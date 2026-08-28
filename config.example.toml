@@ -1,0 +1,38 @@
+[workbook]
+# Only these rows are sent into athlete matching. Every workbook row is still
+# streamed and counted by `inspect` and during `run`.
+sports = ["Track and Field: Mens", "Track and Field: Womens"]
+expected_graduation_year = 2027
+
+[discovery]
+# Direct Athletic.net search endpoint. Searches are rate-limited and use only
+# the prospect's name, school, city/state, class year, and sport.
+athletic_search_url = "https://www.athletic.net/Search.aspx/runSearch"
+max_candidates = 3
+request_timeout_seconds = 30
+search_delay_ms = 750
+
+[retrieval]
+# Default is false. Athletic.net currently prohibits scraping and automated
+# spiders in its Terms. Enable only after obtaining authorization.
+authorized_direct_fetch = false
+# Optional no-crawl path: manually saved athlete pages named <athlete-id>.html.
+saved_pages_dir = "saved_pages"
+respect_robots_txt = true
+delay_ms = 2000
+user_agent = "AthleteResearch/0.1 (+contact@example.edu)"
+page_text_limit = 60000
+
+[ollama]
+# Local llama.cpp/llama-server OpenAI-compatible endpoint.
+api = "openai-compatible"
+enabled = true
+url = "http://127.0.0.1:11000"
+model = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
+timeout_seconds = 180
+
+[matching]
+match_threshold = 0.93
+close_threshold = 0.86
+review_threshold = 0.75
+require_corroboration = true

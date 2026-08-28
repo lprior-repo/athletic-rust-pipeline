@@ -1,0 +1,31 @@
+[package]
+name = "athletic-rust-pipeline"
+version = "0.1.0"
+edition = "2021"
+description = "Streaming XLSX athlete matching pipeline with direct Athletic.net search, Spider, and local models"
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+csv = "1.3"
+quick-xml = "0.38"
+regex = "1.11"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+spider = { version = "2.53.6", features = ["sync"] }
+strsim = "0.11"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+toml = "0.9"
+unicode-normalization = "0.1"
+url = "2.5"
+zip = { version = "2.4", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

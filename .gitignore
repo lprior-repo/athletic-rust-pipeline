@@ -1,0 +1,12 @@
+/target/
+/out/
+/out*/
+/checkpoint.jsonl
+/config.toml
+**/*.xlsx
+**/*.csv
+**/*.jsonl
+/saved_pages/
+*.zip
+*.bak
+/athletic_matcher
