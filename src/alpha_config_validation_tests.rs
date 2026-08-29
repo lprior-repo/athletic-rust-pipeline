@@ -187,6 +187,78 @@ mod tests {
         );
     }
     #[test]
+    fn cap_marker_empty_rejected() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["".to_owned()];
+        let error = config.validate().expect_err("empty cap_marker must fail");
+        assert!(
+            error.to_string().contains("must be non-empty"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn cap_marker_top_level_key_ok() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["truncated".to_owned(), "has_more".to_owned()];
+        config.validate().expect("top-level keys should pass");
+    }
+
+    #[test]
+    fn cap_marker_valid_rfc6901_pointer_ok() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["/metadata/truncated".to_owned()];
+        config.validate().expect("valid RFC6901 pointer should pass");
+    }
+
+    #[test]
+    fn cap_marker_valid_escaped_pointer_ok() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["/data/value~0".to_owned()]; // ~0 encodes literal ~
+        config.validate().expect("valid escaped RFC6901 pointer should pass");
+    }
+
+    #[test]
+    fn cap_marker_malformed_path_rejected() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["/metadata/truncated~2".to_owned()];
+        let error = config.validate().expect_err("malformed RFC6901 escape must fail");
+        assert!(
+            error.to_string().contains("invalid RFC6901"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn cap_marker_slash_in_top_level_rejected() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["metadata/truncated".to_owned()];
+        let error = config
+            .validate()
+            .expect_err("slash in non-pointer marker must fail");
+        assert!(
+            error.to_string().contains("not a valid RFC6901 pointer"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn cap_marker_tilde_in_top_level_rejected() {
+        let mut config = valid_config();
+        config.api.cap_markers = vec!["truncated~bad".to_owned()];
+        let error = config
+            .validate()
+            .expect_err("tilde in non-pointer marker must fail");
+        assert!(
+            error.to_string().contains("not a valid RFC6901 pointer"),
+            "error: {}",
+            error
+        );
+    }
+    #[test]
     fn empty_allowed_routes_rejected() {
         let mut config = valid_config();
         config.authorization.allowed_routes.clear();

@@ -12,6 +12,33 @@ pub struct AlphaConfig {
     pub api: AlphaApiConfig,
 }
 
+/// Validate a cap_marker: non-empty, either a top-level key (no /, no ~)
+/// or a strict RFC6901 JSON pointer (starts with /, every ~ followed by 0 or 1).
+fn validate_cap_marker(marker: &str, idx: usize) -> Result<()> {
+    if marker.starts_with('/') {
+        // RFC6901 pointer: validate escape sequences.
+        let mut chars = marker.chars().peekable();
+        while let Some(ch) = chars.next() {
+            if ch == '~' {
+                let next = chars.peek().copied().unwrap_or('\0');
+                if next != '0' && next != '1' {
+                    bail!(
+                        "api.cap_markers[{idx}] has invalid RFC6901 escape '~{next}' at position {}",
+                        marker.find(ch).unwrap_or(0),
+                    );
+                }
+            }
+        }
+    } else {
+        // Top-level key: must not contain / or ~.
+        if marker.contains('/') || marker.contains('~') {
+            bail!(
+                "api.cap_markers[{idx}] is not a top-level key and not a valid RFC6901 pointer: '{marker}'"
+            );
+        }
+    }
+    Ok(())
+}
 impl AlphaConfig {
     /// Load and validate an alpha configuration file.
     pub fn load(path: &Path) -> Result<Self> {
@@ -129,6 +156,13 @@ impl AlphaConfig {
 
         // Pagination pointers must be non-empty.
         self.validate_pagination()?;
+        // Validate cap_markers: nonempty, either top-level key or strict RFC6901 pointer.
+        for (idx, marker) in api.cap_markers.iter().enumerate() {
+            if marker.is_empty() {
+                bail!("api.cap_markers[{idx}] must be non-empty");
+            }
+            validate_cap_marker(marker, idx)?;
+        }
 
         // Profile enrichment: only allowed when explicitly authorized via allowed_profile_routes.
         if self.authorization.allow_profile_enrichment {
