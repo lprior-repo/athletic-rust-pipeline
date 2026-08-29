@@ -26,7 +26,8 @@ const expectedOrigin = 'https://www.athletic.net';
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name/i;
 const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|localhost(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9]+\.[a-z0-9]+\.[0-9]+\.[a-z0-9]+(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9][a-z0-9-]*\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
-const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
+const PII_VALUE_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/i;
+const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source|email|phone|address|street|postal|zip|city|ssn|dob/i;
 
 const ID_RE = /^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i;
 const scrub = (value, key = '') => {
@@ -55,6 +56,7 @@ const scrub = (value, key = '') => {
   if (typeof value === 'string') {
     if (REDACT_KEY_RE.test(key)) return 'REDACTED';
     if (URL_VALUE_RE.test(value)) return 'REDACTED';
+    if (PII_VALUE_RE.test(value)) return 'REDACTED';
   }
   return value;
 };
@@ -93,8 +95,9 @@ try {
       if (seen.has(key)) return;
       seen.add(key);
       try {
-        captured[key] = scrub(await response.json(), '');
-        check();
+        const parsed = await response.json();
+        if (parsed === null || typeof parsed !== 'object') throw new Error('response is not a JSON object');
+        captured[key] = scrub(parsed, '');
       } catch {
         reject(new Error('failed to parse alpha response'));
       }
@@ -164,7 +167,7 @@ async function writeAtomicPair(dir, entries) {
   } catch (e) {
     // Rollback: restore every successful backup
     for (const f of successfulBackups) {
-      try { await rename(f.backupPath, f.finalPath); } catch {}
+      try { await rename(f.backupPath, f.finalPath); } catch (e) { console.error('backup restore failed:', e.message); }
       const idx = backupFiles.indexOf(f.backupPath);
       if (idx !== -1) backupFiles.splice(idx, 1);
     }
@@ -181,13 +184,13 @@ async function writeAtomicPair(dir, entries) {
   } catch (e) {
     // Clean up staged temp files
     for (const f of staged) {
-      try { await rm(f.tmpPath); } catch {}
+      try { await rm(f.tmpPath); } catch (e) { console.error('temp cleanup failed:', e.message); }
       const idx = tempFiles.indexOf(f.tmpPath);
       if (idx !== -1) tempFiles.splice(idx, 1);
     }
     // Restore backups
     for (const f of successfulBackups) {
-      try { await rename(f.backupPath, f.finalPath); } catch {}
+      try { await rename(f.backupPath, f.finalPath); } catch (e) { console.error('backup restore failed:', e.message); }
       const idx = backupFiles.indexOf(f.backupPath);
       if (idx !== -1) backupFiles.splice(idx, 1);
     }
@@ -203,18 +206,18 @@ async function writeAtomicPair(dir, entries) {
     }
     // Success: remove backups
     for (const f of successfulBackups) {
-      try { await rm(f.backupPath); } catch {}
+      try { await rm(f.backupPath); } catch (e) { console.error('backup removal failed:', e.message); }
       const bIdx = backupFiles.indexOf(f.backupPath);
       if (bIdx !== -1) backupFiles.splice(bIdx, 1);
     }
   } catch (e) {
     // Clean up newly installed files
     for (const f of filePairs) {
-      try { await rm(f.finalPath); } catch {}
+      try { await rm(f.finalPath); } catch (e) { console.error('new file cleanup failed:', e.message); }
     }
     // Restore backups
     for (const f of successfulBackups) {
-      try { await rename(f.backupPath, f.finalPath); } catch {}
+      try { await rename(f.backupPath, f.finalPath); } catch (e) { console.error('backup restore failed:', e.message); }
       const idx = backupFiles.indexOf(f.backupPath);
       if (idx !== -1) backupFiles.splice(idx, 1);
     }
