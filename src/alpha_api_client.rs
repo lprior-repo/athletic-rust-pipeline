@@ -83,7 +83,7 @@ impl AlphaApiClient {
                     }
                 }
                 match value.get("hasMore").and_then(|x| x.as_bool()) {
-                    Some(true) => { validate_next(value.get("nextPage"), "hasMore=true, nextPage")?; return Ok(false); }
+                    Some(true) => { validate_next(value.get("nextPage"), "hasMore=true, nextPage")?; return Err(AlphaApiError::Incomplete("SingleResponse: hasMore=true with nextPage but SingleResponse cannot produce a continuation token".into())); }
                     Some(false) | None => {}
                 }
                 let ptr = Self::resolve_ptr(complete_pointer);

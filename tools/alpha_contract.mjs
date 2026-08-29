@@ -24,7 +24,7 @@ const expectedOrigin = 'https://www.athletic.net';
   }
 }
 
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page[_-]?key|page[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key/i;
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page|page[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key/i;
 const URL_VALUE_RE = /^(?:https?:\/\/|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:\/|$))/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 

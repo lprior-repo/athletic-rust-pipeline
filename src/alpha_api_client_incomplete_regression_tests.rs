@@ -110,3 +110,36 @@ async fn cap_markers_top_level_key_path() {
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "top-level cap marker must detect truncation");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
+    // SingleResponse hasMore=true with valid nextPage must return Incomplete.
+    // SingleResponse cannot produce a continuation token, so this is non-resumable.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-42"}"#)
+        .create();
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+        timeout_seconds: 30,
+        max_retries: 0,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0,
+        cap_markers: vec![],
+    }).expect("client creation must not fail");
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::Incomplete(_)), "SingleResponse hasMore=true with valid nextPage must return Incomplete, got {:?}", err);
+}
