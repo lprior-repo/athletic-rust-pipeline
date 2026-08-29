@@ -25,7 +25,7 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name|id/i;
-const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|data:|urn:|tel:|blob:|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
+const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
 const scrub = (value, key = '') => {
@@ -142,6 +142,11 @@ async function writeAtomicPair(dir, entries) {
     backupPath: join(dir, '.bak-' + filename),
   }));
 
+  // Recover from stale crash artifacts
+  for (const f of filePairs) {
+    try { await rm(f.backupPath); } catch {}
+    try { await rm(f.tmpPath); } catch {}
+  }
   // Step 1: Backup existing final files; track only successful backups
   const successfulBackups = [];
   try {
