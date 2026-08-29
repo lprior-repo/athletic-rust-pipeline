@@ -3,7 +3,7 @@ use reqwest::{Client, Method, redirect::Policy};
 use tokio::sync::Semaphore;
 use url::Url;
 
-use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
+use crate::alpha_api::{validate_pagination_config, AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_model::{AlphaRequest, PaginationConfig, RankingRecord};
 use crate::alpha_model_raw::{RawNavInfoResponse, RawRankingsResponse};
 
@@ -54,6 +54,7 @@ impl AlphaApiClient {
             return Err(AlphaApiError::AuthorizationDisabled);
         }
         validate_cap_markers(&config.cap_markers)?;
+        validate_pagination_config(&config.pagination)?;
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(config.timeout_seconds))
             .redirect(Policy::none())

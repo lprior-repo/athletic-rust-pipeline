@@ -51,4 +51,64 @@ pub struct AlphaApiClientConfig {
     pub min_delay_ms: u64,
     pub max_retry_delay_ms: u64,
 }
+/// Strict RFC6901 JSON pointer validation: non-empty, starts with '/',
+/// every '~' followed by '0' or '1'.
+fn validate_absolute_pointer(ptr: &str, name: &str) -> Result<(), AlphaApiError> {
+    if ptr.is_empty() {
+        return Err(AlphaApiError::InvalidConfig(format!(
+            "{name} must be non-empty"
+        )));
+    }
+    if !ptr.starts_with('/') {
+        return Err(AlphaApiError::InvalidConfig(format!(
+            "{name} must start with '/' (got '{ptr}')"
+        )));
+    }
+    for (pos, ch) in ptr.chars().enumerate() {
+        if ch == '~' {
+            match ptr.chars().nth(pos + 1) {
+                Some('0') | Some('1') => {}
+                Some(other) => {
+                    return Err(AlphaApiError::InvalidConfig(format!(
+                        "{name} has invalid RFC6901 escape '~{other}' at position {pos}",
+                    )));
+                }
+                None => {
+                    return Err(AlphaApiError::InvalidConfig(format!(
+                        "{name} has trailing '~' at position {pos}",
+                    )));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Validate a PaginationConfig: all pointer fields must be
+/// non-empty strict RFC6901 pointers; request_page_key must be non-empty.
+pub fn validate_pagination_config(
+    pagination: &crate::alpha_model::PaginationConfig,
+) -> Result<(), AlphaApiError> {
+    match pagination {
+        crate::alpha_model::PaginationConfig::SingleResponse {
+            complete_pointer,
+        } => {
+            validate_absolute_pointer(complete_pointer, "complete_pointer")?;
+        }
+        crate::alpha_model::PaginationConfig::NextPage {
+            has_more_pointer,
+            next_page_pointer,
+            request_page_key,
+        } => {
+            validate_absolute_pointer(has_more_pointer, "has_more_pointer")?;
+            validate_absolute_pointer(next_page_pointer, "next_page_pointer")?;
+            if request_page_key.is_empty() {
+                return Err(AlphaApiError::InvalidConfig(
+                    "request_page_key must be non-empty".into(),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
 

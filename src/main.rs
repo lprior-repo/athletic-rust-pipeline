@@ -62,6 +62,10 @@ mod alpha_nav_validation_tests;
 #[cfg(test)]
 mod alpha_api_client_pagination_tests;
 #[cfg(test)]
+mod alpha_api_client_pagination_config_tests;
+#[cfg(test)]
+mod alpha_api_client_constructor_tests;
+#[cfg(test)]
 mod alpha_test_helpers;
 #[cfg(test)]
 mod alpha_api_deserialization_tests;
