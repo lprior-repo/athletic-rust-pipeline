@@ -36,7 +36,11 @@ async fn single_response_incomplete_fails_closed() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client creation must not fail");
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::Incomplete(_)), "SingleResponse incomplete must fail closed, got {:?}", err);
 }
@@ -72,6 +76,9 @@ async fn cap_markers_json_pointer_path() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["/metadata/truncated".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "JSON-pointer cap marker must detect truncation");
@@ -106,6 +113,9 @@ async fn cap_markers_top_level_key_path() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["__cap".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "top-level cap marker must detect truncation");
@@ -141,6 +151,9 @@ async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::Incomplete(_)), "SingleResponse hasMore=true with valid nextPage must return Incomplete, got {:?}", err);
@@ -174,6 +187,9 @@ async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["truncated".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "wrong-type cap marker must fail-closed as truncated");

@@ -72,7 +72,11 @@ async fn single_response_rankings_continuation_is_none() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client must not fail");
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
     assert!(page.continuation.is_none(), "SingleResponse must return None continuation");
 }

@@ -25,6 +25,10 @@ pub enum AlphaApiError {
     TruncatedWithoutContinuation,
     #[error("invalid concurrency: must be exactly 1")]
     InvalidConcurrency,
+    #[error("authorization disabled or permission_reference empty")]
+    AuthorizationDisabled,
+    #[error("response body too large (exceeded {} bytes)", limit)]
+    BodyTooLarge { limit: u64 },
 }
 
 /// Configuration extracted from `AlphaConfig` for constructing the client.
@@ -38,8 +42,11 @@ pub struct AlphaApiClientConfig {
     pub allowed_routes: Vec<String>,
     pub allowed_fields: Vec<String>,
     pub max_concurrent_requests: usize,
+    pub max_body_bytes: u64,
+    pub cap_markers: Vec<String>,
+    pub auth_enabled: bool,
+    pub permission_reference: String,
     pub min_delay_ms: u64,
     pub max_retry_delay_ms: u64,
-    pub cap_markers: Vec<String>,
 }
 

@@ -36,7 +36,11 @@ async fn http_429_wait_maxes_retry_after_against_min_delay() {
         max_concurrent_requests: 1,
         min_delay_ms: 500, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client creation must not fail");
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
         AlphaApiError::RateLimitedExhausted { total_delay_ms, .. } => {
@@ -182,6 +186,9 @@ async fn nested_configured_has_more_does_not_reject_unrelated_top_level_has_more
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
     assert!(page.complete, "nested hasMore=false should mean complete");
@@ -218,6 +225,9 @@ async fn pointer_escaped_and_array_pointers() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
     assert!(page.complete);
@@ -253,6 +263,9 @@ async fn pointer_array_index_in_pointer() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
     assert!(page.complete, "pointer /items/0/complete should resolve to true");

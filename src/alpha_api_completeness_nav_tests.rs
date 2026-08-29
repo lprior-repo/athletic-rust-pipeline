@@ -15,7 +15,11 @@ fn make_nav_info_client(server_url: &str) -> AlphaApiClient {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client creation must not fail")
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail")
 }
 
 #[tokio::test(flavor = "multi_thread")]

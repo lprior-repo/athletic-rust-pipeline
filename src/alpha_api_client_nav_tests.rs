@@ -173,8 +173,11 @@ async fn http_429_retry_after_one_second() {
         ],
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         max_concurrent_requests: 1,
-        cap_markers: vec![],
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -214,6 +217,9 @@ async fn nav_info_rejects_empty_response() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;
@@ -251,6 +257,9 @@ async fn nav_info_rejects_response_missing_complete_and_page() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;
@@ -289,6 +298,9 @@ async fn nav_info_accepts_partial_response_with_complete() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;

@@ -19,6 +19,7 @@ rankings_path = "/api/v1/tfRankings/GetRankings"
 nav_info_path = "/api/v1/tfRankings/GetNavInfo"
 timeout_seconds = 30
 max_retries = 2
+max_body_bytes = 8388608
 cap_markers = []
 [api.pagination]
 mode = "single_response"

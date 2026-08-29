@@ -239,8 +239,10 @@ impl AlphaConfig {
         }
         Ok(())
     }
-    /// Convert to an AlphaApiClientConfig, wiring all fields including cap_markers.
+    /// Convert to an AlphaApiClientConfig, wiring all fields including cap_markers,
+    /// max_body_bytes, and authorization.
     pub fn to_client_config(&self) -> crate::alpha_api::AlphaApiClientConfig {
+        const DEFAULT_MAX_BODY_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
         let auth = &self.authorization;
         let api = &self.api;
         crate::alpha_api::AlphaApiClientConfig {
@@ -249,6 +251,9 @@ impl AlphaConfig {
             nav_info_path: api.nav_info_path.clone(),
             timeout_seconds: api.timeout_seconds,
             max_retries: api.max_retries,
+            max_body_bytes: api.max_body_bytes.max(DEFAULT_MAX_BODY_BYTES),
+            auth_enabled: auth.enabled,
+            permission_reference: auth.permission_reference.clone(),
             pagination: api.pagination.clone(),
             allowed_routes: auth.allowed_routes.clone(),
             allowed_fields: auth.allowed_fields.clone(),

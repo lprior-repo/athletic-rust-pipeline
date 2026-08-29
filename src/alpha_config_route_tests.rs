@@ -215,6 +215,9 @@ mod tests {
             max_concurrent_requests: 1,
             min_delay_ms: 0, max_retry_delay_ms: 30_000,
             cap_markers: vec![],
+            max_body_bytes: 8 * 1024 * 1024,
+            auth_enabled: true,
+            permission_reference: "test".into(),
         };
         let result = crate::alpha_api_client::AlphaApiClient::new(config);
         assert!(result.is_ok(), "new() must return Ok with valid config");
@@ -270,6 +273,9 @@ mod tests {
             max_concurrent_requests: 2,
             min_delay_ms: 0, max_retry_delay_ms: 30_000,
             cap_markers: vec![],
+            max_body_bytes: 8 * 1024 * 1024,
+            auth_enabled: true,
+            permission_reference: "test".into(),
         };
         assert!(matches!(crate::alpha_api_client::AlphaApiClient::new(config), Err(crate::alpha_api::AlphaApiError::InvalidConcurrency)));
     }

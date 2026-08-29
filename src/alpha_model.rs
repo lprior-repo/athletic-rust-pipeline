@@ -26,6 +26,7 @@ pub struct AlphaApiConfig {
     pub nav_info_path: String,
     pub timeout_seconds: u64,
     pub max_retries: usize,
+    pub max_body_bytes: u64,
     pub pagination: PaginationConfig,
     pub cap_markers: Vec<String>,
 }

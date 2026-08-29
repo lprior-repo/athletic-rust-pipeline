@@ -107,7 +107,11 @@ fn enforce_allowed_fields_filters() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).unwrap();
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let input = serde_json::json!({
         "groupedRankings": [[{
             "AthleteID": 1, "AthleteName": "Test", "GradeID": 2, "TeamName": "T",

@@ -17,8 +17,6 @@ pub(crate) fn valid_config() -> AlphaConfig {
                 "AthleteID".to_owned(),
                 "AthleteName".to_owned(),
                 "GradeID".to_owned(),
-                "TeamName".to_owned(),
-                "State".to_owned(),
                 "MeetID".to_owned(),
                 "MeetName".to_owned(),
                 "IDResult".to_owned(),
@@ -39,6 +37,7 @@ pub(crate) fn valid_config() -> AlphaConfig {
             nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
             timeout_seconds: 30,
             max_retries: 2,
+            max_body_bytes: 8 * 1024 * 1024,
             pagination: PaginationConfig::SingleResponse {
                 complete_pointer: "/settings/complete".to_owned(),
             },

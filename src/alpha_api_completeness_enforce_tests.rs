@@ -9,7 +9,11 @@ fn make_config(url: &str, routes: &[&str], fields: Vec<&str>) -> AlphaApiClientC
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: routes.iter().map(|s| (*s).to_string()).collect(),
         allowed_fields: fields.iter().map(|s| s.to_string()).collect(),
-        max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
+        max_concurrent_requests: 1,
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+        min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
     }
 }
 
@@ -43,6 +47,9 @@ async fn nextpage_cap_marker_rejected() {
             "IDResult".into(),"EventShort".into(),"Measure".into(),
             "ResultDate".into(),"SeasonID".into()],
         max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec!["__cap".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client must not fail");
     let err = client.rankings(&make_test_req()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation));
@@ -71,6 +78,9 @@ async fn single_response_cap_marker_rejected() {
             "IDResult".into(),"EventShort".into(),"Measure".into(),
             "ResultDate".into(),"SeasonID".into()],
         max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec!["__cap".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
     }).expect("client must not fail");
     let err = client.rankings(&make_test_req()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation));
@@ -131,8 +141,14 @@ fn enforce_missing_required_result_field_errors() {
         allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(),
             "TeamName".into(), "State".into(), "MeetID".into(), "IDResult".into(),
             "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into()],
-        max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
-    }).expect("client must not fail");
+        max_concurrent_requests: 1,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let err = client.enforce_response_allowed_fields(serde_json::json!({})).unwrap_err();
     assert!(matches!(err, AlphaApiError::Incomplete(msg) if msg.contains("MeetName")));
 }
@@ -183,8 +199,14 @@ async fn enforce_response_allowed_fields_removes_wind_unknown_keeps_envelope() {
             "TeamName".into(), "State".into(), "MeetID".into(), "MeetName".into(),
             "IDResult".into(), "EventShort".into(), "Measure".into(),
             "ResultDate".into(), "SeasonID".into()],
-        max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
-    }).unwrap();
+        max_concurrent_requests: 1,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail");
     let value: serde_json::Value = serde_json::from_str(r#"{
         "groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,
             "TeamName":"School","State":"CA",

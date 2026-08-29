@@ -26,9 +26,13 @@ pub fn make_client(url: &str) -> AlphaApiClient {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test-permission".into(),
     })
     .expect("client creation must not fail")
 }
+
 
 pub fn make_test_request() -> AlphaRequest {
     AlphaRequest {
@@ -68,9 +72,12 @@ pub fn make_full_pagination_config(url: &str) -> AlphaApiClient {
             "IDResult".into(), "EventShort".into(), "Measure".into(),
             "ResultDate".into(), "SeasonID".into(),
         ],
-        max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_concurrent_requests: 1,
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test-permission".into(),
     })
     .expect("client creation must not fail")
 }
@@ -90,6 +97,9 @@ pub fn make_client_with_fields(url: &str, allowed_fields: Vec<&str>) -> AlphaApi
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test-permission".into(),
     })
-    .expect("client must not fail")
+    .expect("client creation must not fail")
 }

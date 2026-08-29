@@ -16,7 +16,11 @@ fn make_single_response_client(server_url: &str, pointer: &str) -> AlphaApiClien
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client creation must not fail")
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail")
 }
 
 fn make_next_page_client(server_url: &str) -> AlphaApiClient {
@@ -36,7 +40,11 @@ fn make_next_page_client(server_url: &str) -> AlphaApiClient {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-    }).expect("client creation must not fail")
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    })
+    .expect("client creation must not fail")
 }
 
 
