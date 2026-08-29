@@ -238,17 +238,16 @@ impl AlphaApiClient {
     ) -> Result<serde_json::Value, AlphaApiError> {
         let allowed = &self.config.allowed_fields;
         if allowed.is_empty() { return Ok(value); }
-        let required = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State"];
-        for &f in &required {
+        // Every retained source field must be explicitly authorized in allowed_fields.
+        let required_fields = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "MeetName", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"];
+        for &f in &required_fields {
             if !allowed.iter().any(|a| a == f) {
-                return Err(AlphaApiError::Incomplete(format!("required field '{f}' not in allowed_fields")));
+                return Err(AlphaApiError::Incomplete(format!("required source field '{f}' not in allowed_fields")));
             }
         }
-        // Required result/provenance fields are always authorized and never stripped.
-        let always_keep = ["IDResult", "EventShort", "Measure", "ResultDate", "SeasonID", "MeetID", "MeetName"];
-        fn filter_fields(obj: &mut serde_json::Map<String, serde_json::Value>, allowed: &[String], always_keep: &[&str]) {
+        fn filter_fields(obj: &mut serde_json::Map<String, serde_json::Value>, allowed: &[String]) {
             let allowed_set: std::collections::HashSet<&str> = allowed.iter().map(|s| s.as_str()).collect();
-            obj.retain(|k, _| allowed_set.contains(k.as_str()) || always_keep.contains(&k.as_str()));
+            obj.retain(|k, _| allowed_set.contains(k.as_str()));
         }
         if let Some(obj) = value.as_object_mut() {
             if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
@@ -256,13 +255,21 @@ impl AlphaApiClient {
                     if let Some(records) = g.as_array_mut() {
                         for rec in records {
                             if let Some(rec_obj) = rec.as_object_mut() {
-                                filter_fields(rec_obj, allowed, &always_keep);
-                                if let Some(results) = rec_obj.get_mut("Results").and_then(|v| v.as_array_mut()) {
-                                    for r in results {
+                                // Preserve "Results" (structural key) before filtering, filter nested results, then re-attach.
+                                let results: Option<Vec<serde_json::Value>> = rec_obj.remove("Results").and_then(|v| {
+                                    match v {
+                                        serde_json::Value::Array(arr) => Some(arr),
+                                        _ => None,
+                                    }
+                                });
+                                filter_fields(rec_obj, allowed);
+                                if let Some(mut results) = results {
+                                    for r in results.iter_mut() {
                                         if let Some(res_obj) = r.as_object_mut() {
-                                            filter_fields(res_obj, allowed, &always_keep);
+                                            filter_fields(res_obj, allowed);
                                         }
                                     }
+                                    rec_obj.insert("Results".into(), serde_json::Value::Array(results));
                                 }
                             }
                         }
@@ -272,6 +279,7 @@ impl AlphaApiClient {
         }
         Ok(value)
     }
+
 
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> {
         v.pointer(ptr)

@@ -16,7 +16,7 @@ fn make_client(server_url: &str) -> AlphaApiClient {
             "/api/v1/tfRankings/GetRankings".to_owned(),
             "/api/v1/tfRankings/GetNavInfo".to_owned(),
         ],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(), "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
         cap_markers: vec![],

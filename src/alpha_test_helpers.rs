@@ -19,6 +19,9 @@ pub fn make_client(url: &str) -> AlphaApiClient {
         allowed_fields: vec![
             "AthleteID".into(), "AthleteName".into(), "GradeID".into(),
             "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(),
+            "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
@@ -61,6 +64,9 @@ pub fn make_full_pagination_config(url: &str) -> AlphaApiClient {
         allowed_fields: vec![
             "AthleteID".into(), "AthleteName".into(), "GradeID".into(),
             "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(),
+            "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
         min_delay_ms: 0,

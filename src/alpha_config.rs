@@ -213,6 +213,7 @@ pub(crate) mod test_helpers {
                     "TeamName".to_owned(),
                     "State".to_owned(),
                     "MeetID".to_owned(),
+                    "MeetName".to_owned(),
                     "IDResult".to_owned(),
                     "EventShort".to_owned(),
                     "Measure".to_owned(),

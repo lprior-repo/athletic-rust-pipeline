@@ -227,7 +227,7 @@ async fn enforce_response_allowed_fields_missing_required() {
 async fn enforce_response_allowed_fields_all_required_present() {
     let client = make_client_with_fields(
         "http://127.0.0.1",
-        vec!["AthleteID", "AthleteName", "GradeID", "TeamName", "State"],
+        vec!["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "MeetName", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"],
     );
     let value = serde_json::json!({"groupedRankings":[]});
     let result = client.enforce_response_allowed_fields(value);

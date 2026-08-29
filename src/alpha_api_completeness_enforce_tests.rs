@@ -107,8 +107,10 @@ fn enforce_allowed_fields_removes_nested_results_disallowed() {
         allowed_routes: vec!["/api".to_owned()],
         allowed_fields: vec![
             "AthleteID".into(), "AthleteName".into(), "GradeID".into(),
-            "TeamName".into(), "State".into(), "Results".into(),
-            "IDResult".into(), "EventShort".into(),
+            "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(),
+            "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
@@ -166,7 +168,7 @@ fn enforce_allowed_fields_preserves_envelope() {
             complete_pointer: "/complete".to_owned(),
         },
         allowed_routes: vec!["/api".to_owned()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(), "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
         cap_markers: vec![],
@@ -183,4 +185,94 @@ fn enforce_allowed_fields_preserves_envelope() {
     assert!(filtered.get("complete").is_some());
     assert!(filtered.get("continuation").is_some());
     assert!(filtered.get("groupedRankings").is_some());
+}
+#[test]
+fn enforce_missing_required_result_field_errors() {
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: "http://example.com".to_owned(),
+        rankings_path: "/api".to_owned(),
+        nav_info_path: "/nav".to_owned(),
+        timeout_seconds: 10,
+        max_retries: 0,
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".to_owned(),
+        },
+        allowed_routes: vec!["/api".to_owned()],
+        // Missing MeetName — required source field.
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(), "MeetID".into(), "IDResult".into(), "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into()],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0,
+        cap_markers: vec![],
+    }).expect("client must not fail");
+    let err = client.enforce_response_allowed_fields(serde_json::json!({})).unwrap_err();
+    assert!(matches!(err, AlphaApiError::Incomplete(msg) if msg.contains("MeetName")));
+}
+
+#[test]
+fn enforce_full_allowed_fields_passes() {
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: "http://example.com".to_owned(),
+        rankings_path: "/api".to_owned(),
+        nav_info_path: "/nav".to_owned(),
+        timeout_seconds: 10,
+        max_retries: 0,
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".to_owned(),
+        },
+        allowed_routes: vec!["/api".to_owned()],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(),
+            "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(),
+            "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0,
+        cap_markers: vec![],
+    }).expect("client must not fail");
+    let json = r#"{
+        "page": 1,
+        "complete": false,
+        "groupedRankings": [[{
+            "AthleteID": 1,
+            "AthleteName": "Test",
+            "GradeID": 1,
+            "TeamName": "",
+            "State": "",
+            "MeetID": 50,
+            "MeetName": "Regional",
+            "Results": [{
+                "IDResult": 100,
+                "EventShort": "100m",
+                "Measure": "10.50",
+                "ResultDate": "2024-01-01",
+                "SeasonID": 2024,
+                "Wind": "+0.5"
+            }]
+        }]]
+    }"#;
+    let value: serde_json::Value = serde_json::from_str(json).unwrap();
+    let filtered = client.enforce_response_allowed_fields(value).unwrap();
+    let recs = filtered["groupedRankings"][0].as_array().unwrap();
+    let rec = &recs[0];
+    // Record-level fields preserved.
+    assert!(rec.get("AthleteID").is_some());
+    assert!(rec.get("AthleteName").is_some());
+    assert!(rec.get("GradeID").is_some());
+    assert!(rec.get("TeamName").is_some());
+    assert!(rec.get("State").is_some());
+    assert!(rec.get("MeetID").is_some());
+    assert!(rec.get("MeetName").is_some());
+    assert!(rec.get("Wind").is_none());
+    // Result-level fields preserved.
+    let results = rec["Results"].as_array().unwrap();
+    let result = &results[0];
+    assert!(result.get("IDResult").is_some());
+    assert!(result.get("EventShort").is_some());
+    assert!(result.get("Measure").is_some());
+    assert!(result.get("ResultDate").is_some());
+    assert!(result.get("SeasonID").is_some());
+    // Wind is not a required source field — stripped.
+    assert!(result.get("Wind").is_none());
 }
