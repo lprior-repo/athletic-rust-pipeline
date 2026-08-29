@@ -266,7 +266,6 @@ async fn run_pipeline(
                 }
             }
         }
-
         let model_decision = if candidates.is_empty() {
             ModelDecision {
                 decision: "NO_MATCH".to_owned(),
@@ -277,7 +276,6 @@ async fn run_pipeline(
         } else {
             ollama.validate_identity(prospect, &candidates).await
         };
-
         let mut record = scoring::finalize_match(
             prospect.clone(),
             candidates,
