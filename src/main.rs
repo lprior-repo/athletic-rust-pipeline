@@ -56,7 +56,13 @@ mod alpha_nav_validation;
 #[cfg(test)]
 mod alpha_nav_validation_tests;
 #[cfg(test)]
+mod alpha_api_client_pagination_tests;
+#[cfg(test)]
 mod alpha_test_helpers;
+#[cfg(test)]
+mod alpha_api_deserialization_tests;
+#[cfg(test)]
+mod alpha_api_field_validation_tests;
 mod checkpoint;
 mod config;
 mod discovery;
@@ -241,26 +247,18 @@ async fn run_pipeline(
         if config.retrieval.authorized_direct_fetch {
             if let Some(selected_index) = selected_index {
                 if let Some(hit) = hits.get(selected_index) {
-                    let mut html = match config.retrieval.saved_pages_dir.as_deref() {
-                        Some(directory) => match fetch::load_saved_profile(&hit.url, directory) {
-                            Ok(Some(h)) => Some(h),
-                            Ok(None) | Err(_) => None,
-                        },
-                        None => None,
-                    };
+                    let mut html = config.retrieval.saved_pages_dir.as_ref().and_then(|dir| fetch::load_saved_profile(&hit.url, dir).ok()).flatten();
                     if html.is_none() {
                         html = fetch::fetch_exact_profile(&hit.url, &config.retrieval).await.ok();
                     }
                     if html.is_none() {
                         eprintln!("  retrieval failed for {}: no saved page", hit.url);
                     }
-                    if let Some(html) = html {
-                        let mut enriched = extract::candidate_from_evidence(prospect, hit, Some(&html), &ollama, config.retrieval.page_text_limit).await;
+                    if let Some(ref html) = html {
+                        let mut enriched = extract::candidate_from_evidence(prospect, hit, Some(html.as_str()), &ollama, config.retrieval.page_text_limit).await;
                         scoring::score_candidate(prospect, &mut enriched, &config.matching);
                         if let Some(slot) = candidates.get_mut(selected_index) { *slot = enriched; }
                     }
-                } else {
-                    eprintln!("  selected candidate index {selected_index} has no search hit");
                 }
             }
         }
