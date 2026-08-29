@@ -282,4 +282,110 @@ mod tests {
         let raw = RawRankingsResponse::from_json(json).expect("unknown fields should be ignored");
         assert_eq!(raw.page, Some(1));
     }
+    #[test]
+    fn from_json_rejects_wrong_page_type() {
+        // page must be u64 or null; string type should error
+        let result = RawRankingsResponse::from_json(
+            r#"{"groupedRankings":[],"page":"invalid"}"#,
+        );
+        assert!(result.is_err(), "string page must error");
+    }
+    #[test]
+    fn from_json_rejects_float_page_type() {
+        let result = RawRankingsResponse::from_json(
+            r#"{"groupedRankings":[],"page":1.5}"#,
+        );
+        assert!(result.is_err(), "float page must error");
+    }
+    #[test]
+    fn from_json_accepts_null_page() {
+        let raw = RawRankingsResponse::from_json(
+            r#"{"groupedRankings":[],"page":null}"#,
+        ).expect("null page should be accepted");
+        assert_eq!(raw.page, None);
+    }
+    #[test]
+    fn from_flattened_rejects_zero_id_result() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 0, "EventShort": "100m", "Measure": "10.5s",
+            "ResultDate": "2024-01-01", "SeasonID": 1, "MeetID": 5, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "zero IDResult must error");
+    }
+    #[test]
+    fn from_flattened_rejects_empty_event_short() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "", "Measure": "10.5s",
+            "ResultDate": "2024-01-01", "SeasonID": 1, "MeetID": 5, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "empty EventShort must error");
+    }
+    #[test]
+    fn from_flattened_rejects_zero_season_id() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "100m", "Measure": "10.5s",
+            "ResultDate": "2024-01-01", "SeasonID": 0, "MeetID": 5, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "zero SeasonID must error");
+    }
+    #[test]
+    fn from_flattened_rejects_zero_meet_id() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "100m", "Measure": "10.5s",
+            "ResultDate": "2024-01-01", "SeasonID": 1, "MeetID": 0, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "zero MeetID must error");
+    }
+    #[test]
+    fn from_flattened_rejects_empty_meet_name() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "100m", "Measure": "10.5s",
+            "ResultDate": "2024-01-01", "SeasonID": 1, "MeetID": 5, "MeetName": ""
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "empty MeetName must error");
+    }
+    #[test]
+    fn from_flattened_rejects_empty_measure() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "100m", "Measure": "",
+            "ResultDate": "2024-01-01", "SeasonID": 1, "MeetID": 5, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "empty Measure must error");
+    }
+    #[test]
+    fn from_flattened_rejects_empty_result_date() {
+        let json = r#"{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2,
+            "TeamName": "School", "State": "CA",
+            "IDResult": 100, "EventShort": "100m", "Measure": "10.5s",
+            "ResultDate": "", "SeasonID": 1, "MeetID": 5, "MeetName": "Meet"
+        }"#;
+        let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+        let result = rec.to_flattened_records();
+        assert!(result.is_err(), "empty ResultDate must error");
+    }
 }

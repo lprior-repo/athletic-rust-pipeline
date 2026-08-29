@@ -104,18 +104,39 @@ impl RawRankingRecord {
     fn from_flattened(&self) -> Result<Vec<RankingRecord>, String> {
         let id_result = self.id_result
             .ok_or("RawRankingRecord flattened: missing required IDResult")?;
+        if id_result == 0 {
+            return Err("RawRankingRecord flattened: IDResult must not be zero".into());
+        }
         let event_short = self.event_short.clone()
             .ok_or("RawRankingRecord flattened: missing required EventShort")?;
+        if event_short.is_empty() {
+            return Err("RawRankingRecord flattened: EventShort must not be empty".into());
+        }
         let measure = self.measure.clone()
             .ok_or("RawRankingRecord flattened: missing required Measure")?;
+        if measure.is_empty() {
+            return Err("RawRankingRecord flattened: Measure must not be empty".into());
+        }
         let result_date = self.result_date.clone()
             .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
+        if result_date.is_empty() {
+            return Err("RawRankingRecord flattened: ResultDate must not be empty".into());
+        }
         let season_id = self.season_id
             .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
+        if season_id == 0 {
+            return Err("RawRankingRecord flattened: SeasonID must not be zero".into());
+        }
         let meet_name = self.meet_name.clone()
             .ok_or("RawRankingRecord flattened: missing required MeetName")?;
+        if meet_name.is_empty() {
+            return Err("RawRankingRecord flattened: MeetName must not be empty".into());
+        }
         let meet_id = self.meet_id
             .ok_or("RawRankingRecord flattened: missing required MeetID")?;
+        if meet_id == 0 {
+            return Err("RawRankingRecord flattened: MeetID must not be zero".into());
+        }
         Ok(vec![RankingRecord {
             athlete_id: self.athlete_id,
             athlete_name: self.athlete_name.clone(),
@@ -205,7 +226,13 @@ impl RawRankingsResponse {
             .collect();
 
         let grouped_rankings = grouped_rankings?;
-        let page = value.get("page").and_then(|v| v.as_u64());
+        // Strict page type: if present, must be u64 or explicit null; no silent drops.
+        let page = match value.get("page") {
+            Some(serde_json::Value::Null) => None,
+            Some(serde_json::Value::Number(n)) if n.is_u64() => Some(n.as_u64().unwrap()),
+            Some(v) => return Err(format!("page must be u64 or null, got: {v}")),
+            None => None,
+        };
         let complete = value.get("complete").cloned();
         let continuation = match value.get("continuation") {
             Some(serde_json::Value::Null) => None,

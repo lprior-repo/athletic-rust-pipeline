@@ -90,3 +90,19 @@ async fn nav_info_5xx_exhausted() {
     let err = client.nav_info(2026, false).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::ServerErrorExhausted { .. }));
 }
+#[tokio::test(flavor = "multi_thread")]
+async fn nav_info_rejects_empty_object() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
+        .match_query(mockito::Matcher::Any)
+        .with_status(200)
+        .with_body("{}")
+        .create();
+    let client = make_nav_info_client(&url);
+    let err = client.nav_info(2026, false).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::Incomplete(_)), "bare object must be rejected");
+}

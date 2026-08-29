@@ -1,8 +1,7 @@
+#![cfg_attr(test, allow(dead_code))]
 #[cfg(test)]
-#[allow(dead_code)]
 mod alpha_config;
 #[cfg(test)]
-#[allow(dead_code)]
 mod alpha_api;
 #[cfg(test)]
 mod alpha_api_client;
@@ -286,15 +285,9 @@ async fn run_pipeline(
     summarize(&ordered);
     Ok(())
 }
-
 fn summarize(records: &[MatchRecord]) {
     let mut counts: HashMap<&str, usize> = HashMap::new();
-    for record in records {
-        counts
-            .entry(record.status.as_str())
-            .and_modify(|count| *count = count.saturating_add(1))
-            .or_insert(1);
-    }
+    for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); }
     eprintln!("wrote {} records", records.len());
     for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] {
         eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c));

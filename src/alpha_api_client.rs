@@ -75,6 +75,12 @@ impl AlphaApiClient {
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
                 let value = &raw.value;
+                // Fix 3: continuation.complete=false overrides hasMore=false => incomplete.
+                if let Some(cont) = &raw.continuation {
+                    if !cont.complete {
+                        return Ok(false);
+                    }
+                }
                 let hptr = Self::resolve_ptr(has_more_pointer);
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
                     serde_json::Value::Bool(v) => {
@@ -119,7 +125,7 @@ impl AlphaApiClient {
         method: Method,
         url: Url,
         body: Option<&serde_json::Value>,
-    ) -> Result<reqwest::Response, AlphaApiError> {
+    ) -> Result<String, AlphaApiError> {
         let mut retry = 0usize;
         let max_retry = self.config.max_retries;
         let timeout_ms = self.config.timeout_seconds * 1000;
@@ -167,7 +173,9 @@ impl AlphaApiClient {
                 let body = resp.text().await.map_err(AlphaApiError::Request)?;
                 return Err(AlphaApiError::UnexpectedStatus { status, body });
             }
-            return Ok(resp);
+            // Buffer body inside the retry loop so timeouts on text() also retry.
+            let body = resp.text().await.map_err(AlphaApiError::Request)?;
+            return Ok(body);
         }
     }
 
@@ -184,29 +192,22 @@ impl AlphaApiClient {
             .map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
         let url = base.join(route)
             .map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;
-        let resp = self.execute_request(Method::POST, url, Some(&body)).await?;
-        let text = resp.text().await.map_err(AlphaApiError::Request)?;
+        let text = self.execute_request(Method::POST, url, Some(&body)).await?;
         let raw = RawRankingsResponse::from_json(&text).map_err(|e| AlphaApiError::Incomplete(e))?;
         let complete = self.check_completeness(&raw)?;
-        let raw_value = &raw.value;
+        // SingleResponse continuation is a boolean flag, not a token => None.
         let continuation = match &self.config.pagination {
-            PaginationConfig::SingleResponse { complete_pointer } => {
-                let ptr = Self::resolve_ptr(complete_pointer);
-                raw_value.pointer(&ptr).cloned()
-            }
+            PaginationConfig::SingleResponse { .. } => None,
             PaginationConfig::NextPage { next_page_pointer, .. } => {
                 let ptr = Self::resolve_ptr(next_page_pointer);
-                raw_value.pointer(&ptr).cloned()
+                raw.value.pointer(&ptr).cloned()
             }
         };
+        // Filter allowed_fields BEFORE parsing groupedRankings,
+        // so disallowed fields (e.g. Wind) never reach RankingRecord.
         let validated_json = self.enforce_response_allowed_fields(raw.value)?;
-        let validated_raw = RawRankingsResponse {
-            grouped_rankings: raw.grouped_rankings,
-            page: raw.page,
-            complete: raw.complete,
-            continuation: raw.continuation,
-            value: validated_json,
-        };
+        let validated_raw = RawRankingsResponse::from_json(&validated_json.to_string())
+            .map_err(|e| AlphaApiError::Incomplete(format!("reparse filtered response: {e}")))?;
         let records = self.parse_rankings_strict(&validated_raw)
             .map_err(|e| AlphaApiError::Incomplete(e))?;
         Ok(RankingPage { records, complete, continuation })
@@ -225,8 +226,7 @@ impl AlphaApiClient {
         url.query_pairs_mut()
             .append_pair("season_id", &season_id.to_string())
             .append_pair("indoor", &indoor.to_string());
-        let resp = self.execute_request(Method::GET, url, None).await?;
-        let text = resp.text().await.map_err(AlphaApiError::Request)?;
+        let text = self.execute_request(Method::GET, url, None).await?;
         let nav: RawNavInfoResponse = serde_json::from_str(&text)
             .map_err(|e| AlphaApiError::Incomplete(format!("JSON parse error: {e}")))?;
         nav.validate().map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
