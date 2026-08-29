@@ -249,3 +249,42 @@ fn new_returns_error_on_invalid_config() {
     let result = AlphaApiClient::new(config);
     assert!(result.is_ok(), "new() must return Ok with valid config");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_wait_maxes_retry_after_against_min_delay() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    for _ in 0..3 {
+        server.mock("POST", "/api/v1/tfRankings/GetRankings")
+            .with_status(429)
+            .with_header("Retry-After", "0")
+            .create();
+    }
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
+        timeout_seconds: 30,
+        max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 500,
+        cap_markers: vec![],
+    }).expect("client creation must not fail");
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    match err {
+        AlphaApiError::RateLimitedExhausted { total_delay_ms, .. } => {
+            assert_eq!(total_delay_ms, 1000, "must use max(Retry-After, min_delay_ms) * attempt");
+        }
+        other => panic!("expected RateLimitedExhausted, got {:?}", other),
+    }
+}

@@ -153,10 +153,11 @@ impl AlphaApiClient {
         url: Url,
         body: Option<&serde_json::Value>,
     ) -> Result<String, AlphaApiError> {
-        let mut retry = 0usize;
+        let mut attempt = 0usize;
         let max_retry = self.config.max_retries;
-        let timeout_ms = self.config.timeout_seconds * 1000;
+        let timeout_ms = self.config.timeout_seconds.saturating_mul(1000);
         loop {
+            // Rebuild complete request (including body) on every attempt.
             let builder = self.client.request(method.clone(), url.as_str())
                 .timeout(Duration::from_secs(self.config.timeout_seconds));
             let builder = match body {
@@ -167,10 +168,12 @@ impl AlphaApiClient {
             let resp = match resp {
                 Ok(r) => r,
                 Err(e) if e.is_timeout() => {
-                    if retry >= max_retry {
+                    if attempt >= max_retry {
                         return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
                     }
-                    retry += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue;
+                    attempt += 1;
+                    tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
+                    continue;
                 }
                 Err(e) => return Err(AlphaApiError::Request(e)),
             };
@@ -178,42 +181,55 @@ impl AlphaApiClient {
             if status == 401 { return Err(AlphaApiError::Unauthorized(format!("HTTP {status}"))); }
             if status == 403 { return Err(AlphaApiError::Forbidden(format!("HTTP {status}"))); }
             if status == 429 {
-                let delay = resp.headers().get("Retry-After")
+                let retry_after_ms = match resp.headers().get("Retry-After")
                     .and_then(|v| v.to_str().ok())
-                    .and_then(|v| v.parse::<u64>().ok());
-                match delay {
-                    Some(d) => {
-                        if retry >= max_retry {
-                            return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: d.saturating_mul(1000).saturating_mul(retry as u64) });
-                        }
-                        tokio::time::sleep(Duration::from_millis(d.saturating_mul(1000))).await; retry += 1; continue;
-                    }
+                    .and_then(|v| v.parse::<u64>().ok()) {
+                    Some(d) => d.saturating_mul(1000),
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
+                };
+                let wait_ms = retry_after_ms.max(self.config.min_delay_ms);
+                if attempt >= max_retry {
+                    return Err(AlphaApiError::RateLimitedExhausted {
+                        max_retries: max_retry,
+                        total_delay_ms: wait_ms.saturating_mul(attempt as u64),
+                    });
                 }
+                attempt += 1;
+                tokio::time::sleep(Duration::from_millis(wait_ms)).await;
+                continue;
             }
             if status >= 500 {
-                if retry < max_retry { retry += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
-                return Err(AlphaApiError::ServerErrorExhausted { status, retries: retry });
+                if attempt < max_retry {
+                    attempt += 1;
+                    tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
+                    continue;
+                }
+                return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
             }
             if status < 200 || status >= 300 {
                 let body = resp.text().await.map_err(AlphaApiError::Request)?;
                 return Err(AlphaApiError::UnexpectedStatus { status, body });
             }
-            // Defect 2: body-read timeout — retry with bounded retries and min-delay.
-            let mut body_retry = 0usize;
+            // Read body text with bounded retry on timeout.
+            let mut text_read = 0usize;
             let mut current_resp = resp;
             loop {
                 match current_resp.text().await {
                     Ok(text) => return Ok(text),
                     Err(e) if e.is_timeout() => {
-                        if body_retry >= max_retry {
+                        if text_read >= max_retry {
                             return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
                         }
-                        body_retry += 1;
+                        text_read += 1;
                         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
-                        current_resp = self.client.request(method.clone(), url.as_str())
-                            .timeout(Duration::from_secs(self.config.timeout_seconds))
-                            .send().await
+                        // Rebuild and re-send the complete request with body.
+                        let builder = self.client.request(method.clone(), url.as_str())
+                            .timeout(Duration::from_secs(self.config.timeout_seconds));
+                        let builder = match body {
+                            Some(b) => builder.header("Content-Type", "application/json").json(b),
+                            None => builder,
+                        };
+                        current_resp = builder.send().await
                             .map_err(AlphaApiError::Request)?;
                     }
                     Err(e) => return Err(AlphaApiError::Request(e)),
@@ -277,8 +293,6 @@ impl AlphaApiClient {
         nav.validate().map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
         Ok(nav)
     }
-
-
 
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> {
         v.pointer(ptr)
