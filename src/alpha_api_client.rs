@@ -7,8 +7,6 @@ use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_model::{AlphaRequest, PaginationConfig, RankingRecord};
 use crate::alpha_model_raw::{RawNavInfoResponse, RawRankingsResponse};
 
-/// Operational ceiling for numeric Retry-After values (seconds).
-/// Servers asking to sleep longer are treated as exhaustively rate-limited.
 const MAX_RETRY_AFTER_SECONDS: u64 = 300;
 
 #[derive(Debug)]
@@ -45,8 +43,7 @@ impl AlphaApiClient {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(config.timeout_seconds))
             .redirect(Policy::none())
-            .build()
-            .map_err(|e| AlphaApiError::Incomplete(format!("reqwest builder failed: {e}")))?;
+            .build().map_err(|e| AlphaApiError::Incomplete(format!("reqwest builder failed: {e}")))?;
         Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(1) })
     }
 
@@ -61,19 +58,14 @@ impl AlphaApiClient {
                     serde_json::Value::Null => return Err(AlphaApiError::Incomplete("continuation is null".into())),
                     serde_json::Value::String(s) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty".into())),
                     serde_json::Value::Object(o) if o.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty object".into())),
-                    serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_) => {
-                        Ok(serde_json::json!({ request_page_key: c }))
-                    }
+                    serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_) => Ok(serde_json::json!({ request_page_key: c })),
                     v => return Err(AlphaApiError::Incomplete(format!("unsupported continuation type: {v}"))),
                 }
             }
-            (PaginationConfig::SingleResponse { .. }, Some(_)) => {
-                return Err(AlphaApiError::Incomplete("SingleResponse mode does not accept continuation".into()));
-            }
+            (PaginationConfig::SingleResponse { .. }, Some(_)) => Err(AlphaApiError::Incomplete("SingleResponse mode does not accept continuation".into())),
             _ => Ok(serde_json::json!({})),
         }
     }
-
 
     fn parse_rankings_strict(&self, raw: &RawRankingsResponse) -> Result<Vec<RankingRecord>, String> {
         let mut records = Vec::new();
@@ -83,16 +75,9 @@ impl AlphaApiClient {
         Ok(records)
     }
 
-    /// FIX 1: SingleResponse — hasMore controls flow explicitly.
-    /// Cap semantics (Finding 1):
-    /// - NextPage: hasMore=true + valid nonempty next pointer → complete=false,
-    ///   caller gets continuation even if cap marker fires.
-    ///   Cap marker with terminal/no usable continuation → TruncatedWithoutContinuation.
-    /// - SingleResponse: hasMore=true → always Incomplete (no continuation output).
-    ///   Cap marker with complete=true must fail.
     pub(crate) fn check_completeness(&self, raw: &RawRankingsResponse) -> Result<bool, AlphaApiError> {
         let value = &raw.value;
-        // Validate nextPage/next pointer value type.
+        // Validate next pointer value type.
         let validate_next = |val: Option<&serde_json::Value>, ctx: &str| -> Result<(), AlphaApiError> {
             match val {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
@@ -102,27 +87,25 @@ impl AlphaApiClient {
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
         };
-        let check_cap = |v: &serde_json::Value| -> Result<bool, AlphaApiError> {
+        // Check cap markers — non-bool or bool(true) triggers truncation error.
+        let check_cap = |v: &serde_json::Value| -> Result<(), AlphaApiError> {
             for cm in &self.config.cap_markers {
-                let found = if cm.starts_with('/') {
-                    v.pointer(cm)
-                } else {
-                    v.get(cm)
-                };
+                let found = if cm.starts_with('/') { v.pointer(cm) } else { v.get(cm) };
                 match found {
                     Some(serde_json::Value::Bool(true)) => return Err(AlphaApiError::TruncatedWithoutContinuation),
-                    Some(serde_json::Value::Bool(false)) => {}
-                    Some(_v) => return Err(AlphaApiError::TruncatedWithoutContinuation),
-                    None => {}
+                    Some(serde_json::Value::Bool(false)) | None => {}
+                    Some(_) => return Err(AlphaApiError::TruncatedWithoutContinuation),
                 }
             }
-            Ok(true)
+            Ok(())
         };
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
+                // Cap marker check fires before complete pointer — truncation priority.
+                check_cap(value)?;
                 if let Some(cont) = &raw.continuation {
-                    if !cont.complete { 
-                        validate_next(value.get("nextPage"), "continuation.complete=false but nextPage")?; 
+                    if !cont.complete {
+                        validate_next(value.get("nextPage"), "continuation.complete=false but nextPage")?;
                         return Err(AlphaApiError::Incomplete("SingleResponse: continuation.complete=false with nextPage but SingleResponse cannot produce a continuation token".into()));
                     }
                 }
@@ -133,15 +116,12 @@ impl AlphaApiClient {
                 }
                 let ptr = Self::resolve_ptr(complete_pointer);
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
-                    serde_json::Value::Bool(b) => {
-                        if !b { return Ok(false); }
-                        // complete=true with cap marker → TruncatedWithoutContinuation
-                        check_cap(value)
-                    }
+                    serde_json::Value::Bool(b) => Ok(*b),
                     v => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool: {v}"))),
                 }
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
+                // continuation.complete=false overrides: require usable next pointer.
                 if let Some(cont) = &raw.continuation {
                     if !cont.complete {
                         let nptr = Self::resolve_ptr(next_page_pointer);
@@ -151,13 +131,11 @@ impl AlphaApiClient {
                 }
                 let hptr = Self::resolve_ptr(has_more_pointer);
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
-                    serde_json::Value::Bool(v) => {
-                        if !v {
-                            // hasMore=false: check cap on complete response
-                            check_cap(value)?;
-                        }
-                        // hasMore=true + valid nextPage: pagination takes priority,
-                        // caller gets continuation regardless of cap marker.
+                    serde_json::Value::Bool(false) => { check_cap(value)?; Ok(true) }
+                    serde_json::Value::Bool(true) => {
+                        let nptr = Self::resolve_ptr(next_page_pointer);
+                        validate_next(value.pointer(&nptr), "next page")?;
+                        check_cap(value)?;
                         Ok(false)
                     }
                     v => Err(AlphaApiError::Incomplete(format!("has_more pointer {has_more_pointer} not bool: {v}"))),
@@ -165,10 +143,9 @@ impl AlphaApiClient {
             }
         }
     }
+
     fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
 
-
-    /// Return status + headers without consuming the body.
     async fn check_status(builder: reqwest::RequestBuilder)
         -> Result<(u16, reqwest::header::HeaderMap, reqwest::Response), reqwest::Error>
     {
@@ -176,28 +153,34 @@ impl AlphaApiClient {
         Ok((resp.status().as_u16(), resp.headers().clone(), resp))
     }
 
-    /// Read response body with a timeout and enforce the configured
-    /// max_body_bytes limit.  Rejects oversized bodies before parsing.
+    /// Read body with timeout; enforce max_body_bytes via chunk()-style
+    /// incremental reads. Uses `Response::chunk()` to read incrementally.
     async fn read_body_with_timeout(&self, resp: reqwest::Response, timeout: Duration)
         -> Result<String, BodyReadError>
     {
         let limit = self.config.max_body_bytes;
-        let bytes = tokio::time::timeout(timeout, resp.bytes())
-            .await
-            .map_err(|_| BodyReadError::Timeout)
-            .and_then(|r| r.map_err(BodyReadError::from))?;
-        let len = bytes.len() as u64;
-        if len > limit {
-            return Err(BodyReadError::Other(format!(
-                "body exceeded limit of {limit} bytes"
-            )));
+        let mut accumulated = Vec::new();
+        let mut resp = resp;
+        loop {
+            let chunk = tokio::time::timeout(timeout, resp.chunk())
+                .await
+                .map_err(|_| BodyReadError::Timeout)
+                .and_then(|r| r.map_err(BodyReadError::from))?;
+            match chunk {
+                Some(bytes) => {
+                    accumulated.extend_from_slice(&bytes);
+                    if accumulated.len() as u64 > limit {
+                        return Err(BodyReadError::Other(format!("body exceeded limit of {limit} bytes")));
+                    }
+                }
+                None => break,
+            }
         }
-        String::from_utf8(bytes.to_vec())
-            .map_err(|e| BodyReadError::Other(format!("invalid utf-8: {e}")))
+        String::from_utf8(accumulated).map_err(|e| BodyReadError::Other(format!("invalid utf-8: {e}")))
     }
 
-    /// Unified retry loop — body timeouts retry whole request,
-    /// 5xx retries; 2xx reads body; non-2xx reads body without retry.
+    /// Unified retry loop — body timeouts retry, 5xx retries; 2xx reads body;
+    /// non-2xx reads body without retry.
     async fn execute_request(&self, method: Method, url: Url, body: Option<&serde_json::Value>)
         -> Result<String, AlphaApiError> {
         let mut total_wait_ms: u64 = 0;
@@ -238,7 +221,10 @@ impl AlphaApiClient {
                 if attempt < max_retry { attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
                 match self.read_body_with_timeout(resp, timeout_dur).await {
                     Err(BodyReadError::Timeout) => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
-                    Err(_e) => return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt }),
+                    Err(BodyReadError::Other(msg)) => {
+                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
+                        return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
+                    }
                     Ok(_) => {}
                 };
                 return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
@@ -247,18 +233,24 @@ impl AlphaApiClient {
                 let resp_body = match self.read_body_with_timeout(resp, timeout_dur).await {
                     Ok(b) => b,
                     Err(BodyReadError::Timeout) => return Err(AlphaApiError::UnexpectedStatus { status, body: "response body read timed out".into() }),
-                    Err(e) => return Err(AlphaApiError::UnexpectedStatus { status, body: format!("response body read error: {e}") }),
+                    Err(BodyReadError::Other(msg)) => {
+                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
+                        return Err(AlphaApiError::UnexpectedStatus { status, body: format!("response body read error: {msg}") });
+                    }
                 };
                 return Err(AlphaApiError::UnexpectedStatus { status, body: resp_body });
             }
+            // 2xx success path: read body
             match self.read_body_with_timeout(resp, timeout_dur).await {
                 Ok(resp_body) => return Ok(resp_body),
                 Err(BodyReadError::Timeout) => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
-                Err(e) => return Err(AlphaApiError::Incomplete(e.to_string())),
+                Err(BodyReadError::Other(msg)) => {
+                    if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
+                    return Err(AlphaApiError::Incomplete(msg));
+                }
             }
         }
     }
-
 
     pub async fn rankings(&self, req: &AlphaRequest) -> Result<RankingPage, AlphaApiError> {
         let _permit = self.concurrency_semaphore.acquire().await.map_err(|_| AlphaApiError::Incomplete("semaphore closed".into()))?;
@@ -279,9 +271,7 @@ impl AlphaApiClient {
                     raw.value.pointer(&Self::resolve_ptr(next_page_pointer)).cloned()
                 }
             }
-        } else {
-            None
-        };
+        } else { None };
         let validated_json = self.enforce_response_allowed_fields(raw.value)?;
         let validated_raw = RawRankingsResponse::from_json(&validated_json.to_string()).map_err(|e| AlphaApiError::Incomplete(format!("reparse: {e}")))?;
         let records = self.parse_rankings_strict(&validated_raw).map_err(|e| AlphaApiError::Incomplete(e))?;
@@ -301,7 +291,5 @@ impl AlphaApiClient {
         Ok(nav)
     }
 
-    pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> {
-        v.pointer(ptr)
-    }
+    pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> { v.pointer(ptr) }
 }
