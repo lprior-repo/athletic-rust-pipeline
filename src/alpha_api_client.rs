@@ -33,15 +33,9 @@ pub struct AlphaApiClient {
     pub(crate) config: AlphaApiClientConfig,
     concurrency_semaphore: Semaphore,
 }
-
-
-/// Validate a JSON number as a positive integer (> 0); rejects 0, negatives, fractions.
 fn is_positive_integer(n: &serde_json::Number) -> bool {
-    match (n.is_u64(), n.is_i64()) {
-        (true, _) => n.as_u64().unwrap_or(0) > 0,
-        (_, true) => n.as_i64().unwrap_or(0) > 0,
-        _ => false,
-    }
+    n.as_i64().map_or(false, |v| v > 0)
+        || n.as_u64().map_or(false, |v| v > 0)
 }
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
