@@ -166,6 +166,11 @@ impl AlphaConfig {
         if api.max_retries > 5 {
             bail!("api.max_retries must be at most 5");
         }
+        // max_body_bytes must be > 0 and at most 8 MiB; no silent default.
+        const MAX_BODY_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
+        if api.max_body_bytes == 0 || api.max_body_bytes > MAX_BODY_BYTES {
+            bail!("api.max_body_bytes must be > 0 and <= {} (got {})", MAX_BODY_BYTES, api.max_body_bytes);
+        }
 
         // Pagination pointers must be non-empty.
         self.validate_pagination()?;
@@ -242,7 +247,6 @@ impl AlphaConfig {
     /// Convert to an AlphaApiClientConfig, wiring all fields including cap_markers,
     /// max_body_bytes, and authorization.
     pub fn to_client_config(&self) -> crate::alpha_api::AlphaApiClientConfig {
-        const DEFAULT_MAX_BODY_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
         let auth = &self.authorization;
         let api = &self.api;
         crate::alpha_api::AlphaApiClientConfig {
@@ -251,7 +255,7 @@ impl AlphaConfig {
             nav_info_path: api.nav_info_path.clone(),
             timeout_seconds: api.timeout_seconds,
             max_retries: api.max_retries,
-            max_body_bytes: api.max_body_bytes.max(DEFAULT_MAX_BODY_BYTES),
+            max_body_bytes: api.max_body_bytes,
             auth_enabled: auth.enabled,
             permission_reference: auth.permission_reference.clone(),
             pagination: api.pagination.clone(),

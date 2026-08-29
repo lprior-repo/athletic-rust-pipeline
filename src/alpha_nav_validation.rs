@@ -10,8 +10,8 @@ impl RawNavInfoResponse {
     /// genders (nonempty vec),
     /// and at least one pagination field (complete bool or page u64).
     pub fn validate(&self) -> Result<(), &'static str> {
-        // Pagination metadata: at least one of complete (bool) or page (u64).
-        let has_complete = self.complete.is_some();
+        // Pagination metadata: complete is now required; page remains optional.
+        let has_complete = self.complete;
         let has_page = self.page.is_some();
         if !has_complete && !has_page {
             return Err("RawNavInfoResponse: missing required pagination (complete or page)");

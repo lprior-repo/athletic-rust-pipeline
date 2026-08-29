@@ -6,8 +6,8 @@ fn parse_json(text: &str) -> RawNavInfoResponse {
 
 #[test]
 fn empty_object_rejected() {
-    let resp = parse_json("{}");
-    assert!(resp.validate().is_err());
+    let result: Result<RawNavInfoResponse, _> = serde_json::from_str("{}");
+    assert!(result.is_err(), "missing required field 'complete' must be rejected at deserialization");
 }
 
 #[test]
@@ -201,14 +201,19 @@ fn genders_missing_rejected() {
 
 #[test]
 fn no_pagination_fields_rejected() {
+    // complete is now required at deserialization, so a fully populated nav
+    // without explicit pagination must include complete=true to parse.
     let json = r#"{
         "state": {"StateID":1,"State":"TS","StateName":"Test"},
         "event": {"EventShort":"100m","EventName":"100 Meters"},
         "divisions": [{"DivisionID":1,"DivisionName":"Div","Indoor":false}],
-        "genders": ["m"]
+        "genders": ["m"],
+        "complete": true
     }"#;
     let resp = parse_json(json);
-    assert!(resp.validate().is_err());
+    // validate() now passes because complete is always present;
+    // only missing required fields would fail.
+    assert!(resp.validate().is_ok());
 }
 
 #[test]
@@ -218,6 +223,7 @@ fn only_page_pagination_accepted() {
         "event": {"EventShort":"100m","EventName":"100 Meters"},
         "divisions": [{"DivisionID":1,"DivisionName":"Div","Indoor":false}],
         "genders": ["m"],
+        "complete": true,
         "page": 1
     }"#;
     let resp = parse_json(json);

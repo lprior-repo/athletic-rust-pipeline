@@ -70,7 +70,7 @@ mod tests {
         assert_eq!(div[0].indoor, Some(false));
 
         assert_eq!(resp.genders, Some(vec!["m".to_owned()]));
-        assert_eq!(resp.complete, Some(true));
+        assert_eq!(resp.complete, true);
         assert_eq!(resp.page, Some(1));
     }
 

@@ -51,7 +51,7 @@ async fn nav_info_5xx_bounded_retry() {
         .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "event": {"EventShort": "100m", "EventName": "100 Meters"}, "divisions": [{"DivisionID": 1, "DivisionName": "Div 1", "Indoor": false}], "genders": ["m", "f"], "complete": true}"#).create();
     let client = make_nav_info_client(&url);
     let resp = client.nav_info(2026, false).await.unwrap();
-    assert_eq!(resp.complete, Some(true));
+    assert_eq!(resp.complete, true);
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -100,7 +100,7 @@ pub struct RawNavInfoResponse {
     #[serde(rename = "genders")]
     pub genders: Option<Vec<String>>,
     #[serde(rename = "complete")]
-    pub complete: Option<bool>,
+    pub complete: bool,
     #[serde(rename = "page")]
     pub page: Option<u64>,
 }

@@ -83,6 +83,7 @@ impl AlphaApiClient {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
                 Some(serde_json::Value::String(s)) if s.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty"))),
+                Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
                 Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
@@ -144,7 +145,6 @@ impl AlphaApiClient {
     }
 
     fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
-
     async fn check_status(builder: reqwest::RequestBuilder)
         -> Result<(u16, reqwest::header::HeaderMap, reqwest::Response), reqwest::Error>
     {
@@ -172,10 +172,11 @@ impl AlphaApiClient {
                 .and_then(|r| r.map_err(BodyReadError::from))?;
             match chunk {
                 Some(bytes) => {
-                    accumulated.extend_from_slice(&bytes);
-                    if accumulated.len() as u64 > limit {
+                    let budget_remaining = limit.saturating_sub(accumulated.len() as u64);
+                    if bytes.len() as u64 > budget_remaining {
                         return Err(BodyReadError::Other(format!("body exceeded limit of {limit} bytes")));
                     }
+                    accumulated.extend_from_slice(&bytes);
                 }
                 None => break,
             }
@@ -224,7 +225,7 @@ impl AlphaApiClient {
             if (500..=599).contains(&status) {
                 if attempt < max_retry { attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
                 match self.read_body_with_timeout(resp, timeout_dur).await {
-                    Err(BodyReadError::Timeout) => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
+                    Err(BodyReadError::Timeout) => { return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt }); }
                     Err(BodyReadError::Other(msg)) => {
                         if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
                         return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
@@ -294,6 +295,5 @@ impl AlphaApiClient {
         nav.validate().map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
         Ok(nav)
     }
-
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> { v.pointer(ptr) }
 }
