@@ -10,6 +10,8 @@ mod alpha_api;
 #[cfg(test)]
 mod alpha_api_client;
 #[cfg(test)]
+mod alpha_api_client_validation;
+#[cfg(test)]
 mod alpha_api_tests;
 #[cfg(test)]
 mod alpha_api_client_unit_tests;
