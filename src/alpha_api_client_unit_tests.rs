@@ -1,61 +1,7 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
-fn make_client(server_url: &str) -> AlphaApiClient {
-    let config = AlphaApiClientConfig {
-        base_url: server_url.to_owned(),
-        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 30,
-        max_retries: 2,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
-        },
-        allowed_routes: vec![
-            "/api/v1/tfRankings/GetRankings".to_owned(),
-            "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        ],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(), "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0,
-        cap_markers: vec![],
-    };
-    AlphaApiClient::new(config).expect("client creation must not fail")
-}
-fn make_test_request() -> AlphaRequest {
-    AlphaRequest {
-        state_id: 12,
-        season_id: 2026,
-        gender: "m".to_owned(),
-        event_short: "100m".to_owned(),
-        indoor: false,
-        continuation: None,
-    }
-}
-fn success_body() -> &'static str {
-    r#"{
-        "groupedRankings": [[{
-            "AthleteID": 1,
-            "AthleteName": "Test",
-            "GradeID": 2,
-            "TeamName": "School",
-            "State": "CA",
-            "Results": [{
-                "MeetID": 100,
-                "MeetName": "State Finals",
-                "IDResult": 500,
-                "EventShort": "100m",
-                "Measure": "10.55",
-                "ResultDate": "2026-06-15",
-                "SeasonID": 2026,
-                "Wind": null
-            }]
-        }]],
-        "page": 1,
-        "complete": true,
-        "continuation": null
-    }"#
-}
+use crate::alpha_test_helpers::{make_client, make_full_pagination_config, make_test_request, success_body};
 #[tokio::test(flavor = "multi_thread")]
 async fn http_200_success() {
     let (mut server, url) = tokio::task::spawn_blocking(|| {
@@ -287,4 +233,62 @@ async fn http_429_wait_maxes_retry_after_against_min_delay() {
         }
         other => panic!("expected RateLimitedExhausted, got {:?}", other),
     }
+}
+#[tokio::test(flavor = "multi_thread")]
+async fn request_boundary_single_response_has_exact_protocol_keys() {
+    // Finding 4: assert the production request body has exactly the ten
+    // protocol keys including qParams, numeric divListId, and empty qParams.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    let mock = server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .match_body(mockito::Matcher::Json(serde_json::json!({
+            "reportType": "div", "mode": "list", "divListId": 12,
+            "indoor": false, "eventShort": "100m", "gender": "m",
+            "qualifyingListKey": "", "version": 2, "debug": "",
+            "qParams": serde_json::json!({}),
+        })))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(success_body())
+        .create();
+    let client = make_client(&url);
+    let page = client.rankings(&make_test_request()).await.unwrap();
+    assert!(page.complete);
+    assert_eq!(page.records.len(), 1);
+    mock.assert();
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn request_boundary_next_page_has_qparams_with_continuation() {
+    // Finding 4: NextPage mode — qParams contains the continuation token.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    let cont_token = serde_json::json!("next-page-42");
+    let mock = server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .match_body(mockito::Matcher::Json(serde_json::json!({
+            "reportType": "div", "mode": "list", "divListId": 12,
+            "indoor": false, "eventShort": "100m", "gender": "m",
+            "qualifyingListKey": "", "version": 2, "debug": "",
+            "qParams": serde_json::json!({ "page": cont_token }),
+        })))
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"page":1,"hasMore":false,"complete":true,"nextPage":null,"continuation":null}"#)
+        .create();
+    let req = AlphaRequest {
+        state_id: 12, season_id: 2026, gender: "m".into(),
+        event_short: "100m".into(), indoor: false,
+        continuation: Some(cont_token),
+    };
+    let client = make_full_pagination_config(&url);
+    let page = client.rankings(&req).await.unwrap();
+    assert!(page.complete);
+    assert_eq!(page.records.len(), 1);
+    mock.assert();
 }
