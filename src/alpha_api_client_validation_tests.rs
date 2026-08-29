@@ -58,7 +58,7 @@ async fn single_response_rankings_continuation_is_none() {
         .match_body(mockito::Matcher::Any)
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"groupedRankings":[],"complete":true,"page":1,"continuation":{"page":2,"complete":false}}"#)
+        .with_body(r#"{"groupedRankings":[],"complete":true,"page":1}"#)
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,

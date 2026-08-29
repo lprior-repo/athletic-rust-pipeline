@@ -85,11 +85,18 @@ fn single_response_complete_with_nested_pointer() {
     assert!(client.check_completeness(&raw).unwrap(), "nested pointer works");
 }
 #[test]
-fn single_response_continuation_complete_false_overrides() {
-    // Reconcile continuation.complete=false in SingleResponse mode.
+fn single_response_continuation_complete_false_no_next_errors() {
+    // continuation.complete=false in SingleResponse without nextPage => Incomplete.
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false overrides complete=true in SingleResponse");
+    assert!(client.check_completeness(&raw).is_err(), "continuation.complete=false without nextPage => Incomplete");
+}
+#[test]
+fn single_response_continuation_complete_false_with_next_page() {
+    // continuation.complete=false with nextPage => Ok(false).
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
+    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false with nextPage => Ok(false)");
 }
 
 #[test]
@@ -138,11 +145,20 @@ fn nextpage_incomplete_when_has_more_true_valid_next() {
 }
 
 #[test]
-fn nextpage_has_more_false_returns_complete() {
-    // hasMore=false is authoritative: response is complete regardless of continuation metadata.
+fn nextpage_continuation_complete_false_overrides_has_more_false() {
+    // continuation.complete=false overrides hasMore=false.
+    // Without usable next token => Incomplete (fail closed).
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": false }"#).unwrap();
-    assert!(client.check_completeness(&raw).unwrap(), "hasMore=false => complete");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": false, "continuation": {"page": 1, "complete": false} }"#).unwrap();
+    assert!(client.check_completeness(&raw).is_err(), "continuation.complete=false, hasMore=false, no next => Incomplete");
+}
+
+#[test]
+fn nextpage_continuation_complete_false_with_next_token() {
+    // continuation.complete=false with usable next token => Ok(false).
+    let client = make_next_page_client("https://example.com");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
+    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false with valid next => Ok(false)");
 }
 
 

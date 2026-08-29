@@ -57,10 +57,20 @@ impl AlphaApiClient {
         if self.is_truncated(raw) { return Err(AlphaApiError::TruncatedWithoutContinuation); }
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
-                if let Some(cont) = &raw.continuation {
-                    if !cont.complete { return Ok(false); }
-                }
                 let value = &raw.value;
+                if let Some(cont) = &raw.continuation {
+                    if !cont.complete {
+                        let np = value.get("nextPage");
+                        match np {
+                            None => return Err(AlphaApiError::Incomplete("continuation.complete=false but nextPage missing".into())),
+                            Some(serde_json::Value::Null) => return Err(AlphaApiError::Incomplete("continuation.complete=false but nextPage is null".into())),
+                            Some(serde_json::Value::String(s)) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation.complete=false but nextPage is empty".into())),
+                            Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => {}
+                            Some(v) => return Err(AlphaApiError::Incomplete(format!("continuation.complete=false but nextPage unexpected type: {v}"))),
+                        }
+                        return Ok(false);
+                    }
+                }
                 match value.get("hasMore").and_then(|x| x.as_bool()) {
                     Some(true) => {
                         let np = value.get("nextPage");
@@ -84,6 +94,22 @@ impl AlphaApiClient {
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
                 let value = &raw.value;
+                // continuation.complete=false overrides hasMore/nextPage.
+                if let Some(cont) = &raw.continuation {
+                    if !cont.complete {
+                        let nptr = Self::resolve_ptr(next_page_pointer);
+                        let np = value.pointer(&nptr);
+                        match np {
+                            None => return Err(AlphaApiError::Incomplete("continuation.complete=false but next pointer missing".into())),
+                            Some(serde_json::Value::Null) => return Err(AlphaApiError::Incomplete("continuation.complete=false but next pointer is null".into())),
+                            Some(serde_json::Value::String(s)) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation.complete=false but next pointer is empty".into())),
+                            Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => {}
+                            Some(v) => return Err(AlphaApiError::Incomplete(format!("continuation.complete=false but next pointer unexpected type: {v}"))),
+                        }
+                        return Ok(false); // continue with the token
+                    }
+                }
+                // Continuation complete or absent; check hasMore.
                 let hptr = Self::resolve_ptr(has_more_pointer);
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
                     serde_json::Value::Bool(v) => { if !v { return Ok(true); } }
@@ -98,7 +124,6 @@ impl AlphaApiClient {
                     Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => {}
                     Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} unexpected type: {v}"))),
                 }
-                // hasMore=true with valid next token => incomplete, continuation is metadata.
                 Ok(false)
             }
         }
