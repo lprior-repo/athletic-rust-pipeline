@@ -21,7 +21,7 @@ const scrub = (value, key = '') => {
     });
     return Object.fromEntries(entries);
   }
-  if (typeof value === 'number' && /ID$/.test(key)) return 90000001;
+  if (typeof value === 'number' && /^(?:.*ID|ID.*|id)$/i.test(key)) return 90000001;
   if (/name|url|state|meet|school/i.test(key) && typeof value === 'string') return 'REDACTED';
   return value;
 };
