@@ -24,7 +24,7 @@ const expectedOrigin = 'https://www.athletic.net';
   }
 }
 
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|nextpagekey|pagekey|cursor|credentials|credential|password|secret|api[_-]?key/i;
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|nextpagekey|pagekey|cursor|credentials|credential|password|secret|api[_-]?key/i;
 const URL_VALUE_RE = /^(?:https?:\/\/|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9])/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
@@ -32,6 +32,9 @@ const scrub = (value, key = '') => {
   if (Array.isArray(value)) return value.map(item => scrub(item, key));
   if (value && typeof value === 'object') {
     const entries = Object.entries(value).map(([name, item]) => {
+      if (name === 'continuation' && typeof item === 'object' && item !== null) {
+        return [name, scrub(item, name)];
+      }
       if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
       return [name, scrub(item, name)];
     });
