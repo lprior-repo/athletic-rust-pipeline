@@ -30,6 +30,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ storageState });
   const page = await context.newPage();
+  const captured = { rankings: null, nav: null };
   const seen = new Set();
 
   const CONFIRMED_PATHS = [
