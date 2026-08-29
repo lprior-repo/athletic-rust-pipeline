@@ -1,4 +1,8 @@
+#[cfg(test)]
+#[allow(dead_code)]
 mod alpha_config;
+#[cfg(test)]
+#[allow(dead_code)]
 mod alpha_model;
 mod checkpoint;
 mod config;

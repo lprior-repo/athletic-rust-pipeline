@@ -11,6 +11,73 @@ pub struct AlphaConfig {
     pub api: AlphaApiConfig,
 }
 
+/// Validate a route by resolving against the base URL.
+/// Ensures same scheme/host, rejects backslash authority escapes,
+/// userinfo, query, and fragment.
+fn validate_route(
+    route: &str,
+    base: &url::Url,
+    allowed: &[String],
+) -> Result<()> {
+    // Must be an absolute path starting with /.
+    if !route.starts_with('/') {
+        bail!(
+            "api route '{}' must be an HTTPS-relative path starting with '/'",
+            route
+        );
+    }
+
+    // Reject backslash authority escapes (e.g. /\\evil.com/api).
+    if route.contains('\\') {
+        bail!(
+            "api route '{}' must not contain backslashes",
+            route
+        );
+    }
+
+    // Join route against base URL to resolve any path anomalies.
+    let resolved = base
+        .join(route)
+        .with_context(|| format!("api route '{}' cannot be resolved against base URL", route))?;
+
+    // Must be same scheme (https).
+    if resolved.scheme() != base.scheme() {
+        bail!(
+            "api route '{}' resolves to a different scheme ('{}') than base URL",
+            route,
+            resolved.scheme()
+        );
+    }
+
+    // Must be same host.
+    if resolved.host_str() != base.host_str() {
+        bail!(
+            "api route '{}' resolves to a different host ('{}') than base URL",
+            route,
+            resolved.host_str().unwrap_or("none")
+        );
+    }
+
+    // No userinfo.
+    if !resolved.username().is_empty() || resolved.password().is_some() {
+        bail!("api route '{}' must not contain userinfo", route);
+    }
+
+    // No query or fragment.
+    if resolved.query().is_some() || resolved.fragment().is_some() {
+        bail!("api route '{}' must not contain query or fragment", route);
+    }
+
+    // Must be listed in allowed_routes.
+    if !allowed.contains(&route.to_string()) {
+        bail!(
+            "api route '{}' is not listed in authorization.allowed_routes",
+            route
+        );
+    }
+
+    Ok(())
+}
 impl AlphaConfig {
     /// Load and validate an alpha configuration file.
     pub fn load(path: &Path) -> Result<Self> {
@@ -49,9 +116,7 @@ impl AlphaConfig {
         ];
         let canonical_set: std::collections::HashSet<&str> =
             canonical_states.iter().copied().collect();
-
-        let mut seen_states: std::collections::HashSet<&str> =
-            std::collections::HashSet::new();
+        let mut seen_states = std::collections::HashSet::new();
         for code in &auth.allowed_states {
             if !canonical_set.contains(code.as_str()) {
                 bail!(
@@ -91,6 +156,7 @@ impl AlphaConfig {
         Ok(())
     }
 
+
     fn validate_api(&self) -> Result<()> {
         let api = &self.api;
 
@@ -109,31 +175,12 @@ impl AlphaConfig {
                 api.base_url
             );
         }
-
-        // Rankings and nav paths must be HTTPS-relative (path-only, no scheme/host/query/fragment).
         let allowed = &self.authorization.allowed_routes;
+
+        // Validate every API and allowed route by resolving against base URL.
+        // Reject backslash authority escapes, non-HTTPS schemes, different hosts,
         for route in [api.rankings_path.as_str(), api.nav_info_path.as_str()] {
-            // Must be an absolute path starting with /.
-            if !route.starts_with('/') {
-                bail!(
-                    "api route '{}' must be an HTTPS-relative path starting with '/'",
-                    route
-                );
-            }
-            // Reject routes that contain scheme, host, query, or fragment markers.
-            // Reject network-path references (//host/path) and other scheme/host/query/fragment.
-            if route.contains("//") || route.contains('@') || route.contains('?') || route.contains('#') {
-                bail!(
-                    "api route '{}' must not contain scheme, host, query, or fragment",
-                    route
-                );
-            }
-            if !allowed.contains(&route.to_string()) {
-                bail!(
-                    "api route '{}' is not listed in authorization.allowed_routes",
-                    route
-                );
-            }
+            validate_route(route, &parsed, allowed)?;
         }
 
         // Timeout must be bounded (1..=300).
@@ -157,25 +204,7 @@ impl AlphaConfig {
                 );
             }
             for profile_route in &self.authorization.allowed_profile_routes {
-                // Validate each profile route is HTTPS-relative (path-only).
-                if !profile_route.starts_with('/') {
-                    bail!(
-                        "allowed_profile_routes entry '{}' must start with '/'",
-                        profile_route
-                    );
-                }
-                if profile_route.contains("//") || profile_route.contains('@') || profile_route.contains('?') || profile_route.contains('#') {
-                    bail!(
-                        "allowed_profile_routes entry '{}' must not contain scheme, host, query, or fragment",
-                        profile_route
-                    );
-                }
-                if !allowed.contains(profile_route) {
-                    bail!(
-                        "allowed_profile_routes entry '{}' is not in authorization.allowed_routes",
-                        profile_route
-                    );
-                }
+                validate_route(profile_route, &parsed, allowed)?;
             }
         }
 
@@ -532,7 +561,7 @@ mod tests {
             .validate()
             .expect_err("unauthorized profile route must fail");
         assert!(
-            error.to_string().contains("not in authorization.allowed_routes"),
+            error.to_string().contains("not listed in"),
             "error: {}",
             error
         );
@@ -604,7 +633,7 @@ mod tests {
             .validate()
             .expect_err("profile route with scheme must fail");
         assert!(
-            error.to_string().contains("start with '/'") || error.to_string().contains("host"),
+            error.to_string().contains("starting with '/'"),
             "error: {}",
             error
         );
@@ -621,7 +650,7 @@ mod tests {
             .validate()
             .expect_err("profile route without leading / must fail");
         assert!(
-            error.to_string().contains("start with '/'"),
+            error.to_string().contains("starting with '/'"),
             "error: {}",
             error
         );
