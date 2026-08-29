@@ -40,7 +40,7 @@ const scrub = (value, key = '') => {
     });
     return Object.fromEntries(entries);
   }
-  if (typeof value === 'number' && /^(?:.*ID|ID.*|id)$/i.test(key)) return 90000001;
+  if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(key) && (typeof value === 'number' || typeof value === 'string')) return 'REDACTED';
   if (typeof value === 'string') {
     if (REDACT_KEY_RE.test(key)) return 'REDACTED';
     if (URL_VALUE_RE.test(value)) return 'REDACTED';
@@ -89,6 +89,8 @@ try {
       if (!CONFIRMED_PATHS.includes(url.pathname)) return;
       if (url.origin !== expectedOrigin) return;
       if (request.method() !== 'POST') return;
+      const key = url.pathname.includes('GetRankings') ? 'rankings' : 'nav';
+      if (seen.has(key)) return; // Ignore duplicate failure after valid capture
       reject(new Error('network request failed'));
     });
   });
@@ -102,10 +104,8 @@ try {
     }, 15000);
   });
 
-  await Promise.race([
-    Promise.all([page.goto(pageUrl, { waitUntil: 'load' }), confirmResponse]),
-    deadlinePromise,
-  ]);
+  void page.goto(pageUrl, { waitUntil: 'load' }).catch(() => {});
+  await Promise.race([confirmResponse, deadlinePromise]);
   clearTimeout(timeoutId);
 
   if (!captured.rankings || !captured.nav) throw new Error('alpha contract responses not observed');
