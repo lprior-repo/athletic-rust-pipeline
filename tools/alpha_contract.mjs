@@ -48,6 +48,7 @@ const scrub = (value, key = '') => {
         if (typeof item === 'object' && item !== null) return [name, 'REDACTED'];
       }
       if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
+      if (REDACT_KEY_RE.test(name)) return [name, 'REDACTED'];
       return [name, scrub(item, name)];
     });
     return Object.fromEntries(entries);
@@ -96,8 +97,9 @@ try {
       seen.add(key);
       try {
         const parsed = await response.json();
-        if (parsed === null || typeof parsed !== 'object') throw new Error('response is not a JSON object');
+        if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('response is not a JSON object');
         captured[key] = scrub(parsed, '');
+        check();
       } catch {
         reject(new Error('failed to parse alpha response'));
       }
