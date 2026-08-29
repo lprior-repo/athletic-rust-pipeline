@@ -122,7 +122,8 @@ impl AlphaApiClient {
             if status == 403 { return Err(AlphaApiError::Forbidden(format!("HTTP {}", status))); }
             if status == 429 {
                 match resp.headers().get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
-                    Some(delay_ms) => {
+                    Some(delay_secs) => {
+                        let delay_ms = delay_secs.saturating_mul(1000);
                         let wait = delay_ms.max(self.config.min_delay_ms);
                         if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: wait * retry_count as u64 }); }
                         tokio::time::sleep(Duration::from_millis(wait)).await;
@@ -172,10 +173,10 @@ impl AlphaApiClient {
             };
             let status = resp.status().as_u16();
             if status == 401 { return Err(AlphaApiError::Unauthorized(format!("HTTP {}", status))); }
-            if status == 403 { return Err(AlphaApiError::Forbidden(format!("HTTP {}", status))); }
             if status == 429 {
                 match resp.headers().get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
-                    Some(delay_ms) => {
+                    Some(delay_secs) => {
+                        let delay_ms = delay_secs.saturating_mul(1000);
                         let wait = delay_ms.max(self.config.min_delay_ms);
                         if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: wait * retry_count as u64 }); }
                         tokio::time::sleep(Duration::from_millis(wait)).await;

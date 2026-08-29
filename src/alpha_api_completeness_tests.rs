@@ -204,7 +204,7 @@ async fn nav_info_429_with_retry_after() {
         (server, url)
     }).await.unwrap();
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo").match_query(mockito::Matcher::Any)
-        .with_status(429).with_header("Retry-After", "50").create();
+        .with_status(429).with_header("Retry-After", "0").create();
     let client = make_nav_info_client(&url);
     let err = client.nav_info(2026, false).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::RateLimitedExhausted { .. }));
