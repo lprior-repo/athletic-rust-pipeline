@@ -237,3 +237,37 @@ async fn http_unexpected_status() {
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::UnexpectedStatus { status: 404, .. }));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_short_retry_after_respects_min_delay() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    // Retry-After of 1ms is shorter than min_delay_ms of 10
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(429)
+        .with_header("Retry-After", "1")
+        .create();
+    let client = make_client(&url);
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::RateLimitedExhausted { .. }));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_long_retry_after_respects_header() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    // Retry-After of 1000ms is longer than min_delay_ms of 10
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(429)
+        .with_header("Retry-After", "1000")
+        .create();
+    let client = make_client(&url);
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::RateLimitedExhausted { .. }));
+}

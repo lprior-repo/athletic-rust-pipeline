@@ -123,8 +123,9 @@ impl AlphaApiClient {
             if status == 429 {
                 match resp.headers().get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
                     Some(delay_ms) => {
-                        if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: delay_ms * retry_count as u64 }); }
-                        tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                        let wait = delay_ms.max(self.config.min_delay_ms);
+                        if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: wait * retry_count as u64 }); }
+                        tokio::time::sleep(Duration::from_millis(wait)).await;
                         retry_count += 1; continue;
                     }
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
@@ -175,8 +176,9 @@ impl AlphaApiClient {
             if status == 429 {
                 match resp.headers().get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
                     Some(delay_ms) => {
-                        if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: delay_ms * retry_count as u64 }); }
-                        tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                        let wait = delay_ms.max(self.config.min_delay_ms);
+                        if retry_count >= max_retries { return Err(AlphaApiError::RateLimitedExhausted { max_retries, total_delay_ms: wait * retry_count as u64 }); }
+                        tokio::time::sleep(Duration::from_millis(wait)).await;
                         retry_count += 1; continue;
                     }
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
