@@ -19,6 +19,14 @@ fn validate_route(
     base: &url::Url,
     allowed: &[String],
 ) -> Result<()> {
+    // Reject network-path references (//host/path) — even same-host.
+    if route.starts_with("//") {
+        bail!(
+            "api route '{}' must not begin with // (network-path reference)",
+            route
+        );
+    }
+
     // Must be an absolute path starting with /.
     if !route.starts_with('/') {
         bail!(
@@ -616,7 +624,19 @@ mod tests {
         config.api.rankings_path = "//evil.com/api/v1/tfRankings/GetRankings".to_owned();
         let error = config.validate().expect_err("network-path route must fail");
         assert!(
-            error.to_string().contains("host"),
+            error.to_string().contains("network-path"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn route_same_host_network_path_rejected() {
+        let mut config = valid_config();
+        config.api.rankings_path = "//www.athletic.net/secret".to_owned();
+        let error = config.validate().expect_err("same-host network-path route must fail");
+        assert!(
+            error.to_string().contains("network-path"),
             "error: {}",
             error
         );
