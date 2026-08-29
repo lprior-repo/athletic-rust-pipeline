@@ -36,6 +36,10 @@ pub struct AlphaApiClient {
 
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
+        if config.max_body_bytes == 0 || config.max_body_bytes > 8_000_000 { return Err(AlphaApiError::InvalidConfig("max_body_bytes > 0 && <= 8MiB".to_string())); }
+        if config.max_retries > 5 { return Err(AlphaApiError::InvalidConfig("max_retries <= 5".to_string())); }
+        if config.timeout_seconds < 1 || config.timeout_seconds > 300 { return Err(AlphaApiError::InvalidConfig("timeout_seconds 1..=300".to_string())); }
+        if config.max_retry_delay_ms < config.min_delay_ms || config.max_retry_delay_ms > 300_000 { return Err(AlphaApiError::InvalidConfig("max_retry_delay_ms >= min_delay_ms && <= 300000".to_string())); }
         if config.max_concurrent_requests != 1 { return Err(AlphaApiError::InvalidConcurrency); }
         if !config.auth_enabled || config.permission_reference.is_empty() {
             return Err(AlphaApiError::AuthorizationDisabled);
@@ -111,7 +115,7 @@ impl AlphaApiClient {
                     Some(serde_json::Value::Bool(false)) | None => {}
                     Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore is not bool: {v}"))),
                 }
-                let ptr = Self::resolve_ptr(complete_pointer);
+                let ptr = complete_pointer.to_string();
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
                     serde_json::Value::Bool(b) => Ok(*b),
                     v => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool: {v}"))),
@@ -121,13 +125,13 @@ impl AlphaApiClient {
                 // continuation.complete=false overrides: require usable next pointer.
                 if let Some(cont) = &raw.continuation {
                     if !cont.complete {
-                        let nptr = Self::resolve_ptr(next_page_pointer);
+                        let nptr = next_page_pointer.to_string();
                         validate_next(value.pointer(&nptr), "continuation.complete=false but next pointer")?;
                         enforce_cap(value)?;
                         return Ok(false);
                     }
                 }
-                let hptr = Self::resolve_ptr(has_more_pointer);
+                let hptr = has_more_pointer.to_string();
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
                     serde_json::Value::Bool(false) => {
                         enforce_cap(value)?;
@@ -135,7 +139,7 @@ impl AlphaApiClient {
                     }
                     serde_json::Value::Bool(true) => {
                         enforce_cap(value)?;
-                        let nptr = Self::resolve_ptr(next_page_pointer);
+                        let nptr = next_page_pointer.to_string();
                         validate_next(value.pointer(&nptr), "next page")?;
                         Ok(false)
                     }
@@ -143,13 +147,6 @@ impl AlphaApiClient {
                 }
             }
         }
-    }
-    fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
-    async fn check_status(builder: reqwest::RequestBuilder)
-        -> Result<(u16, reqwest::header::HeaderMap, reqwest::Response), reqwest::Error>
-    {
-        let resp = builder.send().await?;
-        Ok((resp.status().as_u16(), resp.headers().clone(), resp))
     }
 
     /// Read body with timeout; enforce max_body_bytes via chunk()-style
@@ -197,8 +194,8 @@ impl AlphaApiClient {
             let builder = self.client.request(method.clone(), url.as_str())
                 .timeout(Duration::from_secs(self.config.timeout_seconds));
             let builder = match body { Some(b) => builder.header("Content-Type", "application/json").json(b), None => builder };
-            let (status, headers, resp) = match Self::check_status(builder).await {
-                Ok(r) => r,
+            let (status, headers, resp) = match builder.send().await {
+                Ok(r) => (r.status().as_u16(), r.headers().clone(), r),
                 Err(e) if e.is_timeout() => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
                 Err(e) => return Err(AlphaApiError::Request(e)),
             };
@@ -273,7 +270,7 @@ impl AlphaApiClient {
             match &self.config.pagination {
                 PaginationConfig::SingleResponse { .. } => None,
                 PaginationConfig::NextPage { next_page_pointer, .. } => {
-                    raw.value.pointer(&Self::resolve_ptr(next_page_pointer)).cloned()
+                    raw.value.pointer(&next_page_pointer.to_string()).cloned()
                 }
             }
         } else { None };

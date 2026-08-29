@@ -29,6 +29,8 @@ pub enum AlphaApiError {
     AuthorizationDisabled,
     #[error("response body too large (exceeded {} bytes)", limit)]
     BodyTooLarge { limit: u64 },
+    #[error("invalid configuration: {0}")]
+    InvalidConfig(String),
 }
 
 /// Configuration extracted from `AlphaConfig` for constructing the client.
