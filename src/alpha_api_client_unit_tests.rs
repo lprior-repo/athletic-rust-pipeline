@@ -1,7 +1,6 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
-use crate::alpha_model_raw::RawRankingRecord;
 fn make_client(server_url: &str) -> AlphaApiClient {
     let config = AlphaApiClientConfig {
         base_url: server_url.to_owned(),
@@ -243,42 +242,4 @@ fn new_returns_error_on_invalid_config() {
     // This must not panic — it returns Result.
     let result = AlphaApiClient::new(config);
     assert!(result.is_ok(), "new() must return Ok with valid config");
-}
-
-// --- Missing MeetID/MeetName tests ---
-
-#[test]
-fn from_flattened_records_errors_on_missing_meet_id() {
-    let json = r#"{
-        "AthleteID": 1,
-        "AthleteName": "Test",
-        "GradeID": 2,
-        "TeamName": "School",
-        "State": "CA",
-        "EventShort": "100m",
-        "MeetName": "Meet A"
-    }"#;
-    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    let result = rec.to_flattened_records();
-    assert!(result.is_err(), "missing MeetID must error");
-    let err = result.unwrap_err();
-    let msg = err.to_string(); eprintln!("Error: {}", msg); assert!(msg.contains("meet") || msg.contains("required"));
-}
-
-#[test]
-fn from_flattened_records_errors_on_missing_meet_name() {
-    let json = r#"{
-        "AthleteID": 1,
-        "AthleteName": "Test",
-        "GradeID": 2,
-        "TeamName": "School",
-        "State": "CA",
-        "EventShort": "100m",
-        "MeetID": 123
-    }"#;
-    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    let result = rec.to_flattened_records();
-    assert!(result.is_err(), "missing MeetName must error");
-    let err = result.unwrap_err();
-    let msg = err.to_string(); eprintln!("Error: {}", msg); assert!(msg.contains("meet") || msg.contains("required"));
 }

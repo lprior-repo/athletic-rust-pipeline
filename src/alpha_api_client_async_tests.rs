@@ -235,9 +235,9 @@ async fn enforce_response_allowed_fields_all_required_present() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn enforce_response_allowed_fields_empty_allows_through() {
+async fn enforce_response_allowed_fields_empty_fails_closed() {
     let client = make_client_with_fields("http://127.0.0.1", vec![]);
     let value = serde_json::json!({"groupedRankings":[]});
     let result = client.enforce_response_allowed_fields(value);
-    assert!(result.is_ok(), "empty allowed_fields allows all through");
+    assert!(result.is_err(), "empty allowed_fields must fail closed");
 }

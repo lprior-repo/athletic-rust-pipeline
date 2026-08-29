@@ -1,5 +1,9 @@
 #![cfg_attr(test, allow(dead_code))]
 #[cfg(test)]
+mod alpha_model_raw_validation;
+#[cfg(test)]
+mod alpha_model_validation_tests;
+#[cfg(test)]
 mod alpha_config;
 #[cfg(test)]
 mod alpha_api;
@@ -11,6 +15,8 @@ mod alpha_api_tests;
 mod alpha_api_client_unit_tests;
 #[cfg(test)]
 mod alpha_api_client_async_tests;
+#[cfg(test)]
+mod alpha_api_client_validation_tests;
 #[cfg(test)]
 mod alpha_api_client_nav_tests;
 #[cfg(test)]
@@ -285,11 +291,4 @@ async fn run_pipeline(
     summarize(&ordered);
     Ok(())
 }
-fn summarize(records: &[MatchRecord]) {
-    let mut counts: HashMap<&str, usize> = HashMap::new();
-    for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); }
-    eprintln!("wrote {} records", records.len());
-    for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] {
-        eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c));
-    }
-}
+fn summarize(records: &[MatchRecord]) { let mut counts: HashMap<&str, usize> = HashMap::new(); for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); } eprintln!("wrote {} records", records.len()); for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] { eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c)); } }

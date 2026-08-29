@@ -66,6 +66,12 @@ impl AlphaApiClient {
         if self.is_truncated(raw) { return Err(AlphaApiError::TruncatedWithoutContinuation); }
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
+                // Reconcile continuation.complete=false in SingleResponse mode.
+                if let Some(cont) = &raw.continuation {
+                    if !cont.complete {
+                        return Ok(false);
+                    }
+                }
                 let ptr = Self::resolve_ptr(complete_pointer);
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
                     serde_json::Value::Bool(true) => Ok(true),
@@ -237,7 +243,10 @@ impl AlphaApiClient {
         &self, mut value: serde_json::Value,
     ) -> Result<serde_json::Value, AlphaApiError> {
         let allowed = &self.config.allowed_fields;
-        if allowed.is_empty() { return Ok(value); }
+        // Empty enabled allowlist must fail closed.
+        if allowed.is_empty() {
+            return Err(AlphaApiError::Incomplete("allowed_fields is empty — no source fields authorized".into()));
+        }
         // Every retained source field must be explicitly authorized in allowed_fields.
         let required_fields = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "MeetName", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"];
         for &f in &required_fields {

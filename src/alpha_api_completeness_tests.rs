@@ -84,7 +84,28 @@ fn single_response_complete_with_nested_pointer() {
     let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "settings": {"complete": true}}"#).unwrap();
     assert!(client.check_completeness(&raw).unwrap(), "nested pointer works");
 }
+#[test]
+fn single_response_continuation_complete_false_overrides() {
+    // Reconcile continuation.complete=false in SingleResponse mode.
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "continuation": {"page": 1, "complete": false} }"#).unwrap();
+    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false overrides complete=true in SingleResponse");
+}
 
+#[test]
+fn single_response_has_more_true_with_null_next_page_errors() {
+    // SingleResponse must still reject hasMore=true without valid nextPage.
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": null}"#).unwrap();
+    assert!(client.check_completeness(&raw).is_err(), "hasMore=true with null nextPage must error in SingleResponse");
+}
+
+#[test]
+fn single_response_has_more_true_with_empty_next_page_errors() {
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#).unwrap();
+    assert!(client.check_completeness(&raw).is_err(), "hasMore=true with empty nextPage must error in SingleResponse");
+}
 // --- NextPage completeness ---
 
 #[test]
