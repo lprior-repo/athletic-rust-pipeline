@@ -1,0 +1,21 @@
+{
+  "state": {
+    "StateID": 90000001,
+    "State": "TS",
+    "StateName": "Test State"
+  },
+  "event": {
+    "EventShort": "100m",
+    "EventName": "100 Meters"
+  },
+  "divisions": [
+    {
+      "DivisionID": 90000001,
+      "DivisionName": "Test Division",
+      "Indoor": false
+    }
+  ],
+  "genders": ["m"],
+  "complete": true,
+  "page": 1
+}

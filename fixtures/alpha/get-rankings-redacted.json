@@ -1,0 +1,56 @@
+{
+  "groupedRankings": [
+    {
+      "AthleteID": 90000001,
+      "AthleteName": "Test Runner",
+      "GradeID": 90000001,
+      "TeamName": "Test High School",
+      "State": "TS",
+      "Results": [
+        {
+          "MeetID": 90000001,
+          "MeetName": "Test Meet",
+          "IDResult": 90000001,
+          "EventShort": "100m",
+          "Measure": "10.50",
+          "ResultDate": "2099-01-01",
+          "SeasonID": 90000001,
+          "Wind": "+1.2"
+        }
+      ]
+    },
+    {
+      "AthleteID": 90000001,
+      "AthleteName": "Test Runner",
+      "GradeID": 90000001,
+      "TeamName": "Test High School",
+      "State": "TS",
+      "Results": []
+    },
+    {
+      "AthleteID": 90000001,
+      "AthleteName": "Test Runner",
+      "GradeID": 90000001,
+      "TeamName": "Test High School",
+      "State": "TS",
+      "Results": [
+        {
+          "MeetID": 90000001,
+          "MeetName": "Test Meet",
+          "IDResult": 90000001,
+          "EventShort": "200m",
+          "Measure": "21.30",
+          "ResultDate": "2099-01-01",
+          "SeasonID": 90000001
+        }
+      ]
+    }
+  ],
+  "continuation": {
+    "page": 2,
+    "complete": false,
+    "nextPageKey": "eyJwYWdlIjoyfQ=="
+  },
+  "page": 2,
+  "complete": false
+}

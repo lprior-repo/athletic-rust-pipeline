@@ -11,3 +11,8 @@
 *.bak
 /athletic_matcher
 /.worktrees/
+/alpha.toml
+/alpha.local.toml
+/playwright/.auth/
+/storage-state.json
+/tmp/alpha-contract/
