@@ -47,8 +47,8 @@ const scrub = (value, key = '') => {
 
 const browser = await chromium.launch({ headless: true });
 let timeoutId;
-let tempFiles = [];
 let backupFiles = [];
+let tempFiles = [];
 try {
   const context = await browser.newContext({ storageState });
   const page = await context.newPage();
@@ -90,15 +90,18 @@ try {
     });
   });
 
-  // Start timeout covering entire capture (navigation + API responses)
-  timeoutId = setTimeout(() => {
-    confirmResponse.catch(() => {});
-    reject(new Error('timed out waiting for alpha API responses'));
-  }, 15000);
+  // Deadline promise: reject scoped inside executor, accessible by timeout callback
+  let deadlineReject;
+  const deadlinePromise = new Promise((_, rej) => {
+    deadlineReject = rej;
+    timeoutId = setTimeout(() => {
+      deadlineReject(new Error('timed out waiting for alpha API responses'));
+    }, 15000);
+  });
 
   await Promise.race([
-    page.goto(pageUrl, { waitUntil: 'load' }),
-    confirmResponse,
+    Promise.all([page.goto(pageUrl, { waitUntil: 'load' }), confirmResponse]),
+    deadlinePromise,
   ]);
   clearTimeout(timeoutId);
 
@@ -113,45 +116,80 @@ try {
   for (const f of tempFiles) {
     try { await rm(f); } catch {}
   }
-  for (const f of backupFiles) {
-    try { await rm(f); } catch {}
-  }
   tempFiles = [];
-  backupFiles = [];
   await browser.close();
 }
 
 async function writeAtomicPair(dir, entries) {
-  const filePairs = []; // [finalPath, content]
-  for (const [filename, content] of entries) {
-    filePairs.push([join(dir, filename), content]);
-  }
+  const filePairs = entries.map(([filename, content]) => ({
+    filename,
+    content,
+    finalPath: join(dir, filename),
+    tmpPath: join(dir, '.tmp-' + filename),
+    backupPath: join(dir, '.bak-' + filename),
+  }));
 
-  // Backup existing final files
-  for (const [finalPath] of filePairs) {
-    const backup = finalPath + '.bak';
-    backupFiles.push(backup);
+  // Step 1: Backup existing final files; track only successful backups
+  const successfulBackups = [];
+  for (const f of filePairs) {
     try {
-      await rename(finalPath, backup);
-    } catch {
-      // File doesn't exist yet, no backup needed
+      await rename(f.finalPath, f.backupPath);
+      successfulBackups.push(f);
+      backupFiles.push(f.backupPath);
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e; // Non-ENOENT is a real error
+      // File doesn't exist, no backup needed
     }
   }
 
-  // Stage all temp files
-  const tmpPaths = [];
-  for (const [finalPath, content] of filePairs) {
-    const tmp = finalPath + '.tmp';
-    tmpPaths.push(tmp);
-    tempFiles.push(tmp);
-    await writeFile(tmp, content);
+  // Step 2: Stage all temp files
+  const staged = [];
+  try {
+    for (const f of filePairs) {
+      staged.push(f);
+      tempFiles.push(f.tmpPath);
+      await writeFile(f.tmpPath, f.content);
+    }
+  } catch (e) {
+    // Clean up staged temp files
+    for (const f of staged) {
+      try { await rm(f.tmpPath); } catch {}
+      const idx = tempFiles.indexOf(f.tmpPath);
+      if (idx !== -1) tempFiles.splice(idx, 1);
+    }
+    // Restore backups
+    for (const f of successfulBackups) {
+      try { await rename(f.backupPath, f.finalPath); } catch {}
+      const idx = backupFiles.indexOf(f.backupPath);
+      if (idx !== -1) backupFiles.splice(idx, 1);
+    }
+    throw e;
   }
 
-  // Install all
-  for (const [finalPath, content] of filePairs) {
-    const tmp = finalPath + '.tmp';
-    await rename(tmp, finalPath);
-    const idx = tempFiles.indexOf(tmp);
-    if (idx !== -1) tempFiles.splice(idx, 1);
+  // Step 3: Install all
+  try {
+    for (const f of filePairs) {
+      await rename(f.tmpPath, f.finalPath);
+      const tmpIdx = tempFiles.indexOf(f.tmpPath);
+      if (tmpIdx !== -1) tempFiles.splice(tmpIdx, 1);
+    }
+    // Success: remove backups
+    for (const f of successfulBackups) {
+      try { await rm(f.backupPath); } catch {}
+      const bIdx = backupFiles.indexOf(f.backupPath);
+      if (bIdx !== -1) backupFiles.splice(bIdx, 1);
+    }
+  } catch (e) {
+    // Clean up newly installed files
+    for (const f of filePairs) {
+      try { await rm(f.finalPath); } catch {}
+    }
+    // Restore backups
+    for (const f of successfulBackups) {
+      try { await rename(f.backupPath, f.finalPath); } catch {}
+      const idx = backupFiles.indexOf(f.backupPath);
+      if (idx !== -1) backupFiles.splice(idx, 1);
+    }
+    throw e;
   }
 }
