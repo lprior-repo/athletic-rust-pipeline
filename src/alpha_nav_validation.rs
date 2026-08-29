@@ -23,21 +23,21 @@ impl RawNavInfoResponse {
             return Err("RawNavInfoResponse: state.state_id must not be zero");
         }
         let sname = state.state_name.as_ref().ok_or("RawNavInfoResponse: state.state_name missing")?;
-        if sname.is_empty() {
+        if sname.trim().is_empty() {
             return Err("RawNavInfoResponse: state.state_name empty");
         }
         let s = state.state.as_ref().ok_or("RawNavInfoResponse: state.state missing")?;
-        if s.is_empty() {
+        if s.trim().is_empty() {
             return Err("RawNavInfoResponse: state.state empty");
         }
         // Event: present with all required fields nonempty.
         let event = self.event.as_ref().ok_or("RawNavInfoResponse: missing event")?;
         let eshort = event.event_short.as_ref().ok_or("RawNavInfoResponse: event.event_short missing")?;
-        if eshort.is_empty() {
+        if eshort.trim().is_empty() {
             return Err("RawNavInfoResponse: event.event_short empty");
         }
         let ename = event.event_name.as_ref().ok_or("RawNavInfoResponse: event.event_name missing")?;
-        if ename.is_empty() {
+        if ename.trim().is_empty() {
             return Err("RawNavInfoResponse: event.event_name empty");
         }
         // Divisions: present, nonempty vec, each with all required fields.
@@ -51,7 +51,7 @@ impl RawNavInfoResponse {
                 return Err("RawNavInfoResponse: division_id must not be zero");
             }
             let dname = div.division_name.as_ref().ok_or("RawNavInfoResponse: division_name missing")?;
-            if dname.is_empty() {
+            if dname.trim().is_empty() {
                 return Err("RawNavInfoResponse: division_name empty");
             }
             let _indoor = div.indoor.ok_or("RawNavInfoResponse: indoor missing")?;

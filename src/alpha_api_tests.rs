@@ -1,3 +1,4 @@
+use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
 use crate::alpha_model_raw::{
@@ -260,21 +261,38 @@ fn snake_case_nav_fields_deserialize() {
 }
 #[test]
 fn enforce_allowed_fields_filters() {
-    let body = serde_json::json!({
-        "divListId": 12,
-        "reportType": "div",
-        "other": "field"
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: "https://example.com".to_owned(),
+        rankings_path: "/rankings".to_owned(),
+        nav_info_path: "/nav".to_owned(),
+        timeout_seconds: 30,
+        max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        allowed_routes: vec![],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(),
+            "State".into(), "MeetID".into(), "MeetName".into(), "IDResult".into(),
+            "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into(),
+            "Wind".into(), "unknown".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0,
+        cap_markers: vec![],
+    }).unwrap();
+    let input = serde_json::json!({
+        "groupedRankings": [[{
+            "AthleteID": 1, "AthleteName": "Test", "GradeID": 2, "TeamName": "T",
+            "State": "CA", "MeetID": 3, "MeetName": "M", "IDResult": 4,
+            "EventShort": "100m", "Measure": "10.5", "ResultDate": "2024-01-01",
+            "SeasonID": 5, "Wind": "1.2", "unknown_field": "remove_me"
+        }]]
     });
-    let allowed = vec!["divListId".to_owned(), "reportType".to_owned()];
-    let allowed_obj = body.as_object().unwrap().clone();
-    let mut filtered = serde_json::Map::new();
-    for (k, v) in allowed_obj {
-        if allowed.contains(&k) {
-            filtered.insert(k, v);
-        }
-    }
-    assert_eq!(filtered.len(), 2);
-    assert!(filtered.contains_key("divListId"));
+    let result = client.enforce_response_allowed_fields(input).unwrap();
+    let groups = result.get("groupedRankings").unwrap().as_array().unwrap();
+    let rec = groups[0].as_array().unwrap()[0].as_object().unwrap();
+    assert!(rec.contains_key("AthleteID"));
+    assert!(rec.contains_key("MeetName"));
+    assert!(!rec.contains_key("unknown_field"), "unknown fields must be stripped");
 }
 #[test]
 fn serialize_rankings_body_qparams_with_continuation() {

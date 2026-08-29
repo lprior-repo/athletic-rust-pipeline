@@ -183,7 +183,7 @@ impl AlphaApiClient {
                 tokio::time::sleep(Duration::from_millis(wait_ms)).await;
                 continue;
             }
-            if status >= 500 {
+            if (500..=599).contains(&status) {
                 if attempt < max_retry { attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
                 match Self::read_body_with_timeout(resp, timeout_dur).await {
                     Err(BodyReadError::Timeout) => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }

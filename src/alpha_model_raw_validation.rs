@@ -21,31 +21,39 @@ impl RawRankingRecord {
     }
 
     fn from_nested_results(&self, results: &[RawRankingResult]) -> Result<Vec<RankingRecord>, String> {
-        // Defect 5: reject zero parent identity before nested conversion.
+        if self.athlete_name.trim().is_empty() {
+            return Err("RawRankingRecord nested: AthleteName must not be empty".into());
+        }
+        if self.team_name.trim().is_empty() {
+            return Err("RawRankingRecord nested: TeamName must not be empty".into());
+        }
+        if self.state.trim().is_empty() {
+            return Err("RawRankingRecord nested: State must not be empty".into());
+        }
+        let mut records = Vec::new();
         if self.athlete_id == 0 {
             return Err("RawRankingRecord: AthleteID must not be zero".into());
         }
         if self.grade_id == 0 {
             return Err("RawRankingRecord: GradeID must not be zero".into());
         }
-        let mut records = Vec::new();
         for r in results {
             if r.id_result == 0 {
                 return Err("RawRankingResult: missing required IDResult".into());
             }
-            if r.event_short.is_empty() {
+            if r.event_short.trim().is_empty() {
                 return Err("RawRankingResult: missing required EventShort".into());
             }
-            if r.measure.is_empty() {
+            if r.measure.trim().is_empty() {
                 return Err("RawRankingResult: missing required Measure".into());
             }
-            if r.result_date.is_empty() {
+            if r.result_date.trim().is_empty() {
                 return Err("RawRankingResult: missing required ResultDate".into());
             }
             if r.meet_id == 0 {
                 return Err("RawRankingResult: missing required MeetID".into());
             }
-            if r.meet_name.is_empty() {
+            if r.meet_name.trim().is_empty() {
                 return Err("RawRankingResult: missing required MeetName".into());
             }
             if r.season_id == 0 {
@@ -78,6 +86,15 @@ impl RawRankingRecord {
         if self.grade_id == 0 {
             return Err("RawRankingRecord flattened: GradeID must not be zero".into());
         }
+        if self.athlete_name.trim().is_empty() {
+            return Err("RawRankingRecord flattened: AthleteName must not be empty".into());
+        }
+        if self.team_name.trim().is_empty() {
+            return Err("RawRankingRecord flattened: TeamName must not be empty".into());
+        }
+        if self.state.trim().is_empty() {
+            return Err("RawRankingRecord flattened: State must not be empty".into());
+        }
         let id_result = self.id_result
             .ok_or("RawRankingRecord flattened: missing required IDResult")?;
         if id_result == 0 {
@@ -85,17 +102,17 @@ impl RawRankingRecord {
         }
         let event_short = self.event_short.clone()
             .ok_or("RawRankingRecord flattened: missing required EventShort")?;
-        if event_short.is_empty() {
+        if event_short.trim().is_empty() {
             return Err("RawRankingRecord flattened: EventShort must not be empty".into());
         }
         let measure = self.measure.clone()
             .ok_or("RawRankingRecord flattened: missing required Measure")?;
-        if measure.is_empty() {
+        if measure.trim().is_empty() {
             return Err("RawRankingRecord flattened: Measure must not be empty".into());
         }
         let result_date = self.result_date.clone()
             .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
-        if result_date.is_empty() {
+        if result_date.trim().is_empty() {
             return Err("RawRankingRecord flattened: ResultDate must not be empty".into());
         }
         let season_id = self.season_id
@@ -105,7 +122,7 @@ impl RawRankingRecord {
         }
         let meet_name = self.meet_name.clone()
             .ok_or("RawRankingRecord flattened: missing required MeetName")?;
-        if meet_name.is_empty() {
+        if meet_name.trim().is_empty() {
             return Err("RawRankingRecord flattened: MeetName must not be empty".into());
         }
         let meet_id = self.meet_id
