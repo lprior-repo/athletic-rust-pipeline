@@ -88,22 +88,19 @@ impl AlphaApiClient {
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
         };
-        // Check cap markers — non-bool or bool(true) triggers truncation error.
-        let check_cap = |v: &serde_json::Value| -> Result<(), AlphaApiError> {
+        let enforce_cap = |v: &serde_json::Value| -> Result<bool, AlphaApiError> {
             for cm in &self.config.cap_markers {
                 let found = if cm.starts_with('/') { v.pointer(cm) } else { v.get(cm) };
                 match found {
-                    Some(serde_json::Value::Bool(true)) => return Err(AlphaApiError::TruncatedWithoutContinuation),
                     Some(serde_json::Value::Bool(false)) | None => {}
-                    Some(_) => return Err(AlphaApiError::TruncatedWithoutContinuation),
+                    _ => return Err(AlphaApiError::TruncatedWithoutContinuation),
                 }
             }
-            Ok(())
+            Ok(false)
         };
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
-                // Cap marker check fires before complete pointer — truncation priority.
-                check_cap(value)?;
+                enforce_cap(value)?;
                 if let Some(cont) = &raw.continuation {
                     if !cont.complete {
                         validate_next(value.get("nextPage"), "continuation.complete=false but nextPage")?;
@@ -127,13 +124,17 @@ impl AlphaApiClient {
                     if !cont.complete {
                         let nptr = Self::resolve_ptr(next_page_pointer);
                         validate_next(value.pointer(&nptr), "continuation.complete=false but next pointer")?;
-                        return Ok(false);
+                        enforce_cap(value)?;
                     }
                 }
                 let hptr = Self::resolve_ptr(has_more_pointer);
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
-                    serde_json::Value::Bool(false) => { check_cap(value)?; Ok(true) }
+                    serde_json::Value::Bool(false) => {
+                        enforce_cap(value)?;
+                        Ok(true)
+                    }
                     serde_json::Value::Bool(true) => {
+                        enforce_cap(value)?;
                         let nptr = Self::resolve_ptr(next_page_pointer);
                         validate_next(value.pointer(&nptr), "next page")?;
                         Ok(false)

@@ -49,11 +49,9 @@ async fn nextpage_cap_marker_rejected() {
         auth_enabled: true,
         permission_reference: "test".into(),
     }).expect("client must not fail");
-    // hasMore=true + valid next page = Ok(false) with continuation, cap marker ignored.
-    let page = client.rankings(&make_test_req()).await.unwrap();
-    assert!(!page.complete, "incomplete but resumable");
-    assert!(page.continuation.is_some(), "continuation token exposed");
-    assert_eq!(page.records.len(), 1);
+    // __cap=true with hasMore=true must still fail closed as truncated.
+    let err = client.rankings(&make_test_req()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "cap=true must reject even on resumable path, got {:?}", err);
 }
 
 #[tokio::test(flavor = "multi_thread")]

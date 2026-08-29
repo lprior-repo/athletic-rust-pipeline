@@ -194,3 +194,45 @@ async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "wrong-type cap marker must fail-closed as truncated");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn nextpage_wrong_type_cap_marker_on_resumable_path_fails_closed() {
+    // NextPage mode with hasMore=true, valid next pointer, but wrong-type cap marker
+    // must fail with TruncatedWithoutContinuation, not Ok(false) with continuation.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-42","truncated":"yes"}"#)
+        .create();
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+        timeout_seconds: 30,
+        max_retries: 0,
+        pagination: PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".into(),
+            next_page_pointer: "/nextPage".into(),
+            request_page_key: "page".into(),
+        },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        cap_markers: vec!["truncated".into()],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    }).expect("client creation must not fail");
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "wrong-type cap marker on resumable NextPage path must fail-closed as truncated");
+}
