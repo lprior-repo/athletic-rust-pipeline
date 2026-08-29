@@ -25,7 +25,7 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|nextpagekey|pagekey|cursor|credentials|credential|password|secret|api[_-]?key/i;
-const URL_VALUE_RE = /^(?:https?:\/\/|www\.)/i;
+const URL_VALUE_RE = /^(?:https?:\/\/|www\.|\/\/|[.]{0,2}\/)/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
 const scrub = (value, key = '') => {
@@ -131,18 +131,27 @@ async function writeAtomicPair(dir, entries) {
 
   // Step 1: Backup existing final files; track only successful backups
   const successfulBackups = [];
-  for (const f of filePairs) {
-    try {
-      await rename(f.finalPath, f.backupPath);
-      successfulBackups.push(f);
-      backupFiles.push(f.backupPath);
-    } catch (e) {
-      if (e.code !== 'ENOENT') throw e; // Non-ENOENT is a real error
-      // File doesn't exist, no backup needed
+  try {
+    for (const f of filePairs) {
+      try {
+        await rename(f.finalPath, f.backupPath);
+        successfulBackups.push(f);
+        backupFiles.push(f.backupPath);
+      } catch (e) {
+        if (e.code !== 'ENOENT') throw e; // Non-ENOENT is a real error
+        // File doesn't exist, no backup needed
+      }
     }
+  } catch (e) {
+    // Rollback: restore every successful backup
+    for (const f of successfulBackups) {
+      try { await rename(f.backupPath, f.finalPath); } catch {}
+      const idx = backupFiles.indexOf(f.backupPath);
+      if (idx !== -1) backupFiles.splice(idx, 1);
+    }
+    throw e;
   }
 
-  // Step 2: Stage all temp files
   const staged = [];
   try {
     for (const f of filePairs) {
