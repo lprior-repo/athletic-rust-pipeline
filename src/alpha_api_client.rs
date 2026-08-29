@@ -77,7 +77,6 @@ impl AlphaApiClient {
 
     pub(crate) fn check_completeness(&self, raw: &RawRankingsResponse) -> Result<bool, AlphaApiError> {
         let value = &raw.value;
-        // Validate next pointer value type.
         let validate_next = |val: Option<&serde_json::Value>, ctx: &str| -> Result<(), AlphaApiError> {
             match val {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
