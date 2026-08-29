@@ -88,6 +88,7 @@ impl AlphaApiClient {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
                 Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
+                Some(serde_json::Value::Object(_)) => Ok(()),
                 Some(serde_json::Value::String(s)) if !s.is_empty() => Ok(()),
                 Some(serde_json::Value::Number(n)) if is_positive_integer(n) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),

@@ -197,6 +197,14 @@ fn nextpage_continuation_complete_false_with_next_token() {
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
     assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false with valid next => Ok(false)");
 }
+#[test]
+fn nextpage_accepts_object_token() {
+    // build_qparams supports nonempty object tokens; validate_next must accept them.
+    let client = make_next_page_client("https://example.com");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": true, "nextPage": {"token":"abc","page":2} }"#).unwrap();
+    let result = client.check_completeness(&raw);
+    assert!(matches!(result, Ok(false)), "object nextPage token => incomplete (Ok(false))");
+}
 
 
 // --- JSON pointer navigation ---
