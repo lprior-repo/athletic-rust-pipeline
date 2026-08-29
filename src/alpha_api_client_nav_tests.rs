@@ -1,4 +1,5 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
+use std::io::{Read, Write};
 use crate::alpha_test_helpers::{make_client, make_test_request, success_body};
 use crate::alpha_model::PaginationConfig;
 use crate::alpha_api_client::AlphaApiClient;
@@ -24,19 +25,30 @@ async fn http_200_success() {
     mock.assert();
 }
 #[tokio::test(flavor = "multi_thread")]
-async fn http_401_immediate_error() {
-    let (mut server, url) = tokio::task::spawn_blocking(|| {
-        let server = mockito::Server::new();
-        let url = server.url();
-        (server, url)
-    }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(401)
-        .with_body("unauthorised")
-        .create();
+async fn http_401_immediate_error_raw_tcp() {
+    // Raw TCP server sends 401 header, delays body to verify
+    // the client returns Unauthorized before body is read (no retry).
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let url = format!("http://127.0.0.1:{port}/api/v1/tfRankings/GetRankings");
+    let retry_count = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let retry_count_clone = retry_count.clone();
+    let _handle = tokio::task::spawn_blocking(move || {
+        let mut conn = listener.accept().unwrap().0;
+        let mut buf = [0u8; 4096];
+        let _ = conn.read(&mut buf);
+        retry_count_clone.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        // Send 401 header, then delay body to prove Unauthorized returned first.
+        let _ = conn.write_all(b"HTTP/1.1 401 Unauthorized\r\nContent-Length: 9999\r\n\r\n");
+        std::thread::sleep(std::time::Duration::from_secs(5));
+    });
     let client = make_client(&url);
+    let start = std::time::Instant::now();
     let err = client.rankings(&make_test_request()).await.unwrap_err();
+    let elapsed = start.elapsed();
     assert!(matches!(err, AlphaApiError::Unauthorized(_)));
+    assert!(elapsed.as_secs() < 2, "Unauthorized must return before body delay, got {elapsed:?}");
+    assert_eq!(retry_count.load(std::sync::atomic::Ordering::SeqCst), 1, "must not retry on 401");
 }
 #[tokio::test(flavor = "multi_thread")]
 async fn http_403_immediate_error() {
@@ -162,7 +174,7 @@ async fn http_429_retry_after_one_second() {
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         max_concurrent_requests: 1,
         cap_markers: vec![],
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -183,7 +195,6 @@ async fn nav_info_rejects_empty_response() {
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
        
        .match_query(mockito::Matcher::Any)
- .match_query(mockito::Matcher::Any)
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body("{}")
@@ -201,7 +212,7 @@ async fn nav_info_rejects_empty_response() {
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
         allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client must not fail");
 
@@ -224,7 +235,6 @@ async fn nav_info_rejects_response_missing_complete_and_page() {
 .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"someData": "ignored"}"#)
-        .match_query(mockito::Matcher::Any)
 .create();
 
     let client = AlphaApiClient::new(AlphaApiClientConfig {
@@ -239,7 +249,7 @@ async fn nav_info_rejects_response_missing_complete_and_page() {
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
         allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client must not fail");
 
@@ -277,7 +287,7 @@ async fn nav_info_accepts_partial_response_with_complete() {
         ],
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client must not fail");
 

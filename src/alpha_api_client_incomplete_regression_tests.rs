@@ -34,7 +34,7 @@ async fn single_response_incomplete_fails_closed() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
@@ -70,7 +70,7 @@ async fn cap_markers_json_pointer_path() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["/metadata/truncated".into()],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
@@ -104,7 +104,7 @@ async fn cap_markers_top_level_key_path() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["__cap".into()],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
@@ -139,7 +139,7 @@ async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
@@ -172,7 +172,7 @@ async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec!["truncated".into()],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();

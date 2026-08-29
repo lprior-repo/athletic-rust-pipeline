@@ -11,6 +11,7 @@ allowed_profile_routes = []
 allow_profile_enrichment = false
 max_concurrent_requests = 1
 min_delay_ms = 750
+max_retry_delay_ms = 30000
 
 [api]
 base_url = "https://www.athletic.net"

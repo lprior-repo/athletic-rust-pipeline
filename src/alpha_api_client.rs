@@ -1,10 +1,18 @@
 use std::time::Duration;
+
 use reqwest::{Client, Method, redirect::Policy};
 use tokio::sync::Semaphore;
 use url::Url;
+
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_model::{AlphaRequest, PaginationConfig, RankingRecord};
 use crate::alpha_model_raw::{RawNavInfoResponse, RawRankingsResponse};
+
+/// Operational ceiling for numeric Retry-After values (seconds).
+/// Servers asking to sleep longer are treated as exhaustively rate-limited.
+const MAX_RETRY_AFTER_SECONDS: u64 = 300;
+
+
 #[derive(Debug)]
 pub enum BodyReadError { Timeout, Other(String) }
 impl std::fmt::Display for BodyReadError {
@@ -32,23 +40,33 @@ pub struct AlphaApiClient {
 
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
-        let max_concurrent = config.max_concurrent_requests.max(1);
+        if config.max_concurrent_requests != 1 { return Err(AlphaApiError::InvalidConcurrency); }
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(config.timeout_seconds))
             .redirect(Policy::none())
             .build()
             .map_err(|e| AlphaApiError::Incomplete(format!("reqwest builder failed: {e}")))?;
-        Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(max_concurrent) })
+        Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(1) })
     }
 
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
         serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
     }
 
-    pub fn build_qparams(pagination: &PaginationConfig, continuation: &Option<serde_json::Value>) -> serde_json::Value {
+    pub fn build_qparams(pagination: &PaginationConfig, continuation: &Option<serde_json::Value>) -> Result<serde_json::Value, AlphaApiError> {
         match (pagination, continuation) {
-            (PaginationConfig::NextPage { request_page_key, .. }, Some(c)) => serde_json::json!({ request_page_key: c }),
-            _ => serde_json::json!({}),
+            (PaginationConfig::NextPage { request_page_key, .. }, Some(c)) => {
+                match c {
+                    serde_json::Value::Null => return Err(AlphaApiError::Incomplete("continuation is null".into())),
+                    serde_json::Value::String(s) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty".into())),
+                    serde_json::Value::Object(o) if o.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty object".into())),
+                    serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_) => {
+                        Ok(serde_json::json!({ request_page_key: c }))
+                    }
+                    v => return Err(AlphaApiError::Incomplete(format!("unsupported continuation type: {v}"))),
+                }
+            }
+            _ => Ok(serde_json::json!({})),
         }
     }
 
@@ -172,11 +190,17 @@ impl AlphaApiClient {
             if status == 401 { return Err(AlphaApiError::Unauthorized(format!("HTTP {status}"))); }
             if status == 403 { return Err(AlphaApiError::Forbidden(format!("HTTP {status}"))); }
             if status == 429 {
-                let retry_after_ms = match headers.get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
-                    Some(d) => d.saturating_mul(1000),
+                let retry_after_s = match headers.get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
+                    Some(d) => {
+                        if d > MAX_RETRY_AFTER_SECONDS {
+                            return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms });
+                        }
+                        d
+                    }
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
                 };
-                let wait_ms = retry_after_ms.max(self.config.min_delay_ms);
+                let retry_after_ms = retry_after_s.saturating_mul(1000);
+                let wait_ms = retry_after_ms.min(self.config.max_retry_delay_ms).max(self.config.min_delay_ms);
                 if attempt >= max_retry { return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms }); }
                 total_wait_ms = total_wait_ms.saturating_add(wait_ms);
                 attempt += 1;
@@ -213,7 +237,7 @@ impl AlphaApiClient {
         let _permit = self.concurrency_semaphore.acquire().await.map_err(|_| AlphaApiError::Incomplete("semaphore closed".into()))?;
         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
         let mut body = Self::serialize_rankings_body(req);
-        body["qParams"] = Self::build_qparams(&self.config.pagination, &req.continuation);
+        body["qParams"] = Self::build_qparams(&self.config.pagination, &req.continuation)?;
         let base = Url::parse(&self.config.base_url).map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?;
         crate::alpha_route_validation::validate_route(&self.config.rankings_path, &base, &self.config.allowed_routes).map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
         let url = base.join(&self.config.rankings_path).map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;

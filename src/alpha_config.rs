@@ -241,6 +241,7 @@ impl AlphaConfig {
             allowed_fields: auth.allowed_fields.clone(),
             max_concurrent_requests: auth.max_concurrent_requests,
             min_delay_ms: auth.min_delay_ms,
+            max_retry_delay_ms: auth.max_retry_delay_ms,
             cap_markers: api.cap_markers.clone(),
         }
     }

@@ -34,7 +34,7 @@ async fn http_429_wait_maxes_retry_after_against_min_delay() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 500,
+        min_delay_ms: 500, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
@@ -180,7 +180,7 @@ async fn nested_configured_has_more_does_not_reject_unrelated_top_level_has_more
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
@@ -216,7 +216,7 @@ async fn pointer_escaped_and_array_pointers() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
@@ -251,7 +251,7 @@ async fn pointer_array_index_in_pointer() {
             "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();

@@ -1,6 +1,7 @@
 use crate::alpha_model::AlphaRequest;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::PaginationConfig;
+use crate::alpha_api::AlphaApiError;
 // --- Request serialization ---
 #[test]
 fn serialize_rankings_body_numeric_divlistid() {
@@ -21,7 +22,7 @@ fn serialize_rankings_body_single_response_qparams() {
     let pagination = PaginationConfig::SingleResponse {
         complete_pointer: "/complete".to_owned(),
     };
-    let qparams = AlphaApiClient::build_qparams(&pagination, &None);
+    let qparams = AlphaApiClient::build_qparams(&pagination, &None).unwrap();
     assert_eq!(qparams.as_object().unwrap().len(), 0);
 }
 #[test]
@@ -32,7 +33,7 @@ fn serialize_rankings_body_nextpage_qparams() {
         request_page_key: "page".to_owned(),
     };
     let continuation = Some(serde_json::json!({"page": 2}));
-    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation);
+    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation).unwrap();
     assert_eq!(qparams["page"], serde_json::json!({"page": 2}));
 }
 #[test]
@@ -67,4 +68,37 @@ fn no_request_body_logged() {
     let json_str = serde_json::to_string(&body).unwrap();
     assert!(!json_str.contains("Bearer"));
 }
+    #[test]
+    fn build_qparams_nextpage_rejects_null_continuation() {
+        let pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let continuation = Some(serde_json::Value::Null);
+        let err = AlphaApiClient::build_qparams(&pagination, &continuation).unwrap_err();
+        assert!(matches!(err, AlphaApiError::Incomplete(msg) if msg.contains("null")));
+    }
+    #[test]
+    fn build_qparams_nextpage_rejects_empty_string_continuation() {
+        let pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let continuation = Some(serde_json::Value::String("".into()));
+        let err = AlphaApiClient::build_qparams(&pagination, &continuation).unwrap_err();
+        assert!(matches!(err, AlphaApiError::Incomplete(msg) if msg.contains("empty")));
+    }
+    #[test]
+    fn build_qparams_nextpage_rejects_empty_object_continuation() {
+        let pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let continuation = Some(serde_json::json!({}));
+        let err = AlphaApiClient::build_qparams(&pagination, &continuation).unwrap_err();
+        assert!(matches!(err, AlphaApiError::Incomplete(msg) if msg.contains("empty object")));
+    }
 

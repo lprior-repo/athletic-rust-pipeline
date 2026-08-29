@@ -31,6 +31,7 @@ pub(crate) fn valid_config() -> AlphaConfig {
             allow_profile_enrichment: false,
             max_concurrent_requests: 1,
             min_delay_ms: 750,
+            max_retry_delay_ms: 30_000,
         },
         api: AlphaApiConfig {
             base_url: "https://www.athletic.net".to_owned(),

@@ -13,7 +13,7 @@ fn make_nav_info_client(server_url: &str) -> AlphaApiClient {
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".into(), "/rankings".into()],
         allowed_fields: vec![],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client creation must not fail")
 }

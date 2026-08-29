@@ -249,7 +249,7 @@ mod tests {
             allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
             allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
             max_concurrent_requests: 1,
-            min_delay_ms: 0,
+            min_delay_ms: 0, max_retry_delay_ms: 30_000,
             cap_markers: vec![],
         };
         let result = crate::alpha_api_client::AlphaApiClient::new(config);
@@ -291,5 +291,22 @@ mod tests {
         config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "".into() };
         let error = config.validate().expect_err("empty complete_pointer must be rejected in single_response mode");
         assert!(error.to_string().contains("non-empty"), "error: {}", error);
+    }
+    #[test]
+    fn new_rejects_concurrent_requests_not_one() {
+        let config = crate::alpha_api::AlphaApiClientConfig {
+            base_url: "https://example.com".into(),
+            rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+            nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+            timeout_seconds: 30,
+            max_retries: 0,
+            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+            allowed_fields: vec!["AthleteID".into()],
+            max_concurrent_requests: 2,
+            min_delay_ms: 0, max_retry_delay_ms: 30_000,
+            cap_markers: vec![],
+        };
+        assert!(matches!(crate::alpha_api_client::AlphaApiClient::new(config), Err(crate::alpha_api::AlphaApiError::InvalidConcurrency)));
     }
 }

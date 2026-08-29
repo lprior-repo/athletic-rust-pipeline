@@ -15,6 +15,7 @@ pub struct AuthorizationConfig {
     pub allow_profile_enrichment: bool,
     pub max_concurrent_requests: usize,
     pub min_delay_ms: u64,
+    pub max_retry_delay_ms: u64,
 }
 
 /// API connection and pagination settings from `[api]`.

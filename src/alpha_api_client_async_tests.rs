@@ -1,4 +1,6 @@
 use crate::alpha_api::AlphaApiError;
+use serde_json::json;
+use std::io::{Read, Write};
 use crate::alpha_test_helpers::make_test_request;
 use crate::alpha_test_helpers::{make_client, make_full_pagination_config, success_body};
 
@@ -155,4 +157,97 @@ async fn http_429_retry_after_one_second() {
         }
         other => panic!("expected RateLimitedExhausted, got {:?}", other),
     }
+}
+
+/// Retry-After exceeding 300s operational max returns RateLimitedExhausted immediately.
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_retry_after_exceeds_operational_max_returns_exhausted() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let url = format!("http://127.0.0.1:{port}/api/v1/tfRankings/GetRankings");
+    let handle = tokio::task::spawn_blocking(move || {
+        let mut conn = listener.accept().unwrap().0;
+        let mut buf = [0u8; 4096];
+        conn.read(&mut buf).unwrap();
+        let _ = conn.write_all(b"HTTP/1.1 429 Too Many Requests\r\nRetry-After: 999999\r\nContent-Length: 0\r\n\r\n");
+    });
+    let client = make_client(&url);
+    let start = std::time::Instant::now();
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    let elapsed = start.elapsed();
+    assert!(matches!(err, AlphaApiError::RateLimitedExhausted { .. }), "must return RateLimitedExhausted, got {:?}", err);
+    // Must return immediately (no sleep), not hang for 300+ seconds
+    assert!(elapsed.as_secs() < 3, "excessive Retry-After must return immediately, took {elapsed:?}");
+    handle.abort();
+}
+
+/// Unsupported continuation types (arrays) must return Incomplete, not qParams.
+#[tokio::test(flavor = "multi_thread")]
+async fn unsupported_continuation_type_returns_incomplete() {
+    use crate::alpha_api_client::AlphaApiClient;
+    use crate::alpha_model::PaginationConfig;
+    use serde_json::json;
+    let result = AlphaApiClient::build_qparams(
+        &PaginationConfig::NextPage {
+            request_page_key: "nextPage".to_owned(),
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+        },
+        &Some(json!([])),
+    );
+    assert!(result.is_err(), "array continuation must be rejected");
+    let err = result.unwrap_err();
+    assert!(matches!(err, AlphaApiError::Incomplete(_)), "must return Incomplete, got {:?}", err);
+}
+
+/// Empty string continuation must return Incomplete.
+#[tokio::test(flavor = "multi_thread")]
+async fn empty_string_continuation_returns_incomplete() {
+    use crate::alpha_api_client::AlphaApiClient;
+    use crate::alpha_model::PaginationConfig;
+    use serde_json::json;
+    let result = AlphaApiClient::build_qparams(
+        &PaginationConfig::NextPage {
+            request_page_key: "nextPage".to_owned(),
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+        },
+        &Some(json!("")),
+    );
+    assert!(result.is_err());
+    assert!(matches!(result.unwrap_err(), AlphaApiError::Incomplete(_)));
+}
+
+/// Null continuation must return Incomplete.
+#[tokio::test(flavor = "multi_thread")]
+async fn null_continuation_returns_incomplete() {
+    use crate::alpha_api_client::AlphaApiClient;
+    use crate::alpha_model::PaginationConfig;
+    let result = AlphaApiClient::build_qparams(
+        &PaginationConfig::NextPage {
+            request_page_key: "nextPage".to_owned(),
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+        },
+        &Some(serde_json::Value::Null),
+    );
+    assert!(result.is_err());
+    assert!(matches!(result.unwrap_err(), AlphaApiError::Incomplete(_)));
+}
+
+/// Empty object continuation must return Incomplete.
+#[tokio::test(flavor = "multi_thread")]
+async fn empty_object_continuation_returns_incomplete() {
+    use crate::alpha_api_client::AlphaApiClient;
+    use crate::alpha_model::PaginationConfig;
+    let result = AlphaApiClient::build_qparams(
+        &PaginationConfig::NextPage {
+            request_page_key: "nextPage".to_owned(),
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+        },
+        &Some(json!({})),
+    );
+    assert!(result.is_err());
+    assert!(matches!(result.unwrap_err(), AlphaApiError::Incomplete(_)));
 }

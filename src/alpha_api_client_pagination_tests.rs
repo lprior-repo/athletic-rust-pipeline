@@ -120,7 +120,7 @@ async fn body_timeout_cancellation_no_orphan() {
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec!["AthleteID","AthleteName","GradeID","TeamName","State","MeetID","MeetName","IDResult","EventShort","Measure","ResultDate","SeasonID"].into_iter().map(String::from).collect(),
-        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+        max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
     }).expect("client creation must not fail");
     let start = std::time::Instant::now();
     let result = client.rankings(&make_test_request()).await;
@@ -156,7 +156,7 @@ async fn non_2xx_body_timeout_returns_error_not_retry() {
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec!["AthleteID","AthleteName","GradeID","TeamName","State","MeetID","MeetName","IDResult","EventShort","Measure","ResultDate","SeasonID"].into_iter().map(String::from).collect(),
-        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+        max_concurrent_requests: 1, min_delay_ms: 0, max_retry_delay_ms: 30_000, cap_markers: vec![],
     }).expect("client creation must not fail");
     let start = std::time::Instant::now();
     let result = client.rankings(&make_test_request()).await;

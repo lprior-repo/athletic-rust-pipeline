@@ -70,7 +70,7 @@ async fn single_response_rankings_continuation_is_none() {
         allowed_routes: vec!["/rankings".to_owned()],
         allowed_fields: vec!["AthleteID".into(),"AthleteName".into(),"GradeID".into(),"TeamName".into(),"State".into(),"MeetID".into(),"MeetName".into(),"IDResult".into(),"EventShort".into(),"Measure".into(),"ResultDate".into(),"SeasonID".into()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).expect("client must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();

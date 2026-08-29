@@ -105,7 +105,7 @@ fn enforce_allowed_fields_filters() {
             "Wind".into(), "unknown".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
+        min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
     }).unwrap();
     let input = serde_json::json!({
@@ -131,6 +131,6 @@ fn serialize_rankings_body_qparams_with_continuation() {
         request_page_key: "page".to_owned(),
     };
     let continuation = Some(serde_json::json!({"page": "next_1"}));
-    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation);
+    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation).unwrap();
     assert_eq!(qparams["page"], serde_json::json!({"page": "next_1"}));
 }
