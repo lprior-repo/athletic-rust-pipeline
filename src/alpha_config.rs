@@ -393,6 +393,17 @@ mod tests {
         );
     }
     #[test]
+    fn empty_allowed_routes_rejected() {
+        let mut config = valid_config();
+        config.authorization.allowed_routes.clear();
+        let error = config.validate().expect_err("empty allowed_routes must fail");
+        assert!(
+            error.to_string().contains("allowed_routes"),
+            "error: {}",
+            error
+        );
+    }
+    #[test]
     fn invalid_base_url_not_valid() {
         let mut config = valid_config();
         config.api.base_url = "not-a-url".to_owned();
