@@ -38,8 +38,6 @@ mod alpha_route_validation;
 #[cfg(test)]
 mod alpha_config_auth_tests;
 #[cfg(test)]
-mod alpha_config_auth_route_tests;
-#[cfg(test)]
 mod alpha_config_api_tests;
 #[cfg(test)]
 mod alpha_config_loading_tests;

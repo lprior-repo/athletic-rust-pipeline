@@ -114,6 +114,19 @@ impl AlphaConfig {
             bail!("authorization.min_delay_ms must be at least 500 ms");
         }
 
+        // max_retry_delay_ms must be at least min_delay_ms and bounded.
+        if auth.max_retry_delay_ms < auth.min_delay_ms {
+            bail!(
+                "authorization.max_retry_delay_ms ({}) must be >= min_delay_ms ({})",
+                auth.max_retry_delay_ms,
+                auth.min_delay_ms
+            );
+        }
+        const MAX_RETRY_AFTER_MS: u64 = 300_000;
+        if auth.max_retry_delay_ms > MAX_RETRY_AFTER_MS {
+            bail!("authorization.max_retry_delay_ms must be at most {} ms", MAX_RETRY_AFTER_MS);
+        }
+
         Ok(())
     }
 

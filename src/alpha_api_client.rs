@@ -66,9 +66,13 @@ impl AlphaApiClient {
                     v => return Err(AlphaApiError::Incomplete(format!("unsupported continuation type: {v}"))),
                 }
             }
+            (PaginationConfig::SingleResponse { .. }, Some(_)) => {
+                return Err(AlphaApiError::Incomplete("SingleResponse mode does not accept continuation".into()));
+            }
             _ => Ok(serde_json::json!({})),
         }
     }
+
 
     fn parse_rankings_strict(&self, raw: &RawRankingsResponse) -> Result<Vec<RankingRecord>, String> {
         let mut records = Vec::new();

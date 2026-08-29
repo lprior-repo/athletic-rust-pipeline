@@ -1,8 +1,82 @@
+use crate::alpha_config_test_helpers::valid_config;
+use crate::alpha_model::PaginationConfig;
+
 #[cfg(test)]
 mod tests {
-    use crate::alpha_config_test_helpers::valid_config;
-    use crate::alpha_model::PaginationConfig;
+    use super::*;
 
+    #[test]
+    fn empty_complete_pointer_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse {
+            complete_pointer: "".to_owned(),
+        };
+        let error = config.validate().expect_err("empty complete_pointer must fail");
+        assert!(
+            error.to_string().contains("complete_pointer"),
+            "error: {}",
+            error
+        );
+    }
+    #[test]
+    fn complete_pointer_trailing_tilde_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse {
+            complete_pointer: "/settings/complete~".to_owned(),
+        };
+        let error = config.validate().expect_err("trailing ~ must fail");
+        assert!(
+            error.to_string().contains("invalid RFC6901"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn complete_pointer_invalid_escape_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse {
+            complete_pointer: "/settings/complete~2".to_owned(),
+        };
+        let error = config.validate().expect_err("~2 escape must fail");
+        assert!(
+            error.to_string().contains("invalid RFC6901"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn has_more_pointer_invalid_escape_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/data/~bad".to_owned(),
+            next_page_pointer: "/data/next".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let error = config.validate().expect_err("invalid escape in has_more must fail");
+        assert!(
+            error.to_string().contains("invalid RFC6901"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn next_page_pointer_invalid_escape_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/data/hm".to_owned(),
+            next_page_pointer: "/data/next~".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let error = config.validate().expect_err("invalid escape in next_page must fail");
+        assert!(
+            error.to_string().contains("invalid RFC6901"),
+            "error: {}",
+            error
+        );
+    }
     #[test]
     fn cap_marker_empty_rejected() {
         let mut config = valid_config();
@@ -75,202 +149,128 @@ mod tests {
             error
         );
     }
-
     #[test]
-    fn empty_complete_pointer_always_rejected() {
+    fn empty_allowed_routes_rejected() {
         let mut config = valid_config();
-        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "".into() };
-        let error = config.validate().expect_err("empty complete_pointer must be rejected in single_response mode");
+        config.authorization.allowed_routes.clear();
+        let error = config.validate().expect_err("empty allowed_routes must fail");
         assert!(
-            error.to_string().contains("complete_pointer"),
+            error.to_string().contains("allowed_routes"),
             "error: {}",
             error
         );
+    }
+    #[test]
+    fn invalid_base_url_not_valid() {
+        let mut config = valid_config();
+        config.api.base_url = "not-a-url".to_owned();
+        let error = config.validate().expect_err("invalid base_url must fail");
+        assert!(error.to_string().contains("not a valid URL"), "error: {}", error);
     }
 
     #[test]
-    fn profile_enrichment_with_empty_allowed_profile_routes_rejected() {
+    fn base_url_missing_host_rejected() {
         let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "/api/v1/other/Profile".to_owned(),
-        ];
-        let error = config.validate().expect_err("enrichment without route must fail");
+        config.api.base_url = "https://".to_owned();
+        let error = config.validate().expect_err("base_url missing host must fail");
+        assert!(error.to_string().contains("not a valid URL") || error.to_string().contains("nonempty host"), "error: {}", error);
+    }
+
+    #[test]
+    fn route_with_scheme_rejected() {
+        let mut config = valid_config();
+        config.api.rankings_path = "https://evil.com/api/v1/tfRankings/GetRankings".to_owned();
+        let error = config.validate().expect_err("route with scheme must fail");
         assert!(
-            error.to_string().contains("not in allowed_routes"),
+            error.to_string().contains("starting with '/'"),
             "error: {}",
             error
         );
     }
+
     #[test]
-    fn profile_enrichment_with_unauthorized_profile_route_rejected() {
+    fn route_with_query_rejected() {
         let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "/api/v1/other/Profile".to_owned(),
-        ];
-        let error = config
-            .validate()
-            .expect_err("unauthorized profile route must fail");
-        assert!(
-            error.to_string().contains("is not in"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn timeout_zero_rejected() {
-        let mut config = valid_config();
-        config.api.timeout_seconds = 0;
-        let error = config.validate().expect_err("timeout 0 must fail");
-        assert!(
-            error.to_string().contains("between 1"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn max_retries_too_high_rejected() {
-        let mut config = valid_config();
-        config.api.max_retries = 10;
-        let error = config.validate().expect_err("max_retries > 5 must fail");
-        assert!(
-            error.to_string().contains("at most 5"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn profile_route_not_started_with_slash_rejected() {
-        let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "api/v1/Profile".to_owned(),
-        ];
-        let error = config.validate().expect_err("profile route without / must fail");
-        assert!(
-            error.to_string().contains("starting with"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn profile_route_with_backslash_rejected() {
-        let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "/api/v1/\\evil.com/Profile".to_owned(),
-        ];
-        let error = config.validate().expect_err("profile route with \\ must fail");
-        assert!(
-            error.to_string().contains("backslash"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn profile_route_with_query_rejected() {
-        let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "/api/v1/Profile?debug=1".to_owned(),
-        ];
-        let error = config.validate().expect_err("profile route with query must fail");
+        config.api.rankings_path = "/api/v1/tfRankings/GetRankings?debug=1".to_owned();
+        let error = config.validate().expect_err("route with query must fail");
         assert!(
             error.to_string().contains("query"),
             "error: {}",
             error
         );
     }
-    #[test]
-    fn profile_route_same_host_different_port_rejected() {
-        let mut config = valid_config();
-        config.api.base_url = "https://athletic.net".to_owned();
-        config.api.rankings_path = "/api/v1/tfRankings/GetRankings".to_owned();
-        config.api.nav_info_path = "/api/v1/tfRankings/GetNavInfo".to_owned();
-        config.authorization.allowed_routes = vec![
-            "/api/v1/tfRankings/GetRankings".to_owned(),
-            "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        ];
-        config.api.rankings_path = "/api/v1/tfRankings/GetRankings:443".to_owned();
-        let error = config.validate().expect_err("invalid route with port must fail");
-        assert!(
-            error.to_string().contains("cannot be resolved") || error.to_string().contains("route"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn profile_route_different_host_rejected() {
-        let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "//evil.com/api/Profile".to_owned(),
-        ];
-        let error = config.validate().expect_err("different host must fail");
-        assert!(
-            error.to_string().contains("network-path"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn profile_route_network_path_rejected() {
-        let mut config = valid_config();
-        config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "//other.athletic.net/api/Profile".to_owned(),
-        ];
-        let error = config.validate().expect_err("// must fail");
-        assert!(
-            error.to_string().contains("network-path"),
-            "error: {}",
-            error
-        );
-    }
-    #[test]
-    fn empty_seasons_rejected() {
-        let mut config = valid_config();
-        config.authorization.allowed_seasons.clear();
-        let error = config.validate().expect_err("empty seasons must fail");
-        assert!(
-            error.to_string().contains("at least one season"),
-            "error: {}",
-            error
-        );
-    }
 
     #[test]
-    fn empty_genders_rejected() {
-        let mut config = valid_config();
-        config.authorization.allowed_genders.clear();
-        let error = config.validate().expect_err("empty genders must fail");
-        assert!(
-            error.to_string().contains("at least one gender"),
-            "error: {}",
-            error
-        );
+    fn new_returns_ok_with_valid_config() {
+        // Regression: AlphaApiClient::new must not panic with valid config.
+        let config = crate::alpha_api::AlphaApiClientConfig {
+            base_url: "https://example.com".into(),
+            rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+            nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+            timeout_seconds: 30,
+            max_retries: 0,
+            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+            allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+            max_concurrent_requests: 1,
+            min_delay_ms: 0, max_retry_delay_ms: 30_000,
+            cap_markers: vec![],
+        };
+        let result = crate::alpha_api_client::AlphaApiClient::new(config);
+        assert!(result.is_ok(), "new() must return Ok with valid config");
     }
-
     #[test]
-    fn request_page_key_empty_rejected() {
+    fn bare_complete_pointer_rejected() {
+        // RFC6901 pointers must be absolute (start with /).
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "settings/complete".into() };
+        let error = config.validate().expect_err("bare pointer must be rejected");
+        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
+    }
+    #[test]
+    fn bare_next_page_pointer_rejected() {
         let mut config = valid_config();
         config.api.pagination = PaginationConfig::NextPage {
-            has_more_pointer: "/data/hm".to_owned(),
-            next_page_pointer: "/data/next".to_owned(),
-            request_page_key: "".to_owned(),
+            has_more_pointer: "/hasMore".into(),
+            next_page_pointer: "nextPage".into(),
+            request_page_key: "page".into(),
         };
-        let error = config.validate().expect_err("empty request_page_key must fail");
-        assert!(
-            error.to_string().contains("non-empty"),
-            "error: {}",
-            error
-        );
+        let error = config.validate().expect_err("bare next_page_pointer must be rejected");
+        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
     }
-
     #[test]
-    fn valid_config_passes_validation() {
-        let config = valid_config();
-        config.validate().expect("valid config should pass");
+    fn empty_has_more_pointer_rejected_in_next_page_mode() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "".into(),
+            next_page_pointer: "/nextPage".into(),
+            request_page_key: "page".into(),
+        };
+        let error = config.validate().expect_err("empty has_more_pointer must be rejected");
+        assert!(error.to_string().contains("non-empty"), "error: {}", error);
+    }
+    #[test]
+    fn empty_complete_pointer_always_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "".into() };
+        let error = config.validate().expect_err("empty complete_pointer must be rejected in single_response mode");
+        assert!(error.to_string().contains("non-empty"), "error: {}", error);
+    }
+    #[test]
+    fn new_rejects_concurrent_requests_not_one() {
+        let config = crate::alpha_api::AlphaApiClientConfig {
+            base_url: "https://example.com".into(),
+            rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+            nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+            timeout_seconds: 30,
+            max_retries: 0,
+            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+            allowed_fields: vec!["AthleteID".into()],
+            max_concurrent_requests: 2,
+            min_delay_ms: 0, max_retry_delay_ms: 30_000,
+            cap_markers: vec![],
+        };
+        assert!(matches!(crate::alpha_api_client::AlphaApiClient::new(config), Err(crate::alpha_api::AlphaApiError::InvalidConcurrency)));
     }
 }

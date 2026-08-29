@@ -251,3 +251,18 @@ async fn empty_object_continuation_returns_incomplete() {
     assert!(result.is_err());
     assert!(matches!(result.unwrap_err(), AlphaApiError::Incomplete(_)));
 }
+
+/// SingleResponse mode with continuation token must return Incomplete.
+#[tokio::test(flavor = "multi_thread")]
+async fn single_response_with_continuation_returns_incomplete() {
+    use crate::alpha_api_client::AlphaApiClient;
+    use crate::alpha_model::PaginationConfig;
+    let result = AlphaApiClient::build_qparams(
+        &PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".to_owned(),
+        },
+        &Some(json!("abc123")),
+    );
+    assert!(result.is_err(), "SingleResponse with continuation must be rejected");
+    assert!(matches!(result.unwrap_err(), AlphaApiError::Incomplete(_)));
+}
