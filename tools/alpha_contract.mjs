@@ -10,6 +10,22 @@ if (!pageUrl || !outputDir || !storageState) {
   );
 }
 
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer/i;
+
+const scrub = (value, key = '') => {
+  if (Array.isArray(value)) return value.map(item => scrub(item, key));
+  if (value && typeof value === 'object') {
+    const entries = Object.entries(value).map(([name, item]) => {
+      if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
+      return [name, scrub(item, name)];
+    });
+    return Object.fromEntries(entries);
+  }
+  if (typeof value === 'number' && /ID$/.test(key)) return 90000001;
+  if (/name|url|state|meet|school/i.test(key) && typeof value === 'string') return 'REDACTED';
+  return value;
+};
+
 const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ storageState });
@@ -49,19 +65,3 @@ try {
 } finally {
   await browser.close();
 }
-
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer/i;
-
-const scrub = (value, key = '') => {
-  if (Array.isArray(value)) return value.map(item => scrub(item, key));
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value).map(([name, item]) => {
-      if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
-      return [name, scrub(item, name)];
-    });
-    return Object.fromEntries(entries);
-  }
-  if (typeof value === 'number' && /ID$/.test(key)) return 90000001;
-  if (/name|url|state|meet|school/i.test(key) && typeof value === 'string') return 'REDACTED';
-  return value;
-};
