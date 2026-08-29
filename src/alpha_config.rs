@@ -212,7 +212,6 @@ impl AlphaConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     fn valid_config() -> AlphaConfig {
         AlphaConfig {
