@@ -109,17 +109,14 @@ impl AlphaApiClient {
         }
     }
 
-    fn resolve_ptr(ptr: &str) -> String {
-        if ptr.starts_with('/') { ptr.to_string() } else { format!("/{ptr}") }
-    }
+    fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
 
     fn is_truncated(&self, raw: &RawRankingsResponse) -> bool {
         let v = &raw.value;
         for cm in &self.config.cap_markers {
             if v.get(cm).and_then(|x| x.as_bool()) == Some(true) { return true; }
         }
-        v.get("__truncated").and_then(|x| x.as_bool()) == Some(true)
-            || v.get("__cap").and_then(|x| x.as_bool()) == Some(true)
+        false
     }
 
     /// Return status + headers without consuming the body.
@@ -135,21 +132,13 @@ impl AlphaApiClient {
     async fn read_body_with_timeout(resp: reqwest::Response, timeout: Duration)
         -> Result<String, BodyReadError>
     {
-        let body_task = tokio::task::spawn(async move { resp.text().await });
-        tokio::select! {
-            result = body_task => {
-                result
-                    .map_err(|_| BodyReadError::Other("body read task cancelled".into()))?
-                    .map_err(BodyReadError::from)
-            }
-            _ = tokio::time::sleep(timeout) => {
-                Err(BodyReadError::Timeout)
-            }
-        }
+        tokio::time::timeout(timeout, resp.text())
+            .await
+            .map_err(|_| BodyReadError::Timeout)
+            .and_then(|r| r.map_err(BodyReadError::from))
     }
 
     /// Unified retry loop — body timeouts retry whole request,
-    /// status-first handling (401/403 immediate; 429 reads Retry-After;
     /// 5xx retries; 2xx reads body; other non-2xx reads body).
     async fn execute_request(&self, method: Method, url: Url, body: Option<&serde_json::Value>)
         -> Result<String, AlphaApiError> {
@@ -219,11 +208,15 @@ impl AlphaApiClient {
         let text = self.execute_request(Method::POST, url, Some(&body)).await?;
         let raw = RawRankingsResponse::from_json(&text).map_err(|e| AlphaApiError::Incomplete(e))?;
         let complete = self.check_completeness(&raw)?;
-        let continuation = match &self.config.pagination {
-            PaginationConfig::SingleResponse { .. } => None,
-            PaginationConfig::NextPage { next_page_pointer, .. } => {
-                raw.value.pointer(&Self::resolve_ptr(next_page_pointer)).cloned()
+        let continuation = if !complete {
+            match &self.config.pagination {
+                PaginationConfig::SingleResponse { .. } => None,
+                PaginationConfig::NextPage { next_page_pointer, .. } => {
+                    raw.value.pointer(&Self::resolve_ptr(next_page_pointer)).cloned()
+                }
             }
+        } else {
+            None
         };
         let validated_json = self.enforce_response_allowed_fields(raw.value)?;
         let validated_raw = RawRankingsResponse::from_json(&validated_json.to_string()).map_err(|e| AlphaApiError::Incomplete(format!("reparse: {e}")))?;

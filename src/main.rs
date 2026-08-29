@@ -14,7 +14,7 @@ mod alpha_api_client_validation;
 #[cfg(test)]
 mod alpha_api_tests;
 #[cfg(test)]
-mod alpha_api_client_unit_tests;
+mod alpha_api_client_regression_tests;
 #[cfg(test)]
 mod alpha_api_client_async_tests;
 #[cfg(test)]

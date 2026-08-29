@@ -177,5 +177,25 @@ mod tests {
             error
         );
     }
+
+    #[test]
+    fn new_returns_ok_with_valid_config() {
+        // Regression: AlphaApiClient::new must not panic with valid config.
+        let config = crate::alpha_api::AlphaApiClientConfig {
+            base_url: "https://example.com".into(),
+            rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+            nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+            timeout_seconds: 30,
+            max_retries: 0,
+            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+            allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+            max_concurrent_requests: 1,
+            min_delay_ms: 0,
+            cap_markers: vec![],
+        };
+        let result = crate::alpha_api_client::AlphaApiClient::new(config);
+        assert!(result.is_ok(), "new() must return Ok with valid config");
+    }
 }
 

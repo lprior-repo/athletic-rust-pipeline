@@ -146,11 +146,18 @@ impl AlphaConfig {
     }
 
     fn validate_pagination(&self) -> Result<()> {
+        let validate_absolute_ptr = |ptr: &str, name: &str| -> Result<()> {
+            if !ptr.is_empty() && !ptr.starts_with('/') {
+                bail!("api.pagination.{name} must be an absolute RFC6901 JSON pointer (starts with '/') or empty, got '{ptr}'");
+            }
+            Ok(())
+        };
         match &self.api.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
                 if complete_pointer.is_empty() {
                     bail!("api.pagination.complete_pointer must be non-empty for single_response mode");
                 }
+                validate_absolute_ptr(complete_pointer, "complete_pointer")?;
             }
             PaginationConfig::NextPage {
                 has_more_pointer,
@@ -160,9 +167,11 @@ impl AlphaConfig {
                 if has_more_pointer.is_empty() {
                     bail!("api.pagination.has_more_pointer must be non-empty for next_page mode");
                 }
+                validate_absolute_ptr(has_more_pointer, "has_more_pointer")?;
                 if next_page_pointer.is_empty() {
                     bail!("api.pagination.next_page_pointer must be non-empty for next_page mode");
                 }
+                validate_absolute_ptr(next_page_pointer, "next_page_pointer")?;
                 if request_page_key.is_empty() {
                     bail!("api.pagination.request_page_key must be non-empty for next_page mode");
                 }
