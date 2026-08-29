@@ -22,6 +22,8 @@ mod alpha_api_client_async_tests;
 #[cfg(test)]
 mod alpha_api_client_validation_tests;
 #[cfg(test)]
+mod alpha_api_client_validation_regression_tests;
+#[cfg(test)]
 mod alpha_api_client_nav_tests;
 #[cfg(test)]
 mod alpha_api_client_nav_info_tests;
@@ -209,9 +211,7 @@ async fn run_pipeline(
             eprintln!("[{}/{}] skip {} {}", index.saturating_add(1), prospects.len(), prospect.source_key, prospect.full_name());
             continue;
         }
-
         eprintln!("[{}/{}] discover {} | {}", index.saturating_add(1), prospects.len(), prospect.full_name(), prospect.school);
-
         let hits = match discovery.search(prospect).await {
             Ok(hits) => hits,
             Err(error) => { eprintln!("  discovery failed: {error:#}"); continue; }
