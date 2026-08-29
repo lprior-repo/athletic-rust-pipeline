@@ -28,6 +28,7 @@ const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|c
 const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
+const ID_RE = /^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i;
 const scrub = (value, key = '') => {
   if (Array.isArray(value)) return value.map(item => scrub(item, key));
   if (value && typeof value === 'object') {
@@ -41,7 +42,7 @@ const scrub = (value, key = '') => {
         });
         return [name, Object.fromEntries(safe)];
       }
-      if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(name)) {
+      if (ID_RE.test(name)) {
         if (typeof item === 'number' || typeof item === 'string') return [name, typeof item === 'number' ? 90000001 : '90000001'];
         if (typeof item === 'object' && item !== null) return [name, 'REDACTED'];
       }
@@ -49,7 +50,7 @@ const scrub = (value, key = '') => {
     });
     return Object.fromEntries(entries);
   }
-  if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(key) && (typeof value === 'number' || typeof value === 'string')) return typeof value === 'number' ? 90000001 : '90000001';
+  if (ID_RE.test(key) && (typeof value === 'number' || typeof value === 'string')) return typeof value === 'number' ? 90000001 : '90000001';
   if (typeof value === 'string') {
     if (REDACT_KEY_RE.test(key)) return 'REDACTED';
     if (URL_VALUE_RE.test(value)) return 'REDACTED';
