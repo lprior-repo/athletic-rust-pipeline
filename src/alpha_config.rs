@@ -150,6 +150,19 @@ impl AlphaConfig {
             if !ptr.is_empty() && !ptr.starts_with('/') {
                 bail!("api.pagination.{name} must be an absolute RFC6901 JSON pointer (starts with '/') or empty, got '{ptr}'");
             }
+            // Validate RFC6901 escape sequences: every ~ must be followed by 0 or 1.
+            let mut chars = ptr.chars().peekable();
+            while let Some(ch) = chars.next() {
+                if ch == '~' {
+                    let next = chars.peek().copied().unwrap_or('\0');
+                    if next != '0' && next != '1' {
+                        bail!(
+                            "api.pagination.{name} has invalid RFC6901 escape '~{next}' at position {}",
+                            ptr.find(ch).unwrap_or(0),
+                        );
+                    }
+                }
+            }
             Ok(())
         };
         match &self.api.pagination {
