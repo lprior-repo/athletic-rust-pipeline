@@ -1,0 +1,23 @@
+[authorization]
+enabled = false
+permission_reference = "disabled-example-no-permission"
+allowed_routes = ["/api/v1/tfRankings/GetRankings", "/api/v1/tfRankings/GetNavInfo"]
+allowed_sports = ["Track and Field"]
+allowed_states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"]
+allowed_seasons = [2026]
+allowed_genders = ["m", "f"]
+allowed_fields = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"]
+allow_profile_enrichment = false
+max_concurrent_requests = 1
+min_delay_ms = 750
+
+[api]
+base_url = "https://www.athletic.net"
+rankings_path = "/api/v1/tfRankings/GetRankings"
+nav_info_path = "/api/v1/tfRankings/GetNavInfo"
+timeout_seconds = 30
+max_retries = 2
+
+[api.pagination]
+mode = "single_response"
+complete_pointer = "/settings/complete"

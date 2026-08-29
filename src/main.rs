@@ -1,3 +1,5 @@
+mod alpha_config;
+mod alpha_model;
 mod checkpoint;
 mod config;
 mod discovery;
