@@ -170,6 +170,7 @@ impl AlphaApiClient {
                     return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms });
                 }
                 total_wait_ms = total_wait_ms.saturating_add(wait_ms);
+                attempt += 1;
                 tokio::time::sleep(Duration::from_millis(wait_ms)).await;
                 continue;
             }
