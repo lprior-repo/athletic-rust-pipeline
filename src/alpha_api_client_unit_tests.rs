@@ -1,3 +1,4 @@
+use std::time::Duration;
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
@@ -291,4 +292,91 @@ async fn request_boundary_next_page_has_qparams_with_continuation() {
     assert!(page.complete);
     assert_eq!(page.records.len(), 1);
     mock.assert();
+}
+
+// --- Regression tests for status-first handling and is_truncated fix ---
+
+#[tokio::test(flavor = "multi_thread")]
+async fn http_401_stalled_body_returns_unauthorized_without_reading_body() {
+    // 401 must return immediately without waiting for the body to arrive.
+    // The mock never sends body content — if the client tried to read it,
+    // the test would hang or error on a broken connection.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    // Send status 401 with no body — simulates a stalled/aborted response.
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(401)
+        .with_body("")
+        .create();
+    let client = make_client(&url);
+    // This must return quickly without waiting for body.
+    let start = std::time::Instant::now();
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    let elapsed = start.elapsed();
+    assert!(matches!(err, AlphaApiError::Unauthorized(_)), "expected Unauthorized, got {:?}", err);
+    assert!(elapsed < Duration::from_secs(2), "401 should return immediately, took {:?}", elapsed);
+}
+
+
+
+#[tokio::test(flavor = "multi_thread")]
+async fn nested_configured_has_more_next_does_not_reject_unrelated_top_level_has_more() {
+    // When using NextPage pagination with configured RFC6901 pointers into
+    // nested JSON (e.g. /data/hasMore, /data/nextPage), a top-level hasMore
+    // field must NOT trigger is_truncated rejection.
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    // Response has:
+    // - top-level hasMore: true (irrelevant)
+    // - nested /data/hasMore: false (configured pointer) => complete
+    let response_body = r#"{
+        "groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],
+        "hasMore": true,
+        "page": 1,
+        "nextPage": "ignored",
+        "data": {
+            "hasMore": false,
+            "nextPage": null
+        },
+        "complete": true,
+        "continuation": null
+    }"#;
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(response_body)
+        .create();
+
+    // Config uses nested RFC6901 pointers.
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
+        timeout_seconds: 30,
+        max_retries: 2,
+        pagination: PaginationConfig::NextPage {
+            has_more_pointer: "/data/hasMore".into(),
+            next_page_pointer: "/data/nextPage".into(),
+            request_page_key: "page".into(),
+        },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0,
+        cap_markers: vec![],
+    }).expect("client creation must not fail");
+
+    let page = client.rankings(&make_test_request()).await.unwrap();
+    assert!(page.complete, "nested hasMore=false should mean complete");
+    assert_eq!(page.records.len(), 1);
 }
