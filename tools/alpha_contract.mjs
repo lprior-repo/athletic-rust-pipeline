@@ -30,7 +30,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   const context = await browser.newContext({ storageState });
   const page = await context.newPage();
-  const captured = { rankings: null, nav: null };
+  const seen = new Set();
 
   const CONFIRMED_PATHS = [
     '/api/v1/tfRankings/GetRankings',
@@ -45,11 +45,15 @@ try {
       const url = new URL(response.url());
       if (!CONFIRMED_PATHS.includes(url.pathname)) return;
       const key = url.pathname.includes('GetRankings') ? 'rankings' : 'nav';
-      if (captured[key]) return;
-      captured[key] = scrub(await response.json(), '');
-      check();
+      if (seen.has(key)) return;
+      seen.add(key);
+      try {
+        captured[key] = scrub(await response.json(), '');
+        check();
+      } catch {
+        reject(new Error('failed to parse alpha response'));
+      }
     });
-    page.on('requestfailed', () => reject(new Error('network request failed')));
   });
 
   await page.goto(pageUrl, { waitUntil: 'load' });
