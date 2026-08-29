@@ -1,4 +1,3 @@
-use std::cell::Cell;
 use std::time::Duration;
 use reqwest::{Client, Method, redirect::Policy};
 use tokio::sync::Semaphore;
@@ -19,7 +18,6 @@ pub struct AlphaApiClient {
     client: Client,
     pub(crate) config: AlphaApiClientConfig,
     concurrency_semaphore: Semaphore,
-    last_total_wait_ms: Cell<Option<u64>>,
 }
 
 impl AlphaApiClient {
@@ -30,8 +28,7 @@ impl AlphaApiClient {
             .redirect(Policy::none())
             .build()
             .map_err(|e| AlphaApiError::Incomplete(format!("reqwest builder failed: {e}")))?;
-        Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(max_concurrent),
-            last_total_wait_ms: Cell::new(None) })
+        Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(max_concurrent) })
     }
 
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
@@ -139,7 +136,7 @@ impl AlphaApiClient {
     async fn execute_request(&self, method: Method, url: Url, body: Option<&serde_json::Value>)
         -> Result<String, AlphaApiError>
     {
-        self.last_total_wait_ms.set(None);
+        let mut total_wait_ms: u64 = 0;
         let max_retry = self.config.max_retries;
         let timeout_ms = self.config.timeout_seconds.saturating_mul(1000);
         let mut attempt = 0usize;
@@ -169,13 +166,10 @@ impl AlphaApiClient {
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
                 };
                 let wait_ms = retry_after_ms.max(self.config.min_delay_ms);
-                let mut total_wait_ms: u64 = self.last_total_wait_ms.get().unwrap_or(0);
                 if attempt >= max_retry {
                     return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms });
                 }
                 total_wait_ms = total_wait_ms.saturating_add(wait_ms);
-                self.last_total_wait_ms.set(Some(total_wait_ms));
-                attempt += 1;
                 tokio::time::sleep(Duration::from_millis(wait_ms)).await;
                 continue;
             }
