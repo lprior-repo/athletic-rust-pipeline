@@ -63,6 +63,10 @@ try {
     '/api/v1/tfRankings/GetNavInfo',
   ];
 
+  const PATH_METHODS = {
+    '/api/v1/tfRankings/GetRankings': 'POST',
+    '/api/v1/tfRankings/GetNavInfo': 'GET',
+  };
   const confirmResponse = new Promise((resolve, reject) => {
     const check = () => {
       if (captured.rankings && captured.nav) resolve();
@@ -72,7 +76,7 @@ try {
       if (!CONFIRMED_PATHS.includes(url.pathname)) return;
       if (url.origin !== expectedOrigin) return;
       const req = response.request();
-      if (req.method() !== 'POST') return;
+      if (req.method() !== PATH_METHODS[url.pathname]) return;
       if (response.status() !== 200) return;
       const key = url.pathname.includes('GetRankings') ? 'rankings' : 'nav';
       if (seen.has(key)) return;
@@ -88,7 +92,7 @@ try {
       const url = new URL(request.url());
       if (!CONFIRMED_PATHS.includes(url.pathname)) return;
       if (url.origin !== expectedOrigin) return;
-      if (request.method() !== 'POST') return;
+      if (request.method() !== PATH_METHODS[url.pathname]) return;
       const key = url.pathname.includes('GetRankings') ? 'rankings' : 'nav';
       if (seen.has(key)) return; // Ignore duplicate failure after valid capture
       reject(new Error('network request failed'));
