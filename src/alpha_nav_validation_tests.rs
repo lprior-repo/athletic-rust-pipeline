@@ -15,6 +15,20 @@ fn complete_only_rejected() {
     let resp = parse_json(r#"{"complete":true}"#);
     assert!(resp.validate().is_err());
 }
+#[test]
+fn complete_false_rejected() {
+    let json = r#"{
+        "state": {"StateID":1,"State":"TS","StateName":"Test"},
+        "event": {"EventShort":"100m","EventName":"100 Meters"},
+        "divisions": [{"DivisionID":1,"DivisionName":"Div","Indoor":false}],
+        "genders": ["m"],
+        "complete": false,
+        "page": 1
+    }"#;
+    let resp = parse_json(json);
+    assert!(resp.complete == false);
+    assert!(resp.validate().is_err(), "complete=false must be rejected by validate");
+}
 
 #[test]
 fn state_missing_rejected() {

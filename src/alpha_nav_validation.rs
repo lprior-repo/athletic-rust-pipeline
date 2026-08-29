@@ -8,13 +8,11 @@ impl RawNavInfoResponse {
     /// event (event_short/event_name nonempty),
     /// divisions (nonempty vec, each with division_id non-zero, division_name nonempty, indoor present),
     /// genders (nonempty vec),
-    /// and at least one pagination field (complete bool or page u64).
+    /// and page (u64) as optional metadata.
     pub fn validate(&self) -> Result<(), &'static str> {
-        // Pagination metadata: complete is now required; page remains optional.
-        let has_complete = self.complete;
-        let has_page = self.page.is_some();
-        if !has_complete && !has_page {
-            return Err("RawNavInfoResponse: missing required pagination (complete or page)");
+        // complete must be true for a usable catalog response.
+        if !self.complete {
+            return Err("RawNavInfoResponse: complete must be true");
         }
         // State: present with all required fields nonempty.
         let state = self.state.as_ref().ok_or("RawNavInfoResponse: missing state")?;
