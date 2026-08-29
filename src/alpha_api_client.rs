@@ -192,7 +192,7 @@ impl AlphaApiClient {
             }
 
             if status < 200 || status >= 300 {
-                let body = resp.text().await.unwrap_or_default();
+                let body = resp.text().await.map_err(AlphaApiError::Request)?;
                 return Err(AlphaApiError::UnexpectedStatus { status, body });
             }
 
@@ -222,7 +222,8 @@ impl AlphaApiClient {
         // Parse then validate response against allowed_fields.
         let raw = RawRankingsResponse::from_json(&text)
             .map_err(|e| AlphaApiError::Incomplete(e))?;
-        let validated_json = self.enforce_response_allowed_fields(raw.value);
+        let validated_json = self.enforce_response_allowed_fields(raw.value)
+            ?;
         let validated_raw = RawRankingsResponse {
             grouped_rankings: raw.grouped_rankings,
             page: raw.page,
@@ -274,9 +275,22 @@ impl AlphaApiClient {
         Ok(nav)
     }
 
-    fn enforce_response_allowed_fields(&self, value: serde_json::Value) -> serde_json::Value {
+    pub(crate) fn enforce_response_allowed_fields(
+        &self,
+        value: serde_json::Value,
+    ) -> Result<serde_json::Value, AlphaApiError> {
         let allowed = &self.config.allowed_fields;
-        if allowed.is_empty() { return value; }
+        if allowed.is_empty() {
+            return Ok(value);
+        }
+        // Enforce required fields are present in allowed_fields.
+        for field in ["AthleteID", "AthleteName", "GradeID", "TeamName", "State"] {
+            if !allowed.iter().any(|a| a == field) {
+                return Err(AlphaApiError::Incomplete(format!(
+                    "required field '{field}' not in allowed_fields",
+                )));
+            }
+        }
         let mut obj = value.as_object().cloned().unwrap_or_default();
         if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
             for group in groups {
@@ -289,7 +303,7 @@ impl AlphaApiClient {
                 }
             }
         }
-        serde_json::Value::Object(obj)
+        Ok(serde_json::Value::Object(obj))
     }
 
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> {

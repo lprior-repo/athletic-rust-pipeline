@@ -46,9 +46,9 @@ impl RawRankingRecord {
     /// Uses nested `Results` when present and non-empty; falls back to
     /// flattened row fields when Results is absent or empty.
     ///
-    /// Required nested fields: IDResult, EventShort, Measure, ResultDate,
-    /// SeasonID.  Required flattened fields: IDResult, EventShort, Measure,
-    /// ResultDate, SeasonID, MeetName.
+    /// Required nested fields: IDResult, EventShort, Measure, ResultDate, SeasonID,
+    /// MeetID, MeetName.  Required flattened fields: IDResult, EventShort, Measure,
+    /// ResultDate, SeasonID, MeetName, MeetID.
     pub fn to_flattened_records(&self) -> Result<Vec<RankingRecord>, String> {
         if let Some(ref results) = self.results {
             if !results.is_empty() {
@@ -72,6 +72,15 @@ impl RawRankingRecord {
             }
             if r.result_date.is_empty() {
                 return Err("RawRankingResult: missing required ResultDate".into());
+            }
+            if r.meet_id == 0 {
+                return Err("RawRankingResult: missing required MeetID".into());
+            }
+            if r.meet_name.is_empty() {
+                return Err("RawRankingResult: missing required MeetName".into());
+            }
+            if r.season_id == 0 {
+                return Err("RawRankingResult: missing required SeasonID".into());
             }
             records.push(RankingRecord {
                 athlete_id: self.athlete_id,
@@ -246,13 +255,9 @@ impl RawNavInfoResponse {
     /// (e.g. `{}` or missing complete/page fields in a way that suggests
     /// a malformed response rather than a partial one).
     pub fn validate(&self) -> Result<(), &'static str> {
-        // At minimum, complete or page must be present to indicate
-        // a valid nav response rather than garbage.
-        if self.complete.is_none() && self.page.is_none()
-            && self.state.is_none() && self.event.is_none()
-            && self.divisions.is_none() && self.genders.is_none()
-        {
-            return Err("RawNavInfoResponse: completely empty or malformed response");
+        // Require complete or page to indicate a valid nav response.
+        if self.complete.is_none() && self.page.is_none() {
+            return Err("RawNavInfoResponse: missing required complete or page field");
         }
         Ok(())
     }

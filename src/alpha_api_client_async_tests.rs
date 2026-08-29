@@ -7,7 +7,8 @@ fn make_client(url: &str) -> AlphaApiClient {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 30, max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into(), "/api/v1/tfRankings/GetNavInfo".into()],
-        allowed_fields: vec!["AthleteID".into()], max_concurrent_requests: 1, min_delay_ms: 0,
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()], max_concurrent_requests: 1, min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client creation must not fail")
 }
 fn make_test_request() -> AlphaRequest {
@@ -167,9 +168,10 @@ async fn http_429_retry_after_one_second() {
         max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -204,9 +206,10 @@ async fn rankings_continuation_next_page_mode() {
             request_page_key: "page".to_owned(),
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".to_owned()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client must not fail");
 
     let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
@@ -231,11 +234,11 @@ async fn rankings_continuation_single_response_mode() {
         .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"A","GradeID":1,"TeamName":"S","State":"CA","EventShort":"100m","IDResult":105,"Measure":"Seconds","ResultDate":"2024-01-01T12:00:00Z","SeasonID":2024,"Wind":"0.5","MeetID":123,"MeetName":"Meet A"}]],"page":1,"complete":true,"hasMore":false}"#)
         .create();
 
-    let cfg = AlphaApiClientConfig { base_url: url, rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+    let cfg = AlphaApiClientConfig { base_url: url.clone(), rankings_path: "/api/v1/tfRankings/GetRankings".into(),
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 10, max_retries: 0,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![], max_concurrent_requests: 1, min_delay_ms: 0 };
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()], max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![] };
     let client = AlphaApiClient::new(cfg).expect("client must not fail");
 
     let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
@@ -257,15 +260,67 @@ async fn rankings_truncated_has_more_no_next_pointer() {
         .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"A","GradeID":1,"TeamName":"S","State":"CA","EventShort":"100m","IDResult":105,"Measure":"Seconds","ResultDate":"2024-01-01T12:00:00Z","SeasonID":2024,"Wind":"0.5","MeetID":123,"MeetName":"Meet A"}]],"hasMore":true}"#)
         .create();
 
-    let cfg = AlphaApiClientConfig { base_url: url, rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+    let cfg = AlphaApiClientConfig { base_url: url.clone(), rankings_path: "/api/v1/tfRankings/GetRankings".into(),
         nav_info_path: "/nav".into(), timeout_seconds: 10, max_retries: 0,
         pagination: PaginationConfig::NextPage { has_more_pointer: "/hasMore".into(),
             next_page_pointer: "/nextPage".into(), request_page_key: "page".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![], max_concurrent_requests: 1, min_delay_ms: 0 };
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()], max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![] };
     let client = AlphaApiClient::new(cfg).expect("client must not fail");
 
     let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
     let result = client.rankings(&req).await;
     assert!(result.is_err(), "hasMore=true without nextPage must error");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn enforce_response_allowed_fields_missing_required() {
+    let cfg = AlphaApiClientConfig {
+        base_url: "http://127.0.0.1".into(), rankings_path: "/api".into(),
+        nav_info_path: "/nav".into(), timeout_seconds: 10, max_retries: 0,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api".into()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into()], // Missing TeamName, State, GradeID
+        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+    };
+    let client = AlphaApiClient::new(cfg).expect("client must not fail");
+
+    let value = serde_json::json!({"groupedRankings":[]} );
+    let result = client.enforce_response_allowed_fields(value);
+    assert!(result.is_err(), "should error when required fields are missing");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn enforce_response_allowed_fields_all_required_present() {
+    let cfg = AlphaApiClientConfig {
+        base_url: "http://127.0.0.1".into(), rankings_path: "/api".into(),
+        nav_info_path: "/nav".into(), timeout_seconds: 10, max_retries: 0,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api".into()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(),
+                             "TeamName".into(), "State".into()],
+        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+    };
+    let client = AlphaApiClient::new(cfg).expect("client must not fail");
+
+    let value = serde_json::json!({"groupedRankings":[]} );
+    let result = client.enforce_response_allowed_fields(value);
+    assert!(result.is_ok(), "should succeed when all required fields are present");
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn enforce_response_allowed_fields_empty_allows_through() {
+    let cfg = AlphaApiClientConfig {
+        base_url: "http://127.0.0.1".into(), rankings_path: "/api".into(),
+        nav_info_path: "/nav".into(), timeout_seconds: 10, max_retries: 0,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api".into()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+    };
+    let client = AlphaApiClient::new(cfg).expect("client must not fail");
+
+    let value = serde_json::json!({"groupedRankings":[]} );
+    let result = client.enforce_response_allowed_fields(value);
+    assert!(result.is_ok(), "empty allowed_fields allows all through");
 }

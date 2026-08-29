@@ -23,6 +23,8 @@ pub enum AlphaApiError {
     MissingPointer(String),
     #[error("response truncated or capped without continuation metadata")]
     TruncatedWithoutContinuation,
+    #[error("response truncated or capped without continuation metadata: {0}")]
+    TruncatedWithTopNMetadata(String),
 }
 
 /// Configuration extracted from `AlphaConfig` for constructing the client.
@@ -37,6 +39,7 @@ pub struct AlphaApiClientConfig {
     pub allowed_fields: Vec<String>,
     pub max_concurrent_requests: usize,
     pub min_delay_ms: u64,
+    pub cap_markers: Vec<String>,
 }
 
 impl AlphaApiClientConfig {

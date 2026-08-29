@@ -7,7 +7,8 @@ fn make_client(url: &str) -> AlphaApiClient {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 30, max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into(), "/api/v1/tfRankings/GetNavInfo".into()],
-        allowed_fields: vec!["AthleteID".into()], max_concurrent_requests: 1, min_delay_ms: 0,
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()], max_concurrent_requests: 1, min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client creation must not fail")
 }
 fn make_test_request() -> AlphaRequest {
@@ -167,9 +168,10 @@ async fn http_429_retry_after_one_second() {
         max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -206,9 +208,10 @@ async fn nav_info_rejects_empty_response() {
             complete_pointer: "/complete".to_owned(),
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;
@@ -243,9 +246,10 @@ async fn nav_info_rejects_response_missing_complete_and_page() {
             complete_pointer: "/complete".to_owned(),
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;
@@ -278,9 +282,10 @@ async fn nav_info_accepts_partial_response_with_complete() {
             complete_pointer: "/complete".to_owned(),
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client must not fail");
 
     let result = client.nav_info(2024, false).await;

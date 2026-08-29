@@ -16,9 +16,10 @@ fn make_client(server_url: &str) -> AlphaApiClient {
             "/api/v1/tfRankings/GetRankings".to_owned(),
             "/api/v1/tfRankings/GetNavInfo".to_owned(),
         ],
-        allowed_fields: vec!["AthleteID".to_owned()],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     };
     AlphaApiClient::new(config).expect("client creation must not fail")
 }
@@ -207,9 +208,10 @@ async fn http_429_retry_after_one_second() {
         max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -233,9 +235,10 @@ fn new_returns_error_on_invalid_config() {
             complete_pointer: "/complete".to_owned(),
         },
         allowed_routes: vec!["/api".to_owned()],
-        allowed_fields: vec![],
+        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
+        cap_markers: vec![],
     };
     // This must not panic — it returns Result.
     let result = AlphaApiClient::new(config);
