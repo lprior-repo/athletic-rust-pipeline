@@ -2,7 +2,8 @@ use crate::alpha_api::AlphaApiError;
 use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
-use crate::alpha_model_raw::RawRankingRecord;
+use crate::alpha_model_raw::{RawRankingRecord, RawRankingsResponse};
+use crate::alpha_test_helpers::make_client;
 fn make_test_request() -> AlphaRequest {
     AlphaRequest {
         state_id: 12,
@@ -185,3 +186,79 @@ async fn oversized_2xx_body_still_returns_body_too_large() {
     assert!(matches!(err, AlphaApiError::BodyTooLarge { limit: 8388608 }), "2xx oversized must return BodyTooLarge, got {:?}", err);
 }
 
+
+// --- Continuation numeric value validation tests ---
+
+#[test]
+fn build_qparams_rejects_zero_continuation() {
+    let pagination = PaginationConfig::NextPage {
+        request_page_key: "page".into(),
+        next_page_pointer: "/nextPage".into(),
+        has_more_pointer: "/hasMore".into(),
+    };
+    let cont = Some(serde_json::json!(0));
+    let result = AlphaApiClient::build_qparams(&pagination, &cont);
+    assert!(result.is_err(), "zero continuation must be rejected");
+}
+
+#[test]
+fn build_qparams_rejects_negative_continuation() {
+    let pagination = PaginationConfig::NextPage {
+        request_page_key: "page".into(),
+        next_page_pointer: "/nextPage".into(),
+        has_more_pointer: "/hasMore".into(),
+    };
+    let cont = Some(serde_json::json!(-1));
+    let result = AlphaApiClient::build_qparams(&pagination, &cont);
+    assert!(result.is_err(), "negative continuation must be rejected");
+}
+
+#[test]
+fn build_qparams_rejects_fractional_continuation() {
+    let pagination = PaginationConfig::NextPage {
+        request_page_key: "page".into(),
+        next_page_pointer: "/nextPage".into(),
+        has_more_pointer: "/hasMore".into(),
+    };
+    let cont = Some(serde_json::json!(1.5));
+    let result = AlphaApiClient::build_qparams(&pagination, &cont);
+    assert!(result.is_err(), "fractional continuation must be rejected");
+}
+
+#[test]
+fn build_qparams_accepts_positive_integer_continuation() {
+    let pagination = PaginationConfig::NextPage {
+        request_page_key: "page".into(),
+        next_page_pointer: "/nextPage".into(),
+        has_more_pointer: "/hasMore".into(),
+    };
+    let cont = Some(serde_json::json!(1));
+    let result = AlphaApiClient::build_qparams(&pagination, &cont);
+    assert!(result.is_ok(), "positive integer continuation must be accepted");
+    let params = result.unwrap();
+    assert_eq!(params["page"], 1);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn check_completeness_rejects_fractional_next_page() {
+    let json = r#"{
+        "groupedRankings": [], "page": 1, "complete": true, "continuation": null,
+        "nextPage": 1.5, "hasMore": false
+    }"#;
+    let raw: RawRankingsResponse = serde_json::from_str(json).unwrap();
+    let client = make_client("http://example.com");
+    let result = client.check_completeness(&raw);
+    assert!(result.is_err(), "fractional nextPage must be rejected, got {:?}", result);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn check_completeness_rejects_zero_next_page() {
+    let json = r#"{
+        "groupedRankings": [], "page": 1, "complete": true, "continuation": null,
+        "nextPage": 0, "hasMore": false
+    }"#;
+    let raw: RawRankingsResponse = serde_json::from_str(json).unwrap();
+    let client = make_client("http://example.com");
+    let result = client.check_completeness(&raw);
+    assert!(result.is_err(), "zero nextPage must be rejected, got {:?}", result);
+}

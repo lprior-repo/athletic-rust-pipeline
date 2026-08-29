@@ -34,6 +34,15 @@ pub struct AlphaApiClient {
     concurrency_semaphore: Semaphore,
 }
 
+
+/// Validate a JSON number as a positive integer (> 0); rejects 0, negatives, fractions.
+fn is_positive_integer(n: &serde_json::Number) -> bool {
+    match (n.is_u64(), n.is_i64()) {
+        (true, _) => n.as_u64().unwrap_or(0) > 0,
+        (_, true) => n.as_i64().unwrap_or(0) > 0,
+        _ => false,
+    }
+}
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
         if config.max_body_bytes == 0 || config.max_body_bytes > 8 * 1024 * 1024 { return Err(AlphaApiError::InvalidConfig("max_body_bytes > 0 && <= 8MiB".to_string())); }
@@ -54,7 +63,6 @@ impl AlphaApiClient {
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
         serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
     }
-
     pub fn build_qparams(pagination: &PaginationConfig, continuation: &Option<serde_json::Value>) -> Result<serde_json::Value, AlphaApiError> {
         match (pagination, continuation) {
             (PaginationConfig::NextPage { request_page_key, .. }, Some(c)) => {
@@ -62,7 +70,8 @@ impl AlphaApiClient {
                     serde_json::Value::Null => return Err(AlphaApiError::Incomplete("continuation is null".into())),
                     serde_json::Value::String(s) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty".into())),
                     serde_json::Value::Object(o) if o.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty object".into())),
-                    serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_) => Ok(serde_json::json!({ request_page_key: c })),
+                    serde_json::Value::String(_) | serde_json::Value::Object(_) => Ok(serde_json::json!({ request_page_key: c })),
+                    serde_json::Value::Number(n) if is_positive_integer(n) => Ok(serde_json::json!({ request_page_key: c })),
                     v => return Err(AlphaApiError::Incomplete(format!("unsupported continuation type: {v}"))),
                 }
             }
@@ -86,8 +95,8 @@ impl AlphaApiClient {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
                 Some(serde_json::Value::String(s)) if s.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty"))),
-                Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
-                Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => Ok(()),
+                Some(serde_json::Value::String(_) | serde_json::Value::Object(_)) => Ok(()),
+                Some(serde_json::Value::Number(n)) if is_positive_integer(n) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
         };
