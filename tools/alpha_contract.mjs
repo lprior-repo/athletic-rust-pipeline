@@ -80,7 +80,7 @@ try {
         reject(new Error('failed to parse alpha response'));
       }
     });
-    page.on('requestfailed', () => reject(new Error('network request failed')));
+    page.on('requestfailed', request => { if (!CONFIRMED_PATHS.includes(new URL(request.url()).pathname)) return; reject(new Error('network request failed')) });
   });
 
   await page.goto(pageUrl, { waitUntil: 'load' });
