@@ -36,7 +36,7 @@ pub struct AlphaApiClient {
 
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
-        if config.max_body_bytes == 0 || config.max_body_bytes > 8_000_000 { return Err(AlphaApiError::InvalidConfig("max_body_bytes > 0 && <= 8MiB".to_string())); }
+        if config.max_body_bytes == 0 || config.max_body_bytes > 8 * 1024 * 1024 { return Err(AlphaApiError::InvalidConfig("max_body_bytes > 0 && <= 8MiB".to_string())); }
         if config.max_retries > 5 { return Err(AlphaApiError::InvalidConfig("max_retries <= 5".to_string())); }
         if config.timeout_seconds < 1 || config.timeout_seconds > 300 { return Err(AlphaApiError::InvalidConfig("timeout_seconds 1..=300".to_string())); }
         if config.max_retry_delay_ms == 0 || config.max_retry_delay_ms < config.min_delay_ms || config.max_retry_delay_ms > 300_000 { return Err(AlphaApiError::InvalidConfig("max_retry_delay_ms > 0, >= min_delay_ms && <= 300000".to_string())); }

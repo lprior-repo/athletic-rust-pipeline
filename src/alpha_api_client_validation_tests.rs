@@ -219,7 +219,7 @@ fn invalid_config_max_body_bytes_over_8mi() {
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
-        max_body_bytes: 8_000_001,
+        max_body_bytes: 8_388_609,
         auth_enabled: true, permission_reference: "test".into(),
     });
     assert!(matches!(result, Err(AlphaApiError::InvalidConfig(_))));
