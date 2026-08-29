@@ -227,3 +227,12 @@ fn json_pointer_walk_escaped_key() {
     let val = AlphaApiClient::walk_pointer_value(&value, "/a~0b~1c");
     assert_eq!(val, Some(&serde_json::json!("value")));
 }
+#[test]
+fn nextpage_resumable_cap_with_valid_continuation() {
+    // Cap marker true + hasMore=true + valid nextPage = Ok(false) with continuation exposed.
+    let client = make_next_page_client("https://example.com");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-abc","__cap":true}"#
+    ).unwrap();
+    assert!(!client.check_completeness(&raw).unwrap(), "resumable page returns Ok(false)");
+}

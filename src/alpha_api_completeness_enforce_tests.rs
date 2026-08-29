@@ -31,10 +31,8 @@ async fn nextpage_cap_marker_rejected() {
     }).await.unwrap();
     server.mock("POST", "/rankings")
         .match_body(mockito::Matcher::Any)
-        .with_status(200).with_header("content-type", "application/json")
         .with_body(r#"{"page":1,"complete":false,"continuation":null,
-        "groupedRankings":[[{"AthleteID":1,"AthleteName":"Test",
-        "GradeID":1,"TeamName":"","State":""}]],"hasMore":true,
+        "groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":1,"TeamName":"School","State":"CA","Results":[{"MeetID":1,"MeetName":"Test Meet","IDResult":1,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"hasMore":true,
         "nextPage":"next-token","__cap":true}"#).create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url, rankings_path: "/rankings".into(), nav_info_path: "/nav".into(),
@@ -51,8 +49,11 @@ async fn nextpage_cap_marker_rejected() {
         auth_enabled: true,
         permission_reference: "test".into(),
     }).expect("client must not fail");
-    let err = client.rankings(&make_test_req()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation));
+    // hasMore=true + valid next page = Ok(false) with continuation, cap marker ignored.
+    let page = client.rankings(&make_test_req()).await.unwrap();
+    assert!(!page.complete, "incomplete but resumable");
+    assert!(page.continuation.is_some(), "continuation token exposed");
+    assert_eq!(page.records.len(), 1);
 }
 
 #[tokio::test(flavor = "multi_thread")]

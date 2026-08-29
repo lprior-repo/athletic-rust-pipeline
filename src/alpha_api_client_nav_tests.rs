@@ -189,112 +189,53 @@ async fn http_429_retry_after_one_second() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn nav_info_rejects_empty_response() {
-    let (mut server, url) = tokio::task::spawn_blocking(|| {
-        let server = mockito::Server::new();
-        let url = server.url();
-        (server, url)
-    }).await.unwrap();
-    server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
-       
-       .match_query(mockito::Matcher::Any)
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body("{}")
-        .create();
-
-    let client = AlphaApiClient::new(AlphaApiClientConfig {
-        base_url: url,
-        rankings_path: "/api".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 10,
-        max_retries: 0,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
-        },
-        allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
-        cap_markers: vec![],
-        max_body_bytes: 8 * 1024 * 1024,
-        auth_enabled: true,
-        permission_reference: "test".into(),
-    }).expect("client must not fail");
-
-    let result = client.nav_info(2024, false).await;
-    let err = result.unwrap_err();
-    eprintln!("Actual error: {:?}", err);
-    assert!(matches!(err, AlphaApiError::Incomplete(_)), "error was: {:?}", err);
+async fn http_body_oversize_before_buffer_rejected() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let url = format!("http://127.0.0.1:{port}/api/v1/tfRankings/GetRankings");
+    let _handle = tokio::task::spawn_blocking(move || {
+        let mut conn = listener.accept().unwrap().0;
+        let mut buf = [0u8; 4096];
+        let _ = conn.read(&mut buf);
+        // Send 200 OK with body larger than 8MB limit
+        let large_body = "x".repeat(9 * 1024 * 1024);
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nContent-Type: application/json\r\n\r\n{}",
+            large_body.len(),
+            large_body
+        );
+        let _ = conn.write_all(response.as_bytes());
+    });
+    let client = make_client(&url);
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    assert!(matches!(err, AlphaApiError::BodyTooLarge { .. }), "oversize body must return BodyTooLarge, got {:?}", err);
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn nav_info_rejects_response_missing_complete_and_page() {
+async fn http_429_retry_after_over_bound_no_sleep() {
     let (mut server, url) = tokio::task::spawn_blocking(|| {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
     }).await.unwrap();
-    server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
-        
-        .match_query(mockito::Matcher::Any)
-.with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(r#"{"someData": "ignored"}"#)
-.create();
-
-    let client = AlphaApiClient::new(AlphaApiClientConfig {
-        base_url: url,
-        rankings_path: "/api".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 10,
-        max_retries: 0,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
-        },
-        allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
-        cap_markers: vec![],
-        max_body_bytes: 8 * 1024 * 1024,
-        auth_enabled: true,
-        permission_reference: "test".into(),
-    }).expect("client must not fail");
-
-    let result = client.nav_info(2024, false).await;
-    assert!(result.is_err(), "response missing complete/page must be rejected");
-}
-
-#[tokio::test(flavor = "multi_thread")]
-async fn nav_info_accepts_partial_response_with_complete() {
-    let (mut server, url) = tokio::task::spawn_blocking(|| {
-        let server = mockito::Server::new();
-        let url = server.url();
-        (server, url)
-    }).await.unwrap();
-    server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
-        .match_query(mockito::Matcher::Any)
-        .with_status(200)
-        .with_header("content-type", "application/json")
-        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "event": {"EventShort": "100m", "EventName": "100 Meters"}, "divisions": [{"DivisionID": 1, "DivisionName": "Div 1", "Indoor": false}], "genders": ["m", "f"], "complete": true, "page": 1}"#)
+    // Retry-After: 500 exceeds MAX_RETRY_AFTER_SECONDS (300)
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(429)
+        .with_header("Retry-After", "500")
         .create();
-
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
-        rankings_path: "/api".to_owned(),
+        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 10,
-        max_retries: 0,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
-        },
+        timeout_seconds: 30,
+        max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
         allowed_fields: vec![
             "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
             "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
             "ResultDate".into(), "SeasonID".into(),
         ],
-        allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0, max_retry_delay_ms: 30_000,
         cap_markers: vec![],
@@ -302,7 +243,56 @@ async fn nav_info_accepts_partial_response_with_complete() {
         auth_enabled: true,
         permission_reference: "test".into(),
     }).expect("client must not fail");
+    let start = std::time::Instant::now();
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    let elapsed = start.elapsed();
+    // Should return immediately (no sleep) since Retry-After exceeds 300s
+    assert!(elapsed.as_millis() < 500, "should not sleep for Retry-After over bound, got {:?}", elapsed);
+    match err {
+        AlphaApiError::RateLimitedExhausted { .. } => {}
+        other => panic!("expected RateLimitedExhausted, got {:?}", other),
+    }
+}
 
-    let result = client.nav_info(2024, false).await;
-    assert!(result.is_ok(), "partial response with complete must succeed");
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_retry_after_over_config_bound_no_sleep() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    // Retry-After: 50 (50s) exceeds max_retry_delay_ms=10000/1000=10s
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(429)
+        .with_header("Retry-After", "50")
+        .create();
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
+        timeout_seconds: 30,
+        max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        max_concurrent_requests: 1,
+        min_delay_ms: 0, max_retry_delay_ms: 10_000,
+        cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true,
+        permission_reference: "test".into(),
+    }).expect("client must not fail");
+    let start = std::time::Instant::now();
+    let err = client.rankings(&make_test_request()).await.unwrap_err();
+    let elapsed = start.elapsed();
+    // Should return immediately (no sleep) since Retry-After exceeds config bound
+    assert!(elapsed.as_millis() < 500, "should not sleep for Retry-After over config bound, got {:?}", elapsed);
+    match err {
+        AlphaApiError::RateLimitedExhausted { .. } => {}
+        other => panic!("expected RateLimitedExhausted, got {:?}", other),
+    }
 }

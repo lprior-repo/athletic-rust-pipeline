@@ -24,6 +24,8 @@ mod alpha_api_client_validation_tests;
 #[cfg(test)]
 mod alpha_api_client_nav_tests;
 #[cfg(test)]
+mod alpha_api_client_nav_info_tests;
+#[cfg(test)]
 mod alpha_api_completeness_tests;
 #[cfg(test)]
 mod alpha_api_completeness_nav_tests;

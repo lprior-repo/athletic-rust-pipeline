@@ -135,7 +135,6 @@ impl AlphaApiClient {
                     serde_json::Value::Bool(true) => {
                         let nptr = Self::resolve_ptr(next_page_pointer);
                         validate_next(value.pointer(&nptr), "next page")?;
-                        check_cap(value)?;
                         Ok(false)
                     }
                     v => Err(AlphaApiError::Incomplete(format!("has_more pointer {has_more_pointer} not bool: {v}"))),
@@ -154,15 +153,20 @@ impl AlphaApiClient {
     }
 
     /// Read body with timeout; enforce max_body_bytes via chunk()-style
-    /// incremental reads. Uses `Response::chunk()` to read incrementally.
+    /// incremental reads. One deadline wraps the entire loop.
     async fn read_body_with_timeout(&self, resp: reqwest::Response, timeout: Duration)
         -> Result<String, BodyReadError>
     {
         let limit = self.config.max_body_bytes;
         let mut accumulated = Vec::new();
         let mut resp = resp;
+        let deadline = tokio::time::Instant::now() + timeout;
         loop {
-            let chunk = tokio::time::timeout(timeout, resp.chunk())
+            if tokio::time::Instant::now() >= deadline {
+                return Err(BodyReadError::Timeout);
+            }
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            let chunk = tokio::time::timeout(remaining, resp.chunk())
                 .await
                 .map_err(|_| BodyReadError::Timeout)
                 .and_then(|r| r.map_err(BodyReadError::from))?;
@@ -202,7 +206,7 @@ impl AlphaApiClient {
             if status == 429 {
                 let retry_after_s = match headers.get("Retry-After").and_then(|v| v.to_str().ok()).and_then(|v| v.parse::<u64>().ok()) {
                     Some(d) => {
-                        if d > MAX_RETRY_AFTER_SECONDS {
+                        if d > self.config.max_retry_delay_ms / 1000 || d > MAX_RETRY_AFTER_SECONDS {
                             return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms });
                         }
                         d
@@ -210,7 +214,7 @@ impl AlphaApiClient {
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
                 };
                 let retry_after_ms = retry_after_s.saturating_mul(1000);
-                let wait_ms = retry_after_ms.min(self.config.max_retry_delay_ms).max(self.config.min_delay_ms);
+                let wait_ms = retry_after_ms.max(self.config.min_delay_ms);
                 if attempt >= max_retry { return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: total_wait_ms }); }
                 total_wait_ms = total_wait_ms.saturating_add(wait_ms);
                 attempt += 1;
