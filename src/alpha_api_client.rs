@@ -82,11 +82,12 @@ impl AlphaApiClient {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
                 Some(serde_json::Value::String(s)) if s.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty"))),
+                Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
                 Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
         };
-        let enforce_cap = |v: &serde_json::Value| -> Result<bool, AlphaApiError> {
+        let enforce_cap = |v: &serde_json::Value| -> Result<(), AlphaApiError> {
             for cm in &self.config.cap_markers {
                 let found = if cm.starts_with('/') { v.pointer(cm) } else { v.get(cm) };
                 match found {
@@ -94,7 +95,7 @@ impl AlphaApiClient {
                     _ => return Err(AlphaApiError::TruncatedWithoutContinuation),
                 }
             }
-            Ok(false)
+            Ok(())
         };
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
@@ -143,7 +144,6 @@ impl AlphaApiClient {
             }
         }
     }
-
     fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
     async fn check_status(builder: reqwest::RequestBuilder)
         -> Result<(u16, reqwest::header::HeaderMap, reqwest::Response), reqwest::Error>
