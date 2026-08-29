@@ -151,7 +151,10 @@ impl RawRankingsResponse {
         // Strict page type: if present, must be u64 or explicit null; no silent drops.
         let page = match value.get("page") {
             Some(serde_json::Value::Null) => None,
-            Some(serde_json::Value::Number(n)) if n.is_u64() => Some(n.as_u64().unwrap()),
+            Some(serde_json::Value::Number(n)) => match n.as_u64() {
+                Some(v) => Some(v),
+                None => return Err(format!("page must be u64 or null, got: {n}")),
+            },
             Some(v) => return Err(format!("page must be u64 or null, got: {v}")),
             None => None,
         };
