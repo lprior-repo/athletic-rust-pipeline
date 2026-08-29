@@ -1,6 +1,7 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
-use crate::alpha_model::{PaginationConfig, RawRankingsResponse};
+use crate::alpha_model::PaginationConfig;
+use crate::alpha_model_raw::RawRankingsResponse;
 
 fn make_single_response_client(server_url: &str, pointer: &str) -> AlphaApiClient {
     AlphaApiClient::new(AlphaApiClientConfig {
@@ -177,7 +178,7 @@ async fn nav_info_success() {
         .create();
     let client = make_nav_info_client(&url);
     let resp = client.nav_info(2026, false).await.expect("nav_info should succeed");
-    assert_eq!(resp.state.unwrap().StateID, Some(1));
+    assert_eq!(resp.state.unwrap().state_id, Some(1));
 }
 
 #[tokio::test(flavor = "multi_thread")]

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::alpha_model::*;
+    use crate::alpha_model_raw::RawRankingsResponse;
     use std::path::Path;
     #[test]
     fn parse_rankings_fixture() {

@@ -23,29 +23,6 @@ fn make_client(server_url: &str) -> AlphaApiClient {
     AlphaApiClient::new(config)
 }
 
-fn make_next_page_client(server_url: &str) -> AlphaApiClient {
-    let config = AlphaApiClientConfig {
-        base_url: server_url.to_owned(),
-        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 30,
-        max_retries: 2,
-        pagination: PaginationConfig::NextPage {
-            has_more_pointer: "/hasMore".to_owned(),
-            next_page_pointer: "/nextPage".to_owned(),
-            request_page_key: "page".to_owned(),
-        },
-        allowed_routes: vec![
-            "/api/v1/tfRankings/GetRankings".to_owned(),
-            "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        ],
-        allowed_fields: vec!["AthleteID".to_owned()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0,
-    };
-    AlphaApiClient::new(config)
-}
-
 fn make_test_request() -> AlphaRequest {
     AlphaRequest {
         state_id: 12,
@@ -238,11 +215,21 @@ async fn http_unexpected_status() {
     assert!(matches!(err, AlphaApiError::UnexpectedStatus { status: 404, .. }));
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn http_429_retry_after_one_second() {
+    let (mut server, _unused) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let _url = server.url();
+        (server, _url)
+    }).await.unwrap();
 
-/// Helper: make a client with zero min_delay_ms to avoid real sleeps in tests.
-fn make_fast_client(server_url: &str) -> AlphaApiClient {
-    AlphaApiClient::new(AlphaApiClientConfig {
-        base_url: server_url.to_owned(),
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(429)
+        .with_header("Retry-After", "1")
+        .create();
+
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: server.url(),
         rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
         timeout_seconds: 30,
@@ -252,59 +239,12 @@ fn make_fast_client(server_url: &str) -> AlphaApiClient {
         allowed_fields: vec![],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
-    })
-}
-
-
-/// Verify HTTP 429 with Retry-After header returns RateLimitedExhausted error.
-#[tokio::test(flavor = "multi_thread")]
-async fn http_429_retry_after_one_second() {
-    let (mut server, url) = tokio::task::spawn_blocking(|| {
-        let server = mockito::Server::new();
-        let url = server.url();
-        (server, url)
-    }).await.unwrap();
-    // Retry-After: 1 means 1 second = 1000ms
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(429)
-        .with_header("Retry-After", "1")
-        .create();
-    let client = make_fast_client(&url);
+    });
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
         AlphaApiError::RateLimitedExhausted { total_delay_ms, .. } => {
-            // 2 retries × 1000ms = 2000ms
             assert_eq!(total_delay_ms, 2000, "Retry-After: 1s must convert to 1000ms per retry");
         }
         other => panic!("expected RateLimitedExhausted, got {:?}", other),
     }
 }
-
-
-/// Verify Retry-After seconds-to-milliseconds conversion and min_delay_ms enforcement.
-/// Uses pure unit assertions rather than HTTP calls to avoid timing issues.
-#[test]
-fn retry_after_seconds_convert_to_millis() {
-    // Retry-After: 1 (1 second) → 1000ms
-    let secs: u64 = 1;
-    let delay_ms = secs.saturating_mul(1000);
-    assert_eq!(delay_ms, 1000, "1 second must be 1000ms");
-
-    // Retry-After: 0 → 0ms, then max with min_delay_ms(10) → 10ms
-    let secs: u64 = 0;
-    let delay_ms = secs.saturating_mul(1000);
-    let wait = delay_ms.max(10);
-    assert_eq!(wait, 10, "zero Retry-After must use min_delay_ms");
-
-    // Retry-After: 1000 (1000 seconds) → 1000000ms
-    let secs: u64 = 1000;
-    let delay_ms = secs.saturating_mul(1000);
-    assert_eq!(delay_ms, 1_000_000, "1000 seconds must be 1000000ms");
-
-    // Large seconds that could overflow: 4_294_967_295 → saturates
-    let secs: u64 = u64::MAX;
-    let delay_ms = secs.saturating_mul(1000);
-    assert_eq!(delay_ms, u64::MAX, "overflow must saturate");
-}
-
-

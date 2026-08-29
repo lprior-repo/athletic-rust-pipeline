@@ -36,6 +36,7 @@ pub struct AlphaApiClientConfig {
 }
 
 impl AlphaApiClientConfig {
+    #[allow(dead_code)]
     pub fn build_next_page_qparams(
         pagination: &crate::alpha_model::PaginationConfig,
         continuation: &serde_json::Value,

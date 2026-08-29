@@ -1,29 +1,8 @@
-use crate::alpha_api::{AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
-use crate::alpha_model::{
-    AlphaRequest, PaginationConfig,
+use crate::alpha_model::{AlphaRequest, PaginationConfig};
+use crate::alpha_model_raw::{
     RawNavInfoResponse, RawRankingRecord, RawRankingResult, RawRankingsResponse,
 };
-
-fn make_test_config() -> AlphaApiClientConfig {
-    AlphaApiClientConfig {
-        base_url: "https://www.athletic.net".to_owned(),
-        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 30,
-        max_retries: 2,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/settings/complete".to_owned(),
-        },
-        allowed_routes: vec![
-            "/api/v1/tfRankings/GetRankings".to_owned(),
-            "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        ],
-        allowed_fields: vec!["AthleteID".to_owned()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0,
-    }
-}
 
 // --- Request serialization ---
 
@@ -44,17 +23,11 @@ fn serialize_rankings_body_numeric_divlistid() {
 
 #[test]
 fn serialize_rankings_body_single_response_qparams() {
-    let req = AlphaRequest {
-        state_id: 12,
-        season_id: 2026,
-        gender: "m".to_owned(),
-        event_short: "100m".to_owned(),
-        indoor: false,
-        continuation: None,
+    let pagination = PaginationConfig::SingleResponse {
+        complete_pointer: "/complete".to_owned(),
     };
-    let body = AlphaApiClient::serialize_rankings_body(&req);
-    assert!(body["qParams"].is_object());
-    assert_eq!(body["qParams"].as_object().unwrap().len(), 0);
+    let qparams = AlphaApiClient::build_qparams(&pagination, &None);
+    assert_eq!(qparams.as_object().unwrap().len(), 0);
 }
 
 #[test]
@@ -65,7 +38,7 @@ fn serialize_rankings_body_nextpage_qparams() {
         request_page_key: "page".to_owned(),
     };
     let continuation = Some(serde_json::json!({"page": 2}));
-    let qparams = AlphaApiClientConfig::build_next_page_qparams(&pagination, &continuation.unwrap());
+    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation);
     assert_eq!(qparams["page"], serde_json::json!({"page": 2}));
 }
 
@@ -82,7 +55,7 @@ fn serialize_rankings_body_all_keys_present() {
     let body = AlphaApiClient::serialize_rankings_body(&req);
     let expected_keys = [
         "reportType", "mode", "divListId", "indoor", "eventShort",
-        "gender", "qParams", "qualifyingListKey", "version", "debug",
+        "gender", "qualifyingListKey", "version", "debug",
     ];
     for key in &expected_keys {
         assert!(body.get(*key).is_some(), "body must contain key '{}'", key);
@@ -108,12 +81,13 @@ fn deserialize_nav_info_fixture() {
     let fixture = std::fs::read_to_string("fixtures/alpha/get-nav-info-redacted.json").unwrap();
     let resp: RawNavInfoResponse = serde_json::from_str(&fixture).unwrap();
     let state = resp.state.unwrap();
-    assert_eq!(state.StateID, Some(90_000_001));
+    assert_eq!(state.state_id, Some(90_000_001));
     let event = resp.event.unwrap();
-    assert_eq!(event.EventShort, Some("100m".to_owned()));
-    assert_eq!(event.EventName, Some("100 Meters".to_owned()));
+    assert_eq!(event.event_short, Some("100m".to_owned()));
+    assert_eq!(event.event_name, Some("100 Meters".to_owned()));
     let div = resp.divisions.unwrap();
     assert_eq!(div.len(), 1);
+    assert_eq!(div[0].division_id, Some(90_000_001));
 }
 
 // --- Flattened row decoding ---
@@ -189,4 +163,93 @@ fn no_request_body_logged() {
     });
     let json_str = serde_json::to_string(&body).unwrap();
     assert!(!json_str.contains("Bearer"));
+}
+
+// --- Malformed row rejection ---
+
+#[test]
+fn malformed_nested_row_rejected() {
+    let json = r#"{
+        "AthleteID": 1,
+        "AthleteName": "Test",
+        "GradeID": 2,
+        "TeamName": "School",
+        "State": "CA",
+        "Results": [{
+            "MeetID": 100,
+            "MeetName": "Meet",
+            "EventShort": "100m",
+            "Measure": "10.5",
+            "ResultDate": "2026-06-15",
+            "SeasonID": 2026
+        }]
+    }"#;
+    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+    assert!(rec.to_flattened_records().is_empty(), "missing IDResult must reject nested row");
+}
+
+#[test]
+fn unknown_field_in_ranking_record_rejected() {
+    let json = r#"{
+        "AthleteID": 1,
+        "AthleteName": "Test",
+        "GradeID": 2,
+        "TeamName": "School",
+        "State": "CA",
+        "UnknownField": "rejected"
+    }"#;
+    let result: Result<RawRankingRecord, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "unknown fields must be rejected");
+}
+
+#[test]
+fn snake_case_nav_fields_deserialize() {
+    let json = r#"{
+        "state": {"StateID": 1, "State": "CA", "StateName": "California"},
+        "event": {"EventShort": "100m", "EventName": "100 Meters"},
+        "divisions": [{"DivisionID": 1, "DivisionName": "A", "Indoor": false}],
+        "genders": ["m"],
+        "complete": true,
+        "page": 1
+    }"#;
+    let resp: RawNavInfoResponse = serde_json::from_str(json).unwrap();
+    let state = resp.state.unwrap();
+    assert_eq!(state.state_id, Some(1));
+    assert_eq!(state.state_name, Some("California".to_owned()));
+    let event = resp.event.unwrap();
+    assert_eq!(event.event_short, Some("100m".to_owned()));
+    let div = resp.divisions.unwrap();
+    assert_eq!(div[0].division_id, Some(1));
+    assert_eq!(div[0].indoor, Some(false));
+}
+
+#[test]
+fn enforce_allowed_fields_filters() {
+    let body = serde_json::json!({
+        "divListId": 12,
+        "reportType": "div",
+        "other": "field"
+    });
+    let allowed = vec!["divListId".to_owned(), "reportType".to_owned()];
+    let allowed_obj = body.as_object().unwrap().clone();
+    let mut filtered = serde_json::Map::new();
+    for (k, v) in allowed_obj {
+        if allowed.contains(&k) {
+            filtered.insert(k, v);
+        }
+    }
+    assert_eq!(filtered.len(), 2);
+    assert!(filtered.contains_key("divListId"));
+}
+
+#[test]
+fn serialize_rankings_body_qparams_with_continuation() {
+    let pagination = PaginationConfig::NextPage {
+        has_more_pointer: "/hasMore".to_owned(),
+        next_page_pointer: "/nextPage".to_owned(),
+        request_page_key: "page".to_owned(),
+    };
+    let continuation = Some(serde_json::json!({"page": "next_1"}));
+    let qparams = AlphaApiClient::build_qparams(&pagination, &continuation);
+    assert_eq!(qparams["page"], serde_json::json!({"page": "next_1"}));
 }

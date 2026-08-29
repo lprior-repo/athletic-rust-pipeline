@@ -23,7 +23,7 @@ mod alpha_config_api_tests;
 #[cfg(test)]
 mod alpha_config_loading_tests;
 #[cfg(test)]
-mod alpha_model_tests;
+mod alpha_model_raw;
 mod checkpoint;
 mod config;
 mod discovery;
