@@ -247,12 +247,16 @@ async fn run_pipeline(
         if config.retrieval.authorized_direct_fetch {
             if let Some(selected_index) = selected_index {
                 if let Some(hit) = hits.get(selected_index) {
-                    let mut html = config.retrieval.saved_pages_dir.as_ref().and_then(|dir| fetch::load_saved_profile(&hit.url, dir).ok()).flatten();
+                    let mut html = if let Some(ref dir) = config.retrieval.saved_pages_dir {
+                        fetch::load_saved_profile(&hit.url, dir)?
+                    } else {
+                        None
+                    };
                     if html.is_none() {
-                        html = fetch::fetch_exact_profile(&hit.url, &config.retrieval).await.ok();
-                    }
-                    if html.is_none() {
-                        eprintln!("  retrieval failed for {}: no saved page", hit.url);
+                        match fetch::fetch_exact_profile(&hit.url, &config.retrieval).await {
+                            Ok(fetched) => html = Some(fetched),
+                            Err(e) => eprintln!("  retrieval failed for {}: {e}", hit.url),
+                        }
                     }
                     if let Some(ref html) = html {
                         let mut enriched = extract::candidate_from_evidence(prospect, hit, Some(html.as_str()), &ollama, config.retrieval.page_text_limit).await;
