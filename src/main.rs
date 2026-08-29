@@ -3,6 +3,16 @@
 mod alpha_config;
 #[cfg(test)]
 #[allow(dead_code)]
+mod alpha_api;
+#[cfg(test)]
+mod alpha_api_client;
+#[cfg(test)]
+mod alpha_api_tests;
+#[cfg(test)]
+mod alpha_api_client_tests;
+#[cfg(test)]
+mod alpha_api_completeness_tests;
+#[cfg(test)]
 mod alpha_model;
 #[cfg(test)]
 mod alpha_route_validation;

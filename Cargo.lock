@@ -182,6 +182,7 @@ dependencies = [
  "spider",
  "strsim",
  "tempfile",
+ "thiserror",
  "tokio",
  "toml",
  "unicode-normalization",

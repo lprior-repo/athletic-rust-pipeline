@@ -34,8 +34,10 @@ pub fn validate_route(
         format!("api route '{}' is not valid relative to base URL", route)
     })?;
 
-    // Must use HTTPS scheme.
-    if resolved.scheme() != "https" {
+    // Must use HTTPS scheme (allow HTTP for localhost testing).
+    let scheme_ok = resolved.scheme() == "https"
+        || (resolved.scheme() == "http" && is_localhost(resolved.host_str()));
+    if !scheme_ok {
         bail!("api route '{}' resolved to non-HTTPS scheme", route);
     }
 
@@ -63,4 +65,9 @@ pub fn validate_route(
     }
 
     Ok(())
+}
+
+/// Check if the host is a localhost address (for test-mode HTTP).
+fn is_localhost(host: Option<&str>) -> bool {
+    host.map(|h| h == "localhost" || h == "127.0.0.1").unwrap_or(false)
 }
