@@ -9,6 +9,8 @@
 /saved_pages/
 *.zip
 *.bak
+*.bak-*
+*.tmp-*
 /athletic_matcher
 /.worktrees/
 /alpha.toml
