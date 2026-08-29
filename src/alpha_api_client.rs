@@ -33,9 +33,15 @@ pub struct AlphaApiClient {
     pub(crate) config: AlphaApiClientConfig,
     concurrency_semaphore: Semaphore,
 }
-fn is_positive_integer(n: &serde_json::Number) -> bool {
-    n.as_i64().map_or(false, |v| v > 0)
-        || n.as_u64().map_or(false, |v| v > 0)
+fn validate_cap_markers(cap_markers: &[String]) -> Result<(), AlphaApiError> {
+    for (idx, marker) in cap_markers.iter().enumerate() {
+        if marker.is_empty() { return Err(AlphaApiError::InvalidConfig(format!("cap_markers[{idx}] must be non-empty"))); }
+        if marker.starts_with('/') {
+            let mut chars = marker.chars().peekable();
+            while let Some(ch) = chars.next() { if ch == '~' { let n = chars.peek().copied().unwrap_or('\0'); if n != '0' && n != '1' { return Err(AlphaApiError::InvalidConfig(format!("invalid RFC6901 escape '~{n}' in cap_markers[{idx}]"))); } } }
+        } else if marker.contains('/') || marker.contains('~') { return Err(AlphaApiError::InvalidConfig(format!("cap_markers[{idx}] not a top-level key or valid RFC6901 pointer: '{marker}'"))); }
+    }
+    Ok(())
 }
 impl AlphaApiClient {
     pub fn new(config: AlphaApiClientConfig) -> Result<Self, AlphaApiError> {
@@ -47,6 +53,7 @@ impl AlphaApiClient {
         if !config.auth_enabled || config.permission_reference.is_empty() {
             return Err(AlphaApiError::AuthorizationDisabled);
         }
+        validate_cap_markers(&config.cap_markers)?;
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(config.timeout_seconds))
             .redirect(Policy::none())
@@ -64,7 +71,7 @@ impl AlphaApiClient {
                     serde_json::Value::String(s) if s.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty".into())),
                     serde_json::Value::Object(o) if o.is_empty() => return Err(AlphaApiError::Incomplete("continuation is empty object".into())),
                     serde_json::Value::String(_) | serde_json::Value::Object(_) => Ok(serde_json::json!({ request_page_key: c })),
-                    serde_json::Value::Number(n) if is_positive_integer(n) => Ok(serde_json::json!({ request_page_key: c })),
+                    serde_json::Value::Number(n) if n.as_i64().map_or(false, |v| v > 0) || n.as_u64().map_or(false, |v| v > 0) => Ok(serde_json::json!({ request_page_key: c })),
                     v => return Err(AlphaApiError::Incomplete(format!("unsupported continuation type: {v}"))),
                 }
             }
@@ -72,7 +79,6 @@ impl AlphaApiClient {
             _ => Ok(serde_json::json!({})),
         }
     }
-
     fn parse_rankings_strict(&self, raw: &RawRankingsResponse) -> Result<Vec<RankingRecord>, String> {
         let mut records = Vec::new();
         for group in &raw.grouped_rankings {
@@ -80,20 +86,9 @@ impl AlphaApiClient {
         }
         Ok(records)
     }
-
     pub(crate) fn check_completeness(&self, raw: &RawRankingsResponse) -> Result<bool, AlphaApiError> {
         let value = &raw.value;
-        let validate_next = |val: Option<&serde_json::Value>, ctx: &str| -> Result<(), AlphaApiError> {
-            match val {
-                None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
-                Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
-                Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
-                Some(serde_json::Value::Object(_)) => Ok(()),
-                Some(serde_json::Value::String(s)) if !s.is_empty() => Ok(()),
-                Some(serde_json::Value::Number(n)) if is_positive_integer(n) => Ok(()),
-                Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
-            }
-        };
+        let validate_next = |val: Option<&serde_json::Value>, ctx: &str| -> Result<(), AlphaApiError> { match val { None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))), Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))), Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))), Some(serde_json::Value::Object(_)) => Ok(()), Some(serde_json::Value::String(s)) if !s.is_empty() => Ok(()), Some(serde_json::Value::Number(n)) if n.as_i64().map_or(false, |v| v > 0) || n.as_u64().map_or(false, |v| v > 0) => Ok(()), Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))), } };
         let enforce_cap = |v: &serde_json::Value| -> Result<(), AlphaApiError> {
             for cm in &self.config.cap_markers {
                 let found = if cm.starts_with('/') { v.pointer(cm) } else { v.get(cm) };
