@@ -177,7 +177,7 @@ impl AlphaConfig {
                 api.base_url
             );
         }
-        if parsed.host_str().map_or(true, str::is_empty) {
+        if parsed.host_str().is_none_or(str::is_empty) {
             bail!(
                 "api.base_url must have a nonempty host (got '{}')",
                 api.base_url
