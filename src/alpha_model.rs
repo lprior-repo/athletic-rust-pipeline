@@ -11,6 +11,7 @@ pub struct AuthorizationConfig {
     pub allowed_seasons: Vec<i32>,
     pub allowed_genders: Vec<String>,
     pub allowed_fields: Vec<String>,
+    pub allowed_profile_routes: Vec<String>,
     pub allow_profile_enrichment: bool,
     pub max_concurrent_requests: usize,
     pub min_delay_ms: u64,
@@ -121,9 +122,7 @@ pub struct RawRankingResult {
     #[serde(rename = "Wind")]
     #[serde(default)]
     pub wind: Option<String>,
-    // Preserve any extra API fields for future use; ignore unknowns.
-    #[serde(flatten)]
-    pub extra: std::collections::HashMap<String, serde_json::Value>,
+    // Unknown fields are ignored by serde's default deserializer.
 }
 
 /// Top-level GetRankings response shape.
@@ -253,5 +252,49 @@ mod tests {
         assert_eq!(resp.genders, Some(vec!["m".to_owned()]));
         assert_eq!(resp.complete, Some(true));
         assert_eq!(resp.page, Some(1));
+    }
+
+    #[test]
+    fn unknown_fields_ignored_in_raw_ranking_result() {
+        let json = r#"{
+            "MeetID": 123,
+            "MeetName": "Test Meet",
+            "IDResult": 456,
+            "EventShort": "100m",
+            "Measure": "10.5",
+            "ResultDate": "2099-01-01",
+            "SeasonID": 2026,
+            "UnknownField": "ignored",
+            "AnotherUnknown": 42
+        }"#;
+        let result: RawRankingResult = serde_json::from_str(json)
+            .expect("unknown fields should be ignored");
+        assert_eq!(result.meet_id, 123);
+        assert_eq!(result.measure, "10.5");
+    }
+
+    #[test]
+    fn required_fields_must_be_present_in_raw_ranking_result() {
+        let json = r#"{
+            "MeetID": 123
+        }"#;
+        let result: Result<RawRankingResult, _> = serde_json::from_str(json);
+        assert!(result.is_err(), "missing required fields must cause deserialization error");
+    }
+
+    #[test]
+    fn required_fields_must_be_present_in_raw_ranking_record() {
+        let json = r#"{
+            "AthleteID": 123
+        }"#;
+        let result: Result<RawRankingRecord, _> = serde_json::from_str(json);
+        assert!(result.is_err(), "missing required fields must cause deserialization error");
+    }
+
+    #[test]
+    fn required_fields_must_be_present_in_raw_rankings_response() {
+        let json = r#"{}"#;
+        let result: Result<RawRankingsResponse, _> = serde_json::from_str(json);
+        assert!(result.is_err(), "missing groupedRankings must cause deserialization error");
     }
 }

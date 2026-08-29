@@ -7,6 +7,7 @@ allowed_states = ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "H
 allowed_seasons = [2026]
 allowed_genders = ["m", "f"]
 allowed_fields = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"]
+allowed_profile_routes = []
 allow_profile_enrichment = false
 max_concurrent_requests = 1
 min_delay_ms = 750
