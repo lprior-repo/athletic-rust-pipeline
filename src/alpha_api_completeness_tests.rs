@@ -61,7 +61,8 @@ fn single_response_complete_pointer_true() {
 fn single_response_complete_pointer_false() {
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": false}"#).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "complete=false => false");
+    let err = client.check_completeness(&raw).expect_err("SingleResponse complete=false => Incomplete error, no continuation path");
+    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)), "expected Incomplete error, got {:?}", err);
 }
 
 #[test]

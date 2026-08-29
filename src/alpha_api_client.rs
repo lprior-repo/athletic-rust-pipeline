@@ -53,7 +53,6 @@ impl AlphaApiClient {
             .build().map_err(|e| AlphaApiError::Incomplete(format!("reqwest builder failed: {e}")))?;
         Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(1) })
     }
-
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
         serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
     }
@@ -88,9 +87,8 @@ impl AlphaApiClient {
             match val {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
-                Some(serde_json::Value::String(s)) if s.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty"))),
                 Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
-                Some(serde_json::Value::String(_) | serde_json::Value::Object(_)) => Ok(()),
+                Some(serde_json::Value::String(s)) if !s.is_empty() => Ok(()),
                 Some(serde_json::Value::Number(n)) if is_positive_integer(n) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
@@ -121,7 +119,8 @@ impl AlphaApiClient {
                 }
                 let ptr = complete_pointer.to_string();
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
-                    serde_json::Value::Bool(b) => Ok(*b),
+                    serde_json::Value::Bool(false) => Err(AlphaApiError::Incomplete("SingleResponse: complete=false with no continuation path".into())),
+                    serde_json::Value::Bool(true) => Ok(true),
                     v => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool: {v}"))),
                 }
             }
@@ -283,7 +282,6 @@ impl AlphaApiClient {
         let records = self.parse_rankings_strict(&validated_raw).map_err(|e| AlphaApiError::Incomplete(e))?;
         Ok(RankingPage { records, complete, continuation })
     }
-
     pub async fn nav_info(&self, season_id: i32, indoor: bool) -> Result<RawNavInfoResponse, AlphaApiError> {
         let _permit = self.concurrency_semaphore.acquire().await.map_err(|_| AlphaApiError::Incomplete("semaphore closed".into()))?;
         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
