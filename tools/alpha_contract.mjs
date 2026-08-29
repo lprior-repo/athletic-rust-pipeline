@@ -46,7 +46,7 @@ const scrub = (value, key = '') => {
     });
     return Object.fromEntries(entries);
   }
-  if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(key) && (typeof value === 'number' || typeof value === 'string')) return 'REDACTED';
+  if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(key) && (typeof value === 'number' || typeof value === 'string')) return typeof value === 'number' ? 90000001 : '90000001';
   if (typeof value === 'string') {
     if (REDACT_KEY_RE.test(key)) return 'REDACTED';
     if (URL_VALUE_RE.test(value)) return 'REDACTED';
