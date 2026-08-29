@@ -25,7 +25,7 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|nextpagekey|pagekey|cursor|credentials|credential|password|secret|api[_-]?key/i;
-const URL_VALUE_RE = /^(?:https?:\/\/|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9])/i;
+const URL_VALUE_RE = /^(?:https?:\/\/|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9-]*\.[a-z]{2,}[\/])/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
 const scrub = (value, key = '') => {
@@ -73,7 +73,7 @@ try {
       if (url.origin !== expectedOrigin) return;
       const req = response.request();
       if (req.method() !== 'POST') return;
-      if (!response.ok()) return;
+      if (response.status() !== 200) return;
       const key = url.pathname.includes('GetRankings') ? 'rankings' : 'nav';
       if (seen.has(key)) return;
       seen.add(key);
