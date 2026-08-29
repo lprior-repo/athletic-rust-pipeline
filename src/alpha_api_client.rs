@@ -152,7 +152,7 @@ impl AlphaApiClient {
     }
 
     /// Unified retry loop — body timeouts retry whole request,
-    /// 5xx retries; 2xx reads body; other non-2xx reads body).
+    /// 5xx retries; 2xx reads body; non-2xx reads body without retry.
     async fn execute_request(&self, method: Method, url: Url, body: Option<&serde_json::Value>)
         -> Result<String, AlphaApiError> {
         let mut total_wait_ms: u64 = 0;
@@ -195,8 +195,8 @@ impl AlphaApiClient {
             if status < 200 || status >= 300 {
                 let resp_body = match Self::read_body_with_timeout(resp, timeout_dur).await {
                     Ok(b) => b,
-                    Err(BodyReadError::Timeout) => { if attempt >= max_retry { return Err(AlphaApiError::Timeout { milliseconds: timeout_ms }); } attempt += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
-                    Err(e) => return Err(AlphaApiError::Incomplete(e.to_string())),
+                    Err(BodyReadError::Timeout) => return Err(AlphaApiError::UnexpectedStatus { status, body: "response body read timed out".into() }),
+                    Err(e) => return Err(AlphaApiError::UnexpectedStatus { status, body: format!("response body read error: {e}") }),
                 };
                 return Err(AlphaApiError::UnexpectedStatus { status, body: resp_body });
             }

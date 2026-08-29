@@ -284,3 +284,42 @@ async fn body_timeout_cancellation_no_orphan() {
     assert!(elapsed < Duration::from_secs(10), "did not hang, elapsed {:?}", elapsed);
     match result { Err(AlphaApiError::Timeout { .. }) => {}, other => panic!("expected Timeout, got {:?}", other), }
 }
+
+/// Non-2xx responses must not retry on body timeout — they must return
+/// UnexpectedStatus immediately, preserving the status code.
+#[tokio::test(flavor = "multi_thread")]
+async fn non_2xx_body_timeout_returns_error_not_retry() {
+    // Raw TCP server sends 400 headers, delays body by 6s.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        loop {
+            let mut s = listener.accept().await.unwrap().0;
+            tokio::task::spawn(async move {
+                let _ = s.read(&mut [0u8; 8192]).await;
+                let _ = s.write_all(b"HTTP/1.1 400 Bad Request\r\nContent-Type: application/json\r\n\r\n").await;
+                tokio::time::sleep(Duration::from_secs(6)).await;
+                let _ = s.write_all(b"{}").await;
+            });
+        }
+    });
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: format!("http://{addr}/api/v1/tfRankings/GetRankings"),
+        rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
+        timeout_seconds: 2, max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec!["AthleteID","AthleteName","GradeID","TeamName","State","MeetID","MeetName","IDResult","EventShort","Measure","ResultDate","SeasonID"].into_iter().map(String::from).collect(),
+        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+    }).expect("client creation must not fail");
+    let start = std::time::Instant::now();
+    let result = client.rankings(&make_test_request()).await;
+    let elapsed = start.elapsed();
+    // Must return quickly (no retry), not hang
+    assert!(elapsed < Duration::from_secs(4), "non-2xx must not retry on body timeout, elapsed {:?}", elapsed);
+    match result {
+        Err(AlphaApiError::UnexpectedStatus { status, .. }) => assert_eq!(status, 400),
+        other => panic!("expected UnexpectedStatus {{ status: 400 }}, got {:?}", other),
+    }
+}
