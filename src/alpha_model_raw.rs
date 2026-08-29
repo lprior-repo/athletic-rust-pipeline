@@ -1,8 +1,10 @@
 use crate::alpha_model::RankingRecord;
 use serde::{Deserialize, Serialize};
 
-/// One row inside `groupedRankings` — supports both nested `Results` and
+/// One row inside `groupedRankings` — supports both nested Results and
 /// confirmed flattened row shapes.
+///
+/// Unknown fields are silently ignored.
 ///
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RawRankingRecord {
@@ -16,105 +18,114 @@ pub struct RawRankingRecord {
     pub team_name: String,
     #[serde(rename = "State")]
     pub state: String,
-    #[serde(rename = "Results", default)]
-    pub results: Vec<RawRankingResult>,
-    // Flattened row fields.
-    #[serde(rename = "IDResult", default)]
+    /// Nested results array. `None` when the API omits the field.
+    #[serde(rename = "Results")]
+    pub results: Option<Vec<RawRankingResult>>,
+    // Flattened row fields — all optional, validated downstream.
+    #[serde(rename = "IDResult")]
     pub id_result: Option<u64>,
-    #[serde(rename = "EventShort", default)]
+    #[serde(rename = "EventShort")]
     pub event_short: Option<String>,
-    #[serde(rename = "Measure", default)]
+    #[serde(rename = "Measure")]
     pub measure: Option<String>,
-    #[serde(rename = "ResultDate", default)]
+    #[serde(rename = "ResultDate")]
     pub result_date: Option<String>,
-    #[serde(rename = "SeasonID", default)]
+    #[serde(rename = "SeasonID")]
     pub season_id: Option<i32>,
-    #[serde(rename = "Wind", default)]
+    #[serde(rename = "Wind")]
     pub wind: Option<Option<String>>,
-    #[serde(rename = "MeetID", default)]
+    #[serde(rename = "MeetID")]
     pub meet_id: Option<u64>,
-    #[serde(rename = "MeetName", default)]
+    #[serde(rename = "MeetName")]
     pub meet_name: Option<String>,
 }
 
 impl RawRankingRecord {
     /// Convert to flat `RankingRecord` list.
     ///
-    /// Returns `Result` — never silently drops malformed rows (finding #8).
+    /// Uses nested `Results` when present and non-empty; falls back to
+    /// flattened row fields when Results is absent or empty.
     ///
-    /// Uses nested `Results` when present; falls back to flattened row fields.
-    /// Required nested fields: IDResult, EventShort, Measure, ResultDate, SeasonID,
-    /// MeetID, MeetName. Required flattened fields: IDResult, EventShort, Measure,
+    /// Required nested fields: IDResult, EventShort, Measure, ResultDate,
+    /// SeasonID.  Required flattened fields: IDResult, EventShort, Measure,
     /// ResultDate, SeasonID, MeetName.
-    pub fn to_flattened_records(&self) -> Result<Vec<RankingRecord>, &'static str> {
-        if !self.results.is_empty() {
-            let mut records = Vec::new();
-            for r in &self.results {
-                // All required nested fields must be present.
-                if r.id_result == 0 {
-                    return Err("RawRankingResult: missing required IDResult");
-                }
-                if r.event_short.is_empty() {
-                    return Err("RawRankingResult: missing required EventShort");
-                }
-                if r.measure.is_empty() {
-                    return Err("RawRankingResult: missing required Measure");
-                }
-                if r.result_date.is_empty() {
-                    return Err("RawRankingResult: missing required ResultDate");
-                }
-                records.push(RankingRecord {
-                    athlete_id: self.athlete_id,
-                    athlete_name: self.athlete_name.clone(),
-                    grade_id: self.grade_id,
-                    team_name: self.team_name.clone(),
-                    state: self.state.clone(),
-                    meet_id: r.meet_id,
-                    meet_name: r.meet_name.clone(),
-                    result_id: Some(r.id_result),
-                    event_short: r.event_short.clone(),
-                    measure: r.measure.clone(),
-                    result_date: r.result_date.clone(),
-                    season_id: r.season_id,
-                    wind: r.wind.clone(),
-                });
+    pub fn to_flattened_records(&self) -> Result<Vec<RankingRecord>, String> {
+        if let Some(ref results) = self.results {
+            if !results.is_empty() {
+                return self.from_nested_results(results);
             }
-            Ok(records)
-        } else if self.event_short.is_some() {
-            // Flattened row: fail closed on missing required fields.
-            let id_result = self.id_result
-                .ok_or("RawRankingRecord flattened: missing required IDResult")?;
-            let measure = self.measure.clone()
-                .ok_or("RawRankingRecord flattened: missing required Measure")?;
-            let result_date = self.result_date.clone()
-                .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
-            let season_id = self.season_id
-                .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
-            Ok(vec![RankingRecord {
+        }
+        self.from_flattened()
+    }
+
+    fn from_nested_results(&self, results: &[RawRankingResult]) -> Result<Vec<RankingRecord>, String> {
+        let mut records = Vec::new();
+        for r in results {
+            if r.id_result == 0 {
+                return Err("RawRankingResult: missing required IDResult".into());
+            }
+            if r.event_short.is_empty() {
+                return Err("RawRankingResult: missing required EventShort".into());
+            }
+            if r.measure.is_empty() {
+                return Err("RawRankingResult: missing required Measure".into());
+            }
+            if r.result_date.is_empty() {
+                return Err("RawRankingResult: missing required ResultDate".into());
+            }
+            records.push(RankingRecord {
                 athlete_id: self.athlete_id,
                 athlete_name: self.athlete_name.clone(),
                 grade_id: self.grade_id,
                 team_name: self.team_name.clone(),
                 state: self.state.clone(),
-                meet_id: self.meet_id.unwrap_or(0),
-                meet_name: self.meet_name.clone().unwrap_or_default(),
-                result_id: Some(id_result),
-                event_short: self.event_short.clone().unwrap_or_default(),
-                measure,
-                result_date,
-                season_id,
-                wind: self.wind.clone().flatten(),
-            }])
-        } else {
-            Ok(vec![])
+                meet_id: r.meet_id,
+                meet_name: r.meet_name.clone(),
+                result_id: Some(r.id_result),
+                event_short: r.event_short.clone(),
+                measure: r.measure.clone(),
+                result_date: r.result_date.clone(),
+                season_id: r.season_id,
+                wind: r.wind.clone(),
+            });
         }
+        Ok(records)
+    }
+
+    fn from_flattened(&self) -> Result<Vec<RankingRecord>, String> {
+        let id_result = self.id_result
+            .ok_or("RawRankingRecord flattened: missing required IDResult")?;
+        let event_short = self.event_short.clone()
+            .ok_or("RawRankingRecord flattened: missing required EventShort")?;
+        let measure = self.measure.clone()
+            .ok_or("RawRankingRecord flattened: missing required Measure")?;
+        let result_date = self.result_date.clone()
+            .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
+        let season_id = self.season_id
+            .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
+        let meet_name = self.meet_name.clone()
+            .ok_or("RawRankingRecord flattened: missing required MeetName")?;
+        Ok(vec![RankingRecord {
+            athlete_id: self.athlete_id,
+            athlete_name: self.athlete_name.clone(),
+            grade_id: self.grade_id,
+            team_name: self.team_name.clone(),
+            state: self.state.clone(),
+            meet_id: self.meet_id.unwrap_or(0),
+            meet_name,
+            result_id: Some(id_result),
+            event_short,
+            measure,
+            result_date,
+            season_id,
+            wind: self.wind.clone().flatten(),
+        }])
     }
 }
 
 /// One result entry inside a `RawRankingRecord`.
 ///
-/// **`IDResult` is REQUIRED** — no `#[serde(default)]`. Missing IDResult
-/// will cause a deserialization error (finding #8).
+/// All fields are required except Wind (optional).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RawRankingResult {
     #[serde(rename = "MeetID")]
@@ -132,13 +143,14 @@ pub struct RawRankingResult {
     #[serde(rename = "SeasonID")]
     pub season_id: i32,
     #[serde(rename = "Wind")]
-    #[serde(default)]
     pub wind: Option<String>,
 }
 
 /// Top-level GetRankings response shape.
 /// Preserves the original response JSON (`value`) for RFC 6901 pointer
 /// evaluation (unknown fields, nested completeness, etc.).
+///
+/// `groupedRankings` is REQUIRED.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawRankingsResponse {
     #[serde(rename = "groupedRankings")]
@@ -152,25 +164,45 @@ pub struct RawRankingsResponse {
 }
 
 /// Manually deserialize to capture the full JSON value for pointer walking.
+///
+/// - Requires `groupedRankings` to be present.
+/// - Rejects wrong type for groupedRankings, groups, or rows.
+/// - Propagates RawRankingRecord / RawContinuation parse errors.
+/// - No silent filtering — every malformed item is an error.
 impl RawRankingsResponse {
-    pub fn from_json(text: &str) -> Result<Self, serde_json::Error> {
-        let value: serde_json::Value = serde_json::from_str(text)?;
-        let grouped_rankings = value.get("groupedRankings")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter().filter_map(|g| {
-                    g.as_array().map(|items| {
-                        items.iter().filter_map(|r| {
-                            RawRankingRecord::deserialize(r.clone()).ok()
-                        }).collect::<Vec<_>>()
+    pub fn from_json(text: &str) -> Result<Self, String> {
+        let value: serde_json::Value = serde_json::from_str(text)
+            .map_err(|e| format!("JSON parse error: {e}"))?;
+
+        let grouped_raw = value.get("groupedRankings")
+            .ok_or("missing required field: groupedRankings")?;
+        let groups_arr = grouped_raw.as_array()
+            .ok_or("groupedRankings must be an array")?;
+
+        let grouped_rankings: Result<Vec<Vec<RawRankingRecord>>, String> = groups_arr
+            .iter()
+            .map(|group| {
+                let items = group.as_array()
+                    .ok_or_else(|| "group inside groupedRankings must be an array".to_string())?;
+                items.iter()
+                    .map(|row| {
+                        RawRankingRecord::deserialize(row.clone())
+                            .map_err(|e| format!("malformed row: {e}"))
                     })
-                }).collect()
+                    .collect()
             })
-            .unwrap_or_default();
+            .collect();
+
+        let grouped_rankings = grouped_rankings?;
         let page = value.get("page").and_then(|v| v.as_u64());
         let complete = value.get("complete").cloned();
-        let continuation = value.get("continuation")
-            .and_then(|v| RawContinuation::deserialize(v.clone()).ok());
+        let continuation = match value.get("continuation") {
+            Some(serde_json::Value::Null) => None,
+            Some(cont_raw) => Some(RawContinuation::deserialize(cont_raw.clone())
+                .map_err(|e| format!("malformed continuation: {e}"))?),
+            None => None,
+        };
+
         Ok(RawRankingsResponse {
             grouped_rankings,
             page,

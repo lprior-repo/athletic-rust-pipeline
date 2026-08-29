@@ -72,8 +72,8 @@ fn deserialize_redacted_rankings_fixture() {
     assert_eq!(resp.grouped_rankings[0].len(), 2);
     let rec = &resp.grouped_rankings[0][0];
     assert_eq!(rec.athlete_id, 90_000_001);
-    assert_eq!(rec.results[0].meet_id, 90_000_001);
-    assert_eq!(rec.results[0].meet_name, "Test Meet");
+    assert_eq!(rec.results.as_ref().unwrap()[0].meet_id, 90_000_001);
+    assert_eq!(rec.results.as_ref().unwrap()[0].meet_name, "Test Meet");
 }
 
 #[test]
@@ -110,11 +110,11 @@ fn deserialize_flattened_row_shape() {
     let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
     assert_eq!(rec.id_result, Some(11_111));
     assert_eq!(rec.event_short, Some("100m".to_owned()));
-    assert!(rec.results.is_empty());
+    assert!(rec.results.is_none() || rec.results.as_ref().unwrap().is_empty());
 }
 
 #[test]
-fn to_flattened_records_empty_when_no_data() {
+fn to_flattened_records_errors_when_no_valid_data() {
     let json = r#"{
         "AthleteID": 999,
         "AthleteName": "Nobody",
@@ -124,7 +124,8 @@ fn to_flattened_records_empty_when_no_data() {
         "Results": []
     }"#;
     let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    assert!(rec.to_flattened_records().unwrap().is_empty());
+    let result = rec.to_flattened_records();
+    assert!(result.is_err(), "no valid data should error, not return empty");
 }
 
 #[test]
@@ -169,6 +170,7 @@ fn no_request_body_logged() {
 
 #[test]
 fn malformed_nested_row_rejected_via_from_json() {
+    // Malformed nested result (missing IDResult) causes from_json to reject the entire response.
     let json = r#"{
         "groupedRankings": [[{
             "AthleteID": 1,
@@ -187,10 +189,34 @@ fn malformed_nested_row_rejected_via_from_json() {
         }]],
         "page": 1
     }"#;
-    // from_json silently drops malformed nested records (filter_map + ok)
+    // from_json propagates errors — malformed row causes rejection
+    let result = RawRankingsResponse::from_json(json);
+    assert!(result.is_err(), "malformed nested row must reject the entire response");
+}
+
+#[test]
+fn valid_nested_row_succeeds() {
+    let json = r#"{
+        "groupedRankings": [[{
+            "AthleteID": 1,
+            "AthleteName": "Test",
+            "GradeID": 2,
+            "TeamName": "School",
+            "State": "CA",
+            "Results": [{
+                "MeetID": 100,
+                "MeetName": "Meet",
+                "IDResult": 500,
+                "EventShort": "100m",
+                "Measure": "10.5",
+                "ResultDate": "2026-06-15",
+                "SeasonID": 2026
+            }]
+        }]],
+        "page": 1
+    }"#;
     let raw = RawRankingsResponse::from_json(json).unwrap();
-    // Both outer record and malformed nested are dropped => empty
-    assert_eq!(raw.grouped_rankings[0].len(), 0);
+    assert_eq!(raw.grouped_rankings[0].len(), 1);
 }
 
 #[test]

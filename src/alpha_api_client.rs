@@ -76,10 +76,24 @@ impl AlphaApiClient {
         }
     }
 
+    #[allow(dead_code)]
     fn parse_rankings(&self, raw: &RawRankingsResponse) -> Vec<RankingRecord> {
         raw.grouped_rankings.iter()
             .flat_map(|group| group.iter().filter_map(|r| r.to_flattened_records().ok()).flatten())
             .collect()
+    }
+
+    /// Parse a response into RankingPage.
+    /// Errors on malformed rows (no silent dropping).
+    fn parse_rankings_strict(&self, raw: &RawRankingsResponse) -> Result<Vec<RankingRecord>, String> {
+        let mut records = Vec::new();
+        for group in &raw.grouped_rankings {
+            for r in group {
+                let mut batch = r.to_flattened_records()?;
+                records.append(&mut batch);
+            }
+        }
+        Ok(records)
     }
 
     /// Evaluate completeness using RFC 6901 JSON pointers.
@@ -269,7 +283,7 @@ impl AlphaApiClient {
 
         // Parse then validate response against allowed_fields.
         let raw = RawRankingsResponse::from_json(&text)
-            .map_err(|e| AlphaApiError::Incomplete(format!("JSON parse error: {}", e)))?;
+            .map_err(|e| AlphaApiError::Incomplete(e))?;
         let validated_json = self.enforce_response_allowed_fields(raw.value);
         let validated_raw = RawRankingsResponse {
             grouped_rankings: raw.grouped_rankings,
@@ -282,8 +296,12 @@ impl AlphaApiClient {
         // RFC 6901 pointer-based completeness check with fail-closed.
         let complete = self.check_completeness(&validated_raw)?;
 
+        // Strict parsing: no silently dropped malformed rows.
+        let records = self.parse_rankings_strict(&validated_raw)
+            .map_err(|e| AlphaApiError::Incomplete(e))?;
+
         Ok(RankingPage {
-            records: self.parse_rankings(&validated_raw),
+            records,
             complete,            continuation: validated_raw.continuation.map(|c| serde_json::json!({ "page": c.page, "complete": c.complete })),
         })
     }
