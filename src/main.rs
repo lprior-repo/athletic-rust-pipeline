@@ -1,4 +1,4 @@
-#![cfg_attr(test, allow(dead_code))]
+mod summary;
 #[cfg(test)]
 mod alpha_model_raw_validation;
 #[cfg(test)]
@@ -72,7 +72,6 @@ use clap::{Parser, Subcommand};
 use config::Config;
 use model::{MatchRecord, ModelDecision};
 use std::{
-    collections::HashMap,
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -128,7 +127,7 @@ enum Command {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Inspect { input } => inspect(&input),
+        Command::Inspect { input } => summary::inspect(&input),
         Command::ExportRecords { input, output } => xlsx::export_records(&input, &output),
         Command::Run {
             input,
@@ -158,13 +157,6 @@ async fn main() -> Result<()> {
         }
     }
 }
-
-fn inspect(input: &Path) -> Result<()> {
-    let result = xlsx::scan(input, &[], None)?;
-    println!("{}", serde_json::to_string_pretty(&result.stats)?);
-    Ok(())
-}
-
 async fn run_pipeline(
     input: &Path,
     config_path: &Path,
@@ -302,6 +294,6 @@ async fn run_pipeline(
         .filter_map(|prospect| completed.get(&prospect.source_key).cloned())
         .collect();
     output::write_all(out_dir, &ordered)?;
-    summarize(&ordered);
+    summary::summarize(&ordered);
     Ok(())
-}fn summarize(records: &[MatchRecord]) { let mut counts: HashMap<&str, usize> = HashMap::new(); for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); } eprintln!("wrote {} records", records.len()); for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] { eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c)); } }
+}
