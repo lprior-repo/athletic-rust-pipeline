@@ -49,19 +49,18 @@ impl crate::alpha_api_client::AlphaApiClient {
                                 if let Some(raw) = results_raw {
                                     match raw {
                                         serde_json::Value::Array(arr) => {
-                                            // Valid array — filter each element and reinsert.
-                                            let filtered: Vec<serde_json::Value> = arr
-                                                .into_iter()
-                                                .filter_map(|v| {
-                                                    if let Some(obj) = v.as_object() {
-                                                        let mut filtered_map = obj.clone();
-                                                        filter_fields(&mut filtered_map, allowed);
-                                                        Some(serde_json::Value::Object(filtered_map))
-                                                    } else {
-                                                        None
-                                                    }
-                                                })
-                                                .collect();
+                                            // Filter each element, fail on non-object.
+                                            let mut filtered: Vec<serde_json::Value> = Vec::new();
+                                            for v in arr {
+                                                if let Some(obj) = v.as_object() {
+                                                    let mut filtered_map = obj.clone();
+                                                    filter_fields(&mut filtered_map, allowed);
+                                                    filtered.push(serde_json::Value::Object(filtered_map));
+                                                } else {
+                                                    return Err(AlphaApiError::Incomplete(
+                                                        "Results element is not an object".into()));
+                                                }
+                                            }
                                             rec_obj.insert("Results".into(), serde_json::Value::Array(filtered));
                                         },
                                         _ => return Err(AlphaApiError::Incomplete(
