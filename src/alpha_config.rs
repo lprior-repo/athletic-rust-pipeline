@@ -121,7 +121,8 @@ impl AlphaConfig {
                 );
             }
             // Reject routes that contain scheme, host, query, or fragment markers.
-            if route.contains("://") || route.contains('@') || route.contains('?') || route.contains('#') {
+            // Reject network-path references (//host/path) and other scheme/host/query/fragment.
+            if route.contains("//") || route.contains('@') || route.contains('?') || route.contains('#') {
                 bail!(
                     "api route '{}' must not contain scheme, host, query, or fragment",
                     route
@@ -156,6 +157,19 @@ impl AlphaConfig {
                 );
             }
             for profile_route in &self.authorization.allowed_profile_routes {
+                // Validate each profile route is HTTPS-relative (path-only).
+                if !profile_route.starts_with('/') {
+                    bail!(
+                        "allowed_profile_routes entry '{}' must start with '/'",
+                        profile_route
+                    );
+                }
+                if profile_route.contains("//") || profile_route.contains('@') || profile_route.contains('?') || profile_route.contains('#') {
+                    bail!(
+                        "allowed_profile_routes entry '{}' must not contain scheme, host, query, or fragment",
+                        profile_route
+                    );
+                }
                 if !allowed.contains(profile_route) {
                     bail!(
                         "allowed_profile_routes entry '{}' is not in authorization.allowed_routes",
@@ -509,6 +523,95 @@ mod tests {
             .expect_err("unauthorized profile route must fail");
         assert!(
             error.to_string().contains("not in authorization.allowed_routes"),
+            "error: {}",
+            error
+        );
+    }
+    #[test]
+    fn timeout_zero_rejected() {
+        let mut config = valid_config();
+        config.api.timeout_seconds = 0;
+        let error = config.validate().expect_err("timeout 0 must fail");
+        assert!(
+            error.to_string().contains("between 1 and 300"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn next_page_empty_next_page_pointer_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/more".to_owned(),
+            next_page_pointer: "".to_owned(),
+            request_page_key: "page".to_owned(),
+        };
+        let error = config.validate().expect_err("empty next_page_pointer must fail");
+        assert!(
+            error.to_string().contains("next_page_pointer"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn next_page_empty_request_page_key_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/more".to_owned(),
+            next_page_pointer: "/page".to_owned(),
+            request_page_key: "".to_owned(),
+        };
+        let error = config.validate().expect_err("empty request_page_key must fail");
+        assert!(
+            error.to_string().contains("request_page_key"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn route_network_path_rejected() {
+        let mut config = valid_config();
+        config.api.rankings_path = "//evil.com/api/v1/tfRankings/GetRankings".to_owned();
+        let error = config.validate().expect_err("network-path route must fail");
+        assert!(
+            error.to_string().contains("host"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn profile_route_with_scheme_rejected() {
+        let mut config = valid_config();
+        config.authorization.allow_profile_enrichment = true;
+        config.authorization.allowed_profile_routes = vec![
+            "https://example.com/api/Profile".to_owned(),
+        ];
+        let error = config
+            .validate()
+            .expect_err("profile route with scheme must fail");
+        assert!(
+            error.to_string().contains("start with '/'") || error.to_string().contains("host"),
+            "error: {}",
+            error
+        );
+    }
+
+    #[test]
+    fn profile_route_not_started_with_slash_rejected() {
+        let mut config = valid_config();
+        config.authorization.allow_profile_enrichment = true;
+        config.authorization.allowed_profile_routes = vec![
+            "api/v1/Profile".to_owned(),
+        ];
+        let error = config
+            .validate()
+            .expect_err("profile route without leading / must fail");
+        assert!(
+            error.to_string().contains("start with '/'"),
             "error: {}",
             error
         );
