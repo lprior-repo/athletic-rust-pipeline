@@ -82,7 +82,6 @@ impl AlphaApiClient {
                 None => Err(AlphaApiError::Incomplete(format!("{ctx} missing"))),
                 Some(serde_json::Value::Null) => Err(AlphaApiError::Incomplete(format!("{ctx} is null"))),
                 Some(serde_json::Value::String(s)) if s.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty"))),
-                Some(serde_json::Value::Object(o)) if o.is_empty() => Err(AlphaApiError::Incomplete(format!("{ctx} is empty object"))),
                 Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => Ok(()),
                 Some(v) => Err(AlphaApiError::Incomplete(format!("{ctx} unexpected type: {v}"))),
             }
@@ -124,6 +123,7 @@ impl AlphaApiClient {
                         let nptr = Self::resolve_ptr(next_page_pointer);
                         validate_next(value.pointer(&nptr), "continuation.complete=false but next pointer")?;
                         enforce_cap(value)?;
+                        return Ok(false);
                     }
                 }
                 let hptr = Self::resolve_ptr(has_more_pointer);
