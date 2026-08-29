@@ -43,8 +43,7 @@
   ],
   "continuation": {
     "page": 2,
-    "complete": false,
-    "nextPageKey": "TEST_CONTINUATION"
+    "complete": false
   },
   "page": 2,
   "complete": false
