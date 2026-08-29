@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::alpha_config::test_helpers::valid_config;
+    use crate::alpha_config_test_helpers::valid_config;
     use crate::alpha_model::PaginationConfig;
 
     use crate::alpha_config::AlphaConfig;
