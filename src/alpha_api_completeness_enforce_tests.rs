@@ -145,11 +145,12 @@ fn enforce_allowed_fields_removes_nested_results_disallowed() {
     let result = &results[0];
     assert!(result.get("IDResult").is_some());
     assert!(result.get("EventShort").is_some());
-    assert!(result.get("Measure").is_none());
-    assert!(result.get("ResultDate").is_none());
-    assert!(result.get("SeasonID").is_none());
-    assert!(result.get("MeetID").is_none());
-    assert!(result.get("MeetName").is_none());
+    // Required result/provenance fields are always preserved.
+    assert!(result.get("Measure").is_some());
+    assert!(result.get("ResultDate").is_some());
+    assert!(result.get("SeasonID").is_some());
+    assert!(result.get("MeetID").is_some());
+    assert!(result.get("MeetName").is_some());
     assert!(result.get("Wind").is_none());
 }
 

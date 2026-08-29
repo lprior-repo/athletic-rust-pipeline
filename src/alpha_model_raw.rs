@@ -253,15 +253,14 @@ pub struct RawNavInfoResponse {
 impl RawNavInfoResponse {
     /// Validate the nav_info response shape.
     ///
-    /// Rejects responses where the API provided no pagination metadata at all
-    /// (e.g. `{}` or missing complete/page fields).
+    /// Requires the response to contain valid pagination metadata.
+    /// Rejects responses missing both complete and page, or with
+    /// wrong-type values for those fields.
     pub fn validate(&self) -> Result<(), &'static str> {
-        // Require complete or page to indicate a valid nav response.
-        // Partial responses (missing state/divisions) are acceptable if pagination metadata is present.
-        if self.complete.is_none() && self.page.is_none() {
-            return Err("RawNavInfoResponse: missing required complete or page field");
+        match (&self.complete, &self.page) {
+            (Some(_), _) | (None, Some(_)) => Ok(()),
+            (None, None) => Err("RawNavInfoResponse: missing required complete or page field"),
         }
-        Ok(())
     }
 }
 

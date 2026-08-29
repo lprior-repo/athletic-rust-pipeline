@@ -26,6 +26,7 @@ pub struct AlphaApiConfig {
     pub timeout_seconds: u64,
     pub max_retries: usize,
     pub pagination: PaginationConfig,
+    pub cap_markers: Vec<String>,
 }
 
 /// Pagination strategy selected by the authorization manifest.

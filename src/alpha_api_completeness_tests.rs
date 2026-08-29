@@ -105,8 +105,7 @@ fn nextpage_error_when_has_more_true_no_next() {
 fn nextpage_error_when_has_more_true_empty_next() {
     let client = make_next_page_client("https://example.com");
     let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#).unwrap();
-    // empty string is a valid pointer — returns Ok(false) for incomplete
-    assert!(matches!(client.check_completeness(&raw), Ok(false)));
+    assert!(client.check_completeness(&raw).is_err(), "empty next page => error");
 }
 
 #[test]

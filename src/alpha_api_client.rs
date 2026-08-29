@@ -84,10 +84,15 @@ impl AlphaApiClient {
                 };
                 let nptr = Self::resolve_ptr(next_page_pointer);
                 let np = value.pointer(&nptr);
-                if np.is_none() || np == Some(&serde_json::Value::Null) {
-                    return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} missing")));
+                match np {
+                    None => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} missing"))),
+                    Some(serde_json::Value::Null) => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} is null"))),
+                    Some(serde_json::Value::String(s)) if s.is_empty() => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} is empty"))),
+                    Some(serde_json::Value::String(_)) | Some(serde_json::Value::Number(_)) | Some(serde_json::Value::Object(_)) => {},
+                    Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} unexpected type: {v}"))),
                 }
-                if let Some(cm) = self.config.cap_markers.first() {
+                // Check all configured cap markers for truncation.
+                for cm in &self.config.cap_markers {
                     if value.get(cm).and_then(|x| x.as_bool()) == Some(true) {
                         return Err(AlphaApiError::TruncatedWithoutContinuation);
                     }
@@ -101,7 +106,7 @@ impl AlphaApiClient {
     }
     fn is_truncated(&self, raw: &RawRankingsResponse) -> bool {
         let v = &raw.value;
-        if let Some(cm) = self.config.cap_markers.first() {
+        for cm in &self.config.cap_markers {
             if v.get(cm).and_then(|x| x.as_bool()) == Some(true) { return true; }
         }
         v.get("__truncated").and_then(|x| x.as_bool()) == Some(true)
@@ -239,8 +244,11 @@ impl AlphaApiClient {
                 return Err(AlphaApiError::Incomplete(format!("required field '{f}' not in allowed_fields")));
             }
         }
-        fn filter_fields(obj: &mut serde_json::Map<String, serde_json::Value>, allowed: &[String]) {
-            obj.retain(|k, _| allowed.iter().any(|a| a == k));
+        // Required result/provenance fields are always authorized and never stripped.
+        let always_keep = ["IDResult", "EventShort", "Measure", "ResultDate", "SeasonID", "MeetID", "MeetName"];
+        fn filter_fields(obj: &mut serde_json::Map<String, serde_json::Value>, allowed: &[String], always_keep: &[&str]) {
+            let allowed_set: std::collections::HashSet<&str> = allowed.iter().map(|s| s.as_str()).collect();
+            obj.retain(|k, _| allowed_set.contains(k.as_str()) || always_keep.contains(&k.as_str()));
         }
         if let Some(obj) = value.as_object_mut() {
             if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
@@ -248,11 +256,11 @@ impl AlphaApiClient {
                     if let Some(records) = g.as_array_mut() {
                         for rec in records {
                             if let Some(rec_obj) = rec.as_object_mut() {
-                                filter_fields(rec_obj, allowed);
+                                filter_fields(rec_obj, allowed, &always_keep);
                                 if let Some(results) = rec_obj.get_mut("Results").and_then(|v| v.as_array_mut()) {
                                     for r in results {
                                         if let Some(res_obj) = r.as_object_mut() {
-                                            filter_fields(res_obj, allowed);
+                                            filter_fields(res_obj, allowed, &always_keep);
                                         }
                                     }
                                 }

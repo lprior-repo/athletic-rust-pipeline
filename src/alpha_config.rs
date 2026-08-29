@@ -170,6 +170,24 @@ impl AlphaConfig {
         }
         Ok(())
     }
+    /// Convert to an AlphaApiClientConfig, wiring all fields including cap_markers.
+    pub fn to_client_config(&self) -> crate::alpha_api::AlphaApiClientConfig {
+        let auth = &self.authorization;
+        let api = &self.api;
+        crate::alpha_api::AlphaApiClientConfig {
+            base_url: api.base_url.clone(),
+            rankings_path: api.rankings_path.clone(),
+            nav_info_path: api.nav_info_path.clone(),
+            timeout_seconds: api.timeout_seconds,
+            max_retries: api.max_retries,
+            pagination: api.pagination.clone(),
+            allowed_routes: auth.allowed_routes.clone(),
+            allowed_fields: auth.allowed_fields.clone(),
+            max_concurrent_requests: auth.max_concurrent_requests,
+            min_delay_ms: auth.min_delay_ms,
+            cap_markers: api.cap_markers.clone(),
+        }
+    }
 }
 #[cfg(test)]
 pub(crate) mod test_helpers {
@@ -215,6 +233,7 @@ pub(crate) mod test_helpers {
                 pagination: PaginationConfig::SingleResponse {
                     complete_pointer: "/settings/complete".to_owned(),
                 },
+                cap_markers: vec![],
             },
         }
     }
