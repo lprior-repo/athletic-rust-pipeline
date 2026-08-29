@@ -141,10 +141,12 @@ async fn http_429_retry_after_one_second() {
         let url = server.url();
         (server, url)
     }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(429)
-        .with_header("Retry-After", "1")
-        .create();
+    for _ in 0..3 {
+        server.mock("POST", "/api/v1/tfRankings/GetRankings")
+            .with_status(429)
+            .with_header("Retry-After", "1")
+            .create();
+    }
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
         rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
@@ -152,11 +154,15 @@ async fn http_429_retry_after_one_second() {
         timeout_seconds: 30,
         max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0,
         cap_markers: vec![],
+        min_delay_ms: 0,
     }).expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {
@@ -249,13 +255,11 @@ async fn nav_info_accepts_partial_response_with_complete() {
         (server, url)
     }).await.unwrap();
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
-        
         .match_query(mockito::Matcher::Any)
-.with_status(200)
+        .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"complete": true, "page": 1}"#)
-        .match_query(mockito::Matcher::Any)
-.create();
+        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "complete": true, "page": 1}"#)
+        .create();
 
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -266,8 +270,12 @@ async fn nav_info_accepts_partial_response_with_complete() {
         pagination: PaginationConfig::SingleResponse {
             complete_pointer: "/complete".to_owned(),
         },
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
         allowed_routes: vec!["/api/v1/tfRankings/GetNavInfo".to_owned()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
         cap_markers: vec![],

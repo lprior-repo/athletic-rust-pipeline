@@ -44,6 +44,22 @@ impl AlphaApiClient {
         serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
     }
 
+    /// Defect 1: pre-send field authorization — validate required fields are in allowed_fields
+    /// before any network call.
+    pub(crate) fn validate_pre_send_allowed_fields(&self) -> Result<(), AlphaApiError> {
+        let allowed = &self.config.allowed_fields;
+        if allowed.is_empty() {
+            return Err(AlphaApiError::Incomplete("allowed_fields is empty — no source fields authorized".into()));
+        }
+        let required_fields = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State", "MeetID", "MeetName", "IDResult", "EventShort", "Measure", "ResultDate", "SeasonID"];
+        for &f in &required_fields {
+            if !allowed.iter().any(|a| a == f) {
+                return Err(AlphaApiError::Incomplete(format!("required source field '{f}' not in allowed_fields")));
+            }
+        }
+        Ok(())
+    }
+
     pub fn build_qparams(
         pagination: &PaginationConfig,
         continuation: &Option<serde_json::Value>,
@@ -52,6 +68,7 @@ impl AlphaApiClient {
             (PaginationConfig::NextPage { request_page_key, .. }, Some(c)) => serde_json::json!({ request_page_key: c }),
             _ => serde_json::json!({}),
         }
+
     }
 
     fn parse_rankings_strict(&self, raw: &RawRankingsResponse) -> Result<Vec<RankingRecord>, String> {
@@ -71,6 +88,26 @@ impl AlphaApiClient {
                     if !cont.complete {
                         return Ok(false);
                     }
+                }
+                // Defect 3: hasMore=true with bad nextPage must error even in SingleResponse mode.
+                let value = &raw.value;
+                match value.get("hasMore").and_then(|x| x.as_bool()) {
+                    Some(true) => {
+                        // hasMore=true requires a valid nextPage pointer
+                        let np = value.get("nextPage");
+                        match np {
+                            None => return Err(AlphaApiError::Incomplete("hasMore=true, nextPage missing".into())),
+                            Some(serde_json::Value::Null) => return Err(AlphaApiError::Incomplete("hasMore=true, nextPage is null".into())),
+                            Some(serde_json::Value::String(s)) if s.is_empty() => return Err(AlphaApiError::Incomplete("hasMore=true, nextPage is empty".into())),
+                            Some(serde_json::Value::String(_)) | Some(serde_json::Value::Number(_)) | Some(serde_json::Value::Object(_)) => {}
+                            Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore=true, nextPage unexpected type: {v}"))),
+                        }
+                    }
+                    Some(false) => {
+                        // hasMore=false => complete with no continuation
+                        return Ok(true);
+                    }
+                    None => {}
                 }
                 let ptr = Self::resolve_ptr(complete_pointer);
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
@@ -159,14 +196,13 @@ impl AlphaApiClient {
             if status == 429 {
                 let delay = resp.headers().get("Retry-After")
                     .and_then(|v| v.to_str().ok())
-                    .and_then(|v| v.parse::<u64>().ok())
-                    .map(|s| s.saturating_mul(1000).max(self.config.min_delay_ms));
+                    .and_then(|v| v.parse::<u64>().ok());
                 match delay {
                     Some(d) => {
                         if retry >= max_retry {
-                            return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: d * retry as u64 });
+                            return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: d.saturating_mul(1000).saturating_mul(retry as u64) });
                         }
-                        tokio::time::sleep(Duration::from_millis(d)).await; retry += 1; continue;
+                        tokio::time::sleep(Duration::from_millis(d.saturating_mul(1000))).await; retry += 1; continue;
                     }
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
                 }
@@ -179,9 +215,26 @@ impl AlphaApiClient {
                 let body = resp.text().await.map_err(AlphaApiError::Request)?;
                 return Err(AlphaApiError::UnexpectedStatus { status, body });
             }
-            // Buffer body inside the retry loop so timeouts on text() also retry.
-            let body = resp.text().await.map_err(AlphaApiError::Request)?;
-            return Ok(body);
+            // Defect 2: body-read timeout — retry with bounded retries and min-delay.
+            let mut body_retry = 0usize;
+            let mut current_resp = resp;
+            loop {
+                match current_resp.text().await {
+                    Ok(text) => return Ok(text),
+                    Err(e) if e.is_timeout() => {
+                        if body_retry >= max_retry {
+                            return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
+                        }
+                        body_retry += 1;
+                        tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
+                        current_resp = self.client.request(method.clone(), url.as_str())
+                            .timeout(Duration::from_secs(self.config.timeout_seconds))
+                            .send().await
+                            .map_err(AlphaApiError::Request)?;
+                    }
+                    Err(e) => return Err(AlphaApiError::Request(e)),
+                }
+            }
         }
     }
 
@@ -198,6 +251,8 @@ impl AlphaApiClient {
             .map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
         let url = base.join(route)
             .map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;
+        // Defect 1: pre-send field authorization — validate before any network call.
+        self.validate_pre_send_allowed_fields()?;
         let text = self.execute_request(Method::POST, url, Some(&body)).await?;
         let raw = RawRankingsResponse::from_json(&text).map_err(|e| AlphaApiError::Incomplete(e))?;
         let complete = self.check_completeness(&raw)?;

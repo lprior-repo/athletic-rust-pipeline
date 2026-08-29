@@ -140,10 +140,12 @@ async fn http_429_retry_after_one_second() {
         let url = server.url();
         (server, url)
     }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(429)
-        .with_header("Retry-After", "1")
-        .create();
+    for _ in 0..3 {
+        server.mock("POST", "/api/v1/tfRankings/GetRankings")
+            .with_status(429)
+            .with_header("Retry-After", "1")
+            .create();
+    }
     let client = make_full_pagination_config(&url);
     let err = client.rankings(&make_test_request()).await.unwrap_err();
     match err {

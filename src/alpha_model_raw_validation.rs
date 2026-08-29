@@ -21,6 +21,13 @@ impl RawRankingRecord {
     }
 
     fn from_nested_results(&self, results: &[RawRankingResult]) -> Result<Vec<RankingRecord>, String> {
+        // Defect 5: reject zero parent identity before nested conversion.
+        if self.athlete_id == 0 {
+            return Err("RawRankingRecord: AthleteID must not be zero".into());
+        }
+        if self.grade_id == 0 {
+            return Err("RawRankingRecord: GradeID must not be zero".into());
+        }
         let mut records = Vec::new();
         for r in results {
             if r.id_result == 0 {
@@ -64,6 +71,13 @@ impl RawRankingRecord {
     }
 
     fn from_flattened(&self) -> Result<Vec<RankingRecord>, String> {
+        // Defect 5: reject zero parent identity before flattened conversion.
+        if self.athlete_id == 0 {
+            return Err("RawRankingRecord flattened: AthleteID must not be zero".into());
+        }
+        if self.grade_id == 0 {
+            return Err("RawRankingRecord flattened: GradeID must not be zero".into());
+        }
         let id_result = self.id_result
             .ok_or("RawRankingRecord flattened: missing required IDResult")?;
         if id_result == 0 {
@@ -183,9 +197,15 @@ impl RawNavInfoResponse {
     /// Rejects responses missing both complete and page, or with
     /// wrong-type values for those fields.
     pub fn validate(&self) -> Result<(), &'static str> {
+        // Require pagination metadata (complete OR page).
         match (&self.complete, &self.page) {
-            (Some(_), _) | (None, Some(_)) => Ok(()),
-            (None, None) => Err("RawNavInfoResponse: missing required complete or page field"),
+            (Some(_), _) | (None, Some(_)) => {}
+            (None, None) => return Err("RawNavInfoResponse: missing required complete or page field"),
         }
+        // Defect 4: require at least one confirmed nav state/event/divisions/genders member.
+        if self.state.is_none() && self.event.is_none() && self.divisions.is_none() && self.genders.is_none() {
+            return Err("RawNavInfoResponse: missing required nav state/event/divisions/genders members");
+        }
+        Ok(())
     }
 }

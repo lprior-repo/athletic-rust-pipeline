@@ -195,10 +195,12 @@ async fn http_429_retry_after_one_second() {
         let url = server.url();
         (server, url)
     }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(429)
-        .with_header("Retry-After", "1")
-        .create();
+    for _ in 0..3 {
+        server.mock("POST", "/api/v1/tfRankings/GetRankings")
+            .with_status(429)
+            .with_header("Retry-After", "1")
+            .create();
+    }
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
         rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
@@ -206,8 +208,12 @@ async fn http_429_retry_after_one_second() {
         timeout_seconds: 30,
         max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        allowed_fields: vec![
+            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
+        ],
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
         cap_markers: vec![],
