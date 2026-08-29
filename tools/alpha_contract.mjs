@@ -10,7 +10,7 @@ if (!pageUrl || !outputDir || !storageState) {
   );
 }
 
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer/i;
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|nextpagekey|pagekey|cursor/i;
 
 const scrub = (value, key = '') => {
   if (Array.isArray(value)) return value.map(item => scrub(item, key));
