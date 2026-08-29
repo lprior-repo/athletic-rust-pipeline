@@ -22,6 +22,8 @@ mod alpha_api_client_async_tests;
 #[cfg(test)]
 mod alpha_api_client_validation_tests;
 #[cfg(test)]
+mod alpha_api_client_cap_marker_tests;
+#[cfg(test)]
 mod alpha_api_client_validation_regression_tests;
 #[cfg(test)]
 mod alpha_api_client_nav_tests;
@@ -83,7 +85,6 @@ use std::{
     path::{Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
-
 #[derive(Debug, Parser)]
 #[command(version, about)]
 struct Cli {
@@ -130,7 +131,6 @@ enum Command {
         output: PathBuf,
     },
 }
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
