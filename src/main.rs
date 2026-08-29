@@ -9,7 +9,11 @@ mod alpha_api_client;
 #[cfg(test)]
 mod alpha_api_tests;
 #[cfg(test)]
-mod alpha_api_client_tests;
+mod alpha_api_client_unit_tests;
+#[cfg(test)]
+mod alpha_api_client_async_tests;
+#[cfg(test)]
+mod alpha_api_client_nav_tests;
 #[cfg(test)]
 mod alpha_api_completeness_tests;
 #[cfg(test)]
@@ -161,11 +165,7 @@ async fn run_pipeline(
         }
     }
     let scan = xlsx::scan(input, &sports, config.workbook.expected_graduation_year)?;
-    eprintln!(
-        "parsed {} real rows; selected {} prospects",
-        scan.stats.actual_data_rows,
-        scan.prospects.len()
-    );
+    eprintln!("parsed {} real rows; selected {} prospects", scan.stats.actual_data_rows, scan.prospects.len());
 
     let checkpoint_path = out_dir.join("checkpoint.jsonl");
     let mut completed = checkpoint::load_latest(&checkpoint_path)?;
@@ -181,30 +181,15 @@ async fn run_pipeline(
 
     for (index, prospect) in prospects.iter().enumerate() {
         if completed.contains_key(&prospect.source_key) {
-            eprintln!(
-                "[{}/{}] skip {} {}",
-                index.saturating_add(1),
-                prospects.len(),
-                prospect.source_key,
-                prospect.full_name()
-            );
+            eprintln!("[{}/{}] skip {} {}", index.saturating_add(1), prospects.len(), prospect.source_key, prospect.full_name());
             continue;
         }
 
-        eprintln!(
-            "[{}/{}] discover {} | {}",
-            index.saturating_add(1),
-            prospects.len(),
-            prospect.full_name(),
-            prospect.school
-        );
+        eprintln!("[{}/{}] discover {} | {}", index.saturating_add(1), prospects.len(), prospect.full_name(), prospect.school);
 
         let hits = match discovery.search(prospect).await {
             Ok(hits) => hits,
-            Err(error) => {
-                eprintln!("  discovery failed: {error:#}");
-                continue;
-            }
+            Err(error) => { eprintln!("  discovery failed: {error:#}"); continue; }
         };
 
         // Extract search evidence for every candidate first. This preserves all
@@ -237,34 +222,23 @@ async fn run_pipeline(
         if config.retrieval.authorized_direct_fetch {
             if let Some(selected_index) = selected_index {
                 if let Some(hit) = hits.get(selected_index) {
-                    let saved_html = match config.retrieval.saved_pages_dir.as_deref() {
-                        Some(directory) => fetch::load_saved_profile(&hit.url, directory)?,
+                    let mut html = match config.retrieval.saved_pages_dir.as_deref() {
+                        Some(directory) => match fetch::load_saved_profile(&hit.url, directory) {
+                            Ok(Some(h)) => Some(h),
+                            Ok(None) | Err(_) => None,
+                        },
                         None => None,
                     };
-                    let html = if saved_html.is_some() {
-                        saved_html
-                    } else {
-                        match fetch::fetch_exact_profile(&hit.url, &config.retrieval).await {
-                            Ok(html) => Some(html),
-                            Err(error) => {
-                                eprintln!("  retrieval failed for {}: {error:#}", hit.url);
-                                None
-                            }
-                        }
-                    };
+                    if html.is_none() {
+                        html = fetch::fetch_exact_profile(&hit.url, &config.retrieval).await.ok();
+                    }
+                    if html.is_none() {
+                        eprintln!("  retrieval failed for {}: no saved page", hit.url);
+                    }
                     if let Some(html) = html {
-                        let mut enriched = extract::candidate_from_evidence(
-                            prospect,
-                            hit,
-                            Some(&html),
-                            &ollama,
-                            config.retrieval.page_text_limit,
-                        )
-                        .await;
+                        let mut enriched = extract::candidate_from_evidence(prospect, hit, Some(&html), &ollama, config.retrieval.page_text_limit).await;
                         scoring::score_candidate(prospect, &mut enriched, &config.matching);
-                        if let Some(slot) = candidates.get_mut(selected_index) {
-                            *slot = enriched;
-                        }
+                        if let Some(slot) = candidates.get_mut(selected_index) { *slot = enriched; }
                     }
                 } else {
                     eprintln!("  selected candidate index {selected_index} has no search hit");
@@ -289,15 +263,10 @@ async fn run_pipeline(
             model_decision,
             &config.matching,
         );
-        record.processed_at_unix = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |duration| duration.as_secs());
+        record.processed_at_unix = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
 
         checkpoint::append(&checkpoint_path, &record)?;
-        eprintln!(
-            "  => {} {:.3} {}",
-            record.status, record.score, record.selected_profile_url
-        );
+        eprintln!("  => {} {:.3} {}", record.status, record.score, record.selected_profile_url);
         completed.insert(record.source_key.clone(), record);
     }
 
@@ -320,9 +289,6 @@ fn summarize(records: &[MatchRecord]) {
     }
     eprintln!("wrote {} records", records.len());
     for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] {
-        eprintln!(
-            "  {status}: {}",
-            counts.get(status).copied().map_or(0, |count| count)
-        );
+        eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c));
     }
 }

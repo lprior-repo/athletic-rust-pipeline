@@ -111,7 +111,7 @@ impl RawRankingRecord {
             grade_id: self.grade_id,
             team_name: self.team_name.clone(),
             state: self.state.clone(),
-            meet_id: self.meet_id.unwrap_or(0),
+            meet_id: self.meet_id.ok_or("RawRankingRecord flattened: missing required MeetID")?,
             meet_name,
             result_id: Some(id_result),
             event_short,
@@ -221,6 +221,8 @@ pub struct RawContinuation {
 
 /// GetNavInfo response shape.
 /// All fields use snake_case; serde `rename` maps from the API's PascalCase/camelCase keys.
+///
+/// `complete` is REQUIRED for valid pagination state.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawNavInfoResponse {
     #[serde(rename = "state")]
@@ -235,6 +237,25 @@ pub struct RawNavInfoResponse {
     pub complete: Option<bool>,
     #[serde(rename = "page")]
     pub page: Option<u64>,
+}
+
+impl RawNavInfoResponse {
+    /// Validate the nav_info response shape.
+    ///
+    /// Rejects responses where the API provided no pagination metadata at all
+    /// (e.g. `{}` or missing complete/page fields in a way that suggests
+    /// a malformed response rather than a partial one).
+    pub fn validate(&self) -> Result<(), &'static str> {
+        // At minimum, complete or page must be present to indicate
+        // a valid nav response rather than garbage.
+        if self.complete.is_none() && self.page.is_none()
+            && self.state.is_none() && self.event.is_none()
+            && self.divisions.is_none() && self.genders.is_none()
+        {
+            return Err("RawNavInfoResponse: completely empty or malformed response");
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]

@@ -1,60 +1,20 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
-use crate::alpha_model_raw::RawRankingRecord;
-fn make_client(server_url: &str) -> AlphaApiClient {
-    let config = AlphaApiClientConfig {
-        base_url: server_url.to_owned(),
-        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        timeout_seconds: 30,
-        max_retries: 2,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
-        },
-        allowed_routes: vec![
-            "/api/v1/tfRankings/GetRankings".to_owned(),
-            "/api/v1/tfRankings/GetNavInfo".to_owned(),
-        ],
-        allowed_fields: vec!["AthleteID".to_owned()],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0,
-    };
-    AlphaApiClient::new(config).expect("client creation must not fail")
+fn make_client(url: &str) -> AlphaApiClient {
+    AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url.to_owned(), rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 30, max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into(), "/api/v1/tfRankings/GetNavInfo".into()],
+        allowed_fields: vec!["AthleteID".into()], max_concurrent_requests: 1, min_delay_ms: 0,
+    }).expect("client creation must not fail")
 }
 fn make_test_request() -> AlphaRequest {
-    AlphaRequest {
-        state_id: 12,
-        season_id: 2026,
-        gender: "m".to_owned(),
-        event_short: "100m".to_owned(),
-        indoor: false,
-        continuation: None,
-    }
+    AlphaRequest { state_id: 12, season_id: 2026, gender: "m".into(), event_short: "100m".into(), indoor: false, continuation: None }
 }
 fn success_body() -> &'static str {
-    r#"{
-        "groupedRankings": [[{
-            "AthleteID": 1,
-            "AthleteName": "Test",
-            "GradeID": 2,
-            "TeamName": "School",
-            "State": "CA",
-            "Results": [{
-                "MeetID": 100,
-                "MeetName": "State Finals",
-                "IDResult": 500,
-                "EventShort": "100m",
-                "Measure": "10.55",
-                "ResultDate": "2026-06-15",
-                "SeasonID": 2026,
-                "Wind": null
-            }]
-        }]],
-        "page": 1,
-        "complete": true,
-        "continuation": null
-    }"#
+    r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"page":1,"complete":true,"continuation":null}"#
 }
 #[tokio::test(flavor = "multi_thread")]
 async fn http_200_success() {
@@ -219,63 +179,93 @@ async fn http_429_retry_after_one_second() {
         other => panic!("expected RateLimitedExhausted, got {:?}", other),
     }
 }
-// --- Constructor error tests ---
 
-#[test]
-fn new_returns_error_on_invalid_config() {
-    let config = AlphaApiClientConfig {
-        base_url: "http://localhost:9999".to_owned(),
-        rankings_path: "/api".to_owned(),
-        nav_info_path: "/nav".to_owned(),
-        timeout_seconds: 1,
+#[tokio::test(flavor = "multi_thread")]
+async fn rankings_continuation_next_page_mode() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    let mock = server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200).with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"A","GradeID":1,"TeamName":"S","State":"CA","EventShort":"100m","IDResult":105,"Measure":"Seconds","ResultDate":"2024-01-01T12:00:00Z","SeasonID":2024,"Wind":"0.5","MeetID":123,"MeetName":"Meet A"}]],"page":2,"complete":false,"continuation":{"page":2,"complete":false},"hasMore":true,"nextPage":"page=3"}"#)
+        .create();
+
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: url,
+        rankings_path: "/api/v1/tfRankings/GetRankings".to_owned(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".to_owned(),
+        timeout_seconds: 10,
         max_retries: 0,
-        pagination: PaginationConfig::SingleResponse {
-            complete_pointer: "/complete".to_owned(),
+        pagination: PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".to_owned(),
+            next_page_pointer: "/nextPage".to_owned(),
+            request_page_key: "page".to_owned(),
         },
-        allowed_routes: vec!["/api".to_owned()],
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".to_owned()],
         allowed_fields: vec![],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
-    };
-    // This must not panic — it returns Result.
-    let result = AlphaApiClient::new(config);
-    assert!(result.is_ok(), "new() must return Ok with valid config");
+    }).expect("client must not fail");
+
+    let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
+    let page = client.rankings(&req).await.expect("rankings must succeed");
+    assert_eq!(page.records.len(), 1, "must have 1 record");
+    assert!(!page.complete, "hasMore=true => incomplete");
+    assert!(page.continuation.is_some(), "continuation must be extracted from nextPage pointer");
+    let cont = page.continuation.unwrap();
+    assert_eq!(cont.as_str().unwrap(), "page=3", "continuation must be next page value");
+    mock.assert();
 }
 
-// --- Missing MeetID/MeetName tests ---
+#[tokio::test(flavor = "multi_thread")]
+async fn rankings_continuation_single_response_mode() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    let mock = server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200).with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"A","GradeID":1,"TeamName":"S","State":"CA","EventShort":"100m","IDResult":105,"Measure":"Seconds","ResultDate":"2024-01-01T12:00:00Z","SeasonID":2024,"Wind":"0.5","MeetID":123,"MeetName":"Meet A"}]],"page":1,"complete":true,"hasMore":false}"#)
+        .create();
 
-#[test]
-fn from_flattened_records_errors_on_missing_meet_id() {
-    let json = r#"{
-        "AthleteID": 1,
-        "AthleteName": "Test",
-        "GradeID": 2,
-        "TeamName": "School",
-        "State": "CA",
-        "EventShort": "100m",
-        "MeetName": "Meet A"
-    }"#;
-    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    let result = rec.to_flattened_records();
-    assert!(result.is_err(), "missing MeetID must error");
-    let err = result.unwrap_err();
-    let msg = err.to_string(); eprintln!("Error: {}", msg); assert!(msg.contains("meet") || msg.contains("required"));
+    let cfg = AlphaApiClientConfig { base_url: url, rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 10, max_retries: 0,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![], max_concurrent_requests: 1, min_delay_ms: 0 };
+    let client = AlphaApiClient::new(cfg).expect("client must not fail");
+
+    let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
+    let page = client.rankings(&req).await.expect("rankings must succeed");
+    assert!(page.complete, "complete=true => done");
+    mock.assert();
 }
 
-#[test]
-fn from_flattened_records_errors_on_missing_meet_name() {
-    let json = r#"{
-        "AthleteID": 1,
-        "AthleteName": "Test",
-        "GradeID": 2,
-        "TeamName": "School",
-        "State": "CA",
-        "EventShort": "100m",
-        "MeetID": 123
-    }"#;
-    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    let result = rec.to_flattened_records();
-    assert!(result.is_err(), "missing MeetName must error");
-    let err = result.unwrap_err();
-    let msg = err.to_string(); eprintln!("Error: {}", msg); assert!(msg.contains("meet") || msg.contains("required"));
+#[tokio::test(flavor = "multi_thread")]
+async fn rankings_truncated_has_more_no_next_pointer() {
+    let (mut server, url) = tokio::task::spawn_blocking(|| {
+        let server = mockito::Server::new();
+        let url = server.url();
+        (server, url)
+    }).await.unwrap();
+    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"A","GradeID":1,"TeamName":"S","State":"CA","EventShort":"100m","IDResult":105,"Measure":"Seconds","ResultDate":"2024-01-01T12:00:00Z","SeasonID":2024,"Wind":"0.5","MeetID":123,"MeetName":"Meet A"}]],"hasMore":true}"#)
+        .create();
+
+    let cfg = AlphaApiClientConfig { base_url: url, rankings_path: "/api/v1/tfRankings/GetRankings".into(),
+        nav_info_path: "/nav".into(), timeout_seconds: 10, max_retries: 0,
+        pagination: PaginationConfig::NextPage { has_more_pointer: "/hasMore".into(),
+            next_page_pointer: "/nextPage".into(), request_page_key: "page".into() },
+        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
+        allowed_fields: vec![], max_concurrent_requests: 1, min_delay_ms: 0 };
+    let client = AlphaApiClient::new(cfg).expect("client must not fail");
+
+    let req = AlphaRequest { state_id: 1, indoor: false, event_short: "".into(), gender: "".into(), season_id: 2024, continuation: None };
+    let result = client.rankings(&req).await;
+    assert!(result.is_err(), "hasMore=true without nextPage must error");
 }

@@ -5,7 +5,6 @@ use crate::alpha_model_raw::{
 };
 
 // --- Request serialization ---
-
 #[test]
 fn serialize_rankings_body_numeric_divlistid() {
     let req = AlphaRequest {
@@ -20,7 +19,6 @@ fn serialize_rankings_body_numeric_divlistid() {
     assert!(body["divListId"].is_number());
     assert_eq!(body["divListId"], serde_json::json!(12));
 }
-
 #[test]
 fn serialize_rankings_body_single_response_qparams() {
     let pagination = PaginationConfig::SingleResponse {
@@ -29,7 +27,6 @@ fn serialize_rankings_body_single_response_qparams() {
     let qparams = AlphaApiClient::build_qparams(&pagination, &None);
     assert_eq!(qparams.as_object().unwrap().len(), 0);
 }
-
 #[test]
 fn serialize_rankings_body_nextpage_qparams() {
     let pagination = PaginationConfig::NextPage {
@@ -41,7 +38,6 @@ fn serialize_rankings_body_nextpage_qparams() {
     let qparams = AlphaApiClient::build_qparams(&pagination, &continuation);
     assert_eq!(qparams["page"], serde_json::json!({"page": 2}));
 }
-
 #[test]
 fn serialize_rankings_body_all_keys_present() {
     let req = AlphaRequest {
@@ -63,7 +59,6 @@ fn serialize_rankings_body_all_keys_present() {
 }
 
 // --- Fixture deserialization ---
-
 #[test]
 fn deserialize_redacted_rankings_fixture() {
     let fixture = std::fs::read_to_string("fixtures/alpha/get-rankings-redacted.json").unwrap();
@@ -75,7 +70,6 @@ fn deserialize_redacted_rankings_fixture() {
     assert_eq!(rec.results.as_ref().unwrap()[0].meet_id, 90_000_001);
     assert_eq!(rec.results.as_ref().unwrap()[0].meet_name, "Test Meet");
 }
-
 #[test]
 fn deserialize_nav_info_fixture() {
     let fixture = std::fs::read_to_string("fixtures/alpha/get-nav-info-redacted.json").unwrap();
@@ -91,7 +85,6 @@ fn deserialize_nav_info_fixture() {
 }
 
 // --- Flattened row decoding ---
-
 #[test]
 fn deserialize_flattened_row_shape() {
     let json = r#"{
@@ -112,7 +105,6 @@ fn deserialize_flattened_row_shape() {
     assert_eq!(rec.event_short, Some("100m".to_owned()));
     assert!(rec.results.is_none() || rec.results.as_ref().unwrap().is_empty());
 }
-
 #[test]
 fn to_flattened_records_errors_when_no_valid_data() {
     let json = r#"{
@@ -127,7 +119,6 @@ fn to_flattened_records_errors_when_no_valid_data() {
     let result = rec.to_flattened_records();
     assert!(result.is_err(), "no valid data should error, not return empty");
 }
-
 #[test]
 fn unknown_fields_ignored_in_raw_ranking_result() {
     let json = r#"{
@@ -144,14 +135,12 @@ fn unknown_fields_ignored_in_raw_ranking_result() {
     assert!(result.is_ok());
     assert_eq!(result.unwrap().measure, "10.5");
 }
-
 #[test]
 fn required_fields_missing_in_raw_ranking_record() {
     let json = r#"{"AthleteID": 123}"#;
     let result: Result<RawRankingRecord, _> = serde_json::from_str(json);
     assert!(result.is_err());
 }
-
 #[test]
 fn no_request_body_logged() {
     let body = AlphaApiClient::serialize_rankings_body(&AlphaRequest {
@@ -167,7 +156,6 @@ fn no_request_body_logged() {
 }
 
 // --- Malformed row rejection ---
-
 #[test]
 fn malformed_nested_row_rejected_via_from_json() {
     // Malformed nested result (missing IDResult) causes from_json to reject the entire response.
@@ -193,7 +181,6 @@ fn malformed_nested_row_rejected_via_from_json() {
     let result = RawRankingsResponse::from_json(json);
     assert!(result.is_err(), "malformed nested row must reject the entire response");
 }
-
 #[test]
 fn valid_nested_row_succeeds() {
     let json = r#"{
@@ -218,7 +205,6 @@ fn valid_nested_row_succeeds() {
     let raw = RawRankingsResponse::from_json(json).unwrap();
     assert_eq!(raw.grouped_rankings[0].len(), 1);
 }
-
 #[test]
 fn flattened_row_missing_required_returns_error() {
     let json = r#"{
@@ -236,7 +222,6 @@ fn flattened_row_missing_required_returns_error() {
     // Missing IDResult, ResultDate, SeasonID => error
     assert!(raw.grouped_rankings[0][0].to_flattened_records().is_err());
 }
-
 #[test]
 fn unknown_fields_in_ranking_record_silently_ignored() {
     // Unknown fields are silently ignored (no deny_unknown_fields).
@@ -253,7 +238,6 @@ fn unknown_fields_in_ranking_record_silently_ignored() {
     assert_eq!(rec.athlete_id, 1);
     assert_eq!(rec.athlete_name, "Test");
 }
-
 #[test]
 fn snake_case_nav_fields_deserialize() {
     let json = r#"{
@@ -274,7 +258,6 @@ fn snake_case_nav_fields_deserialize() {
     assert_eq!(div[0].division_id, Some(1));
     assert_eq!(div[0].indoor, Some(false));
 }
-
 #[test]
 fn enforce_allowed_fields_filters() {
     let body = serde_json::json!({
@@ -293,7 +276,6 @@ fn enforce_allowed_fields_filters() {
     assert_eq!(filtered.len(), 2);
     assert!(filtered.contains_key("divListId"));
 }
-
 #[test]
 fn serialize_rankings_body_qparams_with_continuation() {
     let pagination = PaginationConfig::NextPage {

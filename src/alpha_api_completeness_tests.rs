@@ -15,7 +15,7 @@ fn make_single_response_client(server_url: &str, pointer: &str) -> AlphaApiClien
         allowed_fields: vec![],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
-    })
+    }).expect("client creation must not fail")
 }
 
 fn make_next_page_client(server_url: &str) -> AlphaApiClient {
@@ -34,7 +34,7 @@ fn make_next_page_client(server_url: &str) -> AlphaApiClient {
         allowed_fields: vec![],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
-    })
+    }).expect("client creation must not fail")
 }
 
 fn make_nav_info_client(server_url: &str) -> AlphaApiClient {
@@ -49,7 +49,7 @@ fn make_nav_info_client(server_url: &str) -> AlphaApiClient {
         allowed_fields: vec![],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
-    })
+    }).expect("client creation must not fail")
 }
 
 // --- SingleResponse completeness ---
