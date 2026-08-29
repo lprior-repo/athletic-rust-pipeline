@@ -23,8 +23,6 @@ pub enum AlphaApiError {
     MissingPointer(String),
     #[error("response truncated or capped without continuation metadata")]
     TruncatedWithoutContinuation,
-    #[error("response truncated or capped without continuation metadata: {0}")]
-    TruncatedWithTopNMetadata(String),
 }
 
 /// Configuration extracted from `AlphaConfig` for constructing the client.
