@@ -25,7 +25,7 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|nextpagekey|pagekey|cursor|credentials|credential|password|secret|api[_-]?key/i;
-const URL_VALUE_RE = /athletic\.net|\/profile\/|\/result\//i;
+const URL_VALUE_RE = /^(?:https?:\/\/|www\.)/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
 const scrub = (value, key = '') => {
@@ -48,6 +48,7 @@ const scrub = (value, key = '') => {
 const browser = await chromium.launch({ headless: true });
 let timeoutId;
 let tempFiles = [];
+let backupFiles = [];
 try {
   const context = await browser.newContext({ storageState });
   const page = await context.newPage();
@@ -80,36 +81,77 @@ try {
         reject(new Error('failed to parse alpha response'));
       }
     });
-    page.on('requestfailed', request => { if (!CONFIRMED_PATHS.includes(new URL(request.url()).pathname)) return; reject(new Error('network request failed')) });
+    page.on('requestfailed', request => {
+      const url = new URL(request.url());
+      if (!CONFIRMED_PATHS.includes(url.pathname)) return;
+      if (url.origin !== expectedOrigin) return;
+      if (request.method() !== 'POST') return;
+      reject(new Error('network request failed'));
+    });
   });
 
-  await page.goto(pageUrl, { waitUntil: 'load' });
+  // Start timeout covering entire capture (navigation + API responses)
+  timeoutId = setTimeout(() => {
+    confirmResponse.catch(() => {});
+    reject(new Error('timed out waiting for alpha API responses'));
+  }, 15000);
+
   await Promise.race([
+    page.goto(pageUrl, { waitUntil: 'load' }),
     confirmResponse,
-    new Promise((_, rej) => {
-      timeoutId = setTimeout(() => rej(new Error('timed out waiting for alpha API responses')), 15000);
-    }),
   ]);
   clearTimeout(timeoutId);
 
   if (!captured.rankings || !captured.nav) throw new Error('alpha contract responses not observed');
   await mkdir(outputDir, { recursive: true });
-  await writeAtomic(outputDir, 'get-rankings-redacted.json', JSON.stringify(captured.rankings, null, 2));
-  await writeAtomic(outputDir, 'get-nav-info-redacted.json', JSON.stringify(captured.nav, null, 2));
+  await writeAtomicPair(outputDir, [
+    ['get-rankings-redacted.json', JSON.stringify(captured.rankings, null, 2)],
+    ['get-nav-info-redacted.json', JSON.stringify(captured.nav, null, 2)],
+  ]);
 } finally {
   clearTimeout(timeoutId);
   for (const f of tempFiles) {
     try { await rm(f); } catch {}
   }
+  for (const f of backupFiles) {
+    try { await rm(f); } catch {}
+  }
   tempFiles = [];
+  backupFiles = [];
   await browser.close();
 }
 
-async function writeAtomic(dir, filename, content) {
-  const tmp = join(dir, '.tmp-' + filename);
-  tempFiles.push(tmp);
-  await writeFile(tmp, content);
-  await rename(tmp, join(dir, filename));
-  const idx = tempFiles.indexOf(tmp);
-  if (idx !== -1) tempFiles.splice(idx, 1);
+async function writeAtomicPair(dir, entries) {
+  const filePairs = []; // [finalPath, content]
+  for (const [filename, content] of entries) {
+    filePairs.push([join(dir, filename), content]);
+  }
+
+  // Backup existing final files
+  for (const [finalPath] of filePairs) {
+    const backup = finalPath + '.bak';
+    backupFiles.push(backup);
+    try {
+      await rename(finalPath, backup);
+    } catch {
+      // File doesn't exist yet, no backup needed
+    }
+  }
+
+  // Stage all temp files
+  const tmpPaths = [];
+  for (const [finalPath, content] of filePairs) {
+    const tmp = finalPath + '.tmp';
+    tmpPaths.push(tmp);
+    tempFiles.push(tmp);
+    await writeFile(tmp, content);
+  }
+
+  // Install all
+  for (const [finalPath, content] of filePairs) {
+    const tmp = finalPath + '.tmp';
+    await rename(tmp, finalPath);
+    const idx = tempFiles.indexOf(tmp);
+    if (idx !== -1) tempFiles.splice(idx, 1);
+  }
 }

@@ -44,7 +44,7 @@
   "continuation": {
     "page": 2,
     "complete": false,
-    "nextPageKey": "eyJwYWdlIjoyfQ=="
+    "nextPageKey": "TEST_CONTINUATION"
   },
   "page": 2,
   "complete": false
