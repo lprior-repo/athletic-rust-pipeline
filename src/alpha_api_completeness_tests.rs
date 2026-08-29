@@ -93,10 +93,12 @@ fn single_response_continuation_complete_false_no_next_errors() {
 }
 #[test]
 fn single_response_continuation_complete_false_with_next_page() {
-    // continuation.complete=false with nextPage => Ok(false).
+    // SingleResponse continuation.complete=false with nextPage => Incomplete error.
+    // SingleResponse cannot produce a continuation token, so this must fail closed.
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false with nextPage => Ok(false)");
+    let err = client.check_completeness(&raw).expect_err("SingleResponse with incomplete continuation must fail closed");
+    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)), "expected Incomplete error, got {:?}", err);
 }
 
 #[test]

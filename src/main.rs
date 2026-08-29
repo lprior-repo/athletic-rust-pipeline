@@ -16,6 +16,8 @@ mod alpha_api_tests;
 #[cfg(test)]
 mod alpha_api_client_regression_tests;
 #[cfg(test)]
+mod alpha_api_client_incomplete_regression_tests;
+#[cfg(test)]
 mod alpha_api_client_async_tests;
 #[cfg(test)]
 mod alpha_api_client_validation_tests;
@@ -57,7 +59,6 @@ mod model;
 mod output;
 mod scoring;
 mod xlsx;
-
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use config::Config;
@@ -74,7 +75,6 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 }
-
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Stream and report every real workbook row; performs no network access.

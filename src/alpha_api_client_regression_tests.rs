@@ -257,3 +257,4 @@ async fn pointer_array_index_in_pointer() {
     let page = client.rankings(&make_test_request()).await.unwrap();
     assert!(page.complete, "pointer /items/0/complete should resolve to true");
 }
+

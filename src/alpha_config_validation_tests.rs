@@ -197,5 +197,41 @@ mod tests {
         let result = crate::alpha_api_client::AlphaApiClient::new(config);
         assert!(result.is_ok(), "new() must return Ok with valid config");
     }
+    #[test]
+    fn bare_complete_pointer_rejected() {
+        // RFC6901 pointers must be absolute (start with /).
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "settings/complete".into() };
+        let error = config.validate().expect_err("bare pointer must be rejected");
+        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
+    }
+    #[test]
+    fn bare_next_page_pointer_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "/hasMore".into(),
+            next_page_pointer: "nextPage".into(),
+            request_page_key: "page".into(),
+        };
+        let error = config.validate().expect_err("bare next_page_pointer must be rejected");
+        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
+    }
+    #[test]
+    fn empty_has_more_pointer_rejected_in_next_page_mode() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::NextPage {
+            has_more_pointer: "".into(),
+            next_page_pointer: "/nextPage".into(),
+            request_page_key: "page".into(),
+        };
+        let error = config.validate().expect_err("empty has_more_pointer must be rejected");
+        assert!(error.to_string().contains("non-empty"), "error: {}", error);
+    }
+    #[test]
+    fn empty_complete_pointer_always_rejected() {
+        let mut config = valid_config();
+        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "".into() };
+        let error = config.validate().expect_err("empty complete_pointer must be rejected in single_response mode");
+        assert!(error.to_string().contains("non-empty"), "error: {}", error);
+    }
 }
-

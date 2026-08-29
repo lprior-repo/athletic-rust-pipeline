@@ -77,7 +77,10 @@ impl AlphaApiClient {
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
                 if let Some(cont) = &raw.continuation {
-                    if !cont.complete { validate_next(value.get("nextPage"), "continuation.complete=false but nextPage")?; return Ok(false); }
+                    if !cont.complete { 
+                        validate_next(value.get("nextPage"), "continuation.complete=false but nextPage")?; 
+                        return Err(AlphaApiError::Incomplete("SingleResponse: continuation.complete=false with nextPage but SingleResponse cannot produce a continuation token".into()));
+                    }
                 }
                 match value.get("hasMore").and_then(|x| x.as_bool()) {
                     Some(true) => { validate_next(value.get("nextPage"), "hasMore=true, nextPage")?; return Ok(false); }
@@ -108,13 +111,17 @@ impl AlphaApiClient {
             }
         }
     }
-
     fn resolve_ptr(ptr: &str) -> String { ptr.to_string() }
 
     fn is_truncated(&self, raw: &RawRankingsResponse) -> bool {
         let v = &raw.value;
         for cm in &self.config.cap_markers {
-            if v.get(cm).and_then(|x| x.as_bool()) == Some(true) { return true; }
+            let found = if cm.starts_with('/') {
+                v.pointer(cm).and_then(|x| x.as_bool())
+            } else {
+                v.get(cm).and_then(|x| x.as_bool())
+            };
+            if found == Some(true) { return true; }
         }
         false
     }
