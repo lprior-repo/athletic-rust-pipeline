@@ -43,21 +43,30 @@ impl crate::alpha_api_client::AlphaApiClient {
                     if let Some(records) = g.as_array_mut() {
                         for rec in records {
                             if let Some(rec_obj) = rec.as_object_mut() {
-                                // Preserve "Results" (structural key) before filtering.
-                                let results: Option<Vec<serde_json::Value>> = rec_obj.remove("Results").and_then(|v| {
-                                    match v {
-                                        serde_json::Value::Array(arr) => Some(arr),
-                                        _ => None,
-                                    }
-                                });
+                                // Extract Results before filtering so filter_fields doesn't strip it.
+                                let results_raw = rec_obj.remove("Results");
                                 filter_fields(rec_obj, allowed);
-                                if let Some(mut results) = results {
-                                    for r in results.iter_mut() {
-                                        if let Some(res_obj) = r.as_object_mut() {
-                                            filter_fields(res_obj, allowed);
-                                        }
+                                if let Some(raw) = results_raw {
+                                    match raw {
+                                        serde_json::Value::Array(arr) => {
+                                            // Valid array — filter each element and reinsert.
+                                            let filtered: Vec<serde_json::Value> = arr
+                                                .into_iter()
+                                                .filter_map(|v| {
+                                                    if let Some(obj) = v.as_object() {
+                                                        let mut filtered_map = obj.clone();
+                                                        filter_fields(&mut filtered_map, allowed);
+                                                        Some(serde_json::Value::Object(filtered_map))
+                                                    } else {
+                                                        None
+                                                    }
+                                                })
+                                                .collect();
+                                            rec_obj.insert("Results".into(), serde_json::Value::Array(filtered));
+                                        },
+                                        _ => return Err(AlphaApiError::Incomplete(
+                                            "Results is not an array".into())),
                                     }
-                                    rec_obj.insert("Results".into(), serde_json::Value::Array(results));
                                 }
                             }
                         }

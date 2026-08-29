@@ -1,9 +1,12 @@
 use std::time::Duration;
+
+use crate::alpha_api::AlphaApiError;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_model::PaginationConfig;
-use crate::alpha_api::AlphaApiError;
-use crate::alpha_test_helpers::{make_client, make_client_with_fields, make_full_pagination_config, make_test_request, success_body};
+use crate::alpha_test_helpers::make_test_request;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use crate::alpha_test_helpers::{make_client, make_client_with_fields, make_full_pagination_config, success_body};
 
 #[tokio::test(flavor = "multi_thread")]
 async fn http_200_success() {
@@ -250,47 +253,34 @@ async fn enforce_response_allowed_fields_empty_fails_closed() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn body_timeout_cancellation_no_orphan() {
-    // Body read timeout must cancel the spawned body-read task (no orphan).
-    // Uses tokio::time::timeout internally — when timeout wins, the
-    // underlying Future is dropped immediately.
-    let (mut server, url) = tokio::task::spawn_blocking(|| {
-        let server = mockito::Server::new();
-        let url = server.url();
-        (server, url)
-    }).await.unwrap();
-    // Server sends 200 but hangs on body.
-    let mock = server.mock("POST", "/api/v1/tfRankings/GetRankings")
-        .with_status(200)
-        .create();
-    let config = AlphaApiClientConfig {
-        base_url: url,
+    // Raw TCP server sends 200 headers, delays body by 6s.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        loop {
+            let mut s = listener.accept().await.unwrap().0;
+            tokio::task::spawn(async move {
+                let _ = s.read(&mut [0u8; 8192]).await;
+                let _ = s.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n").await;
+                tokio::time::sleep(Duration::from_secs(6)).await;
+                let _ = s.write_all(b"{}").await;
+            });
+        }
+    });
+    let client = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: format!("http://{addr}/api/v1/tfRankings/GetRankings"),
         rankings_path: "/api/v1/tfRankings/GetRankings".into(),
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
-        timeout_seconds: 30,
-        max_retries: 0,
+        timeout_seconds: 2, max_retries: 2,
         pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-        allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(),
-            "TeamName".into(), "State".into(), "MeetID".into(), "MeetName".into(),
-            "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
-        ],
-        max_concurrent_requests: 1,
-        min_delay_ms: 0,
-        cap_markers: vec![],
-    };
-    let client = AlphaApiClient::new(config).expect("client creation must not fail");
+        allowed_fields: vec!["AthleteID","AthleteName","GradeID","TeamName","State","MeetID","MeetName","IDResult","EventShort","Measure","ResultDate","SeasonID"].into_iter().map(String::from).collect(),
+        max_concurrent_requests: 1, min_delay_ms: 0, cap_markers: vec![],
+    }).expect("client creation must not fail");
     let start = std::time::Instant::now();
-    let result = tokio::time::timeout(Duration::from_secs(5), client.rankings(&make_test_request())).await;
+    let result = client.rankings(&make_test_request()).await;
     let elapsed = start.elapsed();
-    // Either we get a timeout error from the client or the request timeout fires.
-    // In either case, it must return within 5 seconds (no orphan waiting).
-    assert!(elapsed < Duration::from_secs(5), "body timeout must cancel immediately, took {:?}", elapsed);
-    match result {
-        Err(_) => { /* tokio timeout — good, no orphan */ }
-        Ok(Err(_)) => { /* client timeout — good */ }
-        Ok(Ok(_)) => panic!("should not succeed with no body"),
-    }
-    mock.assert();
+    assert!(elapsed >= Duration::from_secs(5), "retried bounded attempts, elapsed {:?}", elapsed);
+    assert!(elapsed < Duration::from_secs(10), "did not hang, elapsed {:?}", elapsed);
+    match result { Err(AlphaApiError::Timeout { .. }) => {}, other => panic!("expected Timeout, got {:?}", other), }
 }

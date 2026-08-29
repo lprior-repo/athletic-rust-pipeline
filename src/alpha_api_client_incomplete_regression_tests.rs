@@ -18,7 +18,7 @@ async fn single_response_incomplete_fails_closed() {
     server.mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"hasMore":true,"nextPage":"token-42","settings":{"complete":false},"continuation":{"complete":false}}"#)
+        .with_body(r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"hasMore":true,"nextPage":"token-42","settings":{"complete":false},"continuation":{"page":0,"complete":false}}"#)
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -135,6 +135,8 @@ async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
             "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
+            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
+            "ResultDate".into(), "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
         min_delay_ms: 0,
