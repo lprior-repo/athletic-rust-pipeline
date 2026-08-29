@@ -258,7 +258,7 @@ async fn nav_info_accepts_partial_response_with_complete() {
         .match_query(mockito::Matcher::Any)
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "complete": true, "page": 1}"#)
+        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "event": {"EventShort": "100m", "EventName": "100 Meters"}, "divisions": [{"DivisionID": 1, "DivisionName": "Div 1", "Indoor": false}], "genders": ["m", "f"], "complete": true, "page": 1}"#)
         .create();
 
     let client = AlphaApiClient::new(AlphaApiClientConfig {

@@ -1,5 +1,5 @@
 use crate::alpha_model::RankingRecord;
-use crate::alpha_model_raw::{RawContinuation, RawNavInfoResponse, RawRankingRecord, RawRankingResult, RawRankingsResponse};
+use crate::alpha_model_raw::{RawContinuation, RawRankingRecord, RawRankingResult, RawRankingsResponse};
 use serde::Deserialize;
 
 impl RawRankingRecord {
@@ -190,22 +190,3 @@ impl RawRankingsResponse {
     }
 }
 
-impl RawNavInfoResponse {
-    /// Validate the nav_info response shape.
-    ///
-    /// Requires the response to contain valid pagination metadata.
-    /// Rejects responses missing both complete and page, or with
-    /// wrong-type values for those fields.
-    pub fn validate(&self) -> Result<(), &'static str> {
-        // Require pagination metadata (complete OR page).
-        match (&self.complete, &self.page) {
-            (Some(_), _) | (None, Some(_)) => {}
-            (None, None) => return Err("RawNavInfoResponse: missing required complete or page field"),
-        }
-        // Defect 4: require at least one confirmed nav state/event/divisions/genders member.
-        if self.state.is_none() && self.event.is_none() && self.divisions.is_none() && self.genders.is_none() {
-            return Err("RawNavInfoResponse: missing required nav state/event/divisions/genders members");
-        }
-        Ok(())
-    }
-}

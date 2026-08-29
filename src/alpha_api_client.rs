@@ -207,33 +207,21 @@ impl AlphaApiClient {
                 return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
             }
             if status < 200 || status >= 300 {
-                let body = resp.text().await.map_err(AlphaApiError::Request)?;
-                return Err(AlphaApiError::UnexpectedStatus { status, body });
+                let body_text = resp.text().await.map_err(AlphaApiError::Request)?;
+                return Err(AlphaApiError::UnexpectedStatus { status, body: body_text });
             }
             // Read body text with bounded retry on timeout.
-            let mut text_read = 0usize;
-            let mut current_resp = resp;
-            loop {
-                match current_resp.text().await {
-                    Ok(text) => return Ok(text),
-                    Err(e) if e.is_timeout() => {
-                        if text_read >= max_retry {
-                            return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
-                        }
-                        text_read += 1;
-                        tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
-                        // Rebuild and re-send the complete request with body.
-                        let builder = self.client.request(method.clone(), url.as_str())
-                            .timeout(Duration::from_secs(self.config.timeout_seconds));
-                        let builder = match body {
-                            Some(b) => builder.header("Content-Type", "application/json").json(b),
-                            None => builder,
-                        };
-                        current_resp = builder.send().await
-                            .map_err(AlphaApiError::Request)?;
+            match resp.text().await {
+                Ok(text) => return Ok(text),
+                Err(e) if e.is_timeout() => {
+                    if attempt >= max_retry {
+                        return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
                     }
-                    Err(e) => return Err(AlphaApiError::Request(e)),
+                    attempt += 1;
+                    tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
+                    continue;
                 }
+                Err(e) => return Err(AlphaApiError::Request(e)),
             }
         }
     }

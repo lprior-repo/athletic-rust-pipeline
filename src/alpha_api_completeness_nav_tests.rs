@@ -27,7 +27,7 @@ async fn nav_info_success() {
     }).await.unwrap();
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo")
         .match_query(mockito::Matcher::Any).with_status(200)
-        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "complete": true}"#)
+        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "event": {"EventShort": "100m", "EventName": "100 Meters"}, "divisions": [{"DivisionID": 1, "DivisionName": "Div 1", "Indoor": false}], "genders": ["m", "f"], "complete": true}"#)
         .create();
     let client = make_nav_info_client(&url);
     let resp = client.nav_info(2026, false).await.expect("nav_info should succeed");
@@ -44,7 +44,7 @@ async fn nav_info_5xx_bounded_retry() {
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo").with_status(500).create();
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo").with_status(500).create();
     server.mock("GET", "/api/v1/tfRankings/GetNavInfo").match_query(mockito::Matcher::Any)
-        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "complete": true}"#).create();
+        .with_body(r#"{"state": {"StateID": 1, "State": "CA", "StateName": "California"}, "event": {"EventShort": "100m", "EventName": "100 Meters"}, "divisions": [{"DivisionID": 1, "DivisionName": "Div 1", "Indoor": false}], "genders": ["m", "f"], "complete": true}"#).create();
     let client = make_nav_info_client(&url);
     let resp = client.nav_info(2026, false).await.unwrap();
     assert_eq!(resp.complete, Some(true));

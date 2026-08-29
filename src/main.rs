@@ -42,6 +42,10 @@ mod alpha_config_loading_tests;
 #[cfg(test)]
 mod alpha_model_raw;
 #[cfg(test)]
+mod alpha_nav_validation;
+#[cfg(test)]
+mod alpha_nav_validation_tests;
+#[cfg(test)]
 mod alpha_test_helpers;
 mod checkpoint;
 mod config;
@@ -292,5 +296,4 @@ async fn run_pipeline(
     output::write_all(out_dir, &ordered)?;
     summarize(&ordered);
     Ok(())
-}
-fn summarize(records: &[MatchRecord]) { let mut counts: HashMap<&str, usize> = HashMap::new(); for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); } eprintln!("wrote {} records", records.len()); for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] { eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c)); } }
+}fn summarize(records: &[MatchRecord]) { let mut counts: HashMap<&str, usize> = HashMap::new(); for r in records { counts.entry(r.status.as_str()).and_modify(|c| *c = c.saturating_add(1)).or_insert(1); } eprintln!("wrote {} records", records.len()); for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] { eprintln!("  {status}: {}", counts.get(status).copied().map_or(0, |c| c)); } }
