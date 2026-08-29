@@ -33,7 +33,13 @@ const scrub = (value, key = '') => {
   if (value && typeof value === 'object') {
     const entries = Object.entries(value).map(([name, item]) => {
       if (name === 'continuation' && typeof item === 'object' && item !== null) {
-        return [name, scrub(item, name)];
+        // Whitelist only safe metadata types; redact everything else
+        const safe = Object.entries(item).map(([k, v]) => {
+          if (k === 'page' && typeof v === 'number') return [k, v];
+          if (k === 'complete' && typeof v === 'boolean') return [k, v];
+          return [k, 'REDACTED'];
+        });
+        return [name, Object.fromEntries(safe)];
       }
       if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
       return [name, scrub(item, name)];
