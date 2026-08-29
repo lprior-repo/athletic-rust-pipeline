@@ -82,9 +82,10 @@ impl AlphaApiClient {
                         return Err(AlphaApiError::Incomplete("SingleResponse: continuation.complete=false with nextPage but SingleResponse cannot produce a continuation token".into()));
                     }
                 }
-                match value.get("hasMore").and_then(|x| x.as_bool()) {
-                    Some(true) => { validate_next(value.get("nextPage"), "hasMore=true, nextPage")?; return Err(AlphaApiError::Incomplete("SingleResponse: hasMore=true with nextPage but SingleResponse cannot produce a continuation token".into())); }
-                    Some(false) | None => {}
+                match value.get("hasMore") {
+                    Some(serde_json::Value::Bool(true)) => { validate_next(value.get("nextPage"), "hasMore=true, nextPage")?; return Err(AlphaApiError::Incomplete("SingleResponse: hasMore=true with nextPage but SingleResponse cannot produce a continuation token".into())); }
+                    Some(serde_json::Value::Bool(false)) | None => {}
+                    Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore is not bool: {v}"))),
                 }
                 let ptr = Self::resolve_ptr(complete_pointer);
                 match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
@@ -117,11 +118,16 @@ impl AlphaApiClient {
         let v = &raw.value;
         for cm in &self.config.cap_markers {
             let found = if cm.starts_with('/') {
-                v.pointer(cm).and_then(|x| x.as_bool())
+                v.pointer(cm)
             } else {
-                v.get(cm).and_then(|x| x.as_bool())
+                v.get(cm)
             };
-            if found == Some(true) { return true; }
+            match found {
+                Some(serde_json::Value::Bool(true)) => return true,
+                Some(serde_json::Value::Bool(false)) => {}
+                Some(_v) => return true,
+                None => {}
+            }
         }
         false
     }

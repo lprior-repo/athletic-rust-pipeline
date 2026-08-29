@@ -115,6 +115,32 @@ fn single_response_has_more_true_with_empty_next_page_errors() {
     let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#).unwrap();
     assert!(client.check_completeness(&raw).is_err(), "hasMore=true with empty nextPage must error in SingleResponse");
 }
+#[test]
+fn single_response_has_more_wrong_type_string_returns_error() {
+    // hasMore:"yes" (wrong type) must be treated as malformed, not absent.
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": "yes"}"#).unwrap();
+    let err = client.check_completeness(&raw).expect_err("hasMore wrong-type must return Incomplete");
+    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+}
+
+#[test]
+fn single_response_has_more_null_returns_error() {
+    // hasMore:null must be treated as malformed, not absent.
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": null}"#).unwrap();
+    let err = client.check_completeness(&raw).expect_err("hasMore null must return Incomplete");
+    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+}
+
+#[test]
+fn single_response_has_more_wrong_type_object_returns_error() {
+    // hasMore:{...} (wrong type) must be treated as malformed, not absent.
+    let client = make_single_response_client("https://example.com", "/complete");
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": {"foo": 1}}"#).unwrap();
+    let err = client.check_completeness(&raw).expect_err("hasMore wrong-type object must return Incomplete");
+    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+}
 // --- NextPage completeness ---
 
 #[test]
