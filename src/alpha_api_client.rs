@@ -158,7 +158,7 @@ impl AlphaApiClient {
         -> Result<String, BodyReadError>
     {
         let limit = self.config.max_body_bytes;
-        let mut accumulated = Vec::new();
+        let mut accumulated = Vec::with_capacity(limit as usize);
         let mut resp = resp;
         let deadline = tokio::time::Instant::now() + timeout;
         loop {
@@ -227,7 +227,7 @@ impl AlphaApiClient {
                 match self.read_body_with_timeout(resp, timeout_dur).await {
                     Err(BodyReadError::Timeout) => { return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt }); }
                     Err(BodyReadError::Other(msg)) => {
-                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
+                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt }); }
                         return Err(AlphaApiError::ServerErrorExhausted { status, retries: attempt });
                     }
                     Ok(_) => {}
@@ -239,7 +239,7 @@ impl AlphaApiClient {
                     Ok(b) => b,
                     Err(BodyReadError::Timeout) => return Err(AlphaApiError::UnexpectedStatus { status, body: "response body read timed out".into() }),
                     Err(BodyReadError::Other(msg)) => {
-                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::BodyTooLarge { limit: self.config.max_body_bytes }); }
+                        if msg.starts_with("body exceeded") { return Err(AlphaApiError::UnexpectedStatus { status, body: "response body too large".into() }); }
                         return Err(AlphaApiError::UnexpectedStatus { status, body: format!("response body read error: {msg}") });
                     }
                 };
