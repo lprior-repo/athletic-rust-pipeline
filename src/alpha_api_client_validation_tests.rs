@@ -3,7 +3,7 @@ use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::{AlphaRequest, PaginationConfig};
 use crate::alpha_model_raw::{RawRankingRecord, RawRankingsResponse};
-use crate::alpha_test_helpers::make_client;
+use crate::alpha_test_helpers::make_full_pagination_config;
 fn make_test_request() -> AlphaRequest {
     AlphaRequest {
         state_id: 12,
@@ -239,14 +239,15 @@ fn build_qparams_accepts_positive_integer_continuation() {
     assert_eq!(params["page"], 1);
 }
 
+
 #[tokio::test(flavor = "multi_thread")]
 async fn check_completeness_rejects_fractional_next_page() {
     let json = r#"{
         "groupedRankings": [], "page": 1, "complete": true, "continuation": null,
-        "nextPage": 1.5, "hasMore": false
+        "nextPage": 1.5, "hasMore": true
     }"#;
-    let raw: RawRankingsResponse = serde_json::from_str(json).unwrap();
-    let client = make_client("http://example.com");
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    let client = make_full_pagination_config("http://example.com");
     let result = client.check_completeness(&raw);
     assert!(result.is_err(), "fractional nextPage must be rejected, got {:?}", result);
 }
@@ -255,10 +256,36 @@ async fn check_completeness_rejects_fractional_next_page() {
 async fn check_completeness_rejects_zero_next_page() {
     let json = r#"{
         "groupedRankings": [], "page": 1, "complete": true, "continuation": null,
-        "nextPage": 0, "hasMore": false
+        "nextPage": 0, "hasMore": true
     }"#;
-    let raw: RawRankingsResponse = serde_json::from_str(json).unwrap();
-    let client = make_client("http://example.com");
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    let client = make_full_pagination_config("http://example.com");
     let result = client.check_completeness(&raw);
     assert!(result.is_err(), "zero nextPage must be rejected, got {:?}", result);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn check_completeness_rejects_empty_object_next_page() {
+    let json = r#"{
+        "groupedRankings": [], "page": 1, "complete": true, "continuation": null,
+        "nextPage": {}, "hasMore": true
+    }"#;
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    let client = make_full_pagination_config("http://example.com");
+    let result = client.check_completeness(&raw);
+    assert!(result.is_err(), "empty object nextPage must be rejected, got {:?}", result);
+}
+
+
+#[tokio::test(flavor = "multi_thread")]
+async fn check_completeness_accepts_valid_next_page_token() {
+    let json = r#"{
+        "groupedRankings": [[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":1,"MeetName":"State","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026}]}]],
+        "page": 1, "complete": true, "continuation": null,
+        "nextPage": "2", "hasMore": true
+    }"#;
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    let client = make_full_pagination_config("http://example.com");
+    let result = client.check_completeness(&raw);
+    assert!(matches!(result, Ok(false)), "valid string nextPage with hasMore=true => incomplete");
 }
