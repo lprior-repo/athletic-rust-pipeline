@@ -24,16 +24,16 @@ const expectedOrigin = 'https://www.athletic.net';
   }
 }
 
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key/i;
-const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?:\/|$))/i;
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name|id/i;
+const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|data:|urn:|tel:|blob:|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
 const scrub = (value, key = '') => {
   if (Array.isArray(value)) return value.map(item => scrub(item, key));
   if (value && typeof value === 'object') {
     const entries = Object.entries(value).map(([name, item]) => {
-      if (name === 'continuation' && typeof item === 'object' && item !== null) {
-        // Whitelist only safe metadata types; redact everything else
+      if (name === 'continuation' && item === null) return [name, null];
+      if (name === 'continuation' && typeof item === 'object') {
         const safe = Object.entries(item).map(([k, v]) => {
           if (k === 'page' && typeof v === 'number') return [k, v];
           if (k === 'complete' && typeof v === 'boolean') return [k, v];
