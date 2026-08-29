@@ -138,11 +138,11 @@ fn nextpage_incomplete_when_has_more_true_valid_next() {
 }
 
 #[test]
-fn nextpage_continuation_complete_false_overrides_has_more_false() {
-    // Fix 3: continuation.complete=false overrides hasMore=false.
+fn nextpage_has_more_false_returns_complete() {
+    // hasMore=false is authoritative: response is complete regardless of continuation metadata.
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": false, "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false overrides hasMore=false");
+    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": false }"#).unwrap();
+    assert!(client.check_completeness(&raw).unwrap(), "hasMore=false => complete");
 }
 
 

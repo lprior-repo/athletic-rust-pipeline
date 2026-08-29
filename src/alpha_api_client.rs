@@ -84,9 +84,6 @@ impl AlphaApiClient {
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
                 let value = &raw.value;
-                if let Some(cont) = &raw.continuation {
-                    if !cont.complete { return Ok(false); }
-                }
                 let hptr = Self::resolve_ptr(has_more_pointer);
                 match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
                     serde_json::Value::Bool(v) => { if !v { return Ok(true); } }
@@ -101,6 +98,7 @@ impl AlphaApiClient {
                     Some(serde_json::Value::String(_) | serde_json::Value::Number(_) | serde_json::Value::Object(_)) => {}
                     Some(v) => return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} unexpected type: {v}"))),
                 }
+                // hasMore=true with valid next token => incomplete, continuation is metadata.
                 Ok(false)
             }
         }

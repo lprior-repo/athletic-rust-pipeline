@@ -232,3 +232,31 @@ fn fixture_redacted_accepted() {
         .expect("fixture must parse");
     assert!(resp.validate().is_ok());
 }
+
+#[test]
+fn gender_empty_string_rejected() {
+    let json = r#"{
+        "state": {"StateID":1,"State":"TS","StateName":"Test"},
+        "event": {"EventShort":"100m","EventName":"100 Meters"},
+        "divisions": [{"DivisionID":1,"DivisionName":"Div","Indoor":false}],
+        "genders": ["m", ""],
+        "complete": true,
+        "page": 1
+    }"#;
+    let resp = parse_json(json);
+    assert!(resp.validate().is_err());
+}
+
+#[test]
+fn gender_whitespace_only_rejected() {
+    let json = r#"{
+        "state": {"StateID":1,"State":"TS","StateName":"Test"},
+        "event": {"EventShort":"100m","EventName":"100 Meters"},
+        "divisions": [{"DivisionID":1,"DivisionName":"Div","Indoor":false}],
+        "genders": ["m", "  "],
+        "complete": true,
+        "page": 1
+    }"#;
+    let resp = parse_json(json);
+    assert!(resp.validate().is_err());
+}

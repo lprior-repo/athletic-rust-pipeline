@@ -61,6 +61,12 @@ impl RawNavInfoResponse {
         if genders.is_empty() {
             return Err("RawNavInfoResponse: genders empty");
         }
+        for g in genders {
+            let trimmed = g.trim();
+            if trimmed.is_empty() {
+                return Err("RawNavInfoResponse: gender is empty or whitespace-only");
+            }
+        }
         Ok(())
     }
 }
