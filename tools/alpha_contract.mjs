@@ -25,8 +25,8 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name/i;
-const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|localhost(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9]+\.[a-z0-9]+\.[0-9]+\.[a-z0-9]+(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9][a-z0-9-]*\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
-const PII_VALUE_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/i;
+const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|localhost(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9]+\.[a-z0-9]+\.[0-9]+\.[a-z0-9]+(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9][a-z0-9-]*\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$)|\[[a-fA-F0-9:]+\]|[a-z0-9]\/)/i;
+const PII_VALUE_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\+?[0-9][ -.]?[0-9]{2,}/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source|email|phone|address|street|postal|zip|city|ssn|dob/i;
 
 const ID_RE = /^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i;
@@ -35,7 +35,7 @@ const scrub = (value, key = '') => {
   if (value && typeof value === 'object') {
     const entries = Object.entries(value).map(([name, item]) => {
       if (name === 'continuation' && item === null) return [name, null];
-      if (name === 'continuation' && typeof item === 'object') {
+      if (name === 'continuation' && item !== null && typeof item === 'object' && !Array.isArray(item)) {
         const safe = Object.entries(item).map(([k, v]) => {
           if (k === 'page' && typeof v === 'number') return [k, v];
           if (k === 'complete' && typeof v === 'boolean') return [k, v];
