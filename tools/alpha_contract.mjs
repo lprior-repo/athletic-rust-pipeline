@@ -24,7 +24,7 @@ const expectedOrigin = 'https://www.athletic.net';
   }
 }
 
-const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name/i;
+const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key/i;
 const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|[a-z]+\/[a-z0-9]|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$))/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source/i;
 
@@ -41,7 +41,10 @@ const scrub = (value, key = '') => {
         });
         return [name, Object.fromEntries(safe)];
       }
-      if (CRED_KEYS.test(name)) return [name, 'REDACTED'];
+      if (/^(?:.*[Ii][Dd]|[Ii][Dd].*|id)$/i.test(name)) {
+        if (typeof item === 'number' || typeof item === 'string') return [name, typeof item === 'number' ? 90000001 : '90000001'];
+        if (typeof item === 'object' && item !== null) return [name, 'REDACTED'];
+      }
       return [name, scrub(item, name)];
     });
     return Object.fromEntries(entries);
