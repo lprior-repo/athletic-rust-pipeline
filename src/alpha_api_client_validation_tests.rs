@@ -319,3 +319,21 @@ fn invalid_config_retry_delay_over_300k() {
     });
     assert!(matches!(result, Err(AlphaApiError::InvalidConfig(_))));
 }
+#[test]
+fn invalid_config_retry_delay_zero() {
+    let result = AlphaApiClient::new(AlphaApiClientConfig {
+        base_url: "http://example.com".into(),
+        rankings_path: "/api".into(),
+        nav_info_path: "/api".into(),
+        timeout_seconds: 30, max_retries: 2,
+        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        allowed_routes: vec!["/api".into()],
+        allowed_fields: vec!["AthleteID".into()],
+        max_concurrent_requests: 1,
+        min_delay_ms: 1000, max_retry_delay_ms: 0,
+        cap_markers: vec![],
+        max_body_bytes: 8 * 1024 * 1024,
+        auth_enabled: true, permission_reference: "test".into(),
+    });
+    assert!(matches!(result, Err(AlphaApiError::InvalidConfig(_))));
+}
