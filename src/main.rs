@@ -4,6 +4,16 @@ mod alpha_config;
 #[cfg(test)]
 #[allow(dead_code)]
 mod alpha_model;
+#[cfg(test)]
+mod alpha_route_validation;
+#[cfg(test)]
+mod alpha_config_validation_tests;
+#[cfg(test)]
+mod alpha_config_api_tests;
+#[cfg(test)]
+mod alpha_config_loading_tests;
+#[cfg(test)]
+mod alpha_model_tests;
 mod checkpoint;
 mod config;
 mod discovery;
