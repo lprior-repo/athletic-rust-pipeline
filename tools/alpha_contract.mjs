@@ -134,19 +134,15 @@ try {
 }
 
 async function writeAtomicPair(dir, entries) {
+
+  const tx = process.pid + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
   const filePairs = entries.map(([filename, content]) => ({
     filename,
     content,
     finalPath: join(dir, filename),
-    tmpPath: join(dir, '.tmp-' + filename),
-    backupPath: join(dir, '.bak-' + filename),
+    tmpPath: join(dir, '.tmp-' + tx + '-' + filename),
+    backupPath: join(dir, '.bak-' + tx + '-' + filename),
   }));
-
-  // Recover from stale crash artifacts
-  for (const f of filePairs) {
-    try { await rm(f.backupPath); } catch {}
-    try { await rm(f.tmpPath); } catch {}
-  }
   // Step 1: Backup existing final files; track only successful backups
   const successfulBackups = [];
   try {
