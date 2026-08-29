@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::alpha_model::*;
-    use crate::alpha_model_raw::RawRankingsResponse;
+    use crate::alpha_model_raw::{RawNavInfoResponse, RawRankingRecord, RawRankingResult, RawRankingsResponse};
     use std::path::Path;
     #[test]
     fn parse_rankings_fixture() {
@@ -22,9 +22,9 @@ mod tests {
         assert_eq!(rec.athlete_id, 90_000_001);
         assert_eq!(rec.athlete_name, "Test Runner");
         assert_eq!(rec.state, "TS");
-        assert_eq!(rec.results.len(), 1);
+        assert_eq!(rec.results.as_ref().unwrap().len(), 1);
 
-        let r0 = &rec.results[0];
+        let r0 = &rec.results.as_ref().unwrap()[0];
         assert_eq!(r0.measure, "10.50");
         assert_eq!(r0.wind, Some("+1.2".to_owned()));
         assert_eq!(r0.event_short, "100m");
@@ -34,10 +34,10 @@ mod tests {
         assert_eq!(rec2.athlete_id, 90_000_001);
         assert_eq!(rec2.athlete_name, "Test Runner");
         assert_eq!(rec2.state, "TS");
-        assert_eq!(rec2.results.len(), 1);
-        assert_eq!(rec2.results[0].measure, "21.30");
-        assert_eq!(rec2.results[0].event_short, "200m");
-        assert_eq!(rec2.results[0].wind, None);
+        assert_eq!(rec2.results.as_ref().unwrap().len(), 1);
+        assert_eq!(rec2.results.as_ref().unwrap()[0].measure, "21.30");
+        assert_eq!(rec2.results.as_ref().unwrap()[0].event_short, "200m");
+        assert_eq!(rec2.results.as_ref().unwrap()[0].wind, None);
 
         // Continuation metadata present.
         assert_eq!(resp.continuation.as_ref().unwrap().page, 2);
@@ -52,19 +52,19 @@ mod tests {
         let resp: RawNavInfoResponse =
             serde_json::from_str(&fixture).expect("fixture must deserialize");
         let state = resp.state.unwrap();
-        assert_eq!(state.StateID, Some(90_000_001));
-        assert_eq!(state.State, Some("TS".to_owned()));
-        assert_eq!(state.StateName, Some("Test State".to_owned()));
+        assert_eq!(state.state_id, Some(90_000_001));
+        assert_eq!(state.state, Some("TS".to_owned()));
+        assert_eq!(state.state_name, Some("Test State".to_owned()));
 
         let event = resp.event.unwrap();
-        assert_eq!(event.EventShort, Some("100m".to_owned()));
-        assert_eq!(event.EventName, Some("100 Meters".to_owned()));
+        assert_eq!(event.event_short, Some("100m".to_owned()));
+        assert_eq!(event.event_name, Some("100 Meters".to_owned()));
 
         let div = resp.divisions.unwrap();
         assert_eq!(div.len(), 1);
-        assert_eq!(div[0].DivisionID, Some(90_000_001));
-        assert_eq!(div[0].DivisionName, Some("Test Division".to_owned()));
-        assert_eq!(div[0].Indoor, Some(false));
+        assert_eq!(div[0].division_id, Some(90_000_001));
+        assert_eq!(div[0].division_name, Some("Test Division".to_owned()));
+        assert_eq!(div[0].indoor, Some(false));
 
         assert_eq!(resp.genders, Some(vec!["m".to_owned()]));
         assert_eq!(resp.complete, Some(true));

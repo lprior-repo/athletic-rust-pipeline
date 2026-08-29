@@ -42,17 +42,3 @@ pub struct AlphaApiClientConfig {
     pub cap_markers: Vec<String>,
 }
 
-impl AlphaApiClientConfig {
-    #[allow(dead_code)]
-    pub fn build_next_page_qparams(
-        pagination: &crate::alpha_model::PaginationConfig,
-        continuation: &serde_json::Value,
-    ) -> serde_json::Value {
-        match pagination {
-            crate::alpha_model::PaginationConfig::NextPage { request_page_key, .. } => {
-                serde_json::json!({ request_page_key: continuation })
-            }
-            crate::alpha_model::PaginationConfig::SingleResponse { .. } => serde_json::json!({}),
-        }
-    }
-}

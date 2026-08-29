@@ -1,22 +1,7 @@
 use crate::alpha_api::{AlphaApiError, AlphaApiClientConfig};
+use crate::alpha_test_helpers::{make_client, make_test_request, success_body};
+use crate::alpha_model::PaginationConfig;
 use crate::alpha_api_client::AlphaApiClient;
-use crate::alpha_model::{AlphaRequest, PaginationConfig};
-fn make_client(url: &str) -> AlphaApiClient {
-    AlphaApiClient::new(AlphaApiClientConfig {
-        base_url: url.to_owned(), rankings_path: "/api/v1/tfRankings/GetRankings".into(),
-        nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(), timeout_seconds: 30, max_retries: 2,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
-        allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into(), "/api/v1/tfRankings/GetNavInfo".into()],
-        allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()], max_concurrent_requests: 1, min_delay_ms: 0,
-        cap_markers: vec![],
-    }).expect("client creation must not fail")
-}
-fn make_test_request() -> AlphaRequest {
-    AlphaRequest { state_id: 12, season_id: 2026, gender: "m".into(), event_short: "100m".into(), indoor: false, continuation: None }
-}
-fn success_body() -> &'static str {
-    r#"{"groupedRankings":[[{"AthleteID":1,"AthleteName":"Test","GradeID":2,"TeamName":"School","State":"CA","Results":[{"MeetID":100,"MeetName":"State Finals","IDResult":500,"EventShort":"100m","Measure":"10.55","ResultDate":"2026-06-15","SeasonID":2026,"Wind":null}]}]],"page":1,"complete":true,"continuation":null}"#
-}
 #[tokio::test(flavor = "multi_thread")]
 async fn http_200_success() {
     let (mut server, url) = tokio::task::spawn_blocking(|| {

@@ -39,12 +39,6 @@ impl AlphaApiClient {
         })
     }
 
-    fn validate_route(&self, route: &str) -> Result<(), AlphaApiError> {
-        let base = Url::parse(&self.config.base_url)
-            .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {}", e)))?;
-        crate::alpha_route_validation::validate_route(route, &base, &self.config.allowed_routes)
-            .map_err(|e| AlphaApiError::Incomplete(format!("route: {}", e)))
-    }
 
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
         serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
@@ -69,66 +63,44 @@ impl AlphaApiClient {
     }
 
     pub(crate) fn check_completeness(&self, raw: &RawRankingsResponse) -> Result<bool, AlphaApiError> {
-        // Cap/truncation detection: if hasMore is true but no continuation, fail closed.
-        if self.is_truncated(raw) {
-            return Err(AlphaApiError::TruncatedWithoutContinuation);
-        }
-
+        if self.is_truncated(raw) { return Err(AlphaApiError::TruncatedWithoutContinuation); }
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
                 let ptr = Self::resolve_ptr(complete_pointer);
-                let val = raw.value.pointer(&ptr)
-                    .ok_or_else(|| AlphaApiError::MissingPointer(ptr))?;
+                let val = raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))?;
                 match val {
                     serde_json::Value::Bool(true) => Ok(true),
                     serde_json::Value::Bool(false) => Ok(false),
-                    _ => Err(AlphaApiError::Incomplete(format!(
-                        "complete pointer {complete_pointer} not bool"
-                    ))),
+                    _ => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool"))),
                 }
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
                 let value = &raw.value;
-
                 let hptr = Self::resolve_ptr(has_more_pointer);
-                let hm = value.pointer(&hptr)
-                    .ok_or_else(|| AlphaApiError::MissingPointer(hptr))?;
-                let has_more = match hm {
+                let has_more = match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr))? {
                     serde_json::Value::Bool(v) => *v,
-                    _ => return Err(AlphaApiError::Incomplete(format!(
-                        "has_more pointer {has_more_pointer} not bool"
-                    ))),
+                    _ => return Err(AlphaApiError::Incomplete(format!("has_more pointer {has_more_pointer} not bool"))),
                 };
-
-                if !has_more {
-                    return Ok(true);
-                }
-
+                if !has_more { return Ok(true); }
                 let nptr = Self::resolve_ptr(next_page_pointer);
                 let np = value.pointer(&nptr);
                 if np.is_none() || np == Some(&serde_json::Value::Null) {
-                    return Err(AlphaApiError::Incomplete(format!(
-                        "hasMore true, next pointer {next_page_pointer} missing"
-                    )));
+                    return Err(AlphaApiError::Incomplete(format!("hasMore true, next pointer {next_page_pointer} missing")));
                 }
-
                 Ok(false)
             }
         }
     }
-
     fn resolve_ptr(ptr: &str) -> String {
         if ptr.starts_with('/') { ptr.to_string() } else { format!("/{ptr}") }
     }
 
     fn is_truncated(&self, raw: &RawRankingsResponse) -> bool {
-        let value = &raw.value;
-        if let Some(m) = value.get("__truncated").and_then(|v| v.as_bool()) { if m { return true; } }
-        if let Some(m) = value.get("__cap").and_then(|v| v.as_bool()) { if m { return true; } }
-        if let Some(hm) = value.get("hasMore").and_then(|v| v.as_bool()) {
-            if hm && value.get("nextPage").is_none() { return true; }
-        }
-        false
+        let v = &raw.value;
+        (v.get("__truncated").and_then(|x| x.as_bool()) == Some(true))
+            || (v.get("__cap").and_then(|x| x.as_bool()) == Some(true))
+            || (v.get("hasMore").and_then(|x| x.as_bool()) == Some(true)
+                && v.get("nextPage").is_none())
     }
 
     async fn execute_request(
@@ -209,21 +181,48 @@ impl AlphaApiClient {
         body["qParams"] = Self::build_qparams(&self.config.pagination, &req.continuation);
 
         let route = &self.config.rankings_path;
-        self.validate_route(route)?;
-        let url = Url::parse(&self.config.base_url)
-            .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?
-            .join(route)
+        let base = Url::parse(&self.config.base_url)
+            .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?;
+        crate::alpha_route_validation::validate_route(route, &base, &self.config.allowed_routes)
+            .map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
+        let url = base.join(route)
             .map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;
 
         // allowed_fields is for RESPONSE filtering only, never outbound.
         let resp = self.execute_request(Method::POST, url, Some(&body)).await?;
         let text = resp.text().await.map_err(AlphaApiError::Request)?;
 
-        // Parse then validate response against allowed_fields.
+        // Parse raw JSON, preserving full value for pointer evaluation.
         let raw = RawRankingsResponse::from_json(&text)
             .map_err(|e| AlphaApiError::Incomplete(e))?;
-        let validated_json = self.enforce_response_allowed_fields(raw.value)
-            ?;
+        let raw_value = &raw.value;
+
+        // RFC 6901 pointer-based completeness check with fail-closed — evaluate on raw value.
+        let complete = self.check_completeness(&raw)?;
+
+        // Extract continuation from configured pointer (raw value, before filtering).
+        let continuation = match &self.config.pagination {
+            PaginationConfig::SingleResponse { complete_pointer } => {
+                let ptr = if complete_pointer.starts_with('/') {
+                    complete_pointer.clone()
+                } else {
+                    format!("/{complete_pointer}")
+                };
+                raw_value.pointer(&ptr).cloned()
+            }
+            PaginationConfig::NextPage { next_page_pointer, .. } => {
+                let ptr = if next_page_pointer.starts_with('/') {
+                    next_page_pointer.clone()
+                } else {
+                    format!("/{next_page_pointer}")
+                };
+                raw_value.pointer(&ptr).cloned()
+            }
+        };
+
+        // allowed_fields is for RESPONSE filtering only, never outbound.
+        // Filter after pointer evaluation.
+        let validated_json = self.enforce_response_allowed_fields(raw.value)?;
         let validated_raw = RawRankingsResponse {
             grouped_rankings: raw.grouped_rankings,
             page: raw.page,
@@ -232,22 +231,9 @@ impl AlphaApiClient {
             value: validated_json,
         };
 
-        // RFC 6901 pointer-based completeness check with fail-closed.
-        let complete = self.check_completeness(&validated_raw)?;
-
         // Strict parsing: no silently dropped malformed rows.
         let records = self.parse_rankings_strict(&validated_raw)
             .map_err(|e| AlphaApiError::Incomplete(e))?;
-
-        // Extract continuation from configured pointer.
-        let continuation = match &self.config.pagination {
-            PaginationConfig::SingleResponse { complete_pointer } => {
-                validated_raw.value.pointer(&Self::resolve_ptr(complete_pointer)).cloned()
-            }
-            PaginationConfig::NextPage { next_page_pointer, .. } => {
-                validated_raw.value.pointer(&Self::resolve_ptr(next_page_pointer)).cloned()
-            }
-        };
 
         Ok(RankingPage { records, complete, continuation })
     }
@@ -258,10 +244,11 @@ impl AlphaApiClient {
         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
 
         let route = &self.config.nav_info_path;
-        self.validate_route(route)?;
-        let mut url = Url::parse(&self.config.base_url)
-            .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?
-            .join(route)
+        let base = Url::parse(&self.config.base_url)
+            .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?;
+        crate::alpha_route_validation::validate_route(route, &base, &self.config.allowed_routes)
+            .map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
+        let mut url = base.join(route)
             .map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;
         url.query_pairs_mut()
             .append_pair("season_id", &season_id.to_string())
@@ -276,34 +263,32 @@ impl AlphaApiClient {
     }
 
     pub(crate) fn enforce_response_allowed_fields(
-        &self,
-        value: serde_json::Value,
+        &self, mut value: serde_json::Value,
     ) -> Result<serde_json::Value, AlphaApiError> {
         let allowed = &self.config.allowed_fields;
-        if allowed.is_empty() {
-            return Ok(value);
-        }
-        // Enforce required fields are present in allowed_fields.
-        for field in ["AthleteID", "AthleteName", "GradeID", "TeamName", "State"] {
+        if allowed.is_empty() { return Ok(value); }
+        let required = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State"];
+        for &field in &required {
             if !allowed.iter().any(|a| a == field) {
                 return Err(AlphaApiError::Incomplete(format!(
                     "required field '{field}' not in allowed_fields",
                 )));
             }
         }
-        let mut obj = value.as_object().cloned().unwrap_or_default();
-        if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
-            for group in groups {
-                if let Some(records) = group.as_array_mut() {
-                    for rec in records {
-                        if let Some(obj) = rec.as_object_mut() {
-                            obj.retain(|k, _| allowed.iter().any(|a| a == k));
+        if let Some(obj) = value.as_object_mut() {
+            if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
+                for group in groups {
+                    if let Some(records) = group.as_array_mut() {
+                        for rec in records {
+                            if let Some(obj) = rec.as_object_mut() {
+                                obj.retain(|k, _| allowed.iter().any(|a| a == k));
+                            }
                         }
                     }
                 }
             }
         }
-        Ok(serde_json::Value::Object(obj))
+        Ok(value)
     }
 
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> {

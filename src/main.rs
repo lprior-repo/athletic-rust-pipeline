@@ -17,6 +17,8 @@ mod alpha_api_client_nav_tests;
 #[cfg(test)]
 mod alpha_api_completeness_tests;
 #[cfg(test)]
+mod alpha_model_tests;
+#[cfg(test)]
 mod alpha_model;
 #[cfg(test)]
 mod alpha_route_validation;
@@ -28,6 +30,8 @@ mod alpha_config_api_tests;
 mod alpha_config_loading_tests;
 #[cfg(test)]
 mod alpha_model_raw;
+#[cfg(test)]
+mod alpha_test_helpers;
 mod checkpoint;
 mod config;
 mod discovery;
