@@ -67,25 +67,30 @@ impl AlphaApiClient {
         match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
                 let ptr = Self::resolve_ptr(complete_pointer);
-                let val = raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))?;
-                match val {
+                match raw.value.pointer(&ptr).ok_or_else(|| AlphaApiError::MissingPointer(ptr))? {
                     serde_json::Value::Bool(true) => Ok(true),
                     serde_json::Value::Bool(false) => Ok(false),
-                    _ => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool"))),
+                    v => Err(AlphaApiError::Incomplete(format!("complete pointer {complete_pointer} not bool: {v}"))),
                 }
             }
             PaginationConfig::NextPage { has_more_pointer, next_page_pointer, .. } => {
                 let value = &raw.value;
                 let hptr = Self::resolve_ptr(has_more_pointer);
-                let has_more = match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr))? {
-                    serde_json::Value::Bool(v) => *v,
-                    _ => return Err(AlphaApiError::Incomplete(format!("has_more pointer {has_more_pointer} not bool"))),
+                match value.pointer(&hptr).ok_or_else(|| AlphaApiError::MissingPointer(hptr.clone()))? {
+                    serde_json::Value::Bool(v) => {
+                        if !v { return Ok(true); }
+                    }
+                    v => return Err(AlphaApiError::Incomplete(format!("has_more pointer {has_more_pointer} not bool: {v}"))),
                 };
-                if !has_more { return Ok(true); }
                 let nptr = Self::resolve_ptr(next_page_pointer);
                 let np = value.pointer(&nptr);
                 if np.is_none() || np == Some(&serde_json::Value::Null) {
-                    return Err(AlphaApiError::Incomplete(format!("hasMore true, next pointer {next_page_pointer} missing")));
+                    return Err(AlphaApiError::Incomplete(format!("hasMore=true, next pointer {next_page_pointer} missing")));
+                }
+                if let Some(cm) = self.config.cap_markers.first() {
+                    if value.get(cm).and_then(|x| x.as_bool()) == Some(true) {
+                        return Err(AlphaApiError::TruncatedWithoutContinuation);
+                    }
                 }
                 Ok(false)
             }
@@ -94,13 +99,14 @@ impl AlphaApiClient {
     fn resolve_ptr(ptr: &str) -> String {
         if ptr.starts_with('/') { ptr.to_string() } else { format!("/{ptr}") }
     }
-
     fn is_truncated(&self, raw: &RawRankingsResponse) -> bool {
         let v = &raw.value;
-        (v.get("__truncated").and_then(|x| x.as_bool()) == Some(true))
-            || (v.get("__cap").and_then(|x| x.as_bool()) == Some(true))
-            || (v.get("hasMore").and_then(|x| x.as_bool()) == Some(true)
-                && v.get("nextPage").is_none())
+        if let Some(cm) = self.config.cap_markers.first() {
+            if v.get(cm).and_then(|x| x.as_bool()) == Some(true) { return true; }
+        }
+        v.get("__truncated").and_then(|x| x.as_bool()) == Some(true)
+            || v.get("__cap").and_then(|x| x.as_bool()) == Some(true)
+            || (v.get("hasMore").and_then(|x| x.as_bool()) == Some(true) && v.get("nextPage").is_none())
     }
 
     async fn execute_request(
@@ -109,65 +115,53 @@ impl AlphaApiClient {
         url: Url,
         body: Option<&serde_json::Value>,
     ) -> Result<reqwest::Response, AlphaApiError> {
-        let mut retry_count = 0usize;
-        let max_retries = self.config.max_retries;
+        let mut retry = 0usize;
+        let max_retry = self.config.max_retries;
         let timeout_ms = self.config.timeout_seconds * 1000;
-
         loop {
-            let request_builder = self.client.request(method.clone(), url.as_str())
+            let builder = self.client.request(method.clone(), url.as_str())
                 .timeout(Duration::from_secs(self.config.timeout_seconds));
-            let request_builder = match body {
-                Some(b) => request_builder.header("Content-Type", "application/json").json(b),
-                None => request_builder,
+            let builder = match body {
+                Some(b) => builder.header("Content-Type", "application/json").json(b),
+                None => builder,
             };
-            let resp = request_builder.send().await;
+            let resp = builder.send().await;
             let resp = match resp {
                 Ok(r) => r,
                 Err(e) if e.is_timeout() => {
-                    if retry_count >= max_retries {
+                    if retry >= max_retry {
                         return Err(AlphaApiError::Timeout { milliseconds: timeout_ms });
                     }
-                    retry_count += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue;
+                    retry += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue;
                 }
                 Err(e) => return Err(AlphaApiError::Request(e)),
             };
-
             let status = resp.status().as_u16();
             if status == 401 { return Err(AlphaApiError::Unauthorized(format!("HTTP {status}"))); }
             if status == 403 { return Err(AlphaApiError::Forbidden(format!("HTTP {status}"))); }
-
             if status == 429 {
-                match resp.headers().get("Retry-After")
+                let delay = resp.headers().get("Retry-After")
                     .and_then(|v| v.to_str().ok())
                     .and_then(|v| v.parse::<u64>().ok())
-                {
-                    Some(delay_secs) => {
-                        let delay_ms = delay_secs.saturating_mul(1000);
-                        let wait = delay_ms.max(self.config.min_delay_ms);
-                        if retry_count >= max_retries {
-                            return Err(AlphaApiError::RateLimitedExhausted {
-                                max_retries,
-                                total_delay_ms: wait * retry_count as u64,
-                            });
+                    .map(|s| s.saturating_mul(1000).max(self.config.min_delay_ms));
+                match delay {
+                    Some(d) => {
+                        if retry >= max_retry {
+                            return Err(AlphaApiError::RateLimitedExhausted { max_retries: max_retry, total_delay_ms: d * retry as u64 });
                         }
-                        tokio::time::sleep(Duration::from_millis(wait)).await; retry_count += 1; continue;
+                        tokio::time::sleep(Duration::from_millis(d)).await; retry += 1; continue;
                     }
                     None => return Err(AlphaApiError::RateLimitedNoRetryAfter),
                 }
             }
-
             if status >= 500 {
-                if retry_count < max_retries {
-                    retry_count += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue;
-                }
-                return Err(AlphaApiError::ServerErrorExhausted { status, retries: retry_count });
+                if retry < max_retry { retry += 1; tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await; continue; }
+                return Err(AlphaApiError::ServerErrorExhausted { status, retries: retry });
             }
-
             if status < 200 || status >= 300 {
                 let body = resp.text().await.map_err(AlphaApiError::Request)?;
                 return Err(AlphaApiError::UnexpectedStatus { status, body });
             }
-
             return Ok(resp);
         }
     }
@@ -176,10 +170,8 @@ impl AlphaApiClient {
         let _permit = self.concurrency_semaphore.acquire().await
             .map_err(|_| AlphaApiError::Incomplete("concurrency semaphore closed".into()))?;
         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
-
         let mut body = Self::serialize_rankings_body(req);
         body["qParams"] = Self::build_qparams(&self.config.pagination, &req.continuation);
-
         let route = &self.config.rankings_path;
         let base = Url::parse(&self.config.base_url)
             .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?;
@@ -187,41 +179,21 @@ impl AlphaApiClient {
             .map_err(|e| AlphaApiError::Incomplete(format!("route: {e}")))?;
         let url = base.join(route)
             .map_err(|e| AlphaApiError::Incomplete(format!("url join: {e}")))?;
-
-        // allowed_fields is for RESPONSE filtering only, never outbound.
         let resp = self.execute_request(Method::POST, url, Some(&body)).await?;
         let text = resp.text().await.map_err(AlphaApiError::Request)?;
-
-        // Parse raw JSON, preserving full value for pointer evaluation.
-        let raw = RawRankingsResponse::from_json(&text)
-            .map_err(|e| AlphaApiError::Incomplete(e))?;
-        let raw_value = &raw.value;
-
-        // RFC 6901 pointer-based completeness check with fail-closed — evaluate on raw value.
+        let raw = RawRankingsResponse::from_json(&text).map_err(|e| AlphaApiError::Incomplete(e))?;
         let complete = self.check_completeness(&raw)?;
-
-        // Extract continuation from configured pointer (raw value, before filtering).
+        let raw_value = &raw.value;
         let continuation = match &self.config.pagination {
             PaginationConfig::SingleResponse { complete_pointer } => {
-                let ptr = if complete_pointer.starts_with('/') {
-                    complete_pointer.clone()
-                } else {
-                    format!("/{complete_pointer}")
-                };
+                let ptr = Self::resolve_ptr(complete_pointer);
                 raw_value.pointer(&ptr).cloned()
             }
             PaginationConfig::NextPage { next_page_pointer, .. } => {
-                let ptr = if next_page_pointer.starts_with('/') {
-                    next_page_pointer.clone()
-                } else {
-                    format!("/{next_page_pointer}")
-                };
+                let ptr = Self::resolve_ptr(next_page_pointer);
                 raw_value.pointer(&ptr).cloned()
             }
         };
-
-        // allowed_fields is for RESPONSE filtering only, never outbound.
-        // Filter after pointer evaluation.
         let validated_json = self.enforce_response_allowed_fields(raw.value)?;
         let validated_raw = RawRankingsResponse {
             grouped_rankings: raw.grouped_rankings,
@@ -230,19 +202,14 @@ impl AlphaApiClient {
             continuation: raw.continuation,
             value: validated_json,
         };
-
-        // Strict parsing: no silently dropped malformed rows.
         let records = self.parse_rankings_strict(&validated_raw)
             .map_err(|e| AlphaApiError::Incomplete(e))?;
-
         Ok(RankingPage { records, complete, continuation })
     }
-
     pub async fn nav_info(&self, season_id: i32, indoor: bool) -> Result<RawNavInfoResponse, AlphaApiError> {
         let _permit = self.concurrency_semaphore.acquire().await
             .map_err(|_| AlphaApiError::Incomplete("concurrency semaphore closed".into()))?;
         tokio::time::sleep(Duration::from_millis(self.config.min_delay_ms)).await;
-
         let route = &self.config.nav_info_path;
         let base = Url::parse(&self.config.base_url)
             .map_err(|e| AlphaApiError::Incomplete(format!("bad base_url: {e}")))?;
@@ -256,9 +223,8 @@ impl AlphaApiClient {
         let resp = self.execute_request(Method::GET, url, None).await?;
         let text = resp.text().await.map_err(AlphaApiError::Request)?;
         let nav: RawNavInfoResponse = serde_json::from_str(&text)
-            .map_err(|e| AlphaApiError::Incomplete(format!("JSON parse error: {}", e)))?;
-        nav.validate()
-            .map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
+            .map_err(|e| AlphaApiError::Incomplete(format!("JSON parse error: {e}")))?;
+        nav.validate().map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
         Ok(nav)
     }
 
@@ -268,20 +234,28 @@ impl AlphaApiClient {
         let allowed = &self.config.allowed_fields;
         if allowed.is_empty() { return Ok(value); }
         let required = ["AthleteID", "AthleteName", "GradeID", "TeamName", "State"];
-        for &field in &required {
-            if !allowed.iter().any(|a| a == field) {
-                return Err(AlphaApiError::Incomplete(format!(
-                    "required field '{field}' not in allowed_fields",
-                )));
+        for &f in &required {
+            if !allowed.iter().any(|a| a == f) {
+                return Err(AlphaApiError::Incomplete(format!("required field '{f}' not in allowed_fields")));
             }
+        }
+        fn filter_fields(obj: &mut serde_json::Map<String, serde_json::Value>, allowed: &[String]) {
+            obj.retain(|k, _| allowed.iter().any(|a| a == k));
         }
         if let Some(obj) = value.as_object_mut() {
             if let Some(groups) = obj.get_mut("groupedRankings").and_then(|v| v.as_array_mut()) {
-                for group in groups {
-                    if let Some(records) = group.as_array_mut() {
+                for g in groups {
+                    if let Some(records) = g.as_array_mut() {
                         for rec in records {
-                            if let Some(obj) = rec.as_object_mut() {
-                                obj.retain(|k, _| allowed.iter().any(|a| a == k));
+                            if let Some(rec_obj) = rec.as_object_mut() {
+                                filter_fields(rec_obj, allowed);
+                                if let Some(results) = rec_obj.get_mut("Results").and_then(|v| v.as_array_mut()) {
+                                    for r in results {
+                                        if let Some(res_obj) = r.as_object_mut() {
+                                            filter_fields(res_obj, allowed);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

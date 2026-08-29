@@ -17,6 +17,10 @@ mod alpha_api_client_nav_tests;
 #[cfg(test)]
 mod alpha_api_completeness_tests;
 #[cfg(test)]
+mod alpha_api_completeness_nav_tests;
+#[cfg(test)]
+mod alpha_api_completeness_enforce_tests;
+#[cfg(test)]
 mod alpha_model_tests;
 #[cfg(test)]
 mod alpha_model;

@@ -114,13 +114,15 @@ impl RawRankingRecord {
             .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
         let meet_name = self.meet_name.clone()
             .ok_or("RawRankingRecord flattened: missing required MeetName")?;
+        let meet_id = self.meet_id
+            .ok_or("RawRankingRecord flattened: missing required MeetID")?;
         Ok(vec![RankingRecord {
             athlete_id: self.athlete_id,
             athlete_name: self.athlete_name.clone(),
             grade_id: self.grade_id,
             team_name: self.team_name.clone(),
             state: self.state.clone(),
-            meet_id: self.meet_id.ok_or("RawRankingRecord flattened: missing required MeetID")?,
+            meet_id,
             meet_name,
             result_id: Some(id_result),
             event_short,
@@ -252,10 +254,10 @@ impl RawNavInfoResponse {
     /// Validate the nav_info response shape.
     ///
     /// Rejects responses where the API provided no pagination metadata at all
-    /// (e.g. `{}` or missing complete/page fields in a way that suggests
-    /// a malformed response rather than a partial one).
+    /// (e.g. `{}` or missing complete/page fields).
     pub fn validate(&self) -> Result<(), &'static str> {
         // Require complete or page to indicate a valid nav response.
+        // Partial responses (missing state/divisions) are acceptable if pagination metadata is present.
         if self.complete.is_none() && self.page.is_none() {
             return Err("RawNavInfoResponse: missing required complete or page field");
         }
