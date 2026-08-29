@@ -124,7 +124,7 @@ fn to_flattened_records_empty_when_no_data() {
         "Results": []
     }"#;
     let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    assert!(rec.to_flattened_records().is_empty());
+    assert!(rec.to_flattened_records().unwrap().is_empty());
 }
 
 #[test]
@@ -168,38 +168,64 @@ fn no_request_body_logged() {
 // --- Malformed row rejection ---
 
 #[test]
-fn malformed_nested_row_rejected() {
+fn malformed_nested_row_rejected_via_from_json() {
     let json = r#"{
-        "AthleteID": 1,
-        "AthleteName": "Test",
-        "GradeID": 2,
-        "TeamName": "School",
-        "State": "CA",
-        "Results": [{
-            "MeetID": 100,
-            "MeetName": "Meet",
-            "EventShort": "100m",
-            "Measure": "10.5",
-            "ResultDate": "2026-06-15",
-            "SeasonID": 2026
-        }]
+        "groupedRankings": [[{
+            "AthleteID": 1,
+            "AthleteName": "Test",
+            "GradeID": 2,
+            "TeamName": "School",
+            "State": "CA",
+            "Results": [{
+                "MeetID": 100,
+                "MeetName": "Meet",
+                "EventShort": "100m",
+                "Measure": "10.5",
+                "ResultDate": "2026-06-15",
+                "SeasonID": 2026
+            }]
+        }]],
+        "page": 1
     }"#;
-    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
-    assert!(rec.to_flattened_records().is_empty(), "missing IDResult must reject nested row");
+    // from_json silently drops malformed nested records (filter_map + ok)
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    // Both outer record and malformed nested are dropped => empty
+    assert_eq!(raw.grouped_rankings[0].len(), 0);
 }
 
 #[test]
-fn unknown_field_in_ranking_record_rejected() {
+fn flattened_row_missing_required_returns_error() {
+    let json = r#"{
+        "groupedRankings": [[{
+            "AthleteID": 1,
+            "AthleteName": "Test",
+            "GradeID": 2,
+            "TeamName": "School",
+            "State": "CA",
+            "EventShort": "100m",
+            "Measure": "10.5"
+        }]]
+    }"#;
+    let raw = RawRankingsResponse::from_json(json).unwrap();
+    // Missing IDResult, ResultDate, SeasonID => error
+    assert!(raw.grouped_rankings[0][0].to_flattened_records().is_err());
+}
+
+#[test]
+fn unknown_fields_in_ranking_record_silently_ignored() {
+    // Unknown fields are silently ignored (no deny_unknown_fields).
     let json = r#"{
         "AthleteID": 1,
         "AthleteName": "Test",
         "GradeID": 2,
         "TeamName": "School",
         "State": "CA",
-        "UnknownField": "rejected"
+        "UnknownField": "ignored",
+        "AnotherUnknown": 42
     }"#;
-    let result: Result<RawRankingRecord, _> = serde_json::from_str(json);
-    assert!(result.is_err(), "unknown fields must be rejected");
+    let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
+    assert_eq!(rec.athlete_id, 1);
+    assert_eq!(rec.athlete_name, "Test");
 }
 
 #[test]

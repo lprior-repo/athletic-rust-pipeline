@@ -19,6 +19,10 @@ pub enum AlphaApiError {
     UnexpectedStatus { status: u16, body: String },
     #[error("incomplete response: {0}")]
     Incomplete(String),
+    #[error("missing required JSON pointer value at {0}")]
+    MissingPointer(String),
+    #[error("response truncated or capped without continuation metadata")]
+    TruncatedWithoutContinuation,
 }
 
 /// Configuration extracted from `AlphaConfig` for constructing the client.

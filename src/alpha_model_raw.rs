@@ -2,9 +2,9 @@ use crate::alpha_model::RankingRecord;
 use serde::{Deserialize, Serialize};
 
 /// One row inside `groupedRankings` — supports both nested `Results` and
-/// confirmed flattened row shapes. Rejects unknown fields.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
+/// confirmed flattened row shapes.
+///
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RawRankingRecord {
     #[serde(rename = "AthleteID")]
     pub athlete_id: u64,
@@ -40,17 +40,30 @@ pub struct RawRankingRecord {
 impl RawRankingRecord {
     /// Convert to flat `RankingRecord` list.
     ///
-    /// Uses nested `Results` when present; falls back to the flattened
-    /// row fields (one result per row).  Fails closed: missing required
-    /// flattened fields are never fabricated as defaults.
-    pub fn to_flattened_records(&self) -> Vec<RankingRecord> {
+    /// Returns `Result` — never silently drops malformed rows (finding #8).
+    ///
+    /// Uses nested `Results` when present; falls back to flattened row fields.
+    /// Required nested fields: IDResult, EventShort, Measure, ResultDate, SeasonID,
+    /// MeetID, MeetName. Required flattened fields: IDResult, EventShort, Measure,
+    /// ResultDate, SeasonID, MeetName.
+    pub fn to_flattened_records(&self) -> Result<Vec<RankingRecord>, &'static str> {
         if !self.results.is_empty() {
-            self.results.iter().filter_map(|r| {
-                // Reject malformed nested rows missing required fields.
-                if r.id_result == 0 || r.event_short.is_empty() || r.measure.is_empty() || r.result_date.is_empty() {
-                    return None;
+            let mut records = Vec::new();
+            for r in &self.results {
+                // All required nested fields must be present.
+                if r.id_result == 0 {
+                    return Err("RawRankingResult: missing required IDResult");
                 }
-                Some(RankingRecord {
+                if r.event_short.is_empty() {
+                    return Err("RawRankingResult: missing required EventShort");
+                }
+                if r.measure.is_empty() {
+                    return Err("RawRankingResult: missing required Measure");
+                }
+                if r.result_date.is_empty() {
+                    return Err("RawRankingResult: missing required ResultDate");
+                }
+                records.push(RankingRecord {
                     athlete_id: self.athlete_id,
                     athlete_name: self.athlete_name.clone(),
                     grade_id: self.grade_id,
@@ -64,16 +77,20 @@ impl RawRankingRecord {
                     result_date: r.result_date.clone(),
                     season_id: r.season_id,
                     wind: r.wind.clone(),
-                })
-            }).collect()
+                });
+            }
+            Ok(records)
         } else if self.event_short.is_some() {
             // Flattened row: fail closed on missing required fields.
-            if self.id_result.is_none() || self.measure.is_none()
-                || self.result_date.is_none() || self.season_id.is_none()
-            {
-                return vec![];
-            }
-            self.event_short.as_ref().map(|es| RankingRecord {
+            let id_result = self.id_result
+                .ok_or("RawRankingRecord flattened: missing required IDResult")?;
+            let measure = self.measure.clone()
+                .ok_or("RawRankingRecord flattened: missing required Measure")?;
+            let result_date = self.result_date.clone()
+                .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
+            let season_id = self.season_id
+                .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
+            Ok(vec![RankingRecord {
                 athlete_id: self.athlete_id,
                 athlete_name: self.athlete_name.clone(),
                 grade_id: self.grade_id,
@@ -81,29 +98,30 @@ impl RawRankingRecord {
                 state: self.state.clone(),
                 meet_id: self.meet_id.unwrap_or(0),
                 meet_name: self.meet_name.clone().unwrap_or_default(),
-                result_id: self.id_result,
-                event_short: es.clone(),
-                measure: self.measure.clone().unwrap_or_default(),
-                result_date: self.result_date.clone().unwrap_or_default(),
-                season_id: self.season_id.unwrap_or(0),
+                result_id: Some(id_result),
+                event_short: self.event_short.clone().unwrap_or_default(),
+                measure,
+                result_date,
+                season_id,
                 wind: self.wind.clone().flatten(),
-            }).into_iter().collect()
+            }])
         } else {
-            vec![]
+            Ok(vec![])
         }
     }
 }
 
 /// One result entry inside a `RawRankingRecord`.
-/// `IDResult` defaults to 0 when missing, enabling malformed row rejection
-/// in `to_flattened_records()`.
-#[derive(Debug, Deserialize, Serialize)]
+///
+/// **`IDResult` is REQUIRED** — no `#[serde(default)]`. Missing IDResult
+/// will cause a deserialization error (finding #8).
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RawRankingResult {
     #[serde(rename = "MeetID")]
     pub meet_id: u64,
     #[serde(rename = "MeetName")]
     pub meet_name: String,
-    #[serde(rename = "IDResult", default)]
+    #[serde(rename = "IDResult")]
     pub id_result: u64,
     #[serde(rename = "EventShort")]
     pub event_short: String,
@@ -163,14 +181,14 @@ impl RawRankingsResponse {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RawContinuation {
     pub page: u64,
     pub complete: bool,
 }
 
 /// GetNavInfo response shape.
-/// All fields use snake_case; serde `rename` maps from the API's camelCase keys.
+/// All fields use snake_case; serde `rename` maps from the API's PascalCase/camelCase keys.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RawNavInfoResponse {
     #[serde(rename = "state")]
