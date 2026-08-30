@@ -62,7 +62,7 @@ impl AlphaApiClient {
         Ok(AlphaApiClient { client, config, concurrency_semaphore: Semaphore::new(1) })
     }
     pub fn serialize_rankings_body(req: &AlphaRequest) -> serde_json::Value {
-        serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":""})
+        serde_json::json!({"reportType":"div","mode":"list","divListId":req.state_id,"indoor":req.indoor,"eventShort":req.event_short.clone(),"gender":req.gender.clone(),"qualifyingListKey":"","version":2,"debug":"","qParams":{}})
     }
     pub fn build_qparams(pagination: &PaginationConfig, continuation: &Option<serde_json::Value>) -> Result<serde_json::Value, AlphaApiError> {
         match (pagination, continuation) {

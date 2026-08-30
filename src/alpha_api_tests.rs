@@ -49,11 +49,13 @@ fn serialize_rankings_body_all_keys_present() {
     let body = AlphaApiClient::serialize_rankings_body(&req);
     let expected_keys = [
         "reportType", "mode", "divListId", "indoor", "eventShort",
-        "gender", "qualifyingListKey", "version", "debug",
+        "gender", "qualifyingListKey", "version", "debug", "qParams",
     ];
+    assert_eq!(body.as_object().unwrap().len(), 10, "body must have exactly 10 keys");
     for key in &expected_keys {
         assert!(body.get(*key).is_some(), "body must contain key '{}'", key);
     }
+    assert!(body["qParams"].is_object(), "qParams must be an object");
 }
 #[test]
 fn no_request_body_logged() {
