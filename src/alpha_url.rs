@@ -105,13 +105,12 @@ pub fn validate_result_url(raw: &str) -> Option<String> {
     if !ATHLETIC_NET_HOSTS.contains(&host) {
         return None;
     }
-    if !parsed.path().starts_with("/result/") {
+    let id_str = parsed.path().strip_prefix("/result/")?;
+    let id: u64 = id_str.parse().ok()?;
+    if id == 0 {
         return None;
     }
-    if parsed.path().strip_prefix("/result/")?.is_empty() {
-        return None;
-    }
-    Some(trimmed.to_owned())
+    Some(format!("https://athletic.net/result/{id}"))
 }
 
 /// Validate a source URL: https on athletic.net host.
@@ -124,7 +123,10 @@ pub fn validate_source_url(raw: &str) -> Option<String> {
     if parsed.scheme() != "https" || parsed.username() != "" {
         return None;
     }
-    if parsed.password().is_some() {
+    if parsed.password().is_some()
+        || parsed.query().is_some()
+        || parsed.fragment().is_some()
+    {
         return None;
     }
     let host = parsed.host_str()?;

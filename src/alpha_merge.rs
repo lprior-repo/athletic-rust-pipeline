@@ -23,7 +23,7 @@ pub fn from_ranking_record(rec: &RankingRecord, _profile_url: &str) -> ResultRec
 }
 
 /// Convert a model SourceResult into a ResultRecord.
-pub fn from_model_source_result(sr: &ModelSourceResult, _profile_url: &str) -> ResultRecord {
+pub fn from_model_source_result(sr: &ModelSourceResult, profile_url: &str) -> ResultRecord {
     ResultRecord {
         result_id: sr.result_id,
         event: sr.event_short.clone(),
@@ -32,6 +32,7 @@ pub fn from_model_source_result(sr: &ModelSourceResult, _profile_url: &str) -> R
         date: sr.result_date.clone(),
         meet_name: String::new(),
         wind: None,
+        source_url: profile_url.to_owned(),
         result_url: if sr.result_id > 0 {
             format!("https://athletic.net/result/{}", sr.result_id)
         } else {
@@ -60,18 +61,52 @@ pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> Vec<SourceAthlete> {
 pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete) -> u64 {
     let id = new.athlete_id;
     if id == 0 {
-        // Missing/zero ID → exception-only record under key 0
         let note = "athlete_id missing or zero; cannot deduplicate".to_owned();
-        let mut exn = SourceAthlete {
-            athlete_id: 0,
-            exception_notes: vec![note],
-            ..new
-        };
         let existing = map.entry(0).or_default();
-        for n in exn.exception_notes.drain(..) {
-            if !existing.exception_notes.contains(&n) {
-                existing.exception_notes.push(n);
+        if existing.first_name.is_empty() && !new.first_name.is_empty() {
+            existing.first_name = new.first_name;
+        }
+        if existing.last_name.is_empty() && !new.last_name.is_empty() {
+            existing.last_name = new.last_name;
+        }
+        if existing.school.is_empty() && !new.school.is_empty() {
+            existing.school = new.school;
+        }
+        if existing.state.is_empty() && !new.state.is_empty() {
+            existing.state = new.state;
+        }
+        if existing.city.is_empty() && !new.city.is_empty() {
+            existing.city = new.city;
+        }
+        for u in new.profile_urls {
+            if !existing.profile_urls.contains(&u) {
+                existing.profile_urls.push(u);
             }
+        }
+        for u in new.source_urls {
+            if !existing.source_urls.contains(&u) {
+                existing.source_urls.push(u);
+            }
+        }
+        if new.results.len() > existing.results.len() {
+            existing.results = new.results;
+        } else {
+            for r in new.results {
+                if !existing.results.iter().any(|e| {
+                    e.result_id == r.result_id
+                        && e.event == r.event
+                        && e.mark == r.mark
+                        && e.date == r.date
+                        && e.meet_name == r.meet_name
+                        && e.source_url == r.source_url
+                        && e.result_url == r.result_url
+                }) {
+                    existing.results.push(r);
+                }
+            }
+        }
+        if !existing.exception_notes.contains(&note) {
+            existing.exception_notes.push(note);
         }
         return 0;
     }
