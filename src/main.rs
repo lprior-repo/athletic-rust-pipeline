@@ -1,5 +1,6 @@
 #![cfg_attr(test, allow(dead_code))]
 mod summary;
+mod commands;
 #[cfg(test)] mod alpha_model_raw_validation;
 #[cfg(test)] mod alpha_model_validation_tests;
 #[cfg(test)] mod alpha_config;
@@ -60,56 +61,17 @@ mod output;
 mod scoring;
 mod xlsx;
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use config::Config;
+use commands::Command;
 use model::{MatchRecord, ModelDecision};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Debug, Parser)]
 #[command(version, about)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
-}
-#[derive(Debug, Subcommand)]
-enum Command {
-    /// Stream and report every real workbook row; performs no network access.
-    Inspect {
-        #[arg(long)]
-        input: PathBuf,
-    },
-    /// Export every real source row to JSONL; performs no network access.
-    ExportRecords {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long)]
-        output: PathBuf,
-    },
-    /// Discover candidates, optionally retrieve pages, validate locally, and checkpoint.
-    Run {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long)]
-        config: PathBuf,
-        #[arg(long, default_value = "out")]
-        out_dir: PathBuf,
-        #[arg(long)]
-        max: Option<usize>,
-        /// Include Cross Country rows in addition to configured sports.
-        #[arg(long)]
-        include_xc: bool,
-        #[arg(long)]
-        i_have_written_authorization: bool,
-    },
-    /// Add an Athletic Matches worksheet to a copy of the source workbook.
-    Writeback {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long)]
-        matches: PathBuf,
-        #[arg(long)]
-        output: PathBuf,
-    },
 }
 #[tokio::main]
 async fn main() -> Result<()> {
