@@ -1,50 +1,96 @@
 #![cfg_attr(test, allow(dead_code))]
-mod summary;
-#[cfg(test)] mod alpha_model_raw_validation;
-#[cfg(test)] mod alpha_model_validation_tests;
-#[cfg(test)] mod alpha_config;
-#[cfg(test)] mod alpha_api;
-#[cfg(test)] mod alpha_api_client;
-#[cfg(test)] mod alpha_api_client_validation;
-#[cfg(test)] mod alpha_api_tests;
-#[cfg(test)] mod alpha_api_client_regression_tests;
-#[cfg(test)] mod alpha_api_client_incomplete_regression_tests;
-#[cfg(test)] mod alpha_api_client_async_tests;
-#[cfg(test)] mod alpha_api_client_validation_tests;
-#[cfg(test)] mod alpha_api_client_cap_marker_tests;
-#[cfg(test)] mod alpha_api_client_validation_regression_tests;
-#[cfg(test)] mod alpha_api_client_nav_tests;
-#[cfg(test)] mod alpha_api_client_nav_info_tests;
-#[cfg(test)] mod alpha_api_completeness_tests;
-#[cfg(test)] mod alpha_api_completeness_nav_tests;
-#[cfg(test)] mod alpha_api_completeness_enforce_tests;
-#[cfg(test)] mod alpha_model_tests;
-#[cfg(test)] mod alpha_model;
-#[cfg(test)] mod alpha_route_validation;
-#[cfg(test)] mod alpha_config_auth_tests;
-#[cfg(test)] mod alpha_config_api_tests;
-#[cfg(test)] mod alpha_config_loading_tests;
-#[cfg(test)] mod alpha_config_test_helpers;
-#[cfg(test)] mod alpha_config_pagination_tests;
-#[cfg(test)] mod alpha_config_route_tests;
-#[cfg(test)] mod alpha_test_helpers;
-#[cfg(test)] mod alpha_nav_validation;
-#[cfg(test)] mod alpha_nav_validation_tests;
-#[cfg(test)] mod alpha_model_raw;
-#[cfg(test)] mod alpha_model_raw_validation_negative_season_tests;
-#[cfg(test)] mod alpha_api_client_pagination_tests;
-#[cfg(test)] mod alpha_api_client_pagination_config_tests;
-#[cfg(test)] mod alpha_api_client_constructor_tests;
-#[cfg(test)] mod alpha_api_deserialization_tests;
-#[cfg(test)] mod alpha_api_field_validation_tests;
-#[cfg(test)] mod alpha_catalog;
-#[cfg(test)] mod alpha_catalog_matrix_tests;
-#[cfg(test)] mod alpha_catalog_validation_tests;
-#[cfg(test)] mod alpha_catalog_nav_tests;
-#[cfg(test)] mod alpha_cohort;
-#[cfg(test)] mod alpha_cohort_tests;
-#[cfg(test)] mod alpha_normalize;
-#[cfg(test)] mod alpha_normalize_tests;
+#[cfg(test)]
+mod alpha_api;
+#[cfg(test)]
+mod alpha_api_client;
+#[cfg(test)]
+mod alpha_api_client_async_tests;
+#[cfg(test)]
+mod alpha_api_client_cap_marker_tests;
+#[cfg(test)]
+mod alpha_api_client_constructor_tests;
+#[cfg(test)]
+mod alpha_api_client_incomplete_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_nav_info_tests;
+#[cfg(test)]
+mod alpha_api_client_nav_tests;
+#[cfg(test)]
+mod alpha_api_client_pagination_config_tests;
+#[cfg(test)]
+mod alpha_api_client_pagination_tests;
+#[cfg(test)]
+mod alpha_api_client_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_validation;
+#[cfg(test)]
+mod alpha_api_client_validation_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_validation_tests;
+#[cfg(test)]
+mod alpha_api_completeness_enforce_tests;
+#[cfg(test)]
+mod alpha_api_completeness_nav_tests;
+#[cfg(test)]
+mod alpha_api_completeness_tests;
+#[cfg(test)]
+mod alpha_api_deserialization_tests;
+#[cfg(test)]
+mod alpha_api_field_validation_tests;
+#[cfg(test)]
+mod alpha_api_tests;
+#[cfg(test)]
+mod alpha_catalog;
+#[cfg(test)]
+mod alpha_catalog_matrix_tests;
+#[cfg(test)]
+mod alpha_catalog_nav_tests;
+#[cfg(test)]
+mod alpha_catalog_validation_tests;
+#[cfg(test)]
+mod alpha_cohort;
+#[cfg(test)]
+mod alpha_cohort_tests;
+#[cfg(test)]
+mod alpha_config;
+#[cfg(test)]
+mod alpha_config_api_tests;
+#[cfg(test)]
+mod alpha_config_auth_tests;
+#[cfg(test)]
+mod alpha_config_loading_tests;
+#[cfg(test)]
+mod alpha_config_pagination_tests;
+#[cfg(test)]
+mod alpha_config_route_tests;
+#[cfg(test)]
+mod alpha_config_test_helpers;
+#[cfg(test)]
+mod alpha_model;
+#[cfg(test)]
+mod alpha_model_raw;
+#[cfg(test)]
+mod alpha_model_raw_validation;
+#[cfg(test)]
+mod alpha_model_raw_validation_negative_season_tests;
+#[cfg(test)]
+mod alpha_model_tests;
+#[cfg(test)]
+mod alpha_model_validation_tests;
+#[cfg(test)]
+mod alpha_nav_validation;
+#[cfg(test)]
+mod alpha_nav_validation_tests;
+#[cfg(test)]
+mod alpha_normalize;
+#[cfg(test)]
+mod alpha_normalize_tests;
+#[cfg(test)]
+mod alpha_route_validation;
+#[cfg(test)]
+mod alpha_test_helpers;
+#[cfg(test)]
+mod alpha_url;
 mod checkpoint;
 mod config;
 mod discovery;
@@ -54,6 +100,7 @@ mod marks;
 mod model;
 mod output;
 mod scoring;
+mod summary;
 mod xlsx;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -229,19 +276,22 @@ async fn run_pipeline(
             candidates.push(candidate);
         }
 
-        // Spider retrieves only the strongest candidate. All other candidates
-        // remain available in the audit JSON/CSV with their search evidence.
-        let selected_index = candidates
-            .iter()
-            .enumerate()
-            .max_by(|(_, left), (_, right)| {
-                left.deterministic_score
-                    .total_cmp(&right.deterministic_score)
-            })
-            .map(|(candidate_index, _)| candidate_index);
+        // Spider retrieves the strongest candidates (up to top 2) to improve
+        // extraction quality. All other candidates remain available in the audit
+        // JSON/CSV with their search evidence.
+        let mut top_indices: Vec<usize> = (0..candidates.len()).collect();
+        top_indices.sort_by(|&a, &b| {
+            candidates[b]
+                .deterministic_score
+                .total_cmp(&candidates[a].deterministic_score)
+        });
+        top_indices.truncate(2.min(candidates.len()));
         if config.retrieval.authorized_direct_fetch {
-            if let Some(selected_index) = selected_index {
-                if let Some(hit) = hits.get(selected_index) {
+            for &idx in &top_indices {
+                if let Some(hit) = hits.get(idx) {
+                    if candidates[idx].page_retrieved {
+                        continue;
+                    }
                     let mut html = if let Some(ref dir) = config.retrieval.saved_pages_dir {
                         fetch::load_saved_profile(&hit.url, dir)?
                     } else {
@@ -263,9 +313,7 @@ async fn run_pipeline(
                         )
                         .await;
                         scoring::score_candidate(prospect, &mut enriched, &config.matching);
-                        if let Some(slot) = candidates.get_mut(selected_index) {
-                            *slot = enriched;
-                        }
+                        candidates[idx] = enriched;
                     }
                 }
             }

@@ -83,7 +83,10 @@ mod negative_season_regression_tests {
         }"#;
         let resp = RawRankingsResponse::from_json(json).expect("parse should succeed");
         let result = resp.grouped_rankings[0][0].to_flattened_records();
-        assert!(result.is_err(), "zero SeasonID in nested Results must be rejected");
+        assert!(
+            result.is_err(),
+            "zero SeasonID in nested Results must be rejected"
+        );
     }
 
     // Regression: flattened row with SeasonID == 0 still rejected
@@ -107,7 +110,10 @@ mod negative_season_regression_tests {
         }"#;
         let resp = RawRankingsResponse::from_json(json).expect("parse should succeed");
         let result = resp.grouped_rankings[0][0].to_flattened_records();
-        assert!(result.is_err(), "zero SeasonID in flattened row must be rejected");
+        assert!(
+            result.is_err(),
+            "zero SeasonID in flattened row must be rejected"
+        );
     }
 
     // Positive regression: valid positive SeasonID should still work
@@ -137,4 +143,3 @@ mod negative_season_regression_tests {
         assert_eq!(result.unwrap()[0].season_id, 2026);
     }
 }
-

@@ -44,8 +44,7 @@ impl AlphaConfig {
     pub fn load(path: &Path) -> Result<Self> {
         let raw = std::fs::read_to_string(path)
             .with_context(|| format!("reading alpha configuration {}", path.display()))?;
-        let config: Self =
-            toml::from_str(&raw).context("parsing alpha TOML configuration")?;
+        let config: Self = toml::from_str(&raw).context("parsing alpha TOML configuration")?;
         config.validate()?;
         Ok(config)
     }
@@ -70,10 +69,10 @@ impl AlphaConfig {
 
         // Validate state codes: exactly 50 canonical US state codes, no duplicates.
         let canonical_states = [
-            "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL",
-            "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT",
-            "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
-            "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+            "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN",
+            "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV",
+            "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN",
+            "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
         ];
         let canonical_set: std::collections::HashSet<&str> =
             canonical_states.iter().copied().collect();
@@ -86,7 +85,10 @@ impl AlphaConfig {
                 );
             }
             if !seen_states.insert(code) {
-                bail!("authorization.allowed_states contains duplicate code '{}'", code);
+                bail!(
+                    "authorization.allowed_states contains duplicate code '{}'",
+                    code
+                );
             }
         }
         if auth.allowed_states.len() != canonical_states.len() {
@@ -124,12 +126,14 @@ impl AlphaConfig {
         }
         const MAX_RETRY_AFTER_MS: u64 = 300_000;
         if auth.max_retry_delay_ms > MAX_RETRY_AFTER_MS {
-            bail!("authorization.max_retry_delay_ms must be at most {} ms", MAX_RETRY_AFTER_MS);
+            bail!(
+                "authorization.max_retry_delay_ms must be at most {} ms",
+                MAX_RETRY_AFTER_MS
+            );
         }
 
         Ok(())
     }
-
 
     fn validate_api(&self) -> Result<()> {
         let api = &self.api;
@@ -169,7 +173,11 @@ impl AlphaConfig {
         // max_body_bytes must be > 0 and at most 8 MiB; no silent default.
         const MAX_BODY_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
         if api.max_body_bytes == 0 || api.max_body_bytes > MAX_BODY_BYTES {
-            bail!("api.max_body_bytes must be > 0 and <= {} (got {})", MAX_BODY_BYTES, api.max_body_bytes);
+            bail!(
+                "api.max_body_bytes must be > 0 and <= {} (got {})",
+                MAX_BODY_BYTES,
+                api.max_body_bytes
+            );
         }
 
         // Pagination pointers must be non-empty.

@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::path::Path;
-use anyhow::Result;
 use crate::model::MatchRecord;
 use crate::xlsx;
+use anyhow::Result;
+use std::collections::HashMap;
+use std::path::Path;
 pub fn summarize(records: &[MatchRecord]) {
     let mut counts: HashMap<&str, usize> = HashMap::new();
     for r in records {

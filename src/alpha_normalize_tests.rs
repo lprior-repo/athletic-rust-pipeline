@@ -1,16 +1,16 @@
 /// Focused tests for normalization, URL validation, and deduplication.
 use crate::alpha_normalize::{
-    canonical_state, construct_profile_url, exception_for_missing_id, merge_athlete,
-    normalize_record, normalize_whitespace, validate_url, SourceRecord,
+    canonical_state, dedup_athletes, merge_athlete, normalize_record, normalize_whitespace,
+    SourceRecord,
 };
-use crate::model::Mark;
 use std::collections::BTreeMap;
 
 #[test]
 fn canonical_state_uppercases() {
-    assert_eq!(canonical_state("ca"), "CA");
-    assert_eq!(canonical_state("  ca  "), "CA");
-    assert_eq!(canonical_state("ny"), "NY");
+    assert_eq!(canonical_state("ca").unwrap(), "CA");
+    assert_eq!(canonical_state("  ca  ").unwrap(), "CA");
+    assert_eq!(canonical_state("ny").unwrap(), "NY");
+    assert!(canonical_state("zz").is_none());
 }
 
 #[test]
@@ -21,38 +21,12 @@ fn normalize_whitespace_collapses() {
 }
 
 #[test]
-fn validate_url_athletic_net_https_ok() {
-    assert!(validate_url("https://athletic.net/athlete/12345").is_some());
-    assert!(validate_url("https://athletic.net/results/123").is_some());
-}
-
-#[test]
-fn validate_url_rejects_non_https_and_unauthorized() {
-    assert!(validate_url("http://athletic.net/athlete/123").is_none());
-    assert!(validate_url("ftp://athletic.net/athlete/123").is_none());
-    assert!(validate_url("https://other-site.com/athlete/123").is_none());
-    assert!(validate_url("https://athletic.net.evil.com/athlete/123").is_none());
-    assert!(validate_url("").is_none());
-    assert!(validate_url("  ").is_none());
-}
-
-#[test]
-fn construct_profile_url_nonzero_id() {
-    assert_eq!(
-        construct_profile_url(12345),
-        Some("https://athletic.net/athlete/12345".to_owned())
-    );
-    assert!(construct_profile_url(0).is_none());
-}
-
-#[test]
 fn normalize_record_extract_fields() {
     let mut fields = BTreeMap::new();
     fields.insert("first_name".to_owned(), "  John  ".to_owned());
     fields.insert("last_name".to_owned(), "Doe".to_owned());
     fields.insert("school".to_owned(), "  Lincoln High  ".to_owned());
     fields.insert("state".to_owned(), "ca".to_owned());
-    fields.insert("location".to_owned(), "  LA  ".to_owned());
     fields.insert(
         "profile_url".to_owned(),
         "https://athletic.net/athlete/12345".to_owned(),
@@ -67,13 +41,10 @@ fn normalize_record_extract_fields() {
 
     let athlete = normalize_record(&record);
     assert_eq!(athlete.first_name, "John Doe");
+    assert_eq!(athlete.last_name, "Doe");
     assert_eq!(athlete.school, "Lincoln High");
     assert_eq!(athlete.state, "CA");
-    assert_eq!(athlete.location, "LA");
-    assert_eq!(
-        athlete.profile_url,
-        "https://athletic.net/athlete/12345"
-    );
+    assert_eq!(athlete.profile_url, "https://athletic.net/athlete/12345");
 }
 
 #[test]
@@ -97,24 +68,18 @@ fn normalize_record_rejects_invalid_profile_url() {
 fn merge_athlete_two_events_one_athlete_two_results() {
     let mut map = BTreeMap::new();
 
+    // Record 1: 100m mark
     let mut fields1 = BTreeMap::new();
     fields1.insert("athlete_id".to_owned(), "12345".to_owned());
     fields1.insert("state".to_owned(), "ca".to_owned());
     fields1.insert(
-        "profile_url".to_owned(),
-        "https://athletic.net/athlete/12345".to_owned(),
+        "marks".to_owned(),
+        "100m|10.55|2026-27|2026-05-01|Invitational|+1.2".to_owned(),
     );
     fields1.insert(
         "result_urls".to_owned(),
-        "https://athletic.net/results/100".to_owned(),
+        "https://athletic.net/result/100".to_owned(),
     );
-
-    let mut mark1 = Mark::default();
-    mark1.event = "100m".to_owned();
-    mark1.mark = "10.55".to_owned();
-    mark1.date = "2026-05-01".to_owned();
-    mark1.meet_name = "Invitational".to_owned();
-    mark1.source_url = "https://athletic.net/results/100".to_owned();
 
     let rec1 = SourceRecord {
         source_key: "src1".to_owned(),
@@ -123,24 +88,18 @@ fn merge_athlete_two_events_one_athlete_two_results() {
         fields: fields1,
     };
 
+    // Record 2: 200m mark
     let mut fields2 = BTreeMap::new();
     fields2.insert("athlete_id".to_owned(), "12345".to_owned());
     fields2.insert("state".to_owned(), "ca".to_owned());
     fields2.insert(
-        "profile_url".to_owned(),
-        "https://athletic.net/athlete/12345".to_owned(),
+        "marks".to_owned(),
+        "200m|21.30|2026-27|2026-05-15|State Finals|+0.8".to_owned(),
     );
     fields2.insert(
         "result_urls".to_owned(),
-        "https://athletic.net/results/200".to_owned(),
+        "https://athletic.net/result/200".to_owned(),
     );
-
-    let mut mark2 = Mark::default();
-    mark2.event = "200m".to_owned();
-    mark2.mark = "21.30".to_owned();
-    mark2.date = "2026-05-15".to_owned();
-    mark2.meet_name = "State Finals".to_owned();
-    mark2.source_url = "https://athletic.net/results/200".to_owned();
 
     let rec2 = SourceRecord {
         source_key: "src2".to_owned(),
@@ -149,28 +108,35 @@ fn merge_athlete_two_events_one_athlete_two_results() {
         fields: fields2,
     };
 
-    let athlete1 = normalize_record(&rec1);
-    let mut athlete1 = athlete1;
-    athlete1.marks = vec![mark1];
-
-    let athlete2 = normalize_record(&rec2);
-    let mut athlete2 = athlete2;
-    athlete2.marks = vec![mark2];
-
-    merge_athlete(&mut map, athlete1);
-    let id = merge_athlete(&mut map, athlete2);
+    let a1 = normalize_record(&rec1);
+    let a2 = normalize_record(&rec2);
+    merge_athlete(&mut map, a1);
+    let id = merge_athlete(&mut map, a2);
 
     assert_eq!(id, 12345);
     let athlete = &map[&12345];
-    assert_eq!(athlete.marks.len(), 2);
-    assert_eq!(athlete.result_urls.len(), 2);
+    assert_eq!(athlete.results.len(), 3);
+    assert_eq!(
+        athlete
+            .results
+            .iter()
+            .filter(|r| !r.result_url.is_empty())
+            .count(),
+        2
+    );
 }
 
 #[test]
-fn duplicate_result_collapse() {
+fn duplicate_result_collapse_by_result_id() {
     let mut map = BTreeMap::new();
     let mut fields1 = BTreeMap::new();
     fields1.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields1.insert("result_ids".to_owned(), "999".to_owned());
+    fields1.insert(
+        "marks".to_owned(),
+        "100m|10.55|2026-27|2026-05-01|Invitational".to_owned(),
+    );
+
     let rec1 = SourceRecord {
         source_key: "src1".to_owned(),
         sheet: "s1".to_owned(),
@@ -178,18 +144,14 @@ fn duplicate_result_collapse() {
         fields: fields1,
     };
 
-    let mut mark = Mark::default();
-    mark.event = "100m".to_owned();
-    mark.mark = "10.55".to_owned();
-    mark.date = "2026-05-01".to_owned();
-    mark.meet_name = "Invitational".to_owned();
-    mark.source_url = "https://athletic.net/results/100".to_owned();
-
-    let mut athlete1 = normalize_record(&rec1);
-    athlete1.marks = vec![mark.clone()];
-
     let mut fields2 = BTreeMap::new();
     fields2.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields2.insert("result_ids".to_owned(), "999".to_owned());
+    fields2.insert(
+        "marks".to_owned(),
+        "100m|10.55|2026-27|2026-05-01|Invitational".to_owned(),
+    );
+
     let rec2 = SourceRecord {
         source_key: "src2".to_owned(),
         sheet: "s2".to_owned(),
@@ -197,14 +159,20 @@ fn duplicate_result_collapse() {
         fields: fields2,
     };
 
-    let mut athlete2 = normalize_record(&rec2);
-    athlete2.marks = vec![mark];
-
-    merge_athlete(&mut map, athlete1);
-    let _ = merge_athlete(&mut map, athlete2);
+    let a1 = normalize_record(&rec1);
+    let a2 = normalize_record(&rec2);
+    merge_athlete(&mut map, a1);
+    let _ = merge_athlete(&mut map, a2);
 
     let athlete = &map[&12345];
-    assert_eq!(athlete.marks.len(), 1);
+    assert_eq!(
+        athlete
+            .results
+            .iter()
+            .filter(|r| r.result_id == 999)
+            .count(),
+        1
+    );
 }
 
 #[test]
@@ -230,22 +198,23 @@ fn identity_conflict_creates_exception() {
         fields: fields2,
     };
 
-    let athlete1 = normalize_record(&rec1);
-    let athlete2 = normalize_record(&rec2);
-
-    merge_athlete(&mut map, athlete1);
-    merge_athlete(&mut map, athlete2);
+    let a1 = normalize_record(&rec1);
+    let a2 = normalize_record(&rec2);
+    merge_athlete(&mut map, a1);
+    merge_athlete(&mut map, a2);
 
     let athlete = &map[&12345];
     assert!(!athlete.exception_notes.is_empty());
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("first_name conflict")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|n| n.contains("first_name conflict")));
 }
 
 #[test]
-fn missing_id_creates_exception_record() {
+fn missing_zero_id_creates_exception_record() {
     let mut fields = BTreeMap::new();
-    fields.insert("first_name".to_owned(), "Jane".to_owned());
-    fields.insert("last_name".to_owned(), "Doe".to_owned());
+    fields.insert("first_name".to_owned(), "Jane Doe".to_owned());
     fields.insert("school".to_owned(), "West High".to_owned());
     fields.insert("state".to_owned(), "tx".to_owned());
     let record = SourceRecord {
@@ -255,27 +224,86 @@ fn missing_id_creates_exception_record() {
         fields,
     };
 
-    let athlete = exception_for_missing_id(&record);
-    assert_eq!(athlete.athlete_id, 0);
-    assert_eq!(athlete.first_name, "Jane Doe");
-    assert_eq!(athlete.school, "West High");
-    assert_eq!(athlete.state, "TX");
-    assert!(athlete.exception_notes[0].contains("athlete_id missing or zero"));
+    let mut map = BTreeMap::new();
+    let a = normalize_record(&record);
+    merge_athlete(&mut map, a);
+
+    // Exception records go under key 0
+    let exn = &map[&0];
+    assert!(exn
+        .exception_notes
+        .iter()
+        .any(|n| n.contains("athlete_id missing or zero")));
 }
 
 #[test]
-fn zero_id_creates_exception_record() {
+fn state_unknown_rejected() {
     let mut fields = BTreeMap::new();
-    fields.insert("athlete_id".to_owned(), "0".to_owned());
-    fields.insert("first_name".to_owned(), "Bob".to_owned());
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields.insert("state".to_owned(), "ZZ".to_owned());
     let record = SourceRecord {
         source_key: "bad".to_owned(),
         sheet: "s1".to_owned(),
         excel_row: 1,
         fields,
     };
+    let athlete = normalize_record(&record);
+    assert_eq!(athlete.state, "");
+    assert!(!athlete.exception_notes.is_empty());
+}
 
-    let athlete = exception_for_missing_id(&record);
-    assert_eq!(athlete.athlete_id, 0);
-    assert!(athlete.exception_notes[0].contains("athlete_id missing or zero"));
+#[test]
+fn profile_url_not_in_result_urls() {
+    let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields.insert(
+        "profile_url".to_owned(),
+        "https://athletic.net/athlete/12345".to_owned(),
+    );
+    fields.insert(
+        "result_urls".to_owned(),
+        "https://athletic.net/athlete/12345;https://athletic.net/result/100".to_owned(),
+    );
+    let record = SourceRecord {
+        source_key: "test".to_owned(),
+        sheet: "s1".to_owned(),
+        excel_row: 1,
+        fields,
+    };
+    let athlete = normalize_record(&record);
+    assert!(!athlete
+        .results
+        .iter()
+        .any(|r| r.result_url == athlete.profile_url));
+    assert!(athlete
+        .results
+        .iter()
+        .any(|r| r.result_url == "https://athletic.net/result/100"));
+}
+
+#[test]
+fn dedup_athletes_keeps_first() {
+    let mut fields1 = BTreeMap::new();
+    fields1.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields1.insert("first_name".to_owned(), "John".to_owned());
+    let a1 = normalize_record(&SourceRecord {
+        source_key: "s1".into(),
+        sheet: "s1".into(),
+        excel_row: 1,
+        fields: fields1,
+    });
+
+    let mut fields2 = BTreeMap::new();
+    fields2.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields2.insert("first_name".to_owned(), "Jane".to_owned());
+    let a2 = normalize_record(&SourceRecord {
+        source_key: "s2".into(),
+        sheet: "s2".into(),
+        excel_row: 2,
+        fields: fields2,
+    });
+
+    let deduped = dedup_athletes(vec![a1, a2]);
+    assert_eq!(deduped.len(), 1);
+    assert_eq!(deduped[0].first_name, "John");
 }

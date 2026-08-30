@@ -11,8 +11,15 @@ pub enum AlphaApiError {
     Forbidden(String),
     #[error("rate limited (429): no Retry-After header present or invalid")]
     RateLimitedNoRetryAfter,
-    #[error("rate limited (429): Retry-After exceeded max retry count ({}) after {} ms", max_retries, total_delay_ms)]
-    RateLimitedExhausted { max_retries: usize, total_delay_ms: u64 },
+    #[error(
+        "rate limited (429): Retry-After exceeded max retry count ({}) after {} ms",
+        max_retries,
+        total_delay_ms
+    )]
+    RateLimitedExhausted {
+        max_retries: usize,
+        total_delay_ms: u64,
+    },
     #[error("server error {} after {} retries", status, retries)]
     ServerErrorExhausted { status: u16, retries: usize },
     #[error("unexpected status {}: {}", status, body)]
@@ -90,9 +97,7 @@ pub fn validate_pagination_config(
     pagination: &crate::alpha_model::PaginationConfig,
 ) -> Result<(), AlphaApiError> {
     match pagination {
-        crate::alpha_model::PaginationConfig::SingleResponse {
-            complete_pointer,
-        } => {
+        crate::alpha_model::PaginationConfig::SingleResponse { complete_pointer } => {
             validate_absolute_pointer(complete_pointer, "complete_pointer")?;
         }
         crate::alpha_model::PaginationConfig::NextPage {
@@ -111,4 +116,3 @@ pub fn validate_pagination_config(
     }
     Ok(())
 }
-

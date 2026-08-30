@@ -8,7 +8,10 @@ mod raw_ranking_record_tests {
             "AthleteID": 123
         }"#;
         let result: Result<RawRankingRecord, _> = serde_json::from_str(json);
-        assert!(result.is_err(), "missing required fields must cause deserialization error");
+        assert!(
+            result.is_err(),
+            "missing required fields must cause deserialization error"
+        );
     }
 
     #[test]
@@ -22,8 +25,8 @@ mod raw_ranking_record_tests {
             "UnknownField": "ignored",
             "AnotherUnknown": 42
         }"#;
-        let rec: RawRankingRecord = serde_json::from_str(json)
-            .expect("unknown fields should be ignored");
+        let rec: RawRankingRecord =
+            serde_json::from_str(json).expect("unknown fields should be ignored");
         assert_eq!(rec.athlete_id, 1);
         assert_eq!(rec.athlete_name, "Test");
     }
@@ -40,7 +43,10 @@ mod raw_ranking_record_tests {
         }"#;
         let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
         let records = rec.to_flattened_records();
-        assert!(records.is_err(), "missing required fields should error, not empty");
+        assert!(
+            records.is_err(),
+            "missing required fields should error, not empty"
+        );
     }
 
     #[test]
@@ -152,8 +158,8 @@ mod raw_ranking_result_tests {
             "UnknownField": "ignored",
             "AnotherUnknown": 42
         }"#;
-        let result: RawRankingResult = serde_json::from_str(json)
-            .expect("unknown fields should be ignored");
+        let result: RawRankingResult =
+            serde_json::from_str(json).expect("unknown fields should be ignored");
         assert_eq!(result.meet_id, 123);
         assert_eq!(result.measure, "10.5");
     }
@@ -164,7 +170,10 @@ mod raw_ranking_result_tests {
             "MeetID": 123
         }"#;
         let result: Result<RawRankingResult, _> = serde_json::from_str(json);
-        assert!(result.is_err(), "missing required fields must cause deserialization error");
+        assert!(
+            result.is_err(),
+            "missing required fields must cause deserialization error"
+        );
     }
 }
 
@@ -176,7 +185,10 @@ mod raw_rankings_response_tests {
     fn required_fields_must_be_present_in_raw_rankings_response() {
         let json = r#"{}"#;
         let result: Result<RawRankingsResponse, _> = serde_json::from_str(json);
-        assert!(result.is_err(), "missing groupedRankings must cause deserialization error");
+        assert!(
+            result.is_err(),
+            "missing groupedRankings must cause deserialization error"
+        );
     }
 
     #[test]
@@ -193,26 +205,21 @@ mod raw_rankings_response_tests {
 
     #[test]
     fn from_json_rejects_non_array_group() {
-        let result = RawRankingsResponse::from_json(
-            r#"{"groupedRankings": [{"AthleteID": 1}]}"#
-        );
+        let result = RawRankingsResponse::from_json(r#"{"groupedRankings": [{"AthleteID": 1}]}"#);
         assert!(result.is_err(), "non-array group must error");
     }
 
     #[test]
     fn from_json_rejects_malformed_row() {
         // Missing required AthleteName field
-        let result = RawRankingsResponse::from_json(
-            r#"{"groupedRankings": [[{"AthleteID": 1}]]}"#
-        );
+        let result = RawRankingsResponse::from_json(r#"{"groupedRankings": [[{"AthleteID": 1}]]}"#);
         assert!(result.is_err(), "malformed row must error");
     }
 
     #[test]
     fn from_json_propagates_continuation_error() {
-        let result = RawRankingsResponse::from_json(
-            r#"{"groupedRankings": [], "continuation": "bad"}"#
-        );
+        let result =
+            RawRankingsResponse::from_json(r#"{"groupedRankings": [], "continuation": "bad"}"#);
         assert!(result.is_err(), "malformed continuation must error");
     }
 
@@ -226,25 +233,20 @@ mod raw_rankings_response_tests {
     #[test]
     fn from_json_rejects_wrong_page_type() {
         // page must be u64 or null; string type should error
-        let result = RawRankingsResponse::from_json(
-            r#"{"groupedRankings":[],"page":"invalid"}"#,
-        );
+        let result = RawRankingsResponse::from_json(r#"{"groupedRankings":[],"page":"invalid"}"#);
         assert!(result.is_err(), "string page must error");
     }
 
     #[test]
     fn from_json_rejects_float_page_type() {
-        let result = RawRankingsResponse::from_json(
-            r#"{"groupedRankings":[],"page":1.5}"#,
-        );
+        let result = RawRankingsResponse::from_json(r#"{"groupedRankings":[],"page":1.5}"#);
         assert!(result.is_err(), "float page must error");
     }
 
     #[test]
     fn from_json_accepts_null_page() {
-        let raw = RawRankingsResponse::from_json(
-            r#"{"groupedRankings":[],"page":null}"#,
-        ).expect("null page should be accepted");
+        let raw = RawRankingsResponse::from_json(r#"{"groupedRankings":[],"page":null}"#)
+            .expect("null page should be accepted");
         assert_eq!(raw.page, None);
     }
 
@@ -266,6 +268,9 @@ mod raw_rankings_response_tests {
         assert_eq!(resp.grouped_rankings.len(), 1);
         assert_eq!(resp.complete, Some(serde_json::json!(true)));
         assert!(resp.value.get("unknownField").is_some());
-        assert_eq!(resp.value.pointer("/complete"), Some(&serde_json::json!(true)));
+        assert_eq!(
+            resp.value.pointer("/complete"),
+            Some(&serde_json::json!(true))
+        );
     }
 }

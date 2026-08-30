@@ -1,5 +1,7 @@
 use crate::alpha_model::RankingRecord;
-use crate::alpha_model_raw::{RawContinuation, RawRankingRecord, RawRankingResult, RawRankingsResponse};
+use crate::alpha_model_raw::{
+    RawContinuation, RawRankingRecord, RawRankingResult, RawRankingsResponse,
+};
 use serde::Deserialize;
 
 impl RawRankingRecord {
@@ -20,7 +22,10 @@ impl RawRankingRecord {
         self.from_flattened()
     }
 
-    fn from_nested_results(&self, results: &[RawRankingResult]) -> Result<Vec<RankingRecord>, String> {
+    fn from_nested_results(
+        &self,
+        results: &[RawRankingResult],
+    ) -> Result<Vec<RankingRecord>, String> {
         if self.athlete_name.trim().is_empty() {
             return Err("RawRankingRecord nested: AthleteName must not be empty".into());
         }
@@ -95,37 +100,48 @@ impl RawRankingRecord {
         if self.state.trim().is_empty() {
             return Err("RawRankingRecord flattened: State must not be empty".into());
         }
-        let id_result = self.id_result
+        let id_result = self
+            .id_result
             .ok_or("RawRankingRecord flattened: missing required IDResult")?;
         if id_result == 0 {
             return Err("RawRankingRecord flattened: IDResult must not be zero".into());
         }
-        let event_short = self.event_short.clone()
+        let event_short = self
+            .event_short
+            .clone()
             .ok_or("RawRankingRecord flattened: missing required EventShort")?;
         if event_short.trim().is_empty() {
             return Err("RawRankingRecord flattened: EventShort must not be empty".into());
         }
-        let measure = self.measure.clone()
+        let measure = self
+            .measure
+            .clone()
             .ok_or("RawRankingRecord flattened: missing required Measure")?;
         if measure.trim().is_empty() {
             return Err("RawRankingRecord flattened: Measure must not be empty".into());
         }
-        let result_date = self.result_date.clone()
+        let result_date = self
+            .result_date
+            .clone()
             .ok_or("RawRankingRecord flattened: missing required ResultDate")?;
         if result_date.trim().is_empty() {
             return Err("RawRankingRecord flattened: ResultDate must not be empty".into());
         }
-        let season_id = self.season_id
+        let season_id = self
+            .season_id
             .ok_or("RawRankingRecord flattened: missing required SeasonID")?;
         if season_id <= 0 {
             return Err("RawRankingRecord flattened: SeasonID must be positive".into());
         }
-        let meet_name = self.meet_name.clone()
+        let meet_name = self
+            .meet_name
+            .clone()
             .ok_or("RawRankingRecord flattened: missing required MeetName")?;
         if meet_name.trim().is_empty() {
             return Err("RawRankingRecord flattened: MeetName must not be empty".into());
         }
-        let meet_id = self.meet_id
+        let meet_id = self
+            .meet_id
             .ok_or("RawRankingRecord flattened: missing required MeetID")?;
         if meet_id == 0 {
             return Err("RawRankingRecord flattened: MeetID must not be zero".into());
@@ -156,20 +172,24 @@ impl RawRankingsResponse {
     /// - Propagates RawRankingRecord / RawContinuation parse errors.
     /// - No silent filtering — every malformed item is an error.
     pub fn from_json(text: &str) -> Result<Self, String> {
-        let value: serde_json::Value = serde_json::from_str(text)
-            .map_err(|e| format!("JSON parse error: {e}"))?;
+        let value: serde_json::Value =
+            serde_json::from_str(text).map_err(|e| format!("JSON parse error: {e}"))?;
 
-        let grouped_raw = value.get("groupedRankings")
+        let grouped_raw = value
+            .get("groupedRankings")
             .ok_or("missing required field: groupedRankings")?;
-        let groups_arr = grouped_raw.as_array()
+        let groups_arr = grouped_raw
+            .as_array()
             .ok_or("groupedRankings must be an array")?;
 
         let grouped_rankings: Result<Vec<Vec<RawRankingRecord>>, String> = groups_arr
             .iter()
             .map(|group| {
-                let items = group.as_array()
+                let items = group
+                    .as_array()
                     .ok_or_else(|| "group inside groupedRankings must be an array".to_string())?;
-                items.iter()
+                items
+                    .iter()
                     .map(|row| {
                         RawRankingRecord::deserialize(row.clone())
                             .map_err(|e| format!("malformed row: {e}"))
@@ -192,8 +212,10 @@ impl RawRankingsResponse {
         let complete = value.get("complete").cloned();
         let continuation = match value.get("continuation") {
             Some(serde_json::Value::Null) => None,
-            Some(cont_raw) => Some(RawContinuation::deserialize(cont_raw.clone())
-                .map_err(|e| format!("malformed continuation: {e}"))?),
+            Some(cont_raw) => Some(
+                RawContinuation::deserialize(cont_raw.clone())
+                    .map_err(|e| format!("malformed continuation: {e}"))?,
+            ),
             None => None,
         };
 

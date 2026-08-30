@@ -12,7 +12,7 @@ fn explicit_year_match_includes() {
 #[test]
 fn explicit_year_mismatch_excludes() {
     let result = classify_cohort(2027, Some(2028), None, None);
-    assert!(matches!(result, CohortDecision::Exception(_)));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
 }
 
 #[test]
@@ -68,9 +68,9 @@ fn explicit_year_2027_with_conflicting_grade_still_exception() {
 }
 
 #[test]
-fn explicit_year_2027_without_grade_still_exception_for_wrong_year() {
+fn explicit_year_without_grade_excludes() {
     let result = classify_cohort(2027, Some(2028), None, None);
-    assert!(matches!(result, CohortDecision::Exception(_)));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
 }
 
 #[test]

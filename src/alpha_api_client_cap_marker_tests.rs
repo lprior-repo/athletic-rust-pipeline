@@ -1,5 +1,5 @@
-use crate::alpha_api::AlphaApiError;
 use crate::alpha_api::AlphaApiClientConfig;
+use crate::alpha_api::AlphaApiError;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::PaginationConfig;
 
@@ -19,7 +19,8 @@ fn make_client_with_cap_markers(cap_markers: Vec<String>) -> Result<AlphaApiClie
         ],
         allowed_fields: vec!["AthleteID".into(), "AthleteName".into()],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers,
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,

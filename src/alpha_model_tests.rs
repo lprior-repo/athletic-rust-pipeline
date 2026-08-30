@@ -7,10 +7,9 @@ mod tests {
 
     #[test]
     fn parse_rankings_fixture() {
-        let fixture = std::fs::read_to_string(
-            Path::new("fixtures/alpha/get-rankings-redacted.json"),
-        )
-        .expect("fixture must exist");
+        let fixture =
+            std::fs::read_to_string(Path::new("fixtures/alpha/get-rankings-redacted.json"))
+                .expect("fixture must exist");
         let resp: RawRankingsResponse =
             serde_json::from_str(&fixture).expect("fixture must deserialize");
 
@@ -48,10 +47,9 @@ mod tests {
 
     #[test]
     fn parse_nav_info_fixture() {
-        let fixture = std::fs::read_to_string(
-            Path::new("fixtures/alpha/get-nav-info-redacted.json"),
-        )
-        .expect("fixture must exist");
+        let fixture =
+            std::fs::read_to_string(Path::new("fixtures/alpha/get-nav-info-redacted.json"))
+                .expect("fixture must exist");
         let resp: RawNavInfoResponse =
             serde_json::from_str(&fixture).expect("fixture must deserialize");
         let state = resp.state.unwrap();

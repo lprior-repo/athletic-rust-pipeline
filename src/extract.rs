@@ -440,21 +440,122 @@ fn matching_location(prospect: &Prospect, text: &str) -> Option<String> {
     if city.is_empty() || state.is_empty() {
         return None;
     }
-    let expected = normalize_text(&format!("{city} {state}"));
     let observed = normalize_text(text);
-    observed
-        .contains(&expected)
-        .then(|| format!("{city}, {state}"))
+    let full_expected = normalize_text(&format!("{city} {state}"));
+    let city_expected = normalize_text(&format!("{city}"));
+    let state_expected = normalize_text(&format!("{state}"));
+    if observed.contains(&full_expected) {
+        return Some(format!("{city}, {state}"));
+    }
+    let city_words: Vec<&str> = city_expected.split_whitespace().collect();
+    if city_words
+        .iter()
+        .all(|w| observed.contains(w) && w.len() >= 3)
+    {
+        if observed.contains(&state_expected) && state_expected.len() <= 4 {
+            return Some(format!("{city}, {state}"));
+        }
+    }
+    if observed.contains(&state_expected) && state_expected.len() <= 4 {
+        let state_full = state_name_to_full(state);
+        if !state_full.is_empty() {
+            let state_full_normalized = normalize_text(&state_full);
+            if observed.contains(&state_full_normalized) {
+                return Some(format!("{city}, {state}"));
+            }
+        }
+        return Some(format!("{city}, {state}"));
+    }
+    None
+}
+
+fn state_name_to_full(abbrev: &str) -> &str {
+    match abbrev.trim().to_uppercase().as_str() {
+        "AL" => "Alabama",
+        "AK" => "Alaska",
+        "AZ" => "Arizona",
+        "AR" => "Arkansas",
+        "CA" => "California",
+        "CO" => "Colorado",
+        "CT" => "Connecticut",
+        "DE" => "Delaware",
+        "FL" => "Florida",
+        "GA" => "Georgia",
+        "HI" => "Hawaii",
+        "ID" => "Idaho",
+        "IL" => "Illinois",
+        "IN" => "Indiana",
+        "IA" => "Iowa",
+        "KS" => "Kansas",
+        "KY" => "Kentucky",
+        "LA" => "Louisiana",
+        "ME" => "Maine",
+        "MD" => "Maryland",
+        "MA" => "Massachusetts",
+        "MI" => "Michigan",
+        "MN" => "Minnesota",
+        "MS" => "Mississippi",
+        "MO" => "Missouri",
+        "MT" => "Montana",
+        "NE" => "Nebraska",
+        "NV" => "Nevada",
+        "NH" => "New Hampshire",
+        "NJ" => "New Jersey",
+        "NM" => "New Mexico",
+        "NY" => "New York",
+        "NC" => "North Carolina",
+        "ND" => "North Dakota",
+        "OH" => "Ohio",
+        "OK" => "Oklahoma",
+        "OR" => "Oregon",
+        "PA" => "Pennsylvania",
+        "RI" => "Rhode Island",
+        "SC" => "South Carolina",
+        "SD" => "South Dakota",
+        "TN" => "Tennessee",
+        "TX" => "Texas",
+        "UT" => "Utah",
+        "VT" => "Vermont",
+        "VA" => "Virginia",
+        "WA" => "Washington",
+        "WV" => "West Virginia",
+        "WI" => "Wisconsin",
+        "WY" => "Wyoming",
+        _ => "",
+    }
 }
 
 fn name_before_location(title: &str, location: &str) -> Option<String> {
     let title_lower = title.to_ascii_lowercase();
     let location_lower = location.to_ascii_lowercase();
-    let end = title_lower.find(&location_lower)?;
-    let name = title.get(..end)?.trim().trim_end_matches([',', '-', ' ']);
-    let name = name.split("...").next()?.trim();
-    let token_count = name.split_whitespace().count();
-    (name.len() >= 2 && token_count <= 5).then(|| name.to_owned())
+    if let Some(end) = title_lower.find(&location_lower) {
+        let name = title.get(..end)?.trim().trim_end_matches([',', '-', ' ']);
+        let name = name.split("...").next()?.trim();
+        let token_count = name.split_whitespace().count();
+        if name.len() >= 2 && token_count <= 5 {
+            return Some(name.to_owned());
+        }
+    }
+    let city_words: Vec<&str> = location_lower
+        .split_whitespace()
+        .filter(|w| w.len() >= 3)
+        .collect();
+    if !city_words.is_empty() {
+        for word in &city_words {
+            if let Some(pos) = title_lower.rfind(word) {
+                if pos >= word.len() {
+                    let name = title.get(..pos.saturating_sub(1))?.trim();
+                    let name = name.trim_end_matches([',', '-', ' ', '.']);
+                    let name = name.split("...").next()?.trim();
+                    let token_count = name.split_whitespace().count();
+                    if name.len() >= 2 && token_count <= 5 {
+                        return Some(name.to_owned());
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn matching_school(prospect: &Prospect, text: &str) -> Option<String> {

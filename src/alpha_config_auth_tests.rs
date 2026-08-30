@@ -28,10 +28,7 @@ mod tests {
     #[test]
     fn duplicate_state_code_rejected() {
         let mut config = valid_config();
-        config
-            .authorization
-            .allowed_states
-            .push("CA".to_owned());
+        config.authorization.allowed_states.push("CA".to_owned());
         let error = config.validate().expect_err("duplicate state must fail");
         assert!(error.to_string().contains("duplicate"), "error: {}", error);
     }
@@ -54,11 +51,7 @@ mod tests {
         let mut config = valid_config();
         config.api.base_url = "http://example.com".to_owned();
         let error = config.validate().expect_err("non-HTTPS base must fail");
-        assert!(
-            error.to_string().contains("https"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("https"), "error: {}", error);
     }
 
     #[test]
@@ -94,11 +87,7 @@ mod tests {
         let mut config = valid_config();
         config.authorization.max_concurrent_requests = 2;
         let error = config.validate().expect_err("concurrency != 1 must fail");
-        assert!(
-            error.to_string().contains("exactly 1"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("exactly 1"), "error: {}", error);
     }
 
     #[test]
@@ -106,11 +95,7 @@ mod tests {
         let mut config = valid_config();
         config.authorization.min_delay_ms = 100;
         let error = config.validate().expect_err("delay < 500 must fail");
-        assert!(
-            error.to_string().contains("500"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("500"), "error: {}", error);
     }
 
     #[test]
@@ -118,7 +103,9 @@ mod tests {
         let mut config = valid_config();
         config.authorization.min_delay_ms = 5000;
         config.authorization.max_retry_delay_ms = 1000;
-        let error = config.validate().expect_err("max_retry_delay_ms < min_delay_ms must fail");
+        let error = config
+            .validate()
+            .expect_err("max_retry_delay_ms < min_delay_ms must fail");
         assert!(
             error.to_string().contains("max_retry_delay_ms"),
             "error: {}",
@@ -135,7 +122,9 @@ mod tests {
     fn max_retry_delay_exceeds_operational_ceiling_rejected() {
         let mut config = valid_config();
         config.authorization.max_retry_delay_ms = 500_000;
-        let error = config.validate().expect_err("max_retry_delay_ms > ceiling must fail");
+        let error = config
+            .validate()
+            .expect_err("max_retry_delay_ms > ceiling must fail");
         assert!(
             error.to_string().contains("300_000") || error.to_string().contains("300000"),
             "error must mention ceiling: {}",

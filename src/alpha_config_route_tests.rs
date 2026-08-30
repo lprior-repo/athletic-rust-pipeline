@@ -11,7 +11,9 @@ mod tests {
         config.api.pagination = PaginationConfig::SingleResponse {
             complete_pointer: "".to_owned(),
         };
-        let error = config.validate().expect_err("empty complete_pointer must fail");
+        let error = config
+            .validate()
+            .expect_err("empty complete_pointer must fail");
         assert!(
             error.to_string().contains("complete_pointer"),
             "error: {}",
@@ -54,7 +56,9 @@ mod tests {
             next_page_pointer: "/data/next".to_owned(),
             request_page_key: "page".to_owned(),
         };
-        let error = config.validate().expect_err("invalid escape in has_more must fail");
+        let error = config
+            .validate()
+            .expect_err("invalid escape in has_more must fail");
         assert!(
             error.to_string().contains("invalid RFC6901"),
             "error: {}",
@@ -70,7 +74,9 @@ mod tests {
             next_page_pointer: "/data/next~".to_owned(),
             request_page_key: "page".to_owned(),
         };
-        let error = config.validate().expect_err("invalid escape in next_page must fail");
+        let error = config
+            .validate()
+            .expect_err("invalid escape in next_page must fail");
         assert!(
             error.to_string().contains("invalid RFC6901"),
             "error: {}",
@@ -100,21 +106,27 @@ mod tests {
     fn cap_marker_valid_rfc6901_pointer_ok() {
         let mut config = valid_config();
         config.api.cap_markers = vec!["/metadata/truncated".to_owned()];
-        config.validate().expect("valid RFC6901 pointer should pass");
+        config
+            .validate()
+            .expect("valid RFC6901 pointer should pass");
     }
 
     #[test]
     fn cap_marker_valid_escaped_pointer_ok() {
         let mut config = valid_config();
         config.api.cap_markers = vec!["/data/value~0".to_owned()]; // ~0 encodes literal ~
-        config.validate().expect("valid escaped RFC6901 pointer should pass");
+        config
+            .validate()
+            .expect("valid escaped RFC6901 pointer should pass");
     }
 
     #[test]
     fn cap_marker_malformed_path_rejected() {
         let mut config = valid_config();
         config.api.cap_markers = vec!["/metadata/truncated~2".to_owned()];
-        let error = config.validate().expect_err("malformed RFC6901 escape must fail");
+        let error = config
+            .validate()
+            .expect_err("malformed RFC6901 escape must fail");
         assert!(
             error.to_string().contains("invalid RFC6901"),
             "error: {}",
@@ -153,7 +165,9 @@ mod tests {
     fn empty_allowed_routes_rejected() {
         let mut config = valid_config();
         config.authorization.allowed_routes.clear();
-        let error = config.validate().expect_err("empty allowed_routes must fail");
+        let error = config
+            .validate()
+            .expect_err("empty allowed_routes must fail");
         assert!(
             error.to_string().contains("allowed_routes"),
             "error: {}",
@@ -165,15 +179,26 @@ mod tests {
         let mut config = valid_config();
         config.api.base_url = "not-a-url".to_owned();
         let error = config.validate().expect_err("invalid base_url must fail");
-        assert!(error.to_string().contains("not a valid URL"), "error: {}", error);
+        assert!(
+            error.to_string().contains("not a valid URL"),
+            "error: {}",
+            error
+        );
     }
 
     #[test]
     fn base_url_missing_host_rejected() {
         let mut config = valid_config();
         config.api.base_url = "https://".to_owned();
-        let error = config.validate().expect_err("base_url missing host must fail");
-        assert!(error.to_string().contains("not a valid URL") || error.to_string().contains("nonempty host"), "error: {}", error);
+        let error = config
+            .validate()
+            .expect_err("base_url missing host must fail");
+        assert!(
+            error.to_string().contains("not a valid URL")
+                || error.to_string().contains("nonempty host"),
+            "error: {}",
+            error
+        );
     }
 
     #[test]
@@ -193,11 +218,7 @@ mod tests {
         let mut config = valid_config();
         config.api.rankings_path = "/api/v1/tfRankings/GetRankings?debug=1".to_owned();
         let error = config.validate().expect_err("route with query must fail");
-        assert!(
-            error.to_string().contains("query"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("query"), "error: {}", error);
     }
 
     #[test]
@@ -209,11 +230,20 @@ mod tests {
             nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
             timeout_seconds: 30,
             max_retries: 0,
-            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            pagination: PaginationConfig::SingleResponse {
+                complete_pointer: "/complete".into(),
+            },
             allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
-            allowed_fields: vec!["AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into()],
+            allowed_fields: vec![
+                "AthleteID".into(),
+                "AthleteName".into(),
+                "GradeID".into(),
+                "TeamName".into(),
+                "State".into(),
+            ],
             max_concurrent_requests: 1,
-            min_delay_ms: 0, max_retry_delay_ms: 30_000,
+            min_delay_ms: 0,
+            max_retry_delay_ms: 30_000,
             cap_markers: vec![],
             max_body_bytes: 8 * 1024 * 1024,
             auth_enabled: true,
@@ -226,9 +256,17 @@ mod tests {
     fn bare_complete_pointer_rejected() {
         // RFC6901 pointers must be absolute (start with /).
         let mut config = valid_config();
-        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "settings/complete".into() };
-        let error = config.validate().expect_err("bare pointer must be rejected");
-        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
+        config.api.pagination = PaginationConfig::SingleResponse {
+            complete_pointer: "settings/complete".into(),
+        };
+        let error = config
+            .validate()
+            .expect_err("bare pointer must be rejected");
+        assert!(
+            error.to_string().contains("absolute RFC6901"),
+            "error: {}",
+            error
+        );
     }
     #[test]
     fn bare_next_page_pointer_rejected() {
@@ -238,8 +276,14 @@ mod tests {
             next_page_pointer: "nextPage".into(),
             request_page_key: "page".into(),
         };
-        let error = config.validate().expect_err("bare next_page_pointer must be rejected");
-        assert!(error.to_string().contains("absolute RFC6901"), "error: {}", error);
+        let error = config
+            .validate()
+            .expect_err("bare next_page_pointer must be rejected");
+        assert!(
+            error.to_string().contains("absolute RFC6901"),
+            "error: {}",
+            error
+        );
     }
     #[test]
     fn empty_has_more_pointer_rejected_in_next_page_mode() {
@@ -249,14 +293,20 @@ mod tests {
             next_page_pointer: "/nextPage".into(),
             request_page_key: "page".into(),
         };
-        let error = config.validate().expect_err("empty has_more_pointer must be rejected");
+        let error = config
+            .validate()
+            .expect_err("empty has_more_pointer must be rejected");
         assert!(error.to_string().contains("non-empty"), "error: {}", error);
     }
     #[test]
     fn empty_complete_pointer_always_rejected() {
         let mut config = valid_config();
-        config.api.pagination = PaginationConfig::SingleResponse { complete_pointer: "".into() };
-        let error = config.validate().expect_err("empty complete_pointer must be rejected in single_response mode");
+        config.api.pagination = PaginationConfig::SingleResponse {
+            complete_pointer: "".into(),
+        };
+        let error = config
+            .validate()
+            .expect_err("empty complete_pointer must be rejected in single_response mode");
         assert!(error.to_string().contains("non-empty"), "error: {}", error);
     }
     #[test]
@@ -267,16 +317,22 @@ mod tests {
             nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
             timeout_seconds: 30,
             max_retries: 0,
-            pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+            pagination: PaginationConfig::SingleResponse {
+                complete_pointer: "/complete".into(),
+            },
             allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
             allowed_fields: vec!["AthleteID".into()],
             max_concurrent_requests: 2,
-            min_delay_ms: 0, max_retry_delay_ms: 30_000,
+            min_delay_ms: 0,
+            max_retry_delay_ms: 30_000,
             cap_markers: vec![],
             max_body_bytes: 8 * 1024 * 1024,
             auth_enabled: true,
             permission_reference: "test".into(),
         };
-        assert!(matches!(crate::alpha_api_client::AlphaApiClient::new(config), Err(crate::alpha_api::AlphaApiError::InvalidConcurrency)));
+        assert!(matches!(
+            crate::alpha_api_client::AlphaApiClient::new(config),
+            Err(crate::alpha_api::AlphaApiError::InvalidConcurrency)
+        ));
     }
 }

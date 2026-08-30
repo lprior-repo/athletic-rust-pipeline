@@ -1,4 +1,6 @@
-use crate::alpha_model_raw::{RawNavInfoResponse, RawRankingRecord, RawRankingResult, RawRankingsResponse};
+use crate::alpha_model_raw::{
+    RawNavInfoResponse, RawRankingRecord, RawRankingResult, RawRankingsResponse,
+};
 
 // --- Fixture deserialization ---
 #[test]
@@ -59,7 +61,10 @@ fn to_flattened_records_errors_when_no_valid_data() {
     }"#;
     let rec: RawRankingRecord = serde_json::from_str(json).unwrap();
     let result = rec.to_flattened_records();
-    assert!(result.is_err(), "no valid data should error, not return empty");
+    assert!(
+        result.is_err(),
+        "no valid data should error, not return empty"
+    );
 }
 #[test]
 fn unknown_fields_ignored_in_raw_ranking_result() {

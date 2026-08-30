@@ -17,30 +17,37 @@ pub fn score_candidate(prospect: &Prospect, candidate: &mut Candidate, config: &
 
     let year_score = match (prospect.expected_graduation_year, candidate.graduation_year) {
         (Some(expected), Some(actual)) if expected == actual => 1.0,
-        (Some(_), Some(_)) => 0.0,
+        (Some(expected), Some(actual)) => {
+            let diff = (expected as i32 - actual as i32).unsigned_abs() as f64;
+            (1.0 - diff * 0.3).max(0.0)
+        }
         _ => 0.0,
     };
     let sport_score = sport_score(&prospect.sport, &candidate.sports);
+    let school_or_location_match =
+        candidate.school_score >= 0.82 || candidate.location_score >= 0.90;
+    let year_matches = year_score >= 0.7;
+    let name_overrides = candidate.name_score >= 0.95;
     candidate.corroborated =
-        candidate.school_score >= 0.82 || candidate.location_score >= 0.90 || year_score == 1.0;
+        school_or_location_match || year_matches || (name_overrides && school_or_location_match);
 
-    let mut score = candidate.name_score * 0.68
-        + candidate.school_score * 0.20
-        + candidate.location_score * 0.07
-        + year_score * 0.03
-        + sport_score * 0.02;
+    let mut score = candidate.name_score * 0.55
+        + candidate.school_score * 0.25
+        + candidate.location_score * 0.10
+        + year_score * 0.05
+        + sport_score * 0.05;
 
     if prospect.expected_graduation_year.is_some()
         && candidate.graduation_year.is_some()
-        && year_score == 0.0
+        && year_score < 0.5
     {
-        score -= 0.12;
+        score -= 0.05;
     }
     if sport_score == 0.0 && !candidate.sports.is_empty() {
-        score -= 0.10;
+        score -= 0.05;
     }
     if config.require_corroboration && !candidate.corroborated {
-        score = score.min(config.review_threshold + 0.07);
+        score *= 0.88;
     }
     candidate.deterministic_score = score.clamp(0.0, 1.0);
 }

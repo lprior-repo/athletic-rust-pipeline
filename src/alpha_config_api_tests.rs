@@ -47,11 +47,7 @@ mod tests {
         let mut config = valid_config();
         config.api.max_retries = 10;
         let error = config.validate().expect_err("retries > 5 must fail");
-        assert!(
-            error.to_string().contains("at most 5"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("at most 5"), "error: {}", error);
     }
 
     #[test]
@@ -62,7 +58,9 @@ mod tests {
             next_page_pointer: "/page".to_owned(),
             request_page_key: "page".to_owned(),
         };
-        let error = config.validate().expect_err("empty has_more_pointer must fail");
+        let error = config
+            .validate()
+            .expect_err("empty has_more_pointer must fail");
         assert!(
             error.to_string().contains("has_more_pointer"),
             "error: {}",
@@ -89,17 +87,11 @@ mod tests {
     fn profile_enrichment_with_unauthorized_profile_route_rejected() {
         let mut config = valid_config();
         config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "/api/v1/other/Profile".to_owned(),
-        ];
+        config.authorization.allowed_profile_routes = vec!["/api/v1/other/Profile".to_owned()];
         let error = config
             .validate()
             .expect_err("unauthorized profile route must fail");
-        assert!(
-            error.to_string().contains("is not in"),
-            "error: {}",
-            error
-        );
+        assert!(error.to_string().contains("is not in"), "error: {}", error);
     }
     #[test]
     fn timeout_zero_rejected() {
@@ -121,7 +113,9 @@ mod tests {
             next_page_pointer: "".to_owned(),
             request_page_key: "page".to_owned(),
         };
-        let error = config.validate().expect_err("empty next_page_pointer must fail");
+        let error = config
+            .validate()
+            .expect_err("empty next_page_pointer must fail");
         assert!(
             error.to_string().contains("next_page_pointer"),
             "error: {}",
@@ -137,7 +131,9 @@ mod tests {
             next_page_pointer: "/page".to_owned(),
             request_page_key: "".to_owned(),
         };
-        let error = config.validate().expect_err("empty request_page_key must fail");
+        let error = config
+            .validate()
+            .expect_err("empty request_page_key must fail");
         assert!(
             error.to_string().contains("request_page_key"),
             "error: {}",
@@ -161,7 +157,9 @@ mod tests {
     fn route_same_host_network_path_rejected() {
         let mut config = valid_config();
         config.api.rankings_path = "//www.athletic.net/secret".to_owned();
-        let error = config.validate().expect_err("same-host network-path route must fail");
+        let error = config
+            .validate()
+            .expect_err("same-host network-path route must fail");
         assert!(
             error.to_string().contains("network-path"),
             "error: {}",
@@ -173,9 +171,8 @@ mod tests {
     fn profile_route_with_scheme_rejected() {
         let mut config = valid_config();
         config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "https://example.com/api/Profile".to_owned(),
-        ];
+        config.authorization.allowed_profile_routes =
+            vec!["https://example.com/api/Profile".to_owned()];
         let error = config
             .validate()
             .expect_err("profile route with scheme must fail");
@@ -190,9 +187,7 @@ mod tests {
     fn profile_route_not_started_with_slash_rejected() {
         let mut config = valid_config();
         config.authorization.allow_profile_enrichment = true;
-        config.authorization.allowed_profile_routes = vec![
-            "api/v1/Profile".to_owned(),
-        ];
+        config.authorization.allowed_profile_routes = vec!["api/v1/Profile".to_owned()];
         let error = config
             .validate()
             .expect_err("profile route without leading / must fail");
@@ -213,15 +208,10 @@ mod tests {
 
     #[test]
     fn disabled_example_parses_correctly() {
-        let config = AlphaConfig::load(Path::new(
-            "alpha.example.toml",
-        ))
-        .expect("example file should parse");
+        let config =
+            AlphaConfig::load(Path::new("alpha.example.toml")).expect("example file should parse");
         assert!(!config.authorization.enabled);
-        assert_eq!(
-            config.api.base_url,
-            "https://www.athletic.net"
-        );
+        assert_eq!(config.api.base_url, "https://www.athletic.net");
         assert_eq!(config.authorization.max_concurrent_requests, 1);
         assert_eq!(config.authorization.min_delay_ms, 750);
         assert!(!config.authorization.allow_profile_enrichment);
