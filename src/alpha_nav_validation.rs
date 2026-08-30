@@ -1,5 +1,6 @@
 use crate::alpha_model_raw::RawNavInfoResponse;
 
+#[allow(dead_code)]
 impl RawNavInfoResponse {
     /// Validate the nav_info response shape.
     ///

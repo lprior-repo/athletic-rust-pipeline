@@ -53,12 +53,13 @@ mod alpha_config_test_helpers;
 mod alpha_config_pagination_tests;
 #[cfg(test)]
 mod alpha_config_route_tests;
-#[cfg(test)]
+#[allow(dead_code)]
 mod alpha_model_raw;
-#[cfg(test)]
 mod alpha_nav_validation;
 #[cfg(test)]
 mod alpha_nav_validation_tests;
+#[cfg(test)]
+mod alpha_model_raw_validation_negative_season_tests;
 #[cfg(test)]
 mod alpha_api_client_pagination_tests;
 #[cfg(test)]
@@ -85,10 +86,8 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use config::Config;
 use model::{MatchRecord, ModelDecision};
-use std::{
-    path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 #[derive(Debug, Parser)]
 #[command(version, about)]
 struct Cli {
@@ -141,24 +140,7 @@ async fn main() -> Result<()> {
     match cli.command {
         Command::Inspect { input } => summary::inspect(&input),
         Command::ExportRecords { input, output } => xlsx::export_records(&input, &output),
-        Command::Run {
-            input,
-            config,
-            out_dir,
-            max,
-            include_xc,
-            i_have_written_authorization,
-        } => {
-            run_pipeline(
-                &input,
-                &config,
-                &out_dir,
-                max,
-                include_xc,
-                i_have_written_authorization,
-            )
-            .await
-        }
+        Command::Run { input, config, out_dir, max, include_xc, i_have_written_authorization } => run_pipeline(&input, &config, &out_dir, max, include_xc, i_have_written_authorization).await,
         Command::Writeback {
             input,
             matches,
