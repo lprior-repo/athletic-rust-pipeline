@@ -96,3 +96,32 @@ pub struct RankingRecord {
     pub season_id: i32,
     pub wind: Option<String>,
 }
+/// A canonical state target with a validated numeric ID.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct StateTarget {
+    pub code: String,
+    pub state_id: u64,
+}
+
+/// An event spec with its optimization direction.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct EventSpec {
+    pub event_short: String,
+    pub higher_is_better: bool,
+}
+
+/// One matrix item the collector iterates over all states, seasons, genders, and events.
+#[derive(Debug, Clone)]
+pub struct RunUnit {
+    pub state: StateTarget,
+    pub season_id: i32,
+    pub gender: String,
+    pub event: EventSpec,
+    #[allow(dead_code)]
+    pub page: Option<serde_json::Value>,
+}
+/// A cartesian product of states × seasons × genders × events — the collector's work matrix.
+#[derive(Debug, Clone)]
+pub struct RunMatrix {
+    pub units: Vec<RunUnit>,
+}

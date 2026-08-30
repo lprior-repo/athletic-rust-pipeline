@@ -72,6 +72,10 @@ mod alpha_test_helpers;
 mod alpha_api_deserialization_tests;
 #[cfg(test)]
 mod alpha_api_field_validation_tests;
+#[cfg(test)]
+mod alpha_catalog;
+#[cfg(test)]
+mod alpha_catalog_tests;
 mod checkpoint;
 mod config;
 mod discovery;
