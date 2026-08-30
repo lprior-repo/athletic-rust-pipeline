@@ -1,17 +1,26 @@
 /// Safe normalization for source records and athlete deduplication.
+pub use crate::alpha_url::canonical_state;
 pub use crate::model::SourceRecord;
+use crate::alpha_url::{validate_profile_url, validate_result_url, validate_source_url};
 use crate::marks;
 use crate::model::Mark;
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use url::Url;
 
-const ATHLETIC_NET_HOST: &str = "athletic.net";
-
-fn allowed_source_hosts() -> &'static [&'static str] {
-    &["athletic.net"]
+/// A single result record with full metadata.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ResultRecord {
+    pub result_id: u64,
+    pub event: String,
+    pub mark: String,
+    pub season: String,
+    pub date: String,
+    pub meet_name: String,
+    pub wind: Option<String>,
+    pub source_url: String,
+    pub result_url: String,
 }
 
+/// Normalized athlete record.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SourceAthlete {
     pub athlete_id: u64,
@@ -19,206 +28,183 @@ pub struct SourceAthlete {
     pub last_name: String,
     pub school: String,
     pub state: String,
-    pub location: String,
-    pub profile_url: String,
-    pub result_urls: Vec<String>,
+    pub city: String,
+    pub profile_urls: Vec<String>,
+    pub results: Vec<ResultRecord>,
     pub source_urls: Vec<String>,
-    pub marks: Vec<Mark>,
     pub exception_notes: Vec<String>,
-}
-
-pub fn validate_url(raw: &str) -> Option<String> {
-    let trimmed = raw.trim();
-    if trimmed.is_empty() {
-        return None;
-    }
-    let parsed = Url::parse(trimmed).ok()?;
-    if parsed.scheme() != "https" {
-        return None;
-    }
-    let host = parsed.host_str()?;
-    if !allowed_source_hosts().contains(&host) {
-        return None;
-    }
-    Some(trimmed.to_owned())
-}
-
-pub fn construct_profile_url(athlete_id: u64) -> Option<String> {
-    if athlete_id == 0 {
-        return None;
-    }
-    Some(format!("https://{}/athlete/{}", ATHLETIC_NET_HOST, athlete_id))
 }
 
 pub fn normalize_whitespace(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-pub fn canonical_state(s: &str) -> String {
-    s.trim().to_uppercase()
+/// Parse a city/state field. Accepts "City, ST" or bare city name.
+/// Rejects digits, contact/address text.
+pub fn parse_location(raw: &str) -> Option<(String, String)> {
+    let t = raw.trim();
+    if t.is_empty() {
+        return None;
+    }
+    // Reject pure digits or phone-like patterns
+    let clean = t.replace(['-', '(', ')', '.'], "");
+    if clean.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    // Try "City, ST" format
+    if let Some((city, state)) = t.split_once(',') {
+        let city = normalize_whitespace(city);
+        let state = canonical_state(state);
+        if !city.is_empty() {
+            return Some((city, state.unwrap_or_default()));
+        }
+    }
+    // Bare city — no state
+    Some((normalize_whitespace(t), String::new()))
 }
 
-#[allow(dead_code)]
-pub fn normalize_mark_entry(mark: Mark) -> Mark {
-    marks::normalize_mark(mark)
+/// Parse and normalize a single mark string into a ResultRecord.
+fn parse_mark_entry(
+    mark_str: &str,
+    _profile_url: &str,
+    source_url: &str,
+    result_id: Option<u64>,
+) -> Option<ResultRecord> {
+    let parts: Vec<&str> = mark_str.split('|').collect();
+    if parts.len() < 4 {
+        return None;
+    }
+    let mut mark = Mark::default();
+    mark.event = parts[0].to_owned();
+    mark.mark = parts[1].to_owned();
+    mark.season = parts[2].to_owned();
+    mark.date = parts[3].to_owned();
+    if parts.len() > 4 {
+        mark.meet_name = parts[4].to_owned();
+    }
+    if parts.len() > 5 {
+        mark.wind = Some(parts[5].to_owned());
+    }
+    let normalized = marks::normalize_mark(mark);
+    if !normalized.valid {
+        return None;
+    }
+    Some(ResultRecord {
+        event: normalized.event,
+        mark: normalized.mark,
+        season: normalized.season,
+        date: normalized.date,
+        meet_name: normalized.meet_name,
+        wind: normalized.wind,
+        result_id: result_id.unwrap_or(0),
+        source_url: source_url.to_owned(),
+        ..Default::default()
+    })
 }
 
+/// Normalize a source record into a SourceAthlete.
 pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
     let mut athlete = SourceAthlete::default();
 
+    // Extract athlete_id
     if let Some(id_str) = record.fields.get("athlete_id") {
         if let Ok(id) = id_str.trim().parse::<u64>() {
-            if id != 0 {
-                athlete.athlete_id = id;
-            }
+            athlete.athlete_id = id;
         }
     }
+
+    // Extract name fields separately
     if let Some(first) = record.fields.get("first_name") {
-        let normalized = normalize_whitespace(first);
-        if let Some(last) = record.fields.get("last_name") {
-            athlete.first_name = format!("{} {}", normalized, normalize_whitespace(last));
-        } else {
-            athlete.first_name = normalized;
-        }
+        athlete.first_name = normalize_whitespace(first);
     }
     if let Some(last) = record.fields.get("last_name") {
         athlete.last_name = normalize_whitespace(last);
     }
+
     if let Some(school) = record.fields.get("school") {
         athlete.school = normalize_whitespace(school);
     }
+
+    // Extract state
     if let Some(state) = record.fields.get("state") {
-        athlete.state = canonical_state(state);
+        if let Some(canonical) = canonical_state(state) {
+            athlete.state = canonical;
+        } else {
+            athlete.exception_notes.push(format!("unknown state '{}'", state.trim()));
+        }
     }
-    if let Some(loc) = record.fields.get("location") {
-        athlete.location = normalize_whitespace(loc);
+
+    // Extract city (validated — no free-form address text)
+    if let Some(city) = record.fields.get("city") {
+        if let Some((city_str, _)) = parse_location(city) {
+            athlete.city = city_str;
+        }
     }
+
+    // Validate and collect profile URLs
     if let Some(profile) = record.fields.get("profile_url") {
-        if let Some(valid) = validate_url(profile) {
-            athlete.profile_url = valid;
+        for url in profile.split(';') {
+            if let Some(valid) = validate_profile_url(url) {
+                if !athlete.profile_urls.contains(&valid) {
+                    athlete.profile_urls.push(valid);
+                }
+            }
         }
     }
+
+    // Collect result URLs
     if let Some(results) = record.fields.get("result_urls") {
-        let urls: Vec<String> = results
-            .split(';')
-            .filter_map(|u| validate_url(u.trim()))
-            .collect();
-        if !urls.is_empty() {
-            athlete.result_urls = urls;
+        for url in results.split(';') {
+            if let Some(valid) = validate_result_url(url.trim()) {
+                if !athlete.profile_urls.contains(&valid)
+                    && !athlete.results.iter().any(|r| r.result_url == valid)
+                {
+                    athlete.results.push(ResultRecord {
+                        result_url: valid,
+                        ..Default::default()
+                    });
+                }
+            }
         }
     }
+
+    // Collect source URLs
     if let Some(source) = record.fields.get("source_url") {
-        if let Some(valid) = validate_url(source) {
-            athlete.source_urls = vec![valid];
-        }
-    }
-
-    athlete
-}
-
-pub fn merge_athlete(
-    map: &mut BTreeMap<u64, SourceAthlete>,
-    new: SourceAthlete,
-) -> u64 {
-    let id = new.athlete_id;
-    if id == 0 {
-        return id;
-    }
-
-    match map.get_mut(&id) {
-        Some(existing) => {
-            for mark in new.marks {
-                let is_dup = existing.marks.iter().any(|m| {
-                    m.event == mark.event
-                        && m.mark == mark.mark
-                        && m.date == mark.date
-                        && m.meet_name == mark.meet_name
-                        && m.source_url == mark.source_url
-                });
-                if !is_dup {
-                    existing.marks.push(mark);
+        for url in source.split(';') {
+            if let Some(valid) = validate_source_url(url) {
+                if !athlete.source_urls.contains(&valid) {
+                    athlete.source_urls.push(valid);
                 }
             }
-            for url in new.result_urls {
-                if !existing.result_urls.contains(&url) {
-                    existing.result_urls.push(url);
-                }
-            }
-            if !existing.profile_url.is_empty()
-                && existing.profile_url != new.profile_url
-                && !existing.result_urls.contains(&new.profile_url)
-            {
-                existing.result_urls.push(new.profile_url);
-            }
-            for url in new.source_urls {
-                if !existing.source_urls.contains(&url) {
-                    existing.source_urls.push(url);
-                }
-            }
-            if !new.first_name.is_empty()
-                && !existing.first_name.is_empty()
-                && new.first_name != existing.first_name
-            {
-                existing.exception_notes.push(format!(
-                    "first_name conflict: '{}' vs '{}'",
-                    existing.first_name, new.first_name
-                ));
-            }
-            if !new.last_name.is_empty()
-                && !existing.last_name.is_empty()
-                && new.last_name != existing.last_name
-            {
-                existing.exception_notes.push(format!(
-                    "last_name conflict: '{}' vs '{}'",
-                    existing.last_name, new.last_name
-                ));
-            }
-            if !new.school.is_empty()
-                && !existing.school.is_empty()
-                && new.school != existing.school
-            {
-                existing.exception_notes.push(format!(
-                    "school conflict: '{}' vs '{}'",
-                    existing.school, new.school
-                ));
-            }
-            if existing.state.is_empty() && !new.state.is_empty() {
-                existing.state = new.state;
-            }
-            if existing.location.is_empty() && !new.location.is_empty() {
-                existing.location = new.location;
-            }
-            existing.exception_notes.extend(new.exception_notes);
-        }
-        None => {
-            map.insert(id, new);
         }
     }
 
-    id
-}
-
-pub fn exception_for_missing_id(record: &SourceRecord) -> SourceAthlete {
-    let mut athlete = SourceAthlete::default();
-    athlete.exception_notes = vec![
-        "athlete_id missing or zero; cannot deduplicate".to_owned(),
-    ];
-    if let Some(first) = record.fields.get("first_name") {
-        let normalized = normalize_whitespace(first);
-        if let Some(last) = record.fields.get("last_name") {
-            athlete.first_name = format!("{} {}", normalized, normalize_whitespace(last));
-        } else {
-            athlete.first_name = normalized;
+    // Parse marks data and normalize with marks module
+    if let Some(marks_raw) = record.fields.get("marks") {
+        let source_url = athlete.source_urls.first().cloned().unwrap_or_default();
+        for mark_str in marks_raw.split(';') {
+            let trimmed = mark_str.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            if let Some(rr) = parse_mark_entry(trimmed, "", &source_url, None) {
+                athlete.results.push(rr);
+            }
         }
     }
-    if let Some(last) = record.fields.get("last_name") {
-        athlete.last_name = normalize_whitespace(last);
+
+    // Attach result IDs for dedup
+    if let Some(result_ids) = record.fields.get("result_ids") {
+        let ids: Vec<u64> = result_ids
+            .split(';')
+            .filter_map(|s| s.trim().parse::<u64>().ok())
+            .collect();
+        for (i, rid) in ids.iter().enumerate() {
+            if i < athlete.results.len() {
+                athlete.results[i].result_id = *rid;
+            }
+        }
     }
-    if let Some(school) = record.fields.get("school") {
-        athlete.school = normalize_whitespace(school);
-    }
-    if let Some(state) = record.fields.get("state") {
-        athlete.state = canonical_state(state);
-    }
+
     athlete
 }
