@@ -220,3 +220,73 @@ fn normalize_record_source_url_multiple() {
     let athlete = normalize_record(&record);
     assert_eq!(athlete.source_urls.len(), 2);
 }
+
+#[test]
+fn normalize_record_invalid_mark_adds_exception_note() {
+    let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields.insert("marks".to_owned(), "bogus_event|10.55|2026-27|2026-05-01".to_owned());
+    let record = SourceRecord {
+        source_key: "test".to_owned(),
+        sheet: "s1".to_owned(),
+        excel_row: 1,
+        fields,
+    };
+    let athlete = normalize_record(&record);
+    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid mark entry")));
+    assert_eq!(athlete.results.len(), 0);
+}
+
+#[test]
+fn normalize_record_invalid_city_adds_exception_note() {
+    let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
+    fields.insert("city".to_owned(), "123 Main St".to_owned());
+    let record = SourceRecord {
+        source_key: "test".to_owned(),
+        sheet: "s1".to_owned(),
+        excel_row: 1,
+        fields,
+    };
+    let athlete = normalize_record(&record);
+    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid city")));
+    assert_eq!(athlete.city, "");
+}
+
+#[test]
+fn normalize_record_profile_url_id_mismatch_adds_exception_note() {
+    let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "11111".to_owned());
+    fields.insert(
+        "profile_url".to_owned(),
+        "https://athletic.net/athlete/99999".to_owned(),
+    );
+    let record = SourceRecord {
+        source_key: "test".to_owned(),
+        sheet: "s1".to_owned(),
+        excel_row: 1,
+        fields,
+    };
+    let athlete = normalize_record(&record);
+    assert!(athlete.exception_notes.iter().any(|n| n.contains("does not match record athlete ID")));
+}
+
+#[test]
+fn normalize_record_source_url_canonicalizes_www() {
+    let mut fields = BTreeMap::new();
+    fields.insert(
+        "source_url".to_owned(),
+        "https://www.athletic.net/sheet/1".to_owned(),
+    );
+    let record = SourceRecord {
+        source_key: "test".to_owned(),
+        sheet: "s1".to_owned(),
+        excel_row: 1,
+        fields,
+    };
+    let athlete = normalize_record(&record);
+    assert_eq!(
+        athlete.source_urls,
+        vec!["https://athletic.net/sheet/1".to_owned()]
+    );
+}

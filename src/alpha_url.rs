@@ -132,7 +132,7 @@ pub fn validate_source_url(raw: &str) -> Option<String> {
     if !ATHLETIC_NET_HOSTS.contains(&host) {
         return None;
     }
-    Some(trimmed.to_owned())
+    Some(format!("https://athletic.net{}", parsed.path()))
 }
 
 /// Canonicalize a state: accept known 50-state codes or full names, reject unknown.
