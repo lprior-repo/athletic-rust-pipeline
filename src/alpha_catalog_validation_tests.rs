@@ -40,14 +40,14 @@ fn test_too_many_states_rejected() {
 #[test]
 fn test_duplicate_state_code_rejected() {
     let mut states = states_50();
-    states.push(state("CA", 999));
+    states[0] = state("CA", 10); // replace first with CA, keeping 50
     assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
 }
 
 #[test]
 fn test_duplicate_state_id_rejected() {
     let mut states = states_50();
-    states.push(state("ZZ", 10));
+    states[1] = state("ZZ", 10); // replace AL with ZZ using same ID as AL
     assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
 }
 

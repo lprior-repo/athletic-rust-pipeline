@@ -19,7 +19,7 @@ fn event_higher_is_better(event_short: &str) -> bool {
         "55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m",
         "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m",
         "10000m",
-        "100h", "110h", "400h", "60h",
+        "100h", "110h", "400h", "60h", "300h",
         "mile", "milet",
         "hurdle", "hurdles",
         "relay", "relays",
