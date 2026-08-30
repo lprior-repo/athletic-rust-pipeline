@@ -47,7 +47,7 @@ fn test_duplicate_state_code_rejected() {
 #[test]
 fn test_duplicate_state_id_rejected() {
     let mut states = states_50();
-    states[1] = state("ZZ", 10); // replace AL with ZZ using same ID as AL
+    states[1] = state("AK", 10); // keep AK, duplicate AL's ID (10), 50 entries
     assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
 }
 

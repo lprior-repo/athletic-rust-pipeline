@@ -143,3 +143,19 @@ fn test_matrix_cardinality_50_x_seasons_x_genders_x_events() {
     let matrix = RunMatrix::from_targets(states_50(), seasons, genders, events).unwrap();
     assert_eq!(matrix.all().len(), 50 * 3 * 3 * 2);
 }
+#[test]
+fn test_300h_direction() {
+    let matrix = RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into()], vec![event("300h", false)]).unwrap();
+    assert!(!matrix.all()[0].event.higher_is_better, "300h should be lower-is-better");
+}
+
+#[test]
+fn test_timed_events_all_lower_is_better() {
+    let timed = vec!["55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m",
+        "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m", "10000m",
+        "100h", "110h", "300h", "400h", "60h", "mile"];
+    let matrix = RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into()], timed.iter().map(|s| event(s, false)).collect()).expect("timed events should be valid");
+    for u in matrix.all() {
+        assert!(!u.event.higher_is_better, "{} should be lower-is-better", u.event.event_short);
+    }
+}
