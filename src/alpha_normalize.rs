@@ -4,6 +4,7 @@ pub use crate::model::SourceRecord;
 use crate::alpha_url::{validate_profile_url, validate_result_url, validate_source_url};
 use crate::marks;
 use crate::model::Mark;
+use url::Url;
 use serde::{Deserialize, Serialize};
 
 /// A single result record with full metadata.
@@ -136,19 +137,41 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
         }
     }
 
-    // Extract city (validated — no free-form address text)
     if let Some(city) = record.fields.get("city") {
         if let Some((city_str, _)) = parse_location(city) {
             athlete.city = city_str;
+        } else {
+            athlete.exception_notes.push(format!("invalid city/location: '{}'", city.trim()));
         }
     }
-
     // Validate and collect profile URLs
     if let Some(profile) = record.fields.get("profile_url") {
         for url in profile.split(';') {
             if let Some(valid) = validate_profile_url(url) {
                 if !athlete.profile_urls.contains(&valid) {
                     athlete.profile_urls.push(valid);
+                }
+            }
+        }
+    }
+    if let Some(profile) = record.fields.get("profile_url") {
+        for url in profile.split(';') {
+            let trimmed = url.trim();
+            if trimmed.is_empty() {
+                continue;
+            }
+            if let Some(parsed) = Url::parse(trimmed).ok() {
+                if let Some(path) = parsed.path().strip_prefix("/athlete/") {
+                    if let Some(id_str) = path.split('/').next() {
+                        if let Ok(profile_id) = id_str.parse::<u64>() {
+                            if profile_id != 0 && athlete.athlete_id != 0 && profile_id != athlete.athlete_id {
+                                athlete.exception_notes.push(format!(
+                                    "profile URL athlete ID {} does not match record athlete ID {}",
+                                    profile_id, athlete.athlete_id
+                                ));
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -191,6 +214,8 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
             }
             if let Some(rr) = parse_mark_entry(trimmed, "", &source_url, None) {
                 athlete.results.push(rr);
+            } else {
+                athlete.exception_notes.push(format!("invalid mark entry: '{}'", trimmed));
             }
         }
     }
