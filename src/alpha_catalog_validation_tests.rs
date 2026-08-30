@@ -116,3 +116,12 @@ fn test_duplicate_event_short_rejected() {
     let events = vec![event("100m", false), event("100m", true)];
     assert!(RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into()], events).is_err());
 }
+#[test]
+fn test_empty_seasons_rejected() {
+    assert!(RunMatrix::from_targets(states_50(), vec![], vec!["M".into()], vec![event("100m", false)]).is_err());
+}
+
+#[test]
+fn test_duplicate_seasons_rejected() {
+    assert!(RunMatrix::from_targets(states_50(), vec![2024, 2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+}

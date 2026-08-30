@@ -1,5 +1,5 @@
 use crate::alpha_model_raw::{RawNavEvent, RawNavInfoResponse, RawNavState};
-use crate::alpha_catalog::parse_nav_targets;
+use crate::alpha_catalog::{parse_nav_targets, ALLOWED_STATES};
 
 // ── parse_nav_targets: state parsing ─────────────────────────────────
 
@@ -221,4 +221,56 @@ fn test_parse_nav_trims_whitespace() {
     let (states, events) = parse_nav_targets(responses).unwrap();
     assert_eq!(states[0].code, "CA");
     assert_eq!(events[0].event_short, "100m");
+}
+#[test]
+fn test_parse_nav_exact_cardinality_50() {
+    let responses: Vec<RawNavInfoResponse> = ALLOWED_STATES
+        .iter()
+        .enumerate()
+        .map(|(i, code)| RawNavInfoResponse {
+            state: Some(RawNavState { state_id: Some((i as u64 + 1) * 10), state: Some(code.to_string()), state_name: None }),
+            event: None, divisions: None, genders: None, complete: true, page: None,
+        })
+        .collect();
+    let (states, _) = parse_nav_targets(responses).unwrap();
+    assert_eq!(states.len(), 50);
+    let mut responses = vec![];
+    for (i, code) in ["CA", "TX", "NY", "FL", "IL"].iter().enumerate() {
+        responses.push(RawNavInfoResponse {
+            state: Some(RawNavState { state_id: Some((i as u64 + 1) * 10), state: Some(code.to_string()), state_name: None }),
+            event: None, divisions: None, genders: None, complete: true, page: None,
+        });
+    }
+    for short in &["100m", "long_jump"] {
+        responses.push(RawNavInfoResponse {
+            state: None,
+            event: Some(RawNavEvent { event_short: Some(short.to_string()), event_name: None }),
+            divisions: None, genders: None, complete: true, page: None,
+        });
+    }
+    let (states, events) = parse_nav_targets(responses).unwrap();
+    assert_eq!(states.len(), 5);
+    assert_eq!(events.len(), 2);
+}
+
+#[test]
+fn test_parse_nav_110mh_direction() {
+    let responses = vec![RawNavInfoResponse {
+        state: None,
+        event: Some(RawNavEvent { event_short: Some("110mh".to_string()), event_name: Some("110m hurdles".to_string()) }),
+        divisions: None, genders: None, complete: true, page: None,
+    }];
+    let (_, events) = parse_nav_targets(responses).unwrap();
+    assert!(!events[0].higher_is_better, "110mh should be lower-is-better");
+}
+
+#[test]
+fn test_parse_nav_5k_direction() {
+    let responses = vec![RawNavInfoResponse {
+        state: None,
+        event: Some(RawNavEvent { event_short: Some("5k".to_string()), event_name: Some("5000 meters".to_string()) }),
+        divisions: None, genders: None, complete: true, page: None,
+    }];
+    let (_, events) = parse_nav_targets(responses).unwrap();
+    assert!(!events[0].higher_is_better, "5k should be lower-is-better");
 }

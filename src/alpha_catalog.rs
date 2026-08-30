@@ -17,9 +17,9 @@ fn event_higher_is_better(event_short: &str) -> bool {
     // Timed track events: any pattern containing a distance number + m/H, or known timed names.
     let timed_patterns = [
         "55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m",
-        "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m",
+        "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m", "5k",
         "10000m",
-        "100h", "110h", "400h", "60h", "300h",
+        "100h", "100mh", "110h", "110mh", "300h", "300mh", "400h", "400mh", "60h", "60mh",
         "mile", "milet",
         "hurdle", "hurdles",
         "relay", "relays",
@@ -70,10 +70,17 @@ impl RunMatrix {
             }
         }
 
-        // Validate seasons: positive
+        // Validate seasons: at least one, positive, unique
+        if seasons.is_empty() {
+            return Err("at least one season is required".into());
+        }
+        let mut seen_seasons = HashSet::new();
         for &season in &seasons {
             if season <= 0 {
                 return Err(format!("season must be positive, got {}", season));
+            }
+            if !seen_seasons.insert(season) {
+                return Err(format!("duplicate season {}", season));
             }
         }
 
