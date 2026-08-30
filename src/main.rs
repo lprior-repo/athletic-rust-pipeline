@@ -1,77 +1,84 @@
-mod summary;
-#[cfg(test)]
-mod alpha_model_raw_validation;
-#[cfg(test)]
-mod alpha_model_validation_tests;
-#[cfg(test)]
-mod alpha_config;
 #[cfg(test)]
 mod alpha_api;
 #[cfg(test)]
 mod alpha_api_client;
 #[cfg(test)]
-mod alpha_api_client_validation;
-#[cfg(test)]
-mod alpha_api_tests;
-#[cfg(test)]
-mod alpha_api_client_regression_tests;
-#[cfg(test)]
-mod alpha_api_client_incomplete_regression_tests;
-#[cfg(test)]
 mod alpha_api_client_async_tests;
-#[cfg(test)]
-mod alpha_api_client_validation_tests;
 #[cfg(test)]
 mod alpha_api_client_cap_marker_tests;
 #[cfg(test)]
-mod alpha_api_client_validation_regression_tests;
+mod alpha_api_client_constructor_tests;
 #[cfg(test)]
-mod alpha_api_client_nav_tests;
+mod alpha_api_client_incomplete_regression_tests;
 #[cfg(test)]
 mod alpha_api_client_nav_info_tests;
 #[cfg(test)]
-mod alpha_api_completeness_tests;
-#[cfg(test)]
-mod alpha_api_completeness_nav_tests;
-#[cfg(test)]
-mod alpha_api_completeness_enforce_tests;
-#[cfg(test)]
-mod alpha_model_tests;
-#[cfg(test)]
-mod alpha_model;
-#[cfg(test)]
-mod alpha_route_validation;
-#[cfg(test)]
-mod alpha_config_auth_tests;
-#[cfg(test)]
-mod alpha_config_api_tests;
-#[cfg(test)]
-mod alpha_config_loading_tests;
-#[cfg(test)]
-mod alpha_config_test_helpers;
-#[cfg(test)]
-mod alpha_config_pagination_tests;
-#[cfg(test)]
-mod alpha_config_route_tests;
-#[allow(dead_code)]
-mod alpha_model_raw;
-mod alpha_nav_validation;
-#[cfg(test)]
-mod alpha_nav_validation_tests;
-#[cfg(test)]
-mod alpha_model_raw_validation_negative_season_tests;
-#[cfg(test)]
-mod alpha_api_client_pagination_tests;
+mod alpha_api_client_nav_tests;
 #[cfg(test)]
 mod alpha_api_client_pagination_config_tests;
 #[cfg(test)]
-mod alpha_api_client_constructor_tests;
+mod alpha_api_client_pagination_tests;
 #[cfg(test)]
-mod alpha_test_helpers;
+mod alpha_api_client_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_validation;
+#[cfg(test)]
+mod alpha_api_client_validation_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_validation_tests;
+#[cfg(test)]
+mod alpha_api_completeness_enforce_tests;
+#[cfg(test)]
+mod alpha_api_completeness_nav_tests;
+#[cfg(test)]
+mod alpha_api_completeness_tests;
 #[cfg(test)]
 mod alpha_api_deserialization_tests;
 #[cfg(test)]
 mod alpha_api_field_validation_tests;
+#[cfg(test)]
+mod alpha_api_tests;
+#[cfg(test)]
+mod alpha_config;
+#[cfg(test)]
+mod alpha_config_api_tests;
+#[cfg(test)]
+mod alpha_config_auth_tests;
+#[cfg(test)]
+mod alpha_config_loading_tests;
+#[cfg(test)]
+mod alpha_config_pagination_tests;
+#[cfg(test)]
+mod alpha_config_route_tests;
+#[cfg(test)]
+mod alpha_config_test_helpers;
+#[cfg(test)]
+mod alpha_model;
+#[allow(dead_code)]
+mod alpha_model_raw;
+#[cfg(test)]
+mod alpha_model_raw_validation;
+#[cfg(test)]
+mod alpha_model_raw_validation_negative_season_tests;
+#[cfg(test)]
+mod alpha_model_tests;
+#[cfg(test)]
+mod alpha_model_validation_tests;
+mod alpha_nav_validation;
+#[cfg(test)]
+mod alpha_nav_validation_tests;
+#[cfg(test)]
+mod alpha_route_validation;
+#[cfg(test)]
+mod alpha_test_helpers;
+#[cfg(test)]
+mod alpha_cohort;
+#[cfg(test)]
+mod alpha_cohort_tests;
+#[cfg(test)]
+mod alpha_normalize;
+#[cfg(test)]
+mod alpha_normalize_tests;
 mod checkpoint;
 mod config;
 mod discovery;
@@ -81,6 +88,7 @@ mod marks;
 mod model;
 mod output;
 mod scoring;
+mod summary;
 mod xlsx;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
@@ -140,7 +148,24 @@ async fn main() -> Result<()> {
     match cli.command {
         Command::Inspect { input } => summary::inspect(&input),
         Command::ExportRecords { input, output } => xlsx::export_records(&input, &output),
-        Command::Run { input, config, out_dir, max, include_xc, i_have_written_authorization } => run_pipeline(&input, &config, &out_dir, max, include_xc, i_have_written_authorization).await,
+        Command::Run {
+            input,
+            config,
+            out_dir,
+            max,
+            include_xc,
+            i_have_written_authorization,
+        } => {
+            run_pipeline(
+                &input,
+                &config,
+                &out_dir,
+                max,
+                include_xc,
+                i_have_written_authorization,
+            )
+            .await
+        }
         Command::Writeback {
             input,
             matches,
@@ -178,7 +203,11 @@ async fn run_pipeline(
         }
     }
     let scan = xlsx::scan(input, &sports, config.workbook.expected_graduation_year)?;
-    eprintln!("parsed {} real rows; selected {} prospects", scan.stats.actual_data_rows, scan.prospects.len());
+    eprintln!(
+        "parsed {} real rows; selected {} prospects",
+        scan.stats.actual_data_rows,
+        scan.prospects.len()
+    );
 
     let checkpoint_path = out_dir.join("checkpoint.jsonl");
     let mut completed = checkpoint::load_latest(&checkpoint_path)?;
@@ -194,13 +223,28 @@ async fn run_pipeline(
 
     for (index, prospect) in prospects.iter().enumerate() {
         if completed.contains_key(&prospect.source_key) {
-            eprintln!("[{}/{}] skip {} {}", index.saturating_add(1), prospects.len(), prospect.source_key, prospect.full_name());
+            eprintln!(
+                "[{}/{}] skip {} {}",
+                index.saturating_add(1),
+                prospects.len(),
+                prospect.source_key,
+                prospect.full_name()
+            );
             continue;
         }
-        eprintln!("[{}/{}] discover {} | {}", index.saturating_add(1), prospects.len(), prospect.full_name(), prospect.school);
+        eprintln!(
+            "[{}/{}] discover {} | {}",
+            index.saturating_add(1),
+            prospects.len(),
+            prospect.full_name(),
+            prospect.school
+        );
         let hits = match discovery.search(prospect).await {
             Ok(hits) => hits,
-            Err(error) => { eprintln!("  discovery failed: {error:#}"); continue; }
+            Err(error) => {
+                eprintln!("  discovery failed: {error:#}");
+                continue;
+            }
         };
 
         // Extract search evidence for every candidate first. This preserves all
@@ -245,9 +289,18 @@ async fn run_pipeline(
                         }
                     }
                     if let Some(ref html) = html {
-                        let mut enriched = extract::candidate_from_evidence(prospect, hit, Some(html.as_str()), &ollama, config.retrieval.page_text_limit).await;
+                        let mut enriched = extract::candidate_from_evidence(
+                            prospect,
+                            hit,
+                            Some(html.as_str()),
+                            &ollama,
+                            config.retrieval.page_text_limit,
+                        )
+                        .await;
                         scoring::score_candidate(prospect, &mut enriched, &config.matching);
-                        if let Some(slot) = candidates.get_mut(selected_index) { *slot = enriched; }
+                        if let Some(slot) = candidates.get_mut(selected_index) {
+                            *slot = enriched;
+                        }
                     }
                 }
             }
@@ -268,10 +321,15 @@ async fn run_pipeline(
             model_decision,
             &config.matching,
         );
-        record.processed_at_unix = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
+        record.processed_at_unix = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
 
         checkpoint::append(&checkpoint_path, &record)?;
-        eprintln!("  => {} {:.3} {}", record.status, record.score, record.selected_profile_url);
+        eprintln!(
+            "  => {} {:.3} {}",
+            record.status, record.score, record.selected_profile_url
+        );
         completed.insert(record.source_key.clone(), record);
     }
 

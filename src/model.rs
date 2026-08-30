@@ -79,6 +79,8 @@ pub struct Candidate {
     pub athlete_name: String,
     pub school: String,
     pub location: String,
+    #[serde(default)]
+    pub athlete_id: Option<u64>,
     pub graduation_year: Option<i32>,
     pub sports: Vec<String>,
     pub marks: Vec<Mark>,
