@@ -97,9 +97,11 @@ fn merge_athlete_zero_id_exception_only() {
     let mut map = BTreeMap::new();
     let a = SourceAthlete { athlete_id: 0, first_name: "Jane".to_owned(), ..Default::default() };
     let id = merge_athlete(&mut map, a);
-    assert_eq!(id, 0);
-    assert!(map.contains_key(&0));
-    assert!(map[&0].exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
+    assert!(id > 0);
+    assert!(map.contains_key(&id));
+    let r = &map[&id];
+    assert_eq!(r.first_name, "Jane");
+    assert!(r.exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
 }
 
 #[test]

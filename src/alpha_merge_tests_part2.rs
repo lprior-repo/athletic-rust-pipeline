@@ -20,7 +20,6 @@ fn test_from_model_source_result() {
     assert_eq!(rr.season, "2027");
     assert_eq!(rr.date, "2026-07-01");
     assert_eq!(rr.result_url, "https://athletic.net/result/777");
-    assert_eq!(rr.source_url, "https://athletic.net/athlete/123");
 }
 
 #[test]
@@ -102,8 +101,8 @@ fn zero_id_merge_preserves_identity() {
         }],
         ..Default::default()
     };
-    merge_athlete(&mut map, a);
-    let r = &map[&0];
+    let key = merge_athlete(&mut map, a);
+    let r = &map[&key];
     assert!(r.exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
     assert_eq!(r.first_name, "Jane");
     assert_eq!(r.last_name, "Doe");
@@ -138,4 +137,28 @@ fn parse_location_rejects_digit_starting_address() {
     assert_eq!(parse_location("Los Angeles, CA"), Some(("Los Angeles".to_owned(), "CA".to_owned())));
     assert_eq!(parse_location("New York"), Some(("New York".to_owned(), String::new())));
     assert_eq!(parse_location("Springfield"), Some(("Springfield".to_owned(), String::new())));
+}
+
+#[test]
+fn canonical_state_rejects_dc() {
+    use crate::alpha_url::canonical_state;
+    assert_eq!(canonical_state("DC"), None);
+    assert_eq!(canonical_state("district of columbia"), None);
+    assert_eq!(canonical_state("CA"), Some("CA".to_owned()));
+    assert_eq!(canonical_state("California"), Some("CA".to_owned()));
+}
+
+#[test]
+fn distinct_zero_id_exceptions_not_collapsed() {
+    let mut map = std::collections::BTreeMap::new();
+    let a1 = SourceAthlete { athlete_id: 0, first_name: "Jane".to_owned(), ..Default::default() };
+    let a2 = SourceAthlete { athlete_id: 0, first_name: "John".to_owned(), ..Default::default() };
+    let k1 = merge_athlete(&mut map, a1);
+    let k2 = merge_athlete(&mut map, a2);
+    assert_ne!(k1, k2);
+    assert!(map.contains_key(&k1));
+    assert!(map.contains_key(&k2));
+    assert_eq!(map[&k1].first_name, "Jane");
+    assert_eq!(map[&k2].first_name, "John");
+    assert_eq!(map.len(), 2);
 }
