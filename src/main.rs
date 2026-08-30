@@ -86,6 +86,12 @@ mod alpha_normalize;
 #[cfg(test)]
 mod alpha_normalize_tests;
 #[cfg(test)]
+mod alpha_merge;
+#[cfg(test)]
+mod alpha_merge_tests;
+#[cfg(test)]
+mod alpha_merge_tests_part2;
+#[cfg(test)]
 mod alpha_route_validation;
 #[cfg(test)]
 mod alpha_test_helpers;

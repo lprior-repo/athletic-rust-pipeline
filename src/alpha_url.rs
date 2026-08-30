@@ -147,7 +147,7 @@ pub fn canonical_state(raw: &str) -> Option<String> {
             return Some(upper);
         }
         if name.to_lowercase() == trimmed.to_lowercase() {
-            return Some(upper);
+            return Some(code.to_uppercase());
         }
     }
     None
