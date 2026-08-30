@@ -75,7 +75,11 @@ mod alpha_api_field_validation_tests;
 #[cfg(test)]
 mod alpha_catalog;
 #[cfg(test)]
-mod alpha_catalog_tests;
+mod alpha_catalog_matrix_tests;
+#[cfg(test)]
+mod alpha_catalog_validation_tests;
+#[cfg(test)]
+mod alpha_catalog_nav_tests;
 mod checkpoint;
 mod config;
 mod discovery;
