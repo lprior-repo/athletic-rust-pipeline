@@ -25,7 +25,7 @@ const expectedOrigin = 'https://www.athletic.net';
 }
 
 const CRED_KEYS = /cookie|authorization|token|auth|header|x-api|session|bearer|continuation|jwt|oauth|access[_-]?key|signature|next[_-]?page(?:[_-]?key)?|page[_-]?key|private[_-]?key|cursor|credentials|credential|password|secret|api[_-]?key|meet|state|school|name/i;
-const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|localhost(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9]+\.[a-z0-9]+\.[0-9]+\.[a-z0-9]+(?::[0-9]+)?(?:[/?#]|$)|[\w-][a-z0-9_.-]*\/[\w.?_]*|[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$)|\[[a-fA-F0-9:]+\]|[\w-]\/|\S+[/\?#]|[\?#][^\s]*)/i;
+const URL_VALUE_RE = /^[ \t]*(?:https?:\/\/|ftp:\/\/|mailto:|[^:\s]+:\/\/|[a-z][a-z0-9+.-]*:|www\.|\/\/|[.]{0,2}\/|localhost(?::[0-9]+)?(?:[/?#]|$)|[a-z0-9]+\.[a-z0-9]+\.[0-9]+\.[a-z0-9]+(?::[0-9]+)?(?:[/?#]|$)|[\w-][a-z0-9_.-]*\/[\w.?_]*|[a-z0-9][a-z0-9._-]*\.[a-z]{2,}(?::[0-9]+)?(?:[/?#]|$)|\[[a-fA-F0-9:]+\]|[\w-]\/|\S+[/\?#]|[\?#][^\s]*)/i;
 const PII_VALUE_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}|\+\d{1,3}(?:[ \t]*\(\d+[ \t]*\)[ \t]*[ .-]?)?(?:[ .-]?\d){7,13}\b|(?:\(\d{3}\)|\d{3})[ .-]?\d{3}[ .-]?\d{4}/i;
 const REDACT_KEY_RE = /name|url|state|meet|school|href|link|profile|source|email|phone|address|street|postal|zip|city|ssn|dob|contact|mobile|fax/i;
 const STRUCTURAL_KEYS = new Set(['state', 'event', 'divisions', 'genders', 'groupedRankings', 'Results']);
