@@ -46,9 +46,11 @@ pub fn parse_location(raw: &str) -> Option<(String, String)> {
     if t.is_empty() {
         return None;
     }
-    // Reject pure digits or phone-like patterns
     let clean = t.replace(['-', '(', ')', '.'], "");
     if clean.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    if clean.chars().next().map_or(false, |c| c.is_ascii_digit()) {
         return None;
     }
     // Try "City, ST" format
@@ -90,7 +92,7 @@ fn parse_mark_entry(
         return None;
     }
     Some(ResultRecord {
-        event: normalized.event,
+        event: normalized.canonical_event,
         mark: normalized.mark,
         season: normalized.season,
         date: normalized.date,
