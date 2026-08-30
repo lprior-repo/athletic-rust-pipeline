@@ -13,18 +13,22 @@ pub const ALLOWED_STATES: &[&str] = &[
 
 /// Infer event direction: track/sprint → lower is better; field events → higher is better.
 fn event_higher_is_better(event_short: &str) -> bool {
-    // Track / sprint / distance events — lower time = better
-    let lower_is_better_patterns = [
-        "100", "200", "400", "800", "1500", "1600", "3000", "3200",
-        "3200m", "5000", "10000", "110H", "100H", "400H",
-        "MILE", "mile",
+    let lower = event_short.to_lowercase();
+    // Timed track events: any pattern containing a distance number + m/H, or known timed names.
+    let timed_patterns = [
+        "55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m",
+        "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m",
+        "10000m",
+        "100h", "110h", "400h", "60h",
+        "mile", "milet",
+        "hurdle", "hurdles",
+        "relay", "relays",
     ];
-    for pat in &lower_is_better_patterns {
-        if event_short.to_lowercase().contains(pat.to_lowercase().as_str()) {
+    for pat in &timed_patterns {
+        if lower.contains(pat) {
             return false;
         }
     }
-    // Everything else (field events, relays, jumps, throws, multi-events) → higher is better
     true
 }
 
@@ -33,29 +37,35 @@ impl RunMatrix {
     ///
     /// Validates:
     /// - Each state code is in the 50-code allow-list, no duplicates.
-    /// - Each state_id is nonzero.
-    /// - Seasons are positive.
-    /// - Genders and event_short are nonempty after trim.
-    /// - event_short values are unique across the event list.
     pub fn from_targets(
         states: Vec<StateTarget>,
         seasons: Vec<i32>,
         genders: Vec<String>,
         events: Vec<EventSpec>,
     ) -> Result<Self, String> {
-        // Validate states: allow-list membership, no duplicates, nonzero IDs
-        let mut seen_states = BTreeSet::new();
+        // Validate exactly 50 states, allow-list membership, unique codes, unique nonzero IDs
+        if states.len() != 50 {
+            return Err(format!(
+                "exactly 50 states required, got {}",
+                states.len()
+            ));
+        }
+        let mut seen_codes = BTreeSet::new();
+        let mut seen_ids = HashSet::new();
         for s in &states {
+            if s.state_id == 0 {
+                return Err(format!("state_id must be nonzero for {}", s.code));
+            }
+            if !seen_ids.insert(s.state_id) {
+                return Err(format!("duplicate state_id {} for {}", s.state_id, s.code));
+            }
             if !ALLOWED_STATES.contains(&s.code.as_str()) {
                 return Err(format!(
                     "state code '{}' not in the 50-code allow-list",
                     s.code
                 ));
             }
-            if s.state_id == 0 {
-                return Err(format!("state_id must be nonzero for {}", s.code));
-            }
-            if !seen_states.insert(&s.code) {
+            if !seen_codes.insert(&s.code) {
                 return Err(format!("duplicate state code '{}'", s.code));
             }
         }
@@ -67,17 +77,28 @@ impl RunMatrix {
             }
         }
 
-        // Validate genders: nonempty after trim, at least one
+        // Validate genders: at least one, all nonempty after trim, no duplicates
+        if genders.is_empty() {
+            return Err("at least one gender is required".into());
+        }
+        let mut seen_genders = HashSet::new();
         let trimmed_genders: Vec<String> = genders
             .iter()
             .map(|g| g.trim().to_string())
-            .filter(|g| !g.is_empty())
             .collect();
-        if trimmed_genders.is_empty() {
-            return Err("at least one nonempty gender is required".into());
+        for g in &trimmed_genders {
+            if g.is_empty() {
+                return Err("whitespace-only gender is not allowed".into());
+            }
+            if !seen_genders.insert(g.as_str()) {
+                return Err(format!("duplicate gender '{}'", g));
+            }
         }
 
-        // Validate events: nonempty, unique short, at least one
+        // Validate events: at least one, all nonempty after trim, unique event_short
+        if events.is_empty() {
+            return Err("at least one event is required".into());
+        }
         let trimmed_events: Vec<EventSpec> = events
             .iter()
             .map(|e| {
@@ -87,14 +108,15 @@ impl RunMatrix {
                     higher_is_better: e.higher_is_better,
                 }
             })
-            .filter(|e| !e.event_short.is_empty())
             .collect();
-        let event_shorts: HashSet<&str> = trimmed_events.iter().map(|e| e.event_short.as_str()).collect();
-        if event_shorts.len() != trimmed_events.len() {
-            return Err("duplicate event_short values are not allowed".into());
-        }
-        if trimmed_events.is_empty() {
-            return Err("at least one nonempty event is required".into());
+        let mut seen_events = HashSet::new();
+        for e in &trimmed_events {
+            if e.event_short.is_empty() {
+                return Err("whitespace-only event is not allowed".into());
+            }
+            if !seen_events.insert(e.event_short.as_str()) {
+                return Err(format!("duplicate event_short '{}'", e.event_short));
+            }
         }
 
         // Build cartesian product, deterministically sorted by (state_code, season, gender, event_short)
