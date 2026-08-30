@@ -55,7 +55,6 @@ const KNOWN_STATES: &[(/* code */ &str, /* full */ &str)] = &[
     ("WV", "West Virginia"),
     ("WI", "Wisconsin"),
     ("WY", "Wyoming"),
-    ("DC", "District of Columbia"),
 ];
 
 /// Validate a profile URL: https, athletic.net host, /athlete/<nonzero-id>.
