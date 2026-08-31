@@ -16,8 +16,7 @@ mod alpha_nav_validation;
 mod alpha_normalize;
 mod alpha_normalize_helpers;
 mod alpha_output; mod alpha_output_privacy;
-mod alpha_pipeline;
-mod alpha_route_validation;
+mod alpha_pipeline; mod alpha_match; mod alpha_route_validation;
 mod alpha_url;
 #[cfg(test)] mod alpha_model_validation_tests;
 #[cfg(test)] mod alpha_api_tests;
@@ -64,8 +63,7 @@ mod model;
 mod output;
 mod scoring;
 mod xlsx;
-use anyhow::{Context, Result};
-use clap::Parser;
+use anyhow::{Context, Result}; use clap::Parser;
 use config::Config;
 use commands::Command;
 use model::{MatchRecord, ModelDecision};
@@ -123,6 +121,8 @@ async fn main() -> Result<()> {
             );
             Ok(())
         }
+        Command::MatchAuthorized { input, alpha_source, config, out_dir, max } =>
+            alpha_match::match_workbook(&input, &alpha_source, &config, &out_dir, max),
         Command::Writeback {
             input,
             matches,

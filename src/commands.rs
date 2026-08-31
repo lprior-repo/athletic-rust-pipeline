@@ -42,6 +42,19 @@ pub enum Command {
         #[arg(long)]
         i_have_alpha_authorization: bool,
     },
+    /// Match an existing workbook against a local authorized alpha source.
+    MatchAuthorized {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        alpha_source: PathBuf,
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long, default_value = "out-authorized-matches")]
+        out_dir: PathBuf,
+        #[arg(long)]
+        max: Option<usize>,
+    },
     /// Add an Athletic Matches worksheet to a copy of the source workbook.
     Writeback {
         #[arg(long)]
