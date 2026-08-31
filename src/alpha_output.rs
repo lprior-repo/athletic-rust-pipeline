@@ -59,6 +59,7 @@ struct ResultLine<'a> {
     result: &'a ResultRecord,
 }
 
+#[allow(dead_code)]
 pub fn approved_athlete_headers() -> &'static [&'static str] {
     ATHLETE_HEADERS
 }

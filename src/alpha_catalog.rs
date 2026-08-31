@@ -156,11 +156,13 @@ impl RunMatrix {
     }
 
     /// Return a reference to all units.
+    #[allow(dead_code)]
     pub fn all(&self) -> &[RunUnit] {
         &self.units
     }
 
     /// Alias for `all()`.
+    #[allow(dead_code)]
     pub fn units(&self) -> &[RunUnit] {
         &self.units
     }

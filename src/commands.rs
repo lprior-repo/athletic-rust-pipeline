@@ -31,6 +31,17 @@ pub enum Command {
         #[arg(long)]
         i_have_written_authorization: bool,
     },
+    /// Collect the authorized, API-backed Class-of-2027 alpha source.
+    CollectAuthorized {
+        #[arg(long)]
+        alpha_config: PathBuf,
+        #[arg(long, default_value = "out-authorized-2027")]
+        out_dir: PathBuf,
+        #[arg(long)]
+        max_units: Option<usize>,
+        #[arg(long)]
+        i_have_alpha_authorization: bool,
+    },
     /// Add an Athletic Matches worksheet to a copy of the source workbook.
     Writeback {
         #[arg(long)]

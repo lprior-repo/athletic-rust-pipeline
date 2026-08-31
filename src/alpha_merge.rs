@@ -4,6 +4,7 @@ use crate::alpha_url::validate_profile_url;
 use std::collections::BTreeMap;
 use url::Url;
 
+#[allow(dead_code)]
 pub fn from_ranking_record(
     record: &RankingRecord,
     profile_url: &str,
@@ -30,6 +31,7 @@ pub fn from_ranking_record(
     })
 }
 
+#[allow(dead_code)]
 pub fn from_model_source_result(result: &SourceResult) -> SourceResult {
     result.clone()
 }
@@ -146,6 +148,7 @@ pub fn merge_athlete(
     existing.clone()
 }
 
+#[allow(dead_code)]
 pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> (Vec<SourceAthlete>, Vec<SourceAthlete>) {
     let mut keyed = BTreeMap::new();
     let mut exception_only = Vec::new();

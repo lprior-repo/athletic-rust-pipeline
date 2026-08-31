@@ -291,5 +291,6 @@ impl AlphaApiClient {
         nav.validate().map_err(|e| AlphaApiError::Incomplete(e.to_string()))?;
         Ok(nav)
     }
+    #[allow(dead_code)]
     pub fn walk_pointer_value<'a>(v: &'a serde_json::Value, ptr: &str) -> Option<&'a serde_json::Value> { v.pointer(ptr) }
 }

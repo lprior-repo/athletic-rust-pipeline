@@ -56,6 +56,7 @@ pub fn load_latest(output_dir: &Path) -> Result<BTreeMap<AlphaUnitKey, AlphaChec
     Ok(latest)
 }
 
+#[allow(dead_code)]
 pub fn is_retryable(checkpoint: Option<&AlphaCheckpoint>) -> bool {
     checkpoint.map_or(true, |state| !state.complete)
 }
