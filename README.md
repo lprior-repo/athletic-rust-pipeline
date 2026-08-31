@@ -17,12 +17,12 @@ hosted AI API.
 
 ## Important boundary
 
-Athletic.net's Terms currently prohibit scraping, automated spiders, and harvesting identifiable-person information. Direct Spider retrieval is locked behind both:
+Public-site scraping and automated spiders are not the alpha collection mechanism. The alpha path uses only a developer-authorized unofficial API contract and remains disabled unless both the manifest and command-line authorization checks pass:
 
-- `retrieval.authorized_direct_fetch = true` in the config; and
-- `--i-have-written-authorization` on the command line.
+- `authorization.enabled = true` plus a non-empty `permission_reference` in `alpha.toml`;
+- `--i-have-alpha-authorization` on `collect-authorized`.
 
-That flag is an operational guard, not legal advice. Do not enable it unless your use is authorized. The code deliberately omits stealth, anti-bot bypass, proxy rotation, login automation, and broad site crawling. It requests only already-discovered profile URLs, one at a time, respects robots.txt, and uses a delay.
+The authorization reference must be real, documented permission from Athletic.net developers for the exact routes, fields, states, seasons, and limits in the manifest. The code has no credential guessing, login automation, stealth, proxy rotation, public-site crawling, or broad profile-page traversal. Missing or uncertain API pagination/completeness metadata fails closed.
 
 ## Workbook verified for this project
 
@@ -109,6 +109,30 @@ Authorized exact-page retrieval with Spider:
 ```
 
 Add `--include-xc` to include Cross Country rows configured alongside Track & Field.
+
+Collect the developer-authorized alpha source through the typed API client:
+
+```bash
+./athletic_matcher collect-authorized \
+  --alpha-config alpha.toml \
+  --out-dir out-authorized-2027 \
+  --max-units 1 \
+  --i-have-alpha-authorization
+```
+
+Start from `alpha.example.toml`; keep `alpha.toml` local and fill only the exact API contract confirmed by the developers. The command requires all 50 states, validates response completeness, checkpoints each matrix unit, and refuses incomplete/capped pages.
+
+Match an existing workbook against a completed local alpha source. This command performs no Athletic.net network access:
+
+```bash
+./athletic_matcher match-authorized \
+  --input "/path/to/input.xlsx" \
+  --alpha-source out-authorized-2027 \
+  --config config.toml \
+  --out-dir out-authorized-matches
+```
+
+Alpha outputs are separate from match decisions: `athletes.csv`, `athletes.jsonl`, `results.jsonl`, `cohort-exceptions.jsonl`, `unresolved.csv`, `unresolved.jsonl`, `checkpoint.jsonl`, and `coverage.json`. Sensitive fields and unsafe evidence are rejected before serialization.
 
 Resume is automatic: `out/checkpoint.jsonl` is append-only and keyed by `sheet:excel_row`. Delete or move the checkpoint only if you intentionally want to redo discovery.
 

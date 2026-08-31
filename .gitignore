@@ -18,6 +18,5 @@
 /playwright/.auth/
 **/storage-state.json
 /storage-state.json
-**/playwright/.auth/
 /tmp/alpha-contract/
 /node_modules/
