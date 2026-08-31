@@ -56,6 +56,18 @@ const KNOWN_STATES: &[(/* code */ &str, /* full */ &str)] = &[
     ("WI", "Wisconsin"),
     ("WY", "Wyoming"),
 ];
+fn valid_origin(parsed: &Url, raw: &str) -> bool {
+    let authority = raw
+        .split_once("://")
+        .map_or("", |(_, rest)| rest.split(['/', '?', '#']).next().map_or("", |part| part));
+    parsed.scheme() == "https"
+        && parsed.host_str().is_some()
+        && parsed.password().is_none()
+        && parsed.query().is_none()
+        && parsed.fragment().is_none()
+        && !authority.contains('@')
+        && parsed.port_or_known_default() == Some(443)
+}
 
 /// Validate a profile URL: https, athletic.net host, /athlete/<nonzero-id>.
 /// Rejects userinfo, query, fragment, token-bearing URLs.
@@ -65,13 +77,7 @@ pub fn validate_profile_url(raw: &str) -> Option<String> {
         return None;
     }
     let parsed = Url::parse(trimmed).ok()?;
-    if parsed.scheme() != "https" || parsed.username() != "" {
-        return None;
-    }
-    if parsed.password().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
-        return None;
-    }
-    if parsed.port() != Some(443) {
+    if !valid_origin(&parsed, trimmed) {
         return None;
     }
     let host = parsed.host_str()?;
@@ -97,13 +103,7 @@ pub fn validate_result_url(raw: &str) -> Option<String> {
         return None;
     }
     let parsed = Url::parse(trimmed).ok()?;
-    if parsed.scheme() != "https" || parsed.username() != "" {
-        return None;
-    }
-    if parsed.password().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
-        return None;
-    }
-    if parsed.port() != Some(443) {
+    if !valid_origin(&parsed, trimmed) {
         return None;
     }
     let host = parsed.host_str()?;
@@ -125,16 +125,7 @@ pub fn validate_source_url(raw: &str) -> Option<String> {
         return None;
     }
     let parsed = Url::parse(trimmed).ok()?;
-    if parsed.scheme() != "https" || parsed.username() != "" {
-        return None;
-    }
-    if parsed.password().is_some()
-        || parsed.query().is_some()
-        || parsed.fragment().is_some()
-    {
-        return None;
-    }
-    if parsed.port() != Some(443) {
+    if !valid_origin(&parsed, trimmed) {
         return None;
     }
     let host = parsed.host_str()?;

@@ -1,176 +1,159 @@
-/// Athlete merging, deduplication, and RankingRecord conversion.
-use crate::alpha_model::{RankingRecord, SourceResult as ModelSourceResult};
-use crate::alpha_normalize::{ResultRecord, SourceAthlete};
+/// Athlete merging, deduplication, and ranking-record conversion.
+use crate::alpha_model::{RankingRecord, SourceAthlete, SourceResult};
+use crate::alpha_url::validate_profile_url;
 use std::collections::BTreeMap;
+use url::Url;
 
-/// Convert a RankingRecord into a ResultRecord with full fields preserved.
-pub fn from_ranking_record(rec: &RankingRecord, profile_url: &str) -> ResultRecord {
-    ResultRecord {
-        result_id: rec.result_id.unwrap_or(0),
-        event: rec.event_short.clone(),
-        mark: rec.measure.clone(),
-        season: rec.season_id.to_string(),
-        date: rec.result_date.clone(),
-        meet_name: rec.meet_name.clone(),
-        wind: rec.wind.clone(),
-        source_url: profile_url.to_owned(),
-        result_url: rec.result_id
-            .map(|rid| format!("https://athletic.net/result/{rid}"))
-            .unwrap_or_default(),
+pub fn from_ranking_record(
+    record: &RankingRecord,
+    profile_url: &str,
+) -> Result<SourceResult, String> {
+    let profile = validate_profile_url(profile_url)
+        .ok_or_else(|| "ranking profile URL is not an approved Athletic.net profile".to_owned())?;
+    let profile_id = Url::parse(&profile)
+        .ok()
+        .and_then(|url| url.path().strip_prefix("/athlete/").map(str::to_owned))
+        .and_then(|id| id.parse::<u64>().ok());
+    if profile_id != Some(record.athlete_id) {
+        return Err("ranking profile URL athlete ID does not match record ID".to_owned());
+    }
+    Ok(SourceResult {
+        result_id: record.result_id,
+        event: record.event_short.clone(),
+        mark: record.measure.clone(),
+        season: record.season_id.to_string(),
+        date: record.result_date.clone(),
+        meet_name: record.meet_name.clone(),
+        wind: record.wind.clone(),
+        source_url: profile,
+        result_url: None,
+    })
+}
+
+pub fn from_model_source_result(result: &SourceResult) -> SourceResult {
+    result.clone()
+}
+
+
+fn add_note(athlete: &mut SourceAthlete, message: String) {
+    if !athlete.exception_notes.contains(&message) {
+        athlete.exception_notes.push(message);
     }
 }
 
-/// Convert a model SourceResult into a ResultRecord.
-/// Only preserves fields actually present on SourceResult.
-pub fn from_model_source_result(sr: &ModelSourceResult) -> ResultRecord {
-    ResultRecord {
-        result_id: sr.result_id,
-        event: sr.event_short.clone(),
-        mark: sr.measure.clone(),
-        season: sr.season_id.to_string(),
-        date: sr.result_date.clone(),
-        meet_name: String::new(),
-        wind: None,
-        source_url: String::new(),
-        result_url: String::new(),
+fn merge_text(
+    existing: &mut String,
+    incoming: &str,
+    field: &str,
+    notes: &mut Vec<String>,
+) {
+    if existing.is_empty() {
+        *existing = incoming.to_owned();
+    } else if !incoming.is_empty() && existing != incoming {
+        notes.push(format!("{field} conflict"));
     }
 }
 
-/// Dedup athletes by athlete_id, merging duplicates instead of discarding.
-///
-/// Returns (keyed_athletes, exception_only_athletes).
-/// Zero-ID athletes are returned outside the keyed map.
+fn merge_optional(
+    existing: &mut Option<i32>,
+    incoming: Option<i32>,
+    field: &str,
+    notes: &mut Vec<String>,
+) {
+    match (*existing, incoming) {
+        (None, Some(value)) => *existing = Some(value),
+        (Some(left), Some(right)) if left != right => notes.push(format!("{field} conflict")),
+        _ => {}
+    }
+}
+
+fn merge_result(existing: &mut Vec<SourceResult>, incoming: &SourceResult) {
+    let duplicate = existing.iter().any(|candidate| {
+        candidate.result_id == incoming.result_id
+            && candidate.event == incoming.event
+            && candidate.mark == incoming.mark
+            && candidate.season == incoming.season
+            && candidate.date == incoming.date
+            && candidate.meet_name == incoming.meet_name
+            && candidate.wind == incoming.wind
+            && candidate.source_url == incoming.source_url
+            && candidate.result_url == incoming.result_url
+    });
+    if !duplicate {
+        existing.push(incoming.clone());
+    }
+}
+
+pub fn merge_athlete(
+    map: &mut BTreeMap<u64, SourceAthlete>,
+    mut incoming: SourceAthlete,
+) -> SourceAthlete {
+    if incoming.athlete_id == 0 {
+        add_note(&mut incoming, "athlete_id missing or zero; cannot deduplicate".to_owned());
+        return incoming;
+    }
+    let id = incoming.athlete_id;
+    let Some(existing) = map.get_mut(&id) else {
+        map.insert(id, incoming.clone());
+        return incoming;
+    };
+    let mut notes = Vec::new();
+    merge_text(&mut existing.athlete_name, &incoming.athlete_name, "athlete_name", &mut notes);
+    merge_text(&mut existing.first_name, &incoming.first_name, "first_name", &mut notes);
+    merge_text(&mut existing.last_name, &incoming.last_name, "last_name", &mut notes);
+    merge_text(&mut existing.school, &incoming.school, "school", &mut notes);
+    merge_text(&mut existing.team_name, &incoming.team_name, "team_name", &mut notes);
+    merge_text(&mut existing.state, &incoming.state, "state", &mut notes);
+    merge_text(&mut existing.city, &incoming.city, "city", &mut notes);
+    merge_text(&mut existing.gender, &incoming.gender, "gender", &mut notes);
+    merge_text(&mut existing.sport, &incoming.sport, "sport", &mut notes);
+    merge_text(
+        &mut existing.cohort_evidence,
+        &incoming.cohort_evidence,
+        "cohort_evidence",
+        &mut notes,
+    );
+    if existing.grade_id == 0 {
+        existing.grade_id = incoming.grade_id;
+    } else if incoming.grade_id != 0 && existing.grade_id != incoming.grade_id {
+        notes.push("grade_id conflict".to_owned());
+    }
+    merge_optional(
+        &mut existing.graduation_year,
+        incoming.graduation_year,
+        "graduation_year",
+        &mut notes,
+    );
+    for url in &incoming.profile_urls {
+        if !existing.profile_urls.contains(url) {
+            existing.profile_urls.push(url.clone());
+        }
+    }
+    for url in &incoming.source_urls {
+        if !existing.source_urls.contains(url) {
+            existing.source_urls.push(url.clone());
+        }
+    }
+    for result in &incoming.results {
+        merge_result(&mut existing.results, result);
+    }
+    for note in notes.into_iter().chain(incoming.exception_notes) {
+        add_note(existing, note);
+    }
+    if existing.profile_url.is_empty() {
+        existing.profile_url = incoming.profile_url;
+    }
+    existing.clone()
+}
+
 pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> (Vec<SourceAthlete>, Vec<SourceAthlete>) {
-    let mut map: BTreeMap<u64, SourceAthlete> = BTreeMap::new();
-    let mut exception_only: Vec<SourceAthlete> = Vec::new();
-    for a in athletes {
-        let merged = merge_athlete(&mut map, a);
+    let mut keyed = BTreeMap::new();
+    let mut exception_only = Vec::new();
+    for athlete in athletes {
+        let merged = merge_athlete(&mut keyed, athlete);
         if merged.athlete_id == 0 {
             exception_only.push(merged);
         }
     }
-    (map.into_values().collect(), exception_only)
-}
-
-/// Merge a new SourceAthlete into an existing map by athlete_id.
-///
-/// Merge rules:
-/// - Identity: fill empty first_name/last_name/school/state/city from new
-/// - Conflicts: if both non-empty and different → exception note
-/// - URLs: retain all distinct profile/source/result URLs
-/// - Results: dedup by full event+mark+date+meet+source+result_id+result_url identity
-///
-/// Zero-ID athletes are NOT inserted into the keyed map. Instead they are
-/// returned with an exception note so the caller can handle them separately.
-pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete) -> SourceAthlete {
-    let id = new.athlete_id;
-    if id == 0 {
-        let mut exc = new;
-        exc.exception_notes
-            .push("athlete_id missing or zero; cannot deduplicate".to_owned());
-        return exc;
-    }
-
-    match map.get_mut(&id) {
-        Some(existing) => {
-            if existing.first_name.is_empty() && !new.first_name.is_empty() {
-                existing.first_name = new.first_name;
-            } else if !existing.first_name.is_empty()
-                && !new.first_name.is_empty()
-                && existing.first_name != new.first_name
-            {
-                existing.exception_notes.push(format!(
-                    "first_name conflict: '{}' vs '{}'",
-                    existing.first_name, new.first_name
-                ));
-            }
-
-            if existing.last_name.is_empty() && !new.last_name.is_empty() {
-                existing.last_name = new.last_name;
-            } else if !existing.last_name.is_empty()
-                && !new.last_name.is_empty()
-                && existing.last_name != new.last_name
-            {
-                existing.exception_notes.push(format!(
-                    "last_name conflict: '{}' vs '{}'",
-                    existing.last_name, new.last_name
-                ));
-            }
-
-            if existing.school.is_empty() && !new.school.is_empty() {
-                existing.school = new.school;
-            } else if !existing.school.is_empty()
-                && !new.school.is_empty()
-                && existing.school != new.school
-            {
-                existing.exception_notes.push(format!(
-                    "school conflict: '{}' vs '{}'",
-                    existing.school, new.school
-                ));
-            }
-
-            if existing.state.is_empty() && !new.state.is_empty() {
-                existing.state = new.state;
-            } else if !existing.state.is_empty()
-                && !new.state.is_empty()
-                && existing.state != new.state
-            {
-                existing.exception_notes.push(format!(
-                    "state conflict: '{}' vs '{}'",
-                    existing.state, new.state
-                ));
-            }
-
-            if existing.city.is_empty() && !new.city.is_empty() {
-                existing.city = new.city;
-            } else if !existing.city.is_empty()
-                && !new.city.is_empty()
-                && existing.city != new.city
-            {
-                existing.exception_notes.push(format!(
-                    "city conflict: '{}' vs '{}'",
-                    existing.city, new.city
-                ));
-            }
-
-            for url in &new.profile_urls {
-                if !existing.profile_urls.contains(url) {
-                    existing.profile_urls.push(url.clone());
-                }
-            }
-
-            for url in &new.source_urls {
-                if !existing.source_urls.contains(url) {
-                    existing.source_urls.push(url.clone());
-                }
-            }
-
-            for nr in &new.results {
-                let is_dup = existing.results.iter().any(|r| {
-                    r.result_id == nr.result_id
-                        && r.event == nr.event
-                        && r.mark == nr.mark
-                        && r.date == nr.date
-                        && r.meet_name == nr.meet_name
-                        && r.source_url == nr.source_url
-                        && r.result_url == nr.result_url
-                });
-                if !is_dup {
-                    existing.results.push(nr.clone());
-                }
-            }
-
-            for note in &new.exception_notes {
-                if !existing.exception_notes.contains(note) {
-            existing.clone()
-        }
-        None => {
-            map.insert(id, new);
-            SourceAthlete::default()
-        }
-    }
-}
-            new
-        }
-    }
+    (keyed.into_values().collect(), exception_only)
 }

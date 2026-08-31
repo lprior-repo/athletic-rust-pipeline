@@ -1,234 +1,198 @@
 /// Safe normalization for source records and athlete deduplication.
+pub use crate::alpha_model::{SourceAthlete, SourceResult};
 pub use crate::alpha_url::canonical_state;
 pub use crate::model::SourceRecord;
+pub type ResultRecord = SourceResult;
+
 use crate::alpha_url::{validate_profile_url, validate_result_url, validate_source_url};
-use crate::marks;
-use crate::model::Mark;
 use url::Url;
-use serde::{Deserialize, Serialize};
+pub use crate::alpha_normalize_helpers::parse_location;
+use crate::alpha_normalize_helpers::parse_mark_entry;
 
-/// A single result record with full metadata.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct ResultRecord {
-    pub result_id: u64,
-    pub event: String,
-    pub mark: String,
-    pub season: String,
-    pub date: String,
-    pub meet_name: String,
-    pub wind: Option<String>,
-    pub source_url: String,
-    pub result_url: String,
+pub fn normalize_whitespace(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-/// Normalized athlete record.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SourceAthlete {
-    pub athlete_id: u64,
-    pub first_name: String,
-    pub last_name: String,
-    pub school: String,
-    pub state: String,
-    pub city: String,
-    pub profile_urls: Vec<String>,
-    pub results: Vec<ResultRecord>,
-    pub source_urls: Vec<String>,
-    pub exception_notes: Vec<String>,
+
+fn note(athlete: &mut SourceAthlete, message: &str) {
+    if !athlete.exception_notes.iter().any(|existing| existing == message) {
+        athlete.exception_notes.push(message.to_owned());
+    }
 }
 
-pub fn normalize_whitespace(s: &str) -> String {
-    s.split_whitespace().collect::<Vec<_>>().join(" ")
+fn parse_id(value: Option<&String>) -> Option<u64> {
+    let raw = value?.trim();
+    let id = raw.parse::<u64>().ok()?;
+    (id > 0).then_some(id)
 }
 
-/// Parse a city/state field. Accepts "City, ST" or bare city name.
-/// Rejects digits, contact/address text.
-pub fn parse_location(raw: &str) -> Option<(String, String)> {
-    let t = raw.trim();
-    if t.is_empty() {
-        return None;
-    }
-    let clean = t.replace(['-', '(', ')', '.'], "");
-    if clean.chars().all(|c| c.is_ascii_digit()) {
-        return None;
-    }
-    if clean.chars().next().map_or(false, |c| c.is_ascii_digit()) {
-        return None;
-    }
-    // Try "City, ST" format
-    if let Some((city, state)) = t.split_once(',') {
-        let city = normalize_whitespace(city);
-        let state = canonical_state(state);
-        if !city.is_empty() {
-            return Some((city, state.unwrap_or_default()));
-        }
-    }
-    // Bare city — no state
-    Some((normalize_whitespace(t), String::new()))
+fn profile_id(url: &str) -> Option<u64> {
+    let parsed = Url::parse(url).ok()?;
+    let value = parsed.path().strip_prefix("/athlete/")?;
+    value.parse::<u64>().ok().filter(|id| *id > 0)
 }
 
-/// Parse and normalize a single mark string into a ResultRecord.
-fn parse_mark_entry(
-    mark_str: &str,
-    _profile_url: &str,
-    source_url: &str,
-    result_id: Option<u64>,
-) -> Option<ResultRecord> {
-    let parts: Vec<&str> = mark_str.split('|').collect();
-    if parts.len() < 4 {
-        return None;
-    }
-    let mut mark = Mark::default();
-    mark.event = parts[0].to_owned();
-    mark.mark = parts[1].to_owned();
-    mark.season = parts[2].to_owned();
-    mark.date = parts[3].to_owned();
-    if parts.len() > 4 {
-        mark.meet_name = parts[4].to_owned();
-    }
-    if parts.len() > 5 {
-        mark.wind = Some(parts[5].to_owned());
-    }
-    let normalized = marks::normalize_mark(mark);
-    if !normalized.valid {
-        return None;
-    }
-    Some(ResultRecord {
-        event: normalized.canonical_event,
-        mark: normalized.mark,
-        season: normalized.season,
-        date: normalized.date,
-        meet_name: normalized.meet_name,
-        wind: normalized.wind,
-        result_id: result_id.unwrap_or(0),
-        source_url: source_url.to_owned(),
-        ..Default::default()
-    })
+fn result_id(url: &str) -> Option<u64> {
+    let parsed = Url::parse(url).ok()?;
+    let value = parsed.path().strip_prefix("/result/")?;
+    value.parse::<u64>().ok().filter(|id| *id > 0)
 }
 
-/// Normalize a source record into a SourceAthlete.
+fn parsed_ids(raw: &str, athlete: &mut SourceAthlete) -> Vec<Option<u64>> {
+    raw.split(';')
+        .map(|token| {
+            let trimmed = token.trim();
+            if trimmed.is_empty() {
+                return None;
+            }
+            let parsed = trimmed.parse::<u64>().ok().filter(|id| *id > 0);
+            if parsed.is_none() {
+                note(athlete, "invalid result ID evidence");
+            }
+            parsed
+        })
+        .collect()
+}
+
+/// Normalize a source record into the canonical alpha model type.
 pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
     let mut athlete = SourceAthlete::default();
-
-    // Extract athlete_id
-    if let Some(id_str) = record.fields.get("athlete_id") {
-        if let Ok(id) = id_str.trim().parse::<u64>() {
-            athlete.athlete_id = id;
-        }
+    athlete.athlete_id = match parse_id(record.fields.get("athlete_id")) {
+        Some(id) => id,
+        None => 0,
+    };
+    if athlete.athlete_id == 0 {
+        note(&mut athlete, "athlete_id missing or invalid");
     }
-
-    // Extract name fields separately
-    if let Some(first) = record.fields.get("first_name") {
-        athlete.first_name = normalize_whitespace(first);
+    athlete.first_name = record.fields.get("first_name")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    athlete.last_name = record.fields.get("last_name")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    athlete.athlete_name = record.fields.get("athlete_name")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    if athlete.athlete_name.is_empty() {
+        athlete.athlete_name = format!("{} {}", athlete.first_name, athlete.last_name)
+            .trim().to_owned();
     }
-    if let Some(last) = record.fields.get("last_name") {
-        athlete.last_name = normalize_whitespace(last);
-    }
+    athlete.school = record.fields.get("school")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    athlete.team_name = record.fields.get("team_name")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    athlete.gender = record.fields.get("gender")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    athlete.sport = record.fields.get("sport")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
 
-    if let Some(school) = record.fields.get("school") {
-        athlete.school = normalize_whitespace(school);
-    }
-
-    // Extract state
     if let Some(state) = record.fields.get("state") {
-        if let Some(canonical) = canonical_state(state) {
-            athlete.state = canonical;
-        } else {
-            athlete.exception_notes.push(format!("unknown state '{}'", state.trim()));
+        match canonical_state(state) {
+            Some(canonical) => athlete.state = canonical,
+            None if !state.trim().is_empty() => note(&mut athlete, "unknown state evidence"),
+            None => {}
         }
     }
-
     if let Some(city) = record.fields.get("city") {
-        if let Some((city_str, _)) = parse_location(city) {
-            athlete.city = city_str;
-        } else {
-            athlete.exception_notes.push(format!("invalid city/location: '{}'", city.trim()));
-        }
-    }
-    // Validate and collect profile URLs
-    if let Some(profile) = record.fields.get("profile_url") {
-        for url in profile.split(';') {
-            if let Some(valid) = validate_profile_url(url) {
-                if !athlete.profile_urls.contains(&valid) {
-                    athlete.profile_urls.push(valid);
+        match parse_location(city) {
+            Some((city_name, location_state)) => {
+                athlete.city = city_name;
+                if athlete.state.is_empty() {
+                    athlete.state = location_state;
+                } else if !location_state.is_empty() && athlete.state != location_state {
+                    note(&mut athlete, "city/state evidence conflicts with state field");
                 }
             }
+            None => note(&mut athlete, "invalid city/location evidence"),
         }
     }
-    if let Some(profile) = record.fields.get("profile_url") {
-        for url in profile.split(';') {
-            let trimmed = url.trim();
-            if trimmed.is_empty() {
+
+    if let Some(grade) = record.fields.get("grade_id") {
+        match grade.trim().parse::<u64>() {
+            Ok(value) if value > 0 => athlete.grade_id = value,
+            Err(_) if !grade.trim().is_empty() => note(&mut athlete, "invalid grade evidence"),
+            _ => {}
+        }
+    }
+    if let Some(year) = record.fields.get("graduation_year") {
+        match year.trim().parse::<i32>() {
+            Ok(value) => athlete.graduation_year = Some(value),
+            Err(_) if !year.trim().is_empty() => note(&mut athlete, "invalid graduation-year evidence"),
+            _ => {}
+        }
+    }
+    athlete.cohort_evidence = record.fields.get("cohort_evidence")
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    if athlete.cohort_evidence.is_empty() {
+        if let Some(year) = athlete.graduation_year {
+            athlete.cohort_evidence = format!("graduation_year={year}");
+        }
+    }
+    if let Some(profile_field) = record.fields.get("profile_url") {
+        for raw_url in profile_field.split(';').map(str::trim).filter(|url| !url.is_empty()) {
+            let Some(valid) = validate_profile_url(raw_url) else {
+                note(&mut athlete, "invalid profile URL evidence");
+                continue;
+            };
+            if profile_id(&valid).is_some_and(|id| athlete.athlete_id != 0 && id != athlete.athlete_id) {
+                note(&mut athlete, "profile URL athlete ID conflicts with record ID");
                 continue;
             }
-            if let Some(parsed) = Url::parse(trimmed).ok() {
-                if let Some(path) = parsed.path().strip_prefix("/athlete/") {
-                    if let Some(id_str) = path.split('/').next() {
-                        if let Ok(profile_id) = id_str.parse::<u64>() {
-                            if profile_id != 0 && athlete.athlete_id != 0 && profile_id != athlete.athlete_id {
-                                athlete.exception_notes.push(format!(
-                                    "profile URL athlete ID {} does not match record athlete ID {}",
-                                    profile_id, athlete.athlete_id
-                                ));
-                            }
-                        }
-                    }
-                }
+            if !athlete.profile_urls.contains(&valid) {
+                athlete.profile_urls.push(valid);
+            }
+        }
+    }
+    athlete.profile_url = match athlete.profile_urls.first() {
+        Some(url) => url.clone(),
+        None => String::new(),
+    };
+
+    let mut source_url = String::new();
+    if let Some(source_field) = record.fields.get("source_url") {
+        for raw_url in source_field.split(';').map(str::trim).filter(|url| !url.is_empty()) {
+            let Some(valid) = validate_source_url(raw_url) else {
+                note(&mut athlete, "invalid source URL evidence");
+                continue;
+            };
+            if source_url.is_empty() {
+                source_url = valid.clone();
+            }
+            if !athlete.source_urls.contains(&valid) {
+                athlete.source_urls.push(valid);
+            }
+        }
+    }
+    if source_url.is_empty() {
+        source_url = athlete.profile_url.clone();
+    }
+
+    if let Some(results_field) = record.fields.get("result_urls") {
+        for raw_url in results_field.split(';').map(str::trim).filter(|url| !url.is_empty()) {
+            let Some(valid) = validate_result_url(raw_url) else {
+                note(&mut athlete, "invalid result URL evidence");
+                continue;
+            };
+            if !athlete.results.iter().any(|result| result.result_url.as_ref() == Some(&valid)) {
+                athlete.results.push(SourceResult {
+                    result_id: result_id(&valid),
+                    result_url: Some(valid),
+                    source_url: source_url.clone(),
+                    ..Default::default()
+                });
             }
         }
     }
 
-    // Collect result URLs
-    if let Some(results) = record.fields.get("result_urls") {
-        for url in results.split(';') {
-            if let Some(valid) = validate_result_url(url.trim()) {
-                if !athlete.profile_urls.contains(&valid)
-                    && !athlete.results.iter().any(|r| r.result_url == valid)
-                {
-                    athlete.results.push(ResultRecord {
-                        result_url: valid,
-                        ..Default::default()
-                    });
-                }
-            }
-        }
-    }
-
-    // Collect source URLs
-    if let Some(source) = record.fields.get("source_url") {
-        for url in source.split(';') {
-            if let Some(valid) = validate_source_url(url) {
-                if !athlete.source_urls.contains(&valid) {
-                    athlete.source_urls.push(valid);
-                }
-            }
-        }
-    }
-
-    // Parse marks data and normalize with marks module
+    let ids = record.fields.get("result_ids")
+        .map_or_else(Vec::new, |raw| parsed_ids(raw, &mut athlete));
     if let Some(marks_raw) = record.fields.get("marks") {
-        let source_url = athlete.source_urls.first().cloned().unwrap_or_default();
-        for mark_str in marks_raw.split(';') {
-            let trimmed = mark_str.trim();
-            if trimmed.is_empty() {
+        for (index, raw_mark) in marks_raw.split(';').map(str::trim).enumerate() {
+            if raw_mark.is_empty() {
                 continue;
             }
-            if let Some(rr) = parse_mark_entry(trimmed, "", &source_url, None) {
-                athlete.results.push(rr);
+            let id = ids.get(index).copied().flatten();
+            if let Some(result) = parse_mark_entry(raw_mark, &source_url, id) {
+                athlete.results.push(result);
             } else {
-                athlete.exception_notes.push(format!("invalid mark entry: '{}'", trimmed));
-            }
-        }
-    }
-
-    // Attach result IDs for dedup
-    if let Some(result_ids) = record.fields.get("result_ids") {
-        let ids: Vec<u64> = result_ids
-            .split(';')
-            .filter_map(|s| s.trim().parse::<u64>().ok())
-            .collect();
-        for (i, rid) in ids.iter().enumerate() {
-            if i < athlete.results.len() {
-                athlete.results[i].result_id = *rid;
+                note(&mut athlete, "invalid mark evidence");
             }
         }
     }

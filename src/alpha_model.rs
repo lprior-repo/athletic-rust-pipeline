@@ -57,26 +57,42 @@ pub struct AlphaRequest {
     pub continuation: Option<serde_json::Value>,
 }
 
-/// Normalized athlete record produced by the alpha pipeline.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
+
+/// Normalized athlete record — canonical type for the entire pipeline.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct SourceAthlete {
     pub athlete_id: u64,
     pub athlete_name: String,
+    pub first_name: String,
+    pub last_name: String,
     pub grade_id: u64,
+    pub school: String,
     pub team_name: String,
     pub state: String,
+    pub city: String,
+    pub graduation_year: Option<i32>,
+    pub cohort_evidence: String,
+    pub gender: String,
+    pub sport: String,
+    pub profile_urls: Vec<String>,
+    pub profile_url: String,
+    pub results: Vec<SourceResult>,
+    pub source_urls: Vec<String>,
+    pub exception_notes: Vec<String>,
 }
 
-/// Normalized result record.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)]
+/// Normalized result record — canonical type for the entire pipeline.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct SourceResult {
-    pub result_id: u64,
-    pub event_short: String,
-    pub measure: String,
-    pub result_date: String,
-    pub season_id: i32,
+    pub result_id: Option<u64>,
+    pub event: String,
+    pub mark: String,
+    pub season: String,
+    pub date: String,
+    pub meet_name: String,
+    pub wind: Option<String>,
+    pub source_url: String,
+    pub result_url: Option<String>,
 }
 
 /// Normalised ranking row produced by the alpha API client.
@@ -96,6 +112,7 @@ pub struct RankingRecord {
     pub season_id: i32,
     pub wind: Option<String>,
 }
+
 /// A canonical state target with a validated numeric ID.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StateTarget {
@@ -120,7 +137,8 @@ pub struct RunUnit {
     #[allow(dead_code)]
     pub page: Option<serde_json::Value>,
 }
-/// A cartesian product of states × seasons × genders × events — the collector's work matrix.
+
+/// A cartesian product of states × seasons × genders × events.
 #[derive(Debug, Clone)]
 pub struct RunMatrix {
     pub units: Vec<RunUnit>,

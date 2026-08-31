@@ -99,20 +99,21 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
     output.push_str(&ATHLETE_HEADERS.join(","));
     output.push('\n');
     for athlete in athletes {
-        let source_urls_json = serde_json::to_string(&athlete.source_urls)
-            .context("serializing source URLs")?;
-        let profile_url = athlete.profile_urls.first().cloned().unwrap_or_default();
+        let source_urls_json =
+            serde_json::to_string(&athlete.source_urls).context("serializing source URLs")?;
+        let profile_url = athlete.profile_url.clone();
+        let graduation_year = athlete
+            .graduation_year
+            .map_or_else(String::new, |year| year.to_string());
         let fields = [
             athlete.athlete_id.to_string(),
-            format!("{} {}", athlete.first_name, athlete.last_name)
-                .trim()
-                .to_owned(),
+            athlete.athlete_name.clone(),
             athlete.school.clone(),
             athlete.state.clone(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
+            graduation_year,
+            athlete.cohort_evidence.clone(),
+            athlete.gender.clone(),
+            athlete.sport.clone(),
             profile_url,
             source_urls_json,
             athlete.results.len().to_string(),

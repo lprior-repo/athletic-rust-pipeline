@@ -127,8 +127,8 @@ fn normalize_record_result_urls_excluded_from_profile() {
     assert!(!athlete.profile_urls.contains(&"https://athletic.net/result/100".to_owned()));
     assert_eq!(athlete.profile_urls.len(), 1);
     assert_eq!(athlete.results.len(), 2);
-    assert!(athlete.results.iter().any(|r| r.result_url == "https://athletic.net/result/100"));
-    assert!(athlete.results.iter().any(|r| r.result_url == "https://athletic.net/result/200"));
+    assert!(athlete.results.iter().any(|r| r.result_url == Some("https://athletic.net/result/100".to_owned())));
+    assert!(athlete.results.iter().any(|r| r.result_url == Some("https://athletic.net/result/200".to_owned())));
 }
 
 #[test]
@@ -165,7 +165,7 @@ fn normalize_record_attaches_result_ids() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert_eq!(athlete.results[0].result_id, 999);
+    assert_eq!(athlete.results[0].result_id, Some(999));
 }
 
 #[test]
@@ -233,7 +233,7 @@ fn normalize_record_invalid_mark_adds_exception_note() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid mark entry")));
+    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid mark")));
     assert_eq!(athlete.results.len(), 0);
 }
 
@@ -268,7 +268,7 @@ fn normalize_record_profile_url_id_mismatch_adds_exception_note() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("does not match record athlete ID")));
+    assert!(athlete.exception_notes.iter().any(|n| n.contains("profile URL athlete ID conflicts")));
 }
 
 #[test]
