@@ -20,7 +20,7 @@ impl CohortDecision {
 ///
 /// Precedence (first match wins):
 /// 1. explicit_year == target_year → Include
-/// 2. explicit_year != target_year → Exclude (wrong year, regardless of grade)
+/// 2. explicit_year != target_year → Exception if grade conflicts, otherwise Exclude
 /// 3. Fallback: grade 11 in "2025-26" or grade 12 in "2026-27" → Include
 /// 4. Missing/conflicting evidence → Exception
 pub fn classify_cohort(
@@ -36,7 +36,11 @@ pub fn classify_cohort(
                 "explicit graduation year {yr} matches target {target_year}"
             ));
         }
-        // Rule 2: explicit year conflicts → Exclude (wrong year, regardless of grade)
+        if grade.is_some() {
+            return CohortDecision::Exception(format!(
+                "explicit graduation year {yr} conflicts with target {target_year}"
+            ));
+        }
         return CohortDecision::Exclude(format!(
             "explicit graduation year {yr} does not match target {target_year}"
         ));

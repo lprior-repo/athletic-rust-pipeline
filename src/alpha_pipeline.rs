@@ -11,7 +11,7 @@ use crate::alpha_output::{
 };
 use crate::alpha_url::validate_profile_url;
 use anyhow::{bail, Context, Result};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -70,14 +70,16 @@ pub async fn collect_authorized(
             coverage.complete_units += 1;
             continue;
         }
-        let mut continuation = match prior {
-            Some(checkpoint) => checkpoint_continuation(checkpoint)
-                .map_err(|error| anyhow::anyhow!(error))?,
-            None => None,
-        };
+        let mut continuation = None;
+        let mut seen_continuations = BTreeSet::new();
+        let mut unit_has_exception = false;
         loop {
             let key = unit_key(&unit, &continuation)
                 .map_err(|error| anyhow::anyhow!(error))?;
+            if !seen_continuations.insert(key.continuation.clone()) {
+                append_checkpoint(output_dir, key, 0, false, "loop")?;
+                bail!("authorized alpha continuation cycle detected");
+            }
             let page = client
                 .rankings(&AlphaRequest {
                     state_id: unit.state.state_id,
@@ -98,26 +100,37 @@ pub async fn collect_authorized(
             let response_count = page.records.len();
             for record in page.records {
                 match source_athlete(&record, &unit) {
-                    Ok((_athlete, Some(exception))) => cohort_exceptions.push(exception),
+                    Ok((_athlete, Some(exception))) => {
+                        unit_has_exception = true;
+                        cohort_exceptions.push(exception);
+                    }
                     Ok((athlete, None)) if athlete.athlete_id == 0 => {
+                        unit_has_exception = true;
                         unresolved.push(unresolved_from(&athlete));
                     }
                     Ok((athlete, None)) if !athlete.exception_notes.is_empty() => {
+                        unit_has_exception = true;
                         unresolved.push(unresolved_from(&athlete));
                     }
                     Ok((athlete, None)) => {
                         merge_athlete(&mut keyed, athlete);
                     }
-                    Err(reason) => unresolved.push(UnresolvedRecord {
-                        record_key: "ranking-record".to_owned(),
-                        reason,
-                        source_url: String::new(),
-                    }),
+                    Err(reason) => {
+                        unit_has_exception = true;
+                        unresolved.push(UnresolvedRecord {
+                            record_key: "ranking-record".to_owned(),
+                            reason,
+                            source_url: String::new(),
+                        });
+                    }
                 }
             }
             if page.complete {
                 append_checkpoint(output_dir, key, response_count, true, "complete")?;
                 coverage.complete_units += 1;
+                if unit_has_exception {
+                    coverage.exception_units += 1;
+                }
                 if response_count == 0 {
                     coverage.empty_units += 1;
                 }
@@ -127,10 +140,6 @@ pub async fn collect_authorized(
                 append_checkpoint(output_dir, key, response_count, false, "incomplete")?;
                 bail!("authorized alpha unit is incomplete without continuation");
             };
-            if continuation.as_ref() == Some(&next) {
-                append_checkpoint(output_dir, key, response_count, false, "loop")?;
-                bail!("authorized alpha continuation did not advance");
-            }
             let next_key = unit_key(&unit, &Some(next.clone()))
                 .map_err(|error| anyhow::anyhow!(error))?;
             append_checkpoint(output_dir, next_key, response_count, false, "incomplete")?;
@@ -168,16 +177,6 @@ fn same_unit(key: &AlphaUnitKey, unit: &RunUnit) -> bool {
         && key.event_short == unit.event.event_short
 }
 
-fn checkpoint_continuation(
-    checkpoint: &AlphaCheckpoint,
-) -> Result<Option<serde_json::Value>, String> {
-    if checkpoint.key.continuation.is_empty() || checkpoint.key.continuation == "0" {
-        return Ok(None);
-    }
-    serde_json::from_str(&checkpoint.key.continuation)
-        .map(Some)
-        .map_err(|_| "invalid checkpoint continuation".to_owned())
-}
 
 fn append_checkpoint(
     output_dir: &Path,

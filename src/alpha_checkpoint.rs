@@ -53,7 +53,6 @@ fn validate_checkpoint(checkpoint: &AlphaCheckpoint) -> Result<()> {
         checkpoint.key.state_code.as_str(),
         checkpoint.key.gender.as_str(),
         checkpoint.key.event_short.as_str(),
-        checkpoint.key.continuation.as_str(),
         checkpoint.status.as_str(),
     ];
     if fields.iter().any(|field| {
@@ -69,6 +68,15 @@ fn validate_checkpoint(checkpoint: &AlphaCheckpoint) -> Result<()> {
             || lower.contains("token")
     }) {
         bail!("checkpoint contains forbidden sensitive metadata");
+    }
+    let continuation = checkpoint.key.continuation.to_ascii_lowercase();
+    if checkpoint.key.continuation.contains(['\n', '\r'])
+        || continuation.contains("cookie")
+        || continuation.contains("authorization")
+        || continuation.contains("bearer ")
+        || continuation.contains('@')
+    {
+        bail!("checkpoint contains forbidden continuation metadata");
     }
     Ok(())
 }
@@ -189,6 +197,6 @@ mod tests {
     #[test]
     fn checkpoint_sensitive_metadata_is_rejected() {
         let directory = tempfile::tempdir().expect("tempdir");
-        assert!(append(directory.path(), &checkpoint("token-value", false, "incomplete")).is_err());
+        assert!(append(directory.path(), &checkpoint("authorization-value", false, "incomplete")).is_err());
     }
 }

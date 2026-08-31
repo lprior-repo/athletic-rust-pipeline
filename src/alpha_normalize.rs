@@ -185,19 +185,20 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
         .filter(|raw| !raw.trim().is_empty())
         .map_or_else(Vec::new, |raw| parsed_ids(raw, &mut athlete));
     if let Some(marks_raw) = record.fields.get("marks") {
-        let mark_count = marks_raw.split(';').filter(|mark| !mark.trim().is_empty()).count();
-        for (index, raw_mark) in marks_raw.split(';').map(str::trim).enumerate() {
+        let mut mark_index = 0;
+        for raw_mark in marks_raw.split(';').map(str::trim) {
             if raw_mark.is_empty() {
                 continue;
             }
-            let id = ids.get(index).copied().flatten();
+            let id = ids.get(mark_index).copied().flatten();
+            mark_index += 1;
             if let Some(result) = parse_mark_entry(raw_mark, &source_url, id) {
                 athlete.results.push(result);
             } else {
                 note(&mut athlete, "invalid mark evidence");
             }
         }
-        if ids.len() > mark_count {
+        if ids.len() > mark_index {
             note(&mut athlete, "unpaired result ID evidence");
         }
     } else if !ids.is_empty() {

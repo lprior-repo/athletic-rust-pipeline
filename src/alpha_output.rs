@@ -88,6 +88,9 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
     output.push_str(&ATHLETE_HEADERS.join(","));
     output.push('\n');
     for athlete in athletes {
+        for url in &athlete.source_urls {
+            validate_public_json(&Value::String(url.clone()))?;
+        }
         let source_urls_json =
             serde_json::to_string(&athlete.source_urls).context("serializing source URLs")?;
         let profile_url = match (athlete.profile_url.is_empty(), athlete.profile_urls.first()) {
@@ -120,7 +123,7 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
             if index > 0 {
                 output.push(',');
             }
-            if index != 0 && index != 10 {
+            if index != 0 && index != 9 && index != 10 {
                 validate_public_json(&Value::String(field.clone()))?;
             }
             output.push_str(&csv_escape(field));

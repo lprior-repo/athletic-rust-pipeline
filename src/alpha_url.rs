@@ -66,7 +66,7 @@ fn valid_origin(parsed: &Url, raw: &str) -> bool {
         && parsed.query().is_none()
         && parsed.fragment().is_none()
         && !authority.contains('@')
-        && parsed.port_or_known_default() == Some(443)
+        && (parsed.port().is_none() || parsed.port() == Some(443))
 }
 
 /// Validate a profile URL: https, athletic.net host, /athlete/<nonzero-id>.
@@ -152,4 +152,22 @@ pub fn canonical_state(raw: &str) -> Option<String> {
         }
     }
     None
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn accepts_implicit_and_explicit_default_https_port() {
+        let implicit = Url::parse("https://athletic.net/athlete/12345").expect("URL");
+        assert!(valid_origin(&implicit, "https://athletic.net/athlete/12345"));
+        assert_eq!(
+            validate_profile_url("https://athletic.net/athlete/12345"),
+            Some("https://athletic.net/athlete/12345".to_owned())
+        );
+        assert_eq!(
+            validate_profile_url("https://athletic.net:443/athlete/12345"),
+            Some("https://athletic.net/athlete/12345".to_owned())
+        );
+    }
 }
