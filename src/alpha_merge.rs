@@ -85,16 +85,46 @@ fn merge_result(existing: &mut Vec<SourceResult>, incoming: &SourceResult) {
         existing.push(incoming.clone());
     }
 }
+fn approved_profile(athlete_id: u64, raw_url: &str) -> Option<String> {
+    let canonical = validate_profile_url(raw_url)?;
+    let parsed = Url::parse(&canonical).ok()?;
+    let profile_id = parsed.path().strip_prefix("/athlete/")?.parse::<u64>().ok()?;
+    (profile_id == athlete_id).then_some(canonical)
+}
+fn sanitize_profiles(athlete_id: u64, mut athlete: SourceAthlete) -> SourceAthlete {
+    let mut profiles = athlete.profile_urls.clone();
+    if !athlete.profile_url.is_empty() {
+        profiles.push(athlete.profile_url.clone());
+    }
+    let valid: Vec<String> = profiles
+        .iter()
+        .filter_map(|url| approved_profile(athlete_id, url))
+        .collect();
+    if valid.len() != profiles.len() {
+        add_note(&mut athlete, "invalid profile URL evidence discarded during merge".to_owned());
+    }
+    athlete.profile_urls = valid;
+    athlete.profile_urls.sort();
+    athlete.profile_urls.dedup();
+    athlete.profile_url = match athlete.profile_urls.first() {
+        Some(url) => url.clone(),
+        None => String::new(),
+    };
+    athlete
+}
 
 pub fn merge_athlete(
     map: &mut BTreeMap<u64, SourceAthlete>,
     mut incoming: SourceAthlete,
 ) -> SourceAthlete {
     if incoming.athlete_id == 0 {
-        add_note(&mut incoming, "athlete_id missing or zero; cannot deduplicate".to_owned());
+        incoming.profile_urls.clear();
+        incoming.profile_url.clear();
+        add_note(&mut incoming, "athlete_id missing or zero; cannot trust profile URL".to_owned());
         return incoming;
     }
     let id = incoming.athlete_id;
+    incoming = sanitize_profiles(id, incoming);
     let Some(existing) = map.get_mut(&id) else {
         map.insert(id, incoming.clone());
         return incoming;
@@ -109,12 +139,20 @@ pub fn merge_athlete(
     merge_text(&mut existing.city, &incoming.city, "city", &mut notes);
     merge_text(&mut existing.gender, &incoming.gender, "gender", &mut notes);
     merge_text(&mut existing.sport, &incoming.sport, "sport", &mut notes);
-    merge_text(
-        &mut existing.cohort_evidence,
-        &incoming.cohort_evidence,
-        "cohort_evidence",
-        &mut notes,
-    );
+    let existing_cohort_rank = if existing.graduation_year.is_some() { 2 } else { 1 };
+    let incoming_cohort_rank = if incoming.graduation_year.is_some() { 2 } else { 1 };
+    if incoming_cohort_rank > existing_cohort_rank
+        || (existing.cohort_evidence.is_empty() && !incoming.cohort_evidence.is_empty())
+    {
+        existing.cohort_evidence = incoming.cohort_evidence.clone();
+    } else if incoming_cohort_rank == existing_cohort_rank {
+        merge_text(
+            &mut existing.cohort_evidence,
+            &incoming.cohort_evidence,
+            "cohort_evidence",
+            &mut notes,
+        );
+    }
     if existing.grade_id == 0 {
         existing.grade_id = incoming.grade_id;
     } else if incoming.grade_id != 0 && existing.grade_id != incoming.grade_id {
@@ -126,9 +164,28 @@ pub fn merge_athlete(
         "graduation_year",
         &mut notes,
     );
-    for url in &incoming.profile_urls {
-        if !existing.profile_urls.contains(url) {
-            existing.profile_urls.push(url.clone());
+    let mut existing_profiles = existing.profile_urls.clone();
+    if !existing.profile_url.is_empty() {
+        existing_profiles.push(existing.profile_url.clone());
+    }
+    let valid_existing: Vec<String> = existing_profiles
+        .iter()
+        .filter_map(|url| approved_profile(id, url))
+        .collect();
+    if valid_existing.len() != existing_profiles.len() {
+        notes.push("invalid profile URL evidence discarded during merge".to_owned());
+    }
+    existing.profile_urls = valid_existing;
+    for url in incoming.profile_urls.iter().chain(std::iter::once(&incoming.profile_url)) {
+        if url.is_empty() {
+            continue;
+        }
+        let Some(canonical) = approved_profile(id, url) else {
+            notes.push("profile URL conflicts with athlete ID".to_owned());
+            continue;
+        };
+        if !existing.profile_urls.contains(&canonical) {
+            existing.profile_urls.push(canonical);
         }
     }
     for url in &incoming.source_urls {
@@ -143,7 +200,14 @@ pub fn merge_athlete(
         add_note(existing, note);
     }
     if existing.profile_url.is_empty() {
-        existing.profile_url = incoming.profile_url;
+        existing.profile_url = match existing.profile_urls.first() {
+            Some(url) => url.clone(),
+            None => String::new(),
+        };
+    } else if let Some(canonical) = approved_profile(id, &existing.profile_url) {
+        existing.profile_url = canonical;
+    } else {
+        existing.profile_url = String::new();
     }
     existing.clone()
 }

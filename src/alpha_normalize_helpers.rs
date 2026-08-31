@@ -25,13 +25,18 @@ pub fn parse_location(raw: &str) -> Option<(String, String)> {
 fn looks_like_private_location(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
     let digits = value.chars().filter(|ch| ch.is_ascii_digit()).count();
+    let has_postal = value
+        .split(|ch: char| !ch.is_ascii_digit())
+        .any(|part| part.len() == 5);
     value.chars().next().is_some_and(|ch| ch.is_ascii_digit())
         || lower.contains('@')
         || digits >= 7
-        || lower.contains(" street")
-        || lower.contains(" avenue")
-        || lower.contains(" boulevard")
-        || lower.contains(" road")
+        || has_postal
+        || lower.split_whitespace().any(|part| {
+            matches!(part.trim_matches(|ch: char| !ch.is_ascii_alphabetic()),
+                "street" | "avenue" | "boulevard" | "road")
+        })
+        || lower.contains("apt ") || lower.contains("unit ") || lower.contains("po box")
 }
 
 fn valid_season(value: &str) -> bool {
@@ -62,13 +67,24 @@ fn valid_date(value: &str) -> bool {
     {
         return false;
     }
+    let Ok(year) = value[0..4].parse::<i32>() else {
+        return false;
+    };
     let Ok(month) = value[5..7].parse::<u32>() else {
         return false;
     };
     let Ok(day) = value[8..10].parse::<u32>() else {
         return false;
     };
-    (1..=12).contains(&month) && (1..=31).contains(&day)
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    let max_day = match month {
+        2 if leap => 29,
+        2 => 28,
+        4 | 6 | 9 | 11 => 30,
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        _ => 0,
+    };
+    (1900..=2200).contains(&year) && day > 0 && day <= max_day
 }
 
 pub(crate) fn parse_mark_entry(
@@ -77,7 +93,7 @@ pub(crate) fn parse_mark_entry(
     result_id: Option<u64>,
 ) -> Option<SourceResult> {
     let parts: Vec<&str> = mark_str.split('|').collect();
-    if parts.len() < 4 {
+    if !(4..=6).contains(&parts.len()) {
         return None;
     }
     let event = normalize_whitespace(parts[0]);

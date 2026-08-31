@@ -107,7 +107,7 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
     if let Some(grade) = record.fields.get("grade_id") {
         match grade.trim().parse::<u64>() {
             Ok(value) if value > 0 => athlete.grade_id = value,
-            Err(_) if !grade.trim().is_empty() => note(&mut athlete, "invalid grade evidence"),
+            Ok(_) | Err(_) if !grade.trim().is_empty() => note(&mut athlete, "invalid grade evidence"),
             _ => {}
         }
     }
@@ -118,20 +118,20 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
             _ => {}
         }
     }
-    athlete.cohort_evidence = record.fields.get("cohort_evidence")
-        .map_or_else(String::new, |value| normalize_whitespace(value));
-    if athlete.cohort_evidence.is_empty() {
-        if let Some(year) = athlete.graduation_year {
-            athlete.cohort_evidence = format!("graduation_year={year}");
-        }
-    }
+    athlete.cohort_evidence = match athlete.graduation_year {
+        Some(year) => format!("graduation_year={year}"),
+        None => record.fields.get("cohort_evidence")
+            .map_or_else(String::new, |value| normalize_whitespace(value)),
+    };
     if let Some(profile_field) = record.fields.get("profile_url") {
         for raw_url in profile_field.split(';').map(str::trim).filter(|url| !url.is_empty()) {
             let Some(valid) = validate_profile_url(raw_url) else {
                 note(&mut athlete, "invalid profile URL evidence");
                 continue;
             };
-            if profile_id(&valid).is_some_and(|id| athlete.athlete_id != 0 && id != athlete.athlete_id) {
+            if profile_id(&valid).is_some_and(|id| {
+                athlete.athlete_id == 0 || id != athlete.athlete_id
+            }) {
                 note(&mut athlete, "profile URL athlete ID conflicts with record ID");
                 continue;
             }
@@ -182,8 +182,10 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
     }
 
     let ids = record.fields.get("result_ids")
+        .filter(|raw| !raw.trim().is_empty())
         .map_or_else(Vec::new, |raw| parsed_ids(raw, &mut athlete));
     if let Some(marks_raw) = record.fields.get("marks") {
+        let mark_count = marks_raw.split(';').filter(|mark| !mark.trim().is_empty()).count();
         for (index, raw_mark) in marks_raw.split(';').map(str::trim).enumerate() {
             if raw_mark.is_empty() {
                 continue;
@@ -195,6 +197,11 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
                 note(&mut athlete, "invalid mark evidence");
             }
         }
+        if ids.len() > mark_count {
+            note(&mut athlete, "unpaired result ID evidence");
+        }
+    } else if !ids.is_empty() {
+        note(&mut athlete, "unpaired result ID evidence");
     }
 
     athlete

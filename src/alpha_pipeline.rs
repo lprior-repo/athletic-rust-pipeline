@@ -6,7 +6,9 @@ use crate::alpha_config::AlphaConfig;
 use crate::alpha_merge::merge_athlete;
 use crate::alpha_model::{AlphaRequest, RunMatrix, RunUnit, SourceAthlete};
 use crate::alpha_normalize::normalize_record;
-use crate::alpha_output::{write_outputs, CohortException, CoverageReport, UnresolvedRecord};
+use crate::alpha_output::{
+    read_jsonl, write_outputs, CohortException, CoverageReport, UnresolvedRecord,
+};
 use crate::alpha_url::validate_profile_url;
 use anyhow::{bail, Context, Result};
 use std::collections::BTreeMap;
@@ -53,58 +55,87 @@ pub async fn collect_authorized(
         ..CoverageReport::default()
     };
     let mut keyed = BTreeMap::new();
-    let mut cohort_exceptions = Vec::new();
-    let mut unresolved = Vec::new();
+    for athlete in read_jsonl::<SourceAthlete>(&output_dir.join("athletes.jsonl"))? {
+        if athlete.athlete_id > 0 {
+            merge_athlete(&mut keyed, athlete);
+        }
+    }
+    let mut cohort_exceptions =
+        read_jsonl::<CohortException>(&output_dir.join("cohort-exceptions.jsonl"))?;
+    let mut unresolved = read_jsonl::<UnresolvedRecord>(&output_dir.join("unresolved.jsonl"))?;
 
     for unit in units {
-        let key = unit_key(&unit);
-        if latest.get(&key).is_some_and(|state| state.complete) {
+        let prior = latest.values().find(|state| same_unit(&state.key, &unit));
+        if prior.is_some_and(|state| state.complete) {
             coverage.complete_units += 1;
             continue;
         }
-        let page = client
-            .rankings(&AlphaRequest {
-                state_id: unit.state.state_id,
-                season_id: unit.season_id,
-                gender: unit.gender.clone(),
-                event_short: unit.event.event_short.clone(),
-                indoor: false,
-                continuation: None,
-            })
-            .await;
-        let page = match page {
-            Ok(page) => page,
-            Err(error) => {
-                append_checkpoint(output_dir, key, 0, false, "error")?;
-                return Err(anyhow::anyhow!(error));
-            }
+        let mut continuation = match prior {
+            Some(checkpoint) => checkpoint_continuation(checkpoint)
+                .map_err(|error| anyhow::anyhow!(error))?,
+            None => None,
         };
-        let response_count = page.records.len();
-        if !page.complete {
-            append_checkpoint(output_dir, key, response_count, false, "incomplete")?;
-            bail!("authorized alpha unit is incomplete; resume from checkpoint");
-        }
-        if response_count == 0 {
-            coverage.empty_units += 1;
-        }
-        for record in page.records {
-            match source_athlete(&record, &unit) {
-                Ok((_athlete, Some(exception))) => cohort_exceptions.push(exception),
-                Ok((athlete, None)) => {
-                    let merged = merge_athlete(&mut keyed, athlete);
-                    if merged.athlete_id == 0 {
-                        unresolved.push(unresolved_from(&merged));
-                    }
+        loop {
+            let key = unit_key(&unit, &continuation)
+                .map_err(|error| anyhow::anyhow!(error))?;
+            let page = client
+                .rankings(&AlphaRequest {
+                    state_id: unit.state.state_id,
+                    season_id: unit.season_id,
+                    gender: unit.gender.clone(),
+                    event_short: unit.event.event_short.clone(),
+                    indoor: false,
+                    continuation: continuation.clone(),
+                })
+                .await;
+            let page = match page {
+                Ok(page) => page,
+                Err(error) => {
+                    append_checkpoint(output_dir, key, 0, false, "error")?;
+                    return Err(anyhow::anyhow!(error));
                 }
-                Err(reason) => unresolved.push(UnresolvedRecord {
-                    record_key: "ranking-record".to_owned(),
-                    reason,
-                    source_url: String::new(),
-                }),
+            };
+            let response_count = page.records.len();
+            for record in page.records {
+                match source_athlete(&record, &unit) {
+                    Ok((_athlete, Some(exception))) => cohort_exceptions.push(exception),
+                    Ok((athlete, None)) if athlete.athlete_id == 0 => {
+                        unresolved.push(unresolved_from(&athlete));
+                    }
+                    Ok((athlete, None)) if !athlete.exception_notes.is_empty() => {
+                        unresolved.push(unresolved_from(&athlete));
+                    }
+                    Ok((athlete, None)) => {
+                        merge_athlete(&mut keyed, athlete);
+                    }
+                    Err(reason) => unresolved.push(UnresolvedRecord {
+                        record_key: "ranking-record".to_owned(),
+                        reason,
+                        source_url: String::new(),
+                    }),
+                }
             }
+            if page.complete {
+                append_checkpoint(output_dir, key, response_count, true, "complete")?;
+                coverage.complete_units += 1;
+                if response_count == 0 {
+                    coverage.empty_units += 1;
+                }
+                break;
+            }
+            let Some(next) = page.continuation else {
+                append_checkpoint(output_dir, key, response_count, false, "incomplete")?;
+                bail!("authorized alpha unit is incomplete without continuation");
+            };
+            if continuation.as_ref() == Some(&next) {
+                append_checkpoint(output_dir, key, response_count, false, "loop")?;
+                bail!("authorized alpha continuation did not advance");
+            }
+            let next_key = unit_key(&unit, &Some(next.clone()))
+                .map_err(|error| anyhow::anyhow!(error))?;
+            append_checkpoint(output_dir, next_key, response_count, false, "incomplete")?;
+            continuation = Some(next);
         }
-        append_checkpoint(output_dir, key, response_count, true, "complete")?;
-        coverage.complete_units += 1;
     }
     let athletes: Vec<SourceAthlete> = keyed.into_values().collect();
     write_outputs(output_dir, &athletes, &cohort_exceptions, &unresolved, &coverage)?;
@@ -116,14 +147,36 @@ pub async fn collect_authorized(
     })
 }
 
-fn unit_key(unit: &RunUnit) -> AlphaUnitKey {
-    AlphaUnitKey {
+fn unit_key(unit: &RunUnit, continuation: &Option<serde_json::Value>) -> Result<AlphaUnitKey, String> {
+    let continuation = match continuation {
+        None => "0".to_owned(),
+        Some(value) => serde_json::to_string(value).map_err(|_| "invalid continuation".to_owned())?,
+    };
+    Ok(AlphaUnitKey {
         state_code: unit.state.code.clone(),
         season_id: unit.season_id,
         gender: unit.gender.clone(),
         event_short: unit.event.event_short.clone(),
-        continuation: String::new(),
+        continuation,
+    })
+}
+
+fn same_unit(key: &AlphaUnitKey, unit: &RunUnit) -> bool {
+    key.state_code == unit.state.code
+        && key.season_id == unit.season_id
+        && key.gender == unit.gender
+        && key.event_short == unit.event.event_short
+}
+
+fn checkpoint_continuation(
+    checkpoint: &AlphaCheckpoint,
+) -> Result<Option<serde_json::Value>, String> {
+    if checkpoint.key.continuation.is_empty() || checkpoint.key.continuation == "0" {
+        return Ok(None);
     }
+    serde_json::from_str(&checkpoint.key.continuation)
+        .map(Some)
+        .map_err(|_| "invalid checkpoint continuation".to_owned())
 }
 
 fn append_checkpoint(

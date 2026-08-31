@@ -1,11 +1,12 @@
+use crate::alpha_checkpoint::ensure_exists;
 use crate::alpha_normalize::{ResultRecord, SourceAthlete};
-use anyhow::{bail, Context, Result};
-use serde::{Deserialize, Serialize};
+use crate::alpha_output_privacy::validate_value;
+use anyhow::{Context, Result};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::fs::{self, File};
-use std::io::Write;
+use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
-
 const ATHLETE_HEADERS: &[&str] = &[
     "athlete_id",
     "athlete_name",
@@ -19,30 +20,18 @@ const ATHLETE_HEADERS: &[&str] = &[
     "source_urls_json",
     "result_count",
 ];
-const FORBIDDEN_KEYS: &[&str] = &[
-    "email",
-    "phone",
-    "street",
-    "postal",
-    "cookie",
-    "authorization",
-    "token",
-];
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CohortException {
     pub athlete_id: u64,
     pub reason: String,
     pub source_url: String,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UnresolvedRecord {
     pub record_key: String,
     pub reason: String,
     pub source_url: String,
 }
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct CoverageReport {
     pub planned_units: usize,
@@ -51,14 +40,12 @@ pub struct CoverageReport {
     pub incomplete_units: usize,
     pub exception_units: usize,
 }
-
 #[derive(Serialize)]
 struct ResultLine<'a> {
     athlete_id: u64,
     #[serde(flatten)]
     result: &'a ResultRecord,
 }
-
 #[allow(dead_code)]
 pub fn approved_athlete_headers() -> &'static [&'static str] {
     ATHLETE_HEADERS
@@ -77,6 +64,7 @@ pub fn write_outputs(
 ) -> Result<()> {
     fs::create_dir_all(output_dir)
         .with_context(|| format!("creating output directory {}", output_dir.display()))?;
+    ensure_exists(output_dir)?;
     write_athletes_csv(&output_dir.join("athletes.csv"), athletes)?;
     write_jsonl(&output_dir.join("athletes.jsonl"), athletes)?;
     let results: Vec<ResultLine<'_>> = athletes
@@ -91,10 +79,10 @@ pub fn write_outputs(
     write_jsonl(&output_dir.join("results.jsonl"), &results)?;
     write_jsonl(&output_dir.join("cohort-exceptions.jsonl"), cohort_exceptions)?;
     write_csv_records(&output_dir.join("unresolved.csv"), unresolved)?;
+    write_jsonl(&output_dir.join("unresolved.jsonl"), unresolved)?;
     write_json(&output_dir.join("coverage.json"), coverage)?;
     Ok(())
 }
-
 pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()> {
     let mut output = String::new();
     output.push_str(&ATHLETE_HEADERS.join(","));
@@ -102,13 +90,22 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
     for athlete in athletes {
         let source_urls_json =
             serde_json::to_string(&athlete.source_urls).context("serializing source URLs")?;
-        let profile_url = athlete.profile_url.clone();
+        let profile_url = match (athlete.profile_url.is_empty(), athlete.profile_urls.first()) {
+            (false, _) => athlete.profile_url.clone(),
+            (true, Some(url)) => url.clone(),
+            (true, None) => String::new(),
+        };
         let graduation_year = athlete
             .graduation_year
             .map_or_else(String::new, |year| year.to_string());
+        let athlete_name = if athlete.athlete_name.is_empty() {
+            format!("{} {}", athlete.first_name, athlete.last_name).trim().to_owned()
+        } else {
+            athlete.athlete_name.clone()
+        };
         let fields = [
             athlete.athlete_id.to_string(),
-            athlete.athlete_name.clone(),
+            athlete_name,
             athlete.school.clone(),
             athlete.state.clone(),
             graduation_year,
@@ -162,6 +159,22 @@ fn write_jsonl<T: Serialize>(path: &Path, records: &[T]) -> Result<()> {
     }
     write_atomic(path, &output)
 }
+pub fn read_jsonl<T: DeserializeOwned>(path: &Path) -> Result<Vec<T>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let file = File::open(path).with_context(|| format!("opening {}", path.display()))?;
+    BufReader::new(file)
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| line.as_ref().map_or(true, |value| !value.trim().is_empty()))
+        .map(|(line_number, line)| {
+            let line = line.with_context(|| format!("reading JSONL line {}", line_number + 1))?;
+            serde_json::from_str(&line)
+                .with_context(|| format!("decoding JSONL line {}", line_number + 1))
+        })
+        .collect()
+}
 
 fn write_json<T: Serialize>(path: &Path, value: &T) -> Result<()> {
     let value = serde_json::to_value(value).context("serializing JSON output")?;
@@ -179,60 +192,6 @@ fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     file.sync_all().context("syncing temporary output")?;
     fs::rename(&temporary, path)
         .with_context(|| format!("renaming {}", temporary.display()))
-}
-
-fn validate_value(value: &Value, path: &str) -> Result<()> {
-    match value {
-        Value::Object(map) => {
-            for (key, child) in map {
-                let lower = key.to_ascii_lowercase();
-                if FORBIDDEN_KEYS.iter().any(|forbidden| lower.contains(forbidden)) {
-                    bail!("forbidden output field at {path}.{key}");
-                }
-                validate_value(child, &format!("{path}.{key}"))?;
-            }
-        }
-        Value::Array(items) => {
-            for (index, child) in items.iter().enumerate() {
-                validate_value(child, &format!("{path}[{index}]"))?;
-            }
-        }
-        Value::String(text) => {
-            let lower = text.to_ascii_lowercase();
-            if lower.contains("cookie") || lower.contains("authorization") || lower.contains("token") {
-                bail!("forbidden sensitive value at {path}");
-            }
-            if looks_like_email(text) || looks_like_phone(text) {
-                bail!("forbidden personal value at {path}");
-            }
-        }
-        Value::Null | Value::Bool(_) | Value::Number(_) => {}
-    }
-    Ok(())
-}
-
-fn looks_like_email(text: &str) -> bool {
-    let Some((local, domain)) = text.split_once('@') else {
-        return false;
-    };
-    !local.trim().is_empty() && domain.contains('.') && !domain.starts_with('.') && !domain.ends_with('.')
-}
-
-fn looks_like_phone(text: &str) -> bool {
-    let trimmed = text.trim();
-    if trimmed.len() == 10 && trimmed.chars().all(|c| c.is_ascii_digit()) {
-        return true;
-    }
-    let digits = trimmed.chars().filter(|c| c.is_ascii_digit()).count();
-    let separators = trimmed.chars().filter(|c| matches!(c, ' ' | '-' | '(' | ')' | '.')).count();
-    digits >= 7 && separators >= 2 && !is_iso_date(trimmed)
-}
-
-fn is_iso_date(text: &str) -> bool {
-    text.len() == 10
-        && text.as_bytes().get(4) == Some(&b'-')
-        && text.as_bytes().get(7) == Some(&b'-')
-        && text.chars().enumerate().all(|(i, c)| i == 4 || i == 7 || c.is_ascii_digit())
 }
 
 fn csv_escape(value: &str) -> String {

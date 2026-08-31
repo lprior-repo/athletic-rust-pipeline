@@ -30,6 +30,7 @@ fn normalize_whitespace_collapses() {
 #[test]
 fn normalize_record_extract_fields() {
     let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
     fields.insert("first_name".to_owned(), "  John  ".to_owned());
     fields.insert("last_name".to_owned(), "Doe".to_owned());
     fields.insert("school".to_owned(), "  Lincoln High  ".to_owned());
@@ -92,9 +93,10 @@ fn normalize_record_rejects_invalid_profile_url() {
 #[test]
 fn normalize_record_multiple_profile_urls() {
     let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "1".to_owned());
     fields.insert(
         "profile_url".to_owned(),
-        "https://athletic.net/athlete/1;https://www.athletic.net/athlete/2".to_owned(),
+        "https://athletic.net/athlete/1;https://www.athletic.net/athlete/1".to_owned(),
     );
     let record = SourceRecord {
         source_key: "test".to_owned(),
@@ -103,12 +105,13 @@ fn normalize_record_multiple_profile_urls() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert_eq!(athlete.profile_urls.len(), 2);
+    assert_eq!(athlete.profile_urls.len(), 1);
 }
 
 #[test]
 fn normalize_record_result_urls_excluded_from_profile() {
     let mut fields = BTreeMap::new();
+    fields.insert("athlete_id".to_owned(), "12345".to_owned());
     fields.insert(
         "profile_url".to_owned(),
         "https://athletic.net/athlete/12345".to_owned(),
