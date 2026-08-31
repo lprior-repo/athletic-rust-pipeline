@@ -39,6 +39,8 @@ pub struct CoverageReport {
     pub empty_units: usize,
     pub incomplete_units: usize,
     pub exception_units: usize,
+    pub expected_units: usize,
+    pub bounded: bool,
 }
 #[derive(Serialize)]
 struct ResultLine<'a> {

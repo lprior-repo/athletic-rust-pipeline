@@ -33,6 +33,16 @@ pub async fn collect_authorized(
     if !authorization_ack {
         bail!("collect-authorized requires --i-have-alpha-authorization");
     }
+    let authorized_sport = config
+        .authorization
+        .allowed_sports
+        .iter()
+        .find(|sport| {
+            let lower = sport.to_ascii_lowercase();
+            lower.contains("track") && lower.contains("field")
+        })
+        .cloned()
+        .ok_or_else(|| anyhow::anyhow!("Track and Field is not authorized"))?;
     let client = AlphaApiClient::new(config.to_client_config())?;
     let nav = client
         .nav_info(config.authorization.allowed_seasons[0], false)
@@ -50,6 +60,8 @@ pub async fn collect_authorized(
     let latest = load_latest(output_dir)?;
     let mut coverage = CoverageReport {
         planned_units: units.len(),
+        expected_units: matrix.units().len(),
+        bounded: max_units.is_some(),
         ..CoverageReport::default()
     };
     let mut keyed = BTreeMap::new();
@@ -79,6 +91,11 @@ pub async fn collect_authorized(
                 .map_err(|error| anyhow::anyhow!(error))?;
             if !seen_continuations.insert(key.continuation.clone()) {
                 append_checkpoint(output_dir, key, 0, false, "loop")?;
+                unresolved.push(UnresolvedRecord {
+                    record_key: "alpha-unit".to_owned(),
+                    reason: "authorized alpha continuation cycle detected".to_owned(),
+                    source_url: String::new(),
+                });
                 persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                 bail!("authorized alpha continuation cycle detected");
             }
@@ -95,14 +112,18 @@ pub async fn collect_authorized(
             let page = match page {
                 Ok(page) => page,
                 Err(error) => {
-                    append_checkpoint(output_dir, key, 0, false, "error")?;
+                    unresolved.push(UnresolvedRecord {
+                        record_key: "alpha-unit".to_owned(),
+                        reason: "authorized alpha request failed; retryable".to_owned(),
+                        source_url: String::new(),
+                    });
                     persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                     return Err(anyhow::anyhow!(error));
                 }
             };
             let response_count = page.records.len();
             for record in page.records {
-                match source_athlete(&record, &unit) {
+                match source_athlete(&record, &unit, &authorized_sport) {
                     Ok((_athlete, Some(exception))) => {
                         unit_has_exception = true;
                         unit_exceptions.push(exception);
@@ -147,6 +168,11 @@ pub async fn collect_authorized(
             }
             let Some(next) = page.continuation else {
                 append_checkpoint(output_dir, key, response_count, false, "incomplete")?;
+                unresolved.push(UnresolvedRecord {
+                    record_key: "alpha-unit".to_owned(),
+                    reason: "authorized alpha unit is incomplete without continuation".to_owned(),
+                    source_url: String::new(),
+                });
                 persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                 bail!("authorized alpha unit is incomplete without continuation");
             };

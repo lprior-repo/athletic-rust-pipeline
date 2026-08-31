@@ -236,7 +236,7 @@ fn similarity(left: &str, right: &str) -> f64 {
     }
 }
 
-fn normalize(value: &str) -> String {
+pub(crate) fn normalize(value: &str) -> String {
     value
         .nfkd()
         .filter(|character| !is_combining_mark(*character))

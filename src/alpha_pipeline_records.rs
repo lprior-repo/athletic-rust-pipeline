@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 pub(crate) fn source_athlete(
     record: &crate::alpha_model::RankingRecord,
     unit: &RunUnit,
+    sport: &str,
 ) -> Result<(SourceAthlete, Option<CohortException>), String> {
     if record.season_id != unit.season_id {
         return Err("ranking record season does not match requested unit".to_owned());
@@ -41,7 +42,7 @@ pub(crate) fn source_athlete(
     fields.insert("state".to_owned(), state);
     fields.insert("grade_id".to_owned(), record.grade_id.to_string());
     fields.insert("gender".to_owned(), unit.gender.clone());
-    fields.insert("sport".to_owned(), "Track and Field".to_owned());
+    fields.insert("sport".to_owned(), sport.to_owned());
     fields.insert("profile_url".to_owned(), profile_url.clone());
     fields.insert("source_url".to_owned(), profile_url.clone());
     fields.insert(

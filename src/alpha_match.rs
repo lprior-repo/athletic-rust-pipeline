@@ -4,7 +4,7 @@ use crate::config::MatchingConfig;
 use crate::marks;
 use crate::model::{Candidate, Mark, Prospect};
 use crate::scoring;
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::collections::BTreeMap;
 
 pub struct SourceIndex<'a> {
@@ -57,6 +57,10 @@ pub fn candidate_from_source(
         .results
         .iter()
         .filter_map(|source| {
+            let source_url = match validate_source_url(&source.source_url) {
+                Some(url) => url,
+                None => return None,
+            };
             let mut mark = Mark::default();
             mark.event = source.event.clone();
             mark.mark = source.mark.clone();
@@ -64,7 +68,7 @@ pub fn candidate_from_source(
             mark.date = source.date.clone();
             mark.meet_name = source.meet_name.clone();
             mark.wind = source.wind.clone();
-            mark.source_url = source.source_url.clone();
+            mark.source_url = source_url;
             let normalized = marks::normalize_mark(mark);
             normalized.valid.then_some(normalized)
         })
@@ -137,10 +141,26 @@ pub fn match_workbook(
 ) -> Result<()> {
     let config = crate::config::Config::load(config_path)?;
     let source_path = if alpha_source.is_dir() {
+        let coverage_path = alpha_source.join("coverage.json");
+        let coverage_text = std::fs::read_to_string(&coverage_path)
+            .with_context(|| format!("loading {}", coverage_path.display()))?;
+        let coverage: crate::alpha_output::CoverageReport =
+            serde_json::from_str(&coverage_text).context("decoding alpha coverage")?;
+        if coverage.bounded
+            || coverage.expected_units == 0
+            || coverage.planned_units != coverage.expected_units
+            || coverage.complete_units != coverage.expected_units
+            || coverage.incomplete_units != 0
+        {
+            bail!("alpha source coverage is bounded or incomplete");
+        }
         alpha_source.join("athletes.jsonl")
     } else {
         alpha_source.to_owned()
     };
+    if !source_path.is_file() {
+        bail!("alpha source file does not exist: {}", source_path.display());
+    }
     let source = crate::alpha_output::read_jsonl::<SourceAthlete>(&source_path)
         .with_context(|| format!("loading alpha source {}", source_path.display()))?;
     let index = build_source_index(&source);
@@ -187,11 +207,7 @@ fn name_key(full: &str, first: &str, last: &str) -> String {
     } else {
         full.to_owned()
     };
-    value
-        .split_whitespace()
-        .map(|word| word.to_lowercase())
-        .collect::<Vec<_>>()
-        .join(" ")
+    scoring::normalize(&value)
 }
 
 #[cfg(test)]
