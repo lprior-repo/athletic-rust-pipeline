@@ -132,7 +132,7 @@ pub fn score_indexed_candidates(
     }
     candidates
 }
-pub fn match_workbook(
+pub async fn match_workbook(
     input: &std::path::Path,
     alpha_source: &std::path::Path,
     config_path: &std::path::Path,
@@ -140,6 +140,7 @@ pub fn match_workbook(
     max: Option<usize>,
 ) -> Result<()> {
     let config = crate::config::Config::load(config_path)?;
+    let ollama = crate::extract::OllamaClient::new(&config.ollama)?;
     let source_path = if alpha_source.is_dir() {
         let coverage_path = alpha_source.join("coverage.json");
         let coverage_text = std::fs::read_to_string(&coverage_path)
@@ -173,20 +174,26 @@ pub fn match_workbook(
         Some(value) => value,
         None => usize::MAX,
     };
-    let records = scan
-        .prospects
-        .into_iter()
-        .take(limit)
-        .map(|prospect| {
-            let candidates = score_indexed_candidates(&prospect, &index, &config.matching);
-            crate::scoring::finalize_match(
-                prospect,
-                candidates,
-                crate::model::ModelDecision::default(),
-                &config.matching,
-            )
-        })
-        .collect::<Vec<_>>();
+    let mut records = Vec::new();
+    for prospect in scan.prospects.into_iter().take(limit) {
+        let candidates = score_indexed_candidates(&prospect, &index, &config.matching);
+        let model_decision = if candidates.is_empty() {
+            crate::model::ModelDecision {
+                decision: "NO_MATCH".to_owned(),
+                model_status: "not_needed".to_owned(),
+                reason: "No alpha candidate matched the normalized name".to_owned(),
+                ..Default::default()
+            }
+        } else {
+            ollama.validate_identity(&prospect, &candidates).await
+        };
+        records.push(crate::scoring::finalize_match(
+            prospect,
+            candidates,
+            model_decision,
+            &config.matching,
+        ));
+    }
     std::fs::create_dir_all(output_dir)
         .with_context(|| format!("creating {}", output_dir.display()))?;
     crate::output::write_all(output_dir, &records)

@@ -122,7 +122,7 @@ async fn main() -> Result<()> {
             Ok(())
         }
         Command::MatchAuthorized { input, alpha_source, config, out_dir, max } =>
-            alpha_match::match_workbook(&input, &alpha_source, &config, &out_dir, max),
+            alpha_match::match_workbook(&input, &alpha_source, &config, &out_dir, max).await,
         Command::Writeback {
             input,
             matches,
