@@ -112,6 +112,7 @@ pub async fn collect_authorized(
             let page = match page {
                 Ok(page) => page,
                 Err(error) => {
+                    append_checkpoint(output_dir, key, 0, false, "error")?;
                     unresolved.push(UnresolvedRecord {
                         record_key: "alpha-unit".to_owned(),
                         reason: "authorized alpha request failed; retryable".to_owned(),
