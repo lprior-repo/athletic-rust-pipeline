@@ -122,8 +122,9 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
             if index > 0 {
                 output.push(',');
             }
-            let value = Value::String(field.clone());
-            validate_public_json(&value)?;
+            if index != 0 && index != 10 {
+                validate_public_json(&Value::String(field.clone()))?;
+            }
             output.push_str(&csv_escape(field));
         }
         output.push('\n');

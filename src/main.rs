@@ -48,6 +48,7 @@ mod commands;
 #[cfg(test)] mod alpha_output;
 #[cfg(test)] mod alpha_normalize_helpers;
 #[cfg(test)] mod alpha_normalize;
+#[cfg(test)] mod alpha_normalize_regression_tests;
 #[cfg(test)] mod alpha_normalize_tests;
 #[cfg(test)] mod alpha_merge;
 #[cfg(test)] mod alpha_merge_tests;
