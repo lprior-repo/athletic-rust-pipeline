@@ -71,6 +71,9 @@ pub fn validate_profile_url(raw: &str) -> Option<String> {
     if parsed.password().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
         return None;
     }
+    if parsed.port() != Some(443) {
+        return None;
+    }
     let host = parsed.host_str()?;
     if !ATHLETIC_NET_HOSTS.contains(&host) {
         return None;
@@ -100,6 +103,9 @@ pub fn validate_result_url(raw: &str) -> Option<String> {
     if parsed.password().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
         return None;
     }
+    if parsed.port() != Some(443) {
+        return None;
+    }
     let host = parsed.host_str()?;
     if !ATHLETIC_NET_HOSTS.contains(&host) {
         return None;
@@ -126,6 +132,9 @@ pub fn validate_source_url(raw: &str) -> Option<String> {
         || parsed.query().is_some()
         || parsed.fragment().is_some()
     {
+        return None;
+    }
+    if parsed.port() != Some(443) {
         return None;
     }
     let host = parsed.host_str()?;

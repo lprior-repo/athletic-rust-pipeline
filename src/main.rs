@@ -44,6 +44,8 @@ mod commands;
 #[cfg(test)] mod alpha_catalog_nav_tests;
 #[cfg(test)] mod alpha_cohort;
 #[cfg(test)] mod alpha_cohort_tests;
+#[cfg(test)] mod alpha_checkpoint;
+#[cfg(test)] mod alpha_output;
 #[cfg(test)] mod alpha_normalize;
 #[cfg(test)] mod alpha_normalize_tests;
 #[cfg(test)] mod alpha_merge;

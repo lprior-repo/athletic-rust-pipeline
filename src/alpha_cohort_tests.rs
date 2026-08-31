@@ -12,15 +12,17 @@ fn explicit_year_match_includes() {
 #[test]
 fn explicit_year_mismatch_excludes() {
     let result = classify_cohort(2027, Some(2028), None, None);
-    assert!(matches!(result, CohortDecision::Exception(_)));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
+    let msg = result.message();
+    assert!(msg.contains("2028"));
 }
 
 #[test]
-fn explicit_year_conflict_with_grade_is_exception() {
+fn explicit_year_conflict_with_grade_is_exclude() {
     let result = classify_cohort(2027, Some(2026), None, Some(11));
-    assert!(matches!(result, CohortDecision::Exception(_)));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
     let msg = result.message();
-    assert!(msg.contains("conflict"));
+    assert!(msg.contains("2026"));
 }
 
 #[test]
@@ -60,17 +62,15 @@ fn grade_11_in_wrong_season_is_exception() {
 }
 
 #[test]
-fn explicit_year_2027_with_conflicting_grade_still_exception() {
+fn explicit_year_2027_with_conflicting_grade_still_excludes() {
     let result = classify_cohort(2027, Some(2026), Some("2025-26"), Some(11));
-    assert!(matches!(result, CohortDecision::Exception(_)));
-    let msg = result.message();
-    assert!(msg.contains("conflict"));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
 }
 
 #[test]
-fn explicit_year_2027_without_grade_still_exception_for_wrong_year() {
+fn explicit_year_2027_without_grade_still_excludes_for_wrong_year() {
     let result = classify_cohort(2027, Some(2028), None, None);
-    assert!(matches!(result, CohortDecision::Exception(_)));
+    assert!(matches!(result, CohortDecision::Exclude(_)));
 }
 
 #[test]

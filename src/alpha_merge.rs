@@ -2,9 +2,6 @@
 use crate::alpha_model::{RankingRecord, SourceResult as ModelSourceResult};
 use crate::alpha_normalize::{ResultRecord, SourceAthlete};
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static ZERO_ID_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Convert a RankingRecord into a ResultRecord with full fields preserved.
 pub fn from_ranking_record(rec: &RankingRecord, profile_url: &str) -> ResultRecord {
@@ -17,34 +14,42 @@ pub fn from_ranking_record(rec: &RankingRecord, profile_url: &str) -> ResultReco
         meet_name: rec.meet_name.clone(),
         wind: rec.wind.clone(),
         source_url: profile_url.to_owned(),
-        result_url: rec.result_id.map(|rid| format!("https://athletic.net/result/{rid}")).unwrap_or_default(),
+        result_url: rec.result_id
+            .map(|rid| format!("https://athletic.net/result/{rid}"))
+            .unwrap_or_default(),
     }
 }
 
 /// Convert a model SourceResult into a ResultRecord.
-pub fn from_model_source_result(sr: &ModelSourceResult, _profile_url: &str) -> ResultRecord {
+/// Only preserves fields actually present on SourceResult.
+pub fn from_model_source_result(sr: &ModelSourceResult) -> ResultRecord {
     ResultRecord {
         result_id: sr.result_id,
         event: sr.event_short.clone(),
         mark: sr.measure.clone(),
         season: sr.season_id.to_string(),
         date: sr.result_date.clone(),
-        result_url: if sr.result_id > 0 {
-            format!("https://athletic.net/result/{}", sr.result_id)
-        } else {
-            String::new()
-        },
-        ..Default::default()
+        meet_name: String::new(),
+        wind: None,
+        source_url: String::new(),
+        result_url: String::new(),
     }
 }
 
 /// Dedup athletes by athlete_id, merging duplicates instead of discarding.
-pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> Vec<SourceAthlete> {
+///
+/// Returns (keyed_athletes, exception_only_athletes).
+/// Zero-ID athletes are returned outside the keyed map.
+pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> (Vec<SourceAthlete>, Vec<SourceAthlete>) {
     let mut map: BTreeMap<u64, SourceAthlete> = BTreeMap::new();
+    let mut exception_only: Vec<SourceAthlete> = Vec::new();
     for a in athletes {
-        merge_athlete(&mut map, a);
+        let merged = merge_athlete(&mut map, a);
+        if merged.athlete_id == 0 {
+            exception_only.push(merged);
+        }
     }
-    map.into_values().collect()
+    (map.into_values().collect(), exception_only)
 }
 
 /// Merge a new SourceAthlete into an existing map by athlete_id.
@@ -54,16 +59,16 @@ pub fn dedup_athletes(athletes: Vec<SourceAthlete>) -> Vec<SourceAthlete> {
 /// - Conflicts: if both non-empty and different → exception note
 /// - URLs: retain all distinct profile/source/result URLs
 /// - Results: dedup by full event+mark+date+meet+source+result_id+result_url identity
-pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete) -> u64 {
+///
+/// Zero-ID athletes are NOT inserted into the keyed map. Instead they are
+/// returned with an exception note so the caller can handle them separately.
+pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete) -> SourceAthlete {
     let id = new.athlete_id;
     if id == 0 {
-        // Missing/zero ID → each gets its own unique key to avoid collapsing
-        let counter = ZERO_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
-        let key = u64::MAX - counter;
-        let mut athlete = new;
-        athlete.exception_notes.push("athlete_id missing or zero; cannot deduplicate".to_owned());
-        map.insert(key, athlete);
-        return key;
+        let mut exc = new;
+        exc.exception_notes
+            .push("athlete_id missing or zero; cannot deduplicate".to_owned());
+        return exc;
     }
 
     match map.get_mut(&id) {
@@ -128,43 +133,44 @@ pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete)
                 ));
             }
 
-            for url in new.profile_urls {
-                if !existing.profile_urls.contains(&url) {
-                    existing.profile_urls.push(url);
+            for url in &new.profile_urls {
+                if !existing.profile_urls.contains(url) {
+                    existing.profile_urls.push(url.clone());
                 }
             }
 
-            for url in new.source_urls {
-                if !existing.source_urls.contains(&url) {
-                    existing.source_urls.push(url);
+            for url in &new.source_urls {
+                if !existing.source_urls.contains(url) {
+                    existing.source_urls.push(url.clone());
                 }
             }
 
-            for nr in new.results {
+            for nr in &new.results {
                 let is_dup = existing.results.iter().any(|r| {
-                    nr.result_id == r.result_id
-                        && nr.event == r.event
-                        && nr.mark == r.mark
-                        && nr.date == r.date
-                        && nr.meet_name == r.meet_name
-                        && nr.source_url == r.source_url
-                        && nr.result_url == r.result_url
+                    r.result_id == nr.result_id
+                        && r.event == nr.event
+                        && r.mark == nr.mark
+                        && r.date == nr.date
+                        && r.meet_name == nr.meet_name
+                        && r.source_url == nr.source_url
+                        && r.result_url == nr.result_url
                 });
                 if !is_dup {
-                    existing.results.push(nr);
+                    existing.results.push(nr.clone());
                 }
             }
 
-            for note in new.exception_notes {
-                if !existing.exception_notes.contains(&note) {
-                    existing.exception_notes.push(note);
-                }
-            }
+            for note in &new.exception_notes {
+                if !existing.exception_notes.contains(note) {
+            existing.clone()
         }
         None => {
             map.insert(id, new);
+            SourceAthlete::default()
         }
     }
-
-    id
+}
+            new
+        }
+    }
 }

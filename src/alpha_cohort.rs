@@ -20,7 +20,7 @@ impl CohortDecision {
 ///
 /// Precedence (first match wins):
 /// 1. explicit_year == target_year → Include
-/// 2. explicit_year != target_year AND grade present → Exception (conflict)
+/// 2. explicit_year != target_year → Exclude (wrong year, regardless of grade)
 /// 3. Fallback: grade 11 in "2025-26" or grade 12 in "2026-27" → Include
 /// 4. Missing/conflicting evidence → Exception
 pub fn classify_cohort(
@@ -35,17 +35,11 @@ pub fn classify_cohort(
             return CohortDecision::Include(format!(
                 "explicit graduation year {yr} matches target {target_year}"
             ));
-        } else {
-            // Rule 2: explicit year conflicts, even with grade present
-            if grade.is_some() {
-                return CohortDecision::Exception(format!(
-                    "explicit graduation year {yr} conflicts with target {target_year}"
-                ));
-            }
-            return CohortDecision::Exception(format!(
-                "explicit graduation year {yr} does not match target {target_year}"
-            ));
         }
+        // Rule 2: explicit year conflicts → Exclude (wrong year, regardless of grade)
+        return CohortDecision::Exclude(format!(
+            "explicit graduation year {yr} does not match target {target_year}"
+        ));
     }
 
     // Rule 3: season/grade fallback
@@ -65,14 +59,8 @@ pub fn classify_cohort(
 
     // Rule 4: missing/conflicting evidence
     let mut evidence = String::from("no matching evidence");
-    if let Some(yr) = explicit_year {
-        evidence = format!("explicit year {yr} present");
-    }
     if let Some(gr) = grade {
-        if evidence != "no matching evidence" {
-            evidence.push_str(", ");
-        }
-        evidence.push_str(&format!("grade {gr}"));
+        evidence = format!("grade {gr}");
     }
     if let Some(s) = season_label {
         if !evidence.contains("season") {

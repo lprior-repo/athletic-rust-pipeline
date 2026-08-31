@@ -34,9 +34,8 @@ fn merge_athlete_two_events_one_athlete() {
     });
 
     merge_athlete(&mut map, a1);
-    let id = merge_athlete(&mut map, a2);
-
-    assert_eq!(id, 12345);
+    let result = merge_athlete(&mut map, a2);
+    assert_eq!(result.athlete_id, 12345);
     let athlete = &map[&12345];
     assert_eq!(athlete.results.len(), 2);
     assert!(athlete.results.iter().any(|r| r.event == "100m"));
@@ -93,15 +92,14 @@ fn merge_athlete_fills_empty_identity() {
 }
 
 #[test]
-fn merge_athlete_zero_id_exception_only() {
+fn merge_athlete_zero_id_returns_exception_only() {
     let mut map = BTreeMap::new();
     let a = SourceAthlete { athlete_id: 0, first_name: "Jane".to_owned(), ..Default::default() };
-    let id = merge_athlete(&mut map, a);
-    assert!(id > 0);
-    assert!(map.contains_key(&id));
-    let r = &map[&id];
-    assert_eq!(r.first_name, "Jane");
-    assert!(r.exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
+    let result = merge_athlete(&mut map, a);
+    assert_eq!(result.athlete_id, 0);
+    assert!(result.exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
+    // Zero-ID athletes should NOT be in the keyed map
+    assert_eq!(map.len(), 0);
 }
 
 #[test]
@@ -120,19 +118,33 @@ fn dedup_athletes_merges_duplicates() {
         ..Default::default()
     };
     a2.results.push(ResultRecord { event: "200m".to_owned(), mark: "21.30".to_owned(), ..Default::default() });
-    let deduped = dedup_athletes(vec![a1, a2]);
+    let (deduped, exception_only) = dedup_athletes(vec![a1, a2]);
     assert_eq!(deduped.len(), 1);
     assert_eq!(deduped[0].first_name, "John");
     assert_eq!(deduped[0].last_name, "Doe");
     assert_eq!(deduped[0].results.len(), 2);
+    assert_eq!(exception_only.len(), 0);
 }
 
 #[test]
 fn dedup_athletes_keeps_distinct_ids() {
     let a1 = SourceAthlete { athlete_id: 1, first_name: "Alice".to_owned(), ..Default::default() };
     let a2 = SourceAthlete { athlete_id: 2, first_name: "Bob".to_owned(), ..Default::default() };
-    let deduped = dedup_athletes(vec![a1, a2]);
+    let (deduped, exception_only) = dedup_athletes(vec![a1, a2]);
     assert_eq!(deduped.len(), 2);
+    assert_eq!(exception_only.len(), 0);
+}
+
+#[test]
+fn dedup_athletes_separates_zero_id() {
+    let a1 = SourceAthlete { athlete_id: 12345, first_name: "John".to_owned(), ..Default::default() };
+    let a2 = SourceAthlete { athlete_id: 0, first_name: "Jane".to_owned(), ..Default::default() };
+    let (deduped, exception_only) = dedup_athletes(vec![a1, a2]);
+    assert_eq!(deduped.len(), 1);
+    assert_eq!(deduped[0].first_name, "John");
+    assert_eq!(exception_only.len(), 1);
+    assert_eq!(exception_only[0].first_name, "Jane");
+    assert!(exception_only[0].exception_notes.iter().any(|n| n.contains("athlete_id missing or zero")));
 }
 
 #[test]
