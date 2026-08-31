@@ -16,7 +16,7 @@ mod alpha_nav_validation;
 mod alpha_normalize;
 mod alpha_normalize_helpers;
 mod alpha_output; mod alpha_output_privacy;
-mod alpha_pipeline; mod alpha_match; mod alpha_route_validation;
+mod alpha_pipeline; mod alpha_pipeline_records; mod alpha_match; mod alpha_route_validation;
 mod alpha_url;
 #[cfg(test)] mod alpha_model_validation_tests;
 #[cfg(test)] mod alpha_api_tests;

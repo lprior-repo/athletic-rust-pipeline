@@ -1,15 +1,13 @@
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_catalog::parse_nav_targets;
 use crate::alpha_checkpoint::{append, load_latest, AlphaCheckpoint, AlphaUnitKey};
-use crate::alpha_cohort::{classify_cohort, CohortDecision};
+use crate::alpha_pipeline_records::{source_athlete, unresolved_from};
 use crate::alpha_config::AlphaConfig;
 use crate::alpha_merge::merge_athlete;
 use crate::alpha_model::{AlphaRequest, RunMatrix, RunUnit, SourceAthlete};
-use crate::alpha_normalize::normalize_record;
 use crate::alpha_output::{
     read_jsonl, write_outputs, CohortException, CoverageReport, UnresolvedRecord,
 };
-use crate::alpha_url::validate_profile_url;
 use anyhow::{bail, Context, Result};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -72,12 +70,16 @@ pub async fn collect_authorized(
         }
         let mut continuation = None;
         let mut seen_continuations = BTreeSet::new();
+        let mut unit_keyed = BTreeMap::new();
+        let mut unit_exceptions = Vec::new();
+        let mut unit_unresolved = Vec::new();
         let mut unit_has_exception = false;
         loop {
             let key = unit_key(&unit, &continuation)
                 .map_err(|error| anyhow::anyhow!(error))?;
             if !seen_continuations.insert(key.continuation.clone()) {
                 append_checkpoint(output_dir, key, 0, false, "loop")?;
+                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                 bail!("authorized alpha continuation cycle detected");
             }
             let page = client
@@ -94,6 +96,7 @@ pub async fn collect_authorized(
                 Ok(page) => page,
                 Err(error) => {
                     append_checkpoint(output_dir, key, 0, false, "error")?;
+                    persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                     return Err(anyhow::anyhow!(error));
                 }
             };
@@ -102,22 +105,22 @@ pub async fn collect_authorized(
                 match source_athlete(&record, &unit) {
                     Ok((_athlete, Some(exception))) => {
                         unit_has_exception = true;
-                        cohort_exceptions.push(exception);
+                        unit_exceptions.push(exception);
                     }
                     Ok((athlete, None)) if athlete.athlete_id == 0 => {
                         unit_has_exception = true;
-                        unresolved.push(unresolved_from(&athlete));
+                        unit_unresolved.push(unresolved_from(&athlete));
                     }
                     Ok((athlete, None)) if !athlete.exception_notes.is_empty() => {
                         unit_has_exception = true;
-                        unresolved.push(unresolved_from(&athlete));
+                        unit_unresolved.push(unresolved_from(&athlete));
                     }
                     Ok((athlete, None)) => {
-                        merge_athlete(&mut keyed, athlete);
+                        merge_athlete(&mut unit_keyed, athlete);
                     }
                     Err(reason) => {
                         unit_has_exception = true;
-                        unresolved.push(UnresolvedRecord {
+                        unit_unresolved.push(UnresolvedRecord {
                             record_key: "ranking-record".to_owned(),
                             reason,
                             source_url: String::new(),
@@ -126,18 +129,25 @@ pub async fn collect_authorized(
                 }
             }
             if page.complete {
-                append_checkpoint(output_dir, key, response_count, true, "complete")?;
-                coverage.complete_units += 1;
+                for athlete in unit_keyed.into_values() {
+                    merge_athlete(&mut keyed, athlete);
+                }
+                cohort_exceptions.extend(unit_exceptions);
+                unresolved.extend(unit_unresolved);
                 if unit_has_exception {
                     coverage.exception_units += 1;
                 }
                 if response_count == 0 {
                     coverage.empty_units += 1;
                 }
+                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
+                append_checkpoint(output_dir, key, response_count, true, "complete")?;
+                coverage.complete_units += 1;
                 break;
             }
             let Some(next) = page.continuation else {
                 append_checkpoint(output_dir, key, response_count, false, "incomplete")?;
+                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
                 bail!("authorized alpha unit is incomplete without continuation");
             };
             let next_key = unit_key(&unit, &Some(next.clone()))
@@ -154,6 +164,16 @@ pub async fn collect_authorized(
         cohort_exception_count: cohort_exceptions.len(),
         unresolved_count: unresolved.len(),
     })
+}
+fn persist(
+    output_dir: &Path,
+    keyed: &BTreeMap<u64, SourceAthlete>,
+    cohort_exceptions: &[CohortException],
+    unresolved: &[UnresolvedRecord],
+    coverage: &CoverageReport,
+) -> Result<()> {
+    let athletes: Vec<SourceAthlete> = keyed.values().cloned().collect();
+    write_outputs(output_dir, &athletes, cohort_exceptions, unresolved, coverage)
 }
 
 fn unit_key(unit: &RunUnit, continuation: &Option<serde_json::Value>) -> Result<AlphaUnitKey, String> {
@@ -193,84 +213,6 @@ fn append_checkpoint(
     })
 }
 
-fn source_athlete(
-    record: &crate::alpha_model::RankingRecord,
-    unit: &RunUnit,
-) -> Result<(SourceAthlete, Option<CohortException>), String> {
-    let profile_url = if record.athlete_id > 0 {
-        validate_profile_url(&format!("https://athletic.net/athlete/{}", record.athlete_id))
-            .ok_or_else(|| "invalid confirmed athlete profile ID".to_owned())?
-    } else {
-        String::new()
-    };
-    let season_label = format!("{}-{:02}", unit.season_id, (unit.season_id + 1) % 100);
-    let grade = i32::try_from(record.grade_id).ok();
-    let decision = classify_cohort(2027, None, Some(&season_label), grade);
-    let date = record
-        .result_date
-        .get(..10)
-        .map_or_else(|| record.result_date.clone(), str::to_owned);
-    let mut fields = std::collections::BTreeMap::new();
-    fields.insert("athlete_id".to_owned(), record.athlete_id.to_string());
-    fields.insert("athlete_name".to_owned(), record.athlete_name.clone());
-    fields.insert("school".to_owned(), record.team_name.clone());
-    fields.insert("team_name".to_owned(), record.team_name.clone());
-    fields.insert("state".to_owned(), record.state.clone());
-    fields.insert("grade_id".to_owned(), record.grade_id.to_string());
-    fields.insert("gender".to_owned(), unit.gender.clone());
-    fields.insert("sport".to_owned(), "Track and Field".to_owned());
-    fields.insert("profile_url".to_owned(), profile_url.clone());
-    fields.insert("source_url".to_owned(), profile_url.clone());
-    fields.insert(
-        "marks".to_owned(),
-        format!(
-            "{}|{}|{}|{}|{}|{}",
-            record.event_short,
-            record.measure,
-            season_label,
-            date,
-            record.meet_name,
-            record.wind.clone().map_or_else(String::new, |wind| wind)
-        ),
-    );
-    fields.insert(
-        "result_ids".to_owned(),
-        record.result_id.map_or_else(String::new, |id| id.to_string()),
-    );
-    let source = crate::model::SourceRecord {
-        source_key: "authorized-ranking".to_owned(),
-        sheet: "alpha".to_owned(),
-        excel_row: 0,
-        fields,
-    };
-    let mut athlete = normalize_record(&source);
-    athlete.cohort_evidence = decision.message().to_owned();
-    let exception = match decision {
-        CohortDecision::Exception(reason) | CohortDecision::Exclude(reason) => Some(CohortException {
-            athlete_id: record.athlete_id,
-            reason,
-            source_url: profile_url,
-        }),
-        CohortDecision::Include(_) => None,
-    };
-    Ok((athlete, exception))
-}
-
-fn unresolved_from(athlete: &SourceAthlete) -> UnresolvedRecord {
-    let reason = match athlete.exception_notes.first() {
-        Some(note) => note.clone(),
-        None => "athlete ID missing".to_owned(),
-    };
-    let source_url = match athlete.source_urls.first() {
-        Some(url) => url.clone(),
-        None => String::new(),
-    };
-    UnresolvedRecord {
-        record_key: "athlete-id-missing".to_owned(),
-        reason,
-        source_url,
-    }
-}
 
 #[cfg(test)]
 mod tests {
