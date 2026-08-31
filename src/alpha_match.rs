@@ -238,4 +238,32 @@ mod tests {
         assert_eq!(candidates[0].profile_url, "https://athletic.net/athlete/7");
         assert!(!candidates[0].page_retrieved);
     }
+    #[test]
+    fn same_name_different_location_cannot_become_match() {
+        let source = [SourceAthlete {
+            athlete_id: 9,
+            athlete_name: "Test Runner".to_owned(),
+            school: "Different School".to_owned(),
+            state: "CA".to_owned(),
+            city: "San Diego".to_owned(),
+            sport: "Track and Field".to_owned(),
+            profile_url: "https://athletic.net/athlete/9".to_owned(),
+            profile_urls: vec!["https://athletic.net/athlete/9".to_owned()],
+            ..Default::default()
+        }];
+        let config = MatchingConfig {
+            match_threshold: 0.8,
+            close_threshold: 0.6,
+            review_threshold: 0.4,
+            require_corroboration: true,
+        };
+        let mut candidates = score_indexed_candidates(&prospect(), &build_source_index(&source), &config);
+        let best = crate::scoring::finalize_match(
+            prospect(),
+            std::mem::take(&mut candidates),
+            crate::model::ModelDecision::default(),
+            &config,
+        );
+        assert_ne!(best.status, "MATCH");
+    }
 }
