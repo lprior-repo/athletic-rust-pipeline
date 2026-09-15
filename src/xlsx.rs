@@ -1,4 +1,6 @@
-use crate::model::{MatchRecord, Prospect, SheetStats, SourceRecord, WorkbookStats};
+use crate::model::{
+    ordered_source_headers, MatchRecord, Prospect, SheetStats, SourceRecord, WorkbookStats,
+};
 use anyhow::{bail, Context, Result};
 use quick_xml::{events::Event, Reader};
 use std::{
@@ -466,49 +468,61 @@ pub fn append_matches_sheet(input: &Path, output: &Path, records: &[MatchRecord]
     }
 
     let sheets = load_sheet_metadata(input)?;
-    if sheets.iter().any(|sheet| sheet.name == "Athletic Matches") {
-        bail!("source workbook already has an Athletic Matches worksheet");
-    }
-    let maximum_sheet_id = sheets
+    let existing_path = sheets
         .iter()
-        .map(|sheet| sheet.sheet_id)
-        .max()
-        .map_or(0, |id| id);
-    let next_sheet_id = maximum_sheet_id
-        .checked_add(1)
-        .context("worksheet id overflow")?;
-    let next_sheet_path = format!("xl/worksheets/sheet{next_sheet_id}.xml");
-
+        .find(|sheet| sheet.name == "Athletic Matches")
+        .map(|sheet| sheet.path.clone());
     let mut source = ZipArchive::new(File::open(input)?)?;
     let workbook_xml = read_zip_string(&mut source, "xl/workbook.xml")?;
     let relationships_xml = read_zip_string(&mut source, "xl/_rels/workbook.xml.rels")?;
     let content_types_xml = read_zip_string(&mut source, "[Content_Types].xml")?;
-    let next_relation_id = next_relationship_id(&relationships_xml)?;
     drop(source);
 
-    let workbook_xml = insert_before(
-        &workbook_xml,
-        "</sheets>",
-        &format!(
-            "<sheet name=\"Athletic Matches\" sheetId=\"{next_sheet_id}\" r:id=\"{next_relation_id}\"/>"
-        ),
-    )?;
-    let relationships_xml = insert_before(
-        &relationships_xml,
-        "</Relationships>",
-        &format!(
-            "<Relationship Id=\"{next_relation_id}\" Type=\"{REL_WORKSHEET}\" Target=\"worksheets/sheet{next_sheet_id}.xml\"/>"
-        ),
-    )?;
-    let content_types_xml = insert_before(
-        &content_types_xml,
-        "</Types>",
-        &format!(
-            "<Override PartName=\"/xl/worksheets/sheet{next_sheet_id}.xml\" ContentType=\"{CONTENT_WORKSHEET}\"/>"
-        ),
-    )?;
+    let (result_sheet_path, workbook_xml, relationships_xml, content_types_xml, replacing) =
+        match existing_path {
+            Some(path) => (
+                path,
+                workbook_xml,
+                relationships_xml,
+                content_types_xml,
+                true,
+            ),
+            None => {
+                let maximum_sheet_id = sheets
+                    .iter()
+                    .map(|sheet| sheet.sheet_id)
+                    .max()
+                    .map_or(0, |id| id);
+                let next_sheet_id = maximum_sheet_id
+                    .checked_add(1)
+                    .context("worksheet id overflow")?;
+                let path = format!("xl/worksheets/sheet{next_sheet_id}.xml");
+                let next_relation_id = next_relationship_id(&relationships_xml)?;
+                let workbook = insert_before(
+                    &workbook_xml,
+                    "</sheets>",
+                    &format!(
+                        "<sheet name=\"Athletic Matches\" sheetId=\"{next_sheet_id}\" r:id=\"{next_relation_id}\"/>"
+                    ),
+                )?;
+                let relationships = insert_before(
+                    &relationships_xml,
+                    "</Relationships>",
+                    &format!(
+                        "<Relationship Id=\"{next_relation_id}\" Type=\"{REL_WORKSHEET}\" Target=\"worksheets/sheet{next_sheet_id}.xml\"/>"
+                    ),
+                )?;
+                let content_types = insert_before(
+                    &content_types_xml,
+                    "</Types>",
+                    &format!(
+                        "<Override PartName=\"/{path}\" ContentType=\"{CONTENT_WORKSHEET}\"/>"
+                    ),
+                )?;
+                (path, workbook, relationships, content_types, false)
+            }
+        };
     let result_sheet = build_matches_sheet(records);
-
     let temporary = temporary_output_path(output);
     let mut source = ZipArchive::new(File::open(input)?)?;
     let destination = File::create(&temporary)?;
@@ -524,17 +538,21 @@ pub fn append_matches_sheet(input: &Path, output: &Path, records: &[MatchRecord]
         let name = file.name().to_owned();
         let options = SimpleFileOptions::default().compression_method(file.compression());
         destination.start_file(&name, options)?;
-        if let Some(replacement) = replacements.get(name.as_str()) {
+        if name == result_sheet_path {
+            destination.write_all(result_sheet.as_bytes())?;
+        } else if let Some(replacement) = replacements.get(name.as_str()) {
             destination.write_all(replacement)?;
         } else {
             std::io::copy(&mut file, &mut destination)?;
         }
     }
-    destination.start_file(
-        &next_sheet_path,
-        SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
-    )?;
-    destination.write_all(result_sheet.as_bytes())?;
+    if !replacing {
+        destination.start_file(
+            &result_sheet_path,
+            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
+        )?;
+        destination.write_all(result_sheet.as_bytes())?;
+    }
     destination.finish()?.flush()?;
     fs::rename(&temporary, output).with_context(|| {
         format!(
@@ -581,41 +599,48 @@ fn temporary_output_path(output: &Path) -> PathBuf {
 }
 
 fn build_matches_sheet(records: &[MatchRecord]) -> String {
-    let headers = [
-        "Source Key",
-        "Source Sheet",
-        "Excel Row",
-        "Prospect Name",
-        "Prospect School",
-        "Prospect Sport",
-        "Status",
-        "Score",
-        "Matched Name",
-        "Matched School",
-        "Matched Location",
-        "Profile",
-        "Track Confirmed",
-        "XC Confirmed",
-        "100m PR",
-        "200m PR",
-        "400m PR",
-        "800m PR",
-        "1600m PR",
-        "3200m PR",
-        "Hurdles PR",
-        "High Jump PR",
-        "Long Jump PR",
-        "Triple Jump PR",
-        "Pole Vault PR",
-        "Shot Put PR",
-        "Discus PR",
-        "Javelin PR",
-        "Candidates JSON",
-        "Best Marks JSON",
-        "Notes",
-        "Hint Count",
-        "AI Logic",
-    ];
+    let source_headers = ordered_source_headers(records);
+    let source_column_count = source_headers.len();
+    let mut headers = source_headers.clone();
+    headers.extend(
+        [
+            "Source Key",
+            "Source Sheet",
+            "Excel Row",
+            "Prospect Name",
+            "Prospect School",
+            "Prospect Sport",
+            "Status",
+            "Score",
+            "Matched Name",
+            "Matched School",
+            "Matched Location",
+            "Profile",
+            "Track Confirmed",
+            "XC Confirmed",
+            "100m PR",
+            "200m PR",
+            "400m PR",
+            "800m PR",
+            "1600m PR",
+            "3200m PR",
+            "Hurdles PR",
+            "High Jump PR",
+            "Long Jump PR",
+            "Triple Jump PR",
+            "Pole Vault PR",
+            "Shot Put PR",
+            "Discus PR",
+            "Javelin PR",
+            "Candidates JSON",
+            "Best Marks JSON",
+            "Notes",
+            "Hint Count",
+            "AI Logic",
+        ]
+        .into_iter()
+        .map(str::to_owned),
+    );
     let final_column = column_name(headers.len().saturating_sub(1));
     let final_row = records.len().saturating_add(1);
     let mut xml = format!(
@@ -630,7 +655,17 @@ fn build_matches_sheet(records: &[MatchRecord]) -> String {
     for (offset, record) in records.iter().enumerate() {
         let row = offset.saturating_add(2);
         xml.push_str(&format!("<row r=\"{row}\">"));
-        let values = [
+        let mut values = source_headers
+            .iter()
+            .map(|header| {
+                record
+                    .prospect
+                    .source_fields
+                    .get(header)
+                    .map_or_else(String::new, Clone::clone)
+            })
+            .collect::<Vec<_>>();
+        values.extend([
             record.source_key.clone(),
             record.prospect.sheet.clone(),
             record.prospect.excel_row.to_string(),
@@ -659,16 +694,18 @@ fn build_matches_sheet(records: &[MatchRecord]) -> String {
             mark_value(record, "shot_put"),
             mark_value(record, "discus"),
             mark_value(record, "javelin"),
-            serde_json::to_string(&record.candidates).unwrap_or_else(|_| String::new()),
-            serde_json::to_string(&record.best_marks).unwrap_or_else(|_| String::new()),
+            serde_json::to_string(&record.candidates).map_or_else(|_| String::new(), |value| value),
+            serde_json::to_string(&record.best_marks).map_or_else(|_| String::new(), |value| value),
             record.notes.clone(),
             record.hint_count.to_string(),
             record.ai_logic.clone(),
-        ];
+        ]);
         for (column, value) in values.iter().enumerate() {
-            if column == 7 {
+            if column == source_column_count.saturating_add(7) {
                 push_number_cell(&mut xml, row, column, value);
-            } else if column == 11 && !record.selected_profile_url.is_empty() {
+            } else if column == source_column_count.saturating_add(11)
+                && !record.selected_profile_url.is_empty()
+            {
                 push_hyperlink_formula_cell(&mut xml, row, column, &record.selected_profile_url);
             } else {
                 push_inline_cell(&mut xml, row, column, value);
@@ -837,7 +874,7 @@ mod tests {
             selected_name: "Sarah Jones".to_owned(),
             ..Default::default()
         };
-        append_matches_sheet(&path, &enriched, &[record]).unwrap();
+        append_matches_sheet(&path, &enriched, std::slice::from_ref(&record)).unwrap();
         let mut archive = ZipArchive::new(File::open(&enriched).unwrap()).unwrap();
         let workbook = read_zip_string(&mut archive, "xl/workbook.xml").unwrap();
         let result_sheet = read_zip_string(&mut archive, "xl/worksheets/sheet2.xml").unwrap();
@@ -848,6 +885,20 @@ mod tests {
         assert!(result_sheet.contains("Best Marks JSON"));
         assert!(result_sheet.contains("Hint Count"));
         assert!(result_sheet.contains("AI Logic"));
+        assert!(result_sheet.contains("Person First"));
+        assert!(result_sheet.contains("Sarah"));
+        drop(archive);
+
+        let replaced = directory.path().join("replaced.xlsx");
+        append_matches_sheet(&enriched, &replaced, std::slice::from_ref(&record)).unwrap();
+        let sheets = load_sheet_metadata(&replaced).unwrap();
+        assert_eq!(
+            sheets
+                .iter()
+                .filter(|sheet| sheet.name == "Athletic Matches")
+                .count(),
+            1
+        );
     }
 
     #[test]

@@ -1,5 +1,21 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+
+pub const SOURCE_HEADERS: &[&str] = &[
+    "Person First",
+    "Person Last",
+    "Person Email",
+    "Address Mailing / Permanent Street Combined",
+    "Address Mailing / Permanent City",
+    "Address Mailing / Permanent Region",
+    "Address Mailing / Permanent Postal",
+    "Sports Created Date",
+    "Sports Sport",
+    "Sports Rating",
+    "Origin Source Date",
+    "Origin Source",
+    "Schools Name",
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WorkbookStats {
@@ -129,4 +145,19 @@ pub struct MatchRecord {
     pub model_decision: ModelDecision,
     pub notes: String,
     pub processed_at_unix: u64,
+}
+
+pub fn ordered_source_headers(records: &[MatchRecord]) -> Vec<String> {
+    let known = SOURCE_HEADERS
+        .iter()
+        .map(|header| (*header).to_owned())
+        .collect::<Vec<_>>();
+    let known_set = SOURCE_HEADERS.iter().copied().collect::<BTreeSet<_>>();
+    let extras = records
+        .iter()
+        .flat_map(|record| record.prospect.source_fields.keys())
+        .filter(|header| !known_set.contains(header.as_str()))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    known.into_iter().chain(extras).collect()
 }

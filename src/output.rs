@@ -1,4 +1,4 @@
-use crate::model::MatchRecord;
+use crate::model::{ordered_source_headers, MatchRecord};
 use anyhow::{Context, Result};
 use std::{
     fs::File,
@@ -31,7 +31,17 @@ pub fn write_all(out_dir: &Path, records: &[MatchRecord]) -> Result<()> {
     write_csv(&out_dir.join("matches.csv"), records)?;
     let unresolved: Vec<MatchRecord> = records
         .iter()
-        .filter(|record| matches!(record.status.as_str(), "REVIEW" | "NO_MATCH"))
+        .filter(|record| {
+            matches!(
+                record.status.as_str(),
+                "CLOSE_MATCH"
+                    | "REVIEW"
+                    | "NO_MATCH"
+                    | "INPUT_ERROR"
+                    | "SEARCH_ERROR"
+                    | "AI_ERROR"
+            )
+        })
         .cloned()
         .collect();
     write_csv(&out_dir.join("unresolved.csv"), &unresolved)?;
@@ -68,7 +78,9 @@ fn write_jsonl(path: &Path, records: &[MatchRecord]) -> Result<()> {
 
 fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
     let mut writer = csv::Writer::from_path(path)?;
-    let mut headers = vec![
+    let source_headers = ordered_source_headers(records);
+    let mut headers = source_headers.clone();
+    headers.extend([
         "Source Key".to_owned(),
         "Sheet".to_owned(),
         "Excel Row".to_owned(),
@@ -85,7 +97,7 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
         "Athletic Profile".to_owned(),
         "Track Confirmed".to_owned(),
         "XC Confirmed".to_owned(),
-    ];
+    ]);
     headers.extend(PR_EVENTS.iter().map(|event| format!("{event} PR")));
     headers.extend([
         "All Marks JSON".to_owned(),
@@ -97,7 +109,17 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
     writer.write_record(&headers)?;
 
     for record in records {
-        let mut row = vec![
+        let mut row = source_headers
+            .iter()
+            .map(|header| {
+                record
+                    .prospect
+                    .source_fields
+                    .get(header)
+                    .map_or_else(String::new, Clone::clone)
+            })
+            .collect::<Vec<_>>();
+        row.extend([
             record.source_key.clone(),
             record.prospect.sheet.clone(),
             record.prospect.excel_row.to_string(),
@@ -114,7 +136,7 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
             record.selected_profile_url.clone(),
             yes_no(record.track_confirmed).to_owned(),
             yes_no(record.xc_confirmed).to_owned(),
-        ];
+        ]);
         row.extend(PR_EVENTS.iter().map(|event| {
             record
                 .best_marks
@@ -132,10 +154,69 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
     Ok(())
 }
 
+
 fn yes_no(value: bool) -> &'static str {
     if value {
         "YES"
     } else {
         "NO"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Prospect;
+    use std::collections::BTreeMap;
+    use tempfile::tempdir;
+
+    fn record_with_source_fields(status: &str) -> MatchRecord {
+        MatchRecord {
+            source_key: "Export:2".to_owned(),
+            prospect: Prospect {
+                sheet: "Export".to_owned(),
+                excel_row: 2,
+                first_name: "Ada".to_owned(),
+                last_name: "Lovelace".to_owned(),
+                source_fields: BTreeMap::from([
+                    ("Person First".to_owned(), "Ada".to_owned()),
+                    ("Person Last".to_owned(), "Lovelace".to_owned()),
+                    ("Person Email".to_owned(), "ada@example.test".to_owned()),
+                    (
+                        "Address Mailing / Permanent Street Combined".to_owned(),
+                        "1 Main".to_owned(),
+                    ),
+                ]),
+                ..Default::default()
+            },
+            status: status.to_owned(),
+            ai_logic: "full AI output".to_owned(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn csv_carries_original_source_columns_before_match_columns() {
+        let directory = tempdir().unwrap();
+        write_all(directory.path(), &[record_with_source_fields("MATCH")]).unwrap();
+        let text = std::fs::read_to_string(directory.path().join("matches.csv")).unwrap();
+        assert!(text.lines().next().unwrap().starts_with(
+            "Person First,Person Last,Person Email,Address Mailing / Permanent Street Combined"
+        ));
+        assert!(text.contains("Ada,Lovelace,ada@example.test,1 Main"));
+        assert!(text.contains("full AI output"));
+    }
+
+    #[test]
+    fn unresolved_contains_close_match_and_source_address() {
+        let directory = tempdir().unwrap();
+        write_all(
+            directory.path(),
+            &[record_with_source_fields("CLOSE_MATCH")],
+        )
+        .unwrap();
+        let text = std::fs::read_to_string(directory.path().join("unresolved.csv")).unwrap();
+        assert!(text.contains("CLOSE_MATCH"));
+        assert!(text.contains("1 Main"));
     }
 }
