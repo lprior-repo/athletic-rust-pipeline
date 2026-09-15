@@ -72,6 +72,8 @@ pub struct SearchHit {
     pub title: String,
     pub snippet: String,
     pub query: String,
+    #[serde(default)]
+    pub filter: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -5,7 +5,7 @@ use crate::{
 use anyhow::{Context, Result};
 use regex::Regex;
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{cmp::Reverse, collections::HashSet, sync::LazyLock, time::Duration};
 use tokio::time::sleep;
@@ -28,6 +28,111 @@ struct SearchEnvelope {
 struct SearchPayload {
     #[serde(default)]
     results: String,
+}
+
+const SPORT_FILTERS: [&str; 2] = ["a:tf", "a:xc"];
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct SearchRequest {
+    pub query: String,
+    pub filter: String,
+    pub stage: u8,
+}
+
+impl SearchRequest {
+    pub fn new(query: &str, filter: &str, stage: u8) -> Self {
+        Self {
+            query: collapse_spaces(query),
+            filter: filter.to_owned(),
+            stage,
+        }
+    }
+
+    pub fn cache_key(&self) -> String {
+        format!(
+            "{}\n{}",
+            self.filter,
+            normalize_name_for_search(&self.query).to_lowercase()
+        )
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct QueryPlan {
+    stages: Vec<Vec<SearchRequest>>,
+}
+
+impl QueryPlan {
+    pub fn for_prospect(prospect: &Prospect) -> Self {
+        let name = prospect.full_name();
+        let mut seen = HashSet::new();
+        let first_stage = paired_requests(0, std::iter::once(name.clone()), &mut seen);
+        let context_queries = [
+            (!prospect.school.trim().is_empty())
+                .then(|| format!("{name} {}", prospect.school.trim())),
+            (!(prospect.city.trim().is_empty() && prospect.state.trim().is_empty())).then(|| {
+                format!(
+                    "{name} {} {}",
+                    prospect.city.trim(),
+                    prospect.state.trim()
+                )
+            }),
+        ]
+        .into_iter()
+        .flatten();
+        let second_stage = paired_requests(1, context_queries, &mut seen);
+        let normalized_name = normalize_name_for_search(&name);
+        let reversed = format!(
+            "{} {}",
+            prospect.last_name.trim(),
+            prospect.first_name.trim()
+        );
+        let initial = prospect
+            .first_name
+            .trim()
+            .chars()
+            .next()
+            .map(|value| format!("{value} {}", prospect.last_name.trim()));
+        let third_stage = paired_requests(
+            2,
+            [Some(normalized_name), Some(reversed), initial]
+                .into_iter()
+                .flatten(),
+            &mut seen,
+        );
+        Self {
+            stages: vec![first_stage, second_stage, third_stage],
+        }
+    }
+
+    pub fn stage(&self, index: usize) -> Option<&[SearchRequest]> {
+        self.stages.get(index).map(Vec::as_slice)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &SearchRequest> {
+        self.stages.iter().flatten()
+    }
+}
+
+fn paired_requests(
+    stage: u8,
+    queries: impl IntoIterator<Item = String>,
+    seen: &mut HashSet<String>,
+) -> Vec<SearchRequest> {
+    queries
+        .into_iter()
+        .flat_map(|query| {
+            SPORT_FILTERS
+                .into_iter()
+                .map(move |filter| SearchRequest::new(&query, filter, stage))
+        })
+        .filter(|request| !request.query.is_empty())
+        .filter(|request| seen.insert(request.cache_key()))
+        .collect()
+}
+
+fn collapse_spaces(value: &str) -> String {
+    value.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 impl AthleticNetClient {
@@ -239,6 +344,7 @@ fn append_results(
             },
             snippet,
             query: query.to_owned(),
+            filter: filter.to_owned(),
         });
     }
 }
@@ -334,5 +440,64 @@ mod tests {
         assert!(queries
             .iter()
             .any(|query| query == "J Smith-Jones Example High School"));
+    }
+
+    #[test]
+    fn first_stage_queries_full_name_for_both_sports() {
+        let prospect = Prospect {
+            first_name: "Ada".to_owned(),
+            last_name: "Runner".to_owned(),
+            ..Default::default()
+        };
+        let plan = QueryPlan::for_prospect(&prospect);
+        let stage = plan.stage(0).expect("stage zero");
+        assert_eq!(
+            stage,
+            [
+                SearchRequest::new("Ada Runner", "a:tf", 0),
+                SearchRequest::new("Ada Runner", "a:xc", 0),
+            ]
+        );
+    }
+
+    #[test]
+    fn contextual_stage_keeps_school_and_location_queries() {
+        let prospect = Prospect {
+            first_name: "Ada".to_owned(),
+            last_name: "Runner".to_owned(),
+            school: "Central".to_owned(),
+            city: "Austin".to_owned(),
+            state: "TX".to_owned(),
+            ..Default::default()
+        };
+        let plan = QueryPlan::for_prospect(&prospect);
+        let stage = plan.stage(1).expect("stage one");
+        for filter in ["a:tf", "a:xc"] {
+            assert!(stage.contains(&SearchRequest::new(
+                "Ada Runner Central",
+                filter,
+                1
+            )));
+            assert!(stage.contains(&SearchRequest::new(
+                "Ada Runner Austin TX",
+                filter,
+                1
+            )));
+        }
+    }
+
+    #[test]
+    fn query_plan_deduplicates_equivalent_variants() {
+        let prospect = Prospect {
+            first_name: "Ada".to_owned(),
+            last_name: "Runner".to_owned(),
+            ..Default::default()
+        };
+        let plan = QueryPlan::for_prospect(&prospect);
+        let keys = plan
+            .iter()
+            .map(SearchRequest::cache_key)
+            .collect::<HashSet<_>>();
+        assert_eq!(keys.len(), plan.iter().count());
     }
 }
