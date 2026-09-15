@@ -62,6 +62,7 @@ mod marks;
 mod model;
 mod output;
 mod scoring;
+mod search_cache;
 mod xlsx;
 use anyhow::{Context, Result}; use clap::Parser;
 use config::Config;

@@ -17,7 +17,7 @@ serde_json = "1"
 thiserror = "2"
 spider = { version = "2.53.6", features = ["sync"] }
 strsim = "0.11"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"] }
 toml = "0.9"
 unicode-normalization = "0.1"
 url = "2.5"

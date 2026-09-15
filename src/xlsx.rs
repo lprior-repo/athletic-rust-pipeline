@@ -226,7 +226,7 @@ fn load_sheet_metadata(path: &Path) -> Result<Vec<SheetMeta>> {
     loop {
         match reader.read_event_into(&mut buffer)? {
             Event::Empty(event) | Event::Start(event) if event.name().as_ref() == b"sheet" => {
-                let name = attribute(&event, b"name")?.unwrap_or_else(String::new);
+                let name = attribute(&event, b"name")?.map_or_else(String::new, |value| value);
                 let sheet_id = attribute(&event, b"sheetId")?
                     .and_then(|value| value.parse().ok())
                     .map_or(0, |value| value);
@@ -239,7 +239,7 @@ fn load_sheet_metadata(path: &Path) -> Result<Vec<SheetMeta>> {
                     })
                     .map(|item| decode_xml_text(item.value.as_ref()))
                     .transpose()?
-                    .unwrap_or_else(String::new);
+                    .map_or_else(String::new, |value| value);
                 let target = relationships.get(&relation_id).with_context(|| {
                     format!("missing worksheet relationship {relation_id} for {name}")
                 })?;
@@ -325,13 +325,13 @@ where
                 let fallback_row = u32::try_from(stats.xml_rows).map_or(u32::MAX, |value| value);
                 current_row_number = attribute(&event, b"r")?
                     .and_then(|value| value.parse().ok())
-                    .unwrap_or(fallback_row);
+                    .map_or(fallback_row, |value| value);
                 current_cells.clear();
             }
             Event::Start(event) if event.name().as_ref() == b"c" => {
                 current_cell = Some(CellState {
-                    reference: attribute(&event, b"r")?.unwrap_or_else(String::new),
-                    cell_type: attribute(&event, b"t")?.unwrap_or_else(String::new),
+                    reference: attribute(&event, b"r")?.map_or_else(String::new, |value| value),
+                    cell_type: attribute(&event, b"t")?.map_or_else(String::new, |value| value),
                     value: String::new(),
                 });
             }
@@ -359,9 +359,18 @@ where
                     continue;
                 }
                 if header_row.is_none() {
-                    let max_column = current_cells.keys().copied().max().unwrap_or(0);
+                    let max_column = current_cells
+                        .keys()
+                        .copied()
+                        .max()
+                        .map_or(0, |value| value);
                     headers = (0..=max_column)
-                        .map(|column| current_cells.get(&column).cloned().unwrap_or_default())
+                        .map(|column| {
+                            current_cells
+                                .get(&column)
+                                .cloned()
+                                .map_or_else(String::new, |value| value)
+                        })
                         .collect();
                     header_row = Some(current_row_number);
                     stats.headers = headers.clone();
@@ -375,7 +384,10 @@ where
                         .map(|(column, header)| {
                             (
                                 header.clone(),
-                                current_cells.get(&column).cloned().unwrap_or_default(),
+                                current_cells
+                                    .get(&column)
+                                    .cloned()
+                                    .map_or_else(String::new, |value| value),
                             )
                         })
                         .collect();
@@ -402,7 +414,7 @@ fn resolve_cell_value(cell: &CellState, shared_strings: &[String]) -> String {
             .ok()
             .and_then(|index| shared_strings.get(index))
             .cloned()
-            .unwrap_or_default()
+            .map_or_else(String::new, |value| value)
     } else {
         cell.value.trim().to_owned()
     }
@@ -738,7 +750,7 @@ fn first_mark(record: &MatchRecord, events: &[&str]) -> String {
     events
         .iter()
         .find_map(|event| record.best_marks.get(*event).map(|mark| mark.mark.clone()))
-        .unwrap_or_else(String::new)
+        .map_or_else(String::new, |value| value)
 }
 
 fn push_inline_cell(xml: &mut String, row: usize, column: usize, value: &str) {
@@ -799,12 +811,13 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn converts_column_references() {
-        assert_eq!(column_index("A2").unwrap(), 0);
-        assert_eq!(column_index("Z2").unwrap(), 25);
-        assert_eq!(column_index("AA2").unwrap(), 26);
+    fn converts_column_references() -> Result<()> {
+        assert_eq!(column_index("A2")?, 0);
+        assert_eq!(column_index("Z2")?, 25);
+        assert_eq!(column_index("AA2")?, 26);
         assert_eq!(column_name(0), "A");
         assert_eq!(column_name(28), "AC");
+        Ok(())
     }
 
     #[test]
@@ -813,10 +826,10 @@ mod tests {
     }
 
     #[test]
-    fn streams_real_rows_and_ignores_styled_empty_rows() {
-        let directory = tempdir().unwrap();
+    fn streams_real_rows_and_ignores_styled_empty_rows() -> Result<()> {
+        let directory = tempdir()?;
         let path = directory.path().join("fixture.xlsx");
-        let file = File::create(&path).unwrap();
+        let file = File::create(&path)?;
         let mut zip = ZipWriter::new(file);
         let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
         write_fixture_entry(
@@ -824,33 +837,32 @@ mod tests {
             "[Content_Types].xml",
             r#"<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>"#,
             options,
-        );
+        )?;
         write_fixture_entry(
             &mut zip,
             "xl/workbook.xml",
             r#"<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Export" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
             options,
-        );
+        )?;
         write_fixture_entry(
             &mut zip,
             "xl/_rels/workbook.xml.rels",
             r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
             options,
-        );
+        )?;
         write_fixture_entry(
             &mut zip,
             "xl/worksheets/sheet1.xml",
             r#"<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:F1000"/><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Person First</t></is></c><c r="B1" t="inlineStr"><is><t>Person Last</t></is></c><c r="C1" t="inlineStr"><is><t>Sports Sport</t></is></c><c r="D1" t="inlineStr"><is><t>Schools Name</t></is></c><c r="E1" t="inlineStr"><is><t>Address Mailing / Permanent City</t></is></c><c r="F1" t="inlineStr"><is><t>Address Mailing / Permanent Region</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>Sarah</t></is></c><c r="B2" t="inlineStr"><is><t>Jones</t></is></c><c r="C2" t="inlineStr"><is><t>Women's Track &amp; Field</t></is></c><c r="D2" t="inlineStr"><is><t>Central High</t></is></c><c r="E2" t="inlineStr"><is><t>Austin</t></is></c><c r="F2" t="inlineStr"><is><t>TX</t></is></c></row><row r="1000"><c r="A1000" s="1"/></row></sheetData></worksheet>"#,
             options,
-        );
-        zip.finish().unwrap();
+        )?;
+        zip.finish()?;
 
         let result = scan(
             &path,
             ScanMode::Sports(vec!["Women's Track & Field".to_owned()]),
             Some(2027),
-        )
-        .unwrap();
+        )?;
         assert_eq!(result.stats.actual_data_rows, 1);
         assert_eq!(result.stats.sheets[0].xml_rows, 3);
         assert_eq!(result.stats.sheets[0].last_actual_row, 2);
@@ -874,10 +886,10 @@ mod tests {
             selected_name: "Sarah Jones".to_owned(),
             ..Default::default()
         };
-        append_matches_sheet(&path, &enriched, std::slice::from_ref(&record)).unwrap();
-        let mut archive = ZipArchive::new(File::open(&enriched).unwrap()).unwrap();
-        let workbook = read_zip_string(&mut archive, "xl/workbook.xml").unwrap();
-        let result_sheet = read_zip_string(&mut archive, "xl/worksheets/sheet2.xml").unwrap();
+        append_matches_sheet(&path, &enriched, std::slice::from_ref(&record))?;
+        let mut archive = ZipArchive::new(File::open(&enriched)?)?;
+        let workbook = read_zip_string(&mut archive, "xl/workbook.xml")?;
+        let result_sheet = read_zip_string(&mut archive, "xl/worksheets/sheet2.xml")?;
         assert!(workbook.contains("Athletic Matches"));
         assert!(result_sheet.contains("HYPERLINK"));
         assert!(result_sheet.contains("athlete/123/track-and-field"));
@@ -890,8 +902,8 @@ mod tests {
         drop(archive);
 
         let replaced = directory.path().join("replaced.xlsx");
-        append_matches_sheet(&enriched, &replaced, std::slice::from_ref(&record)).unwrap();
-        let sheets = load_sheet_metadata(&replaced).unwrap();
+        append_matches_sheet(&enriched, &replaced, std::slice::from_ref(&record))?;
+        let sheets = load_sheet_metadata(&replaced)?;
         assert_eq!(
             sheets
                 .iter()
@@ -899,6 +911,7 @@ mod tests {
                 .count(),
             1
         );
+        Ok(())
     }
 
     #[test]
@@ -938,8 +951,9 @@ mod tests {
         name: &str,
         contents: &str,
         options: SimpleFileOptions,
-    ) {
-        zip.start_file(name, options).unwrap();
-        zip.write_all(contents.as_bytes()).unwrap();
+    ) -> Result<()> {
+        zip.start_file(name, options)?;
+        zip.write_all(contents.as_bytes())?;
+        Ok(())
     }
 }

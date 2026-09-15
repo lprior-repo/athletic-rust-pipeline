@@ -196,27 +196,29 @@ mod tests {
     }
 
     #[test]
-    fn csv_carries_original_source_columns_before_match_columns() {
-        let directory = tempdir().unwrap();
-        write_all(directory.path(), &[record_with_source_fields("MATCH")]).unwrap();
-        let text = std::fs::read_to_string(directory.path().join("matches.csv")).unwrap();
-        assert!(text.lines().next().unwrap().starts_with(
+    fn csv_carries_original_source_columns_before_match_columns() -> Result<()> {
+        let directory = tempdir()?;
+        write_all(directory.path(), &[record_with_source_fields("MATCH")])?;
+        let text = std::fs::read_to_string(directory.path().join("matches.csv"))?;
+        let header = text.lines().next().context("missing CSV header")?;
+        assert!(header.starts_with(
             "Person First,Person Last,Person Email,Address Mailing / Permanent Street Combined"
         ));
         assert!(text.contains("Ada,Lovelace,ada@example.test,1 Main"));
         assert!(text.contains("full AI output"));
+        Ok(())
     }
 
     #[test]
-    fn unresolved_contains_close_match_and_source_address() {
-        let directory = tempdir().unwrap();
+    fn unresolved_contains_close_match_and_source_address() -> Result<()> {
+        let directory = tempdir()?;
         write_all(
             directory.path(),
             &[record_with_source_fields("CLOSE_MATCH")],
-        )
-        .unwrap();
-        let text = std::fs::read_to_string(directory.path().join("unresolved.csv")).unwrap();
+        )?;
+        let text = std::fs::read_to_string(directory.path().join("unresolved.csv"))?;
         assert!(text.contains("CLOSE_MATCH"));
         assert!(text.contains("1 Main"));
+        Ok(())
     }
 }

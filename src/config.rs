@@ -26,6 +26,24 @@ pub struct DiscoveryConfig {
     pub max_candidates: usize,
     pub request_timeout_seconds: u64,
     pub search_delay_ms: u64,
+    #[serde(default = "default_max_attempts")]
+    pub max_attempts: u32,
+    #[serde(default = "default_circuit_breaker_threshold")]
+    pub circuit_breaker_threshold: u32,
+    #[serde(default = "default_ambiguity_margin")]
+    pub ambiguity_margin: f64,
+}
+
+fn default_max_attempts() -> u32 {
+    4
+}
+
+fn default_circuit_breaker_threshold() -> u32 {
+    8
+}
+
+fn default_ambiguity_margin() -> f64 {
+    0.03
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -79,6 +97,15 @@ impl Config {
         }
         if self.discovery.search_delay_ms < 500 {
             bail!("discovery.search_delay_ms must be at least 500 ms");
+        }
+        if self.discovery.max_attempts == 0 {
+            bail!("discovery.max_attempts must be greater than zero");
+        }
+        if self.discovery.circuit_breaker_threshold == 0 {
+            bail!("discovery.circuit_breaker_threshold must be greater than zero");
+        }
+        if !(0.0..=1.0).contains(&self.discovery.ambiguity_margin) {
+            bail!("discovery.ambiguity_margin must be between zero and one");
         }
         if self.retrieval.delay_ms < 500 {
             bail!("retrieval.delay_ms must be at least 500 ms");
