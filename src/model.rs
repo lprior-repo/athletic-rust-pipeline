@@ -38,6 +38,8 @@ pub struct Prospect {
     pub state: String,
     pub sport: String,
     pub expected_graduation_year: Option<i32>,
+    #[serde(default)]
+    pub source_fields: BTreeMap<String, String>,
 }
 
 impl Prospect {

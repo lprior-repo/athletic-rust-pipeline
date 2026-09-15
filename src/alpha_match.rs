@@ -167,7 +167,7 @@ pub async fn match_workbook(
     let index = build_source_index(&source);
     let scan = crate::xlsx::scan(
         input,
-        &config.workbook.sports,
+        crate::xlsx::ScanMode::Sports(config.workbook.sports.clone()),
         config.workbook.expected_graduation_year,
     )?;
     let limit = match max {

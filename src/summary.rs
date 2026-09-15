@@ -22,7 +22,7 @@ pub fn summarize(records: &[MatchRecord]) {
 
 /// Scan and print xlsx stats.
 pub fn inspect(input: &Path) -> Result<()> {
-    let result = xlsx::scan(input, &[], None)?;
+    let result = xlsx::scan(input, xlsx::ScanMode::Sports(Vec::new()), None)?;
     println!("{}", serde_json::to_string_pretty(&result.stats)?);
     Ok(())
 }

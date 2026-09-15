@@ -34,18 +34,29 @@ struct CellState {
     value: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScanMode {
+    Sports(Vec<String>),
+    Exhaustive,
+}
+
 pub fn scan(
     path: &Path,
-    target_sports: &[String],
+    mode: ScanMode,
     expected_graduation_year: Option<i32>,
 ) -> Result<ScanResult> {
     let shared_strings = load_shared_strings(path)?;
     let sheets = load_sheet_metadata(path)?;
-    let normalized_sports: Vec<String> = target_sports.iter().map(|x| normalize(x)).collect();
+    let prepared_mode = match mode {
+        ScanMode::Sports(sports) => {
+            ScanMode::Sports(sports.into_iter().map(|sport| normalize(&sport)).collect())
+        }
+        ScanMode::Exhaustive => ScanMode::Exhaustive,
+    };
     let mut stats = WorkbookStats::default();
     let mut prospects = Vec::new();
 
-    for sheet in sheets {
+    for sheet in sheets.into_iter().filter(|sheet| is_source_sheet(&sheet.name)) {
         let mut archive = ZipArchive::new(File::open(path)?)?;
         let file = archive
             .by_name(&sheet.path)
@@ -53,32 +64,27 @@ pub fn scan(
         let sheet_name = sheet.name.clone();
         let mut selected_in_sheet = 0_u64;
         let sheet_stats = parse_worksheet(file, &sheet_name, &shared_strings, |record| {
-            if normalized_sports.is_empty() {
-                return Ok(());
-            }
-            let sport = field(&record, "Sports Sport");
-            if !normalized_sports
-                .iter()
-                .any(|target| normalize(sport) == *target)
-            {
+            if !selects_prepared_record(&record, &prepared_mode) {
                 return Ok(());
             }
             let first_name = field(&record, "Person First").to_owned();
             let last_name = field(&record, "Person Last").to_owned();
-            if first_name.trim().is_empty() && last_name.trim().is_empty() {
-                return Ok(());
-            }
+            let school = field(&record, "Schools Name").to_owned();
+            let city = field(&record, "Address Mailing / Permanent City").to_owned();
+            let state = field(&record, "Address Mailing / Permanent Region").to_owned();
+            let sport = field(&record, "Sports Sport").to_owned();
             prospects.push(Prospect {
-                source_key: record.source_key.clone(),
-                sheet: record.sheet.clone(),
+                source_key: record.source_key,
+                sheet: record.sheet,
                 excel_row: record.excel_row,
                 first_name,
                 last_name,
-                school: field(&record, "Schools Name").to_owned(),
-                city: field(&record, "Address Mailing / Permanent City").to_owned(),
-                state: field(&record, "Address Mailing / Permanent Region").to_owned(),
-                sport: sport.to_owned(),
+                school,
+                city,
+                state,
+                sport,
                 expected_graduation_year,
+                source_fields: record.fields,
             });
             selected_in_sheet = selected_in_sheet.saturating_add(1);
             Ok(())
@@ -93,6 +99,38 @@ pub fn scan(
     Ok(ScanResult { stats, prospects })
 }
 
+#[cfg(test)]
+fn selects_record(record: &SourceRecord, mode: &ScanMode) -> bool {
+    let prepared_mode = match mode {
+        ScanMode::Sports(sports) => {
+            ScanMode::Sports(sports.iter().map(|sport| normalize(sport)).collect())
+        }
+        ScanMode::Exhaustive => ScanMode::Exhaustive,
+    };
+    selects_prepared_record(record, &prepared_mode)
+}
+
+fn selects_prepared_record(record: &SourceRecord, mode: &ScanMode) -> bool {
+    match mode {
+        ScanMode::Exhaustive => true,
+        ScanMode::Sports(sports) => {
+            let first_name = field(record, "Person First");
+            let last_name = field(record, "Person Last");
+            if first_name.trim().is_empty() && last_name.trim().is_empty() {
+                return false;
+            }
+            let normalized_sport = normalize(field(record, "Sports Sport"));
+            sports.iter().any(|target| normalized_sport == *target)
+        }
+    }
+}
+
+fn is_source_sheet(name: &str) -> bool {
+    !["Athletic Matches", "Corrections", "Summary"]
+        .iter()
+        .any(|generated| name.eq_ignore_ascii_case(generated))
+}
+
 pub fn export_records(input: &Path, output: &Path) -> Result<()> {
     if output.exists() {
         bail!("refusing to overwrite existing {}", output.display());
@@ -102,7 +140,7 @@ pub fn export_records(input: &Path, output: &Path) -> Result<()> {
     let mut writer = BufWriter::new(
         File::create(output).with_context(|| format!("creating {}", output.display()))?,
     );
-    for sheet in sheets {
+    for sheet in sheets.into_iter().filter(|sheet| is_source_sheet(&sheet.name)) {
         let mut archive = ZipArchive::new(File::open(input)?)?;
         let file = archive.by_name(&sheet.path)?;
         parse_worksheet(file, &sheet.name, &shared_strings, |record| {
@@ -770,12 +808,24 @@ mod tests {
         );
         zip.finish().unwrap();
 
-        let result = scan(&path, &["Women's Track & Field".to_owned()], Some(2027)).unwrap();
+        let result = scan(
+            &path,
+            ScanMode::Sports(vec!["Women's Track & Field".to_owned()]),
+            Some(2027),
+        )
+        .unwrap();
         assert_eq!(result.stats.actual_data_rows, 1);
         assert_eq!(result.stats.sheets[0].xml_rows, 3);
         assert_eq!(result.stats.sheets[0].last_actual_row, 2);
         assert_eq!(result.prospects.len(), 1);
         assert_eq!(result.prospects[0].source_key, "Export:2");
+        assert_eq!(
+            result.prospects[0]
+                .source_fields
+                .get("Schools Name")
+                .map(String::as_str),
+            Some("Central High")
+        );
 
         let enriched = directory.path().join("enriched.xlsx");
         let record = MatchRecord {
@@ -798,6 +848,38 @@ mod tests {
         assert!(result_sheet.contains("Best Marks JSON"));
         assert!(result_sheet.contains("Hint Count"));
         assert!(result_sheet.contains("AI Logic"));
+    }
+
+    #[test]
+    fn exhaustive_mode_selects_rows_without_sport_or_name() {
+        let record = SourceRecord {
+            fields: BTreeMap::from([
+                ("Person First".to_owned(), "Ada".to_owned()),
+                ("Person Last".to_owned(), "Lovelace".to_owned()),
+                ("Sports Sport".to_owned(), String::new()),
+            ]),
+            ..Default::default()
+        };
+        assert!(selects_record(&record, &ScanMode::Exhaustive));
+        assert!(!selects_record(
+            &record,
+            &ScanMode::Sports(vec!["Track and Field: Womens".to_owned()])
+        ));
+
+        let blank_name = SourceRecord {
+            fields: BTreeMap::from([("Person Email".to_owned(), "unknown@example.test".to_owned())]),
+            ..Default::default()
+        };
+        assert!(selects_record(&blank_name, &ScanMode::Exhaustive));
+    }
+
+    #[test]
+    fn generated_sheets_are_not_source_populations() {
+        assert!(is_source_sheet("Export"));
+        assert!(is_source_sheet("Sheet1"));
+        assert!(!is_source_sheet("Athletic Matches"));
+        assert!(!is_source_sheet("Corrections"));
+        assert!(!is_source_sheet("Summary"));
     }
 
     fn write_fixture_entry<W: Write + std::io::Seek>(

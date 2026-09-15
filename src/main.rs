@@ -159,7 +159,11 @@ async fn run_pipeline(
             }
         }
     }
-    let scan = xlsx::scan(input, &sports, config.workbook.expected_graduation_year)?;
+    let scan = xlsx::scan(
+        input,
+        xlsx::ScanMode::Sports(sports),
+        config.workbook.expected_graduation_year,
+    )?;
     eprintln!(
         "parsed {} real rows; selected {} prospects",
         scan.stats.actual_data_rows,
