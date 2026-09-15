@@ -22,6 +22,7 @@ The supplied workbook contains 111,939 real rows in `Export` and 8,777 real rows
 - Produce a terminal outcome and populated `AI Logic` field for every source row, including no-hit and error outcomes.
 - Resume a multi-day run without repeating completed searches, AI work, or completed row resolution.
 - Keep email, street address, and postal code local; send only name, school, city, state, expected graduation year, and sport scope.
+- Carry every original source column into the row-level JSONL, CSV, unresolved, and `Athletic Matches` outputs without altering its value.
 - Write complete CSV, JSONL, checkpoint, coverage, unresolved, and workbook outputs.
 
 ## Non-goals
@@ -40,6 +41,26 @@ A source row is included when the streaming workbook parser recognizes it as a r
 The two worksheets are separate source populations in the supplied workbook. They contain 120,716 real rows in total. Exhaustive mode retains all of them even when names, schools, or locations coincide. Network work may be shared when the complete discovery request key is identical, but results are scored and AI-reviewed independently against each source row.
 
 The prospect's expected graduation year is `2027` from configuration. Because the workbook has no graduation-year column, this is run context rather than row-level evidence and must remain distinguishable from Athletic.net evidence.
+
+## Source-data carry-through
+
+Each result carries the complete original source row alongside the match result. For the supplied workbook, that means:
+
+- `Person First`;
+- `Person Last`;
+- `Person Email`;
+- `Address Mailing / Permanent Street Combined`;
+- `Address Mailing / Permanent City`;
+- `Address Mailing / Permanent Region`;
+- `Address Mailing / Permanent Postal`;
+- `Sports Created Date`;
+- `Sports Sport`;
+- `Sports Rating`;
+- `Origin Source Date`;
+- `Origin Source`;
+- `Schools Name`.
+
+These fields are copied locally and remain associated through `sheet:excel_row`; contact fields are never submitted to Athletic.net or the local model. The supplied workbook has no telephone or cellphone column—its worksheet range ends at column `M`, and the 13 headers above are the complete schema. The output must not invent a phone number. If a later input includes a configured phone/cellphone header, that field is carried through locally under its original header and is never used for discovery or AI.
 
 ## Discovery strategy
 
@@ -128,15 +149,15 @@ Configuration that affects population, query construction, scoring, model behavi
 
 The run writes:
 
-- `matches.jsonl`: one complete record per finalized source row;
-- `matches.csv`: flat review output with selected profile, evidence, and full `AI Logic`;
-- `unresolved.csv`: `CLOSE_MATCH`, `REVIEW`, `NO_MATCH`, and error outcomes;
+- `matches.jsonl`: one complete record per finalized source row, including every original source field;
+- `matches.csv`: flat review output containing every original source column plus selected profile, evidence, and full `AI Logic`;
+- `unresolved.csv`: the same source-data columns for `CLOSE_MATCH`, `REVIEW`, `NO_MATCH`, and error outcomes;
 - `checkpoint.jsonl`: append-only finalized row ledger;
 - `search-cache.jsonl`: append-only logical search results;
 - `ai-cache.jsonl`: append-only candidate extraction and identity-review results;
 - `coverage.json`: expected rows, completed rows, successful searches, cached searches, AI extraction/review counts, pending retries, terminal errors, and status counts.
 
-`writeback` copies the original workbook and replaces or creates the `Athletic Matches` worksheet. The sheet contains one row per source-row outcome and retains source sheet plus Excel row keys. A run is complete only when `coverage.json` reports 120,716 expected rows, 120,716 finalized rows, and zero pending retryable failures.
+`writeback` copies the original workbook and replaces or creates the `Athletic Matches` worksheet. The sheet contains one row per source-row outcome, every original source column, and the match/AI columns; source sheet plus Excel row remain the stable keys. A run is complete only when `coverage.json` reports 120,716 expected rows, 120,716 finalized rows, and zero pending retryable failures.
 
 Errors are data, not omissions. A failed row remains in outputs with its failure class and message so the apparent match rate cannot be inflated by missing records.
 
@@ -183,6 +204,7 @@ Behavioral tests must prove:
 - resume does not repeat completed rows, successful searches, or successful AI calls;
 - coverage cannot report complete while any row, search, or AI retry is pending;
 - writeback contains one outcome and `AI Logic` value for every expected source row.
+- output rows preserve every original source field exactly and never send email, street, postal, or future phone fields to Athletic.net or the model;
 
 A bounded live smoke run uses a fresh output directory and a handful of known rows to verify the actual search endpoint, local model, checkpoint resume, both sport filters, and output generation. The full run starts only after that smoke path passes.
 
@@ -194,6 +216,7 @@ A bounded live smoke run uses a fresh output directory and a handful of known ro
 - Adaptive retries preserve all distinct candidate profiles.
 - Every candidate receives AI extraction and every candidate-bearing row receives AI identity review.
 - Every output row contains explicit `AI Logic`, including successful no-hit and error paths.
+- Every output row carries all original source columns, including names, email, and full mailing address; no cellphone value is fabricated when the input has no cellphone column.
 - The run survives interruption without repeating successful network or AI work.
 - Final coverage accounts for every row and every non-success outcome.
 - The enriched workbook and flat outputs are generated from the completed run.
