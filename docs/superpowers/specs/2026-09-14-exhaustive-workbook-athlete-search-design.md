@@ -38,7 +38,7 @@ The supplied workbook contains 111,939 real rows in `Export` and 8,777 real rows
 
 A source row is included when the streaming workbook parser recognizes it as a real, non-header row. A row is searchable when its first or last name is non-empty; the supplied workbook has seven real `Export` rows without either name, and those rows receive explicit input-error outcomes without network requests. The row identity remains `sheet:excel_row` so output can be written back without ambiguity.
 
-The two worksheets are separate source populations in the supplied workbook. They contain 120,716 real rows in total. Exhaustive mode retains all of them even when names, schools, or locations coincide. Network work may be shared when the complete discovery request key is identical, but results are scored and AI-reviewed independently against each source row.
+The `Export` and `Sheet1` worksheets are separate source populations. They contain 120,716 real rows in total. Generated result/review sheets such as `Athletic Matches`, `Corrections`, and `Summary` are not source populations and must be excluded from later exhaustive scans. Exhaustive mode retains every real row from the two source sheets even when names, schools, or locations coincide. Network work may be shared when the complete discovery request key is identical, but results are scored and AI-reviewed independently against each source row.
 
 The prospect's expected graduation year is `2027` from configuration. Because the workbook has no graduation-year column, this is run context rather than row-level evidence and must remain distinguishable from Athletic.net evidence.
 
@@ -64,7 +64,7 @@ These fields are copied locally and remain associated through `sheet:excel_row`;
 
 ## Discovery strategy
 
-Each source row searches both endpoint filters:
+Each searchable source row searches both endpoint filters:
 
 - `a:tf` for Track & Field;
 - `a:xc` for Cross Country.
@@ -111,7 +111,7 @@ The existing delay applies only between variants inside one prospect, allowing t
 - Cache successful search responses by endpoint, filter, and canonical query.
 - Persist cache records append-only so restarts do not repeat successful requests.
 
-At 120,716 rows, Stage 1 requires 241,432 logical searches before cache reuse. A 750 ms global interval imposes a theoretical minimum near 50.3 hours, excluding network latency, adaptive searches, candidate extraction, and identity-review time.
+The 120,709 named rows require 241,418 Stage 1 logical searches before cache reuse; the seven blank-name rows receive local input-error outcomes. A 750 ms global interval imposes a theoretical minimum near 50.3 hours, excluding network latency, adaptive searches, candidate extraction, and identity-review time.
 
 ## Full AI processing
 
@@ -157,7 +157,7 @@ The run writes:
 - `ai-cache.jsonl`: append-only candidate extraction and identity-review results;
 - `coverage.json`: expected rows, completed rows, successful searches, cached searches, AI extraction/review counts, pending retries, terminal errors, and status counts.
 
-`writeback` copies the original workbook and replaces or creates the `Athletic Matches` worksheet. The sheet contains one row per source-row outcome, every original source column, and the match/AI columns; source sheet plus Excel row remain the stable keys. A run is complete only when `coverage.json` reports 120,716 expected rows, 120,716 finalized rows, and zero pending retryable failures.
+`writeback` copies the original workbook and replaces an existing generated `Athletic Matches` worksheet or creates it when absent. The sheet contains one row per source-row outcome, every original source column, and the match/AI columns; source sheet plus Excel row remain the stable keys. Generated review sheets are never treated as source input on a later run. A run is complete only when `coverage.json` reports 120,716 expected rows, 120,716 finalized rows, and zero pending retryable failures.
 
 Errors are data, not omissions. A failed row remains in outputs with its failure class and message so the apparent match rate cannot be inflated by missing records.
 
