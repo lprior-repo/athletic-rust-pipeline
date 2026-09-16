@@ -83,11 +83,13 @@ class Service:
         self.incomplete, self.malformed, self.upstream = incomplete, malformed, upstream
         self.requests, self.filters, self.private_payloads = 0, set(), 0
         self.address_payloads, self.transient_failures = 0, 0
+        self.active, self.max_active, self.start_times = 0, 0, []
         self.lock, self.seen = threading.Lock(), threading.Event()
 
     def response(self, path, body):
         with self.lock:
             self.requests += 1
+            self.start_times.append(time.monotonic())
             forbidden = PRIVATE_VALUES if self.kind == 'search' else PRIVATE_VALUES[:1]
             if any(value.encode() in body for value in forbidden):
                 self.private_payloads += 1
@@ -144,6 +146,9 @@ class Service:
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self):
                 body = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                with service.lock:
+                    service.active += 1
+                    service.max_active = max(service.max_active, service.active)
                 try:
                     status, response = service.response(self.path, body)
                     self.send_response(status)
@@ -153,6 +158,9 @@ class Service:
                     self.wfile.write(response)
                 except (BrokenPipeError, ConnectionResetError):
                     pass
+                finally:
+                    with service.lock:
+                        service.active -= 1
             def log_message(self, *_args):
                 pass
         self.server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
@@ -304,7 +312,7 @@ def scenario(args, root, name):
             report = coverage(output, 2, 0, 0)
         else:
             result = invoke(args, source, config, output)
-            if name in ('positive', 'transient'):
+            if name in ('positive', 'transient', 'two_pass'):
                 require(result['exit'] == 0, result['stderr'])
                 report = check_positive(output)
                 require(search.filters == {'t:a a:tf', 't:a a:xc'}, 'missing sport search')
@@ -326,6 +334,22 @@ def scenario(args, root, name):
                 require(cached['exit'] == 0, cached['stderr'])
                 require(before == [service.requests for service in services], 'cache-only resume made external requests')
                 check_positive(output)
+                if name == 'two_pass':
+                    before_search = search.requests
+                    donor_bytes = (output / 'checkpoint.jsonl').read_bytes()
+                    extractor.status = reviewer.status = 200
+                    reviewed = directory / 'reviewed'
+                    review_command = [value for value in command(args, source, config, reviewed) if value != '--no-ai']
+                    review_command += ['--reuse-searches-from', str(output)]
+                    started = time.perf_counter()
+                    process = subprocess.Popen(review_command, stdin=subprocess.DEVNULL,
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    review_result = collect(process, reviewed, started)
+                    require(review_result['exit'] == 0, review_result['stderr'])
+                    check_positive(reviewed)
+                    require(search.requests == before_search, 'AI second pass repeated discovery')
+                    require(extractor.requests >= 2 and reviewer.requests >= 1, 'second pass did not review')
+                    require((output / 'checkpoint.jsonl').read_bytes() == donor_bytes, 'second pass overwrote deterministic decisions')
             else:
                 expected = 'AI_ERROR' if name.startswith('model_') else 'SEARCH_ERROR'
                 require(result['exit'] != 0, 'service failure claimed success')
@@ -335,8 +359,12 @@ def scenario(args, root, name):
                 require(not rows[0]['selected_profile_url'], 'error retained attribution')
                 report = coverage(output, 0, 1, 1)
         require(all(service.private_payloads == 0 for service in services), 'private fields reached transport')
+        if name != 'cancellation':
+            require(search.max_active <= 2, 'search fanout exceeded two')
+        require(extractor.max_active <= 1 and reviewer.max_active <= 1, 'model fanout exceeded one')
         return {'name': name, 'exit': result['exit'], 'seconds': round(result['seconds'], 4),
                 'requests': dict(zip(('search', 'extractor', 'reviewer'), (s.requests for s in services))),
+                'max_inflight': dict(zip(('search', 'extractor', 'reviewer'), (s.max_active for s in services))),
                 'completed': report['completed_rows'], 'pending': report['pending_rows'],
                 'retryable': report['retryable_rows']}
 
@@ -356,7 +384,7 @@ def main():
     args.binary = args.binary.resolve()
     root = Path(tempfile.mkdtemp(prefix='athletic-cli-evidence-'))
     names = ['positive'] if args.actual_models or args.positive_only else (
-        ['positive', 'transient', 'search_503', 'incomplete', 'cancellation'] if args.no_ai else
+        ['positive', 'transient', 'two_pass', 'search_503', 'incomplete', 'cancellation'] if args.no_ai else
         ['positive', 'transient', 'model_503', 'model_schema', 'search_503', 'incomplete', 'cancellation'])
     outcomes = []
     try:
