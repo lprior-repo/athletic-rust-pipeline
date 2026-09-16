@@ -10,7 +10,10 @@ fn privacy_guard_rejects_postal_phone_email_and_address_values() {
         json!("a@b"),
         json!("12 Main Street"),
     ] {
-        assert!(validate_public_json(&value).is_err(), "accepted private value {value}");
+        assert!(
+            validate_public_json(&value).is_err(),
+            "accepted private value {value}"
+        );
     }
 }
 

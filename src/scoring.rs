@@ -6,7 +6,12 @@ use crate::{
 use strsim::jaro_winkler;
 use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
 
-pub fn score_candidate(prospect: &Prospect, candidate: &mut Candidate, config: &MatchingConfig) {
+pub(crate) fn score_with_sport(
+    prospect: &Prospect,
+    candidate: &mut Candidate,
+    config: &MatchingConfig,
+    requested_sport: &str,
+) {
     let source_name = normalize(&prospect.full_name());
     let candidate_name = normalize(&candidate.athlete_name);
     let source_school = normalize(&prospect.school);
@@ -20,9 +25,23 @@ pub fn score_candidate(prospect: &Prospect, candidate: &mut Candidate, config: &
         (Some(_), Some(_)) => 0.0,
         _ => 0.0,
     };
-    let sport_score = sport_score(&prospect.sport, &candidate.sports);
+    let sport_score = sport_score(requested_sport, &candidate.sports);
     candidate.corroborated =
         candidate.school_score >= 0.82 || candidate.location_score >= 0.90 || year_score == 1.0;
+    let state_conflict = match (
+        crate::alpha_url::canonical_state(&prospect.state),
+        location_state(&candidate.location),
+    ) {
+        (Some(expected), Some(actual)) => expected != actual,
+        _ => false,
+    };
+    let year_conflict = matches!(
+        (prospect.expected_graduation_year, candidate.graduation_year),
+        (Some(expected), Some(actual)) if expected != actual
+    );
+    if state_conflict || year_conflict {
+        candidate.corroborated = false;
+    }
 
     let mut score = candidate.name_score * 0.68
         + candidate.school_score * 0.20
@@ -39,13 +58,34 @@ pub fn score_candidate(prospect: &Prospect, candidate: &mut Candidate, config: &
     if sport_score == 0.0 && !candidate.sports.is_empty() {
         score -= 0.10;
     }
+    if state_conflict || year_conflict {
+        score = score.min(config.review_threshold);
+    }
     if config.require_corroboration && !candidate.corroborated {
         score = score.min(config.review_threshold + 0.07);
     }
-    candidate.deterministic_score = score.clamp(0.0, 1.0);
+    candidate.deterministic_score = if score.is_finite() {
+        score.clamp(0.0, 1.0)
+    } else {
+        f64::NAN
+    };
 }
 
-fn no_candidate_record(prospect: Prospect, model_decision: ModelDecision) -> MatchRecord {
+pub fn score_candidate(prospect: &Prospect, candidate: &mut Candidate, config: &MatchingConfig) {
+    score_with_sport(prospect, candidate, config, &prospect.sport);
+}
+
+pub fn score_athletics_candidate(
+    prospect: &Prospect,
+    candidate: &mut Candidate,
+    config: &MatchingConfig,
+) {
+    score_with_sport(prospect, candidate, config, "track cross country");
+}
+
+fn no_candidate_record(prospect: Prospect, mut model_decision: ModelDecision) -> MatchRecord {
+    model_decision.track_confirmed = false;
+    model_decision.xc_confirmed = false;
     MatchRecord {
         source_key: prospect.source_key.clone(),
         prospect,
@@ -59,6 +99,43 @@ fn no_candidate_record(prospect: Prospect, model_decision: ModelDecision) -> Mat
     }
 }
 
+fn rejected_record(
+    prospect: Prospect,
+    candidates: Vec<Candidate>,
+    mut model_decision: ModelDecision,
+    reason: &'static str,
+) -> MatchRecord {
+    model_decision.track_confirmed = false;
+    model_decision.xc_confirmed = false;
+    let hint_count = candidates
+        .iter()
+        .filter(|candidate| !candidate.profile_url.trim().is_empty())
+        .count();
+    MatchRecord {
+        source_key: prospect.source_key.clone(),
+        prospect,
+        status: "REVIEW".to_owned(),
+        hint_count,
+        ai_logic: reason.to_owned(),
+        score: 0.0,
+        candidates,
+        model_decision,
+        notes: reason.to_owned(),
+        ..Default::default()
+    }
+}
+
+fn has_nonfinite_score(candidate: &Candidate) -> bool {
+    [
+        candidate.deterministic_score,
+        candidate.name_score,
+        candidate.school_score,
+        candidate.location_score,
+    ]
+    .into_iter()
+    .any(|score| !score.is_finite())
+}
+
 pub fn finalize_match(
     prospect: Prospect,
     candidates: Vec<Candidate>,
@@ -67,6 +144,30 @@ pub fn finalize_match(
 ) -> MatchRecord {
     if candidates.is_empty() {
         return no_candidate_record(prospect, model_decision);
+    }
+    if !model_decision.confidence.is_finite()
+        || !config.match_threshold.is_finite()
+        || !config.close_threshold.is_finite()
+        || !config.review_threshold.is_finite()
+        || candidates.iter().any(has_nonfinite_score)
+    {
+        return rejected_record(
+            prospect,
+            candidates,
+            model_decision,
+            "Candidate, model, or matching score is non-finite",
+        );
+    }
+    if model_decision
+        .candidate_index
+        .is_some_and(|index| index >= candidates.len())
+    {
+        return rejected_record(
+            prospect,
+            candidates,
+            model_decision,
+            "Model candidate index is outside the candidate set",
+        );
     }
 
     let Some((deterministic_best, _)) =
@@ -141,6 +242,7 @@ pub fn finalize_match(
     );
     MatchRecord {
         source_key: prospect.source_key.clone(),
+        deterministic_decision: None,
         prospect,
         status,
         hint_count,
@@ -214,18 +316,29 @@ fn sport_score(requested: &str, sports: &[String]) -> f64 {
 }
 
 fn location_score(prospect: &Prospect, candidate_location: &str) -> f64 {
+    let observed_state = location_state(candidate_location);
+    if let (Some(expected), Some(actual)) = (
+        crate::alpha_url::canonical_state(&prospect.state),
+        observed_state,
+    ) {
+        return if expected == actual { 1.0 } else { 0.0 };
+    }
     let candidate = normalize(candidate_location);
     let city = normalize(&prospect.city);
-    let state = normalize(&prospect.state);
-    if candidate.is_empty() {
-        0.0
-    } else if (!city.is_empty() && candidate.contains(&city))
-        || (!state.is_empty() && candidate.contains(&state))
-    {
+    if !city.is_empty() && candidate.split_whitespace().eq(city.split_whitespace()) {
         1.0
     } else {
-        similarity(&format!("{city} {state}"), &candidate)
+        0.0
     }
+}
+
+fn location_state(value: &str) -> Option<String> {
+    let words = value.split_whitespace().collect::<Vec<_>>();
+    (1..=3).find_map(|length| {
+        let start = words.len().checked_sub(length)?;
+        let suffix = words.get(start..)?.join(" ");
+        crate::alpha_url::canonical_state(suffix.trim_matches(|c: char| !c.is_alphabetic()))
+    })
 }
 
 fn similarity(left: &str, right: &str) -> f64 {
@@ -314,7 +427,84 @@ mod tests {
             },
             &config(),
         );
+
         assert_eq!(record.hint_count, 1);
         assert!(record.ai_logic.contains("weak corroboration"));
+    }
+
+    #[test]
+    fn exhaustive_scoring_ignores_source_sport() {
+        let prospect = Prospect {
+            first_name: "Ada".to_owned(),
+            last_name: "Runner".to_owned(),
+            school: "Central High".to_owned(),
+            city: "Austin".to_owned(),
+            state: "TX".to_owned(),
+            sport: "Basketball".to_owned(),
+            expected_graduation_year: Some(2027),
+            ..Default::default()
+        };
+        let candidate = Candidate {
+            athlete_name: "Ada Runner".to_owned(),
+            school: "Central High".to_owned(),
+            location: "Austin, TX".to_owned(),
+            graduation_year: Some(2027),
+            sports: vec!["Track & Field".to_owned(), "Cross Country".to_owned()],
+            ..Default::default()
+        };
+        let mut source_scored = candidate.clone();
+        let mut exhaustive_scored = candidate;
+
+        score_candidate(&prospect, &mut source_scored, &config());
+        score_athletics_candidate(&prospect, &mut exhaustive_scored, &config());
+
+        assert!(exhaustive_scored.deterministic_score > source_scored.deterministic_score);
+    }
+
+    #[test]
+    fn invalid_model_index_is_rejected_without_attribution() {
+        let candidate = Candidate {
+            profile_url: "https://www.athletic.net/athlete/7/track-and-field".to_owned(),
+            deterministic_score: 0.99,
+            corroborated: true,
+            ..Default::default()
+        };
+        let record = finalize_match(
+            Prospect::default(),
+            vec![candidate],
+            ModelDecision {
+                candidate_index: Some(1),
+                confidence: 0.99,
+                track_confirmed: true,
+                ..Default::default()
+            },
+            &config(),
+        );
+
+        assert_eq!(record.status, "REVIEW");
+        assert!(record.selected_profile_url.is_empty());
+        assert!(!record.track_confirmed && !record.xc_confirmed);
+        assert!(!record.model_decision.track_confirmed);
+        assert!(record.best_marks.is_empty());
+    }
+
+    #[test]
+    fn nonfinite_candidate_score_is_rejected_without_attribution() {
+        let candidate = Candidate {
+            profile_url: "https://www.athletic.net/athlete/7/track-and-field".to_owned(),
+            deterministic_score: f64::NAN,
+            ..Default::default()
+        };
+        let record = finalize_match(
+            Prospect::default(),
+            vec![candidate],
+            ModelDecision::default(),
+            &config(),
+        );
+
+        assert_eq!(record.status, "REVIEW");
+        assert_eq!(record.selected_candidate_index, None);
+        assert!(record.selected_profile_url.is_empty());
+        assert!(record.best_marks.is_empty());
     }
 }

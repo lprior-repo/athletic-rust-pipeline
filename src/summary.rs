@@ -1,23 +1,25 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::path::Path;
+
 use anyhow::Result;
+
 use crate::model::MatchRecord;
 use crate::xlsx;
+
 pub fn summarize(records: &[MatchRecord]) {
-    let mut counts: HashMap<&str, usize> = HashMap::new();
-    for r in records {
-        counts
-            .entry(r.status.as_str())
-            .and_modify(|c| *c = c.saturating_add(1))
-            .or_insert(1);
-    }
+    let counts = records
+        .iter()
+        .fold(BTreeMap::<&str, usize>::new(), |mut counts, record| {
+            counts
+                .entry(record.status.as_str())
+                .and_modify(|count| *count = count.saturating_add(1))
+                .or_insert(1);
+            counts
+        });
     eprintln!("wrote {} records", records.len());
-    for status in ["MATCH", "CLOSE_MATCH", "REVIEW", "NO_MATCH"] {
-        eprintln!(
-            "  {status}: {}",
-            counts.get(status).copied().map_or(0, |c| c)
-        );
-    }
+    counts
+        .into_iter()
+        .for_each(|(status, count)| eprintln!("  {status}: {count}"));
 }
 
 /// Scan and print xlsx stats.

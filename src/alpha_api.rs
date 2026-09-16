@@ -11,8 +11,15 @@ pub enum AlphaApiError {
     Forbidden(String),
     #[error("rate limited (429): no Retry-After header present or invalid")]
     RateLimitedNoRetryAfter,
-    #[error("rate limited (429): Retry-After exceeded max retry count ({}) after {} ms", max_retries, total_delay_ms)]
-    RateLimitedExhausted { max_retries: usize, total_delay_ms: u64 },
+    #[error(
+        "rate limited (429): Retry-After exceeded max retry count ({}) after {} ms",
+        max_retries,
+        total_delay_ms
+    )]
+    RateLimitedExhausted {
+        max_retries: usize,
+        total_delay_ms: u64,
+    },
     #[error("server error {} after {} retries", status, retries)]
     ServerErrorExhausted { status: u16, retries: usize },
     #[error("unexpected status {}: {}", status, body)]
@@ -65,19 +72,23 @@ fn validate_absolute_pointer(ptr: &str, name: &str) -> Result<(), AlphaApiError>
         )));
     }
     for (pos, ch) in ptr.chars().enumerate() {
-        if ch == '~' {
-            match ptr.chars().nth(pos + 1) {
-                Some('0') | Some('1') => {}
-                Some(other) => {
-                    return Err(AlphaApiError::InvalidConfig(format!(
-                        "{name} has invalid RFC6901 escape '~{other}' at position {pos}",
-                    )));
-                }
-                None => {
-                    return Err(AlphaApiError::InvalidConfig(format!(
-                        "{name} has trailing '~' at position {pos}",
-                    )));
-                }
+        if ch != '~' {
+            continue;
+        }
+        match ptr.chars().nth(
+            pos.checked_add(1)
+                .ok_or_else(|| AlphaApiError::InvalidConfig(format!("{name} position overflow")))?,
+        ) {
+            Some('0') | Some('1') => {}
+            Some(other) => {
+                return Err(AlphaApiError::InvalidConfig(format!(
+                    "{name} has invalid RFC6901 escape '~{other}' at position {pos}",
+                )));
+            }
+            None => {
+                return Err(AlphaApiError::InvalidConfig(format!(
+                    "{name} has trailing '~' at position {pos}",
+                )));
             }
         }
     }
@@ -90,9 +101,7 @@ pub fn validate_pagination_config(
     pagination: &crate::alpha_model::PaginationConfig,
 ) -> Result<(), AlphaApiError> {
     match pagination {
-        crate::alpha_model::PaginationConfig::SingleResponse {
-            complete_pointer,
-        } => {
+        crate::alpha_model::PaginationConfig::SingleResponse { complete_pointer } => {
             validate_absolute_pointer(complete_pointer, "complete_pointer")?;
         }
         crate::alpha_model::PaginationConfig::NextPage {
@@ -111,4 +120,3 @@ pub fn validate_pagination_config(
     }
     Ok(())
 }
-

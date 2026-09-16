@@ -16,47 +16,78 @@ impl RawNavInfoResponse {
             return Err("RawNavInfoResponse: complete must be true");
         }
         // State: present with all required fields nonempty.
-        let state = self.state.as_ref().ok_or("RawNavInfoResponse: missing state")?;
-        let sid = state.state_id.ok_or("RawNavInfoResponse: state.state_id missing")?;
+        let state = self
+            .state
+            .as_ref()
+            .ok_or("RawNavInfoResponse: missing state")?;
+        let sid = state
+            .state_id
+            .ok_or("RawNavInfoResponse: state.state_id missing")?;
         if sid == 0 {
             return Err("RawNavInfoResponse: state.state_id must not be zero");
         }
-        let sname = state.state_name.as_ref().ok_or("RawNavInfoResponse: state.state_name missing")?;
+        let sname = state
+            .state_name
+            .as_ref()
+            .ok_or("RawNavInfoResponse: state.state_name missing")?;
         if sname.trim().is_empty() {
             return Err("RawNavInfoResponse: state.state_name empty");
         }
-        let s = state.state.as_ref().ok_or("RawNavInfoResponse: state.state missing")?;
+        let s = state
+            .state
+            .as_ref()
+            .ok_or("RawNavInfoResponse: state.state missing")?;
         if s.trim().is_empty() {
             return Err("RawNavInfoResponse: state.state empty");
         }
         // Event: present with all required fields nonempty.
-        let event = self.event.as_ref().ok_or("RawNavInfoResponse: missing event")?;
-        let eshort = event.event_short.as_ref().ok_or("RawNavInfoResponse: event.event_short missing")?;
+        let event = self
+            .event
+            .as_ref()
+            .ok_or("RawNavInfoResponse: missing event")?;
+        let eshort = event
+            .event_short
+            .as_ref()
+            .ok_or("RawNavInfoResponse: event.event_short missing")?;
         if eshort.trim().is_empty() {
             return Err("RawNavInfoResponse: event.event_short empty");
         }
-        let ename = event.event_name.as_ref().ok_or("RawNavInfoResponse: event.event_name missing")?;
+        let ename = event
+            .event_name
+            .as_ref()
+            .ok_or("RawNavInfoResponse: event.event_name missing")?;
         if ename.trim().is_empty() {
             return Err("RawNavInfoResponse: event.event_name empty");
         }
         // Divisions: present, nonempty vec, each with all required fields.
-        let divisions = self.divisions.as_ref().ok_or("RawNavInfoResponse: missing divisions")?;
+        let divisions = self
+            .divisions
+            .as_ref()
+            .ok_or("RawNavInfoResponse: missing divisions")?;
         if divisions.is_empty() {
             return Err("RawNavInfoResponse: divisions empty");
         }
         for div in divisions {
-            let did = div.division_id.ok_or("RawNavInfoResponse: division_id missing")?;
+            let did = div
+                .division_id
+                .ok_or("RawNavInfoResponse: division_id missing")?;
             if did == 0 {
                 return Err("RawNavInfoResponse: division_id must not be zero");
             }
-            let dname = div.division_name.as_ref().ok_or("RawNavInfoResponse: division_name missing")?;
+            let dname = div
+                .division_name
+                .as_ref()
+                .ok_or("RawNavInfoResponse: division_name missing")?;
             if dname.trim().is_empty() {
                 return Err("RawNavInfoResponse: division_name empty");
             }
             let _indoor = div.indoor.ok_or("RawNavInfoResponse: indoor missing")?;
         }
         // Genders: present and nonempty.
-        let genders = self.genders.as_ref().ok_or("RawNavInfoResponse: missing genders")?;
+        let genders = self
+            .genders
+            .as_ref()
+            .ok_or("RawNavInfoResponse: missing genders")?;
         if genders.is_empty() {
             return Err("RawNavInfoResponse: genders empty");
         }

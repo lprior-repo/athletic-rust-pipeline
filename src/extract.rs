@@ -4,12 +4,16 @@ use crate::{
     model::{Candidate, Mark, ModelDecision, Prospect, SearchHit},
 };
 use anyhow::{Context, Result};
+use futures::TryStreamExt;
 use regex::Regex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{sync::LazyLock, time::Duration};
 use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
+
+pub const AI_SCHEMA_VERSION: u32 = 5;
+const MAX_MODEL_RESPONSE_BYTES: usize = 64 * 1024;
 
 pub struct OllamaClient {
     client: Client,
@@ -46,51 +50,174 @@ struct OpenAiMessage {
     content: String,
 }
 
+fn missing_evidence<'de, D, T>(deserializer: D) -> std::result::Result<T, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de> + Default,
+{
+    let Some(value) = Option::<T>::deserialize(deserializer)? else {
+        return Ok(T::default());
+    };
+    Ok(value)
+}
+
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct CandidateExtraction {
-    #[serde(default)]
+    #[serde(deserialize_with = "missing_evidence")]
     athlete_name: String,
-    #[serde(default)]
+    #[serde(deserialize_with = "missing_evidence")]
     school: String,
-    #[serde(default)]
+    #[serde(deserialize_with = "missing_evidence")]
     location: String,
+    #[serde(deserialize_with = "missing_evidence")]
     graduation_year: Option<i32>,
-    #[serde(default)]
+    #[serde(deserialize_with = "missing_evidence")]
     sports: Vec<String>,
-    #[serde(default)]
+    #[serde(deserialize_with = "missing_evidence")]
     marks: Vec<ExtractedMark>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct ExtractedMark {
-    #[serde(default)]
+    #[serde(default, deserialize_with = "missing_evidence")]
     event: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "missing_evidence")]
     mark: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "missing_evidence")]
     season: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "missing_evidence")]
     date: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "missing_evidence")]
     meet_name: String,
+    #[serde(default, deserialize_with = "missing_evidence")]
     wind: Option<String>,
     #[serde(default)]
     is_pr: bool,
+}
+#[derive(Serialize)]
+struct ProspectSummary<'a> {
+    first_name: &'a str,
+    last_name: &'a str,
+    school: &'a str,
+    city: &'a str,
+    state: &'a str,
+    street: &'a str,
+    postal_code: &'a str,
+    source_sport: &'a str,
+    expected_graduation_year: Option<i32>,
+}
+
+impl<'a> From<&'a Prospect> for ProspectSummary<'a> {
+    fn from(prospect: &'a Prospect) -> Self {
+        Self {
+            first_name: &prospect.first_name,
+            last_name: &prospect.last_name,
+            school: &prospect.school,
+            city: &prospect.city,
+            state: &prospect.state,
+            street: prospect
+                .source_fields
+                .get("Address Mailing / Permanent Street Combined")
+                .map_or("", String::as_str),
+            postal_code: prospect
+                .source_fields
+                .get("Address Mailing / Permanent Postal")
+                .map_or("", String::as_str),
+            source_sport: &prospect.sport,
+            expected_graduation_year: prospect.expected_graduation_year,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
 struct CandidateSummary<'a> {
     index: usize,
     profile_url: &'a str,
+    search_title: &'a str,
+    search_snippet: &'a str,
     athlete_name: &'a str,
     school: &'a str,
     location: &'a str,
     graduation_year: Option<i32>,
     sports: &'a [String],
+    evidence_text: &'a str,
+    evidence_urls: &'a [String],
+    marks: &'a [Mark],
     deterministic_score: f64,
     corroborated: bool,
 }
+#[derive(Debug, Deserialize, Default)]
+struct IdentityDecisionPayload {
+    #[serde(default)]
+    decision: Option<String>,
+    #[serde(default)]
+    candidate_index: Option<usize>,
+    #[serde(default)]
+    confidence: Option<f64>,
+    #[serde(default)]
+    track_confirmed: bool,
+    #[serde(default)]
+    xc_confirmed: bool,
+    #[serde(default)]
+    reason: String,
+    #[serde(default)]
+    model_status: Option<String>,
+}
 
+impl IdentityDecisionPayload {
+    fn into_model_decision(self) -> Result<ModelDecision> {
+        Ok(ModelDecision {
+            decision: self.decision.context("identity model omitted decision")?,
+            candidate_index: self.candidate_index,
+            confidence: self
+                .confidence
+                .context("identity model omitted confidence")?,
+            track_confirmed: self.track_confirmed,
+            xc_confirmed: self.xc_confirmed,
+            reason: self.reason,
+            model_status: match self.model_status {
+                Some(value) => value,
+                None => "ok".to_owned(),
+            },
+        })
+    }
+}
+
+#[derive(Clone, Copy)]
+enum IdentityReviewMode {
+    Legacy,
+    Exhaustive,
+}
+
+pub(crate) async fn bounded_response_body(response: reqwest::Response) -> Result<Vec<u8>> {
+    let max_bytes = u64::try_from(MAX_MODEL_RESPONSE_BYTES)
+        .context("model response size limit does not fit in u64")?;
+    if response
+        .content_length()
+        .is_some_and(|length| length > max_bytes)
+    {
+        anyhow::bail!("local model response exceeds {MAX_MODEL_RESPONSE_BYTES} bytes");
+    }
+    response
+        .bytes_stream()
+        .map_err(anyhow::Error::from)
+        .try_fold(Vec::new(), |body, chunk| async move {
+            let next_length = body
+                .len()
+                .checked_add(chunk.len())
+                .context("local model response size overflow")?;
+            if next_length > MAX_MODEL_RESPONSE_BYTES {
+                anyhow::bail!("local model response exceeds {MAX_MODEL_RESPONSE_BYTES} bytes");
+            }
+            let mut body = body;
+            body.try_reserve(chunk.len())
+                .context("allocating local model response buffer")?;
+            body.extend_from_slice(&chunk);
+            Ok(body)
+        })
+        .await
+        .context("reading local model response body")
+}
 impl OllamaClient {
     pub fn new(config: &OllamaConfig) -> Result<Self> {
         let client = Client::builder()
@@ -103,6 +230,14 @@ impl OllamaClient {
             api: config.api.clone(),
             enabled: config.enabled,
         })
+    }
+
+    pub fn model_name(&self) -> &str {
+        &self.model
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     async fn chat_json<T: for<'de> Deserialize<'de>>(&self, prompt: &str) -> Result<T> {
@@ -145,19 +280,10 @@ impl OllamaClient {
                 "messages": messages
             })
         };
-        let response = self
-            .client
-            .post(&endpoint)
-            .json(&body)
-            .send()
-            .await
-            .with_context(|| format!("calling local model at {endpoint}"))?
-            .error_for_status()
-            .context("local model returned an error status")?;
+        let response_body =
+            crate::model_transport::post_json(&self.client, &endpoint, &body).await?;
         let content = if openai_compatible {
-            response
-                .json::<OpenAiResponse>()
-                .await
+            serde_json::from_slice::<OpenAiResponse>(&response_body)
                 .context("decoding OpenAI-compatible local model response")?
                 .choices
                 .into_iter()
@@ -166,9 +292,7 @@ impl OllamaClient {
                 .filter(|value| !value.trim().is_empty())
                 .context("local model returned no text choice")?
         } else {
-            response
-                .json::<OllamaResponse>()
-                .await
+            serde_json::from_slice::<OllamaResponse>(&response_body)
                 .context("decoding Ollama response")?
                 .message
                 .content
@@ -184,15 +308,15 @@ impl OllamaClient {
         hit: &SearchHit,
         evidence: &str,
     ) -> Result<CandidateExtraction> {
+        let prospect_json = serde_json::to_string(&ProspectSummary::from(prospect))
+            .context("serializing postal identity context")?;
         let prompt = format!(
             r#"Extract only facts explicitly supported by the candidate evidence.
 
 Prospect context is supplied only to focus extraction, not as evidence:
-name: {prospect_name}
-school: {prospect_school}
-location: {prospect_city}, {prospect_state}
-expected graduation year: {year:?}
-requested sport: {sport}
+{prospect_json}
+The full mailing/permanent address is context, not proof of the athlete's residence.
+Never copy its street, city, state or postal code into candidate facts without independent evidence.
 
 Candidate URL: {url}
 Search title: {title}
@@ -222,12 +346,7 @@ Return exactly this JSON shape:
 
 Do not copy prospect fields into the candidate unless the evidence independently shows them.
 Do not infer a PR when the evidence does not label it or provide enough complete results to establish it."#,
-            prospect_name = prospect.full_name(),
-            prospect_school = prospect.school,
-            prospect_city = prospect.city,
-            prospect_state = prospect.state,
-            year = prospect.expected_graduation_year,
-            sport = prospect.sport,
+            prospect_json = prospect_json,
             url = hit.url,
             title = hit.title,
             snippet = hit.snippet,
@@ -240,74 +359,10 @@ Do not infer a PR when the evidence does not label it or provide enough complete
         prospect: &Prospect,
         candidates: &[Candidate],
     ) -> ModelDecision {
-        if !self.enabled {
-            return ModelDecision {
-                decision: "DETERMINISTIC".to_owned(),
-                model_status: "disabled".to_owned(),
-                reason: "Ollama validation disabled".to_owned(),
-                ..Default::default()
-            };
-        }
-        let summaries: Vec<CandidateSummary<'_>> = candidates
-            .iter()
-            .enumerate()
-            .map(|(index, candidate)| CandidateSummary {
-                index,
-                profile_url: &candidate.profile_url,
-                athlete_name: &candidate.athlete_name,
-                school: &candidate.school,
-                location: &candidate.location,
-                graduation_year: candidate.graduation_year,
-                sports: &candidate.sports,
-                deterministic_score: candidate.deterministic_score,
-                corroborated: candidate.corroborated,
-            })
-            .collect();
-        let prospect_json = match serde_json::to_string_pretty(prospect) {
-            Ok(value) => value,
-            Err(error) => {
-                return ModelDecision {
-                    decision: "DETERMINISTIC".to_owned(),
-                    model_status: "serialization_error".to_owned(),
-                    reason: format!("Could not serialize prospect context: {error}"),
-                    ..Default::default()
-                };
-            }
-        };
-        let summaries_json = match serde_json::to_string_pretty(&summaries) {
-            Ok(value) => value,
-            Err(error) => {
-                return ModelDecision {
-                    decision: "DETERMINISTIC".to_owned(),
-                    model_status: "serialization_error".to_owned(),
-                    reason: format!("Could not serialize candidate context: {error}"),
-                    ..Default::default()
-                };
-            }
-        };
-        let prompt = format!(
-            r#"Perform conservative identity review. Exact name alone is insufficient. School, geography, class year, and team/sport must corroborate identity. Cross Country may corroborate Track & Field but is not a substitute for Track participation. Conflicting school/state/year is negative evidence. Do not invent facts.
-
-Prospect:
-{prospect_json}
-
-Candidates (zero-based index):
-{summaries_json}
-
-Return exactly:
-{{
-  "decision": "MATCH|CLOSE_MATCH|REVIEW|NO_MATCH",
-  "candidate_index": null,
-  "confidence": 0.0,
-  "track_confirmed": false,
-  "xc_confirmed": false,
-  "reason": "",
-  "model_status": "ok"
-}}
-
-Use candidate_index only when one candidate is defensible. False positives are worse than false negatives."#
-        );
-        match self.chat_json::<ModelDecision>(&prompt).await {
+        match self
+            .request_identity(prospect, candidates, IdentityReviewMode::Legacy)
+            .await
+        {
             Ok(mut decision) => {
                 decision.model_status = "ok".to_owned();
                 if decision
@@ -332,7 +387,196 @@ Use candidate_index only when one candidate is defensible. False positives are w
             },
         }
     }
+
+    pub async fn validate_identity_required(
+        &self,
+        prospect: &Prospect,
+        candidates: &[Candidate],
+    ) -> Result<ModelDecision> {
+        let decision = self
+            .request_identity(prospect, candidates, IdentityReviewMode::Exhaustive)
+            .await?;
+        validate_model_decision(&decision, candidates)?;
+        Ok(decision)
+    }
+
+    async fn request_identity(
+        &self,
+        prospect: &Prospect,
+        candidates: &[Candidate],
+        mode: IdentityReviewMode,
+    ) -> Result<ModelDecision> {
+        if !self.enabled {
+            anyhow::bail!("Local identity reviewer is disabled");
+        }
+        let summaries: Vec<CandidateSummary<'_>> = candidates
+            .iter()
+            .enumerate()
+            .map(|(index, candidate)| CandidateSummary {
+                index,
+                profile_url: &candidate.profile_url,
+                search_title: &candidate.search_title,
+                search_snippet: &candidate.search_snippet,
+                athlete_name: &candidate.athlete_name,
+                school: &candidate.school,
+                location: &candidate.location,
+                graduation_year: candidate.graduation_year,
+                sports: &candidate.sports,
+                evidence_text: &candidate.evidence_text,
+                evidence_urls: &candidate.evidence_urls,
+                marks: &candidate.marks,
+                deterministic_score: candidate.deterministic_score,
+                corroborated: candidate.corroborated,
+            })
+            .collect();
+        let prospect_summary = ProspectSummary::from(prospect);
+        let prospect_json = serde_json::to_string(&prospect_summary)
+            .context("serializing permitted prospect identity context")?;
+        let summaries_json =
+            serde_json::to_string_pretty(&summaries).context("serializing candidate context")?;
+        let prompt = match mode {
+            IdentityReviewMode::Legacy => format!(
+                r#"Perform conservative identity review. Exact name alone is insufficient. School, geography, class year, and team/sport must corroborate identity. Cross Country may corroborate Track & Field but is not a substitute for Track participation. Conflicting school/state/year is negative evidence. Do not invent facts.
+
+Prospect:
+{prospect_json}
+
+Candidates (zero-based index):
+{summaries_json}
+
+Return exactly:
+{{
+  "decision": "MATCH|CLOSE_MATCH|REVIEW|NO_MATCH",
+  "candidate_index": null,
+  "confidence": 0.0,
+  "track_confirmed": false,
+  "xc_confirmed": false,
+  "reason": "",
+  "model_status": "ok"
+}}
+
+Use candidate_index only when one candidate is defensible. False positives are worse than false negatives."#
+            ),
+            IdentityReviewMode::Exhaustive => format!(
+                r#"Perform conservative identity review using only the supplied candidate evidence. Exact name alone is insufficient; independently corroborating school, geography, or class year is required when available. Conflicting candidate school, state, or year is negative evidence. Do not invent facts.
+
+The prospect's sport is a source-row provenance field, not an identity constraint. Do not reject a candidate solely because its sports differ from that source field, and do not require a candidate sport to match it. Track & Field and Cross Country are independent candidate evidence: confirm each only when the candidate evidence supports it. Never copy prospect fields into candidate facts or rewrite candidate sports.
+The full mailing/permanent postal address can distinguish same-name people. Compare geography only against independently supported candidate facts. A missing candidate street/postal address is unknown, not a mismatch. A conflicting state is negative evidence; a move is possible but must not be invented. Never infer identity from the name alone.
+
+Prospect:
+{prospect_json}
+
+Candidates (zero-based index; summaries include the candidate's actual evidence):
+{summaries_json}
+
+Return exactly:
+{{
+  "decision": "MATCH|CLOSE_MATCH|REVIEW|NO_MATCH",
+  "candidate_index": null,
+  "confidence": 0.0,
+  "track_confirmed": false,
+  "xc_confirmed": false,
+  "reason": "",
+  "model_status": "ok"
+}}
+
+Use candidate_index only when one candidate is defensible. False positives are worse than false negatives."#
+            ),
+        };
+        self.chat_json::<IdentityDecisionPayload>(&prompt)
+            .await?
+            .into_model_decision()
+    }
 }
+
+pub fn validate_model_decision(decision: &ModelDecision, candidates: &[Candidate]) -> Result<()> {
+    if decision.model_status != "ok" {
+        anyhow::bail!(
+            "identity reviewer returned invalid model_status {}: {}",
+            decision.model_status,
+            decision.reason
+        );
+    }
+    if !decision.confidence.is_finite() || !(0.0..=1.0).contains(&decision.confidence) {
+        anyhow::bail!("identity reviewer returned invalid confidence");
+    }
+    if !matches!(
+        decision.decision.as_str(),
+        "MATCH" | "CLOSE_MATCH" | "REVIEW" | "NO_MATCH"
+    ) {
+        anyhow::bail!(
+            "identity reviewer returned invalid decision {}",
+            decision.decision
+        );
+    }
+    if let Some(index) = decision.candidate_index {
+        if candidates.get(index).is_none() {
+            anyhow::bail!("identity reviewer returned invalid candidate index {index}");
+        }
+    }
+    if matches!(decision.decision.as_str(), "MATCH" | "CLOSE_MATCH")
+        && decision.candidate_index.is_none()
+    {
+        anyhow::bail!(
+            "identity reviewer decision {} requires a candidate index",
+            decision.decision
+        );
+    }
+    Ok(())
+}
+
+pub async fn candidate_from_evidence_required(
+    prospect: &Prospect,
+    hit: &SearchHit,
+    html: Option<&str>,
+    ollama: &OllamaClient,
+    page_text_limit: usize,
+) -> Result<Candidate> {
+    let evidence = build_evidence(hit, html, page_text_limit);
+    let extraction = ollama
+        .extract_candidate(prospect, hit, &evidence)
+        .await
+        .map_err(|error| {
+            anyhow::anyhow!("required local-model candidate extraction failed: {error:#}")
+        })?;
+    Ok(candidate_from_extraction(hit, html, extraction, evidence))
+}
+
+pub fn candidate_from_evidence_deterministic(
+    prospect: &Prospect,
+    hit: &SearchHit,
+    html: Option<&str>,
+    page_text_limit: usize,
+) -> Candidate {
+    let evidence = build_evidence(hit, html, page_text_limit);
+    let mut extraction = fallback_extraction(hit);
+    enrich_from_search_evidence(prospect, hit, &mut extraction);
+    extraction.sports.retain(|sport| {
+        (sport == "Track & Field" && hit.url.contains("track-and-field"))
+            || (sport == "Cross Country" && hit.url.contains("cross-country"))
+    });
+    if let Some(state) = hit
+        .snippet
+        .split_whitespace()
+        .filter_map(|token| {
+            let token = token.trim_matches(|c: char| !c.is_alphabetic());
+            (token.len() == 2 && token.chars().all(|c| c.is_ascii_uppercase()))
+                .then(|| crate::alpha_url::canonical_state(token))
+                .flatten()
+        })
+        .next()
+    {
+        extraction.location = state;
+    }
+    extraction.graduation_year = CLASS_YEAR
+        .as_ref()
+        .and_then(|pattern| pattern.captures(&evidence)?.get(1)?.as_str().parse().ok());
+    candidate_from_extraction(hit, html, extraction, evidence)
+}
+
+static CLASS_YEAR: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(r"(?i)\b(?:class\s+of|graduation(?:\s+year)?)\s*:?\s*(20\d{2})\b").ok()
+});
 
 pub async fn candidate_from_evidence(
     prospect: &Prospect,
@@ -347,6 +591,19 @@ pub async fn candidate_from_evidence(
         Err(_) => fallback_extraction(hit),
     };
     enrich_from_search_evidence(prospect, hit, &mut extraction);
+    candidate_from_extraction(hit, html, extraction, evidence)
+}
+
+pub fn candidate_evidence(hit: &SearchHit, html: Option<&str>, page_text_limit: usize) -> String {
+    build_evidence(hit, html, page_text_limit)
+}
+
+fn candidate_from_extraction(
+    hit: &SearchHit,
+    html: Option<&str>,
+    extraction: CandidateExtraction,
+    evidence: String,
+) -> Candidate {
     let marks = extraction
         .marks
         .into_iter()
@@ -666,5 +923,102 @@ mod tests {
         assert_eq!(extraction.location, "Testville, TS");
         assert_eq!(extraction.marks.len(), 2);
         assert_eq!(extraction.marks[0].event, "100mH");
+    }
+
+    #[test]
+    fn null_optional_extraction_fields_remain_empty() -> Result<()> {
+        let extraction: CandidateExtraction = serde_json::from_str(
+            r#"{
+                "athlete_name": null,
+                "school": null,
+                "location": null,
+                "graduation_year": null,
+                "sports": null,
+                "marks": null
+            }"#,
+        )?;
+        assert!(extraction.athlete_name.is_empty());
+        assert!(extraction.school.is_empty());
+        assert!(extraction.location.is_empty());
+        assert!(extraction.graduation_year.is_none());
+        assert!(extraction.sports.is_empty());
+        assert!(extraction.marks.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn strict_identity_validation_rejects_invalid_confidence() -> Result<()> {
+        let decision = ModelDecision {
+            decision: "MATCH".to_owned(),
+            candidate_index: Some(0),
+            confidence: 1.1,
+            model_status: "ok".to_owned(),
+            ..Default::default()
+        };
+        let error = match validate_model_decision(&decision, &[Candidate::default()]) {
+            Ok(()) => anyhow::bail!("invalid confidence unexpectedly accepted"),
+            Err(error) => error,
+        };
+        assert!(format!("{error:#}").contains("invalid confidence"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn required_candidate_extraction_rejects_disabled_model() -> Result<()> {
+        let client = OllamaClient::new(&OllamaConfig {
+            api: "openai-compatible".to_owned(),
+            enabled: false,
+            url: "http://127.0.0.1:1".to_owned(),
+            model: "test-model".to_owned(),
+            timeout_seconds: 1,
+        })?;
+        let prospect = Prospect {
+            first_name: "Ada".to_owned(),
+            last_name: "Runner".to_owned(),
+            ..Default::default()
+        };
+        let hit = SearchHit {
+            url: "https://www.athletic.net/athlete/7/track-and-field".to_owned(),
+            title: "Ada Runner".to_owned(),
+            ..Default::default()
+        };
+        let error =
+            match candidate_from_evidence_required(&prospect, &hit, None, &client, 4_000).await {
+                Ok(_) => anyhow::bail!("required AI extraction unexpectedly succeeded"),
+                Err(error) => error,
+            };
+        assert!(format!("{error:#}").contains("Local model is disabled"));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn omitted_extraction_schema_is_an_error_not_empty_evidence() -> Result<()> {
+        let mut server = mockito::Server::new_async().await;
+        let _response = server
+            .mock("POST", "/v1/chat/completions")
+            .with_body(json!({"choices": [{"message": {"content": "{}"}}]}).to_string())
+            .create_async()
+            .await;
+        let client = OllamaClient::new(&OllamaConfig {
+            api: "openai-compatible".to_owned(),
+            enabled: true,
+            url: server.url(),
+            model: "fixture".to_owned(),
+            timeout_seconds: 5,
+        })?;
+        let hit = SearchHit {
+            url: "https://www.athletic.net/athlete/7/track-and-field".to_owned(),
+            title: "Ada Runner".to_owned(),
+            ..Default::default()
+        };
+        let result =
+            candidate_from_evidence_required(&Prospect::default(), &hit, None, &client, 4_000)
+                .await;
+        let error = match result {
+            Ok(_) => anyhow::bail!("missing extraction schema accepted as evidence"),
+            Err(error) => error,
+        };
+        assert!(format!("{error:#}").contains("missing field"));
+        Ok(())
     }
 }

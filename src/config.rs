@@ -11,6 +11,8 @@ pub struct Config {
     pub discovery: DiscoveryConfig,
     pub retrieval: RetrievalConfig,
     pub ollama: OllamaConfig,
+    #[serde(default)]
+    pub identity_review: Option<OllamaConfig>,
     pub matching: MatchingConfig,
 }
 
@@ -110,10 +112,36 @@ impl Config {
         if self.retrieval.delay_ms < 500 {
             bail!("retrieval.delay_ms must be at least 500 ms");
         }
+        if [
+            self.matching.review_threshold,
+            self.matching.close_threshold,
+            self.matching.match_threshold,
+        ]
+        .iter()
+        .any(|value| !(0.0..=1.0).contains(value))
+        {
+            bail!("matching thresholds must be finite probabilities in [0, 1]");
+        }
         if self.matching.review_threshold > self.matching.close_threshold
             || self.matching.close_threshold > self.matching.match_threshold
         {
             bail!("matching thresholds must satisfy review <= close <= match");
+        }
+        if !(1..=600).contains(&self.ollama.timeout_seconds) {
+            bail!("ollama.timeout_seconds must be positive");
+        }
+        if let Some(review) = &self.identity_review {
+            if !(1..=600).contains(&review.timeout_seconds) {
+                bail!("identity_review.timeout_seconds must be positive");
+            }
+        }
+        if !(1..=120).contains(&self.discovery.request_timeout_seconds)
+            || self.discovery.max_attempts > 8
+            || self.discovery.search_delay_ms > 60_000
+        {
+            bail!(
+                "discovery requires timeout 1..120 seconds, attempts 1..8, and delay <= 60000 ms"
+            );
         }
         Ok(())
     }

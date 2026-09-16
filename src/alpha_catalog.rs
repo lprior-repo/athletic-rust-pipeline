@@ -5,10 +5,10 @@ use crate::alpha_model_raw::RawNavInfoResponse;
 
 /// The exact 50 canonical US state codes — no DC, no subregions, no leagues.
 pub const ALLOWED_STATES: &[&str] = &[
-    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA",
-    "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-    "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT",
-    "VA", "WA", "WV", "WI", "WY",
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS",
+    "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY",
+    "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV",
+    "WI", "WY",
 ];
 
 /// Infer event direction: track/sprint → lower is better; field events → higher is better.
@@ -16,13 +16,10 @@ fn event_higher_is_better(event_short: &str) -> bool {
     let lower = event_short.to_lowercase();
     // Timed track events: any pattern containing a distance number + m/H, or known timed names.
     let timed_patterns = [
-        "55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m",
-        "800m", "1000m", "1500m", "1600m", "2000m", "3000m", "3200m", "5000m", "5k",
-        "10000m",
-        "100h", "100mh", "110h", "110mh", "300h", "300mh", "400h", "400mh", "60h", "60mh",
-        "mile", "milet",
-        "hurdle", "hurdles",
-        "relay", "relays",
+        "55m", "60m", "80m", "100m", "200m", "300m", "400m", "500m", "600m", "800m", "1000m",
+        "1500m", "1600m", "2000m", "3000m", "3200m", "5000m", "5k", "10000m", "100h", "100mh",
+        "110h", "110mh", "300h", "300mh", "400h", "400mh", "60h", "60mh", "mile", "milet",
+        "hurdle", "hurdles", "relay", "relays",
     ];
     for pat in &timed_patterns {
         if lower.contains(pat) {
@@ -45,10 +42,7 @@ impl RunMatrix {
     ) -> Result<Self, String> {
         // Validate exactly 50 states, allow-list membership, unique codes, unique nonzero IDs
         if states.len() != 50 {
-            return Err(format!(
-                "exactly 50 states required, got {}",
-                states.len()
-            ));
+            return Err(format!("exactly 50 states required, got {}", states.len()));
         }
         let mut seen_codes = BTreeSet::new();
         let mut seen_ids = HashSet::new();
@@ -89,10 +83,7 @@ impl RunMatrix {
             return Err("at least one gender is required".into());
         }
         let mut seen_genders = HashSet::new();
-        let trimmed_genders: Vec<String> = genders
-            .iter()
-            .map(|g| g.trim().to_string())
-            .collect();
+        let trimmed_genders: Vec<String> = genders.iter().map(|g| g.trim().to_string()).collect();
         for g in &trimmed_genders {
             if g.is_empty() {
                 return Err("whitespace-only gender is not allowed".into());
@@ -171,7 +162,13 @@ impl RunMatrix {
     /// `None` returns all units. `Some(0)` returns an empty slice.
     pub fn take(&self, max_units: Option<usize>) -> &[RunUnit] {
         match max_units {
-            Some(n) => &self.units[..n.min(self.units.len())],
+            Some(n) => {
+                let limit = n.min(self.units.len());
+                match self.units.get(..limit) {
+                    Some(units) => units,
+                    None => &[],
+                }
+            }
             None => &self.units,
         }
     }

@@ -27,28 +27,52 @@ fn states_50() -> Vec<StateTarget> {
 fn test_exactly_50_states_required() {
     let mut states = states_50();
     states.pop();
-    assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states,
+        vec![2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_too_many_states_rejected() {
     let mut states = states_50();
     states.push(state("ZZ", 99));
-    assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states,
+        vec![2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_duplicate_state_code_rejected() {
     let mut states = states_50();
     states[0] = state("CA", 10); // replace first with CA, keeping 50
-    assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states,
+        vec![2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_duplicate_state_id_rejected() {
     let mut states = states_50();
     states[1] = state("AK", 10); // keep AK, duplicate AL's ID (10), 50 entries
-    assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states,
+        vec![2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
@@ -57,14 +81,23 @@ fn test_unknown_state_rejected() {
     states.pop();
     let mut s = states;
     s.push(state("ZZ", 1000));
-    assert!(RunMatrix::from_targets(s, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(
+        RunMatrix::from_targets(s, vec![2024], vec!["M".into()], vec![event("100m", false)])
+            .is_err()
+    );
 }
 
 #[test]
 fn test_zero_state_id_rejected() {
     let mut states = states_50();
     states[0] = state("AL", 0);
-    assert!(RunMatrix::from_targets(states, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states,
+        vec![2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
@@ -73,42 +106,84 @@ fn test_dc_rejected() {
     states.pop();
     let mut s = states;
     s.push(state("DC", 1));
-    assert!(RunMatrix::from_targets(s, vec![2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(
+        RunMatrix::from_targets(s, vec![2024], vec!["M".into()], vec![event("100m", false)])
+            .is_err()
+    );
 }
 
 #[test]
 fn test_negative_season_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![-1], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![-1],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_zero_season_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![0], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![0],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_empty_genders_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024], vec![], vec![event("100m", false)]).is_err());
+    assert!(
+        RunMatrix::from_targets(states_50(), vec![2024], vec![], vec![event("100m", false)])
+            .is_err()
+    );
 }
 
 #[test]
 fn test_whitespace_gender_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024], vec!["  ".to_string()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![2024],
+        vec!["  ".to_string()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_duplicate_genders_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into(), "M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![2024],
+        vec!["M".into(), "M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_empty_event_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into()], vec![event("", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![2024],
+        vec!["M".into()],
+        vec![event("", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_whitespace_event_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024], vec!["M".into()], vec![event("  ", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![2024],
+        vec!["M".into()],
+        vec![event("  ", false)]
+    )
+    .is_err());
 }
 
 #[test]
@@ -118,10 +193,22 @@ fn test_duplicate_event_short_rejected() {
 }
 #[test]
 fn test_empty_seasons_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }
 
 #[test]
 fn test_duplicate_seasons_rejected() {
-    assert!(RunMatrix::from_targets(states_50(), vec![2024, 2024], vec!["M".into()], vec![event("100m", false)]).is_err());
+    assert!(RunMatrix::from_targets(
+        states_50(),
+        vec![2024, 2024],
+        vec!["M".into()],
+        vec![event("100m", false)]
+    )
+    .is_err());
 }

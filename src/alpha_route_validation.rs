@@ -3,11 +3,7 @@ use anyhow::{bail, Context, Result};
 /// Validate a route by resolving against the base URL.
 /// Ensures same scheme/host, rejects backslash authority escapes,
 /// userinfo, query, and fragment.
-pub fn validate_route(
-    route: &str,
-    base: &url::Url,
-    allowed: &[String],
-) -> Result<()> {
+pub fn validate_route(route: &str, base: &url::Url, allowed: &[String]) -> Result<()> {
     // Reject network-path references (//host/path) — even same-host.
     if route.starts_with("//") {
         bail!(
@@ -30,9 +26,9 @@ pub fn validate_route(
     }
 
     // Resolve route against the base URL.
-    let resolved = base.join(route).with_context(|| {
-        format!("api route '{}' is not valid relative to base URL", route)
-    })?;
+    let resolved = base
+        .join(route)
+        .with_context(|| format!("api route '{}' is not valid relative to base URL", route))?;
 
     // Must use HTTPS scheme (allow HTTP for localhost testing).
     let scheme_ok = resolved.scheme() == "https"
@@ -69,5 +65,6 @@ pub fn validate_route(
 
 /// Check if the host is a localhost address (for test-mode HTTP).
 fn is_localhost(host: Option<&str>) -> bool {
-    host.map(|h| h == "localhost" || h == "127.0.0.1").unwrap_or(false)
+    host.map(|h| h == "localhost" || h == "127.0.0.1")
+        .unwrap_or(false)
 }

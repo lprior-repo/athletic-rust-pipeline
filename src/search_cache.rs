@@ -1,10 +1,8 @@
 use crate::model::SearchHit;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
-    fs::{File, OpenOptions},
-    io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -76,49 +74,11 @@ impl SearchCacheRecord {
 }
 
 pub fn load_latest(path: &Path) -> Result<HashMap<String, SearchCacheRecord>> {
-    if !path.exists() {
-        return Ok(HashMap::new());
-    }
-    let reader = BufReader::new(
-        File::open(path).with_context(|| format!("opening search cache {}", path.display()))?,
-    );
-    reader
-        .lines()
-        .enumerate()
-        .try_fold(HashMap::new(), |mut records, (line_number, line)| {
-            let line = line.with_context(|| {
-                format!(
-                    "reading search cache {} at line {}",
-                    path.display(),
-                    line_number.saturating_add(1)
-                )
-            })?;
-            if line.trim().is_empty() {
-                return Ok(records);
-            }
-            let record: SearchCacheRecord = serde_json::from_str(&line).with_context(|| {
-                format!(
-                    "invalid search cache JSON at line {}",
-                    line_number.saturating_add(1)
-                )
-            })?;
-            records.insert(record.key.clone(), record);
-            Ok(records)
-        })
+    crate::jsonl::load(path, |record: &SearchCacheRecord| record.key.clone())
 }
 
 pub fn append(path: &Path, record: &SearchCacheRecord) -> Result<()> {
-    let file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(path)
-        .with_context(|| format!("opening search cache {}", path.display()))?;
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, record)
-        .with_context(|| format!("serializing search cache {}", path.display()))?;
-    writer.write_all(b"\n")?;
-    writer.flush()?;
-    Ok(())
+    crate::jsonl::append(path, record)
 }
 
 fn unix_time() -> u64 {
@@ -131,6 +91,7 @@ fn unix_time() -> u64 {
 mod tests {
     use super::*;
     use crate::model::SearchHit;
+    use anyhow::Context;
     use tempfile::tempdir;
 
     #[test]

@@ -13,7 +13,10 @@ pub(crate) fn source_athlete(
     if record.season_id != unit.season_id {
         return Err("ranking record season does not match requested unit".to_owned());
     }
-    if !record.event_short.eq_ignore_ascii_case(&unit.event.event_short) {
+    if !record
+        .event_short
+        .eq_ignore_ascii_case(&unit.event.event_short)
+    {
         return Err("ranking record event does not match requested unit".to_owned());
     }
     let state = canonical_state(&record.state)
@@ -22,18 +25,26 @@ pub(crate) fn source_athlete(
         return Err("ranking record state does not match requested unit".to_owned());
     }
     let profile_url = if record.athlete_id > 0 {
-        validate_profile_url(&format!("https://athletic.net/athlete/{}", record.athlete_id))
-            .ok_or_else(|| "invalid confirmed athlete profile ID".to_owned())?
+        validate_profile_url(&format!(
+            "https://athletic.net/athlete/{}",
+            record.athlete_id
+        ))
+        .ok_or_else(|| "invalid confirmed athlete profile ID".to_owned())?
     } else {
         String::new()
     };
-    let season_label = format!("{}-{:02}", record.season_id, (record.season_id + 1) % 100);
+    let next_season_id = record
+        .season_id
+        .checked_add(1)
+        .ok_or_else(|| "season ID overflow".to_owned())?;
+    let season_label = format!("{}-{:02}", record.season_id, next_season_id.rem_euclid(100));
     let grade = i32::try_from(record.grade_id).ok();
     let decision = classify_cohort(2027, None, Some(&season_label), grade);
     let date = record
         .result_date
         .get(..10)
         .map_or_else(|| record.result_date.clone(), str::to_owned);
+    let wind = record.wind.as_deref().map_or("", std::convert::identity);
     let mut fields = BTreeMap::new();
     fields.insert("athlete_id".to_owned(), record.athlete_id.to_string());
     fields.insert("athlete_name".to_owned(), record.athlete_name.clone());
@@ -49,17 +60,14 @@ pub(crate) fn source_athlete(
         "marks".to_owned(),
         format!(
             "{}|{}|{}|{}|{}|{}",
-            record.event_short,
-            record.measure,
-            season_label,
-            date,
-            record.meet_name,
-            record.wind.clone().map_or_else(String::new, |wind| wind)
+            record.event_short, record.measure, season_label, date, record.meet_name, wind,
         ),
     );
     fields.insert(
         "result_ids".to_owned(),
-        record.result_id.map_or_else(String::new, |id| id.to_string()),
+        record
+            .result_id
+            .map_or_else(String::new, |id| id.to_string()),
     );
     let source = crate::model::SourceRecord {
         source_key: "authorized-ranking".to_owned(),

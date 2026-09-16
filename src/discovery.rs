@@ -2,7 +2,8 @@ use crate::{
     config::DiscoveryConfig,
     model::{Prospect, SearchHit},
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
+use futures::TryStreamExt;
 use regex::Regex;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
@@ -16,9 +17,14 @@ use std::{
     },
     time::Duration,
 };
-use tokio::{sync::Mutex, time::{sleep, Instant}};
+use tokio::{
+    sync::Mutex,
+    time::{sleep, Instant},
+};
 use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
 use url::Url;
+
+const MAX_RESPONSE_BODY_BYTES: u64 = 16 * 1024 * 1024;
 
 pub struct AthleticNetClient {
     client: Client,
@@ -27,7 +33,7 @@ pub struct AthleticNetClient {
     search_delay: Duration,
     max_attempts: u32,
     circuit_breaker_threshold: u32,
-    consecutive_denials: AtomicU32,
+    total_denials: AtomicU32,
     circuit_open: AtomicBool,
     next_request_at: Mutex<Instant>,
 }
@@ -39,8 +45,11 @@ struct SearchEnvelope {
 
 #[derive(Debug, Deserialize, Default)]
 struct SearchPayload {
-    #[serde(default)]
     results: String,
+    #[serde(default)]
+    count: Option<i64>,
+    #[serde(default)]
+    pager: String,
 }
 
 #[derive(Debug)]
@@ -103,7 +112,7 @@ impl SearchRequest {
         format!(
             "{}\n{}",
             self.filter,
-            normalize_name_for_search(&self.query).to_lowercase()
+            collapse_spaces(&self.query).to_lowercase()
         )
     }
 }
@@ -121,13 +130,11 @@ impl QueryPlan {
         let context_queries = [
             (!prospect.school.trim().is_empty())
                 .then(|| format!("{name} {}", prospect.school.trim())),
-            (!(prospect.city.trim().is_empty() && prospect.state.trim().is_empty())).then(|| {
-                format!(
-                    "{name} {} {}",
-                    prospect.city.trim(),
-                    prospect.state.trim()
-                )
-            }),
+            (!(prospect.city.trim().is_empty() && prospect.state.trim().is_empty()))
+                .then(|| format!("{name} {} {}", prospect.city.trim(), prospect.state.trim())),
+            prospect
+                .expected_graduation_year
+                .map(|year| format!("{name} {year}")),
         ]
         .into_iter()
         .flatten();
@@ -160,6 +167,7 @@ impl QueryPlan {
         self.stages.get(index).map(Vec::as_slice)
     }
 
+    #[cfg(test)]
     pub fn iter(&self) -> impl Iterator<Item = &SearchRequest> {
         self.stages.iter().flatten()
     }
@@ -188,8 +196,17 @@ fn collapse_spaces(value: &str) -> String {
 
 impl AthleticNetClient {
     pub fn new(config: &DiscoveryConfig) -> Result<Self> {
+        if config.max_candidates == 0 {
+            anyhow::bail!("discovery max_candidates must be greater than zero");
+        }
+        if config.request_timeout_seconds == 0 {
+            anyhow::bail!("discovery request_timeout_seconds must be greater than zero");
+        }
         if config.max_attempts == 0 {
             anyhow::bail!("discovery max_attempts must be greater than zero");
+        }
+        if config.circuit_breaker_threshold == 0 {
+            anyhow::bail!("discovery circuit_breaker_threshold must be greater than zero");
         }
         let client = Client::builder()
             .timeout(Duration::from_secs(config.request_timeout_seconds))
@@ -202,7 +219,7 @@ impl AthleticNetClient {
             search_delay: Duration::from_millis(config.search_delay_ms),
             max_attempts: config.max_attempts,
             circuit_breaker_threshold: config.circuit_breaker_threshold,
-            consecutive_denials: AtomicU32::new(0),
+            total_denials: AtomicU32::new(0),
             circuit_open: AtomicBool::new(false),
             next_request_at: Mutex::new(Instant::now()),
         })
@@ -225,6 +242,24 @@ impl AthleticNetClient {
         &self,
         request: &SearchRequest,
     ) -> std::result::Result<SearchExecution, SearchFailure> {
+        let (payload, attempts) = self.execute_page(request, 0).await?;
+        let mut hits = Vec::new();
+        append_results(
+            &mut hits,
+            &payload.results,
+            &request.query,
+            &request.filter,
+            self.max_candidates,
+        )
+        .map_err(|failure| failure.with_attempts(attempts))?;
+        Ok(SearchExecution { hits, attempts })
+    }
+
+    async fn execute_page(
+        &self,
+        request: &SearchRequest,
+        start: usize,
+    ) -> std::result::Result<(SearchPayload, u32), SearchFailure> {
         if self.circuit_open.load(Ordering::Acquire) {
             return Err(SearchFailure::new(
                 "Athletic.net request circuit is open".to_owned(),
@@ -234,27 +269,22 @@ impl AthleticNetClient {
         }
         for attempt in 1..=self.max_attempts {
             self.wait_for_request_slot().await;
-            match self.send_once(request).await {
-                Ok(envelope) => {
-                    let mut hits = Vec::new();
-                    append_results(
-                        &mut hits,
-                        &envelope.d.results,
-                        &request.query,
-                        &request.filter,
-                        self.max_candidates,
-                    );
-                    return Ok(SearchExecution {
-                        hits,
-                        attempts: attempt,
-                    });
-                }
+            if self.circuit_open.load(Ordering::Acquire) {
+                return Err(SearchFailure::new(
+                    "Athletic.net request circuit is open".to_owned(),
+                    true,
+                    None,
+                )
+                .with_attempts(attempt.saturating_sub(1)));
+            }
+            match self.send_once(request, start).await {
+                Ok(envelope) => return Ok((envelope.d, attempt)),
                 Err(failure) if self.circuit_open.load(Ordering::Acquire) => {
                     return Err(failure.with_attempts(attempt));
                 }
                 Err(failure) if failure.retryable && attempt < self.max_attempts => {
                     let delay = self.retry_delay(attempt).max(failure.retry_after);
-                    sleep(delay).await;
+                    self.defer_requests(delay).await;
                 }
                 Err(failure) => return Err(failure.with_attempts(attempt)),
             }
@@ -268,27 +298,36 @@ impl AthleticNetClient {
     }
 
     async fn wait_for_request_slot(&self) {
+        // This is the sole scheduler lock; no network I/O or other lock is acquired
+        // while held. Sleeping under it prevents bunched starts after a stalled task.
+        let mut next = self.next_request_at.lock().await;
+        sleep(next.saturating_duration_since(Instant::now())).await;
         let now = Instant::now();
-        let wait = {
-            let mut next = self.next_request_at.lock().await;
-            let start = if *next > now { *next } else { now };
-            *next = start + self.search_delay;
-            start.saturating_duration_since(now)
-        };
-        sleep(wait).await;
+        *next = now
+            .checked_add(self.search_delay)
+            .map_or(now, |value| value);
+    }
+
+    async fn defer_requests(&self, delay: Duration) {
+        let mut next = self.next_request_at.lock().await;
+        let deadline = Instant::now().checked_add(delay);
+        if let Some(deadline) = deadline {
+            *next = (*next).max(deadline);
+        }
     }
 
     async fn send_once(
         &self,
         request: &SearchRequest,
+        start: usize,
     ) -> std::result::Result<SearchEnvelope, SearchFailure> {
         let response = self
             .client
             .post(&self.endpoint)
             .json(&json!({
                 "q": request.query,
-                "fq": request.filter,
-                "start": 0,
+                "fq": format!("t:a {}", request.filter),
+                "start": start,
             }))
             .send()
             .await
@@ -303,11 +342,63 @@ impl AthleticNetClient {
         if !status.is_success() {
             return Err(self.failure_for_status(status, response.headers()));
         }
-        self.consecutive_denials.store(0, Ordering::Release);
-        response.json::<SearchEnvelope>().await.map_err(|error| {
+        if response
+            .content_length()
+            .is_some_and(|length| length > MAX_RESPONSE_BODY_BYTES)
+        {
+            return Err(SearchFailure::new(
+                format!(
+                    "Athletic.net search response exceeds {} byte limit",
+                    MAX_RESPONSE_BODY_BYTES
+                ),
+                false,
+                Some(status.as_u16()),
+            ));
+        }
+        let body = response
+            .bytes_stream()
+            .map_err(|error| {
+                SearchFailure::new(
+                    format!("reading Athletic.net search response body: {error}"),
+                    true,
+                    Some(status.as_u16()),
+                )
+            })
+            .try_fold(Vec::new(), |mut body, chunk| async move {
+                let next_length = body.len().checked_add(chunk.len()).ok_or_else(|| {
+                    SearchFailure::new(
+                        "Athletic.net search response size overflow".to_owned(),
+                        false,
+                        Some(status.as_u16()),
+                    )
+                })?;
+                if u64::try_from(next_length)
+                    .map_or(true, |length| length > MAX_RESPONSE_BODY_BYTES)
+                {
+                    return Err(SearchFailure::new(
+                        format!(
+                            "Athletic.net search response exceeds {} byte limit",
+                            MAX_RESPONSE_BODY_BYTES
+                        ),
+                        false,
+                        Some(status.as_u16()),
+                    ));
+                }
+                body.try_reserve(chunk.len()).map_err(|error| {
+                    SearchFailure::new(
+                        format!("allocating Athletic.net search response body: {error}"),
+                        false,
+                        Some(status.as_u16()),
+                    )
+                })?;
+                body.extend_from_slice(&chunk);
+                Ok::<Vec<u8>, SearchFailure>(body)
+            })
+            .await?;
+        serde_json::from_slice::<SearchEnvelope>(&body).map_err(|error| {
             SearchFailure::new(
                 format!("decoding Athletic.net search response: {error}"),
-                true,
+                false,
                 Some(status.as_u16()),
             )
         })
@@ -320,19 +411,26 @@ impl AthleticNetClient {
     ) -> SearchFailure {
         let denied = status == StatusCode::FORBIDDEN || status == StatusCode::TOO_MANY_REQUESTS;
         if denied {
-            let count = self.consecutive_denials.fetch_add(1, Ordering::AcqRel) + 1;
-            if count >= self.circuit_breaker_threshold {
+            let count = self
+                .total_denials
+                .fetch_add(1, Ordering::AcqRel)
+                .saturating_add(1);
+            if status == StatusCode::FORBIDDEN || count >= self.circuit_breaker_threshold {
                 self.circuit_open.store(true, Ordering::Release);
             }
-        } else {
-            self.consecutive_denials.store(0, Ordering::Release);
         }
-        let retryable = denied || status.is_server_error();
-        let retry_after = headers
-            .get(reqwest::header::RETRY_AFTER)
-            .and_then(|value| value.to_str().ok())
-            .and_then(|value| value.parse::<u64>().ok())
-            .map_or(Duration::ZERO, Duration::from_secs);
+        let retryable = crate::retry_policy::transient_status(status);
+        let retry_after =
+            match crate::retry_policy::retry_after(headers, std::time::SystemTime::now()) {
+                Ok(delay) => delay,
+                Err(error) => {
+                    return SearchFailure::new(
+                        format!("Athletic.net returned HTTP {}: {error:#}", status.as_u16()),
+                        false,
+                        Some(status.as_u16()),
+                    )
+                }
+            };
         SearchFailure::new(
             format!("Athletic.net returned HTTP {}", status.as_u16()),
             retryable,
@@ -429,84 +527,113 @@ fn sport_filter(sport: &str) -> &'static str {
     }
 }
 
-static ATHLETE_LINK: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?i)href\s*=\s*["']((?:https?://(?:www\.)?athletic\.net)?/athlete/[0-9]+(?:/[^"'<>\s]*)?)["']"#,
-    )
-    .ok()
-});
-
 fn append_results(
     hits: &mut Vec<SearchHit>,
     html: &str,
     query: &str,
     filter: &str,
     max_candidates: usize,
-) {
-    let Some(pattern) = ATHLETE_LINK.as_ref() else {
-        return;
+) -> std::result::Result<(), SearchFailure> {
+    let Some(pattern) = ATHLETE_ANCHOR.as_ref() else {
+        return Err(SearchFailure::new(
+            "athlete result parser is unavailable".to_owned(),
+            false,
+            None,
+        ));
+    };
+    let Some(row_pattern) = RESULT_ROW.as_ref() else {
+        return Err(SearchFailure::new(
+            "athlete result row parser is unavailable".to_owned(),
+            false,
+            None,
+        ));
     };
     let query_start = hits.len();
     let mut seen: HashSet<String> = hits.iter().map(|hit| hit.url.clone()).collect();
-
-    for capture in pattern.captures_iter(html) {
-        if hits.len().saturating_sub(query_start) >= max_candidates {
-            return;
-        }
-        let Some(raw_url) = capture.get(1).map(|value| value.as_str()) else {
-            continue;
-        };
-        let required_path = if filter == "a:xc" {
+    let rows = row_pattern
+        .find_iter(html)
+        .map(|row| row.as_str())
+        .collect::<Vec<_>>();
+    let rows = if rows.is_empty() { vec![html] } else { rows };
+    for row in rows {
+        let lower_row = row.to_ascii_lowercase();
+        let has_athlete_reference = lower_row.contains("/athlete/");
+        let has_requested_reference = lower_row.contains(if filter == "a:xc" {
             "cross-country"
         } else {
             "track-and-field"
-        };
-        if !raw_url.to_ascii_lowercase().contains(required_path) {
-            continue;
-        }
-        let absolute = if raw_url.starts_with('/') {
-            format!("https://www.athletic.net{raw_url}")
-        } else {
-            raw_url.to_owned()
-        };
-        let Some(url) = allowed_profile_url(&absolute) else {
-            continue;
-        };
-        if !seen.insert(url.clone()) {
-            continue;
-        }
-
-        let offset = capture.get(0).map_or(0, |value| value.start());
-        let row_start = html
-            .get(..offset)
-            .and_then(|prefix| prefix.rfind("<tr"))
-            .map_or(0, |start| start);
-        let row_end = html
-            .get(offset..)
-            .and_then(|suffix| suffix.find("</tr>"))
-            .and_then(|end| end.checked_add(offset))
-            .and_then(|end| end.checked_add("</tr>".len()))
-            .map_or(html.len(), |end| end);
-        let snippet = html
-            .get(row_start..row_end)
-            .map_or_else(String::new, compact_html);
-        let title = snippet
-            .split_whitespace()
-            .take(12)
-            .collect::<Vec<_>>()
-            .join(" ");
-        hits.push(SearchHit {
-            url,
-            title: if title.is_empty() {
-                "Athletic.net athlete result".to_owned()
-            } else {
-                title
-            },
-            snippet,
-            query: query.to_owned(),
-            filter: filter.to_owned(),
         });
+        if has_athlete_reference && has_requested_reference && !pattern.is_match(row) {
+            return Err(SearchFailure::new(
+                "search result row contains a malformed athlete link".to_owned(),
+                true,
+                None,
+            ));
+        }
+        for capture in pattern.captures_iter(row) {
+            if hits.len().saturating_sub(query_start) >= max_candidates {
+                return Ok(());
+            }
+            let Some(raw_url) = capture.get(1).map(|value| value.as_str()) else {
+                return Err(SearchFailure::new(
+                    "search result row contains an incomplete athlete link".to_owned(),
+                    true,
+                    None,
+                ));
+            };
+            let required_path = if filter == "a:xc" {
+                "cross-country"
+            } else {
+                "track-and-field"
+            };
+            if !raw_url.to_ascii_lowercase().contains(required_path) {
+                continue;
+            }
+            let absolute = if raw_url.starts_with('/') {
+                format!("https://www.athletic.net{raw_url}")
+            } else {
+                raw_url.to_owned()
+            };
+            let Some(url) = allowed_profile_url(&absolute) else {
+                return Err(SearchFailure::new(
+                    "search result row contains an athlete link with an invalid ID".to_owned(),
+                    true,
+                    None,
+                ));
+            };
+            let Some(name_html) = capture.get(2) else {
+                return Err(SearchFailure::new(
+                    "search result row contains an incomplete athlete name".to_owned(),
+                    true,
+                    None,
+                ));
+            };
+            let name = compact_html(name_html.as_str());
+            if name.is_empty() {
+                return Err(SearchFailure::new(
+                    "search result row contains an athlete link with an empty name".to_owned(),
+                    true,
+                    None,
+                ));
+            }
+            if !seen.insert(url.clone()) {
+                return Err(SearchFailure::new(
+                    format!("search returned duplicate athlete result {url}"),
+                    true,
+                    None,
+                ));
+            }
+            let snippet = compact_html(row);
+            hits.push(SearchHit {
+                url,
+                title: name,
+                snippet,
+                query: query.to_owned(),
+                filter: filter.to_owned(),
+            });
+        }
     }
+    Ok(())
 }
 
 pub fn allowed_profile_url(value: &str) -> Option<String> {
@@ -521,11 +648,28 @@ pub fn allowed_profile_url(value: &str) -> Option<String> {
     if url.scheme() != "https" && url.scheme() != "http" {
         return None;
     }
+    let mut path_parts = url.path().split('/');
+    if path_parts.next() != Some("")
+        || path_parts.next() != Some("athlete")
+        || path_parts.next().is_none_or(|id| {
+            id.is_empty() || !id.chars().all(|character| character.is_ascii_digit())
+        })
+    {
+        return None;
+    }
     url.set_fragment(None);
     url.set_query(None);
     Some(url.to_string())
 }
 
+static RESULT_ROW: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tr\b[^>]*>.*?</tr\s*>").ok());
+static ATHLETE_ANCHOR: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(
+        r#"(?is)<a\b[^>]*href\s*=\s*["']((?:https?://(?:www\.)?athletic\.net)?/athlete/[^"'<>\s]*)["'][^>]*>(.*?)</a\s*>"#,
+    )
+    .ok()
+});
 static HTML_TAGS: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?s)<[^>]+>").ok());
 static HTML_SPACE: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"\s+").ok());
 
@@ -548,6 +692,7 @@ fn compact_html(html: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Context;
 
     #[test]
     fn filters_candidate_urls() {
@@ -559,17 +704,18 @@ mod tests {
     }
 
     #[test]
-    fn extracts_only_requested_athlete_results() {
+    fn extracts_only_requested_athlete_results() -> Result<()> {
         let html = r#"<tr><td><a href="/athlete/12345/track-and-field?x=1">Jane Doe</a></td></tr>
             <tr><td><a href="/athlete/99999/cross-country">Other sport</a>
             <a href="https://evil.example/athlete/99">Evil</a></td></tr>"#;
         let mut hits = Vec::new();
-        append_results(&mut hits, html, "Jane Doe", "a:tf", 3);
+        append_results(&mut hits, html, "Jane Doe", "a:tf", 3)?;
         assert_eq!(hits.len(), 1);
         assert_eq!(
             hits.first().map(|hit| hit.url.as_str()),
             Some("https://www.athletic.net/athlete/12345/track-and-field")
         );
+        Ok(())
     }
 
     #[test]
@@ -634,16 +780,8 @@ mod tests {
         let plan = QueryPlan::for_prospect(&prospect);
         let stage = plan.stage(1).context("missing stage one")?;
         for filter in ["a:tf", "a:xc"] {
-            assert!(stage.contains(&SearchRequest::new(
-                "Ada Runner Central",
-                filter,
-                1
-            )));
-            assert!(stage.contains(&SearchRequest::new(
-                "Ada Runner Austin TX",
-                filter,
-                1
-            )));
+            assert!(stage.contains(&SearchRequest::new("Ada Runner Central", filter, 1)));
+            assert!(stage.contains(&SearchRequest::new("Ada Runner Austin TX", filter, 1)));
         }
         Ok(())
     }
@@ -675,7 +813,7 @@ mod tests {
             .mock("POST", "/search")
             .match_body(mockito::Matcher::Json(json!({
                 "q": "Ada One",
-                "fq": "a:tf",
+                "fq": "t:a a:tf",
                 "start": 0
             })))
             .with_status(200)
@@ -686,7 +824,7 @@ mod tests {
             .mock("POST", "/search")
             .match_body(mockito::Matcher::Json(json!({
                 "q": "Grace Two",
-                "fq": "a:xc",
+                "fq": "t:a a:xc",
                 "start": 0
             })))
             .with_status(200)
@@ -751,3 +889,6 @@ mod tests {
         Ok(())
     }
 }
+
+#[path = "discovery_exhaustive.rs"]
+mod exhaustive;

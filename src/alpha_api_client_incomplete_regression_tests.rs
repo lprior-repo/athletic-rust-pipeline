@@ -1,6 +1,6 @@
+use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_api::AlphaApiError;
 use crate::alpha_api_client::AlphaApiClient;
-use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_model::PaginationConfig;
 use crate::alpha_test_helpers::make_test_request;
 
@@ -14,7 +14,9 @@ async fn single_response_incomplete_fails_closed() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
     server.mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -26,15 +28,27 @@ async fn single_response_incomplete_fails_closed() {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
         timeout_seconds: 30,
         max_retries: 0,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/settings/complete".into() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/settings/complete".into(),
+        },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
@@ -42,7 +56,11 @@ async fn single_response_incomplete_fails_closed() {
     })
     .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::Incomplete(_)), "SingleResponse incomplete must fail closed, got {:?}", err);
+    assert!(
+        matches!(err, AlphaApiError::Incomplete(_)),
+        "SingleResponse incomplete must fail closed, got {:?}",
+        err
+    );
 }
 
 // --- Regression: cap_markers JSON-pointer paths ---
@@ -54,7 +72,9 @@ async fn cap_markers_json_pointer_path() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
     server.mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -66,22 +86,38 @@ async fn cap_markers_json_pointer_path() {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
         timeout_seconds: 30,
         max_retries: 2,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".into(),
+        },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec!["/metadata/truncated".into()],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "JSON-pointer cap marker must detect truncation");
+    assert!(
+        matches!(err, AlphaApiError::TruncatedWithoutContinuation),
+        "JSON-pointer cap marker must detect truncation"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -91,11 +127,16 @@ async fn cap_markers_top_level_key_path() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+    })
+    .await
+    .unwrap();
+    server
+        .mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"groupedRankings":[],"page":1,"complete":true,"continuation":null,"__cap":true}"#)
+        .with_body(
+            r#"{"groupedRankings":[],"page":1,"complete":true,"continuation":null,"__cap":true}"#,
+        )
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -103,22 +144,38 @@ async fn cap_markers_top_level_key_path() {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
         timeout_seconds: 30,
         max_retries: 2,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".into(),
+        },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec!["__cap".into()],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "top-level cap marker must detect truncation");
+    assert!(
+        matches!(err, AlphaApiError::TruncatedWithoutContinuation),
+        "top-level cap marker must detect truncation"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -129,8 +186,11 @@ async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+    })
+    .await
+    .unwrap();
+    server
+        .mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-42"}"#)
@@ -141,22 +201,39 @@ async fn single_response_has_more_true_valid_next_page_returns_incomplete() {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
         timeout_seconds: 30,
         max_retries: 0,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".into(),
+        },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::Incomplete(_)), "SingleResponse hasMore=true with valid nextPage must return Incomplete, got {:?}", err);
+    assert!(
+        matches!(err, AlphaApiError::Incomplete(_)),
+        "SingleResponse hasMore=true with valid nextPage must return Incomplete, got {:?}",
+        err
+    );
 }
 #[tokio::test(flavor = "multi_thread")]
 async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
@@ -165,8 +242,11 @@ async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+    })
+    .await
+    .unwrap();
+    server
+        .mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"groupedRankings":[],"truncated":"yes"}"#)
@@ -177,22 +257,38 @@ async fn cap_marker_wrong_type_returns_truncated_fail_closed() {
         nav_info_path: "/api/v1/tfRankings/GetNavInfo".into(),
         timeout_seconds: 30,
         max_retries: 0,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".into() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".into(),
+        },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec!["truncated".into()],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "wrong-type cap marker must fail-closed as truncated");
+    assert!(
+        matches!(err, AlphaApiError::TruncatedWithoutContinuation),
+        "wrong-type cap marker must fail-closed as truncated"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -203,11 +299,16 @@ async fn nextpage_wrong_type_cap_marker_on_resumable_path_fails_closed() {
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
-    server.mock("POST", "/api/v1/tfRankings/GetRankings")
+    })
+    .await
+    .unwrap();
+    server
+        .mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-42","truncated":"yes"}"#)
+        .with_body(
+            r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-42","truncated":"yes"}"#,
+        )
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -222,19 +323,33 @@ async fn nextpage_wrong_type_cap_marker_on_resumable_path_fails_closed() {
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec!["truncated".into()],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let err = client.rankings(&make_test_request()).await.unwrap_err();
-    assert!(matches!(err, AlphaApiError::TruncatedWithoutContinuation), "wrong-type cap marker on resumable NextPage path must fail-closed as truncated");
+    assert!(
+        matches!(err, AlphaApiError::TruncatedWithoutContinuation),
+        "wrong-type cap marker on resumable NextPage path must fail-closed as truncated"
+    );
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -246,7 +361,9 @@ async fn nextpage_continuation_complete_false_returns_incomplete_even_with_has_m
         let server = mockito::Server::new();
         let url = server.url();
         (server, url)
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
     server.mock("POST", "/api/v1/tfRankings/GetRankings")
         .with_status(200)
         .with_header("content-type", "application/json")
@@ -265,19 +382,36 @@ async fn nextpage_continuation_complete_false_returns_incomplete_even_with_has_m
         },
         allowed_routes: vec!["/api/v1/tfRankings/GetRankings".into()],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(), "State".into(),
-            "MeetID".into(), "MeetName".into(), "IDResult".into(), "EventShort".into(), "Measure".into(),
-            "ResultDate".into(), "SeasonID".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
         permission_reference: "test".into(),
-    }).expect("client creation must not fail");
+    })
+    .expect("client creation must not fail");
     let page = client.rankings(&make_test_request()).await.unwrap();
-    assert!(!page.complete, "continuation.complete=false must return incomplete");
-    assert!(page.continuation.is_some(), "continuation token must be exposed");
+    assert!(
+        !page.complete,
+        "continuation.complete=false must return incomplete"
+    );
+    assert!(
+        page.continuation.is_some(),
+        "continuation token must be exposed"
+    );
     assert_eq!(page.records.len(), 1);
 }

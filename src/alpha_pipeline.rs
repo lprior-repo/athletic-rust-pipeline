@@ -1,13 +1,13 @@
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_catalog::parse_nav_targets;
 use crate::alpha_checkpoint::{append, load_latest, AlphaCheckpoint, AlphaUnitKey};
-use crate::alpha_pipeline_records::{source_athlete, unresolved_from};
 use crate::alpha_config::AlphaConfig;
 use crate::alpha_merge::merge_athlete;
 use crate::alpha_model::{AlphaRequest, RunMatrix, RunUnit, SourceAthlete};
 use crate::alpha_output::{
     read_jsonl, write_outputs, CohortException, CoverageReport, UnresolvedRecord,
 };
+use crate::alpha_pipeline_records::{source_athlete, unresolved_from};
 use anyhow::{bail, Context, Result};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -45,7 +45,15 @@ pub async fn collect_authorized(
         .ok_or_else(|| anyhow::anyhow!("Track and Field is not authorized"))?;
     let client = AlphaApiClient::new(config.to_client_config())?;
     let nav = client
-        .nav_info(config.authorization.allowed_seasons[0], false)
+        .nav_info(
+            config
+                .authorization
+                .allowed_seasons
+                .first()
+                .copied()
+                .context("authorization.allowed_seasons must not be empty")?,
+            false,
+        )
         .await
         .context("loading authorized alpha catalog")?;
     let (states, events) = parse_nav_targets(vec![nav]).map_err(|error| anyhow::anyhow!(error))?;
@@ -77,7 +85,10 @@ pub async fn collect_authorized(
     for unit in units {
         let prior = latest.values().find(|state| same_unit(&state.key, &unit));
         if prior.is_some_and(|state| state.complete) {
-            coverage.complete_units += 1;
+            coverage.complete_units = coverage
+                .complete_units
+                .checked_add(1)
+                .context("complete unit count overflow")?;
             continue;
         }
         let mut continuation = None;
@@ -87,8 +98,7 @@ pub async fn collect_authorized(
         let mut unit_unresolved = Vec::new();
         let mut unit_has_exception = false;
         loop {
-            let key = unit_key(&unit, &continuation)
-                .map_err(|error| anyhow::anyhow!(error))?;
+            let key = unit_key(&unit, &continuation).map_err(|error| anyhow::anyhow!(error))?;
             if !seen_continuations.insert(key.continuation.clone()) {
                 append_checkpoint(output_dir, key, 0, false, "loop")?;
                 unresolved.push(UnresolvedRecord {
@@ -96,7 +106,13 @@ pub async fn collect_authorized(
                     reason: "authorized alpha continuation cycle detected".to_owned(),
                     source_url: String::new(),
                 });
-                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
+                persist(
+                    output_dir,
+                    &keyed,
+                    &cohort_exceptions,
+                    &unresolved,
+                    &coverage,
+                )?;
                 bail!("authorized alpha continuation cycle detected");
             }
             let page = client
@@ -118,7 +134,13 @@ pub async fn collect_authorized(
                         reason: "authorized alpha request failed; retryable".to_owned(),
                         source_url: String::new(),
                     });
-                    persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
+                    persist(
+                        output_dir,
+                        &keyed,
+                        &cohort_exceptions,
+                        &unresolved,
+                        &coverage,
+                    )?;
                     return Err(anyhow::anyhow!(error));
                 }
             };
@@ -157,14 +179,29 @@ pub async fn collect_authorized(
                 cohort_exceptions.extend(unit_exceptions);
                 unresolved.extend(unit_unresolved);
                 if unit_has_exception {
-                    coverage.exception_units += 1;
+                    coverage.exception_units = coverage
+                        .exception_units
+                        .checked_add(1)
+                        .context("exception unit count overflow")?;
                 }
                 if response_count == 0 {
-                    coverage.empty_units += 1;
+                    coverage.empty_units = coverage
+                        .empty_units
+                        .checked_add(1)
+                        .context("empty unit count overflow")?;
                 }
-                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
+                persist(
+                    output_dir,
+                    &keyed,
+                    &cohort_exceptions,
+                    &unresolved,
+                    &coverage,
+                )?;
                 append_checkpoint(output_dir, key, response_count, true, "complete")?;
-                coverage.complete_units += 1;
+                coverage.complete_units = coverage
+                    .complete_units
+                    .checked_add(1)
+                    .context("complete unit count overflow")?;
                 break;
             }
             let Some(next) = page.continuation else {
@@ -174,17 +211,29 @@ pub async fn collect_authorized(
                     reason: "authorized alpha unit is incomplete without continuation".to_owned(),
                     source_url: String::new(),
                 });
-                persist(output_dir, &keyed, &cohort_exceptions, &unresolved, &coverage)?;
+                persist(
+                    output_dir,
+                    &keyed,
+                    &cohort_exceptions,
+                    &unresolved,
+                    &coverage,
+                )?;
                 bail!("authorized alpha unit is incomplete without continuation");
             };
-            let next_key = unit_key(&unit, &Some(next.clone()))
-                .map_err(|error| anyhow::anyhow!(error))?;
+            let next_key =
+                unit_key(&unit, &Some(next.clone())).map_err(|error| anyhow::anyhow!(error))?;
             append_checkpoint(output_dir, next_key, response_count, false, "incomplete")?;
             continuation = Some(next);
         }
     }
     let athletes: Vec<SourceAthlete> = keyed.into_values().collect();
-    write_outputs(output_dir, &athletes, &cohort_exceptions, &unresolved, &coverage)?;
+    write_outputs(
+        output_dir,
+        &athletes,
+        &cohort_exceptions,
+        &unresolved,
+        &coverage,
+    )?;
     Ok(CollectionSummary {
         coverage,
         athlete_count: athletes.len(),
@@ -200,13 +249,24 @@ fn persist(
     coverage: &CoverageReport,
 ) -> Result<()> {
     let athletes: Vec<SourceAthlete> = keyed.values().cloned().collect();
-    write_outputs(output_dir, &athletes, cohort_exceptions, unresolved, coverage)
+    write_outputs(
+        output_dir,
+        &athletes,
+        cohort_exceptions,
+        unresolved,
+        coverage,
+    )
 }
 
-fn unit_key(unit: &RunUnit, continuation: &Option<serde_json::Value>) -> Result<AlphaUnitKey, String> {
+fn unit_key(
+    unit: &RunUnit,
+    continuation: &Option<serde_json::Value>,
+) -> Result<AlphaUnitKey, String> {
     let continuation = match continuation {
         None => "0".to_owned(),
-        Some(value) => serde_json::to_string(value).map_err(|_| "invalid continuation".to_owned())?,
+        Some(value) => {
+            serde_json::to_string(value).map_err(|_| "invalid continuation".to_owned())?
+        }
     };
     Ok(AlphaUnitKey {
         state_code: unit.state.code.clone(),
@@ -224,7 +284,6 @@ fn same_unit(key: &AlphaUnitKey, unit: &RunUnit) -> bool {
         && key.event_short == unit.event.event_short
 }
 
-
 fn append_checkpoint(
     output_dir: &Path,
     key: AlphaUnitKey,
@@ -232,14 +291,16 @@ fn append_checkpoint(
     complete: bool,
     status: &str,
 ) -> Result<()> {
-    append(output_dir, &AlphaCheckpoint {
-        key,
-        response_count,
-        complete,
-        status: status.to_owned(),
-    })
+    append(
+        output_dir,
+        &AlphaCheckpoint {
+            key,
+            response_count,
+            complete,
+            status: status.to_owned(),
+        },
+    )
 }
-
 
 #[cfg(test)]
 mod tests {

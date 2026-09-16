@@ -130,6 +130,9 @@ pub struct MatchRecord {
     pub source_key: String,
     pub prospect: Prospect,
     pub status: String,
+    /// Evidence-only first pass, retained independently of subsequent AI review.
+    #[serde(default)]
+    pub deterministic_decision: Option<ModelDecision>,
     #[serde(default)]
     pub hint_count: usize,
     #[serde(default)]

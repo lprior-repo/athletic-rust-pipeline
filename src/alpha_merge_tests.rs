@@ -35,9 +35,15 @@ fn merge_athlete_preserves_distinct_results() {
 #[test]
 fn merge_athlete_deduplicates_identical_results() {
     let mut map = BTreeMap::new();
-    let mut first = SourceAthlete { athlete_id: 12345, ..Default::default() };
+    let mut first = SourceAthlete {
+        athlete_id: 12345,
+        ..Default::default()
+    };
     first.results.push(result("100m", Some(999), None));
-    let mut second = SourceAthlete { athlete_id: 12345, ..Default::default() };
+    let mut second = SourceAthlete {
+        athlete_id: 12345,
+        ..Default::default()
+    };
     second.results.push(result("100m", Some(999), None));
     merge_athlete(&mut map, first);
     merge_athlete(&mut map, second);
@@ -47,31 +53,49 @@ fn merge_athlete_deduplicates_identical_results() {
 #[test]
 fn merge_athlete_records_identity_conflicts() {
     let mut map = BTreeMap::new();
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        athlete_name: "John Doe".to_owned(),
-        ..Default::default()
-    });
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        athlete_name: "Johnny Doe".to_owned(),
-        ..Default::default()
-    });
-    assert!(map[&12345].exception_notes.iter().any(|note| note.contains("athlete_name conflict")));
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            athlete_name: "John Doe".to_owned(),
+            ..Default::default()
+        },
+    );
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            athlete_name: "Johnny Doe".to_owned(),
+            ..Default::default()
+        },
+    );
+    assert!(map[&12345]
+        .exception_notes
+        .iter()
+        .any(|note| note.contains("athlete_name conflict")));
 }
 
 #[test]
 fn merge_athlete_fills_empty_identity() {
     let mut map = BTreeMap::new();
-    merge_athlete(&mut map, SourceAthlete { athlete_id: 12345, ..Default::default() });
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        athlete_name: "John Doe".to_owned(),
-        school: "Lincoln".to_owned(),
-        state: "CA".to_owned(),
-        city: "Los Angeles".to_owned(),
-        ..Default::default()
-    });
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            ..Default::default()
+        },
+    );
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            athlete_name: "John Doe".to_owned(),
+            school: "Lincoln".to_owned(),
+            state: "CA".to_owned(),
+            city: "Los Angeles".to_owned(),
+            ..Default::default()
+        },
+    );
     let athlete = &map[&12345];
     assert_eq!(athlete.athlete_name, "John Doe");
     assert_eq!(athlete.school, "Lincoln");
@@ -81,21 +105,35 @@ fn merge_athlete_fills_empty_identity() {
 #[test]
 fn zero_id_merge_returns_exception_only() {
     let mut map = BTreeMap::new();
-    let result = merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 0,
-        athlete_name: "Jane Doe".to_owned(),
-        ..Default::default()
-    });
+    let result = merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 0,
+            athlete_name: "Jane Doe".to_owned(),
+            ..Default::default()
+        },
+    );
     assert_eq!(result.athlete_id, 0);
-    assert!(result.exception_notes.iter().any(|note| note.contains("athlete_id")));
+    assert!(result
+        .exception_notes
+        .iter()
+        .any(|note| note.contains("athlete_id")));
     assert!(map.is_empty());
 }
 
 #[test]
 fn dedup_athletes_separates_missing_ids() {
     let (keyed, exceptions) = dedup_athletes(vec![
-        SourceAthlete { athlete_id: 1, athlete_name: "Alice".to_owned(), ..Default::default() },
-        SourceAthlete { athlete_id: 0, athlete_name: "Unknown".to_owned(), ..Default::default() },
+        SourceAthlete {
+            athlete_id: 1,
+            athlete_name: "Alice".to_owned(),
+            ..Default::default()
+        },
+        SourceAthlete {
+            athlete_id: 0,
+            athlete_name: "Unknown".to_owned(),
+            ..Default::default()
+        },
     ]);
     assert_eq!(keyed.len(), 1);
     assert_eq!(exceptions.len(), 1);

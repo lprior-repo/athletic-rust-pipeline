@@ -79,7 +79,10 @@ pub fn write_outputs(
         })
         .collect();
     write_jsonl(&output_dir.join("results.jsonl"), &results)?;
-    write_jsonl(&output_dir.join("cohort-exceptions.jsonl"), cohort_exceptions)?;
+    write_jsonl(
+        &output_dir.join("cohort-exceptions.jsonl"),
+        cohort_exceptions,
+    )?;
     write_csv_records(&output_dir.join("unresolved.csv"), unresolved)?;
     write_jsonl(&output_dir.join("unresolved.jsonl"), unresolved)?;
     write_json(&output_dir.join("coverage.json"), coverage)?;
@@ -104,7 +107,9 @@ pub fn write_athletes_csv(path: &Path, athletes: &[SourceAthlete]) -> Result<()>
             .graduation_year
             .map_or_else(String::new, |year| year.to_string());
         let athlete_name = if athlete.athlete_name.is_empty() {
-            format!("{} {}", athlete.first_name, athlete.last_name).trim().to_owned()
+            format!("{} {}", athlete.first_name, athlete.last_name)
+                .trim()
+                .to_owned()
         } else {
             athlete.athlete_name.clone()
         };
@@ -174,9 +179,12 @@ pub fn read_jsonl<T: DeserializeOwned>(path: &Path) -> Result<Vec<T>> {
         .enumerate()
         .filter(|(_, line)| line.as_ref().map_or(true, |value| !value.trim().is_empty()))
         .map(|(line_number, line)| {
-            let line = line.with_context(|| format!("reading JSONL line {}", line_number + 1))?;
+            let display_line_number = line_number
+                .checked_add(1)
+                .context("JSONL line number overflow")?;
+            let line = line.with_context(|| format!("reading JSONL line {display_line_number}"))?;
             serde_json::from_str(&line)
-                .with_context(|| format!("decoding JSONL line {}", line_number + 1))
+                .with_context(|| format!("decoding JSONL line {display_line_number}"))
         })
         .collect()
 }
@@ -195,8 +203,7 @@ fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     file.write_all(bytes)
         .with_context(|| format!("writing temporary output {}", temporary.display()))?;
     file.sync_all().context("syncing temporary output")?;
-    fs::rename(&temporary, path)
-        .with_context(|| format!("renaming {}", temporary.display()))
+    fs::rename(&temporary, path).with_context(|| format!("renaming {}", temporary.display()))
 }
 
 fn csv_escape(value: &str) -> String {

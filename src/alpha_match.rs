@@ -14,7 +14,11 @@ pub struct SourceIndex<'a> {
 pub fn build_source_index<'a>(source: &'a [SourceAthlete]) -> SourceIndex<'a> {
     let mut by_name: BTreeMap<String, Vec<&'a SourceAthlete>> = BTreeMap::new();
     for athlete in source {
-        let key = name_key(&athlete.athlete_name, &athlete.first_name, &athlete.last_name);
+        let key = name_key(
+            &athlete.athlete_name,
+            &athlete.first_name,
+            &athlete.last_name,
+        );
         if !key.is_empty() {
             by_name.entry(key).or_default().push(athlete);
         }
@@ -77,7 +81,12 @@ pub fn candidate_from_source(
         .profile_urls
         .iter()
         .filter_map(|url| validate_profile_url(url))
-        .chain(athlete.source_urls.iter().filter_map(|url| validate_source_url(url)))
+        .chain(
+            athlete
+                .source_urls
+                .iter()
+                .filter_map(|url| validate_source_url(url)),
+        )
         .chain(
             athlete
                 .results
@@ -91,7 +100,9 @@ pub fn candidate_from_source(
     Candidate {
         profile_url: profile_url.clone(),
         athlete_name: if athlete.athlete_name.is_empty() {
-            format!("{} {}", athlete.first_name, athlete.last_name).trim().to_owned()
+            format!("{} {}", athlete.first_name, athlete.last_name)
+                .trim()
+                .to_owned()
         } else {
             athlete.athlete_name.clone()
         },
@@ -99,7 +110,11 @@ pub fn candidate_from_source(
         location: format_location(&athlete.city, &athlete.state),
         athlete_id: (athlete.athlete_id > 0).then_some(athlete.athlete_id),
         graduation_year: athlete.graduation_year,
-        sports: if athlete.sport.is_empty() { Vec::new() } else { vec![athlete.sport.clone()] },
+        sports: if athlete.sport.is_empty() {
+            Vec::new()
+        } else {
+            vec![athlete.sport.clone()]
+        },
         marks,
         page_retrieved: false,
         evidence_text: athlete.cohort_evidence.clone(),
@@ -160,7 +175,10 @@ pub async fn match_workbook(
         alpha_source.to_owned()
     };
     if !source_path.is_file() {
-        bail!("alpha source file does not exist: {}", source_path.display());
+        bail!(
+            "alpha source file does not exist: {}",
+            source_path.display()
+        );
     }
     let source = crate::alpha_output::read_jsonl::<SourceAthlete>(&source_path)
         .with_context(|| format!("loading alpha source {}", source_path.display()))?;
@@ -280,7 +298,8 @@ mod tests {
             review_threshold: 0.4,
             require_corroboration: true,
         };
-        let mut candidates = score_indexed_candidates(&prospect(), &build_source_index(&source), &config);
+        let mut candidates =
+            score_indexed_candidates(&prospect(), &build_source_index(&source), &config);
         let best = crate::scoring::finalize_match(
             prospect(),
             std::mem::take(&mut candidates),

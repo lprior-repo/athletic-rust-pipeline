@@ -1,7 +1,7 @@
 use crate::alpha_api::AlphaApiClientConfig;
 use crate::alpha_api_client::AlphaApiClient;
 use crate::alpha_model::PaginationConfig;
-use crate::alpha_model_raw::{RawRankingsResponse, RawRankingRecord};
+use crate::alpha_model_raw::{RawRankingRecord, RawRankingsResponse};
 
 // --- Malformed row rejection ---
 #[test]
@@ -27,7 +27,10 @@ fn malformed_nested_row_rejected_via_from_json() {
     }"#;
     // from_json propagates errors — malformed row causes rejection
     let result = RawRankingsResponse::from_json(json);
-    assert!(result.is_err(), "malformed nested row must reject the entire response");
+    assert!(
+        result.is_err(),
+        "malformed nested row must reject the entire response"
+    );
 }
 #[test]
 fn valid_nested_row_succeeds() {
@@ -96,16 +99,29 @@ fn enforce_allowed_fields_filters() {
         nav_info_path: "/nav".to_owned(),
         timeout_seconds: 30,
         max_retries: 2,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: "/complete".to_owned() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: "/complete".to_owned(),
+        },
         allowed_routes: vec![],
         allowed_fields: vec![
-            "AthleteID".into(), "AthleteName".into(), "GradeID".into(), "TeamName".into(),
-            "State".into(), "MeetID".into(), "MeetName".into(), "IDResult".into(),
-            "EventShort".into(), "Measure".into(), "ResultDate".into(), "SeasonID".into(),
-            "Wind".into(), "unknown".into(),
+            "AthleteID".into(),
+            "AthleteName".into(),
+            "GradeID".into(),
+            "TeamName".into(),
+            "State".into(),
+            "MeetID".into(),
+            "MeetName".into(),
+            "IDResult".into(),
+            "EventShort".into(),
+            "Measure".into(),
+            "ResultDate".into(),
+            "SeasonID".into(),
+            "Wind".into(),
+            "unknown".into(),
         ],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
@@ -125,7 +141,10 @@ fn enforce_allowed_fields_filters() {
     let rec = groups[0].as_array().unwrap()[0].as_object().unwrap();
     assert!(rec.contains_key("AthleteID"));
     assert!(rec.contains_key("MeetName"));
-    assert!(!rec.contains_key("unknown_field"), "unknown fields must be stripped");
+    assert!(
+        !rec.contains_key("unknown_field"),
+        "unknown fields must be stripped"
+    );
 }
 #[test]
 fn serialize_rankings_body_qparams_with_continuation() {

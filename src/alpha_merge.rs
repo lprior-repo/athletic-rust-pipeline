@@ -36,19 +36,13 @@ pub fn from_model_source_result(result: &SourceResult) -> SourceResult {
     result.clone()
 }
 
-
 fn add_note(athlete: &mut SourceAthlete, message: String) {
     if !athlete.exception_notes.contains(&message) {
         athlete.exception_notes.push(message);
     }
 }
 
-fn merge_text(
-    existing: &mut String,
-    incoming: &str,
-    field: &str,
-    notes: &mut Vec<String>,
-) {
+fn merge_text(existing: &mut String, incoming: &str, field: &str, notes: &mut Vec<String>) {
     if existing.is_empty() {
         *existing = incoming.to_owned();
     } else if !incoming.is_empty() && existing != incoming {
@@ -88,7 +82,11 @@ fn merge_result(existing: &mut Vec<SourceResult>, incoming: &SourceResult) {
 fn approved_profile(athlete_id: u64, raw_url: &str) -> Option<String> {
     let canonical = validate_profile_url(raw_url)?;
     let parsed = Url::parse(&canonical).ok()?;
-    let profile_id = parsed.path().strip_prefix("/athlete/")?.parse::<u64>().ok()?;
+    let profile_id = parsed
+        .path()
+        .strip_prefix("/athlete/")?
+        .parse::<u64>()
+        .ok()?;
     (profile_id == athlete_id).then_some(canonical)
 }
 fn sanitize_profiles(athlete_id: u64, mut athlete: SourceAthlete) -> SourceAthlete {
@@ -101,7 +99,10 @@ fn sanitize_profiles(athlete_id: u64, mut athlete: SourceAthlete) -> SourceAthle
         .filter_map(|url| approved_profile(athlete_id, url))
         .collect();
     if valid.len() != profiles.len() {
-        add_note(&mut athlete, "invalid profile URL evidence discarded during merge".to_owned());
+        add_note(
+            &mut athlete,
+            "invalid profile URL evidence discarded during merge".to_owned(),
+        );
     }
     athlete.profile_urls = valid;
     athlete.profile_urls.sort();
@@ -120,7 +121,10 @@ pub fn merge_athlete(
     if incoming.athlete_id == 0 {
         incoming.profile_urls.clear();
         incoming.profile_url.clear();
-        add_note(&mut incoming, "athlete_id missing or zero; cannot trust profile URL".to_owned());
+        add_note(
+            &mut incoming,
+            "athlete_id missing or zero; cannot trust profile URL".to_owned(),
+        );
         return incoming;
     }
     let id = incoming.athlete_id;
@@ -130,17 +134,45 @@ pub fn merge_athlete(
         return incoming;
     };
     let mut notes = Vec::new();
-    merge_text(&mut existing.athlete_name, &incoming.athlete_name, "athlete_name", &mut notes);
-    merge_text(&mut existing.first_name, &incoming.first_name, "first_name", &mut notes);
-    merge_text(&mut existing.last_name, &incoming.last_name, "last_name", &mut notes);
+    merge_text(
+        &mut existing.athlete_name,
+        &incoming.athlete_name,
+        "athlete_name",
+        &mut notes,
+    );
+    merge_text(
+        &mut existing.first_name,
+        &incoming.first_name,
+        "first_name",
+        &mut notes,
+    );
+    merge_text(
+        &mut existing.last_name,
+        &incoming.last_name,
+        "last_name",
+        &mut notes,
+    );
     merge_text(&mut existing.school, &incoming.school, "school", &mut notes);
-    merge_text(&mut existing.team_name, &incoming.team_name, "team_name", &mut notes);
+    merge_text(
+        &mut existing.team_name,
+        &incoming.team_name,
+        "team_name",
+        &mut notes,
+    );
     merge_text(&mut existing.state, &incoming.state, "state", &mut notes);
     merge_text(&mut existing.city, &incoming.city, "city", &mut notes);
     merge_text(&mut existing.gender, &incoming.gender, "gender", &mut notes);
     merge_text(&mut existing.sport, &incoming.sport, "sport", &mut notes);
-    let existing_cohort_rank = if existing.graduation_year.is_some() { 2 } else { 1 };
-    let incoming_cohort_rank = if incoming.graduation_year.is_some() { 2 } else { 1 };
+    let existing_cohort_rank = if existing.graduation_year.is_some() {
+        2
+    } else {
+        1
+    };
+    let incoming_cohort_rank = if incoming.graduation_year.is_some() {
+        2
+    } else {
+        1
+    };
     if incoming_cohort_rank > existing_cohort_rank
         || (existing.cohort_evidence.is_empty() && !incoming.cohort_evidence.is_empty())
     {
@@ -176,7 +208,11 @@ pub fn merge_athlete(
         notes.push("invalid profile URL evidence discarded during merge".to_owned());
     }
     existing.profile_urls = valid_existing;
-    for url in incoming.profile_urls.iter().chain(std::iter::once(&incoming.profile_url)) {
+    for url in incoming
+        .profile_urls
+        .iter()
+        .chain(std::iter::once(&incoming.profile_url))
+    {
         if url.is_empty() {
             continue;
         }

@@ -1,0 +1,39 @@
+[workbook]
+sports = ["Track and Field: Mens", "Track and Field: Womens"]
+expected_graduation_year = 2027
+
+[discovery]
+athletic_search_url = "https://www.athletic.net/Search.aspx/runSearch"
+max_candidates = 10
+request_timeout_seconds = 30
+search_delay_ms = 750
+max_attempts = 3
+circuit_breaker_threshold = 3
+ambiguity_margin = 0.03
+
+[retrieval]
+authorized_direct_fetch = false
+respect_robots_txt = true
+delay_ms = 2000
+user_agent = "AthleteResearch/0.1"
+page_text_limit = 60000
+
+[ollama]
+api = "openai-compatible"
+enabled = true
+url = "http://127.0.0.1:11000"
+model = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
+timeout_seconds = 180
+
+[identity_review]
+api = "openai-compatible"
+enabled = true
+url = "http://127.0.0.1:11001"
+model = "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"
+timeout_seconds = 180
+
+[matching]
+match_threshold = 0.93
+close_threshold = 0.86
+review_threshold = 0.75
+require_corroboration = true

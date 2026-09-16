@@ -33,7 +33,8 @@ pub fn append(output_dir: &Path, checkpoint: &AlphaCheckpoint) -> Result<()> {
         .open(&path)
         .with_context(|| format!("opening checkpoint file {}", path.display()))?;
     serde_json::to_writer(&mut file, checkpoint).context("serializing checkpoint")?;
-    file.write_all(b"\n").context("writing checkpoint newline")?;
+    file.write_all(b"\n")
+        .context("writing checkpoint newline")?;
     file.sync_data().context("syncing checkpoint")?;
     Ok(())
 }
@@ -46,7 +47,6 @@ pub fn ensure_exists(output_dir: &Path) -> Result<()> {
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
         Err(error) => Err(error).context("creating checkpoint file"),
     }
-
 }
 fn validate_checkpoint(checkpoint: &AlphaCheckpoint) -> Result<()> {
     let fields = [
@@ -92,11 +92,15 @@ pub fn load_latest(output_dir: &Path) -> Result<BTreeMap<AlphaUnitKey, AlphaChec
     if !path.exists() {
         return Ok(BTreeMap::new());
     }
-    let text = String::from_utf8(fs::read(&path).with_context(|| format!("reading {}", path.display()))?)
-        .context("checkpoint is not valid UTF-8")?;
+    let text =
+        String::from_utf8(fs::read(&path).with_context(|| format!("reading {}", path.display()))?)
+            .context("checkpoint is not valid UTF-8")?;
     let total_lines = text.lines().count();
     let mut latest = BTreeMap::new();
     for (line_number, segment) in text.split_inclusive('\n').enumerate() {
+        let display_line_number = line_number
+            .checked_add(1)
+            .context("checkpoint line number overflow")?;
         let complete = segment.ends_with('\n');
         let line = segment.trim_end_matches(['\r', '\n']);
         if line.trim().is_empty() {
@@ -104,10 +108,10 @@ pub fn load_latest(output_dir: &Path) -> Result<BTreeMap<AlphaUnitKey, AlphaChec
         }
         let checkpoint: AlphaCheckpoint = match serde_json::from_str(line) {
             Ok(checkpoint) => checkpoint,
-            Err(_error) if !complete && line_number + 1 == total_lines => break,
+            Err(_error) if !complete && display_line_number == total_lines => break,
             Err(error) => {
                 return Err(error)
-                    .with_context(|| format!("decoding checkpoint line {}", line_number + 1));
+                    .with_context(|| format!("decoding checkpoint line {display_line_number}"));
             }
         };
         let previous = latest
@@ -124,7 +128,7 @@ pub fn load_latest(output_dir: &Path) -> Result<BTreeMap<AlphaUnitKey, AlphaChec
 
 #[allow(dead_code)]
 pub fn is_retryable(checkpoint: Option<&AlphaCheckpoint>) -> bool {
-    checkpoint.map_or(true, |state| !state.complete)
+    checkpoint.is_none_or(|state| !state.complete)
 }
 
 #[cfg(test)]
@@ -151,7 +155,9 @@ mod tests {
         let directory = tempfile::tempdir().expect("tempdir");
         append(directory.path(), &checkpoint("0", false, "incomplete")).expect("append");
         let latest = load_latest(directory.path()).expect("load");
-        assert!(is_retryable(latest.get(&checkpoint("0", false, "incomplete").key)));
+        assert!(is_retryable(
+            latest.get(&checkpoint("0", false, "incomplete").key)
+        ));
     }
 
     #[test]
@@ -162,7 +168,10 @@ mod tests {
         let latest = load_latest(directory.path()).expect("load");
         assert_eq!(latest.len(), 1);
         assert!(!is_retryable(latest.values().next()));
-        assert_eq!(latest.values().next().map(|v| v.status.as_str()), Some("complete"));
+        assert_eq!(
+            latest.values().next().map(|v| v.status.as_str()),
+            Some("complete")
+        );
     }
 
     #[test]
@@ -178,7 +187,10 @@ mod tests {
         append(directory.path(), &checkpoint("2", false, "incomplete")).expect("append");
         let latest = load_latest(directory.path()).expect("load");
         assert_eq!(latest.len(), 1);
-        assert_eq!(latest.keys().next().map(|key| key.continuation.as_str()), Some("2"));
+        assert_eq!(
+            latest.keys().next().map(|key| key.continuation.as_str()),
+            Some("2")
+        );
     }
 
     #[test]
@@ -197,6 +209,10 @@ mod tests {
     #[test]
     fn checkpoint_sensitive_metadata_is_rejected() {
         let directory = tempfile::tempdir().expect("tempdir");
-        assert!(append(directory.path(), &checkpoint("authorization-value", false, "incomplete")).is_err());
+        assert!(append(
+            directory.path(),
+            &checkpoint("authorization-value", false, "incomplete")
+        )
+        .is_err());
     }
 }

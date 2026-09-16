@@ -57,9 +57,9 @@ const KNOWN_STATES: &[(/* code */ &str, /* full */ &str)] = &[
     ("WY", "Wyoming"),
 ];
 fn valid_origin(parsed: &Url, raw: &str) -> bool {
-    let authority = raw
-        .split_once("://")
-        .map_or("", |(_, rest)| rest.split(['/', '?', '#']).next().map_or("", |part| part));
+    let authority = raw.split_once("://").map_or("", |(_, rest)| {
+        rest.split(['/', '?', '#']).next().map_or("", |part| part)
+    });
     parsed.scheme() == "https"
         && parsed.host_str().is_some()
         && parsed.password().is_none()
@@ -69,7 +69,7 @@ fn valid_origin(parsed: &Url, raw: &str) -> bool {
         && (parsed.port().is_none() || parsed.port() == Some(443))
 }
 
-/// Validate a profile URL: https, athletic.net host, /athlete/<nonzero-id>.
+/// Validate a profile URL: https, athletic.net host, `/athlete/<nonzero-id>`.
 /// Rejects userinfo, query, fragment, token-bearing URLs.
 pub fn validate_profile_url(raw: &str) -> Option<String> {
     let trimmed = raw.trim();
@@ -96,7 +96,7 @@ pub fn validate_profile_url(raw: &str) -> Option<String> {
     Some(format!("https://athletic.net/athlete/{id}"))
 }
 
-/// Validate a result URL: https, athletic.net host, /result/<id> route.
+/// Validate a result URL: https, athletic.net host, `/result/<id>` route.
 pub fn validate_result_url(raw: &str) -> Option<String> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
@@ -160,7 +160,10 @@ mod tests {
     #[test]
     fn accepts_implicit_and_explicit_default_https_port() {
         let implicit = Url::parse("https://athletic.net/athlete/12345").expect("URL");
-        assert!(valid_origin(&implicit, "https://athletic.net/athlete/12345"));
+        assert!(valid_origin(
+            &implicit,
+            "https://athletic.net/athlete/12345"
+        ));
         assert_eq!(
             validate_profile_url("https://athletic.net/athlete/12345"),
             Some("https://athletic.net/athlete/12345".to_owned())

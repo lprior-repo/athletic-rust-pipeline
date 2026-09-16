@@ -10,11 +10,14 @@ fn make_single_response_client(server_url: &str, pointer: &str) -> AlphaApiClien
         nav_info_path: "/nav".to_owned(),
         timeout_seconds: 30,
         max_retries: 2,
-        pagination: PaginationConfig::SingleResponse { complete_pointer: pointer.to_owned() },
+        pagination: PaginationConfig::SingleResponse {
+            complete_pointer: pointer.to_owned(),
+        },
         allowed_routes: vec![],
         allowed_fields: vec![],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
@@ -38,7 +41,8 @@ fn make_next_page_client(server_url: &str) -> AlphaApiClient {
         allowed_routes: vec![],
         allowed_fields: vec![],
         max_concurrent_requests: 1,
-        min_delay_ms: 0, max_retry_delay_ms: 30_000,
+        min_delay_ms: 0,
+        max_retry_delay_ms: 30_000,
         cap_markers: vec![],
         max_body_bytes: 8 * 1024 * 1024,
         auth_enabled: true,
@@ -47,22 +51,32 @@ fn make_next_page_client(server_url: &str) -> AlphaApiClient {
     .expect("client creation must not fail")
 }
 
-
 // --- SingleResponse completeness ---
 
 #[test]
 fn single_response_complete_pointer_true() {
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": true}"#).unwrap();
-    assert!(client.check_completeness(&raw).unwrap(), "complete=true => true");
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": true}"#).unwrap();
+    assert!(
+        client.check_completeness(&raw).unwrap(),
+        "complete=true => true"
+    );
 }
 
 #[test]
 fn single_response_complete_pointer_false() {
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": false}"#).unwrap();
-    let err = client.check_completeness(&raw).expect_err("SingleResponse complete=false => Incomplete error, no continuation path");
-    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)), "expected Incomplete error, got {:?}", err);
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": false}"#).unwrap();
+    let err = client
+        .check_completeness(&raw)
+        .expect_err("SingleResponse complete=false => Incomplete error, no continuation path");
+    assert!(
+        matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)),
+        "expected Incomplete error, got {:?}",
+        err
+    );
 }
 
 #[test]
@@ -70,35 +84,57 @@ fn single_response_complete_pointer_missing() {
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": []}"#).unwrap();
     // Missing pointer => error (fail closed)
-    assert!(client.check_completeness(&raw).is_err(), "missing pointer => error");
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "missing pointer => error"
+    );
 }
 
 #[test]
 fn single_response_complete_pointer_wrong_type() {
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": "yes"}"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "wrong type => error");
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": "yes"}"#).unwrap();
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "wrong type => error"
+    );
 }
 
 #[test]
 fn single_response_complete_with_unknown_field() {
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "complete": true, "unknown": 42}"#).unwrap();
-    assert!(client.check_completeness(&raw).unwrap(), "complete=true with unknown field => true");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "complete": true, "unknown": 42}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).unwrap(),
+        "complete=true with unknown field => true"
+    );
 }
 
 #[test]
 fn single_response_complete_with_nested_pointer() {
     let client = make_single_response_client("https://example.com", "/settings/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "settings": {"complete": true}}"#).unwrap();
-    assert!(client.check_completeness(&raw).unwrap(), "nested pointer works");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "settings": {"complete": true}}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).unwrap(),
+        "nested pointer works"
+    );
 }
 #[test]
 fn single_response_continuation_complete_false_no_next_errors() {
     // continuation.complete=false in SingleResponse without nextPage => Incomplete.
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "continuation.complete=false without nextPage => Incomplete");
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "continuation.complete=false without nextPage => Incomplete"
+    );
 }
 #[test]
 fn single_response_continuation_complete_false_with_next_page() {
@@ -106,79 +142,137 @@ fn single_response_continuation_complete_false_with_next_page() {
     // SingleResponse cannot produce a continuation token, so this must fail closed.
     let client = make_single_response_client("https://example.com", "/complete");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "complete": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    let err = client.check_completeness(&raw).expect_err("SingleResponse with incomplete continuation must fail closed");
-    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)), "expected Incomplete error, got {:?}", err);
+    let err = client
+        .check_completeness(&raw)
+        .expect_err("SingleResponse with incomplete continuation must fail closed");
+    assert!(
+        matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)),
+        "expected Incomplete error, got {:?}",
+        err
+    );
 }
 
 #[test]
 fn single_response_has_more_true_with_null_next_page_errors() {
     // SingleResponse must still reject hasMore=true without valid nextPage.
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": null}"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "hasMore=true with null nextPage must error in SingleResponse");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "hasMore": true, "nextPage": null}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "hasMore=true with null nextPage must error in SingleResponse"
+    );
 }
 
 #[test]
 fn single_response_has_more_true_with_empty_next_page_errors() {
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "hasMore=true with empty nextPage must error in SingleResponse");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "hasMore=true with empty nextPage must error in SingleResponse"
+    );
 }
 #[test]
 fn single_response_has_more_wrong_type_string_returns_error() {
     // hasMore:"yes" (wrong type) must be treated as malformed, not absent.
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": "yes"}"#).unwrap();
-    let err = client.check_completeness(&raw).expect_err("hasMore wrong-type must return Incomplete");
-    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": "yes"}"#).unwrap();
+    let err = client
+        .check_completeness(&raw)
+        .expect_err("hasMore wrong-type must return Incomplete");
+    assert!(matches!(
+        err,
+        crate::alpha_api::AlphaApiError::Incomplete(_)
+    ));
 }
 
 #[test]
 fn single_response_has_more_null_returns_error() {
     // hasMore:null must be treated as malformed, not absent.
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": null}"#).unwrap();
-    let err = client.check_completeness(&raw).expect_err("hasMore null must return Incomplete");
-    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": null}"#).unwrap();
+    let err = client
+        .check_completeness(&raw)
+        .expect_err("hasMore null must return Incomplete");
+    assert!(matches!(
+        err,
+        crate::alpha_api::AlphaApiError::Incomplete(_)
+    ));
 }
 
 #[test]
 fn single_response_has_more_wrong_type_object_returns_error() {
     // hasMore:{...} (wrong type) must be treated as malformed, not absent.
     let client = make_single_response_client("https://example.com", "/complete");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": {"foo": 1}}"#).unwrap();
-    let err = client.check_completeness(&raw).expect_err("hasMore wrong-type object must return Incomplete");
-    assert!(matches!(err, crate::alpha_api::AlphaApiError::Incomplete(_)));
+    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": {"foo": 1}}"#)
+        .unwrap();
+    let err = client
+        .check_completeness(&raw)
+        .expect_err("hasMore wrong-type object must return Incomplete");
+    assert!(matches!(
+        err,
+        crate::alpha_api::AlphaApiError::Incomplete(_)
+    ));
 }
 // --- NextPage completeness ---
 
 #[test]
 fn nextpage_complete_when_has_more_false() {
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": false}"#).unwrap();
-    assert!(client.check_completeness(&raw).unwrap(), "has_more=false => complete");
+    let raw =
+        RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": false}"#).unwrap();
+    assert!(
+        client.check_completeness(&raw).unwrap(),
+        "has_more=false => complete"
+    );
 }
 
 #[test]
 fn nextpage_error_when_has_more_true_no_next() {
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": null}"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "has_more=true without next => error");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "hasMore": true, "nextPage": null}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "has_more=true without next => error"
+    );
 }
 
 #[test]
 fn nextpage_error_when_has_more_true_empty_next() {
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "empty next page => error");
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "hasMore": true, "nextPage": ""}"#,
+    )
+    .unwrap();
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "empty next page => error"
+    );
 }
 
 #[test]
 fn nextpage_incomplete_when_has_more_true_valid_next() {
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{"groupedRankings": [], "hasMore": true, "nextPage": "2"}"#).unwrap();
+    let raw = RawRankingsResponse::from_json(
+        r#"{"groupedRankings": [], "hasMore": true, "nextPage": "2"}"#,
+    )
+    .unwrap();
     let result = client.check_completeness(&raw);
-    assert!(matches!(result, Ok(false)), "has_more=true with valid next page = incomplete");
+    assert!(
+        matches!(result, Ok(false)),
+        "has_more=true with valid next page = incomplete"
+    );
 }
 
 #[test]
@@ -187,7 +281,10 @@ fn nextpage_continuation_complete_false_overrides_has_more_false() {
     // Without usable next token => Incomplete (fail closed).
     let client = make_next_page_client("https://example.com");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": false, "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(client.check_completeness(&raw).is_err(), "continuation.complete=false, hasMore=false, no next => Incomplete");
+    assert!(
+        client.check_completeness(&raw).is_err(),
+        "continuation.complete=false, hasMore=false, no next => Incomplete"
+    );
 }
 
 #[test]
@@ -195,23 +292,32 @@ fn nextpage_continuation_complete_false_with_next_token() {
     // continuation.complete=false with usable next token => Ok(false).
     let client = make_next_page_client("https://example.com");
     let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": true, "nextPage": "2", "continuation": {"page": 1, "complete": false} }"#).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "continuation.complete=false with valid next => Ok(false)");
+    assert!(
+        !client.check_completeness(&raw).unwrap(),
+        "continuation.complete=false with valid next => Ok(false)"
+    );
 }
 #[test]
 fn nextpage_accepts_object_token() {
     // build_qparams supports nonempty object tokens; validate_next must accept them.
     let client = make_next_page_client("https://example.com");
-    let raw = RawRankingsResponse::from_json(r#"{ "groupedRankings": [], "hasMore": true, "nextPage": {"token":"abc","page":2} }"#).unwrap();
+    let raw = RawRankingsResponse::from_json(
+        r#"{ "groupedRankings": [], "hasMore": true, "nextPage": {"token":"abc","page":2} }"#,
+    )
+    .unwrap();
     let result = client.check_completeness(&raw);
-    assert!(matches!(result, Ok(false)), "object nextPage token => incomplete (Ok(false))");
+    assert!(
+        matches!(result, Ok(false)),
+        "object nextPage token => incomplete (Ok(false))"
+    );
 }
-
 
 // --- JSON pointer navigation ---
 
 #[test]
 fn json_pointer_walk_nested() {
-    let value = serde_json::json!({ "groupedRankings": [[{"AthleteID": 1}]], "page": 1, "complete": true });
+    let value =
+        serde_json::json!({ "groupedRankings": [[{"AthleteID": 1}]], "page": 1, "complete": true });
     let val = AlphaApiClient::walk_pointer_value(&value, "/complete");
     assert_eq!(val, Some(&serde_json::json!(true)));
 }
@@ -241,7 +347,11 @@ fn nextpage_resumable_cap_with_valid_continuation() {
     // Cap marker true + hasMore=true + valid nextPage = Ok(false) with continuation exposed.
     let client = make_next_page_client("https://example.com");
     let raw = RawRankingsResponse::from_json(
-        r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-abc","__cap":true}"#
-    ).unwrap();
-    assert!(!client.check_completeness(&raw).unwrap(), "resumable page returns Ok(false)");
+        r#"{"groupedRankings":[],"hasMore":true,"nextPage":"token-abc","__cap":true}"#,
+    )
+    .unwrap();
+    assert!(
+        !client.check_completeness(&raw).unwrap(),
+        "resumable page returns Ok(false)"
+    );
 }

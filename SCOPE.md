@@ -5,9 +5,9 @@
 ```text
 large XLSX
   -> streaming OOXML reader
-  -> local-only row selection
-  -> existing scoped search/retrieval path
-  -> deterministic local matching
+  -> local-only row scope (strict first worksheet or legacy sport filter)
+  -> scoped TF and XC search with full pagination reconciliation
+  -> strict local Q5 extraction + Q4 identity review + deterministic matching
   -> authorized alpha manifest + typed API client (optional separate run)
   -> 50-state/event matrix + completeness validation
   -> cohort filter + safe normalization + athlete-ID deduplication
@@ -33,6 +33,12 @@ Result records retain every discovered profile hint, including weak candidates, 
 | `alpha_catalog` | Validate exactly 50 states and the discovered event matrix | Add DC, territories, or unconfirmed events |
 | `alpha_cohort` / `alpha_normalize` | Apply Class-of-2027 evidence precedence and safe field normalization | Promote missing or conflicting evidence |
 | `alpha_match` | Match a completed local alpha source into existing candidate/scoring types | Make Athletic.net network calls |
+| `exhaustive` / `exhaustive_run_rows` | Own the writer lock, cancellation, durable row commits, and final exports | Report retryable errors as complete |
+| `exhaustive_search` / `search_cache` | Bound concurrent search and persist complete query outcomes | Cache failed or truncated queries as successful |
+| `exhaustive_ai` / `ai_cache` | Require both model clients and cache schema-bound successful analysis | Substitute heuristic evidence after model failure |
+| `exhaustive_identity` | Reconcile canonical athlete identities and conservative attribution | Attribute an unresolved row to a selected profile |
+| `coverage` / `jsonl` | Bind population/configuration/schema, reconcile every source key, and repair only torn suffixes | Ignore committed corruption or orphan checkpoint keys |
+
 ## Authorized alpha API path
 
 The optional alpha run starts only from a validated local manifest with documented developer permission. It calls the confirmed nav/rankings routes, requires exactly 50 canonical states, rejects unknown completeness or cap behavior, records an append-only unit checkpoint, and writes a separate source directory. `match-authorized` reads that directory locally and does not contact Athletic.net.
@@ -42,6 +48,8 @@ The optional alpha run starts only from a validated local manifest with document
 The XLSX reader opens the ZIP container, streams `sharedStrings.xml`, resolves worksheet relationships, and streams each worksheet `<row>`. A row counts as real only when it contains at least one non-empty cell. This avoids the `Sheet1` inflated dimension.
 
 Each selected prospect receives the immutable key `sheet_name:excel_row`. Every later output uses that key; names are never used as write-back keys.
+
+`--all-workbook-rows --first-worksheet-only` selects every real row in the first actual worksheet relationship, irrespective of source sport. For this workbook the population is 111,939 rows with all 13 source columns preserved. Seven rows have no name and finish as explicit `INPUT_ERROR`; the remaining 111,932 require TF and XC discovery.
 
 ### 2. Candidate discovery
 
@@ -54,9 +62,13 @@ For each selected athlete, queries are generated from:
 - `site:athletic.net/athlete`.
 Only URLs whose normalized host is `athletic.net` or `www.athletic.net` and whose path starts with `/athlete/` are retained. Completed row records checkpoint the query, URLs, snippets, extracted evidence, model decision, and scores under the immutable source key.
 
+Strict exhaustive discovery has no candidate-count truncation. It validates athlete IDs, result counts, pagination progress, and the bounded page limit; any unknown or inconsistent completeness produces a retryable `SEARCH_ERROR`. Two concurrent query futures share one spacing gate. Both sport lanes must finish before a decisive identity may stop later query stages.
+
 ### 3. Retrieval
 
 Default mode retains search-result title/snippet/URL as evidence and can ingest manually saved `<athlete-id>.html` pages. Authorized mode uses Spider with concurrency 1, a stop-after-seed callback, robots enabled, and a configured delay to retrieve each exact candidate URL. The pipeline has no anti-bot fallback.
+
+Direct retrieval additionally requires `SPIDER_MAX_SIZE_BYTES` in the inclusive range 1,048,576–4,194,304 bytes. Saved files are also bounded to 4 MiB. The owned crawl/collector futures are joined under a deadline; truncation, invalid response status, access challenges, and identity-changing redirects are errors.
 
 If a site requires JavaScript, supply manually saved HTML or adapt the authorized retriever to Spider's `smart`/Chrome feature after confirming permission. The base build intentionally avoids browser automation.
 
@@ -70,7 +82,7 @@ The configured local model server receives only:
 
 It never receives email, street address, postal code, or the full workbook row.
 
-The model returns JSON. Invalid JSON, missing required fields, or an out-of-range candidate index becomes `REVIEW`, not a guessed match.
+Strict exhaustive mode requires Q5 extraction and Q4 identity review. Invalid JSON, omitted extraction schema, unavailable models, or invalid review indices become retryable `AI_ERROR`, not a guessed match or `NO_MATCH`. Explicit null evidence fields are allowed to remain absent. The separate legacy path retains its older tolerant fallback behavior.
 
 ### 5. Deterministic identity policy
 
@@ -89,17 +101,24 @@ Records that fail mark validation remain in raw evidence but are not promoted in
 | Failure | Result |
 |---|---|
 | Athletic.net search/API unavailable | The affected row or alpha unit remains retryable; no credential guessing |
-| Local model unavailable/invalid JSON | Deterministic result retained with `model_status=unavailable_or_invalid` |
-| Model returns out-of-range candidate index | `REVIEW` with `model_status=invalid_index` |
+| Exhaustive local model unavailable, invalid JSON/schema, or invalid candidate index | Retryable `AI_ERROR`; row commit followed by nonzero exit |
+| Legacy local model unavailable/invalid | Legacy deterministic fallback or review; not strict exhaustive proof |
 | Page blocked/robots denied | Search evidence retained; no bypass attempted |
 | Alpha response unauthorized, malformed, capped, or incomplete | Affected unit is checkpointed unresolved and the run fails closed |
-| No candidate | `NO_MATCH` checkpointed |
-| Interrupted process | Resume skips completed row/unit keys and retries incomplete work |
+| No candidate after every required search completes | `NO_MATCH` checkpointed |
+| Neither source name present | Terminal `INPUT_ERROR`; no fabricated athlete |
+| Interrupted process | Cancel uncommitted work, drain any started commit, export progress, then resume from durable outcomes |
 | XLSX write-back fails | Source file remains untouched; output temp is not promoted |
+
+The exhaustive runner holds an exclusive output-directory writer lock. Workbook/configuration/scope/analysis-schema fingerprints reject incompatible resumes. JSONL persistence syncs complete newline-terminated records before exposing cache entries; only an unterminated final suffix may be repaired. Coverage is atomically replaced and reconciles checkpoint source keys against the full selected population.
+
+An unchanged completed run skips engine construction and all external requests. Candidate and decision caches are persistent but currently loaded into memory, as are source prospects and checkpoint records; bounded HTTP concurrency is not a claim of constant-memory operation. Cache appends and optional saved-page reads still perform synchronous file I/O in the async row path. These are explicit performance/review limitations, not passed architectural gates.
+
+The strict compiler/Clippy gate is narrower than full architectural approval. The codebase still has functions exceeding the Farley 25-line/five-argument limits and source files exceeding 300 lines (including `exhaustive_engine`, `coverage`, `discovery`, `extract`, and `xlsx`). Full black-hat approval is not claimed.
 
 ## Privacy and operational controls
 
-- No email or street/postal data leaves the workbook reader.
+- Email and street/postal data are retained only in local source/result records, never sent to search or model services.
 - Logs identify rows by source key and name, not email.
 - Direct page retrieval requires two independent authorization controls.
 - Alpha API collection requires a separate developer permission reference and explicit CLI acknowledgment.
@@ -118,3 +137,7 @@ Records that fail mark validation remain in raw evidence but are not promoted in
 - `collect-authorized` refuses a disabled manifest before client/network construction.
 - The alpha run writes separate source outputs and never replaces match decisions.
 - A capped, malformed, or incomplete alpha response cannot be reported complete.
+- Strict first-worksheet coverage reports 111,939 total rows and seven missing-name rows.
+- A positive synthetic-search scenario with real Q5/Q4 models can match TF and XC despite a Basketball source sport, preserve all 13 source fields, and resume without external requests.
+- Search/model failures cannot become `NO_MATCH`; malformed advertised search rows fail closed.
+- Complete production delivery requires all 111,939 rows final, zero pending/retryable rows, and a verified zero-request unchanged resume. The observed live invalid-athlete-ID response currently blocks this criterion.

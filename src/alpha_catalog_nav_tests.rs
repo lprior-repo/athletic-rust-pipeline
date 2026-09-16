@@ -1,5 +1,5 @@
-use crate::alpha_model_raw::{RawNavEvent, RawNavInfoResponse, RawNavState};
 use crate::alpha_catalog::{parse_nav_targets, ALLOWED_STATES};
+use crate::alpha_model_raw::{RawNavEvent, RawNavInfoResponse, RawNavState};
 
 // ── parse_nav_targets: state parsing ─────────────────────────────────
 
@@ -11,7 +11,11 @@ fn test_parse_nav_states_basic() {
             state: Some("CA".to_string()),
             state_name: Some("California".to_string()),
         }),
-        event: None, divisions: None, genders: None, complete: true, page: None,
+        event: None,
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (states, _) = parse_nav_targets(responses).unwrap();
     assert_eq!(states.len(), 1);
@@ -27,7 +31,10 @@ fn test_parse_nav_events_basic() {
             event_short: Some("100m".to_string()),
             event_name: Some("100 meters".to_string()),
         }),
-        divisions: None, genders: None, complete: true, page: None,
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
     assert_eq!(events.len(), 1);
@@ -38,8 +45,16 @@ fn test_parse_nav_events_basic() {
 #[test]
 fn test_parse_nav_missing_state_id_rejected() {
     let responses = vec![RawNavInfoResponse {
-        state: Some(RawNavState { state_id: None, state: Some("CA".to_string()), state_name: None }),
-        event: None, divisions: None, genders: None, complete: true, page: None,
+        state: Some(RawNavState {
+            state_id: None,
+            state: Some("CA".to_string()),
+            state_name: None,
+        }),
+        event: None,
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     assert!(parse_nav_targets(responses).is_err());
 }
@@ -48,8 +63,14 @@ fn test_parse_nav_missing_state_id_rejected() {
 fn test_parse_nav_missing_event_short_rejected() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: None, event_name: Some("100m".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: None,
+            event_name: Some("100m".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     assert!(parse_nav_targets(responses).is_err());
 }
@@ -57,8 +78,16 @@ fn test_parse_nav_missing_event_short_rejected() {
 #[test]
 fn test_parse_nav_zero_state_id_rejected() {
     let responses = vec![RawNavInfoResponse {
-        state: Some(RawNavState { state_id: Some(0), state: Some("CA".to_string()), state_name: None }),
-        event: None, divisions: None, genders: None, complete: true, page: None,
+        state: Some(RawNavState {
+            state_id: Some(0),
+            state: Some("CA".to_string()),
+            state_name: None,
+        }),
+        event: None,
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     assert!(parse_nav_targets(responses).is_err());
 }
@@ -67,8 +96,14 @@ fn test_parse_nav_zero_state_id_rejected() {
 fn test_parse_nav_empty_event_short_rejected() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("".to_string()), event_name: None }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("".to_string()),
+            event_name: None,
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     assert!(parse_nav_targets(responses).is_err());
 }
@@ -76,8 +111,30 @@ fn test_parse_nav_empty_event_short_rejected() {
 #[test]
 fn test_parse_nav_filters_to_50_codes() {
     let responses = vec![
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("CA".to_string()), state_name: None }), event: None, divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(99), state: Some("DC".to_string()), state_name: Some("District of Columbia".to_string()) }), event: None, divisions: None, genders: None, complete: true, page: None },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("CA".to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(99),
+                state: Some("DC".to_string()),
+                state_name: Some("District of Columbia".to_string()),
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
     ];
     let (states, _) = parse_nav_targets(responses).unwrap();
     let codes: Vec<&str> = states.iter().map(|s| s.code.as_str()).collect();
@@ -88,20 +145,55 @@ fn test_parse_nav_filters_to_50_codes() {
 #[test]
 fn test_parse_nav_divisions_filtered() {
     let responses = vec![RawNavInfoResponse {
-        state: Some(RawNavState { state_id: Some(1), state: Some("DIV-A".to_string()), state_name: None }),
-        event: Some(RawNavEvent { event_short: Some("100m".to_string()), event_name: Some("100m".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        state: Some(RawNavState {
+            state_id: Some(1),
+            state: Some("DIV-A".to_string()),
+            state_name: None,
+        }),
+        event: Some(RawNavEvent {
+            event_short: Some("100m".to_string()),
+            event_name: Some("100m".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (states, _) = parse_nav_targets(responses).unwrap();
     let codes: Vec<&str> = states.iter().map(|s| s.code.as_str()).collect();
-    assert!(!codes.contains(&"DIV-A"), "Division names must not be in states");
+    assert!(
+        !codes.contains(&"DIV-A"),
+        "Division names must not be in states"
+    );
 }
 
 #[test]
 fn test_parse_nav_deduplicates_states() {
     let responses = vec![
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("CA".to_string()), state_name: None }), event: None, divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("CA".to_string()), state_name: None }), event: None, divisions: None, genders: None, complete: true, page: None },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("CA".to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("CA".to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
     ];
     let (states, _) = parse_nav_targets(responses).unwrap();
     assert_eq!(states.len(), 1);
@@ -110,8 +202,28 @@ fn test_parse_nav_deduplicates_states() {
 #[test]
 fn test_parse_nav_deduplicates_events() {
     let responses = vec![
-        RawNavInfoResponse { state: None, event: Some(RawNavEvent { event_short: Some("100m".to_string()), event_name: None }), divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: None, event: Some(RawNavEvent { event_short: Some("100m".to_string()), event_name: None }), divisions: None, genders: None, complete: true, page: None },
+        RawNavInfoResponse {
+            state: None,
+            event: Some(RawNavEvent {
+                event_short: Some("100m".to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: None,
+            event: Some(RawNavEvent {
+                event_short: Some("100m".to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
     ];
     let (_, events) = parse_nav_targets(responses).unwrap();
     assert_eq!(events.len(), 1);
@@ -120,8 +232,30 @@ fn test_parse_nav_deduplicates_events() {
 #[test]
 fn test_parse_nav_conflicting_duplicate_id_rejected() {
     let responses = vec![
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("CA".to_string()), state_name: None }), event: None, divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("TX".to_string()), state_name: None }), event: None, divisions: None, genders: None, complete: true, page: None },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("CA".to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("TX".to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
     ];
     assert!(parse_nav_targets(responses).is_err());
 }
@@ -130,41 +264,110 @@ fn test_parse_nav_conflicting_duplicate_id_rejected() {
 fn test_parse_nav_event_direction_100m_lower() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("100m".to_string()), event_name: Some("100 meters".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("100m".to_string()),
+            event_name: Some("100 meters".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
-    assert!(!events[0].higher_is_better, "100m should be lower-is-better");
+    assert!(
+        !events[0].higher_is_better,
+        "100m should be lower-is-better"
+    );
 }
 
 #[test]
 fn test_parse_nav_event_direction_long_jump_higher() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("long_jump".to_string()), event_name: Some("Long Jump".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("long_jump".to_string()),
+            event_name: Some("Long Jump".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
-    assert!(events[0].higher_is_better, "long_jump should be higher-is-better");
+    assert!(
+        events[0].higher_is_better,
+        "long_jump should be higher-is-better"
+    );
 }
 
 #[test]
 fn test_parse_nav_event_direction_shot_put_higher() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("shot_put".to_string()), event_name: Some("Shot Put".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("shot_put".to_string()),
+            event_name: Some("Shot Put".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
-    assert!(events[0].higher_is_better, "shot_put should be higher-is-better");
+    assert!(
+        events[0].higher_is_better,
+        "shot_put should be higher-is-better"
+    );
 }
 
 #[test]
 fn test_parse_nav_multiple_states_and_events() {
     let responses = vec![
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(1), state: Some("CA".to_string()), state_name: None }), event: Some(RawNavEvent { event_short: Some("100m".to_string()), event_name: None }), divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(2), state: Some("TX".to_string()), state_name: None }), event: Some(RawNavEvent { event_short: Some("long_jump".to_string()), event_name: None }), divisions: None, genders: None, complete: true, page: None },
-        RawNavInfoResponse { state: Some(RawNavState { state_id: Some(3), state: Some("NY".to_string()), state_name: None }), event: Some(RawNavEvent { event_short: Some("shot_put".to_string()), event_name: None }), divisions: None, genders: None, complete: true, page: None },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(1),
+                state: Some("CA".to_string()),
+                state_name: None,
+            }),
+            event: Some(RawNavEvent {
+                event_short: Some("100m".to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(2),
+                state: Some("TX".to_string()),
+                state_name: None,
+            }),
+            event: Some(RawNavEvent {
+                event_short: Some("long_jump".to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
+        RawNavInfoResponse {
+            state: Some(RawNavState {
+                state_id: Some(3),
+                state: Some("NY".to_string()),
+                state_name: None,
+            }),
+            event: Some(RawNavEvent {
+                event_short: Some("shot_put".to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
+        },
     ];
     let (states, events) = parse_nav_targets(responses).unwrap();
     assert_eq!(states.len(), 3);
@@ -187,8 +390,16 @@ fn test_parse_nav_state_sorting() {
     let mut responses = vec![];
     for (i, code) in ["WY", "AL", "MT", "CA", "AK"].iter().enumerate() {
         responses.push(RawNavInfoResponse {
-            state: Some(RawNavState { state_id: Some((i as u64 + 1) * 10), state: Some(code.to_string()), state_name: None }),
-            event: None, divisions: None, genders: None, complete: true, page: None,
+            state: Some(RawNavState {
+                state_id: Some((i as u64 + 1) * 10),
+                state: Some(code.to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
         });
     }
     let (states, _) = parse_nav_targets(responses).unwrap();
@@ -202,8 +413,14 @@ fn test_parse_nav_event_sorting() {
     for short in &["shot_put", "100m", "long_jump"] {
         responses.push(RawNavInfoResponse {
             state: None,
-            event: Some(RawNavEvent { event_short: Some(short.to_string()), event_name: None }),
-            divisions: None, genders: None, complete: true, page: None,
+            event: Some(RawNavEvent {
+                event_short: Some(short.to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
         });
     }
     let (_, events) = parse_nav_targets(responses).unwrap();
@@ -214,9 +431,19 @@ fn test_parse_nav_event_sorting() {
 #[test]
 fn test_parse_nav_trims_whitespace() {
     let responses = vec![RawNavInfoResponse {
-        state: Some(RawNavState { state_id: Some(1), state: Some(" CA ".to_string()), state_name: None }),
-        event: Some(RawNavEvent { event_short: Some(" 100m ".to_string()), event_name: None }),
-        divisions: None, genders: None, complete: true, page: None,
+        state: Some(RawNavState {
+            state_id: Some(1),
+            state: Some(" CA ".to_string()),
+            state_name: None,
+        }),
+        event: Some(RawNavEvent {
+            event_short: Some(" 100m ".to_string()),
+            event_name: None,
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (states, events) = parse_nav_targets(responses).unwrap();
     assert_eq!(states[0].code, "CA");
@@ -228,8 +455,16 @@ fn test_parse_nav_exact_cardinality_50() {
         .iter()
         .enumerate()
         .map(|(i, code)| RawNavInfoResponse {
-            state: Some(RawNavState { state_id: Some((i as u64 + 1) * 10), state: Some(code.to_string()), state_name: None }),
-            event: None, divisions: None, genders: None, complete: true, page: None,
+            state: Some(RawNavState {
+                state_id: Some((i as u64 + 1) * 10),
+                state: Some(code.to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
         })
         .collect();
     let (states, _) = parse_nav_targets(responses).unwrap();
@@ -237,15 +472,29 @@ fn test_parse_nav_exact_cardinality_50() {
     let mut responses = vec![];
     for (i, code) in ["CA", "TX", "NY", "FL", "IL"].iter().enumerate() {
         responses.push(RawNavInfoResponse {
-            state: Some(RawNavState { state_id: Some((i as u64 + 1) * 10), state: Some(code.to_string()), state_name: None }),
-            event: None, divisions: None, genders: None, complete: true, page: None,
+            state: Some(RawNavState {
+                state_id: Some((i as u64 + 1) * 10),
+                state: Some(code.to_string()),
+                state_name: None,
+            }),
+            event: None,
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
         });
     }
     for short in &["100m", "long_jump"] {
         responses.push(RawNavInfoResponse {
             state: None,
-            event: Some(RawNavEvent { event_short: Some(short.to_string()), event_name: None }),
-            divisions: None, genders: None, complete: true, page: None,
+            event: Some(RawNavEvent {
+                event_short: Some(short.to_string()),
+                event_name: None,
+            }),
+            divisions: None,
+            genders: None,
+            complete: true,
+            page: None,
         });
     }
     let (states, events) = parse_nav_targets(responses).unwrap();
@@ -257,19 +506,34 @@ fn test_parse_nav_exact_cardinality_50() {
 fn test_parse_nav_110mh_direction() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("110mh".to_string()), event_name: Some("110m hurdles".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("110mh".to_string()),
+            event_name: Some("110m hurdles".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
-    assert!(!events[0].higher_is_better, "110mh should be lower-is-better");
+    assert!(
+        !events[0].higher_is_better,
+        "110mh should be lower-is-better"
+    );
 }
 
 #[test]
 fn test_parse_nav_5k_direction() {
     let responses = vec![RawNavInfoResponse {
         state: None,
-        event: Some(RawNavEvent { event_short: Some("5k".to_string()), event_name: Some("5000 meters".to_string()) }),
-        divisions: None, genders: None, complete: true, page: None,
+        event: Some(RawNavEvent {
+            event_short: Some("5k".to_string()),
+            event_name: Some("5000 meters".to_string()),
+        }),
+        divisions: None,
+        genders: None,
+        complete: true,
+        page: None,
     }];
     let (_, events) = parse_nav_targets(responses).unwrap();
     assert!(!events[0].higher_is_better, "5k should be lower-is-better");

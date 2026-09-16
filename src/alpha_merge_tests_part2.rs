@@ -22,46 +22,66 @@ fn model_source_result_is_preserved() {
 #[test]
 fn merge_athlete_profile_urls_merge_without_duplicates() {
     let mut map = std::collections::BTreeMap::new();
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        profile_urls: vec!["https://athletic.net/athlete/12345".to_owned()],
-        ..Default::default()
-    });
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        profile_urls: vec![
-            "https://athletic.net/athlete/12345".to_owned(),
-            "https://athletic.net/athlete/54321".to_owned(),
-        ],
-        ..Default::default()
-    });
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            profile_urls: vec!["https://athletic.net/athlete/12345".to_owned()],
+            ..Default::default()
+        },
+    );
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            profile_urls: vec![
+                "https://athletic.net/athlete/12345".to_owned(),
+                "https://athletic.net/athlete/54321".to_owned(),
+            ],
+            ..Default::default()
+        },
+    );
     assert_eq!(map[&12345].profile_urls.len(), 2);
 }
 
 #[test]
 fn merge_athlete_source_urls_preserves_all_sources() {
     let mut map = std::collections::BTreeMap::new();
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        source_urls: vec!["https://athletic.net/sheet/1".to_owned()],
-        ..Default::default()
-    });
-    merge_athlete(&mut map, SourceAthlete {
-        athlete_id: 12345,
-        source_urls: vec![
-            "https://athletic.net/sheet/1".to_owned(),
-            "https://athletic.net/sheet/2".to_owned(),
-        ],
-        ..Default::default()
-    });
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            source_urls: vec!["https://athletic.net/sheet/1".to_owned()],
+            ..Default::default()
+        },
+    );
+    merge_athlete(
+        &mut map,
+        SourceAthlete {
+            athlete_id: 12345,
+            source_urls: vec![
+                "https://athletic.net/sheet/1".to_owned(),
+                "https://athletic.net/sheet/2".to_owned(),
+            ],
+            ..Default::default()
+        },
+    );
     assert_eq!(map[&12345].source_urls.len(), 2);
 }
 
 #[test]
 fn zero_id_records_remain_exception_only_and_distinct() {
     let (keyed, exceptions) = dedup_athletes(vec![
-        SourceAthlete { athlete_id: 0, athlete_name: "Jane".to_owned(), ..Default::default() },
-        SourceAthlete { athlete_id: 0, athlete_name: "John".to_owned(), ..Default::default() },
+        SourceAthlete {
+            athlete_id: 0,
+            athlete_name: "Jane".to_owned(),
+            ..Default::default()
+        },
+        SourceAthlete {
+            athlete_id: 0,
+            athlete_name: "John".to_owned(),
+            ..Default::default()
+        },
     ]);
     assert!(keyed.is_empty());
     assert_eq!(exceptions.len(), 2);

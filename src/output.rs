@@ -1,6 +1,7 @@
 use crate::model::{ordered_source_headers, MatchRecord};
 use anyhow::{Context, Result};
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader, BufWriter, Write},
     path::Path,
@@ -27,42 +28,61 @@ const PR_EVENTS: &[&str] = &[
 ];
 
 pub fn write_all(out_dir: &Path, records: &[MatchRecord]) -> Result<()> {
+    validate_records(records)?;
     write_jsonl(&out_dir.join("matches.jsonl"), records)?;
-    write_csv(&out_dir.join("matches.csv"), records)?;
-    let unresolved: Vec<MatchRecord> = records
+    write_csv(&out_dir.join("matches.csv"), records, |_| true)?;
+    write_csv(&out_dir.join("unresolved.csv"), records, |record| {
+        record.status != "MATCH"
+    })?;
+    Ok(())
+}
+
+fn validate_records(records: &[MatchRecord]) -> Result<()> {
+    records
         .iter()
-        .filter(|record| {
-            matches!(
-                record.status.as_str(),
-                "CLOSE_MATCH"
-                    | "REVIEW"
-                    | "NO_MATCH"
-                    | "INPUT_ERROR"
-                    | "SEARCH_ERROR"
-                    | "AI_ERROR"
-            )
-        })
-        .cloned()
-        .collect();
-    write_csv(&out_dir.join("unresolved.csv"), &unresolved)?;
+        .try_fold(HashSet::new(), |mut keys, record| {
+            if record.source_key.trim().is_empty() {
+                anyhow::bail!("output record has an empty source key");
+            }
+            if !keys.insert(record.source_key.clone()) {
+                anyhow::bail!("output contains duplicate source key {}", record.source_key);
+            }
+            if record.prospect.source_key != record.source_key {
+                anyhow::bail!(
+                    "output record metadata mismatch for source key {}",
+                    record.source_key
+                );
+            }
+            Ok(keys)
+        })?;
     Ok(())
 }
 
 pub fn read_jsonl(path: &Path) -> Result<Vec<MatchRecord>> {
     let reader = BufReader::new(File::open(path)?);
     let mut records = Vec::new();
+    let mut keys = HashSet::new();
     for (line_number, line) in reader.lines().enumerate() {
         let line = line?;
         if line.trim().is_empty() {
             continue;
         }
-        records.push(serde_json::from_str(&line).with_context(|| {
+        let record: MatchRecord = serde_json::from_str(&line).with_context(|| {
             format!(
                 "invalid match JSON at line {}",
                 line_number.saturating_add(1)
             )
-        })?);
+        })?;
+        if !keys.insert(record.source_key.clone()) {
+            anyhow::bail!(
+                "duplicate match source key {} at line {}",
+                record.source_key,
+                line_number.saturating_add(1)
+            );
+        }
+        records.push(record);
     }
+    validate_records(&records)?;
     Ok(records)
 }
 
@@ -76,7 +96,11 @@ fn write_jsonl(path: &Path, records: &[MatchRecord]) -> Result<()> {
     Ok(())
 }
 
-fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
+fn write_csv(
+    path: &Path,
+    records: &[MatchRecord],
+    include: impl Fn(&MatchRecord) -> bool,
+) -> Result<()> {
     let mut writer = csv::Writer::from_path(path)?;
     let source_headers = ordered_source_headers(records);
     let mut headers = source_headers.clone();
@@ -108,7 +132,7 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
     ]);
     writer.write_record(&headers)?;
 
-    for record in records {
+    for record in records.iter().filter(|record| include(record)) {
         let mut row = source_headers
             .iter()
             .map(|header| {
@@ -154,7 +178,6 @@ fn write_csv(path: &Path, records: &[MatchRecord]) -> Result<()> {
     Ok(())
 }
 
-
 fn yes_no(value: bool) -> &'static str {
     if value {
         "YES"
@@ -174,6 +197,7 @@ mod tests {
         MatchRecord {
             source_key: "Export:2".to_owned(),
             prospect: Prospect {
+                source_key: "Export:2".to_owned(),
                 sheet: "Export".to_owned(),
                 excel_row: 2,
                 first_name: "Ada".to_owned(),
@@ -193,6 +217,15 @@ mod tests {
             ai_logic: "full AI output".to_owned(),
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn write_all_rejects_duplicate_source_keys_before_writing() -> Result<()> {
+        let directory = tempdir()?;
+        let record = record_with_source_fields("MATCH");
+        assert!(write_all(directory.path(), &[record.clone(), record]).is_err());
+        assert!(!directory.path().join("matches.jsonl").exists());
+        Ok(())
     }
 
     #[test]

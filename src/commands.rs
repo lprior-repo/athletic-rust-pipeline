@@ -25,6 +25,15 @@ pub enum Command {
         out_dir: PathBuf,
         #[arg(long)]
         max: Option<usize>,
+        /// Search every real source row against both track and cross-country.
+        #[arg(long, conflicts_with = "include_xc")]
+        all_workbook_rows: bool,
+        /// Restrict exhaustive matching to the actual first worksheet.
+        #[arg(long, requires = "all_workbook_rows")]
+        first_worksheet_only: bool,
+        /// Extract and rank deterministically without contacting either model.
+        #[arg(long, requires = "all_workbook_rows")]
+        no_ai: bool,
         /// Include Cross Country rows in addition to configured sports.
         #[arg(long)]
         include_xc: bool,

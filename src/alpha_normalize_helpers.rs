@@ -33,10 +33,14 @@ fn looks_like_private_location(value: &str) -> bool {
         || digits >= 7
         || has_postal
         || lower.split_whitespace().any(|part| {
-            matches!(part.trim_matches(|ch: char| !ch.is_ascii_alphabetic()),
-                "street" | "avenue" | "boulevard" | "road")
+            matches!(
+                part.trim_matches(|ch: char| !ch.is_ascii_alphabetic()),
+                "street" | "avenue" | "boulevard" | "road"
+            )
         })
-        || lower.contains("apt ") || lower.contains("unit ") || lower.contains("po box")
+        || lower.contains("apt ")
+        || lower.contains("unit ")
+        || lower.contains("po box")
 }
 
 fn valid_season(value: &str) -> bool {
@@ -49,9 +53,12 @@ fn valid_season(value: &str) -> bool {
     let Ok(end_year) = end.parse::<i32>() else {
         return false;
     };
+    let Some(next_year) = start_year.checked_add(1) else {
+        return false;
+    };
     start.len() == 4
         && end.len() == 2
-        && end_year == (start_year + 1) % 100
+        && end_year == next_year.rem_euclid(100)
         && (1900..=2200).contains(&start_year)
 }
 
@@ -67,13 +74,22 @@ fn valid_date(value: &str) -> bool {
     {
         return false;
     }
-    let Ok(year) = value[0..4].parse::<i32>() else {
+    let Some(year_text) = value.get(0..4) else {
         return false;
     };
-    let Ok(month) = value[5..7].parse::<u32>() else {
+    let Some(month_text) = value.get(5..7) else {
         return false;
     };
-    let Ok(day) = value[8..10].parse::<u32>() else {
+    let Some(day_text) = value.get(8..10) else {
+        return false;
+    };
+    let Ok(year) = year_text.parse::<i32>() else {
+        return false;
+    };
+    let Ok(month) = month_text.parse::<u32>() else {
+        return false;
+    };
+    let Ok(day) = day_text.parse::<u32>() else {
         return false;
     };
     let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
@@ -96,26 +112,28 @@ pub(crate) fn parse_mark_entry(
     if !(4..=6).contains(&parts.len()) {
         return None;
     }
-    let event = normalize_whitespace(parts[0]);
-    let season = normalize_whitespace(parts[2]);
-    let date = normalize_whitespace(parts[3]);
+    let event = normalize_whitespace(parts.first()?);
+    let season = normalize_whitespace(parts.get(2)?);
+    let date = normalize_whitespace(parts.get(3)?);
     if !valid_season(&season) || !valid_date(&date) {
         return None;
     }
-    let mut mark = Mark::default();
-    mark.event = event;
-    mark.mark = parts[1].trim().to_owned();
-    mark.season = season;
-    mark.date = date;
-    if let Some(meet_name) = parts.get(4) {
-        mark.meet_name = normalize_whitespace(meet_name);
-    }
-    if let Some(wind) = parts.get(5) {
-        let wind = normalize_whitespace(wind);
-        if !wind.is_empty() {
-            mark.wind = Some(wind);
-        }
-    }
+    let meet_name = parts
+        .get(4)
+        .map_or_else(String::new, |value| normalize_whitespace(value));
+    let wind = parts
+        .get(5)
+        .map(|value| normalize_whitespace(value))
+        .filter(|value| !value.is_empty());
+    let mark = Mark {
+        event,
+        mark: parts.get(1)?.trim().to_owned(),
+        season,
+        date,
+        meet_name,
+        wind,
+        ..Default::default()
+    };
     let normalized = marks::normalize_mark(mark);
     normalized.valid.then_some(SourceResult {
         result_id,

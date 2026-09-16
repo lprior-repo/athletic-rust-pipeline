@@ -5,13 +5,21 @@ use std::{cmp::Ordering, collections::BTreeMap, sync::LazyLock};
 pub fn normalize_mark(mut mark: Mark) -> Mark {
     mark.canonical_event = canonical_event(&mark.event);
     mark.parsed_value = parse_mark_value(&mark.canonical_event, &mark.mark);
-    mark.valid = !mark.canonical_event.is_empty() && mark.parsed_value.is_some();
+    mark.valid = !mark.canonical_event.is_empty()
+        && mark
+            .parsed_value
+            .is_some_and(|value| value.is_finite() && value >= 0.0);
     mark
 }
 
 pub fn best_marks(marks: &[Mark]) -> BTreeMap<String, Mark> {
     let mut best = BTreeMap::new();
-    for mark in marks.iter().filter(|mark| mark.valid) {
+    for mark in marks.iter().filter(|mark| {
+        mark.valid
+            && mark
+                .parsed_value
+                .is_some_and(|value| value.is_finite() && value >= 0.0)
+    }) {
         let key = mark.canonical_event.clone();
         match best.get(&key) {
             None => {
@@ -27,10 +35,16 @@ pub fn best_marks(marks: &[Mark]) -> BTreeMap<String, Mark> {
 }
 
 fn is_better(candidate: &Mark, previous: &Mark) -> bool {
-    let Some(candidate_value) = candidate.parsed_value else {
+    let Some(candidate_value) = candidate
+        .parsed_value
+        .filter(|value| value.is_finite() && *value >= 0.0)
+    else {
         return false;
     };
-    let Some(previous_value) = previous.parsed_value else {
+    let Some(previous_value) = previous
+        .parsed_value
+        .filter(|value| value.is_finite() && *value >= 0.0)
+    else {
         return true;
     };
     let ordering = match candidate_value.partial_cmp(&previous_value) {
@@ -119,7 +133,7 @@ pub fn parse_mark_value(event: &str, value: &str) -> Option<f64> {
 
 fn parse_time_seconds(value: &str) -> Option<f64> {
     let cleaned = value.trim().trim_end_matches(['a', 'A', 'h', 'H']);
-    if cleaned.contains(':') {
+    let parsed = if cleaned.contains(':') {
         let parts: Vec<&str> = cleaned.split(':').collect();
         match parts.as_slice() {
             [minutes, seconds] => {
@@ -134,7 +148,8 @@ fn parse_time_seconds(value: &str) -> Option<f64> {
         }
     } else {
         cleaned.parse::<f64>().ok()
-    }
+    };
+    parsed.filter(|seconds| seconds.is_finite() && *seconds >= 0.0)
 }
 
 fn parse_distance(value: &str) -> Option<f64> {
@@ -149,7 +164,8 @@ fn parse_distance(value: &str) -> Option<f64> {
     if let Some(captures) = imperial.captures(value) {
         let feet = captures.get(1)?.as_str().parse::<f64>().ok()?;
         let inches = captures.get(2)?.as_str().parse::<f64>().ok()?;
-        return Some(feet * 12.0 + inches);
+        let total_inches = feet * 12.0 + inches;
+        return total_inches.is_finite().then_some(total_inches);
     }
     parse_metric(value, METRIC.as_ref())
 }
@@ -157,7 +173,8 @@ fn parse_distance(value: &str) -> Option<f64> {
 fn parse_metric(value: &str, metric: Option<&Regex>) -> Option<f64> {
     let captures = metric?.captures(value)?;
     let meters = captures.get(1)?.as_str().parse::<f64>().ok()?;
-    Some(meters * 39.370_078_740_2)
+    let inches = meters * 39.370_078_740_2;
+    inches.is_finite().then_some(inches)
 }
 
 #[cfg(test)]
@@ -173,8 +190,22 @@ mod tests {
     #[test]
     fn parses_distances() {
         assert_eq!(parse_mark_value("long_jump", "18-4.25"), Some(220.25));
-        let metric = parse_mark_value("long_jump", "5.62m").unwrap();
-        assert!((metric - 221.2598).abs() < 0.001);
+        let metric = parse_mark_value("long_jump", "5.62m");
+        assert!(metric.is_some_and(|value| (value - 221.2598).abs() < 0.001));
+
+        assert_eq!(parse_mark_value("100m", "-1.0"), None);
+    }
+
+    #[test]
+    fn rejects_nonfinite_marks() {
+        assert_eq!(parse_mark_value("100m", "NaN"), None);
+        assert_eq!(parse_mark_value("100m", "inf"), None);
+        let normalized = normalize_mark(Mark {
+            event: "100m".to_owned(),
+            mark: "NaN".to_owned(),
+            ..Default::default()
+        });
+        assert!(!normalized.valid);
     }
 
     #[test]

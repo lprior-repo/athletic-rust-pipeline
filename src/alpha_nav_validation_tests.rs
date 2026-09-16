@@ -7,7 +7,10 @@ fn parse_json(text: &str) -> RawNavInfoResponse {
 #[test]
 fn empty_object_rejected() {
     let result: Result<RawNavInfoResponse, _> = serde_json::from_str("{}");
-    assert!(result.is_err(), "missing required field 'complete' must be rejected at deserialization");
+    assert!(
+        result.is_err(),
+        "missing required field 'complete' must be rejected at deserialization"
+    );
 }
 
 #[test]
@@ -27,7 +30,10 @@ fn complete_false_rejected() {
     }"#;
     let resp = parse_json(json);
     assert!(resp.complete == false);
-    assert!(resp.validate().is_err(), "complete=false must be rejected by validate");
+    assert!(
+        resp.validate().is_err(),
+        "complete=false must be rejected by validate"
+    );
 }
 
 #[test]
@@ -248,8 +254,7 @@ fn only_page_pagination_accepted() {
 fn fixture_redacted_accepted() {
     let text = std::fs::read_to_string("fixtures/alpha/get-nav-info-redacted.json")
         .expect("fixture must exist");
-    let resp: RawNavInfoResponse = serde_json::from_str(&text)
-        .expect("fixture must parse");
+    let resp: RawNavInfoResponse = serde_json::from_str(&text).expect("fixture must parse");
     assert!(resp.validate().is_ok());
 }
 

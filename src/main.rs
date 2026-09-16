@@ -1,72 +1,128 @@
 #![cfg_attr(test, allow(dead_code))]
-mod summary;
-mod commands;
+mod ai_cache;
 mod alpha_api;
 mod alpha_api_client;
+#[cfg(test)]
+mod alpha_api_client_async_tests;
+#[cfg(test)]
+mod alpha_api_client_cap_marker_tests;
+#[cfg(test)]
+mod alpha_api_client_constructor_tests;
+#[cfg(test)]
+mod alpha_api_client_incomplete_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_nav_info_tests;
+#[cfg(test)]
+mod alpha_api_client_nav_tests;
+#[cfg(test)]
+mod alpha_api_client_pagination_config_tests;
+#[cfg(test)]
+mod alpha_api_client_pagination_tests;
+#[cfg(test)]
+mod alpha_api_client_regression_tests;
 mod alpha_api_client_validation;
+#[cfg(test)]
+mod alpha_api_client_validation_regression_tests;
+#[cfg(test)]
+mod alpha_api_client_validation_tests;
+#[cfg(test)]
+mod alpha_api_completeness_enforce_tests;
+#[cfg(test)]
+mod alpha_api_completeness_nav_tests;
+#[cfg(test)]
+mod alpha_api_completeness_tests;
+#[cfg(test)]
+mod alpha_api_deserialization_tests;
+#[cfg(test)]
+mod alpha_api_field_validation_tests;
+#[cfg(test)]
+mod alpha_api_tests;
 mod alpha_catalog;
+#[cfg(test)]
+mod alpha_catalog_matrix_tests;
+#[cfg(test)]
+mod alpha_catalog_nav_tests;
+#[cfg(test)]
+mod alpha_catalog_validation_tests;
 mod alpha_checkpoint;
 mod alpha_cohort;
+#[cfg(test)]
+mod alpha_cohort_tests;
 mod alpha_config;
+#[cfg(test)]
+mod alpha_config_api_tests;
+#[cfg(test)]
+mod alpha_config_auth_tests;
+#[cfg(test)]
+mod alpha_config_loading_tests;
+#[cfg(test)]
+mod alpha_config_pagination_tests;
+#[cfg(test)]
+mod alpha_config_route_tests;
+#[cfg(test)]
+mod alpha_config_test_helpers;
+mod alpha_match;
 mod alpha_merge;
+#[cfg(test)]
+mod alpha_merge_tests;
+#[cfg(test)]
+mod alpha_merge_tests_part2;
 mod alpha_model;
 mod alpha_model_raw;
 mod alpha_model_raw_validation;
+#[cfg(test)]
+mod alpha_model_raw_validation_negative_season_tests;
+#[cfg(test)]
+mod alpha_model_tests;
+#[cfg(test)]
+mod alpha_model_validation_tests;
 mod alpha_nav_validation;
+#[cfg(test)]
+mod alpha_nav_validation_tests;
 mod alpha_normalize;
 mod alpha_normalize_helpers;
-mod alpha_output; mod alpha_output_privacy;
-mod alpha_pipeline; mod alpha_pipeline_records; mod alpha_match; mod alpha_route_validation;
+#[cfg(test)]
+mod alpha_normalize_regression_tests;
+#[cfg(test)]
+mod alpha_normalize_tests;
+mod alpha_output;
+mod alpha_output_privacy;
+#[cfg(test)]
+mod alpha_output_regression_tests;
+mod alpha_pipeline;
+mod alpha_pipeline_records;
+mod alpha_route_validation;
+#[cfg(test)]
+mod alpha_test_helpers;
 mod alpha_url;
-#[cfg(test)] mod alpha_model_validation_tests;
-#[cfg(test)] mod alpha_api_tests;
-#[cfg(test)] mod alpha_api_client_regression_tests;
-#[cfg(test)] mod alpha_api_client_incomplete_regression_tests;
-#[cfg(test)] mod alpha_api_client_async_tests;
-#[cfg(test)] mod alpha_api_client_validation_tests;
-#[cfg(test)] mod alpha_api_client_cap_marker_tests;
-#[cfg(test)] mod alpha_api_client_validation_regression_tests;
-#[cfg(test)] mod alpha_api_client_nav_tests;
-#[cfg(test)] mod alpha_api_client_nav_info_tests;
-#[cfg(test)] mod alpha_api_completeness_tests;
-#[cfg(test)] mod alpha_api_completeness_nav_tests;
-#[cfg(test)] mod alpha_api_completeness_enforce_tests;
-#[cfg(test)] mod alpha_model_tests;
-#[cfg(test)] mod alpha_config_auth_tests;
-#[cfg(test)] mod alpha_config_api_tests;
-#[cfg(test)] mod alpha_config_loading_tests;
-#[cfg(test)] mod alpha_config_test_helpers;
-#[cfg(test)] mod alpha_config_pagination_tests;
-#[cfg(test)] mod alpha_config_route_tests;
-#[cfg(test)] mod alpha_test_helpers;
-#[cfg(test)] mod alpha_nav_validation_tests;
-#[cfg(test)] mod alpha_model_raw_validation_negative_season_tests;
-#[cfg(test)] mod alpha_api_client_pagination_tests;
-#[cfg(test)] mod alpha_api_client_pagination_config_tests;
-#[cfg(test)] mod alpha_api_client_constructor_tests;
-#[cfg(test)] mod alpha_api_deserialization_tests;
-#[cfg(test)] mod alpha_api_field_validation_tests;
-#[cfg(test)] mod alpha_catalog_matrix_tests;
-#[cfg(test)] mod alpha_catalog_validation_tests;
-#[cfg(test)] mod alpha_catalog_nav_tests;
-#[cfg(test)] mod alpha_cohort_tests; #[cfg(test)] mod alpha_normalize_regression_tests;
-#[cfg(test)] mod alpha_output_regression_tests; #[cfg(test)] mod alpha_normalize_tests;
-#[cfg(test)] mod alpha_merge_tests;
-#[cfg(test)] mod alpha_merge_tests_part2;
 mod checkpoint;
+mod commands;
 mod config;
+mod coverage;
 mod discovery;
+mod exhaustive;
+mod exhaustive_ai;
+mod exhaustive_engine;
+mod exhaustive_identity;
+mod exhaustive_search;
+#[cfg(test)]
+mod exhaustive_tests;
 mod extract;
 mod fetch;
+mod jsonl;
 mod marks;
 mod model;
+mod model_transport;
 mod output;
+mod retry_policy;
 mod scoring;
 mod search_cache;
+mod summary;
 mod xlsx;
-use anyhow::{Context, Result}; use clap::Parser;
-use config::Config;
+use anyhow::{Context, Result};
+use clap::Parser;
 use commands::Command;
+use config::Config;
 use model::{MatchRecord, ModelDecision};
 use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -89,16 +145,34 @@ async fn main() -> Result<()> {
             max,
             include_xc,
             i_have_written_authorization,
+            all_workbook_rows,
+            first_worksheet_only,
+            no_ai,
         } => {
-            run_pipeline(
-                &input,
-                &config,
-                &out_dir,
-                max,
-                include_xc,
-                i_have_written_authorization,
-            )
-            .await
+            if all_workbook_rows {
+                exhaustive::run(
+                    &input,
+                    &config,
+                    &out_dir,
+                    exhaustive::RunOptions {
+                        max,
+                        first_worksheet_only,
+                        authorization_ack: i_have_written_authorization,
+                        no_ai,
+                    },
+                )
+                .await
+            } else {
+                run_pipeline(
+                    &input,
+                    &config,
+                    &out_dir,
+                    max,
+                    include_xc,
+                    i_have_written_authorization,
+                )
+                .await
+            }
         }
         Command::CollectAuthorized {
             alpha_config,
@@ -122,8 +196,13 @@ async fn main() -> Result<()> {
             );
             Ok(())
         }
-        Command::MatchAuthorized { input, alpha_source, config, out_dir, max } =>
-            alpha_match::match_workbook(&input, &alpha_source, &config, &out_dir, max).await,
+        Command::MatchAuthorized {
+            input,
+            alpha_source,
+            config,
+            out_dir,
+            max,
+        } => alpha_match::match_workbook(&input, &alpha_source, &config, &out_dir, max).await,
         Command::Writeback {
             input,
             matches,
@@ -209,9 +288,6 @@ async fn run_pipeline(
             }
         };
 
-        // Extract search evidence for every candidate first. This preserves all
-        // candidate URLs and snippets while deferring network retrieval until
-        // Rust has selected the strongest identity candidate.
         let mut candidates = Vec::with_capacity(hits.len());
         for hit in &hits {
             let mut candidate = extract::candidate_from_evidence(
@@ -226,8 +302,6 @@ async fn run_pipeline(
             candidates.push(candidate);
         }
 
-        // Spider retrieves only the strongest candidate. All other candidates
-        // remain available in the audit JSON/CSV with their search evidence.
         let selected_index = candidates
             .iter()
             .enumerate()

@@ -25,7 +25,10 @@ fn rejected_urls_are_exceptions_without_raw_values() {
     assert!(athlete.results.is_empty());
     assert!(athlete.source_urls.is_empty());
     assert!(athlete.exception_notes.len() >= 3);
-    assert!(athlete.exception_notes.iter().all(|note| !note.contains("example.com")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .all(|note| !note.contains("example.com")));
 }
 
 #[test]
@@ -51,7 +54,10 @@ fn location_state_is_retained_and_contact_is_rejected() {
     assert_eq!(athlete.state, "CA");
     let private = normalize_record(&record(&[("athlete_id", "123"), ("city", "555-123-4567")]));
     assert!(private.city.is_empty());
-    assert!(private.exception_notes.iter().any(|note| note.contains("invalid city")));
+    assert!(private
+        .exception_notes
+        .iter()
+        .any(|note| note.contains("invalid city")));
 }
 
 #[test]
@@ -61,7 +67,10 @@ fn malformed_dates_and_seasons_are_exceptions() {
         ("marks", "100m|10.55|2026/27|not-a-date|Meet"),
     ]));
     assert!(athlete.results.is_empty());
-    assert!(athlete.exception_notes.iter().any(|note| note.contains("invalid mark")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|note| note.contains("invalid mark")));
 }
 
 #[test]
@@ -71,5 +80,8 @@ fn mismatched_profile_is_not_retained() {
         ("profile_url", "https://athletic.net/athlete/999"),
     ]));
     assert!(athlete.profile_urls.is_empty());
-    assert!(athlete.exception_notes.iter().any(|note| note.contains("conflicts")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|note| note.contains("conflicts")));
 }

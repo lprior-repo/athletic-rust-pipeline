@@ -57,7 +57,6 @@ pub struct AlphaRequest {
     pub continuation: Option<serde_json::Value>,
 }
 
-
 /// Normalized athlete record — canonical type for the entire pipeline.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct SourceAthlete {

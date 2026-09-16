@@ -23,6 +23,11 @@ pub struct ScanResult {
 }
 
 #[derive(Debug, Clone)]
+struct Relationship {
+    target: String,
+    relation_type: String,
+}
+
 struct SheetMeta {
     name: String,
     path: String,
@@ -40,6 +45,7 @@ struct CellState {
 pub enum ScanMode {
     Sports(Vec<String>),
     Exhaustive,
+    FirstWorksheet,
 }
 
 pub fn scan(
@@ -49,23 +55,24 @@ pub fn scan(
 ) -> Result<ScanResult> {
     let shared_strings = load_shared_strings(path)?;
     let sheets = load_sheet_metadata(path)?;
+    let sheets = select_sheets(sheets, &mode)?;
     let prepared_mode = match mode {
         ScanMode::Sports(sports) => {
             ScanMode::Sports(sports.into_iter().map(|sport| normalize(&sport)).collect())
         }
         ScanMode::Exhaustive => ScanMode::Exhaustive,
+        ScanMode::FirstWorksheet => ScanMode::FirstWorksheet,
     };
     let mut stats = WorkbookStats::default();
     let mut prospects = Vec::new();
 
-    for sheet in sheets.into_iter().filter(|sheet| is_source_sheet(&sheet.name)) {
+    for sheet in sheets {
         let mut archive = ZipArchive::new(File::open(path)?)?;
         let file = archive
             .by_name(&sheet.path)
             .with_context(|| format!("opening {} in workbook", sheet.path))?;
-        let sheet_name = sheet.name.clone();
         let mut selected_in_sheet = 0_u64;
-        let sheet_stats = parse_worksheet(file, &sheet_name, &shared_strings, |record| {
+        let sheet_stats = parse_worksheet(file, &sheet.name, &shared_strings, |record| {
             if !selects_prepared_record(&record, &prepared_mode) {
                 return Ok(());
             }
@@ -91,6 +98,13 @@ pub fn scan(
             selected_in_sheet = selected_in_sheet.saturating_add(1);
             Ok(())
         })?;
+        if matches!(prepared_mode, ScanMode::FirstWorksheet)
+            && !["Person First", "Person Last"]
+                .iter()
+                .all(|header| sheet_stats.headers.iter().any(|value| value == header))
+        {
+            bail!("first worksheet lacks required Person First/Person Last headers");
+        }
         stats.actual_data_rows = stats
             .actual_data_rows
             .saturating_add(sheet_stats.actual_data_rows);
@@ -101,6 +115,26 @@ pub fn scan(
     Ok(ScanResult { stats, prospects })
 }
 
+fn select_sheets(sheets: Vec<SheetMeta>, mode: &ScanMode) -> Result<Vec<SheetMeta>> {
+    if matches!(mode, ScanMode::FirstWorksheet) {
+        let first = sheets
+            .into_iter()
+            .next()
+            .context("workbook has no worksheets")?;
+        if !is_source_sheet(&first.name) {
+            bail!(
+                "first worksheet is generated output, not source data: {}",
+                first.name
+            );
+        }
+        return Ok(vec![first]);
+    }
+    Ok(sheets
+        .into_iter()
+        .filter(|sheet| is_source_sheet(&sheet.name))
+        .collect())
+}
+
 #[cfg(test)]
 fn selects_record(record: &SourceRecord, mode: &ScanMode) -> bool {
     let prepared_mode = match mode {
@@ -108,13 +142,14 @@ fn selects_record(record: &SourceRecord, mode: &ScanMode) -> bool {
             ScanMode::Sports(sports.iter().map(|sport| normalize(sport)).collect())
         }
         ScanMode::Exhaustive => ScanMode::Exhaustive,
+        ScanMode::FirstWorksheet => ScanMode::FirstWorksheet,
     };
     selects_prepared_record(record, &prepared_mode)
 }
 
 fn selects_prepared_record(record: &SourceRecord, mode: &ScanMode) -> bool {
     match mode {
-        ScanMode::Exhaustive => true,
+        ScanMode::Exhaustive | ScanMode::FirstWorksheet => true,
         ScanMode::Sports(sports) => {
             let first_name = field(record, "Person First");
             let last_name = field(record, "Person Last");
@@ -122,7 +157,7 @@ fn selects_prepared_record(record: &SourceRecord, mode: &ScanMode) -> bool {
                 return false;
             }
             let normalized_sport = normalize(field(record, "Sports Sport"));
-            sports.iter().any(|target| normalized_sport == *target)
+            sports.contains(&normalized_sport)
         }
     }
 }
@@ -142,7 +177,10 @@ pub fn export_records(input: &Path, output: &Path) -> Result<()> {
     let mut writer = BufWriter::new(
         File::create(output).with_context(|| format!("creating {}", output.display()))?,
     );
-    for sheet in sheets.into_iter().filter(|sheet| is_source_sheet(&sheet.name)) {
+    for sheet in sheets
+        .into_iter()
+        .filter(|sheet| is_source_sheet(&sheet.name))
+    {
         let mut archive = ZipArchive::new(File::open(input)?)?;
         let file = archive.by_name(&sheet.path)?;
         parse_worksheet(file, &sheet.name, &shared_strings, |record| {
@@ -201,6 +239,9 @@ fn load_shared_strings(path: &Path) -> Result<Vec<String>> {
             Event::Text(event) if in_item && in_text => {
                 current.push_str(&decode_xml_text(event.as_ref())?);
             }
+            Event::CData(event) if in_item && in_text => {
+                current.push_str(std::str::from_utf8(event.as_ref())?);
+            }
             Event::End(event) if event.name().as_ref() == b"t" => in_text = false,
             Event::End(event) if event.name().as_ref() == b"si" => {
                 strings.push(std::mem::take(&mut current));
@@ -226,26 +267,19 @@ fn load_sheet_metadata(path: &Path) -> Result<Vec<SheetMeta>> {
     loop {
         match reader.read_event_into(&mut buffer)? {
             Event::Empty(event) | Event::Start(event) if event.name().as_ref() == b"sheet" => {
-                let name = attribute(&event, b"name")?.map_or_else(String::new, |value| value);
-                let sheet_id = attribute(&event, b"sheetId")?
-                    .and_then(|value| value.parse().ok())
-                    .map_or(0, |value| value);
-                let relation_id = event
-                    .attributes()
-                    .with_checks(false)
-                    .filter_map(|item| item.ok())
-                    .find(|item| {
-                        item.key.as_ref() == b"r:id" || item.key.as_ref().ends_with(b":id")
-                    })
-                    .map(|item| decode_xml_text(item.value.as_ref()))
-                    .transpose()?
-                    .map_or_else(String::new, |value| value);
-                let target = relationships.get(&relation_id).with_context(|| {
+                let name = option_string(attribute(&event, b"name")?);
+                let sheet_id = parse_sheet_id(attribute(&event, b"sheetId")?)?;
+                let relation_id = sheet_relation_id(&event)?;
+                let relationship = relationships.get(&relation_id).with_context(|| {
                     format!("missing worksheet relationship {relation_id} for {name}")
                 })?;
+                if !is_worksheet_relationship(&relationship.relation_type) {
+                    buffer.clear();
+                    continue;
+                }
                 sheets.push(SheetMeta {
                     name,
-                    path: normalize_zip_target(target),
+                    path: normalize_zip_target(&relationship.target),
                     sheet_id,
                 });
             }
@@ -257,7 +291,42 @@ fn load_sheet_metadata(path: &Path) -> Result<Vec<SheetMeta>> {
     Ok(sheets)
 }
 
-fn parse_relationships(xml: &str) -> Result<HashMap<String, String>> {
+fn sheet_relation_id(event: &quick_xml::events::BytesStart<'_>) -> Result<String> {
+    for item in event.attributes().with_checks(false) {
+        let attribute = item?;
+        if attribute.key.as_ref() == b"r:id" || attribute.key.as_ref().ends_with(b":id") {
+            return decode_xml_text(attribute.value.as_ref());
+        }
+    }
+    bail!("worksheet is missing relationship id")
+}
+
+fn parse_sheet_id(value: Option<String>) -> Result<u32> {
+    let parsed = value
+        .map(|value| {
+            value
+                .parse::<u32>()
+                .with_context(|| format!("invalid worksheet id {value:?}"))
+        })
+        .transpose()?;
+    match parsed {
+        Some(value) => Ok(value),
+        None => Ok(0),
+    }
+}
+
+fn option_string(value: Option<String>) -> String {
+    let Some(value) = value else {
+        return String::new();
+    };
+    value
+}
+
+fn is_worksheet_relationship(relation_type: &str) -> bool {
+    relation_type == REL_WORKSHEET || relation_type.ends_with("/worksheet")
+}
+
+fn parse_relationships(xml: &str) -> Result<HashMap<String, Relationship>> {
     let mut reader = Reader::from_str(xml);
     let mut buffer = Vec::new();
     let mut relationships = HashMap::new();
@@ -266,11 +335,19 @@ fn parse_relationships(xml: &str) -> Result<HashMap<String, String>> {
             Event::Empty(event) | Event::Start(event)
                 if event.name().as_ref() == b"Relationship" =>
             {
-                if let (Some(id), Some(target)) =
-                    (attribute(&event, b"Id")?, attribute(&event, b"Target")?)
-                {
-                    relationships.insert(id, target);
-                }
+                let id = attribute(&event, b"Id")?
+                    .with_context(|| "worksheet relationship is missing Id")?;
+                let target = attribute(&event, b"Target")?
+                    .with_context(|| format!("worksheet relationship {id} is missing Target"))?;
+                let relation_type = attribute(&event, b"Type")?
+                    .with_context(|| format!("worksheet relationship {id} is missing Type"))?;
+                relationships.insert(
+                    id,
+                    Relationship {
+                        target,
+                        relation_type,
+                    },
+                );
             }
             Event::Eof => break,
             _ => {}
@@ -307,11 +384,12 @@ where
         name: sheet_name.to_owned(),
         ..Default::default()
     };
-    let mut headers: Vec<String> = Vec::new();
+    let mut headers = Vec::new();
     let mut header_row = None;
     let mut current_row_number = 0_u32;
-    let mut current_cells: BTreeMap<usize, String> = BTreeMap::new();
-    let mut current_cell: Option<CellState> = None;
+    let mut current_cells = BTreeMap::new();
+    let mut current_cell = None;
+    let mut row_has_data = false;
     let mut in_value = false;
     let mut in_inline_text = false;
 
@@ -320,20 +398,38 @@ where
             Event::Empty(event) if event.name().as_ref() == b"dimension" => {
                 stats.declared_dimension = attribute(&event, b"ref")?;
             }
+            Event::Empty(event) if event.name().as_ref() == b"row" => {
+                stats.xml_rows = stats.xml_rows.saturating_add(1);
+            }
             Event::Start(event) if event.name().as_ref() == b"row" => {
                 stats.xml_rows = stats.xml_rows.saturating_add(1);
-                let fallback_row = u32::try_from(stats.xml_rows).map_or(u32::MAX, |value| value);
-                current_row_number = attribute(&event, b"r")?
-                    .and_then(|value| value.parse().ok())
-                    .map_or(fallback_row, |value| value);
+                let fallback_row = u32::try_from(stats.xml_rows)
+                    .context("worksheet row count exceeds Excel row range")?;
+                current_row_number = match attribute(&event, b"r")? {
+                    Some(value) => {
+                        let row = value
+                            .parse::<u32>()
+                            .with_context(|| format!("invalid Excel row number {value:?}"))?;
+                        if row == 0 {
+                            bail!("invalid Excel row number {value:?}");
+                        }
+                        row
+                    }
+                    None => fallback_row,
+                };
                 current_cells.clear();
+                current_cell = None;
+                row_has_data = false;
+            }
+            Event::Empty(event) if event.name().as_ref() == b"c" => {
+                let cell = cell_state(&event)?;
+                let column = column_index(&cell.reference)?;
+                let value = resolve_cell_value(&cell, shared_strings)?;
+                row_has_data |= !value.is_empty();
+                current_cells.insert(column, value);
             }
             Event::Start(event) if event.name().as_ref() == b"c" => {
-                current_cell = Some(CellState {
-                    reference: attribute(&event, b"r")?.map_or_else(String::new, |value| value),
-                    cell_type: attribute(&event, b"t")?.map_or_else(String::new, |value| value),
-                    value: String::new(),
-                });
+                current_cell = Some(cell_state(&event)?);
             }
             Event::Start(event) if event.name().as_ref() == b"v" => in_value = true,
             Event::Start(event) if event.name().as_ref() == b"t" => in_inline_text = true,
@@ -342,62 +438,31 @@ where
                     cell.value.push_str(&decode_xml_text(event.as_ref())?);
                 }
             }
+            Event::CData(event) if in_value || in_inline_text => {
+                if let Some(cell) = current_cell.as_mut() {
+                    cell.value.push_str(std::str::from_utf8(event.as_ref())?);
+                }
+            }
             Event::End(event) if event.name().as_ref() == b"v" => in_value = false,
             Event::End(event) if event.name().as_ref() == b"t" => in_inline_text = false,
             Event::End(event) if event.name().as_ref() == b"c" => {
                 if let Some(cell) = current_cell.take() {
                     let column = column_index(&cell.reference)?;
-                    let value = resolve_cell_value(&cell, shared_strings);
-                    if !value.is_empty() {
-                        current_cells.insert(column, value);
-                    }
+                    let value = resolve_cell_value(&cell, shared_strings)?;
+                    row_has_data |= !value.is_empty();
+                    current_cells.insert(column, value);
                 }
             }
-            Event::End(event) if event.name().as_ref() == b"row" => {
-                if current_cells.is_empty() {
-                    buffer.clear();
-                    continue;
-                }
-                if header_row.is_none() {
-                    let max_column = current_cells
-                        .keys()
-                        .copied()
-                        .max()
-                        .map_or(0, |value| value);
-                    headers = (0..=max_column)
-                        .map(|column| {
-                            current_cells
-                                .get(&column)
-                                .cloned()
-                                .map_or_else(String::new, |value| value)
-                        })
-                        .collect();
-                    header_row = Some(current_row_number);
-                    stats.headers = headers.clone();
-                } else {
-                    stats.actual_data_rows = stats.actual_data_rows.saturating_add(1);
-                    stats.last_actual_row = current_row_number;
-                    let fields = headers
-                        .iter()
-                        .enumerate()
-                        .filter(|(_, header)| !header.is_empty())
-                        .map(|(column, header)| {
-                            (
-                                header.clone(),
-                                current_cells
-                                    .get(&column)
-                                    .cloned()
-                                    .map_or_else(String::new, |value| value),
-                            )
-                        })
-                        .collect();
-                    on_record(SourceRecord {
-                        source_key: format!("{sheet_name}:{current_row_number}"),
-                        sheet: sheet_name.to_owned(),
-                        excel_row: current_row_number,
-                        fields,
-                    })?;
-                }
+            Event::End(event) if event.name().as_ref() == b"row" && row_has_data => {
+                finish_row(
+                    sheet_name,
+                    current_row_number,
+                    &current_cells,
+                    &mut headers,
+                    &mut header_row,
+                    &mut stats,
+                    &mut on_record,
+                )?;
             }
             Event::Eof => break,
             _ => {}
@@ -407,39 +472,106 @@ where
     Ok(stats)
 }
 
-fn resolve_cell_value(cell: &CellState, shared_strings: &[String]) -> String {
-    if cell.cell_type == "s" {
-        cell.value
-            .parse::<usize>()
-            .ok()
-            .and_then(|index| shared_strings.get(index))
-            .cloned()
-            .map_or_else(String::new, |value| value)
-    } else {
-        cell.value.trim().to_owned()
+fn cell_state(event: &quick_xml::events::BytesStart<'_>) -> Result<CellState> {
+    Ok(CellState {
+        reference: option_string(attribute(event, b"r")?),
+        cell_type: option_string(attribute(event, b"t")?),
+        value: String::new(),
+    })
+}
+
+fn finish_row<F>(
+    sheet_name: &str,
+    row_number: u32,
+    cells: &BTreeMap<usize, String>,
+    headers: &mut Vec<String>,
+    header_row: &mut Option<u32>,
+    stats: &mut SheetStats,
+    on_record: &mut F,
+) -> Result<()>
+where
+    F: FnMut(SourceRecord) -> Result<()>,
+{
+    if header_row.is_none() {
+        let max_column = match cells.keys().next_back() {
+            Some(value) => *value,
+            None => 0,
+        };
+        *headers = (0..=max_column)
+            .map(|column| match cells.get(&column) {
+                Some(value) => value.clone(),
+                None => String::new(),
+            })
+            .collect();
+        *header_row = Some(row_number);
+        stats.headers = headers.clone();
+        return Ok(());
     }
+
+    stats.actual_data_rows = stats.actual_data_rows.saturating_add(1);
+    stats.last_actual_row = row_number;
+    let fields = headers
+        .iter()
+        .enumerate()
+        .filter(|(_, header)| !header.is_empty())
+        .map(|(column, header)| {
+            let value = match cells.get(&column) {
+                Some(value) => value.clone(),
+                None => String::new(),
+            };
+            (header.clone(), value)
+        })
+        .collect();
+    on_record(SourceRecord {
+        source_key: format!("{sheet_name}:{row_number}"),
+        sheet: sheet_name.to_owned(),
+        excel_row: row_number,
+        fields,
+    })
+}
+
+fn resolve_cell_value(cell: &CellState, shared_strings: &[String]) -> Result<String> {
+    if cell.cell_type != "s" {
+        return Ok(cell.value.clone());
+    }
+    if cell.value.is_empty() {
+        return Ok(String::new());
+    }
+    let index = cell
+        .value
+        .trim()
+        .parse::<usize>()
+        .with_context(|| format!("invalid shared string index {:?}", cell.value))?;
+    let value = shared_strings
+        .get(index)
+        .with_context(|| format!("shared string index {index} is out of range"))?;
+    Ok(value.clone())
 }
 
 fn column_index(reference: &str) -> Result<usize> {
     let mut result = 0_usize;
     let mut letters = 0_usize;
+    let mut digits_started = false;
     for byte in reference.bytes() {
-        if !byte.is_ascii_alphabetic() {
-            break;
+        if !digits_started && byte.is_ascii_alphabetic() {
+            let Some(offset) = byte.to_ascii_uppercase().checked_sub(b'A') else {
+                bail!("invalid cell reference {reference:?}");
+            };
+            let Some(offset) = offset.checked_add(1) else {
+                bail!("invalid cell reference {reference:?}");
+            };
+            result = result
+                .checked_mul(26)
+                .and_then(|value| value.checked_add(usize::from(offset)))
+                .with_context(|| format!("cell reference column overflow: {reference:?}"))?;
+            letters = letters.saturating_add(1);
+        } else if byte.is_ascii_digit() {
+            digits_started = true;
+        } else {
+            bail!("invalid cell reference {reference:?}");
         }
-        let Some(offset) = byte.to_ascii_uppercase().checked_sub(b'A') else {
-            bail!("invalid cell reference {reference:?}");
-        };
-        let Some(offset) = offset.checked_add(1) else {
-            bail!("invalid cell reference {reference:?}");
-        };
-        result = result
-            .checked_mul(26)
-            .and_then(|value| value.checked_add(usize::from(offset)))
-            .with_context(|| format!("cell reference column overflow: {reference:?}"))?;
-        letters = letters.saturating_add(1);
     }
-    if letters == 0 {
+    if letters == 0 || !digits_started {
         bail!("invalid cell reference {reference:?}");
     }
     result
@@ -500,14 +632,8 @@ pub fn append_matches_sheet(input: &Path, output: &Path, records: &[MatchRecord]
                 true,
             ),
             None => {
-                let maximum_sheet_id = sheets
-                    .iter()
-                    .map(|sheet| sheet.sheet_id)
-                    .max()
-                    .map_or(0, |id| id);
-                let next_sheet_id = maximum_sheet_id
-                    .checked_add(1)
-                    .context("worksheet id overflow")?;
+                let maximum = sheets.iter().map(|sheet| sheet.sheet_id).fold(0, u32::max);
+                let next_sheet_id = maximum.checked_add(1).context("worksheet id overflow")?;
                 let path = format!("xl/worksheets/sheet{next_sheet_id}.xml");
                 let next_relation_id = next_relationship_id(&relationships_xml)?;
                 let workbook = insert_before(
@@ -534,7 +660,7 @@ pub fn append_matches_sheet(input: &Path, output: &Path, records: &[MatchRecord]
                 (path, workbook, relationships, content_types, false)
             }
         };
-    let result_sheet = build_matches_sheet(records);
+    let result_sheet = build_matches_sheet(records)?;
     let temporary = temporary_output_path(output);
     let mut source = ZipArchive::new(File::open(input)?)?;
     let destination = File::create(&temporary)?;
@@ -580,9 +706,15 @@ fn next_relationship_id(xml: &str) -> Result<String> {
     let relationships = parse_relationships(xml)?;
     let maximum = relationships
         .keys()
-        .filter_map(|id| id.strip_prefix("rId")?.parse::<u32>().ok())
-        .max()
-        .map_or(0, |id| id);
+        .try_fold(0_u32, |maximum, id| -> Result<u32> {
+            let Some(raw_id) = id.strip_prefix("rId") else {
+                return Ok(maximum);
+            };
+            let parsed = raw_id
+                .parse::<u32>()
+                .with_context(|| format!("invalid relationship id {id:?}"))?;
+            Ok(maximum.max(parsed))
+        })?;
     let next_id = maximum.checked_add(1).context("relationship id overflow")?;
     Ok(format!("rId{next_id}"))
 }
@@ -610,7 +742,7 @@ fn temporary_output_path(output: &Path) -> PathBuf {
     PathBuf::from(value)
 }
 
-fn build_matches_sheet(records: &[MatchRecord]) -> String {
+fn build_matches_sheet(records: &[MatchRecord]) -> Result<String> {
     let source_headers = ordered_source_headers(records);
     let source_column_count = source_headers.len();
     let mut headers = source_headers.clone();
@@ -669,13 +801,7 @@ fn build_matches_sheet(records: &[MatchRecord]) -> String {
         xml.push_str(&format!("<row r=\"{row}\">"));
         let mut values = source_headers
             .iter()
-            .map(|header| {
-                record
-                    .prospect
-                    .source_fields
-                    .get(header)
-                    .map_or_else(String::new, Clone::clone)
-            })
+            .map(|header| source_field_value(record, header))
             .collect::<Vec<_>>();
         values.extend([
             record.source_key.clone(),
@@ -706,8 +832,8 @@ fn build_matches_sheet(records: &[MatchRecord]) -> String {
             mark_value(record, "shot_put"),
             mark_value(record, "discus"),
             mark_value(record, "javelin"),
-            serde_json::to_string(&record.candidates).map_or_else(|_| String::new(), |value| value),
-            serde_json::to_string(&record.best_marks).map_or_else(|_| String::new(), |value| value),
+            serde_json::to_string(&record.candidates)?,
+            serde_json::to_string(&record.best_marks)?,
             record.notes.clone(),
             record.hint_count.to_string(),
             record.ai_logic.clone(),
@@ -728,7 +854,14 @@ fn build_matches_sheet(records: &[MatchRecord]) -> String {
     xml.push_str(&format!(
         "</sheetData><autoFilter ref=\"A1:{final_column}{final_row}\"/></worksheet>"
     ));
-    xml
+    Ok(xml)
+}
+
+fn source_field_value(record: &MatchRecord, header: &str) -> String {
+    match record.prospect.source_fields.get(header) {
+        Some(value) => value.clone(),
+        None => String::new(),
+    }
 }
 
 fn yes_no(value: bool) -> &'static str {
@@ -747,10 +880,11 @@ fn mark_value(record: &MatchRecord, event: &str) -> String {
 }
 
 fn first_mark(record: &MatchRecord, events: &[&str]) -> String {
-    events
-        .iter()
-        .find_map(|event| record.best_marks.get(*event).map(|mark| mark.mark.clone()))
-        .map_or_else(String::new, |value| value)
+    option_string(
+        events
+            .iter()
+            .find_map(|event| record.best_marks.get(*event).map(|mark| mark.mark.clone())),
+    )
 }
 
 fn push_inline_cell(xml: &mut String, row: usize, column: usize, value: &str) {
@@ -931,7 +1065,10 @@ mod tests {
         ));
 
         let blank_name = SourceRecord {
-            fields: BTreeMap::from([("Person Email".to_owned(), "unknown@example.test".to_owned())]),
+            fields: BTreeMap::from([(
+                "Person Email".to_owned(),
+                "unknown@example.test".to_owned(),
+            )]),
             ..Default::default()
         };
         assert!(selects_record(&blank_name, &ScanMode::Exhaustive));
@@ -957,3 +1094,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "xlsx_scope_tests.rs"]
+mod scope_tests;
