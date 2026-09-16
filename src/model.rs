@@ -111,6 +111,8 @@ pub struct Candidate {
     pub name_score: f64,
     pub school_score: f64,
     pub location_score: f64,
+    #[serde(default)]
+    pub sport_score: f64,
     pub corroborated: bool,
 }
 

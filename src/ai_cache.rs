@@ -11,7 +11,7 @@ use std::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "value")]
 pub enum AiCacheValue {
-    Candidate(Candidate),
+    Candidate(Box<Candidate>),
     Decision(ModelDecision),
 }
 
@@ -26,7 +26,7 @@ impl AiCacheRecord {
     pub fn candidate(key: String, candidate: Candidate) -> Self {
         Self {
             key,
-            value: AiCacheValue::Candidate(candidate),
+            value: AiCacheValue::Candidate(Box::new(candidate)),
             completed_at_unix: unix_time(),
         }
     }

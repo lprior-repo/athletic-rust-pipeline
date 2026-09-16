@@ -29,7 +29,7 @@ fn complete_false_rejected() {
         "page": 1
     }"#;
     let resp = parse_json(json);
-    assert!(resp.complete == false);
+    assert!(!resp.complete);
     assert!(
         resp.validate().is_err(),
         "complete=false must be rejected by validate"

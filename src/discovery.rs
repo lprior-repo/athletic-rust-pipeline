@@ -892,3 +892,7 @@ mod tests {
 
 #[path = "discovery_exhaustive.rs"]
 mod exhaustive;
+
+#[cfg(test)]
+#[path = "discovery_retry_tests.rs"]
+mod retry_tests;

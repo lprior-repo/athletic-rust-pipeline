@@ -120,13 +120,12 @@ pub(super) fn finalize(
         return record;
     }
     if matches!(record.status.as_str(), "MATCH" | "CLOSE_MATCH") {
-        let threshold = if record.status == "MATCH" {
-            config.match_threshold
+        let best = if record.status == "MATCH" {
+            unique_candidate(&record.candidates, config, margin)
         } else {
-            config.close_threshold
-        };
-        let best = unique_above(&record.candidates, threshold, margin)
-            .and_then(|index| record.candidates.get(index));
+            unique_above(&record.candidates, config.close_threshold, margin)
+        }
+        .and_then(|index| record.candidates.get(index));
         let selected = record
             .model_decision
             .candidate_index

@@ -129,6 +129,8 @@ fn write_csv(
         "Notes".to_owned(),
         "Hint Count".to_owned(),
         "AI Logic".to_owned(),
+        "Deterministic Decision JSON".to_owned(),
+        "Review Mode".to_owned(),
     ]);
     writer.write_record(&headers)?;
 
@@ -172,6 +174,8 @@ fn write_csv(
         row.push(record.notes.clone());
         row.push(record.hint_count.to_string());
         row.push(record.ai_logic.clone());
+        row.push(serde_json::to_string(&record.deterministic_decision)?);
+        row.push(record.model_decision.model_status.clone());
         writer.write_record(&row)?;
     }
     writer.flush()?;

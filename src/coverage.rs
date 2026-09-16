@@ -57,7 +57,7 @@ impl Write for Sha256Writer {
     }
 }
 
-pub fn bind_run(input: &Path, config_path: &Path, out_dir: &Path, scope: &str) -> Result<String> {
+pub fn run_fingerprint(input: &Path, config_path: &Path, scope: &str) -> Result<String> {
     if scope.trim().is_empty() {
         anyhow::bail!("run scope must not be empty");
     }
@@ -69,13 +69,17 @@ pub fn bind_run(input: &Path, config_path: &Path, out_dir: &Path, scope: &str) -
 
     let config_bytes = fs::read(config_path).context("reading config")?;
     let config_digest = format!("{:x}", Sha256::digest(&config_bytes));
-    let fingerprint = fingerprint(&[
+    Ok(fingerprint(&[
         &input_digest,
         &config_digest,
         scope,
         VERSION_STRING,
         &crate::extract::AI_SCHEMA_VERSION.to_string(),
-    ]);
+    ]))
+}
+
+pub fn bind_run(input: &Path, config_path: &Path, out_dir: &Path, scope: &str) -> Result<String> {
+    let fingerprint = run_fingerprint(input, config_path, scope)?;
     let input_display = input.display().to_string();
     let manifest = RunManifest {
         fingerprint: fingerprint.clone(),

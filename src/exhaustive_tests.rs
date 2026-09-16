@@ -21,7 +21,6 @@ fn prospect() -> Prospect {
         sport: "Basketball".to_owned(),
         expected_graduation_year: Some(2027),
         source_fields: [("Person Email".to_owned(), "ada@example.test".to_owned())].into(),
-        ..Default::default()
     }
 }
 
@@ -302,5 +301,30 @@ fn same_name_and_school_in_conflicting_states_cannot_be_confirmed() -> Result<()
     );
     assert_eq!(result.status, "REVIEW");
     assert!(result.selected_profile_url.is_empty());
+    Ok(())
+}
+
+#[test]
+fn deterministic_extraction_keeps_observed_state_instead_of_expected_address() -> Result<()> {
+    let cfg: Config = toml::from_str(include_str!("../config.exhaustive.toml"))?;
+    let person = Prospect {
+        state: "Oregon".to_owned(),
+        ..prospect()
+    };
+    let hit = crate::model::SearchHit {
+        title: person.full_name(),
+        snippet: "Ada Runner Central High Portland, Michigan. Class of 2027".to_owned(),
+        url: "https://www.athletic.net/athlete/7/track-and-field".to_owned(),
+        ..Default::default()
+    };
+    let mut candidate =
+        crate::extract::candidate_from_evidence_deterministic(&person, &hit, None, 4000);
+    assert_eq!(candidate.location, "MI");
+    crate::scoring::score_athletics_candidate(&person, &mut candidate, &cfg.matching);
+    assert!(!candidate.corroborated);
+    assert_eq!(
+        crate::scoring::location_state("Huntington, West Virginia").as_deref(),
+        Some("WV")
+    );
     Ok(())
 }

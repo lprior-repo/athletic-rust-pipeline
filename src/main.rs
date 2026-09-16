@@ -148,6 +148,7 @@ async fn main() -> Result<()> {
             all_workbook_rows,
             first_worksheet_only,
             no_ai,
+            reuse_searches_from,
         } => {
             if all_workbook_rows {
                 exhaustive::run(
@@ -159,6 +160,7 @@ async fn main() -> Result<()> {
                         first_worksheet_only,
                         authorization_ack: i_have_written_authorization,
                         no_ai,
+                        reuse_searches_from,
                     },
                 )
                 .await

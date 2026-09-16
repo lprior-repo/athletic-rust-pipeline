@@ -26,6 +26,7 @@ pub(crate) fn score_with_sport(
         _ => 0.0,
     };
     let sport_score = sport_score(requested_sport, &candidate.sports);
+    candidate.sport_score = sport_score;
     candidate.corroborated =
         candidate.school_score >= 0.82 || candidate.location_score >= 0.90 || year_score == 1.0;
     let state_conflict = match (
@@ -228,7 +229,7 @@ pub fn finalize_match(
         .filter(|candidate| !candidate.profile_url.trim().is_empty())
         .count();
     let ai_logic = format!(
-        "AI decision={} confidence={:.3} status={} reason={}; Rust scores name={:.3} school={:.3} location={:.3} deterministic={:.3} corroborated={} hint_count={}",
+        "Identity decision={} confidence={:.3} status={} reason={}; Rust scores name={:.3} school={:.3} location={:.3} sport={:.3} year={:.3} deterministic={:.3} corroborated={} hint_count={}",
         model_decision.decision,
         model_decision.confidence,
         model_decision.model_status,
@@ -236,6 +237,11 @@ pub fn finalize_match(
         selected.name_score,
         selected.school_score,
         selected.location_score,
+        selected.sport_score,
+        match (prospect.expected_graduation_year, selected.graduation_year) {
+            (Some(expected), Some(actual)) if expected == actual => 1.0,
+            _ => 0.0,
+        },
         selected.deterministic_score,
         selected.corroborated,
         hint_count
@@ -332,9 +338,9 @@ fn location_score(prospect: &Prospect, candidate_location: &str) -> f64 {
     }
 }
 
-fn location_state(value: &str) -> Option<String> {
+pub(crate) fn location_state(value: &str) -> Option<String> {
     let words = value.split_whitespace().collect::<Vec<_>>();
-    (1..=3).find_map(|length| {
+    (1..=3).rev().find_map(|length| {
         let start = words.len().checked_sub(length)?;
         let suffix = words.get(start..)?.join(" ");
         crate::alpha_url::canonical_state(suffix.trim_matches(|c: char| !c.is_alphabetic()))

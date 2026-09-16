@@ -17,13 +17,16 @@ use tokio::task::{JoinError, JoinHandle};
 
 #[path = "exhaustive_run_rows.rs"]
 mod exhaustive_run_rows;
+#[path = "reuse_search.rs"]
+mod reuse_search;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct RunOptions {
     pub max: Option<usize>,
     pub first_worksheet_only: bool,
     pub authorization_ack: bool,
     pub no_ai: bool,
+    pub reuse_searches_from: Option<PathBuf>,
 }
 
 struct RunState {
@@ -43,6 +46,7 @@ pub async fn run(
     options: RunOptions,
 ) -> Result<()> {
     let paths = (input.to_owned(), config_path.to_owned(), out_dir.to_owned());
+    let no_ai = options.no_ai;
     let prepared =
         tokio::task::spawn_blocking(move || prepare(&paths.0, &paths.1, &paths.2, options));
     let (mut state, config) = await_blocking("workbook preparation", prepared).await?;
@@ -56,8 +60,7 @@ pub async fn run(
     }
 
     let engine_out_dir = state.out_dir.clone();
-    let engine =
-        tokio::task::spawn_blocking(move || Engine::new(config, &engine_out_dir, options.no_ai));
+    let engine = tokio::task::spawn_blocking(move || Engine::new(config, &engine_out_dir, no_ai));
     let mut engine = match await_blocking("engine initialization", engine).await {
         Ok(engine) => engine,
         Err(error) => {
@@ -126,6 +129,7 @@ fn prepare(
     if scan.prospects.is_empty() {
         anyhow::bail!("No prospects found in workbook");
     }
+    let donor_scope = format!("{scope}:deterministic");
     let scope = format!(
         "{scope}:{}",
         if options.no_ai {
@@ -135,6 +139,9 @@ fn prepare(
         }
     );
     let fingerprint = coverage::bind_run(input, config_path, out_dir, &scope)?;
+    if let Some(donor) = &options.reuse_searches_from {
+        reuse_search::import(input, config_path, out_dir, donor, &donor_scope)?;
+    }
     let completed = checkpoint::load_latest(&out_dir.join("checkpoint.jsonl"))?;
     let progress = coverage::build_report(&fingerprint, &scan.prospects, &completed)?;
     let limit = options

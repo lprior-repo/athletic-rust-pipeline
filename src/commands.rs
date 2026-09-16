@@ -34,6 +34,9 @@ pub enum Command {
         /// Extract and rank deterministically without contacting either model.
         #[arg(long, requires = "all_workbook_rows")]
         no_ai: bool,
+        /// Reuse discovery from a stopped, compatible deterministic run; never reuse its decisions.
+        #[arg(long, requires = "all_workbook_rows", conflicts_with = "no_ai")]
+        reuse_searches_from: Option<PathBuf>,
         /// Include Cross Country rows in addition to configured sports.
         #[arg(long)]
         include_xc: bool,

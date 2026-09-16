@@ -34,7 +34,7 @@ fn test_all_50_states_accepted() {
     let genders = vec!["M".to_string(), "F".to_string()];
     let events = vec![event("100m", false)];
     let matrix = RunMatrix::from_targets(states_50(), seasons, genders, events).unwrap();
-    assert_eq!(matrix.all().len(), 50 * 2 * 2 * 1);
+    assert_eq!(matrix.all().len(), 50 * 2 * 2);
 }
 
 #[test]

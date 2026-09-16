@@ -123,7 +123,7 @@ async fn oversized_5xx_body_maps_to_server_error_exhausted() {
         .mock("POST", "/api")
         .with_status(503)
         .with_header("content-type", "application/json")
-        .with_body(&"x".repeat(9 * 1024 * 1024))
+        .with_body("x".repeat(9 * 1024 * 1024))
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -185,7 +185,7 @@ async fn oversized_non_2xx_body_maps_to_unexpected_status() {
         .mock("POST", "/api")
         .with_status(499)
         .with_header("content-type", "application/json")
-        .with_body(&"x".repeat(9 * 1024 * 1024))
+        .with_body("x".repeat(9 * 1024 * 1024))
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,
@@ -250,7 +250,7 @@ async fn oversized_2xx_body_still_returns_body_too_large() {
         .mock("POST", "/api")
         .with_status(200)
         .with_header("content-type", "application/json")
-        .with_body(&"x".repeat(9 * 1024 * 1024))
+        .with_body("x".repeat(9 * 1024 * 1024))
         .create();
     let client = AlphaApiClient::new(AlphaApiClientConfig {
         base_url: url,

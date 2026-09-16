@@ -236,9 +236,7 @@ fn first_worksheet_preserves_sparse_rich_shared_and_inline_source_rows() -> Resu
             format!(r#"<c r="{column}1" t="inlineStr"><is><t>{header}</t></is></c>"#)
         })
         .collect::<String>();
-    let row = format!(
-        r#"<row r="7"><c r="A7" t="inlineStr"><is><r><t xml:space="preserve"> Alice </t></r><r><t>Runner</t></r></is></c><c r="B7" t="s"><v>0</v></c><c r="I7" t="inlineStr"><is><t xml:space="preserve"> Basketball </t></is></c><c r="M7" t="inlineStr"><is><t>Sparse School</t></is></c></row>"#
-    );
+    let row = r#"<row r="7"><c r="A7" t="inlineStr"><is><r><t xml:space="preserve"> Alice </t></r><r><t>Runner</t></r></is></c><c r="B7" t="s"><v>0</v></c><c r="I7" t="inlineStr"><is><t xml:space="preserve"> Basketball </t></is></c><c r="M7" t="inlineStr"><is><t>Sparse School</t></is></c></row>"#;
     let sheet = format!(r#"<row r="1">{header_cells}</row>{row}"#);
     let path = build_minimal_xlsx(&dir, "fixture.xlsx", &[("Roster", &sheet)])?;
 

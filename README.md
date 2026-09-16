@@ -49,16 +49,16 @@ Origin Source
 Schools Name
 ```
 
-Only name, school, city/state, expected graduation year, and sport leave the workbook process. Email and street/postal address are never sent to search or the model.
+Search receives name, school, city/state, expected graduation year, and sport context, never email or street/postal data. The configured model endpoints additionally receive the full street address and postal code for identity disambiguation. Email and unrelated workbook fields are not sent to either model. Address context is not evidence that a candidate lives there; absent candidate address data remains unknown.
 
 The legacy sport-filtered mode uses the Track labels `Track and Field: Mens` (146 rows) and `Track and Field: Womens` (95 rows) from `config.example.toml`. `--include-xc` additionally selects configured Cross Country rows.
 
-Strict exhaustive mode ignores source-sport selection, searches both TF and XC, and retains every candidate returned by fully reconciled search pages. It escalates from exact-name queries to contextual and alternative-name queries when identity remains unresolved. A decisive identity can stop escalation only after both sport lanes have completed; no top-three candidate cap applies.
+Strict exhaustive mode ignores source-sport selection, searches both TF and XC, and retains every candidate returned by fully reconciled search pages. Every deduplicated exact-name, contextual, and alternative-name query stage completes before the final decision, even when an early candidate looks decisive. There is no top-three candidate cap. Rust records a deterministic best guess before optional Q5 extraction and Q4 identity review.
 
 ## Build
 
 
-The matcher expects a local llama.cpp-compatible server. The example configuration targets the existing server on `127.0.0.1:11000` and uses its OpenAI-compatible `/v1/chat/completions` route. No Docker Compose service is required.
+The AI-enabled matcher expects a local llama.cpp-compatible server; exhaustive `--no-ai` runs require no model server. The example configuration targets the existing server on `127.0.0.1:11000` and uses its OpenAI-compatible `/v1/chat/completions` route. No Docker Compose service is required.
 
 ```bash
 cp config.example.toml config.toml
@@ -105,15 +105,36 @@ cargo run --release -- run \
 
 For the supplied workbook this selects all **111,939 `Export` rows**, not `Sheet1` and not just Track-labelled rows. All 13 original fields are retained in result JSONL and CSV. The seven rows with neither name are terminal `INPUT_ERROR` outcomes. Every named row is searched in both TF and XC irrespective of its original sport; source sport is provenance, not negative identity evidence.
 
-Both models must be enabled. Extraction and identity review fail closed on unavailable, malformed, incomplete-schema, or invalid-index model responses. Search must reconcile every advertised result with valid athlete rows and complete pagination. `SEARCH_ERROR` and `AI_ERROR` are retryable, never converted to `NO_MATCH`; a retryable row is durably checkpointed and stops the command with a nonzero exit.
+Both models must be enabled unless `--no-ai` is selected. Extraction and identity review fail closed on unavailable, malformed, incomplete-schema, or invalid-index model responses. Search must reconcile every advertised result with valid athlete rows and complete pagination. `SEARCH_ERROR` and `AI_ERROR` are retryable, never converted to `NO_MATCH`; a retryable row is durably checkpointed and stops the command with a nonzero exit.
 
-Resume by repeating the **same command and output directory**. Input bytes, configuration bytes, worksheet scope, and analysis schema bind the run manifest; changing them requires a fresh output directory. Do not manually edit the checkpoint. Successful searches and model results have persistent caches. An unchanged completed-run resume performs no search or model requests. An exclusive writer lock prevents concurrent writers, and Ctrl-C drains an in-flight checkpoint commit before exporting current progress.
+Resume by repeating the **same command and output directory**. Input bytes, configuration bytes, worksheet scope, review mode, and analysis schema bind the run manifest; changing them requires a fresh output directory. Do not manually edit the checkpoint. Successful searches and model results have persistent caches. An unchanged completed-run resume performs no search or model requests. An exclusive writer lock prevents concurrent writers, and Ctrl-C drains an in-flight checkpoint commit before exporting current progress.
 
 `coverage.json` describes the whole selected population even when `--max` restricts a diagnostic run. Its completed, pending, and retryable counts are disjoint. A successful complete run requires `complete: true`, all 111,939 rows completed, and zero pending/retryable rows. Terminal missing-name input errors do not prevent completeness. `--max 0` scans and binds a fresh run without making external requests; it does **not** demonstrate completed matching.
 
-Search concurrency is bounded to two requests with a shared request-spacing gate (750 ms in the supplied configuration). Search bodies are bounded to 16 MiB and model responses to 64 KiB. The row pipeline is sequential, so fixture timings are not a full-workbook throughput guarantee.
+Search concurrency is bounded to two requests with one shared request-spacing gate (750 ms in the supplied configuration); rows and model calls are sequential. Transient network failures, HTTP 429, and 5xx responses have bounded retries: three attempts in the supplied search configuration and three for model transport. Model schema failures are not automatically retried. Search HTTP 403 opens a sticky circuit immediately; accumulated 429 denials also open the configured circuit. Retry-After delta seconds and HTTP dates are honored up to a 60-second automatic-wait limit; invalid or longer values fail explicitly instead of retrying early. Search bodies are bounded to 16 MiB and model responses to 64 KiB.
 
 Observed live blocker: the full first-worksheet run encountered an Athletic.net athlete link with an invalid ID. It stopped with `SEARCH_ERROR`; coverage was 0 completed, 111,938 pending, and 1 retryable. This is not a completed data delivery. The source response must be corrected or a separately authorized, completeness-preserving source must be supplied; dropping malformed rows is not an acceptable workaround.
+
+### Deterministic first pass, optional AI second pass
+
+```bash
+cargo run --release -- run \
+  --input "/path/to/input.xlsx" --config config.exhaustive.toml \
+  --out-dir out-deterministic --all-workbook-rows --first-worksheet-only --no-ai
+
+cargo run --release -- run \
+  --input "/path/to/input.xlsx" --config config.exhaustive.toml \
+  --out-dir out-reviewed --all-workbook-rows --first-worksheet-only \
+  --reuse-searches-from out-deterministic
+```
+
+Keep the same configuration, including enabled model settings: `--no-ai` prevents model construction and requests without changing configuration bytes. The second pass validates and imports only the first pass's search cache, never its decisions or checkpoints. An incomplete donor is allowed; failed searches are retried. Donor and destination must be different output directories, and the donor cannot be running during import.
+
+No-AI decisions carry `model_status: not_run_deterministic`; CSV includes `Deterministic Decision JSON` and `Review Mode`. The heuristic score is **not a calibrated identity probability**. Same-name candidates in conflicting states or with conflicting class years cannot be promoted to a corroborated match. Ambiguous candidates remain `REVIEW`, with no attributed athlete URL.
+
+Measured on the supplied first worksheet in a release build: scanning 111,939 rows took 0.532 seconds; planning all query stages took 0.948 seconds and produced 1,239,782 unique sport/query keys. Three synthetic one-candidate-per-named-row deterministic replays took 1.546–1.551 seconds for 111,932 rows. Those CPU measurements exclude network access, real candidate multiplicity, durable writes, and exports; they are not completed matching.
+
+At the supplied 750 ms spacing, those cold query keys alone imply approximately **10.76 days**, before pagination, latency, retries, and optional model work. Removing AI does not remove that source bottleneck. A complete authorized bulk source or reusable complete query cache is needed for a substantially faster exhaustive run.
 
 ### Verification scenarios
 
@@ -122,10 +143,11 @@ The scenario driver invokes the actual binary, retains raw invocation evidence i
 ```bash
 cargo build
 python3 tools/exhaustive_cli_scenarios.py --binary target/debug/athletic-rust-pipeline
+python3 tools/exhaustive_cli_scenarios.py --binary target/debug/athletic-rust-pipeline --no-ai
 python3 tools/exhaustive_cli_scenarios.py --binary target/debug/athletic-rust-pipeline --actual-models
 ```
 
-The first command exercises positive dual-sport matching, original-field preservation, unavailable/malformed models, unavailable/incomplete search, writer locking, cancellation, and zero-request completed/cache-only resumes. The second uses the real local Q5/Q4 servers through recording proxies and synthetic search evidence; it is not a live Athletic.net matching test. Synthetic email/street/postal sentinels must never reach either model.
+The fixture scenarios exercise positive dual-sport matching, deterministic-first decisions, original-field preservation, transient retries, unavailable/malformed models, unavailable/incomplete search, writer locking, cancellation, and zero-request completed/cache-only resumes. The no-AI suite additionally proves zero model requests and a second AI pass using only imported searches. `--actual-models` uses the real local Q5/Q4 servers through recording proxies and synthetic search evidence; it is not a live Athletic.net matching test. Synthetic street/postal sentinels must reach both models but never search; the email sentinel must reach neither. `--no-ai --positive-only --search-latency 1.0` exercises overlapping requests and asserts the two-search concurrency bound.
 
 ### Legacy sport-filtered run
 

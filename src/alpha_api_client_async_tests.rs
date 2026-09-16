@@ -202,17 +202,17 @@ async fn http_429_retry_after_one_second() {
 
 /// Retry-After exceeding 300s operational max returns RateLimitedExhausted immediately.
 #[tokio::test(flavor = "multi_thread")]
-async fn http_429_retry_after_exceeds_operational_max_returns_exhausted() {
+async fn http_429_retry_after_exceeds_operational_max_returns_exhausted() -> anyhow::Result<()> {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
     let url = format!("http://127.0.0.1:{port}/api/v1/tfRankings/GetRankings");
     let handle = tokio::task::spawn_blocking(move || {
         let mut conn = listener.accept().unwrap().0;
-        let mut buf = [0u8; 4096];
-        conn.read(&mut buf).unwrap();
-        let _ = conn.write_all(
+        let mut buf = [0u8; 1];
+        conn.read_exact(&mut buf)?;
+        conn.write_all(
             b"HTTP/1.1 429 Too Many Requests\r\nRetry-After: 999999\r\nContent-Length: 0\r\n\r\n",
-        );
+        )
     });
     let client = make_client(&url);
     let start = std::time::Instant::now();
@@ -228,7 +228,8 @@ async fn http_429_retry_after_exceeds_operational_max_returns_exhausted() {
         elapsed.as_secs() < 3,
         "excessive Retry-After must return immediately, took {elapsed:?}"
     );
-    handle.abort();
+    handle.await??;
+    Ok(())
 }
 
 /// Unsupported continuation types (arrays) must return Incomplete, not qParams.

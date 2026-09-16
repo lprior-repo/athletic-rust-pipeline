@@ -555,17 +555,23 @@ pub fn candidate_from_evidence_deterministic(
         (sport == "Track & Field" && hit.url.contains("track-and-field"))
             || (sport == "Cross Country" && hit.url.contains("cross-country"))
     });
-    if let Some(state) = hit
-        .snippet
-        .split_whitespace()
-        .filter_map(|token| {
+    let geographic_prefix = CLASS_YEAR
+        .as_ref()
+        .and_then(|pattern| pattern.find(&hit.snippet))
+        .and_then(|matched| hit.snippet.get(..matched.start()))
+        .map_or(hit.snippet.as_str(), |value| value);
+    let state = crate::scoring::location_state(
+        geographic_prefix.trim_end_matches(|c: char| !c.is_alphabetic()),
+    )
+    .or_else(|| {
+        hit.snippet.split_whitespace().find_map(|token| {
             let token = token.trim_matches(|c: char| !c.is_alphabetic());
             (token.len() == 2 && token.chars().all(|c| c.is_ascii_uppercase()))
                 .then(|| crate::alpha_url::canonical_state(token))
                 .flatten()
         })
-        .next()
-    {
+    });
+    if let Some(state) = state {
         extraction.location = state;
     }
     extraction.graduation_year = CLASS_YEAR
@@ -692,26 +698,137 @@ fn enrich_from_search_evidence(
 }
 
 fn matching_location(prospect: &Prospect, text: &str) -> Option<String> {
-    let city = prospect.city.trim();
-    let state = prospect.state.trim();
-    if city.is_empty() || state.is_empty() {
+    let observed = normalize_text(text);
+    let canonical = match crate::alpha_url::canonical_state(&prospect.state) {
+        Some(state) => state,
+        None => {
+            let city = prospect.city.trim();
+            let region = prospect.state.trim();
+            let expected = normalize_text(&format!("{city} {region}"));
+            return (!city.is_empty()
+                && !region.is_empty()
+                && contains_phrase(&observed, &expected))
+            .then(|| format!("{city}, {region}"));
+        }
+    };
+    let full_state = normalize_text(state_name_to_full(&canonical));
+    let explicit_code = text
+        .split_whitespace()
+        .any(|word| word.trim_matches(|c: char| !c.is_alphabetic()) == canonical);
+    if !explicit_code && !contains_phrase(&observed, &full_state) {
         return None;
     }
-    let expected = normalize_text(&format!("{city} {state}"));
-    let observed = normalize_text(text);
-    observed
-        .contains(&expected)
-        .then(|| format!("{city}, {state}"))
+    let city = normalize_text(&prospect.city);
+    if contains_phrase(&observed, &city) {
+        Some(format!("{}, {canonical}", prospect.city.trim()))
+    } else {
+        // A state match must not manufacture the prospect's city.
+        Some(canonical)
+    }
+}
+
+fn contains_phrase(text: &str, phrase: &str) -> bool {
+    !phrase.is_empty()
+        && text.match_indices(phrase).any(|(start, matched)| {
+            let boundary_before = start == 0
+                || text
+                    .get(..start)
+                    .is_some_and(|prefix| prefix.ends_with(' '));
+            let boundary_after = start
+                .checked_add(matched.len())
+                .and_then(|end| text.get(end..))
+                .is_some_and(|suffix| suffix.is_empty() || suffix.starts_with(' '));
+            boundary_before && boundary_after
+        })
+}
+
+fn state_name_to_full(abbrev: &str) -> &str {
+    match abbrev.trim().to_uppercase().as_str() {
+        "AL" => "Alabama",
+        "AK" => "Alaska",
+        "AZ" => "Arizona",
+        "AR" => "Arkansas",
+        "CA" => "California",
+        "CO" => "Colorado",
+        "CT" => "Connecticut",
+        "DE" => "Delaware",
+        "FL" => "Florida",
+        "GA" => "Georgia",
+        "HI" => "Hawaii",
+        "ID" => "Idaho",
+        "IL" => "Illinois",
+        "IN" => "Indiana",
+        "IA" => "Iowa",
+        "KS" => "Kansas",
+        "KY" => "Kentucky",
+        "LA" => "Louisiana",
+        "ME" => "Maine",
+        "MD" => "Maryland",
+        "MA" => "Massachusetts",
+        "MI" => "Michigan",
+        "MN" => "Minnesota",
+        "MS" => "Mississippi",
+        "MO" => "Missouri",
+        "MT" => "Montana",
+        "NE" => "Nebraska",
+        "NV" => "Nevada",
+        "NH" => "New Hampshire",
+        "NJ" => "New Jersey",
+        "NM" => "New Mexico",
+        "NY" => "New York",
+        "NC" => "North Carolina",
+        "ND" => "North Dakota",
+        "OH" => "Ohio",
+        "OK" => "Oklahoma",
+        "OR" => "Oregon",
+        "PA" => "Pennsylvania",
+        "RI" => "Rhode Island",
+        "SC" => "South Carolina",
+        "SD" => "South Dakota",
+        "TN" => "Tennessee",
+        "TX" => "Texas",
+        "UT" => "Utah",
+        "VT" => "Vermont",
+        "VA" => "Virginia",
+        "WA" => "Washington",
+        "WV" => "West Virginia",
+        "WI" => "Wisconsin",
+        "WY" => "Wyoming",
+        _ => "",
+    }
 }
 
 fn name_before_location(title: &str, location: &str) -> Option<String> {
     let title_lower = title.to_ascii_lowercase();
     let location_lower = location.to_ascii_lowercase();
-    let end = title_lower.find(&location_lower)?;
-    let name = title.get(..end)?.trim().trim_end_matches([',', '-', ' ']);
-    let name = name.split("...").next()?.trim();
-    let token_count = name.split_whitespace().count();
-    (name.len() >= 2 && token_count <= 5).then(|| name.to_owned())
+    if let Some(end) = title_lower.find(&location_lower) {
+        let name = title.get(..end)?.trim().trim_end_matches([',', '-', ' ']);
+        let name = name.split("...").next()?.trim();
+        let token_count = name.split_whitespace().count();
+        if name.len() >= 2 && token_count <= 5 {
+            return Some(name.to_owned());
+        }
+    }
+    let city_words: Vec<&str> = location_lower
+        .split_whitespace()
+        .filter(|w| w.len() >= 3)
+        .collect();
+    if !city_words.is_empty() {
+        for word in &city_words {
+            if let Some(pos) = title_lower.rfind(word) {
+                if pos >= word.len() {
+                    let name = title.get(..pos.saturating_sub(1))?.trim();
+                    let name = name.trim_end_matches([',', '-', ' ', '.']);
+                    let name = name.split("...").next()?.trim();
+                    let token_count = name.split_whitespace().count();
+                    if name.len() >= 2 && token_count <= 5 {
+                        return Some(name.to_owned());
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 fn matching_school(prospect: &Prospect, text: &str) -> Option<String> {

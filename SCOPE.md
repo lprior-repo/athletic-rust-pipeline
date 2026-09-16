@@ -7,7 +7,8 @@ large XLSX
   -> streaming OOXML reader
   -> local-only row scope (strict first worksheet or legacy sport filter)
   -> scoped TF and XC search with full pagination reconciliation
-  -> strict local Q5 extraction + Q4 identity review + deterministic matching
+  -> deterministic evidence extraction and best guess
+  -> optional strict local Q5 extraction + Q4 identity review + Rust policy enforcement
   -> authorized alpha manifest + typed API client (optional separate run)
   -> 50-state/event matrix + completeness validation
   -> cohort filter + safe normalization + athlete-ID deduplication
@@ -35,9 +36,11 @@ Result records retain every discovered profile hint, including weak candidates, 
 | `alpha_match` | Match a completed local alpha source into existing candidate/scoring types | Make Athletic.net network calls |
 | `exhaustive` / `exhaustive_run_rows` | Own the writer lock, cancellation, durable row commits, and final exports | Report retryable errors as complete |
 | `exhaustive_search` / `search_cache` | Bound concurrent search and persist complete query outcomes | Cache failed or truncated queries as successful |
-| `exhaustive_ai` / `ai_cache` | Require both model clients and cache schema-bound successful analysis | Substitute heuristic evidence after model failure |
+| `exhaustive_ai` / `ai_cache` | In AI mode, require both clients and cache schema-bound successful analysis | Substitute heuristic evidence after model failure |
 | `exhaustive_identity` | Reconcile canonical athlete identities and conservative attribution | Attribute an unresolved row to a selected profile |
 | `coverage` / `jsonl` | Bind population/configuration/schema, reconcile every source key, and repair only torn suffixes | Ignore committed corruption or orphan checkpoint keys |
+| `retry_policy` / `model_transport` | Classify transient failures, honor bounded Retry-After, retry model transport | Retry invalid model content or ignore server delays |
+| `reuse_search` | Validate, lock, and atomically import a compatible deterministic run's search cache | Import its decisions or checkpoints |
 
 ## Authorized alpha API path
 
@@ -62,7 +65,7 @@ For each selected athlete, queries are generated from:
 - `site:athletic.net/athlete`.
 Only URLs whose normalized host is `athletic.net` or `www.athletic.net` and whose path starts with `/athlete/` are retained. Completed row records checkpoint the query, URLs, snippets, extracted evidence, model decision, and scores under the immutable source key.
 
-Strict exhaustive discovery has no candidate-count truncation. It validates athlete IDs, result counts, pagination progress, and the bounded page limit; any unknown or inconsistent completeness produces a retryable `SEARCH_ERROR`. Two concurrent query futures share one spacing gate. Both sport lanes must finish before a decisive identity may stop later query stages.
+Strict exhaustive discovery has no candidate-count truncation. It validates athlete IDs, result counts, pagination progress, and the bounded page limit; any unknown or inconsistent completeness produces a retryable `SEARCH_ERROR`. Two concurrent query futures share one spacing gate. All deduplicated query stages complete in both sport lanes before the final decision, without an early-match shortcut.
 
 ### 3. Retrieval
 
@@ -76,19 +79,21 @@ If a site requires JavaScript, supply manually saved HTML or adapt the authorize
 
 The configured local model server receives only:
 
-- prospect name, school, city/state, class year, and sport;
+- prospect name, school, full street address, city/state, postal code, class year, and sport;
 - candidate title/snippet/profile URL;
 - compact public page text if authorized retrieval is enabled.
 
-It never receives email, street address, postal code, or the full workbook row.
+It never receives email or the full workbook row. Street/postal values are identity context, not candidate facts; missing candidate address evidence is unknown rather than a mismatch. The current implementation passes the original street/postal fields and canonicalizes observed state names; it does not implement a street-component parser or authoritative postal-address validation.
 
-Strict exhaustive mode requires Q5 extraction and Q4 identity review. Invalid JSON, omitted extraction schema, unavailable models, or invalid review indices become retryable `AI_ERROR`, not a guessed match or `NO_MATCH`. Explicit null evidence fields are allowed to remain absent. The separate legacy path retains its older tolerant fallback behavior.
+AI-enabled exhaustive mode requires Q5 extraction and Q4 identity review. Rust first records a deterministic decision, then Q5 extracts every candidate and Q4 reviews the complete candidate set once. Invalid JSON, omitted extraction schema, unavailable models, or invalid review indices become retryable `AI_ERROR`, not a guessed match or `NO_MATCH`. Explicit null evidence fields are allowed to remain absent. `--no-ai` constructs neither model client and emits deterministic decisions only. The separate legacy path retains its older tolerant fallback behavior.
 
 ### 5. Deterministic identity policy
 
-Name has the largest weight. School and geography provide corroboration. Class year and Track/XC participation are smaller but material checks. An exact common name cannot become `MATCH` without corroboration. Different states or conflicting class years apply penalties.
+Name has the largest weight. School and geography provide corroboration. Class year and Track/XC participation are smaller but material checks. An exact common name cannot become `MATCH` without corroboration. Explicit canonical-state or class-year conflicts remove corroboration and cap the score at the review threshold, including when configurable corroboration is disabled. State suffixes use longest matching names first, so West Virginia is not Virginia.
 
 The model may add an explanation or recommend a lower status. Promotion above the deterministic result is disallowed unless the underlying structured evidence itself raises the Rust score.
+
+Deterministic decisions require a unique qualifying candidate and sufficient runner-up margin for positive attribution. Nonempty but weak or ambiguous candidate sets remain `REVIEW`; only complete discovery with no candidates produces `NO_MATCH`. Scores are heuristic rankings, not calibrated probabilities. CSV exposes the original deterministic decision and the review mode separately.
 
 ### 6. Marks
 
@@ -110,15 +115,17 @@ Records that fail mark validation remain in raw evidence but are not promoted in
 | Interrupted process | Cancel uncommitted work, drain any started commit, export progress, then resume from durable outcomes |
 | XLSX write-back fails | Source file remains untouched; output temp is not promoted |
 
-The exhaustive runner holds an exclusive output-directory writer lock. Workbook/configuration/scope/analysis-schema fingerprints reject incompatible resumes. JSONL persistence syncs complete newline-terminated records before exposing cache entries; only an unterminated final suffix may be repaired. Coverage is atomically replaced and reconciles checkpoint source keys against the full selected population.
+Search transient failures use the configured bounded attempt count (three in the supplied configuration); model transport uses three attempts. Retry-After accepts delta seconds and HTTP dates, with a 60-second automatic-wait ceiling. Invalid or excessive delays fail explicitly. Search 403 opens a sticky circuit immediately, and accumulated 429 denials open the configured circuit without successful siblings resetting the count. Model schema/content errors do not consume automatic transport retries. The current CLI still stops after checkpointing the first retryable row; per-row fault isolation across the remaining population is not implemented.
+
+The exhaustive runner holds an exclusive output-directory writer lock. Workbook/configuration/scope/review-mode/analysis-schema fingerprints reject incompatible resumes. JSONL persistence syncs complete newline-terminated records before exposing cache entries; only an unterminated final suffix may be repaired. Coverage is atomically replaced and reconciles checkpoint source keys against the full selected population. An AI second pass may explicitly import a compatible deterministic run's validated search cache under the donor's writer lock; it never imports deterministic decisions as AI-reviewed outcomes.
 
 An unchanged completed run skips engine construction and all external requests. Candidate and decision caches are persistent but currently loaded into memory, as are source prospects and checkpoint records; bounded HTTP concurrency is not a claim of constant-memory operation. Cache appends and optional saved-page reads still perform synchronous file I/O in the async row path. These are explicit performance/review limitations, not passed architectural gates.
 
-The strict compiler/Clippy gate is narrower than full architectural approval. The codebase still has functions exceeding the Farley 25-line/five-argument limits and source files exceeding 300 lines (including `exhaustive_engine`, `coverage`, `discovery`, `extract`, and `xlsx`). Full black-hat approval is not claimed.
+The strict compiler/Clippy gate is narrower than full architectural approval. The codebase still has functions exceeding the Farley 25-line/five-argument limits and source files exceeding 300 lines (including `coverage`, `discovery`, `extract`, and `xlsx`). Full black-hat approval is not claimed.
 
 ## Privacy and operational controls
 
-- Email and street/postal data are retained only in local source/result records, never sent to search or model services.
+- Email stays in local source/result records. Street/postal data stays out of search but is deliberately sent to the configured model endpoints; the supplied endpoints are local.
 - Logs identify rows by source key and name, not email.
 - Direct page retrieval requires two independent authorization controls.
 - Alpha API collection requires a separate developer permission reference and explicit CLI acknowledgment.
@@ -140,4 +147,7 @@ The strict compiler/Clippy gate is narrower than full architectural approval. Th
 - Strict first-worksheet coverage reports 111,939 total rows and seven missing-name rows.
 - A positive synthetic-search scenario with real Q5/Q4 models can match TF and XC despite a Basketball source sport, preserve all 13 source fields, and resume without external requests.
 - Search/model failures cannot become `NO_MATCH`; malformed advertised search rows fail closed.
+- No-AI runs make zero model requests, preserve deterministic decisions, and can supply validated cached searches to a separate AI-reviewed run.
+- Same-name candidates with conflicting observed states cannot become corroborated matches; ambiguous rows retain evidence without attributed profile links.
+- Transient failures recover within bounded retries; slow-search scenarios never exceed two in-flight search requests.
 - Complete production delivery requires all 111,939 rows final, zero pending/retryable rows, and a verified zero-request unchanged resume. The observed live invalid-athlete-ID response currently blocks this criterion.
