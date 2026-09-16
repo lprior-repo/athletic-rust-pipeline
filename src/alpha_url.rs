@@ -122,10 +122,7 @@ pub fn validate_source_url(raw: &str) -> Option<String> {
     if parsed.scheme() != "https" || parsed.username() != "" {
         return None;
     }
-    if parsed.password().is_some()
-        || parsed.query().is_some()
-        || parsed.fragment().is_some()
-    {
+    if parsed.password().is_some() || parsed.query().is_some() || parsed.fragment().is_some() {
         return None;
     }
     let host = parsed.host_str()?;

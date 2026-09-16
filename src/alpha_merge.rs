@@ -17,7 +17,10 @@ pub fn from_ranking_record(rec: &RankingRecord, profile_url: &str) -> ResultReco
         meet_name: rec.meet_name.clone(),
         wind: rec.wind.clone(),
         source_url: profile_url.to_owned(),
-        result_url: rec.result_id.map(|rid| format!("https://athletic.net/result/{rid}")).unwrap_or_default(),
+        result_url: rec
+            .result_id
+            .map(|rid| format!("https://athletic.net/result/{rid}"))
+            .unwrap_or_default(),
     }
 }
 
@@ -61,7 +64,9 @@ pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete)
         let counter = ZERO_ID_COUNTER.fetch_add(1, Ordering::Relaxed);
         let key = u64::MAX - counter;
         let mut athlete = new;
-        athlete.exception_notes.push("athlete_id missing or zero; cannot deduplicate".to_owned());
+        athlete
+            .exception_notes
+            .push("athlete_id missing or zero; cannot deduplicate".to_owned());
         map.insert(key, athlete);
         return key;
     }
@@ -118,9 +123,7 @@ pub fn merge_athlete(map: &mut BTreeMap<u64, SourceAthlete>, new: SourceAthlete)
 
             if existing.city.is_empty() && !new.city.is_empty() {
                 existing.city = new.city;
-            } else if !existing.city.is_empty()
-                && !new.city.is_empty()
-                && existing.city != new.city
+            } else if !existing.city.is_empty() && !new.city.is_empty() && existing.city != new.city
             {
                 existing.exception_notes.push(format!(
                     "city conflict: '{}' vs '{}'",

@@ -51,7 +51,10 @@ fn normalize_record_extract_fields() {
     assert_eq!(athlete.last_name, "Doe");
     assert_eq!(athlete.school, "Lincoln High");
     assert_eq!(athlete.state, "CA");
-    assert_eq!(athlete.profile_urls, vec!["https://athletic.net/athlete/12345"]);
+    assert_eq!(
+        athlete.profile_urls,
+        vec!["https://athletic.net/athlete/12345"]
+    );
 }
 
 #[test]
@@ -124,18 +127,29 @@ fn normalize_record_result_urls_excluded_from_profile() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(!athlete.profile_urls.contains(&"https://athletic.net/result/100".to_owned()));
+    assert!(!athlete
+        .profile_urls
+        .contains(&"https://athletic.net/result/100".to_owned()));
     assert_eq!(athlete.profile_urls.len(), 1);
     assert_eq!(athlete.results.len(), 2);
-    assert!(athlete.results.iter().any(|r| r.result_url == "https://athletic.net/result/100"));
-    assert!(athlete.results.iter().any(|r| r.result_url == "https://athletic.net/result/200"));
+    assert!(athlete
+        .results
+        .iter()
+        .any(|r| r.result_url == "https://athletic.net/result/100"));
+    assert!(athlete
+        .results
+        .iter()
+        .any(|r| r.result_url == "https://athletic.net/result/200"));
 }
 
 #[test]
 fn normalize_record_parse_marks() {
     let mut fields = BTreeMap::new();
     fields.insert("athlete_id".to_owned(), "12345".to_owned());
-    fields.insert("marks".to_owned(), "100m|10.55|2026-27|2026-05-01|Invitational|+1.2".to_owned());
+    fields.insert(
+        "marks".to_owned(),
+        "100m|10.55|2026-27|2026-05-01|Invitational|+1.2".to_owned(),
+    );
     let record = SourceRecord {
         source_key: "test".to_owned(),
         sheet: "s1".to_owned(),
@@ -156,7 +170,10 @@ fn normalize_record_parse_marks() {
 fn normalize_record_attaches_result_ids() {
     let mut fields = BTreeMap::new();
     fields.insert("athlete_id".to_owned(), "12345".to_owned());
-    fields.insert("marks".to_owned(), "100m|10.55|2026-27|2026-05-01|Invitational".to_owned());
+    fields.insert(
+        "marks".to_owned(),
+        "100m|10.55|2026-27|2026-05-01|Invitational".to_owned(),
+    );
     fields.insert("result_ids".to_owned(), "999".to_owned());
     let record = SourceRecord {
         source_key: "test".to_owned(),
@@ -225,7 +242,10 @@ fn normalize_record_source_url_multiple() {
 fn normalize_record_invalid_mark_adds_exception_note() {
     let mut fields = BTreeMap::new();
     fields.insert("athlete_id".to_owned(), "12345".to_owned());
-    fields.insert("marks".to_owned(), "bogus_event|10.55|2026-27|2026-05-01".to_owned());
+    fields.insert(
+        "marks".to_owned(),
+        "bogus_event|10.55|2026-27|2026-05-01".to_owned(),
+    );
     let record = SourceRecord {
         source_key: "test".to_owned(),
         sheet: "s1".to_owned(),
@@ -233,7 +253,10 @@ fn normalize_record_invalid_mark_adds_exception_note() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid mark entry")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|n| n.contains("invalid mark entry")));
     assert_eq!(athlete.results.len(), 0);
 }
 
@@ -249,7 +272,10 @@ fn normalize_record_invalid_city_adds_exception_note() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("invalid city")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|n| n.contains("invalid city")));
     assert_eq!(athlete.city, "");
 }
 
@@ -268,7 +294,10 @@ fn normalize_record_profile_url_id_mismatch_adds_exception_note() {
         fields,
     };
     let athlete = normalize_record(&record);
-    assert!(athlete.exception_notes.iter().any(|n| n.contains("does not match record athlete ID")));
+    assert!(athlete
+        .exception_notes
+        .iter()
+        .any(|n| n.contains("does not match record athlete ID")));
 }
 
 #[test]

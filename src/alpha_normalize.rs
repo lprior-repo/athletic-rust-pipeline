@@ -1,11 +1,11 @@
 /// Safe normalization for source records and athlete deduplication.
 pub use crate::alpha_url::canonical_state;
-pub use crate::model::SourceRecord;
 use crate::alpha_url::{validate_profile_url, validate_result_url, validate_source_url};
 use crate::marks;
 use crate::model::Mark;
-use url::Url;
+pub use crate::model::SourceRecord;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 /// A single result record with full metadata.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -133,7 +133,9 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
         if let Some(canonical) = canonical_state(state) {
             athlete.state = canonical;
         } else {
-            athlete.exception_notes.push(format!("unknown state '{}'", state.trim()));
+            athlete
+                .exception_notes
+                .push(format!("unknown state '{}'", state.trim()));
         }
     }
 
@@ -141,7 +143,9 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
         if let Some((city_str, _)) = parse_location(city) {
             athlete.city = city_str;
         } else {
-            athlete.exception_notes.push(format!("invalid city/location: '{}'", city.trim()));
+            athlete
+                .exception_notes
+                .push(format!("invalid city/location: '{}'", city.trim()));
         }
     }
     // Validate and collect profile URLs
@@ -164,7 +168,10 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
                 if let Some(path) = parsed.path().strip_prefix("/athlete/") {
                     if let Some(id_str) = path.split('/').next() {
                         if let Ok(profile_id) = id_str.parse::<u64>() {
-                            if profile_id != 0 && athlete.athlete_id != 0 && profile_id != athlete.athlete_id {
+                            if profile_id != 0
+                                && athlete.athlete_id != 0
+                                && profile_id != athlete.athlete_id
+                            {
                                 athlete.exception_notes.push(format!(
                                     "profile URL athlete ID {} does not match record athlete ID {}",
                                     profile_id, athlete.athlete_id
@@ -215,7 +222,9 @@ pub fn normalize_record(record: &SourceRecord) -> SourceAthlete {
             if let Some(rr) = parse_mark_entry(trimmed, "", &source_url, None) {
                 athlete.results.push(rr);
             } else {
-                athlete.exception_notes.push(format!("invalid mark entry: '{}'", trimmed));
+                athlete
+                    .exception_notes
+                    .push(format!("invalid mark entry: '{}'", trimmed));
             }
         }
     }

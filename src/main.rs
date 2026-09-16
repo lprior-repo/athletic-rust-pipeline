@@ -66,6 +66,12 @@ mod alpha_config_route_tests;
 #[cfg(test)]
 mod alpha_config_test_helpers;
 #[cfg(test)]
+mod alpha_merge;
+#[cfg(test)]
+mod alpha_merge_tests;
+#[cfg(test)]
+mod alpha_merge_tests_part2;
+#[cfg(test)]
 mod alpha_model;
 #[cfg(test)]
 mod alpha_model_raw;
@@ -85,12 +91,6 @@ mod alpha_nav_validation_tests;
 mod alpha_normalize;
 #[cfg(test)]
 mod alpha_normalize_tests;
-#[cfg(test)]
-mod alpha_merge;
-#[cfg(test)]
-mod alpha_merge_tests;
-#[cfg(test)]
-mod alpha_merge_tests_part2;
 #[cfg(test)]
 mod alpha_route_validation;
 #[cfg(test)]
