@@ -44,13 +44,13 @@ fn decodes_tf_masks_without_nonzero_inference_and_keeps_opaque_raw() {
     other_bits.personal_best = BestClaim::OpaqueFlags(4);
     other_bits.season_best = BestClaim::OpaqueFlags(1);
     let summary = summarize_performances(&[flagged, other_bits]).expect("summary");
-    assert_eq!(summary.source_best_claims[0].claimed, Some(true));
+    assert_eq!(summary.source_best_claims[0].claimed, None);
     assert_eq!(summary.source_best_claims[0].raw, BestClaim::OpaqueFlags(2));
-    assert_eq!(summary.source_best_claims[1].claimed, Some(false));
+    assert_eq!(summary.source_best_claims[1].claimed, None);
     assert_eq!(summary.source_best_claims[1].raw, BestClaim::OpaqueFlags(2));
-    assert_eq!(summary.source_best_claims[2].claimed, Some(false));
+    assert_eq!(summary.source_best_claims[2].claimed, None);
     assert_eq!(summary.source_best_claims[2].raw, BestClaim::OpaqueFlags(4));
-    assert_eq!(summary.source_best_claims[3].claimed, Some(true));
+    assert_eq!(summary.source_best_claims[3].claimed, None);
 }
 #[test]
 fn xc_uses_boolean_claims_and_keeps_distance_context() {
@@ -169,7 +169,7 @@ fn source_pb_claim_is_distinct_from_observed_best() {
     claimed.personal_best = BestClaim::OpaqueFlags(2);
     let better = result(51, Sport::TrackField, "100m", "10.20", Some("Seconds"));
     let summary = summarize_performances(&[claimed, better]).expect("summary");
-    assert_eq!(summary.source_best_claims[0].claimed, Some(true));
+    assert_eq!(summary.source_best_claims[0].claimed, None);
     assert_eq!(summary.observed_best_groups.len(), 1);
     assert_eq!(summary.observed_best_groups[0].best.result_id, 51);
     assert_eq!(summary.completeness, Completeness::RetrievedSampleOnly);

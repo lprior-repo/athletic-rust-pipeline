@@ -380,24 +380,20 @@ pub(super) fn source_claims(source: &ResultEvidence) -> Vec<SourceBestClaim> {
     .map(|(kind, raw)| SourceBestClaim {
         result_id: source.result_id,
         kind: kind.clone(),
-        claimed: claim_value(&raw, source.sport, &kind),
+        claimed: claim_value(&raw),
         raw,
         evidence: source.evidence.clone(),
     })
     .collect()
 }
 
-fn claim_value(claim: &BestClaim, sport: Sport, kind: &BestClaimKind) -> Option<bool> {
-    match (sport, claim, kind) {
-        (Sport::TrackField, BestClaim::OpaqueFlags(raw), BestClaimKind::PersonalBest) => {
-            Some(raw & 2 == 2)
-        }
-        (Sport::TrackField, BestClaim::OpaqueFlags(raw), BestClaimKind::SeasonBest) => {
-            Some(raw & 1 == 1)
-        }
-        (Sport::CrossCountry, BestClaim::Claimed, _) => Some(true),
-        (Sport::CrossCountry, BestClaim::NotClaimed, _) => Some(false),
-        _ => None,
+fn claim_value(claim: &BestClaim) -> Option<bool> {
+    match claim {
+        BestClaim::Claimed => Some(true),
+        BestClaim::NotClaimed => Some(false),
+        // Athletic.net's numeric TF flags have no grounded public semantics in
+        // this pipeline. Preserve the raw value, but do not infer a boolean.
+        BestClaim::OpaqueFlags(_) | BestClaim::Unavailable => None,
     }
 }
 

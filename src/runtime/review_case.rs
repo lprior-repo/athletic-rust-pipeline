@@ -9,7 +9,7 @@ use restate_sdk::prelude::*;
 use serde::Serialize;
 use std::{collections::BTreeSet, sync::Arc};
 
-const REVIEW_PROTOCOL_REVISION: &str = "review-protocol-workbook-eligible-v2";
+const REVIEW_PROTOCOL_REVISION: &str = "review-protocol-golden-context-v3";
 const MAX_CANDIDATES: usize = 64;
 const ASSIGNMENT_BUCKETS: u64 = 5;
 const Q5_BUCKETS: u64 = 3;

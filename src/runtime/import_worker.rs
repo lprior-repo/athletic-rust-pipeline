@@ -23,6 +23,7 @@ pub fn key(request: &ImportRequest) -> anyhow::Result<String> {
 }
 
 #[restate_sdk::object(
+    ingress_private = true,
     inactivity_timeout = "2h",
     journal_retention = "30 days",
     idempotency_retention = "30 days",

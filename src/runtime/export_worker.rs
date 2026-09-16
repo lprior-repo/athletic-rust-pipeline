@@ -6,8 +6,8 @@ use super::{
     Runtime,
 };
 use crate::{
+    bundle_verify::{verify_bundle, BundleVerificationReport},
     domain::identity::EvidenceDigest,
-    workbook_verify::{verify_fields, VerificationReport},
 };
 use anyhow::{bail, Context, Result};
 use restate_sdk::prelude::*;
@@ -22,7 +22,7 @@ use std::{
 };
 use tempfile::Builder;
 
-const EXPORT_PROTOCOL_REVISION: &str = "native-export-worker-v1";
+const EXPORT_PROTOCOL_REVISION: &str = "native-export-worker-v2";
 const STAGE_STATE: &str = "stage-receipt";
 const RESULT_STATE: &str = "published-result";
 
@@ -46,11 +46,11 @@ impl ExportRequest {
     }
 }
 
-/// Includes field/hash preservation evidence only; it does not validate identity decisions.
+/// Includes source preservation and retained result-evidence consistency checks.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublishedExport {
     pub report: ExportReport,
-    pub verification: VerificationReport,
+    pub verification: BundleVerificationReport,
     pub commit_path: PathBuf,
 }
 
@@ -64,7 +64,7 @@ struct StageReceipt {
     xlsx_sha256: String,
     detail_sha256: String,
     report: ExportReport,
-    verification: VerificationReport,
+    verification: BundleVerificationReport,
 }
 
 /// A missing commit receipt means the two-file bundle is still in progress.
@@ -82,7 +82,7 @@ struct CommitReceipt {
     run: EvidenceDigest,
     destination: PathBuf,
     report: ExportReport,
-    verification: VerificationReport,
+    verification: BundleVerificationReport,
 }
 
 #[restate_sdk::object(
@@ -198,8 +198,17 @@ fn stage_export(
         .iter()
         .map(|header| (*header).to_owned())
         .collect::<Vec<_>>();
-    let verification = verify_fields(&manifest.original, &xlsx_path, &manifest.workbook, &headers)
-        .context("independently verifying staged workbook fields")?;
+    let verification = verify_bundle(&manifest.original, &xlsx_path, &manifest.workbook, &headers)
+        .context("independently verifying staged workbook and result evidence")?;
+    let results = &verification.results;
+    if results.total_rows != report.coverage.source_rows
+        || results.accepted_rows != report.coverage.accepted_rows
+        || results.review_rows != report.coverage.review_rows
+        || results.no_match_rows != report.coverage.no_match_rows
+        || results.pending_rows != report.coverage.pending_rows
+    {
+        bail!("independent result counts differ from export coverage");
+    }
     let xlsx_sha256 = sha256_file(&xlsx_path)?;
     let detail_sha256 = sha256_file(&detail_path)?;
     let directory = temporary.keep();

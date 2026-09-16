@@ -42,7 +42,7 @@ pub enum Command {
         #[arg(long)]
         output: PathBuf,
     },
-    /// Independently verify source fields and row accounting, not identity decisions.
+    /// Verify source preservation and retained XLSX/JSONL result-evidence consistency.
     Verify {
         #[arg(long)]
         input: PathBuf,

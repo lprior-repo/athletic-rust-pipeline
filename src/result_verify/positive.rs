@@ -1,0 +1,320 @@
+use super::{AssessmentWire, DetailRow};
+use crate::{
+    domain::{
+        evidence::{EvidenceRef, ProfileEvidence, ResultAttribution, Sport},
+        facts::Location as FactLocation,
+        identity::{AthleteId, EvidenceDigest},
+    },
+    runtime::{
+        acquisition::ProfileAcquisition,
+        protocol::{ReviewOutcome, ReviewVerdict},
+        row_protocol::{AcceptanceMethod, RowReport},
+    },
+};
+use anyhow::{bail, Result};
+use std::collections::HashSet;
+use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
+
+pub(super) fn verify_profiles(profiles: &[ProfileAcquisition]) -> Result<()> {
+    profiles.iter().try_for_each(|acquisition| {
+        let Some(profile) = acquisition.profile.as_ref() else {
+            return Ok(());
+        };
+        if profile.profile_url.athlete_id() != profile.athlete_id {
+            bail!("profile URL athlete ID contradicts profile evidence ID");
+        }
+        if profile.documents.is_empty() {
+            bail!("profile evidence has no retained source documents");
+        }
+        let response_documents = acquisition
+            .responses
+            .iter()
+            .map(|receipt| receipt.digest.as_str())
+            .collect::<HashSet<_>>();
+        if profile
+            .documents
+            .iter()
+            .any(|document| !response_documents.contains(document.as_str()))
+        {
+            bail!("profile document is absent from retained response receipts");
+        }
+        check_ref(&profile.name.evidence, &profile.documents)?;
+        profile.teams.iter().try_for_each(|team| {
+            if team.team_id == 0 {
+                bail!("profile team has invalid ID");
+            }
+            check_ref(&team.name.evidence, &profile.documents)?;
+            if let Some(location) = team.location.as_ref() {
+                check_ref(&location.evidence, &profile.documents)?;
+            }
+            Ok(())
+        })?;
+        profile
+            .graduation_years
+            .iter()
+            .try_for_each(|year| check_ref(&year.evidence, &profile.documents))?;
+        profile
+            .grades
+            .iter()
+            .try_for_each(|grade| check_ref(&grade.evidence, &profile.documents))?;
+        profile.results.iter().try_for_each(|result| {
+            if result.result_id == 0 || result.team_id == 0 || result.meet_id == 0 {
+                bail!("profile result has invalid source identifiers");
+            }
+            check_ref(&result.evidence, &profile.documents)
+        })?;
+        profile.issues.iter().try_for_each(|issue| {
+            if let Some(reference) = issue.evidence.as_ref() {
+                check_ref(reference, &profile.documents)?;
+            }
+            if hard_contradiction(&issue.code) {
+                bail!(
+                    "profile retains hard identity contradiction: {}",
+                    issue.code
+                );
+            }
+            Ok(())
+        })
+    })
+}
+
+fn check_ref(reference: &EvidenceRef, documents: &[EvidenceDigest]) -> Result<()> {
+    if reference.locator.trim().is_empty() {
+        bail!("source evidence locator is empty");
+    }
+    if !documents
+        .iter()
+        .any(|document| document == &reference.document)
+    {
+        bail!("source evidence document is not retained by profile");
+    }
+    Ok(())
+}
+
+fn hard_contradiction(code: &str) -> bool {
+    matches!(
+        code,
+        "identity_conflict"
+            | "html_identity_mismatch"
+            | "html_identity_inconsistency"
+            | "team_conflict"
+            | "team_name_inconsistency"
+            | "team_location_inconsistency"
+            | "identity_incomplete"
+            | "profile_url_conflict"
+            | "team_history_join_missing"
+    )
+}
+
+pub(super) fn verify_positive(
+    row: &DetailRow,
+    report: &RowReport,
+    assessment: &AssessmentWire,
+    acquisitions: &[ProfileAcquisition],
+    selected: AthleteId,
+    method: AcceptanceMethod,
+) -> Result<()> {
+    if !matches!(
+        assessment.search,
+        crate::domain::decision::SearchCompleteness::Complete { .. }
+    ) {
+        bail!("accepted result lacks complete search evidence");
+    }
+    if !assessment
+        .candidates
+        .iter()
+        .any(|candidate| candidate.athlete_id == selected)
+    {
+        bail!("accepted athlete was not supplied as an assessment candidate");
+    }
+    let acquisition = acquisitions
+        .iter()
+        .find(|item| item.athlete_id == selected)
+        .ok_or_else(|| anyhow::anyhow!("accepted athlete lacks retained profile acquisition"))?;
+    let profile = acquisition
+        .profile
+        .as_ref()
+        .ok_or_else(|| anyhow::anyhow!("accepted athlete lacks retained profile evidence"))?;
+    if !acquisition.complete || !acquisition.failures.is_empty() {
+        bail!("accepted athlete profile acquisition is incomplete or failed");
+    }
+    verify_profiles(std::slice::from_ref(acquisition))?;
+    verify_identity(row, profile)?;
+    verify_participation(profile, selected)?;
+    match method {
+        AcceptanceMethod::Deterministic => {
+            if report.review.is_some() {
+                bail!("deterministic acceptance carries a review outcome");
+            }
+            let corroborated = acquisitions
+                .iter()
+                .filter(|candidate| candidate_is_corroborated(row, candidate))
+                .count();
+            if corroborated != 1 {
+                bail!("deterministic acceptance lacks a unique corroborated identity");
+            }
+            verify_deterministic(assessment, selected)?;
+        }
+        AcceptanceMethod::LocalReview => verify_local_review(report, profile, selected)?,
+    }
+    Ok(())
+}
+
+fn verify_identity(row: &DetailRow, profile: &ProfileEvidence) -> Result<()> {
+    let first = source_field(row, "Person First")?;
+    let last = source_field(row, "Person Last")?;
+    let school = source_field(row, "Schools Name")?;
+    let city = source_field_optional(row, "Address Mailing / Permanent City");
+    let region = source_field_optional(row, "Address Mailing / Permanent Region");
+    if normalized(&format!("{first} {last}")).is_empty()
+        || matches!(
+            normalized(&school).as_str(),
+            "" | "unknown" | "not provided" | "none" | "null" | "n a" | "other"
+        )
+    {
+        bail!("accepted source lacks meaningful name or school identity");
+    }
+    if city.is_none() && region.is_none() {
+        bail!("accepted source has no location context");
+    }
+    if normalized(&format!("{first} {last}")) != normalized(profile.name.value.as_str()) {
+        bail!("retained profile name contradicts source identity");
+    }
+    let matching_team = profile
+        .teams
+        .iter()
+        .filter(|team| normalized(team.name.value.as_str()) == normalized(&school));
+    if !matching_team.clone().any(|team| {
+        team.location.as_ref().is_some_and(|observed| {
+            location_matches(&observed.value, city.as_deref(), region.as_deref())
+        })
+    }) {
+        bail!("retained profile lacks source-matching school and location evidence");
+    }
+    Ok(())
+}
+
+fn source_field(row: &DetailRow, name: &str) -> Result<String> {
+    source_field_optional(row, name)
+        .ok_or_else(|| anyhow::anyhow!("accepted source field is empty: {name}"))
+}
+
+fn source_field_optional(row: &DetailRow, name: &str) -> Option<String> {
+    row.source
+        .fields
+        .get(name)
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+}
+
+fn location_matches(location: &FactLocation, city: Option<&str>, region: Option<&str>) -> bool {
+    match location {
+        FactLocation::Missing => false,
+        FactLocation::RegionOnly(value) => {
+            city.is_none()
+                && region.is_some_and(|actual| normalized(value.as_str()) == normalized(actual))
+        }
+        FactLocation::CityOnly(value) => city.is_some_and(|actual| {
+            region.is_none() && normalized(value.as_str()) == normalized(actual)
+        }),
+        FactLocation::CityRegion {
+            city: expected_city,
+            region: expected_region,
+        } => {
+            city.is_none_or(|actual| normalized(expected_city.as_str()) == normalized(actual))
+                && region
+                    .is_none_or(|actual| normalized(expected_region.as_str()) == normalized(actual))
+        }
+    }
+}
+
+fn normalized(raw: &str) -> String {
+    raw.nfkd()
+        .filter(|character| !is_combining_mark(*character))
+        .fold(String::new(), |mut output, character| {
+            if character.is_alphanumeric() {
+                output.extend(character.to_lowercase());
+            } else if !output.ends_with(' ') {
+                output.push(' ');
+            }
+            output
+        })
+        .trim()
+        .to_owned()
+}
+
+fn verify_participation(profile: &ProfileEvidence, selected: AthleteId) -> Result<()> {
+    let attributed = profile.results.iter().any(|result| {
+        result.result_id > 0
+            && matches!(result.sport, Sport::TrackField | Sport::CrossCountry)
+            && match &result.attribution {
+                ResultAttribution::Individual => true,
+                ResultAttribution::VerifiedRelayMember { relay_athlete_id } => {
+                    *relay_athlete_id == selected.get()
+                }
+                ResultAttribution::Unresolved { .. } => false,
+            }
+    });
+    if !attributed {
+        bail!("accepted athlete lacks attributed TF/XC participation");
+    }
+    Ok(())
+}
+fn candidate_is_corroborated(row: &DetailRow, acquisition: &ProfileAcquisition) -> bool {
+    let Some(profile) = acquisition.profile.as_ref() else {
+        return false;
+    };
+    acquisition.complete
+        && acquisition.failures.is_empty()
+        && verify_profiles(std::slice::from_ref(acquisition)).is_ok()
+        && verify_identity(row, profile).is_ok()
+        && verify_participation(profile, profile.athlete_id).is_ok()
+}
+
+fn verify_deterministic(assessment: &AssessmentWire, selected: AthleteId) -> Result<()> {
+    if !matches!(
+        &assessment.search,
+        crate::domain::decision::SearchCompleteness::Complete { .. }
+    ) {
+        bail!("deterministic acceptance lacks complete search evidence");
+    }
+    if assessment.decision != crate::domain::decision::Decision::DeterministicAccepted {
+        bail!("deterministic acceptance has a non-deterministic assessment");
+    }
+    if assessment.verified.as_ref().map(|value| value.athlete_id) != Some(selected) {
+        bail!("deterministic assessment verified selection does not match report");
+    }
+    Ok(())
+}
+
+fn verify_local_review(
+    report: &RowReport,
+    profile: &ProfileEvidence,
+    selected: AthleteId,
+) -> Result<()> {
+    let Some(ReviewOutcome::Reviewed {
+        verdict:
+            ReviewVerdict::Select {
+                athlete_id,
+                evidence,
+                ..
+            },
+        ..
+    }) = report.review.as_ref()
+    else {
+        bail!("local acceptance missing retained review outcome prerequisite");
+    };
+    if *athlete_id != selected || evidence.is_empty() {
+        bail!("local review selection does not bind selected athlete");
+    }
+    let allowed = super::profile_refs(profile);
+    if evidence
+        .iter()
+        .any(|reference| !allowed.iter().any(|item| item == reference))
+    {
+        bail!("local review cites unsupported profile evidence");
+    }
+    Ok(())
+}

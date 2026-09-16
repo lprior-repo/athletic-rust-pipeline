@@ -45,7 +45,7 @@ pub async fn run() -> Result<()> {
                 destination: destination(output)?,
             };
             let key = request.key()?;
-            let request_key = fingerprint(&("native-export-v1", &request))?;
+            let request_key = fingerprint(&("native-export-v2", &request))?;
             let client = ExportWorkerIngressClient::from_client(transport::client(&ingress)?, &key);
             let published = client
                 .publish(Json(request))
@@ -67,14 +67,14 @@ pub async fn run() -> Result<()> {
                     .iter()
                     .map(|header| (*header).to_owned())
                     .collect::<Vec<_>>();
-                athletic_rust_pipeline::workbook_verify::verify_fields(
+                athletic_rust_pipeline::bundle_verify::verify_bundle(
                     &input, &output, &digest, &headers,
                 )
             })
             .await
-            .context("joining independent field verification")??;
+            .context("joining independent bundle verification")??;
             emit(
-                &serde_json::json!({"scope": "source_fields_and_hash_only", "verification": report}),
+                &serde_json::json!({"scope": "source_preservation_and_retained_result_evidence_consistency", "verification": report}),
             )
         }
     }

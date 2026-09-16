@@ -12,6 +12,8 @@ All original fields are retained. The assigned local reviewer receives the compl
 
 Rust performs routine parsing, arithmetic, mark comparison, and deterministic matching. Only genuine ambiguity reaches one assigned local model. Different cases are assigned across the existing Q5/5090 and Q4/3090 servers; no two-model consensus is required. A model cannot override deterministic contradictions or manufacture evidence.
 
+Observed-best summaries retain event/timing/wind/equipment context and evidence references. Opaque numeric best flags remain unknown rather than being interpreted as verified PR claims. A summary too large for an Excel cell is explicitly relocated to the full JSONL sidecar with row/report/athlete linkage; it is not truncated.
+
 ## Build and checks
 
 ```sh
@@ -59,7 +61,7 @@ cargo run --release -- verify \
 
 Export publishes an XLSX, a detailed JSONL sidecar, and a commit receipt. Original source fields and row positions are preserved; annotation columns are appended. Partial exports retain explicit pending rows. Destinations are non-clobbering and bound to one run. The commit receipt is published last: the files are not an atomic multi-file transaction. Treat a missing receipt as an incomplete publication.
 
-The independent `verify` command checks source hashes, original fields, source-sheet order and row accounting in the actual XLSX. **It does not independently prove positive identity decisions or PR provenance.** Do not describe this field verifier as a complete result-accuracy audit.
+The independent `verify` command checks source hashes, original fields, source-sheet order and row accounting in the actual XLSX, then checks retained JSONL result evidence and binds each workbook annotation to its sidecar row. Positive checks cover selected identity, retained profile/document references, attributed participation, complete discovery and deterministic uniqueness. Review rows may retain conflicts without becoming positive results. Source, XLSX and sidecar hashes are checked for changes during verification. **This establishes retained-evidence consistency, not source authenticity or unknowable real-world identity accuracy; PR arithmetic and raw-source authenticity are not independently proved by this command.**
 
 Restate owns durable calls, cached workflow results, operation retry policies and orchestration. HTTP attempt evidence is retained, but an external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee.
 
@@ -74,4 +76,4 @@ cargo run --example native_fixture -- \
 
 The fixture writes a synthetic workbook and worker configuration, and serves controlled source/model responses and request counters. Run its worker against a dedicated native Restate instance. Fixture model endpoints are synthetic; they do not exercise the real GPUs. Keep generated fixture inputs stable during a run: fixture startup currently regenerates its workbook, changing its digest.
 
-Observed native happy-path exercise: 8 source rows across two sheets, 5 accepted, 1 no-match, 2 review; exported fields verified 120/120 with source SHA-256 unchanged during export. This is synthetic evidence, not the real 100-row pilot or completed full-workbook delivery. Live rollout, independent positive-result verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.
+Observed native happy-path exercise: 8 source rows across two sheets, 5 accepted, 1 no-match, 2 review; exported fields verified 120/120, independent result counts reconciled, and source SHA-256 unchanged during export. A second scenario proves missing-school rows reach discovery and retain candidate evidence without speculative acceptance. This is synthetic evidence, not the real 100-row pilot or completed full-workbook delivery. Live rollout, raw-source/PR verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.
