@@ -1,0 +1,85 @@
+use httpdate::parse_http_date;
+use reqwest::header::{HeaderMap, RETRY_AFTER};
+use std::time::{Duration, SystemTime};
+
+pub(crate) const MAX_RETRY_DELAY: Duration = Duration::from_secs(86_400);
+
+pub(crate) fn retryable_status(status: u16) -> bool {
+    status == 429 || (500..=599).contains(&status)
+}
+
+pub(crate) fn retry_after(headers: &HeaderMap, now: SystemTime) -> Result<Duration, &'static str> {
+    let mut values = headers.get_all(RETRY_AFTER).iter();
+    let Some(value) = values.next() else {
+        return Ok(Duration::ZERO);
+    };
+    if values.next().is_some() {
+        return Err("multiple Retry-After headers are ambiguous");
+    }
+    let value = value
+        .to_str()
+        .map_err(|_| "invalid Retry-After encoding")?
+        .trim_matches([' ', '\t']);
+    let delay = if !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()) {
+        Duration::from_secs(
+            value
+                .parse::<u64>()
+                .map_err(|_| "Retry-After seconds overflow")?,
+        )
+    } else {
+        parse_http_date(value)
+            .map_err(|_| "invalid Retry-After date")?
+            .duration_since(now)
+            .map_or(Duration::ZERO, |delay| delay)
+    };
+    (delay <= MAX_RETRY_DELAY)
+        .then_some(delay)
+        .ok_or("Retry-After exceeds bounded retry delay")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use reqwest::header::HeaderValue;
+
+    #[test]
+    fn parses_delta_and_http_date_with_bound() {
+        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+        let mut headers = HeaderMap::new();
+        headers.insert(RETRY_AFTER, HeaderValue::from_static("7"));
+        assert_eq!(
+            retry_after(&headers, now).expect("delta"),
+            Duration::from_secs(7)
+        );
+        headers.insert(RETRY_AFTER, HeaderValue::from_static("86401"));
+        assert!(retry_after(&headers, now).is_err());
+        let date = httpdate::fmt_http_date(now + Duration::from_secs(11));
+        headers.insert(RETRY_AFTER, HeaderValue::from_str(&date).expect("date"));
+        assert_eq!(
+            retry_after(&headers, now).expect("date"),
+            Duration::from_secs(11)
+        );
+    }
+
+    #[test]
+    fn retries_only_rate_limit_and_server_failures() {
+        assert!(retryable_status(429));
+        assert!(retryable_status(503));
+        assert!(!retryable_status(403));
+        assert!(!retryable_status(400));
+    }
+
+    #[test]
+    fn absent_header_allows_retry_but_duplicate_or_signed_headers_fail_closed() {
+        let now = SystemTime::UNIX_EPOCH;
+        let mut headers = HeaderMap::new();
+        assert_eq!(retry_after(&headers, now), Ok(Duration::ZERO));
+        headers.append(RETRY_AFTER, HeaderValue::from_static("7"));
+        headers.append(RETRY_AFTER, HeaderValue::from_static("7"));
+        assert!(retry_after(&headers, now).is_err());
+        headers.insert(RETRY_AFTER, HeaderValue::from_static("+7"));
+        assert!(retry_after(&headers, now).is_err());
+        headers.insert(RETRY_AFTER, HeaderValue::from_static(" \t7\t "));
+        assert_eq!(retry_after(&headers, now), Ok(Duration::from_secs(7)));
+    }
+}

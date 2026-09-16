@@ -24,7 +24,7 @@ struct Evidence {
     deterministic: Option<ModelDecision>,
 }
 
-fn merge_hit(hits: &mut BTreeMap<String, SearchHit>, hit: SearchHit) {
+pub(crate) fn merge_hit(hits: &mut BTreeMap<String, SearchHit>, hit: SearchHit) {
     match hits.get_mut(&hit.url) {
         Some(existing) => {
             if existing.title.is_empty() {

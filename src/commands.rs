@@ -43,6 +43,36 @@ pub enum Command {
         #[arg(long)]
         i_have_written_authorization: bool,
     },
+    /// Serve durable row objects for a registered Restate deployment.
+    ServeRestate {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long, default_value = "127.0.0.1:9080")]
+        bind: std::net::SocketAddr,
+    },
+    /// Match every selected workbook row using durable Restate checkpoints.
+    RunRestate {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long, default_value = "out-restate")]
+        out_dir: PathBuf,
+        #[arg(long)]
+        max: Option<usize>,
+        #[arg(long)]
+        first_worksheet_only: bool,
+        #[arg(long)]
+        no_ai: bool,
+        #[arg(long)]
+        i_have_written_authorization: bool,
+        #[arg(long, default_value = "http://127.0.0.1:8080")]
+        restate_url: String,
+        #[arg(long, default_value_t = 8)]
+        concurrency: usize,
+        #[arg(long, default_value_t = 300)]
+        request_timeout_seconds: u64,
+    },
     /// Collect the authorized, API-backed Class-of-2027 alpha source.
     CollectAuthorized {
         #[arg(long)]

@@ -169,7 +169,7 @@ fn aggregate_sports(record: &mut MatchRecord) {
     record.xc_confirmed = xc;
 }
 
-fn clear_attribution(record: &mut MatchRecord) {
+pub(crate) fn clear_attribution(record: &mut MatchRecord) {
     record.selected_candidate_index = None;
     record.selected_profile_url.clear();
     record.selected_name.clear();

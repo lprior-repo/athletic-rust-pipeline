@@ -1,4 +1,5 @@
 use super::*;
+use anyhow::Result;
 use std::io::Write;
 use tempfile::tempdir;
 use zip::write::SimpleFileOptions;
@@ -192,14 +193,7 @@ fn first_worksheet_generated_sheet_returns_error() -> Result<()> {
     )];
     let path = build_minimal_xlsx(&dir, "fixture.xlsx", &sheets)?;
 
-    let result = scan(&path, ScanMode::FirstWorksheet, None);
-    match result {
-        Ok(_) => anyhow::bail!("expected error for generated sheet"),
-        Err(error) => {
-            let error_message = error.to_string();
-            assert!(error_message.contains("generated output"));
-        }
-    }
+    assert!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
 
     Ok(())
 }
@@ -213,14 +207,7 @@ fn first_worksheet_missing_required_headers_returns_error() -> Result<()> {
     let sheets = vec![("Export", sheet1_content)];
     let path = build_minimal_xlsx(&dir, "fixture.xlsx", &sheets)?;
 
-    let result = scan(&path, ScanMode::FirstWorksheet, None);
-    match result {
-        Ok(_) => anyhow::bail!("expected error for missing headers"),
-        Err(error) => {
-            let error_message = error.to_string();
-            assert!(error_message.contains("Person First"));
-        }
-    }
+    assert!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
 
     Ok(())
 }

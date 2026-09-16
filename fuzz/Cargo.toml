@@ -1,0 +1,56 @@
+[package]
+name = "athletic-rust-pipeline-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+athletic-rust-pipeline = { path = ".." }
+libfuzzer-sys = "0.4"
+anyhow = "1"
+serde_json = "1"
+tempfile = "3"
+
+[[bin]]
+name = "search_json_html"
+path = "fuzz_targets/search_json_html.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "profile_html_embedded_json"
+path = "fuzz_targets/profile_html_embedded_json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bio_json"
+path = "fuzz_targets/bio_json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xlsx_zip_stream"
+path = "fuzz_targets/xlsx_zip_stream.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "workbook_ingestion"
+path = "fuzz_targets/workbook_ingestion.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "domain_mark_deserialization"
+path = "fuzz_targets/domain_mark_deserialization.rs"
+test = false
+doc = false
+bench = false

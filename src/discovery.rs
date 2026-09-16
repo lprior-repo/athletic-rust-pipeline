@@ -65,7 +65,7 @@ pub struct SearchFailure {
     pub retryable: bool,
     pub attempts: u32,
     pub status: Option<u16>,
-    retry_after: Duration,
+    pub(crate) retry_after: Duration,
 }
 
 impl SearchFailure {
@@ -195,6 +195,10 @@ fn collapse_spaces(value: &str) -> String {
 }
 
 impl AthleticNetClient {
+    pub(crate) fn denial_count(&self) -> u32 {
+        self.total_denials.load(Ordering::Acquire)
+    }
+
     pub fn new(config: &DiscoveryConfig) -> Result<Self> {
         if config.max_candidates == 0 {
             anyhow::bail!("discovery max_candidates must be greater than zero");

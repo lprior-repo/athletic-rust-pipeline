@@ -1,0 +1,31 @@
+{
+  "observed_at": "2026-09-16T18:43:57.174Z",
+  "asset_url": "https://angular.athletic.net/app/site-app/athlete-bio.routes-BA3NJCer.js",
+  "asset_sha256": "95f7d36fa23a5f46402d630e743c6eec7e445e4e778c36865494fe52ced8a035",
+  "tf_best_claim_snippet": "isPR(n){return(n.PersonalBest&2)===2}isSR(n){return(n.SeasonBest&1)===1}",
+  "tf_event_join_fields": {
+    "metadata": [
+      "IDEvent",
+      "IDEventType"
+    ],
+    "result": [
+      "EventID",
+      "EventTypeID"
+    ]
+  },
+  "field_measure_type": "S/L controls display format; not a physical unit",
+  "field_metadata_source": "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=26158261&sport=tf&level=0",
+  "search_multisport_observation": {
+    "endpoint": "https://www.athletic.net/Search.aspx/runSearch",
+    "query": {
+      "q": "evan boykin",
+      "fq": "t:a a:tf",
+      "start": 10
+    },
+    "rows": 10,
+    "candidate_ids": 10,
+    "athlete_links": 12,
+    "same_identity_may_have_tf_and_xc_links": true
+  },
+  "accuracy_scope": "Publisher best claims and retrieved-sample bests remain distinct; no whole-career completeness assertion"
+}

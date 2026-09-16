@@ -12,7 +12,7 @@ use serde_json::json;
 use std::{sync::LazyLock, time::Duration};
 use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
 
-pub const AI_SCHEMA_VERSION: u32 = 5;
+pub const AI_SCHEMA_VERSION: u32 = 6;
 const MAX_MODEL_RESPONSE_BYTES: usize = 64 * 1024;
 
 pub struct OllamaClient {
@@ -103,6 +103,7 @@ struct ProspectSummary<'a> {
     state: &'a str,
     street: &'a str,
     postal_code: &'a str,
+    parsed_address: crate::address::AddressEvidence,
     source_sport: &'a str,
     expected_graduation_year: Option<i32>,
 }
@@ -123,6 +124,7 @@ impl<'a> From<&'a Prospect> for ProspectSummary<'a> {
                 .source_fields
                 .get("Address Mailing / Permanent Postal")
                 .map_or("", String::as_str),
+            parsed_address: crate::address::parse(prospect),
             source_sport: &prospect.sport,
             expected_graduation_year: prospect.expected_graduation_year,
         }
@@ -317,6 +319,7 @@ Prospect context is supplied only to focus extraction, not as evidence:
 {prospect_json}
 The full mailing/permanent address is context, not proof of the athlete's residence.
 Never copy its street, city, state or postal code into candidate facts without independent evidence.
+Parsed address fields describe source syntax only; they do not validate postal deliverability or prove residence.
 
 Candidate URL: {url}
 Search title: {title}

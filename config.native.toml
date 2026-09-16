@@ -1,0 +1,11 @@
+mode = "live"
+storage_dir = "/home/lewis/.local/share/athletic-rust-pipeline/native-artifacts-v2"
+source_origin = "https://www.athletic.net/"
+source_interval_ms = 750
+request_timeout_seconds = 120
+cpu_workers = 16
+row_concurrency = 64
+q5_url = "http://127.0.0.1:11000/"
+q5_model = "Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf"
+q4_url = "http://127.0.0.1:11001/"
+q4_model = "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf"

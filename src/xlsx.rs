@@ -1,947 +1,90 @@
-use crate::model::{
-    ordered_source_headers, MatchRecord, Prospect, SheetStats, SourceRecord, WorkbookStats,
-};
-use anyhow::{bail, Context, Result};
-use quick_xml::{events::Event, Reader};
-use std::{
-    collections::{BTreeMap, HashMap},
-    fs::{self, File},
-    io::{BufReader, BufWriter, Read, Write},
-    path::{Path, PathBuf},
-};
-use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
+use crate::model::{Prospect, SourceRecord};
 
-const REL_WORKSHEET: &str =
-    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
-const CONTENT_WORKSHEET: &str =
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml";
+pub(crate) mod cells;
+pub(crate) mod metadata;
+mod parser;
+mod selection;
+mod writer;
+mod writer_xml;
+pub(crate) mod xml;
 
-#[derive(Debug)]
-pub struct ScanResult {
-    pub stats: WorkbookStats,
-    pub prospects: Vec<Prospect>,
-}
-
-#[derive(Debug, Clone)]
-struct Relationship {
-    target: String,
-    relation_type: String,
-}
-
-struct SheetMeta {
-    name: String,
-    path: String,
-    sheet_id: u32,
-}
-
-#[derive(Debug, Default)]
-struct CellState {
-    reference: String,
-    cell_type: String,
-    value: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ScanMode {
-    Sports(Vec<String>),
-    Exhaustive,
-    FirstWorksheet,
-}
-
-pub fn scan(
-    path: &Path,
-    mode: ScanMode,
-    expected_graduation_year: Option<i32>,
-) -> Result<ScanResult> {
-    let shared_strings = load_shared_strings(path)?;
-    let sheets = load_sheet_metadata(path)?;
-    let sheets = select_sheets(sheets, &mode)?;
-    let prepared_mode = match mode {
-        ScanMode::Sports(sports) => {
-            ScanMode::Sports(sports.into_iter().map(|sport| normalize(&sport)).collect())
-        }
-        ScanMode::Exhaustive => ScanMode::Exhaustive,
-        ScanMode::FirstWorksheet => ScanMode::FirstWorksheet,
-    };
-    let mut stats = WorkbookStats::default();
-    let mut prospects = Vec::new();
-
-    for sheet in sheets {
-        let mut archive = ZipArchive::new(File::open(path)?)?;
-        let file = archive
-            .by_name(&sheet.path)
-            .with_context(|| format!("opening {} in workbook", sheet.path))?;
-        let mut selected_in_sheet = 0_u64;
-        let sheet_stats = parse_worksheet(file, &sheet.name, &shared_strings, |record| {
-            if !selects_prepared_record(&record, &prepared_mode) {
-                return Ok(());
-            }
-            let first_name = field(&record, "Person First").to_owned();
-            let last_name = field(&record, "Person Last").to_owned();
-            let school = field(&record, "Schools Name").to_owned();
-            let city = field(&record, "Address Mailing / Permanent City").to_owned();
-            let state = field(&record, "Address Mailing / Permanent Region").to_owned();
-            let sport = field(&record, "Sports Sport").to_owned();
-            prospects.push(Prospect {
-                source_key: record.source_key,
-                sheet: record.sheet,
-                excel_row: record.excel_row,
-                first_name,
-                last_name,
-                school,
-                city,
-                state,
-                sport,
-                expected_graduation_year,
-                source_fields: record.fields,
-            });
-            selected_in_sheet = selected_in_sheet.saturating_add(1);
-            Ok(())
-        })?;
-        if matches!(prepared_mode, ScanMode::FirstWorksheet)
-            && !["Person First", "Person Last"]
-                .iter()
-                .all(|header| sheet_stats.headers.iter().any(|value| value == header))
-        {
-            bail!("first worksheet lacks required Person First/Person Last headers");
-        }
-        stats.actual_data_rows = stats
-            .actual_data_rows
-            .saturating_add(sheet_stats.actual_data_rows);
-        stats.selected_prospects = stats.selected_prospects.saturating_add(selected_in_sheet);
-        stats.sheets.push(sheet_stats);
-    }
-
-    Ok(ScanResult { stats, prospects })
-}
-
-fn select_sheets(sheets: Vec<SheetMeta>, mode: &ScanMode) -> Result<Vec<SheetMeta>> {
-    if matches!(mode, ScanMode::FirstWorksheet) {
-        let first = sheets
-            .into_iter()
-            .next()
-            .context("workbook has no worksheets")?;
-        if !is_source_sheet(&first.name) {
-            bail!(
-                "first worksheet is generated output, not source data: {}",
-                first.name
-            );
-        }
-        return Ok(vec![first]);
-    }
-    Ok(sheets
-        .into_iter()
-        .filter(|sheet| is_source_sheet(&sheet.name))
-        .collect())
-}
+pub(crate) use metadata::SheetMeta;
+pub use parser::visit_records;
+pub(crate) use parser::walk_records;
+pub use selection::{scan, ScanMode, ScanResult};
+pub use writer::append_matches_sheet;
+pub use writer::export_records;
 
 #[cfg(test)]
-fn selects_record(record: &SourceRecord, mode: &ScanMode) -> bool {
-    let prepared_mode = match mode {
-        ScanMode::Sports(sports) => {
-            ScanMode::Sports(sports.iter().map(|sport| normalize(sport)).collect())
-        }
-        ScanMode::Exhaustive => ScanMode::Exhaustive,
-        ScanMode::FirstWorksheet => ScanMode::FirstWorksheet,
-    };
-    selects_prepared_record(record, &prepared_mode)
-}
+pub(crate) use cells::{column_index, column_name, escape_xml};
+#[cfg(test)]
+pub(crate) use metadata::{read_zip_string, BoundedReader};
+pub(crate) const MAX_ZIP_ENTRY_BYTES: u64 = 512 * 1024 * 1024;
+pub(crate) const MAX_SHARED_STRINGS: usize = 2_000_000;
+pub(crate) const MAX_SHARED_STRING_BYTES: usize = 4 * 1024 * 1024;
+pub(crate) const MAX_SHARED_STRING_TOTAL_BYTES: usize = 256 * 1024 * 1024;
+pub(crate) const MAX_WORKSHEETS: usize = 4096;
+pub(crate) const MAX_EXCEL_ROW: u32 = 1_048_576;
+pub(crate) const MAX_EXCEL_COLUMN: usize = 16_384;
+pub(crate) const CONTENT_WORKSHEET: &str =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml";
+pub(crate) const REL_WORKSHEET: &str =
+    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet";
 
-fn selects_prepared_record(record: &SourceRecord, mode: &ScanMode) -> bool {
-    match mode {
-        ScanMode::Exhaustive | ScanMode::FirstWorksheet => true,
-        ScanMode::Sports(sports) => {
-            let first_name = field(record, "Person First");
-            let last_name = field(record, "Person Last");
-            if first_name.trim().is_empty() && last_name.trim().is_empty() {
-                return false;
-            }
-            let normalized_sport = normalize(field(record, "Sports Sport"));
-            sports.contains(&normalized_sport)
-        }
-    }
-}
-
-fn is_source_sheet(name: &str) -> bool {
-    !["Athletic Matches", "Corrections", "Summary"]
-        .iter()
-        .any(|generated| name.eq_ignore_ascii_case(generated))
-}
-
-pub fn export_records(input: &Path, output: &Path) -> Result<()> {
-    if output.exists() {
-        bail!("refusing to overwrite existing {}", output.display());
-    }
-    let shared_strings = load_shared_strings(input)?;
-    let sheets = load_sheet_metadata(input)?;
-    let mut writer = BufWriter::new(
-        File::create(output).with_context(|| format!("creating {}", output.display()))?,
-    );
-    for sheet in sheets
-        .into_iter()
-        .filter(|sheet| is_source_sheet(&sheet.name))
-    {
-        let mut archive = ZipArchive::new(File::open(input)?)?;
-        let file = archive.by_name(&sheet.path)?;
-        parse_worksheet(file, &sheet.name, &shared_strings, |record| {
-            serde_json::to_writer(&mut writer, &record)?;
-            writer.write_all(b"\n")?;
-            Ok(())
-        })?;
-    }
-    writer.flush()?;
-    Ok(())
-}
-
-fn field<'a>(record: &'a SourceRecord, header: &str) -> &'a str {
-    record.fields.get(header).map_or("", String::as_str)
-}
-
-fn normalize(value: &str) -> String {
-    value
-        .to_lowercase()
-        .chars()
-        .map(|character| {
-            if character.is_alphanumeric() {
-                character
-            } else {
-                ' '
-            }
-        })
-        .collect::<String>()
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-}
-
-fn load_shared_strings(path: &Path) -> Result<Vec<String>> {
-    let mut archive = ZipArchive::new(File::open(path)?)?;
-    let file = match archive.by_name("xl/sharedStrings.xml") {
-        Ok(file) => file,
-        Err(zip::result::ZipError::FileNotFound) => return Ok(Vec::new()),
-        Err(error) => return Err(error.into()),
-    };
-    let mut reader = Reader::from_reader(BufReader::new(file));
-    reader.config_mut().trim_text(false);
-    let mut buffer = Vec::new();
-    let mut strings = Vec::new();
-    let mut in_item = false;
-    let mut in_text = false;
-    let mut current = String::new();
-
-    loop {
-        match reader.read_event_into(&mut buffer)? {
-            Event::Start(event) if event.name().as_ref() == b"si" => {
-                in_item = true;
-                current.clear();
-            }
-            Event::Start(event) if in_item && event.name().as_ref() == b"t" => in_text = true,
-            Event::Text(event) if in_item && in_text => {
-                current.push_str(&decode_xml_text(event.as_ref())?);
-            }
-            Event::CData(event) if in_item && in_text => {
-                current.push_str(std::str::from_utf8(event.as_ref())?);
-            }
-            Event::End(event) if event.name().as_ref() == b"t" => in_text = false,
-            Event::End(event) if event.name().as_ref() == b"si" => {
-                strings.push(std::mem::take(&mut current));
-                in_item = false;
-            }
-            Event::Eof => break,
-            _ => {}
-        }
-        buffer.clear();
-    }
-    Ok(strings)
-}
-
-fn load_sheet_metadata(path: &Path) -> Result<Vec<SheetMeta>> {
-    let mut archive = ZipArchive::new(File::open(path)?)?;
-    let workbook_xml = read_zip_string(&mut archive, "xl/workbook.xml")?;
-    let relationships_xml = read_zip_string(&mut archive, "xl/_rels/workbook.xml.rels")?;
-    let relationships = parse_relationships(&relationships_xml)?;
-    let mut reader = Reader::from_str(&workbook_xml);
-    let mut buffer = Vec::new();
-    let mut sheets = Vec::new();
-
-    loop {
-        match reader.read_event_into(&mut buffer)? {
-            Event::Empty(event) | Event::Start(event) if event.name().as_ref() == b"sheet" => {
-                let name = option_string(attribute(&event, b"name")?);
-                let sheet_id = parse_sheet_id(attribute(&event, b"sheetId")?)?;
-                let relation_id = sheet_relation_id(&event)?;
-                let relationship = relationships.get(&relation_id).with_context(|| {
-                    format!("missing worksheet relationship {relation_id} for {name}")
-                })?;
-                if !is_worksheet_relationship(&relationship.relation_type) {
-                    buffer.clear();
-                    continue;
-                }
-                sheets.push(SheetMeta {
-                    name,
-                    path: normalize_zip_target(&relationship.target),
-                    sheet_id,
-                });
-            }
-            Event::Eof => break,
-            _ => {}
-        }
-        buffer.clear();
-    }
-    Ok(sheets)
-}
-
-fn sheet_relation_id(event: &quick_xml::events::BytesStart<'_>) -> Result<String> {
-    for item in event.attributes().with_checks(false) {
-        let attribute = item?;
-        if attribute.key.as_ref() == b"r:id" || attribute.key.as_ref().ends_with(b":id") {
-            return decode_xml_text(attribute.value.as_ref());
-        }
-    }
-    bail!("worksheet is missing relationship id")
-}
-
-fn parse_sheet_id(value: Option<String>) -> Result<u32> {
-    let parsed = value
-        .map(|value| {
-            value
-                .parse::<u32>()
-                .with_context(|| format!("invalid worksheet id {value:?}"))
-        })
-        .transpose()?;
-    match parsed {
-        Some(value) => Ok(value),
-        None => Ok(0),
-    }
-}
-
-fn option_string(value: Option<String>) -> String {
-    let Some(value) = value else {
-        return String::new();
-    };
-    value
-}
-
-fn is_worksheet_relationship(relation_type: &str) -> bool {
-    relation_type == REL_WORKSHEET || relation_type.ends_with("/worksheet")
-}
-
-fn parse_relationships(xml: &str) -> Result<HashMap<String, Relationship>> {
-    let mut reader = Reader::from_str(xml);
-    let mut buffer = Vec::new();
-    let mut relationships = HashMap::new();
-    loop {
-        match reader.read_event_into(&mut buffer)? {
-            Event::Empty(event) | Event::Start(event)
-                if event.name().as_ref() == b"Relationship" =>
-            {
-                let id = attribute(&event, b"Id")?
-                    .with_context(|| "worksheet relationship is missing Id")?;
-                let target = attribute(&event, b"Target")?
-                    .with_context(|| format!("worksheet relationship {id} is missing Target"))?;
-                let relation_type = attribute(&event, b"Type")?
-                    .with_context(|| format!("worksheet relationship {id} is missing Type"))?;
-                relationships.insert(
-                    id,
-                    Relationship {
-                        target,
-                        relation_type,
-                    },
-                );
-            }
-            Event::Eof => break,
-            _ => {}
-        }
-        buffer.clear();
-    }
-    Ok(relationships)
-}
-
-fn normalize_zip_target(target: &str) -> String {
-    if target.starts_with('/') {
-        target.trim_start_matches('/').to_owned()
-    } else if target.starts_with("xl/") {
-        target.to_owned()
-    } else {
-        format!("xl/{target}")
-    }
-}
-
-fn parse_worksheet<R, F>(
-    source: R,
-    sheet_name: &str,
-    shared_strings: &[String],
-    mut on_record: F,
-) -> Result<SheetStats>
-where
-    R: Read,
-    F: FnMut(SourceRecord) -> Result<()>,
-{
-    let mut reader = Reader::from_reader(BufReader::new(source));
-    reader.config_mut().trim_text(false);
-    let mut buffer = Vec::new();
-    let mut stats = SheetStats {
-        name: sheet_name.to_owned(),
-        ..Default::default()
-    };
-    let mut headers = Vec::new();
-    let mut header_row = None;
-    let mut current_row_number = 0_u32;
-    let mut current_cells = BTreeMap::new();
-    let mut current_cell = None;
-    let mut row_has_data = false;
-    let mut in_value = false;
-    let mut in_inline_text = false;
-
-    loop {
-        match reader.read_event_into(&mut buffer)? {
-            Event::Empty(event) if event.name().as_ref() == b"dimension" => {
-                stats.declared_dimension = attribute(&event, b"ref")?;
-            }
-            Event::Empty(event) if event.name().as_ref() == b"row" => {
-                stats.xml_rows = stats.xml_rows.saturating_add(1);
-            }
-            Event::Start(event) if event.name().as_ref() == b"row" => {
-                stats.xml_rows = stats.xml_rows.saturating_add(1);
-                let fallback_row = u32::try_from(stats.xml_rows)
-                    .context("worksheet row count exceeds Excel row range")?;
-                current_row_number = match attribute(&event, b"r")? {
-                    Some(value) => {
-                        let row = value
-                            .parse::<u32>()
-                            .with_context(|| format!("invalid Excel row number {value:?}"))?;
-                        if row == 0 {
-                            bail!("invalid Excel row number {value:?}");
-                        }
-                        row
-                    }
-                    None => fallback_row,
-                };
-                current_cells.clear();
-                current_cell = None;
-                row_has_data = false;
-            }
-            Event::Empty(event) if event.name().as_ref() == b"c" => {
-                let cell = cell_state(&event)?;
-                let column = column_index(&cell.reference)?;
-                let value = resolve_cell_value(&cell, shared_strings)?;
-                row_has_data |= !value.is_empty();
-                current_cells.insert(column, value);
-            }
-            Event::Start(event) if event.name().as_ref() == b"c" => {
-                current_cell = Some(cell_state(&event)?);
-            }
-            Event::Start(event) if event.name().as_ref() == b"v" => in_value = true,
-            Event::Start(event) if event.name().as_ref() == b"t" => in_inline_text = true,
-            Event::Text(event) if in_value || in_inline_text => {
-                if let Some(cell) = current_cell.as_mut() {
-                    cell.value.push_str(&decode_xml_text(event.as_ref())?);
-                }
-            }
-            Event::CData(event) if in_value || in_inline_text => {
-                if let Some(cell) = current_cell.as_mut() {
-                    cell.value.push_str(std::str::from_utf8(event.as_ref())?);
-                }
-            }
-            Event::End(event) if event.name().as_ref() == b"v" => in_value = false,
-            Event::End(event) if event.name().as_ref() == b"t" => in_inline_text = false,
-            Event::End(event) if event.name().as_ref() == b"c" => {
-                if let Some(cell) = current_cell.take() {
-                    let column = column_index(&cell.reference)?;
-                    let value = resolve_cell_value(&cell, shared_strings)?;
-                    row_has_data |= !value.is_empty();
-                    current_cells.insert(column, value);
-                }
-            }
-            Event::End(event) if event.name().as_ref() == b"row" && row_has_data => {
-                finish_row(
-                    sheet_name,
-                    current_row_number,
-                    &current_cells,
-                    &mut headers,
-                    &mut header_row,
-                    &mut stats,
-                    &mut on_record,
-                )?;
-            }
-            Event::Eof => break,
-            _ => {}
-        }
-        buffer.clear();
-    }
-    Ok(stats)
-}
-
-fn cell_state(event: &quick_xml::events::BytesStart<'_>) -> Result<CellState> {
-    Ok(CellState {
-        reference: option_string(attribute(event, b"r")?),
-        cell_type: option_string(attribute(event, b"t")?),
-        value: String::new(),
-    })
-}
-
-fn finish_row<F>(
-    sheet_name: &str,
-    row_number: u32,
-    cells: &BTreeMap<usize, String>,
-    headers: &mut Vec<String>,
-    header_row: &mut Option<u32>,
-    stats: &mut SheetStats,
-    on_record: &mut F,
-) -> Result<()>
-where
-    F: FnMut(SourceRecord) -> Result<()>,
-{
-    if header_row.is_none() {
-        let max_column = match cells.keys().next_back() {
-            Some(value) => *value,
-            None => 0,
-        };
-        *headers = (0..=max_column)
-            .map(|column| match cells.get(&column) {
-                Some(value) => value.clone(),
-                None => String::new(),
-            })
-            .collect();
-        *header_row = Some(row_number);
-        stats.headers = headers.clone();
-        return Ok(());
-    }
-
-    stats.actual_data_rows = stats.actual_data_rows.saturating_add(1);
-    stats.last_actual_row = row_number;
-    let fields = headers
-        .iter()
-        .enumerate()
-        .filter(|(_, header)| !header.is_empty())
-        .map(|(column, header)| {
-            let value = match cells.get(&column) {
-                Some(value) => value.clone(),
-                None => String::new(),
-            };
-            (header.clone(), value)
-        })
-        .collect();
-    on_record(SourceRecord {
-        source_key: format!("{sheet_name}:{row_number}"),
-        sheet: sheet_name.to_owned(),
-        excel_row: row_number,
+pub(crate) fn prospect_from_record(
+    record: SourceRecord,
+    expected_graduation_year: Option<i32>,
+) -> Prospect {
+    let SourceRecord {
+        source_key,
+        sheet,
+        excel_row,
         fields,
-    })
-}
-
-fn resolve_cell_value(cell: &CellState, shared_strings: &[String]) -> Result<String> {
-    if cell.cell_type != "s" {
-        return Ok(cell.value.clone());
+    } = record;
+    let first_name = fields
+        .get("Person First")
+        .map_or("", String::as_str)
+        .to_owned();
+    let last_name = fields
+        .get("Person Last")
+        .map_or("", String::as_str)
+        .to_owned();
+    let school = fields
+        .get("Schools Name")
+        .map_or("", String::as_str)
+        .to_owned();
+    let city = fields
+        .get("Address Mailing / Permanent City")
+        .map_or("", String::as_str)
+        .to_owned();
+    let state = fields
+        .get("Address Mailing / Permanent Region")
+        .map_or("", String::as_str)
+        .to_owned();
+    let sport = fields
+        .get("Sports Sport")
+        .map_or("", String::as_str)
+        .to_owned();
+    Prospect {
+        source_key,
+        sheet,
+        excel_row,
+        first_name,
+        last_name,
+        school,
+        city,
+        state,
+        sport,
+        expected_graduation_year,
+        source_fields: fields,
     }
-    if cell.value.is_empty() {
-        return Ok(String::new());
-    }
-    let index = cell
-        .value
-        .trim()
-        .parse::<usize>()
-        .with_context(|| format!("invalid shared string index {:?}", cell.value))?;
-    let value = shared_strings
-        .get(index)
-        .with_context(|| format!("shared string index {index} is out of range"))?;
-    Ok(value.clone())
-}
-
-fn column_index(reference: &str) -> Result<usize> {
-    let mut result = 0_usize;
-    let mut letters = 0_usize;
-    let mut digits_started = false;
-    for byte in reference.bytes() {
-        if !digits_started && byte.is_ascii_alphabetic() {
-            let Some(offset) = byte.to_ascii_uppercase().checked_sub(b'A') else {
-                bail!("invalid cell reference {reference:?}");
-            };
-            let Some(offset) = offset.checked_add(1) else {
-                bail!("invalid cell reference {reference:?}");
-            };
-            result = result
-                .checked_mul(26)
-                .and_then(|value| value.checked_add(usize::from(offset)))
-                .with_context(|| format!("cell reference column overflow: {reference:?}"))?;
-            letters = letters.saturating_add(1);
-        } else if byte.is_ascii_digit() {
-            digits_started = true;
-        } else {
-            bail!("invalid cell reference {reference:?}");
-        }
-    }
-    if letters == 0 || !digits_started {
-        bail!("invalid cell reference {reference:?}");
-    }
-    result
-        .checked_sub(1)
-        .with_context(|| format!("invalid cell reference {reference:?}"))
-}
-
-fn attribute(event: &quick_xml::events::BytesStart<'_>, key: &[u8]) -> Result<Option<String>> {
-    for attribute in event.attributes().with_checks(false) {
-        let attribute = attribute?;
-        if attribute.key.as_ref() == key {
-            return Ok(Some(decode_xml_text(attribute.value.as_ref())?));
-        }
-    }
-    Ok(None)
-}
-
-fn decode_xml_text(value: &[u8]) -> Result<String> {
-    let text = std::str::from_utf8(value)?;
-    Ok(quick_xml::escape::unescape(text)?.into_owned())
-}
-
-fn read_zip_string<R: Read + std::io::Seek>(
-    archive: &mut ZipArchive<R>,
-    name: &str,
-) -> Result<String> {
-    let mut value = String::new();
-    archive.by_name(name)?.read_to_string(&mut value)?;
-    Ok(value)
-}
-
-pub fn append_matches_sheet(input: &Path, output: &Path, records: &[MatchRecord]) -> Result<()> {
-    if input == output {
-        bail!("source and output paths must be different");
-    }
-    if output.exists() {
-        bail!("refusing to overwrite existing {}", output.display());
-    }
-
-    let sheets = load_sheet_metadata(input)?;
-    let existing_path = sheets
-        .iter()
-        .find(|sheet| sheet.name == "Athletic Matches")
-        .map(|sheet| sheet.path.clone());
-    let mut source = ZipArchive::new(File::open(input)?)?;
-    let workbook_xml = read_zip_string(&mut source, "xl/workbook.xml")?;
-    let relationships_xml = read_zip_string(&mut source, "xl/_rels/workbook.xml.rels")?;
-    let content_types_xml = read_zip_string(&mut source, "[Content_Types].xml")?;
-    drop(source);
-
-    let (result_sheet_path, workbook_xml, relationships_xml, content_types_xml, replacing) =
-        match existing_path {
-            Some(path) => (
-                path,
-                workbook_xml,
-                relationships_xml,
-                content_types_xml,
-                true,
-            ),
-            None => {
-                let maximum = sheets.iter().map(|sheet| sheet.sheet_id).fold(0, u32::max);
-                let next_sheet_id = maximum.checked_add(1).context("worksheet id overflow")?;
-                let path = format!("xl/worksheets/sheet{next_sheet_id}.xml");
-                let next_relation_id = next_relationship_id(&relationships_xml)?;
-                let workbook = insert_before(
-                    &workbook_xml,
-                    "</sheets>",
-                    &format!(
-                        "<sheet name=\"Athletic Matches\" sheetId=\"{next_sheet_id}\" r:id=\"{next_relation_id}\"/>"
-                    ),
-                )?;
-                let relationships = insert_before(
-                    &relationships_xml,
-                    "</Relationships>",
-                    &format!(
-                        "<Relationship Id=\"{next_relation_id}\" Type=\"{REL_WORKSHEET}\" Target=\"worksheets/sheet{next_sheet_id}.xml\"/>"
-                    ),
-                )?;
-                let content_types = insert_before(
-                    &content_types_xml,
-                    "</Types>",
-                    &format!(
-                        "<Override PartName=\"/{path}\" ContentType=\"{CONTENT_WORKSHEET}\"/>"
-                    ),
-                )?;
-                (path, workbook, relationships, content_types, false)
-            }
-        };
-    let result_sheet = build_matches_sheet(records)?;
-    let temporary = temporary_output_path(output);
-    let mut source = ZipArchive::new(File::open(input)?)?;
-    let destination = File::create(&temporary)?;
-    let mut destination = ZipWriter::new(BufWriter::new(destination));
-    let replacements: HashMap<&str, &[u8]> = HashMap::from([
-        ("xl/workbook.xml", workbook_xml.as_bytes()),
-        ("xl/_rels/workbook.xml.rels", relationships_xml.as_bytes()),
-        ("[Content_Types].xml", content_types_xml.as_bytes()),
-    ]);
-
-    for index in 0..source.len() {
-        let mut file = source.by_index(index)?;
-        let name = file.name().to_owned();
-        let options = SimpleFileOptions::default().compression_method(file.compression());
-        destination.start_file(&name, options)?;
-        if name == result_sheet_path {
-            destination.write_all(result_sheet.as_bytes())?;
-        } else if let Some(replacement) = replacements.get(name.as_str()) {
-            destination.write_all(replacement)?;
-        } else {
-            std::io::copy(&mut file, &mut destination)?;
-        }
-    }
-    if !replacing {
-        destination.start_file(
-            &result_sheet_path,
-            SimpleFileOptions::default().compression_method(CompressionMethod::Deflated),
-        )?;
-        destination.write_all(result_sheet.as_bytes())?;
-    }
-    destination.finish()?.flush()?;
-    fs::rename(&temporary, output).with_context(|| {
-        format!(
-            "promoting temporary workbook {} to {}",
-            temporary.display(),
-            output.display()
-        )
-    })?;
-    Ok(())
-}
-
-fn next_relationship_id(xml: &str) -> Result<String> {
-    let relationships = parse_relationships(xml)?;
-    let maximum = relationships
-        .keys()
-        .try_fold(0_u32, |maximum, id| -> Result<u32> {
-            let Some(raw_id) = id.strip_prefix("rId") else {
-                return Ok(maximum);
-            };
-            let parsed = raw_id
-                .parse::<u32>()
-                .with_context(|| format!("invalid relationship id {id:?}"))?;
-            Ok(maximum.max(parsed))
-        })?;
-    let next_id = maximum.checked_add(1).context("relationship id overflow")?;
-    Ok(format!("rId{next_id}"))
-}
-
-fn insert_before(source: &str, marker: &str, insertion: &str) -> Result<String> {
-    let index = source
-        .rfind(marker)
-        .with_context(|| format!("missing XML marker {marker}"))?;
-    let prefix = source
-        .get(..index)
-        .with_context(|| format!("invalid XML marker boundary {marker}"))?;
-    let suffix = source
-        .get(index..)
-        .with_context(|| format!("invalid XML marker boundary {marker}"))?;
-    let mut output = String::with_capacity(source.len().saturating_add(insertion.len()));
-    output.push_str(prefix);
-    output.push_str(insertion);
-    output.push_str(suffix);
-    Ok(output)
-}
-
-fn temporary_output_path(output: &Path) -> PathBuf {
-    let mut value = output.as_os_str().to_owned();
-    value.push(format!(".{}.tmp", std::process::id()));
-    PathBuf::from(value)
-}
-
-fn build_matches_sheet(records: &[MatchRecord]) -> Result<String> {
-    let source_headers = ordered_source_headers(records);
-    let source_column_count = source_headers.len();
-    let mut headers = source_headers.clone();
-    headers.extend(
-        [
-            "Source Key",
-            "Source Sheet",
-            "Excel Row",
-            "Prospect Name",
-            "Prospect School",
-            "Prospect Sport",
-            "Status",
-            "Score",
-            "Matched Name",
-            "Matched School",
-            "Matched Location",
-            "Profile",
-            "Track Confirmed",
-            "XC Confirmed",
-            "100m PR",
-            "200m PR",
-            "400m PR",
-            "800m PR",
-            "1600m PR",
-            "3200m PR",
-            "Hurdles PR",
-            "High Jump PR",
-            "Long Jump PR",
-            "Triple Jump PR",
-            "Pole Vault PR",
-            "Shot Put PR",
-            "Discus PR",
-            "Javelin PR",
-            "Candidates JSON",
-            "Best Marks JSON",
-            "Notes",
-            "Hint Count",
-            "AI Logic",
-        ]
-        .into_iter()
-        .map(str::to_owned),
-    );
-    let final_column = column_name(headers.len().saturating_sub(1));
-    let final_row = records.len().saturating_add(1);
-    let mut xml = format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><dimension ref=\"A1:{final_column}{final_row}\"/><sheetViews><sheetView workbookViewId=\"0\"/></sheetViews><sheetFormatPr defaultRowHeight=\"15\"/><sheetData>"
-    );
-    xml.push_str("<row r=\"1\">");
-    for (column, header) in headers.iter().enumerate() {
-        push_inline_cell(&mut xml, 1, column, header);
-    }
-    xml.push_str("</row>");
-
-    for (offset, record) in records.iter().enumerate() {
-        let row = offset.saturating_add(2);
-        xml.push_str(&format!("<row r=\"{row}\">"));
-        let mut values = source_headers
-            .iter()
-            .map(|header| source_field_value(record, header))
-            .collect::<Vec<_>>();
-        values.extend([
-            record.source_key.clone(),
-            record.prospect.sheet.clone(),
-            record.prospect.excel_row.to_string(),
-            record.prospect.full_name(),
-            record.prospect.school.clone(),
-            record.prospect.sport.clone(),
-            record.status.clone(),
-            format!("{:.4}", record.score),
-            record.selected_name.clone(),
-            record.selected_school.clone(),
-            record.selected_location.clone(),
-            String::new(),
-            yes_no(record.track_confirmed).to_owned(),
-            yes_no(record.xc_confirmed).to_owned(),
-            mark_value(record, "100m"),
-            mark_value(record, "200m"),
-            mark_value(record, "400m"),
-            mark_value(record, "800m"),
-            mark_value(record, "1600m"),
-            mark_value(record, "3200m"),
-            first_mark(record, &["100h", "110h", "300h", "400h"]),
-            mark_value(record, "high_jump"),
-            mark_value(record, "long_jump"),
-            mark_value(record, "triple_jump"),
-            mark_value(record, "pole_vault"),
-            mark_value(record, "shot_put"),
-            mark_value(record, "discus"),
-            mark_value(record, "javelin"),
-            serde_json::to_string(&record.candidates)?,
-            serde_json::to_string(&record.best_marks)?,
-            record.notes.clone(),
-            record.hint_count.to_string(),
-            record.ai_logic.clone(),
-        ]);
-        for (column, value) in values.iter().enumerate() {
-            if column == source_column_count.saturating_add(7) {
-                push_number_cell(&mut xml, row, column, value);
-            } else if column == source_column_count.saturating_add(11)
-                && !record.selected_profile_url.is_empty()
-            {
-                push_hyperlink_formula_cell(&mut xml, row, column, &record.selected_profile_url);
-            } else {
-                push_inline_cell(&mut xml, row, column, value);
-            }
-        }
-        xml.push_str("</row>");
-    }
-    xml.push_str(&format!(
-        "</sheetData><autoFilter ref=\"A1:{final_column}{final_row}\"/></worksheet>"
-    ));
-    Ok(xml)
-}
-
-fn source_field_value(record: &MatchRecord, header: &str) -> String {
-    match record.prospect.source_fields.get(header) {
-        Some(value) => value.clone(),
-        None => String::new(),
-    }
-}
-
-fn yes_no(value: bool) -> &'static str {
-    if value {
-        "YES"
-    } else {
-        "NO"
-    }
-}
-
-fn mark_value(record: &MatchRecord, event: &str) -> String {
-    record
-        .best_marks
-        .get(event)
-        .map_or_else(String::new, |mark| mark.mark.clone())
-}
-
-fn first_mark(record: &MatchRecord, events: &[&str]) -> String {
-    option_string(
-        events
-            .iter()
-            .find_map(|event| record.best_marks.get(*event).map(|mark| mark.mark.clone())),
-    )
-}
-
-fn push_inline_cell(xml: &mut String, row: usize, column: usize, value: &str) {
-    let reference = format!("{}{}", column_name(column), row);
-    xml.push_str(&format!(
-        "<c r=\"{reference}\" t=\"inlineStr\"><is><t xml:space=\"preserve\">{}</t></is></c>",
-        escape_xml(value)
-    ));
-}
-
-fn push_number_cell(xml: &mut String, row: usize, column: usize, value: &str) {
-    let reference = format!("{}{}", column_name(column), row);
-    xml.push_str(&format!("<c r=\"{reference}\"><v>{value}</v></c>"));
-}
-
-fn push_hyperlink_formula_cell(xml: &mut String, row: usize, column: usize, url: &str) {
-    let reference = format!("{}{}", column_name(column), row);
-    let formula_url = url.replace('"', "\"\"");
-    let formula = format!("HYPERLINK(\"{formula_url}\",\"Open profile\")");
-    xml.push_str(&format!(
-        "<c r=\"{reference}\"><f>{}</f><v></v></c>",
-        escape_xml(&formula)
-    ));
-}
-
-fn column_name(mut index: usize) -> String {
-    let mut output = Vec::new();
-    index = index.saturating_add(1);
-    while index > 0 {
-        let Some(adjusted) = index.checked_sub(1) else {
-            return String::new();
-        };
-        let remainder = adjusted % 26;
-        let Ok(offset) = u8::try_from(remainder) else {
-            return String::new();
-        };
-        let Some(byte) = b'A'.checked_add(offset) else {
-            return String::new();
-        };
-        output.push(char::from(byte));
-        index = adjusted / 26;
-    }
-    output.iter().rev().collect()
-}
-
-fn escape_xml(value: &str) -> String {
-    value
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
+    use std::io::Write;
     use tempfile::tempdir;
 
     #[test]
@@ -963,9 +106,10 @@ mod tests {
     fn streams_real_rows_and_ignores_styled_empty_rows() -> Result<()> {
         let directory = tempdir()?;
         let path = directory.path().join("fixture.xlsx");
-        let file = File::create(&path)?;
-        let mut zip = ZipWriter::new(file);
-        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        let file = std::fs::File::create(&path)?;
+        let mut zip = zip::ZipWriter::new(file);
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
         write_fixture_entry(
             &mut zip,
             "[Content_Types].xml",
@@ -975,23 +119,22 @@ mod tests {
         write_fixture_entry(
             &mut zip,
             "xl/workbook.xml",
-            r#"<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Export" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
+            r#"<?xml version="1.0" encoding="UTF-8"?><workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Export" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
             options,
         )?;
         write_fixture_entry(
             &mut zip,
             "xl/_rels/workbook.xml.rels",
-            r#"<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
+            r#"<?xml version="1.0" encoding="UTF-8"?><Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
             options,
         )?;
         write_fixture_entry(
             &mut zip,
             "xl/worksheets/sheet1.xml",
-            r#"<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:F1000"/><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Person First</t></is></c><c r="B1" t="inlineStr"><is><t>Person Last</t></is></c><c r="C1" t="inlineStr"><is><t>Sports Sport</t></is></c><c r="D1" t="inlineStr"><is><t>Schools Name</t></is></c><c r="E1" t="inlineStr"><is><t>Address Mailing / Permanent City</t></is></c><c r="F1" t="inlineStr"><is><t>Address Mailing / Permanent Region</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>Sarah</t></is></c><c r="B2" t="inlineStr"><is><t>Jones</t></is></c><c r="C2" t="inlineStr"><is><t>Women's Track &amp; Field</t></is></c><c r="D2" t="inlineStr"><is><t>Central High</t></is></c><c r="E2" t="inlineStr"><is><t>Austin</t></is></c><c r="F2" t="inlineStr"><is><t>TX</t></is></c></row><row r="1000"><c r="A1000" s="1"/></row></sheetData></worksheet>"#,
+            r#"<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:F1000"/><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Person First</t></is></c><c r="B1" t="inlineStr"><is><t>Person Last</t></is></c><c r="C1" t="inlineStr"><is><t>Sports Sport</t></is></c><c r="D1" t="inlineStr"><is><t>Schools Name</t></is></c><c r="E1" t="inlineStr"><is><t>Address Mailing / Permanent City</t></is></c><c r="F1" t="inlineStr"><is><t>Address Mailing / Permanent Region</t></is></c></row><row r="2"><c r="A2" t="inlineStr"><is><t>Sarah</t></is></c><c r="B2" t="inlineStr"><is><t>Jones</t></is></c><c r="C2" t="inlineStr"><is><t>Women's Track &amp; Field</t></is></c><c r="D2" t="inlineStr"><is><t>Central High</t></is></c><c r="E2" t="inlineStr"><is><t>Town</t></is></c><c r="F2" t="inlineStr"><is><t>ST</t></is></c></row><row r="3" s="1"/></sheetData></worksheet>"#,
             options,
         )?;
         zip.finish()?;
-
         let result = scan(
             &path,
             ScanMode::Sports(vec!["Women's Track & Field".to_owned()]),
@@ -1002,92 +145,14 @@ mod tests {
         assert_eq!(result.stats.sheets[0].last_actual_row, 2);
         assert_eq!(result.prospects.len(), 1);
         assert_eq!(result.prospects[0].source_key, "Export:2");
-        assert_eq!(
-            result.prospects[0]
-                .source_fields
-                .get("Schools Name")
-                .map(String::as_str),
-            Some("Central High")
-        );
-
-        let enriched = directory.path().join("enriched.xlsx");
-        let record = MatchRecord {
-            source_key: "Export:2".to_owned(),
-            prospect: result.prospects[0].clone(),
-            status: "MATCH".to_owned(),
-            score: 0.97,
-            selected_profile_url: "https://www.athletic.net/athlete/123/track-and-field".to_owned(),
-            selected_name: "Sarah Jones".to_owned(),
-            ..Default::default()
-        };
-        append_matches_sheet(&path, &enriched, std::slice::from_ref(&record))?;
-        let mut archive = ZipArchive::new(File::open(&enriched)?)?;
-        let workbook = read_zip_string(&mut archive, "xl/workbook.xml")?;
-        let result_sheet = read_zip_string(&mut archive, "xl/worksheets/sheet2.xml")?;
-        assert!(workbook.contains("Athletic Matches"));
-        assert!(result_sheet.contains("HYPERLINK"));
-        assert!(result_sheet.contains("athlete/123/track-and-field"));
-        assert!(result_sheet.contains("Candidates JSON"));
-        assert!(result_sheet.contains("Best Marks JSON"));
-        assert!(result_sheet.contains("Hint Count"));
-        assert!(result_sheet.contains("AI Logic"));
-        assert!(result_sheet.contains("Person First"));
-        assert!(result_sheet.contains("Sarah"));
-        drop(archive);
-
-        let replaced = directory.path().join("replaced.xlsx");
-        append_matches_sheet(&enriched, &replaced, std::slice::from_ref(&record))?;
-        let sheets = load_sheet_metadata(&replaced)?;
-        assert_eq!(
-            sheets
-                .iter()
-                .filter(|sheet| sheet.name == "Athletic Matches")
-                .count(),
-            1
-        );
         Ok(())
     }
 
-    #[test]
-    fn exhaustive_mode_selects_rows_without_sport_or_name() {
-        let record = SourceRecord {
-            fields: BTreeMap::from([
-                ("Person First".to_owned(), "Ada".to_owned()),
-                ("Person Last".to_owned(), "Lovelace".to_owned()),
-                ("Sports Sport".to_owned(), String::new()),
-            ]),
-            ..Default::default()
-        };
-        assert!(selects_record(&record, &ScanMode::Exhaustive));
-        assert!(!selects_record(
-            &record,
-            &ScanMode::Sports(vec!["Track and Field: Womens".to_owned()])
-        ));
-
-        let blank_name = SourceRecord {
-            fields: BTreeMap::from([(
-                "Person Email".to_owned(),
-                "unknown@example.test".to_owned(),
-            )]),
-            ..Default::default()
-        };
-        assert!(selects_record(&blank_name, &ScanMode::Exhaustive));
-    }
-
-    #[test]
-    fn generated_sheets_are_not_source_populations() {
-        assert!(is_source_sheet("Export"));
-        assert!(is_source_sheet("Sheet1"));
-        assert!(!is_source_sheet("Athletic Matches"));
-        assert!(!is_source_sheet("Corrections"));
-        assert!(!is_source_sheet("Summary"));
-    }
-
-    fn write_fixture_entry<W: Write + std::io::Seek>(
-        zip: &mut ZipWriter<W>,
+    fn write_fixture_entry<W: std::io::Write + std::io::Seek>(
+        zip: &mut zip::ZipWriter<W>,
         name: &str,
         contents: &str,
-        options: SimpleFileOptions,
+        options: zip::write::SimpleFileOptions,
     ) -> Result<()> {
         zip.start_file(name, options)?;
         zip.write_all(contents.as_bytes())?;
@@ -1098,3 +163,6 @@ mod tests {
 #[cfg(test)]
 #[path = "xlsx_scope_tests.rs"]
 mod scope_tests;
+#[cfg(test)]
+#[path = "xlsx_stream_tests.rs"]
+mod stream_tests;
