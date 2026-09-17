@@ -193,25 +193,31 @@ pub(super) fn verify_row(row: &DetailRow) -> Result<VerifiedState> {
     };
     verify_report_binding(row, report)?;
     let profiles = decode_profiles(row)?;
+    let assessment = row.assessment.as_ref().map(decode_value).transpose()?;
+    if let Some(assessment) = assessment.as_ref() {
+        super::assessment::verify(row, &profiles, assessment)?;
+    }
     match &report.resolution {
         RowResolution::Accepted { athlete_id, method } => {
             super::coverage::verify_selected(report, *athlete_id)?;
-            let assessment = decode_assessment(row)?;
-            verify_positive(row, report, &assessment, profiles, *athlete_id, *method)?;
+            let assessment = assessment
+                .as_ref()
+                .context("accepted row has no assessment")?;
+            verify_positive(row, report, assessment, profiles, *athlete_id, *method)?;
             Ok(VerifiedState::Accepted)
         }
         RowResolution::CompleteSearchNoMatch => {
             if report.review.as_ref().is_some_and(is_positive_review) {
                 bail!("no-match row carries a positive selection");
             }
-            if let Some(assessment) = row.assessment.as_ref() {
-                verify_no_match(&decode_value(assessment)?)?;
+            if let Some(assessment) = assessment.as_ref() {
+                verify_no_match(assessment)?;
             }
             Ok(VerifiedState::NoMatch)
         }
         RowResolution::ReviewRequired => {
-            if let Some(assessment) = row.assessment.as_ref() {
-                verify_review_state(&decode_value(assessment)?)?;
+            if let Some(assessment) = assessment.as_ref() {
+                verify_review_state(assessment)?;
             }
             Ok(VerifiedState::Review)
         }

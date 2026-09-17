@@ -31,9 +31,9 @@ struct ReceiptData {
     elapsed: Duration,
 }
 
-pub(crate) async fn perform(runtime: Arc<Runtime>, request: RequestSpec) -> AttemptResult {
+pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> AttemptResult {
     let started = Instant::now();
-    let response = match send(&runtime, &request).await {
+    let response = match send(&runtime, request).await {
         Ok(response) => response,
         Err(message) => return failure(FailureCode::Transport, None, message, true),
     };
@@ -45,7 +45,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: RequestSpec) -> Atte
         Err((code, message)) => return body_failure(code, status, message, backoff),
     };
     let data = ReceiptData {
-        source_url: request.semantic_url,
+        source_url: request.semantic_url.clone(),
         status,
         media_type,
         body,

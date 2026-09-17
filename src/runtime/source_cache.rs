@@ -15,7 +15,10 @@ pub struct SourceRequest {
 
 impl SourceRequest {
     pub fn key(&self) -> anyhow::Result<String> {
-        identity::scoped_key(&self.snapshot, &self.resource)
+        identity::scoped_key(
+            &self.snapshot,
+            &(super::acquisition::ACQUISITION_REVISION, &self.resource),
+        )
     }
 }
 

@@ -1,20 +1,22 @@
 use crate::domain::identity::ProfileUrl;
 use crate::runtime::protocol::SourceResource;
 use anyhow::{bail, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 pub(crate) const MAX_QUERY_BYTES: usize = 512;
 pub(crate) const MAX_START: u32 = 1_000_000;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct RequestSpec {
     pub(crate) url: Url,
     pub(crate) semantic_url: String,
     pub(crate) body: Option<SearchBody>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct SearchBody {
     pub q: String,
     pub fq: String,

@@ -143,7 +143,7 @@ fn validate_limits(raw: &RawConfig) -> Result<()> {
     Ok(())
 }
 
-fn validated_origin(raw: &str) -> Result<Url> {
+pub(crate) fn validated_origin(raw: &str) -> Result<Url> {
     let url = Url::parse(raw).context("invalid configured HTTP origin")?;
     if !matches!(url.scheme(), "http" | "https")
         || url.host_str().is_none()
@@ -170,7 +170,7 @@ fn validate_local(url: &Url) -> Result<()> {
     Ok(())
 }
 
-fn validate_source(url: &Url, mode: ExecutionMode) -> Result<()> {
+pub(crate) fn validate_source(url: &Url, mode: ExecutionMode) -> Result<()> {
     match mode {
         ExecutionMode::Fixture => validate_local(url),
         ExecutionMode::Live => {

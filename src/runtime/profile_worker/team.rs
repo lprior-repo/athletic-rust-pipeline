@@ -1,6 +1,6 @@
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::super::acquisition::TeamRequest;
 use crate::domain::evidence::{EvidenceIssue, EvidenceRef, Sport};
@@ -19,6 +19,7 @@ pub(crate) struct TeamObservation {
 
 const MAX_ENTRIES: usize = 100_000;
 const MAX_TEAM_ID: u64 = 10_000_000_000_000;
+const MAX_TEAM_REQUESTS: usize = 4_096;
 
 pub(crate) fn authorized_requests_value(
     object: &serde_json::Map<String, Value>,
@@ -66,6 +67,21 @@ pub(crate) fn authorized_requests_value(
     let ids = team_ids(teams, digest, &mut issues);
     let requests = season_requests(seasons, sport, &ids, digest, &mut issues);
     Ok((requests, issues))
+}
+
+pub(crate) fn unique_requests(requests: Vec<TeamRequest>) -> (Vec<TeamRequest>, bool) {
+    let unique = requests
+        .into_iter()
+        .fold(BTreeMap::new(), |mut map, request| {
+            map.entry((request.team_id, request.sport.api_code(), request.season))
+                .or_insert(request);
+            map
+        });
+    let exceeded = unique.len() > MAX_TEAM_REQUESTS;
+    (
+        unique.into_values().take(MAX_TEAM_REQUESTS).collect(),
+        exceeded,
+    )
 }
 
 fn team_ids(

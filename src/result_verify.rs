@@ -1,13 +1,17 @@
 //! Independent verification of exported result-detail JSONL.
 //!
-//! Checks consistency of terminal claims with retained structured evidence and
-//! independently reparses raw Bio/HTML receipts for source-bound exclusions.
+//! Reconstructs planned discovery, complete profiles and source-bound exclusions
+//! from captured requests and raw responses, then recomputes canonical assessments.
 //! `bundle_verify` separately binds these results to preserved source/XLSX fields.
 
+mod assessment;
 mod checks;
 mod complete;
 mod coverage;
+mod discovery;
 mod exclusions;
+mod raw_profiles;
+mod source_receipts;
 
 use crate::store::ArtifactStore;
 use anyhow::{bail, Context, Result};
@@ -47,10 +51,12 @@ struct DetailRow {
 /// Independently verifies positive decisions, retained coverage, and detail-row integrity.
 ///
 /// The verifier reads the JSONL detail artifact and the existing stopped
-/// ArtifactStore. It checks source/report binding, discovery and identity
-/// coverage, retained profile evidence, assessment selections, and (when
-/// present) local-review selections. It does not establish workbook membership,
-/// verify exported XLSX fields, or verify XLSX/detail provenance.
+/// ArtifactStore. It checks source/report binding, captured HTTP request/response
+/// operations, planned discovery, raw complete-profile and exclusion evidence,
+/// canonical assessments, and (when present) local-review selections. Incomplete
+/// acquisitions remain review evidence, not proof of a complete upstream corpus.
+/// It does not establish workbook membership, verify exported XLSX fields, or
+/// authenticate upstream documents; `bundle_verify` checks workbook provenance.
 pub fn verify_results(detail: &Path, store: &ArtifactStore) -> Result<ResultVerificationReport> {
     let file = File::open(detail)
         .with_context(|| format!("opening detail artifact {}", detail.display()))?;

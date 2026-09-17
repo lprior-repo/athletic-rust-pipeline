@@ -1,7 +1,8 @@
 mod admission;
 mod body;
 mod http;
-mod request;
+pub(crate) mod observation;
+pub(crate) mod request;
 mod result;
 pub(crate) mod retry;
 
@@ -87,10 +88,14 @@ async fn execute(
     let audit_operation = operation.clone();
     let effect = match ctx
         .run(|| async move {
-            let mut attempt = http::perform(runtime.clone(), request).await;
+            let mut attempt = http::perform(runtime.clone(), &request).await;
             limit_retry_policy(&mut attempt);
             let retryable = attempt.retryable;
-            let digest = http_audit::record(runtime, audit_operation, attempt).await?;
+            let captured = observation::CapturedAttempt {
+                request,
+                result: attempt,
+            };
+            let digest = http_audit::record(runtime, audit_operation, captured).await?;
             if retryable {
                 Err(anyhow::anyhow!("retryable source HTTP failure; evidence retained").into())
             } else {

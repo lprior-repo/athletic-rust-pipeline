@@ -1,6 +1,6 @@
 pub mod acquisition;
 mod artifacts;
-mod config;
+pub(crate) mod config;
 pub mod control;
 pub mod export;
 pub mod export_worker;

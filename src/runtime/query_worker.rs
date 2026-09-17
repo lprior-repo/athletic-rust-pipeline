@@ -141,9 +141,13 @@ impl QueryWorker {
                 )
                 .await
                 {
-                    Ok(value) => value,
-                    Err(error) => {
+                    Ok(Ok(value)) => value,
+                    Ok(Err(error)) => {
                         failures.push(parse_failure(error, retries, Some(status), evidence));
+                        return Ok(false);
+                    }
+                    Err(error) => {
+                        failures.push(artifact_failure(error, retries, Some(status), evidence));
                         return Ok(false);
                     }
                 };
@@ -243,10 +247,10 @@ async fn parse_response(
     start: u32,
     digest: EvidenceDigest,
     bytes: Vec<u8>,
-) -> anyhow::Result<SearchPage> {
+) -> anyhow::Result<anyhow::Result<SearchPage>> {
     let query = query.clone();
     runtime
-        .blocking(move || search::parse_page(&query, start, digest, &bytes))
+        .blocking(move || Ok(search::parse_page(&query, start, digest, &bytes)))
         .await
 }
 

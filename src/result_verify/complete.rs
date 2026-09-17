@@ -1,4 +1,3 @@
-use super::exclusions::{bio_resource, find_receipt, html_resource, verify_receipt_metadata};
 use crate::{
     domain::{
         evidence::{ProfileEvidence, Sport},
@@ -51,10 +50,6 @@ pub(super) fn verify(probe: &ProfileProbe, acquisition: &ProfileAcquisition) -> 
     {
         bail!("full acquisition does not retain its initial probe evidence");
     }
-    let receipt = find_receipt(probe, &html.document, |url| {
-        html_resource(url, probe.athlete_id)
-    })?;
-    verify_receipt_metadata(receipt, "text/html")?;
     probe
         .identities
         .iter()
@@ -96,8 +91,5 @@ fn verify_bio(
     {
         bail!("full profile differs from its initial Bio identities");
     }
-    let receipt = find_receipt(probe, &identity.first.evidence.document, |url| {
-        bio_resource(url, probe.athlete_id, identity.sport)
-    })?;
-    verify_receipt_metadata(receipt, "application/json")
+    Ok(())
 }

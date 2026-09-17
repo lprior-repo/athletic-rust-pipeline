@@ -43,7 +43,8 @@ pub(super) fn verify(row: &DetailRow, store: &ArtifactStore) -> Result<()> {
         discovery_digest,
         store,
     )?;
-    verify_discovery(report, &discovery)?;
+    let origin = super::source_receipts::source_origin(&report.job.snapshot, store)?;
+    verify_discovery(&row.source, report, &discovery, &origin, store)?;
     let assessment = decode_assessment(row)?;
     verify_assessment(report, &discovery, &assessment)?;
     let mut probes = row.identity_artifacts.iter();
@@ -86,6 +87,7 @@ pub(super) fn verify(row: &DetailRow, store: &ArtifactStore) -> Result<()> {
                 reason,
                 probe.as_ref(),
                 profile.as_ref(),
+                &origin,
                 store,
             )
         })?;
@@ -118,7 +120,13 @@ fn decode_bound<T: DeserializeOwned + Serialize>(
     Ok(artifact)
 }
 
-fn verify_discovery(report: &RowReport, discovery: &DiscoverySummary) -> Result<()> {
+fn verify_discovery(
+    source: &crate::model::SourceRecord,
+    report: &RowReport,
+    discovery: &DiscoverySummary,
+    origin: &url::Url,
+    store: &ArtifactStore,
+) -> Result<()> {
     if discovery.job.workbook != report.job.workbook
         || discovery.job.snapshot != report.job.snapshot
         || discovery.job.source != report.job.source
@@ -126,6 +134,7 @@ fn verify_discovery(report: &RowReport, discovery: &DiscoverySummary) -> Result<
     {
         bail!("discovery is not bound to the original row job and query artifacts");
     }
+    super::discovery::verify(source, discovery, origin, store)?;
     let covered = report
         .candidates
         .iter()
@@ -196,6 +205,7 @@ fn verify_candidate(
     reason: &CandidateReason,
     probe: Option<&ProfileProbe>,
     profile: Option<&ProfileAcquisition>,
+    origin: &url::Url,
     store: &ArtifactStore,
 ) -> Result<()> {
     let id = candidate.athlete_id();
@@ -216,15 +226,25 @@ fn verify_candidate(
                 probe.context("complete coverage has no initial probe")?,
                 profile.context("complete coverage has no full acquisition")?,
             )?;
+            super::raw_profiles::verify(
+                profile.context("complete coverage has no full acquisition")?,
+                probe.context("complete coverage has no initial probe")?,
+                origin,
+                store,
+            )?;
             AssessedCoverage::Complete
         }
         CandidateCoverage::Incomplete { .. } => AssessedCoverage::Incomplete,
         CandidateCoverage::NameExcluded { source_name, .. } => {
+            super::raw_profiles::verify_probe(
+                probe.context("exclusion probe missing")?,
+                origin,
+                store,
+            )?;
             let witness = super::exclusions::verify(
                 &row.source,
                 source_name,
                 probe.context("exclusion probe missing")?,
-                store,
             )?;
             if !witness
                 .documents()

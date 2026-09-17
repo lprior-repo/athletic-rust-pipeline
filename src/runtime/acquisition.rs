@@ -12,8 +12,8 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const ACQUISITION_REVISION: &str = "observed-source-sdk-retries-v2";
-pub(crate) const SOURCE_PARSER_REVISION: &str = "streaming-source-parsers-v10";
+pub const ACQUISITION_REVISION: &str = "captured-source-request-response-v3";
+pub(crate) const SOURCE_PARSER_REVISION: &str = "streaming-source-parsers-v12";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TeamRequest {
