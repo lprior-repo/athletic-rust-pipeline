@@ -174,10 +174,10 @@ async fn publish_feedback(
 }
 
 fn limit_retry_policy(attempt: &mut http::AttemptResult) {
-    if attempt.retryable && attempt.retry_after_ms != 0 {
+    if attempt.retryable && (attempt.status == Some(429) || attempt.retry_after_ms != 0) {
         attempt.retryable = false;
         attempt.message.push_str(
-            "; Retry-After requires global admission cooldown; automatic retry stopped for review",
+            "; source admission policy must observe this response before further attempts",
         );
     }
 }
@@ -227,5 +227,19 @@ mod tests {
         limit_retry_policy(&mut attempt);
         assert!(!attempt.retryable);
         assert_eq!(attempt.retry_after_ms, 1_000);
+    }
+
+    #[test]
+    fn throttling_without_retry_after_stops_automatic_retries() {
+        let mut attempt = http::AttemptResult {
+            receipt: None,
+            code: Some(FailureCode::RateLimited),
+            status: Some(429),
+            message: String::new(),
+            retryable: true,
+            retry_after_ms: 0,
+        };
+        limit_retry_policy(&mut attempt);
+        assert!(!attempt.retryable);
     }
 }
