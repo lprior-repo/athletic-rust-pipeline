@@ -8,8 +8,8 @@ use std::{
 
 const MAX_EXCEL_ROW: u32 = 1_048_576;
 const MAX_EXCEL_COLUMN: u32 = 16_384;
-const MAX_MATERIALIZED_ROW_BYTES: usize = 8 * 1024 * 1024;
-const MAX_RETAINED_HEADER_BYTES: usize = 1024 * 1024;
+pub(crate) const MAX_MATERIALIZED_ROW_BYTES: usize = 8 * 1024 * 1024;
+pub(crate) const MAX_RETAINED_HEADER_BYTES: usize = 1024 * 1024;
 
 pub(crate) fn visit_sheet<RS, F>(
     workbook: &mut Xlsx<RS>,
@@ -263,7 +263,7 @@ fn materialize_cell_text(value: &DataRef<'_>, row_bytes: &mut usize) -> Result<S
     }
 }
 
-fn account_retained_headers(retained: &mut usize, added: usize) -> Result<()> {
+pub(crate) fn account_retained_headers(retained: &mut usize, added: usize) -> Result<()> {
     *retained = retained
         .checked_add(added)
         .context("retained workbook header byte count overflow")?;

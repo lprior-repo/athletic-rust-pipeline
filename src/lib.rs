@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+mod html_bounds;
+
 pub mod bundle_verify;
 pub mod domain;
 pub mod model;

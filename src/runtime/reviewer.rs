@@ -1,4 +1,7 @@
 mod input;
+#[cfg(feature = "fuzzing")]
+pub mod model;
+#[cfg(not(feature = "fuzzing"))]
 mod model;
 mod transport;
 

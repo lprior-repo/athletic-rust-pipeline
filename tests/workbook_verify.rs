@@ -1,8 +1,9 @@
 use athletic_rust_pipeline::{domain::identity::WorkbookDigest, workbook_verify::verify_fields};
 use rust_xlsxwriter::Workbook;
 use sha2::{Digest, Sha256};
-use std::{fs, path::Path, result::Result as StdResult};
+use std::{fs, io::Write, path::Path, result::Result as StdResult};
 use tempfile::tempdir;
+use zip::{write::SimpleFileOptions, ZipWriter};
 
 type TestResult = StdResult<(), Box<dyn std::error::Error>>;
 
@@ -48,6 +49,102 @@ fn expected_digest(path: &Path) -> StdResult<WorkbookDigest, Box<dyn std::error:
         "{:x}",
         Sha256::digest(bytes)
     ))?)
+}
+fn write_minimal_shared_workbook(path: &Path, dimension: &str, expanded: bool) -> TestResult {
+    let options = SimpleFileOptions::default();
+    let headers = [
+        "Name",
+        "Score",
+        "Flag",
+        "Literal",
+        "Status",
+        "Audit One",
+        "Audit Two",
+        "Audit Three",
+    ];
+    let status = if expanded {
+        "x".repeat(2 * 1024 * 1024)
+    } else {
+        "PENDING".to_owned()
+    };
+    let shared_strings = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\
+<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" count=\"14\" uniqueCount=\"14\">\
+<si><t>Name</t></si><si><t>Score</t></si><si><t>Flag</t></si><si><t>Literal</t></si><si><t>Status</t></si>\
+<si><t>Audit One</t></si><si><t>Audit Two</t></si><si><t>Audit Three</t></si>\
+<si><t>Alice</t></si><si><t>42.5</t></si><si><t>1</t></si><si><t>=literal</t></si>\
+<si><t>PENDING</t></si><si><t>{status}</t></si></sst>"
+    );
+    let header_cells = (b'A'..=b'H')
+        .zip(0..headers.len())
+        .map(|(column, index)| {
+            let column = char::from(column);
+            format!("<c r=\"{column}1\" t=\"s\"><v>{index}</v></c>")
+        })
+        .collect::<String>();
+    let data_indexes = [
+        8,
+        9,
+        10,
+        11,
+        if expanded { 13 } else { 12 },
+        if expanded { 13 } else { 12 },
+        if expanded { 13 } else { 12 },
+        if expanded { 13 } else { 12 },
+    ];
+    let data_cells = (b'A'..=b'H')
+        .zip(data_indexes)
+        .map(|(column, shared_index)| {
+            let column = char::from(column);
+            format!("<c r=\"{column}2\" t=\"s\"><v>{shared_index}</v></c>")
+        })
+        .collect::<String>();
+    let worksheet = format!(
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\
+<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">\
+<dimension ref=\"{dimension}\"/><sheetData><row r=\"1\">{header_cells}</row>\
+<row r=\"2\">{data_cells}</row></sheetData></worksheet>"
+    );
+    let mut archive = ZipWriter::new(fs::File::create(path)?);
+    archive.start_file("[Content_Types].xml", options)?;
+    archive.write_all(
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+</Types>"#,
+    )?;
+    archive.start_file("_rels/.rels", options)?;
+    archive.write_all(
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+    )?;
+    archive.start_file("xl/workbook.xml", options)?;
+    archive.write_all(
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Alpha" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#,
+    )?;
+    archive.start_file("xl/_rels/workbook.xml.rels", options)?;
+    archive.write_all(
+        br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+</Relationships>"#,
+    )?;
+    archive.start_file("xl/worksheets/sheet1.xml", options)?;
+    archive.write_all(worksheet.as_bytes())?;
+    archive.start_file("xl/sharedStrings.xml", options)?;
+    archive.write_all(shared_strings.as_bytes())?;
+    archive.finish()?;
+    Ok(())
 }
 
 fn source_sheets() -> Vec<Sheet> {
@@ -280,6 +377,63 @@ fn rejects_malformed_output_workbook() -> TestResult {
         &malformed,
         &expected_digest(&original)?,
         &["Status".to_owned()]
+    )
+    .is_err());
+    Ok(())
+}
+
+#[test]
+fn rejects_shared_string_row_amplification_and_bad_dimensions() -> TestResult {
+    let directory = tempdir()?;
+    let original = directory.path().join("original.xlsx");
+    let mut source = source_sheets().into_iter().take(1).collect::<Vec<_>>();
+    source[0].1.truncate(2);
+    write_fixture(&original, &source)?;
+
+    let extra_headers = vec![
+        "Status".to_owned(),
+        "Audit One".to_owned(),
+        "Audit Two".to_owned(),
+        "Audit Three".to_owned(),
+    ];
+    let bounded = directory.path().join("bounded.xlsx");
+    write_minimal_shared_workbook(&bounded, "A1:H2", false)?;
+    let report = verify_fields(
+        &original,
+        &bounded,
+        &expected_digest(&original)?,
+        &extra_headers,
+    )?;
+    assert_eq!(report.matched_row_count, 1);
+
+    let expanded = directory.path().join("expanded.xlsx");
+    write_minimal_shared_workbook(&expanded, "A1:H2", true)?;
+
+    assert!(verify_fields(
+        &original,
+        &expanded,
+        &expected_digest(&original)?,
+        &extra_headers
+    )
+    .is_err());
+
+    let malformed = directory.path().join("malformed-dimension.xlsx");
+    write_minimal_shared_workbook(&malformed, "A1:B", false)?;
+    assert!(verify_fields(
+        &original,
+        &malformed,
+        &expected_digest(&original)?,
+        &extra_headers
+    )
+    .is_err());
+
+    let out_of_bounds = directory.path().join("out-of-bounds-dimension.xlsx");
+    write_minimal_shared_workbook(&out_of_bounds, "XFE1:XFE2", false)?;
+    assert!(verify_fields(
+        &original,
+        &out_of_bounds,
+        &expected_digest(&original)?,
+        &extra_headers
     )
     .is_err());
     Ok(())

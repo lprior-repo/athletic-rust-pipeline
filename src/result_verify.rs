@@ -8,6 +8,7 @@ mod checks;
 
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::{
     collections::HashSet,
     fs::File,
@@ -69,9 +70,13 @@ pub fn verify_results(detail: &Path) -> Result<ResultVerificationReport> {
         if length == 0 {
             break;
         }
-        line_number = line_number.saturating_add(1);
+        line_number = line_number
+            .checked_add(1)
+            .context("detail line count overflow")?;
         validate_line(&line, length, detail, line_number)?;
         let row: DetailRow = serde_json::from_slice(&line)
+            .with_context(|| format!("decoding detail line {line_number}"))?;
+        let raw: Value = serde_json::from_slice(&line)
             .with_context(|| format!("decoding detail line {line_number}"))?;
         if !seen_sources.insert(row.source.source_key.clone()) {
             bail!(
@@ -79,6 +84,9 @@ pub fn verify_results(detail: &Path) -> Result<ResultVerificationReport> {
                 row.source.source_key
             );
         }
+        checks::verify_embedded_artifacts(&row, &raw).with_context(|| {
+            format!("verifying embedded artifact serialization at detail line {line_number}")
+        })?;
         let state = checks::verify_row(&row)
             .with_context(|| format!("verifying detail line {line_number}"))?;
         report.total_rows = report

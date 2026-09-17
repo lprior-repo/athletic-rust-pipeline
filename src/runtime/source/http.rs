@@ -1,9 +1,8 @@
-use super::{request::RequestSpec, retry};
+use super::{request::RequestSpec, retry, spider_body};
 use crate::runtime::{
-    protocol::{DocumentReceipt, FailureCode, MAX_SOURCE_RESPONSE_BYTES},
+    protocol::{DocumentReceipt, FailureCode},
     Runtime,
 };
-use futures::TryStreamExt;
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
     StatusCode,
@@ -41,7 +40,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: RequestSpec) -> Atte
     let status = response.status();
     let backoff = retry::retry_after(response.headers(), SystemTime::now());
     let media_type = media_type(response.headers());
-    let body = match read_body(response).await {
+    let body = match spider_body::read_body(response).await {
         Ok(body) => body,
         Err((code, message)) => return body_failure(code, status, message, backoff),
     };
@@ -67,52 +66,6 @@ async fn send(runtime: &Runtime, request: &RequestSpec) -> Result<reqwest::Respo
         .send()
         .await
         .map_err(|_| "HTTP transport failure".to_owned())
-}
-
-async fn read_body(response: reqwest::Response) -> Result<Vec<u8>, (FailureCode, String)> {
-    if response
-        .content_length()
-        .is_some_and(|size| size > MAX_SOURCE_RESPONSE_BYTES as u64)
-    {
-        return Err((
-            FailureCode::PayloadLimit,
-            "source response exceeds 32 MiB".to_owned(),
-        ));
-    }
-    response
-        .bytes_stream()
-        .map_err(|_| {
-            (
-                FailureCode::Transport,
-                "source response body transport failed".to_owned(),
-            )
-        })
-        .try_fold(Vec::new(), |mut body, chunk| async move {
-            append_chunk(&mut body, &chunk)?;
-            Ok(body)
-        })
-        .await
-}
-
-fn append_chunk(body: &mut Vec<u8>, chunk: &[u8]) -> Result<(), (FailureCode, String)> {
-    let size = body
-        .len()
-        .checked_add(chunk.len())
-        .filter(|size| *size <= MAX_SOURCE_RESPONSE_BYTES)
-        .ok_or_else(|| {
-            (
-                FailureCode::PayloadLimit,
-                "source response exceeds 32 MiB".to_owned(),
-            )
-        })?;
-    body.try_reserve(size - body.len()).map_err(|_| {
-        (
-            FailureCode::PayloadLimit,
-            "source response allocation failed".to_owned(),
-        )
-    })?;
-    body.extend_from_slice(chunk);
-    Ok(())
 }
 
 async fn receipt(runtime: &Runtime, data: ReceiptData) -> Result<DocumentReceipt, String> {
@@ -245,17 +198,6 @@ fn now_ms() -> Result<u64, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn chunked_body_cannot_cross_declared_limit() {
-        let mut body = vec![0; MAX_SOURCE_RESPONSE_BYTES - 1];
-        append_chunk(&mut body, b"x").expect("last allowed byte");
-        assert!(matches!(
-            append_chunk(&mut body, b"y"),
-            Err((FailureCode::PayloadLimit, _))
-        ));
-        assert_eq!(body.len(), MAX_SOURCE_RESPONSE_BYTES);
-    }
 
     #[test]
     fn authentication_denial_is_not_a_transient_failure() {

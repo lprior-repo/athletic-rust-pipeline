@@ -1,0 +1,1 @@
+{"choices":[{"finish_reason":"stop","message":{"content":"{\"decision\":\"select\",\"athlete_id\":7,\"reason\":\"same team\",\"evidence\":[{\"document\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"locator\":\"team/name\"}]}}]}

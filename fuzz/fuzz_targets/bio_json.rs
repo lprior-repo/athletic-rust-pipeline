@@ -1,5 +1,7 @@
 #![no_main]
 
+mod roundtrip;
+
 use athletic_rust_pipeline::{
     domain::{
         evidence::Sport,
@@ -22,5 +24,7 @@ fuzz_target!(|data: &[u8]| {
     let Ok(digest) = EvidenceDigest::parse(DIGEST) else {
         return;
     };
-    let _ = parse_bio(id, Sport::TrackField, digest, data);
+    if let Ok(profile) = parse_bio(id, Sport::TrackField, digest, data) {
+        roundtrip::assert_json(&profile);
+    }
 });

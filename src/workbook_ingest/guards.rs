@@ -94,7 +94,10 @@ impl WorksheetGuard {
         if self.declared_dimension.is_some() {
             bail!("worksheet contains duplicate dimensions");
         }
-        self.declared_dimension = cells::attribute(element, b"ref")?;
+        let dimension =
+            cells::attribute(element, b"ref")?.context("worksheet dimension is missing ref")?;
+        validate_dimension(&dimension)?;
+        self.declared_dimension = Some(dimension);
         Ok(())
     }
 
@@ -167,6 +170,48 @@ impl WorksheetGuard {
             xml_rows: self.rows,
         })
     }
+}
+
+fn validate_dimension(raw: &str) -> Result<()> {
+    let (start, end) = raw
+        .split_once(':')
+        .map_or((raw, raw), |(left, right)| (left, right));
+    if end.contains(':') {
+        bail!("worksheet dimension contains more than one range separator");
+    }
+    let start = dimension_cell(start)?;
+    let end = dimension_cell(end)?;
+    if start.0 > end.0 || start.1 > end.1 {
+        bail!("worksheet dimension range is reversed");
+    }
+    Ok(())
+}
+
+fn dimension_cell(raw: &str) -> Result<(u32, usize)> {
+    let normalized = raw.replace('$', "");
+    let digit_start = normalized
+        .bytes()
+        .position(|byte| byte.is_ascii_digit())
+        .context("worksheet dimension has no row number")?;
+    let column = normalized
+        .get(..digit_start)
+        .context("worksheet dimension column is invalid")?;
+    if column.is_empty() {
+        bail!("worksheet dimension has no column");
+    }
+    let row = normalized
+        .get(digit_start..)
+        .context("worksheet dimension row is invalid")?
+        .parse::<u32>()
+        .context("worksheet dimension row is invalid")?;
+    if row == 0 || row > crate::xlsx::MAX_EXCEL_ROW {
+        bail!("worksheet dimension row exceeds Excel range");
+    }
+    let column_index = cells::column_index(&normalized)?;
+    if column_index >= crate::xlsx::MAX_EXCEL_COLUMN {
+        bail!("worksheet dimension column exceeds Excel range");
+    }
+    Ok((row, column_index))
 }
 
 fn row_number(value: Option<String>, previous: Option<u32>) -> Result<u32> {

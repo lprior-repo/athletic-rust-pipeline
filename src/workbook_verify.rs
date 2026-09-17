@@ -1,5 +1,7 @@
 mod stream;
 
+use crate::workbook_ingest;
+use crate::workbook_ingest::stream::account_retained_headers;
 use anyhow::{bail, Context, Result};
 use calamine::{open_workbook, Reader, Xlsx};
 use serde::{Deserialize, Serialize};
@@ -66,6 +68,8 @@ pub fn verify_fields(
         bail!("original workbook hash before verification does not match expected digest");
     }
     validate_extra_headers(extra_headers)?;
+    workbook_ingest::preflight(original)?;
+    workbook_ingest::preflight(output)?;
     let (source_names, output_names) = open_sheet_names(original, output)?;
     if source_names != output_names {
         bail!("output workbook sheets do not match source sheets in original order");
@@ -74,10 +78,19 @@ pub fn verify_fields(
         open_workbook(original).context("opening original workbook with calamine")?;
     let mut output_book: Xlsx<BufReader<File>> =
         open_workbook(output).context("opening output workbook with calamine")?;
+    let mut source_header_bytes = 0_usize;
+    let mut output_header_bytes = 0_usize;
     let counts = source_names.iter().try_fold(
         SheetCounts::default(),
         |mut total, name| -> Result<SheetCounts> {
-            let sheet = verify_sheet(&mut source_book, &mut output_book, name, extra_headers)?;
+            let sheet = verify_sheet(
+                &mut source_book,
+                &mut output_book,
+                name,
+                extra_headers,
+                &mut source_header_bytes,
+                &mut output_header_bytes,
+            )?;
             total.source_rows = total
                 .source_rows
                 .checked_add(sheet.source_rows)
@@ -192,6 +205,8 @@ fn verify_sheet<RS, RO>(
     output_book: &mut Xlsx<RO>,
     name: &str,
     extra_headers: &[String],
+    source_header_bytes: &mut usize,
+    output_header_bytes: &mut usize,
 ) -> Result<SheetCounts>
 where
     RS: io::Read + io::Seek,
@@ -223,8 +238,8 @@ where
         .next()
         .transpose()?
         .context("output worksheet has no nonempty header row")?;
-    let source_headers = parse_headers(&source_header)?;
-    let output_headers = parse_headers(&output_header)?;
+    let source_headers = parse_headers(&source_header, source_header_bytes)?;
+    let output_headers = parse_headers(&output_header, output_header_bytes)?;
     if output_headers.len()
         != source_headers
             .len()
@@ -279,8 +294,17 @@ where
     }
     Ok(counts)
 }
-
-fn parse_headers(row: &Row) -> Result<Vec<String>> {
+fn parse_headers(row: &Row, retained_header_bytes: &mut usize) -> Result<Vec<String>> {
+    let header_bytes = row
+        .cells
+        .values()
+        .filter(|value| !value.is_empty())
+        .try_fold(0_usize, |total, value| {
+            total
+                .checked_add(value.len())
+                .context("worksheet header byte count overflow")
+        })?;
+    account_retained_headers(retained_header_bytes, header_bytes)?;
     let last = row
         .cells
         .iter()

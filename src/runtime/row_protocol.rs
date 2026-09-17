@@ -15,7 +15,12 @@ impl RowJob {
     pub fn key(&self) -> anyhow::Result<String> {
         scoped_key(
             &self.snapshot,
-            &(ROW_PROTOCOL_REVISION, &self.workbook, &self.source),
+            &(
+                ROW_PROTOCOL_REVISION,
+                super::acquisition::SOURCE_PARSER_REVISION,
+                &self.workbook,
+                &self.source,
+            ),
         )
     }
 }

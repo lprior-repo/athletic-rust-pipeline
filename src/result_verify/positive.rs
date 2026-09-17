@@ -1,6 +1,7 @@
 use super::{AssessmentWire, DetailRow};
 use crate::{
     domain::{
+        decision::{self, Decision, ReviewChoice},
         evidence::{EvidenceRef, ProfileEvidence, ResultAttribution, Sport},
         facts::Location as FactLocation,
         identity::{AthleteId, EvidenceDigest},
@@ -110,7 +111,7 @@ pub(super) fn verify_positive(
     row: &DetailRow,
     report: &RowReport,
     assessment: &AssessmentWire,
-    acquisitions: &[ProfileAcquisition],
+    acquisitions: Vec<ProfileAcquisition>,
     selected: AthleteId,
     method: AcceptanceMethod,
 ) -> Result<()> {
@@ -123,7 +124,7 @@ pub(super) fn verify_positive(
     if !assessment
         .candidates
         .iter()
-        .any(|candidate| candidate.athlete_id == selected)
+        .any(|candidate| candidate.athlete_id() == selected)
     {
         bail!("accepted athlete was not supplied as an assessment candidate");
     }
@@ -140,7 +141,7 @@ pub(super) fn verify_positive(
     }
     verify_profiles(std::slice::from_ref(acquisition))?;
     verify_identity(row, profile)?;
-    verify_participation(profile, selected)?;
+    verify_participation(profile)?;
     match method {
         AcceptanceMethod::Deterministic => {
             if report.review.is_some() {
@@ -155,7 +156,10 @@ pub(super) fn verify_positive(
             }
             verify_deterministic(assessment, selected)?;
         }
-        AcceptanceMethod::LocalReview => verify_local_review(report, profile, selected)?,
+        AcceptanceMethod::LocalReview => {
+            verify_local_review(report, profile, selected)?;
+            verify_local_authorization(row, assessment, acquisitions, selected)?;
+        }
     }
     Ok(())
 }
@@ -245,14 +249,14 @@ fn normalized(raw: &str) -> String {
         .to_owned()
 }
 
-fn verify_participation(profile: &ProfileEvidence, selected: AthleteId) -> Result<()> {
+fn verify_participation(profile: &ProfileEvidence) -> Result<()> {
     let attributed = profile.results.iter().any(|result| {
         result.result_id > 0
             && matches!(result.sport, Sport::TrackField | Sport::CrossCountry)
             && match &result.attribution {
                 ResultAttribution::Individual => true,
                 ResultAttribution::VerifiedRelayMember { relay_athlete_id } => {
-                    *relay_athlete_id == selected.get()
+                    AthleteId::new(*relay_athlete_id).is_ok()
                 }
                 ResultAttribution::Unresolved { .. } => false,
             }
@@ -270,7 +274,7 @@ fn candidate_is_corroborated(row: &DetailRow, acquisition: &ProfileAcquisition) 
         && acquisition.failures.is_empty()
         && verify_profiles(std::slice::from_ref(acquisition)).is_ok()
         && verify_identity(row, profile).is_ok()
-        && verify_participation(profile, profile.athlete_id).is_ok()
+        && verify_participation(profile).is_ok()
 }
 
 fn verify_deterministic(assessment: &AssessmentWire, selected: AthleteId) -> Result<()> {
@@ -315,6 +319,40 @@ fn verify_local_review(
         .any(|reference| !allowed.iter().any(|item| item == reference))
     {
         bail!("local review cites unsupported profile evidence");
+    }
+    Ok(())
+}
+
+fn verify_local_authorization(
+    row: &DetailRow,
+    assessment: &AssessmentWire,
+    acquisitions: Vec<ProfileAcquisition>,
+    selected: AthleteId,
+) -> Result<()> {
+    if assessment.decision != Decision::IdentityReview {
+        bail!("local acceptance lacks an identity-review assessment");
+    }
+    if acquisitions
+        .iter()
+        .any(|acquisition| !acquisition.complete || !acquisition.failures.is_empty())
+    {
+        bail!("local acceptance contains incomplete profile discovery");
+    }
+    let profiles = acquisitions
+        .into_iter()
+        .map(|acquisition| {
+            acquisition
+                .profile
+                .ok_or_else(|| anyhow::anyhow!("local acceptance lacks a candidate profile"))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let recomputed = decision::assess(&row.source, &profiles, assessment.search.clone())?;
+    if recomputed.decision() != Decision::IdentityReview {
+        bail!("retained source evidence does not require identity review");
+    }
+    let authorized = decision::apply_review(&recomputed, ReviewChoice::Select(selected))?;
+    if authorized.accepted_athlete_id() != Some(selected) {
+        bail!("retained source evidence does not authorize the local selection");
     }
     Ok(())
 }

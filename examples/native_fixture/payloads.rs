@@ -116,9 +116,9 @@ pub fn bio_body(id: u64, case: Scenario, _sport: &str) -> String {
     let teams = json!({team.to_string(): {"SchoolName": school, "City": location.0, "State": location.1, "Level": 4}});
     let seasons = json!([{"SchoolID":team,"IDSeason":12025}]);
     let tf_results = json!([{"IDResult":id,"AthleteID":id,"Result":"10.72","SchoolID":team,"MeetID":9,"SeasonID":12025,"EventID":1,"EventTypeID":7,"PersonalBest":14,"SeasonBest":1,"FAT":1,"shortCode":format!("synthetic-tf-{id}") }]);
-    let xc_results = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
+    let xc_results = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5000,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
     let events = json!([{"IDEvent":1,"IDEventType":7,"Event":"100 Meters","Type":"T","FieldMeasureType":"S","PersonalEvent":true}]);
-    let distances = json!([{"Distance":5,"Units":"km"}]);
+    let distances = json!([{"Meters":5000,"Distance":5,"Units":"km"}]);
     json!({
         "athlete":{"IDAthlete":id,"FirstName":first,"LastName":last},
         "allSeasons":seasons,

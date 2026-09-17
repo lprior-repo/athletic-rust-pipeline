@@ -1,5 +1,7 @@
 #![no_main]
 
+mod roundtrip;
+
 use athletic_rust_pipeline::{
     domain::identity::{AthleteId, EvidenceDigest},
     profile::parse_profile_html,
@@ -19,5 +21,7 @@ fuzz_target!(|data: &[u8]| {
     let Ok(digest) = EvidenceDigest::parse(DIGEST) else {
         return;
     };
-    let _ = parse_profile_html(id, digest, data);
+    if let Ok(profile) = parse_profile_html(id, digest, data) {
+        roundtrip::assert_json(&profile);
+    }
 });

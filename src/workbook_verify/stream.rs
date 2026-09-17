@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 use calamine::{Cell, DataRef};
 use std::collections::BTreeMap;
 
@@ -30,6 +30,23 @@ pub(crate) struct CellRows<F> {
     exhausted: bool,
 }
 
+fn retain_cell(
+    cells: &mut BTreeMap<u32, String>,
+    row_bytes: &mut usize,
+    event: CellEvent,
+) -> Result<()> {
+    *row_bytes = row_bytes
+        .checked_add(event.value.len())
+        .context("materialized row byte count overflow")?;
+    if *row_bytes > crate::workbook_ingest::stream::MAX_MATERIALIZED_ROW_BYTES {
+        bail!("materialized row values exceed the 8 MiB limit");
+    }
+    if cells.insert(event.column, event.value).is_some() {
+        bail!("worksheet contains duplicate cell positions");
+    }
+    Ok(())
+}
+
 impl<F> CellRows<F>
 where
     F: FnMut() -> Result<Option<CellEvent>>,
@@ -58,9 +75,8 @@ where
         };
         let row_number = first.row;
         let mut cells = BTreeMap::new();
-        if cells.insert(first.column, first.value).is_some() {
-            bail!("worksheet contains duplicate cell positions");
-        }
+        let mut row_bytes = 0_usize;
+        retain_cell(&mut cells, &mut row_bytes, first)?;
         let mut finished = false;
         std::iter::from_fn(|| {
             if finished {
@@ -85,13 +101,7 @@ where
                 }
             }
         })
-        .try_for_each(|event| {
-            let event = event?;
-            if cells.insert(event.column, event.value).is_some() {
-                bail!("worksheet contains duplicate cell positions");
-            }
-            Ok(())
-        })?;
+        .try_for_each(|event| retain_cell(&mut cells, &mut row_bytes, event?))?;
         Ok(Some(Row {
             number: row_number,
             cells,

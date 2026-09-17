@@ -22,7 +22,7 @@ use std::{
 };
 use tempfile::Builder;
 
-const EXPORT_PROTOCOL_REVISION: &str = "native-export-worker-v2";
+const EXPORT_PROTOCOL_REVISION: &str = "native-export-worker-v4";
 const STAGE_STATE: &str = "stage-receipt";
 const RESULT_STATE: &str = "published-result";
 

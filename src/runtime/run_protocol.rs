@@ -51,7 +51,13 @@ impl RunRequest {
         if self.concurrency.get() > 256 {
             bail!("run concurrency exceeds 256");
         }
-        Ok(fingerprint(&(RUN_REVISION, self))?.as_str().to_owned())
+        Ok(fingerprint(&(
+            RUN_REVISION,
+            super::acquisition::SOURCE_PARSER_REVISION,
+            self,
+        ))?
+        .as_str()
+        .to_owned())
     }
 }
 

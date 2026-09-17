@@ -45,7 +45,7 @@ pub async fn run() -> Result<()> {
                 destination: destination(output)?,
             };
             let key = request.key()?;
-            let request_key = fingerprint(&("native-export-v2", &request))?;
+            let request_key = fingerprint(&("native-export-v4", &request))?;
             let client = ExportWorkerIngressClient::from_client(transport::client(&ingress)?, &key);
             let published = client
                 .publish(Json(request))

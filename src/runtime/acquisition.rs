@@ -12,6 +12,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 pub const ACQUISITION_REVISION: &str = "observed-source-sdk-retries-v2";
+pub(crate) const SOURCE_PARSER_REVISION: &str = "spider-streaming-source-parsers-v6";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryJob {
@@ -23,7 +24,11 @@ impl QueryJob {
     pub fn key(&self) -> anyhow::Result<String> {
         identity::scoped_key(
             &self.snapshot,
-            &(ACQUISITION_REVISION, self.query.cache_identity()),
+            &(
+                ACQUISITION_REVISION,
+                SOURCE_PARSER_REVISION,
+                self.query.cache_identity(),
+            ),
         )
     }
 }
@@ -54,7 +59,14 @@ pub struct ProfileJob {
 
 impl ProfileJob {
     pub fn key(&self) -> anyhow::Result<String> {
-        identity::scoped_key(&self.snapshot, &(ACQUISITION_REVISION, self.athlete_id))
+        identity::scoped_key(
+            &self.snapshot,
+            &(
+                ACQUISITION_REVISION,
+                SOURCE_PARSER_REVISION,
+                self.athlete_id,
+            ),
+        )
     }
 }
 

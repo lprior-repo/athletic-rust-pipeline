@@ -1,5 +1,7 @@
 #![no_main]
 
+mod roundtrip;
+
 use athletic_rust_pipeline::{
     domain::{evidence::Sport, identity::EvidenceDigest},
     search::{parse_page, SearchQuery},
@@ -19,5 +21,7 @@ fuzz_target!(|data: &[u8]| {
     let Ok(digest) = EvidenceDigest::parse(DIGEST) else {
         return;
     };
-    let _ = parse_page(&query, 0, digest, data);
+    if let Ok(page) = parse_page(&query, 0, digest, data) {
+        roundtrip::assert_json(&page);
+    }
 });

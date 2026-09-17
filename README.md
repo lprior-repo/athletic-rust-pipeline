@@ -12,6 +12,8 @@ All original fields are retained. The assigned local reviewer receives the compl
 
 Rust performs routine parsing, arithmetic, mark comparison, and deterministic matching. Only genuine ambiguity reaches one assigned local model. Different cases are assigned across the existing Q5/5090 and Q4/3090 servers; no two-model consensus is required. A model cannot override deterministic contradictions or manufacture evidence.
 
+Source acquisition keeps HTTP methods, admission and durable retry policy in the native runtime. Spider consumes each already-received response through a bounded adapter; it does not run an independent crawler or retry loop. Profile and search extraction use `lol_html` streaming handlers instead of a materialized DOM. Parser-internal accounted memory is capped at 8 MiB, with separate input and evidence-capture bounds; this is not a total-process memory limit. `SPIDER_MAX_SIZE_BYTES`, if set, must be zero or at least the 32 MiB source-response bound. Parser revision changes invalidate parsed evidence while preserving compatible raw HTTP receipts.
+
 Observed-best summaries retain event/timing/wind/equipment context and evidence references. Opaque numeric best flags remain unknown rather than being interpreted as verified PR claims. A summary too large for an Excel cell is explicitly relocated to the full JSONL sidecar with row/report/athlete linkage; it is not truncated.
 
 ## Build and checks
@@ -21,9 +23,20 @@ cargo build --release
 cargo fmt --all -- --check
 cargo clippy --all-targets -- -D warnings
 cargo test --all-targets
+cargo bench --bench pipeline
+cargo audit
+cargo deny check
+cargo deny check advisories licenses sources --deny warnings
+cargo deny --manifest-path fuzz/Cargo.toml --config deny.toml check advisories licenses sources --deny warnings
 ```
 
-`fuzz/` contains parser fuzz targets. Passing the ordinary test suite does not establish fuzz coverage, recovery correctness, real-world identity accuracy, or full-population readiness.
+`fuzz/` contains bounded parser and evidence-boundary fuzz targets. Use the pinned nightly toolchain with `cargo fuzz`; for example, `cargo fuzz run bio_json -- -max_total_time=60 -max_len=262144 -rss_limit_mb=2048 -timeout=10 -seed=4202`. Preserve seed corpora and record the exact target, sanitizer, seed, input bounds, duration and exit status. Passing ordinary tests or a short fuzz campaign does not establish recovery correctness, real-world identity accuracy, or full-population readiness.
+
+The model-response and retained-results fuzz targets execute fixed positive and negative witnesses before fuzzing arbitrary bytes. A valid corpus file alone is not an acceptance oracle. Keep retained-result witnesses in the exact production JSON serialization, including typed artifact digests; regenerating them through a different JSON serializer can invalidate their representation.
+
+The Criterion suite uses synthetic source data. Fresh publication/persistence and idempotent reuse have separate benchmarks; fresh-store setup and teardown are outside the timed operation. Successful parsing, accepted-decision fixtures and storage results are checked rather than silently benchmarking errors. These microbenchmarks are not live source throughput or a GPU benchmark.
+
+Storage benchmarks use `tempfile`, so record the filesystem selected by `TMPDIR`. On this workstation `/tmp` is tmpfs, while the private production directory is on Btrfs. Set `TMPDIR` to a dedicated directory on the intended filesystem when measuring persistent writes; do not interpret tmpfs timings as disk persistence performance.
 
 ## Native services
 
@@ -61,9 +74,26 @@ cargo run --release -- verify \
 
 Export publishes an XLSX, a detailed JSONL sidecar, and a commit receipt. Original source fields and row positions are preserved; annotation columns are appended. Partial exports retain explicit pending rows. Destinations are non-clobbering and bound to one run. The commit receipt is published last: the files are not an atomic multi-file transaction. Treat a missing receipt as an incomplete publication.
 
-The independent `verify` command checks source hashes, original fields, source-sheet order and row accounting in the actual XLSX, then checks retained JSONL result evidence and binds each workbook annotation to its sidecar row. Positive checks cover selected identity, retained profile/document references, attributed participation, complete discovery and deterministic uniqueness. Review rows may retain conflicts without becoming positive results. Source, XLSX and sidecar hashes are checked for changes during verification. **This establishes retained-evidence consistency, not source authenticity or unknowable real-world identity accuracy; PR arithmetic and raw-source authenticity are not independently proved by this command.**
+The independent `verify` command preflights both workbooks before sparse-cell readback, checks source hashes, original fields, source-sheet order and row accounting in the actual XLSX, then checks retained JSONL result evidence and binds every workbook annotation, including performance summaries, to its sidecar row. Sidecar source fields must have exactly the original column keys and values; annotation columns cannot substitute for original fields. Typed report, assessment and profile digests and retained-performance projections must agree. Positive checks cover selected identity, retained profile/document references, attributed participation, complete discovery and deterministic uniqueness. Review rows may retain conflicts without becoming positive results. Source, XLSX and sidecar hashes are checked for changes during verification. **This establishes retained-evidence consistency, not source authenticity or unknowable real-world identity accuracy; PR arithmetic and raw-source authenticity are not independently proved by this command.**
+
+Local-review acceptance is additionally checked against an assessment reconstructed from the retained source and profiles, followed by the production selection-authorization rule. Rehashed candidate flags cannot bypass that rule. A verified relay-member result identifies the relay separately from its member; the relay ID is not required to equal the selected athlete ID.
 
 Restate owns durable calls, cached workflow results, operation retry policies and orchestration. HTTP attempt evidence is retained, but an external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee.
+
+### Recovery and paused invocations
+
+Restore the same worker build and artifact directory for an in-flight recovery, and retain Restate's data directory. A paused invocation is durable: restarting the worker or Restate does not automatically resume it. In the controlled worker-kill exercise, transport retries exhausted while the worker was unavailable and paused `SourceGateway/global/fetch`; queued dependents could not progress until that invocation was explicitly resumed.
+
+Inspect invocation status and failure history through the native Restate administration API. After restoring the worker and diagnosing the cause, resume the actual paused dependency, not merely its waiting parent:
+
+```sh
+curl --fail-with-body --request PATCH \
+  http://127.0.0.1:19070/invocations/PAUSED_INVOCATION_ID/resume
+```
+
+This is an operator-controlled recovery action, not an unbounded retry loop. Preserve failure history and account for uncertain in-flight HTTP effects. A separate controlled Restate-server restart recovered automatically from its existing data directory. Both recovered synthetic runs completed all eight rows and passed workbook verification; subsequent exact replays added zero source/model requests. The worker-kill result is **operator-assisted recovery**, not proof of automatic worker-only recovery.
+
+Exact replay requires the same input digest, source snapshot label, execution label and selection/concurrency arguments. Changing or omitting the snapshot label can submit different work. Upgrade CLI and worker cache protocols together; do not replay in-flight journals against incompatible parser or orchestration contracts.
 
 ## Synthetic native exercise
 

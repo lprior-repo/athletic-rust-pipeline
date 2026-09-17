@@ -158,6 +158,113 @@ mod tests {
             &serde_json::to_vec(value)?,
         )
     }
+    fn xc_body(distances: Value, result_distance: u64) -> Value {
+        json!({
+            "athlete":{"IDAthlete":7,"FirstName":"Synthetic","LastName":"Runner"},
+            "allTeams":{"9":{"SchoolName":"Fictional High"}},
+            "meets":{"5":{"MeetName":"Synthetic Meet"}},
+            "distancesXC": distances,
+            "resultsXC":[{
+                "IDResult":11,"AthleteID":7,"SchoolID":9,"MeetID":5,"SeasonID":2026,
+                "Distance":result_distance,"Result":"17:01","PersonalBest":true,
+                "SeasonBest":true,"shortCode":"synthetic-xc"
+            }]
+        })
+    }
+
+    fn parse_xc(value: &Value) -> anyhow::Result<ProfileEvidence> {
+        crate::profile::parse_bio(
+            AthleteId::new(7)?,
+            Sport::CrossCountry,
+            EvidenceDigest::parse(&"a".repeat(64))?,
+            &serde_json::to_vec(value)?,
+        )
+    }
+
+    #[test]
+    fn xc_join_uses_canonical_meters_and_preserves_integer_display_units() -> anyhow::Result<()> {
+        let profile = parse_xc(&xc_body(
+            json!([{"Meters":4828,"Distance":3,"Units":"Miles"}]),
+            4828,
+        ))?;
+        assert_eq!(profile.results[0].event_name, "3 Miles");
+        assert_eq!(profile.results[0].units.as_deref(), Some("Miles"));
+        let summary = summarize_performances(&profile.results)?;
+        assert_eq!(summary.observations[0].context.event.as_str(), "xc3mile");
+        assert_eq!(summary.observations[0].source.event_name, "3 Miles");
+        let encoded = serde_json::to_string(&summary)?;
+        assert!(encoded.contains("\"event\":\"xc3mile\""));
+        assert!(encoded.contains("\"event_name\":\"3 Miles\""));
+        assert!(!encoded.contains("4828 Miles"));
+        Ok(())
+    }
+
+    #[test]
+    fn xc_join_preserves_fractional_display_units_without_conversion() -> anyhow::Result<()> {
+        let profile = parse_xc(&xc_body(
+            json!([{"Meters":3106,"Distance":1.93,"Units":"Miles"}]),
+            3106,
+        ))?;
+        assert_eq!(profile.results[0].event_name, "1.93 Miles");
+        assert_eq!(profile.results[0].units.as_deref(), Some("Miles"));
+        let summary = summarize_performances(&profile.results)?;
+        assert!(matches!(
+            &summary.observations[0].context.event,
+            crate::domain::marks::EventName::Unsupported(_)
+        ));
+        assert_eq!(summary.observations[0].source.event_name, "1.93 Miles");
+        Ok(())
+    }
+
+    #[test]
+    fn xc_metric_display_remains_source_declared() -> anyhow::Result<()> {
+        let profile = parse_xc(&xc_body(
+            json!([{"Meters":5000,"Distance":5000,"Units":"Meters"}]),
+            5000,
+        ))?;
+        assert_eq!(profile.results[0].event_name, "5000 Meters");
+        assert_eq!(profile.results[0].units.as_deref(), Some("Meters"));
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_missing_and_conflicting_metadata_never_manufacture_distance() -> anyhow::Result<()> {
+        let invalid = parse_xc(&xc_body(json!([{"Distance":3,"Units":"Miles"}]), 4828))?;
+        assert_eq!(invalid.results[0].event_name, "Unknown distance");
+        assert!(invalid
+            .issues
+            .iter()
+            .any(|issue| { issue.code == "invalid_distance_metadata" }));
+        assert!(invalid
+            .issues
+            .iter()
+            .any(|issue| { issue.code == "missing_distance_join" }));
+
+        let missing = parse_xc(&xc_body(json!([]), 4828))?;
+        assert_eq!(missing.results[0].event_name, "Unknown distance");
+        assert!(missing
+            .issues
+            .iter()
+            .any(|issue| { issue.code == "missing_distance_join" }));
+
+        let conflicting = parse_xc(&xc_body(
+            json!([
+                {"Meters":5000,"Distance":5000,"Units":"Meters"},
+                {"Meters":5000,"Distance":3.1,"Units":"Miles"}
+            ]),
+            5000,
+        ))?;
+        assert_eq!(conflicting.results[0].event_name, "Unknown distance");
+        assert!(conflicting
+            .issues
+            .iter()
+            .any(|issue| { issue.code == "conflicting_distance_metadata" }));
+        assert!(conflicting
+            .issues
+            .iter()
+            .any(|issue| { issue.code == "ambiguous_distance_join" }));
+        Ok(())
+    }
 
     #[test]
     fn equipment_variants_join_exactly_and_display_measure_type_is_not_seconds(

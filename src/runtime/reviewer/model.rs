@@ -243,6 +243,48 @@ pub fn parse_response(bytes: &[u8], input: &ReviewInput) -> Result<AssistantVerd
     verdict.validate(input)
 }
 
+/// Fuzz-only parser entrypoint with a fixed, valid review input.
+#[cfg(feature = "fuzzing")]
+pub fn fuzz_parse_response(bytes: &[u8]) -> Result<AssistantVerdict> {
+    static INPUT: std::sync::LazyLock<std::result::Result<ReviewInput, serde_json::Error>> =
+        std::sync::LazyLock::new(|| {
+            serde_json::from_value(serde_json::json!({
+                "source": {
+                    "source_key": "Sheet:2",
+                    "sheet": "Sheet",
+                    "excel_row": 2,
+                    "fields": {"Person First": "Ada"}
+                },
+                "candidates": [{
+                    "athlete_id": 7,
+                    "name": "Ada Runner",
+                    "teams": [{
+                        "team_id": 9,
+                        "name": {
+                            "value": "Central",
+                            "evidence": {
+                                "document": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                                "locator": "team/name"
+                            }
+                        },
+                        "location": null,
+                        "seasons": [],
+                        "level": null
+                    }],
+                    "graduation_years": [],
+                    "sports": [],
+                    "issues": [],
+                    "eligibility_reasons": ["matching sport"],
+                    "documents": []
+                }]
+            }))
+        });
+    let input = INPUT
+        .as_ref()
+        .map_err(|error| anyhow!("synthetic fuzz review input is invalid: {error}"))?;
+    parse_response(bytes, input)
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Attempt {
     Success {

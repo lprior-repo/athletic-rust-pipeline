@@ -147,7 +147,7 @@ proptest! {
             "athlete": {"IDAthlete": ATHLETE_ID, "FirstName": "Synthetic", "LastName": "Runner"},
             "allTeams": {"7": {"SchoolName": "Fictional High"}},
             "meets": {"9": {"MeetName": "Synthetic Meet"}},
-            "distancesXC": [{"Distance": 5000, "Units": "m"}],
+            "distancesXC": [{"Meters": 5000, "Distance": 5, "Units": "m"}],
             "resultsXC": [{
                 "IDResult": 11, "AthleteID": reported, "Result": "17:01", "SchoolID": 7,
                 "MeetID": 9, "SeasonID": 2025, "Distance": 5000, "PersonalBest": best,

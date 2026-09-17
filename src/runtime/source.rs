@@ -2,6 +2,7 @@ mod http;
 mod request;
 mod result;
 pub(crate) mod retry;
+pub(super) mod spider_body;
 
 use crate::runtime::{
     http_audit,

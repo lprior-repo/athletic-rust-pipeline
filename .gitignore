@@ -20,3 +20,10 @@
 /storage-state.json
 /tmp/alpha-contract/
 /node_modules/
+/fuzz/target/
+/fuzz/artifacts/
+/fuzz/coverage/
+!/fuzz/corpus/workbook_ingestion/seed-valid.xlsx
+!/fuzz/corpus/xlsx_zip_stream/seed-valid.xlsx
+__pycache__/
+*.pyc

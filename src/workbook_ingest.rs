@@ -1,7 +1,6 @@
 mod guards;
 mod preflight;
-mod stream;
-
+pub(crate) mod stream;
 use crate::{
     model::{SourceRecord, WorkbookStats},
     xlsx::metadata::load_sheet_metadata,
@@ -9,6 +8,10 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use calamine::{open_workbook, Reader, Xlsx};
 use std::{fs::File, io::BufReader, path::Path};
+
+pub(crate) fn preflight(path: &Path) -> Result<()> {
+    preflight::inspect(path).map(|_| ())
+}
 
 fn is_source_sheet(name: &str) -> bool {
     !["Athletic Matches", "Corrections", "Summary"]

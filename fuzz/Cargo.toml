@@ -3,13 +3,18 @@ name = "athletic-rust-pipeline-fuzz"
 version = "0.0.0"
 edition = "2021"
 publish = false
+license = "MIT"
+
+[package.metadata]
+cargo-fuzz = true
 
 [workspace]
 
 [dependencies]
-athletic-rust-pipeline = { path = ".." }
+athletic-rust-pipeline = { path = "..", features = ["fuzzing"] }
 libfuzzer-sys = "0.4"
 anyhow = "1"
+serde = "1"
 serde_json = "1"
 tempfile = "3"
 
@@ -51,6 +56,26 @@ bench = false
 [[bin]]
 name = "domain_mark_deserialization"
 path = "fuzz_targets/domain_mark_deserialization.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "retained_results_jsonl"
+path = "fuzz_targets/retained_results_jsonl.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decision_boundary"
+path = "fuzz_targets/decision_boundary.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "model_response"
+path = "fuzz_targets/model_response.rs"
 test = false
 doc = false
 bench = false
