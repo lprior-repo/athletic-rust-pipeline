@@ -137,9 +137,6 @@ fn validate_limits(raw: &RawConfig) -> Result<()> {
     if raw.source_interval_ms > 3_600_000 {
         bail!("source interval exceeds one hour");
     }
-    if raw.mode == ExecutionMode::Live && raw.source_interval_ms < 750 {
-        bail!("live source interval must be at least 750 ms");
-    }
     if !raw.storage_dir.is_absolute() {
         bail!("storage_dir must be absolute");
     }

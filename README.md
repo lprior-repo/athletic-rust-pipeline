@@ -50,6 +50,8 @@ Use native Restate, not Docker. `tools/restate-native.sh start` launches the alr
 
 `config.native.toml` contains this workstation's live configuration: private artifact storage, Athletic.net origin and admission interval, bounded CPU/row work, and the two existing local model endpoints. Adjust paths and model identifiers for another workstation. Do not commit private inputs, credentials, model prompts, or generated athlete artifacts.
 
+`source_interval_ms = 0` disables the fixed inter-request delay, including in live mode. This workstation uses zero delay. The native global source object still serializes HTTP operations; row concurrency is not source-request concurrency. Request timeouts, initial-attempt-plus-three-retry budgets, `Retry-After` handling and access-denial admission stops remain enforced. Measure completed source operations and row throughput rather than interpreting zero delay as unlimited concurrency or assuming the models are the bottleneck.
+
 ```sh
 cargo run --release -- worker --config config.native.toml --bind 127.0.0.1:19181
 cargo run --release -- deploy --admin http://127.0.0.1:19070/ --endpoint http://127.0.0.1:19181/
