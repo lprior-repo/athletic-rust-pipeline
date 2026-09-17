@@ -127,4 +127,8 @@ The separate actual-GPU exercise used two distinct synthetic source records, one
 
 Moving those same field values to differently named worksheets in a separate workbook reused both original model responses without another reviewer invocation. The relocated export independently preserved all 30 source fields. Case identity binds complete field values and candidate evidence, not physical worksheet/row coordinates.
 
+Completed-effect recovery was also exercised after a native Restate process restart and, separately, forced termination (`SIGKILL`) of an idle worker. A fresh coordinator execution after worker recovery reused retained source/model work and exported both rows with all 30 original fields. Neither exercise repeated a source or model call. These checks do not establish exactly-once behavior for uncertain in-flight HTTP effects.
+
+The bounded-HTML exercise served a valid 9,437,374-byte document containing an oversized attribute: below the 32 MiB HTTP body limit, but above the streaming parser's 8 MiB accounted-memory limit. Both native rows retained a parser failure and required review, with no model outcomes; export verified all 30 original fields. A direct production-parser diagnostic accepted the equivalent small document and reported memory-limit exhaustion for the large one. The parser setting is not a whole-process RSS limit.
+
 Run access-denial scenarios separately: denial deliberately halts global source admission, so it can make other concurrent rows require review. Synthetic evidence is not the real 100-row pilot or completed full-workbook delivery. Live rollout, raw-source/PR verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.
