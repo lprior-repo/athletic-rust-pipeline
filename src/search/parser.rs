@@ -166,4 +166,21 @@ mod tests {
         assert_eq!(page.issues[0].code, "invalid_athlete_row");
         Ok(())
     }
+
+    #[test]
+    fn missing_athlete_id_cannot_become_a_complete_empty_search() -> Result<()> {
+        let query = SearchQuery::new("Synthetic Runner", Sport::TrackField, 0)?;
+        let digest = EvidenceDigest::parse(&"a".repeat(64))?;
+        let body = serde_json::json!({"d":{"count":0,"pager":"","results":
+            "<tr><td><a href='/athlete//track-and-field'>Synthetic Runner</a></td></tr>"}});
+        let page = parse_page(&query, 0, digest.clone(), &serde_json::to_vec(&body)?)?;
+        assert!(page.candidates.is_empty());
+        assert!(page.issues.iter().any(|issue| {
+            issue.code == "invalid_athlete_row" && issue.evidence.document == digest
+        }));
+        let mut progress = crate::search::SearchProgress::new(query);
+        assert!(progress.consume(page).is_err());
+        assert!(!progress.complete());
+        Ok(())
+    }
 }

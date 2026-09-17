@@ -316,18 +316,18 @@ fn finish_row(state: &mut State) -> std::result::Result<(), String> {
         row.issue = Some("result row text is incomplete".into());
     }
     let issue = row.issue.take();
-    let Some(athlete_id) = row.identity else {
-        return Ok(());
-    };
-    let evidence = state.evidence(row.index);
     if let Some(message) = issue {
         state.issues.push(SearchIssue {
             code: "invalid_athlete_row".into(),
             message,
-            evidence,
+            evidence: state.evidence(row.index),
         });
         return Ok(());
     }
+    let Some(athlete_id) = row.identity else {
+        return Ok(());
+    };
+    let evidence = state.evidence(row.index);
     let Some(profile_url) = row.selected else {
         state.issues.push(SearchIssue {
             code: "invalid_athlete_row".into(),
