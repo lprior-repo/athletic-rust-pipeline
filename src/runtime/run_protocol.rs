@@ -5,8 +5,19 @@ use serde::{Deserialize, Serialize};
 use std::num::{NonZeroU16, NonZeroU32};
 
 pub const RUN_REVISION: &str = "native-run-workbook-eligible-v2";
+pub const PREPARE_REVISION: &str = "native-prepare-v1";
 pub const MAX_RUN_ROWS: u64 = 2_097_152;
 pub const RESULT_PAGE_ROWS: usize = 64;
+
+/// Derive the idempotency key for source preparation from the active
+/// acquisition contract as well as the request fields.
+pub fn preparation_key<T: Serialize>(request: &T) -> Result<EvidenceDigest> {
+    fingerprint(&(
+        PREPARE_REVISION,
+        super::acquisition::ACQUISITION_REVISION,
+        request,
+    ))
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SourceSnapshot {

@@ -85,8 +85,7 @@ async fn now_ms(ctx: &ObjectContext<'_>) -> Result<u64, HandlerError> {
         let millis = SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis();
         Ok(u64::try_from(millis)?)
     })
-    .name("source-admission-clock")
-    .retry_policy(RunRetryPolicy::new().max_attempts(4))
+    .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
     .map_err(Into::into)
 }

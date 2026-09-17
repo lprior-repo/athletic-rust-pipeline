@@ -3,7 +3,7 @@ use crate::{
     runtime::{
         acquisition::ACQUISITION_REVISION,
         config::{validate_source, validated_origin},
-        protocol::{DocumentReceipt, RetryEvidence, SourceResource},
+        protocol::{DocumentReceipt, FailureCode, RetryEvidence, SourceResource},
         run_protocol::SourceSnapshot,
         source::{
             observation::CapturedAttempt,
@@ -156,14 +156,14 @@ fn load_attempts(
     origin: &Url,
     store: &ArtifactStore,
 ) -> Result<Vec<CapturedAttempt>> {
-    let RetryEvidence::SdkControlled {
+    let RetryEvidence::WorkflowControlled {
         operation,
         maximum_retries,
         observed_attempts,
         attempts,
     } = retries
     else {
-        bail!("successful source evidence lacks captured SDK attempts");
+        bail!("successful source evidence lacks captured durable workflow attempts");
     };
     if maximum_retries.get() != 3
         || attempts.is_empty()
@@ -204,9 +204,14 @@ fn validate_attempt(attempt: &CapturedAttempt, origin: &Url) -> Result<()> {
         bail!("captured source request differs from its frozen origin");
     }
     if let Some(receipt) = &attempt.result.receipt {
+        let valid_classification = if (200..300).contains(&receipt.http_status) {
+            attempt.result.code.is_none() || attempt.result.code == Some(FailureCode::AccessDenied)
+        } else {
+            attempt.result.code.is_some()
+        };
         if receipt.source_url != attempt.request.semantic_url
             || attempt.result.status != Some(receipt.http_status)
-            || attempt.result.code.is_none() != (200..300).contains(&receipt.http_status)
+            || !valid_classification
         {
             bail!("captured source response differs from its physical request/status");
         }

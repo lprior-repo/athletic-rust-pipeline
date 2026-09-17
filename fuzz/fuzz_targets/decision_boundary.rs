@@ -96,7 +96,7 @@ fn exercise(choice: &ReviewChoice, contradictory: bool) {
     let source = source();
     let evidence = EvidenceDigest::parse(SEARCH_DIGEST)
         .expect("static decision fuzz search digest must parse");
-    let profiles = vec![profile(contradictory.then_some("identity_conflict"))];
+    let profiles = [profile(contradictory.then_some("identity_conflict"))];
     let assessment = assess(
         &source,
         profiles.iter().map(CandidateEvidence::Complete),
@@ -120,7 +120,7 @@ fn exercise(choice: &ReviewChoice, contradictory: bool) {
         assert_eq!(assessment.accepted_athlete_id(), Some(known_athlete_id));
     }
 
-    let outcome = apply_review(&assessment, choice.clone());
+    let outcome = apply_review(&assessment, *choice);
 
     match (choice, outcome) {
         (ReviewChoice::Select(requested_id), Ok(final_decision)) => {

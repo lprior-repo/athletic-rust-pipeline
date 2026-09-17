@@ -17,19 +17,29 @@ pub(super) struct Finalized {
     pub(super) blocked: bool,
 }
 
-pub(super) fn finish(
+pub(super) fn finish_workflow(
     operation: EvidenceDigest,
     records: Vec<AttemptEvidence<AttemptResult>>,
     effect: Result<Json<EvidenceDigest>, TerminalError>,
+    exhausted: bool,
 ) -> Result<Finalized, HandlerError> {
     let retries = if effect
         .as_ref()
         .is_err_and(|error| error.code() == http_audit::AUDIT_FAILURE)
     {
-        http_audit::unavailable_evidence(operation)?
+        http_audit::workflow_unavailable_evidence(operation)?
     } else {
-        http_audit::retry_evidence(operation, &records)?
+        http_audit::workflow_retry_evidence(operation, &records)?
     };
+    finish_with_retries(records, effect, retries, exhausted)
+}
+
+fn finish_with_retries(
+    records: Vec<AttemptEvidence<AttemptResult>>,
+    effect: Result<Json<EvidenceDigest>, TerminalError>,
+    retries: crate::runtime::protocol::RetryEvidence,
+    exhausted: bool,
+) -> Result<Finalized, HandlerError> {
     let returned = effect.as_ref().ok().map(|value| &value.0);
     let mut selected = None;
     let mut evidence = Vec::new();
@@ -37,19 +47,30 @@ pub(super) fn finish(
     for record in records {
         cooldown_ms = cooldown_ms.max(record.value.retry_after_ms);
         if returned == Some(&record.digest) {
-            selected = Some(record.value);
+            if selected.is_none() {
+                selected = Some(record.value);
+            } else if let Some(receipt) = record.value.receipt {
+                evidence.push(receipt);
+            }
         } else if let Some(receipt) = record.value.receipt {
             evidence.push(receipt);
         }
     }
+    let selected_cooldown_ms = selected.as_ref().map(|attempt| attempt.retry_after_ms);
     let (outcome, blocked) = match (effect, selected) {
         (Ok(_), Some(attempt)) => {
-            let blocked = matches!(attempt.status, Some(401 | 403))
+            let retry_exhausted = exhausted && attempt.retryable;
+            let blocked = (retry_exhausted && attempt.status == Some(429))
+                || attempt.code == Some(FailureCode::AccessDenied)
+                || matches!(attempt.status, Some(401 | 403))
                 || (matches!(attempt.status, Some(429 | 503))
                     && !attempt.retryable
                     && attempt.retry_after_ms == 0)
                 || attempt.code == Some(FailureCode::ArtifactFailure);
-            match attempt.code {
+            let code = retry_exhausted
+                .then_some(FailureCode::RetryExhausted)
+                .or(attempt.code);
+            match code {
                 None => {
                     let receipt = attempt.receipt.ok_or_else(|| {
                         TerminalError::new_with_code(
@@ -92,9 +113,21 @@ pub(super) fn finish(
                 FailureCode::UncertainEffect
             };
             let blocked = code == FailureCode::ArtifactFailure;
-            (FetchOutcome::Failed { failure: OperationFailure { code,
-                message: format!("Restate source effect terminated with code {}; inspect retained attempt evidence", error.code()),
-                http_status: None, retries, evidence } }, blocked)
+            (
+                FetchOutcome::Failed {
+                    failure: OperationFailure {
+                        code,
+                        message: format!(
+                            "Restate source effect terminated with code {}; inspect retained attempt evidence",
+                            error.code()
+                        ),
+                        http_status: None,
+                        retries,
+                        evidence,
+                    },
+                },
+                blocked,
+            )
         }
         (Ok(_), None) => {
             return Err(TerminalError::new_with_code(
@@ -103,6 +136,10 @@ pub(super) fn finish(
             )
             .into())
         }
+    };
+    let cooldown_ms = match outcome {
+        FetchOutcome::Retrieved { .. } => 0,
+        FetchOutcome::Failed { .. } => selected_cooldown_ms.map_or(cooldown_ms, |value| value),
     };
     Ok(Finalized {
         outcome,
@@ -141,19 +178,44 @@ mod tests {
             },
         }
     }
+    #[test]
+    fn access_denied_code_blocks_even_when_http_status_is_success() {
+        let mut attempt = failed_attempt('a', 0);
+        attempt.value.code = Some(FailureCode::AccessDenied);
+        attempt.value.status = Some(200);
+        attempt.value.receipt = Some(DocumentReceipt {
+            digest: digest('a'),
+            source_url: "http://127.0.0.1/fixture".into(),
+            http_status: 200,
+            media_type: "text/html".into(),
+            bytes: 1,
+            fetched_at_unix_ms: 1,
+            elapsed_ms: 1,
+        });
+        let selected = attempt.digest.clone();
+        let result = finish_workflow(digest('e'), vec![attempt], Ok(Json(selected)), false)
+            .expect("finalization");
+        assert!(result.blocked);
+        let FetchOutcome::Failed { failure } = result.outcome else {
+            panic!("expected access denial")
+        };
+        assert_eq!(failure.code, FailureCode::AccessDenied);
+        assert_eq!(failure.http_status, Some(200));
+    }
 
     #[test]
-    fn sdk_exhaustion_retains_every_observed_receipt_and_final_cooldown() {
+    fn workflow_exhaustion_retains_every_observed_receipt_and_final_cooldown() {
         let records = vec![
             failed_attempt('a', 0),
             failed_attempt('b', 1_000),
             failed_attempt('c', 500),
             failed_attempt('d', 2_000),
         ];
-        let result = finish(
+        let result = finish_workflow(
             digest('e'),
             records,
-            Err(TerminalError::new("SDK exhausted")),
+            Err(TerminalError::new("workflow exhausted")),
+            true,
         )
         .expect("finalization");
         assert_eq!(result.cooldown_ms, 2_000);
@@ -172,7 +234,7 @@ mod tests {
         );
         assert!(matches!(
             failure.retries,
-            RetryEvidence::SdkControlled {
+            RetryEvidence::WorkflowControlled {
                 observed_attempts: 4,
                 ..
             }
@@ -181,13 +243,14 @@ mod tests {
 
     #[test]
     fn unacknowledged_audit_write_never_claims_zero_http_attempts() -> anyhow::Result<()> {
-        let result = finish(
+        let result = finish_workflow(
             digest('e'),
             Vec::new(),
             Err(TerminalError::new_with_code(
                 http_audit::AUDIT_FAILURE,
                 "audit write failed",
             )),
+            false,
         )
         .map_err(|error| anyhow::anyhow!("{error:?}"))?;
         assert!(result.blocked);
@@ -195,8 +258,7 @@ mod tests {
             result.outcome,
             FetchOutcome::Failed {
                 failure: OperationFailure {
-                    code: FailureCode::ArtifactFailure,
-                    retries: RetryEvidence::SdkEvidenceUnavailable { .. },
+                    retries: RetryEvidence::WorkflowEvidenceUnavailable { .. },
                     ..
                 }
             }

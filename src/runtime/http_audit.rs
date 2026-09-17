@@ -87,3 +87,28 @@ pub(crate) fn unavailable_evidence(
         maximum_retries,
     })
 }
+
+pub(crate) fn workflow_retry_evidence<T>(
+    operation: EvidenceDigest,
+    records: &[AttemptEvidence<T>],
+) -> Result<RetryEvidence, HandlerError> {
+    let observed_attempts = u32::try_from(records.len()).terminal()?;
+    let maximum_retries = RetryCount::new(3).terminal()?;
+    let attempts = records.iter().map(|record| record.digest.clone()).collect();
+    Ok(RetryEvidence::WorkflowControlled {
+        operation,
+        maximum_retries,
+        observed_attempts,
+        attempts,
+    })
+}
+
+pub(crate) fn workflow_unavailable_evidence(
+    operation: EvidenceDigest,
+) -> Result<RetryEvidence, HandlerError> {
+    let maximum_retries = RetryCount::new(3).terminal()?;
+    Ok(RetryEvidence::WorkflowEvidenceUnavailable {
+        operation,
+        maximum_retries,
+    })
+}

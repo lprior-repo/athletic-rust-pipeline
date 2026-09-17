@@ -13,7 +13,7 @@ use athletic_rust_pipeline::{
         identity::fingerprint,
         import::ImportRequest,
         run::RunCoordinatorIngressClient,
-        run_protocol::Selection,
+        run_protocol::{preparation_key, Selection},
         worker,
     },
     store::ArtifactStore,
@@ -124,7 +124,7 @@ async fn start(args: Start) -> Result<()> {
         snapshot_label: args.snapshot,
         execution: args.execution,
     };
-    let preparation_key = fingerprint(&("native-prepare-v1", &request))?;
+    let preparation_key = preparation_key(&request)?;
     let client = transport::client(&args.ingress)?;
     let control = PipelineControlIngressClient::from_client(client.clone());
     let prepared = control

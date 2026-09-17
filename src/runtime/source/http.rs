@@ -1,3 +1,5 @@
+mod challenge;
+
 use super::{body, request::RequestSpec, retry};
 use crate::runtime::{
     protocol::{DocumentReceipt, FailureCode},
@@ -40,10 +42,12 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
     let status = response.status();
     let backoff = retry::retry_after(response.headers(), SystemTime::now());
     let media_type = media_type(response.headers());
+    let header_challenge = challenge::cf_header_challenge(response.headers());
     let body = match body::read_body(response).await {
         Ok(body) => body,
         Err((code, message)) => return body_failure(code, status, message, backoff),
     };
+    let challenged = header_challenge || challenge::html_body_challenge(&media_type, &body);
     let data = ReceiptData {
         source_url: request.semantic_url.clone(),
         status,
@@ -52,7 +56,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
         elapsed: started.elapsed(),
     };
     match receipt(&runtime, data).await {
-        Ok(receipt) => outcome(status, receipt, backoff),
+        Ok(receipt) => outcome(status, receipt, backoff, challenged),
         Err(message) => body_failure(FailureCode::ArtifactFailure, status, message, backoff),
     }
 }
@@ -92,7 +96,25 @@ fn outcome(
     status: StatusCode,
     receipt: DocumentReceipt,
     backoff: Result<Duration, &'static str>,
+    challenged: bool,
 ) -> AttemptResult {
+    if challenged {
+        let mut result = failure_with_receipt(
+            receipt,
+            status,
+            FailureCode::AccessDenied,
+            "source response is an access challenge",
+        );
+        if !status.is_success() {
+            let (retry_after_ms, backoff_message, valid) = backoff_fields(backoff, status);
+            result.retry_after_ms = retry_after_ms;
+            if !valid {
+                result.message.push_str("; ");
+                result.message.push_str(&backoff_message);
+            }
+        }
+        return result;
+    }
     if status.is_success() {
         return AttemptResult {
             receipt: Some(receipt),
@@ -111,6 +133,22 @@ fn outcome(
         message,
         retryable: retry::retryable_status(status.as_u16()) && valid,
         retry_after_ms,
+    }
+}
+
+fn failure_with_receipt(
+    receipt: DocumentReceipt,
+    status: StatusCode,
+    code: FailureCode,
+    message: &str,
+) -> AttemptResult {
+    AttemptResult {
+        receipt: Some(receipt),
+        code: Some(code),
+        status: Some(status.as_u16()),
+        message: message.to_owned(),
+        retryable: false,
+        retry_after_ms: 0,
     }
 }
 

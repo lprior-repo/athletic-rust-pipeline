@@ -239,7 +239,7 @@ fn hydrate_operations(
             operation["attempts"] = serde_json::json!([digest]);
             operation["observed_attempts"] = serde_json::json!(1);
             operation["maximum_retries"] = serde_json::json!(3);
-            operation["ownership"] = serde_json::json!("sdk_controlled");
+            operation["ownership"] = serde_json::json!("workflow_controlled");
             Ok::<(), anyhow::Error>(())
         })
 }
@@ -290,7 +290,7 @@ fn hydrate_queries(
                 response: serde_json::from_value(response)?,
                 parsed: store.put_bytes(&serde_json::to_vec(&parsed)?)?,
                 retries: serde_json::from_value(serde_json::json!({
-                    "ownership":"sdk_controlled","operation":operation,
+                    "ownership":"workflow_controlled","operation":operation,
                     "maximum_retries":3,"observed_attempts":1,"attempts":[attempt]
                 }))?,
                 previous_responses: Vec::new(),

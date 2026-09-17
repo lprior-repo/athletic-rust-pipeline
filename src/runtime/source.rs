@@ -12,6 +12,7 @@ use crate::runtime::{
     Runtime,
 };
 use restate_sdk::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 
 pub use admission::{AdmissionDecision, AdmissionFeedback};
@@ -22,6 +23,13 @@ const SOURCE_CONTROL_SCOPE: &str = "athletic-source-control";
 
 pub struct SourceGateway {
     pub runtime: Arc<Runtime>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct WorkflowStep {
+    finalized: result::Finalized,
+    retryable: bool,
+    delay_ms: u64,
 }
 
 #[restate_sdk::object(
@@ -48,9 +56,6 @@ impl SourceGateway {
                 }))
             }
         };
-        if let Some(failure) = admission::wait(&ctx).await? {
-            return Ok(Json(FetchOutcome::Failed { failure }));
-        }
         execute(self, &ctx, request).await.map(Json)
     }
 
@@ -78,77 +83,126 @@ async fn execute(
     request: request::RequestSpec,
 ) -> Result<FetchOutcome, HandlerError> {
     let interval = gateway.runtime.config.source_interval();
-    let minimum_retry_delay = interval.max(Duration::from_secs(1));
-    let maximum_retry_delay = minimum_retry_delay
-        .checked_mul(4)
-        .ok_or_else(|| TerminalError::new("source retry delay exceeds duration range"))?;
     let operation = http_audit::operation_key(ctx.invocation_id(), "source-http")?;
-    // Native scope limits own concurrency; the SDK alone owns HTTP retries.
-    let runtime = gateway.runtime.clone();
-    let audit_operation = operation.clone();
-    let effect = match ctx
-        .run(|| async move {
-            let mut attempt = http::perform(runtime.clone(), &request).await;
-            limit_retry_policy(&mut attempt);
-            let retryable = attempt.retryable;
-            let captured = observation::CapturedAttempt {
-                request,
-                result: attempt,
-            };
-            let digest = http_audit::record(runtime, audit_operation, captured).await?;
-            if retryable {
-                Err(anyhow::anyhow!("retryable source HTTP failure; evidence retained").into())
-            } else {
-                Ok(Json(digest))
-            }
-        })
-        .name("source-http")
-        .retry_policy(
-            RunRetryPolicy::new()
-                .initial_delay(minimum_retry_delay)
-                .exponentiation_factor(2.0)
-                .max_delay(maximum_retry_delay)
-                .max_attempts(4),
+    let mut last_finalized: Option<result::Finalized> = None;
+
+    for attempt_index in 0..retry::MAX_ATTEMPTS {
+        if let Some(failure) = admission::wait(ctx).await? {
+            return Ok(
+                last_finalized.map_or(FetchOutcome::Failed { failure }, |value| value.outcome)
+            );
+        }
+        let step = match run_step(
+            gateway,
+            ctx,
+            request.clone(),
+            operation.clone(),
+            interval,
+            attempt_index,
         )
         .await
-    {
-        Err(error) if error.code() == 409 => return Err(error.into()),
-        effect => effect,
-    };
-    let runtime = gateway.runtime.clone();
-    let finalization_operation = operation.clone();
-    let finalized = ctx
-        .run(|| async move {
-            let records = http_audit::load(runtime, finalization_operation.clone()).await?;
-            result::finish(finalization_operation, records, effect).map(Json)
-        })
-        .name("source-http-evidence-finalization")
-        .retry_policy(RunRetryPolicy::new().max_attempts(4))
-        .await;
-    let finalized = match finalized {
-        Ok(value) => value.0,
-        Err(error) if error.code() == 409 => return Err(error.into()),
-        Err(_) => {
-            let failure = OperationFailure {
-                code: FailureCode::ArtifactFailure,
-                message: "source evidence finalization failed; admission stopped pending repair"
-                    .to_owned(),
-                http_status: None,
-                retries: http_audit::unavailable_evidence(operation)?,
-                evidence: Vec::new(),
-            };
-            result::Finalized {
-                outcome: FetchOutcome::Failed { failure },
-                cooldown_ms: 0,
-                blocked: true,
+        {
+            Ok(step) => step,
+            Err(error) if error.code() == 409 => return Err(error.into()),
+            Err(_) => {
+                let finalized = artifact_finalized(operation.clone(), last_finalized.as_ref())?;
+                publish_final_feedback(ctx, &finalized).await?;
+                return Ok(finalized.outcome);
             }
+        };
+        let should_retry = step.retryable && attempt_index + 1 < retry::MAX_ATTEMPTS;
+        let delay_ms = step.delay_ms;
+        let finalized = step.finalized;
+        last_finalized = Some(finalized);
+        if !should_retry {
+            break;
         }
+        publish_feedback(ctx, None, delay_ms).await?;
+        ctx.sleep(Duration::from_millis(delay_ms)).await?;
+    }
+
+    let finalized = match last_finalized {
+        Some(finalized) => finalized,
+        None => artifact_finalized(operation, None)?,
     };
-    publish_feedback(ctx, &finalized).await?;
+    publish_final_feedback(ctx, &finalized).await?;
     Ok(finalized.outcome)
 }
 
-async fn publish_feedback(
+async fn run_step(
+    gateway: &SourceGateway,
+    ctx: &SharedObjectContext<'_>,
+    request: request::RequestSpec,
+    operation: crate::domain::identity::EvidenceDigest,
+    interval: Duration,
+    attempt_index: usize,
+) -> Result<WorkflowStep, TerminalError> {
+    let runtime = gateway.runtime.clone();
+    let record_operation = operation.clone();
+    let load_operation = operation.clone();
+    let last_attempt = attempt_index + 1 == retry::MAX_ATTEMPTS;
+    ctx.run(move || async move {
+        let attempt = http::perform(runtime.clone(), &request).await;
+        let retryable = attempt.retryable;
+        let delay = if retryable {
+            retry::next_delay(attempt_index, &attempt, interval).map_err(TerminalError::new)?
+        } else {
+            Duration::ZERO
+        };
+        let delay_ms = u64::try_from(delay.as_millis())
+            .map_err(|_| TerminalError::new("source retry delay exceeds millisecond range"))?;
+        let captured = observation::CapturedAttempt {
+            request,
+            result: attempt,
+        };
+        let digest = http_audit::record(runtime.clone(), record_operation, captured).await?;
+        let records = http_audit::load(runtime, load_operation).await?;
+        let finalized =
+            result::finish_workflow(operation, records, Ok(Json(digest)), last_attempt)?;
+        Ok(Json(WorkflowStep {
+            finalized,
+            retryable,
+            delay_ms,
+        }))
+    })
+    .retry_policy(RunRetryPolicy::new().max_attempts(1))
+    .await
+    .map(|value| value.0)
+}
+
+fn artifact_finalized(
+    operation: crate::domain::identity::EvidenceDigest,
+    previous: Option<&result::Finalized>,
+) -> Result<result::Finalized, HandlerError> {
+    let evidence = match previous.map(|value| &value.outcome) {
+        Some(FetchOutcome::Failed { failure }) => failure.evidence.clone(),
+        Some(FetchOutcome::Retrieved {
+            receipt,
+            previous_responses,
+            ..
+        }) => {
+            let mut evidence = previous_responses.clone();
+            evidence.push(receipt.clone());
+            evidence
+        }
+        None => Vec::new(),
+    };
+    Ok(result::Finalized {
+        outcome: FetchOutcome::Failed {
+            failure: OperationFailure {
+                code: FailureCode::ArtifactFailure,
+                message: "source evidence finalization failed; admission stopped pending repair"
+                    .to_owned(),
+                retries: http_audit::workflow_unavailable_evidence(operation)?,
+                http_status: None,
+                evidence,
+            },
+        },
+        cooldown_ms: 0,
+        blocked: true,
+    })
+}
+async fn publish_final_feedback(
     ctx: &SharedObjectContext<'_>,
     finalized: &result::Finalized,
 ) -> Result<(), HandlerError> {
@@ -161,30 +215,27 @@ async fn publish_feedback(
         }
         (FetchOutcome::Failed { .. } | FetchOutcome::Retrieved { .. }, false) => None,
     };
-    if failure.is_none() && finalized.cooldown_ms == 0 {
+    publish_feedback(ctx, failure, finalized.cooldown_ms).await
+}
+
+async fn publish_feedback(
+    ctx: &SharedObjectContext<'_>,
+    failure: Option<OperationFailure>,
+    cooldown_ms: u64,
+) -> Result<(), HandlerError> {
+    if failure.is_none() && cooldown_ms == 0 {
         return Ok(());
     }
-    // Detach policy publication from the source caller's cancellation tree,
-    // then wait for the policy to commit before reporting this outcome.
     let feedback = ctx
         .object_client::<SourceGatewayClient>("global")
         .observe(Json(AdmissionFeedback {
             failure,
-            cooldown_ms: finalized.cooldown_ms,
+            cooldown_ms,
         }))
         .scope(SOURCE_CONTROL_SCOPE)
         .send()
         .await?;
     feedback.attach::<()>().await.map_err(Into::into)
-}
-
-fn limit_retry_policy(attempt: &mut http::AttemptResult) {
-    if attempt.retryable && (attempt.status == Some(429) || attempt.retry_after_ms != 0) {
-        attempt.retryable = false;
-        attempt.message.push_str(
-            "; source admission policy must observe this response before further attempts",
-        );
-    }
 }
 
 fn invalid(message: String) -> OperationFailure {
@@ -198,53 +249,4 @@ fn invalid(message: String) -> OperationFailure {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::domain::evidence::Sport;
-    use url::Url;
-
-    #[test]
-    fn team_route_retains_indoor_season_identifier() {
-        let origin = Url::parse("http://127.0.0.1:9090/").expect("origin");
-        let resource = SourceResource::Team {
-            team_id: 7,
-            sport: Sport::TrackField,
-            season: 12025,
-        };
-        let request = request::build(&origin, &resource).expect("request");
-        assert_eq!(request.url.path(), "/api/v1/TeamNav/Team");
-        assert!(request
-            .url
-            .query_pairs()
-            .any(|(key, value)| key == "season" && value == "12025"));
-    }
-
-    #[test]
-    fn positive_server_delay_stops_retries_without_discarding_delay() {
-        let mut attempt = http::AttemptResult {
-            receipt: None,
-            code: Some(FailureCode::RateLimited),
-            status: Some(429),
-            message: String::new(),
-            retryable: true,
-            retry_after_ms: 1_000,
-        };
-        limit_retry_policy(&mut attempt);
-        assert!(!attempt.retryable);
-        assert_eq!(attempt.retry_after_ms, 1_000);
-    }
-
-    #[test]
-    fn throttling_without_retry_after_stops_automatic_retries() {
-        let mut attempt = http::AttemptResult {
-            receipt: None,
-            code: Some(FailureCode::RateLimited),
-            status: Some(429),
-            message: String::new(),
-            retryable: true,
-            retry_after_ms: 0,
-        };
-        limit_retry_policy(&mut attempt);
-        assert!(!attempt.retryable);
-    }
-}
+mod tests;

@@ -258,7 +258,7 @@ fn materialize_operations(
             operation["attempts"] = json!([attempt]);
             operation["observed_attempts"] = json!(1);
             operation["maximum_retries"] = json!(3);
-            operation["ownership"] = json!("sdk_controlled");
+            operation["ownership"] = json!("workflow_controlled");
             Ok::<(), anyhow::Error>(())
         })
 }
@@ -312,7 +312,7 @@ fn search_evidence(
                 &bytes,
             )?)?)?,
             retries: serde_json::from_value(json!({
-                "ownership":"sdk_controlled","operation":operation,"maximum_retries":3,
+                "ownership":"workflow_controlled","operation":operation,"maximum_retries":3,
                 "observed_attempts":1,"attempts":[attempt]
             }))?,
             previous_responses: Vec::new(),

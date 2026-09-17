@@ -3,6 +3,41 @@ use reqwest::header::{HeaderMap, RETRY_AFTER};
 use std::time::{Duration, SystemTime};
 
 pub(crate) const MAX_RETRY_DELAY: Duration = Duration::from_secs(86_400);
+pub(crate) const MAX_ATTEMPTS: usize = 4;
+const RATE_LIMIT_FALLBACK: [Duration; 3] = [
+    Duration::from_secs(60),
+    Duration::from_secs(120),
+    Duration::from_secs(240),
+];
+const TRANSIENT_FALLBACK: [Duration; 3] = [
+    Duration::from_secs(1),
+    Duration::from_secs(2),
+    Duration::from_secs(4),
+];
+
+pub(crate) fn next_delay(
+    attempt_index: usize,
+    attempt: &super::http::AttemptResult,
+    source_interval: Duration,
+) -> Result<Duration, &'static str> {
+    if !attempt.retryable {
+        return Err("non-retryable source attempt cannot be delayed");
+    }
+    if attempt.retry_after_ms != 0 {
+        return Ok(Duration::from_millis(attempt.retry_after_ms));
+    }
+    let fallback = if attempt.status == Some(429) {
+        RATE_LIMIT_FALLBACK
+    } else {
+        TRANSIENT_FALLBACK
+    };
+    let index = attempt_index.min(fallback.len().saturating_sub(1));
+    let fallback_delay = fallback
+        .get(index)
+        .copied()
+        .ok_or("retry fallback index exceeded bounds")?;
+    Ok(source_interval.max(fallback_delay))
+}
 
 pub(crate) fn retryable_status(status: u16) -> bool {
     status == 429 || (500..=599).contains(&status)

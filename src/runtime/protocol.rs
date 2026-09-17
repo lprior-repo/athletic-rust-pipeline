@@ -61,8 +61,8 @@ pub enum FailureCode {
     UncertainEffect,
 }
 
-/// Restate owns scheduling. Observed effects are not an exact SDK retry counter:
-/// an unacknowledged effect may repeat during recovery.
+/// Restate owns scheduling. Source workflows and model SDK policies have distinct
+/// retry budgets. Unacknowledged effects may repeat during crash recovery.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "ownership")]
 pub enum RetryEvidence {
@@ -74,6 +74,16 @@ pub enum RetryEvidence {
         attempts: Vec<EvidenceDigest>,
     },
     SdkEvidenceUnavailable {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+    },
+    WorkflowControlled {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+        observed_attempts: u32,
+        attempts: Vec<EvidenceDigest>,
+    },
+    WorkflowEvidenceUnavailable {
         operation: EvidenceDigest,
         maximum_retries: RetryCount,
     },
