@@ -16,6 +16,7 @@ use crate::{
         acquisition::ProfileAcquisition,
         row_protocol::{AcceptanceMethod, RowReport, RowResolution},
     },
+    store::ArtifactStore,
     workbook_ingest,
     workbook_verify::{verify_fields, VerificationReport},
 };
@@ -37,23 +38,23 @@ pub struct BundleVerificationReport {
     pub output_sha256: String,
     pub detail_sha256: String,
 }
-
-/// Verifies retained evidence consistency, not independent real-world truth.
+/// Verifies retained evidence consistency and revalidates raw exclusion receipts.
 pub fn verify_bundle(
     original: &Path,
     output: &Path,
     expected_sha: &WorkbookDigest,
     extra_headers: &[String],
+    store: &ArtifactStore,
 ) -> Result<BundleVerificationReport> {
     let detail = output.with_extension("jsonl");
     let output_sha256 = hash_file(output)?;
     let detail_sha256 = hash_file(&detail)?;
     let fields = verify_fields(original, output, expected_sha, extra_headers)?;
-    let results = verify_results(&detail)?;
+    let results = verify_results(&detail, store)?;
     if results.total_rows != fields.matched_row_count {
         bail!("sidecar row accounting differs from preserved source rows");
     }
-    bind_rows(output, &detail, expected_sha, extra_headers)?;
+    bind_rows(output, &detail, expected_sha, extra_headers, store)?;
     if hash_file(output)? != output_sha256
         || hash_file(&detail)? != detail_sha256
         || hash_file(original)? != expected_sha.as_str()
@@ -91,12 +92,12 @@ struct DetailBinding {
     assessment: Option<serde_json::Value>,
     profile_artifacts: Vec<serde_json::Value>,
 }
-
 fn bind_rows(
     output: &Path,
     detail: &Path,
     expected_sha: &WorkbookDigest,
     extra_headers: &[String],
+    store: &ArtifactStore,
 ) -> Result<()> {
     let mut reader = BufReader::new(File::open(detail).context("opening result sidecar")?);
     let mut buffer = Vec::new();
@@ -114,7 +115,7 @@ fn bind_rows(
         }
         let bound: DetailBinding =
             serde_json::from_slice(&buffer).context("decoding sidecar row binding")?;
-        check_binding(&row, &bound, expected_sha, extra_headers)
+        check_binding(&row, &bound, expected_sha, extra_headers, store)
     })?;
     if !reader.fill_buf()?.is_empty() {
         bail!("sidecar has rows after workbook EOF");
@@ -127,6 +128,7 @@ fn check_binding(
     bound: &DetailBinding,
     expected_sha: &WorkbookDigest,
     extra_headers: &[String],
+    _store: &ArtifactStore,
 ) -> Result<()> {
     if row.source_key != bound.source.source_key
         || row.sheet != bound.source.sheet

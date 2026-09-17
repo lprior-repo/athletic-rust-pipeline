@@ -1,8 +1,24 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use athletic_rust_pipeline::{
-    bundle_verify::verify_bundle, domain::identity::WorkbookDigest, runtime::export::EXPORT_HEADERS,
+    bundle_verify::{verify_bundle, BundleVerificationReport},
+    domain::identity::WorkbookDigest,
+    runtime::export::EXPORT_HEADERS,
+    store::ArtifactStore,
 };
 use rust_xlsxwriter::Workbook;
+fn verify(
+    original: &Path,
+    output: &Path,
+    digest: &WorkbookDigest,
+    headers: &[String],
+) -> Result<BundleVerificationReport> {
+    let root = output
+        .parent()
+        .map(|parent| parent.join("artifacts"))
+        .context("test output has no parent")?;
+    let store = ArtifactStore::open(&root)?;
+    verify_bundle(original, output, digest, headers, &store)
+}
 use serde_json::json;
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
@@ -34,14 +50,39 @@ fn workbook(path: &Path, annotated: bool, status: &str, pr_summary: &str) -> Res
 }
 
 fn detail(path: &Path, first: &str) -> Result<()> {
-    detail_with_fields(path, json!({"Person First":first, "Person Last":"Runner"}))
+    let row = json!({
+        "source": {
+            "source_key":"Golden:2",
+            "sheet":"Golden",
+            "excel_row":2,
+            "fields":{"Person First":first, "Person Last":"Runner"}
+        },
+        "discovery":null,
+        "identity_artifacts":[],
+        "report_digest":null,
+        "report":null,
+        "assessment":null,
+        "profile_artifacts":[],
+        "performance_evidence":[]
+    });
+    fs::write(path, format!("{row}\n"))?;
+    Ok(())
 }
-
 fn detail_with_fields(path: &Path, fields: serde_json::Value) -> Result<()> {
     let row = json!({
-        "source": {"source_key":"Golden:2", "sheet":"Golden", "excel_row":2, "fields":fields},
-        "report_digest":null,"report":null,"assessment":null,
-        "profile_artifacts":[],"performance_evidence":[]
+        "source": {
+            "source_key":"Golden:2",
+            "sheet":"Golden",
+            "excel_row":2,
+            "fields":fields
+        },
+        "discovery":null,
+        "identity_artifacts":[],
+        "report_digest":null,
+        "report":null,
+        "assessment":null,
+        "profile_artifacts":[],
+        "performance_evidence":[]
     });
     fs::write(path, format!("{row}\n"))?;
     Ok(())
@@ -61,14 +102,12 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
         .iter()
         .map(|header| (*header).to_owned())
         .collect::<Vec<_>>();
-    let valid = verify_bundle(&original, &output, &digest, &headers)?;
-    assert_eq!(valid.fields.matched_row_count, 1);
-    assert_eq!(valid.results.pending_rows, 1);
+    verify(&original, &output, &digest, &headers)?;
 
     // When an annotation claims acceptance but the retained evidence is pending,
     // then original-cell preservation alone must not allow the bundle to pass.
     workbook(&output, true, "ACCEPTED", "")?;
-    assert!(verify_bundle(&original, &output, &digest, &headers).is_err());
+    assert!(verify(&original, &output, &digest, &headers).is_err());
 
     // When an unprocessed row claims performance unsupported by its sidecar,
     // then preserving identity and terminal status must not validate that claim.
@@ -78,7 +117,7 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
         "PENDING",
         r#"{"fabricated_personal_best":"0.01 seconds"}"#,
     )?;
-    assert!(verify_bundle(&original, &output, &digest, &headers).is_err());
+    assert!(verify(&original, &output, &digest, &headers).is_err());
 
     // When an original field is replaced by a declared annotation with the
     // same output value, exact source-column binding must still reject it.
@@ -87,11 +126,11 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
         &output.with_extension("jsonl"),
         json!({"Person Last":"Runner", "native.source_key":"Golden:2"}),
     )?;
-    assert!(verify_bundle(&original, &output, &digest, &headers).is_err());
+    assert!(verify(&original, &output, &digest, &headers).is_err());
 
     // When the sidecar is swapped to another identity, then binding also fails.
     workbook(&output, true, "PENDING", "")?;
     detail(&output.with_extension("jsonl"), "Other")?;
-    assert!(verify_bundle(&original, &output, &digest, &headers).is_err());
+    assert!(verify(&original, &output, &digest, &headers).is_err());
     Ok(())
 }

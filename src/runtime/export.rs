@@ -1,7 +1,7 @@
 use super::{
     acquisition::ProfileAcquisition,
     import::SourceManifest,
-    row_protocol::{AcceptanceMethod, RowReport, RowResolution},
+    row_protocol::{AcceptanceMethod, CandidateCoverage, RowReport, RowResolution},
     run_protocol::{RunPage, RunProgress, RESULT_PAGE_ROWS},
 };
 use crate::{

@@ -15,10 +15,11 @@ use athletic_rust_pipeline::{
         run_protocol::Selection,
         worker,
     },
+    store::ArtifactStore,
 };
 use clap::Parser;
 use restate_sdk::prelude::*;
-use std::io::Write;
+use std::{fs, io::Write, path::Path};
 
 pub async fn run() -> Result<()> {
     match Cli::parse().command {
@@ -60,15 +61,21 @@ pub async fn run() -> Result<()> {
             input,
             output,
             sha256,
+            store,
         } => {
             let digest = WorkbookDigest::parse(&sha256)?;
             let report = tokio::task::spawn_blocking(move || {
+                let artifact_store = existing_stopped_store(&store)?;
                 let headers = EXPORT_HEADERS
                     .iter()
                     .map(|header| (*header).to_owned())
                     .collect::<Vec<_>>();
                 athletic_rust_pipeline::bundle_verify::verify_bundle(
-                    &input, &output, &digest, &headers,
+                    &input,
+                    &output,
+                    &digest,
+                    &headers,
+                    &artifact_store,
                 )
             })
             .await
@@ -78,6 +85,22 @@ pub async fn run() -> Result<()> {
             )
         }
     }
+}
+
+fn existing_stopped_store(path: &Path) -> Result<ArtifactStore> {
+    let metadata = fs::symlink_metadata(path)
+        .with_context(|| format!("opening existing artifact store {}", path.display()))?;
+    if !metadata.file_type().is_dir() {
+        bail!("artifact store path is not a directory");
+    }
+    // Pinned Fjall 3 chooses recovery versus creation from this marker.
+    let marker = fs::symlink_metadata(path.join("version"))
+        .context("existing Fjall version marker is required; refusing to create a store")?;
+    if !marker.file_type().is_file() {
+        bail!("artifact store version marker is not a regular file");
+    }
+    ArtifactStore::open(path)
+        .context("opening stopped artifact store (an active worker store is refused)")
 }
 
 async fn start(args: Start) -> Result<()> {

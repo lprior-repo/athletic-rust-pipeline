@@ -16,6 +16,10 @@ Rust performs routine parsing, arithmetic, mark comparison, and deterministic ma
 
 Source acquisition uses `reqwest`; HTTP methods, admission and durable retry policy stay in the native runtime. Profile and search extraction use `lol_html` streaming handlers instead of a materialized DOM. Parser-internal accounted memory is capped at 8 MiB, with separate input and evidence-capture bounds; this is not a total-process memory limit. Source responses are bounded at 32 MiB, with incomplete bodies rejected. Parser revision changes invalidate parsed evidence while preserving compatible raw HTTP receipts.
 
+Every discovered athlete remains in explicit `Complete`, `Incomplete`, or `NameExcluded` coverage. The initial probe fully parses both sport-specific Bio responses and profile HTML, retaining failures, receipts, retry evidence and authorized follow-up requests. Only source-bound proof of a different name can skip TeamNav expansion: raw TF/XC name components and scoped HTML hints must agree before comparison with the original source name. Search display names, missing hints, conflicting identities or failed initial acquisition cannot establish exclusion. A later full acquisition reuses the same probe; it does not repeat the initial HTTP work or reset its failure history.
+
+Exclusion is specific to the source row's canonical name, not a global negative cache for the athlete. Normalization treats punctuation as separators rather than deleting it: `O'Neil` and `O Neil` agree, but `ONeil` differs. Only complete full acquisitions may become eligible candidates, reach model selection, or supply selected performance summaries.
+
 Observed-best summaries retain event/timing/wind/equipment context and evidence references. Opaque numeric best flags remain unknown rather than being interpreted as verified PR claims. A summary too large for an Excel cell is explicitly relocated to the full JSONL sidecar with row/report/athlete linkage; it is not truncated.
 
 ## Build and checks
@@ -69,18 +73,23 @@ cargo run --release -- export --run RUN_DIGEST --output /absolute/new/results.xl
 cargo run --release -- verify \
   --input /absolute/path/to/original.xlsx \
   --output /absolute/new/results.xlsx \
-  --sha256 ORIGINAL_SHA256
+  --sha256 ORIGINAL_SHA256 \
+  --store /absolute/path/to/stopped/artifacts
 ```
 
 `--per-sheet` selects a bounded number from each source sheet; `--all` requests all source rows. Submission is not completion. Inspect coverage and verify outputs before expanding a real pilot. Reuse a source snapshot only when its evidence contract is unchanged; cached observations are snapshot-scoped. Changed source fixtures require a new snapshot.
 
 Export publishes an XLSX, a detailed JSONL sidecar, and a commit receipt. Original source fields and row positions are preserved; annotation columns are appended. Partial exports retain explicit pending rows. Destinations are non-clobbering and bound to one run. The commit receipt is published last: the files are not an atomic multi-file transaction. Treat a missing receipt as an incomplete publication.
 
+Export verifies through the worker that owns its artifact store. Standalone `verify --store` requires the existing stopped database, not an empty directory; never open or copy a live Fjall directory from another process. An artifact-directory copy alone is not a coordinated Restate rollback image.
+
 The independent `verify` command preflights both workbooks before sparse-cell readback, checks source hashes, original fields, source-sheet order and row accounting in the actual XLSX, then checks retained JSONL result evidence and binds every workbook annotation, including performance summaries, to its sidecar row. Sidecar source fields must have exactly the original column keys and values; annotation columns cannot substitute for original fields. Typed report, assessment and profile digests and retained-performance projections must agree. Positive checks cover selected identity, retained profile/document references, attributed participation, complete discovery and deterministic uniqueness. Review rows may retain conflicts without becoming positive results. Source, XLSX and sidecar hashes are checked for changes during verification. **This establishes retained-evidence consistency, not source authenticity or unknowable real-world identity accuracy; PR arithmetic and raw-source authenticity are not independently proved by this command.**
+
+Embedded report, assessment, discovery, probe and full-acquisition metadata must match their hash-verified bytes in the artifact store. Complete coverage must retain its successful initial probe's identity witnesses, documents and receipt/operation prefixes. Name exclusions additionally reparse bounded raw Bio/HTML documents and bind Bio receipts to exactly `athleteId`, the requested sport and `level=0`; missing, duplicate or extra query parameters cannot establish that witness. Missing raw exclusion documents, altered bytes and unpublished replacement metadata fail verification.
 
 Local-review acceptance is additionally checked against an assessment reconstructed from the retained source and profiles, followed by the production selection-authorization rule. Rehashed candidate flags cannot bypass that rule. A verified relay-member result identifies the relay separately from its member; the relay ID is not required to equal the selected athlete ID.
 
-Restate owns durable calls, cached workflow results, operation retry policies and orchestration. HTTP attempt evidence is retained, but an external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee.
+Restate owns durable calls, cached workflow results, operation retry policies and orchestration. Each HTTP run allows an initial attempt plus three SDK retries. `observed_attempts` counts retained completed-attempt records, not remote request starts: records are published after response handling. An external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee, and workflow-wide request totals are not per-operation retry counts.
 
 ### Recovery and paused invocations
 
@@ -94,6 +103,10 @@ curl --fail-with-body --request PATCH \
 ```
 
 This is an operator-controlled recovery action, not an unbounded retry loop. Preserve failure history and account for uncertain in-flight HTTP effects. A separate controlled Restate-server restart recovered automatically from its existing data directory. Both recovered synthetic runs completed all eight rows and passed workbook verification; subsequent exact replays added zero source/model requests. The worker-kill result is **operator-assisted recovery**, not proof of automatic worker-only recovery.
+
+Additional in-flight exercises restored the same frozen worker after interrupting source HTTP and an actual Q5 review. Both required explicit resumes of paused dependencies. The source run recovered one accepted row; its 18 requests covered 13 logical request identities, each observed at most twice. The model proxy completed two requests with identical bodies to the same assigned Q5 model, losing the first response before worker acknowledgement; the application retained one completed-attempt record. The unresolved review remained non-positive, with no second-model consensus. Independent CLI verification passed both recovered exports. These observations account for the lost-acknowledgement window; they do not establish automatic recovery or a physical-request ceiling across crashes and operator resumes.
+
+An additional in-flight cancellation left its source row explicitly pending, with no accepted or review result. Two source operations had started before cancellation acceptance; the second completed afterward. Native invocation drainage and independent verification of the partial export both passed.
 
 Exact replay requires the same input digest, source snapshot label, execution label and selection/concurrency arguments. Changing or omitting the snapshot label can submit different work. Upgrade CLI and worker cache protocols together; do not replay in-flight journals against incompatible parser or orchestration contracts.
 
@@ -109,6 +122,8 @@ curl --fail-with-body --request PATCH \
 Cancellation acceptance is not drainage. The coordinator cancels admitted row calls and drains its pending native futures; row and effect handlers propagate native cancellation instead of publishing ordinary review results or blocking source admission. In the controlled cancellation exercise, the root and eight admitted rows terminated with cancellation, no row reports were published, and exactly one already-started HTTP request occurred. A subsequent run completed and verified the synthetic workbook.
 
 Before changing an executable or its configuration, stop admission and confirm the old deployment's invocations and external requests have drained. Do not hot-replace an incompatible worker behind the same endpoint. Preserve a verified partial export and invocation history. Keep one owning worker per artifact directory; stop it before an offline directory backup. Reuse raw source snapshots only when their acquisition contract remains valid, and advance parsed-evidence/row revisions when those contracts change.
+
+Use a fresh endpoint URI for a new frozen worker build and inspect the registered service handlers before submission. Reposting an already registered URI can return its old deployment manifest without rediscovering changed handlers. A controlled stale-manifest submission left paused rows that required explicit operator termination after cancellation; cancellation acceptance alone did not clear those paused rows.
 
 ## Synthetic native exercise
 
@@ -130,5 +145,7 @@ Moving those same field values to differently named worksheets in a separate wor
 Completed-effect recovery was also exercised after a native Restate process restart and, separately, forced termination (`SIGKILL`) of an idle worker. A fresh coordinator execution after worker recovery reused retained source/model work and exported both rows with all 30 original fields. Neither exercise repeated a source or model call. These checks do not establish exactly-once behavior for uncertain in-flight HTTP effects.
 
 The bounded-HTML exercise served a valid 9,437,374-byte document containing an oversized attribute: below the 32 MiB HTTP body limit, but above the streaming parser's 8 MiB accounted-memory limit. Both native rows retained a parser failure and required review, with no model outcomes; export verified all 30 original fields. A direct production-parser diagnostic accepted the equivalent small document and reported memory-limit exhaustion for the large one. The parser setting is not a whole-process RSS limit.
+
+The identity-acquisition exercise completed 27 synthetic rows with 8 accepted, 3 no-match and 16 review results, preserving all 405 original fields. A focused 26-row cold comparison used 378 source calls instead of 394: all 16 targeted TeamNav expansions were avoided, while the failed TF probe still made four attempts rather than being retried again by full acquisition. Warm execution and exact completed replay added no source or model calls. The hardened verifier accepted the native workbook and rejected ten targeted metadata/context mutations plus seven missing/corrupt artifact controls; restoring the isolated store recovered the original 27-row result counts.
 
 Run access-denial scenarios separately: denial deliberately halts global source admission, so it can make other concurrent rows require review. Synthetic evidence is not the real 100-row pilot or completed full-workbook delivery. Live rollout, raw-source/PR verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.

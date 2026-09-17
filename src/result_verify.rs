@@ -1,11 +1,15 @@
 //! Independent verification of exported result-detail JSONL.
 //!
-//! Checks consistency of positive-result claims with retained structured evidence.
-//! It does not authenticate raw source documents or establish real-world identity.
+//! Checks consistency of terminal claims with retained structured evidence and
+//! independently reparses raw Bio/HTML receipts for source-bound exclusions.
 //! `bundle_verify` separately binds these results to preserved source/XLSX fields.
 
 mod checks;
+mod complete;
+mod coverage;
+mod exclusions;
 
+use crate::store::ArtifactStore;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -27,11 +31,12 @@ pub struct ResultVerificationReport {
     pub no_match_rows: u64,
     pub pending_rows: u64,
 }
-
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct DetailRow {
     pub(super) source: crate::model::SourceRecord,
+    pub(super) discovery: Option<serde_json::Value>,
+    pub(super) identity_artifacts: Vec<serde_json::Value>,
     pub(super) report_digest: Option<crate::domain::identity::EvidenceDigest>,
     pub(super) report: Option<crate::runtime::row_protocol::RowReport>,
     pub(super) assessment: Option<serde_json::Value>,
@@ -39,14 +44,14 @@ struct DetailRow {
     pub(super) performance_evidence: Vec<serde_json::Value>,
 }
 
-/// Independently verifies positive decisions and detail-row integrity.
+/// Independently verifies positive decisions, retained coverage, and detail-row integrity.
 ///
-/// The verifier reads only the JSONL detail artifact. It checks source/report
-/// binding, retained profile evidence, assessment selections, and (when present)
-/// local-review selections. It does not establish workbook membership, verify
-/// exported XLSX fields, or verify XLSX/detail provenance. Graduation and grade
-/// observations are descriptive and never eligibility gates.
-pub fn verify_results(detail: &Path) -> Result<ResultVerificationReport> {
+/// The verifier reads the JSONL detail artifact and the existing stopped
+/// ArtifactStore. It checks source/report binding, discovery and identity
+/// coverage, retained profile evidence, assessment selections, and (when
+/// present) local-review selections. It does not establish workbook membership,
+/// verify exported XLSX fields, or verify XLSX/detail provenance.
+pub fn verify_results(detail: &Path, store: &ArtifactStore) -> Result<ResultVerificationReport> {
     let file = File::open(detail)
         .with_context(|| format!("opening detail artifact {}", detail.display()))?;
     let mut reader = BufReader::new(file);
@@ -84,7 +89,7 @@ pub fn verify_results(detail: &Path) -> Result<ResultVerificationReport> {
                 row.source.source_key
             );
         }
-        checks::verify_embedded_artifacts(&row, &raw).with_context(|| {
+        checks::verify_embedded_artifacts(&row, &raw, store).with_context(|| {
             format!("verifying embedded artifact serialization at detail line {line_number}")
         })?;
         let state = checks::verify_row(&row)

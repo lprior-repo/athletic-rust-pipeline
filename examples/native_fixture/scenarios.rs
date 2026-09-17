@@ -16,10 +16,20 @@ pub enum Scenario {
     AccessDenied,
     SplitLocation,
     GenericSchool,
+    NameExclusion,
+    ProbeFailure,
+    BioIdentityConflict,
+    HtmlIdentityUnknown,
+    IncompleteIdentity,
+    WrongBioId,
+    MisleadingSearchName,
+    MissingHtmlHint,
+    RawIdentityConflict,
+    HtmlAliasConflict,
 }
 
 impl Scenario {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 22] = [
         Self::Match,
         Self::Duplicate,
         Self::Ambiguous,
@@ -32,6 +42,16 @@ impl Scenario {
         Self::AccessDenied,
         Self::SplitLocation,
         Self::GenericSchool,
+        Self::NameExclusion,
+        Self::ProbeFailure,
+        Self::BioIdentityConflict,
+        Self::HtmlIdentityUnknown,
+        Self::IncompleteIdentity,
+        Self::WrongBioId,
+        Self::MisleadingSearchName,
+        Self::MissingHtmlHint,
+        Self::RawIdentityConflict,
+        Self::HtmlAliasConflict,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -48,6 +68,16 @@ impl Scenario {
             Self::AccessDenied => "access-denied",
             Self::SplitLocation => "split-location",
             Self::GenericSchool => "generic-school",
+            Self::NameExclusion => "name-exclusion",
+            Self::ProbeFailure => "probe-failure",
+            Self::BioIdentityConflict => "bio-identity-conflict",
+            Self::HtmlIdentityUnknown => "html-identity-unknown",
+            Self::IncompleteIdentity => "incomplete-identity",
+            Self::WrongBioId => "wrong-bio-id",
+            Self::MisleadingSearchName => "misleading-search-name",
+            Self::MissingHtmlHint => "missing-html-hint",
+            Self::RawIdentityConflict => "raw-identity-conflict",
+            Self::HtmlAliasConflict => "html-alias-conflict",
         }
     }
 
@@ -57,6 +87,29 @@ impl Scenario {
             .map(Self::as_str)
             .map(str::to_owned)
             .collect()
+    }
+
+    pub fn identity_query(normalized: &str) -> Option<Self> {
+        const CASES: [(&str, Scenario); 15] = [
+            ("coverage", Scenario::NameExclusion),
+            ("cover'age", Scenario::NameExclusion),
+            ("cover age", Scenario::NameExclusion),
+            ("other", Scenario::NameExclusion),
+            ("exclusion", Scenario::NameExclusion),
+            ("failurecase", Scenario::ProbeFailure),
+            ("bioconflict", Scenario::BioIdentityConflict),
+            ("statecase", Scenario::HtmlIdentityUnknown),
+            ("componentcase", Scenario::IncompleteIdentity),
+            ("bindingcase", Scenario::WrongBioId),
+            ("displaycase", Scenario::MisleadingSearchName),
+            ("nohintcase", Scenario::MissingHtmlHint),
+            ("rawcase", Scenario::RawIdentityConflict),
+            ("htmlaliascase", Scenario::HtmlAliasConflict),
+            ("cover’age", Scenario::NameExclusion),
+        ];
+        CASES
+            .iter()
+            .find_map(|(needle, case)| normalized.contains(needle).then_some(*case))
     }
 }
 

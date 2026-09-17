@@ -35,7 +35,7 @@ pub enum SourceResource {
     },
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DocumentReceipt {
     pub digest: EvidenceDigest,
     pub source_url: String,
@@ -63,7 +63,7 @@ pub enum FailureCode {
 
 /// Restate owns scheduling. Observed effects are not an exact SDK retry counter:
 /// an unacknowledged effect may repeat during recovery.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "ownership")]
 pub enum RetryEvidence {
     NotAttempted,

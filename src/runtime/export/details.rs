@@ -8,21 +8,29 @@ use std::io::Write;
 #[derive(Debug, Serialize)]
 pub(super) struct DetailRow {
     source: SourceRecord,
+    discovery: Option<Value>,
+    identity_artifacts: Vec<Value>,
     report_digest: Option<EvidenceDigest>,
     report: Option<super::RowReport>,
     assessment: Option<Value>,
     profile_artifacts: Vec<Value>,
     performance_evidence: Vec<Value>,
 }
-
 pub(super) fn write_detail<W: Write>(
     detail: &mut W,
     source: SourceRecord,
     digest: Option<EvidenceDigest>,
     projection: Option<Projection>,
 ) -> Result<()> {
-    let (report, assessment, profile_artifacts, performance_evidence) = match projection {
-        None => (None, None, Vec::new(), Vec::new()),
+    let (
+        discovery,
+        identity_artifacts,
+        report,
+        assessment,
+        profile_artifacts,
+        performance_evidence,
+    ) = match projection {
+        None => (None, Vec::new(), None, None, Vec::new(), Vec::new()),
         Some(value) => {
             let performance_evidence = value
                 .profile_artifacts
@@ -30,6 +38,8 @@ pub(super) fn write_detail<W: Write>(
                 .flat_map(super::projection::raw_performance_values)
                 .collect();
             (
+                value.discovery,
+                value.identity_artifacts,
                 Some(value.report),
                 value.assessment,
                 value.profile_artifacts,
@@ -39,6 +49,8 @@ pub(super) fn write_detail<W: Write>(
     };
     let row = DetailRow {
         source,
+        discovery,
+        identity_artifacts,
         report_digest: digest,
         report,
         assessment,

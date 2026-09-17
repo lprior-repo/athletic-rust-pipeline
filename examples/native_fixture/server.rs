@@ -269,6 +269,9 @@ async fn bio(State(state): State<FixtureState>, Query(query): Query<SourceQuery>
     let output = match case {
         Scenario::AccessDenied => failure(StatusCode::FORBIDDEN, "fixture access denied"),
         Scenario::RetryExhaustion => retryable_failure("retry exhaustion"),
+        Scenario::ProbeFailure if id == 1017 && sport == "tf" => {
+            retryable_failure("identity probe source failure")
+        }
         Scenario::PayloadLimit => payloads::response(
             StatusCode::OK,
             "application/json",

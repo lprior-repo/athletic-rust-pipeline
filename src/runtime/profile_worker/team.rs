@@ -2,17 +2,11 @@ use anyhow::{anyhow, bail, Context, Result};
 use serde_json::Value;
 use std::collections::BTreeSet;
 
+use super::super::acquisition::TeamRequest;
 use crate::domain::evidence::{EvidenceIssue, EvidenceRef, Sport};
 use crate::domain::facts::{Location, SchoolName};
 use crate::domain::identity::EvidenceDigest;
 use crate::profile::parse_location;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct TeamRequest {
-    pub(crate) team_id: u64,
-    pub(crate) sport: Sport,
-    pub(crate) season: u16,
-}
 
 #[derive(Debug, Clone)]
 pub(crate) struct TeamObservation {
@@ -23,22 +17,14 @@ pub(crate) struct TeamObservation {
     pub(crate) evidence: EvidenceRef,
 }
 
-const MAX_INPUT_BYTES: usize = 32 * 1024 * 1024;
 const MAX_ENTRIES: usize = 100_000;
 const MAX_TEAM_ID: u64 = 10_000_000_000_000;
 
-pub(crate) fn authorized_requests(
-    bytes: &[u8],
+pub(crate) fn authorized_requests_value(
+    object: &serde_json::Map<String, Value>,
     sport: Sport,
     digest: &EvidenceDigest,
 ) -> Result<(Vec<TeamRequest>, Vec<EvidenceIssue>)> {
-    if bytes.len() > MAX_INPUT_BYTES {
-        bail!("bio JSON exceeds 32 MiB");
-    }
-    let root: Value = serde_json::from_slice(bytes).context("bio JSON is invalid")?;
-    let object = root
-        .as_object()
-        .ok_or_else(|| anyhow!("bio envelope is not an object"))?;
     let teams = object.get("allTeams").and_then(Value::as_object);
     let seasons = object.get("allSeasons").and_then(Value::as_array);
     let mut issues = Vec::new();
@@ -233,7 +219,8 @@ mod tests {
     fn authorized_requests_accepts_source_season_identifier() {
         let digest = digest();
         let body = br#"{"allTeams":{"7":{"SchoolName":"Synthetic High"}},"allSeasons":[{"SchoolID":7,"IDSeason":12025}]}"#;
-        let result = authorized_requests(body, Sport::TrackField, &digest);
+        let object = serde_json::from_slice(body).expect("synthetic JSON");
+        let result = authorized_requests_value(&object, Sport::TrackField, &digest);
         assert!(result.is_ok_and(|(requests, _)| requests
             .first()
             .is_some_and(|request| request.season == 12025)));

@@ -10,13 +10,13 @@ use crate::domain::evidence::{
 };
 use crate::domain::facts::{AthleteName, SchoolName};
 use crate::domain::identity::{AthleteId, EvidenceDigest, ProfileUrl};
+use crate::domain::name::{BioIdentityObservation, CanonicalName};
 
 const MAX_BIO_BYTES: usize = 32 * 1024 * 1024;
 const MAX_ITEMS: usize = 100_000;
 const MAX_TEXT_BYTES: usize = 4_096;
 const MAX_SOURCE_ID: u64 = 10_000_000_000_000;
 const MAX_DISTANCE_DISPLAY: f64 = 10_000_000_000_000.0;
-
 pub fn parse_bio(
     id: AthleteId,
     sport: Sport,
@@ -30,22 +30,34 @@ pub fn parse_bio(
     let object = root
         .as_object()
         .ok_or_else(|| anyhow!("bio envelope is not an object"))?;
+    parse_bio_value(id, sport, digest, object).map(|(profile, _)| profile)
+}
+
+pub(crate) fn parse_bio_value(
+    id: AthleteId,
+    sport: Sport,
+    digest: EvidenceDigest,
+    root: &Map<String, Value>,
+) -> Result<(ProfileEvidence, Option<BioIdentityObservation>)> {
     let mut issues = Vec::new();
-    let name = parse_identity(object, id, &digest, &mut issues)?;
-    let (teams, grades) = parse_teams(object, &digest, &mut issues);
-    let parsed = parse_results(object, id, sport, &digest, &mut issues);
-    Ok(ProfileEvidence {
-        athlete_id: id,
-        profile_url: profile_url(id, sport)?,
-        name,
-        teams,
-        graduation_years: Vec::new(),
-        grades,
-        sports: vec![availability(sport, parsed.count, parsed.present)],
-        results: parsed.results,
-        issues,
-        documents: vec![digest],
-    })
+    let (name, identity) = parse_identity(root, id, sport, &digest, &mut issues)?;
+    let (teams, grades) = parse_teams(root, &digest, &mut issues);
+    let parsed = parse_results(root, id, sport, &digest, &mut issues);
+    Ok((
+        ProfileEvidence {
+            athlete_id: id,
+            profile_url: profile_url(id, sport)?,
+            name,
+            teams,
+            graduation_years: Vec::new(),
+            grades,
+            sports: vec![availability(sport, parsed.count, parsed.present)],
+            results: parsed.results,
+            issues,
+            documents: vec![digest],
+        },
+        identity,
+    ))
 }
 
 fn profile_url(id: AthleteId, sport: Sport) -> Result<ProfileUrl> {
@@ -63,9 +75,10 @@ fn profile_url(id: AthleteId, sport: Sport) -> Result<ProfileUrl> {
 fn parse_identity(
     root: &Map<String, Value>,
     requested: AthleteId,
+    sport: Sport,
     digest: &EvidenceDigest,
     issues: &mut Vec<EvidenceIssue>,
-) -> Result<Observed<AthleteName>> {
+) -> Result<(Observed<AthleteName>, Option<BioIdentityObservation>)> {
     let athlete = root
         .get("athlete")
         .and_then(Value::as_object)
@@ -83,17 +96,45 @@ fn parse_identity(
     }
     let first = athlete_text(athlete.get("FirstName"), "FirstName")?;
     let last = athlete_text(athlete.get("LastName"), "LastName")?;
-    let value =
-        AthleteName::parse(format!("{first} {last}").trim()).context("athlete name is invalid")?;
-    let evidence = ev(digest, "/athlete/FirstName+/LastName");
-    if first.is_empty() || last.is_empty() {
+    let first_trimmed = first.trim();
+    let last_trimmed = last.trim();
+    let value = AthleteName::parse(format!("{first_trimmed} {last_trimmed}").trim())
+        .context("athlete name is invalid")?;
+    let first_evidence = ev(digest, "/athlete/FirstName");
+    let last_evidence = ev(digest, "/athlete/LastName");
+    let identity_complete =
+        CanonicalName::parse(first_trimmed).is_ok() && CanonicalName::parse(last_trimmed).is_ok();
+    if !identity_complete {
         issues.push(issue(
             "identity_incomplete",
-            "athlete name has an empty component",
-            Some(evidence.clone()),
+            "athlete name has an empty normalized component",
+            Some(first_evidence.clone()),
         ));
     }
-    Ok(Observed { value, evidence })
+    let first_name = AthleteName::parse(&first).ok();
+    let last_name = AthleteName::parse(&last).ok();
+    let identity = match (first_name, last_name) {
+        (Some(first), Some(last)) if identity_complete => Some(BioIdentityObservation {
+            athlete_id: requested,
+            sport,
+            first: Observed {
+                value: first,
+                evidence: first_evidence,
+            },
+            last: Observed {
+                value: last,
+                evidence: last_evidence,
+            },
+        }),
+        _ => None,
+    };
+    Ok((
+        Observed {
+            value,
+            evidence: ev(digest, "/athlete/FirstName+/LastName"),
+        },
+        identity,
+    ))
 }
 
 fn athlete_text(value: Option<&Value>, key: &str) -> Result<String> {
@@ -101,9 +142,9 @@ fn athlete_text(value: Option<&Value>, key: &str) -> Result<String> {
         .and_then(Value::as_str)
         .ok_or_else(|| anyhow!("athlete {key} is not text"))?;
     if text.len() > MAX_TEXT_BYTES {
-        bail!("athlete {key} exceeds {} bytes", MAX_TEXT_BYTES);
+        bail!("athlete {key} exceeds {MAX_TEXT_BYTES} bytes");
     }
-    Ok(text.trim().to_owned())
+    Ok(text.to_owned())
 }
 
 fn parse_teams(

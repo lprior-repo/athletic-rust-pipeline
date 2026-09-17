@@ -370,7 +370,13 @@ fn verify_local_authorization(
                 .ok_or_else(|| anyhow::anyhow!("local acceptance lacks a candidate profile"))
         })
         .collect::<Result<Vec<_>>>()?;
-    let recomputed = decision::assess(&row.source, &profiles, assessment.search.clone())?;
+    let recomputed = decision::assess(
+        &row.source,
+        profiles
+            .iter()
+            .map(crate::domain::candidate::CandidateEvidence::Complete),
+        assessment.search.clone(),
+    )?;
     if recomputed.decision() != Decision::IdentityReview {
         bail!("retained source evidence does not require identity review");
     }

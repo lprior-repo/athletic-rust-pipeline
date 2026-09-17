@@ -1,4 +1,5 @@
 use crate::domain::{
+    candidate::{CandidateCoverage, CandidateEvidence},
     evidence::ProfileEvidence,
     identity::{AthleteId, EvidenceDigest},
 };
@@ -39,6 +40,7 @@ pub struct CandidateReason {
     reasons: Vec<String>,
     evidence: Vec<EvidenceDigest>,
     mailing_location_matches: bool,
+    coverage: CandidateCoverage,
 }
 
 impl CandidateReason {
@@ -81,6 +83,10 @@ impl CandidateReason {
     #[must_use]
     pub fn evidence_conflict(&self) -> bool {
         self.evidence_conflict
+    }
+    #[must_use]
+    pub fn coverage(&self) -> CandidateCoverage {
+        self.coverage
     }
 }
 
@@ -144,25 +150,82 @@ impl FinalDecision {
     }
 }
 
-pub fn assess(
+struct CandidateGroup<'a> {
+    profiles: Vec<&'a ProfileEvidence>,
+    coverage: CandidateCoverage,
+    inconsistent: bool,
+    exclusion_documents: Vec<EvidenceDigest>,
+}
+
+pub fn assess<'a, I>(
     record: &SourceRecord,
-    profiles: &[ProfileEvidence],
+    evidence: I,
     search: SearchCompleteness,
-) -> Result<Assessment> {
-    validate_input(record, profiles, &search)?;
+) -> Result<Assessment>
+where
+    I: IntoIterator<Item = CandidateEvidence<'a>>,
+{
+    let entries = evidence
+        .into_iter()
+        .take(MAX_PROFILES + 1)
+        .collect::<Vec<_>>();
+    validate_input(record, &entries, &search)?;
+    let groups = group_evidence(&entries);
     let source = matching::source_identity(record);
-    let groups = matching::group_profiles(profiles);
     let candidates = groups
         .iter()
-        .map(|(id, entries)| matching::candidate_reason(*id, entries, &source))
+        .map(|(id, group)| {
+            let coverage = if group.inconsistent {
+                CandidateCoverage::Incomplete
+            } else {
+                group.coverage
+            };
+            matching::candidate_reason(
+                *id,
+                &group.profiles,
+                &source,
+                coverage,
+                &group.exclusion_documents,
+            )
+        })
         .collect::<Vec<_>>();
-    let (decision, verified) = choose_decision(&source, &candidates, &search);
+    let incomplete = groups
+        .values()
+        .any(|group| group.inconsistent || matches!(group.coverage, CandidateCoverage::Incomplete));
+    let (decision, verified) = choose_decision(&source, &candidates, &search, incomplete);
     Ok(Assessment {
         decision,
         candidates,
         search,
         verified,
     })
+}
+
+fn group_evidence<'a>(
+    entries: &[CandidateEvidence<'a>],
+) -> std::collections::BTreeMap<AthleteId, CandidateGroup<'a>> {
+    entries
+        .iter()
+        .fold(std::collections::BTreeMap::new(), |mut groups, entry| {
+            let id = (*entry).athlete_id();
+            let coverage = (*entry).coverage();
+            let group = groups.entry(id).or_insert_with(|| CandidateGroup {
+                profiles: Vec::new(),
+                coverage,
+                inconsistent: false,
+                exclusion_documents: Vec::new(),
+            });
+            if group.coverage != coverage {
+                group.inconsistent = true;
+            }
+            group.profiles.extend((*entry).profiles().iter());
+            if let Some(exclusion) = (*entry).exclusion() {
+                group
+                    .exclusion_documents
+                    .extend(exclusion.documents().iter().cloned());
+            }
+            groups
+        })
 }
 
 pub fn apply_review(assessment: &Assessment, choice: ReviewChoice) -> Result<FinalDecision> {
@@ -214,12 +277,39 @@ fn selection_distinguishes(assessment: &Assessment, selected: &CandidateReason) 
 
 fn validate_input(
     record: &SourceRecord,
-    profiles: &[ProfileEvidence],
+    entries: &[CandidateEvidence<'_>],
     search: &SearchCompleteness,
 ) -> Result<()> {
-    if profiles.len() > MAX_PROFILES {
-        bail!("profile evidence exceeds {MAX_PROFILES} entries")
+    if entries.len() > MAX_PROFILES {
+        bail!("candidate evidence exceeds {MAX_PROFILES} entries")
     }
+    if entries
+        .iter()
+        .flat_map(|entry| (*entry).profiles().iter())
+        .take(MAX_PROFILES * 2 + 1)
+        .count()
+        > MAX_PROFILES * 2
+    {
+        bail!("profile fragments exceed twice the candidate bound")
+    }
+    let source_name = crate::domain::name::CanonicalName::from_source(record)?;
+    entries.iter().try_for_each(|entry| {
+        let athlete_id = (*entry).athlete_id();
+        if (*entry)
+            .profiles()
+            .iter()
+            .any(|profile| profile.athlete_id != athlete_id)
+        {
+            bail!("candidate profile evidence has a mismatched athlete ID")
+        }
+        if (*entry)
+            .exclusion()
+            .is_some_and(|exclusion| source_name.as_ref() != Some(exclusion.source_name()))
+        {
+            bail!("name exclusion belongs to another source-name context")
+        }
+        Ok::<(), anyhow::Error>(())
+    })?;
     const IDENTITY_FIELDS: [&str; 5] = [
         "Person First",
         "Person Last",
@@ -256,10 +346,12 @@ fn choose_decision(
     source: &matching::SourceIdentity,
     candidates: &[CandidateReason],
     search: &SearchCompleteness,
+    incomplete: bool,
 ) -> (Decision, Option<VerifiedMatch>) {
     if source.name.is_none()
         || source.school.is_none()
         || !matches!(search, SearchCompleteness::Complete { .. })
+        || incomplete
     {
         return (Decision::EvidenceReview, None);
     }

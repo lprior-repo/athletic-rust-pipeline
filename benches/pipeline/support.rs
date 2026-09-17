@@ -1,6 +1,7 @@
 use anyhow::{bail, Context, Result};
 use athletic_rust_pipeline::{
     domain::{
+        candidate::CandidateEvidence,
         decision::{assess, SearchCompleteness},
         evidence::Sport,
         identity::{AthleteId, EvidenceDigest, SourceRowKey, WorkbookDigest},
@@ -95,7 +96,7 @@ impl Fixture {
             .context("benchmark fixture has no source records")?;
         let assessment = assess(
             source,
-            std::slice::from_ref(&profile),
+            [CandidateEvidence::Complete(&profile)],
             SearchCompleteness::Complete {
                 evidence: evidence_digest.clone(),
             },

@@ -2,6 +2,7 @@
 
 use athletic_rust_pipeline::{
     domain::{
+        candidate::CandidateEvidence,
         decision::{apply_review, assess, ReviewChoice, SearchCompleteness},
         evidence::ProfileEvidence,
         identity::{AthleteId, EvidenceDigest},
@@ -98,7 +99,7 @@ fn exercise(choice: &ReviewChoice, contradictory: bool) {
     let profiles = vec![profile(contradictory.then_some("identity_conflict"))];
     let assessment = assess(
         &source,
-        &profiles,
+        profiles.iter().map(CandidateEvidence::Complete),
         SearchCompleteness::Complete { evidence },
     )
     .expect("static decision fuzz assessment fixture must be valid");

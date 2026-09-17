@@ -1,5 +1,6 @@
 use super::*;
 use crate::domain::{
+    candidate::CandidateEvidence,
     evidence::{EvidenceRef, GradeAtSeason, Observed, ProfileEvidence, Sport, TeamEvidence},
     facts::{AthleteName, CityName, GraduationYear, Location, RegionName, SchoolName},
     identity::{AthleteId, EvidenceDigest, ProfileUrl},
@@ -113,18 +114,23 @@ fn participation(id: u64) -> crate::domain::evidence::ResultEvidence {
 fn complete() -> SearchCompleteness {
     SearchCompleteness::Complete { evidence: digest() }
 }
+fn complete_candidates<'a>(
+    profiles: &'a [ProfileEvidence],
+) -> impl Iterator<Item = CandidateEvidence<'a>> {
+    profiles.iter().map(CandidateEvidence::Complete)
+}
 
 #[test]
 fn confident_bypass_requires_all_independent_corrobation() {
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -143,7 +149,7 @@ fn duplicate_sports_are_one_identity_and_two_candidates_are_unresolved() {
     let other = profile(8, "Ada Runner", "Central High", "Austin", Some(2027));
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[tf, xc, other],
+        complete_candidates(&[tf, xc, other]),
         complete(),
     )
     .expect("assessment");
@@ -183,7 +189,7 @@ fn workbook_membership_accepts_corroborated_identity_without_a_cohort_requiremen
     for candidate in cases {
         let assessment = assess(
             &source("Ada", "Runner", Some("Central High"), "Austin"),
-            &[candidate],
+            complete_candidates(&[candidate]),
             complete(),
         )
         .expect("assessment");
@@ -202,13 +208,13 @@ fn incomplete_search_never_claims_match_or_no_match() {
     };
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         search,
     )
     .expect("assessment");
@@ -220,7 +226,7 @@ fn incomplete_search_never_claims_match_or_no_match() {
     .is_err());
     let none = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[],
+        std::iter::empty::<CandidateEvidence<'_>>(),
         SearchCompleteness::Incomplete {
             reasons: Vec::new(),
         },
@@ -240,17 +246,22 @@ fn source_labels_do_not_contaminate_name_and_central_is_not_west_central() {
         fields,
         ..SourceRecord::default()
     };
-    let assessment = assess(&contaminated, &[], complete()).expect("assessment");
+    let assessment = assess(
+        &contaminated,
+        std::iter::empty::<CandidateEvidence<'_>>(),
+        complete(),
+    )
+    .expect("assessment");
     assert_eq!(assessment.decision(), Decision::EvidenceReview);
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "West Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -261,13 +272,13 @@ fn source_labels_do_not_contaminate_name_and_central_is_not_west_central() {
 fn missing_school_and_distant_mailing_location_have_distinct_handling() {
     let missing = assess(
         &source("Ada", "Runner", None, "Austin"),
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -279,13 +290,13 @@ fn missing_school_and_distant_mailing_location_have_distinct_handling() {
     );
     let distant = assess(
         &boarding,
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -304,7 +315,7 @@ fn grade_does_not_gate_a_valid_identity_and_forged_selection_is_rejected() {
     });
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[candidate],
+        complete_candidates(&[candidate]),
         complete(),
     )
     .expect("assessment");
@@ -335,13 +346,13 @@ fn unrelated_multiline_source_fields_do_not_invalidate_identity() {
     );
     let assessment = assess(
         &original,
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -360,13 +371,13 @@ fn same_city_name_does_not_override_a_different_region() {
     );
     let assessment = assess(
         &original,
-        &[profile(
+        complete_candidates(&[profile(
             7,
             "Ada Runner",
             "Central High",
             "Austin",
             Some(2027),
-        )],
+        )]),
         complete(),
     )
     .expect("assessment");
@@ -381,7 +392,7 @@ fn graduation_year_cannot_break_an_otherwise_indistinguishable_identity_tie() {
     ];
     let assessment = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &candidates,
+        complete_candidates(&candidates),
         complete(),
     )
     .expect("assessment");
@@ -400,7 +411,7 @@ fn identity_fields_without_participation_cannot_be_accepted() {
     candidate.results.clear();
     let result = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[candidate],
+        complete_candidates(&[candidate]),
         complete(),
     )
     .expect("assessment");
@@ -424,7 +435,7 @@ fn merged_identity_conflict_cannot_disappear_behind_a_matching_name() {
         });
     let result = assess(
         &source("Ada", "Runner", Some("Central High"), "Austin"),
-        &[candidate],
+        complete_candidates(&[candidate]),
         complete(),
     )
     .expect("assessment");

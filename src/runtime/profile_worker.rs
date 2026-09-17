@@ -1,8 +1,8 @@
-mod team;
+pub(crate) mod team;
 
-use self::team::{TeamObservation, TeamRequest};
+use self::team::TeamObservation;
 use super::{
-    acquisition::{ProfileAcquisition, ProfileJob},
+    acquisition::{ProfileAcquisition, ProfileJob, ProfileProbe, TeamRequest},
     protocol::{
         DocumentReceipt, FailureCode, FetchOutcome, OperationFailure, RetryEvidence, SourceResource,
     },
@@ -13,10 +13,11 @@ use crate::{
     domain::{
         evidence::{EvidenceIssue, EvidenceRef, Observed, ProfileEvidence, TeamEvidence},
         identity::{AthleteId, EvidenceDigest, ProfileUrl},
+        name::BioIdentityObservation,
     },
     profile,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use futures::{stream, StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use std::{collections::BTreeMap, sync::Arc};
@@ -31,7 +32,8 @@ pub struct ProfileWorker {
 #[derive(Debug)]
 enum Payload {
     Bio {
-        profile: ProfileEvidence,
+        profile: Box<ProfileEvidence>,
+        identity: Option<BioIdentityObservation>,
         requests: Vec<TeamRequest>,
         issues: Vec<EvidenceIssue>,
     },
@@ -51,6 +53,7 @@ struct BuildState {
     operations: Vec<RetryEvidence>,
     failures: Vec<OperationFailure>,
     profiles: Vec<ProfileEvidence>,
+    identities: Vec<BioIdentityObservation>,
     html: Option<profile::HtmlProfileEvidence>,
     requests: Vec<TeamRequest>,
     issues: Vec<EvidenceIssue>,
@@ -66,6 +69,17 @@ struct BuildState {
 )]
 impl ProfileWorker {
     #[handler]
+    pub async fn identify(
+        &self,
+        ctx: ObjectContext<'_>,
+        input: Json<ProfileJob>,
+    ) -> Result<Json<EvidenceDigest>, HandlerError> {
+        let job = input.into_inner();
+        validate_key(&ctx, &job)?;
+        self.identify_probe(&ctx, &job).await
+    }
+
+    #[handler]
     pub async fn gather(
         &self,
         ctx: ObjectContext<'_>,
@@ -80,16 +94,67 @@ impl ProfileWorker {
         publish(&ctx, self.runtime.clone(), artifact).await
     }
 
+    async fn identify_probe(
+        &self,
+        ctx: &ObjectContext<'_>,
+        job: &ProfileJob,
+    ) -> Result<Json<EvidenceDigest>, HandlerError> {
+        if let Some(probe) = ctx.get::<Json<EvidenceDigest>>("probe").await? {
+            return Ok(probe);
+        }
+        let state = initial_phase(ctx, self.runtime.clone(), job).await?;
+        publish_probe(
+            ctx,
+            self.runtime.clone(),
+            profile_probe(job.athlete_id, state),
+        )
+        .await
+    }
+
     async fn build(
         &self,
         ctx: &ObjectContext<'_>,
         job: &ProfileJob,
     ) -> Result<ProfileAcquisition, HandlerError> {
-        let initial = initial_phase(ctx, self.runtime.clone(), job).await?;
-        team_phase(ctx, self.runtime.clone(), job, initial).await
+        let digest = self.identify_probe(ctx, job).await?;
+        let state = self
+            .runtime
+            .load_json::<ProfileProbe>(&digest.0)
+            .await
+            .map(state_from_probe)
+            .map_err(terminal)?;
+        team_phase(ctx, self.runtime.clone(), job, state).await
     }
 }
 
+fn profile_probe(athlete_id: AthleteId, state: BuildState) -> ProfileProbe {
+    ProfileProbe {
+        athlete_id,
+        responses: state.responses,
+        operations: state.operations,
+        failures: state.failures,
+        profiles: state.profiles,
+        identities: state.identities,
+        html: state.html,
+        requests: state.requests,
+        issues: state.issues,
+        complete: state.complete,
+    }
+}
+
+fn state_from_probe(probe: ProfileProbe) -> BuildState {
+    BuildState {
+        responses: probe.responses,
+        operations: probe.operations,
+        failures: probe.failures,
+        profiles: probe.profiles,
+        identities: probe.identities,
+        html: probe.html,
+        requests: probe.requests,
+        issues: probe.issues,
+        complete: probe.complete,
+    }
+}
 async fn initial_phase(
     ctx: &ObjectContext<'_>,
     runtime: Arc<Runtime>,
@@ -226,12 +291,15 @@ async fn parse_document(
             let bytes = store.get_bytes(&receipt.digest)?;
             match resource {
                 SourceResource::Bio { sport, .. } => {
-                    let profile =
-                        profile::parse_bio(athlete, sport, receipt.digest.clone(), &bytes)?;
+                    let root: serde_json::Map<String, serde_json::Value> =
+                        serde_json::from_slice(&bytes).context("bio JSON is invalid")?;
+                    let (profile, identity) =
+                        profile::parse_bio_value(athlete, sport, receipt.digest.clone(), &root)?;
                     let (requests, issues) =
-                        team::authorized_requests(&bytes, sport, &receipt.digest)?;
+                        team::authorized_requests_value(&root, sport, &receipt.digest)?;
                     Ok(Payload::Bio {
-                        profile,
+                        profile: Box::new(profile),
+                        identity,
                         requests,
                         issues,
                     })
@@ -245,9 +313,8 @@ async fn parse_document(
             }
         })
         .await
-        .map_err(|error| error.to_string())
+        .map_err(|error| format!("{error:#}"))
 }
-
 fn absorb_initial(mut state: BuildState, item: ParsedSource) -> Result<BuildState, HandlerError> {
     state.responses.extend(item.responses.clone());
     if let Some(source_failure) = item.source_failure {
@@ -265,10 +332,16 @@ fn absorb_initial(mut state: BuildState, item: ParsedSource) -> Result<BuildStat
     match item.payload {
         Some(Payload::Bio {
             profile,
+            identity,
             requests,
             issues,
         }) => {
-            state.profiles.push(profile);
+            state.profiles.push(*profile);
+            if let Some(identity) = identity {
+                state.identities.push(identity);
+            } else {
+                state.complete = false;
+            }
             state.requests.extend(requests);
             state.issues.extend(issues);
         }
@@ -641,6 +714,20 @@ async fn publish(
         .retry_policy(RunRetryPolicy::new().max_attempts(1))
         .await?;
     ctx.set("result", Json(digest.0.clone()));
+    Ok(digest)
+}
+
+async fn publish_probe(
+    ctx: &ObjectContext<'_>,
+    runtime: Arc<Runtime>,
+    probe: ProfileProbe,
+) -> Result<Json<EvidenceDigest>, HandlerError> {
+    let digest = ctx
+        .run(|| async move { Ok(Json(runtime.store_json(probe).await.map_err(terminal)?)) })
+        .name("profile-identity-probe-publication")
+        .retry_policy(RunRetryPolicy::new().max_attempts(1))
+        .await?;
+    ctx.set("probe", Json(digest.0.clone()));
     Ok(digest)
 }
 

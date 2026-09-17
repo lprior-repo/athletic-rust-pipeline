@@ -2,7 +2,7 @@ mod bio;
 mod html;
 mod merge;
 mod parser;
-
+pub(crate) use parser::parse_bio_value;
 pub use parser::{merge_profiles, parse_bio, parse_profile_html, HtmlProfileEvidence, TreeHint};
 
 pub(crate) fn parse_location(

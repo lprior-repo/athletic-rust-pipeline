@@ -6,7 +6,7 @@ use review::resolve_assessment;
 use support::{publish, publish_report, publish_terminal, source_validation, validate_job};
 
 use super::{
-    row_protocol::{RowJob, RowReport, ROW_PROTOCOL_REVISION},
+    row_protocol::{DiscoverySummary, RowJob, RowReport, ROW_PROTOCOL_REVISION},
     Runtime,
 };
 use crate::{
@@ -19,7 +19,6 @@ use crate::{
 };
 use anyhow::Context;
 use restate_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 pub(crate) const MAX_CANDIDATES: usize = 4_096;
@@ -27,13 +26,6 @@ pub(crate) const MAX_PROFILE_BYTES_PER_ROW: usize = 8 * 1024 * 1024;
 
 pub struct RowWorker {
     pub runtime: Arc<Runtime>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct DiscoverySummary {
-    pub query_artifacts: Vec<EvidenceDigest>,
-    pub complete: bool,
-    pub issues: Vec<String>,
 }
 
 #[restate_sdk::object(
@@ -134,52 +126,37 @@ impl RowWorker {
             self.runtime.clone(),
             "row-discovery-summary",
             DiscoverySummary {
+                job: job.clone(),
+                candidate_ids: discovery.candidate_ids.clone(),
                 query_artifacts: query_refs.clone(),
                 complete: discovery.complete(),
                 issues: discovery.issues.clone(),
             },
         )
         .await?;
-        let (profiles, profile_refs) = execute_profiles(
+        let (profiles, _profile_refs) = execute_profiles(
             ctx,
             self.runtime.clone(),
             &job.snapshot,
+            &source,
             &discovery.candidate_ids,
         )
         .await?;
         let search = if discovery.complete() && profiles.complete() {
-            decision::SearchCompleteness::Complete { evidence: summary }
+            decision::SearchCompleteness::Complete {
+                evidence: summary.clone(),
+            }
         } else {
-            decision::SearchCompleteness::Incomplete { reasons: vec![format!(
-                "discovery complete: {}; profile acquisition complete: {}; detailed issues retained in row report",
-                discovery.complete(), profiles.complete()
-            )] }
+            decision::SearchCompleteness::Incomplete {
+                reasons: vec![format!(
+                    "discovery complete: {}; profile acquisition complete: {}",
+                    discovery.complete(),
+                    profiles.complete()
+                )],
+            }
         };
-        let assessed =
-            match assess_and_publish(ctx, self.runtime.clone(), &source, &profiles, search).await {
-                Ok(value) => value,
-                Err(error) if error.code() == 409 => return Err(error.into()),
-                Err(error) => {
-                    let mut issues = discovery.issues;
-                    issues.extend(profiles.issues);
-                    issues.push(format!("assessment failed: {error}"));
-                    return publish_report(
-                        ctx,
-                        self.runtime.clone(),
-                        RowReport {
-                            revision: ROW_PROTOCOL_REVISION.to_owned(),
-                            job,
-                            resolution: super::row_protocol::RowResolution::ReviewRequired,
-                            assessment: None,
-                            query_evidence: query_refs,
-                            profile_evidence: profile_refs,
-                            review: None,
-                            issues,
-                        },
-                    )
-                    .await;
-                }
-            };
+        let (profiles, assessed) =
+            assess_and_publish(ctx, self.runtime.clone(), &source, profiles, search).await?;
         let (resolution, review, mut issues) = resolve_assessment(
             ctx,
             self.runtime.clone(),
@@ -191,7 +168,9 @@ impl RowWorker {
         issues.extend(discovery.issues);
         issues.extend(profiles.issues);
         if discovery.candidate_limit {
-            issues.push(format!("candidate limit exceeded: only the first {MAX_CANDIDATES} unique athlete IDs were acquired"));
+            issues.push(format!(
+                "candidate limit exceeded: only the first {MAX_CANDIDATES} unique athlete IDs were acquired"
+            ));
         }
         publish_report(
             ctx,
@@ -200,9 +179,10 @@ impl RowWorker {
                 revision: ROW_PROTOCOL_REVISION.to_owned(),
                 job,
                 resolution,
+                discovery: Some(summary),
+                candidates: profiles.coverage,
                 assessment: Some(assessed.0),
                 query_evidence: query_refs,
-                profile_evidence: profile_refs,
                 review,
                 issues,
             },
@@ -215,17 +195,19 @@ async fn assess_and_publish(
     ctx: &ObjectContext<'_>,
     runtime: Arc<Runtime>,
     source: &SourceRecord,
-    profiles: &ProfileState,
+    profiles: ProfileState,
     search: decision::SearchCompleteness,
-) -> std::result::Result<(EvidenceDigest, decision::Assessment), TerminalError> {
+) -> std::result::Result<(ProfileState, (EvidenceDigest, decision::Assessment)), TerminalError> {
     let source = source.clone();
-    let profiles = profiles.profiles.clone();
-    let assessment = runtime
-        .blocking(move || decision::assess(&source, &profiles, search))
+    let (profiles, assessment) = runtime
+        .blocking(move || {
+            let assessment = decision::assess(&source, profiles.evidence(), search)?;
+            Ok((profiles, assessment))
+        })
         .await
         .map_err(|error| TerminalError::new(error.to_string()))?;
     let digest = publish(ctx, runtime, "row-assessment", assessment.clone()).await?;
-    Ok((digest, assessment))
+    Ok((profiles, (digest, assessment)))
 }
 
 fn terminal(error: impl std::fmt::Display) -> HandlerError {

@@ -15,11 +15,24 @@ pub fn candidate_ids(case: Scenario) -> Vec<u64> {
         Scenario::Conflict => vec![1006],
         Scenario::SplitLocation => vec![1012],
         Scenario::GenericSchool => vec![1013],
+        Scenario::NameExclusion => vec![1014, 1015],
+        Scenario::ProbeFailure => vec![1016, 1017],
+        Scenario::BioIdentityConflict => vec![1018],
+        Scenario::HtmlIdentityUnknown => vec![1019],
+        Scenario::IncompleteIdentity => vec![1020],
+        Scenario::WrongBioId => vec![1021],
+        Scenario::MisleadingSearchName => vec![1022],
+        Scenario::MissingHtmlHint => vec![1023],
+        Scenario::RawIdentityConflict => vec![1024],
+        Scenario::HtmlAliasConflict => vec![1025],
         _ => Vec::new(),
     }
 }
 pub fn scenario_for_text(text: &str) -> Scenario {
     let normalized = text.to_ascii_lowercase();
+    if let Some(case) = Scenario::identity_query(&normalized) {
+        return case;
+    }
     if normalized.contains("casey") {
         Scenario::Duplicate
     } else if normalized.contains("sam") {
@@ -59,6 +72,16 @@ pub fn scenario_for_id(id: u64) -> Scenario {
         1011 => Scenario::AccessDenied,
         1012 => Scenario::SplitLocation,
         1013 => Scenario::GenericSchool,
+        1014 | 1015 => Scenario::NameExclusion,
+        1016 | 1017 => Scenario::ProbeFailure,
+        1018 => Scenario::BioIdentityConflict,
+        1019 => Scenario::HtmlIdentityUnknown,
+        1020 => Scenario::IncompleteIdentity,
+        1021 => Scenario::WrongBioId,
+        1022 => Scenario::MisleadingSearchName,
+        1023 => Scenario::MissingHtmlHint,
+        1024 => Scenario::RawIdentityConflict,
+        1025 => Scenario::HtmlAliasConflict,
         _ => Scenario::Match,
     }
 }
@@ -74,6 +97,16 @@ pub fn scenario_for_team(id: u64) -> Scenario {
         511 => Scenario::AccessDenied,
         512 | 612 => Scenario::SplitLocation,
         513 => Scenario::GenericSchool,
+        514 | 515 => Scenario::NameExclusion,
+        516 | 517 => Scenario::ProbeFailure,
+        518 => Scenario::BioIdentityConflict,
+        519 => Scenario::HtmlIdentityUnknown,
+        520 => Scenario::IncompleteIdentity,
+        521 => Scenario::WrongBioId,
+        522 => Scenario::MisleadingSearchName,
+        523 => Scenario::MissingHtmlHint,
+        524 => Scenario::RawIdentityConflict,
+        525 => Scenario::HtmlAliasConflict,
         _ => Scenario::Match,
     }
 }
@@ -86,6 +119,17 @@ pub fn display_name(id: u64) -> &'static str {
         1006 => "Taylor Clash",
         1012 => "Riley Split",
         1013 => "Gene Generic",
+        1014 => "Alex Coverage",
+        1015 => "Bert Other",
+        1016 => "Rae Failurecase",
+        1017 => "Chris Remote",
+        1018 => "Drew Bioclash",
+        1019 => "Safe Different",
+        1020 => "- Other",
+        1021 => "Wrong Binding",
+        1022 => "Lena Displaycase",
+        1023 => "Safe Nohint",
+        1024 | 1025 => "José Runner",
         _ => "Synthetic Runner",
     }
 }
@@ -100,7 +144,12 @@ pub fn search_row(id: u64, case: Scenario, sport: &str) -> String {
     } else {
         default_suffix
     };
-    format!("<tr><td><a href=\"https://www.athletic.net/athlete/{id}/{suffix}\">{}</a></td><td>Synthetic result</td></tr>", display_name(id))
+    let label = if case == Scenario::MisleadingSearchName {
+        "Somebody Else"
+    } else {
+        display_name(id)
+    };
+    format!("<tr><td><a href=\"https://www.athletic.net/athlete/{id}/{suffix}\">{label}</a></td><td>Synthetic result</td></tr>")
 }
 pub fn model_response(verdict: Value) -> Response {
     response(
@@ -128,6 +177,16 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
     };
     let name = display_name(id);
     let (first, last) = name.split_once(' ').map_or((name, "Runner"), |value| value);
+    let (first, last) = match (case, sport) {
+        (Scenario::BioIdentityConflict, "xc") => ("Different", "Person"),
+        (Scenario::RawIdentityConflict, "xc") => ("Jose", "Runner"),
+        _ => (first, last),
+    };
+    let reported_id = if case == Scenario::WrongBioId {
+        9999
+    } else {
+        id
+    };
     let (school, city, region) = identity_context(case);
     let teams = match (case, sport) {
         (Scenario::Match, _) | (Scenario::Duplicate | Scenario::SplitLocation, "tf") => {
@@ -140,7 +199,15 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
             json!({team.to_string(): {"SchoolName": school, "City": city, "State": region, "Level": 4}})
         }
     };
-    let seasons = json!([{"SchoolID":team,"IDSeason":12025}]);
+    let seasons = if id == 1015 || case == Scenario::MissingHtmlHint {
+        let mut entries = (12018_u16..=12025)
+            .map(|season| json!({"SchoolID":team,"IDSeason":season}))
+            .collect::<Vec<_>>();
+        entries.push(json!({"SchoolID":0,"IDSeason":0}));
+        Value::Array(entries)
+    } else {
+        json!([{"SchoolID":team,"IDSeason":12025}])
+    };
     let tf_results = json!([{"IDResult":id,"AthleteID":id,"Result":"10.72","SchoolID":team,"MeetID":9,"SeasonID":12025,"EventID":1,"EventTypeID":7,"PersonalBest":14,"SeasonBest":1,"FAT":1,"shortCode":format!("synthetic-tf-{id}") }]);
     let xc_results = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5000,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
     let events = json!([{"IDEvent":1,"IDEventType":7,"Event":"100 Meters","Type":"T","FieldMeasureType":"S","PersonalEvent":true}]);
@@ -152,7 +219,7 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
         _ => (events, distances),
     };
     json!({
-        "athlete":{"IDAthlete":id,"FirstName":first,"LastName":last},
+        "athlete":{"IDAthlete":reported_id,"FirstName":first,"LastName":last},
         "allSeasons":seasons,
         "allTeams":teams,
         "grades":{},
@@ -194,10 +261,20 @@ pub fn profile_html(id: u64, case: Scenario) -> String {
         Scenario::Match => "<span>Class of 2026</span>".to_owned(),
         _ => "<span>Class of 2027</span>".to_owned(),
     };
-    let scoped_name = if matches!(case, Scenario::Conflict) {
-        "Jordan Other"
-    } else {
-        display_name(id)
+    let scoped_name = match case {
+        Scenario::Conflict => "Jordan Other",
+        Scenario::HtmlAliasConflict => "Jose Runner",
+        _ => display_name(id),
     };
-    format!("<html><head><link rel=\"canonical\" href=\"{canonical}\"></head><body><div data-athlete-id=\"{id}\">{cohort}</div><script>window.anetSiteAppParams={{\"tree\":[{{\"type\":\"athlete\",\"id\":{id},\"title\":\"{scoped_name}\"}}]}};</script></body></html>")
+    let embedded_id = if case == Scenario::HtmlIdentityUnknown {
+        9999
+    } else {
+        id
+    };
+    let script = if case == Scenario::MissingHtmlHint {
+        String::new()
+    } else {
+        format!("<script>window.anetSiteAppParams={{\"tree\":[{{\"type\":\"athlete\",\"id\":{embedded_id},\"title\":\"{scoped_name}\"}}]}};</script>")
+    };
+    format!("<html><head><link rel=\"canonical\" href=\"{canonical}\"></head><body><div data-athlete-id=\"{id}\">{cohort}</div>{script}</body></html>")
 }

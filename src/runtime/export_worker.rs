@@ -198,8 +198,14 @@ fn stage_export(
         .iter()
         .map(|header| (*header).to_owned())
         .collect::<Vec<_>>();
-    let verification = verify_bundle(&manifest.original, &xlsx_path, &manifest.workbook, &headers)
-        .context("independently verifying staged workbook and result evidence")?;
+    let verification = verify_bundle(
+        &manifest.original,
+        &xlsx_path,
+        &manifest.workbook,
+        &headers,
+        &runtime.store,
+    )
+    .context("independently verifying staged workbook and result evidence")?;
     let results = &verification.results;
     if results.total_rows != report.coverage.source_rows
         || results.accepted_rows != report.coverage.accepted_rows

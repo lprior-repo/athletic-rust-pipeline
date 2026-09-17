@@ -1,4 +1,5 @@
 pub use super::bio::parse_bio;
+pub(crate) use super::bio::parse_bio_value;
 pub use super::html::{parse_profile_html, HtmlProfileEvidence, TreeHint};
 pub use super::merge::merge_profiles;
 

@@ -34,7 +34,7 @@ struct Row {
     year: &'static str,
     scenario: &'static str,
 }
-const ROWS: [Row; 14] = [
+const ROWS: [Row; 28] = [
     Row {
         first: "Ada",
         last: "Runner",
@@ -175,7 +175,34 @@ const ROWS: [Row; 14] = [
         year: "",
         scenario: "generic-school",
     },
+    identity_row("Alex", "Coverage", "name-exclusion"),
+    identity_row("Álex", "Coverage", "name-exclusion"),
+    identity_row("Bert", "Other", "name-exclusion"),
+    identity_row("Nora", "Exclusion", "name-exclusion"),
+    identity_row("Alex", "Cover'age", "name-exclusion"),
+    identity_row("Rae", "Failurecase", "probe-failure"),
+    identity_row("Pat", "Bioconflict", "bio-identity-conflict"),
+    identity_row("Pat", "Statecase", "html-identity-unknown"),
+    identity_row("Pat", "Componentcase", "incomplete-identity"),
+    identity_row("Pat", "Bindingcase", "wrong-bio-id"),
+    identity_row("Lena", "Displaycase", "misleading-search-name"),
+    identity_row("Pat", "Nohintcase", "missing-html-hint"),
+    identity_row("Pat", "Rawcase", "raw-identity-conflict"),
+    identity_row("Pat", "Htmlaliascase", "html-alias-conflict"),
 ];
+
+const fn identity_row(first: &'static str, last: &'static str, scenario: &'static str) -> Row {
+    Row {
+        first,
+        last,
+        city: "Austin",
+        region: "TX",
+        school: "Central High School",
+        sport: "Track & Field",
+        year: "",
+        scenario,
+    }
+}
 
 pub fn generate(output_dir: &Path, selected: &ScenarioSet) -> Result<PathBuf> {
     fs::create_dir_all(output_dir)

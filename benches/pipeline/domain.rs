@@ -1,6 +1,7 @@
 use super::support::{ready, Fixture, RESULT_COUNT};
 use athletic_rust_pipeline::{
     domain::{
+        candidate::CandidateEvidence,
         decision::{assess, SearchCompleteness},
         evidence::Sport,
         identity::{AthleteId, ProfileUrl},
@@ -99,14 +100,20 @@ fn benchmark_identity_and_decision(c: &mut Criterion, fixture: &Fixture) {
             )))
         })
     });
-    let profiles = vec![fixture.profile.clone()];
+    let profiles = std::slice::from_ref(&fixture.profile);
     let complete = SearchCompleteness::Complete {
         evidence: fixture.evidence_digest.clone(),
     };
     group.bench_function("decision_assess", |b| {
         b.iter_batched(
             || complete.clone(),
-            |search| black_box(ready(assess(&fixture.records[0], &profiles, search))),
+            |search| {
+                black_box(ready(assess(
+                    &fixture.records[0],
+                    profiles.iter().map(CandidateEvidence::Complete),
+                    search,
+                )))
+            },
             BatchSize::SmallInput,
         )
     });

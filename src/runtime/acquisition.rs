@@ -4,15 +4,23 @@ use super::{
 };
 use crate::{
     domain::{
-        evidence::ProfileEvidence,
+        evidence::{EvidenceIssue, ProfileEvidence, Sport},
         identity::{AthleteId, EvidenceDigest},
+        name::BioIdentityObservation,
     },
     search::{SearchIssue, SearchQuery},
 };
 use serde::{Deserialize, Serialize};
 
 pub const ACQUISITION_REVISION: &str = "observed-source-sdk-retries-v2";
-pub(crate) const SOURCE_PARSER_REVISION: &str = "streaming-source-parsers-v9";
+pub(crate) const SOURCE_PARSER_REVISION: &str = "streaming-source-parsers-v10";
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TeamRequest {
+    pub team_id: u64,
+    pub sport: Sport,
+    pub season: u16,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryJob {
@@ -78,5 +86,20 @@ pub struct ProfileAcquisition {
     pub responses: Vec<DocumentReceipt>,
     pub operations: Vec<super::protocol::RetryEvidence>,
     pub failures: Vec<OperationFailure>,
+    pub complete: bool,
+}
+
+/// Source-independent bounded initial profile evidence, reusable across rows.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfileProbe {
+    pub athlete_id: AthleteId,
+    pub responses: Vec<DocumentReceipt>,
+    pub operations: Vec<super::protocol::RetryEvidence>,
+    pub failures: Vec<OperationFailure>,
+    pub profiles: Vec<ProfileEvidence>,
+    pub identities: Vec<BioIdentityObservation>,
+    pub html: Option<crate::profile::HtmlProfileEvidence>,
+    pub requests: Vec<TeamRequest>,
+    pub issues: Vec<EvidenceIssue>,
     pub complete: bool,
 }

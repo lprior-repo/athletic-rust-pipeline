@@ -1,9 +1,10 @@
 use super::CandidateReason;
+use crate::domain::candidate::CandidateCoverage;
 use crate::domain::identity::AthleteId;
+use crate::domain::name::{normalize, normalize_school, CanonicalName};
 use crate::domain::{evidence::ProfileEvidence, facts::Location};
 use crate::model::SourceRecord;
 use std::collections::{BTreeMap, BTreeSet};
-use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
 
 const FIRST_NAME: &str = "Person First";
 const LAST_NAME: &str = "Person Last";
@@ -13,7 +14,7 @@ const SCHOOL: &str = "Schools Name";
 
 #[derive(Debug, Clone)]
 pub(super) struct SourceIdentity {
-    pub(super) name: Option<String>,
+    pub(super) name: Option<CanonicalName>,
     pub(super) school: Option<String>,
     mailing_city: Option<String>,
     mailing_region: Option<String>,
@@ -29,22 +30,23 @@ struct CandidateFacts {
     name_conflict: bool,
     participation_confirmed: bool,
     evidence_conflict: bool,
+    coverage: CandidateCoverage,
 }
 
 pub(super) fn source_identity(record: &SourceRecord) -> SourceIdentity {
     let first = source_value(record, FIRST_NAME);
     let last = source_value(record, LAST_NAME);
     let name = match (first, last) {
-        (Some(first), Some(last)) => normalized(&format!("{first} {last}")),
+        (Some(first), Some(last)) => CanonicalName::parse(&format!("{first} {last}")).ok(),
         _ => None,
     };
     SourceIdentity {
         name,
         school: source_value(record, SCHOOL)
-            .and_then(|value| normalized_school(&value))
+            .and_then(|value| normalize_school(&value))
             .filter(|value| meaningful_school(value)),
-        mailing_city: source_value(record, MAILING_CITY).and_then(|value| normalized(&value)),
-        mailing_region: source_value(record, MAILING_REGION).and_then(|value| normalized(&value)),
+        mailing_city: source_value(record, MAILING_CITY).and_then(|value| normalize(&value)),
+        mailing_region: source_value(record, MAILING_REGION).and_then(|value| normalize(&value)),
     }
 }
 
@@ -58,32 +60,6 @@ fn source_value(record: &SourceRecord, field: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn normalized(raw: &str) -> Option<String> {
-    let value = raw
-        .nfkd()
-        .filter(|character| !is_combining_mark(*character))
-        .fold(String::new(), |mut output, character| {
-            if character.is_alphanumeric() {
-                output.extend(character.to_lowercase());
-            } else if !output.ends_with(' ') {
-                output.push(' ');
-            }
-            output
-        });
-    let value = value.trim().to_owned();
-    (!value.is_empty()).then_some(value)
-}
-
-fn normalized_school(raw: &str) -> Option<String> {
-    normalized(raw).map(|mut value| {
-        let suffix = " high school";
-        if value.ends_with(suffix) {
-            value.truncate(value.len() - suffix.len());
-        }
-        value
-    })
-}
-
 fn meaningful_school(value: &str) -> bool {
     !matches!(
         value,
@@ -91,23 +67,14 @@ fn meaningful_school(value: &str) -> bool {
     )
 }
 
-pub(super) fn group_profiles(
-    profiles: &[ProfileEvidence],
-) -> BTreeMap<AthleteId, Vec<&ProfileEvidence>> {
-    profiles
-        .iter()
-        .fold(BTreeMap::new(), |mut groups, profile| {
-            groups.entry(profile.athlete_id).or_default().push(profile);
-            groups
-        })
-}
-
 pub(super) fn candidate_reason(
     athlete_id: AthleteId,
     profiles: &[&ProfileEvidence],
     source: &SourceIdentity,
+    coverage: CandidateCoverage,
+    additional_evidence: &[crate::domain::identity::EvidenceDigest],
 ) -> CandidateReason {
-    let facts = candidate_facts(profiles, source);
+    let facts = candidate_facts(profiles, source, coverage);
     CandidateReason {
         athlete_id,
         exact_name: facts.exact_name,
@@ -118,27 +85,32 @@ pub(super) fn candidate_reason(
         evidence_conflict: facts.evidence_conflict,
         evidence_strength: strength(facts),
         reasons: candidate_reasons(facts),
-        evidence: evidence_digests(profiles),
+        evidence: evidence_digests(profiles, additional_evidence),
         mailing_location_matches: facts.mailing_location_matches,
+        coverage,
     }
 }
 
-fn candidate_facts(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> CandidateFacts {
+fn candidate_facts(
+    profiles: &[&ProfileEvidence],
+    source: &SourceIdentity,
+    coverage: CandidateCoverage,
+) -> CandidateFacts {
     let names = profiles
         .iter()
-        .filter_map(|profile| normalized(profile.name.value.as_str()))
+        .filter_map(|profile| normalize(profile.name.value.as_str()))
         .collect::<BTreeSet<_>>();
     let exact_name = source
         .name
         .as_ref()
-        .is_some_and(|name| names.contains(name));
+        .is_some_and(|name| names.contains(name.as_str()));
     let name_conflict = names.len() > 1;
     let matching_school = source.school.as_ref().is_some_and(|school| {
         profiles.iter().any(|profile| {
             profile
                 .teams
                 .iter()
-                .any(|team| normalized_school(team.name.value.as_str()).as_ref() == Some(school))
+                .any(|team| normalize_school(team.name.value.as_str()).as_ref() == Some(school))
         })
     });
     let mailing_location_matches = school_location_matches(profiles, source);
@@ -160,13 +132,15 @@ fn candidate_facts(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> Ca
             matches!(
                 issue.code.as_str(),
                 "identity_conflict"
+                    | "identity_invalid"
                     | "html_identity_mismatch"
                     | "team_conflict"
                     | "identity_incomplete"
                     | "profile_url_conflict"
             )
         });
-    let hard_eligible = exact_name
+    let hard_eligible = matches!(coverage, CandidateCoverage::Complete)
+        && exact_name
         && !name_conflict
         && matching_school
         && location_corroborated
@@ -181,6 +155,7 @@ fn candidate_facts(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> Ca
         name_conflict,
         participation_confirmed,
         evidence_conflict,
+        coverage,
     }
 }
 
@@ -198,7 +173,7 @@ fn school_location_matches(profiles: &[&ProfileEvidence], source: &SourceIdentit
     profiles
         .iter()
         .flat_map(|profile| &profile.teams)
-        .filter(|team| normalized_school(team.name.value.as_str()).as_ref() == Some(school))
+        .filter(|team| normalize_school(team.name.value.as_str()).as_ref() == Some(school))
         .filter_map(|team| {
             team.location
                 .as_ref()
@@ -214,9 +189,9 @@ fn school_location_matches(profiles: &[&ProfileEvidence], source: &SourceIdentit
 fn location_evidence(location: &Location, city: Option<&str>, region: Option<&str>) -> u8 {
     let (observed_city, observed_region) = location.fields();
     let city_matches =
-        observed_city.is_some_and(|value| city == normalized(value.as_str()).as_deref());
+        observed_city.is_some_and(|value| city == normalize(value.as_str()).as_deref());
     let region_matches =
-        observed_region.is_some_and(|value| region == normalized(value.as_str()).as_deref());
+        observed_region.is_some_and(|value| region == normalize(value.as_str()).as_deref());
     u8::from(city_matches) | (u8::from(region_matches) << 1)
 }
 
@@ -240,6 +215,13 @@ fn strength(facts: CandidateFacts) -> u8 {
 }
 
 fn candidate_reasons(facts: CandidateFacts) -> Vec<String> {
+    let coverage_reason = match facts.coverage {
+        CandidateCoverage::Complete => None,
+        CandidateCoverage::Incomplete => Some("candidate acquisition is incomplete or unavailable"),
+        CandidateCoverage::NameExcluded => {
+            Some("candidate is explicitly excluded by validated name evidence")
+        }
+    };
     [
         (facts.exact_name, "exact normalized full name"),
         (facts.matching_school, "meaningful exact normalized school match"),
@@ -258,10 +240,14 @@ fn candidate_reasons(facts: CandidateFacts) -> Vec<String> {
     .into_iter()
     .filter(|(present, _)| *present)
     .map(|(_, reason)| reason.to_owned())
+    .chain(coverage_reason.into_iter().map(str::to_owned))
     .collect()
 }
 
-fn evidence_digests(profiles: &[&ProfileEvidence]) -> Vec<crate::domain::identity::EvidenceDigest> {
+fn evidence_digests(
+    profiles: &[&ProfileEvidence],
+    additional: &[crate::domain::identity::EvidenceDigest],
+) -> Vec<crate::domain::identity::EvidenceDigest> {
     profiles
         .iter()
         .flat_map(|profile| {
@@ -288,6 +274,7 @@ fn evidence_digests(profiles: &[&ProfileEvidence]) -> Vec<crate::domain::identit
                 .chain(grade_refs)
                 .chain(year_refs)
         })
+        .chain(additional.iter())
         .fold(BTreeMap::new(), |mut unique, digest| {
             unique
                 .entry(digest.as_str().to_owned())

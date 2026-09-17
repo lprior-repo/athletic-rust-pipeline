@@ -19,7 +19,6 @@ use crate::{
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, Copy)]
@@ -46,10 +45,10 @@ impl VerifiedState {
     }
 }
 #[derive(Debug, Deserialize, Serialize)]
-struct AssessmentWire {
+pub(super) struct AssessmentWire {
     decision: crate::domain::decision::Decision,
-    candidates: Vec<CandidateReason>,
-    search: crate::domain::decision::SearchCompleteness,
+    pub(super) candidates: Vec<CandidateReason>,
+    pub(super) search: crate::domain::decision::SearchCompleteness,
     #[serde(default)]
     verified: Option<VerifiedWire>,
 }
@@ -59,30 +58,38 @@ struct VerifiedWire {
     athlete_id: AthleteId,
 }
 
-pub(super) fn verify_embedded_artifacts(row: &DetailRow, raw: &Value) -> Result<()> {
+pub(super) fn verify_embedded_artifacts(
+    row: &DetailRow,
+    raw: &Value,
+    store: &crate::store::ArtifactStore,
+) -> Result<()> {
     verify_typed_value(raw.get("report"), row.report.as_ref(), "report")?;
-    verify_assessment_artifact(row, raw)?;
+    if let Some(report) = &row.report {
+        let digest = row
+            .report_digest
+            .as_ref()
+            .context("row report digest is missing")?;
+        verify_stored_artifact(report, digest, store)?;
+    }
+    verify_assessment_artifact(row, store)?;
     verify_profile_artifacts(row, raw)?;
     verify_performance_evidence(row)?;
+    super::coverage::verify(row, store)?;
     Ok(())
 }
 
-fn verify_assessment_artifact(row: &DetailRow, raw: &Value) -> Result<()> {
+fn verify_assessment_artifact(row: &DetailRow, store: &crate::store::ArtifactStore) -> Result<()> {
     let Some(value) = row.assessment.as_ref() else {
         return Ok(());
     };
-    let assessment: AssessmentWire =
-        serde_json::from_value(value.clone()).context("decoding assessment artifact")?;
+    let assessment = AssessmentWire::deserialize(value).context("decoding assessment artifact")?;
     verify_value_matches(value, &assessment, "assessment")?;
-    let Some(report) = row.report.as_ref() else {
-        bail!("assessment artifact is present without a row report");
-    };
-    let digest = typed_digest(&assessment)?;
-    if report.assessment.as_ref() != Some(&digest) {
-        bail!("assessment digest does not match retained assessment artifact");
-    }
-    let _ = raw;
-    Ok(())
+    let digest = row
+        .report
+        .as_ref()
+        .and_then(|report| report.assessment.as_ref())
+        .context("assessment artifact has no retained report reference")?;
+    verify_stored_artifact(&assessment, digest, store)
 }
 
 fn verify_profile_artifacts(row: &DetailRow, raw: &Value) -> Result<()> {
@@ -93,28 +100,20 @@ fn verify_profile_artifacts(row: &DetailRow, raw: &Value) -> Result<()> {
     if raw_profiles.len() != row.profile_artifacts.len() {
         bail!("profile artifact serialization count differs");
     }
-    if let Some(report) = row.report.as_ref() {
-        if report.profile_evidence.len() != row.profile_artifacts.len() {
-            bail!("profile evidence reference count differs from artifacts");
-        }
-        row.profile_artifacts
-            .iter()
-            .zip(raw_profiles)
-            .zip(&report.profile_evidence)
-            .try_for_each(|((value, raw_value), digest)| {
-                let acquisition: crate::runtime::acquisition::ProfileAcquisition =
-                    serde_json::from_value(value.clone())
-                        .context("decoding profile acquisition artifact")?;
-                verify_value_matches(value, &acquisition, "profile acquisition")?;
-                if value != raw_value {
-                    bail!("profile artifact wrapper differs from parsed value");
-                }
-                if typed_digest(&acquisition)? != *digest {
-                    bail!("profile evidence digest does not match retained artifact");
-                }
-                Ok(())
-            })?;
-    } else if !row.profile_artifacts.is_empty() {
+    row.profile_artifacts
+        .iter()
+        .zip(raw_profiles)
+        .try_for_each(|(value, raw_value)| {
+            let acquisition: crate::runtime::acquisition::ProfileAcquisition =
+                serde_json::from_value(value.clone())
+                    .context("decoding profile acquisition artifact")?;
+            verify_value_matches(value, &acquisition, "profile acquisition")?;
+            if value != raw_value {
+                bail!("profile artifact wrapper differs from parsed value");
+            }
+            Ok(())
+        })?;
+    if row.report.is_none() && !row.profile_artifacts.is_empty() {
         bail!("pending row carries profile artifacts");
     }
     Ok(())
@@ -164,17 +163,26 @@ where
     }
 }
 
-fn verify_value_matches<T: Serialize>(raw: &Value, typed: &T, name: &str) -> Result<()> {
+pub(super) fn verify_value_matches<T: Serialize>(raw: &Value, typed: &T, name: &str) -> Result<()> {
     if serde_json::to_value(typed).context("serializing typed artifact")? != *raw {
         bail!("{name} is not the exact typed serde representation");
     }
     Ok(())
 }
 
-fn typed_digest<T: Serialize>(value: &T) -> Result<crate::domain::identity::EvidenceDigest> {
-    let bytes = serde_json::to_vec(value).context("serializing typed artifact for digest")?;
-    let encoded = format!("{:x}", Sha256::digest(bytes));
-    crate::domain::identity::EvidenceDigest::parse(&encoded).context("parsing artifact digest")
+pub(super) fn verify_stored_artifact<T: Serialize>(
+    value: &T,
+    digest: &crate::domain::identity::EvidenceDigest,
+    store: &crate::store::ArtifactStore,
+) -> Result<()> {
+    let retained = store
+        .get_bytes(digest)
+        .context("reading retained typed artifact")?;
+    let embedded = serde_json::to_vec(value).context("serializing embedded typed artifact")?;
+    if retained != embedded {
+        bail!("embedded typed artifact differs from retained hash-verified bytes");
+    }
+    Ok(())
 }
 
 pub(super) fn verify_row(row: &DetailRow) -> Result<VerifiedState> {
@@ -184,9 +192,10 @@ pub(super) fn verify_row(row: &DetailRow) -> Result<VerifiedState> {
         return Ok(VerifiedState::Pending);
     };
     verify_report_binding(row, report)?;
-    let profiles = decode_profiles(row, report)?;
+    let profiles = decode_profiles(row)?;
     match &report.resolution {
         RowResolution::Accepted { athlete_id, method } => {
+            super::coverage::verify_selected(report, *athlete_id)?;
             let assessment = decode_assessment(row)?;
             verify_positive(row, report, &assessment, profiles, *athlete_id, *method)?;
             Ok(VerifiedState::Accepted)
@@ -217,10 +226,6 @@ fn verify_source_binding(row: &DetailRow) -> Result<()> {
 }
 
 fn verify_report_binding(row: &DetailRow, report: &RowReport) -> Result<()> {
-    let digest = typed_digest(report)?;
-    if row.report_digest.as_ref() != Some(&digest) {
-        bail!("row report digest does not match retained report artifact");
-    }
     if report.revision != ROW_PROTOCOL_REVISION {
         bail!("row report revision is unsupported");
     }
@@ -235,6 +240,9 @@ fn verify_report_binding(row: &DetailRow, report: &RowReport) -> Result<()> {
 
 fn verify_pending(row: &DetailRow) -> Result<()> {
     if row.report_digest.is_some()
+        || row.report.is_some()
+        || row.discovery.is_some()
+        || !row.identity_artifacts.is_empty()
         || row.assessment.is_some()
         || !row.profile_artifacts.is_empty()
         || !row.performance_evidence.is_empty()
@@ -244,7 +252,7 @@ fn verify_pending(row: &DetailRow) -> Result<()> {
     Ok(())
 }
 
-fn decode_assessment(row: &DetailRow) -> Result<AssessmentWire> {
+pub(super) fn decode_assessment(row: &DetailRow) -> Result<AssessmentWire> {
     row.assessment
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("terminal row is missing assessment evidence"))
@@ -255,10 +263,7 @@ fn decode_value(value: &serde_json::Value) -> Result<AssessmentWire> {
     serde_json::from_value(value.clone()).context("decoding assessment evidence")
 }
 
-fn decode_profiles(row: &DetailRow, report: &RowReport) -> Result<Vec<ProfileAcquisition>> {
-    if row.profile_artifacts.len() != report.profile_evidence.len() {
-        bail!("profile artifact count does not match row report evidence references");
-    }
+fn decode_profiles(row: &DetailRow) -> Result<Vec<ProfileAcquisition>> {
     let profiles = row
         .profile_artifacts
         .iter()

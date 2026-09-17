@@ -50,6 +50,9 @@ pub enum Command {
         output: PathBuf,
         #[arg(long)]
         sha256: String,
+        /// Existing stopped-writer ArtifactStore directory containing retained raw evidence.
+        #[arg(long)]
+        store: PathBuf,
     },
 }
 

@@ -21,43 +21,78 @@ const MAX_EXCEL_CELL_UTF16_UNITS: usize = 32_767;
 #[derive(Debug)]
 pub(crate) struct Projection {
     pub(crate) report: super::RowReport,
+    pub(crate) discovery: Option<Value>,
+    pub(crate) identity_artifacts: Vec<Value>,
     pub(crate) assessment: Option<Value>,
     pub(crate) profile_artifacts: Vec<Value>,
     pub(crate) fields: BTreeMap<String, String>,
 }
-
 pub(crate) fn project_report(
     store: &ArtifactStore,
     digest: &crate::domain::identity::EvidenceDigest,
 ) -> Result<Projection> {
     let report: super::RowReport = load_json(store, digest)?;
+    let discovery = report
+        .discovery
+        .as_ref()
+        .map(|value| load_json(store, value))
+        .transpose()?;
     let assessment = report
         .assessment
         .as_ref()
         .map(|value| load_json(store, value))
         .transpose()?;
-    let loaded = report
-        .profile_evidence
+    let identity_artifacts = report
+        .candidates
         .iter()
-        .map(|value| load_profile(store, value))
+        .filter_map(|candidate| candidate.probe())
+        .scan(BTreeSet::new(), |seen, value| {
+            seen.insert(value.as_str().to_owned()).then_some(value)
+        })
+        .map(|value| load_json(store, value))
+        .collect::<Result<Vec<Value>>>()?;
+    let profile_artifacts = report
+        .candidates
+        .iter()
+        .filter_map(|candidate| candidate.profile())
+        .map(|value| load_profile(store, value).map(|(raw, _)| raw))
         .collect::<Result<Vec<_>>>()?;
-    let profile_artifacts = loaded
+    let profiles = report
+        .candidates
         .iter()
-        .map(|(value, _)| value.clone())
-        .collect::<Vec<_>>();
-    let profiles = loaded
+        .filter_map(|candidate| match candidate {
+            super::CandidateCoverage::Complete { profile, .. } => {
+                Some(load_profile(store, profile))
+            }
+            _ => None,
+        })
+        .collect::<Result<Vec<_>>>()?
         .into_iter()
-        .filter_map(|(_, acquisition)| acquisition.profile)
+        .map(|(_, acquisition)| acquisition)
         .collect::<Vec<_>>();
     let accepted = acceptance(&report.resolution);
-    let profile_url = accepted_profile_url(&profiles, accepted.map(|(id, _)| id));
+    let selected_profiles = accepted.map_or_else(Vec::new, |(athlete_id, _)| {
+        profiles
+            .iter()
+            .filter(|acquisition| {
+                acquisition.complete
+                    && acquisition.athlete_id == athlete_id
+                    && acquisition.profile.is_some()
+            })
+            .filter_map(|acquisition| acquisition.profile.clone())
+            .collect::<Vec<_>>()
+    });
+    let profile_url = accepted_profile_url(&selected_profiles, accepted.map(|(id, _)| id));
     let (candidate_count, strength) = assessment
         .as_ref()
         .map_or((String::new(), String::new()), assessment_summary);
     let pr_summary = match accepted {
-        Some((athlete_id, _)) => {
-            build_pr_summary(&profiles, athlete_id, report.job.source.as_str(), digest)?
-        }
+        Some((athlete_id, _)) => build_pr_summary(
+            &selected_profiles,
+            athlete_id,
+            report.job.source.as_str(),
+            digest,
+        )?,
         None => String::new(),
     };
     let fields = fields(
@@ -71,6 +106,8 @@ pub(crate) fn project_report(
     );
     Ok(Projection {
         report,
+        discovery,
+        identity_artifacts,
         assessment,
         profile_artifacts,
         fields,
