@@ -1,3 +1,4 @@
+mod admission;
 mod body;
 mod http;
 mod request;
@@ -11,6 +12,12 @@ use crate::runtime::{
 };
 use restate_sdk::prelude::*;
 use std::{sync::Arc, time::Duration};
+
+pub use admission::{AdmissionDecision, AdmissionFeedback};
+
+pub const SOURCE_SCOPE: &str = "athletic-source";
+pub const SOURCE_CONCURRENCY: u32 = 16;
+const SOURCE_CONTROL_SCOPE: &str = "athletic-source-control";
 
 pub struct SourceGateway {
     pub runtime: Arc<Runtime>,
@@ -26,14 +33,11 @@ impl SourceGateway {
     #[handler]
     pub async fn fetch(
         &self,
-        ctx: ObjectContext<'_>,
+        ctx: SharedObjectContext<'_>,
         input: Json<SourceResource>,
     ) -> Result<Json<FetchOutcome>, HandlerError> {
-        if ctx.key() != "global" {
-            return Err(TerminalError::new("invalid source admission key").into());
-        }
-        if let Some(failure) = ctx.get::<Json<OperationFailure>>("blocked").await? {
-            return Ok(Json(FetchOutcome::Failed { failure: failure.0 }));
+        if ctx.key() != "global" || ctx.scope() != Some(SOURCE_SCOPE) {
+            return Err(TerminalError::new("invalid bounded source scope or key").into());
         }
         let request = match request::build(self.runtime.config.source_origin(), &input.0) {
             Ok(request) => request,
@@ -43,13 +47,33 @@ impl SourceGateway {
                 }))
             }
         };
+        if let Some(failure) = admission::wait(&ctx).await? {
+            return Ok(Json(FetchOutcome::Failed { failure }));
+        }
         execute(self, &ctx, request).await.map(Json)
+    }
+
+    #[handler]
+    pub async fn admit(
+        &self,
+        ctx: ObjectContext<'_>,
+    ) -> Result<Json<AdmissionDecision>, HandlerError> {
+        admission::admit(&ctx, self.runtime.config.source_interval()).await
+    }
+
+    #[handler]
+    pub async fn observe(
+        &self,
+        ctx: ObjectContext<'_>,
+        feedback: Json<AdmissionFeedback>,
+    ) -> Result<(), HandlerError> {
+        admission::observe(&ctx, feedback.0).await
     }
 }
 
 async fn execute(
     gateway: &SourceGateway,
-    ctx: &ObjectContext<'_>,
+    ctx: &SharedObjectContext<'_>,
     request: request::RequestSpec,
 ) -> Result<FetchOutcome, HandlerError> {
     let interval = gateway.runtime.config.source_interval();
@@ -58,14 +82,13 @@ async fn execute(
         .checked_mul(4)
         .ok_or_else(|| TerminalError::new("source retry delay exceeds duration range"))?;
     let operation = http_audit::operation_key(ctx.invocation_id(), "source-http")?;
-    // Global object serialization and SDK timers own admission. The SDK alone owns retries.
-    ctx.sleep(interval).await?;
+    // Native scope limits own concurrency; the SDK alone owns HTTP retries.
     let runtime = gateway.runtime.clone();
     let audit_operation = operation.clone();
     let effect = match ctx
         .run(|| async move {
             let mut attempt = http::perform(runtime.clone(), request).await;
-            limit_retry_policy(&mut attempt, minimum_retry_delay);
+            limit_retry_policy(&mut attempt);
             let retryable = attempt.retryable;
             let digest = http_audit::record(runtime, audit_operation, attempt).await?;
             if retryable {
@@ -109,28 +132,52 @@ async fn execute(
                 retries: http_audit::unavailable_evidence(operation)?,
                 evidence: Vec::new(),
             };
-            ctx.set("blocked", Json(failure.clone()));
-            return Ok(FetchOutcome::Failed { failure });
+            result::Finalized {
+                outcome: FetchOutcome::Failed { failure },
+                cooldown_ms: 0,
+                blocked: true,
+            }
         }
     };
-    // Honor the last failed response even after exhaustion, before the next caller enters.
-    if finalized.cooldown_ms != 0 {
-        ctx.sleep(Duration::from_millis(finalized.cooldown_ms))
-            .await?;
-    }
-    if finalized.blocked {
-        if let FetchOutcome::Failed { failure } = &finalized.outcome {
-            ctx.set("blocked", Json(failure.clone()));
-        }
-    }
+    publish_feedback(ctx, &finalized).await?;
     Ok(finalized.outcome)
 }
 
-fn limit_retry_policy(attempt: &mut http::AttemptResult, minimum_delay: Duration) {
-    if attempt.retryable && Duration::from_millis(attempt.retry_after_ms) > minimum_delay {
+async fn publish_feedback(
+    ctx: &SharedObjectContext<'_>,
+    finalized: &result::Finalized,
+) -> Result<(), HandlerError> {
+    let failure = match (&finalized.outcome, finalized.blocked) {
+        (FetchOutcome::Failed { failure }, true) => Some(failure.clone()),
+        (FetchOutcome::Retrieved { .. }, true) => {
+            return Err(
+                TerminalError::new("successful source response cannot block admission").into(),
+            );
+        }
+        (FetchOutcome::Failed { .. } | FetchOutcome::Retrieved { .. }, false) => None,
+    };
+    if failure.is_none() && finalized.cooldown_ms == 0 {
+        return Ok(());
+    }
+    // Detach policy publication from the source caller's cancellation tree,
+    // then wait for the policy to commit before reporting this outcome.
+    let feedback = ctx
+        .object_client::<SourceGatewayClient>("global")
+        .observe(Json(AdmissionFeedback {
+            failure,
+            cooldown_ms: finalized.cooldown_ms,
+        }))
+        .scope(SOURCE_CONTROL_SCOPE)
+        .send()
+        .await?;
+    feedback.attach::<()>().await.map_err(Into::into)
+}
+
+fn limit_retry_policy(attempt: &mut http::AttemptResult) {
+    if attempt.retryable && attempt.retry_after_ms != 0 {
         attempt.retryable = false;
         attempt.message.push_str(
-            "; Retry-After exceeds the SDK policy minimum; automatic retry stopped for review",
+            "; Retry-After requires global admission cooldown; automatic retry stopped for review",
         );
     }
 }
@@ -168,17 +215,17 @@ mod tests {
     }
 
     #[test]
-    fn server_delay_beyond_sdk_policy_stops_retries_without_discarding_delay() {
+    fn positive_server_delay_stops_retries_without_discarding_delay() {
         let mut attempt = http::AttemptResult {
             receipt: None,
             code: Some(FailureCode::RateLimited),
             status: Some(429),
             message: String::new(),
             retryable: true,
-            retry_after_ms: 120_000,
+            retry_after_ms: 1_000,
         };
-        limit_retry_policy(&mut attempt, Duration::from_secs(1));
+        limit_retry_policy(&mut attempt);
         assert!(!attempt.retryable);
-        assert_eq!(attempt.retry_after_ms, 120_000);
+        assert_eq!(attempt.retry_after_ms, 1_000);
     }
 }

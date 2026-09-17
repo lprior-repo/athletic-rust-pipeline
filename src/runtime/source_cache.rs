@@ -1,7 +1,7 @@
 use super::{
     identity,
     protocol::{FetchOutcome, SourceResource},
-    source::SourceGatewayClient,
+    source::{SourceGatewayClient, SOURCE_SCOPE},
 };
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
@@ -46,6 +46,7 @@ impl SourceCache {
         let outcome = ctx
             .object_client::<SourceGatewayClient>("global")
             .fetch(Json(input.0.resource))
+            .scope(SOURCE_SCOPE)
             .call()
             .await?;
         ctx.set("result", Json(outcome.0.clone()));

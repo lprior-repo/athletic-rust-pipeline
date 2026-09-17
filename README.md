@@ -50,7 +50,21 @@ Use native Restate, not Docker. `tools/restate-native.sh start` launches the alr
 
 `config.native.toml` contains this workstation's live configuration: private artifact storage, Athletic.net origin and admission interval, bounded CPU/row work, and the two existing local model endpoints. Adjust paths and model identifiers for another workstation. Do not commit private inputs, credentials, model prompts, or generated athlete artifacts.
 
-`source_interval_ms = 0` disables the fixed inter-request delay, including in live mode. This workstation uses zero delay. The native global source object still serializes HTTP operations; row concurrency is not source-request concurrency. Request timeouts, initial-attempt-plus-three-retry budgets, `Retry-After` handling and access-denial admission stops remain enforced. Measure completed source operations and row throughput rather than interpreting zero delay as unlimited concurrency or assuming the models are the bottleneck.
+`source_interval_ms = 0` disables fixed admission spacing; this workstation uses zero. Restate's `athletic-source` scope bounds shared HTTP operations to 16 concurrent invocations, independently of row concurrency. An existing stricter source limit is preserved. Already-admitted operations may finish or use their remaining SDK retries after a later denial; this is not instantaneous revocation of physical requests.
+
+Native flow control is an opt-in Restate feature. The pinned 1.7.10 server must have all three settings enabled in its private `restate.toml`:
+
+```toml
+experimental-enable-protocol-v7 = true
+experimental-enable-vqueues = true
+experimental-enable-scoped-virtual-objects = true
+```
+
+`deploy` checks the server version and advertised capabilities before registration. It conditionally creates the exact source rule at `min(16, enabled wildcard limit)`, rejects disabled, unlimited or excessive exact limits, and checks the confirmed rule against a stricter wildcard. To tighten a running deployment, change the exact `athletic-source` rule: Restate's exact rules override `*`. See [Restate flow control](https://docs.restate.dev/services/flow-control).
+
+The separate `athletic-source-control` scope serializes only admission-state transitions, never HTTP or cooldown timers. Callers perform durable waits and recheck admission; 64 changing-deadline observations end in retained review rather than an unbounded loop. Denial/cooldown feedback is sent as a detached native invocation and then attached for acknowledgement, so cancelling the caller does not cancel the policy update.
+
+Before enabling scopes on an existing installation: cancel and drain old invocations, export through the artifact-owning worker, stop both worker and Restate, and preserve both data directories plus their configurations as one checkpoint. Enable the flags only after that checkpoint; use a fresh worker endpoint for changed journal paths. Deployment refuses any retained `SourceGateway/global` blocked state, including the old unscoped object. Do not clear a denial merely to force deployment, or restore only one half of the checkpoint.
 
 ```sh
 cargo run --release -- worker --config config.native.toml --bind 127.0.0.1:19181
@@ -91,7 +105,7 @@ Embedded report, assessment, discovery, probe and full-acquisition metadata must
 
 Local-review acceptance is additionally checked against an assessment reconstructed from the retained source and profiles, followed by the production selection-authorization rule. Rehashed candidate flags cannot bypass that rule. A verified relay-member result identifies the relay separately from its member; the relay ID is not required to equal the selected athlete ID.
 
-Restate owns durable calls, cached workflow results, operation retry policies and orchestration. Each HTTP run allows an initial attempt plus three SDK retries. `observed_attempts` counts retained completed-attempt records, not remote request starts: records are published after response handling. An external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee, and workflow-wide request totals are not per-operation retry counts.
+Restate owns durable calls, cached workflow results, operation retry policies and orchestration. An HTTP run allows at most an initial attempt plus three SDK retries. Any positive `Retry-After` stops that run's automatic retries, retains its failure for review and publishes a global admission cooldown; it does not silently retry inside a separate application loop. `observed_attempts` counts retained completed-attempt records, not remote request starts: records are published after response handling. An external response not acknowledged before a crash can be repeated. There is no exactly-once HTTP guarantee, and workflow-wide request totals are not per-operation retry counts.
 
 ### Recovery and paused invocations
 
@@ -105,6 +119,8 @@ curl --fail-with-body --request PATCH \
 ```
 
 This is an operator-controlled recovery action, not an unbounded retry loop. Preserve failure history and account for uncertain in-flight HTTP effects. A separate controlled Restate-server restart recovered automatically from its existing data directory. Both recovered synthetic runs completed all eight rows and passed workbook verification; subsequent exact replays added zero source/model requests. The worker-kill result is **operator-assisted recovery**, not proof of automatic worker-only recovery.
+
+The scoped source path was also exercised against native Restate: a 27-row synthetic run retained 8 accepted, 3 no-match and 16 review outcomes, with a fixture-observed peak of 16 active HTTP requests. Exact replay added no source or model requests. A one-second `Retry-After` delayed a fresh run, and a longer cooldown survived caller cancellation and restart of both native services. A queued detached 403 observer survived cancellation before acknowledgement; fresh runs before and after restart issued no HTTP or model requests and remained review-only. A separate in-flight worker kill recovered after an operator restart, with 31 proxy request starts over 30 request identities, including one repeated read. These are scoped fixture observations, not a physical exactly-once or universal retry-count guarantee.
 
 Additional in-flight exercises restored the same frozen worker after interrupting source HTTP and an actual Q5 review. Both required explicit resumes of paused dependencies. The source run recovered one accepted row; its 18 requests covered 13 logical request identities, each observed at most twice. The model proxy completed two requests with identical bodies to the same assigned Q5 model, losing the first response before worker acknowledgement; the application retained one completed-attempt record. The unresolved review remained non-positive, with no second-model consensus. Independent CLI verification passed both recovered exports. These observations account for the lost-acknowledgement window; they do not establish automatic recovery or a physical-request ceiling across crashes and operator resumes.
 

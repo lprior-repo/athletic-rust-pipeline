@@ -1,3 +1,4 @@
+use super::flow_control;
 use anyhow::{bail, Context, Result};
 use futures::TryStreamExt;
 use restate_sdk::ingress::ReqwestClient;
@@ -42,7 +43,9 @@ fn http_client() -> Result<reqwest::Client> {
 pub async fn deploy(admin: &str, endpoint: &str) -> Result<serde_json::Value> {
     let admin = local_origin(admin)?;
     let endpoint = local_origin(endpoint)?;
-    let response = http_client()?
+    let client = http_client()?;
+    flow_control::ensure_source_scope(&client, &admin).await?;
+    let response = client
         .post(admin.join("deployments")?)
         .json(&serde_json::json!({"uri": endpoint.as_str()}))
         .send()
