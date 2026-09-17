@@ -41,7 +41,6 @@ pub struct Runtime {
 impl Runtime {
     pub fn open(config_path: &Path) -> Result<Arc<Self>> {
         let config = WorkerConfig::load(config_path)?;
-        source::spider_body::validate_environment()?;
         let store = ArtifactStore::open(config.storage_dir())?;
         let http = reqwest::Client::builder()
             .retry(reqwest::retry::never())

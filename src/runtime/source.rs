@@ -1,8 +1,8 @@
+mod body;
 mod http;
 mod request;
 mod result;
 pub(crate) mod retry;
-pub(super) mod spider_body;
 
 use crate::runtime::{
     http_audit,
@@ -62,7 +62,7 @@ async fn execute(
     ctx.sleep(interval).await?;
     let runtime = gateway.runtime.clone();
     let audit_operation = operation.clone();
-    let effect = ctx
+    let effect = match ctx
         .run(|| async move {
             let mut attempt = http::perform(runtime.clone(), request).await;
             limit_retry_policy(&mut attempt, minimum_retry_delay);
@@ -82,7 +82,11 @@ async fn execute(
                 .max_delay(maximum_retry_delay)
                 .max_attempts(4),
         )
-        .await;
+        .await
+    {
+        Err(error) if error.code() == 409 => return Err(error.into()),
+        effect => effect,
+    };
     let runtime = gateway.runtime.clone();
     let finalization_operation = operation.clone();
     let finalized = ctx
@@ -95,6 +99,7 @@ async fn execute(
         .await;
     let finalized = match finalized {
         Ok(value) => value.0,
+        Err(error) if error.code() == 409 => return Err(error.into()),
         Err(_) => {
             let failure = OperationFailure {
                 code: FailureCode::ArtifactFailure,

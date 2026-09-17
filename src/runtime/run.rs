@@ -203,36 +203,47 @@ async fn drive(
     let (rows, results) = work;
     let mut futures = DurableFuturesUnordered::new();
     let mut jobs = BTreeMap::new();
-    let mut exhausted = false;
-    loop {
-        while !exhausted && futures.len() < usize::from(request.concurrency.get()) {
-            match rows.next(runtime, request).await.map_err(terminal)? {
-                Some(job) => {
-                    let key = job.key().map_err(terminal)?;
-                    let future = ctx
-                        .object_client::<RowWorkerClient>(&key)
-                        .process(Json(job.clone()))
-                        .call();
-                    let index = futures.push(future);
-                    if jobs.insert(index, job).is_some() {
-                        return Err(terminal("duplicate durable future index"));
+    let result: Result<(), HandlerError> = async {
+        let mut exhausted = false;
+        loop {
+            while !exhausted && futures.len() < usize::from(request.concurrency.get()) {
+                match rows.next(runtime, request).await.map_err(terminal)? {
+                    Some(job) => {
+                        let key = job.key().map_err(terminal)?;
+                        let future = ctx
+                            .object_client::<RowWorkerClient>(&key)
+                            .process(Json(job.clone()))
+                            .call();
+                        let handle = future.invocation_handle().await?;
+                        let index = futures.push(future);
+                        if jobs.insert(index, (job, handle)).is_some() {
+                            return Err(terminal("duplicate durable future index"));
+                        }
                     }
+                    None => exhausted = true,
                 }
-                None => exhausted = true,
             }
+            let Some((index, outcome)) = futures.next().await? else {
+                break;
+            };
+            let (job, _) = jobs
+                .remove(&index)
+                .ok_or_else(|| terminal("completion has no admitted source row"))?;
+            results.record(job, outcome?.0).await?;
         }
-        let Some((index, outcome)) = futures.next().await? else {
-            break;
-        };
-        let job = jobs
-            .remove(&index)
-            .ok_or_else(|| terminal("completion has no admitted source row"))?;
-        results.record(job, outcome?.0).await?;
+        if !jobs.is_empty() {
+            return Err(terminal("run ended with unaccounted durable row calls"));
+        }
+        Ok(())
     }
-    if !jobs.is_empty() {
-        return Err(terminal("run ended with unaccounted durable row calls"));
+    .await;
+    if result.is_err() {
+        jobs.values().for_each(|(_, handle)| handle.cancel());
+        for _ in 0..futures.len() {
+            futures.next().await?;
+        }
     }
-    Ok(())
+    result
 }
 
 fn terminal(error: impl std::fmt::Display) -> HandlerError {

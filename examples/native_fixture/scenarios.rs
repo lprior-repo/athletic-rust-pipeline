@@ -14,10 +14,12 @@ pub enum Scenario {
     RetryExhaustion,
     PayloadLimit,
     AccessDenied,
+    SplitLocation,
+    GenericSchool,
 }
 
 impl Scenario {
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 12] = [
         Self::Match,
         Self::Duplicate,
         Self::Ambiguous,
@@ -28,6 +30,8 @@ impl Scenario {
         Self::RetryExhaustion,
         Self::PayloadLimit,
         Self::AccessDenied,
+        Self::SplitLocation,
+        Self::GenericSchool,
     ];
 
     pub fn as_str(self) -> &'static str {
@@ -42,6 +46,8 @@ impl Scenario {
             Self::RetryExhaustion => "retry-exhaustion",
             Self::PayloadLimit => "payload-limit",
             Self::AccessDenied => "access-denied",
+            Self::SplitLocation => "split-location",
+            Self::GenericSchool => "generic-school",
         }
     }
 

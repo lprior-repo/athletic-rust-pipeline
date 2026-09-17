@@ -5,7 +5,7 @@ const MAX_HTML_BYTES: usize = 32 * 1024 * 1024;
 const PARSER_MEMORY_BYTES: usize = 8 * 1024 * 1024;
 const CHUNK_BYTES: usize = 4096;
 
-/// Run Spider's streaming HTML parser with bounded input and parser-owned memory.
+/// Run streaming HTML extraction with bounded input and parser-owned memory.
 /// Captured evidence is bounded separately by each domain adapter.
 pub(crate) fn rewrite_bounded<'handlers, 'selectors>(
     source: &str,

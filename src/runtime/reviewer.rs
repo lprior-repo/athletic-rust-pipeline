@@ -77,7 +77,7 @@ impl LocalReviewer {
         lane: ModelLane,
     ) -> Result<FinalizedReview, HandlerError> {
         let operation = http_audit::operation_key(ctx.invocation_id(), "local-review-http")?;
-        let effect = run_attempt(
+        let effect = match run_attempt(
             ctx,
             self.runtime.clone(),
             operation.clone(),
@@ -85,7 +85,11 @@ impl LocalReviewer {
             prepared.request.clone(),
             prepared.input.clone(),
         )
-        .await;
+        .await
+        {
+            Err(error) if error.code() == 409 => return Err(error.into()),
+            effect => effect,
+        };
         let runtime = self.runtime.clone();
         let finalization_operation = operation.clone();
         let finalization_request = request.clone();
@@ -106,6 +110,7 @@ impl LocalReviewer {
             .await;
         match finalized {
             Ok(value) => Ok(value.0),
+            Err(error) if error.code() == 409 => Err(error.into()),
             Err(_) => {
                 let failure = OperationFailure {
                     code: FailureCode::ArtifactFailure,

@@ -2,7 +2,7 @@ use super::{identity::scoped_key, protocol::ReviewOutcome};
 use crate::domain::identity::{AthleteId, EvidenceDigest, SourceRowKey, WorkbookDigest};
 use serde::{Deserialize, Serialize};
 
-pub const ROW_PROTOCOL_REVISION: &str = "athlete-row-golden-context-v4";
+pub const ROW_PROTOCOL_REVISION: &str = "athlete-row-golden-context-v6";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RowJob {

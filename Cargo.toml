@@ -34,12 +34,11 @@ unicode-normalization = "0.1"
 url = "2.5"
 uuid = { version = "1", features = ["v7", "serde"] }
 zip = { version = "=8.6.0", default-features = false, features = ["deflate"] }
-spider = { version = "=2.53.9", default-features = false, features = ["headers"] }
 lol_html = "=2.9.0"
-http = "1"
 html-escape = "=0.2.13"
 
 [dev-dependencies]
+http = "1"
 axum = "0.8"
 proptest = "1"
 mockito = "1"

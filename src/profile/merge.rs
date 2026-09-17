@@ -6,7 +6,7 @@ use anyhow::{bail, Result};
 use crate::domain::evidence::{
     EvidenceIssue, ProfileEvidence, ResultEvidence, Sport, SportAvailability, TeamEvidence,
 };
-use crate::domain::facts::{Location, SchoolName};
+use crate::domain::facts::{CityName, RegionName, SchoolName};
 
 pub fn merge_profiles(
     mut left: ProfileEvidence,
@@ -32,7 +32,8 @@ pub fn merge_profiles(
 #[derive(Default)]
 struct TeamObservations<'a> {
     names: HashSet<&'a SchoolName>,
-    locations: HashSet<&'a Location>,
+    cities: HashSet<&'a CityName>,
+    regions: HashSet<&'a RegionName>,
     levels: HashSet<u8>,
 }
 
@@ -44,7 +45,13 @@ fn merge_teams(profile: &mut ProfileEvidence, incoming: Vec<TeamEvidence>) {
             let observation = index.entry(value.team_id).or_default();
             observation.names.insert(&value.name.value);
             if let Some(location) = value.location.as_ref() {
-                observation.locations.insert(&location.value);
+                let (city, region) = location.value.fields();
+                if let Some(city) = city {
+                    observation.cities.insert(city);
+                }
+                if let Some(region) = region {
+                    observation.regions.insert(region);
+                }
             }
             if let Some(level) = value.level {
                 observation.levels.insert(level);
@@ -57,8 +64,14 @@ fn merge_teams(profile: &mut ProfileEvidence, incoming: Vec<TeamEvidence>) {
             known.names.len() > 1
                 || !known.names.contains(&value.name.value)
                 || value.location.as_ref().is_some_and(|location| {
-                    !known.locations.is_empty()
-                        && (known.locations.len() > 1 || !known.locations.contains(&location.value))
+                    let (city, region) = location.value.fields();
+                    city.is_some_and(|city| {
+                        !known.cities.is_empty()
+                            && (known.cities.len() > 1 || !known.cities.contains(city))
+                    }) || region.is_some_and(|region| {
+                        !known.regions.is_empty()
+                            && (known.regions.len() > 1 || !known.regions.contains(region))
+                    })
                 })
                 || value.level.is_some_and(|level| {
                     !known.levels.is_empty()

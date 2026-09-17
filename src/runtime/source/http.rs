@@ -1,4 +1,4 @@
-use super::{request::RequestSpec, retry, spider_body};
+use super::{body, request::RequestSpec, retry};
 use crate::runtime::{
     protocol::{DocumentReceipt, FailureCode},
     Runtime,
@@ -40,7 +40,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: RequestSpec) -> Atte
     let status = response.status();
     let backoff = retry::retry_after(response.headers(), SystemTime::now());
     let media_type = media_type(response.headers());
-    let body = match spider_body::read_body(response).await {
+    let body = match body::read_body(response).await {
         Ok(body) => body,
         Err((code, message)) => return body_failure(code, status, message, backoff),
     };

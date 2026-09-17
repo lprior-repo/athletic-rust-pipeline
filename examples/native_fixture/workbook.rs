@@ -34,13 +34,13 @@ struct Row {
     year: &'static str,
     scenario: &'static str,
 }
-const ROWS: [Row; 12] = [
+const ROWS: [Row; 14] = [
     Row {
         first: "Ada",
         last: "Runner",
         city: "Austin",
         region: "TX",
-        school: "Central High",
+        school: "Central High School",
         sport: "Track & Field",
         year: "Junior",
         scenario: "match",
@@ -50,7 +50,7 @@ const ROWS: [Row; 12] = [
         last: "Runner",
         city: "Austin",
         region: "TX",
-        school: "Central High",
+        school: "Central High School",
         sport: "Cross Country",
         year: "Junior",
         scenario: "match",
@@ -154,6 +154,26 @@ const ROWS: [Row; 12] = [
         sport: "Track & Field",
         year: "Junior",
         scenario: "access-denied",
+    },
+    Row {
+        first: "Riley",
+        last: "Split",
+        city: "Austin",
+        region: "TX",
+        school: "Central High School",
+        sport: "Track & Field",
+        year: "",
+        scenario: "split-location",
+    },
+    Row {
+        first: "Gene",
+        last: "Generic",
+        city: "Austin",
+        region: "TX",
+        school: "High School",
+        sport: "Track & Field",
+        year: "",
+        scenario: "generic-school",
     },
 ];
 

@@ -50,7 +50,7 @@ pub(crate) async fn execute_queries(
     runtime: Arc<Runtime>,
     snapshot: &EvidenceDigest,
     queries: Vec<SearchQuery>,
-) -> DiscoveryState {
+) -> std::result::Result<DiscoveryState, TerminalError> {
     let mut state = DiscoveryState::default();
     for query in queries {
         let job = QueryJob {
@@ -66,13 +66,17 @@ pub(crate) async fn execute_queries(
                 continue;
             }
         };
-        let digest = match ctx
+        let call = ctx
             .object_client::<QueryWorkerClient>(&key)
             .gather(Json(job.clone()))
-            .call()
-            .await
-        {
+            .call();
+        let handle = call.invocation_handle().await?;
+        let digest = match call.await {
             Ok(value) => value.0,
+            Err(error) if error.code() == 409 => {
+                handle.cancel();
+                return Err(error);
+            }
             Err(error) => {
                 state
                     .issues
@@ -102,7 +106,7 @@ pub(crate) async fn execute_queries(
                 .push(format!("query artifact could not be decoded: {error}")),
         }
     }
-    state
+    Ok(state)
 }
 
 async fn add_candidates(runtime: &Runtime, state: &mut DiscoveryState, artifact: &QueryEvidence) {
@@ -133,7 +137,7 @@ pub(crate) async fn execute_profiles(
     runtime: Arc<Runtime>,
     snapshot: &EvidenceDigest,
     ids: &BTreeSet<AthleteId>,
-) -> (ProfileState, Vec<EvidenceDigest>) {
+) -> std::result::Result<(ProfileState, Vec<EvidenceDigest>), TerminalError> {
     let mut state = ProfileState {
         complete: true,
         ..ProfileState::default()
@@ -154,13 +158,17 @@ pub(crate) async fn execute_profiles(
                 continue;
             }
         };
-        let digest = match ctx
+        let call = ctx
             .object_client::<ProfileWorkerClient>(&key)
             .gather(Json(job))
-            .call()
-            .await
-        {
+            .call();
+        let handle = call.invocation_handle().await?;
+        let digest = match call.await {
             Ok(value) => value.0,
+            Err(error) if error.code() == 409 => {
+                handle.cancel();
+                return Err(error);
+            }
             Err(error) => {
                 state.complete = false;
                 state.issues.push(format!(
@@ -205,7 +213,7 @@ pub(crate) async fn execute_profiles(
             }
         }
     }
-    (state, refs)
+    Ok((state, refs))
 }
 
 enum ProfileLoad {

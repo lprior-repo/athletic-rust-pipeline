@@ -24,10 +24,10 @@ pub(crate) async fn resolve_assessment(
         crate::domain::identity::EvidenceDigest,
         decision::Assessment,
     ),
-) -> (RowResolution, Option<ReviewOutcome>, Vec<String>) {
+) -> std::result::Result<(RowResolution, Option<ReviewOutcome>, Vec<String>), TerminalError> {
     let value = &assessment.1;
     if value.is_deterministic_acceptance() {
-        return (
+        return Ok((
             value
                 .accepted_athlete_id()
                 .map_or(RowResolution::ReviewRequired, |athlete_id| {
@@ -38,10 +38,10 @@ pub(crate) async fn resolve_assessment(
                 }),
             None,
             Vec::new(),
-        );
+        ));
     }
     if matches!(value.decision(), decision::Decision::CompleteSearchNoMatch) {
-        return (RowResolution::CompleteSearchNoMatch, None, Vec::new());
+        return Ok((RowResolution::CompleteSearchNoMatch, None, Vec::new()));
     }
     let eligible = value
         .candidates()
@@ -50,14 +50,14 @@ pub(crate) async fn resolve_assessment(
         .collect::<Vec<_>>();
     if value.decision() != decision::Decision::IdentityReview || !(2..=64).contains(&eligible.len())
     {
-        return (
+        return Ok((
             RowResolution::ReviewRequired,
             None,
             vec![
                 "assessment requires review without a valid 2..=64 hard-eligible candidate set"
                     .to_owned(),
             ],
-        );
+        ));
     }
     let candidates = eligible
         .iter()
@@ -69,11 +69,11 @@ pub(crate) async fn resolve_assessment(
         })
         .collect::<Vec<_>>();
     if candidates.len() != eligible.len() {
-        return (
+        return Ok((
             RowResolution::ReviewRequired,
             None,
             vec!["one or more hard-eligible candidates lacked a deserialized profile".to_owned()],
-        );
+        ));
     }
     let input = ReviewInput {
         source: source.clone(),
@@ -81,14 +81,15 @@ pub(crate) async fn resolve_assessment(
     };
     let digest = match publish_review_input(ctx, runtime.clone(), input.clone()).await {
         Ok(value) => value,
+        Err(error) if error.code() == 409 => return Err(error),
         Err(error) => {
-            return (
+            return Ok((
                 RowResolution::ReviewRequired,
                 None,
                 vec![format!(
                     "review input exceeds 64 KiB or could not be serialized: {error}"
                 )],
-            )
+            ))
         }
     };
     let config = runtime.config.clone();
@@ -99,26 +100,30 @@ pub(crate) async fn resolve_assessment(
     {
         Ok(value) => value,
         Err(error) => {
-            return (
+            return Ok((
                 RowResolution::ReviewRequired,
                 None,
                 vec![format!("review case key failed: {error}")],
-            )
+            ))
         }
     };
-    let outcome = match ctx
+    let call = ctx
         .object_client::<ReviewCaseClient>(&key)
         .review(Json(digest))
-        .call()
-        .await
-    {
+        .call();
+    let handle = call.invocation_handle().await?;
+    let outcome = match call.await {
         Ok(value) => value.0,
+        Err(error) if error.code() == 409 => {
+            handle.cancel();
+            return Err(error);
+        }
         Err(error) => {
-            return (
+            return Ok((
                 RowResolution::ReviewRequired,
                 None,
                 vec![format!("review worker call failed: {error}")],
-            )
+            ))
         }
     };
     let choice = match &outcome {
@@ -132,7 +137,7 @@ pub(crate) async fn resolve_assessment(
         }
         | ReviewOutcome::Failed { .. } => decision::ReviewChoice::Unresolved,
     };
-    match decision::apply_review(value, choice) {
+    Ok(match decision::apply_review(value, choice) {
         Ok(final_decision) => match final_decision.accepted_athlete_id() {
             Some(athlete_id) => (
                 RowResolution::Accepted {
@@ -155,7 +160,7 @@ pub(crate) async fn resolve_assessment(
                 "review selection rejected by domain gates: {error}"
             )],
         ),
-    }
+    })
 }
 
 fn review_candidate(profile: &ProfileEvidence, reason: &CandidateReason) -> ReviewCandidate {

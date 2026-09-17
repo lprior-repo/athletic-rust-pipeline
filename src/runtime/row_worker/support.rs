@@ -19,7 +19,7 @@ pub(crate) async fn publish<T>(
     runtime: Arc<Runtime>,
     name: &'static str,
     value: T,
-) -> std::result::Result<crate::domain::identity::EvidenceDigest, HandlerError>
+) -> std::result::Result<crate::domain::identity::EvidenceDigest, TerminalError>
 where
     T: Serialize + Send + 'static,
 {
@@ -35,7 +35,7 @@ pub(crate) async fn publish_review_input(
     ctx: &ObjectContext<'_>,
     runtime: Arc<Runtime>,
     input: ReviewInput,
-) -> anyhow::Result<crate::domain::identity::EvidenceDigest> {
+) -> std::result::Result<crate::domain::identity::EvidenceDigest, TerminalError> {
     let store = runtime.store.clone();
     ctx.run(|| async move {
         runtime
@@ -51,7 +51,6 @@ pub(crate) async fn publish_review_input(
     .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
     .map(|value: Json<crate::domain::identity::EvidenceDigest>| value.0)
-    .map_err(|error| anyhow::anyhow!(error.to_string()))
 }
 
 pub(crate) async fn publish_report(

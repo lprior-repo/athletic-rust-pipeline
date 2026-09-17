@@ -11,7 +11,7 @@ use super::{
 };
 use crate::{
     domain::{
-        evidence::{EvidenceIssue, EvidenceRef, ProfileEvidence},
+        evidence::{EvidenceIssue, EvidenceRef, Observed, ProfileEvidence, TeamEvidence},
         identity::{AthleteId, EvidenceDigest, ProfileUrl},
     },
     profile,
@@ -531,11 +531,11 @@ fn attach_team(
             .documents
             .push(observation.evidence.document.clone());
     }
-    let Some(team) = profile
+    let joined = profile
         .teams
-        .iter_mut()
-        .find(|team| team.team_id == observation.requested.team_id)
-    else {
+        .iter()
+        .filter(|team| team.team_id == observation.requested.team_id);
+    if joined.clone().next().is_none() {
         profile.issues.push(EvidenceIssue {
             code: "team_history_join_missing".to_owned(),
             message: "TeamNav response has no matching bio team history".to_owned(),
@@ -543,42 +543,53 @@ fn attach_team(
         });
         *complete = false;
         return profile;
-    };
-    if team.name.value != observation.name {
+    }
+    let name_conflict = joined
+        .clone()
+        .any(|team| team.name.value != observation.name);
+    let location_conflict = observation.location.as_ref().is_some_and(|location| {
+        joined.clone().any(|team| {
+            team.location
+                .as_ref()
+                .is_some_and(|known| !known.value.compatible_with(location))
+        })
+    });
+    [
+        (
+            name_conflict,
+            "team_name_inconsistency",
+            "TeamNav name conflicts with retained team name",
+        ),
+        (
+            location_conflict,
+            "team_location_inconsistency",
+            "TeamNav location conflicts with retained team location",
+        ),
+    ]
+    .into_iter()
+    .filter(|(conflict, _, _)| *conflict)
+    .for_each(|(_, code, message)| {
         profile.issues.push(EvidenceIssue {
-            code: "team_name_inconsistency".to_owned(),
-            message: "TeamNav name conflicts with bio team name".to_owned(),
+            code: code.to_owned(),
+            message: message.to_owned(),
             evidence: Some(observation.evidence.clone()),
         });
-        *complete = false;
-    }
-    if !team.seasons.contains(&observation.requested.season) {
-        team.seasons.push(observation.requested.season);
-    }
-    if let Some(location) = observation.location {
-        match &team.location {
-            None => {
-                team.location = Some(crate::domain::evidence::Observed {
-                    value: location,
-                    evidence: observation.evidence.clone(),
-                })
-            }
-            Some(existing) if existing.value != location => {
-                profile.issues.push(EvidenceIssue {
-                    code: "team_location_inconsistency".to_owned(),
-                    message: "TeamNav location conflicts with bio team location".to_owned(),
-                    evidence: Some(observation.evidence),
-                });
-                *complete = false;
-            }
-            Some(_) => {}
-        }
-    }
-    if let Some(level) = observation.level {
-        if team.level.is_none() {
-            team.level = Some(level);
-        }
-    }
+    });
+    *complete &= !name_conflict && !location_conflict;
+    // Keep independent observations; never invent a location with a single source reference.
+    profile.teams.push(TeamEvidence {
+        team_id: observation.requested.team_id,
+        name: Observed {
+            value: observation.name,
+            evidence: observation.evidence.clone(),
+        },
+        location: observation.location.map(|value| Observed {
+            value,
+            evidence: observation.evidence,
+        }),
+        seasons: vec![observation.requested.season],
+        level: observation.level,
+    });
     profile
 }
 

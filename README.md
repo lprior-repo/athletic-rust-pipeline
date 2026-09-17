@@ -8,11 +8,13 @@ The source workbook is the golden input for membership and source identity conte
 
 Discovery uses names and available school/city/state context and searches both track-and-field and cross-country. A missing school does not prevent discovery. Acceptance remains conservative: missing corroboration or conflicting evidence produces review, not a guessed match. A mailing address is not proof of school geography or candidate residence. Source sport is context, not proof of Athletic.net participation; unknown or blank sport does not exclude a row.
 
+School comparisons normalize a trailing “High School” without fuzzy matching or changing source values; the generic value “High School” is not a distinguishing school identity. Compatible partial location observations retain their own evidence references. City and region may corroborate across observations of the same team ID, never across different teams or through an invented combined-location witness. Conflicting overlapping fields remain contradictions. Bio parsing validates event/distance metadata only for the requested sport.
+
 All original fields are retained. The assigned local reviewer receives the complete source record and structured candidate evidence. Email, street and postal information must not be sent to external search services or remote development models. Such fields are context only unless independently corroborated; email domains, ratings and source metadata do not themselves prove a candidate identity. Source cells and retrieved text are untrusted data, never model instructions.
 
 Rust performs routine parsing, arithmetic, mark comparison, and deterministic matching. Only genuine ambiguity reaches one assigned local model. Different cases are assigned across the existing Q5/5090 and Q4/3090 servers; no two-model consensus is required. A model cannot override deterministic contradictions or manufacture evidence.
 
-Source acquisition keeps HTTP methods, admission and durable retry policy in the native runtime. Spider consumes each already-received response through a bounded adapter; it does not run an independent crawler or retry loop. Profile and search extraction use `lol_html` streaming handlers instead of a materialized DOM. Parser-internal accounted memory is capped at 8 MiB, with separate input and evidence-capture bounds; this is not a total-process memory limit. `SPIDER_MAX_SIZE_BYTES`, if set, must be zero or at least the 32 MiB source-response bound. Parser revision changes invalidate parsed evidence while preserving compatible raw HTTP receipts.
+Source acquisition uses `reqwest`; HTTP methods, admission and durable retry policy stay in the native runtime. Profile and search extraction use `lol_html` streaming handlers instead of a materialized DOM. Parser-internal accounted memory is capped at 8 MiB, with separate input and evidence-capture bounds; this is not a total-process memory limit. Source responses are bounded at 32 MiB, with incomplete bodies rejected. Parser revision changes invalidate parsed evidence while preserving compatible raw HTTP receipts.
 
 Observed-best summaries retain event/timing/wind/equipment context and evidence references. Opaque numeric best flags remain unknown rather than being interpreted as verified PR claims. A summary too large for an Excel cell is explicitly relocated to the full JSONL sidecar with row/report/athlete linkage; it is not truncated.
 
@@ -95,15 +97,34 @@ This is an operator-controlled recovery action, not an unbounded retry loop. Pre
 
 Exact replay requires the same input digest, source snapshot label, execution label and selection/concurrency arguments. Changing or omitting the snapshot label can submit different work. Upgrade CLI and worker cache protocols together; do not replay in-flight journals against incompatible parser or orchestration contracts.
 
+### Cancellation and worker cutover
+
+Cancel a run through its actual native invocation ID:
+
+```sh
+curl --fail-with-body --request PATCH \
+  http://127.0.0.1:19070/invocations/RUN_INVOCATION_ID/cancel
+```
+
+Cancellation acceptance is not drainage. The coordinator cancels admitted row calls and drains its pending native futures; row and effect handlers propagate native cancellation instead of publishing ordinary review results or blocking source admission. In the controlled cancellation exercise, the root and eight admitted rows terminated with cancellation, no row reports were published, and exactly one already-started HTTP request occurred. A subsequent run completed and verified the synthetic workbook.
+
+Before changing an executable or its configuration, stop admission and confirm the old deployment's invocations and external requests have drained. Do not hot-replace an incompatible worker behind the same endpoint. Preserve a verified partial export and invocation history. Keep one owning worker per artifact directory; stop it before an offline directory backup. Reuse raw source snapshots only when their acquisition contract remains valid, and advance parsed-evidence/row revisions when those contracts change.
+
 ## Synthetic native exercise
 
 ```sh
 cargo run --example native_fixture -- \
   --bind 127.0.0.1:18081 \
   --output-dir /absolute/new/synthetic-fixture \
-  --scenario match,duplicate,ambiguous,missing-cohort,conflict,empty-search
+  --scenario match,duplicate,ambiguous,missing-cohort,conflict,empty-search,malformed,retry-exhaustion,payload-limit,split-location,generic-school
 ```
 
 The fixture writes a synthetic workbook and worker configuration, and serves controlled source/model responses and request counters. Run its worker against a dedicated native Restate instance. Fixture model endpoints are synthetic; they do not exercise the real GPUs. Keep generated fixture inputs stable during a run: fixture startup currently regenerates its workbook, changing its digest.
 
-Observed native happy-path exercise: 8 source rows across two sheets, 5 accepted, 1 no-match, 2 review; exported fields verified 120/120, independent result counts reconciled, and source SHA-256 unchanged during export. A second scenario proves missing-school rows reach discovery and retain candidate evidence without speculative acceptance. This is synthetic evidence, not the real 100-row pilot or completed full-workbook delivery. Live rollout, raw-source/PR verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.
+Observed native geography repair exercise: four complementary-location rows changed from review to accepted, and a previously accepted generic-school row changed to review. The completed 13-row run produced 5 accepted, 1 no-match and 7 review results. Both Bio/TeamNav and cross-sport corroboration retained separate document witnesses; mixing different team IDs remained rejected. The other scenarios cover malformed metadata for the unrequested sport, missing/non-2027 cohorts, identity contradictions, genuine ambiguity, malformed responses, retry exhaustion and oversized responses. Export verified all 195 original fields across two sheets and unchanged source SHA-256. Parser cutover added zero source requests and one synthetic model request for changed review evidence; exact run replay added neither source nor model requests.
+
+The separate actual-GPU exercise used two distinct synthetic source records, one per reviewer. Both models returned unresolved for indistinguishable candidates, each in one HTTP attempt. Retained request/response audits verified all 15 source fields and both eligible candidates in each request, and matching actual model IDs. Observed HTTP times were 789 ms for Q5/5090 and 1,524 ms for Q4/3090; each request had 2,273 prompt tokens. The native two-row run completed in 2,470 ms and verified all 30 original fields. Exact replay created no additional reviewer invocations. These are measurements of two controlled cases, not a load or soak benchmark.
+
+Moving those same field values to differently named worksheets in a separate workbook reused both original model responses without another reviewer invocation. The relocated export independently preserved all 30 source fields. Case identity binds complete field values and candidate evidence, not physical worksheet/row coordinates.
+
+Run access-denial scenarios separately: denial deliberately halts global source admission, so it can make other concurrent rows require review. Synthetic evidence is not the real 100-row pilot or completed full-workbook delivery. Live rollout, raw-source/PR verification, recovery/failure campaigns, performance and security acceptance remain separate requirements.

@@ -366,9 +366,10 @@ fn parse_results(
         digest,
         issues,
     );
-    if root
-        .get("eventsTF")
-        .is_some_and(|value| !value.is_array() && !value.is_null())
+    if sport == Sport::TrackField
+        && root
+            .get("eventsTF")
+            .is_some_and(|value| !value.is_array() && !value.is_null())
     {
         issues.push(issue(
             "unknown_events_shape",
@@ -376,9 +377,10 @@ fn parse_results(
             Some(ev(digest, "/eventsTF")),
         ));
     }
-    if root
-        .get("distancesXC")
-        .is_some_and(|value| !value.is_array() && !value.is_null())
+    if sport == Sport::CrossCountry
+        && root
+            .get("distancesXC")
+            .is_some_and(|value| !value.is_array() && !value.is_null())
     {
         issues.push(issue(
             "unknown_distances_shape",
@@ -396,16 +398,22 @@ fn parse_results(
             Some(ev(digest, "/meets")),
         ));
     }
-    let events = root
-        .get("eventsTF")
-        .and_then(Value::as_array)
-        .map_or_else(BTreeMap::new, |items| events::index(items, digest, issues));
-    let distances = root
-        .get("distancesXC")
-        .and_then(Value::as_array)
-        .map_or_else(BTreeMap::new, |items| {
-            index_distances(items, digest, issues)
-        });
+    let events = if sport == Sport::TrackField {
+        root.get("eventsTF")
+            .and_then(Value::as_array)
+            .map_or_else(BTreeMap::new, |items| events::index(items, digest, issues))
+    } else {
+        BTreeMap::new()
+    };
+    let distances = if sport == Sport::CrossCountry {
+        root.get("distancesXC")
+            .and_then(Value::as_array)
+            .map_or_else(BTreeMap::new, |items| {
+                index_distances(items, digest, issues)
+            })
+    } else {
+        BTreeMap::new()
+    };
     let meets = root
         .get("meets")
         .and_then(Value::as_object)

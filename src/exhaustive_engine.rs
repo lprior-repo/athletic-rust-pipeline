@@ -231,11 +231,6 @@ impl Engine {
                 return Ok(Some(html));
             }
         }
-        if self.config.retrieval.authorized_direct_fetch {
-            return fetch::fetch_exact_profile(url, &self.config.retrieval)
-                .await
-                .map(Some);
-        }
         Ok(None)
     }
 }

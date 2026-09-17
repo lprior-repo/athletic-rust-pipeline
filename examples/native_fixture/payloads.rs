@@ -13,6 +13,8 @@ pub fn candidate_ids(case: Scenario) -> Vec<u64> {
         Scenario::Ambiguous => vec![1003, 1004],
         Scenario::MissingCohort => vec![1005],
         Scenario::Conflict => vec![1006],
+        Scenario::SplitLocation => vec![1012],
+        Scenario::GenericSchool => vec![1013],
         _ => Vec::new(),
     }
 }
@@ -36,6 +38,10 @@ pub fn scenario_for_text(text: &str) -> Scenario {
         Scenario::PayloadLimit
     } else if normalized.contains("isolated") {
         Scenario::AccessDenied
+    } else if normalized.contains("riley") {
+        Scenario::SplitLocation
+    } else if normalized.contains("gene") {
+        Scenario::GenericSchool
     } else {
         Scenario::Match
     }
@@ -51,6 +57,8 @@ pub fn scenario_for_id(id: u64) -> Scenario {
         1009 => Scenario::RetryExhaustion,
         1010 => Scenario::PayloadLimit,
         1011 => Scenario::AccessDenied,
+        1012 => Scenario::SplitLocation,
+        1013 => Scenario::GenericSchool,
         _ => Scenario::Match,
     }
 }
@@ -64,6 +72,8 @@ pub fn scenario_for_team(id: u64) -> Scenario {
         509 => Scenario::RetryExhaustion,
         510 => Scenario::PayloadLimit,
         511 => Scenario::AccessDenied,
+        512 | 612 => Scenario::SplitLocation,
+        513 => Scenario::GenericSchool,
         _ => Scenario::Match,
     }
 }
@@ -74,6 +84,8 @@ pub fn display_name(id: u64) -> &'static str {
         1003 | 1004 => "Sam Same",
         1005 => "Morgan Missing",
         1006 => "Taylor Clash",
+        1012 => "Riley Split",
+        1013 => "Gene Generic",
         _ => "Synthetic Runner",
     }
 }
@@ -107,18 +119,38 @@ pub fn response(status: StatusCode, content_type: &'static str, body: Vec<u8>) -
         .insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
     response
 }
-pub fn bio_body(id: u64, case: Scenario, _sport: &str) -> String {
+pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
     let team = 500 + id.saturating_sub(1000);
+    let team = if matches!(case, Scenario::SplitLocation) && sport == "xc" {
+        612
+    } else {
+        team
+    };
     let name = display_name(id);
     let (first, last) = name.split_once(' ').map_or((name, "Runner"), |value| value);
     let (school, city, region) = identity_context(case);
-    let location = (city, region);
-    let teams = json!({team.to_string(): {"SchoolName": school, "City": location.0, "State": location.1, "Level": 4}});
+    let teams = match (case, sport) {
+        (Scenario::Match, _) | (Scenario::Duplicate | Scenario::SplitLocation, "tf") => {
+            json!({team.to_string(): {"SchoolName": school, "City": city, "Level": 4}})
+        }
+        (Scenario::Duplicate | Scenario::SplitLocation, _) => {
+            json!({team.to_string(): {"SchoolName": school, "State": region, "Level": 4}})
+        }
+        _ => {
+            json!({team.to_string(): {"SchoolName": school, "City": city, "State": region, "Level": 4}})
+        }
+    };
     let seasons = json!([{"SchoolID":team,"IDSeason":12025}]);
     let tf_results = json!([{"IDResult":id,"AthleteID":id,"Result":"10.72","SchoolID":team,"MeetID":9,"SeasonID":12025,"EventID":1,"EventTypeID":7,"PersonalBest":14,"SeasonBest":1,"FAT":1,"shortCode":format!("synthetic-tf-{id}") }]);
     let xc_results = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5000,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
     let events = json!([{"IDEvent":1,"IDEventType":7,"Event":"100 Meters","Type":"T","FieldMeasureType":"S","PersonalEvent":true}]);
     let distances = json!([{"Meters":5000,"Distance":5,"Units":"km"}]);
+    // Public-API regression fixture: Match poisons metadata for the unselected sport.
+    let (events, distances) = match (case, sport) {
+        (Scenario::Match, "tf") => (events, json!({"malformed": true})),
+        (Scenario::Match, "xc") => (json!({"malformed": true}), distances),
+        _ => (events, distances),
+    };
     json!({
         "athlete":{"IDAthlete":id,"FirstName":first,"LastName":last},
         "allSeasons":seasons,
@@ -134,8 +166,14 @@ pub fn bio_body(id: u64, case: Scenario, _sport: &str) -> String {
 }
 pub fn team_body(id: u64, case: Scenario) -> String {
     let (name, city, region) = identity_context(case);
-    let location = (city, region);
-    json!({"team":{"ID":id,"Name":name,"City":location.0,"State":location.1,"Level":4}}).to_string()
+    match case {
+        Scenario::Match => json!({"team":{"ID":id,"Name":name,"State":region,"Level":4}}),
+        Scenario::Duplicate | Scenario::SplitLocation => {
+            json!({"team":{"ID":id,"Name":name,"Level":4}})
+        }
+        _ => json!({"team":{"ID":id,"Name":name,"City":city,"State":region,"Level":4}}),
+    }
+    .to_string()
 }
 
 fn identity_context(case: Scenario) -> (&'static str, &'static str, &'static str) {
@@ -144,7 +182,8 @@ fn identity_context(case: Scenario) -> (&'static str, &'static str, &'static str
         Scenario::Ambiguous => ("Twin High", "Boston", "MA"),
         Scenario::MissingCohort => ("No Class High", "Reno", "NV"),
         Scenario::Conflict => ("Conflict High", "Portland", "OR"),
-        _ => ("Central High", "Austin", "TX"),
+        Scenario::GenericSchool => ("High School", "Austin", "TX"),
+        _ => ("Central", "Austin", "TX"),
     }
 }
 pub fn profile_html(id: u64, case: Scenario) -> String {

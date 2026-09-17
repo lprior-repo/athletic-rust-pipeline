@@ -41,7 +41,7 @@ pub(super) fn source_identity(record: &SourceRecord) -> SourceIdentity {
     SourceIdentity {
         name,
         school: source_value(record, SCHOOL)
-            .and_then(|value| normalized(&value))
+            .and_then(|value| normalized_school(&value))
             .filter(|value| meaningful_school(value)),
         mailing_city: source_value(record, MAILING_CITY).and_then(|value| normalized(&value)),
         mailing_region: source_value(record, MAILING_REGION).and_then(|value| normalized(&value)),
@@ -74,10 +74,20 @@ fn normalized(raw: &str) -> Option<String> {
     (!value.is_empty()).then_some(value)
 }
 
+fn normalized_school(raw: &str) -> Option<String> {
+    normalized(raw).map(|mut value| {
+        let suffix = " high school";
+        if value.ends_with(suffix) {
+            value.truncate(value.len() - suffix.len());
+        }
+        value
+    })
+}
+
 fn meaningful_school(value: &str) -> bool {
     !matches!(
         value,
-        "unknown" | "not provided" | "none" | "null" | "n a" | "other"
+        "unknown" | "not provided" | "none" | "null" | "n a" | "other" | "high school"
     )
 }
 
@@ -128,7 +138,7 @@ fn candidate_facts(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> Ca
             profile
                 .teams
                 .iter()
-                .any(|team| normalized(team.name.value.as_str()).as_ref() == Some(school))
+                .any(|team| normalized_school(team.name.value.as_str()).as_ref() == Some(school))
         })
     });
     let mailing_location_matches = school_location_matches(profiles, source);
@@ -175,45 +185,39 @@ fn candidate_facts(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> Ca
 }
 
 fn school_location_matches(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> bool {
-    source.school.as_ref().is_some_and(|school| {
-        profiles.iter().any(|profile| {
-            profile.teams.iter().any(|team| {
-                if normalized(team.name.value.as_str()).as_deref() != Some(school) {
-                    return false;
-                }
-                team.location.as_ref().is_some_and(|observed| {
-                    location_matches(
-                        &observed.value,
-                        source.mailing_city.as_deref(),
-                        source.mailing_region.as_deref(),
-                    )
-                })
-            })
+    let Some(school) = source.school.as_ref() else {
+        return false;
+    };
+    let city = source.mailing_city.as_deref();
+    let region = source.mailing_region.as_deref();
+    let required = u8::from(city.is_some()) | (u8::from(region.is_some()) << 1);
+    if required == 0 {
+        return false;
+    }
+    let mut corroboration = BTreeMap::new();
+    profiles
+        .iter()
+        .flat_map(|profile| &profile.teams)
+        .filter(|team| normalized_school(team.name.value.as_str()).as_ref() == Some(school))
+        .filter_map(|team| {
+            team.location
+                .as_ref()
+                .map(|location| (team.team_id, &location.value))
         })
-    })
+        .any(|(team_id, location)| {
+            let fields = corroboration.entry(team_id).or_insert(0);
+            *fields |= location_evidence(location, city, region);
+            *fields & required == required
+        })
 }
 
-fn location_matches(location: &Location, city: Option<&str>, region: Option<&str>) -> bool {
-    match location {
-        Location::CityOnly(value) => {
-            region.is_none() && city == normalized(value.as_str()).as_deref()
-        }
-        Location::RegionOnly(value) => {
-            city.is_none() && region == normalized(value.as_str()).as_deref()
-        }
-        Location::CityRegion {
-            city: school_city,
-            region: school_region,
-        } => {
-            (city.is_some() || region.is_some())
-                && city
-                    .is_none_or(|value| normalized(school_city.as_str()).as_deref() == Some(value))
-                && region.is_none_or(|value| {
-                    normalized(school_region.as_str()).as_deref() == Some(value)
-                })
-        }
-        Location::Missing => false,
-    }
+fn location_evidence(location: &Location, city: Option<&str>, region: Option<&str>) -> u8 {
+    let (observed_city, observed_region) = location.fields();
+    let city_matches =
+        observed_city.is_some_and(|value| city == normalized(value.as_str()).as_deref());
+    let region_matches =
+        observed_region.is_some_and(|value| region == normalized(value.as_str()).as_deref());
+    u8::from(city_matches) | (u8::from(region_matches) << 1)
 }
 
 fn strength(facts: CandidateFacts) -> u8 {

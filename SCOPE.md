@@ -24,7 +24,7 @@ Result records retain every discovered profile hint, including weak candidates, 
 |---|---|---|
 | `xlsx` | Stream shared strings and worksheet XML; ignore empty styled rows; append result worksheet | Send personal data to any service |
 | `discovery` | Query the scoped Athletic.net search endpoint and retain allowed athlete URLs | Fetch candidate pages |
-| `fetch` | Fetch one exact, already-discovered URL via Spider after authorization gate | Crawl links, bypass blocks, log in, use stealth/proxies |
+| `runtime::source` | Retrieve known source URLs through bounded `reqwest` requests and native Restate admission | Crawl links, bypass blocks, log in, use stealth/proxies |
 | `extract` | Convert HTML/snippets to compact evidence and call the configured local model | Decide the final identity alone |
 | `scoring` | Normalize names/schools; apply thresholds and corroboration rules | Invent missing identity evidence |
 | `marks` | Canonicalize events and compare validated marks | Treat model arithmetic as authoritative |
@@ -69,11 +69,9 @@ Strict exhaustive discovery has no candidate-count truncation. It validates athl
 
 ### 3. Retrieval
 
-Default mode retains search-result title/snippet/URL as evidence and can ingest manually saved `<athlete-id>.html` pages. Authorized mode uses Spider with concurrency 1, a stop-after-seed callback, robots enabled, and a configured delay to retrieve each exact candidate URL. The pipeline has no anti-bot fallback.
+The production retrieval path is `runtime::source`, using `reqwest` for known search and profile requests. Native Restate owns admission and durable retry policy; no independent crawler is involved. Complete raw responses are retained for deterministic parsing and replay.
 
-Direct retrieval additionally requires `SPIDER_MAX_SIZE_BYTES` in the inclusive range 1,048,576–4,194,304 bytes. Saved files are also bounded to 4 MiB. The owned crawl/collector futures are joined under a deadline; truncation, invalid response status, access challenges, and identity-changing redirects are errors.
-
-If a site requires JavaScript, supply manually saved HTML or adapt the authorized retriever to Spider's `smart`/Chrome feature after confirming permission. The base build intentionally avoids browser automation.
+Source bodies are bounded to 32 MiB while streaming. Invalid declared lengths, oversized bodies and transport truncation are explicit failures. Legacy saved-page helpers remain limited to 4 MiB; they are not the production acquisition path. The base build does not use browser automation or anti-bot fallbacks.
 
 ### 4. Local model
 

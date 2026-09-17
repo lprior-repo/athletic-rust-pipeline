@@ -152,12 +152,6 @@ impl AthleticModels {
                 return Ok(html);
             }
         }
-        if self.runtime.config.retrieval.authorized_direct_fetch {
-            return fetch::fetch_exact_profile(url, &self.runtime.config.retrieval)
-                .await
-                .map(Some)
-                .map_err(retrieval_failure);
-        }
         Ok(None)
     }
 }

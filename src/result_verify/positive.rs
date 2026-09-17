@@ -13,7 +13,7 @@ use crate::{
     },
 };
 use anyhow::{bail, Result};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use unicode_normalization::{char::is_combining_mark, UnicodeNormalization};
 
 pub(super) fn verify_profiles(profiles: &[ProfileAcquisition]) -> Result<()> {
@@ -167,13 +167,13 @@ pub(super) fn verify_positive(
 fn verify_identity(row: &DetailRow, profile: &ProfileEvidence) -> Result<()> {
     let first = source_field(row, "Person First")?;
     let last = source_field(row, "Person Last")?;
-    let school = source_field(row, "Schools Name")?;
+    let school = normalized_school(&source_field(row, "Schools Name")?);
     let city = source_field_optional(row, "Address Mailing / Permanent City");
     let region = source_field_optional(row, "Address Mailing / Permanent Region");
     if normalized(&format!("{first} {last}")).is_empty()
         || matches!(
-            normalized(&school).as_str(),
-            "" | "unknown" | "not provided" | "none" | "null" | "n a" | "other"
+            school.as_str(),
+            "" | "unknown" | "not provided" | "none" | "null" | "n a" | "other" | "high school"
         )
     {
         bail!("accepted source lacks meaningful name or school identity");
@@ -184,15 +184,26 @@ fn verify_identity(row: &DetailRow, profile: &ProfileEvidence) -> Result<()> {
     if normalized(&format!("{first} {last}")) != normalized(profile.name.value.as_str()) {
         bail!("retained profile name contradicts source identity");
     }
-    let matching_team = profile
+    let city = city.as_deref().map(normalized);
+    let region = region.as_deref().map(normalized);
+    let mut corroboration = HashMap::new();
+    if !profile
         .teams
         .iter()
-        .filter(|team| normalized(team.name.value.as_str()) == normalized(&school));
-    if !matching_team.clone().any(|team| {
-        team.location.as_ref().is_some_and(|observed| {
-            location_matches(&observed.value, city.as_deref(), region.as_deref())
+        .filter(|team| normalized_school(team.name.value.as_str()) == school)
+        .any(|team| {
+            let Some(observation) = team.location.as_ref() else {
+                return false;
+            };
+            let fields = corroboration
+                .entry(team.team_id)
+                .or_insert((city.is_none(), region.is_none()));
+            let observed = location_matches(&observation.value, city.as_deref(), region.as_deref());
+            fields.0 |= observed.0;
+            fields.1 |= observed.1;
+            fields.0 && fields.1
         })
-    }) {
+    {
         bail!("retained profile lacks source-matching school and location evidence");
     }
     Ok(())
@@ -213,24 +224,28 @@ fn source_field_optional(row: &DetailRow, name: &str) -> Option<String> {
         .map(str::to_owned)
 }
 
-fn location_matches(location: &FactLocation, city: Option<&str>, region: Option<&str>) -> bool {
+fn location_matches(
+    location: &FactLocation,
+    city: Option<&str>,
+    region: Option<&str>,
+) -> (bool, bool) {
     match location {
-        FactLocation::Missing => false,
-        FactLocation::RegionOnly(value) => {
-            city.is_none()
-                && region.is_some_and(|actual| normalized(value.as_str()) == normalized(actual))
-        }
-        FactLocation::CityOnly(value) => city.is_some_and(|actual| {
-            region.is_none() && normalized(value.as_str()) == normalized(actual)
-        }),
+        FactLocation::Missing => (false, false),
+        FactLocation::RegionOnly(value) => (
+            false,
+            region.is_some_and(|actual| normalized(value.as_str()) == actual),
+        ),
+        FactLocation::CityOnly(value) => (
+            city.is_some_and(|actual| normalized(value.as_str()) == actual),
+            false,
+        ),
         FactLocation::CityRegion {
-            city: expected_city,
-            region: expected_region,
-        } => {
-            city.is_none_or(|actual| normalized(expected_city.as_str()) == normalized(actual))
-                && region
-                    .is_none_or(|actual| normalized(expected_region.as_str()) == normalized(actual))
-        }
+            city: observed_city,
+            region: observed_region,
+        } => (
+            city.is_some_and(|actual| normalized(observed_city.as_str()) == actual),
+            region.is_some_and(|actual| normalized(observed_region.as_str()) == actual),
+        ),
     }
 }
 
@@ -247,6 +262,15 @@ fn normalized(raw: &str) -> String {
         })
         .trim()
         .to_owned()
+}
+
+fn normalized_school(raw: &str) -> String {
+    let mut value = normalized(raw);
+    let suffix = " high school";
+    if value.ends_with(suffix) {
+        value.truncate(value.len() - suffix.len());
+    }
+    value
 }
 
 fn verify_participation(profile: &ProfileEvidence) -> Result<()> {

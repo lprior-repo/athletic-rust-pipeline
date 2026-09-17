@@ -127,7 +127,7 @@ impl RowWorker {
         source: SourceRecord,
         queries: Vec<SearchQuery>,
     ) -> Result<Json<EvidenceDigest>, HandlerError> {
-        let discovery = execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await;
+        let discovery = execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
         let query_refs = discovery.refs.clone();
         let summary = publish(
             ctx,
@@ -146,7 +146,7 @@ impl RowWorker {
             &job.snapshot,
             &discovery.candidate_ids,
         )
-        .await;
+        .await?;
         let search = if discovery.complete() && profiles.complete() {
             decision::SearchCompleteness::Complete { evidence: summary }
         } else {
@@ -158,6 +158,7 @@ impl RowWorker {
         let assessed =
             match assess_and_publish(ctx, self.runtime.clone(), &source, &profiles, search).await {
                 Ok(value) => value,
+                Err(error) if error.code() == 409 => return Err(error.into()),
                 Err(error) => {
                     let mut issues = discovery.issues;
                     issues.extend(profiles.issues);
@@ -186,7 +187,7 @@ impl RowWorker {
             &profiles.profiles,
             &assessed,
         )
-        .await;
+        .await?;
         issues.extend(discovery.issues);
         issues.extend(profiles.issues);
         if discovery.candidate_limit {
@@ -216,15 +217,14 @@ async fn assess_and_publish(
     source: &SourceRecord,
     profiles: &ProfileState,
     search: decision::SearchCompleteness,
-) -> anyhow::Result<(EvidenceDigest, decision::Assessment)> {
+) -> std::result::Result<(EvidenceDigest, decision::Assessment), TerminalError> {
     let source = source.clone();
     let profiles = profiles.profiles.clone();
     let assessment = runtime
         .blocking(move || decision::assess(&source, &profiles, search))
-        .await?;
-    let digest = publish(ctx, runtime, "row-assessment", assessment.clone())
         .await
-        .map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        .map_err(|error| TerminalError::new(error.to_string()))?;
+    let digest = publish(ctx, runtime, "row-assessment", assessment.clone()).await?;
     Ok((digest, assessment))
 }
 
