@@ -8,6 +8,10 @@ Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualificat
 
 Main rejected the first GPU gate submission: separate atomics allowed stale reopening, the wait loop busy-polled, and overflow/poison handling did not satisfy the contract. Repairs were returned to the 5090. Further review returned lifecycle/cooldown/recovery defects to the 5090 and empty-body/deadline/abort/navigation-completion defects to the 3090. **The pre-GPU build success does not apply to their current edits.** Re-read the latest deliveries and actual code before validation or publication.
 
+Two integrated post-GPU commands, `cargo fmt --all && cargo check --all-targets`, failed. The first reported 24 errors and 3 warnings; the second reported 40 errors and 2 warnings after the restored transport module exposed additional cleanup-helper failures. Formatting succeeded; no test suite executed. Raw logs are retained as `gpu-check-01.log` and `gpu-check-02.log` under the private root below. Repairs were returned to both GPUs. **No post-GPU compilation success has been established.**
+
+Subsequent source review also rejected behavioral regressions: transport compared response events with a never-assigned document ID, aborted on challenge despite the drain contract, and confused fetch success with abort settlement; navigation rejected the intentionally closed startup/recovery gate and could lose events across separate streams. Lifecycle review found missing challenge-latch resets, repeated cached cooldowns, discarded combined challenge/429 feedback, and unconfirmed physical drain after job failure. Both GPUs received concrete counterexamples and exclusive-owner repair assignments. Completion messages remain unverified claims until Main reviews the actual source and runs the fresh native scenarios.
+
 ### Latest user direction
 
 - The 5090 and 3090 do the actual coding. Main owns planning, review, native verification, and handoff.
@@ -52,7 +56,8 @@ Resume coordination via exact worker IDs in `hub`, or read `agent://GPU5090Chrom
 Private root: `/home/lewis/.local/share/athletic-rust-pipeline/evidence-repairs-v8/chromium-TFpmUt`.
 
 - `athletic-chromium-proof-restate`: native Restate 1.7.10, internal 20530, admin 20531, ingress 20532. Configuration and data are in that private root.
-- `athletic-chromium-proof-source`: controlled Bun source proxy on 20535, forwarding synthetic source traffic to fixture port 20534. The proxy is running; fixture and worker binaries were frozen but **not launched or deployed** at this checkpoint.
+- `athletic-chromium-proof-source`: controlled Bun source proxy on 20535, forwarding synthetic source traffic to fixture port 20534.
+- `athletic-chromium-proof-fixture`: the frozen `fixture-v1` backend is now launched and ready on 20534 with the synthetic `match` scenario, output directory `fixture-match`. Worker configuration `worker-browser-synthetic.toml` points source traffic through 20535, model-fixture traffic directly to 20534, and uses a separate private headed two-tab profile. **No browser worker has been launched or deployed.**
 - Reserved worker port: 20533.
 - Proxy control modes currently include normal, automatic synthetic challenge, human synthetic challenge, HTML-only challenge, gzip, and redirect. `/__test/encoding` is the fixed Latin-1 boundary. Private records retain synthetic request/response hashes and request/cookie/concurrency counts.
 - The root also contains the plain public search response and metadata. Do not display source bodies or private profiles to remote models.

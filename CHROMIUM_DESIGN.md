@@ -78,13 +78,12 @@ CLI / RunCoordinator / RowWorker
 
 ## Implementation ownership
 
-- Main: runtime/config/CLI/SDK BrowserSession integration, source attempt classification/admission, revision changes, validation, documentation and publication.
-- ChromeLifecycle: local process/profile/tab ownership and immediate gate; SDK remains policy owner.
-- ChromeTransport: real CDP request/response capture and navigation observation.
-- GPU5090ChromeGate: local 5090 review of admission, challenge state, cancellation and durable recovery.
-- GPU3090ChromeEvidence: local 3090 review of CDP fidelity, privacy and executable scenario coverage.
+- Main: planning, adversarial source review, native verification, documentation and publication. Per the latest user direction, Main does not perform further production coding.
+- GPU5090ChromeCoding: local 5090 implementation of process/profile/tab ownership, generation-gated admission, lifecycle/actor/pool/shutdown, and SDK BrowserSession/readiness integration.
+- GPU3090ChromeCoding: local 3090 implementation of CDP request/response capture, raw byte acquisition, cancellation cleanup, and continuous navigation observation.
+- The two coders have disjoint file ownership. Main integrates only after both freeze; neither coder runs concurrent builds, formatters, linters, tests, or services.
 
-Both GPUs are review workers, not evidence that the production matching workflow has executed on both lanes.
+The GPUs now perform coding, superseding the earlier review-only assignment. Their completion reports are not verification, and development-model execution is not evidence that the production matching workflow has executed on both matching lanes. Current repair status and private native evidence locations are retained in [HANDOFF.md](HANDOFF.md).
 
 ## Required verification before claiming implementation complete
 
