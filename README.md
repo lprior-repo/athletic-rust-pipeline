@@ -2,6 +2,8 @@
 
 Rust workbook ingestion, Athletic.net candidate discovery and evidence parsing, with native Restate orchestration and local-only model review. The executable exposes `worker`, `deploy`, `start`, `status`, `export`, and `verify`. Earlier CLI commands are no longer the production interface.
 
+Current workstation run, Cloudflare challenge evidence, Restate UI links, verified repairs, and safe continuation steps: [HANDOFF.md](HANDOFF.md). The real 10,000-row qualification remains incomplete; browser/Spider acquisition has not yet been implemented.
+
 ## Identity and eligibility
 
 The source workbook is the golden input for membership and source identity context. Every source row remains in output accounting, including duplicate rows and rows missing identity fields. Workbook membership establishes eligibility: there is no junior, grade, or graduation-year requirement. Observed graduation information is descriptive, not a selection or ranking criterion.
