@@ -4,13 +4,25 @@ Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualificat
 
 ## Current Chromium work and next-session ownership
 
-**Not shipped or fully qualified.** The working tree contains uncommitted browser implementation changes. The final GPU implementation passed formatting, strict all-target Clippy, and binary build. Its first actual headed Chromium/Restate workflow and owner-online export passed against synthetic data. Challenge/recovery and remaining boundary qualification are still open.
+**Not shipped; live qualification awaits the operator.** The GPU-written candidate passed fmt, strict all-target Clippy and build. Twenty-two synthetic exports across retained candidates passed independent stopped-writer verification. The fresh live control reached a real Cloudflare checkbox and is safely paused in `human_required` with zero active source requests. Do not automate the real challenge or claim live acquisition success.
 
 Main rejected the first GPU gate submission: separate atomics allowed stale reopening, the wait loop busy-polled, and overflow/poison handling did not satisfy the contract. Repairs were returned to the 5090. Further review returned lifecycle/cooldown/recovery defects to the 5090 and empty-body/deadline/abort/navigation-completion defects to the 3090. **The pre-GPU build success does not apply to their current edits.** Re-read the latest deliveries and actual code before validation or publication.
 
-Final `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`, and `cargo build --bin athletic-rust-pipeline` each exited 0. Exact command records are `gpu-final-fmt-01.json`, `gpu-final-clippy-01.json`, and `gpu-final-build-01.json` in the private proof root. Earlier failed compilation and quality attempts remain retained there; they do not describe the final frozen worker. No unit suite or fuzz campaign ran.
+Both candidate builds passed `cargo fmt --all`, `cargo clippy --all-targets -- -D warnings`, and `cargo build --bin athletic-rust-pipeline`. Initial records are `gpu-final-*-01.json`; latest repair records are `gpu-cooldown-repair-{fmt,clippy,build}.json`. No unit suite or fuzz campaign ran.
 
 Subsequent source review also rejected behavioral regressions: transport compared response events with a never-assigned document ID, aborted on challenge despite the drain contract, and confused fetch success with abort settlement; navigation rejected the intentionally closed startup/recovery gate and could lose events across separate streams. Lifecycle review found missing challenge-latch resets, repeated cached cooldowns, discarded combined challenge/429 feedback, and unconfirmed physical drain after job failure. Both GPUs received concrete counterexamples and exclusive-owner repair assignments. Completion messages remain unverified claims until Main reviews the actual source and runs the fresh native scenarios.
+
+### Current live control and authorized legacy cutover
+
+- The user explicitly selected **Checkpoint and stop legacy** before the bounded browser probe. Legacy monitor, worker and Restate are now stopped; original binaries, data and configurations remain preserved.
+- Coordinator cancellation returned HTTP 202 at 2026-09-18T13:34:13.489Z. Subsequent native SQL reported zero noncompleted invocations. Both pre-cancel and final owner-online exports succeeded; final stopped-writer verification preserved 120,716 rows, two sheets and all 1,569,308 original fields.
+- Final legacy checkpoint: zero accepted, three no-match, 73 review, 120,640 pending across the full workbook. This is partial/cancelled, not completed 10,000-row qualification. Evidence and exports are under the private proof root's `legacy-cutover/`; final XLSX SHA-256 `a034f04e2b5c71202893683fc420b565b3e44db6f9829118a1e5939cb06ffc49`, JSONL SHA-256 `fcf3715c39d7f30863fe2009307dc597f6ea17a2ad41ee8ed6913038df64a25f`.
+- Latest frozen candidate `worker-chrome-gpu-v2`: SHA-256 `57891815f6a38f4f5d67fe46ed3ac75f306609c08bdcafe7a64655acd446e4b8`. Never replace this file or use changed code under its active journals.
+- Live services: `athletic-chrome-live-control-restate` (internal 20930, admin 20931, ingress 20932) and `athletic-chrome-live-control-worker` (20933). Fresh deployment `dp_172gHbtH3GezUtFEbpRg7mx`; config/data/store are under private `live-control/`.
+- Live profile remains `/home/lewis/.local/share/athletic-rust-pipeline/chrome-profile-0`, headed, two source tabs, one-second configured spacing. This is not an assertion of an operator-approved rate. No identity spoofing or cookie replay.
+- Input is one manually prepared public positive-control row, not Golden data. Run `f9c24ec7d31033f56dbbed06bb3550d1b87eb82e004c32e89e5be291c4877769`; invocation `inv_1fsg95kbGEBB1uyEEwzPEWHFrn9PiQ4G7g`. Submission is not completion.
+- Current browser DevTools port 41149. Headed page shows **Verify you are human**, title **Just a moment...**. Operator must complete it in that same window/profile; Restate then observes clearance and resumes. Main did not click or automate the real challenge. Private screenshot and metadata: `live-control/human-required.webp`, `human-required-state.json`.
+- All completed synthetic verification services are stopped. Only the fresh live-control pair should continue for operator verification. Services remain hub-managed and are not guaranteed to survive harness teardown.
 
 ### Latest user direction
 
@@ -56,36 +68,45 @@ Latest integration contract: `NavigationOutcome::Pending` means an incomplete/ch
 - Frozen synthetic fixture `fixture-v1`: SHA-256 `03397091a113a50f0250e61a06f7bc6e477f2a231fd57fc315b562f722931db6`.
 - Frozen GPU-built worker `worker-chrome-gpu-v1`: SHA-256 `ccd8fc7c07f2d73233294387baf10e6892eb8da4eaa774c4f577a8031710074f`. Fresh deployment `dp_15ELS2UUekYhRw8x09xyait` registered 12 services using Restate Rust SDK 0.12.0.
 - Actual CLI `browser-start` completed through Restate; status became Ready with two tabs, zero active requests and zero cooldown. The headed worker browser uses the private synthetic profile. CDP inspection observed Chrome 151.0.7922.173 and naturally true `navigator.webdriver`, without an override. A screenshot showed the normal synthetic homepage.
-- Native run `2c6ae05c0f16bc49923215b8cb80db0de6c199135b74d3bf8775d70367e25d91` completed 2/2 synthetic rows, both deterministic. Its 15 new source requests had zero missing bootstrap cookies and zero cross-origin requests. Owner-online `gpu-normal-export.xlsx` preserved both rows and all 30 original fields; independent offline verification remains pending.
-- Two separately submitted synthetic runs both completed 2/2 but executed serially. The distinct-identity `match,split-location` run `7012b2d796659e41ae5f522b9810ea5f5d359d51baa9ec08a19859bfacf3e59b` then completed 3/3 (two deterministic, one review-required), issued 30 requests, and reached actual source concurrency 2. The review-required outcome has not yet been investigated as a matching qualification result.
+- Native run `2c6ae05c0f16bc49923215b8cb80db0de6c199135b74d3bf8775d70367e25d91` completed 2/2 synthetic rows, both deterministic. Its 15 new source requests had zero missing bootstrap cookies and zero cross-origin requests. Owner-online export and later stopped-writer independent verification preserved both rows and all 30 original fields.
+- Two separately submitted synthetic runs both completed 2/2 but executed serially. The distinct-identity `match,split-location` run `7012b2d796659e41ae5f522b9810ea5f5d359d51baa9ec08a19859bfacf3e59b` then completed 3/3 (two deterministic, one review-required), issued 30 requests, and reached actual source concurrency 2.
 - Automatic synthetic challenge run `e966042276e228c54ce3d3163cf26ebc322a0748438e2fe7b09c24fec60b3df5` completed 3/3 with the same outcome distribution in approximately 11 seconds. Proxy evidence recorded 31 new source requests, two challenged responses including navigation, and two new homepage requests. Browser status returned Ready with zero active requests/cooldown. No human intervention or manual durable-state reset occurred.
 - Human synthetic challenge run `b5d002945ced06ef681aaf6f185bef56da4121dd066cdce420d94a10154b7724` reached `human_required`, drained to zero active requests, and issued no additional source requests across two paused observations. Clicking the observed local synthetic verification button allowed SDK polling to resume automatically; final state Ready and coverage 3/3 (two deterministic, one review-required). Raw interaction record and screenshot are retained. An initial CSS-selector tool click timed out; the observed-element click succeeded. No real CAPTCHA was automated.
-- Headerless HTML challenge run `66477b2be618ad32d4f9169e362c0c583a115cb1ca8295c74131539886c81968` reached Challenged, then HumanRequired with zero active requests. The local synthetic button was completed; final workflow completion is not yet recorded here.
+- Headerless HTML challenge run `66477b2be618ad32d4f9169e362c0c583a115cb1ca8295c74131539886c81968` reached Challenged, then HumanRequired with zero active requests. Completing the local synthetic button allowed the workflow to finish 3/3 with the same outcome distribution.
 - Inspection of the multi-identity export explains its review-required result: exact name and matching school, but no corroborated school location; assessment `EvidenceReview`, with no valid 2..=64 hard-eligible candidate set for local review. This is a recorded matching-policy outcome, not a claimed acceptance or transport error.
+- Gzip scenario `859fabace61a1961aea459f60897e59d9ccd442f55c65d4a93dc4f3d9a80cb9a` completed 3/3. All 27 exported response receipts (nine unique bodies) matched the independent proxy's decompressed byte lengths, SHA-256 hashes and statuses. This verifies receipt parity for those exported bodies, not a claim that compressed wire bytes are retained.
+- All six exports (`normal`, `multi`, `auto`, `human`, `html`, `gzip`) passed independent CLI verification after Restate reported zero noncompleted invocations and the sole worker/store owner was stopped. Normal preserved 30 fields; each three-row export preserved all 45 fields. Exact records are `gpu-native-*-offline-verify.json`.
+- The unchanged frozen worker was restarted against its existing deployment and data. SDK `browser-start` returned it to Ready. The same mode-0700 profile retained a synthetic localStorage marker across browser restart; natural `navigator.webdriver` remained true. New DevTools port is 36899. Evidence: `gpu-native-profile-persistence.json`.
+- Redirect scenario `032f38bc770fde8f371ad972a729e274a7543e66b11ed9794687a48b0be61af0` completed all three rows as review-required: 20 source responses were rejected, and the redirect target received zero requests. Its export passed stopped-writer verification.
+- Timeout scenario `57ea3b5d8bd09b6b1f36f3791625ac6be9a2c194db91cac611e8a144a8701b2d` used a 35-second backend delay against a 30-second request bound, then recovered through SDK retry. Retained attempt records classify `transport`, message `browser request timed out`; the matching physical retry began 31,217 ms after the first request. Final 3/3 outcomes and all 45 fields passed offline verification.
+- Closing only the owned synthetic browser through CDP left status Stopped, zero active requests, and zero additional source HTTP. Fresh run `ffb708fc91e78ade1cf8bdbde2740e0b909d3f5ff2edbdbdb36bdfa00d05a4b5` completed three explicit review outcomes, not false no-matches. Its export passed stopped-writer verification. This is fail-closed browser-loss proof, not automatic browser respawn proof.
+- Existing frozen `verify` reconstructs full evidence graphs; the existing narrow `extract` binary supports selected raw audits. A proposed redundant collector was rejected, never executed, and removed. One auto-challenge query retained two attempts, its previous HTTP 403 body receipt (386 bytes), and the subsequent HTTP 200 response.
 - Raw native command records use the `gpu-native-*` prefix. These are synthetic deterministic matching checks, not real GPU-matching qualification or sustained public-source access.
+- V1's extended matrix passed valid 429 recovery (next physical request after 5,208 ms for Retry-After 2), one-shot 503 recovery, ordinary 404, and 33 MiB body rejection. Simultaneous challenge-drain proof: second request returned 403 while first remained issued; the first completed normally 1,405 ms later, was dispatched only once, and no new source requests occurred while human-required.
+- Native malformed Retry-After exposed an actor defect: parse failure incorrectly became a 60-second cooldown. The 5090 repaired `ops.rs` and draining guards in `lifecycle_ops.rs`; the first proposed repair was rejected for conflating missing delay with invalid metadata. Final error handling preserves the completed response, closes admission, drains owned work and shuts the browser down.
+- Fresh `gpu-v2/` deployment verified the repair: malformed metadata terminated in 2,333 ms after one request, browser Stopped/zero cooldown, retained HTTP 429 body of 17 bytes with SHA-256 `3850dfdbf4489250268b5f0740240a9f4445e7c5c29e1d03aa0c5446808d7507`, matching the independent proxy. Normal, valid 429 and automatic challenge regressions also passed; all four exports passed offline verification.
+- Isolated `denial/` proved ordinary 403 stops after one request without entering challenge recovery; its export passed offline verification. `profile-lock/` proved a second owner fails while the first remains Ready, with zero extra source/home requests. Supported eight-tab bootstrap reached Ready; configurations with 0/9 tabs, a 14-second window, or headless live mode were rejected before service readiness.
+- Same-build worker and Restate restart/replay under `profile-lock/` restored the exact completed run with zero additional source or homepage requests. Its export passed offline verification. The combined count is 22 independently verified synthetic exports; none establishes real GPU-matching or sustained live-source qualification.
 
 ### Isolated native verification environment
 
 Private root: `/home/lewis/.local/share/athletic-rust-pipeline/evidence-repairs-v8/chromium-TFpmUt`.
 
-- `athletic-chromium-proof-restate`: native Restate 1.7.10, internal 20530, admin 20531, ingress 20532. Configuration and data are in that private root.
-- `athletic-chromium-proof-source`: controlled Bun source proxy on 20535, forwarding synthetic source traffic to fixture port 20534.
-- `athletic-chromium-proof-fixture` was stopped after its completed Match-only runs. `athletic-chromium-proof-fixture-multi` now serves frozen `fixture-v1` on 20534 with `match,split-location`, output directory `fixture-multi`; the original workbook remains untouched in `fixture-match`.
-- `athletic-chromium-proof-worker-gpu-v1` serves the frozen GPU worker on 20533. Configuration `worker-browser-synthetic.toml` points source traffic through 20535, model-fixture traffic directly to 20534, and uses a separate private headed two-tab profile at `synthetic-chrome-profile`. Browser DevTools port at this checkpoint is 34281. The historical live worker is untouched.
-- Proxy control modes currently include normal, automatic synthetic challenge, human synthetic challenge, HTML-only challenge, gzip, and redirect. `/__test/encoding` is the fixed Latin-1 boundary. Private records retain synthetic request/response hashes and request/cookie/concurrency counts.
+- The original synthetic Restate/worker identity used ports 20530–20533; the repaired candidate used 20630–20633. Both are stopped with data preserved.
+- GPU-written `browser-source-proxy-v2.mjs` and frozen multi-identity fixture used ports 20535 and 20534; both are stopped after their completed scenarios. Counter records remain private.
+- Synthetic profile `synthetic-chrome-profile` remains separate from the one permanent live profile solely for test isolation, not challenge avoidance.
+- Isolated `denial/` used ports 20730–20733; `profile-lock/` used 20830–20833. All associated workers/Restate instances are stopped after exports, verification and replay.
+- Restore only a retained frozen binary against its compatible data. Do not clear latched blocks to make another scenario pass; separate test identities preserved prior blocked state.
 - The root also contains the plain public search response and metadata. Do not display source bodies or private profiles to remote models.
 - Verify service readiness on resume. Services are hub-managed, not detached or guaranteed to survive session teardown.
 
 ### Review and verification gates still open
 
-1. Review GPU repairs for normal concurrent admission: active jobs must not make `inspect` abort every second request.
-2. Verify stale homepage evidence cannot clear a challenged API gate; recovery must be issued only when it can navigate, followed by the bounded SDK wait and human resume.
-3. Verify profile-wide revocation cannot lose a race against an async Ready transition, and failed jobs cannot leave apparently Ready ghost slots.
-4. Verify continuous navigation evidence ordering, no stale bootstrap overwrite, and body-fallback classification before Ready.
-5. Verify exact body bytes, empty bodies, POST identity, compressed responses, bounded timeout/abort cleanup, and no redirect following.
-6. Run fresh native Restate/worker/Chromium scenarios against synthetic data, then owner-online export, drain/stop, and independent offline verification. Never open an active Fjall store twice.
-7. Run the actual Rust/Restate public-source path conservatively. The successful plain-browser control alone does not satisfy this gate.
-8. Update current README/design/operating instructions and publish only reviewed, verified implementation. Historical workflow documentation must remain explicitly baseline-scoped.
+1. Operator completes the real checkbox in the existing headed live profile; inspect live `browser-status` and single-row run completion through ingress 20932.
+2. If the bounded live probe completes, owner-export its actual results, drain/stop and independently verify. If it remains challenged or denied, retain the explicit blocker and do not expand workload or rotate identity.
+3. Current proof includes selected byte/attempt audits and all synthetic export graphs, not schedule-exhaustive concurrency proof. Empty/Latin-1 scripts were browser-platform probes; keep that distinction.
+4. Browser loss is proven fail-closed, not automatic respawn. No claim of exact-once external HTTP across uncertain crashes.
+5. README/design operating cutover is updated locally; production Rust remains uncommitted pending final live qualification/review. Historical workflow packet remains baseline-scoped. Do not replace historical deployed binaries or replay changed code under existing journals.
 
 The actual authorization email, authorized scope, and operator-approved rate have not been supplied as an artifact. Do not fabricate them or claim the configured one-second interval is an approved rate. Retain the real document privately when supplied.
 
@@ -158,9 +179,11 @@ Actual source session: `$E/access-e2e-Rtp0RG/source-session.json`, mode 0600. Do
 
 For human debugging: open the offline preview; inspect `attempt-private.json` locally for the exact URL; in your browser's DevTools enable Network → Preserve log and inspect Status, Content-Type, `cf-ray`, `cf-mitigated`, Retry-After, and Response. Keep exported HARs private: they can contain identities and cookies. Coordinate live probes with the running workload rather than generating a parallel scrape. A successful homepage navigation is not an API or load test.
 
-## Current live v7 run — still incomplete
+## Historical live v7 run — now cancelled and checkpointed
 
 Run root: `$E/ten-thousand-fair-EumuTg`.
+
+The observations below are historical. The user-authorized cutover above supersedes them: monitor/worker/Restate stopped, root cancelled and drained, final export independently verified. Do not resume this attempt or restart source traffic without an explicit new decision.
 
 - Run digest: `016810253316119ba76f60fe2086d34aed5f9c8c519526dec9d191defd21fac7`.
 - Coordinator invocation: `inv_1fsg95kbGEBB6nOEElxygnCRaWVReZHGuX`.
@@ -182,7 +205,7 @@ CLI-only export repair: `$E/fair-admission-hBj6aA/export-cli/cli-export-v21`.
 SHA-256: `faa9272dc41979d6fa69db34db1b37c32872cf5a66672ca52909b3bed266d57e`.
 It can inspect/export the unchanged v20 worker; it must not be substituted as a changed worker.
 
-### Safe inspection commands
+### Historical inspection commands for unchanged restored services
 
 ```sh
 E="$HOME/.local/share/athletic-rust-pipeline/evidence-repairs-v8"
@@ -219,12 +242,12 @@ Evidence root `$E/fair-admission-hBj6aA`:
 - v5 `$E/ten-thousand-session-IfXEy8`: stopped on challenged 429 under old policy; one completed row. Source of exact challenge above. Fully preserved partial output, 1,569,308 original fields verified.
 - v6 `$E/ten-thousand-durable-rate-NNyMI0`: cancelled for admission-starvation defect, not persistent Cloudflare denial. Three completed rows (one no-match, two review), 9,997 selected unfinished. Exact real cooldown deadline survived a same-build restart. Final owner export continued after CLI timeout; later retrieved, drained/stopped, offline verified all 120,716 rows / 1,569,308 fields. Files `admission-defect-final-outcome.json`, `admission-defect-offline-verification.json`, `real-restart-*.json` preserve the distinctions.
 
-## Remaining acceptance and next actions
+## Earlier acceptance plan — superseded by current gates above
 
-1. Inspect current services/monitor before acting; continue or deliberately checkpoint/cancel the v7 run. It is nowhere near a completed 10,000-row proof. Do not launch full-workbook processing.
+1. The v7 run was checkpointed and cancelled with user approval; it did not complete the 10,000-row goal. Preserve its final partial export and stopped data. Do not launch full-workbook processing.
 2. Use the captured Managed Challenge and Ray ID for operator/browser diagnosis. Capture fresh response headers and real browser API behavior privately if needed. Current receipts retain body/status/media type and parsed delay, not the complete raw response-header block; do not fabricate missing headers.
-3. Design and exercise local Chrome/Spider acquisition for the actual GET and POST source operations. Preserve request/body/response evidence, bounds, cancellation, origin-bound credentials, session lifecycle, single Restate retry ownership, and no recursive crawling. Validate JavaScript challenge handling separately from rate-limit behavior. No claim yet that this resolves sustained access.
-4. Any transport change needs an acquisition revision, safe old-run drain/export/stop/verify, fresh frozen worker and fresh compatible journals/cache identities. Never hot-swap the active v20 deployment.
+3. Chromium acquisition is now implemented by the local GPUs and synthetically qualified as recorded above. The current live positive control awaits real human verification; there is no sustained-access claim.
+4. Transport changes require fresh frozen workers and compatible journal/cache identities. The browser candidates used fresh data, and the historical v20 worker was never hot-swapped.
 5. Complete the real 10,000 selected rows; prove real matching GPU requests and results, then same-build recovery/replay and owner-online export → drain → stop → offline original-field verification. Static reviews and synthetic model calls do not satisfy this.
 6. Package the final evidence only after those obligations are met. Current state is **UNVERIFIED for real 10,000-row end-to-end acceptance**. Full-workbook rollout remains gated.
 

@@ -1,6 +1,6 @@
 # Persistent Chromium source transport — implementation design
 
-Status: approved direction from the user; implementation in progress. This document is not a claim that browser acquisition is deployed or verified. Baseline workflow packet was published on main in `95331dd`. Existing deployed reqwest-era workers and their journals remain frozen and untouched.
+Status: approved direction from the user; GPU-written implementation is under native qualification, not shipped. The repaired frozen candidate passed strict compilation/Clippy and the synthetic scenarios recorded in [HANDOFF.md](HANDOFF.md), including 22 independently verified exports across retained candidates. The user authorized checkpointing and stopping the legacy run; all original workbook fields were preserved and independently verified. A fresh one-row live control is now paused at a real Cloudflare checkbox in the permanent headed profile. The operator must complete it; no real challenge was automated. Historical binaries were not replaced or replayed against changed code.
 
 ## Required behavior
 
