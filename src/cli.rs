@@ -9,7 +9,7 @@ use athletic_rust_pipeline::{
     runtime::{
         control::{PipelineControlIngressClient, PrepareRequest},
         export::EXPORT_HEADERS,
-        export_worker::{ExportRequest, ExportWorkerIngressClient},
+        export_worker::{ExportRequest, ExportWorkerIngressClient, PublishedExport},
         identity::fingerprint,
         import::ImportRequest,
         run::RunCoordinatorIngressClient,
@@ -19,8 +19,10 @@ use athletic_rust_pipeline::{
     store::ArtifactStore,
 };
 use clap::Parser;
+use futures::{StreamExt, TryStreamExt};
+use restate_sdk::ingress::{ClientError, InvocationHandle, Output};
 use restate_sdk::prelude::*;
-use std::{fs, io::Write, path::Path};
+use std::{fs, io::Write, path::Path, time::Duration};
 
 pub async fn run() -> Result<()> {
     match Cli::parse().command {
@@ -49,14 +51,12 @@ pub async fn run() -> Result<()> {
             let key = request.key()?;
             let request_key = fingerprint(&("native-export-v4", &request))?;
             let client = ExportWorkerIngressClient::from_client(transport::client(&ingress)?, &key);
-            let published = client
+            let submitted = client
                 .publish(Json(request))
                 .idempotency_key(request_key.as_str())
-                .call()
-                .await?
-                .into_body()?
-                .0;
-            emit(&published)
+                .send()
+                .await?;
+            emit(&await_export(submitted.invocation_handle()).await?)
         }
         Command::Verify {
             input,
@@ -86,6 +86,40 @@ pub async fn run() -> Result<()> {
             )
         }
     }
+}
+
+async fn await_export(
+    invocation: InvocationHandle<reqwest::Client, Json<PublishedExport>>,
+) -> Result<PublishedExport> {
+    let handle = &invocation;
+    let observations = futures::stream::iter(0..86_400)
+        .then(move |_| async move {
+            let output = match handle.output().await?.into_body() {
+                Output::Ready(Json(published)) => Some(published),
+                Output::NotReady => {
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    None
+                }
+            };
+            Ok::<_, ClientError>(output)
+        })
+        .try_filter_map(|output| futures::future::ready(Ok(output)));
+    futures::pin_mut!(observations);
+    let published = tokio::time::timeout(Duration::from_secs(86_400), observations.try_next())
+        .await
+        .with_context(|| {
+            format!(
+                "export observation timed out; invocation {} was not cancelled; rerun the same export command to reattach",
+                invocation.invocation_id()
+            )
+        })?
+        .with_context(|| format!("reading export invocation {}", invocation.invocation_id()))?;
+    published.with_context(|| {
+        format!(
+            "export observation limit reached; invocation {} was not cancelled; rerun the same export command to reattach",
+            invocation.invocation_id()
+        )
+    })
 }
 
 fn existing_stopped_store(path: &Path) -> Result<ArtifactStore> {
