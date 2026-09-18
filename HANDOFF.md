@@ -2,7 +2,75 @@
 
 Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualification.
 
-## Start here
+## Current Chromium work and next-session ownership
+
+**Not shipped or end-to-end qualified.** The working tree contains browser implementation changes. The last integrated baseline builds; two local GPU coding workers are now repairing it. Do not treat their eventual completion messages as verification.
+
+### Latest user direction
+
+- The 5090 and 3090 do the actual coding. Main owns planning, review, native verification, and handoff.
+- All production workflow actions, admission, waits, recovery and retries remain owned by Restate SDK.
+- Start with one permanent private headed Chromium profile and two tabs, configurable up to eight. Do not rotate profiles to work around challenges or rate limits.
+- A challenge closes profile-wide admission; already-issued requests may drain. Resume only through the controlled browser/Restate recovery path.
+- No User-Agent overrides, webdriver patches, CAPTCHA services, proxy rotation, or browser-cookie extraction/replay through reqwest.
+
+### Published versus uncommitted state
+
+- `95331dd`: published [WORKFLOW_REVIEW.md](WORKFLOW_REVIEW.md), a historical function-level map against `fee6c82`.
+- `e519683`: published [CHROMIUM_DESIGN.md](CHROMIUM_DESIGN.md). The requested immediate design push to `main` is complete.
+- Chromium implementation is uncommitted. Its acquisition revision is `captured-chromium-source-request-response-v8`; parser revision remains v13.
+- Current code adds the private profile, browser pool, CDP observation, Restate `BrowserSession`, CLI `browser-start`/`browser-status`, and browser-backed source capture. The old cookie/session-file transport has been removed from the working tree.
+- Do not deploy these changes over the historical worker or replay its active journals using this implementation.
+
+### Local GPU coding workers
+
+| Worker | Actual model binding | Exclusive ownership |
+|---|---|---|
+| `GPU5090ChromeCoding` | `qwen36-5090/Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf:high` | `browser.rs`, `browser/gate.rs`, lifecycle/actor/ops/shutdown/pool, `browser_session.rs`, `browser_readiness.rs` |
+| `GPU3090ChromeCoding` | `qwen36-3090/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf:high` | transport/navigation and their descendant modules |
+
+Agent configurations are in the parent workspace, **outside this Git repository**: `/home/lewis/src/ad-law-scrape/.omp/agents/`. The 5090 coder was widened from synthetic-only ownership; a separate 3090 coding profile was added. Neither model server was restarted or reconfigured. Existing reviewer profiles remain separate.
+
+Shared coding contract: the 5090 implements `browser::gate::ProfileGate` with `new`, `snapshot` (`generation`, `ready`), `revoke`, `try_open(observed_generation)`, and cancellation-safe async `closed`. The 3090 consumes it through `Arc<ProfileGate>` in `transport::fetch` and `navigation::start_observer`. An async inspection may reopen admission only if its observed generation is unchanged. Public browser manager/status/settings/error interfaces remain stable. No overlapping file edits; no worker-run builds, formatters, linters, tests, or services while both edit.
+
+Resume coordination via exact worker IDs in `hub`, or read `agent://GPU5090ChromeCoding` and `agent://GPU3090ChromeCoding` after they settle. Check status before assuming either is still running. Review actual changed artifacts and then run integration checks once; do not accept model assertions as evidence.
+
+### Evidence already obtained
+
+- Ordinary headed `/usr/bin/chromium`, using `/home/lewis/.local/share/athletic-rust-pipeline/chrome-profile-0`, loaded the public source homepage with HTTP 200.
+- The exact public positive-control search POST also returned HTTP 200, JSON, 19,831 bytes, no `cf-mitigated` challenge header. `navigator.webdriver` was naturally false in this plain-browser control; no override was injected. A screenshot confirmed the normal homepage.
+- This is a **plain-browser diagnostic**, not proof of the Rust/Restate acquisition path or sustained source access. The plain browser was stopped; its profile was retained.
+- A fixed local encoding probe proved CDP `getResponseBody` changes Latin-1 `3c703ee93c2f703e` to UTF-8 `3c703ec3a93c2f703e`. Source evidence therefore uses the browser Fetch byte stream, base64 transport, and Rust decoding; CDP text is restricted to navigation classification.
+- Before GPU coding began, `cargo fmt --all && cargo build --bin athletic-rust-pipeline --example native_fixture --example source_smoke` succeeded. No unit suite or fuzz campaign ran.
+- Frozen pre-GPU baseline `worker-chrome-v1`: SHA-256 `fe6a5193dc1aa72cfb1dc6975067f9eb030503885642499210a40dfe74ee2944`.
+- Frozen synthetic fixture `fixture-v1`: SHA-256 `03397091a113a50f0250e61a06f7bc6e477f2a231fd57fc315b562f722931db6`.
+
+### Isolated native verification environment
+
+Private root: `/home/lewis/.local/share/athletic-rust-pipeline/evidence-repairs-v8/chromium-TFpmUt`.
+
+- `athletic-chromium-proof-restate`: native Restate 1.7.10, internal 20530, admin 20531, ingress 20532. Configuration and data are in that private root.
+- `athletic-chromium-proof-source`: controlled Bun source proxy on 20535, forwarding synthetic source traffic to fixture port 20534. The proxy is running; fixture and worker binaries were frozen but **not launched or deployed** at this checkpoint.
+- Reserved worker port: 20533.
+- Proxy control modes currently include normal, automatic synthetic challenge, human synthetic challenge, HTML-only challenge, gzip, and redirect. `/__test/encoding` is the fixed Latin-1 boundary. Private records retain synthetic request/response hashes and request/cookie/concurrency counts.
+- The root also contains the plain public search response and metadata. Do not display source bodies or private profiles to remote models.
+- Verify service readiness on resume. Services are hub-managed, not detached or guaranteed to survive session teardown.
+
+### Review and verification gates still open
+
+1. Review GPU repairs for normal concurrent admission: active jobs must not make `inspect` abort every second request.
+2. Verify stale homepage evidence cannot clear a challenged API gate; recovery must be issued only when it can navigate, followed by the bounded SDK wait and human resume.
+3. Verify profile-wide revocation cannot lose a race against an async Ready transition, and failed jobs cannot leave apparently Ready ghost slots.
+4. Verify continuous navigation evidence ordering, no stale bootstrap overwrite, and body-fallback classification before Ready.
+5. Verify exact body bytes, empty bodies, POST identity, compressed responses, bounded timeout/abort cleanup, and no redirect following.
+6. Run fresh native Restate/worker/Chromium scenarios against synthetic data, then owner-online export, drain/stop, and independent offline verification. Never open an active Fjall store twice.
+7. Run the actual Rust/Restate public-source path conservatively. The successful plain-browser control alone does not satisfy this gate.
+8. Update current README/design/operating instructions and publish only reviewed, verified implementation. Historical workflow documentation must remain explicitly baseline-scoped.
+
+The actual authorization email, authorized scope, and operator-approved rate have not been supplied as an artifact. Do not fabricate them or claim the configured one-second interval is an approved rate. Retain the real document privately when supplied.
+
+
+## Earlier live-run investigation: historical context
 
 - Repository: `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline`, branch `main`.
 - Completed code fixes are published through `e4e8153`. This handoff adds operational findings; it does not change the deployed worker.
@@ -15,7 +83,7 @@ Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualificat
 
 ## User intent and hard constraints
 
-The user authorizes source access and wants the Cloudflare challenge identified, local debugging access, JavaScript/browser acquisition investigated (including Spider RS), and all code/context published on main for another AI to continue. The latest priority is diagnosis and handoff. **Browser acquisition is not implemented yet.** The prior no-Spider decision has been reconsidered by the user; do not repeat it as a prohibition.
+The user authorizes source access and requested the challenge investigation recorded below. The current direction is Chromium acquisition wrapped in Restate, with coding performed by the two local GPUs; the section above supersedes the earlier implementation status. Historical deployed-worker observations below remain distinct from the uncommitted browser implementation.
 
 - Native Rust and native Restate; no Docker, cloud browser, external matching model, or GitHub Actions.
 - Golden workbook: 120,716 rows, two sheets, 1,569,308 original fields. Preserve all originals. Membership establishes eligibility: no class, grade, or graduation-year filter.
