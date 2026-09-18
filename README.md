@@ -4,6 +4,8 @@ Rust workbook ingestion, Athletic.net candidate discovery and evidence parsing, 
 
 Current workstation run, Cloudflare challenge evidence, Restate UI links, verified repairs, and safe continuation steps: [HANDOFF.md](HANDOFF.md). The real 10,000-row qualification remains incomplete; browser/Spider acquisition has not yet been implemented.
 
+For another AI's architectural review, read the [function-by-function workflow packet](WORKFLOW_REVIEW.md): complete call graph, durable state/cache identities, source/GPU boundaries, export/verification paths, and prioritized findings. Both local GPUs contributed static reviews. Section 12 identifies an apparent unreachable local-review acceptance gate; it is a source-derived finding, not a newly executed regression or a changed matching contract.
+
 ## Identity and eligibility
 
 The source workbook is the golden input for membership and source identity context. Every source row remains in output accounting, including duplicate rows and rows missing identity fields. Workbook membership establishes eligibility: there is no junior, grade, or graduation-year requirement. Observed graduation information is descriptive, not a selection or ranking criterion.

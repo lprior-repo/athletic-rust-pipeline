@@ -11,6 +11,7 @@ Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualificat
 - State: <http://127.0.0.1:20331/ui/state>. Scope counters: <http://127.0.0.1:20331/ui/flow-control/counters>.
 - Admin API is port 20331; ingress 20332; worker 20333; internal Restate 20330. Do not expose admin publicly. From another machine, use an SSH tunnel to this workstation: `ssh -L 20331:127.0.0.1:20331 <workstation>`.
 - UI completed-invocation counts include internal calls. They are NOT completed workbook rows. Use coordinator coverage below.
+- Full implementation map for the next reviewer: [WORKFLOW_REVIEW.md](WORKFLOW_REVIEW.md), prepared against source baseline `fee6c82` with static reviews on the 5090 and 3090. It includes the call graph, state/cache ownership, verification limits, and a source-derived local-review selection-reachability finding. This documentation does not change the deployed binary or establish real GPU-matching qualification.
 
 ## User intent and hard constraints
 
