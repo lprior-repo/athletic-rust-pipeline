@@ -6,6 +6,8 @@ Updated 2026-09-18 UTC. This is a handoff, not a completed 10,000-row qualificat
 
 **Not shipped or end-to-end qualified.** The working tree contains browser implementation changes. The last integrated baseline builds; two local GPU coding workers are now repairing it. Do not treat their eventual completion messages as verification.
 
+Main rejected the first GPU gate submission: separate atomics allowed stale reopening, the wait loop busy-polled, and overflow/poison handling did not satisfy the contract. Repairs were returned to the 5090. Further review returned lifecycle/cooldown/recovery defects to the 5090 and empty-body/deadline/abort/navigation-completion defects to the 3090. **The pre-GPU build success does not apply to their current edits.** Re-read the latest deliveries and actual code before validation or publication.
+
 ### Latest user direction
 
 - The 5090 and 3090 do the actual coding. Main owns planning, review, native verification, and handoff.
