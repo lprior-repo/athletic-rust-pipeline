@@ -20,6 +20,7 @@ pub use admission::{AdmissionDecision, AdmissionFeedback};
 pub const SOURCE_SCOPE: &str = "athletic-source";
 pub const SOURCE_CONCURRENCY: u32 = 16;
 const SOURCE_CONTROL_SCOPE: &str = "athletic-source-control";
+const SOURCE_ADMISSION_SCOPE: &str = "athletic-source-admission";
 
 pub struct SourceGateway {
     pub runtime: Arc<Runtime>,
@@ -68,6 +69,14 @@ impl SourceGateway {
     }
 
     #[handler]
+    pub async fn await_admission(
+        &self,
+        ctx: ObjectContext<'_>,
+    ) -> Result<Json<Option<OperationFailure>>, HandlerError> {
+        admission::wait(&ctx).await
+    }
+
+    #[handler]
     pub async fn observe(
         &self,
         ctx: ObjectContext<'_>,
@@ -87,7 +96,7 @@ async fn execute(
     let mut last_finalized: Option<result::Finalized> = None;
 
     for attempt_index in 0..retry::MAX_ATTEMPTS {
-        if let Some(failure) = admission::wait(ctx).await? {
+        if let Some(failure) = admission::acquire(ctx).await? {
             return Ok(
                 last_finalized.map_or(FetchOutcome::Failed { failure }, |value| value.outcome)
             );

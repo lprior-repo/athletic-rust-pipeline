@@ -1,5 +1,5 @@
-use super::{SourceGatewayClient, SOURCE_CONTROL_SCOPE};
-use crate::runtime::protocol::{FailureCode, OperationFailure, RetryEvidence};
+use super::{SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE};
+use crate::runtime::protocol::OperationFailure;
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -91,10 +91,15 @@ async fn now_ms(ctx: &ObjectContext<'_>) -> Result<u64, HandlerError> {
 }
 
 pub(super) async fn wait(
-    ctx: &SharedObjectContext<'_>,
-) -> Result<Option<OperationFailure>, HandlerError> {
-    // These are admission-state observations, not HTTP retries. A changing
-    // deadline cannot cause an unbounded control loop or lose a failure.
+    ctx: &ObjectContext<'_>,
+) -> Result<Json<Option<OperationFailure>>, HandlerError> {
+    if ctx.key() != "global" || ctx.scope() != Some(SOURCE_ADMISSION_SCOPE) {
+        return Err(TerminalError::new("invalid source admission scope or key").into());
+    }
+    // This exclusive queue owns the wait, not the control object. Feedback can
+    // extend a cooldown while we sleep, but competing admissions cannot move
+    // the pacing deadline. Only the at-most-15 already admitted peers can
+    // extend it; the 64-observation guard detects a broken concurrency invariant.
     let decisions = futures::stream::iter(0..64)
         .then(|_| {
             ctx.object_client::<SourceGatewayClient>("global")
@@ -114,13 +119,29 @@ pub(super) async fn wait(
         });
     futures::pin_mut!(decisions);
     match decisions.try_next().await? {
-        Some(outcome) => Ok(outcome),
-        None => Ok(Some(OperationFailure {
-            code: FailureCode::RateLimited,
-            message: "source admission deadline changed 64 times; retained for review".to_owned(),
-            http_status: None,
-            retries: RetryEvidence::NotAttempted,
-            evidence: Vec::new(),
-        })),
+        Some(outcome) => Ok(Json(outcome)),
+        None => Err(anyhow::anyhow!(
+            "serialized source admission exceeded its bounded in-flight feedback"
+        )
+        .into()),
+    }
+}
+
+pub(super) async fn acquire(
+    ctx: &SharedObjectContext<'_>,
+) -> Result<Option<OperationFailure>, HandlerError> {
+    let call = ctx
+        .object_client::<SourceGatewayClient>("global")
+        .await_admission()
+        .scope(SOURCE_ADMISSION_SCOPE)
+        .call();
+    let handle = call.invocation_handle().await?;
+    match call.await {
+        Ok(value) => Ok(value.0),
+        Err(error) if error.code() == 409 => {
+            handle.cancel();
+            Err(error.into())
+        }
+        Err(error) => Err(error.into()),
     }
 }
