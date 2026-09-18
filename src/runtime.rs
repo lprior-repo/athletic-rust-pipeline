@@ -20,6 +20,7 @@ pub mod run_protocol;
 pub mod snapshot;
 pub mod source;
 pub mod source_cache;
+mod source_session;
 pub mod worker;
 
 pub use config::{ExecutionMode, ModelLane, WorkerConfig};

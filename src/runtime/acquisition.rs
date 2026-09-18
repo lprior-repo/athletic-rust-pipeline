@@ -12,7 +12,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const ACQUISITION_REVISION: &str = "captured-source-request-response-v4";
+pub const ACQUISITION_REVISION: &str = "captured-source-request-response-v6";
 pub(crate) const SOURCE_PARSER_REVISION: &str = "streaming-source-parsers-v13";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

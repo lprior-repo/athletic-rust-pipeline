@@ -1,3 +1,4 @@
+use super::source_session::SourceSession;
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -44,6 +45,8 @@ struct RawConfig {
     q5_url: String,
     q5_model: String,
     q4_url: String,
+    #[serde(default)]
+    source_session_file: Option<PathBuf>,
     q4_model: String,
 }
 
@@ -53,6 +56,7 @@ pub struct WorkerConfig {
     source: Url,
     q5: Url,
     q4: Url,
+    source_session: Option<SourceSession>,
 }
 
 impl WorkerConfig {
@@ -81,11 +85,17 @@ impl WorkerConfig {
         validate_local(&q4)?;
         validate_model(&raw.q5_model)?;
         validate_model(&raw.q4_model)?;
+        let source_session = raw
+            .source_session_file
+            .as_deref()
+            .map(|path| SourceSession::load(path, &source))
+            .transpose()?;
         Ok(Self {
             raw,
             source,
             q5,
             q4,
+            source_session,
         })
     }
 
@@ -97,6 +107,9 @@ impl WorkerConfig {
     }
     pub fn source_origin(&self) -> &Url {
         &self.source
+    }
+    pub(crate) fn source_session(&self) -> Option<&SourceSession> {
+        self.source_session.as_ref()
     }
     pub fn source_interval(&self) -> Duration {
         Duration::from_millis(self.raw.source_interval_ms)

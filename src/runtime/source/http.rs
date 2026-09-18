@@ -14,6 +14,10 @@ use std::{
     sync::Arc,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+enum SendError {
+    Session(&'static str),
+    Transport,
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct AttemptResult {
@@ -37,7 +41,17 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
     let started = Instant::now();
     let response = match send(&runtime, request).await {
         Ok(response) => response,
-        Err(message) => return failure(FailureCode::Transport, None, message, true),
+        Err(SendError::Session(message)) => {
+            return failure(FailureCode::AccessDenied, None, message.to_owned(), false);
+        }
+        Err(SendError::Transport) => {
+            return failure(
+                FailureCode::Transport,
+                None,
+                "HTTP transport failure".to_owned(),
+                true,
+            );
+        }
     };
     let status = response.status();
     let backoff = retry::retry_after(response.headers(), SystemTime::now());
@@ -61,15 +75,21 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
     }
 }
 
-async fn send(runtime: &Runtime, request: &RequestSpec) -> Result<reqwest::Response, String> {
+async fn send(runtime: &Runtime, request: &RequestSpec) -> Result<reqwest::Response, SendError> {
     let builder = match &request.body {
         Some(body) => runtime.http.post(request.url.clone()).json(body),
         None => runtime.http.get(request.url.clone()),
     };
-    builder
-        .send()
-        .await
-        .map_err(|_| "HTTP transport failure".to_owned())
+    let builder = match runtime.config.source_session() {
+        Some(session) => {
+            session
+                .authorize(&request.url)
+                .map_err(|error| SendError::Session(error.message()))?;
+            session.attach(builder)
+        }
+        None => builder,
+    };
+    builder.send().await.map_err(|_| SendError::Transport)
 }
 
 async fn receipt(runtime: &Runtime, data: ReceiptData) -> Result<DocumentReceipt, String> {
@@ -98,7 +118,7 @@ fn outcome(
     backoff: Result<Duration, &'static str>,
     challenged: bool,
 ) -> AttemptResult {
-    if challenged {
+    if challenged && status != StatusCode::TOO_MANY_REQUESTS {
         let mut result = failure_with_receipt(
             receipt,
             status,
@@ -234,33 +254,4 @@ fn now_ms() -> Result<u64, String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn authentication_denial_is_not_a_transient_failure() {
-        assert_eq!(
-            status_code(StatusCode::UNAUTHORIZED),
-            FailureCode::AccessDenied
-        );
-        assert_eq!(
-            status_code(StatusCode::FORBIDDEN),
-            FailureCode::AccessDenied
-        );
-        assert!(!retry::retryable_status(403));
-        let denied = body_failure(
-            FailureCode::Transport,
-            StatusCode::FORBIDDEN,
-            "truncated denial".to_owned(),
-            Ok(Duration::ZERO),
-        );
-        assert!(!denied.retryable);
-        let transient = body_failure(
-            FailureCode::Transport,
-            StatusCode::SERVICE_UNAVAILABLE,
-            "truncated failure".to_owned(),
-            Ok(Duration::ZERO),
-        );
-        assert!(transient.retryable);
-    }
-}
+mod tests;
