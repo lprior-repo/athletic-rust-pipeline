@@ -95,7 +95,7 @@ pub(crate) async fn fetch(
     }
     let request_body = request
         .body()
-        .map(serde_json::to_string)
+        .map(|body| serde_json::to_string(&body))
         .transpose()
         .map_err(|_| BrowserError::Protocol)?;
     let arguments = FetchArguments {

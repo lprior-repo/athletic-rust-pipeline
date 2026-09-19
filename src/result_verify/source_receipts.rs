@@ -195,13 +195,23 @@ fn load_attempts(
 }
 
 fn validate_attempt(attempt: &CapturedAttempt, origin: &Url) -> Result<()> {
+    let semantic =
+        Url::parse(&attempt.request.semantic_url).context("captured semantic URL is invalid")?;
     if attempt.request.url.origin() != origin.origin()
-        || attempt.request.semantic_url != attempt.request.url.as_str()
+        || semantic.origin() != origin.origin()
         || !attempt.request.url.username().is_empty()
         || attempt.request.url.password().is_some()
         || attempt.request.url.fragment().is_some()
+        || !semantic.username().is_empty()
+        || semantic.password().is_some()
+        || semantic.fragment().is_some()
     {
         bail!("captured source request differs from its frozen origin");
+    }
+    if semantic.as_str() != attempt.request.url.as_str()
+        && !matches!(attempt.request.action, request::RequestAction::Rankings(_))
+    {
+        bail!("captured source request rewrites a non-rankings endpoint");
     }
     if let Some(receipt) = &attempt.result.receipt {
         let valid_classification = if (200..300).contains(&receipt.http_status) {

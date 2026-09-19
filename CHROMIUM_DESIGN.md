@@ -51,8 +51,31 @@ Normal challenge execution may occur only in the bounded readiness window. Passi
 
 Shutdown stops intake, drains/cancels owned work, closes pages/browser, joins process ownership, and leaves the private profile intact. Worker replacement requires a fresh compatible deployment/data identity; an in-flight journal must not be replayed against changed browser/parser semantics. Existing profiles, stores, journals, and frozen binaries are retained.
 
+## Persistent rankings lane
+
+`RankingsCapture::Results` no longer navigates. `fetch_rankings` returns straight into `transport::fetch`, which issues the site's own rankings request from the already-bootstrapped source page, so the page keeps cookies, TLS session, and fingerprint and no direct HTTP client touches the origin. `RankingsCapture::Navigation` keeps the interceptor/navigation path unchanged.
+
+The physical request is `POST /api/v1/tfRankings/GetRankings`; the semantic (UI listing) URL is unchanged, and `RequestSpec` still carries it separately as `semantic_url`. Receipts, cache keys, and checkpoints therefore keep their established identity — `result_verify` requires both URLs on the frozen origin and permits a distinct physical endpoint only for rankings actions.
+
+Measured against an offline fixture with the production transport:
+
+| Check | Result |
+| --- | --- |
+| Physical requests per page issue | exactly 1 `POST`, HTTP 200 |
+| Captured request body | byte-identical to the live-measured body |
+| Capture metadata | `Results`, `POST`, API URL, `next_page = page + 1` |
+| Page with rows | `next_page` advances; empty or malformed body ends pagination |
+| `403` + `cf-mitigated: challenge` | gate revoked, zero further dispatch, pagination ends |
+| `429` + `Retry-After` | gate closed; no request is issued while closed |
+
+Pagination advances on captured rows, never on `minCount`: the live API reports `minCount` as a per-page figure (701 on page 1, 1523 on page 2, 0 for a multi-event query), so it is not a total.
+
 ## Qualification gates
 
-Native retained-corpus qualification passed for 95 queries and 4,256 receipts, and all 26 private storage scenarios passed. These are parser/storage results, not browser end-to-end proof. The request-serialization regression also passed after reproducing its failure. The restored result verifier is 13/14 with one stale enum fixture remaining; final current-tree Clippy is pending after subsequent repairs. Private fixture addresses remain Restate admin 21041, ingress 21042, fixture 21043, and worker 21140; the worker is not deployed.
+Native retained-corpus qualification passed for 95 queries and 4,256 receipts, and all 26 private storage scenarios passed. These are parser/storage results, not browser end-to-end proof. The request-serialization regression also passed after reproducing its failure. The restored result verifier passes 14/14. Current-tree formatting, Clippy with `-D warnings` over all targets, and the full workspace test suite are clean.
+
+The rankings lane is now qualified end-to-end against the offline fixture by the ignored `lane_smoke` tests, which drive the production `fetch_rankings` through a real CDP page: `results_capture_costs_one_physical_post` and `challenge_response_revokes_the_gate_and_ends_pagination`. They are ignored by default because they need a fixture origin and a CDP browser; run them with `cargo test --lib -- --ignored lane_smoke`.
+
+Private fixture addresses remain Restate admin 21041, ingress 21042, fixture 21043, and worker 21140; the worker is not deployed.
 
 Main must still execute the current frozen worker against native scenarios covering normal capture, exact request identity, compressed/decoded bytes, bounds, cancellation and tab reuse, challenge/human-required pause and explicit resume, profile-wide drain, denial/rate-limit/redirect classification, browser loss, pause/resume controls, immutable owner export, stopped-writer verification, and exact replay. These are gates, not completed results. No live-collection readiness claim is permitted.

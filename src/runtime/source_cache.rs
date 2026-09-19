@@ -48,26 +48,22 @@ impl SourceCache {
                 TerminalError::new("source cache key does not bind snapshot and resource").into(),
             );
         }
-        if let Some(value) = ctx.get::<Json<FetchOutcome>>("result").await? {
-            return Ok(value);
-        }
         let is_rankings = input.0.is_rankings();
+        if !is_rankings {
+            if let Some(value) = ctx.get::<Json<FetchOutcome>>("result").await? {
+                return Ok(value);
+            }
+        }
         let outcome = ctx
             .object_client::<SourceGatewayClient>("global")
             .fetch(Json(input.0.resource))
             .scope(SOURCE_SCOPE)
             .call()
             .await?;
-        // Cache successful outcomes always.
-        // Cache failures only for non-rankings; rankings failures are not
-        // cached so a resumed gateway invocation gets a fresh audit
-        // identity and re-attempts the source rather than replaying a
-        // cached failure.
-        let should_cache = match &outcome.0 {
-            FetchOutcome::Retrieved { .. } => true,
-            FetchOutcome::Failed { .. } => !is_rankings,
-        };
-        if should_cache {
+        // Ranking pages are reusable only after collection validation/checkpointing.
+        // Restate journals completed calls; explicit retries of unvalidated pages
+        // must not replay an HTTP-200 response that failed domain parsing.
+        if !is_rankings {
             ctx.set(
                 "result",
                 restate_sdk::serde::Serialize::serialize(&outcome)

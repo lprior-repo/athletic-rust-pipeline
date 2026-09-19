@@ -2,7 +2,11 @@ use super::{BrowserError, BrowserResponse};
 use crate::runtime::protocol::{RankingPageObservation, RankingsCapture};
 use crate::runtime::source::request::RankingsAction;
 use base64::Engine;
-use chromiumoxide::Page;
+use chromiumoxide::{
+    cdp::js_protocol::runtime::{RemoteObjectSubtype, RemoteObjectType},
+    js::EvaluationResult,
+    Page,
+};
 use futures::{StreamExt, TryStreamExt};
 use reqwest::header::HeaderMap;
 use std::time::Duration;
@@ -370,9 +374,26 @@ async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {
         )
         .await
         .map_err(|_| BrowserError::Transport)?;
-    result
-        .into_value::<Option<u32>>()
-        .map_err(|_| BrowserError::Protocol)
+    decode_page_value(result)
+}
+
+fn decode_page_value(result: EvaluationResult) -> Result<Option<u32>, BrowserError> {
+    let object = result.object();
+    match (&object.r#type, &object.subtype) {
+        (RemoteObjectType::Object, Some(RemoteObjectSubtype::Null)) if object.value.is_none() => {
+            Ok(None)
+        }
+        (RemoteObjectType::Number, None) => {
+            let page = result
+                .into_value::<u32>()
+                .map_err(|_| BrowserError::Protocol)?;
+            if page == 0 {
+                return Err(BrowserError::Protocol);
+            }
+            Ok(Some(page))
+        }
+        _ => Err(BrowserError::Protocol),
+    }
 }
 
 const MAX_ACTIVE_PAGE_POLLS: usize = 256;
@@ -432,38 +453,38 @@ pub(super) async fn click_numeric_page(
         .map_err(|_| BrowserError::Protocol)
 }
 
-/// Extract next page after the requested numeric page has rendered.
-pub(super) async fn extract_next_page(
-    page: &Page,
-    current_page: u32,
-    deadline: tokio::time::Instant,
-    has_rows: bool,
-) -> Result<Option<u32>, BrowserError> {
-    if !has_rows {
-        return Ok(None);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chromiumoxide::cdp::js_protocol::runtime::RemoteObject;
+    use serde_json::json;
+
+    #[test]
+    fn terminal_page_null_is_absent_not_protocol_failure() -> anyhow::Result<()> {
+        let raw = json!({"type": "object", "subtype": "null", "value": null});
+        let object: RemoteObject = serde_json::from_value(raw)?;
+        assert_eq!(decode_page_value(EvaluationResult::new(object))?, None);
+        let object = serde_json::from_value(json!({"type": "number", "value": 2}))?;
+        assert_eq!(decode_page_value(EvaluationResult::new(object))?, Some(2));
+        Ok(())
     }
-    wait_for_active_page(page, current_page, deadline).await?;
-    let next = current_page.checked_add(1).ok_or(BrowserError::Protocol)?;
-    let js = format!(
-        r#"(() => {{
-            const pagination = document.querySelector('.pagination');
-            if (!pagination) return null;
-            for (const link of pagination.querySelectorAll('.page-link')) {{
-                const text = link.textContent.trim();
-                const value = Number(text);
-                if (Number.isInteger(value) && value === {next}) {{
-                    const parent = link.closest('.page-item');
-                    if (parent && !parent.classList.contains('disabled')
-                        && link.getAttribute('aria-disabled') !== 'true') return value;
-                }}
-            }}
-            return null;
-        }})()"#,
-        next = next,
-    );
-    page.evaluate(&js[..])
-        .await
-        .map_err(|_| BrowserError::Transport)?
-        .into_value::<Option<u32>>()
-        .map_err(|_| BrowserError::Protocol)
+
+    #[test]
+    fn invalid_page_values_do_not_become_terminal_pages() -> anyhow::Result<()> {
+        for raw in [
+            json!({"type": "undefined"}),
+            json!({"type": "number", "value": 0}),
+            json!({"type": "number", "value": -1}),
+            json!({"type": "number", "value": 1.5}),
+            json!({"type": "number", "value": 4294967296_u64}),
+            json!({"type": "string", "value": "2"}),
+        ] {
+            let object = serde_json::from_value(raw)?;
+            assert!(matches!(
+                decode_page_value(EvaluationResult::new(object)),
+                Err(BrowserError::Protocol)
+            ));
+        }
+        Ok(())
+    }
 }

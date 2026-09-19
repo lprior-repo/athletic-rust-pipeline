@@ -23,6 +23,46 @@ pub(crate) struct RankingsAction {
     pub capture: RankingsCapture,
 }
 
+/// Helper type for serializing qParams grades as a JSON array.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct RankingsQParamsInner<'a> {
+    pub grades: &'a [u8],
+    pub page: u32,
+}
+
+/// Convert an optional grade into RankingsQParamsInner, borrowing from the action.
+fn rankings_q_params(grade: &Option<u8>, page: u32) -> RankingsQParamsInner<'_> {
+    let grades = match grade {
+        Some(g) => std::slice::from_ref(g),
+        None => &[],
+    };
+    RankingsQParamsInner { grades, page }
+}
+/// Wire-body struct for Rankings POST body.  Borrows from RankingsAction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct RankingsQuery<'a> {
+    pub report_type: &'static str,
+    pub mode: &'static str,
+    pub div_list_id: u64,
+    pub indoor: Option<()>,
+    pub event_short: &'a str,
+    pub gender: &'a str,
+    pub q_params: RankingsQParamsInner<'a>,
+    pub qualifying_list_key: &'static str,
+    pub version: u8,
+    pub debug: &'static str,
+}
+
+/// Borrowed wire-body enum returned by RequestSpec::body().
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub(crate) enum RequestBody<'a> {
+    Search(&'a SearchBody),
+    Rankings(RankingsQuery<'a>),
+}
+
 pub(crate) const MAX_START: u32 = 1_000_000;
 pub(crate) const MAX_QUERY_BYTES: usize = 2_048;
 
@@ -35,10 +75,21 @@ pub(crate) struct RequestSpec {
 }
 
 impl RequestSpec {
-    pub(crate) fn body(&self) -> Option<&SearchBody> {
+    pub(crate) fn body(&self) -> Option<RequestBody<'_>> {
         match &self.action {
-            RequestAction::Fetch { body } => body.as_ref(),
-            RequestAction::Rankings(_) => None,
+            RequestAction::Fetch { body } => body.as_ref().map(RequestBody::Search),
+            RequestAction::Rankings(action) => Some(RequestBody::Rankings(RankingsQuery {
+                report_type: "div",
+                mode: "list",
+                div_list_id: action.list_id,
+                indoor: None,
+                event_short: &action.event_short,
+                gender: &action.gender,
+                q_params: rankings_q_params(&action.grade, action.page),
+                qualifying_list_key: "",
+                version: 2,
+                debug: "",
+            })),
         }
     }
 }
@@ -80,7 +131,7 @@ pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSp
             page,
             capture,
             ..
-        } => rankings(
+        } => rankings_spec(
             origin,
             RankingsAction {
                 list_id: *list_id,
@@ -140,7 +191,10 @@ fn team(
     safe(url, RequestAction::Fetch { body: None })
 }
 
-fn rankings(origin: &Url, action: RankingsAction) -> Result<RequestSpec> {
+/// Build the request for one rankings page. The physical `url` is the site's own
+/// rankings API endpoint while `semantic_url` stays the legacy listing URL, so
+/// cache keys, checkpoints, and receipts keep their established identity.
+pub(crate) fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec> {
     if action.list_id == 0 {
         bail!("rankings list_id must be nonzero");
     }
@@ -151,14 +205,26 @@ fn rankings(origin: &Url, action: RankingsAction) -> Result<RequestSpec> {
         "/TrackAndField/rankings/list/{}/{}/{}/",
         action.list_id, action.gender, action.event_short
     );
-    let mut url = endpoint(origin, &path)?;
-    url.query_pairs_mut()
+    // Build semantic_url: legacy UI path + query params
+    let mut semantic_url = endpoint(origin, &path)?;
+    semantic_url
+        .query_pairs_mut()
         .append_pair("page", &action.page.to_string());
     if let Some(grade) = action.grade {
-        url.query_pairs_mut()
+        semantic_url
+            .query_pairs_mut()
             .append_pair("grades", &grade.to_string());
     }
-    safe(url, RequestAction::Rankings(action))
+    // Physical url: API endpoint, no query string
+    let url = endpoint(origin, "/api/v1/tfRankings/GetRankings")?;
+    if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
+        bail!("source URL contains forbidden authority data");
+    }
+    Ok(RequestSpec {
+        semantic_url: semantic_url.to_string(),
+        url,
+        action: RequestAction::Rankings(action),
+    })
 }
 
 fn endpoint(origin: &Url, path: &str) -> Result<Url> {
@@ -258,5 +324,144 @@ mod tests {
             }
         )
         .is_ok());
+    }
+    // -- Rankings body encoding and wire layout --
+
+    #[test]
+    fn rankings_query_encodes_exact_measured_body() {
+        let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+        let request = rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 168416,
+                gender: "m".into(),
+                grade: Some(11),
+                event_short: "100m".into(),
+                page: 1,
+                capture: RankingsCapture::Navigation,
+            },
+        )
+        .expect("request");
+        // Verify body serialises to the byte-verified measured request body.
+        let body = request.body().expect("has body");
+        match body {
+            RequestBody::Rankings(_) => {}
+            _ => panic!("expected Rankings body"),
+        }
+        let json = serde_json::to_string(&body).expect("json");
+        let expected = r#"{"reportType":"div","mode":"list","divListId":168416,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":1},"qualifyingListKey":"","version":2,"debug":""}"#;
+        assert_eq!(json, expected);
+    }
+
+    #[test]
+    fn rankings_grade_none_emits_empty_array_not_null() {
+        let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+        let request = rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 168416,
+                gender: "f".into(),
+                grade: None,
+                event_short: "200m".into(),
+                page: 2,
+                capture: RankingsCapture::Results,
+            },
+        )
+        .expect("request");
+        let json = serde_json::to_string(&request.body().expect("body")).expect("json");
+        assert!(json.contains(r#""grades":[]"#));
+        assert!(!json.contains(r#""grades":null"#));
+    }
+
+    #[test]
+    fn rankings_semantic_url_matches_legacy_ui_url() {
+        let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+        // With grade
+        let req = rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 168416,
+                gender: "m".into(),
+                grade: Some(11),
+                event_short: "100m".into(),
+                page: 3,
+                capture: RankingsCapture::Navigation,
+            },
+        )
+        .expect("request");
+        assert_eq!(
+            req.semantic_url,
+            "http://127.0.0.1:8080/TrackAndField/rankings/list/168416/m/100m/?page=3&grades=11"
+        );
+        // Without grade — use a valid event_short (empty fails safe_text validation)
+        let req2 = rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 99,
+                gender: "f".into(),
+                grade: None,
+                event_short: "TF".into(),
+                page: 1,
+                capture: RankingsCapture::Results,
+            },
+        )
+        .expect("request");
+        assert_eq!(
+            req2.semantic_url,
+            "http://127.0.0.1:8080/TrackAndField/rankings/list/99/f/TF/?page=1"
+        );
+    }
+
+    #[test]
+    fn rankings_physical_url_is_api_endpoint_empty_query() {
+        let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+        let request = rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 168416,
+                gender: "m".into(),
+                grade: Some(11),
+                event_short: "100m".into(),
+                page: 1,
+                capture: RankingsCapture::Navigation,
+            },
+        )
+        .expect("request");
+        assert_eq!(
+            request.url.as_str(),
+            "http://127.0.0.1:8080/api/v1/tfRankings/GetRankings"
+        );
+        assert!(request.url.query().is_none());
+    }
+
+    #[test]
+    fn rankings_rejects_zero_page_and_oversized_event() {
+        let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+        assert!(rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 1,
+                gender: "m".into(),
+                grade: None,
+                event_short: "100m".into(),
+                page: 0,
+                capture: RankingsCapture::Navigation,
+            },
+        )
+        .is_err());
+        // Event text exceeding 64 bytes
+        let long_event = "x".repeat(65);
+        assert!(rankings_spec(
+            &origin,
+            RankingsAction {
+                list_id: 1,
+                gender: "m".into(),
+                grade: None,
+                event_short: long_event,
+                page: 1,
+                capture: RankingsCapture::Navigation,
+            },
+        )
+        .is_err());
     }
 }

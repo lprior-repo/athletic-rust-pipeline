@@ -897,7 +897,7 @@ fn rejects_indistinguishable_local_selection_with_rehashed_evidence() -> TestRes
     assert_eq!(verify(&path)?.review_rows, 1);
     let mut row = trusted;
     row["report"]["resolution"]["method"] = json!("local_review");
-    row["assessment"]["decision"] = json!("deterministic_accepted");
+    row["assessment"]["decision"] = json!(decision::Decision::DeterministicAccepted);
     row["assessment"]["verified"] = json!({"athlete_id":1001});
     write(&path, &[local_selection(row)])?;
     assert!(verify(&path).is_err());
