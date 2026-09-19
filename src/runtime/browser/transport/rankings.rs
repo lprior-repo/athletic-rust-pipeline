@@ -39,12 +39,7 @@ async fn fetch_results(
         None => return Err(BrowserError::Protocol),
     };
     let mut response = super::fetch(page, &request, request_timeout, gate).await?;
-    let next_page = match response_has_rows(&response.body) {
-        Ok(true) => action.page.checked_add(1),
-        // Malformed or empty pages end pagination: strict publication parsing
-        // rejects them before a checkpoint is written.
-        Ok(false) | Err(_) => None,
-    };
+    let next_page = next_page_after(&response.body, action.page);
     response.rankings = Some(RankingPageObservation {
         capture: RankingsCapture::Results,
         request_method: "POST".to_owned(),
@@ -53,6 +48,44 @@ async fn fetch_results(
         next_page,
     });
     Ok(response)
+}
+
+/// Pagination follows the measured row-bearing signal: a page carrying ranked
+/// rows requests its successor, while an empty or unparsable page ends the
+/// chain. Publication seals that terminating page into the event's page count,
+/// so verification requires exactly `None` on the head page and `Some(page + 1)`
+/// on every page before it.
+fn next_page_after(body: &[u8], page: u32) -> Option<u32> {
+    match response_has_rows(body) {
+        Ok(true) => page.checked_add(1),
+        // Malformed pages end pagination: strict publication parsing rejects
+        // them before a checkpoint is written.
+        Ok(false) | Err(_) => None,
+    }
+}
+
+#[cfg(test)]
+mod pagination {
+    use super::next_page_after;
+
+    #[test]
+    fn a_page_with_rows_requests_its_successor() {
+        let body = br#"{"groupedRankings":[[{"athleteId":1}]]}"#;
+        assert_eq!(next_page_after(body, 1), Some(2));
+        assert_eq!(next_page_after(body, 7), Some(8));
+    }
+
+    #[test]
+    fn an_empty_page_terminates_the_chain() {
+        assert_eq!(next_page_after(br#"{"groupedRankings":[]}"#, 3), None);
+        assert_eq!(next_page_after(br#"{"groupedRankings":[[]]}"#, 3), None);
+    }
+
+    #[test]
+    fn an_unparsable_page_terminates_rather_than_advancing() {
+        assert_eq!(next_page_after(b"<html>challenge</html>", 3), None);
+        assert_eq!(next_page_after(b"", 3), None);
+    }
 }
 
 /// Fetch rankings data from the target source via browser CDP.
