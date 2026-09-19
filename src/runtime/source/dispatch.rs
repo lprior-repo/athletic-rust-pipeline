@@ -18,10 +18,11 @@ impl ReadinessPolicy {
     pub(super) fn from_request(request: &request::RequestSpec) -> Self {
         match request.action {
             request::RequestAction::Rankings(_) => Self::Rankings,
-            request::RequestAction::Fetch => Self::Legacy,
+            request::RequestAction::Fetch(_) => Self::Legacy,
         }
     }
 }
+
 
 /// Wait for the browser to become available using the legacy auto-recovery
 /// path.  Non-rankings requests use this because they may need the browser
@@ -75,7 +76,7 @@ pub(super) async fn admitted_step(
             // Legacy retains existing loops.
             match step {
                 WorkflowStep::Deferred if policy == ReadinessPolicy::Rankings => {
-                    return Ok(Some(WorkflowStep::Blocked {
+                    Ok(Some(WorkflowStep::Blocked {
                         failure: crate::runtime::protocol::OperationFailure {
                             code: crate::runtime::protocol::FailureCode::BrowserUnavailable,
                             message: "browser admission closed after readiness check; rankings gate raced".into(),
@@ -83,7 +84,7 @@ pub(super) async fn admitted_step(
                             retries: crate::runtime::protocol::RetryEvidence::NotAttempted,
                             evidence: Vec::new(),
                         },
-                    }));
+                    }))
                 }
                 WorkflowStep::Deferred => {
                     ctx.sleep(Duration::from_secs(1))

@@ -94,11 +94,19 @@ pub(crate) async fn fetch(
         return Err(BrowserError::HumanRequired);
     }
     let request_body = request
-        .body
-        .as_ref()
+        .body()
         .map(serde_json::to_string)
         .transpose()
         .map_err(|_| BrowserError::Protocol)?;
+
+PUT 255.=260:
+fn request_method(request: &RequestSpec) -> &'static str {
+    if request.body().is_some() {
+        "POST"
+    } else {
+        "GET"
+    }
+}
     let arguments = FetchArguments {
         url: request.url.as_str(),
         method: request_method(request),

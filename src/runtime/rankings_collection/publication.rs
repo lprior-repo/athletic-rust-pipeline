@@ -98,10 +98,7 @@ pub(super) fn catalog(
 
 pub(super) fn page(
     store: &ArtifactStore,
-    list_id: u64,
-    season: u64,
-    gender: &str,
-    projection_grade: u8,
+    expected: &ExpectedPageContext<'_>,
     revision: String,
     event: &EventProgress,
     collection: EvidenceDigest,
@@ -122,23 +119,7 @@ pub(super) fn page(
         bail!("pagination does not advance to the next consecutive page");
     }
     let terminal = capture.next_page.is_none();
-    let observation = parse_page_response(
-        &raw(store, receipt)?,
-        &ExpectedPageContext {
-            division_id: list_id,
-            season_id: season,
-            gender,
-            event_short: &event.event_short,
-            event_id: Some(event.event_id),
-            is_relay: event.is_relay,
-            requested_grade: if event.is_relay {
-                None
-            } else {
-                Some(projection_grade)
-            },
-            page: event.next_page,
-        },
-    )?;
+    let observation = parse_page_response(&raw(store, receipt)?, expected)?;
     let min_count = observation.min_count;
     let index_collection = collection.clone();
     let checkpoint = RankingsPageCheckpoint {
@@ -233,17 +214,24 @@ fn page_index(
     })
 }
 
+pub(super) struct SealInput {
+    pub scope: RankingsScope,
+    pub source_snapshot: EvidenceDigest,
+    pub catalog_outcome: FetchOutcome,
+    pub catalog_ref: Option<EvidenceDigest>,
+    pub plan_ref: Option<EvidenceDigest>,
+    pub events: Vec<EventProgress>,
+    pub absent_families: Vec<String>,
+}
+
 pub(super) fn seal(
     store: &ArtifactStore,
-    scope: RankingsScope,
-    source_snapshot: EvidenceDigest,
-    catalog_outcome: FetchOutcome,
-    catalog_ref: Option<EvidenceDigest>,
-    plan_ref: Option<EvidenceDigest>,
-    events: Vec<EventProgress>,
-    absent_families: Vec<String>,
+    input: SealInput,
     collection: EvidenceDigest,
 ) -> anyhow::Result<EvidenceDigest> {
+    let SealInput {
+        scope, source_snapshot, catalog_outcome, catalog_ref, plan_ref, events, absent_families,
+    } = input;
     if events.is_empty()
         || events
             .iter()
