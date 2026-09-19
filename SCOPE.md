@@ -80,9 +80,9 @@ rankings-status, rankings-pause, rankings-resume
 
 ## Qualification ledger
 
-**Reported current evidence:** fresh production and test-library `cargo check`; strict Clippy has one known trivial conversion remaining; allocation measurement 344,131 versus 13,131 over 1,000 synthetic iterations (331 fewer allocations per iteration, not throughput); retained private 26-case storage qualification exposed bugs under repair; native fixture addresses Restate admin 21041, ingress 21042, fixture 21043, worker 21140, with worker not deployed.
+**Executed evidence:** fresh production/test-library compilation; strict Clippy before the latest repairs; allocation measurement 344,131 versus 13,131 over 1,000 synthetic iterations (not throughput); native retained-corpus comparison covering 95 queries, 4,256 receipts, and 142,705 unique athletes; all 26 private storage scenarios; focused parser/storage/bundle and request-serialization regressions. The restored result verifier is 13/14 because one fixture has an obsolete assessment enum spelling. Native fixture addresses are Restate admin 21041, ingress 21042, fixture 21043, worker 21140; the worker is not deployed.
 
-**Pending:** current-tree source repair and final quality gates; native ranking/parser/storage scenarios; genuine pause and explicit resume; native collection, deterministic matching, owner-online immutable export, stopped-writer verification, and exact replay. Full automated collection -> matching -> export/replay has not completed. No live-collection readiness claim is supported.
+**Pending:** the remaining fixture repair and final current-tree quality gates; genuine native pause/resume; collection, deterministic matching, owner-online immutable export, stopped-writer verification, and cached replay. The broader boys/girls indoor/outdoor/XC roster, full available histories, school history, and PR publication remain additional implementation/coverage requirements. No full end-to-end or expanded-roster readiness claim is supported.
 
 Removed alpha/exhaustive/run-restate commands, deleted `tools/restate-native.sh`, old benchmark targets, and removed campaign documents must not reappear in operational instructions. Retained historical evidence remains useful only when labelled with its frozen binary, store, and source contract; it cannot certify this current tree.
 

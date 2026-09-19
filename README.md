@@ -4,6 +4,8 @@ This repository contains the native Rust/Restate athlete-evidence pipeline. It i
 
 This README describes the **current design**. It is not a claim that live collection, full-workbook matching, or end-to-end replay qualification has completed. Historical experiments are labelled as historical in [HANDOFF.md](HANDOFF.md).
 
+The clarified expansion target is **USA Grade 11/junior boys and girls, indoor track, outdoor track, and cross-country**, with athlete URLs, competing-school history, all available high-school performances, and evidence-backed event-specific PRs. See [the expanded roster contract](SCOPE.md#expanded-roster-target--requested-not-yet-complete). This target is broader than the implemented boys rankings collector and is not a completed-delivery claim.
+
 ## Product contract
 
 - Workbook membership is the population contract. Every real source row is retained, including duplicate and incomplete identity rows. There is no cohort, grade, graduation-year, or junior eligibility filter.
@@ -77,9 +79,11 @@ cargo run --release -- verify --input /path/input.xlsx --output /path/result.xls
 
 The fresh evidence currently available is limited and explicitly scoped:
 
-- A fresh `cargo check` covered production and the test library. A strict Clippy pass is not final: one known trivial conversion remains for Main to repair.
+- Fresh production/test-library compilation succeeded. Strict Clippy passed at an earlier integration checkpoint; the subsequent storage/request repairs still require the final current-tree gate.
 - A serialization measurement compared 344,131 with 13,131 allocations over 1,000 synthetic iterations, 331 fewer allocations per iteration. This is an allocation observation, not a throughput claim.
-- The retained corpus and private 26-case storage qualification exposed bugs that Main/5090 are repairing. There is no passing claim for that qualification.
+- The native parser passed the retained corpus: 95 queries, 4,256 receipt digest checks, 340,238 individual results, 57,629 relay-member results, and 142,705 unique athletes. The report retains 15,724 unresolved roster results rather than inventing members.
+- All 26 private storage scenarios passed after repairing replay, counters, and multiple references per athlete/checkpoint. The distinct-position oracle was corrected to count positions, not result/position pairs.
+- Focused parser/storage/bundle regressions and the durable request-serialization regression passed. The restored result verifier passed 13 of 14 scenarios; one fixture still uses an obsolete assessment enum spelling. The later workbook targets did not run because that command stopped at the failure.
 - The private native fixture layout is Restate admin 21041, ingress 21042, fixture 21043, and worker 21140; the worker is not deployed. These are qualification details, not readiness evidence.
 - Full native automated collection -> matching -> export -> replay remains pending execution. No live-collection readiness claim is made.
 

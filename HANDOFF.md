@@ -4,7 +4,7 @@
 
 ## Freeze and ownership
 
-The current documentation-only change updates exactly these existing files:
+This documentation refresh covers these existing files:
 
 - `README.md`
 - `HANDOFF.md`
@@ -12,18 +12,20 @@ The current documentation-only change updates exactly these existing files:
 - `WORKFLOW_REVIEW.md`
 - `SCOPE.md`
 
-No Rust source is changed here. Main owns integration, executable proof, the remaining source Clippy conversion, native qualification, and final publication. The 5090 owns the ranking parser/storage/publication repair slice; this 3090 lane drafted the current documentation from the source interfaces and the explicit qualification facts. Do not accept model completion messages as proof.
+The prior GPU development lanes are frozen. Main owns integration, executable verification, native qualification, and subsequent publication. The local 3090 drafted the documentation; local 5090/3090 repair recommendations remain inputs requiring source review and execution, not proof.
 
 The raw local drafting response is retained outside the repository at `native-rankings-1789772180206/final-development/3090/docs-draft-01.json`. It contains no workbook rows, identities, credentials, or hosted-model traffic. A local model draft is design input, not evidence of pipeline execution.
-The one drafting request used the local 3090 endpoint `http://127.0.0.1:11001/v1/chat/completions`, model `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf`, with `chat_template_kwargs.enable_thinking=false`; it was one request within the six-request cap. No hosted model was used.
+The drafting request used the local 3090 endpoint `http://127.0.0.1:11001/v1/chat/completions`, model `Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf`, with `chat_template_kwargs.enable_thinking=false`. Additional storage/fixture recommendations were requested from that endpoint and the local 5090 at port `11000`, model `Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf`; responses are retained as `final-development/{5090,3090}/integration-repair-01.json` under the same private evidence root.
 
-This documentation freeze is complete at these five files. Main must append only final, directly exercised checks after the source/qualification freeze; it must not turn this draft or retained historical evidence into a passing claim.
+The user pushed the accumulated changes. Subsequent documentation updates must continue to distinguish implementation, executed qualification, and remaining work; a model response or successful compilation is not end-to-end proof.
 
 Preserve original workbooks, profiles, active stores, journals, retained binaries, and evidence. Never replace a changed binary under its old journals. Never open a live Fjall store from a second process. For offline verification: owner-online export first, drain, stop the sole writer, then open the stopped store.
 
 ## Current source design
 
 For the supplied two-sheet source shape, both source worksheets remain in scope; sport and grade do not select or discard rows. The completed consolidated rankings delivery contains 142,705 unique athletes on `AllAthletes`. It is separate from original-workbook identity matching.
+
+The expanded roster target is **source-verified Grade 11/junior boys and girls**, within the existing USA/2026 scope, covering **indoor track, outdoor track, and cross-country**. It requires athlete URLs, competing-school history, all available high-school performances, and evidence-backed comparable PRs. The exact contract and current implementation gaps are in [SCOPE.md](SCOPE.md#expanded-roster-target--requested-not-yet-complete). Do not describe the existing boys rankings collector as this completed expanded product.
 
 The deterministic core covers stable source keys, request construction, HTML/JSON/rankings parsing, candidate evidence, identity policy, event/mark calculations, provenance checks, and export projection. The effect shell covers workbook I/O, ranking-index persistence, Restate calls/timers/admission, Chromium/CDP capture, browser challenge state, retries and uncertain-effect evidence, cancellation/drain, durable checkpoints, collection controls, seal, and publication.
 
@@ -46,20 +48,22 @@ Real Cloudflare handling is manual human interaction only in the existing headed
 The current evidence record says:
 
 - Fresh `cargo check` compiled production and the test library.
-- Strict Clippy is not final: one known trivial conversion remains for Main to repair.
+- Strict Clippy passed before the latest storage/request repairs; final current-tree Clippy remains due. The previously reported trivial conversion is fixed.
 - Serialization measurement: 344,131 versus 13,131 allocations across 1,000 synthetic iterations, or 331 removed per iteration. This is not throughput evidence.
-- Retained corpus/private 26-case storage qualification exposed bugs currently being repaired by Main/5090. No passing result may be stated.
+- Retained corpus qualification passed: 95 queries, 4,256 receipt digest checks, 340,238 individual results, 57,629 relay-member results, and 142,705 unique athletes. It explicitly retains 15,724 unresolved roster results. Private report: `native-rankings-1789772180206/native-corpus-cleanup-proof.json`.
+- All 26 private public-API storage scenarios passed, including replay, conflicts, per-event/collection counts, multiple record references, roster reconciliation, bounds, and reopen persistence. One private oracle was corrected: source positions `1,2,1` contain two distinct positions, not three.
+- Focused parser/storage/bundle regressions and the new request-serialization regression passed. `result_verify` passed 13/14 scenarios; `rejects_indistinguishable_local_selection_with_rehashed_evidence` still has an obsolete assessment enum spelling. The command stopped before executing the subsequent workbook targets.
 - Native fixture addresses are Restate admin `21041`, ingress `21042`, fixture `21043`, and worker `21140`; the worker is not deployed.
 - Full native automated collection -> matching -> export -> replay has not yet been executed to completion.
 
-The following are therefore still open: fresh integrated source review, current-tree quality gates, native fixture execution against the repaired binary, rankings pause/resume and seal proof, owner-online immutable export, stopped-writer verification, and exact replay with zero new effects. Do not convert any of these into a readiness claim.
+Remaining gates are final current-tree quality checks, the restored fixture repair, native worker deployment and execution, rankings pause/resume, owner-online immutable export, stopped-writer verification, and exact cached replay without new source effects. Expanded girls/indoor/XC roster coverage and complete performance-history publication are additional unfinished requirements. These must not be represented as readiness.
 
 Historical synthetic and legacy-run material may remain in retained evidence, but must be labelled historical and must not be used as current-tree proof. Old live profiles/stores/journals and changed binaries remain preserved; they are not replaced or replayed.
 
 ## Quality command ledger
 
-**Completed for the current handoff:** source/interface reading and the local 3090 drafting request, retained outside the repository.
+**Executed:** fresh production/test-library compilation; strict Clippy at the earlier integration checkpoint; retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; and a request-serialization regression that failed before the repair and passed afterward.
 
-**Reported but not final:** fresh production/test-library `cargo check`; one known strict-Clippy conversion remains.
+**Latest incomplete command:** `cargo test --test rankings_parser --test rankings_storage --test workbook_verify --test workbook_zip_layout --test result_verify --test bundle_verify` stopped on the remaining restored fixture failure described above. Do not count targets after that failure as executed.
 
-**Planned by Main after the freeze:** repair that conversion; run the approved current-tree compilation/Clippy/targeted native scenarios; execute the private 26-case qualification and retained-result checks; then run owner-online export -> stop writer -> `verify`, followed by exact replay. No formatter, broad test suite, fuzz campaign, benchmark, service restart, or commit was run by this documentation lane.
+**Next:** repair the remaining fixture, finish current-tree gates, deploy only a fresh native worker/store/journal identity, and exercise collection -> matching -> owner-online export -> stopped-writer verification -> cached replay. No broad unit suite or fuzz campaign is required by this handoff.

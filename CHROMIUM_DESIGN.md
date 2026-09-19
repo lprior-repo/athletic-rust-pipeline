@@ -35,6 +35,8 @@ Every attempt has a stable operation identity and a fresh attempt identity. Sour
 
 The rankings path is an additional `SourceResource::Rankings` action. Navigation capture builds a catalog from 46 requested event families, excludes walk, expands observed variants (current target 95), and records absences. Results capture validates exact scope, page advancement, and lower-bound coverage before publishing a page checkpoint. Relay results join through roster IDs; Grade 11 is a discovery projection, not workbook eligibility.
 
+The requested expanded collector covers source-verified Grade 11/junior boys and girls across indoor track, outdoor track, and cross-country. Existing boys-only rankings capture does not establish that broader coverage. All scopes must share profile admission/cooldown rather than multiplying independent request budgets. Reuse available authorized bulk responses and immutable evidence; honor `Retry-After`, pause on challenges, and measure requests per athlete and successful throughput. Neither Restate nor a concurrency setting guarantees zero upstream 429s.
+
 ## Parser and evidence contract
 
 `DocumentReceipt` binds digest, source URL, status, media type, byte count, timing, and ranking capture metadata. Ranking `PageObservation` preserves source row numbers, result IDs, candidate kind, roster presence, and unresolved roster counts. `RankingPageIndex` and immutable checkpoints bind each index to its raw receipt and collection/event/page identity.
@@ -51,6 +53,6 @@ Shutdown stops intake, drains/cancels owned work, closes pages/browser, joins pr
 
 ## Qualification gates
 
-The current record includes a fresh production/test-library `cargo check`; strict Clippy still has one known trivial conversion for Main to repair. The 26-case private storage qualification exposed bugs under repair, so it has no passing claim. The private fixture addresses are Restate admin 21041, ingress 21042, fixture 21043, and worker 21140, with the worker not deployed.
+Native retained-corpus qualification passed for 95 queries and 4,256 receipts, and all 26 private storage scenarios passed. These are parser/storage results, not browser end-to-end proof. The request-serialization regression also passed after reproducing its failure. The restored result verifier is 13/14 with one stale enum fixture remaining; final current-tree Clippy is pending after subsequent repairs. Private fixture addresses remain Restate admin 21041, ingress 21042, fixture 21043, and worker 21140; the worker is not deployed.
 
 Main must still execute the current frozen worker against native scenarios covering normal capture, exact request identity, compressed/decoded bytes, bounds, cancellation and tab reuse, challenge/human-required pause and explicit resume, profile-wide drain, denial/rate-limit/redirect classification, browser loss, pause/resume controls, immutable owner export, stopped-writer verification, and exact replay. These are gates, not completed results. No live-collection readiness claim is permitted.

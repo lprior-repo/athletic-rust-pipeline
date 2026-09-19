@@ -4,6 +4,8 @@
 
 This packet is a current-source architecture map, not a historic alpha plan and not execution evidence. Read it with [README.md](README.md), [HANDOFF.md](HANDOFF.md), and [SCOPE.md](SCOPE.md). The five documents intentionally distinguish source-derived behavior, reported checks, retained historical evidence, and pending qualification.
 
+The requested expansion is Grade 11/junior **boys and girls**, indoor/outdoor track **plus cross-country**, with complete available high-school performance histories, athlete URLs, competing-school history, and comparable PRs. [SCOPE.md](SCOPE.md#expanded-roster-target--requested-not-yet-complete) separates this target from the currently implemented boys rankings collection. Rankings coverage alone cannot establish roster or career-history completeness.
+
 The Rust module graph uses normal `mod` declarations, feature submodules, `#[path]` placement where a logical child is kept in a feature directory, `pub(crate)` implementation boundaries, and inline modules for tightly coupled tests/helpers. These are one compile-time graph; they are not duplicate collectors. Current source paths are authoritative over old line-number maps.
 
 ## Domain core versus effect shell
@@ -82,4 +84,4 @@ Publication is deliberately non-clobbering and multi-artifact: XLSX plus JSONL s
 5. Does failed ranking acquisition avoid stale failure replay? `SourceCache` explicitly avoids caching ranking failures; execution proof remains open.
 6. Does export preserve source fields and sidecar overflow? Projection/publication and verifier paths provide the contract; current end-to-end proof remains open.
 
-Current evidence is limited to a fresh production/test-library `cargo check`, a non-throughput allocation measurement (344,131 versus 13,131 across 1,000 synthetic iterations), and a private 26-case qualification that exposed bugs under repair. Strict Clippy still has one known trivial conversion. No live-collection readiness, passing 26-case qualification, or completed full collection/matching/export/replay claim is supported.
+Executed evidence now includes the native retained-corpus comparison (95 queries, 4,256 receipts, 142,705 unique athletes), all 26 private storage scenarios, and focused parser/storage/bundle and request-serialization regressions. The result verifier is 13/14 because one restored fixture uses an obsolete enum spelling; subsequent workbook targets were not executed by that failing command. Strict Clippy passed before the latest repairs and needs its final current-tree run. The allocation measurement remains 344,131 versus 13,131 across 1,000 synthetic iterations, not throughput evidence. Native collection/matching/export/replay and expanded roster coverage remain unproved.
