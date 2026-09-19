@@ -258,4 +258,13 @@ mod tests {
         let expected = sealed(89, 79, 4, 3, 3);
         assert!(rejection(&actual, &expected, 89).contains("differs from sealed run reports"));
     }
+
+    #[test]
+    fn accepted_counts_that_overflow_are_rejected_rather_than_wrapped() {
+        // Wrapping u64::MAX + 1 yields 0, which would compare equal to a
+        // zero accepted count and let the export pass validation.
+        let actual = exported(0, 0, 0, 0, 0);
+        let expected = sealed(0, u64::MAX, 1, 0, 0);
+        assert!(rejection(&actual, &expected, 0).contains("accepted coverage overflow"));
+    }
 }
