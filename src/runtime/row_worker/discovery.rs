@@ -11,7 +11,7 @@ use crate::{
         acquisition::{ProfileAcquisition, ProfileJob, ProfileProbe, QueryEvidence, QueryJob},
         profile_worker::ProfileWorkerClient,
         query_worker::QueryWorkerClient,
-        row_protocol::CandidateCoverage,
+        row_protocol::{CandidateCoverage, RankingDiscoveryEvidence},
         Runtime,
     },
     search::{SearchPage, SearchQuery},
@@ -31,6 +31,7 @@ pub(crate) struct DiscoveryState {
     pub issues: Vec<String>,
     pub candidate_ids: BTreeSet<AthleteId>,
     pub candidate_limit: bool,
+    pub rankings: Option<RankingDiscoveryEvidence>,
 }
 
 impl DiscoveryState {
@@ -86,7 +87,6 @@ impl ProfileState {
         })
     }
 }
-
 pub(crate) async fn execute_queries(
     ctx: &ObjectContext<'_>,
     runtime: Arc<Runtime>,
@@ -151,6 +151,7 @@ pub(crate) async fn execute_queries(
     }
     Ok(state)
 }
+
 
 async fn add_candidates(runtime: &Runtime, state: &mut DiscoveryState, artifact: &QueryEvidence) {
     for page in &artifact.pages {

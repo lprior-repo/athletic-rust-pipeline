@@ -3,9 +3,28 @@ use crate::runtime::protocol::SourceResource;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use url::Url;
+use crate::runtime::protocol::RankingsCapture;
+use crate::domain::identity::EvidenceDigest;
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "action")]
+pub(crate) enum RequestAction {
+    Fetch,
+    Rankings(RankingsAction),
+}
 
-pub(crate) const MAX_QUERY_BYTES: usize = 512;
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub(crate) struct RankingsAction {
+    pub collection: EvidenceDigest,
+    pub list_id: u64,
+    pub gender: String,
+    pub grade: Option<u8>,
+    pub event_short: String,
+    pub page: u32,
+    pub capture: RankingsCapture,
+}
 pub(crate) const MAX_START: u32 = 1_000_000;
+pub(crate) const MAX_QUERY_BYTES: usize = 2_048;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -13,6 +32,7 @@ pub(crate) struct RequestSpec {
     pub(crate) url: Url,
     pub(crate) semantic_url: String,
     pub(crate) body: Option<SearchBody>,
+    pub(crate) action: RequestAction,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,7 +56,7 @@ pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSp
                 .append_pair("athleteId", &athlete_id.get().to_string())
                 .append_pair("sport", sport.api_code())
                 .append_pair("level", "0");
-            safe(url, None)
+            safe(url, None, RequestAction::Fetch)
         }
         SourceResource::ProfileHtml { profile_url } => profile(origin, profile_url),
         SourceResource::Team {
@@ -44,6 +64,24 @@ pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSp
             sport,
             season,
         } => team(origin, *team_id, *sport, *season),
+        SourceResource::Rankings {
+            collection,
+            list_id,
+            gender,
+            grade,
+            event_short,
+            page,
+            capture,
+        } => rankings(
+            origin,
+            collection.clone(),
+            *list_id,
+            gender,
+            *grade,
+            event_short,
+            *page,
+            capture,
+        ),
     }
 }
 
@@ -61,7 +99,7 @@ fn search(
         fq: format!("t:a a:{}", sport.api_code()),
         start,
     };
-    safe(endpoint(origin, "/Search.aspx/runSearch")?, Some(body))
+    safe(endpoint(origin, "/Search.aspx/runSearch")?, Some(body), RequestAction::Fetch)
 }
 
 fn profile(origin: &Url, profile_url: &ProfileUrl) -> Result<RequestSpec> {
@@ -70,7 +108,7 @@ fn profile(origin: &Url, profile_url: &ProfileUrl) -> Result<RequestSpec> {
     if path.is_empty() || path.contains("..") || path.contains(['?', '#', '\\']) {
         bail!("profile path is unsafe");
     }
-    safe(endpoint(origin, path)?, None)
+    safe(endpoint(origin, path)?, None, RequestAction::Fetch)
 }
 
 fn team(
@@ -87,9 +125,42 @@ fn team(
         .append_pair("team", &team_id.to_string())
         .append_pair("sport", sport.api_code())
         .append_pair("season", &season.to_string());
-    safe(url, None)
+    safe(url, None, RequestAction::Fetch)
 }
 
+fn rankings(
+    origin: &Url,
+    collection: EvidenceDigest,
+    list_id: u64,
+    gender: &str,
+    grade: Option<u8>,
+    event_short: &str,
+    page: u32,
+    capture: &RankingsCapture,
+) -> Result<RequestSpec> {
+    if list_id == 0 {
+        bail!("rankings list_id must be nonzero");
+    }
+    if !safe_text(event_short, 64) || page == 0 {
+        bail!("rankings event and page must be bounded");
+    }
+    let path = format!("/TrackAndField/rankings/list/{list_id}/{gender}/{event_short}/");
+    let mut url = endpoint(origin, &path)?;
+    url.query_pairs_mut().append_pair("page", &page.to_string());
+    if let Some(grade) = grade {
+        url.query_pairs_mut().append_pair("grades", &grade.to_string());
+    }
+    let action = RequestAction::Rankings(RankingsAction {
+        collection: collection.clone(),
+        list_id,
+        gender: gender.to_owned(),
+        grade,
+        event_short: event_short.to_owned(),
+        page,
+        capture: capture.clone(),
+    });
+    safe(url, None, action)
+}
 fn endpoint(origin: &Url, path: &str) -> Result<Url> {
     if !path.starts_with('/') || path.contains("..") || path.contains(['?', '#', '\\']) {
         bail!("source endpoint path is unsafe");
@@ -102,7 +173,7 @@ fn endpoint(origin: &Url, path: &str) -> Result<Url> {
     Ok(url)
 }
 
-fn safe(url: Url, body: Option<SearchBody>) -> Result<RequestSpec> {
+fn safe(url: Url, body: Option<SearchBody>, action: RequestAction) -> Result<RequestSpec> {
     if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
         bail!("source URL contains forbidden authority data");
     }
@@ -110,6 +181,7 @@ fn safe(url: Url, body: Option<SearchBody>) -> Result<RequestSpec> {
         semantic_url: url.to_string(),
         url,
         body,
+        action,
     })
 }
 

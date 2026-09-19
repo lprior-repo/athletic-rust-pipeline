@@ -85,6 +85,7 @@ pub(super) fn parse_observation(
                 &bytes,
             )?,
         }),
+        SourceResource::Rankings { .. } => bail!("rankings not supported in raw profile parsing"),
         SourceResource::Search { .. } => bail!("raw profile receipt uses a search resource"),
     }
 }

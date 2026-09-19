@@ -8,20 +8,25 @@ use super::{
     CACHE_BYTES, MAX_BATCH_BYTES, MAX_BATCH_RECORDS,
 };
 use crate::{
-    domain::identity::{EvidenceDigest, SourceRowKey, WorkbookDigest},
+    domain::identity::{AthleteId, EvidenceDigest, SourceRowKey, WorkbookDigest},
+    domain::name::CanonicalName,
     model::SourceRecord,
 };
+use super::rankings::types::{RankingLookup, RankingRecordRef};
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
+use sha2::Digest;
 use std::{collections::BTreeMap, path::Path, str, sync::Mutex};
 
 const DOCUMENTS: &str = "documents";
 const SOURCES: &str = "source_index";
+const ATTEMPTS: &str = "attempts";
 
-pub struct StoreInner {
+pub(super) struct StoreInner {
     pub(super) database: Database,
     pub(super) documents: Keyspace,
     pub(super) sources: Keyspace,
     pub(super) attempts: Keyspace,
+    pub(super) rankings: Keyspace,
     pub(super) writer: Mutex<()>,
 }
 
@@ -40,13 +45,17 @@ impl StoreInner {
             .keyspace(SOURCES, KeyspaceCreateOptions::default)
             .map_err(map_database_error)?;
         let attempts = database
-            .keyspace("http_attempt_evidence", KeyspaceCreateOptions::default)
+            .keyspace(ATTEMPTS, KeyspaceCreateOptions::default)
+            .map_err(map_database_error)?;
+        let rankings = database
+            .keyspace("rankings", KeyspaceCreateOptions::default)
             .map_err(map_database_error)?;
         Ok(Self {
             database,
             documents,
             sources,
             attempts,
+            rankings,
             writer: Mutex::new(()),
         })
     }
@@ -163,7 +172,7 @@ impl StoreInner {
     where
         F: FnMut(SourceRecord) -> Result<()>,
     {
-        let (key, value) = guard.into_inner().map_err(map_database_error)?;
+        let (key, value) = guard.into_inner().map_err(|_| StoreError::CorruptData)?;
         let (sheet, row) = decode_source_key(key.as_ref()).ok_or(StoreError::CorruptData)?;
         let digest = parse_index_digest(value.as_ref())?;
         let record = self.read_record(&digest)?;
@@ -237,20 +246,17 @@ fn ensure_document(
 }
 
 fn load_document(store: &StoreInner, key: &[u8]) -> Result<Option<Vec<u8>>> {
-    let Some(size) = store.documents.size_of(key).map_err(map_database_error)? else {
-        return Ok(None);
-    };
-    let size = usize::try_from(size).map_err(|_| StoreError::DocumentTooLarge)?;
-    if size > super::MAX_DOCUMENT_BYTES {
-        return Err(StoreError::DocumentTooLarge);
+    match store.documents.get(key).map_err(map_database_error)? {
+        Some(value) => {
+            let slice = value.as_ref();
+            let size = slice.len();
+            if size > super::MAX_DOCUMENT_BYTES {
+                return Err(StoreError::DocumentTooLarge);
+            }
+            Ok(Some(slice.to_vec()))
+        }
+        None => Ok(None),
     }
-    store
-        .documents
-        .get(key)
-        .map_err(map_database_error)?
-        .map(|value| value.as_ref().to_vec())
-        .ok_or(StoreError::CorruptData)
-        .map(Some)
 }
 
 fn validate_input_record(record: &SourceRecord) -> Result<SourceRowKey> {
@@ -282,4 +288,24 @@ fn validate_stored_key(record: &SourceRecord, sheet: &str, row: u32) -> Result<(
 fn parse_index_digest(bytes: &[u8]) -> Result<EvidenceDigest> {
     let text = str::from_utf8(bytes).map_err(|_| StoreError::CorruptData)?;
     EvidenceDigest::parse(text).map_err(|_| StoreError::CorruptData)
+}
+
+fn ranking_name_ref_prefix(collection: &EvidenceDigest, name: &str) -> Vec<u8> {
+    let mut key = super::rankings::common::COLLECTION_PREFIX.to_vec();
+    key.extend_from_slice(b"rn\0");
+    key.extend_from_slice(collection.as_str().as_bytes());
+    key.push(b'\0');
+    key.extend_from_slice(name.as_bytes());
+    key.push(b'\0');
+    key
+}
+
+fn ranking_athlete_ref_prefix(collection: &EvidenceDigest, athlete: AthleteId) -> Vec<u8> {
+    let mut key = super::rankings::common::COLLECTION_PREFIX.to_vec();
+    key.extend_from_slice(b"ra\0");
+    key.extend_from_slice(collection.as_str().as_bytes());
+    key.push(b'\0');
+    key.extend_from_slice(&athlete.get().to_be_bytes());
+    key.push(b'\0');
+    key
 }

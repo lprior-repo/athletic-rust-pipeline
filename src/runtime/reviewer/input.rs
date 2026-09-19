@@ -76,5 +76,6 @@ pub fn receipt(
         bytes,
         fetched_at_unix_ms,
         elapsed_ms,
+        rankings: None,
     })
 }

@@ -12,6 +12,7 @@ mod discovery;
 mod exclusions;
 mod raw_profiles;
 mod source_receipts;
+mod rankings;
 
 use crate::store::ArtifactStore;
 use anyhow::{bail, Context, Result};

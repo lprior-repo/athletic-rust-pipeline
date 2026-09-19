@@ -1,4 +1,6 @@
-use super::{identity::fingerprint, row_protocol::RowResolution};
+use super::rankings::RankingsScope;
+use super::identity::fingerprint;
+use super::row_protocol::RowResolution;
 use crate::domain::identity::{EvidenceDigest, SourceRowKey};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
@@ -24,6 +26,7 @@ pub struct SourceSnapshot {
     pub revision: String,
     pub source_origin: String,
     pub label: String,
+    pub rankings: Option<RankingsScope>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,6 +135,7 @@ pub struct RunProgress {
     pub started_at_unix_ms: u64,
     pub updated_at_unix_ms: u64,
     pub summary: Option<EvidenceDigest>,
+    pub collection_ref: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
 }
 
 /// A point-in-time progress value plus its immutable, already sealed pages.
@@ -143,9 +147,9 @@ pub struct ExportSnapshot {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunSummary {
-    pub request: RunRequest,
     pub coverage: Coverage,
     pub started_at_unix_ms: u64,
     pub completed_at_unix_ms: u64,
     pub page_digests: Vec<EvidenceDigest>,
+    pub collection_ref: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
 }

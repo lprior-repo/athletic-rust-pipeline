@@ -1,4 +1,4 @@
-use super::source_session::SourceSession;
+use super::{browser::BrowserSettings, browser_config::RawBrowserConfig};
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -46,7 +46,7 @@ struct RawConfig {
     q5_model: String,
     q4_url: String,
     #[serde(default)]
-    source_session_file: Option<PathBuf>,
+    browser: RawBrowserConfig,
     q4_model: String,
 }
 
@@ -56,7 +56,6 @@ pub struct WorkerConfig {
     source: Url,
     q5: Url,
     q4: Url,
-    source_session: Option<SourceSession>,
 }
 
 impl WorkerConfig {
@@ -85,17 +84,12 @@ impl WorkerConfig {
         validate_local(&q4)?;
         validate_model(&raw.q5_model)?;
         validate_model(&raw.q4_model)?;
-        let source_session = raw
-            .source_session_file
-            .as_deref()
-            .map(|path| SourceSession::load(path, &source))
-            .transpose()?;
+        raw.browser.validate(raw.mode)?;
         Ok(Self {
             raw,
             source,
             q5,
             q4,
-            source_session,
         })
     }
 
@@ -108,8 +102,12 @@ impl WorkerConfig {
     pub fn source_origin(&self) -> &Url {
         &self.source
     }
-    pub(crate) fn source_session(&self) -> Option<&SourceSession> {
-        self.source_session.as_ref()
+    pub(crate) fn browser_settings(&self) -> BrowserSettings {
+        self.raw.browser.settings(
+            self.storage_dir(),
+            self.source.clone(),
+            self.request_timeout(),
+        )
     }
     pub fn source_interval(&self) -> Duration {
         Duration::from_millis(self.raw.source_interval_ms)

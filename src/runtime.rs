@@ -1,5 +1,9 @@
 pub mod acquisition;
 mod artifacts;
+pub mod browser;
+mod browser_config;
+mod browser_readiness;
+pub mod browser_session;
 pub(crate) mod config;
 pub mod control;
 pub mod export;
@@ -17,10 +21,29 @@ pub mod row_protocol;
 pub mod row_worker;
 pub mod run;
 pub mod run_protocol;
+pub mod rankings_collection;
+pub mod rankings {
+    pub mod catalog;
+    pub mod page;
+    pub mod types;
+    pub use catalog::{EventCatalog, RequestedFamily};
+    pub use page::parse::{parse_page_response, PageParseError};
+    pub use types::{
+        ExpectedPageContext,
+        is_excluded, IndividualCandidate, NavEvent, PageObservation, RankedEvent, RankingsPlan,
+        RankingsScope,
+        RelayMember, RelayRoster, RelayRow, RelayTeam, VerifiedRelayMember,
+    };
+    pub use crate::store::rankings::{
+        RankingCandidateKind, RankingCandidateEntry, RankingSourceRow,
+        RankingRosterObservation, RankingPageIndex, RankingRecordRef,
+        RankingLookup, RankingEventStats, RankingCollectionStats,
+    };
+    pub use super::protocol::{RankingsCapture, RankingPageObservation};
+}
 pub mod snapshot;
 pub mod source;
 pub mod source_cache;
-mod source_session;
 pub mod worker;
 
 pub use config::{ExecutionMode, ModelLane, WorkerConfig};
@@ -35,6 +58,7 @@ pub struct Runtime {
     pub config: WorkerConfig,
     pub store: ArtifactStore,
     pub http: reqwest::Client,
+    browser: tokio::sync::OnceCell<browser::BrowserManager>,
     cpu: Arc<Semaphore>,
     tasks: TaskTracker,
 }
@@ -60,9 +84,26 @@ impl Runtime {
             config,
             store,
             http,
+            browser: tokio::sync::OnceCell::new(),
             cpu,
             tasks: TaskTracker::new(),
         }))
+    }
+
+    pub(crate) async fn ensure_browser(&self) -> Result<&browser::BrowserManager> {
+        let settings = self.config.browser_settings();
+        self.browser
+            .get_or_try_init(|| async move {
+                match settings.cdp_endpoint.clone() {
+                    Some(endpoint) => browser::BrowserManager::connect(endpoint, settings).await,
+                    None => browser::BrowserManager::launch(settings).await,
+                }
+            })
+            .await
+    }
+
+    pub(crate) fn browser(&self) -> Option<&browser::BrowserManager> {
+        self.browser.get()
     }
 
     pub async fn blocking<T, F>(&self, action: F) -> Result<T>
@@ -83,9 +124,14 @@ impl Runtime {
         .context("joining bounded worker action")?
     }
 
-    pub async fn drain(&self) {
+    pub async fn drain(&self) -> Result<()> {
+        let browser_result = match self.browser.get() {
+            Some(browser) => browser.shutdown().await,
+            None => Ok(()),
+        };
         self.cpu.close();
         self.tasks.close();
         self.tasks.wait().await;
+        browser_result
     }
 }

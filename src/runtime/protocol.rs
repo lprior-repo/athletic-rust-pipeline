@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub const MAX_REVIEW_INPUT_BYTES: usize = 65_536;
 pub const MAX_REVIEW_RESPONSE_BYTES: usize = 32_768;
 pub const MAX_SOURCE_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
+pub const MAX_RANKING_PAGE_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "kind")]
@@ -33,6 +34,15 @@ pub enum SourceResource {
         sport: Sport,
         season: u16,
     },
+    Rankings {
+        collection: EvidenceDigest,
+        list_id: u64,
+        gender: String,
+        grade: Option<u8>,
+        event_short: String,
+        page: u32,
+        capture: RankingsCapture,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -44,6 +54,23 @@ pub struct DocumentReceipt {
     pub bytes: u64,
     pub fetched_at_unix_ms: u64,
     pub elapsed_ms: u64,
+    pub rankings: Option<RankingPageObservation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum RankingsCapture {
+    Navigation,
+    Results,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RankingPageObservation {
+    pub capture: RankingsCapture,
+    pub request_method: String,
+    pub request_url: String,
+    pub request_body: Option<String>,
+    pub next_page: Option<u32>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -52,6 +79,8 @@ pub enum FailureCode {
     InvalidInput,
     Transport,
     AccessDenied,
+    BrowserChallenge,
+    BrowserUnavailable,
     RateLimited,
     HttpFailure,
     PayloadLimit,

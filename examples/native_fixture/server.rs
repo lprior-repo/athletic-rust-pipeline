@@ -189,6 +189,7 @@ pub fn state(scenarios: ScenarioSet, delay_ms: u64, max_concurrency: usize) -> F
 
 pub async fn serve(state: FixtureState, bind: SocketAddr) -> anyhow::Result<()> {
     let router = Router::new()
+        .route("/", get(browser_home))
         .route("/Search.aspx/runSearch", post(search))
         .route("/api/v1/AthleteBio/GetAthleteBioData", get(bio))
         .route("/api/v1/TeamNav/Team", get(team))
@@ -202,6 +203,12 @@ pub async fn serve(state: FixtureState, bind: SocketAddr) -> anyhow::Result<()> 
     tracing::info!(%bind, "native fixture listening");
     axum::serve(listener, router).await?;
     Ok(())
+}
+
+async fn browser_home() -> axum::response::Html<&'static str> {
+    axum::response::Html(
+        "<!doctype html><html><head><title>Native browser fixture</title></head><body><script>document.cookie='native_fixture_js=enabled; Path=/; SameSite=Lax; Max-Age=86400';document.body.dataset.ready='true';</script><p>Native source fixture ready.</p></body></html>",
+    )
 }
 async fn search(State(state): State<FixtureState>, Json(body): Json<Value>) -> Response {
     let query = body

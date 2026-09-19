@@ -1,4 +1,4 @@
-use super::{SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE};
+use super::{dispatch::ReadinessPolicy, SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE};
 use crate::runtime::protocol::OperationFailure;
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
@@ -129,10 +129,11 @@ pub(super) async fn wait(
 
 pub(super) async fn acquire(
     ctx: &SharedObjectContext<'_>,
+    policy: ReadinessPolicy,
 ) -> Result<Option<OperationFailure>, HandlerError> {
     let call = ctx
         .object_client::<SourceGatewayClient>("global")
-        .await_admission()
+        .await_admission(restate_sdk::prelude::Json(policy))
         .scope(SOURCE_ADMISSION_SCOPE)
         .call();
     let handle = call.invocation_handle().await?;

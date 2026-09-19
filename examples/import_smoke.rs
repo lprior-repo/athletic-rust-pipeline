@@ -74,6 +74,6 @@ async fn main() -> Result<()> {
         ensure!(comparison == (count, 0, 0), "Calamine field fidelity comparison failed; aggregate differences reported above");
         Ok(())
     }.await;
-    runtime.drain().await;
+    runtime.drain().await?;
     outcome
 }

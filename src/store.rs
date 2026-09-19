@@ -1,18 +1,18 @@
 #![forbid(unsafe_code)]
-
 mod audit;
 mod backend;
 mod error;
 mod keys;
 mod paging;
+pub mod rankings;
 mod root;
-
 pub use audit::AttemptEvidence;
+use backend::StoreInner;
 pub use error::{Result, StoreError};
 
-use crate::domain::identity::{EvidenceDigest, SourceRowKey, WorkbookDigest};
+use crate::domain::identity::{AthleteId, EvidenceDigest, SourceRowKey, WorkbookDigest};
+use crate::domain::name::CanonicalName;
 use crate::model::SourceRecord;
-use backend::StoreInner;
 use std::{path::Path, sync::Arc};
 
 /// Maximum size of one retained source document.
@@ -78,6 +78,43 @@ impl ArtifactStore {
         self.inner.visit_source(workbook, visitor)
     }
 }
+
+pub use rankings::{
+    RankingCandidateEntry, RankingCandidateKind, RankingCollectionStats, RankingEventStats,
+    RankingPageIndex, RankingLookup, RankingRecordRef,
+    RankingRosterObservation, RankingSourceRow,
+};
+
+impl ArtifactStore {
+    pub fn put_rankings_page(&self, index: &RankingPageIndex) -> Result<()> {
+        rankings::backend::put_rankings_page(&self.inner, index)
+    }
+
+    pub fn ranking_name_refs(&self, collection: &EvidenceDigest, name: &CanonicalName, limit: usize) -> Result<RankingLookup> {
+        rankings::backend::ranking_name_refs(&self.inner, collection, name, limit)
+    }
+
+    pub fn ranking_athlete_refs(&self, collection: &EvidenceDigest, athlete: AthleteId, limit: usize) -> Result<RankingLookup> {
+        rankings::backend::ranking_athlete_refs(&self.inner, collection, athlete, limit)
+    }
+
+    pub fn ranking_event_stats(&self, collection: &EvidenceDigest, event_short: &str) -> Result<RankingEventStats> {
+        rankings::backend_stats::ranking_event_stats(&self.inner, collection, event_short)
+    }
+
+    pub fn ranking_collection_stats(&self, collection: &EvidenceDigest) -> Result<RankingCollectionStats> {
+        rankings::backend_stats::ranking_collection_stats(&self.inner, collection)
+    }
+
+    pub fn seal_rankings(&self, collection: &EvidenceDigest, snapshot: &EvidenceDigest) -> Result<()> {
+        rankings::backend::seal_rankings(&self.inner, collection, snapshot)
+    }
+
+    pub fn ranking_snapshot(&self, collection: &EvidenceDigest) -> Result<Option<EvidenceDigest>> {
+        rankings::backend::ranking_snapshot(&self.inner, collection)
+    }
+}
+
 
 #[cfg(test)]
 mod tests;

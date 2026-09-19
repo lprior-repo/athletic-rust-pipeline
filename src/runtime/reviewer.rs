@@ -371,6 +371,7 @@ mod tests {
             bytes: 1,
             fetched_at_unix_ms: 1,
             elapsed_ms: 1,
+            rankings: None,
         };
         crate::store::AttemptEvidence {
             digest: digest(character),

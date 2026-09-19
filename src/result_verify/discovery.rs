@@ -32,20 +32,36 @@ pub(super) fn verify(
         bail!("source search plan is empty");
     }
     let (verified, issues, missing) = verify_query_sequence(&planned, discovery, origin, store)?;
-    let (candidate_ids, candidate_limit) = candidate_union(&verified);
+    let rankings_complete = super::rankings::verify(source, discovery, store)?;
+    let (mut candidate_ids, mut candidate_limit) = candidate_union(&verified);
+    if let Some(evidence) = &discovery.rankings {
+        evidence.lookup.records.iter().for_each(|record| {
+            if candidate_ids.contains(&record.athlete_id) {
+                return;
+            }
+            if candidate_ids.len() >= MAX_CANDIDATES {
+                candidate_limit = true;
+            } else {
+                candidate_ids.insert(record.athlete_id);
+            }
+        });
+    }
     if candidate_ids != discovery.candidate_ids {
-        bail!("discovery candidate IDs differ from the retained query-page union");
+        bail!("discovery candidate IDs differ from search-first bounded source union");
     }
     if issues != discovery.issues {
         bail!("discovery issues differ from retained query evidence");
     }
     let complete = !missing
+        && rankings_complete
         && !candidate_limit
         && issues.is_empty()
         && verified.iter().all(|query| query.complete);
     if discovery.complete != complete {
         bail!("discovery completeness differs from retained query evidence");
     }
+
+
     Ok(())
 }
 fn verify_query_sequence(

@@ -33,6 +33,16 @@ pub enum Command {
         #[arg(long)]
         run: String,
     },
+    /// Start or resume the durable headed-browser readiness workflow.
+    BrowserStart {
+        #[arg(long, default_value = "http://127.0.0.1:18080/")]
+        ingress: String,
+    },
+    /// Observe browser challenge/human/cooldown state through Restate.
+    BrowserStatus {
+        #[arg(long, default_value = "http://127.0.0.1:18080/")]
+        ingress: String,
+    },
     /// Durably publish a verified snapshot; pending rows remain explicitly pending.
     Export {
         #[arg(long, default_value = "http://127.0.0.1:18080/")]
@@ -53,6 +63,27 @@ pub enum Command {
         /// Existing stopped-writer ArtifactStore directory containing retained raw evidence.
         #[arg(long)]
         store: PathBuf,
+    },
+    /// Observe private rankings collection progress for a run.
+    RankingsStatus {
+        #[arg(long, default_value = "http://127.0.0.1:18080/")]
+        ingress: String,
+        #[arg(long)]
+        run: String,
+    },
+    /// Pause the private rankings collection for a run.
+    RankingsPause {
+        #[arg(long, default_value = "http://127.0.0.1:18080/")]
+        ingress: String,
+        #[arg(long)]
+        run: String,
+    },
+    /// Resume the private rankings collection for a run (with browser recovery).
+    RankingsResume {
+        #[arg(long, default_value = "http://127.0.0.1:18080/")]
+        ingress: String,
+        #[arg(long)]
+        run: String,
     },
 }
 
@@ -75,4 +106,10 @@ pub struct Start {
     pub snapshot: String,
     #[arg(long, default_value = "stage")]
     pub execution: String,
+    /// Enable rankings acquisition for 2026 USA boys Grade11
+    #[arg(long)]
+    pub rankings: bool,
+    /// Max pages per event (bounded safety cap 10000)
+    #[arg(long, default_value = "10000")]
+    pub max_pages_per_event: u32,
 }

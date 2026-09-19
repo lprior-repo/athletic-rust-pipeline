@@ -1,0 +1,129 @@
+diff --git a/src/runtime/rankings_collection/helpers.rs b/src/runtime/rankings_collection/helpers.rs
+index 1234567..abcdefg 100644
+--- a/src/runtime/rankings_collection/helpers.rs
++++ b/src/runtime/rankings_collection/helpers.rs
+@@ -63,10 +63,12 @@ pub(super) async fn run_catalog_step(
+         return Ok(());
+     }
+     let runtime = runtime.clone();
+-    let scope = state.scope.clone();
++    let requested_families = state.scope.requested_families.clone();
+     let retained = outcome.clone();
+     let published = ctx.run(move || async move {
+         let store = runtime.store.clone();
+-        let result = runtime.blocking(move || publication::catalog(&store, &scope, collection, &retained)).await;
++        let result = runtime.blocking(move || publication::catalog(&store, &requested_families, collection, &retained)).await;
+         Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
+     }).name("publish validated ranking catalog and plan").await?.0;
+     match published {
+@@ -80,10 +82,12 @@ pub(super) async fn run_catalog_step(
+         return Ok(());
+     }
+     let runtime = runtime.clone();
+-    let scope = state.scope.clone();
++    let scope = state.scope.clone();
+     let published = ctx.run(move || async move {
+         let store = runtime.store.clone();
+-        let result = runtime.blocking(move || publication::page(&store, &scope, &event, collection, outcome)).await;
++        let result = runtime.blocking(move || publication::page(&store, &scope, &event, collection, outcome)).await;
+         Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
+     }).name("publish validated ranking page and index").await?.0;
+     match published {
+diff --git a/src/runtime/rankings_collection/mod.rs b/src/runtime/rankings_collection/mod.rs
+index 1234567..abcdefg 100644
+--- a/src/runtime/rankings_collection/mod.rs
++++ b/src/runtime/rankings_collection/mod.rs
+@@ -1,6 +1,6 @@
+ mod helpers;
+ mod publication;
+-use helpers::{terminal, run_catalog_step, run_page_step, schedule_step};
++use helpers::{terminal, run_catalog_step, run_page_step, schedule_step, run_seal_step};
+ use crate::domain::identity::EvidenceDigest;
+ use crate::runtime::rankings::RankingsScope;
+ use crate::runtime::protocol::FetchOutcome;
+@@ -10,6 +10,7 @@ use anyhow::Result;
+ use restate_sdk::prelude::*;
+ use serde::{Deserialize, Serialize};
+ use std::sync::Arc;
++use std::time::Duration;
+ 
+ pub struct RankingsCollectionState {
+     pub runtime: Arc<Runtime>,
+@@ -133,6 +134,10 @@ impl RankingsCollectionState {
+             schedule_step(&ctx, &state).await?;
+         }
+         Ok(Json(state))
++    }
++
++    #[handler]
++    pub async fn seal(
++        &self,
++        ctx: ObjectContext<'_>,
++        generation: u64,
++    ) -> Result<Json<CollectionState>, HandlerError> {
++        let Some(mut state) = ctx
++            .get::<Json<CollectionState>>("state")
++            .await?
++            .map(|j| j.0)
++        else {
++            return Err(TerminalError::new("no state").into());
++        };
++        if generation != state.generation {
++            return Ok(Json(state));
++        }
++        if !matches!(state.phase, CollectionPhase::Complete) {
++            return Ok(Json(state));
++        }
++        let collection = collection_fingerprint(
++            &state.scope.revision,
++            &state.source_snapshot,
++        ).map_err(terminal)?;
++        let runtime = self.runtime.clone();
++        let state_owned = state.clone();
++        let snapshot = ctx.run(move || async move {
++            let store = runtime.store.clone();
++            runtime.blocking(move || publication::seal(&store, &state_owned, &collection))
++                .await.map(Json).map_err(terminal)
++        }).name("seal completed ranking collection").await?.0;
++        state.final_snapshot = Some(snapshot);
++        ctx.set("state", Json(state.clone()));
++        Ok(Json(state))
+     }
+ 
+     #[handler]
+diff --git a/src/runtime/rankings_collection/publication.rs b/src/runtime/rankings_collection/publication.rs
+index 1234567..abcdefg 100644
+--- a/src/runtime/rankings_collection/publication.rs
++++ b/src/runtime/rankings_collection/publication.rs
+@@ -1,6 +1,6 @@
+ use super::*;
+ use crate::{runtime::{protocol::{DocumentReceipt, FetchOutcome, RankingsCapture},
+     rankings::{EventCatalog, ExpectedPageContext, PageObservation, parse_page_response}},
+-    store::{ArtifactStore, RankingCandidateEntry, RankingCandidateKind, RankingPageIndex,
+-        RankingRosterObservation, RankingSourceRow}};
++    store::{ArtifactStore, RankingCandidateEntry, RankingCandidateKind, RankingPageIndex, RankingRosterObservation, RankingSourceRow}};
+ use anyhow::{bail, Context};
+ 
+ #[derive(Serialize, Deserialize)]
+@@ -24,7 +24,7 @@ fn receipt(outcome: &FetchOutcome) -> anyhow::Result<&DocumentReceipt> {
+     Ok(receipt)
+ }
+ fn raw(store: &ArtifactStore, receipt: &DocumentReceipt) -> anyhow::Result<serde_json::Value> {
+-    let bytes = store.get_bytes(&receipt.digest)?;
++    let bytes = store.get_bytes(&receipt.digest)?;
+     if bytes.len() as u64 != receipt.bytes { bail!("ranking receipt length mismatch"); }
+     Ok(serde_json::from_slice(&bytes)?)
+ }
+@@ -32,7 +32,7 @@ fn raw(store: &ArtifactStore, receipt: &DocumentReceipt) -> anyhow::Result<serde
+ pub(super) fn catalog(
+     store: &ArtifactStore, scope: &RankingsScope, collection: EvidenceDigest, outcome: &FetchOutcome,
+ ) -> anyhow::Result<CatalogPublication> {
+-    let receipt = receipt(outcome)?;
++    let receipt = receipt(outcome)?;
+     let capture = receipt.rankings.as_ref().context("catalog capture metadata missing")?;
+     if capture.capture != RankingsCapture::Navigation { bail!("wrong catalog capture kind"); }
+-    let catalog = EventCatalog::from_nav(&raw(store, receipt)?, &scope.requested_families)?;
++    let catalog = EventCatalog::from_nav(&raw(store, receipt)?, requested_families)?;
+     if catalog.list_id != scope.list_id || catalog.season_id != scope.season {
+         bail!("catalog list or season differs from requested scope");
+     }

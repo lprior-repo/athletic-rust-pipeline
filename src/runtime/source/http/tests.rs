@@ -28,15 +28,15 @@ fn authentication_denial_is_not_a_transient_failure() {
 }
 
 #[test]
-fn challenged_rate_limits_retry_without_reclassifying_access_denials() -> anyhow::Result<()> {
+fn challenges_retain_evidence_for_browser_recovery_before_retry() -> anyhow::Result<()> {
     for (status, code, retryable) in [
         (
             StatusCode::TOO_MANY_REQUESTS,
-            FailureCode::RateLimited,
+            FailureCode::BrowserChallenge,
             true,
         ),
-        (StatusCode::OK, FailureCode::AccessDenied, false),
-        (StatusCode::FORBIDDEN, FailureCode::AccessDenied, false),
+        (StatusCode::OK, FailureCode::BrowserChallenge, true),
+        (StatusCode::FORBIDDEN, FailureCode::BrowserChallenge, true),
     ] {
         let receipt = DocumentReceipt {
             digest: crate::domain::identity::EvidenceDigest::parse(&"a".repeat(64))?,
@@ -46,6 +46,7 @@ fn challenged_rate_limits_retry_without_reclassifying_access_denials() -> anyhow
             bytes: 1,
             fetched_at_unix_ms: 1,
             elapsed_ms: 1,
+            rankings: None,
         };
         let result = outcome(status, receipt.clone(), Ok(Duration::ZERO), true);
         assert_eq!(result.code, Some(code));

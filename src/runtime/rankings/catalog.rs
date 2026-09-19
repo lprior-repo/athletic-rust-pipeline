@@ -1,0 +1,229 @@
+use crate::domain::identity::EvidenceDigest;
+use super::types::{is_excluded, NavEvent, RankedEvent, RankingsPlan};
+use crate::runtime::protocol::RankingsCapture;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+/// A catalog of all observed event families from GetNavInfo,
+/// classified into requested families with coverage tracking.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventCatalog {
+    pub list_id: u64,
+    pub level_div_id: u64,
+    pub season_id: u64,
+    /// All observed events from nav.events (excluding walk only).
+    pub observed: Vec<NavEvent>,
+    /// Mapped requested families with their observed variants.
+    pub families: Vec<EventFamily>,
+    /// Families from the manifest with no matching nav events.
+    pub absent_families: Vec<AbsentFamily>,
+}
+
+/// One requested event family with its observed variants.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventFamily {
+    pub group: String,
+    pub family: String,
+    /// Observed variants (may be empty if family has no nav entries).
+    pub variants: Vec<ObservedVariant>,
+    /// Whether any variant was observed.
+    pub has_observed: bool,
+}
+
+/// One observed event variant within a family.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ObservedVariant {
+    pub event: NavEvent,
+    pub capture: RankingsCapture,
+}
+
+/// A family from the manifest with no matching events in nav.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AbsentFamily {
+    pub group: String,
+    pub family: String,
+    pub short: String,
+}
+
+impl EventCatalog {
+    /// Build a catalog from a GetNavInfo response and the requested event manifest.
+    /// Walk is excluded. Shuttle hurdles (r+h) are preserved.
+    pub fn from_nav(
+        nav: &serde_json::Value,
+        requested_families: &[RequestedFamily],
+    ) -> Result<Self, CatalogError> {
+        let list_id = nav
+            .get("divListId")
+            .and_then(|value| value.as_u64())
+            .ok_or(CatalogError::MissingDivListId)?;
+        let level_div_id = nav
+            .get("levelDivId")
+            .and_then(|value| value.as_u64())
+            .ok_or(CatalogError::MissingLevelDivId)?;
+        let season_value = nav
+            .get("seasons")
+            .and_then(|value| value.as_object())
+            .and_then(|seasons| seasons.get("2026"))
+            .and_then(|value| value.as_u64())
+            .ok_or(CatalogError::MissingSeason2026)?;
+        if season_value != list_id {
+            return Err(CatalogError::SeasonListIdMismatch {
+                expected: list_id,
+                actual: season_value,
+            });
+        }
+        let events_array = nav
+            .get("events")
+            .and_then(|value| value.as_array())
+            .ok_or(CatalogError::MissingEvents)?;
+        let (_, observed) = events_array.iter().try_fold(
+            |(mut seen_ids, mut observed), value| {
+                let event = NavEvent::from_value(value).ok_or(CatalogError::MalformedNavEvent)?;
+                if event.id == 0 || event.short.is_empty() || event.short.len() > 64 {
+                    return Err(CatalogError::MalformedNavEvent);
+                }
+                if is_excluded(&event.short, event.r, event.h) {
+                    return Ok((seen_ids, observed));
+                }
+                if let Some(index) = seen_ids.get(&event.id) {
+                    let existing = observed.get(*index).ok_or(CatalogError::MalformedNavEvent)?;
+                    if existing != &event {
+                        return Err(CatalogError::DuplicateEventId {
+                            id: event.id,
+                            first_short: existing.short.clone(),
+                            second_short: event.short,
+                        });
+                    }
+                    return Ok((seen_ids, observed));
+                }
+                seen_ids.insert(event.id, observed.len());
+                observed.push(event);
+                Ok((seen_ids, observed))
+            },
+        )?;
+        let (families, absent_families) = requested_families.iter().fold(
+            (Vec::new(), Vec::new()),
+            |(mut families, mut absent_families), requested| {
+                let variants = observed
+                    .iter()
+                    .filter(|event| matches_requested(event, requested))
+                    .cloned()
+                    .map(|event| ObservedVariant {
+                        event,
+                        capture: RankingsCapture::Results,
+                    })
+                    .collect::<Vec<_>>();
+                if variants.is_empty() {
+                    absent_families.push(AbsentFamily {
+                        group: requested.group.clone(),
+                        family: requested.family.clone(),
+                        short: requested.short.clone(),
+                    });
+                } else {
+                    families.push(EventFamily {
+                        group: requested.group.clone(),
+                        family: requested.family.clone(),
+                        variants,
+                        has_observed: true,
+                    });
+                }
+                (families, absent_families)
+            },
+        );
+        Ok(Self {
+            list_id,
+            level_div_id,
+            season_id: 2026,
+            observed,
+            families,
+            absent_families,
+        })
+    }
+
+    /// Convert catalog into a RankingsPlan with the given collection metadata.
+    pub fn into_plan(
+        self,
+        collection: EvidenceDigest,
+        grade: u8,
+    ) -> Result<RankingsPlan, CatalogError> {
+        let events = self
+            .families
+            .into_iter()
+            .flat_map(|family| {
+                let EventFamily {
+                    group,
+                    family,
+                    variants,
+                    has_observed: _,
+                } = family;
+                variants.into_iter().map(move |variant| {
+                    let ObservedVariant { event, capture } = variant;
+                    let NavEvent {
+                        id: event_id,
+                        short,
+                        r: is_relay,
+                        ..
+                    } = event;
+                    RankedEvent {
+                        short,
+                        family: family.clone(),
+                        group: group.clone(),
+                        event_id,
+                        page: 1,
+                        capture,
+                        is_relay,
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+        if events.is_empty() {
+            return Err(CatalogError::NoMatchingEvents);
+        }
+        Ok(RankingsPlan {
+            collection,
+            list_id: self.list_id,
+            gender: "m".to_owned(),
+            grade,
+            events,
+        })
+    }
+}
+
+fn matches_requested(event: &NavEvent, requested: &RequestedFamily) -> bool {
+    match requested.short.as_str() {
+        "" if requested.family == "sprint medley" => event.short.starts_with("sprintmed"),
+        "" if requested.family == "distance medley" => event.short.starts_with("distmed"),
+        "" if requested.family == "swedish relay" => event.short.starts_with("swedish"),
+        "" if requested.family == "shuttle hurdle relay" => event.short.contains("shuttleh"),
+        "" if requested.family == "pentathlon" => event.short.ends_with("pentathlon"),
+        short => event.short == short,
+    }
+}
+
+/// A requested event family from the manifest.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RequestedFamily {
+    pub group: String,
+    pub family: String,
+    pub short: String,
+}
+
+/// Errors that can occur during catalog construction.
+#[derive(Debug, thiserror::Error)]
+pub enum CatalogError {
+    #[error("missing divListId in nav response")]
+    MissingDivListId,
+    #[error("missing levelDivId in nav response")]
+    MissingLevelDivId,
+    #[error("missing 2026 season in nav response")]
+    MissingSeason2026,
+    #[error("no matching events found for any requested family")]
+    NoMatchingEvents,
+    #[error("seasons['2026'] must equal list_id: expected {expected}, got {actual}")]
+    SeasonListIdMismatch { expected: u64, actual: u64 },
+    #[error("missing events array in nav response")]
+    MissingEvents,
+    #[error("malformed nav event")]
+    MalformedNavEvent,
+    #[error("duplicate event ID {id}: '{first_short}' vs '{second_short}'")]
+    DuplicateEventId { id: u64, first_short: String, second_short: String },
+}

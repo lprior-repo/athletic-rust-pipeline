@@ -1,19 +1,20 @@
 mod admission;
-mod body;
-mod http;
+mod dispatch;
+pub(crate) mod http;
 pub(crate) mod observation;
 pub(crate) mod request;
 mod result;
 pub(crate) mod retry;
-
 use crate::runtime::{
     http_audit,
     protocol::{FailureCode, FetchOutcome, OperationFailure, RetryEvidence, SourceResource},
     Runtime,
 };
+use dispatch::ReadinessPolicy;
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
+mod tests;
 
 pub use admission::{AdmissionDecision, AdmissionFeedback};
 
@@ -27,10 +28,21 @@ pub struct SourceGateway {
 }
 
 #[derive(Serialize, Deserialize)]
-struct WorkflowStep {
-    finalized: result::Finalized,
-    retryable: bool,
-    delay_ms: u64,
+enum WorkflowStep {
+    Deferred,
+    Blocked {
+        failure: OperationFailure,
+    },
+    Attempt {
+        finalized: result::Finalized,
+        retryable: bool,
+        delay_ms: u64,
+    },
+}
+
+enum StepError {
+    Admission(HandlerError),
+    Effect(TerminalError),
 }
 
 #[restate_sdk::object(
@@ -49,7 +61,7 @@ impl SourceGateway {
         if ctx.key() != "global" || ctx.scope() != Some(SOURCE_SCOPE) {
             return Err(TerminalError::new("invalid bounded source scope or key").into());
         }
-        let request = match request::build(self.runtime.config.source_origin(), &input.0) {
+        let request = match crate::runtime::source::request::build(self.runtime.config.source_origin(), &input.0) {
             Ok(request) => request,
             Err(error) => {
                 return Ok(Json(FetchOutcome::Failed {
@@ -72,7 +84,40 @@ impl SourceGateway {
     pub async fn await_admission(
         &self,
         ctx: ObjectContext<'_>,
+        policy: Json<ReadinessPolicy>,
     ) -> Result<Json<Option<OperationFailure>>, HandlerError> {
+        match policy.0 {
+            ReadinessPolicy::Legacy => {
+                // Non-rankings: wait for browser availability via the legacy
+                // auto-recovery path, then wait for admission pacing.
+                dispatch::await_browser(&ctx).await?;
+            }
+            ReadinessPolicy::Rankings => {
+                // Rankings: one-shot readiness check via capture_ready.
+                // Only BrowserState::Ready permits proceeding.
+                // If not Ready, return blocked to collection immediately.
+                use crate::runtime::browser::BrowserState;
+                use crate::runtime::browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY};
+                let status = ctx
+                    .object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
+                    .capture_ready()
+                    .call()
+                    .await?
+                    .0;
+                if status.state != BrowserState::Ready {
+                    return Ok(Json(Some(OperationFailure {
+                        code: FailureCode::BrowserUnavailable,
+                        message: format!(
+                            "browser not ready for rankings: state={:?}",
+                            status.state
+                        ),
+                        http_status: None,
+                        retries: RetryEvidence::NotAttempted,
+                        evidence: Vec::new(),
+                    })));
+                }
+            }
+        }
         admission::wait(&ctx).await
     }
 
@@ -89,39 +134,69 @@ impl SourceGateway {
 async fn execute(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
-    request: request::RequestSpec,
+    request: crate::runtime::source::request::RequestSpec,
 ) -> Result<FetchOutcome, HandlerError> {
+    let is_rankings = matches!(
+        request.action,
+        crate::runtime::source::request::RequestAction::Rankings(_)
+    );
+    let policy = ReadinessPolicy::from_request(&request);
     let interval = gateway.runtime.config.source_interval();
     let operation = http_audit::operation_key(ctx.invocation_id(), "source-http")?;
     let mut last_finalized: Option<result::Finalized> = None;
 
     for attempt_index in 0..retry::MAX_ATTEMPTS {
-        if let Some(failure) = admission::acquire(ctx).await? {
-            return Ok(
-                last_finalized.map_or(FetchOutcome::Failed { failure }, |value| value.outcome)
-            );
-        }
-        let step = match run_step(
+        let step = match dispatch::admitted_step(
             gateway,
             ctx,
-            request.clone(),
-            operation.clone(),
+            &request,
+            &operation,
             interval,
             attempt_index,
+            policy,
         )
         .await
         {
             Ok(step) => step,
-            Err(error) if error.code() == 409 => return Err(error.into()),
+            Err(StepError::Admission(error)) => return Err(error),
+            Err(StepError::Effect(error)) if error.code() == 409 => return Err(error.into()),
             Err(_) => {
-                let finalized = artifact_finalized(operation.clone(), last_finalized.as_ref())?;
-                publish_final_feedback(ctx, &finalized).await?;
-                return Ok(finalized.outcome);
+                // Execution error: publish final feedback if we have finalized data,
+                // then return the last known outcome or a generic failure.
+                if let Some(finalized) = &last_finalized {
+                    publish_final_feedback(ctx, finalized, is_rankings).await?;
+                }
+                let outcome = match last_finalized.take() {
+                    Some(f) => f.outcome,
+                    None => FetchOutcome::Failed {
+                        failure: OperationFailure {
+                            code: FailureCode::UncertainEffect,
+                            message: "source execution error".into(),
+                            http_status: None,
+                            retries: RetryEvidence::NotAttempted,
+                            evidence: Vec::new(),
+                        },
+                    },
+                };
+                return Ok(outcome);
             }
         };
-        let should_retry = step.retryable && attempt_index + 1 < retry::MAX_ATTEMPTS;
-        let delay_ms = step.delay_ms;
-        let finalized = step.finalized;
+        let (finalized, retryable, delay_ms) = match step {
+            WorkflowStep::Attempt {
+                finalized,
+                retryable,
+                delay_ms,
+            } => (finalized, retryable, delay_ms),
+            WorkflowStep::Blocked { failure } => {
+                return Ok(
+                    last_finalized.map_or(FetchOutcome::Failed { failure }, |value| value.outcome)
+                );
+            }
+            WorkflowStep::Deferred => {
+                return Err(TerminalError::new("deferred browser step escaped admission").into())
+            }
+        };
+        let should_retry = retryable && attempt_index + 1 < retry::MAX_ATTEMPTS;
         last_finalized = Some(finalized);
         if !should_retry {
             break;
@@ -132,16 +207,25 @@ async fn execute(
 
     let finalized = match last_finalized {
         Some(finalized) => finalized,
-        None => artifact_finalized(operation, None)?,
+        None => {
+            return Ok(FetchOutcome::Failed {
+                failure: OperationFailure {
+                    code: FailureCode::UncertainEffect,
+                    message: "no attempts completed".into(),
+                    http_status: None,
+                    retries: RetryEvidence::NotAttempted,
+                    evidence: Vec::new(),
+                },
+            })
+        }
     };
-    publish_final_feedback(ctx, &finalized).await?;
+    publish_final_feedback(ctx, &finalized, is_rankings).await?;
     Ok(finalized.outcome)
 }
-
 async fn run_step(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
-    request: request::RequestSpec,
+    request: crate::runtime::source::request::RequestSpec,
     operation: crate::domain::identity::EvidenceDigest,
     interval: Duration,
     attempt_index: usize,
@@ -150,11 +234,22 @@ async fn run_step(
     let record_operation = operation.clone();
     let load_operation = operation.clone();
     let last_attempt = attempt_index + 1 == retry::MAX_ATTEMPTS;
+    let is_rankings = matches!(
+        request.action,
+        crate::runtime::source::request::RequestAction::Rankings(_)
+    );
     ctx.run(move || async move {
         let attempt = http::perform(runtime.clone(), &request).await;
-        let retryable = attempt.retryable;
+        if attempt.code == Some(FailureCode::BrowserUnavailable) && !is_rankings {
+            return Ok(Json(WorkflowStep::Deferred));
+        }
+        // Rankings: never retry HTTP failures (403/429/challenge).
+        // Retain the actual receipt/evidence and return failure immediately.
+        // Non-rankings requests keep the existing retryable behavior.
+        let retryable = if is_rankings { false } else { attempt.retryable };
         let delay = if retryable {
-            retry::next_delay(attempt_index, &attempt, interval).map_err(TerminalError::new)?
+            retry::next_delay(attempt_index, &attempt, interval)
+                .map_err(TerminalError::new)?
         } else {
             Duration::ZERO
         };
@@ -168,7 +263,7 @@ async fn run_step(
         let records = http_audit::load(runtime, load_operation).await?;
         let finalized =
             result::finish_workflow(operation, records, Ok(Json(digest)), last_attempt)?;
-        Ok(Json(WorkflowStep {
+        Ok(Json(WorkflowStep::Attempt {
             finalized,
             retryable,
             delay_ms,
@@ -176,53 +271,29 @@ async fn run_step(
     })
     .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
-    .map(|value| value.0)
+    .map_err(Into::into)
+    .map(|json| json.0)
 }
 
-fn artifact_finalized(
-    operation: crate::domain::identity::EvidenceDigest,
-    previous: Option<&result::Finalized>,
-) -> Result<result::Finalized, HandlerError> {
-    let evidence = match previous.map(|value| &value.outcome) {
-        Some(FetchOutcome::Failed { failure }) => failure.evidence.clone(),
-        Some(FetchOutcome::Retrieved {
-            receipt,
-            previous_responses,
-            ..
-        }) => {
-            let mut evidence = previous_responses.clone();
-            evidence.push(receipt.clone());
-            evidence
-        }
-        None => Vec::new(),
-    };
-    Ok(result::Finalized {
-        outcome: FetchOutcome::Failed {
-            failure: OperationFailure {
-                code: FailureCode::ArtifactFailure,
-                message: "source evidence finalization failed; admission stopped pending repair"
-                    .to_owned(),
-                retries: http_audit::workflow_unavailable_evidence(operation)?,
-                http_status: None,
-                evidence,
-            },
-        },
-        cooldown_ms: 0,
-        blocked: true,
-    })
-}
 async fn publish_final_feedback(
     ctx: &SharedObjectContext<'_>,
     finalized: &result::Finalized,
+    is_rankings: bool,
 ) -> Result<(), HandlerError> {
+    if finalized.blocked
+        && matches!(&finalized.outcome, FetchOutcome::Retrieved { .. })
+    {
+        return Err(
+            TerminalError::new("successful source response cannot block admission").into(),
+        );
+    }
+    if is_rankings {
+        return publish_feedback(ctx, None, finalized.cooldown_ms).await;
+    }
     let failure = match (&finalized.outcome, finalized.blocked) {
         (FetchOutcome::Failed { failure }, true) => Some(failure.clone()),
-        (FetchOutcome::Retrieved { .. }, true) => {
-            return Err(
-                TerminalError::new("successful source response cannot block admission").into(),
-            );
-        }
-        (FetchOutcome::Failed { .. } | FetchOutcome::Retrieved { .. }, false) => None,
+        (FetchOutcome::Retrieved { .. }, true)
+        | (FetchOutcome::Failed { .. } | FetchOutcome::Retrieved { .. }, false) => None,
     };
     publish_feedback(ctx, failure, finalized.cooldown_ms).await
 }
@@ -256,6 +327,3 @@ fn invalid(message: String) -> OperationFailure {
         evidence: Vec::new(),
     }
 }
-
-#[cfg(test)]
-mod tests;

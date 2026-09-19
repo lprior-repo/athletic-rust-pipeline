@@ -1,0 +1,1297 @@
+You are the local implementation author on RTX5090. Produce ONLY a unified diff for files under src/runtime/rankings_collection/**. Do not include prose, markdown fences, placeholders, ellipses, or edits outside those three files. The driver will apply your diff mechanically.
+
+Goal: eliminate avoidable deep copies in the current rankings collection implementation while preserving every public DTO field, serialized field, durable evidence/provenance semantics, successful and failed FetchOutcome retention, one-catalog-or-one-page per step, idempotent start, checked stale generations, pause/resume, minCount and terminal coverage, and exact existing APIs. No Arc/Cow/generic DTO frameworks. Do not invent SDK APIs. Only borrow serialization when the actual SDK call accepts it; otherwise move owned values. Avoid whole CollectionState clone for ctx.set and sealing, entire requested-family scope clones per page, repeated FetchOutcome clones, and candidate name clones during page index construction. Remove Clone derives only if all current consumers still work.
+
+Repository contract (authoritative):
+{
+  "decision": "Latest user instruction supersedes Main coding takeover: hand implementation to both local 5090 and 3090 as much as possible. One local inference writer per GPU; Main owns integration and qualification. Existing agents are frozen. Current code, not old handoff claims, is authoritative.",
+  "repo": "/home/lewis/src/ad-law-scrape/athletic-rust-pipeline",
+  "gpu5090": {"endpoint":"http://127.0.0.1:11000/v1/chat/completions", "model":"Qwen3.6-35B-A3B-UD-Q5_K_XL.gguf", "ownership":["src/runtime/rankings_collection/**"], "priority":"Remove unnecessary payload clones by correct ownership and borrowed serialization. Do not blindly wrap data in Arc/Cow or introduce generic DTO frameworks. Preserve durable transition and evidence semantics."},
+  "gpu3090": {"endpoint":"http://127.0.0.1:11001/v1/chat/completions", "model":"Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf", "ownership":["src/runtime/browser/transport/rankings.rs","src/runtime/browser/transport/rankings_helper.rs","src/runtime/source.rs","src/runtime/source/dispatch.rs","src/runtime/source_cache.rs"], "priority":"Correct browser UI capture/cleanup/pagination and recoverable source admission without retries, interception bypasses, or avoidable clones."},
+  "shared_contract": {
+    "no_shared_mutations":"No edits outside exclusive ownership. In particular do not edit runtime.rs, protocol.rs, control.rs, run.rs, row_worker, result_verify, store, parser/types/catalog, Cargo files, fixtures, docs, or tests. Request changes from Main if truly needed.",
+    "collection_dtos":"Keep public types and serialized fields compatible with current files. RankingCollectionRef has collection AND snapshot. Checkpoint full successful FetchOutcome is mandatory. Final snapshot full catalog FetchOutcome mandatory. It is permissible to remove unused Clone derives, use Json(&state) when SDK accepts borrowing, narrow CPU job data to only required fields, move observations into index construction, and alter private helpers. Do not invent SDK APIs or fabricate serialization.",
+    "browser":"Only ordinary application-generated traffic through owned tabs. Navigation GET /api/v1/tfRankings/GetNavInfo; results POST /api/v1/tfRankings/GetRankings. Exact parsed origin/path/method checks. Retain actual request body; scope in body divListId,eventShort,gender,qParams.page,qParams.grades. UI path includes trailing slash, grades11 individuals/no grades relays. One absolute deadline. Request64KiB/response8MiB. Nonce+kind filtering before errors. Wait for actual requested-page DOM rendering before next-page inference. Numeric exact next-page controls, not English Next. Restore intercepted fetch, remove binding and new-document script on every exit; cleanup failure must prevent tab reuse. No unwrap/expect or ignored fallible cleanup.",
+    "source":"Legacy behavior unchanged. Rankings challenge/403/429 fails immediately with durable raw receipt/audit, physical gate revoked, cooldown retained, collection paused. Do NOT irreversibly block global SourceGateway for recoverable ranking failures: explicit BrowserSession.recover plus collection resume must be possible. No hidden Deferred/await_browser recovery on rankings. SourceCache only caches successful rankings captures, never failed ones.",
+    "lifecycle":"Start validates scope + fingerprint and is idempotent. One catalog OR one page per step. Checked generation invalidates stale work. Explicit pause/resume. Raw provenance and observation stored before index; sync DB/JSON parsing in bounded runtime.blocking, named ctx.run. Seal only observed pagination/row-position coverage. All original workbook rows remain eligible; no Class2027 gate."
+  },
+  "baseline":"Main repaired the library compilation. Last cargo check --all-targets had only one test constructor missing rankings:None; Main has fixed it, not yet rerun. Warnings remain. No native worker started/deployed. No performance or native correctness proof yet.",
+  "local_execution":"Driver agents MUST actually call the specified local endpoint. A hosted agent named GPU is not GPU execution. Local model authors all production Rust modifications in that assignment. Drivers may scope/read, construct requests, mechanically apply returned edits, and reject out-of-scope changes. Retain raw response and endpoint/model/usage metadata in new private evidence files. Maximum 8 inference requests per assignment; do not run hundreds of turns or claim completion without actual edits. On incomplete output report exact blocker to Main.",
+  "constraints":"Skip builds, checks, tests, lints, formatters, services, commits, and model-server configuration/restarts. Main validates after both writers freeze. No raw workbook/source athlete PII to hosted context. Do not touch paid Chrome9222, synthetic sentinel9223, model processes11000/11001, active Fjall, original workbooks, retained export evidence. Do not delete/comment tests. No false compile claims."
+}
+
+
+Relevant SDK/API evidence (read-only, do not change):
+- Runtime::blocking<T,F>(&self, action:F) -> anyhow::Result<T> where T: Send + 'static and F: FnOnce() -> Result<T> + Send + 'static; it uses bounded spawn_blocking.
+- Runtime::store is an owned ArtifactStore field; Runtime itself is Arc-cloned into async closures.
+- Existing Restate calls in this crate are ctx.set("state", Json(value)), ctx.get::<Json<CollectionState>>(...), ctx.run(|| async {...}).name(...).await?.0, and object_client(...).fetch(Json(request)).call().await?.0. The local source must not assume a borrowed Json survives unless the SDK type-checking surface shown here permits it; prefer moving owned values into calls/closures.
+- serde_json::to_vec accepts &T; publication::put already serializes by borrowed reference.
+- FetchOutcome is an owned enum with Retrieved { receipt, retries, previous_responses } and Failed { failure }; full outcome in checkpoint and final snapshot is mandatory.
+- RankingsScope contains requested_families: Vec<RequestedFamily> and must remain public and serialized unchanged. EventProgress contains owned event_short and optional checkpoint.
+
+Optimization targets:
+1) mod.rs: do not clone entire state solely to ctx.set where state can be moved after deciding response/scheduling; preserve returned state and scheduling order.
+2) helpers.rs: fetch should move only what must cross 'static boundary; catalog outcome should become state.last_outcome without cloning and also publication should consume it once if possible; page outcome similarly. Sealing should receive only required state fields, not state.clone(). Ensure state mutation after publication still works.
+3) publication.rs: catalog should avoid unnecessary scope clone and clone names only where ownership is actually needed; page should consume outcome into checkpoint, borrow for receipt/parse first, and construct index with minimum ownership; seal should avoid cloning entire scope and full catalog outcome where fields can be moved or serialization can borrow, while keeping state usable only if needed.
+4) Do not change parser/types/runtime.rs/protocol/store/tests/docs/Cargo. Do not add tests or validation commands.
+5) Return a complete unified diff, mechanically applicable to current files. If a requested optimization cannot be proven safe from these signatures, leave it unchanged rather than guessing.
+
+Current files:
+===== src/runtime/rankings_collection/mod.rs =====
+mod helpers;
+mod publication;
+use helpers::{terminal, run_catalog_step, run_page_step, schedule_step};
+use crate::domain::identity::EvidenceDigest;
+use crate::runtime::rankings::RankingsScope;
+use crate::runtime::protocol::FetchOutcome;
+use crate::runtime::run_protocol::SourceSnapshot;
+use crate::runtime::Runtime;
+use anyhow::Result;
+use restate_sdk::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+
+pub struct RankingsCollectionState {
+    pub runtime: Arc<Runtime>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionRequest {
+    pub source_snapshot: EvidenceDigest,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventProgress {
+    pub event_short: String,
+    pub event_id: u64,
+    pub is_relay: bool,
+    pub next_page: u32,
+    pub head_checkpoint: Option<EvidenceDigest>,
+    pub page_count: u32,
+    pub terminal: bool,
+}
+
+/// Deterministic collection fingerprint from revision + source snapshot.
+pub fn collection_fingerprint(
+    revision: &str,
+    source: &EvidenceDigest,
+) -> anyhow::Result<EvidenceDigest> {
+    use crate::runtime::identity::fingerprint;
+    let collection = (revision, source);
+    fingerprint(&collection)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionState {
+    pub source_snapshot: EvidenceDigest,
+    pub scope: RankingsScope,
+    pub phase: CollectionPhase,
+    pub generation: u64,
+    pub events: Vec<EventProgress>,
+    pub current_event_index: usize,
+    pub final_snapshot: Option<EvidenceDigest>,
+    pub catalog_ref: Option<EvidenceDigest>,
+    pub plan_ref: Option<EvidenceDigest>,
+    pub absent_families: Vec<String>,
+    pub catalog_outcome: Option<FetchOutcome>,
+    pub pause_reason: Option<CollectionPauseReason>,
+    pub last_outcome: Option<FetchOutcome>,
+    pub pause_detail: Option<String>,
+}
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
+pub enum CollectionPhase {
+    CatalogStep,
+    PageStep,
+    Complete,
+    Paused(CollectionPauseReason),
+}
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum CollectionPauseReason {
+    Manual,
+    SourceFailure,
+    InvalidEvidence,
+    PageLimit,
+    ParserError,
+}
+
+#[restate_sdk::object(
+    ingress_private = true,
+    inactivity_timeout = "2h",
+    journal_retention = "30 days",
+    idempotency_retention = "30 days"
+)]
+impl RankingsCollectionState {
+    /// Starting an existing collection never implicitly resumes a source failure.
+    #[handler]
+    pub async fn start_or_resume(
+        &self,
+        ctx: ObjectContext<'_>,
+        input: Json<CollectionRequest>,
+    ) -> Result<Json<CollectionState>, HandlerError> {
+        let request = input.0;
+        if let Some(existing) = ctx.get::<Json<CollectionState>>("state").await? {
+            if existing.0.source_snapshot != request.source_snapshot {
+                return Err(terminal("collection already bound to another source snapshot"));
+            }
+            return Ok(existing);
+        }
+        let snapshot: SourceSnapshot = ctx
+            .run(|| {
+                let rt = self.runtime.clone();
+                let d = request.source_snapshot.clone();
+                async move {
+                    let val: SourceSnapshot = rt.load_json(&d).await.map_err(terminal)?;
+                    Ok(Json(val))
+                }
+            })
+            .name("load source snapshot")
+            .await?
+            .0;
+        let scope = snapshot.rankings.ok_or_else(|| {
+            TerminalError::new("snapshot missing rankings scope")
+        })?;
+        scope.validate().map_err(terminal)?;
+        let expected_key = collection_fingerprint(&scope.revision, &request.source_snapshot).map_err(terminal)?;
+        if ctx.key() != expected_key.as_str() {
+            return Err(terminal("collection object key differs from source snapshot fingerprint"));
+        }
+        let state = CollectionState {
+            source_snapshot: request.source_snapshot,
+            scope,
+            phase: CollectionPhase::CatalogStep,
+            generation: 1,
+            events: Vec::new(),
+            current_event_index: 0,
+            final_snapshot: None,
+            catalog_ref: None,
+            plan_ref: None,
+            absent_families: Vec::new(),
+            catalog_outcome: None,
+            pause_reason: None,
+            last_outcome: None,
+            pause_detail: None,
+        };
+        ctx.set("state", Json(state.clone()));
+        schedule_step(&ctx, &state).await?;
+        Ok(Json(state))
+    }
+
+
+    #[handler]
+    pub async fn step(
+        &self,
+        ctx: ObjectContext<'_>,
+        generation: u64,
+    ) -> Result<Json<CollectionState>, HandlerError> {
+        let Some(mut state) = ctx
+            .get::<Json<CollectionState>>("state")
+            .await?
+            .map(|j| j.0)
+        else {
+            return Err(TerminalError::new("no state").into());
+        };
+        if generation != state.generation {
+            return Ok(Json(state));
+        }
+        if matches!(state.phase, CollectionPhase::Paused(_) | CollectionPhase::Complete) {
+            return Ok(Json(state));
+        }
+        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+
+        let collection = collection_fingerprint(
+            &state.scope.revision,
+            &state.source_snapshot,
+        ).map_err(terminal)?;
+
+        let result = match state.phase {
+            CollectionPhase::CatalogStep => run_catalog_step(&ctx, &self.runtime, &mut state, collection).await,
+            CollectionPhase::PageStep => run_page_step(&ctx, &self.runtime, &mut state, collection).await,
+            CollectionPhase::Complete | CollectionPhase::Paused(_) => return Ok(Json(state)),
+        };
+        if let Err(error) = result {
+            helpers::pause(&mut state, CollectionPauseReason::InvalidEvidence, format!("{error:?}"));
+        }
+
+        ctx.set("state", Json(state.clone()));
+        if matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_)) {
+            return Ok(Json(state));
+        }
+        schedule_step(&ctx, &state).await?;
+        Ok(Json(state))
+    }
+
+    #[handler]
+    pub async fn pause(
+        &self,
+        ctx: ObjectContext<'_>,
+    ) -> Result<Json<()>, HandlerError> {
+        let Some(mut state) = ctx
+            .get::<Json<CollectionState>>("state")
+            .await?
+            .map(|j| j.0)
+        else {
+            return Err(TerminalError::new("no state").into());
+        };
+        if matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_)) {
+            return Ok(Json(()));
+        }
+        helpers::pause(&mut state, CollectionPauseReason::Manual, "paused by operator".into());
+        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+        ctx.set("state", Json(state));
+        Ok(Json(()))
+    }
+
+    #[handler]
+    pub async fn resume(
+        &self,
+        ctx: ObjectContext<'_>,
+    ) -> Result<Json<()>, HandlerError> {
+        let Some(mut state) = ctx
+            .get::<Json<CollectionState>>("state")
+            .await?
+            .map(|j| j.0)
+        else {
+            return Err(TerminalError::new("no state").into());
+        };
+        if !matches!(state.phase, CollectionPhase::Paused(_)) {
+            return Ok(Json(()));
+        }
+        // Restore to the active stage based on collection progress.
+        if state.catalog_ref.is_some() && state.plan_ref.is_some() {
+            state.phase = CollectionPhase::PageStep;
+        } else {
+            state.phase = CollectionPhase::CatalogStep;
+        }
+        state.pause_reason = None;
+        state.pause_detail = None;
+        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+        ctx.set("state", Json(state.clone()));
+        schedule_step(&ctx, &state).await?;
+        Ok(Json(()))
+    }
+
+    #[handler]
+    pub async fn progress(
+        &self,
+        ctx: SharedObjectContext<'_>,
+    ) -> Result<Json<CollectionState>, HandlerError> {
+        let state = ctx
+            .get::<Json<CollectionState>>("state")
+            .await?
+            .ok_or_else(|| TerminalError::new("no state"))?;
+        Ok(Json(state.0))
+    }
+
+    #[handler]
+    pub async fn snapshot_ref(
+        &self,
+        ctx: SharedObjectContext<'_>,
+    ) -> Result<Json<Option<EvidenceDigest>>, HandlerError> {
+        let state = ctx.get::<Json<CollectionState>>("state").await?.map(|j| j.0);
+        Ok(Json(state.and_then(|s| s.final_snapshot)))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionFinalSnapshot {
+    pub collection: EvidenceDigest,
+    pub source_snapshot: EvidenceDigest,
+    pub scope: RankingsScope,
+    pub catalog_outcome: FetchOutcome,
+    pub catalog_ref: Option<EvidenceDigest>,
+    pub plan_ref: Option<EvidenceDigest>,
+    pub event_heads: Vec<EventHeadRef>,
+    pub coverage: CoverageSummary,
+    pub unique_athletes: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventHeadRef {
+    pub event_short: String,
+    pub head_checkpoint: Option<EvidenceDigest>,
+    pub page_count: u32,
+    pub terminal: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CoverageSummary {
+    pub total_requested: u64,
+    pub completed: u64,
+    pub absent_families: Vec<String>,
+}
+
+/// Immutable checkpoint with validated observation and provenance.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankingsPageCheckpoint {
+    pub revision: String,
+    pub collection: EvidenceDigest,
+    pub event_short: String,
+    pub page: u32,
+    pub previous_checkpoint: Option<EvidenceDigest>,
+    pub outcome: FetchOutcome,
+    pub observation_digest: EvidenceDigest,
+}
+
+
+/// Public reference to a completed ranking collection.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct RankingCollectionRef {
+    pub collection: EvidenceDigest,
+    pub snapshot: EvidenceDigest,
+}
+
+===== src/runtime/rankings_collection/helpers.rs =====
+use super::*;
+use crate::runtime::{protocol::{FetchOutcome, RankingsCapture, SourceResource},
+    source_cache::{SourceCacheClient, SourceRequest}};
+
+pub(super) fn terminal(error: impl std::fmt::Display) -> HandlerError {
+    TerminalError::new(error.to_string()).into()
+}
+
+pub(super) fn pause(state: &mut CollectionState, reason: CollectionPauseReason, detail: String) {
+    state.phase = CollectionPhase::Paused(reason.clone());
+    state.pause_reason = Some(reason);
+    state.pause_detail = Some(detail);
+}
+
+pub(super) async fn schedule_step(ctx: &ObjectContext<'_>, state: &CollectionState) -> Result<(), HandlerError> {
+    ctx.object_client::<RankingsCollectionStateClient>(ctx.key())
+        .step(state.generation).send_after(std::time::Duration::from_secs(1)).await?;
+    Ok(())
+}
+
+async fn fetch(
+    ctx: &ObjectContext<'_>, state: &CollectionState, collection: EvidenceDigest,
+    event: &str, relay: bool, page: u32, capture: RankingsCapture,
+) -> Result<FetchOutcome, HandlerError> {
+    let request = SourceRequest {
+        snapshot: state.source_snapshot.clone(),
+        resource: SourceResource::Rankings {
+            collection, list_id: state.scope.list_id, gender: state.scope.gender.clone(),
+            grade: if relay { None } else { Some(state.scope.projection_grade) },
+            event_short: event.to_owned(), page, capture,
+        },
+    };
+    let key = request.key().map_err(terminal)?;
+    Ok(ctx.object_client::<SourceCacheClient>(&key).fetch(Json(request)).call().await?.0)
+}
+
+pub(super) async fn run_catalog_step(
+    ctx: &ObjectContext<'_>, runtime: &Arc<Runtime>, state: &mut CollectionState, collection: EvidenceDigest,
+) -> Result<(), HandlerError> {
+    let outcome = fetch(ctx, state, collection.clone(), "100m", false, 1, RankingsCapture::Navigation).await?;
+    state.last_outcome = Some(outcome.clone());
+    if matches!(outcome, FetchOutcome::Failed { .. }) {
+        pause(state, CollectionPauseReason::SourceFailure, "catalog acquisition failed".into());
+        return Ok(());
+    }
+    let runtime = runtime.clone();
+    let scope = state.scope.clone();
+    let retained = outcome.clone();
+    let published = ctx.run(move || async move {
+        let store = runtime.store.clone();
+        let result = runtime.blocking(move || publication::catalog(&store, &scope, collection, &retained)).await;
+        Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
+    }).name("publish validated ranking catalog and plan").await?.0;
+    match published {
+        Ok(catalog) => {
+            state.catalog_ref = Some(catalog.catalog);
+            state.plan_ref = Some(catalog.plan);
+            state.events = catalog.events;
+            state.absent_families = catalog.absent;
+            state.catalog_outcome = Some(outcome);
+            state.phase = CollectionPhase::PageStep;
+        }
+        Err(error) => pause(state, CollectionPauseReason::InvalidEvidence, error),
+    }
+    Ok(())
+}
+
+pub(super) async fn run_page_step(
+    ctx: &ObjectContext<'_>, runtime: &Arc<Runtime>, state: &mut CollectionState, collection: EvidenceDigest,
+) -> Result<(), HandlerError> {
+    let Some(index) = state.events.iter().position(|event| !event.terminal) else {
+        let runtime = runtime.clone();
+        let retained = state.clone();
+        let snapshot = ctx.run(move || async move {
+            let store = runtime.store.clone();
+            runtime.blocking(move || publication::seal(&store, &retained, &collection))
+                .await.map(Json).map_err(terminal)
+        }).name("seal completed ranking collection").await?.0;
+        state.final_snapshot = Some(snapshot);
+        state.phase = CollectionPhase::Complete;
+        return Ok(());
+    };
+    state.current_event_index = index;
+    let event = state.events.get(index).ok_or_else(|| terminal("missing ranking event"))?.clone();
+    if event.next_page > state.scope.max_pages_per_event {
+        pause(state, CollectionPauseReason::PageLimit, "event exceeded configured page cap".into());
+        return Ok(());
+    }
+    let outcome = fetch(ctx, state, collection.clone(), &event.event_short, event.is_relay,
+        event.next_page, RankingsCapture::Results).await?;
+    state.last_outcome = Some(outcome.clone());
+    if matches!(outcome, FetchOutcome::Failed { .. }) {
+        pause(state, CollectionPauseReason::SourceFailure, "ranking page acquisition failed".into());
+        return Ok(());
+    }
+    let runtime = runtime.clone();
+    let scope = state.scope.clone();
+    let published = ctx.run(move || async move {
+        let store = runtime.store.clone();
+        let result = runtime.blocking(move || publication::page(&store, &scope, &event, collection, outcome)).await;
+        Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
+    }).name("publish validated ranking page and index").await?.0;
+    match published {
+        Ok(published) => {
+            let event = state.events.get_mut(index).ok_or_else(|| terminal("missing ranking event"))?;
+            event.head_checkpoint = Some(published.checkpoint);
+            event.next_page = event.next_page.checked_add(1).ok_or_else(|| terminal("ranking page overflow"))?;
+            event.page_count = event.page_count.checked_add(1).ok_or_else(|| terminal("ranking page count overflow"))?;
+            event.terminal = published.terminal;
+        }
+        Err(error) => pause(state, CollectionPauseReason::InvalidEvidence, error),
+    }
+    Ok(())
+}
+
+===== src/runtime/rankings_collection/publication.rs =====
+use super::*;
+use crate::{runtime::{protocol::{DocumentReceipt, FetchOutcome, RankingsCapture},
+    rankings::{EventCatalog, ExpectedPageContext, PageObservation, parse_page_response}},
+    store::{ArtifactStore, RankingCandidateEntry, RankingCandidateKind, RankingPageIndex,
+        RankingRosterObservation, RankingSourceRow}};
+use anyhow::{bail, Context};
+
+#[derive(Serialize, Deserialize)]
+pub(super) struct CatalogPublication {
+    pub catalog: EvidenceDigest,
+    pub plan: EvidenceDigest,
+    pub events: Vec<EventProgress>,
+    pub absent: Vec<String>,
+}
+#[derive(Serialize, Deserialize)]
+pub(super) struct PagePublication {
+    pub checkpoint: EvidenceDigest,
+    pub terminal: bool,
+}
+
+fn put<T: Serialize>(store: &ArtifactStore, value: &T) -> anyhow::Result<EvidenceDigest> {
+    Ok(store.put_bytes(&serde_json::to_vec(value)?)?)
+}
+fn receipt(outcome: &FetchOutcome) -> anyhow::Result<&DocumentReceipt> {
+    let FetchOutcome::Retrieved { receipt, .. } = outcome else { bail!("ranking acquisition failed"); };
+    if !(200..300).contains(&receipt.http_status) { bail!("ranking response is not successful"); }
+    Ok(receipt)
+}
+fn raw(store: &ArtifactStore, receipt: &DocumentReceipt) -> anyhow::Result<serde_json::Value> {
+    let bytes = store.get_bytes(&receipt.digest)?;
+    if bytes.len() as u64 != receipt.bytes { bail!("ranking receipt length mismatch"); }
+    Ok(serde_json::from_slice(&bytes)?)
+}
+
+pub(super) fn catalog(
+    store: &ArtifactStore, scope: &RankingsScope, collection: EvidenceDigest, outcome: &FetchOutcome,
+) -> anyhow::Result<CatalogPublication> {
+    let receipt = receipt(outcome)?;
+    let capture = receipt.rankings.as_ref().context("catalog capture metadata missing")?;
+    if capture.capture != RankingsCapture::Navigation { bail!("wrong catalog capture kind"); }
+    let catalog = EventCatalog::from_nav(&raw(store, receipt)?, &scope.requested_families)?;
+    if catalog.list_id != scope.list_id || catalog.season_id != scope.season {
+        bail!("catalog list or season differs from requested scope");
+    }
+    let absent = catalog.absent_families.iter().map(|family| family.family.clone()).collect();
+    let catalog_digest = put(store, &catalog)?;
+    let plan = catalog.into_plan(collection, scope.projection_grade)?;
+    let events = plan.events.iter().map(|event| EventProgress {
+        event_short: event.short.clone(), event_id: event.event_id, is_relay: event.is_relay,
+        next_page: 1, head_checkpoint: None, page_count: 0, terminal: false,
+    }).collect();
+    Ok(CatalogPublication { catalog: catalog_digest, plan: put(store, &plan)?, events, absent })
+}
+
+pub(super) fn page(
+    store: &ArtifactStore, scope: &RankingsScope, event: &EventProgress,
+    collection: EvidenceDigest, outcome: FetchOutcome,
+) -> anyhow::Result<PagePublication> {
+    let receipt = receipt(&outcome)?;
+    let capture = receipt.rankings.as_ref().context("ranking capture metadata missing")?;
+    if capture.capture != RankingsCapture::Results { bail!("wrong results capture kind"); }
+    if capture.next_page.is_some_and(|next| event.next_page.checked_add(1) != Some(next)) {
+        bail!("pagination does not advance to the next consecutive page");
+    }
+    let terminal = capture.next_page.is_none();
+    let observation = parse_page_response(&raw(store, receipt)?, &ExpectedPageContext {
+        division_id: scope.list_id, season_id: scope.season, gender: &scope.gender,
+        event_short: &event.event_short, event_id: Some(event.event_id), is_relay: event.is_relay,
+        requested_grade: if event.is_relay { None } else { Some(scope.projection_grade) }, page: event.next_page,
+    })?;
+    let checkpoint = RankingsPageCheckpoint {
+        revision: scope.revision.clone(), collection: collection.clone(), event_short: event.event_short.clone(),
+        page: event.next_page, previous_checkpoint: event.head_checkpoint.clone(), outcome,
+        observation_digest: put(store, &observation)?,
+    };
+    let digest = put(store, &checkpoint)?;
+    let index = page_index(&observation, collection.clone(), &event.event_short, event.next_page, digest.clone())?;
+    store.put_rankings_page(&index)?;
+    let stats = store.ranking_event_stats(&collection, &event.event_short)?;
+    if terminal && (stats.row_positions < observation.min_count || stats.max_row_position < observation.min_count) {
+        bail!("terminal ranking page does not cover the source minCount lower bound");
+    }
+    Ok(PagePublication { checkpoint: digest, terminal })
+}
+
+fn page_index(
+    observation: &PageObservation, collection: EvidenceDigest, event: &str, page: u32, checkpoint: EvidenceDigest,
+) -> anyhow::Result<RankingPageIndex> {
+    let individual = observation.grade_11_candidates_list.iter().enumerate().map(|(index, candidate)| {
+        Ok(RankingCandidateEntry { name: candidate.name.clone(), athlete_id: candidate.athlete_id,
+            kind: RankingCandidateKind::Individual, record_index: u32::try_from(index)?, result_id: candidate.id_result })
+    });
+    let relay = observation.verified_relay_members.iter().enumerate().map(|(index, member)| {
+        Ok(RankingCandidateEntry { name: member.name.clone(), athlete_id: member.athlete_id,
+            kind: RankingCandidateKind::RelayMember, record_index: u32::try_from(index)?, result_id: member.id_result })
+    });
+    Ok(RankingPageIndex {
+        collection, event_short: event.to_owned(), page, checkpoint,
+        candidates: individual.chain(relay).collect::<anyhow::Result<Vec<_>>>()?,
+        rows: observation.source_rows.iter().map(|row| RankingSourceRow {
+            result_id: row.result_id, row_number: row.row_number,
+        }).collect(),
+        rosters: observation.source_rows.iter().filter_map(|row| row.roster_present.map(|present| {
+            RankingRosterObservation { result_id: row.result_id, present }
+        })).collect(),
+    })
+}
+
+pub(super) fn seal(store: &ArtifactStore, state: &CollectionState, collection: &EvidenceDigest) -> anyhow::Result<EvidenceDigest> {
+    if state.events.is_empty() || state.events.iter().any(|event| !event.terminal || event.head_checkpoint.is_none()) {
+        bail!("cannot seal an incomplete ranking collection");
+    }
+    let snapshot = CollectionFinalSnapshot {
+        collection: collection.clone(), source_snapshot: state.source_snapshot.clone(), scope: state.scope.clone(),
+        catalog_outcome: state.catalog_outcome.clone().context("catalog acquisition provenance missing")?,
+        catalog_ref: state.catalog_ref.clone(), plan_ref: state.plan_ref.clone(),
+        event_heads: state.events.iter().map(|event| EventHeadRef {
+            event_short: event.event_short.clone(), head_checkpoint: event.head_checkpoint.clone(),
+            page_count: event.page_count, terminal: event.terminal,
+        }).collect(),
+        coverage: CoverageSummary { total_requested: state.events.len() as u64,
+            completed: state.events.len() as u64, absent_families: state.absent_families.clone() },
+        unique_athletes: store.ranking_collection_stats(collection)?.unique_athletes,
+    };
+    let digest = put(store, &snapshot)?;
+    store.seal_rankings(collection, &digest)?;
+    Ok(digest)
+}
+
+===== src/runtime.rs =====
+pub mod acquisition;
+mod artifacts;
+pub mod browser;
+mod browser_config;
+mod browser_readiness;
+pub mod browser_session;
+pub(crate) mod config;
+pub mod control;
+pub mod export;
+pub mod export_worker;
+mod http_audit;
+pub mod identity;
+pub mod import;
+pub mod import_worker;
+pub mod profile_worker;
+pub mod protocol;
+pub mod query_worker;
+pub mod review_case;
+pub mod reviewer;
+pub mod row_protocol;
+pub mod row_worker;
+pub mod run;
+pub mod run_protocol;
+pub mod rankings_collection;
+pub mod rankings {
+    pub mod catalog;
+    pub mod page;
+    pub mod types;
+    pub use catalog::{EventCatalog, RequestedFamily};
+    pub use page::parse::{parse_page_response, PageParseError};
+    pub use types::{
+        ExpectedPageContext,
+        is_excluded, IndividualCandidate, NavEvent, PageObservation, RankedEvent, RankingsPlan,
+        RankingsScope,
+        RelayMember, RelayRoster, RelayRow, RelayTeam, VerifiedRelayMember,
+    };
+    pub use crate::store::rankings::{
+        RankingCandidateKind, RankingCandidateEntry, RankingSourceRow,
+        RankingRosterObservation, RankingPageIndex, RankingRecordRef,
+        RankingLookup, RankingEventStats, RankingCollectionStats,
+    };
+    pub use super::protocol::{RankingsCapture, RankingPageObservation};
+}
+pub mod snapshot;
+pub mod source;
+pub mod source_cache;
+pub mod worker;
+
+pub use config::{ExecutionMode, ModelLane, WorkerConfig};
+
+use crate::store::ArtifactStore;
+use anyhow::{Context, Result};
+use std::{path::Path, sync::Arc};
+use tokio::sync::Semaphore;
+use tokio_util::task::TaskTracker;
+
+pub struct Runtime {
+    pub config: WorkerConfig,
+    pub store: ArtifactStore,
+    pub http: reqwest::Client,
+    browser: tokio::sync::OnceCell<browser::BrowserManager>,
+    cpu: Arc<Semaphore>,
+    tasks: TaskTracker,
+}
+
+impl Runtime {
+    pub fn open(config_path: &Path) -> Result<Arc<Self>> {
+        let config = WorkerConfig::load(config_path)?;
+        let store = ArtifactStore::open(config.storage_dir())?;
+        let http = reqwest::Client::builder()
+            .retry(reqwest::retry::never())
+            .no_gzip()
+            .no_brotli()
+            .no_zstd()
+            .no_deflate()
+            .no_proxy()
+            .redirect(reqwest::redirect::Policy::none())
+            .timeout(config.request_timeout())
+            .user_agent("athletic-rust-pipeline/0.1 authorized-research")
+            .build()
+            .context("building bounded HTTP client")?;
+        let cpu = Arc::new(Semaphore::new(config.cpu_workers()));
+        Ok(Arc::new(Self {
+            config,
+            store,
+            http,
+            browser: tokio::sync::OnceCell::new(),
+            cpu,
+            tasks: TaskTracker::new(),
+        }))
+    }
+
+    pub(crate) async fn ensure_browser(&self) -> Result<&browser::BrowserManager> {
+        let settings = self.config.browser_settings();
+        self.browser
+            .get_or_try_init(|| async move {
+                match settings.cdp_endpoint.clone() {
+                    Some(endpoint) => browser::BrowserManager::connect(endpoint, settings).await,
+                    None => browser::BrowserManager::launch(settings).await,
+                }
+            })
+            .await
+    }
+
+    pub(crate) fn browser(&self) -> Option<&browser::BrowserManager> {
+        self.browser.get()
+    }
+
+    pub async fn blocking<T, F>(&self, action: F) -> Result<T>
+    where
+        T: Send + 'static,
+        F: FnOnce() -> Result<T> + Send + 'static,
+    {
+        let token = self.tasks.token();
+        if self.tasks.is_closed() {
+            anyhow::bail!("worker is draining");
+        }
+        let permit = self.cpu.clone().acquire_owned().await?;
+        tokio::task::spawn_blocking(move || {
+            let (_token, _permit) = (token, permit);
+            action()
+        })
+        .await
+        .context("joining bounded worker action")?
+    }
+
+    pub async fn drain(&self) -> Result<()> {
+        let browser_result = match self.browser.get() {
+            Some(browser) => browser.shutdown().await,
+            None => Ok(()),
+        };
+        self.cpu.close();
+        self.tasks.close();
+        self.tasks.wait().await;
+        browser_result
+    }
+}
+
+===== src/runtime/protocol.rs =====
+use super::ModelLane;
+use crate::{
+    domain::{
+        evidence::{EvidenceIssue, EvidenceRef, Observed, Sport, SportAvailability, TeamEvidence},
+        facts::{AthleteName, GraduationYear, RetryCount},
+        identity::{AthleteId, EvidenceDigest, ProfileUrl},
+    },
+    model::SourceRecord,
+};
+use serde::{Deserialize, Serialize};
+
+pub const MAX_REVIEW_INPUT_BYTES: usize = 65_536;
+pub const MAX_REVIEW_RESPONSE_BYTES: usize = 32_768;
+pub const MAX_SOURCE_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
+pub const MAX_RANKING_PAGE_BYTES: usize = 8 * 1024 * 1024;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum SourceResource {
+    Search {
+        query: String,
+        sport: Sport,
+        start: u32,
+    },
+    Bio {
+        athlete_id: AthleteId,
+        sport: Sport,
+    },
+    ProfileHtml {
+        profile_url: ProfileUrl,
+    },
+    Team {
+        team_id: u64,
+        sport: Sport,
+        season: u16,
+    },
+    Rankings {
+        collection: EvidenceDigest,
+        list_id: u64,
+        gender: String,
+        grade: Option<u8>,
+        event_short: String,
+        page: u32,
+        capture: RankingsCapture,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DocumentReceipt {
+    pub digest: EvidenceDigest,
+    pub source_url: String,
+    pub http_status: u16,
+    pub media_type: String,
+    pub bytes: u64,
+    pub fetched_at_unix_ms: u64,
+    pub elapsed_ms: u64,
+    pub rankings: Option<RankingPageObservation>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum RankingsCapture {
+    Navigation,
+    Results,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RankingPageObservation {
+    pub capture: RankingsCapture,
+    pub request_method: String,
+    pub request_url: String,
+    pub request_body: Option<String>,
+    pub next_page: Option<u32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FailureCode {
+    InvalidInput,
+    Transport,
+    AccessDenied,
+    BrowserChallenge,
+    BrowserUnavailable,
+    RateLimited,
+    HttpFailure,
+    PayloadLimit,
+    ArtifactFailure,
+    MalformedResponse,
+    RetryExhausted,
+    UncertainEffect,
+}
+
+/// Restate owns scheduling. Source workflows and model SDK policies have distinct
+/// retry budgets. Unacknowledged effects may repeat during crash recovery.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "ownership")]
+pub enum RetryEvidence {
+    NotAttempted,
+    SdkControlled {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+        observed_attempts: u32,
+        attempts: Vec<EvidenceDigest>,
+    },
+    SdkEvidenceUnavailable {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+    },
+    WorkflowControlled {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+        observed_attempts: u32,
+        attempts: Vec<EvidenceDigest>,
+    },
+    WorkflowEvidenceUnavailable {
+        operation: EvidenceDigest,
+        maximum_retries: RetryCount,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OperationFailure {
+    pub code: FailureCode,
+    pub message: String,
+    pub http_status: Option<u16>,
+    pub retries: RetryEvidence,
+    pub evidence: Vec<DocumentReceipt>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "outcome")]
+pub enum FetchOutcome {
+    Retrieved {
+        receipt: DocumentReceipt,
+        retries: RetryEvidence,
+        previous_responses: Vec<DocumentReceipt>,
+    },
+    Failed {
+        failure: OperationFailure,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewCandidate {
+    pub athlete_id: AthleteId,
+    pub name: AthleteName,
+    pub teams: Vec<TeamEvidence>,
+    pub graduation_years: Vec<Observed<GraduationYear>>,
+    pub sports: Vec<SportAvailability>,
+    pub issues: Vec<EvidenceIssue>,
+    pub eligibility_reasons: Vec<String>,
+    pub documents: Vec<EvidenceDigest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewInput {
+    pub source: SourceRecord,
+    pub candidates: Vec<ReviewCandidate>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReviewJob {
+    pub input: EvidenceDigest,
+    pub lane: ModelLane,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "decision")]
+pub enum ReviewVerdict {
+    Select {
+        athlete_id: AthleteId,
+        reason: String,
+        evidence: Vec<EvidenceRef>,
+    },
+    Unresolved {
+        reason: String,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "outcome")]
+pub enum ReviewOutcome {
+    Reviewed {
+        lane: ModelLane,
+        verdict: ReviewVerdict,
+        request: EvidenceDigest,
+        response: DocumentReceipt,
+        previous_responses: Vec<DocumentReceipt>,
+        retries: RetryEvidence,
+    },
+    Failed {
+        lane: ModelLane,
+        request: Option<EvidenceDigest>,
+        failure: OperationFailure,
+    },
+}
+
+===== src/runtime/rankings/types.rs =====
+use crate::domain::error::DomainError;
+use crate::domain::identity::{AthleteId, EvidenceDigest};
+use crate::domain::name::CanonicalName;
+use crate::runtime::protocol::RankingsCapture;
+use crate::runtime::source::request::RankingsAction;
+use crate::runtime::rankings::catalog::RequestedFamily;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+
+/// A complete rankings collection plan covering all requested
+/// event families for a single division scope.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankingsPlan {
+    pub collection: EvidenceDigest,
+    pub list_id: u64,
+    pub gender: String,
+    pub grade: u8,
+    pub events: Vec<RankedEvent>,
+}
+
+/// Rankings scope: immutable collection parameters derived from scope.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankingsScope {
+    pub revision: String,
+    pub list_id: u64,
+    pub season: u64,
+    pub gender: String,
+    pub projection_grade: u8,
+    pub country: String,
+    pub level: u64,
+    pub max_pages_per_event: u32,
+    pub requested_families: Vec<RequestedFamily>,
+}
+impl RankingsScope {
+    /// Construct the canonical 2026 USA boys Grade 11 scope with all 46
+    /// requested event families. The caller supplies only the per-event
+    /// page cap; everything else is fixed by the specification.
+    pub fn requested(max_pages_per_event: u32) -> anyhow::Result<Self> {
+        if max_pages_per_event == 0 || max_pages_per_event > 10_000 {
+            anyhow::bail!("max_pages_per_event must be 1..=10000");
+        }
+        let families = Self::default_families();
+        Ok(Self {
+            revision: "2026-usa-boys-grade11-v1".to_owned(),
+            list_id: 168416,
+            season: 2026,
+            gender: "m".to_owned(),
+            projection_grade: 11,
+            country: "USA".to_owned(),
+            level: 4,
+            max_pages_per_event,
+            requested_families: families,
+        })
+    }
+
+    /// Only the canonical source scope may enter the durable collection.
+    pub fn validate(&self) -> anyhow::Result<()> {
+        if self.list_id != 168416 || self.revision != "2026-usa-boys-grade11-v1" {
+            anyhow::bail!("unsupported ranking list or revision");
+        }
+        if self.country != "USA" {
+            anyhow::bail!("unsupported country: {}", self.country);
+        }
+        if self.level != 4 {
+            anyhow::bail!("unsupported level: {}", self.level);
+        }
+        if self.season != 2026 {
+            anyhow::bail!("unsupported season: {}", self.season);
+        }
+        if self.gender != "m" {
+            anyhow::bail!("unsupported gender: {}", self.gender);
+        }
+        if self.projection_grade != 11 {
+            anyhow::bail!("unsupported projection_grade: {}", self.projection_grade);
+        }
+        if self.max_pages_per_event == 0 || self.max_pages_per_event > 10_000 {
+            anyhow::bail!("max_pages_per_event must be 1..=10000");
+        }
+        if serde_json::to_value(&self.requested_families)? != serde_json::to_value(Self::default_families())? {
+            anyhow::bail!("rankings scope must include the complete requested family manifest");
+        }
+        Ok(())
+    }
+
+    /// The 46 requested families for 2026 USA high school boys Grade 11.
+    /// The catalog expands these dynamically into ~95 observed variants.
+    fn default_families() -> Vec<RequestedFamily> {
+        vec![
+            RequestedFamily { group: "sprint".into(), family: "55m".into(), short: "55m".into() },
+            RequestedFamily { group: "sprint".into(), family: "60m".into(), short: "60m".into() },
+            RequestedFamily { group: "sprint".into(), family: "100m".into(), short: "100m".into() },
+            RequestedFamily { group: "sprint".into(), family: "200m".into(), short: "200m".into() },
+            RequestedFamily { group: "sprint".into(), family: "300m".into(), short: "300m".into() },
+            RequestedFamily { group: "sprint".into(), family: "400m".into(), short: "400m".into() },
+            RequestedFamily { group: "middle".into(), family: "500m".into(), short: "500m".into() },
+            RequestedFamily { group: "middle".into(), family: "600m".into(), short: "600m".into() },
+            RequestedFamily { group: "middle".into(), family: "800m".into(), short: "800m".into() },
+            RequestedFamily { group: "middle".into(), family: "1000m".into(), short: "1000m".into() },
+            RequestedFamily { group: "distance".into(), family: "1500m".into(), short: "1500m".into() },
+            RequestedFamily { group: "distance".into(), family: "1600m".into(), short: "1600m".into() },
+            RequestedFamily { group: "distance".into(), family: "mile".into(), short: "1mile".into() },
+            RequestedFamily { group: "distance".into(), family: "2 mile".into(), short: "2miles".into() },
+            RequestedFamily { group: "distance".into(), family: "3000m".into(), short: "3000m".into() },
+            RequestedFamily { group: "distance".into(), family: "3200m".into(), short: "3200m".into() },
+            RequestedFamily { group: "steeplechase".into(), family: "2000mSC".into(), short: "2ksteeple".into() },
+            RequestedFamily { group: "steeplechase".into(), family: "3000mSC".into(), short: "3ksteeple".into() },
+            RequestedFamily { group: "hurdles".into(), family: "55mH".into(), short: "55mh".into() },
+            RequestedFamily { group: "hurdles".into(), family: "60mH".into(), short: "60mh".into() },
+            RequestedFamily { group: "hurdles".into(), family: "100mH".into(), short: "100mh".into() },
+            RequestedFamily { group: "hurdles".into(), family: "110mH".into(), short: "110mh".into() },
+            RequestedFamily { group: "hurdles".into(), family: "300mH".into(), short: "300mh".into() },
+            RequestedFamily { group: "hurdles".into(), family: "400mH".into(), short: "400mh".into() },
+            RequestedFamily { group: "relay".into(), family: "4x100".into(), short: "4x100m".into() },
+            RequestedFamily { group: "relay".into(), family: "4x200".into(), short: "4x200m".into() },
+            RequestedFamily { group: "relay".into(), family: "4x400".into(), short: "4x400m".into() },
+            RequestedFamily { group: "relay".into(), family: "4x800".into(), short: "4x800m".into() },
+            RequestedFamily { group: "relay".into(), family: "4x1600".into(), short: "4x1600m".into() },
+            RequestedFamily { group: "relay".into(), family: "4×mile".into(), short: "4xmile".into() },
+            RequestedFamily { group: "relay".into(), family: "sprint medley".into(), short: "".into() },
+            RequestedFamily { group: "relay".into(), family: "distance medley".into(), short: "".into() },
+            RequestedFamily { group: "relay".into(), family: "swedish relay".into(), short: "".into() },
+            RequestedFamily { group: "jump".into(), family: "high jump".into(), short: "hj".into() },
+            RequestedFamily { group: "relay".into(), family: "shuttle hurdle relay".into(), short: "".into() },
+            RequestedFamily { group: "jump".into(), family: "long jump".into(), short: "lj".into() },
+            RequestedFamily { group: "jump".into(), family: "triple jump".into(), short: "tj".into() },
+            RequestedFamily { group: "jump".into(), family: "pole vault".into(), short: "pv".into() },
+            RequestedFamily { group: "throw".into(), family: "shot put".into(), short: "shot".into() },
+            RequestedFamily { group: "throw".into(), family: "discus".into(), short: "discus".into() },
+            RequestedFamily { group: "throw".into(), family: "javelin".into(), short: "javelin".into() },
+            RequestedFamily { group: "throw".into(), family: "hammer".into(), short: "hammer".into() },
+            RequestedFamily { group: "throw".into(), family: "weight throw".into(), short: "weight".into() },
+            RequestedFamily { group: "combined".into(), family: "pentathlon".into(), short: "".into() },
+            RequestedFamily { group: "combined".into(), family: "heptathlon".into(), short: "heptathlon".into() },
+            RequestedFamily { group: "combined".into(), family: "decathlon".into(), short: "decathlon".into() },
+        ]
+    }
+}
+
+/// One event family within a RankingsPlan.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankedEvent {
+    pub short: String,
+    pub family: String,
+    pub group: String,
+    pub event_id: u64,
+    pub page: u32,
+    pub capture: RankingsCapture,
+    pub is_relay: bool,
+}
+
+impl RankingsPlan {
+    pub fn event_count(&self) -> usize {
+        self.events.len()
+    }
+
+    pub fn for_event(&self, short: &str) -> Option<&RankedEvent> {
+        self.events.iter().find(|e| e.short == short)
+    }
+
+    pub fn build_action(&self, event: &RankedEvent, page: u32) -> RankingsAction {
+        RankingsAction {
+            collection: self.collection.clone(),
+            list_id: self.list_id,
+            gender: self.gender.clone(),
+            grade: if event.is_relay {
+                None
+            } else {
+                Some(self.grade)
+            },
+            event_short: event.short.clone(),
+            page,
+            capture: event.capture.clone(),
+        }
+    }
+}
+
+/// Relay roster member from the application UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelayMember {
+    #[serde(rename = "SortID")]
+    pub sort_id: u64,
+    #[serde(rename = "IDAthlete")]
+    pub athlete_id: u64,
+    #[serde(rename = "AthleteName")]
+    pub name: String,
+    pub handle: String,
+    #[serde(rename = "PhotoUrl", default)]
+    pub photo_url: Option<String>,
+    #[serde(rename = "GradeID")]
+    pub grade_id: u64,
+}
+
+/// Relay team from the application UI.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelayTeam {
+    #[serde(rename = "IDResult")]
+    pub id_result: u64,
+    #[serde(rename = "RelayTeamID")]
+    pub team_id: u64,
+    pub members: Vec<RelayMember>,
+}
+
+/// A relay ranking row with the join keys for roster matching.
+/// All relay rows have GradeID=99 (system placeholder).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RelayRow {
+    #[serde(rename = "IDResult")]
+    pub id_result: u64,
+    #[serde(rename = "AthleteID")]
+    pub athlete_id: u64,
+    #[serde(rename = "TeamID")]
+    pub team_id: u64,
+    #[serde(rename = "AthleteName")]
+    pub athlete_name: String,
+    #[serde(rename = "GradeID")]
+    pub grade_id: u64,
+}
+
+/// A verified relay member: member data + row provenance.
+/// Only emitted when roster.RelayTeamID == row.AthleteID and member.GradeID=11.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerifiedRelayMember {
+    #[serde(rename = "IDAthlete")]
+    pub athlete_id: AthleteId,
+    #[serde(rename = "AthleteName")]
+    pub name: CanonicalName,
+    #[serde(rename = "Handle")]
+    pub handle: String,
+    #[serde(rename = "PhotoUrl", default)]
+    pub photo_url: Option<String>,
+    #[serde(rename = "GradeID")]
+    pub grade_id: u64,
+    #[serde(rename = "IDResult")]
+    pub id_result: u64,
+    pub roster_relay_team_id: u64,
+    pub row_athlete_id: u64,
+    /// JSON pointer to source row: groupedRankings/{group}/{row}
+    pub row_locator: Option<String>,
+    /// JSON pointer to source member: relayTeams/{IDResult}/Members/{index}
+    pub member_locator: Option<usize>,
+    /// Full source row JSON for evidence reconstruction
+    #[serde(skip)]
+    pub source_row: Option<serde_json::Value>,
+    /// Full source member JSON for evidence reconstruction
+    #[serde(skip)]
+    pub source_member: Option<serde_json::Value>,
+}
+
+/// Relay roster indexed by IDResult string key.
+pub type RelayRoster = std::collections::HashMap<String, RelayTeam>;
+
+/// Validated event metadata from GetNavInfo.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct NavEvent {
+    pub id: u64,
+    pub name: String,
+    pub t: String,
+    pub m: String,
+    pub r: bool,
+    pub h: bool,
+    pub short: String,
+    pub w: bool,
+    pub fmt: Option<String>,
+    pub so: u64,
+}
+
+/// Excluded event patterns: walk/race-walk only.
+pub fn is_excluded(short: &str, _r: bool, _h: bool) -> bool {
+    short.to_lowercase().contains("walk")
+}
+
+
+impl NavEvent {
+    /// Parse a NavEvent from a JSON value, returning None if malformed.
+    pub fn from_value(v: &serde_json::Value) -> Option<Self> {
+        serde_json::from_value::<NavEvent>(v.clone()).ok()
+    }
+}
+
+/// An individual GradeID=11 athlete candidate with row provenance.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IndividualCandidate {
+    #[serde(rename = "AthleteID")]
+    pub athlete_id: AthleteId,
+    #[serde(rename = "AthleteName")]
+    pub name: CanonicalName,
+    #[serde(rename = "IDResult")]
+    pub id_result: u64,
+    #[serde(rename = "GradeID")]
+    pub grade_id: u64,
+    #[serde(rename = "TeamID")]
+    pub team_id: Option<u64>,
+    #[serde(rename = "TeamName")]
+    pub team_name: Option<String>,
+    #[serde(rename = "State")]
+    pub state: Option<String>,
+    #[serde(rename = "Country")]
+    pub country: Option<String>,
+    /// JSON pointer to the source row: groupedRankings/{group}/{row}
+    /// Relative index in the corresponding observation candidate vector.
+    pub record_index: u64,
+    pub source_locator: Option<String>,
+    /// Full source row JSON for evidence reconstruction
+    #[serde(skip)]
+    pub source_row: Option<serde_json::Value>,
+}
+/// Returns source-located eligible candidate records plus counts.
+/// Bounded observation from a parsed source page.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PageObservation {
+    pub row_count: u64,
+    pub id_results: Vec<u64>,
+    pub grade_11_candidates: u64,
+    pub total_relay_rows: u64,
+    pub rows_with_roster: u64,
+    pub rows_missing_roster: u64,
+    pub total_relay_teams: u64,
+    pub division_id: Option<u64>,
+    pub season_id: Option<u64>,
+    pub request_gender: Option<String>,
+    pub request_page: Option<u32>,
+    pub event_short: Option<String>,
+    pub settings_page_depth: u64,
+    /// Individual GradeID=11 athlete candidates with provenance.
+    pub grade_11_candidates_list: Vec<IndividualCandidate>,
+    pub verified_relay_members: Vec<VerifiedRelayMember>,
+    /// Internal: IDResult string -> row.AthleteID for relay join validation.
+    #[serde(skip)]
+    pub row_athlete_ids: HashMap<String, u64>,
+    /// Source-located ranking rows with provenance.
+    pub source_rows: Vec<RankingRowObservation>,
+    /// Lower bound of rows observed across all pages.
+    pub min_count: u64,
+    /// Count of individual identities that could not be resolved.
+    pub unresolved_individual_identities: u64,
+    /// Count of relay member identities that could not be resolved.
+    pub unresolved_member_identities: u64,
+}
+
+impl PageObservation {
+    pub fn is_valid(&self, div: u64, season: u64, page: u32) -> bool {
+        self.division_id == Some(div)
+            && self.season_id == Some(season)
+            && self.request_page == Some(page)
+    }
+}
+
+/// Typed expected page context for parser validation.
+/// Native collection always Some(11) individual/None relay.
+/// Historical diagnostic individual all-grade capture may explicitly expect None.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpectedPageContext<'a> {
+    pub division_id: u64,
+    pub season_id: u64,
+    pub gender: &'a str,
+    pub event_short: &'a str,
+    pub event_id: Option<u64>,
+    pub is_relay: bool,
+    pub requested_grade: Option<u8>,
+    pub page: u32,
+}
+
+/// One ranking row observation with provenance.
+/// Row positions from actual rowNum, never per-page enumeration.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankingRowObservation {
+    pub result_id: u64,
+    pub row_number: u64,
+    pub roster_present: Option<bool>,
+}
+

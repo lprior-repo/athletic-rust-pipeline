@@ -1,0 +1,50 @@
+```diff
+--- a/src/rankings_collection.rs
++++ b/src/rankings_collection.rs
+@@ -133,8 +133,8 @@ impl RankingsCollectionState {
+             pause_detail: None,
+         };
+         ctx.set("state", Json(state.clone()));
+-        schedule_step(&ctx, &state).await?;
+-        Ok(Json(state))
++        let response_state = state.clone();
++        schedule_step(&ctx, &state).await?;
++        ctx.set("state", Json(state));
++        Ok(Json(response_state))
+     }
+ 
+ 
+@@ -168,12 +168,18 @@ impl RankingsCollectionState {
+         if let Err(error) = result {
+             helpers::pause(&mut state, CollectionPauseReason::InvalidEvidence, format!("{error:?}"));
+         }
+ 
+-        ctx.set("state", Json(state.clone()));
+-        if matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_)) {
+-            return Ok(Json(state));
+-        }
+-        schedule_step(&ctx, &state).await?;
+-        Ok(Json(state))
++        if matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_)) {
++            let response_state = state.clone();
++            ctx.set("state", Json(state));
++            return Ok(Json(response_state));
++        }
++        schedule_step(&ctx, &state).await?;
++        let response_state = state.clone();
++        ctx.set("state", Json(state));
++        Ok(Json(response_state))
+     }
+ 
+     #[handler]
+@@ -203,8 +209,8 @@ impl RankingsCollectionState {
+         state.pause_reason = None;
+         state.pause_detail = None;
+         state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+-        ctx.set("state", Json(state.clone()));
+-        schedule_step(&ctx, &state).await?;
++        schedule_step(&ctx, &state).await?;
++        ctx.set("state", Json(state));
+         Ok(Json(()))
+     }
+```

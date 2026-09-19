@@ -5,14 +5,14 @@ use crate::domain::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
-
-pub const ROW_PROTOCOL_REVISION: &str = "athlete-row-golden-context-v7";
+pub const ROW_PROTOCOL_REVISION: &str = "athlete-row-golden-context-v8";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RowJob {
     pub workbook: WorkbookDigest,
     pub snapshot: EvidenceDigest,
     pub source: SourceRowKey,
+    pub rankings: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
 }
 
 impl RowJob {
@@ -24,6 +24,7 @@ impl RowJob {
                 SOURCE_PARSER_REVISION,
                 &self.workbook,
                 &self.source,
+                &self.rankings,
             ),
         )
     }
@@ -36,6 +37,15 @@ pub struct DiscoverySummary {
     pub query_artifacts: Vec<EvidenceDigest>,
     pub complete: bool,
     pub issues: Vec<String>,
+    pub rankings: Option<RankingDiscoveryEvidence>,
+}
+
+/// Source discovery evidence from rankings lookup.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RankingDiscoveryEvidence {
+    pub canonical_name: Option<CanonicalName>,
+    pub collection: crate::runtime::rankings_collection::RankingCollectionRef,
+    pub lookup: crate::store::rankings::RankingLookup,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

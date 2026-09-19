@@ -60,9 +60,11 @@ fn finish_with_retries(
     let (outcome, blocked) = match (effect, selected) {
         (Ok(_), Some(attempt)) => {
             let retry_exhausted = exhausted && attempt.retryable;
-            let blocked = (retry_exhausted && attempt.status == Some(429))
+            let challenged = attempt.code == Some(FailureCode::BrowserChallenge);
+            let blocked = (retry_exhausted && (attempt.status == Some(429) || challenged))
+                || (challenged && !attempt.retryable)
                 || attempt.code == Some(FailureCode::AccessDenied)
-                || matches!(attempt.status, Some(401 | 403))
+                || (!challenged && matches!(attempt.status, Some(401 | 403)))
                 || (matches!(attempt.status, Some(429 | 503))
                     && !attempt.retryable
                     && attempt.retry_after_ms == 0)
@@ -169,6 +171,7 @@ mod tests {
                     bytes: 1,
                     fetched_at_unix_ms: 1,
                     elapsed_ms: 1,
+                    rankings: None,
                 }),
                 code: Some(FailureCode::HttpFailure),
                 status: Some(503),
@@ -191,6 +194,7 @@ mod tests {
             bytes: 1,
             fetched_at_unix_ms: 1,
             elapsed_ms: 1,
+            rankings: None,
         });
         let selected = attempt.digest.clone();
         let result = finish_workflow(digest('e'), vec![attempt], Ok(Json(selected)), false)

@@ -20,6 +20,11 @@ impl SourceRequest {
             &(super::acquisition::ACQUISITION_REVISION, &self.resource),
         )
     }
+
+    /// Whether this request is for rankings.
+    pub fn is_rankings(&self) -> bool {
+        matches!(self.resource, SourceResource::Rankings { .. })
+    }
 }
 
 pub struct SourceCache;
@@ -48,11 +53,23 @@ impl SourceCache {
         }
         let outcome = ctx
             .object_client::<SourceGatewayClient>("global")
-            .fetch(Json(input.0.resource))
+            .fetch(Json(input.0.resource.clone()))
             .scope(SOURCE_SCOPE)
             .call()
             .await?;
-        ctx.set("result", Json(outcome.0.clone()));
+        // Cache successful outcomes always.
+        // Cache failures only for non-rankings; rankings failures are not
+        // cached so a resumed gateway invocation gets a fresh audit
+        // identity and re-attempts the source rather than replaying a
+        // cached failure.
+        let is_rankings = input.0.is_rankings();
+        let should_cache = match &outcome.0 {
+            FetchOutcome::Retrieved { .. } => true,
+            FetchOutcome::Failed { .. } => !is_rankings,
+        };
+        if should_cache {
+            ctx.set("result", Json(outcome.0.clone()));
+        }
         Ok(outcome)
     }
 }

@@ -7,11 +7,13 @@ use args::{Cli, Command, Start};
 use athletic_rust_pipeline::{
     domain::identity::{EvidenceDigest, WorkbookDigest},
     runtime::{
-        control::{PipelineControlIngressClient, PrepareRequest},
+        browser_session::{BrowserSessionIngressClient, BROWSER_SESSION_KEY},
+        control::{PipelineControlIngressClient, PrepareRequest, RankingControlsInput},
         export::EXPORT_HEADERS,
         export_worker::{ExportRequest, ExportWorkerIngressClient, PublishedExport},
         identity::fingerprint,
         import::ImportRequest,
+        rankings::RankingsScope,
         run::RunCoordinatorIngressClient,
         run_protocol::{preparation_key, Selection},
         worker,
@@ -37,6 +39,63 @@ pub async fn run() -> Result<()> {
                 .call()
                 .await?
                 .into_body()?;
+            emit(&response.0)
+        }
+        Command::RankingsStatus { ingress, run } => {
+            let input = RankingControlsInput {
+                run: EvidenceDigest::parse(&run)?,
+            };
+            let client = transport::client(&ingress)?;
+            let control = PipelineControlIngressClient::from_client(client);
+            let state = control
+                .rankings_progress(Json(input))
+                .call()
+                .await?
+                .into_body()?;
+            emit(&state.0)
+        }
+        Command::RankingsPause { ingress, run } => {
+            let input = RankingControlsInput {
+                run: EvidenceDigest::parse(&run)?,
+            };
+            let client = transport::client(&ingress)?;
+            let control = PipelineControlIngressClient::from_client(client);
+            control
+                .rankings_pause(Json(input))
+                .call()
+                .await?
+                .into_body()?;
+            emit(&serde_json::json!({"status": "paused"}))
+        }
+        Command::RankingsResume { ingress, run } => {
+            let input = RankingControlsInput {
+                run: EvidenceDigest::parse(&run)?,
+            };
+            let client = transport::client(&ingress)?;
+            let control = PipelineControlIngressClient::from_client(client);
+            control
+                .rankings_resume(Json(input))
+                .call()
+                .await?
+                .into_body()?;
+            emit(&serde_json::json!({"status": "resumed"}))
+        }
+        Command::BrowserStart { ingress } => {
+            let client = BrowserSessionIngressClient::from_client(
+                transport::client(&ingress)?,
+                BROWSER_SESSION_KEY,
+            );
+            let submitted = client.await_ready().send().await?;
+            emit(
+                &serde_json::json!({"invocation_id": submitted.invocation_handle().invocation_id()}),
+            )
+        }
+        Command::BrowserStatus { ingress } => {
+            let client = BrowserSessionIngressClient::from_client(
+                transport::client(&ingress)?,
+                BROWSER_SESSION_KEY,
+            );
+            let response = client.status().call().await?.into_body()?;
             emit(&response.0)
         }
         Command::Export {
@@ -144,6 +203,9 @@ async fn start(args: Start) -> Result<()> {
         (None, true) => Selection::All,
         (Some(_), true) | (None, false) => bail!("choose exactly one of --per-sheet or --all"),
     };
+    if args.max_pages_per_event < 1 || args.max_pages_per_event > 10_000 {
+        bail!("max_pages_per-event must be 1..=10000");
+    }
     let source = ImportRequest {
         original: args
             .input
@@ -151,12 +213,20 @@ async fn start(args: Start) -> Result<()> {
             .context("canonicalizing source workbook")?,
         workbook: WorkbookDigest::parse(&args.sha256)?,
     };
+    let rankings_scope = if args.rankings {
+        let scope = RankingsScope::requested(args.max_pages_per_event)
+            .context("building rankings scope")?;
+        Some(scope)
+    } else {
+        None
+    };
     let request = PrepareRequest {
         source,
         selection,
         concurrency: args.concurrency,
         snapshot_label: args.snapshot,
         execution: args.execution,
+        rankings_scope,
     };
     let preparation_key = preparation_key(&request)?;
     let client = transport::client(&args.ingress)?;

@@ -1,4 +1,5 @@
 mod discovery;
+mod rankings;
 mod review;
 mod support;
 use discovery::{execute_profiles, execute_queries, ProfileState};
@@ -6,13 +7,14 @@ use review::resolve_assessment;
 use support::{publish, publish_report, publish_terminal, source_validation, validate_job};
 
 use super::{
-    row_protocol::{DiscoverySummary, RowJob, RowReport, ROW_PROTOCOL_REVISION},
+    row_protocol::{DiscoverySummary, RankingDiscoveryEvidence, RowJob, RowReport, ROW_PROTOCOL_REVISION},
     Runtime,
 };
 use crate::{
     domain::{
         decision,
         identity::{EvidenceDigest, SourceRowKey},
+        name::CanonicalName,
     },
     model::SourceRecord,
     search::{self, SearchQuery},
@@ -119,8 +121,48 @@ impl RowWorker {
         source: SourceRecord,
         queries: Vec<SearchQuery>,
     ) -> Result<Json<EvidenceDigest>, HandlerError> {
-        let discovery = execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
+        let mut discovery = execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
         let query_refs = discovery.refs.clone();
+        let source_name = CanonicalName::from_source(&source).ok().flatten();
+        let rankings_evidence = if let Some(ranking_ref) = &job.rankings {
+            let collection = ranking_ref.collection.clone();
+            let bound_snapshot = ranking_ref.snapshot.clone();
+            let (lookup, lookup_incomplete) =
+                rankings::perform_rankings_lookup(
+                    ctx,
+                    self.runtime.clone(),
+                    collection,
+                    bound_snapshot,
+                    source_name.clone(),
+                )
+                .await?;
+            if lookup_incomplete || lookup.truncated {
+                discovery.incomplete = true;
+            }
+            let mut candidate_limit = false;
+            let records = &lookup.records;
+            for ref_entry in records {
+                if discovery.candidate_ids.contains(&ref_entry.athlete_id) {
+                    continue;
+                }
+                if discovery.candidate_ids.len() == MAX_CANDIDATES {
+                    candidate_limit = true;
+                    break;
+                }
+                discovery.candidate_ids.insert(ref_entry.athlete_id);
+            }
+            if candidate_limit {
+                discovery.candidate_limit = true;
+            }
+            let evidence = RankingDiscoveryEvidence {
+                canonical_name: source_name,
+                collection: ranking_ref.clone(),
+                lookup,
+            };
+            Some(evidence)
+        } else {
+            None
+        };
         let summary = publish(
             ctx,
             self.runtime.clone(),
@@ -131,6 +173,7 @@ impl RowWorker {
                 query_artifacts: query_refs.clone(),
                 complete: discovery.complete(),
                 issues: discovery.issues.clone(),
+                rankings: rankings_evidence,
             },
         )
         .await?;

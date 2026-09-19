@@ -2,7 +2,7 @@ use super::{
     acquisition::ProfileAcquisition,
     import::SourceManifest,
     row_protocol::{AcceptanceMethod, CandidateCoverage, RowReport, RowResolution},
-    run_protocol::{RunPage, RunProgress, RESULT_PAGE_ROWS},
+    run_protocol::{ExportSnapshot, RunPage, RunProgress, RESULT_PAGE_ROWS},
 };
 use crate::{
     domain::identity::EvidenceDigest,
@@ -22,6 +22,8 @@ mod index;
 mod projection;
 mod publish;
 mod stream;
+mod rankings;
+pub use rankings::RankingsExportCoverage;
 
 pub const EXPORT_HEADERS: &[&str] = &[
     "native.source_key",
@@ -65,6 +67,7 @@ pub struct ExportReport {
     pub stats: ExportStats,
     pub coverage: ExportCoverage,
     pub completeness: CompletenessState,
+    pub rankings: Option<RankingsExportCoverage>,
 }
 
 pub fn export_to(
@@ -76,6 +79,7 @@ pub fn export_to(
     let manifest: SourceManifest = index::load_json(store, &progress.request.manifest)
         .context("loading export source manifest")?;
     index::validate_progress(progress, page_digests, &manifest)?;
+    let rankings = rankings::coverage(store, progress)?;
     let reports = index::build_report_index(store, progress, page_digests, &manifest)?;
     let detail_path = publish::detail_path(destination);
     publish::reject_detail_destination(destination, &detail_path, &manifest)?;
@@ -125,6 +129,7 @@ pub fn export_to(
         stats,
         coverage,
         completeness,
+        rankings,
     })
 }
 

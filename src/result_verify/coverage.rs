@@ -130,6 +130,7 @@ fn verify_discovery(
     if discovery.job.workbook != report.job.workbook
         || discovery.job.snapshot != report.job.snapshot
         || discovery.job.source != report.job.source
+        || discovery.job.rankings != report.job.rankings
         || discovery.query_artifacts != report.query_evidence
     {
         bail!("discovery is not bound to the original row job and query artifacts");

@@ -1,6 +1,8 @@
-mod challenge;
+pub(crate) mod challenge;
 
-use super::{body, request::RequestSpec, retry};
+use super::{request::{RequestAction, RequestSpec}, retry};
+use crate::runtime::browser::BrowserError;
+use crate::runtime::rankings::RankingPageObservation;
 use crate::runtime::{
     protocol::{DocumentReceipt, FailureCode},
     Runtime,
@@ -14,10 +16,6 @@ use std::{
     sync::Arc,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
-enum SendError {
-    Session(&'static str),
-    Transport,
-}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct AttemptResult {
@@ -35,64 +33,64 @@ struct ReceiptData {
     media_type: String,
     body: Vec<u8>,
     elapsed: Duration,
+    rankings: Option<RankingPageObservation>,
 }
 
 pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> AttemptResult {
     let started = Instant::now();
-    let response = match send(&runtime, request).await {
-        Ok(response) => response,
-        Err(SendError::Session(message)) => {
-            return failure(FailureCode::AccessDenied, None, message.to_owned(), false);
-        }
-        Err(SendError::Transport) => {
+    let browser = match runtime.ensure_browser().await {
+        Ok(browser) => browser,
+        Err(_) => {
             return failure(
                 FailureCode::Transport,
                 None,
-                "HTTP transport failure".to_owned(),
-                true,
+                "browser startup failed".to_owned(),
+                false,
             );
         }
     };
-    let status = response.status();
-    let backoff = retry::retry_after(response.headers(), SystemTime::now());
-    let media_type = media_type(response.headers());
-    let header_challenge = challenge::cf_header_challenge(response.headers());
-    let body = match body::read_body(response).await {
-        Ok(body) => body,
-        Err((code, message)) => return body_failure(code, status, message, backoff),
+    let response = match browser.fetch(request.clone()).await {
+        Ok(response) => response,
+        Err(error) => return browser_failure(error),
     };
-    let challenged = header_challenge || challenge::html_body_challenge(&media_type, &body);
+    let status = response.status;
+    let backoff = retry::retry_after(&response.headers, SystemTime::now());
+    let media_type = media_type(&response.headers);
+    let challenged = challenge::cf_header_challenge(&response.headers)
+        || challenge::html_body_challenge(&media_type, &response.body);
     let data = ReceiptData {
         source_url: request.semantic_url.clone(),
         status,
         media_type,
-        body,
+        body: response.body,
         elapsed: started.elapsed(),
+        rankings: response.rankings,
     };
-    match receipt(&runtime, data).await {
+    match receipt(&runtime, data, Some(&request.action)).await {
         Ok(receipt) => outcome(status, receipt, backoff, challenged),
         Err(message) => body_failure(FailureCode::ArtifactFailure, status, message, backoff),
     }
 }
 
-async fn send(runtime: &Runtime, request: &RequestSpec) -> Result<reqwest::Response, SendError> {
-    let builder = match &request.body {
-        Some(body) => runtime.http.post(request.url.clone()).json(body),
-        None => runtime.http.get(request.url.clone()),
-    };
-    let builder = match runtime.config.source_session() {
-        Some(session) => {
-            session
-                .authorize(&request.url)
-                .map_err(|error| SendError::Session(error.message()))?;
-            session.attach(builder)
+fn browser_failure(error: BrowserError) -> AttemptResult {
+    let (code, retryable) = match error {
+        BrowserError::HumanRequired | BrowserError::Unavailable => {
+            (FailureCode::BrowserUnavailable, false)
         }
-        None => builder,
+        BrowserError::PayloadLimit => (FailureCode::PayloadLimit, false),
+        BrowserError::Redirect => (FailureCode::HttpFailure, false),
+        BrowserError::Protocol => (FailureCode::MalformedResponse, false),
+        BrowserError::Shutdown => (FailureCode::Transport, false),
+        BrowserError::Transport | BrowserError::Timeout => (FailureCode::Transport, true),
     };
-    builder.send().await.map_err(|_| SendError::Transport)
+    failure(code, None, error.to_string(), retryable)
 }
 
-async fn receipt(runtime: &Runtime, data: ReceiptData) -> Result<DocumentReceipt, String> {
+async fn receipt(
+    runtime: &Runtime,
+    data: ReceiptData,
+    request_action: Option<&RequestAction>,
+) -> Result<DocumentReceipt, String> {
     let bytes = u64::try_from(data.body.len()).map_err(|_| "source byte count overflow")?;
     let fetched_at_unix_ms = now_ms()?;
     let elapsed_ms = millis(data.elapsed)?;
@@ -101,6 +99,14 @@ async fn receipt(runtime: &Runtime, data: ReceiptData) -> Result<DocumentReceipt
         .blocking(move || Ok(store.put_bytes(&data.body)?))
         .await
         .map_err(|_| "source artifact write failed")?;
+
+    // Rankings capture is passed through verbatim from BrowserResponse
+    // Parsing happens in the collection/domain layer
+    let rankings = match request_action {
+        Some(RequestAction::Rankings(_)) => data.rankings,
+        _ => None,
+    };
+
     Ok(DocumentReceipt {
         digest,
         source_url: data.source_url,
@@ -109,6 +115,7 @@ async fn receipt(runtime: &Runtime, data: ReceiptData) -> Result<DocumentReceipt
         bytes,
         fetched_at_unix_ms,
         elapsed_ms,
+        rankings,
     })
 }
 
@@ -118,20 +125,19 @@ fn outcome(
     backoff: Result<Duration, &'static str>,
     challenged: bool,
 ) -> AttemptResult {
-    if challenged && status != StatusCode::TOO_MANY_REQUESTS {
+    if challenged {
         let mut result = failure_with_receipt(
             receipt,
             status,
-            FailureCode::AccessDenied,
-            "source response is an access challenge",
+            FailureCode::BrowserChallenge,
+            "source browser challenge; awaiting profile recovery through Restate",
         );
-        if !status.is_success() {
-            let (retry_after_ms, backoff_message, valid) = backoff_fields(backoff, status);
-            result.retry_after_ms = retry_after_ms;
-            if !valid {
-                result.message.push_str("; ");
-                result.message.push_str(&backoff_message);
-            }
+        let (retry_after_ms, message, valid) = backoff_fields(backoff, status);
+        result.retry_after_ms = retry_after_ms;
+        result.retryable = valid;
+        if !valid {
+            result.message.push_str("; ");
+            result.message.push_str(&message);
         }
         return result;
     }

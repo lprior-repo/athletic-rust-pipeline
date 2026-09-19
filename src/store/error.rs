@@ -28,6 +28,10 @@ pub enum StoreError {
     Serialization,
     #[error("source visitor failed")]
     Visitor,
+    #[error("invalid ranking index input")]
+    InvalidRankingInput,
+    #[error("ranking page conflicts with existing publication or seal")]
+    RankingConflict,
 }
 
 pub type Result<T, E = StoreError> = std::result::Result<T, E>;

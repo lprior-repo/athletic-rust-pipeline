@@ -95,6 +95,7 @@ fn source_snapshot(store: &ArtifactStore) -> Result<String> {
         revision: athletic_rust_pipeline::runtime::acquisition::ACQUISITION_REVISION.to_owned(),
         source_origin: ORIGIN.to_owned(),
         label: "synthetic-result-verifier".to_owned(),
+        rankings: None,
     };
     let bytes = serde_json::to_vec(&snapshot)?;
     Ok(store.put_bytes(&bytes)?.as_str().to_owned())

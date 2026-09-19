@@ -1,11 +1,12 @@
 use super::{
     acquisition::ACQUISITION_REVISION,
     import::{SourceManifest, INGESTION_REVISION},
-    row_worker::RowWorkerClient,
+    rankings_collection::{RankingCollectionRef, RankingsCollectionStateClient},
     run_protocol::{
         ExportSnapshot, RunProgress, RunRequest, SourceSnapshot, MAX_RUN_ROWS, RESULT_PAGE_ROWS,
     },
     Runtime,
+    row_worker::RowWorkerClient,
 };
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
@@ -72,7 +73,14 @@ impl RunCoordinator {
                 "source manifest uses an incompatible ingestion revision",
             ));
         }
-        let mut rows = SourceRows::new(&manifest, &request).map_err(terminal)?;
+        // Load source snapshot to check for rankings scope
+        let snapshot: SourceSnapshot = self
+            .runtime
+            .load_json(&request.snapshot)
+            .await
+            .map_err(terminal)?;
+        // Initialize Results/progress BEFORE collection wait
+        let mut rows = SourceRows::new(&manifest, &request, None).map_err(terminal)?;
         let mut results = Results::new(
             &ctx,
             self.runtime.clone(),
@@ -81,8 +89,26 @@ impl RunCoordinator {
                 request: request.clone(),
             },
             rows.selected,
+            None,
         )
         .await?;
+        // If rankings scope exists, start collection and wait for sealed snapshot
+        if let Some(scope) = &snapshot.rankings {
+            let collection = super::rankings_collection::collection_fingerprint(
+                &scope.revision,
+                &request.snapshot,
+            )?;
+            let collection_req = super::rankings_collection::CollectionRequest {
+                source_snapshot: request.snapshot.clone(),
+            };
+            let client = ctx
+                .object_client::<RankingsCollectionStateClient>(collection.as_str());
+            client.start_or_resume(Json(collection_req)).call().await?;
+            let sealed = wait_for_collection_sealed(&ctx, &collection).await?;
+            // Update Results with sealed collection_ref
+            results.update_collection_ref(sealed.clone())?;
+            rows.update_rankings(sealed);
+        }
         drive(&ctx, &self.runtime, &request, (&mut rows, &mut results)).await?;
         Ok(Json(results.finish().await?))
     }
@@ -212,11 +238,11 @@ async fn drive(
                         let key = job.key().map_err(terminal)?;
                         let future = ctx
                             .object_client::<RowWorkerClient>(&key)
-                            .process(Json(job.clone()))
+                            .process(Json(job))
                             .call();
                         let handle = future.invocation_handle().await?;
                         let index = futures.push(future);
-                        if jobs.insert(index, (job, handle)).is_some() {
+                        if jobs.insert(index, (key, handle)).is_some() {
                             return Err(terminal("duplicate durable future index"));
                         }
                     }
@@ -226,10 +252,10 @@ async fn drive(
             let Some((index, outcome)) = futures.next().await? else {
                 break;
             };
-            let (job, _) = jobs
+            let (job_key, _) = jobs
                 .remove(&index)
                 .ok_or_else(|| terminal("completion has no admitted source row"))?;
-            results.record(job, outcome?.0).await?;
+            results.record(&job_key, outcome?.0).await?;
         }
         if !jobs.is_empty() {
             return Err(terminal("run ended with unaccounted durable row calls"));
@@ -246,6 +272,20 @@ async fn drive(
     result
 }
 
+/// Observe the other object's shared state through journaled SDK calls.
+async fn wait_for_collection_sealed(
+    ctx: &ObjectContext<'_>,
+    collection: &EvidenceDigest,
+) -> Result<RankingCollectionRef, HandlerError> {
+    loop {
+        let snapshot = ctx.object_client::<RankingsCollectionStateClient>(collection.as_str())
+            .snapshot_ref().call().await?.0;
+        if let Some(snapshot) = snapshot {
+            return Ok(RankingCollectionRef { collection: collection.clone(), snapshot });
+        }
+        ctx.sleep(std::time::Duration::from_secs(1)).await?;
+    }
+}
 fn terminal(error: impl std::fmt::Display) -> HandlerError {
     TerminalError::new(error.to_string()).into()
 }

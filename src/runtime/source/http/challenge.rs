@@ -2,7 +2,7 @@ use reqwest::header::HeaderMap;
 
 const MAX_CHALLENGE_SCAN_BYTES: usize = 128 * 1024;
 
-pub(super) fn cf_header_challenge(headers: &HeaderMap) -> bool {
+pub(crate) fn cf_header_challenge(headers: &HeaderMap) -> bool {
     headers
         .get_all("cf-mitigated")
         .iter()
@@ -10,7 +10,7 @@ pub(super) fn cf_header_challenge(headers: &HeaderMap) -> bool {
         .any(|value| value.eq_ignore_ascii_case("challenge"))
 }
 
-pub(super) fn html_body_challenge(media_type: &str, body: &[u8]) -> bool {
+pub(crate) fn html_body_challenge(media_type: &str, body: &[u8]) -> bool {
     if !is_html_media_type(media_type) {
         return false;
     }

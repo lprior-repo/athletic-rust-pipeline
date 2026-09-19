@@ -1,9 +1,10 @@
 use super::super::{
-    row_protocol::{RowJob, RowReport, ROW_PROTOCOL_REVISION},
+    row_protocol::{RowReport, ROW_PROTOCOL_REVISION},
     run_protocol::*,
     Runtime,
 };
 use super::{terminal, RunIdentity};
+use crate::runtime::rankings_collection::RankingCollectionRef;
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
 use std::{
@@ -26,6 +27,7 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         runtime: Arc<Runtime>,
         identity: RunIdentity,
         selected: u64,
+        collection_ref: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
     ) -> Result<Self, HandlerError> {
         let now = journal_time(ctx).await?;
         let progress = RunProgress {
@@ -40,9 +42,10 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
             started_at_unix_ms: now,
             updated_at_unix_ms: now,
             summary: None,
+            collection_ref,
         };
         let progress_key = format!("progress:{}", identity.key);
-        ctx.set(&progress_key, Json(progress.clone()));
+        ctx.set(&progress_key, restate_sdk::serde::Serialize::serialize(&Json(&progress)).map_err(terminal)?);
         Ok(Self {
             ctx,
             runtime,
@@ -53,14 +56,23 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         })
     }
 
+    pub fn update_collection_ref(
+        &mut self,
+        collection_ref: RankingCollectionRef,
+    ) -> Result<(), HandlerError> {
+        self.progress.collection_ref = Some(collection_ref);
+        self.ctx.set(&self.progress_key,
+            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?);
+        Ok(())
+    }
     pub async fn record(
         &mut self,
-        job: RowJob,
+        job_key: &str,
         digest: EvidenceDigest,
     ) -> Result<(), HandlerError> {
         let report: RowReport = self.runtime.load_json(&digest).await.map_err(terminal)?;
         if report.revision != ROW_PROTOCOL_REVISION
-            || report.job.key().map_err(terminal)? != job.key().map_err(terminal)?
+            || report.job.key().map_err(terminal)? != job_key
         {
             return Err(terminal(
                 "row result does not bind the requested immutable source row",
@@ -71,15 +83,15 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
             .record(&report.resolution)
             .map_err(terminal)?;
         self.progress.pending_rows.push(RowReference {
-            source: job.source,
+            source: report.job.source,
             report: digest,
         });
         if self.progress.pending_rows.len() == RESULT_PAGE_ROWS {
             self.flush().await?;
         }
         self.progress.updated_at_unix_ms = journal_time(self.ctx).await?;
-        self.ctx
-            .set(&self.progress_key, Json(self.progress.clone()));
+        self.ctx.set(&self.progress_key,
+            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?);
         Ok(())
     }
 
@@ -113,11 +125,11 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         self.flush().await?;
         self.progress.updated_at_unix_ms = journal_time(self.ctx).await?;
         let summary = RunSummary {
-            request: self.progress.request.clone(),
             coverage: self.progress.coverage.clone(),
             started_at_unix_ms: self.progress.started_at_unix_ms,
             completed_at_unix_ms: self.progress.updated_at_unix_ms,
             page_digests: std::mem::take(&mut self.page_digests),
+            collection_ref: self.progress.collection_ref.clone(),
         };
         let digest = self.publish("publish run summary", summary).await?;
         self.progress.complete = true;

@@ -1,8 +1,9 @@
 use super::{
-    control::PipelineControl, export_worker::ExportWorker, import_worker::WorkbookImport,
-    profile_worker::ProfileWorker, query_worker::QueryWorker, review_case::ReviewCase,
-    reviewer::LocalReviewer, row_worker::RowWorker, run::RunCoordinator, source::SourceGateway,
-    source_cache::SourceCache, Runtime,
+    browser_session::BrowserSession, control::PipelineControl, export_worker::ExportWorker,
+    import_worker::WorkbookImport, profile_worker::ProfileWorker, query_worker::QueryWorker,
+    review_case::ReviewCase, rankings_collection::RankingsCollectionState, reviewer::LocalReviewer,
+    row_worker::RowWorker, run::RunCoordinator, source::SourceGateway, source_cache::SourceCache,
+    Runtime,
 };
 use anyhow::{bail, Context, Result};
 use restate_sdk::prelude::{Endpoint, HttpServer};
@@ -21,6 +22,9 @@ pub async fn serve(config: &Path, bind: SocketAddr) -> Result<()> {
     let runtime = Runtime::open(config)?;
     let endpoint = Endpoint::builder()
         .bind(PipelineControl {
+            runtime: runtime.clone(),
+        })
+        .bind(BrowserSession {
             runtime: runtime.clone(),
         })
         .bind(WorkbookImport {
@@ -51,12 +55,15 @@ pub async fn serve(config: &Path, bind: SocketAddr) -> Result<()> {
             runtime: runtime.clone(),
         })
         .bind(SourceCache)
+        .bind(RankingsCollectionState {
+            runtime: runtime.clone(),
+        })
         .build();
     tracing::info!(address = %listener.local_addr()?, "Native athlete worker ready");
     HttpServer::new(endpoint)
         .serve_with_cancel(listener, shutdown(terminate, interrupt))
         .await;
-    runtime.drain().await;
+    runtime.drain().await?;
     Ok(())
 }
 
