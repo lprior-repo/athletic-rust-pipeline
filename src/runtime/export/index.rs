@@ -183,3 +183,79 @@ pub(super) fn count_resolution(
         .context("resolution count overflow")?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::validate_export_coverage;
+    use crate::runtime::{export::ExportCoverage, run_protocol::Coverage};
+
+    fn exported(
+        completed: u64,
+        pending: u64,
+        accepted: u64,
+        no_match: u64,
+        review: u64,
+    ) -> ExportCoverage {
+        ExportCoverage {
+            source_rows: completed + pending,
+            selected_rows: completed + pending,
+            completed_rows: completed,
+            pending_rows: pending,
+            accepted_rows: accepted,
+            no_match_rows: no_match,
+            review_rows: review,
+        }
+    }
+
+    fn sealed(
+        completed: u64,
+        deterministic: u64,
+        local_review: u64,
+        no_match: u64,
+        review: u64,
+    ) -> Coverage {
+        Coverage {
+            selected: completed,
+            completed,
+            deterministic,
+            local_review,
+            no_match,
+            review_required: review,
+        }
+    }
+
+    fn rejection(actual: &ExportCoverage, expected: &Coverage, indexed: u64) -> String {
+        validate_export_coverage(actual, expected, indexed, actual.source_rows)
+            .expect_err("inconsistent coverage must be rejected")
+            .to_string()
+    }
+
+    #[test]
+    fn coverage_reconciling_with_the_sealed_run_is_accepted() {
+        let actual = exported(90, 10, 84, 3, 3);
+        let expected = sealed(90, 80, 4, 3, 3);
+        assert!(validate_export_coverage(&actual, &expected, 90, 100).is_ok());
+    }
+
+    #[test]
+    fn an_export_that_drops_pending_rows_is_rejected() {
+        let mut actual = exported(90, 9, 84, 3, 3);
+        actual.source_rows = 100;
+        let expected = sealed(90, 80, 4, 3, 3);
+        assert!(rejection(&actual, &expected, 90).contains("neither completed nor pending"));
+    }
+
+    #[test]
+    fn resolutions_that_do_not_reconcile_with_run_progress_are_rejected() {
+        let actual = exported(90, 10, 83, 3, 3);
+        let expected = sealed(90, 80, 4, 3, 3);
+        assert!(rejection(&actual, &expected, 90).contains("resolution coverage differs"));
+    }
+
+    #[test]
+    fn totals_that_differ_from_sealed_reports_are_rejected() {
+        let actual = exported(90, 10, 84, 3, 3);
+        let expected = sealed(89, 79, 4, 3, 3);
+        assert!(rejection(&actual, &expected, 89).contains("differs from sealed run reports"));
+    }
+}
