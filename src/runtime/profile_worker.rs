@@ -307,9 +307,9 @@ async fn parse_document(
                 SourceResource::ProfileHtml { .. } => Ok(Payload::Html(
                     profile::parse_profile_html(athlete, receipt.digest, &bytes)?,
                 )),
-                SourceResource::Rankings { .. } => {
-                    Err(anyhow::anyhow!("rankings resource not supported in profile parser"))
-                }
+                SourceResource::Rankings { .. } => Err(anyhow::anyhow!(
+                    "rankings resource not supported in profile parser"
+                )),
                 SourceResource::Search { .. } | SourceResource::Team { .. } => {
                     Err(anyhow::anyhow!("unexpected resource in profile parser"))
                 }

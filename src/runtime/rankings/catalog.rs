@@ -1,5 +1,5 @@
-use crate::domain::identity::EvidenceDigest;
 use super::types::{is_excluded, NavEvent, RankedEvent, RankingsPlan};
+use crate::domain::identity::EvidenceDigest;
 use crate::runtime::protocol::RankingsCapture;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -76,6 +76,7 @@ impl EventCatalog {
             .and_then(|value| value.as_array())
             .ok_or(CatalogError::MissingEvents)?;
         let (_, observed) = events_array.iter().try_fold(
+            (HashMap::<u64, usize>::new(), Vec::<NavEvent>::new()),
             |(mut seen_ids, mut observed), value| {
                 let event = NavEvent::from_value(value).ok_or(CatalogError::MalformedNavEvent)?;
                 if event.id == 0 || event.short.is_empty() || event.short.len() > 64 {
@@ -85,7 +86,9 @@ impl EventCatalog {
                     return Ok((seen_ids, observed));
                 }
                 if let Some(index) = seen_ids.get(&event.id) {
-                    let existing = observed.get(*index).ok_or(CatalogError::MalformedNavEvent)?;
+                    let existing = observed
+                        .get(*index)
+                        .ok_or(CatalogError::MalformedNavEvent)?;
                     if existing != &event {
                         return Err(CatalogError::DuplicateEventId {
                             id: event.id,
@@ -225,5 +228,9 @@ pub enum CatalogError {
     #[error("malformed nav event")]
     MalformedNavEvent,
     #[error("duplicate event ID {id}: '{first_short}' vs '{second_short}'")]
-    DuplicateEventId { id: u64, first_short: String, second_short: String },
+    DuplicateEventId {
+        id: u64,
+        first_short: String,
+        second_short: String,
+    },
 }

@@ -1,9 +1,12 @@
+use super::relay::parse_relay_roster;
 use crate::domain::identity::AthleteId;
 use crate::domain::name::CanonicalName;
 use crate::runtime::rankings::types::{
     ExpectedPageContext, IndividualCandidate, PageObservation, RankingRowObservation,
 };
-use super::relay::parse_relay_roster;
+
+const MAX_PAGE_ROWS: usize = 1_024;
+pub(super) const MAX_PAGE_CANDIDATES: usize = 1_024;
 
 /// Parse a source rankings page response with full scope validation.
 pub fn parse_page_response(
@@ -11,10 +14,37 @@ pub fn parse_page_response(
     expected: &ExpectedPageContext<'_>,
 ) -> Result<PageObservation, PageParseError> {
     let mut observation = PageObservation::default();
+    validate_scope(raw, expected, &mut observation)?;
+    let groups = raw
+        .get("groupedRankings")
+        .and_then(|value| value.as_array())
+        .ok_or(PageParseError::MissingGroupedRankings)?;
+    let raw_min_count = raw
+        .get("minCount")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingMinCount)?;
+    let (_, unresolved, candidate_count) = parse_groups(groups, expected, &mut observation)?;
+    observation.grade_11_candidates = candidate_count;
+    observation.unresolved_individual_identities = unresolved;
+    if expected.is_relay {
+        observation.total_relay_rows = u64::try_from(observation.id_results.len())
+            .map_err(|_| PageParseError::CounterOverflow)?;
+        parse_relay_roster(raw, &mut observation)?;
+    }
+    observation.min_count = raw_min_count;
+    Ok(observation)
+}
 
-    // Validate division
+fn validate_scope(
+    raw: &serde_json::Value,
+    expected: &ExpectedPageContext<'_>,
+    observation: &mut PageObservation,
+) -> Result<(), PageParseError> {
     let div = raw.get("division").ok_or(PageParseError::MissingDivision)?;
-    let div_id = div.get("ID").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingDivisionId)?;
+    let div_id = div
+        .get("ID")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingDivisionId)?;
     if div_id != expected.division_id {
         return Err(PageParseError::DivisionMismatch {
             expected: expected.division_id,
@@ -22,9 +52,10 @@ pub fn parse_page_response(
         });
     }
     observation.division_id = Some(div_id);
-
-    // Validate season
-    let season_id = div.get("SeasonID").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingSeasonId)?;
+    let season_id = div
+        .get("SeasonID")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingSeasonId)?;
     if season_id != expected.season_id {
         return Err(PageParseError::SeasonMismatch {
             expected: expected.season_id,
@@ -32,202 +63,274 @@ pub fn parse_page_response(
         });
     }
     observation.season_id = Some(season_id);
+    validate_division_metadata(div)?;
+    validate_request_metadata(raw, expected, observation)
+}
 
-    // BaseDiv REQUIRED: validate country and level
+fn validate_division_metadata(div: &serde_json::Value) -> Result<(), PageParseError> {
     let base_div = div.get("BaseDiv").ok_or(PageParseError::MissingBaseDiv)?;
-    let country = base_div.get("Country").and_then(|v| v.as_str()).ok_or(PageParseError::MissingCountry)?;
+    let country = base_div
+        .get("Country")
+        .and_then(|value| value.as_str())
+        .ok_or(PageParseError::MissingCountry)?;
     if country != "USA" {
         return Err(PageParseError::WrongCountry {
-            expected: "USA".to_string(),
-            actual: country.to_string(),
+            expected: "USA".to_owned(),
+            actual: country.to_owned(),
         });
     }
-    let level = base_div.get("Level").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingLevel)?;
+    let level = base_div
+        .get("Level")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingLevel)?;
     if level != 4 {
-        return Err(PageParseError::WrongLevel { expected: 4, actual: level });
+        return Err(PageParseError::WrongLevel {
+            expected: 4,
+            actual: level,
+        });
     }
+    Ok(())
+}
 
-    // Validate root gender
-    let root_gender = raw.get("gender").and_then(|v| v.as_str()).ok_or(PageParseError::MissingGender)?;
+fn validate_request_metadata(
+    raw: &serde_json::Value,
+    expected: &ExpectedPageContext<'_>,
+    observation: &mut PageObservation,
+) -> Result<(), PageParseError> {
+    let root_gender = raw
+        .get("gender")
+        .and_then(|value| value.as_str())
+        .ok_or(PageParseError::MissingGender)?;
     if root_gender != expected.gender {
         return Err(PageParseError::GenderMismatch {
-            expected: expected.gender.to_string(),
-            actual: root_gender.to_string(),
+            expected: expected.gender.to_owned(),
+            actual: root_gender.to_owned(),
         });
     }
     observation.request_gender = Some(root_gender.to_owned());
-
-    // Validate eventShort
-    let root_event_short = raw.get("eventShort").and_then(|v| v.as_str()).ok_or(PageParseError::MissingEventShort)?;
+    let root_event_short = raw
+        .get("eventShort")
+        .and_then(|value| value.as_str())
+        .ok_or(PageParseError::MissingEventShort)?;
     if root_event_short != expected.event_short {
         return Err(PageParseError::EventShortMismatch {
-            expected: expected.event_short.to_string(),
-            actual: root_event_short.to_string(),
+            expected: expected.event_short.to_owned(),
+            actual: root_event_short.to_owned(),
         });
     }
     observation.event_short = Some(root_event_short.to_owned());
-
-    // Validate eventId when expected
-    if let Some(expected_eid) = expected.event_id {
-        let actual_eid = raw.get("eventId").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingEventId)?;
-        if actual_eid != expected_eid {
+    if let Some(expected_event_id) = expected.event_id {
+        let actual_event_id = raw
+            .get("eventId")
+            .and_then(|value| value.as_u64())
+            .ok_or(PageParseError::MissingEventId)?;
+        if actual_event_id != expected_event_id {
             return Err(PageParseError::EventIdMismatch {
-                expected: expected_eid,
-                actual: actual_eid,
+                expected: expected_event_id,
+                actual: actual_event_id,
             });
         }
     }
+    validate_settings(raw, expected, observation)
+}
 
-    // Validate settings
+fn validate_settings(
+    raw: &serde_json::Value,
+    expected: &ExpectedPageContext<'_>,
+    observation: &mut PageObservation,
+) -> Result<(), PageParseError> {
     let settings = raw.get("settings").ok_or(PageParseError::MissingSettings)?;
-
-    // page REQUIRED: use u64 (no lossy i64)
-    let page = settings.get("page").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingPage)?;
+    let page = settings
+        .get("page")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingPage)?;
     let actual_page = u32::try_from(page).map_err(|_| PageParseError::InvalidPageNumber)?;
     if actual_page != expected.page {
-        return Err(PageParseError::PageMismatch { expected: expected.page, actual: actual_page });
+        return Err(PageParseError::PageMismatch {
+            expected: expected.page,
+            actual: actual_page,
+        });
     }
     observation.request_page = Some(actual_page);
-    let depth = settings.get("depth").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingDepth)?;
+    let depth = settings
+        .get("depth")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingDepth)?;
     if depth == 0 {
         return Err(PageParseError::ZeroPageDepth);
     }
     observation.settings_page_depth = depth;
+    let grades = settings
+        .get("grades")
+        .and_then(|value| value.as_array())
+        .ok_or(PageParseError::MissingGrades)?;
+    validate_grades(grades, expected)
+}
 
-    // grades REQUIRED: must match expected
-    let grades = settings.get("grades").and_then(|v| v.as_array()).ok_or(PageParseError::MissingGrades)?;
+fn validate_grades(
+    grades: &[serde_json::Value],
+    expected: &ExpectedPageContext<'_>,
+) -> Result<(), PageParseError> {
     if expected.is_relay {
-        // Relay: grades must be empty array
-        if !grades.is_empty() {
-            return Err(PageParseError::RelayHasGrades);
-        }
-    } else if let Some(req_grade) = expected.requested_grade {
-        // Individual with explicit grade: grades must exactly match
-        let g: Vec<u64> = grades
-            .iter()
-            .map(|v| v.as_u64().ok_or(PageParseError::NonNumericGrade))
-            .collect::<Result<Vec<_>, _>>()?;
-        if g != vec![req_grade as u64] {
-            return Err(PageParseError::WrongGradeFilter {
-                expected: vec![req_grade as u64],
-                actual: g,
-            });
-        }
+        return grades
+            .is_empty()
+            .then_some(())
+            .ok_or(PageParseError::RelayHasGrades);
+    }
+    let actual = grades
+        .iter()
+        .map(|value| value.as_u64().ok_or(PageParseError::NonNumericGrade))
+        .collect::<Result<Vec<_>, _>>()?;
+    let expected_grades = expected
+        .requested_grade
+        .map(u64::from)
+        .into_iter()
+        .collect::<Vec<_>>();
+    if actual == expected_grades {
+        Ok(())
     } else {
-        // Historical all-grade (requested_grade==None): grades must be empty
-        if !grades.is_empty() {
-            return Err(PageParseError::WrongGradeFilter {
-                expected: vec![],
-                actual: grades.iter().filter_map(|v| v.as_u64()).collect(),
-            });
+        Err(PageParseError::WrongGradeFilter {
+            expected: expected_grades,
+            actual,
+        })
+    }
+}
+
+fn parse_groups(
+    groups: &[serde_json::Value],
+    expected: &ExpectedPageContext<'_>,
+    observation: &mut PageObservation,
+) -> Result<(u64, u64, u64), PageParseError> {
+    groups
+        .iter()
+        .enumerate()
+        .try_fold((0_u64, 0_u64, 0_u64), |state, (group_index, group)| {
+            let rows = group
+                .as_array()
+                .ok_or(PageParseError::NonArrayGroup { index: group_index })?;
+            rows.iter()
+                .enumerate()
+                .try_fold(state, |state, (row_index, row)| {
+                    parse_row(row, group_index, row_index, expected, observation, state)
+                })
+        })
+}
+
+fn parse_row(
+    row: &serde_json::Value,
+    group_index: usize,
+    row_index: usize,
+    expected: &ExpectedPageContext<'_>,
+    observation: &mut PageObservation,
+    (candidate_index, unresolved, candidate_count): (u64, u64, u64),
+) -> Result<(u64, u64, u64), PageParseError> {
+    if observation.source_rows.len() >= MAX_PAGE_ROWS {
+        return Err(PageParseError::PageRowsLimitExceeded);
+    }
+    let row_number = row
+        .get("rowNum")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingRowNum)?;
+    if row_number == 0 {
+        return Err(PageParseError::ZeroRowNumber);
+    }
+    let id_result = row
+        .get("IDResult")
+        .and_then(|value| value.as_u64())
+        .ok_or(PageParseError::MissingRowIdResult)?;
+    if id_result == 0 {
+        return Err(PageParseError::ZeroResultId);
+    }
+    observation.row_count = observation
+        .row_count
+        .checked_add(1)
+        .ok_or(PageParseError::CounterOverflow)?;
+    observation.source_rows.push(RankingRowObservation {
+        result_id: id_result,
+        row_number,
+        roster_present: None,
+    });
+    if let Some(athlete_id) = row.get("AthleteID").and_then(|value| value.as_u64()) {
+        if athlete_id == 0 {
+            return Err(PageParseError::ZeroAthleteId);
         }
+        observation.id_results.push(id_result);
     }
-
-    // Parse groupedRankings array
-    let groups = raw
-        .get("groupedRankings")
-        .and_then(|v| v.as_array())
-        .ok_or(PageParseError::MissingGroupedRankings)?;
-
-    // Read raw minCount from response
-    let raw_min_count = raw
-        .get("minCount")
-        .and_then(|v| v.as_u64())
-        .ok_or(PageParseError::MissingMinCount)?;
-
-    let mut candidate_idx = 0u64;
-    let mut unresolved_individual = 0u64;
-    let mut grade_11_candidates_count = 0u64;
-
-    for (gi, group) in groups.iter().enumerate() {
-        let rows = group.as_array().ok_or(PageParseError::NonArrayGroup { index: gi })?;
-        for (ri, rv) in rows.iter().enumerate() {
-            // Source pointer: JSON pointer format with leading /
-            let source_ptr = format!("/groupedRankings/{}/{}", gi, ri);
-
-            // row_number from raw rowNum field (not fabricated counter)
-            let raw_row_num = rv.get("rowNum").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingRowNum)?;
-            observation.row_count += 1;
-
-            // IDResult REQUIRED on each row
-            let id_result = rv.get("IDResult").and_then(|v| v.as_u64()).ok_or(PageParseError::MissingRowIdResult)?;
-
-            // Source row observation
-            observation.source_rows.push(RankingRowObservation {
-                result_id: id_result,
-                row_number: raw_row_num,
-                roster_present: None, // filled by relay parser
-            });
-
-            // Track id_results and athlete_ids for relay joins
-            let athlete_id_val = rv.get("AthleteID").and_then(|v| v.as_u64());
-            if let Some(aid) = athlete_id_val {
-                observation.id_results.push(id_result);
-                observation.row_athlete_ids.insert(id_result.to_string(), aid);
-            }
-
-            // Individual candidate extraction (non-relay only, GradeID=11)
-            if !expected.is_relay {
-                if let Some(grade_id) = rv.get("GradeID").and_then(|v| v.as_u64()) {
-                    if grade_id == 11 {
-                        if let (Some(aid), Some(name_raw)) = (
-                            rv.get("AthleteID").and_then(|v| v.as_u64()),
-                            rv.get("AthleteName").and_then(|v| v.as_str()),
-                        ) {
-                            // Must have IDResult for individual candidate
-                            // Tuple match: both results must be Ok
-                            let (name_res, athlete_res) = (
-                                CanonicalName::parse(name_raw),
-                                AthleteId::new(aid),
-                            );
-                            match (name_res, athlete_res) {
-                                (Ok(name), Ok(athlete_id)) => {
-                                    grade_11_candidates_count += 1;
-                                    observation.grade_11_candidates_list.push(IndividualCandidate {
-                                        athlete_id,
-                                        name,
-                                        id_result,
-                                        grade_id,
-                                        team_id: rv.get("TeamID").and_then(|v| v.as_u64()),
-                                        team_name: rv.get("TeamName")
-                                            .and_then(|v| v.as_str())
-                                            .map(|s| s.to_owned()),
-                                        state: rv.get("State").and_then(|v| v.as_str()).map(|s| s.to_owned()),
-                                        country: rv.get("Country").and_then(|v| v.as_str()).map(|s| s.to_owned()),
-                                        source_locator: Some(source_ptr),
-                                        source_row: Some(rv.clone()),
-                                        record_index: candidate_idx,
-                                    });
-                                    candidate_idx += 1;
-                                }
-                                _ => {
-                                    // Missing or invalid name/ID increments unresolved
-                                    unresolved_individual += 1;
-                                }
-                            }
-                        } else {
-                            // Missing AthleteID or AthleteName for GradeID=11 row
-                            unresolved_individual += 1;
-                        }
-                    }
-                }
-            }
-        }
+    if expected.is_relay || row.get("GradeID").and_then(|value| value.as_u64()) != Some(11) {
+        return Ok((candidate_index, unresolved, candidate_count));
     }
+    parse_individual_candidate(
+        row,
+        group_index,
+        row_index,
+        observation,
+        (candidate_index, unresolved, candidate_count),
+    )
+}
 
-    observation.grade_11_candidates = grade_11_candidates_count;
-    observation.unresolved_individual_identities = unresolved_individual;
-
-    // Relay roster parsing
-    if expected.is_relay {
-        observation.total_relay_rows = observation.id_results.len() as u64;
-        parse_relay_roster(raw, &mut observation)?;
+fn parse_individual_candidate(
+    row: &serde_json::Value,
+    group_index: usize,
+    row_index: usize,
+    observation: &mut PageObservation,
+    (candidate_index, unresolved, candidate_count): (u64, u64, u64),
+) -> Result<(u64, u64, u64), PageParseError> {
+    let identity = row
+        .get("AthleteID")
+        .and_then(|value| value.as_u64())
+        .zip(row.get("AthleteName").and_then(|value| value.as_str()));
+    let parsed = identity.and_then(|(id, name)| {
+        CanonicalName::parse(name)
+            .ok()
+            .zip(AthleteId::new(id).ok())
+            .map(|(name, athlete_id)| (athlete_id, name))
+    });
+    let Some((athlete_id, name)) = parsed else {
+        return Ok((
+            candidate_index,
+            unresolved
+                .checked_add(1)
+                .ok_or(PageParseError::CounterOverflow)?,
+            candidate_count,
+        ));
+    };
+    if observation.grade_11_candidates_list.len() >= MAX_PAGE_CANDIDATES {
+        return Err(PageParseError::CandidateLimitExceeded);
     }
-
-    // min_count from raw JSON minCount field
-    observation.min_count = raw_min_count;
-
-    Ok(observation)
+    let record_index = candidate_index;
+    let next_index = candidate_index
+        .checked_add(1)
+        .ok_or(PageParseError::CounterOverflow)?;
+    let next_count = candidate_count
+        .checked_add(1)
+        .ok_or(PageParseError::CounterOverflow)?;
+    observation
+        .grade_11_candidates_list
+        .push(IndividualCandidate {
+            athlete_id,
+            name,
+            id_result: row
+                .get("IDResult")
+                .and_then(|value| value.as_u64())
+                .ok_or(PageParseError::MissingRowIdResult)?,
+            grade_id: 11,
+            team_id: row.get("TeamID").and_then(|value| value.as_u64()),
+            team_name: row
+                .get("TeamName")
+                .and_then(|value| value.as_str())
+                .map(str::to_owned),
+            state: row
+                .get("State")
+                .and_then(|value| value.as_str())
+                .map(str::to_owned),
+            country: row
+                .get("Country")
+                .and_then(|value| value.as_str())
+                .map(str::to_owned),
+            record_index,
+            source_locator: Some(format!("/groupedRankings/{group_index}/{row_index}")),
+        });
+    Ok((next_index, unresolved, next_count))
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -278,6 +381,20 @@ pub enum PageParseError {
     MissingRowNum,
     #[error("missing IDResult in row")]
     MissingRowIdResult,
+    #[error("row number must be non-zero")]
+    ZeroRowNumber,
+    #[error("IDResult must be non-zero")]
+    ZeroResultId,
+    #[error("AthleteID must be non-zero when present")]
+    ZeroAthleteId,
+    #[error("page row limit exceeded")]
+    PageRowsLimitExceeded,
+    #[error("page candidate limit exceeded")]
+    CandidateLimitExceeded,
+    #[error("page counter overflow")]
+    CounterOverflow,
+    #[error("relay team limit exceeded")]
+    RelayTeamLimitExceeded,
     #[error("division ID mismatch: expected {expected}, got {actual}")]
     DivisionMismatch { expected: u64, actual: u64 },
     #[error("season ID mismatch: expected {expected}, got {actual}")]
@@ -299,7 +416,10 @@ pub enum PageParseError {
     #[error("relay has grades filter: expected empty")]
     RelayHasGrades,
     #[error("wrong grade filter: expected {expected:?}, got {actual:?}")]
-    WrongGradeFilter { expected: Vec<u64>, actual: Vec<u64> },
+    WrongGradeFilter {
+        expected: Vec<u64>,
+        actual: Vec<u64>,
+    },
     #[error("wrong relay join: roster.IDResult={roster_id_result} row.IDResult={row_id_result} roster.RelayTeamID={roster_relay_team_id} row.AthleteID={row_athlete_id}")]
     WrongRelayJoin {
         roster_id_result: u64,

@@ -1,9 +1,10 @@
-use crate::store::StoreError;
-use super::common::{validate_event_short, ATHLETE_REF, COLLECTION_PREFIX, DIGEST_BYTES, MAX_NAME_BYTES, NAME_REF, PAGE_MARKER};
-use super::types::{RankingCandidateEntry, RankingCandidateKind, RankingRecordRef};
+use super::common::{
+    validate_event_short, ATHLETE_REF, COLLECTION_PREFIX, DIGEST_BYTES, MAX_NAME_BYTES, NAME_REF,
+    PAGE_MARKER,
+};
+use super::types::{RankingCandidateKind, RankingRecordRef};
 use crate::domain::identity::{AthleteId, EvidenceDigest};
-use crate::domain::name::CanonicalName;
-use sha2::{Digest, Sha256};
+use crate::store::StoreError;
 
 /// Build page marker key: rk\0pk\0<collection>\0<event>\0<page(8B BE)>.
 pub(super) fn page_marker_key(

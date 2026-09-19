@@ -1,5 +1,0 @@
-RTX5090 micro-pass 3. Return exactly the replacement Rust statements (no markdown, no path, no explanation) for this current block:
-        ctx.set("state", Json(state.clone()));
-        schedule_step(&ctx, &state).await?;
-        Ok(Json(state))
-The replacement must compile with owned ctx.set and preserve returned state: schedule first while borrowing state, clone once for response, move original into ctx.set, return response. Output exactly four Rust lines.

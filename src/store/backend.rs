@@ -8,13 +8,10 @@ use super::{
     CACHE_BYTES, MAX_BATCH_BYTES, MAX_BATCH_RECORDS,
 };
 use crate::{
-    domain::identity::{AthleteId, EvidenceDigest, SourceRowKey, WorkbookDigest},
-    domain::name::CanonicalName,
+    domain::identity::{EvidenceDigest, SourceRowKey, WorkbookDigest},
     model::SourceRecord,
 };
-use super::rankings::types::{RankingLookup, RankingRecordRef};
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
-use sha2::Digest;
 use std::{collections::BTreeMap, path::Path, str, sync::Mutex};
 
 const DOCUMENTS: &str = "documents";
@@ -288,24 +285,4 @@ fn validate_stored_key(record: &SourceRecord, sheet: &str, row: u32) -> Result<(
 fn parse_index_digest(bytes: &[u8]) -> Result<EvidenceDigest> {
     let text = str::from_utf8(bytes).map_err(|_| StoreError::CorruptData)?;
     EvidenceDigest::parse(text).map_err(|_| StoreError::CorruptData)
-}
-
-fn ranking_name_ref_prefix(collection: &EvidenceDigest, name: &str) -> Vec<u8> {
-    let mut key = super::rankings::common::COLLECTION_PREFIX.to_vec();
-    key.extend_from_slice(b"rn\0");
-    key.extend_from_slice(collection.as_str().as_bytes());
-    key.push(b'\0');
-    key.extend_from_slice(name.as_bytes());
-    key.push(b'\0');
-    key
-}
-
-fn ranking_athlete_ref_prefix(collection: &EvidenceDigest, athlete: AthleteId) -> Vec<u8> {
-    let mut key = super::rankings::common::COLLECTION_PREFIX.to_vec();
-    key.extend_from_slice(b"ra\0");
-    key.extend_from_slice(collection.as_str().as_bytes());
-    key.push(b'\0');
-    key.extend_from_slice(&athlete.get().to_be_bytes());
-    key.push(b'\0');
-    key
 }

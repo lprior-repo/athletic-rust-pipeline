@@ -10,10 +10,11 @@ use crate::runtime::{
     protocol::{FailureCode, FetchOutcome, OperationFailure, RetryEvidence, SourceResource},
     Runtime,
 };
-use dispatch::ReadinessPolicy;
+pub use dispatch::ReadinessPolicy;
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
+#[cfg(test)]
 mod tests;
 
 pub use admission::{AdmissionDecision, AdmissionFeedback};
@@ -61,7 +62,10 @@ impl SourceGateway {
         if ctx.key() != "global" || ctx.scope() != Some(SOURCE_SCOPE) {
             return Err(TerminalError::new("invalid bounded source scope or key").into());
         }
-        let request = match crate::runtime::source::request::build(self.runtime.config.source_origin(), &input.0) {
+        let request = match crate::runtime::source::request::build(
+            self.runtime.config.source_origin(),
+            &input.0,
+        ) {
             Ok(request) => request,
             Err(error) => {
                 return Ok(Json(FetchOutcome::Failed {
@@ -246,10 +250,13 @@ async fn run_step(
         // Rankings: never retry HTTP failures (403/429/challenge).
         // Retain the actual receipt/evidence and return failure immediately.
         // Non-rankings requests keep the existing retryable behavior.
-        let retryable = if is_rankings { false } else { attempt.retryable };
+        let retryable = if is_rankings {
+            false
+        } else {
+            attempt.retryable
+        };
         let delay = if retryable {
-            retry::next_delay(attempt_index, &attempt, interval)
-                .map_err(TerminalError::new)?
+            retry::next_delay(attempt_index, &attempt, interval).map_err(TerminalError::new)?
         } else {
             Duration::ZERO
         };
@@ -280,12 +287,8 @@ async fn publish_final_feedback(
     finalized: &result::Finalized,
     is_rankings: bool,
 ) -> Result<(), HandlerError> {
-    if finalized.blocked
-        && matches!(&finalized.outcome, FetchOutcome::Retrieved { .. })
-    {
-        return Err(
-            TerminalError::new("successful source response cannot block admission").into(),
-        );
+    if finalized.blocked && matches!(&finalized.outcome, FetchOutcome::Retrieved { .. }) {
+        return Err(TerminalError::new("successful source response cannot block admission").into());
     }
     if is_rankings {
         return publish_feedback(ctx, None, finalized.cooldown_ms).await;

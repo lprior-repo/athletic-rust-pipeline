@@ -112,4 +112,7 @@ pub struct Start {
     /// Max pages per event (bounded safety cap 10000)
     #[arg(long, default_value = "10000")]
     pub max_pages_per_event: u32,
+    /// Publish a verified final workbook automatically after run completion.
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }

@@ -2,12 +2,9 @@ use super::is_challenge;
 use crate::runtime::browser::actor::Actor;
 use crate::runtime::browser::{
     actor::{ChallengeTarget, JobResult},
-    pool::{self, Pending, PageSlot},
-    transport,
-    BrowserError, BrowserResponse,
+    pool::Pending,
+    transport, BrowserError, BrowserResponse,
 };
-use chromiumoxide::cdp::browser_protocol::target::CreateTargetParams;
-use std::time::{Duration, Instant};
 use tokio::sync::oneshot;
 
 impl Actor {
@@ -45,7 +42,10 @@ impl Actor {
             let shutdown = self.shutdown.clone();
             let timeout = self.settings.request_timeout;
             let request = item.request.clone();
-            let is_rankings = matches!(&request.action, crate::runtime::source::request::RequestAction::Rankings(_));
+            let is_rankings = matches!(
+                &request.action,
+                crate::runtime::source::request::RequestAction::Rankings(_)
+            );
             let nonce = self.next_capture_nonce();
             let source_origin = self.settings.source_origin.clone();
             self.jobs.spawn(async move {
@@ -74,7 +74,10 @@ impl Actor {
         }
     }
 
-    pub(in crate::runtime::browser) fn complete_job(&mut self, job: Option<Result<JobResult, tokio::task::JoinError>>) {
+    pub(in crate::runtime::browser) fn complete_job(
+        &mut self,
+        job: Option<Result<JobResult, tokio::task::JoinError>>,
+    ) {
         match job {
             Some(Ok(job)) => {
                 if let Some(slot) = self.pages.get_mut(job.slot) {

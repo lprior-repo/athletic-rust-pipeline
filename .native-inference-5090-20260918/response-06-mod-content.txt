@@ -1,4 +1,0 @@
-ctx.set("state", Json(state.clone()));
-schedule_step(&ctx, &state).await?;
-ctx.set("state", Json(state));
-Ok(Json(state))

@@ -81,8 +81,16 @@ impl BrowserSession {
         let status = ctx
             .run(move || async move {
                 let runtime = self.runtime.clone();
-                let browser = runtime.ensure_browser().await.map_err(|e| TerminalError::new(e.to_string()))?;
-                Ok::<_, HandlerError>(Json(browser.inspect().await.map_err(|e| TerminalError::new(e.to_string()))?))
+                let browser = runtime
+                    .ensure_browser()
+                    .await
+                    .map_err(|e| TerminalError::new(e.to_string()))?;
+                Ok::<_, HandlerError>(Json(
+                    browser
+                        .inspect()
+                        .await
+                        .map_err(|e| TerminalError::new(e.to_string()))?,
+                ))
             })
             .name("capture_ready physical act")
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
@@ -107,8 +115,16 @@ impl BrowserSession {
         let status = ctx
             .run(move || async move {
                 let runtime = self.runtime.clone();
-                let browser = runtime.ensure_browser().await.map_err(|e| TerminalError::new(e.to_string()))?;
-                Ok::<_, HandlerError>(Json(browser.recover().await.map_err(|e| TerminalError::new(e.to_string()))?))
+                let browser = runtime
+                    .ensure_browser()
+                    .await
+                    .map_err(|e| TerminalError::new(e.to_string()))?;
+                Ok::<_, HandlerError>(Json(
+                    browser
+                        .recover()
+                        .await
+                        .map_err(|e| TerminalError::new(e.to_string()))?,
+                ))
             })
             .name("recover physical act")
             .retry_policy(RunRetryPolicy::new().max_attempts(1))

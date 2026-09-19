@@ -1,5 +1,5 @@
-use super::rankings::RankingsScope;
 use super::identity::fingerprint;
+use super::rankings::RankingsScope;
 use super::row_protocol::RowResolution;
 use crate::domain::identity::{EvidenceDigest, SourceRowKey};
 use anyhow::{bail, Context, Result};

@@ -1,6 +1,9 @@
 pub(crate) mod challenge;
 
-use super::{request::{RequestAction, RequestSpec}, retry};
+use super::{
+    request::{RequestAction, RequestSpec},
+    retry,
+};
 use crate::runtime::browser::BrowserError;
 use crate::runtime::rankings::RankingPageObservation;
 use crate::runtime::{

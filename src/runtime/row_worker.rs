@@ -7,7 +7,9 @@ use review::resolve_assessment;
 use support::{publish, publish_report, publish_terminal, source_validation, validate_job};
 
 use super::{
-    row_protocol::{DiscoverySummary, RankingDiscoveryEvidence, RowJob, RowReport, ROW_PROTOCOL_REVISION},
+    row_protocol::{
+        DiscoverySummary, RankingDiscoveryEvidence, RowJob, RowReport, ROW_PROTOCOL_REVISION,
+    },
     Runtime,
 };
 use crate::{
@@ -121,21 +123,21 @@ impl RowWorker {
         source: SourceRecord,
         queries: Vec<SearchQuery>,
     ) -> Result<Json<EvidenceDigest>, HandlerError> {
-        let mut discovery = execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
-        let query_refs = discovery.refs.clone();
+        let mut discovery =
+            execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
+        let query_refs = std::mem::take(&mut discovery.refs);
         let source_name = CanonicalName::from_source(&source).ok().flatten();
         let rankings_evidence = if let Some(ranking_ref) = &job.rankings {
             let collection = ranking_ref.collection.clone();
             let bound_snapshot = ranking_ref.snapshot.clone();
-            let (lookup, lookup_incomplete) =
-                rankings::perform_rankings_lookup(
-                    ctx,
-                    self.runtime.clone(),
-                    collection,
-                    bound_snapshot,
-                    source_name.clone(),
-                )
-                .await?;
+            let (lookup, lookup_incomplete) = rankings::perform_rankings_lookup(
+                ctx,
+                self.runtime.clone(),
+                collection,
+                bound_snapshot,
+                source_name.clone(),
+            )
+            .await?;
             if lookup_incomplete || lookup.truncated {
                 discovery.incomplete = true;
             }

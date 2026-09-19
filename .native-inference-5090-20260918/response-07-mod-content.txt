@@ -1,4 +1,0 @@
-schedule_step(&ctx, &state).await?;
-let state_copy = state.clone();
-ctx.set("state", Json(state));
-Ok(Json(state_copy))

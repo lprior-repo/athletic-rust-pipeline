@@ -1,9 +1,9 @@
+use crate::runtime::browser::navigation::{self, NavigationOutcome};
 use crate::runtime::browser::{
     actor::{Actor, ChallengeTarget, Command},
     pool::{self, PageSlot},
     BrowserError, BrowserResponse, BrowserState,
 };
-use crate::runtime::browser::navigation::{self, NavigationOutcome};
 use chromiumoxide::cdp::browser_protocol::target::CreateTargetParams;
 use std::time::{Duration, Instant};
 
@@ -96,7 +96,11 @@ impl Actor {
             Ok(delay) => self.apply_cooldown_duration(delay),
             Err(_) => {
                 let delay = match response.headers.get("Retry-After") {
-                    Some(value) => value.to_str().ok().and_then(|v| v.parse().ok()).unwrap_or(30),
+                    Some(value) => value
+                        .to_str()
+                        .ok()
+                        .and_then(|v| v.parse().ok())
+                        .unwrap_or(30),
                     None => 30,
                 };
                 self.apply_cooldown_duration(Duration::from_secs(delay as u64));

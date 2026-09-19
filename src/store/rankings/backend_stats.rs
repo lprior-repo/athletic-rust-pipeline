@@ -1,14 +1,13 @@
 use super::keys::{
-    collection_prefix, eligible_individual_prefix, eligible_relay_prefix,
-    roster_missing_prefix, roster_present_prefix, seal_key, source_result_prefix,
-    row_position_prefix, validate_event_short, COLLECTION_PREFIX,
+    eligible_individual_prefix, eligible_relay_prefix, roster_missing_prefix,
+    roster_present_prefix, row_position_prefix, source_result_prefix, validate_event_short,
+    COLLECTION_PREFIX,
 };
 use super::types::{RankingCollectionStats, RankingEventStats};
-use crate::store::StoreError;
 use crate::domain::identity::EvidenceDigest;
 use crate::store::backend::StoreInner;
-use fjall::{Readable, Snapshot};
-use std::sync::Mutex;
+use crate::store::StoreError;
+use fjall::Readable;
 
 /// Decode a fixed-width big-endian u64 at the given offset from the key.
 fn decode_be_u64(key: &[u8], offset: usize) -> Option<u64> {
@@ -41,7 +40,8 @@ pub(in crate::store) fn ranking_event_stats(
     let mut row_positions: u64 = 0;
     let mut max_row_position: u64 = 0;
     let mut grade11_individual: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> = std::collections::BTreeSet::new();
+    let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> =
+        std::collections::BTreeSet::new();
     let mut unresolved_rosters: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut roster_present: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut event_athletes: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();

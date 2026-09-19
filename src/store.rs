@@ -81,8 +81,7 @@ impl ArtifactStore {
 
 pub use rankings::{
     RankingCandidateEntry, RankingCandidateKind, RankingCollectionStats, RankingEventStats,
-    RankingPageIndex, RankingLookup, RankingRecordRef,
-    RankingRosterObservation, RankingSourceRow,
+    RankingLookup, RankingPageIndex, RankingRecordRef, RankingRosterObservation, RankingSourceRow,
 };
 
 impl ArtifactStore {
@@ -90,23 +89,44 @@ impl ArtifactStore {
         rankings::backend::put_rankings_page(&self.inner, index)
     }
 
-    pub fn ranking_name_refs(&self, collection: &EvidenceDigest, name: &CanonicalName, limit: usize) -> Result<RankingLookup> {
+    pub fn ranking_name_refs(
+        &self,
+        collection: &EvidenceDigest,
+        name: &CanonicalName,
+        limit: usize,
+    ) -> Result<RankingLookup> {
         rankings::backend::ranking_name_refs(&self.inner, collection, name, limit)
     }
 
-    pub fn ranking_athlete_refs(&self, collection: &EvidenceDigest, athlete: AthleteId, limit: usize) -> Result<RankingLookup> {
+    pub fn ranking_athlete_refs(
+        &self,
+        collection: &EvidenceDigest,
+        athlete: AthleteId,
+        limit: usize,
+    ) -> Result<RankingLookup> {
         rankings::backend::ranking_athlete_refs(&self.inner, collection, athlete, limit)
     }
 
-    pub fn ranking_event_stats(&self, collection: &EvidenceDigest, event_short: &str) -> Result<RankingEventStats> {
+    pub fn ranking_event_stats(
+        &self,
+        collection: &EvidenceDigest,
+        event_short: &str,
+    ) -> Result<RankingEventStats> {
         rankings::backend_stats::ranking_event_stats(&self.inner, collection, event_short)
     }
 
-    pub fn ranking_collection_stats(&self, collection: &EvidenceDigest) -> Result<RankingCollectionStats> {
+    pub fn ranking_collection_stats(
+        &self,
+        collection: &EvidenceDigest,
+    ) -> Result<RankingCollectionStats> {
         rankings::backend_stats::ranking_collection_stats(&self.inner, collection)
     }
 
-    pub fn seal_rankings(&self, collection: &EvidenceDigest, snapshot: &EvidenceDigest) -> Result<()> {
+    pub fn seal_rankings(
+        &self,
+        collection: &EvidenceDigest,
+        snapshot: &EvidenceDigest,
+    ) -> Result<()> {
         rankings::backend::seal_rankings(&self.inner, collection, snapshot)
     }
 
@@ -114,7 +134,6 @@ impl ArtifactStore {
         rankings::backend::ranking_snapshot(&self.inner, collection)
     }
 }
-
 
 #[cfg(test)]
 mod tests;

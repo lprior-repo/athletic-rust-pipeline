@@ -1,6 +1,5 @@
 use crate::store::StoreError;
 
-
 pub(in crate::store) const COLLECTION_PREFIX: &[u8] = b"rk\0";
 pub(in crate::store) const DIGEST_BYTES: usize = 64;
 pub(in crate::store) const MAX_EVENT_SHORT: usize = 128;

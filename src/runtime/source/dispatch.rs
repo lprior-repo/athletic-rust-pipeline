@@ -8,7 +8,7 @@ use std::time::Duration;
 /// Legacy: use the full auto-recovery path (await_ready).
 /// Rankings: one-shot capture_ready, only Ready permits proceeding.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub(super) enum ReadinessPolicy {
+pub enum ReadinessPolicy {
     Legacy,
     Rankings,
 }
@@ -41,22 +41,6 @@ pub(super) async fn await_browser(ctx: &ObjectContext<'_>) -> Result<(), Handler
         }
         Err(error) => Err(error.into()),
     }
-}
-
-/// One-shot readiness check for rankings requests.
-/// Returns the current browser status without waiting or auto-recovery.
-/// Only BrowserState::Ready permits proceeding.
-pub(super) async fn check_browser_ready(
-    ctx: &SharedObjectContext<'_>,
-) -> Result<crate::runtime::browser::BrowserStatus, HandlerError> {
-    use crate::runtime::browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY};
-    let status = ctx
-        .object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
-        .capture_ready()
-        .call()
-        .await?
-        .0;
-    Ok(status)
 }
 
 pub(super) async fn admitted_step(

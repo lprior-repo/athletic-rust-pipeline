@@ -10,9 +10,9 @@ mod complete;
 mod coverage;
 mod discovery;
 mod exclusions;
+mod rankings;
 mod raw_profiles;
 mod source_receipts;
-mod rankings;
 
 use crate::store::ArtifactStore;
 use anyhow::{bail, Context, Result};

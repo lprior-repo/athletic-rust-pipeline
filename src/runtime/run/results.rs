@@ -4,8 +4,8 @@ use super::super::{
     Runtime,
 };
 use super::{terminal, RunIdentity};
-use crate::runtime::rankings_collection::RankingCollectionRef;
 use crate::domain::identity::EvidenceDigest;
+use crate::runtime::rankings_collection::RankingCollectionRef;
 use restate_sdk::prelude::*;
 use std::{
     sync::Arc,
@@ -45,7 +45,10 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
             collection_ref,
         };
         let progress_key = format!("progress:{}", identity.key);
-        ctx.set(&progress_key, restate_sdk::serde::Serialize::serialize(&Json(&progress)).map_err(terminal)?);
+        ctx.set(
+            &progress_key,
+            restate_sdk::serde::Serialize::serialize(&Json(&progress)).map_err(terminal)?,
+        );
         Ok(Self {
             ctx,
             runtime,
@@ -61,8 +64,10 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         collection_ref: RankingCollectionRef,
     ) -> Result<(), HandlerError> {
         self.progress.collection_ref = Some(collection_ref);
-        self.ctx.set(&self.progress_key,
-            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?);
+        self.ctx.set(
+            &self.progress_key,
+            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?,
+        );
         Ok(())
     }
     pub async fn record(
@@ -90,8 +95,10 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
             self.flush().await?;
         }
         self.progress.updated_at_unix_ms = journal_time(self.ctx).await?;
-        self.ctx.set(&self.progress_key,
-            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?);
+        self.ctx.set(
+            &self.progress_key,
+            restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?,
+        );
         Ok(())
     }
 

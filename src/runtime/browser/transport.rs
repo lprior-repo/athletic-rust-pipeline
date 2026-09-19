@@ -18,8 +18,8 @@ use crate::runtime::source::http::challenge::{cf_header_challenge, html_body_cha
 use crate::runtime::source::request::RequestSpec;
 mod capture;
 mod cleanup;
-mod script;
 mod rankings;
+mod script;
 pub(super) use capture::{capture_body, response_headers};
 pub(super) use rankings::fetch_rankings;
 

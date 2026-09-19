@@ -61,7 +61,6 @@ pub(super) fn verify(
         bail!("discovery completeness differs from retained query evidence");
     }
 
-
     Ok(())
 }
 fn verify_query_sequence(

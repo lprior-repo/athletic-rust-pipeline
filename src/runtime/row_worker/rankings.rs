@@ -1,9 +1,5 @@
-use super::{MAX_CANDIDATES, TerminalError};
-use crate::{
-    domain::name::CanonicalName,
-    runtime::Runtime,
-    store::rankings::RankingLookup,
-};
+use super::{TerminalError, MAX_CANDIDATES};
+use crate::{domain::name::CanonicalName, runtime::Runtime, store::rankings::RankingLookup};
 use restate_sdk::prelude::*;
 use std::sync::Arc;
 
@@ -23,7 +19,9 @@ pub(crate) async fn perform_rankings_lookup(
             .blocking(move || {
                 let sealed = store.ranking_snapshot(&collection)?;
                 let expected = sealed.ok_or_else(|| {
-                    anyhow::anyhow!("collection has no sealed snapshot, cannot perform rankings lookup")
+                    anyhow::anyhow!(
+                        "collection has no sealed snapshot, cannot perform rankings lookup"
+                    )
                 })?;
                 if expected != bound_snapshot {
                     anyhow::bail!(

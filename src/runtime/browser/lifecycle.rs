@@ -87,13 +87,17 @@ impl BrowserManager {
         Ok(manager)
     }
 
-    pub(crate) async fn connect(cdp_url: url::Url, settings: BrowserSettings) -> anyhow::Result<Self> {
+    pub(crate) async fn connect(
+        cdp_url: url::Url,
+        settings: BrowserSettings,
+    ) -> anyhow::Result<Self> {
         settings.validate()?;
         let handler_config = HandlerConfig {
             request_timeout: settings.request_timeout,
             ..Default::default()
         };
-        let (browser, handler) = Browser::connect_with_config(cdp_url.as_str(), handler_config).await?;
+        let (browser, handler) =
+            Browser::connect_with_config(cdp_url.as_str(), handler_config).await?;
         let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
         let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
         let handler_join = tokio::spawn(run_handler(handler, handler_tx));

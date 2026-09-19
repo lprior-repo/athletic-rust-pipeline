@@ -143,7 +143,10 @@ impl ExportWorker {
                     .retry_policy(RunRetryPolicy::new().max_attempts(4))
                     .await?;
                 // If the SDK loses the acknowledgement after this run, its kept stage may orphan.
-                ctx.set(STAGE_STATE, Json(receipt.0.clone()));
+                ctx.set(
+                    STAGE_STATE,
+                    restate_sdk::serde::Serialize::serialize(&receipt).map_err(terminal)?,
+                );
                 receipt.0
             }
         };
@@ -162,7 +165,10 @@ impl ExportWorker {
             .name("publish verified export bundle")
             .retry_policy(RunRetryPolicy::new().max_attempts(4))
             .await?;
-        ctx.set(RESULT_STATE, Json(published.0.clone()));
+        ctx.set(
+            RESULT_STATE,
+            restate_sdk::serde::Serialize::serialize(&published).map_err(terminal)?,
+        );
         Ok(published)
     }
 }

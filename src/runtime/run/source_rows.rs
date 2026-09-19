@@ -4,8 +4,8 @@ use super::super::{
     run_protocol::{RunRequest, MAX_RUN_ROWS},
     Runtime,
 };
-use crate::runtime::rankings_collection::RankingCollectionRef;
 use crate::domain::identity::{SourceRowKey, WorkbookDigest};
+use crate::runtime::rankings_collection::RankingCollectionRef;
 use anyhow::{bail, Context, Result};
 use std::collections::{BTreeSet, VecDeque};
 
@@ -30,7 +30,11 @@ pub(super) struct SourceRows {
     rankings: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
 }
 impl SourceRows {
-    pub fn new(manifest: &SourceManifest, request: &RunRequest, rankings: Option<crate::runtime::rankings_collection::RankingCollectionRef>) -> Result<Self> {
+    pub fn new(
+        manifest: &SourceManifest,
+        request: &RunRequest,
+        rankings: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
+    ) -> Result<Self> {
         if manifest.stats.sheets.is_empty() || manifest.stats.sheets.len() > MAX_SHEETS {
             bail!("invalid source sheet count");
         }

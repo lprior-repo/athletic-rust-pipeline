@@ -1,14 +1,15 @@
 use crate::domain::identity::EvidenceDigest;
 
 use super::{
-    browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY},
     acquisition::ACQUISITION_REVISION,
+    browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY},
+    export_worker::{ExportRequest, ExportWorkerClient, PublishedExport},
     import::ImportRequest,
     import_worker::{self, WorkbookImportClient},
+    rankings::RankingsScope,
+    rankings_collection::{collection_fingerprint, CollectionState, RankingsCollectionStateClient},
     run::RunCoordinatorClient,
     run_protocol::{RunRequest, Selection, SourceSnapshot},
-    rankings_collection::{collection_fingerprint, CollectionState, RankingsCollectionStateClient},
-    rankings::RankingsScope,
     Runtime,
 };
 use restate_sdk::prelude::*;
@@ -31,6 +32,11 @@ pub struct RankingControlsInput {
     pub run: EvidenceDigest,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RunAndExportRequest {
+    pub request: RunRequest,
+    pub destination: std::path::PathBuf,
+}
 
 pub struct PipelineControl {
     pub runtime: Arc<Runtime>,
@@ -89,6 +95,34 @@ impl PipelineControl {
             .await?)
     }
 
+    /// Journal the dependency so client disconnects cannot lose final publication.
+    #[handler]
+    pub async fn run_and_export(
+        &self,
+        ctx: Context<'_>,
+        input: Json<RunAndExportRequest>,
+    ) -> Result<Json<PublishedExport>, HandlerError> {
+        let RunAndExportRequest {
+            request,
+            destination,
+        } = input.0;
+        let run_key = request.key().map_err(terminal)?;
+        let export = ExportRequest {
+            run: EvidenceDigest::parse(&run_key).map_err(terminal)?,
+            destination,
+        };
+        let export_key = export.key().map_err(terminal)?;
+        ctx.object_client::<RunCoordinatorClient>("global")
+            .run(Json(request))
+            .call()
+            .await?;
+        Ok(ctx
+            .object_client::<ExportWorkerClient>(&export_key)
+            .publish(Json(export))
+            .call()
+            .await?)
+    }
+
     #[handler]
     pub async fn rankings_progress(
         &self,
@@ -96,8 +130,11 @@ impl PipelineControl {
         input: Json<RankingControlsInput>,
     ) -> Result<Json<CollectionState>, HandlerError> {
         let collection = self.collection_key(&ctx, input.0.run).await?;
-        Ok(ctx.object_client::<RankingsCollectionStateClient>(collection.as_str())
-            .progress().call().await?)
+        Ok(ctx
+            .object_client::<RankingsCollectionStateClient>(collection.as_str())
+            .progress()
+            .call()
+            .await?)
     }
 
     #[handler]
@@ -107,8 +144,11 @@ impl PipelineControl {
         input: Json<RankingControlsInput>,
     ) -> Result<Json<()>, HandlerError> {
         let collection = self.collection_key(&ctx, input.0.run).await?;
-        Ok(ctx.object_client::<RankingsCollectionStateClient>(collection.as_str())
-            .pause().call().await?)
+        Ok(ctx
+            .object_client::<RankingsCollectionStateClient>(collection.as_str())
+            .pause()
+            .call()
+            .await?)
     }
 
     #[handler]
@@ -118,13 +158,24 @@ impl PipelineControl {
         input: Json<RankingControlsInput>,
     ) -> Result<Json<()>, HandlerError> {
         let collection = self.collection_key(&ctx, input.0.run).await?;
-        let status = ctx.object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
-            .recover().call().await?.0;
+        let status = ctx
+            .object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
+            .recover()
+            .call()
+            .await?
+            .0;
         if status.state != super::browser::BrowserState::Ready {
-            return Err(TerminalError::new_with_code(409, "browser is not ready; collection remains paused").into());
+            return Err(TerminalError::new_with_code(
+                409,
+                "browser is not ready; collection remains paused",
+            )
+            .into());
         }
-        Ok(ctx.object_client::<RankingsCollectionStateClient>(collection.as_str())
-            .resume().call().await?)
+        Ok(ctx
+            .object_client::<RankingsCollectionStateClient>(collection.as_str())
+            .resume()
+            .call()
+            .await?)
     }
 
     async fn collection_key(
@@ -132,25 +183,43 @@ impl PipelineControl {
         ctx: &Context<'_>,
         run: EvidenceDigest,
     ) -> Result<EvidenceDigest, HandlerError> {
-        let progress = ctx.object_client::<RunCoordinatorClient>("global")
-            .status(Json(run)).call().await?.0
+        let progress = ctx
+            .object_client::<RunCoordinatorClient>("global")
+            .status(Json(run))
+            .call()
+            .await?
+            .0
             .ok_or_else(|| TerminalError::new_with_code(404, "run not found"))?;
         let source = progress.request.snapshot;
         let runtime = self.runtime.clone();
         let snapshot_digest = source.clone();
-        let snapshot = ctx.run(move || async move {
-            runtime.load_json::<SourceSnapshot>(&snapshot_digest).await.map(Json).map_err(terminal)
-        }).name("load ranking control source snapshot").await?.0;
-        let scope = snapshot.rankings
+        let snapshot = ctx
+            .run(move || async move {
+                runtime
+                    .load_json::<SourceSnapshot>(&snapshot_digest)
+                    .await
+                    .map(Json)
+                    .map_err(terminal)
+            })
+            .name("load ranking control source snapshot")
+            .await?
+            .0;
+        let scope = snapshot
+            .rankings
             .ok_or_else(|| TerminalError::new("run has no rankings scope"))?;
         scope.validate().map_err(terminal)?;
         let collection = collection_fingerprint(&scope.revision, &source).map_err(terminal)?;
-        if progress.collection_ref.as_ref().is_some_and(|bound| bound.collection != collection) {
-            return Err(terminal("run collection binding differs from its source snapshot"));
+        if progress
+            .collection_ref
+            .as_ref()
+            .is_some_and(|bound| bound.collection != collection)
+        {
+            return Err(terminal(
+                "run collection binding differs from its source snapshot",
+            ));
         }
         Ok(collection)
     }
-
 }
 
 fn validate(request: &PrepareRequest, runtime: &Runtime) -> anyhow::Result<()> {
@@ -166,7 +235,9 @@ fn validate(request: &PrepareRequest, runtime: &Runtime) -> anyhow::Result<()> {
     }
     // Validate rankings scope when present
     if let Some(scope) = &request.rankings_scope {
-        scope.validate().map_err(|e| anyhow::anyhow!("rankings scope validation failed: {e}"))?;
+        scope
+            .validate()
+            .map_err(|e| anyhow::anyhow!("rankings scope validation failed: {e}"))?;
     }
     Ok(())
 }

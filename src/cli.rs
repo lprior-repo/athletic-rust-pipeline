@@ -8,7 +8,9 @@ use athletic_rust_pipeline::{
     domain::identity::{EvidenceDigest, WorkbookDigest},
     runtime::{
         browser_session::{BrowserSessionIngressClient, BROWSER_SESSION_KEY},
-        control::{PipelineControlIngressClient, PrepareRequest, RankingControlsInput},
+        control::{
+            PipelineControlIngressClient, PrepareRequest, RankingControlsInput, RunAndExportRequest,
+        },
         export::EXPORT_HEADERS,
         export_worker::{ExportRequest, ExportWorkerIngressClient, PublishedExport},
         identity::fingerprint,
@@ -239,6 +241,23 @@ async fn start(args: Start) -> Result<()> {
         .into_body()?
         .0;
     let key = prepared.key()?;
+    if let Some(output) = args.output {
+        let automated = RunAndExportRequest {
+            request: prepared,
+            destination: destination(output)?,
+        };
+        let automation_key = fingerprint(&("run-and-export-v1", &automated))?;
+        let submitted = control
+            .run_and_export(Json(automated))
+            .idempotency_key(automation_key.as_str())
+            .send()
+            .await?;
+        return emit(&serde_json::json!({
+            "run": key, "invocation": submitted.invocation_handle().invocation_id(),
+            "state": "submitted", "automatic_export": true,
+            "note": "Restate publishes the verified export after run completion; submission is not completion."
+        }));
+    }
     let coordinator = RunCoordinatorIngressClient::from_client(client, "global");
     let sent = coordinator
         .run(Json(prepared))
@@ -258,7 +277,7 @@ fn destination(path: std::path::PathBuf) -> Result<std::path::PathBuf> {
     let parent = path
         .parent()
         .filter(|parent| !parent.as_os_str().is_empty())
-        .unwrap_or_else(|| std::path::Path::new("."));
+        .map_or_else(|| std::path::Path::new("."), |parent| parent);
     Ok(parent
         .canonicalize()
         .context("canonicalizing export parent")?

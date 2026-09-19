@@ -101,7 +101,9 @@ fn validate_cdp_endpoint(url: &Url) -> anyhow::Result<()> {
     if url.scheme() != "http" && url.scheme() != "https" {
         anyhow::bail!("cdp endpoint must use http or https scheme");
     }
-    let host = url.host().ok_or_else(|| anyhow::anyhow!("cdp endpoint must have a host"))?;
+    let host = url
+        .host()
+        .ok_or_else(|| anyhow::anyhow!("cdp endpoint must have a host"))?;
     match host {
         url::Host::Domain("localhost") | url::Host::Ipv4(std::net::Ipv4Addr::LOCALHOST) => {}
         url::Host::Ipv6(std::net::Ipv6Addr::LOCALHOST) => {}

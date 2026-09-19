@@ -1,5 +1,4 @@
 /// Scan-prefix builders for Fjall prefix iteration.
-
 use super::keys::COLLECTION_PREFIX;
 use crate::domain::identity::{AthleteId, EvidenceDigest};
 
@@ -64,7 +63,10 @@ pub(super) fn row_position_prefix(collection: &EvidenceDigest, event_short: &str
 }
 
 /// Build an eligible individual prefix for scanning.
-pub(super) fn eligible_individual_prefix(collection: &EvidenceDigest, event_short: &str) -> Vec<u8> {
+pub(super) fn eligible_individual_prefix(
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Vec<u8> {
     let mut key = Vec::new();
     key.extend_from_slice(COLLECTION_PREFIX);
     key.extend_from_slice(b"ri\0");
@@ -111,29 +113,11 @@ pub(super) fn roster_present_prefix(collection: &EvidenceDigest, event_short: &s
     key
 }
 
-/// Build a collection prefix for scanning all keys for a collection.
-pub(super) fn collection_prefix(collection: &EvidenceDigest) -> Vec<u8> {
-    let mut key = Vec::new();
-    key.extend_from_slice(COLLECTION_PREFIX);
-    key.extend_from_slice(collection.as_str().as_bytes());
-    key
-}
-
 /// Build an event-athlete prefix for scanning all athletes in a collection.
 pub(super) fn event_athlete_prefix(collection: &EvidenceDigest) -> Vec<u8> {
     let mut key = Vec::new();
     key.extend_from_slice(COLLECTION_PREFIX);
     key.extend_from_slice(b"re\0");
-    key.extend_from_slice(collection.as_str().as_bytes());
-    key.push(0);
-    key
-}
-
-/// Build a collection-level page marker prefix for scanning all pages.
-pub(super) fn page_collection_prefix(collection: &EvidenceDigest) -> Vec<u8> {
-    let mut key = Vec::new();
-    key.extend_from_slice(COLLECTION_PREFIX);
-    key.extend_from_slice(b"pk\0");
     key.extend_from_slice(collection.as_str().as_bytes());
     key.push(0);
     key

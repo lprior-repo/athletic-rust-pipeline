@@ -1,13 +1,11 @@
 use super::keys::*;
 use super::types::*;
-use crate::store::error::map_database_error;
-use crate::store::StoreError;
 use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::domain::name::CanonicalName;
 use crate::store::backend::StoreInner;
-use fjall::{Keyspace, Readable, Snapshot};
+use crate::store::StoreError;
+use fjall::{Keyspace, Readable};
 use sha2::{Digest, Sha256};
-use std::sync::Mutex;
 
 const MAX_CANDIDATES: usize = 1_024;
 const MAX_ROWS: usize = 1_024;
@@ -30,19 +28,20 @@ pub(in crate::store) fn put_rankings_page(
     let serialized = serde_json::to_vec(index).map_err(|_| StoreError::Serialization)?;
     let index_hash = Sha256::digest(&serialized);
 
-    let marker_key = page_marker_key(
-        &index.collection,
-        &index.event_short,
-        index.page,
-    )?;
+    let marker_key = page_marker_key(&index.collection, &index.event_short, index.page)?;
 
     // Check for page conflict or replay no-op.
-    if store.rankings.get(&marker_key).map_err(|_| StoreError::CorruptData)?.is_some() {
+    if store
+        .rankings
+        .get(&marker_key)
+        .map_err(|_| StoreError::CorruptData)?
+        .is_some()
+    {
         return Err(StoreError::RankingConflict);
     }
 
     // Check seal after page check so we allow replay after normal seal.
-    if let Some(seal_digest) = load_seal(&store.rankings, &index.collection)? {
+    if load_seal(&store.rankings, &index.collection)?.is_some() {
         return Err(StoreError::RankingConflict);
     }
 
@@ -82,7 +81,8 @@ pub(in crate::store) fn put_rankings_page(
     // Event-level athlete presence keys (were missing, causing zero unique counters).
     let mut event_athletes: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut grade11_individual: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> = std::collections::BTreeSet::new();
+    let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> =
+        std::collections::BTreeSet::new();
     let mut roster_missing: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut roster_present: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
 
@@ -95,8 +95,8 @@ pub(in crate::store) fn put_rankings_page(
         };
 
         // Serialize once and share value for both inserts.
-        let ref_serialized = serde_json::to_vec(&ref_entry)
-            .map_err(|_| StoreError::Serialization)?;
+        let ref_serialized =
+            serde_json::to_vec(&ref_entry).map_err(|_| StoreError::Serialization)?;
         let ref_bytes = ref_serialized.as_slice();
 
         let ref_key = athlete_ref_key(&index.collection, &ref_entry)?;
@@ -120,13 +120,23 @@ pub(in crate::store) fn put_rankings_page(
         match entry.kind {
             RankingCandidateKind::Individual => {
                 let _ = grade11_individual.insert(entry.result_id);
-                let key = presence_eligible_individual(&index.collection, &index.event_short, entry.result_id, entry.athlete_id)?;
+                let key = presence_eligible_individual(
+                    &index.collection,
+                    &index.event_short,
+                    entry.result_id,
+                    entry.athlete_id,
+                )?;
                 total_batch_bytes += key.len();
                 batch.insert(&store.rankings, key, &[]);
             }
             RankingCandidateKind::RelayMember => {
                 let _ = grade11_relay.insert((entry.result_id, entry.athlete_id.get()));
-                let key = presence_eligible_relay_member(&index.collection, &index.event_short, entry.result_id, entry.athlete_id)?;
+                let key = presence_eligible_relay_member(
+                    &index.collection,
+                    &index.event_short,
+                    entry.result_id,
+                    entry.athlete_id,
+                )?;
                 total_batch_bytes += key.len();
                 batch.insert(&store.rankings, key, &[]);
             }
@@ -136,12 +146,14 @@ pub(in crate::store) fn put_rankings_page(
     for roster in &index.rosters {
         if roster.present {
             let _ = roster_present.insert(roster.result_id);
-            let key = presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
+            let key =
+                presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
             total_batch_bytes += key.len();
             batch.insert(&store.rankings, key, &[]);
         } else {
             let _ = roster_missing.insert(roster.result_id);
-            let key = presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
+            let key =
+                presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
             total_batch_bytes += key.len();
             batch.insert(&store.rankings, key, &[]);
         }
@@ -203,10 +215,7 @@ pub(in crate::store) fn ranking_name_refs(
         records.truncate(limit);
     }
 
-    Ok(RankingLookup {
-        records,
-        truncated,
-    })
+    Ok(RankingLookup { records, truncated })
 }
 
 pub(in crate::store) fn ranking_athlete_refs(
@@ -241,10 +250,7 @@ pub(in crate::store) fn ranking_athlete_refs(
         records.truncate(limit);
     }
 
-    Ok(RankingLookup {
-        records,
-        truncated,
-    })
+    Ok(RankingLookup { records, truncated })
 }
 
 pub(in crate::store) fn seal_rankings(
@@ -285,10 +291,14 @@ pub(in crate::store) fn ranking_snapshot(
     let _writer = store.writer.lock().map_err(|_| StoreError::Database)?;
 
     let key = seal_key(collection);
-    match store.rankings.get(&key).map_err(|_| StoreError::CorruptData)? {
+    match store
+        .rankings
+        .get(&key)
+        .map_err(|_| StoreError::CorruptData)?
+    {
         Some(value) => {
-            let text = String::from_utf8(value.as_ref().to_vec())
-                .map_err(|_| StoreError::CorruptData)?;
+            let text =
+                String::from_utf8(value.as_ref().to_vec()).map_err(|_| StoreError::CorruptData)?;
             EvidenceDigest::parse(&text)
                 .map(Some)
                 .map_err(|_| StoreError::CorruptData)
@@ -301,7 +311,10 @@ fn validate_page_index(index: &RankingPageIndex) -> Result<(), StoreError> {
     if index.page == 0 || index.page > 10_000 {
         return Err(StoreError::InvalidRankingInput);
     }
-    if index.rows.len() > MAX_ROWS || index.candidates.len() > MAX_CANDIDATES || index.rosters.len() > MAX_ROSTERS {
+    if index.rows.len() > MAX_ROWS
+        || index.candidates.len() > MAX_CANDIDATES
+        || index.rosters.len() > MAX_ROSTERS
+    {
         return Err(StoreError::RankingConflict);
     }
     Ok(())
@@ -314,9 +327,11 @@ fn load_seal(
     let key = seal_key(collection);
     match ks.get(&key).map_err(|_| StoreError::CorruptData)? {
         Some(value) => {
-            let text = String::from_utf8(value.as_ref().to_vec())
-                .map_err(|_| StoreError::CorruptData)?;
-            EvidenceDigest::parse(&text).map(Some).map_err(|_| StoreError::CorruptData)
+            let text =
+                String::from_utf8(value.as_ref().to_vec()).map_err(|_| StoreError::CorruptData)?;
+            EvidenceDigest::parse(&text)
+                .map(Some)
+                .map_err(|_| StoreError::CorruptData)
         }
         None => Ok(None),
     }

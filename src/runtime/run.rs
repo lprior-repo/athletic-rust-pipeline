@@ -2,11 +2,11 @@ use super::{
     acquisition::ACQUISITION_REVISION,
     import::{SourceManifest, INGESTION_REVISION},
     rankings_collection::{RankingCollectionRef, RankingsCollectionStateClient},
+    row_worker::RowWorkerClient,
     run_protocol::{
         ExportSnapshot, RunProgress, RunRequest, SourceSnapshot, MAX_RUN_ROWS, RESULT_PAGE_ROWS,
     },
     Runtime,
-    row_worker::RowWorkerClient,
 };
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
@@ -101,8 +101,7 @@ impl RunCoordinator {
             let collection_req = super::rankings_collection::CollectionRequest {
                 source_snapshot: request.snapshot.clone(),
             };
-            let client = ctx
-                .object_client::<RankingsCollectionStateClient>(collection.as_str());
+            let client = ctx.object_client::<RankingsCollectionStateClient>(collection.as_str());
             client.start_or_resume(Json(collection_req)).call().await?;
             let sealed = wait_for_collection_sealed(&ctx, &collection).await?;
             // Update Results with sealed collection_ref
@@ -278,10 +277,17 @@ async fn wait_for_collection_sealed(
     collection: &EvidenceDigest,
 ) -> Result<RankingCollectionRef, HandlerError> {
     loop {
-        let snapshot = ctx.object_client::<RankingsCollectionStateClient>(collection.as_str())
-            .snapshot_ref().call().await?.0;
+        let snapshot = ctx
+            .object_client::<RankingsCollectionStateClient>(collection.as_str())
+            .snapshot_ref()
+            .call()
+            .await?
+            .0;
         if let Some(snapshot) = snapshot {
-            return Ok(RankingCollectionRef { collection: collection.clone(), snapshot });
+            return Ok(RankingCollectionRef {
+                collection: collection.clone(),
+                snapshot,
+            });
         }
         ctx.sleep(std::time::Duration::from_secs(1)).await?;
     }

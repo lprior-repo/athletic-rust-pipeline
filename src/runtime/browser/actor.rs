@@ -23,7 +23,6 @@ mod shutdown;
 #[path = "state.rs"]
 mod state;
 
-pub(super) use super::transport;
 const QUEUE_MULTIPLIER: usize = 4;
 
 pub(super) struct Actor {

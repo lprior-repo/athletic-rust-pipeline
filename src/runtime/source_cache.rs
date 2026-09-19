@@ -51,9 +51,10 @@ impl SourceCache {
         if let Some(value) = ctx.get::<Json<FetchOutcome>>("result").await? {
             return Ok(value);
         }
+        let is_rankings = input.0.is_rankings();
         let outcome = ctx
             .object_client::<SourceGatewayClient>("global")
-            .fetch(Json(input.0.resource.clone()))
+            .fetch(Json(input.0.resource))
             .scope(SOURCE_SCOPE)
             .call()
             .await?;
@@ -62,13 +63,16 @@ impl SourceCache {
         // cached so a resumed gateway invocation gets a fresh audit
         // identity and re-attempts the source rather than replaying a
         // cached failure.
-        let is_rankings = input.0.is_rankings();
         let should_cache = match &outcome.0 {
             FetchOutcome::Retrieved { .. } => true,
             FetchOutcome::Failed { .. } => !is_rankings,
         };
         if should_cache {
-            ctx.set("result", Json(outcome.0.clone()));
+            ctx.set(
+                "result",
+                restate_sdk::serde::Serialize::serialize(&outcome)
+                    .map_err(|error| TerminalError::new(error.to_string()))?,
+            );
         }
         Ok(outcome)
     }

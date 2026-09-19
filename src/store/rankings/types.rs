@@ -3,18 +3,7 @@ use crate::domain::name::CanonicalName;
 use serde::{Deserialize, Serialize};
 
 /// Candidate classification for ranking index entries.
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RankingCandidateKind {
     Individual,
@@ -22,14 +11,7 @@ pub enum RankingCandidateKind {
 }
 
 /// A single source ranking row with provenance.
-#[derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Serialize,
-    Deserialize,
-)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RankingSourceRow {
     pub result_id: u64,
     pub row_number: u64,

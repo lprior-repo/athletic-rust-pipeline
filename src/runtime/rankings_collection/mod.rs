@@ -1,12 +1,12 @@
 mod helpers;
 mod publication;
-use helpers::{terminal, run_catalog_step, run_page_step, schedule_step};
 use crate::domain::identity::EvidenceDigest;
-use crate::runtime::rankings::RankingsScope;
 use crate::runtime::protocol::FetchOutcome;
+use crate::runtime::rankings::RankingsScope;
 use crate::runtime::run_protocol::SourceSnapshot;
 use crate::runtime::Runtime;
 use anyhow::Result;
+use helpers::{run_catalog_step, run_page_step, schedule_step, terminal};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -91,7 +91,9 @@ impl RankingsCollectionState {
         let request = input.0;
         if let Some(existing) = ctx.get::<Json<CollectionState>>("state").await? {
             if existing.0.source_snapshot != request.source_snapshot {
-                return Err(terminal("collection already bound to another source snapshot"));
+                return Err(terminal(
+                    "collection already bound to another source snapshot",
+                ));
             }
             return Ok(existing);
         }
@@ -107,13 +109,16 @@ impl RankingsCollectionState {
             .name("load source snapshot")
             .await?
             .0;
-        let scope = snapshot.rankings.ok_or_else(|| {
-            TerminalError::new("snapshot missing rankings scope")
-        })?;
+        let scope = snapshot
+            .rankings
+            .ok_or_else(|| TerminalError::new("snapshot missing rankings scope"))?;
         scope.validate().map_err(terminal)?;
-        let expected_key = collection_fingerprint(&scope.revision, &request.source_snapshot).map_err(terminal)?;
+        let expected_key =
+            collection_fingerprint(&scope.revision, &request.source_snapshot).map_err(terminal)?;
         if ctx.key() != expected_key.as_str() {
-            return Err(terminal("collection object key differs from source snapshot fingerprint"));
+            return Err(terminal(
+                "collection object key differs from source snapshot fingerprint",
+            ));
         }
         let state = CollectionState {
             source_snapshot: request.source_snapshot,
@@ -131,11 +136,13 @@ impl RankingsCollectionState {
             last_outcome: None,
             pause_detail: None,
         };
-        ctx.set("state", restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?);
+        ctx.set(
+            "state",
+            restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?,
+        );
         schedule_step(&ctx, &state).await?;
         Ok(Json(state))
     }
-
 
     #[handler]
     pub async fn step(
@@ -153,27 +160,45 @@ impl RankingsCollectionState {
         if generation != state.generation {
             return Ok(Json(state));
         }
-        if matches!(state.phase, CollectionPhase::Paused(_) | CollectionPhase::Complete) {
+        if matches!(
+            state.phase,
+            CollectionPhase::Paused(_) | CollectionPhase::Complete
+        ) {
             return Ok(Json(state));
         }
-        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+        state.generation = state
+            .generation
+            .checked_add(1)
+            .ok_or_else(|| terminal("collection generation overflow"))?;
 
-        let collection = collection_fingerprint(
-            &state.scope.revision,
-            &state.source_snapshot,
-        ).map_err(terminal)?;
+        let collection = collection_fingerprint(&state.scope.revision, &state.source_snapshot)
+            .map_err(terminal)?;
 
         let result = match state.phase {
-            CollectionPhase::CatalogStep => run_catalog_step(&ctx, &self.runtime, &mut state, collection).await,
-            CollectionPhase::PageStep => run_page_step(&ctx, &self.runtime, &mut state, collection).await,
+            CollectionPhase::CatalogStep => {
+                run_catalog_step(&ctx, &self.runtime, &mut state, collection).await
+            }
+            CollectionPhase::PageStep => {
+                run_page_step(&ctx, &self.runtime, &mut state, collection).await
+            }
             CollectionPhase::Complete | CollectionPhase::Paused(_) => return Ok(Json(state)),
         };
         if let Err(error) = result {
-            helpers::pause(&mut state, CollectionPauseReason::InvalidEvidence, format!("{error:?}"));
+            helpers::pause(
+                &mut state,
+                CollectionPauseReason::InvalidEvidence,
+                format!("{error:?}"),
+            );
         }
 
-        let finished = matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_));
-        ctx.set("state", restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?);
+        let finished = matches!(
+            state.phase,
+            CollectionPhase::Complete | CollectionPhase::Paused(_)
+        );
+        ctx.set(
+            "state",
+            restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?,
+        );
         if finished {
             return Ok(Json(state));
         }
@@ -182,10 +207,7 @@ impl RankingsCollectionState {
     }
 
     #[handler]
-    pub async fn pause(
-        &self,
-        ctx: ObjectContext<'_>,
-    ) -> Result<Json<()>, HandlerError> {
+    pub async fn pause(&self, ctx: ObjectContext<'_>) -> Result<Json<()>, HandlerError> {
         let Some(mut state) = ctx
             .get::<Json<CollectionState>>("state")
             .await?
@@ -193,20 +215,27 @@ impl RankingsCollectionState {
         else {
             return Err(TerminalError::new("no state").into());
         };
-        if matches!(state.phase, CollectionPhase::Complete | CollectionPhase::Paused(_)) {
+        if matches!(
+            state.phase,
+            CollectionPhase::Complete | CollectionPhase::Paused(_)
+        ) {
             return Ok(Json(()));
         }
-        helpers::pause(&mut state, CollectionPauseReason::Manual, "paused by operator".into());
-        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
+        helpers::pause(
+            &mut state,
+            CollectionPauseReason::Manual,
+            "paused by operator".into(),
+        );
+        state.generation = state
+            .generation
+            .checked_add(1)
+            .ok_or_else(|| terminal("collection generation overflow"))?;
         ctx.set("state", Json(state));
         Ok(Json(()))
     }
 
     #[handler]
-    pub async fn resume(
-        &self,
-        ctx: ObjectContext<'_>,
-    ) -> Result<Json<()>, HandlerError> {
+    pub async fn resume(&self, ctx: ObjectContext<'_>) -> Result<Json<()>, HandlerError> {
         let Some(mut state) = ctx
             .get::<Json<CollectionState>>("state")
             .await?
@@ -225,8 +254,14 @@ impl RankingsCollectionState {
         }
         state.pause_reason = None;
         state.pause_detail = None;
-        state.generation = state.generation.checked_add(1).ok_or_else(|| terminal("collection generation overflow"))?;
-        ctx.set("state", restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?);
+        state.generation = state
+            .generation
+            .checked_add(1)
+            .ok_or_else(|| terminal("collection generation overflow"))?;
+        ctx.set(
+            "state",
+            restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?,
+        );
         schedule_step(&ctx, &state).await?;
         Ok(Json(()))
     }
@@ -248,7 +283,10 @@ impl RankingsCollectionState {
         &self,
         ctx: SharedObjectContext<'_>,
     ) -> Result<Json<Option<EvidenceDigest>>, HandlerError> {
-        let state = ctx.get::<Json<CollectionState>>("state").await?.map(|j| j.0);
+        let state = ctx
+            .get::<Json<CollectionState>>("state")
+            .await?
+            .map(|j| j.0);
         Ok(Json(state.and_then(|s| s.final_snapshot)))
     }
 }
@@ -292,7 +330,6 @@ pub struct RankingsPageCheckpoint {
     pub outcome: FetchOutcome,
     pub observation_digest: EvidenceDigest,
 }
-
 
 /// Public reference to a completed ranking collection.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]

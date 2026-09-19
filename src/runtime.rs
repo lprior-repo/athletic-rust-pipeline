@@ -15,31 +15,30 @@ pub mod import_worker;
 pub mod profile_worker;
 pub mod protocol;
 pub mod query_worker;
+pub mod rankings_collection;
 pub mod review_case;
 pub mod reviewer;
 pub mod row_protocol;
 pub mod row_worker;
 pub mod run;
 pub mod run_protocol;
-pub mod rankings_collection;
 pub mod rankings {
     pub mod catalog;
     pub mod page;
     pub mod types;
+    pub use super::protocol::{RankingPageObservation, RankingsCapture};
+    pub use crate::store::rankings::{
+        RankingCandidateEntry, RankingCandidateKind, RankingCollectionStats, RankingEventStats,
+        RankingLookup, RankingPageIndex, RankingRecordRef, RankingRosterObservation,
+        RankingSourceRow,
+    };
     pub use catalog::{EventCatalog, RequestedFamily};
     pub use page::parse::{parse_page_response, PageParseError};
     pub use types::{
-        ExpectedPageContext,
-        is_excluded, IndividualCandidate, NavEvent, PageObservation, RankedEvent, RankingsPlan,
-        RankingsScope,
-        RelayMember, RelayRoster, RelayRow, RelayTeam, VerifiedRelayMember,
+        is_excluded, ExpectedPageContext, IndividualCandidate, NavEvent, PageObservation,
+        RankedEvent, RankingsPlan, RankingsScope, RelayMember, RelayRoster, RelayRow, RelayTeam,
+        VerifiedRelayMember,
     };
-    pub use crate::store::rankings::{
-        RankingCandidateKind, RankingCandidateEntry, RankingSourceRow,
-        RankingRosterObservation, RankingPageIndex, RankingRecordRef,
-        RankingLookup, RankingEventStats, RankingCollectionStats,
-    };
-    pub use super::protocol::{RankingsCapture, RankingPageObservation};
 }
 pub mod snapshot;
 pub mod source;

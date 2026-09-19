@@ -1,10 +1,11 @@
-use std::time::Duration;
-use base64::Engine;
-use chromiumoxide::Page;
 use super::{BrowserError, BrowserResponse};
 use crate::runtime::protocol::{RankingPageObservation, RankingsCapture};
 use crate::runtime::source::request::RankingsAction;
+use base64::Engine;
+use chromiumoxide::Page;
+use futures::{StreamExt, TryStreamExt};
 use reqwest::header::HeaderMap;
+use std::time::Duration;
 /// Verified browser-realm interceptor prototype.
 /// Replaces __RANKINGS_CAPTURE_CONFIG__ with serde_json-serialized config.
 const INTERCEPTOR_TEMPLATE: &str = r#"(() => {
@@ -130,14 +131,14 @@ pub(super) fn parse_binding(
     data: &serde_json::Value,
     capture_kind: RankingsCapture,
 ) -> Result<CapturedRanking, BrowserError> {
-
     // Parse error BEFORE required success fields.
     if let Some(err) = data.get("error").and_then(|v| v.as_str()) {
         return match err {
             "payload_limit" => Err(BrowserError::PayloadLimit),
-            "fetch_failed" | "capture_failed" | "unsupported_request_body" | "request_payload_limit" => {
-                Err(BrowserError::Transport)
-            }
+            "fetch_failed"
+            | "capture_failed"
+            | "unsupported_request_body"
+            | "request_payload_limit" => Err(BrowserError::Transport),
             _other => Err(BrowserError::Protocol),
         };
     }
@@ -161,10 +162,10 @@ pub(super) fn parse_binding(
         .ok_or(BrowserError::Protocol)?
         .to_string();
 
-    let request_body = data
-        .get("requestBody")
-        .and_then(|v| v.as_str())
-        .map(|s| s.to_string());
+    let request_body = data.get("requestBody").and_then(|value| value.as_str());
+    if request_body.is_some_and(|body| body.len() > 64 * 1024) {
+        return Err(BrowserError::PayloadLimit);
+    }
 
     let body_str = data
         .get("body")
@@ -187,15 +188,14 @@ pub(super) fn parse_binding(
         .map_err(|_| BrowserError::Protocol)?;
 
     // Collect allowed response headers.
-    let headers = match data
-        .get("headers")
-        .and_then(|v| v.as_object())
-    {
+    let headers = match data.get("headers").and_then(|v| v.as_object()) {
         Some(h) => h.iter().try_fold(HeaderMap::new(), |mut hm, (k, val)| {
             if let Some(s) = val.as_str() {
-                let key = k.parse::<reqwest::header::HeaderName>()
+                let key = k
+                    .parse::<reqwest::header::HeaderName>()
                     .map_err(|_| BrowserError::Protocol)?;
-                let value = s.parse::<reqwest::header::HeaderValue>()
+                let value = s
+                    .parse::<reqwest::header::HeaderValue>()
                     .map_err(|_| BrowserError::Protocol)?;
                 hm.insert(key, value);
             }
@@ -212,7 +212,7 @@ pub(super) fn parse_binding(
         body_bytes,
         method,
         request_url,
-        request_body,
+        request_body: request_body.map(str::to_owned),
         challenge,
         headers,
         capture_kind,
@@ -232,9 +232,7 @@ pub(super) struct CapturedRanking {
 }
 
 /// Validate captured data and build BrowserResponse.
-pub(super) fn build_response(
-    captured: CapturedRanking,
-) -> Result<BrowserResponse, BrowserError> {
+pub(super) fn build_response(captured: CapturedRanking) -> Result<BrowserResponse, BrowserError> {
     // Require captured headers.
     if captured.headers.is_empty() {
         return Err(BrowserError::Protocol);
@@ -263,94 +261,96 @@ pub(super) fn build_response(
 }
 
 /// Build the UI URL with trailing slash: /.../list/{list_id}/{gender}/{event}/?page=N
-pub(super) fn build_ui_url(source_origin: &url::Url, action: &RankingsAction) -> Result<String, BrowserError> {
+pub(super) fn build_ui_url(
+    source_origin: &url::Url,
+    action: &RankingsAction,
+) -> Result<String, BrowserError> {
     let mut builder = source_origin
         .join(&format!(
             "/TrackAndField/rankings/list/{}/{}/{}/",
             action.list_id, action.gender, action.event_short
         ))
         .map_err(|_| BrowserError::Protocol)?;
-    builder.query_pairs_mut().append_pair("page", &action.page.to_string());
+    builder
+        .query_pairs_mut()
+        .append_pair("page", &action.page.to_string());
     if let Some(grade) = action.grade {
-        builder.query_pairs_mut().append_pair("grades", &grade.to_string());
+        builder
+            .query_pairs_mut()
+            .append_pair("grades", &grade.to_string());
     }
     Ok(builder.to_string())
 }
-/// Validate the request body against the requested rankings scope.
-pub(super) fn validate_request_scope(
+#[derive(serde::Deserialize)]
+struct RankingRequest<'a> {
+    #[serde(rename = "qParams")]
+    q_params: RankingQueryParams,
+    #[serde(rename = "divListId")]
+    div_list_id: u64,
+    #[serde(rename = "eventShort")]
+    event_short: &'a str,
+    gender: &'a str,
+}
+
+#[derive(serde::Deserialize)]
+struct RankingQueryParams {
+    page: Option<u32>,
+    grades: Vec<u64>,
+}
+
+#[derive(serde::Deserialize)]
+struct RankingsEnvelope {
+    #[serde(rename = "groupedRankings")]
+    grouped_rankings: Vec<Vec<serde::de::IgnoredAny>>,
+}
+
+/// Parse and validate the captured request body once, returning its validated page.
+pub(super) fn validate_request(
     captured: &CapturedRanking,
     action: &RankingsAction,
     allow_page_one: bool,
-) -> Result<bool, BrowserError> {
+) -> Result<Option<u32>, BrowserError> {
     if action.capture == RankingsCapture::Navigation {
-        return Ok(captured.request_body.is_none());
+        return Ok(None);
     }
-    let body = captured.request_body.as_deref().ok_or(BrowserError::Protocol)?;
-    let value: serde_json::Value =
+    let body = captured
+        .request_body
+        .as_deref()
+        .ok_or(BrowserError::Protocol)?;
+    let request: RankingRequest<'_> =
         serde_json::from_str(body).map_err(|_| BrowserError::Protocol)?;
-    let qparams = value
-        .get("qParams")
-        .and_then(serde_json::Value::as_object)
-        .ok_or(BrowserError::Protocol)?;
-    let page = qparams
-        .get("page")
-        .and_then(serde_json::Value::as_u64)
-        .and_then(|value| u32::try_from(value).ok());
-    let Some(request_page) = page else {
-        return Ok(false);
+    let Some(request_page) = request.q_params.page else {
+        return Ok(None);
     };
-    let page_matches = request_page == action.page
-        || (allow_page_one && action.page > 1 && request_page == 1);
-    let grades = qparams
-        .get("grades")
-        .and_then(serde_json::Value::as_array)
-        .ok_or(BrowserError::Protocol)?;
+    let page_matches =
+        request_page == action.page || (allow_page_one && action.page > 1 && request_page == 1);
+    if !page_matches {
+        return Ok(None);
+    }
     let grades_match = match action.grade {
         Some(grade) => {
-            grades.len() == 1
-                && grades
-                    .first()
-                    .and_then(serde_json::Value::as_u64)
-                    == Some(u64::from(grade))
+            request.q_params.grades.len() == 1
+                && request.q_params.grades.first() == Some(&u64::from(grade))
         }
-        None => grades.is_empty(),
+        None => request.q_params.grades.is_empty(),
     };
-    Ok(page_matches
-        && grades_match
-        && value.get("divListId").and_then(serde_json::Value::as_u64) == Some(action.list_id)
-        && value.get("eventShort").and_then(serde_json::Value::as_str)
-            == Some(action.event_short.as_str())
-        && value.get("gender").and_then(serde_json::Value::as_str)
-            == Some(action.gender.as_str()))
+    if !grades_match
+        || request.div_list_id != action.list_id
+        || request.event_short != action.event_short
+        || request.gender != action.gender
+    {
+        return Ok(None);
+    }
+    Ok(Some(request_page))
 }
 
 pub(super) fn response_has_rows(body: &[u8]) -> Result<bool, BrowserError> {
-    let value: serde_json::Value =
+    let envelope: RankingsEnvelope =
         serde_json::from_slice(body).map_err(|_| BrowserError::Protocol)?;
-    let groups = value
-        .get("groupedRankings")
-        .and_then(serde_json::Value::as_array)
-        .ok_or(BrowserError::Protocol)?;
-    Ok(groups.iter().any(|group| {
-        group
-            .as_array()
-            .is_some_and(|rows| !rows.is_empty())
-    }))
-}
-
-pub(super) fn request_page(captured: &CapturedRanking) -> Result<Option<u32>, BrowserError> {
-    let Some(body) = captured.request_body.as_deref() else {
-        return Ok(None);
-    };
-    let value: serde_json::Value =
-        serde_json::from_str(body).map_err(|_| BrowserError::Protocol)?;
-    let page = value
-        .get("qParams")
-        .and_then(serde_json::Value::as_object)
-        .and_then(|params| params.get("page"))
-        .and_then(serde_json::Value::as_u64)
-        .and_then(|value| u32::try_from(value).ok());
-    Ok(page)
+    Ok(envelope
+        .grouped_rankings
+        .iter()
+        .any(|group| !group.is_empty()))
 }
 
 async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {
@@ -375,23 +375,30 @@ async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {
         .map_err(|_| BrowserError::Protocol)
 }
 
+const MAX_ACTIVE_PAGE_POLLS: usize = 256;
+
 pub(super) async fn wait_for_active_page(
     page: &Page,
+    requested_page: u32,
     deadline: tokio::time::Instant,
 ) -> Result<u32, BrowserError> {
-    loop {
-        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-        if remaining.is_zero() {
-            return Err(BrowserError::Timeout);
-        }
-        if let Some(page_number) = active_page(page).await? {
-            return Ok(page_number);
-        }
-        let pause = remaining.min(Duration::from_millis(50));
-        tokio::time::timeout_at(deadline, tokio::time::sleep(pause))
-            .await
-            .map_err(|_| BrowserError::Timeout)?;
-    }
+    let polls = futures::stream::iter(0..MAX_ACTIVE_PAGE_POLLS)
+        .then(|_| async {
+            match active_page(page).await? {
+                Some(page_number) if page_number == requested_page => Ok(Some(page_number)),
+                _ => {
+                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    Ok(None)
+                }
+            }
+        })
+        .try_filter_map(|candidate| async move { Ok(candidate) });
+    futures::pin_mut!(polls);
+    tokio::time::timeout_at(deadline, polls.next())
+        .await
+        .map_err(|_| BrowserError::Timeout)?
+        .transpose()?
+        .ok_or(BrowserError::Timeout)
 }
 
 pub(super) async fn click_numeric_page(
@@ -435,10 +442,7 @@ pub(super) async fn extract_next_page(
     if !has_rows {
         return Ok(None);
     }
-    let active = wait_for_active_page(page, deadline).await?;
-    if active != current_page {
-        return Err(BrowserError::Transport);
-    }
+    wait_for_active_page(page, current_page, deadline).await?;
     let next = current_page.checked_add(1).ok_or(BrowserError::Protocol)?;
     let js = format!(
         r#"(() => {{

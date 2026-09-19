@@ -11,7 +11,9 @@ fn has_active_cooldown(cooldown_until: &std::sync::Arc<std::sync::Mutex<Option<I
 }
 
 impl Actor {
-    pub(in crate::runtime::browser) async fn inspect_page(&mut self) -> Result<BrowserStatus, BrowserError> {
+    pub(in crate::runtime::browser) async fn inspect_page(
+        &mut self,
+    ) -> Result<BrowserStatus, BrowserError> {
         // Return physical status for all non-ready states including CoolingDown,
         // even if the cooldown has expired. Do not navigate while CoolingDown.
         let current_state = self.status.read().ok().map(|s| s.state);
@@ -59,7 +61,9 @@ impl Actor {
         Ok(self.status())
     }
 
-    pub(in crate::runtime::browser) async fn recover_page(&mut self) -> Result<BrowserStatus, BrowserError> {
+    pub(in crate::runtime::browser) async fn recover_page(
+        &mut self,
+    ) -> Result<BrowserStatus, BrowserError> {
         // Never navigate with active jobs — SDK must skip Recover while
         // active_requests > 0.
         if !self.jobs.is_empty() {

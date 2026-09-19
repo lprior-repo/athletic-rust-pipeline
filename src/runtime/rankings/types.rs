@@ -1,8 +1,6 @@
-use crate::domain::error::DomainError;
 use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::domain::name::CanonicalName;
 use crate::runtime::protocol::RankingsCapture;
-use crate::runtime::source::request::RankingsAction;
 use crate::runtime::rankings::catalog::RequestedFamily;
 use serde::{Deserialize, Serialize};
 
@@ -76,11 +74,13 @@ impl RankingsScope {
             anyhow::bail!("max_pages_per_event must be 1..=10000");
         }
         let manifest_matches = self.requested_families.len() == REQUESTED_FAMILY_MANIFEST.len()
-            && self.requested_families.iter().zip(REQUESTED_FAMILY_MANIFEST).all(
-                |(actual, (group, family, short))| {
+            && self
+                .requested_families
+                .iter()
+                .zip(REQUESTED_FAMILY_MANIFEST)
+                .all(|(actual, (group, family, short))| {
                     actual.group == group && actual.family == family && actual.short == short
-                },
-            );
+                });
         if !manifest_matches {
             anyhow::bail!("rankings scope must include the complete requested family manifest");
         }
@@ -169,22 +169,6 @@ impl RankingsPlan {
 
     pub fn for_event(&self, short: &str) -> Option<&RankedEvent> {
         self.events.iter().find(|e| e.short == short)
-    }
-
-    pub fn build_action(&self, event: &RankedEvent, page: u32) -> RankingsAction {
-        RankingsAction {
-            collection: self.collection.clone(),
-            list_id: self.list_id,
-            gender: self.gender.clone(),
-            grade: if event.is_relay {
-                None
-            } else {
-                Some(self.grade)
-            },
-            event_short: event.short.clone(),
-            page,
-            capture: event.capture.clone(),
-        }
     }
 }
 
@@ -283,21 +267,7 @@ pub fn is_excluded(short: &str, _r: bool, _h: bool) -> bool {
 impl NavEvent {
     /// Parse a NavEvent from a borrowed JSON value without cloning the value.
     pub fn from_value(value: &serde_json::Value) -> Option<Self> {
-        Some(Self {
-            id: value.get("id")?.as_u64()?,
-            name: value.get("name")?.as_str()?.to_owned(),
-            t: value.get("t")?.as_str()?.to_owned(),
-            m: value.get("m")?.as_str()?.to_owned(),
-            r: value.get("r")?.as_bool()?,
-            h: value.get("h")?.as_bool()?,
-            short: value.get("short")?.as_str()?.to_owned(),
-            w: value.get("w")?.as_bool()?,
-            fmt: value
-                .get("fmt")
-                .map(|item| item.as_str().map(str::to_owned))
-                .transpose()?,
-            so: value.get("so")?.as_u64()?,
-        })
+        Self::deserialize(value).ok()
     }
 }
 
@@ -386,4 +356,3 @@ pub struct RankingRowObservation {
     pub row_number: u64,
     pub roster_present: Option<bool>,
 }
-

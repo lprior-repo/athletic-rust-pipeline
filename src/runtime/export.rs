@@ -2,7 +2,7 @@ use super::{
     acquisition::ProfileAcquisition,
     import::SourceManifest,
     row_protocol::{AcceptanceMethod, CandidateCoverage, RowReport, RowResolution},
-    run_protocol::{ExportSnapshot, RunPage, RunProgress, RESULT_PAGE_ROWS},
+    run_protocol::{RunPage, RunProgress, RESULT_PAGE_ROWS},
 };
 use crate::{
     domain::identity::EvidenceDigest,
@@ -21,8 +21,8 @@ mod details;
 mod index;
 mod projection;
 mod publish;
-mod stream;
 mod rankings;
+mod stream;
 pub use rankings::RankingsExportCoverage;
 
 pub const EXPORT_HEADERS: &[&str] = &[

@@ -1,4 +1,6 @@
-use super::{dispatch::ReadinessPolicy, SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE};
+use super::{
+    dispatch::ReadinessPolicy, SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE,
+};
 use crate::runtime::protocol::OperationFailure;
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;

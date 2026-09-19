@@ -1,10 +1,10 @@
+use crate::domain::identity::EvidenceDigest;
 use crate::domain::identity::ProfileUrl;
+use crate::runtime::protocol::RankingsCapture;
 use crate::runtime::protocol::SourceResource;
 use anyhow::{bail, Result};
 use serde::{Deserialize, Serialize};
 use url::Url;
-use crate::runtime::protocol::RankingsCapture;
-use crate::domain::identity::EvidenceDigest;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "action")]
 pub(crate) enum RequestAction {
@@ -99,7 +99,11 @@ fn search(
         fq: format!("t:a a:{}", sport.api_code()),
         start,
     };
-    safe(endpoint(origin, "/Search.aspx/runSearch")?, Some(body), RequestAction::Fetch)
+    safe(
+        endpoint(origin, "/Search.aspx/runSearch")?,
+        Some(body),
+        RequestAction::Fetch,
+    )
 }
 
 fn profile(origin: &Url, profile_url: &ProfileUrl) -> Result<RequestSpec> {
@@ -148,7 +152,8 @@ fn rankings(
     let mut url = endpoint(origin, &path)?;
     url.query_pairs_mut().append_pair("page", &page.to_string());
     if let Some(grade) = grade {
-        url.query_pairs_mut().append_pair("grades", &grade.to_string());
+        url.query_pairs_mut()
+            .append_pair("grades", &grade.to_string());
     }
     let action = RequestAction::Rankings(RankingsAction {
         collection: collection.clone(),

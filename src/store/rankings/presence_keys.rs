@@ -1,11 +1,10 @@
 use super::common::{
-    validate_event_short, COLLECTION_PREFIX, DIGEST_BYTES,
-    PRESENCE_ELIGIBLE_INDIVIDUAL, PRESENCE_ELIGIBLE_RELAY_MEMBER, PRESENCE_EVENT_ATHLETE,
-    PRESENCE_ROSTER_MISSING, PRESENCE_ROSTER_PRESENT, PRESENCE_ROW_POSITION,
-    PRESENCE_SOURCE_RESULT, SEAL_KEY,
+    validate_event_short, COLLECTION_PREFIX, DIGEST_BYTES, PRESENCE_ELIGIBLE_INDIVIDUAL,
+    PRESENCE_ELIGIBLE_RELAY_MEMBER, PRESENCE_EVENT_ATHLETE, PRESENCE_ROSTER_MISSING,
+    PRESENCE_ROSTER_PRESENT, PRESENCE_ROW_POSITION, PRESENCE_SOURCE_RESULT, SEAL_KEY,
 };
-use crate::store::StoreError;
 use crate::domain::identity::{AthleteId, EvidenceDigest};
+use crate::store::StoreError;
 
 /// Build presence key for an event-level athlete: rk\0re\0<collection>\0<event>\0<athlete(8B BE)>.
 pub(super) fn presence_event_athlete(
@@ -214,7 +213,8 @@ pub(super) fn presence_roster_present(
 /// Build seal key: rk\0sl\0<collection>.
 pub(super) fn seal_key(collection: &EvidenceDigest) -> Vec<u8> {
     let mut key = Vec::with_capacity(
-        COLLECTION_PREFIX.len()
+        COLLECTION_PREFIX
+            .len()
             .saturating_add(SEAL_KEY.len())
             .saturating_add(1)
             .saturating_add(DIGEST_BYTES),
