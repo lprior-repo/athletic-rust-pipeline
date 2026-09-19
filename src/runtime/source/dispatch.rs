@@ -18,11 +18,10 @@ impl ReadinessPolicy {
     pub(super) fn from_request(request: &request::RequestSpec) -> Self {
         match request.action {
             request::RequestAction::Rankings(_) => Self::Rankings,
-            request::RequestAction::Fetch(_) => Self::Legacy,
+            request::RequestAction::Fetch { .. } => Self::Legacy,
         }
     }
 }
-
 
 /// Wait for the browser to become available using the legacy auto-recovery
 /// path.  Non-rankings requests use this because they may need the browser

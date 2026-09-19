@@ -33,7 +33,7 @@ impl Actor {
         if let Some(value) = request {
             self.challenge_target = Some(ChallengeTarget {
                 url: value.url.clone(),
-                post: value.body.is_some(),
+                post: value.body().is_some(),
             });
         }
         if !self.challenge_latched {

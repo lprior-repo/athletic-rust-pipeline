@@ -219,7 +219,7 @@ fn finalize(
                 lane,
                 verdict: verdict.into_protocol().map_err(terminal)?,
                 request,
-                response: receipt,
+                response: Box::new(receipt),
                 previous_responses: evidence,
                 retries,
             },

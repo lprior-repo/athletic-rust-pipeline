@@ -6,7 +6,7 @@ use super::types::{RankingCandidateKind, RankingRecordRef};
 use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::store::StoreError;
 
-/// Build page marker key: rk\0pk\0<collection>\0<event>\0<page(8B BE)>.
+/// Build page marker key: rk\0pk\0<collection>\0<event>\0<page(4B BE)>.
 pub(super) fn page_marker_key(
     collection: &EvidenceDigest,
     event_short: &str,
@@ -24,7 +24,7 @@ pub(super) fn page_marker_key(
         .saturating_add(1)
         .saturating_add(event_short.len())
         .saturating_add(1)
-        .saturating_add(8);
+        .saturating_add(4);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
     key.extend_from_slice(PAGE_MARKER);
@@ -87,7 +87,7 @@ pub(super) fn name_ref_key(
     Ok(key)
 }
 
-/// Build athlete ref key: rk\0ra\0<collection>\0<athlete(8B BE)>\0<checkpoint>\0.
+/// Build athlete ref key: rk\0ra\0<collection>\0<athlete(8B BE)>\0<checkpoint>\0<kind(1B)><record_index(4B)>.
 pub(super) fn athlete_ref_key(
     collection: &EvidenceDigest,
     ref_entry: &RankingRecordRef,
@@ -101,7 +101,9 @@ pub(super) fn athlete_ref_key(
         .saturating_add(8)
         .saturating_add(1)
         .saturating_add(DIGEST_BYTES)
-        .saturating_add(1);
+        .saturating_add(1)
+        .saturating_add(1)
+        .saturating_add(4);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
     key.extend_from_slice(ATHLETE_REF);
@@ -111,5 +113,10 @@ pub(super) fn athlete_ref_key(
     key.push(b'\0');
     key.extend_from_slice(ref_entry.checkpoint.as_str().as_bytes());
     key.push(b'\0');
+    key.push(match ref_entry.kind {
+        RankingCandidateKind::Individual => 0,
+        RankingCandidateKind::RelayMember => 1,
+    });
+    key.extend_from_slice(&ref_entry.record_index.to_be_bytes());
     Ok(key)
 }

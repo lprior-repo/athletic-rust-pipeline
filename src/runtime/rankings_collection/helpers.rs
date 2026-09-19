@@ -151,8 +151,13 @@ pub(super) async fn run_page_step(
                         publication::seal(
                             &store,
                             publication::SealInput {
-                                scope, source_snapshot, catalog_outcome, catalog_ref,
-                                plan_ref, events, absent_families,
+                                scope,
+                                source_snapshot,
+                                catalog_outcome,
+                                catalog_ref,
+                                plan_ref,
+                                events,
+                                absent_families,
                             },
                             collection,
                         )
@@ -221,7 +226,11 @@ pub(super) async fn run_page_step(
                             event_short: &event.event_short,
                             event_id: Some(event.event_id),
                             is_relay: event.is_relay,
-                            requested_grade: if event.is_relay { None } else { Some(projection_grade) },
+                            requested_grade: if event.is_relay {
+                                None
+                            } else {
+                                Some(projection_grade)
+                            },
                             page: event.next_page,
                         },
                         revision,

@@ -184,7 +184,7 @@ pub enum ReviewOutcome {
         lane: ModelLane,
         verdict: ReviewVerdict,
         request: EvidenceDigest,
-        response: DocumentReceipt,
+        response: Box<DocumentReceipt>,
         previous_responses: Vec<DocumentReceipt>,
         retries: RetryEvidence,
     },

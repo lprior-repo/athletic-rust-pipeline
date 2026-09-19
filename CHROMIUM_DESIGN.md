@@ -1,103 +1,56 @@
-# Persistent Chromium source transport — implementation design
+# Persistent Chromium source transport — current design
 
-Status: approved direction from the user; GPU-written implementation is under native qualification, not shipped. The repaired frozen candidate passed strict compilation/Clippy and the synthetic scenarios recorded in [HANDOFF.md](HANDOFF.md), including 22 independently verified exports across retained candidates. The user authorized checkpointing and stopping the legacy run; all original workbook fields were preserved and independently verified. A fresh one-row live control is now paused at a real Cloudflare checkbox in the permanent headed profile. The operator must complete it; no real challenge was automated. Historical binaries were not replaced or replayed against changed code.
+**Qualification status:** implemented interfaces are under current-tree qualification. This document describes the design, not a shipped live-readiness result. Full collection, matching, immutable export, and exact replay remain pending end-to-end execution.
 
-## Required behavior
+## Boundary and invariants
 
-1. Use chromiumoxide 0.9.1 and installed `/usr/bin/chromium`; one ordinary headed Chrome process with a permanent private profile. Never delete the profile between runs.
-2. Bootstrap through normal source-page navigation. JavaScript, cookies, localStorage, IndexedDB and cache remain Chrome-owned.
-3. Capture actual CDP Network request/response identity, status and headers. Detect `cf-mitigated: challenge` and retain the existing bounded HTML challenge fallback. Unknown/denied HTTP statuses are not success.
-4. On challenge, immediately stop new source commands across all tabs in that profile. Already-issued physical requests can finish; do not promise instantaneous revocation.
-5. Allow normal browser challenge execution for a bounded automatic-resolution window, initially 30 seconds. If unresolved, expose durable `HumanRequired`; the user completes any interactive challenge in headed Chrome.
-6. Resume only after actual successful, non-challenged source document evidence. URL equality alone is not clearance. A fetched HTML string does not execute its scripts.
-7. Start with one browser and two bounded tabs; support explicit bounds up to eight. Keep the initial source rate conservative. Adding tabs/processes is not a substitute for agreed source-rate expectations.
-8. Keep normal Chrome identity and the same machine/profile. No UA overrides, fingerprint spoofing, webdriver patches, fake canvas/WebGL, proxies, CAPTCHA services, or cookie extraction/replay through reqwest.
-9. Chrome makes all Athletic.net acquisition requests, including exact POST search and GET Bio/Profile/Team requests. reqwest remains only for local model/control traffic.
-10. Preserve full bounded source-response evidence, deterministic Rust parsing/matching, local-only ambiguity review, all original workbook fields and independent export verification.
-11. Keep authorization email and agreed scope/rate evidence private alongside operational configuration. The actual email is not supplied in this implementation request; do not fabricate or publish it. A conservative configured rate is not an assertion of a site-approved rate.
+Chromium is the source effect shell. Rust deterministic code consumes bounded, provenance-bearing receipts; it does not treat rendered DOM text or a model answer as source truth.
 
-## Restate is the workflow owner
+1. Use the ordinary installed headed Chromium with one private persistent profile. Chrome owns cookies, localStorage, IndexedDB, and cache.
+2. Capture exact request method, URL, body, response status, headers, decoded bytes, and challenge indication through CDP/Fetch. Do not treat a navigation URL or an HTTP 200 challenge page as source success.
+3. A challenge closes new source admission across the profile. Already-issued requests may finish. The transport must drain owned work before reuse or shutdown.
+4. Automatic readiness is bounded. An unresolved challenge becomes durable `human_required`; the operator completes a real challenge manually in the same headed window/profile. Resume is allowed only after successful non-challenged document evidence.
+5. No UA/fingerprint spoofing, webdriver patch, canvas/WebGL trick, proxy rotation, CAPTCHA service, cookie extraction/replay, or direct source-HTTP fallback. `reqwest` is for local model/control traffic.
+6. Keep browser concurrency bounded (two tabs initially, validated upper bound eight) and preserve configured source admission. More tabs are not a substitute for authorization or rate policy.
+7. Source body and parser-memory limits remain distinct: source transport caps decoded bodies at 32 MiB; ranking parsing accounts at most 8 MiB of capture state. Neither is a process-RSS claim.
+8. External HTTP is not exactly-once. Lost acknowledgement is represented as uncertain effect; a replay may repeat a physical request.
+
+## Durable ownership
+
+Restate owns workflow state, retries, admission, timers, pause/resume, and checkpoints. A BrowserSession state machine records readiness, challenge, cooldown, human-required, recovery, and stopped phases. Browser process/page handles are effect-local and never serialized into durable state.
+
+The source path is:
 
 ```text
-CLI / RunCoordinator / RowWorker
-  -> QueryWorker / ProfileWorker
-  -> SourceCache
-  -> SourceGateway (existing bounded source scope)
-  -> serialized source admission
-  -> BrowserSession.await_ready (durable exclusive object)
-       -> journaled launch / bootstrap / inspect / recovery effects
-       -> durable phase state and durable sleeps
-       -> Ready / Challenged / CoolingDown / HumanRequired / Restarting / Stopped
-  -> journaled single source HTTP attempt
-       -> local BrowserManager
-       -> one bounded Chrome tab
-       -> CDP-attested request/response capture
-  -> immutable attempt/body evidence
-  -> existing Rust parsers and decision workflow
+SourceResource
+  -> SourceCache (success cache; failed rankings are not cached)
+  -> SourceGateway + scoped admission
+  -> BrowserSession readiness
+  -> one bounded Chromium tab / CDP capture
+  -> immutable receipt/body/attempt evidence
+  -> deterministic parser and decision core
 ```
 
-### Durable ownership
+Every attempt has a stable operation identity and a fresh attempt identity. Source retries, SDK retries, and model transport retries are separate budgets. A gate-closing race before physical dispatch is no attempt and consumes no HTTP retry budget. A gate-closing event after dispatch cannot revoke the already-issued request.
 
-- A Restate `BrowserSession` object owns workflow phase, automatic-resolution window, human-required state, resume observations and recovery ordering.
-- Browser startup/bootstrap, inspection, and explicitly authorized recovery navigation occur inside SDK `ctx.run` effects. Live process handles are never serialized into durable state.
-- `ctx.sleep` owns challenge/human/cooldown waiting. The browser manager must not implement an independent application retry scheduler or autonomous human-polling policy.
-- Shared status is a Restate observation API. CLI startup/status commands use generated SDK clients; no separate web server or filesystem queue.
-- SourceGateway keeps its existing bounded source retry policy and durable cooldown. Browser transport never silently retries the original request.
-- A challenge response is retained as challenge evidence, not success and not automatically an unrecoverable ordinary 403. Subsequent original-request attempts re-enter durable admission after browser readiness.
-- A race in which the profile gate closes after durable admission but before physical dispatch must be treated as no physical request, not a fabricated HTTP attempt or a consumed HTTP retry budget.
-- Plain 401/403 denial, invalid rate-limit metadata, retry exhaustion and evidence-integrity failures retain conservative failure semantics.
-- Browser readiness waits are explicitly bounded; inactivity/cancellation/recovery policies must be verified together rather than allowing a shorter handler inactivity timeout to silently invalidate a longer human wait.
+The rankings path is an additional `SourceResource::Rankings` action. Navigation capture builds a catalog from 46 requested event families, excludes walk, expands observed variants (current target 95), and records absences. Results capture validates exact scope, page advancement, and lower-bound coverage before publishing a page checkpoint. Relay results join through roster IDs; Grade 11 is a discovery projection, not workbook eligibility.
 
-### Physical ownership
+## Parser and evidence contract
 
-- Runtime owns one lazily initialized BrowserManager; initialization is invoked from the SDK effect boundary, not an eager source navigation before worker registration.
-- BrowserManager owns the Chromium child, CDP handler, bounded tab resources and immediate fail-closed physical gate.
-- CDP challenge events may revoke physical admission immediately. They do not independently authorize durable workflow resumption.
-- Every spawned driver/request task has an explicit owner and shutdown path. Cancellation closes/aborts pending page work before a tab is reused.
-- Shutdown stops intake, drains or cancels bounded in-flight work, closes Chrome, joins handler/process ownership and reports errors. Profile contents survive shutdown.
-- Chromium singleton/profile ownership must prevent two processes claiming the same profile. No attachment to or takeover of the user's unrelated browser.
+`DocumentReceipt` binds digest, source URL, status, media type, byte count, timing, and ranking capture metadata. Ranking `PageObservation` preserves source row numbers, result IDs, candidate kind, roster presence, and unresolved roster counts. `RankingPageIndex` and immutable checkpoints bind each index to its raw receipt and collection/event/page identity.
 
-## Evidence and transport contract
+The parser is split through the existing module graph: `src/runtime/rankings/page/parse.rs` declares `main` and `relay` and re-exports `parse_page_response` and `PageParseError` from `main`. `pub(crate)` keeps internal helpers separate from explicit public serialized IDs and provenance. This split is a source organization choice, not a second parser or alternate collector.
 
-- Preserve exact requested URL, HTTP method and serialized JSON search body. Never interpolate source values as executable JavaScript.
-- Register CDP observations before issuing the action; correlate target request/response identifiers. Reject redirects rather than certifying a response from another route.
-- Capture raw decoded response bytes, not rendered DOM serialization. Keep the 32 MiB source-body limit and bounded request duration.
-- CDP/browser decompression means compressed wire Content-Length is not the decoded-body length. Enforce the decoded bound without a false equality check.
-- Preserve status, Content-Type, Retry-After and challenge indication. Browser cookies/authentication state must not appear in captured request records or logs.
-- Complete bodies and attempt evidence remain in the existing worker-owned Fjall store. No second process opens the live database.
-- Bootstrap/navigation subresources are ordinary Chrome-managed page activity. Restate controls pipeline commands; it does not transactionally journal every browser-generated image/script request.
-- External HTTP is not exactly once. Lost acknowledgement remains an explicit uncertain-effect boundary.
+A failed ranking fetch is not cached as a successful absence. `SourceCache` only stores a failed outcome for non-ranking resources; failed rankings return through the gateway for fresh audit/retry. A final collection snapshot is immutable and can only be sealed when every event head is terminal and checkpointed.
 
-## Clean cutover and deployment
+## Challenge and shutdown behavior
 
-- Replace source-session-header replay in the new production source path. Do not retain a live-source reqwest fallback or silently transplant browser cookies.
-- Add a new acquisition revision for browser semantics. Update verifier/request contracts where representation changes; retain historical documentation as explicitly baseline-specific.
-- Do not replace the currently deployed binary or run changed code under its active journals. Build a uniquely named browser-enabled binary and use a fresh compatible native Restate deployment/data identity for verification.
-- No Docker, cloud browser, external matching model, GitHub Actions, GPU-server restart or configuration changes.
-- Existing local model servers stay on ports 11000 and 11001. Browser source work does not send Golden/private context to development reviewers.
+Normal challenge execution may occur only in the bounded readiness window. Passive overlays are not proof of a challenge. HTTP challenge markers and response evidence close admission; a fetched challenge string is never executed as page JavaScript. The operator must perform any real Cloudflare action manually. No live challenge was automated for this documentation refresh.
 
-## Implementation ownership
+Shutdown stops intake, drains/cancels owned work, closes pages/browser, joins process ownership, and leaves the private profile intact. Worker replacement requires a fresh compatible deployment/data identity; an in-flight journal must not be replayed against changed browser/parser semantics. Existing profiles, stores, journals, and frozen binaries are retained.
 
-- Main: planning, adversarial source review, native verification, documentation and publication. Per the latest user direction, Main does not perform further production coding.
-- GPU5090ChromeCoding: local 5090 implementation of process/profile/tab ownership, generation-gated admission, lifecycle/actor/pool/shutdown, and SDK BrowserSession/readiness integration.
-- GPU3090ChromeCoding: local 3090 implementation of CDP request/response capture, raw byte acquisition, cancellation cleanup, and continuous navigation observation.
-- The two coders have disjoint file ownership. Main integrates only after both freeze; neither coder runs concurrent builds, formatters, linters, tests, or services.
+## Qualification gates
 
-The GPUs now perform coding, superseding the earlier review-only assignment. Their completion reports are not verification, and development-model execution is not evidence that the production matching workflow has executed on both matching lanes. Current repair status and private native evidence locations are retained in [HANDOFF.md](HANDOFF.md).
+The current record includes a fresh production/test-library `cargo check`; strict Clippy still has one known trivial conversion for Main to repair. The 26-case private storage qualification exposed bugs under repair, so it has no passing claim. The private fixture addresses are Restate admin 21041, ingress 21042, fixture 21043, and worker 21140, with the worker not deployed.
 
-## Required verification before claiming implementation complete
-
-Use native executable scenarios, not a unit-suite or fuzz campaign:
-
-- Normal JS bootstrap; persistent browser state survives process restart.
-- Exact GET and POST acquisition, response bytes/status/headers and retained evidence.
-- Compressed response, body limit, timeout and cancellation without tab reuse races.
-- Automatic challenge resolution and unresolved `HumanRequired`; manual completion resumes through durable readiness.
-- Two-tab/profile-wide stop on one challenge; queued commands cannot leak through the gate.
-- Plain 404, denial, 429/Retry-After, server error and redirect classification.
-- Browser death/profile lock/shutdown and native Restate replay/recovery behavior.
-- Raw evidence and exported bundle verification using the correct store owner or a confirmed stopped writer.
-- A bounded authorized live browser check; no claim of whole-workbook/10,000-row scale success from that check.
-- Compilation, formatting, source Clippy and dependency checks appropriate to the pinned crate. No unit suites or fuzz campaigns.
-
-Unexecuted scenarios remain unverified. An interactive challenge requiring the user's action or missing authorization-email artifact is an explicit external prerequisite, not permission to synthesize success.
+Main must still execute the current frozen worker against native scenarios covering normal capture, exact request identity, compressed/decoded bytes, bounds, cancellation and tab reuse, challenge/human-required pause and explicit resume, profile-wide drain, denial/rate-limit/redirect classification, browser loss, pause/resume controls, immutable owner export, stopped-writer verification, and exact replay. These are gates, not completed results. No live-collection readiness claim is permitted.

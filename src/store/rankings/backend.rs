@@ -31,13 +31,16 @@ pub(in crate::store) fn put_rankings_page(
     let marker_key = page_marker_key(&index.collection, &index.event_short, index.page)?;
 
     // Check for page conflict or replay no-op.
-    if store
+    if let Some(existing) = store
         .rankings
         .get(&marker_key)
         .map_err(|_| StoreError::CorruptData)?
-        .is_some()
     {
-        return Err(StoreError::RankingConflict);
+        return if existing.as_ref() == index_hash.as_slice() {
+            Ok(())
+        } else {
+            Err(StoreError::RankingConflict)
+        };
     }
 
     // Check seal after page check so we allow replay after normal seal.
@@ -64,7 +67,7 @@ pub(in crate::store) fn put_rankings_page(
     for result_id in &source_results {
         let key = presence_source_result(&index.collection, &index.event_short, *result_id)?;
         total_batch_bytes += key.len();
-        batch.insert(&store.rankings, key, &[]);
+        batch.insert(&store.rankings, key, []);
     }
 
     for row in &index.rows {
@@ -75,7 +78,7 @@ pub(in crate::store) fn put_rankings_page(
             row.row_number,
         )?;
         total_batch_bytes += key.len();
-        batch.insert(&store.rankings, key, &[]);
+        batch.insert(&store.rankings, key, []);
     }
 
     // Event-level athlete presence keys (were missing, causing zero unique counters).
@@ -127,7 +130,7 @@ pub(in crate::store) fn put_rankings_page(
                     entry.athlete_id,
                 )?;
                 total_batch_bytes += key.len();
-                batch.insert(&store.rankings, key, &[]);
+                batch.insert(&store.rankings, key, []);
             }
             RankingCandidateKind::RelayMember => {
                 let _ = grade11_relay.insert((entry.result_id, entry.athlete_id.get()));
@@ -138,7 +141,7 @@ pub(in crate::store) fn put_rankings_page(
                     entry.athlete_id,
                 )?;
                 total_batch_bytes += key.len();
-                batch.insert(&store.rankings, key, &[]);
+                batch.insert(&store.rankings, key, []);
             }
         }
     }
@@ -149,13 +152,13 @@ pub(in crate::store) fn put_rankings_page(
             let key =
                 presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
             total_batch_bytes += key.len();
-            batch.insert(&store.rankings, key, &[]);
+            batch.insert(&store.rankings, key, []);
         } else {
             let _ = roster_missing.insert(roster.result_id);
             let key =
                 presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
             total_batch_bytes += key.len();
-            batch.insert(&store.rankings, key, &[]);
+            batch.insert(&store.rankings, key, []);
         }
     }
 
@@ -167,7 +170,7 @@ pub(in crate::store) fn put_rankings_page(
             AthleteId::try_from(*athlete_id).map_err(|_| StoreError::InvalidRankingInput)?,
         )?;
         total_batch_bytes += key.len();
-        batch.insert(&store.rankings, key, &[]);
+        batch.insert(&store.rankings, key, []);
     }
 
     // Bound total serialized batch bytes.
@@ -191,7 +194,7 @@ pub(in crate::store) fn ranking_name_refs(
 ) -> Result<RankingLookup, StoreError> {
     let _writer = store.writer.lock().map_err(|_| StoreError::Database)?;
 
-    if limit < 1 || limit > 4096 {
+    if !(1..=4096).contains(&limit) {
         return Err(StoreError::InvalidPageLimit);
     }
 
@@ -226,7 +229,7 @@ pub(in crate::store) fn ranking_athlete_refs(
 ) -> Result<RankingLookup, StoreError> {
     let _writer = store.writer.lock().map_err(|_| StoreError::Database)?;
 
-    if limit < 1 || limit > 4096 {
+    if !(1..=4096).contains(&limit) {
         return Err(StoreError::InvalidPageLimit);
     }
 

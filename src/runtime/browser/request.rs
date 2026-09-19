@@ -36,7 +36,7 @@ impl Actor {
             self.pages[slot].busy = true;
             self.challenge_target = Some(ChallengeTarget {
                 url: item.request.url.clone(),
-                post: item.request.body.is_some(),
+                post: item.request.body().is_some(),
             });
             let gate = self.gate.clone();
             let shutdown = self.shutdown.clone();

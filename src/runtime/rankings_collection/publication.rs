@@ -140,9 +140,11 @@ pub(super) fn page(
         digest.clone(),
     )?;
     store.put_rankings_page(&index)?;
-    let stats = store.ranking_event_stats(&index.collection, &event.event_short)?;
-    if terminal && (stats.row_positions < min_count || stats.max_row_position < min_count) {
-        bail!("terminal ranking page does not cover the source minCount lower bound");
+    if terminal {
+        let stats = store.ranking_event_stats(&index.collection, &event.event_short)?;
+        if stats.row_positions < min_count || stats.max_row_position < min_count {
+            bail!("terminal ranking page does not cover the source minCount lower bound");
+        }
     }
     Ok(PagePublication {
         checkpoint: digest,
@@ -230,7 +232,13 @@ pub(super) fn seal(
     collection: EvidenceDigest,
 ) -> anyhow::Result<EvidenceDigest> {
     let SealInput {
-        scope, source_snapshot, catalog_outcome, catalog_ref, plan_ref, events, absent_families,
+        scope,
+        source_snapshot,
+        catalog_outcome,
+        catalog_ref,
+        plan_ref,
+        events,
+        absent_families,
     } = input;
     if events.is_empty()
         || events

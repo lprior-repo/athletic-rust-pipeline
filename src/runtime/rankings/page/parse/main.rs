@@ -250,7 +250,9 @@ fn parse_row(
         row_number,
         roster_present: None,
     });
-    if let Some(athlete_id) = row.get("AthleteID").and_then(|value| value.as_u64()) {
+    if expected.is_relay {
+        observation.id_results.push(id_result);
+    } else if let Some(athlete_id) = row.get("AthleteID").and_then(|value| value.as_u64()) {
         if athlete_id == 0 {
             return Err(PageParseError::ZeroAthleteId);
         }

@@ -52,6 +52,11 @@ pub(super) struct Actor {
     pub(super) launched: bool,
 }
 
+pub(super) struct BrowserConnection {
+    pub(super) browser: Browser,
+    pub(super) launched: bool,
+}
+
 pub(super) struct ChallengeTarget {
     pub(super) url: url::Url,
     pub(super) post: bool,
@@ -89,18 +94,17 @@ pub(super) struct JobResult {
 
 impl Actor {
     pub(super) fn new(
-        browser: Browser,
+        connection: BrowserConnection,
         settings: BrowserSettings,
         rx: mpsc::Receiver<Command>,
         handler_pair: (mpsc::Receiver<HandlerEvent>, JoinHandle<()>),
         status: Arc<RwLock<BrowserStatus>>,
         cooldown_until: Arc<Mutex<Option<Instant>>>,
         gate: Arc<ProfileGate>,
-        launched: bool,
     ) -> Self {
         let queue_capacity = settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1);
         Self {
-            browser: Some(browser),
+            browser: Some(connection.browser),
             settings,
             rx,
             handler_rx: handler_pair.0,
@@ -122,7 +126,7 @@ impl Actor {
             shutdown: CancellationToken::new(),
             panic_shutdown: false,
             capture_sequence: 0,
-            launched,
+            launched: connection.launched,
         }
     }
 

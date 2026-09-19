@@ -8,7 +8,7 @@ use url::Url;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "action")]
 pub(crate) enum RequestAction {
-    Fetch(Option<SearchBody>),
+    Fetch { body: Option<SearchBody> },
     Rankings(RankingsAction),
 }
 
@@ -37,7 +37,7 @@ pub(crate) struct RequestSpec {
 impl RequestSpec {
     pub(crate) fn body(&self) -> Option<&SearchBody> {
         match &self.action {
-            RequestAction::Fetch(body) => body.as_ref(),
+            RequestAction::Fetch { body } => body.as_ref(),
             RequestAction::Rankings(_) => None,
         }
     }
@@ -64,7 +64,7 @@ pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSp
                 .append_pair("athleteId", &athlete_id.get().to_string())
                 .append_pair("sport", sport.api_code())
                 .append_pair("level", "0");
-            safe(url, RequestAction::Fetch(None))
+            safe(url, RequestAction::Fetch { body: None })
         }
         SourceResource::ProfileHtml { profile_url } => profile(origin, profile_url),
         SourceResource::Team {
@@ -110,7 +110,7 @@ fn search(
     };
     safe(
         endpoint(origin, "/Search.aspx/runSearch")?,
-        RequestAction::Fetch(Some(body)),
+        RequestAction::Fetch { body: Some(body) },
     )
 }
 
@@ -120,7 +120,7 @@ fn profile(origin: &Url, profile_url: &ProfileUrl) -> Result<RequestSpec> {
     if path.is_empty() || path.contains("..") || path.contains(['?', '#', '\\']) {
         bail!("profile path is unsafe");
     }
-    safe(endpoint(origin, path)?, RequestAction::Fetch(None))
+    safe(endpoint(origin, path)?, RequestAction::Fetch { body: None })
 }
 
 fn team(
@@ -137,7 +137,7 @@ fn team(
         .append_pair("team", &team_id.to_string())
         .append_pair("sport", sport.api_code())
         .append_pair("season", &season.to_string());
-    safe(url, RequestAction::Fetch(None))
+    safe(url, RequestAction::Fetch { body: None })
 }
 
 fn rankings(origin: &Url, action: RankingsAction) -> Result<RequestSpec> {
@@ -211,6 +211,29 @@ mod tests {
             serde_json::to_value(request.body()).expect("json"),
             serde_json::json!({"q":"Ada Example","fq":"t:a a:tf","start":12})
         );
+    }
+
+    #[test]
+    fn captured_fetch_requests_survive_durable_serialization() -> anyhow::Result<()> {
+        let origin = Url::parse("http://127.0.0.1:8080/")?;
+        let resources = [
+            SourceResource::Search {
+                query: "Ada Example".to_owned(),
+                sport: Sport::TrackField,
+                start: 12,
+            },
+            SourceResource::Bio {
+                athlete_id: AthleteId::new(7)?,
+                sport: Sport::CrossCountry,
+            },
+        ];
+        for resource in resources {
+            let request = build(&origin, &resource)?;
+            let bytes = serde_json::to_vec(&request)?;
+            let restored: RequestSpec = serde_json::from_slice(&bytes)?;
+            assert_eq!(restored, request);
+        }
+        Ok(())
     }
 
     #[test]

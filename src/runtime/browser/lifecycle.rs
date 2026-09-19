@@ -1,5 +1,5 @@
 use super::{
-    actor::{Actor, Command, HandlerEvent},
+    actor::{Actor, BrowserConnection, Command, HandlerEvent},
     gate::ProfileGate,
     pool, BrowserError, BrowserResponse, BrowserSettings, BrowserState, BrowserStatus,
     SHUTDOWN_TIMEOUT,
@@ -53,15 +53,18 @@ impl BrowserManager {
         let cooldown_until = Arc::new(Mutex::new(None));
         let gate = Arc::new(ProfileGate::new());
         let actor = Actor::new(
-            browser,
+            BrowserConnection {
+                browser,
+                launched: true,
+            },
             settings,
             rx,
             (handler_rx, handler_join),
             status.clone(),
             cooldown_until.clone(),
             gate.clone(),
-            true,
         );
+
         let join = tokio::spawn(actor.run());
         let manager = Self {
             tx,
@@ -110,14 +113,16 @@ impl BrowserManager {
         let cooldown_until = Arc::new(Mutex::new(None));
         let gate = Arc::new(ProfileGate::new());
         let actor = Actor::new(
-            browser,
+            BrowserConnection {
+                browser,
+                launched: false,
+            },
             settings,
             rx,
             (handler_rx, handler_join),
             status.clone(),
             cooldown_until.clone(),
             gate.clone(),
-            false,
         );
         let join = tokio::spawn(actor.run());
         let manager = Self {

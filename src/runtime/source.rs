@@ -278,7 +278,6 @@ async fn run_step(
     })
     .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
-    .map_err(Into::into)
     .map(|json| json.0)
 }
 

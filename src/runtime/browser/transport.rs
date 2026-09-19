@@ -98,15 +98,6 @@ pub(crate) async fn fetch(
         .map(serde_json::to_string)
         .transpose()
         .map_err(|_| BrowserError::Protocol)?;
-
-PUT 255.=260:
-fn request_method(request: &RequestSpec) -> &'static str {
-    if request.body().is_some() {
-        "POST"
-    } else {
-        "GET"
-    }
-}
     let arguments = FetchArguments {
         url: request.url.as_str(),
         method: request_method(request),
@@ -115,6 +106,7 @@ fn request_method(request: &RequestSpec) -> &'static str {
             .map_err(|_| BrowserError::Protocol)?,
         max_body: MAX_SOURCE_RESPONSE_BYTES,
     };
+
     let value = serde_json::to_value(arguments).map_err(|_| BrowserError::Protocol)?;
     let call = chromiumoxide::cdp::js_protocol::runtime::CallFunctionOnParams::builder()
         .function_declaration(script::FETCH_FUNCTION)
@@ -261,7 +253,7 @@ fn request_method(request: &RequestSpec) -> &'static str {
 }
 
 fn request_method(request: &RequestSpec) -> &'static str {
-    if request.body.is_some() {
+    if request.body().is_some() {
         "POST"
     } else {
         "GET"

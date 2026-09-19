@@ -1,151 +1,91 @@
-# Scope and architecture
+# Current scope and architecture
 
-## Data flow
+This document is the current product and source scope. It replaces historic alpha/exhaustive/run-restate descriptions; those commands and tools are not part of the current CLI.
+
+## Expanded roster target — requested, not yet complete
+
+The clarified target is the existing USA/2026 scope with **source-verified Grade 11/junior boys and girls**, covering **indoor track, outdoor track, and cross-country**. It is not an all-grade or alumni census. Keep the previous race-walking exclusion. Junior status requires season-bound source evidence; do not infer it from a name, age, or assumed graduation year. This roster filter does not remove rows from an original workbook supplied for enrichment.
+
+The required records are:
+
+- **Athletes:** stable source athlete ID, name, athlete/profile URLs, evidenced junior status, source season, and competing school. Preserve conflicting or unknown observations explicitly.
+- **Performances:** every available high-school result for the selected athletes, not just their ranking entries or junior-year bests. Retain raw mark, normalized value where supported, sport, event, indoor/outdoor context, timing, wind, implement/hurdle specification, date, meet, result URL, source result ID, and competing school/team at that performance.
+- **Personal records:** event-specific comparable bests with links to their supporting results. Keep source-reported PR claims distinct from calculated bests among captured results. Missing history cannot establish a verified career PR. Cross-country comparisons retain distance and course context; a 5 km time and a three-mile time are not interchangeable.
+- **School history:** retain school identity and the source season/result supporting it. A transfer must not rewrite the school attached to earlier performances.
+- **Coverage:** separate discovered athletes, verified juniors, completed source requests, available performance histories, and unavailable/blocked evidence. A completed rankings plan is not proof of a complete roster or career history.
+
+Full histories must remain tabular and lossless. Partition performance worksheets when Excel row limits require it, retain stable athlete/result links across sheets, and preserve the canonical JSONL evidence sidecar. Do not replace complete histories with a truncated summary cell.
+
+Restate must own bounded scheduling, shared source admission, retry/cooldown state, durable checkpoints, and recovery. Prefer available authorized bulk responses, deduplicate athlete/profile work across events, and reuse immutable evidence. Bound network, CPU, storage, and local-model concurrency independently. Measure throughput, latency, requests per athlete, cache reuse, allocations, and throttle/challenge counts before increasing admission. Honor `Retry-After` and stop new profile admission on a challenge; never promise zero upstream 429s or treat evasion as optimization.
+
+Implementation retains the agreed functional Rust/Holzman discipline: validated domain types, pure calculations separated from effects, explicit errors, bounded resources, owned cancellation/drain, and no avoidable hot-path cloning or allocation. The actual local 5090/3090 endpoints support development; model output requires source review and executable verification.
+
+**Current gap:** the native rankings scope is still fixed to boys Grade 11, and the retained 142,705-athlete delivery covers that rankings dataset. Existing profile/domain code supports track and cross-country evidence, but that does not prove comprehensive girls coverage, complete histories, school histories, or the expanded roster export. Those are new acceptance criteria, not completed features.
+
+## End-to-end shape
 
 ```text
-large XLSX
-  -> streaming OOXML reader
-  -> local-only row scope (strict first worksheet or legacy sport filter)
-  -> scoped TF and XC search with full pagination reconciliation
-  -> deterministic evidence extraction and best guess
-  -> optional strict local Q5 extraction + Q4 identity review + Rust policy enforcement
-  -> authorized alpha manifest + typed API client (optional separate run)
-  -> 50-state/event matrix + completeness validation
-  -> cohort filter + safe normalization + athlete-ID deduplication
-  -> checkpoints + privacy-guarded source outputs
-  -> local alpha-source matching
-  -> enriched XLSX copy with a new result sheet
+original XLSX (all real source rows, all source sheets)
+  -> streaming workbook import + immutable source manifest
+  -> stable worksheet/physical-row identities
+  -> deterministic search/profile evidence and optional rankings discovery
+  -> bounded Chromium/CDP source effects through Restate
+  -> conservative identity assessment
+  -> one assigned local model only for genuine ambiguity
+  -> immutable row pages and ranking checkpoints
+  -> optional Grade 11 ranking projection (discovery only)
+  -> immutable XLSX + JSONL sidecar + publication receipt
+  -> stopped-writer independent verification and exact replay
 ```
-Result records retain every discovered profile hint, including weak candidates, and expose `hint_count` plus an `AI Logic` explanation in CSV and `Athletic Matches`.
 
-## Component boundaries
+Workbook membership is eligibility. There is no cohort, grade, graduation-year, junior, or source-sport filter. Every real row remains accounted for, including duplicates and rows without identity fields. Generated sheets such as `Athletic Matches`, `Corrections`, and `Summary` are output artifacts rather than source population.
 
-| Module | Responsibility | Does not do |
+The completed consolidated rankings workbook contains 142,705 unique athletes on one `AllAthletes` sheet. It is a separate rankings delivery, not an identity-matched original workbook; matching its athletes to original source rows requires its own native run and verifier evidence.
+
+## Ownership boundaries
+
+| Area | Owns | Does not own |
 |---|---|---|
-| `xlsx` | Stream shared strings and worksheet XML; ignore empty styled rows; append result worksheet | Send personal data to any service |
-| `discovery` | Query the scoped Athletic.net search endpoint and retain allowed athlete URLs | Fetch candidate pages |
-| `runtime::source` | Retrieve known source URLs through bounded `reqwest` requests and native Restate admission | Crawl links, bypass blocks, log in, use stealth/proxies |
-| `extract` | Convert HTML/snippets to compact evidence and call the configured local model | Decide the final identity alone |
-| `scoring` | Normalize names/schools; apply thresholds and corroboration rules | Invent missing identity evidence |
-| `marks` | Canonicalize events and compare validated marks | Treat model arithmetic as authoritative |
-| `checkpoint` | Append and reload the latest row or alpha-unit result | Delete previous evidence |
-| `output` | Write audit JSONL, flat CSV, unresolved queue | Mutate source workbook rows |
-| `alpha_api_client` | Call only developer-authorized, allow-listed API routes with bounded pagination/retries | Scrape public pages or guess credentials |
-| `alpha_catalog` | Validate exactly 50 states and the discovered event matrix | Add DC, territories, or unconfirmed events |
-| `alpha_cohort` / `alpha_normalize` | Apply Class-of-2027 evidence precedence and safe field normalization | Promote missing or conflicting evidence |
-| `alpha_match` | Match a completed local alpha source into existing candidate/scoring types | Make Athletic.net network calls |
-| `exhaustive` / `exhaustive_run_rows` | Own the writer lock, cancellation, durable row commits, and final exports | Report retryable errors as complete |
-| `exhaustive_search` / `search_cache` | Bound concurrent search and persist complete query outcomes | Cache failed or truncated queries as successful |
-| `exhaustive_ai` / `ai_cache` | In AI mode, require both clients and cache schema-bound successful analysis | Substitute heuristic evidence after model failure |
-| `exhaustive_identity` | Reconcile canonical athlete identities and conservative attribution | Attribute an unresolved row to a selected profile |
-| `coverage` / `jsonl` | Bind population/configuration/schema, reconcile every source key, and repair only torn suffixes | Ignore committed corruption or orphan checkpoint keys |
-| `retry_policy` / `model_transport` | Classify transient failures, honor bounded Retry-After, retry model transport | Retry invalid model content or ignore server delays |
-| `reuse_search` | Validate, lock, and atomically import a compatible deterministic run's search cache | Import its decisions or checkpoints |
+| Workbook/domain/parser core | Streaming records, stable IDs, deterministic validation, ranking parsing, identity policy, mark arithmetic | Browser lifecycle, timers, model transport, eligibility shortcuts |
+| Restate runtime | Durable calls, scheduling, retries, admission, cooldown, pause/resume, checkpoints, cancellation/drain | Exactly-once external HTTP, truth of upstream source |
+| Chromium transport | Normal headed profile, tabs, CDP request/response identity, decoded bounded bytes, challenge gate | Cookie extraction/replay, evasion, source-rate authorization |
+| SourceCache/Gateway | Snapshot-bound source outcomes, fresh ranking failures, bounded attempt evidence | Candidate decisions, stale failure success |
+| Ranking collection | 46-family manifest, observed variant catalog, walk exclusion, page/roster joins, sealed indexes | Workbook eligibility or cohort selection |
+| ArtifactStore | Immutable documents, row/source indexes, attempts, ranking indexes and seals | Live queue/lease, second writer, external truth |
+| Export/verifier | Additive projections, JSONL overflow, receipts, original-field/evidence consistency | Mutating original input or certifying upstream authenticity |
 
-## Authorized alpha API path
+## Ranking discovery contract
 
-The optional alpha run starts only from a validated local manifest with documented developer permission. It calls the confirmed nav/rankings routes, requires exactly 50 canonical states, rejects unknown completeness or cap behavior, records an append-only unit checkpoint, and writes a separate source directory. `match-authorized` reads that directory locally and does not contact Athletic.net.
+`RankingsScope` is optional. Its requested manifest has 46 event families. `EventCatalog` validates list/season metadata, excludes walk events, records absent families, and expands matching navigation events to observed variants; the current design target is 95 variants. Each results page is bound to collection, event, page number, request metadata, raw receipt, parsed observation, and prior checkpoint.
 
-### 1. Workbook scan
+Individual rows use expected Grade 11 scope. Relay rows carry a system placeholder grade, so they become projected candidates only after `RelayTeamID == row AthleteID` and the joined roster member has Grade 11. This projection supplies discovery candidates and provenance; it never filters workbook membership or turns a missing ranking into an ineligible row.
 
-The XLSX reader opens the ZIP container, streams `sharedStrings.xml`, resolves worksheet relationships, and streams each worksheet `<row>`. A row counts as real only when it contains at least one non-empty cell. This avoids the `Sheet1` inflated dimension.
+Page parsing accounts for at most 8 MiB of ranking capture state. The general decoded source body bound is 32 MiB. `SourceCache` caches successes, but deliberately does not cache failed rankings outcomes; resumed rankings work must create fresh audit provenance. A collection is sealed only when all planned events have terminal pages and the final snapshot binds the same immutable scope/source snapshot.
 
-Each selected prospect receives the immutable key `sheet_name:excel_row`. Every later output uses that key; names are never used as write-back keys.
+## Privacy and source rules
 
-`--all-workbook-rows --first-worksheet-only` selects every real row in the first actual worksheet relationship, irrespective of source sport. For this workbook the population is 111,939 rows with all 13 source columns preserved. Seven rows have no name and finish as explicit `INPUT_ERROR`; the remaining 111,932 require TF and XC discovery.
+The source profile is private and persistent. Chrome owns cookies and storage. Real Cloudflare challenges are manual human-only in the same headed profile. No challenge evasion, UA/fingerprint spoofing, webdriver patching, proxy/CAPTCHA service, cookie extraction/replay, or direct source-HTTP fallback is allowed. Local model endpoints remain local; no PII is sent to hosted models.
 
-### 2. Candidate discovery
+Source, request, response, attempt, candidate, row, page, and export identities are digest/provenance-bound. Public stable IDs are used for joins; physical worksheet coordinates are retained as source provenance, not as mutable identity. Original source fields are immutable and exported alongside additive annotations. Long summaries exceed Excel-cell limits by moving to the JSONL sidecar with row/report/athlete linkage.
 
-For each selected athlete, queries are generated from:
+## Current CLI contract
 
-- exact full name;
-- school;
-- city/state;
-- expected class year;
-- `site:athletic.net/athlete`.
-Only URLs whose normalized host is `athletic.net` or `www.athletic.net` and whose path starts with `/athlete/` are retained. Completed row records checkpoint the query, URLs, snippets, extracted evidence, model decision, and scores under the immutable source key.
+```text
+worker, deploy, start, status,
+browser-start, browser-status, export, verify,
+rankings-status, rankings-pause, rankings-resume
+```
 
-Strict exhaustive discovery has no candidate-count truncation. It validates athlete IDs, result counts, pagination progress, and the bounded page limit; any unknown or inconsistent completeness produces a retryable `SEARCH_ERROR`. Two concurrent query futures share one spacing gate. All deduplicated query stages complete in both sport lanes before the final decision, without an early-match shortcut.
+`start` takes exactly one of `--per-sheet N` or `--all`, plus the original workbook digest. `--rankings` enables discovery collection and `--max-pages-per-event` bounds page traversal. `start --output PATH` queues `run-and-export` automatically; its response is submitted state, not completion. Ranking pause is durable; resume is explicit and performs the browser recovery path. `verify` requires the existing stopped ArtifactStore and must not open a live writer store.
 
-### 3. Retrieval
+## Qualification ledger
 
-The production retrieval path is `runtime::source`, using `reqwest` for known search and profile requests. Native Restate owns admission and durable retry policy; no independent crawler is involved. Complete raw responses are retained for deterministic parsing and replay.
+**Reported current evidence:** fresh production and test-library `cargo check`; strict Clippy has one known trivial conversion remaining; allocation measurement 344,131 versus 13,131 over 1,000 synthetic iterations (331 fewer allocations per iteration, not throughput); retained private 26-case storage qualification exposed bugs under repair; native fixture addresses Restate admin 21041, ingress 21042, fixture 21043, worker 21140, with worker not deployed.
 
-Source bodies are bounded to 32 MiB while streaming. Invalid declared lengths, oversized bodies and transport truncation are explicit failures. Legacy saved-page helpers remain limited to 4 MiB; they are not the production acquisition path. The base build does not use browser automation or anti-bot fallbacks.
+**Pending:** current-tree source repair and final quality gates; native ranking/parser/storage scenarios; genuine pause and explicit resume; native collection, deterministic matching, owner-online immutable export, stopped-writer verification, and exact replay. Full automated collection -> matching -> export/replay has not completed. No live-collection readiness claim is supported.
 
-### 4. Local model
+Removed alpha/exhaustive/run-restate commands, deleted `tools/restate-native.sh`, old benchmark targets, and removed campaign documents must not reappear in operational instructions. Retained historical evidence remains useful only when labelled with its frozen binary, store, and source contract; it cannot certify this current tree.
 
-The configured local model server receives only:
+## Module graph note
 
-- prospect name, school, full street address, city/state, postal code, class year, and sport;
-- candidate title/snippet/profile URL;
-- compact public page text if authorized retrieval is enabled.
-
-It never receives email or the full workbook row. Street/postal values are identity context, not candidate facts; missing candidate address evidence is unknown rather than a mismatch. The current implementation passes the original street/postal fields and canonicalizes observed state names; it does not implement a street-component parser or authoritative postal-address validation.
-
-AI-enabled exhaustive mode requires Q5 extraction and Q4 identity review. Rust first records a deterministic decision, then Q5 extracts every candidate and Q4 reviews the complete candidate set once. Invalid JSON, omitted extraction schema, unavailable models, or invalid review indices become retryable `AI_ERROR`, not a guessed match or `NO_MATCH`. Explicit null evidence fields are allowed to remain absent. `--no-ai` constructs neither model client and emits deterministic decisions only. The separate legacy path retains its older tolerant fallback behavior.
-
-### 5. Deterministic identity policy
-
-Name has the largest weight. School and geography provide corroboration. Class year and Track/XC participation are smaller but material checks. An exact common name cannot become `MATCH` without corroboration. Explicit canonical-state or class-year conflicts remove corroboration and cap the score at the review threshold, including when configurable corroboration is disabled. State suffixes use longest matching names first, so West Virginia is not Virginia.
-
-The model may add an explanation or recommend a lower status. Promotion above the deterministic result is disallowed unless the underlying structured evidence itself raises the Rust score.
-
-Deterministic decisions require a unique qualifying candidate and sufficient runner-up margin for positive attribution. Nonempty but weak or ambiguous candidate sets remain `REVIEW`; only complete discovery with no candidates produces `NO_MATCH`. Scores are heuristic rankings, not calibrated probabilities. CSV exposes the original deterministic decision and the review mode separately.
-
-### 6. Marks
-
-Marks retain event, mark, season, date, meet, wind, and source URL. Event aliases map to stable keys. Rust parses times and distances to comparable numeric values and chooses the PR using event direction (lower for timed events, higher for distance/height events).
-
-Records that fail mark validation remain in raw evidence but are not promoted into PR columns.
-
-### 7. Failure and retry behavior
-
-| Failure | Result |
-|---|---|
-| Athletic.net search/API unavailable | The affected row or alpha unit remains retryable; no credential guessing |
-| Exhaustive local model unavailable, invalid JSON/schema, or invalid candidate index | Retryable `AI_ERROR`; row commit followed by nonzero exit |
-| Legacy local model unavailable/invalid | Legacy deterministic fallback or review; not strict exhaustive proof |
-| Page blocked/robots denied | Search evidence retained; no bypass attempted |
-| Alpha response unauthorized, malformed, capped, or incomplete | Affected unit is checkpointed unresolved and the run fails closed |
-| No candidate after every required search completes | `NO_MATCH` checkpointed |
-| Neither source name present | Terminal `INPUT_ERROR`; no fabricated athlete |
-| Interrupted process | Cancel uncommitted work, drain any started commit, export progress, then resume from durable outcomes |
-| XLSX write-back fails | Source file remains untouched; output temp is not promoted |
-
-Search transient failures use the configured bounded attempt count (three in the supplied configuration); model transport uses three attempts. Retry-After accepts delta seconds and HTTP dates, with a 60-second automatic-wait ceiling. Invalid or excessive delays fail explicitly. Search 403 opens a sticky circuit immediately, and accumulated 429 denials open the configured circuit without successful siblings resetting the count. Model schema/content errors do not consume automatic transport retries. The current CLI still stops after checkpointing the first retryable row; per-row fault isolation across the remaining population is not implemented.
-
-The exhaustive runner holds an exclusive output-directory writer lock. Workbook/configuration/scope/review-mode/analysis-schema fingerprints reject incompatible resumes. JSONL persistence syncs complete newline-terminated records before exposing cache entries; only an unterminated final suffix may be repaired. Coverage is atomically replaced and reconciles checkpoint source keys against the full selected population. An AI second pass may explicitly import a compatible deterministic run's validated search cache under the donor's writer lock; it never imports deterministic decisions as AI-reviewed outcomes.
-
-An unchanged completed run skips engine construction and all external requests. Candidate and decision caches are persistent but currently loaded into memory, as are source prospects and checkpoint records; bounded HTTP concurrency is not a claim of constant-memory operation. Cache appends and optional saved-page reads still perform synchronous file I/O in the async row path. These are explicit performance/review limitations, not passed architectural gates.
-
-The strict compiler/Clippy gate is narrower than full architectural approval. The codebase still has functions exceeding the Farley 25-line/five-argument limits and source files exceeding 300 lines (including `coverage`, `discovery`, `extract`, and `xlsx`). Full black-hat approval is not claimed.
-
-## Privacy and operational controls
-
-- Email stays in local source/result records. Street/postal data stays out of search but is deliberately sent to the configured model endpoints; the supplied endpoints are local.
-- Logs identify rows by source key and name, not email.
-- Direct page retrieval requires two independent authorization controls.
-- Alpha API collection requires a separate developer permission reference and explicit CLI acknowledgment.
-- Host and route allow-lists reject redirects/candidates outside Athletic.net.
-- There is no credential ingestion or authenticated-session capture.
-- Source XLSX is never overwritten.
-
-## Acceptance criteria
-
-- `inspect` reports 111,939 `Export` data rows and 8,777 `Sheet1` data rows for the supplied workbook.
-- A five-row `run` can be stopped and resumed without repeating completed rows.
-- Every selected result retains candidate URLs and evidence.
-- Exact-name/no-corroboration cases are never automatic `MATCH`.
-- CSV profile links and XLSX profile cells are clickable.
-- A write-back workbook opens with the two original worksheets plus `Athletic Matches`.
-- `collect-authorized` refuses a disabled manifest before client/network construction.
-- The alpha run writes separate source outputs and never replaces match decisions.
-- A capped, malformed, or incomplete alpha response cannot be reported complete.
-- Strict first-worksheet coverage reports 111,939 total rows and seven missing-name rows.
-- A positive synthetic-search scenario with real Q5/Q4 models can match TF and XC despite a Basketball source sport, preserve all 13 source fields, and resume without external requests.
-- Search/model failures cannot become `NO_MATCH`; malformed advertised search rows fail closed.
-- No-AI runs make zero model requests, preserve deterministic decisions, and can supply validated cached searches to a separate AI-reviewed run.
-- Same-name candidates with conflicting observed states cannot become corroborated matches; ambiguous rows retain evidence without attributed profile links.
-- Transient failures recover within bounded retries; slow-search scenarios never exceed two in-flight search requests.
-- Complete production delivery requires all 111,939 rows final, zero pending/retryable rows, and a verified zero-request unchanged resume. The observed live invalid-athlete-ID response currently blocks this criterion.
+The production graph is the graph compiled from `src/main.rs`/`src/lib.rs` and their declared submodules. `#[path]` places implementations such as ranking parser children in feature directories without creating alternate roots; `pub(crate)` limits internal helpers; inline modules hold local support/tests. No claim should be based on naive filesystem reachability or historic dead-file counts; inspect declarations and actual callers.

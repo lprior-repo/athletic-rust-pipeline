@@ -47,14 +47,7 @@ fn optional_teams(raw: &Value) -> Result<Option<&Map<String, Value>>, PageParseE
     }
 }
 
-fn members<'a>(
-    teams: Option<&'a Map<String, Value>>,
-    result_id: u64,
-    team_id: u64,
-) -> Result<&'a [Value], PageParseError> {
-    let Some(team) = teams.and_then(|entries| entries.get(&result_id.to_string())) else {
-        return Ok(&[]);
-    };
+fn members(team: &Value, result_id: u64, team_id: u64) -> Result<&[Value], PageParseError> {
     let roster_id = team
         .get("IDResult")
         .and_then(Value::as_u64)
@@ -93,24 +86,26 @@ fn project_row(
         .and_then(Value::as_u64)
         .filter(|id| *id != 0)
         .ok_or(PageParseError::MissingRowIdResult)?;
-    let team_id = row
-        .get("AthleteID")
-        .and_then(Value::as_u64)
-        .filter(|id| *id != 0)
-        .ok_or(PageParseError::WrongRelayTeamId)?;
-    let members = members(teams, result_id, team_id)?;
+    let roster = teams.and_then(|entries| entries.get(&result_id.to_string()));
     let source = observation
         .source_rows
         .get_mut(flattened)
         .ok_or(PageParseError::MissingRowNum)?;
-    source.roster_present = Some(!members.is_empty());
-    if members.is_empty() {
+    let Some(roster) = roster else {
+        source.roster_present = Some(false);
         observation.rows_missing_roster = observation
             .rows_missing_roster
             .checked_add(1)
             .ok_or(PageParseError::CounterOverflow)?;
         return Ok(());
-    }
+    };
+    let team_id = row
+        .get("AthleteID")
+        .and_then(Value::as_u64)
+        .filter(|id| *id != 0)
+        .ok_or(PageParseError::WrongRelayTeamId)?;
+    let members = members(roster, result_id, team_id)?;
+    source.roster_present = Some(true);
     observation.rows_with_roster = observation
         .rows_with_roster
         .checked_add(1)
@@ -144,12 +139,8 @@ fn project_member(
         .get("IDAthlete")
         .and_then(Value::as_u64)
         .zip(member.get("AthleteName").and_then(Value::as_str));
-    let parsed = identity.and_then(|(id, name)| {
-        AthleteId::new(id)
-            .ok()
-            .zip(CanonicalName::parse(name).ok())
-            .map(|(athlete_id, name)| (athlete_id, name))
-    });
+    let parsed = identity
+        .and_then(|(id, name)| AthleteId::new(id).ok().zip(CanonicalName::parse(name).ok()));
     let Some((athlete_id, name)) = parsed else {
         observation.unresolved_member_identities = observation
             .unresolved_member_identities

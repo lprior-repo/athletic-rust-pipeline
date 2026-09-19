@@ -102,21 +102,21 @@ pub(crate) async fn fetch_rankings(
         futures::pin_mut!(events);
         let capture_gate = gate.as_ref();
         let capture_origin = origin.as_str();
+        let capture_context = CaptureContext {
+            page,
+            action,
+            origin: capture_origin,
+            nonce,
+            deadline: absolute_deadline,
+            gate: capture_gate,
+        };
+        let capture_context = &capture_context;
         let candidates = futures::stream::unfold(
             (events, false),
             |(mut events, mut page_one_seen)| async move {
                 let event = events.next().await?;
-                let candidate = process_capture_event(
-                    event,
-                    page,
-                    action,
-                    capture_origin,
-                    nonce,
-                    absolute_deadline,
-                    capture_gate,
-                    &mut page_one_seen,
-                )
-                .await;
+                let candidate =
+                    process_capture_event(event, capture_context, &mut page_one_seen).await;
                 Some((candidate, (events, page_one_seen)))
             },
         )
@@ -233,32 +233,31 @@ enum CaptureEvent {
     Closed,
 }
 
-async fn process_capture_event(
-    event: CaptureEvent,
-    page: &Page,
-    action: &RankingsAction,
-    origin: &str,
+struct CaptureContext<'a> {
+    page: &'a Page,
+    action: &'a RankingsAction,
+    origin: &'a str,
     nonce: u64,
     deadline: tokio::time::Instant,
-    gate: &ProfileGate,
+    gate: &'a ProfileGate,
+}
+
+async fn process_capture_event(
+    event: CaptureEvent,
+    context: &CaptureContext<'_>,
     page_one_seen: &mut bool,
 ) -> Result<Option<rankings_helper::CapturedRanking>, BrowserError> {
     match event {
         CaptureEvent::Binding(binding) => {
-            process_binding_event(
-                &binding,
-                page,
-                action,
-                origin,
-                nonce,
-                deadline,
-                gate,
-                page_one_seen,
-            )
-            .await
+            process_binding_event(&binding, context, page_one_seen).await
         }
         CaptureEvent::Response(response) => {
-            observe_response_event(&response, action.capture.clone(), origin, gate);
+            observe_response_event(
+                &response,
+                context.action.capture.clone(),
+                context.origin,
+                context.gate,
+            );
             Ok(None)
         }
         CaptureEvent::Closed => Err(BrowserError::Transport),
@@ -267,12 +266,7 @@ async fn process_capture_event(
 
 async fn process_binding_event(
     event: &EventBindingCalled,
-    page: &Page,
-    action: &RankingsAction,
-    origin: &str,
-    nonce: u64,
-    deadline: tokio::time::Instant,
-    gate: &ProfileGate,
+    context: &CaptureContext<'_>,
     page_one_seen: &mut bool,
 ) -> Result<Option<rankings_helper::CapturedRanking>, BrowserError> {
     if event.name != BINDING_NAME {
@@ -282,11 +276,11 @@ async fn process_binding_event(
         Ok(value) => value,
         Err(_) => return Ok(None),
     };
-    let expected_kind = match action.capture {
+    let expected_kind = match context.action.capture {
         RankingsCapture::Navigation => "navigation",
         RankingsCapture::Results => "results",
     };
-    if package.get("nonce").and_then(serde_json::Value::as_u64) != Some(nonce)
+    if package.get("nonce").and_then(serde_json::Value::as_u64) != Some(context.nonce)
         || package.get("kind").and_then(serde_json::Value::as_str) != Some(expected_kind)
     {
         return Ok(None);
@@ -296,19 +290,20 @@ async fn process_binding_event(
         .and_then(serde_json::Value::as_str);
     let route_method = package.get("method").and_then(serde_json::Value::as_str);
     if !route_url.is_some_and(|url| {
-        route_method
-            .is_some_and(|method| validate_route(url, origin, action.capture.clone(), method))
+        route_method.is_some_and(|method| {
+            validate_route(url, context.origin, context.action.capture.clone(), method)
+        })
     }) {
         return Ok(None);
     }
-    let parsed = match parse_binding(&package, action.capture.clone()) {
+    let parsed = match parse_binding(&package, context.action.capture.clone()) {
         Ok(value) => value,
         Err(BrowserError::PayloadLimit) => {
-            gate.revoke();
+            context.gate.revoke();
             return Err(BrowserError::PayloadLimit);
         }
         Err(BrowserError::Unavailable) => {
-            gate.revoke();
+            context.gate.revoke();
             return Err(BrowserError::Unavailable);
         }
         Err(BrowserError::Redirect) => return Err(BrowserError::Redirect),
@@ -319,22 +314,26 @@ async fn process_binding_event(
         }
     };
     if parsed.challenge {
-        gate.revoke();
+        context.gate.revoke();
     }
-    if action.capture == RankingsCapture::Navigation {
+    if context.action.capture == RankingsCapture::Navigation {
         return Ok(parsed.request_body.is_none().then_some(parsed));
     }
-    let Some(request_page) = validate_request(&parsed, action, action.page > 1 && !*page_one_seen)?
+    let Some(request_page) = validate_request(
+        &parsed,
+        context.action,
+        context.action.page > 1 && !*page_one_seen,
+    )?
     else {
         return Ok(None);
     };
-    if request_page == action.page {
+    if request_page == context.action.page {
         return Ok(Some(parsed));
     }
     if !*page_one_seen && request_page == 1 {
         *page_one_seen = true;
-        wait_for_active_page(page, 1, deadline).await?;
-        if !click_numeric_page(page, action.page).await? {
+        wait_for_active_page(context.page, 1, context.deadline).await?;
+        if !click_numeric_page(context.page, context.action.page).await? {
             return Err(BrowserError::Timeout);
         }
     }
