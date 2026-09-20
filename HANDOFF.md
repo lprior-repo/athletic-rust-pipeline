@@ -51,7 +51,7 @@ Readiness recovery is bounded by operator action, not by elapsed time: an escala
 
 The current evidence record says:
 
-- Current-tree gates are green: `cargo fmt --check`, `cargo check --all-targets`, and `cargo clippy --all-targets -- -D warnings` are clean, and the 16-target test command below runs 16/16 green (226 tests re-verified 2026-09-20 on the current working tree, including the CLI division-flag guards, the fixture-driven rankings verifier cases, and the operator ingress-failure surface) with the library at 149 passed / 2 ignored and no target failures.
+- Current-tree gates are green: `cargo fmt --check`, `cargo check --all-targets`, and `cargo clippy --all-targets -- -D warnings` are clean, and the test command below runs green (234 tests re-verified 2026-09-20 on the CDP-patched tree: library 156 passed / 2 ignored, main 3, 75 integration tests across 15 targets including the CLI division-flag guards, the fixture-driven rankings verifier cases, the operator ingress-failure surface, and the new `cdp_frame_compat` guard) with no target failures.
 - The restored fixture is repaired in-tree: `result_verify` passes 14/14, including `rejects_indistinguishable_local_selection_with_rehashed_evidence`, and the workbook targets that the earlier failing command never reached now execute.
 - Serialization measurement: 344,131 versus 13,131 allocations across 1,000 synthetic iterations, or 331 removed per iteration. This is not throughput evidence.
 - Retained corpus qualification passed: 95 queries, 4,256 receipt digest checks, 340,238 individual results, 57,629 relay-member results, and 142,705 unique athletes. It explicitly retains 15,724 unresolved roster results. Private report: `native-rankings-1789772180206/native-corpus-cleanup-proof.json`.
@@ -175,7 +175,7 @@ ending the chain, so the live gate was re-submitted with that default as run `57
 `lane-v14/out-live-full-3/result.xlsx`). The submission before it reused run identity `c25150c2…` at the
 old cap and never started; see the serialization note below.
 
-Because each resume still stops after a few pages on the residual CDP client desync, a bounded
+Because the frame drops are repaired but a full live collection has not yet confirmed that the residual stalls shared that cause, a bounded
 supervisor (`~/.local/share/athletic-rust-pipeline/lane-v14/resume-supervisor.sh`, hub process
 `live-resume-supervisor`) re-arms `browser-start` and `rankings-resume` and stops on completion or
 after twelve rounds without new pages. This is an operational mitigation for a client defect, not a
@@ -211,11 +211,24 @@ WARN chromiumoxide::handler: WS Invalid message: data did not match any variant 
 ```
 
 The lane is pinned to `chromiumoxide = "=0.9.1"` (the newest release, published 2026-02-25) and drives
-Chromium 151.0.7922.173, so this is protocol drift inside the CDP client, not pipeline logic: a
-single unparseable frame is dropped, and when it is the completion for a request the lane is awaiting,
-the body is no longer retrievable and the attempt fails. Closing this properly means upstreaming a
-tolerant message model (or logging the dropped `method` to prove which events are lost) or reducing
-reliance on that channel — out of reach of a configuration change, since no newer client exists.
+Chromium 151.0.7922.173, so this is protocol drift inside the CDP client, not pipeline logic. The dropped
+frames are now identified exactly: the crate's own debug target
+`chromiumoxide::conn::raw_ws::parse_errors` retains the raw payload, and every retained frame is
+`Network.requestWillBeSentExtraInfo` whose `clientSecurityState` carries
+`localNetworkAccessRequestPolicy` (`"PermissionBlock"`) and no `privateNetworkRequestPolicy`. Chromium 151
+replaced that field; the pinned generated model still requires it, so the frame fails to parse as an
+untagged `Message` and is dropped. What is lost is an extra-info event, not the completion of a command
+the lane awaits.
+
+The repair is local and one field wide: `vendor/chromiumoxide_cdp` is a copy of the published crate with
+`ClientSecurityState.private_network_request_policy` made optional, wired through `[patch.crates-io]` in
+`Cargo.toml`, and `tests/cdp_frame_compat.rs` pins the behaviour against a sanitized copy of a real
+captured frame, so the guard fails if the patch stops applying or the model drifts again. Live evidence on
+the patched binary (`0ed78cc33bf90020863e55485ecdbe5c2ada8c7f03c142fd05f1656ebad7fd46`): the same headed
+dashboard navigation that dropped a frame every 1-3 s on the previous build produced none, and every
+retained drop in the worker log predates the patched worker's start. The re-arm supervision stays in place
+until a full live collection runs clean end to end; whether the residual stalls shared this cause is not
+yet proven.
 
 These changes make the lane self-healing meanwhile:
 

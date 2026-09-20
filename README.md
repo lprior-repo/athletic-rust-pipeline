@@ -82,7 +82,7 @@ cargo run --release -- verify --input /path/input.xlsx --output /path/result.xls
 
 The fresh evidence currently available is limited and explicitly scoped:
 
-- Current-tree gates are green: `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets --locked -- -D warnings`, and `cargo build --locked` are clean, and the 16-target test command passes in full (re-verified 2026-09-20 on the current working tree; library 156 passed / 2 ignored, every named target green, `result_verify` 14/14).
+- Current-tree gates are green: `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets --locked -- -D warnings`, and `cargo build --locked` are clean, and the 15-target test command (75 integration tests, 234 total) passes in full (re-verified 2026-09-20 on the current working tree; library 156 passed / 2 ignored, every named target green, `result_verify` 14/14).
 - The restored fixture is repaired: `result_verify` passes 14/14, and the workbook targets that the earlier failing command blocked now run.
 - A serialization measurement compared 344,131 with 13,131 allocations over 1,000 synthetic iterations, 331 fewer allocations per iteration. This is an allocation observation, not a throughput claim.
 - The native parser passed the retained corpus: 95 queries, 4,256 receipt digest checks, 340,238 individual results, 57,629 relay-member results, and 142,705 unique athletes. The report retains 15,724 unresolved roster results rather than inventing members.

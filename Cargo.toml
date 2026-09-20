@@ -54,3 +54,11 @@ tokio = { version = "1", features = ["test-util"] }
 lto = "thin"
 codegen-units = 1
 strip = true
+
+# Chromium 151 replaced Network.ClientSecurityState.privateNetworkRequestPolicy with
+# localNetworkAccessRequestPolicy, so the pinned generated model rejects every
+# Network.*ExtraInfo frame ("data did not match any variant of untagged enum Message")
+# and the CDP client drops it. Keep exactly one struct tolerant locally until the
+# upstream model catches up; nothing else in the vendored crate is modified.
+[patch.crates-io]
+chromiumoxide_cdp = { path = "vendor/chromiumoxide_cdp" }
