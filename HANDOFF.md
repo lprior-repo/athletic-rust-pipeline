@@ -117,10 +117,20 @@ retained outside the repository at
   `page mismatch: expected 2, got 1`. The rule now requires the page to fill its declared depth
   (`settings.depth`, falling back to `defaultSettings.depth`); a short page ends the chain.
   Unit tests cover the live short and full shapes plus the fixture's declared depth.
+- **The blocking event is full, and its declared list is far larger than what the session sees.** `55m`
+  returns 101 rows against `depth: 100` (a full page, so a successor is implied) while declaring
+  `minCount: 749`; only five of those rows are unblurred. The running collection therefore accepted
+  `55m` page 1 and then paused on `page mismatch: expected 2, got 1` when the source answered the
+  `page=2` request with page-1 content. Both the source refusal and the terminal `minCount` guard
+  agree that this session cannot assemble the event's evidence, so completing a live event with more
+  than one page of ranked rows requires an entitled browser profile — not a code change. Capture:
+  `site-page2-2026-09-20T1905Z-0.json` (`13f89ec2…`); the short-page path is separately exercised by
+  `100m` (71 rows against `depth: 100`, terminal after one page).
 - **The live re-run remains unexecuted.** A fresh collection (`source_snapshot 839b9cad…`) was
-  created for run `fb564d0c…` with no pages acquired; after the worker restarts acquisition fails
-  with `browser transport failed` and `rankings-resume` intermittently answers
-  `409 Conflict: browser is not ready`. The repaired pagination therefore rests on unit and
+  created for run `fb564d0c…`; it acquired `55m` page 1, paused on the source's page-2 refusal as
+  described above, and its earlier attempts failed with `browser transport failed` until the
+  readiness workflow was restarted (`browser-start`; `rankings-resume` intermittently answers
+  `409 Conflict: browser is not ready`). The repaired pagination therefore rests on unit and
   regression evidence, not on a completed live collection, and the live collection gate stays open.
 
 ## Quality command ledger
