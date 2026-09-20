@@ -1,9 +1,29 @@
 use super::flow_control;
 use anyhow::{bail, Context, Result};
 use futures::TryStreamExt;
-use restate_sdk::ingress::ReqwestClient;
+use restate_sdk::ingress::{ClientError, ReqwestClient};
 use std::time::Duration;
 use url::{Host, Url};
+
+#[derive(serde::Deserialize)]
+struct IngressFailure {
+    message: String,
+}
+
+/// Restate reports terminal handler failures as a JSON body (`{"code":…,"message":…}`).
+/// Surface that message instead of the bare status so operator commands explain why
+/// they were rejected, for example a concurrency above the deployed worker capacity.
+pub fn ingress_error(error: ClientError) -> anyhow::Error {
+    let detail = error.response().and_then(|response| {
+        serde_json::from_slice::<IngressFailure>(response.body())
+            .ok()
+            .map(|IngressFailure { message }| (response.status(), message))
+    });
+    match detail {
+        Some((status, message)) => anyhow::anyhow!("ingress returned HTTP status {status}: {message}"),
+        None => error.into(),
+    }
+}
 
 pub fn local_origin(value: &str) -> Result<Url> {
     let url = Url::parse(value)?;

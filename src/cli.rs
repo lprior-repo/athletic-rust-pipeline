@@ -24,7 +24,7 @@ use athletic_rust_pipeline::{
 };
 use clap::Parser;
 use futures::{StreamExt, TryStreamExt};
-use restate_sdk::ingress::{ClientError, InvocationHandle, Output};
+use restate_sdk::ingress::{InvocationHandle, Output};
 use restate_sdk::prelude::*;
 use std::{fs, io::Write, path::Path, time::Duration};
 
@@ -39,8 +39,10 @@ pub async fn run() -> Result<()> {
             let response = client
                 .status(Json(EvidenceDigest::parse(&run)?))
                 .call()
-                .await?
-                .into_body()?;
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+                .map_err(transport::ingress_error)?;
             emit(&response.0)
         }
         Command::RankingsStatus { ingress, run } => {
@@ -52,8 +54,10 @@ pub async fn run() -> Result<()> {
             let state = control
                 .rankings_progress(Json(input))
                 .call()
-                .await?
-                .into_body()?;
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+                .map_err(transport::ingress_error)?;
             emit(&state.0)
         }
         Command::RankingsPause { ingress, run } => {
@@ -65,8 +69,10 @@ pub async fn run() -> Result<()> {
             control
                 .rankings_pause(Json(input))
                 .call()
-                .await?
-                .into_body()?;
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+                .map_err(transport::ingress_error)?;
             emit(&serde_json::json!({"status": "paused"}))
         }
         Command::RankingsResume { ingress, run } => {
@@ -78,8 +84,10 @@ pub async fn run() -> Result<()> {
             control
                 .rankings_resume(Json(input))
                 .call()
-                .await?
-                .into_body()?;
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+                .map_err(transport::ingress_error)?;
             emit(&serde_json::json!({"status": "resumed"}))
         }
         Command::BrowserStart { ingress } => {
@@ -90,7 +98,8 @@ pub async fn run() -> Result<()> {
             let submitted = client
                 .await_ready(Json(ReadinessRequest { operator: true }))
                 .send()
-                .await?;
+                .await
+                .map_err(transport::ingress_error)?;
             emit(
                 &serde_json::json!({"invocation_id": submitted.invocation_handle().invocation_id()}),
             )
@@ -100,7 +109,13 @@ pub async fn run() -> Result<()> {
                 transport::client(&ingress)?,
                 BROWSER_SESSION_KEY,
             );
-            let response = client.status().call().await?.into_body()?;
+            let response = client
+                .status()
+                .call()
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+                .map_err(transport::ingress_error)?;
             emit(&response.0)
         }
         Command::Export {
@@ -119,7 +134,8 @@ pub async fn run() -> Result<()> {
                 .publish(Json(request))
                 .idempotency_key(request_key.as_str())
                 .send()
-                .await?;
+                .await
+                .map_err(transport::ingress_error)?;
             emit(&await_export(submitted.invocation_handle()).await?)
         }
         Command::Verify {
@@ -158,14 +174,19 @@ async fn await_export(
     let handle = &invocation;
     let observations = futures::stream::iter(0..86_400)
         .then(move |_| async move {
-            let output = match handle.output().await?.into_body() {
+            let output = match handle
+                .output()
+                .await
+                .map_err(transport::ingress_error)?
+                .into_body()
+            {
                 Output::Ready(Json(published)) => Some(published),
                 Output::NotReady => {
                     tokio::time::sleep(Duration::from_secs(1)).await;
                     None
                 }
             };
-            Ok::<_, ClientError>(output)
+            Ok::<_, anyhow::Error>(output)
         })
         .try_filter_map(|output| futures::future::ready(Ok(output)));
     futures::pin_mut!(observations);
@@ -249,8 +270,10 @@ async fn start(args: Start) -> Result<()> {
         .prepare(Json(request))
         .idempotency_key(preparation_key.as_str())
         .call()
-        .await?
-        .into_body()?
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?
         .0;
     let key = prepared.key()?;
     if let Some(output) = args.output {
@@ -263,7 +286,8 @@ async fn start(args: Start) -> Result<()> {
             .run_and_export(Json(automated))
             .idempotency_key(automation_key.as_str())
             .send()
-            .await?;
+            .await
+            .map_err(transport::ingress_error)?;
         return emit(&serde_json::json!({
             "run": key, "invocation": submitted.invocation_handle().invocation_id(),
             "state": "submitted", "automatic_export": true,
@@ -275,7 +299,8 @@ async fn start(args: Start) -> Result<()> {
         .run(Json(prepared))
         .idempotency_key(&key)
         .send()
-        .await?;
+        .await
+        .map_err(transport::ingress_error)?;
     emit(
         &serde_json::json!({"run": key, "invocation": sent.invocation_handle().invocation_id(),
         "state": "submitted", "note": "Submission is not completion; inspect status and verified export."}),
