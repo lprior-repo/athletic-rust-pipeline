@@ -168,23 +168,32 @@ with `--max-pages-per-event 12` as an early qualification bound; under the entit
 accepted twelve distinct full pages for `55m` (`next_page: 13`) and then paused with
 `pause_reason: PageLimit`, so multi-page acquisition is now observed end to end and the cap — not the
 source and not the transport — ended the chain. `start` defaults the cap to 10000 with a short page
-ending the chain, so the live gate was re-submitted with that default as run `c25150c2…` (`--all`,
+ending the chain, so the live gate was re-submitted with that default as run `57f88b34…` (`--all`,
 `--rankings --rankings-gender m --rankings-season indoor`, automatic export to
-`lane-v14/out-live-full/result.xlsx`).
+`lane-v14/out-live-full-3/result.xlsx`). The submission before it reused run identity `c25150c2…` at the
+old cap and never started; see the serialization note below.
 
 Because each resume still stops after a few pages on the residual CDP client desync, a bounded
 supervisor (`~/.local/share/athletic-rust-pipeline/lane-v14/resume-supervisor.sh`, hub process
 `live-resume-supervisor`) re-arms `browser-start` and `rankings-resume` and stops on completion or
 after twelve rounds without new pages. This is an operational mitigation for a client defect, not a
-completed live collection; both live runs remain non-terminal.
+completed live collection; the two capped chains were canceled 2026-09-20 and the default-cap run
+`57f88b34…` is the live gate in progress, acquiring across the full 95-event scope.
 
-`start` derives the run identity from the plan and source, so **resubmitting the same workbook and scope
-with a different `--max-pages-per-event` reuses the existing run** rather than lifting the cap: Restate
-answers `submitted` and deduplicates on the previously used identity, and the 12-page run above is the
-one that keeps running. Lifting a cap therefore needs a new run identity (a byte-identical source copy
-at a new path is enough) or a run submitted without the cap in the first place. Automatic export is
-separate: each `--output` destination gets its own `PipelineControl/run_and_export` invocation, which
-waits for run completion before publishing.
+`start` derives the run identity from the plan and source, and submissions are **serialized rather than
+replaced**: `PipelineControl/run_and_export` calls `RunCoordinator/run` at the `global` key, an exclusive
+handler, so every later submission queues behind the first invocation of that key that is still open.
+The first entitled live submission paused at `PageLimit`, and that paused invocation kept the key; three
+later submissions each answered `submitted` with their own invocation id and then never started (the
+CLI's `state: submitted` is acceptance, not progress; `status`/`rankings-status` answer
+`404 run not found` until the run's collection registers). They also carried the 12-page cap, because
+the first of them reused the identity of the earlier capped run. Clearing the queue needs the lock
+holder canceled — `PATCH /invocations/{id}/cancel`, or `PATCH /invocations/{id}/kill` for a paused
+invocation, since cancel is graceful and a paused invocation reaches no cancellation point. With the
+paused coordinator killed and the two stale queued submissions canceled, the next queued run started
+immediately. The diagnostic is the admin `sys_invocation` table (`status <> 'completed'`), not the
+CLI. Automatic export is separate: each `--output` destination gets its own `run_and_export`
+invocation, which waits for run completion before publishing.
 
 ## Quality command ledger
 
