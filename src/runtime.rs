@@ -59,7 +59,7 @@ pub struct Runtime {
     pub config: WorkerConfig,
     pub store: ArtifactStore,
     pub http: reqwest::Client,
-    browser: tokio::sync::OnceCell<browser::BrowserManager>,
+    browser: tokio::sync::RwLock<Option<Arc<browser::BrowserManager>>>,
     cpu: Arc<Semaphore>,
     tasks: TaskTracker,
 }
@@ -85,36 +85,53 @@ impl Runtime {
             config,
             store,
             http,
-            browser: tokio::sync::OnceCell::new(),
+            browser: tokio::sync::RwLock::new(None),
             cpu,
             tasks: TaskTracker::new(),
         }))
     }
 
-    pub(crate) async fn ensure_browser(&self) -> Result<&browser::BrowserManager> {
+    /// Return a running browser manager, rebuilding a dead one.
+    ///
+    /// A manager whose actor task has exited (its command channel closed, or a
+    /// terminal `Stopped` status) can never serve another command; replacing the
+    /// cached handle is the only way back, so a long run recovers without a
+    /// worker restart.
+    pub(crate) async fn ensure_browser(&self) -> Result<Arc<browser::BrowserManager>> {
+        if let Some(existing) = self.browser.read().await.clone() {
+            if existing.is_alive() {
+                return Ok(existing);
+            }
+            tracing::warn!("cached browser manager is not running; rebuilding it");
+        }
+        let mut slot = self.browser.write().await;
+        if let Some(existing) = slot.clone() {
+            if existing.is_alive() {
+                return Ok(existing);
+            }
+        }
         let settings = self.config.browser_settings();
-        self.browser
-            .get_or_try_init(|| async move {
-                match settings.cdp_endpoint.clone() {
-                    Some(endpoint) => {
-                        match browser::BrowserManager::connect(endpoint, settings.clone()).await {
-                            Ok(manager) => Ok(manager),
-                            Err(error) => {
-                                tracing::warn!(
-                                "cdp endpoint unreachable ({error}); launching a managed browser"
-                            );
-                                browser::BrowserManager::launch(settings).await
-                            }
-                        }
+        let manager = match settings.cdp_endpoint.clone() {
+            Some(endpoint) => {
+                match browser::BrowserManager::connect(endpoint, settings.clone()).await {
+                    Ok(manager) => manager,
+                    Err(error) => {
+                        tracing::warn!(
+                            "cdp endpoint unreachable ({error}); launching a managed browser"
+                        );
+                        browser::BrowserManager::launch(settings).await?
                     }
-                    None => browser::BrowserManager::launch(settings).await,
                 }
-            })
-            .await
+            }
+            None => browser::BrowserManager::launch(settings).await?,
+        };
+        let manager = Arc::new(manager);
+        *slot = Some(manager.clone());
+        Ok(manager)
     }
 
-    pub(crate) fn browser(&self) -> Option<&browser::BrowserManager> {
-        self.browser.get()
+    pub(crate) async fn browser(&self) -> Option<Arc<browser::BrowserManager>> {
+        self.browser.read().await.clone()
     }
 
     pub async fn blocking<T, F>(&self, action: F) -> Result<T>
@@ -136,7 +153,7 @@ impl Runtime {
     }
 
     pub async fn drain(&self) -> Result<()> {
-        let browser_result = match self.browser.get() {
+        let browser_result = match self.browser.write().await.take() {
             Some(browser) => browser.shutdown().await,
             None => Ok(()),
         };

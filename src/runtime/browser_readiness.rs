@@ -46,16 +46,16 @@ pub(crate) async fn act(
     .map_err(Into::into)
 }
 
-pub(crate) fn physical_status(runtime: &Runtime) -> BrowserStatus {
-    runtime.browser().map_or_else(
-        || BrowserStatus {
+pub(crate) async fn physical_status(runtime: &Runtime) -> BrowserStatus {
+    match runtime.browser().await {
+        Some(browser) => browser.status(),
+        None => BrowserStatus {
             state: BrowserState::Stopped,
             active_requests: 0,
             tabs: runtime.config.browser_settings().tabs,
             cooldown_ms: 0,
         },
-        |browser| browser.status(),
-    )
+    }
 }
 
 pub(crate) async fn now_ms(ctx: &ObjectContext<'_>) -> Result<u64, HandlerError> {

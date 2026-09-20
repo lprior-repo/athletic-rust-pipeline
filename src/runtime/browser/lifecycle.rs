@@ -36,6 +36,20 @@ impl Drop for BrowserManager {
 }
 
 impl BrowserManager {
+    /// True while the actor task can still serve commands.
+    ///
+    /// A closed command channel means the actor exited (browser gone or a fatal
+    /// error); a terminal `Stopped` status means the same. Either way the
+    /// runtime rebuilds the manager instead of reusing a dead handle.
+    pub(crate) fn is_alive(&self) -> bool {
+        if self.tx.is_closed() {
+            return false;
+        }
+        self.status
+            .read()
+            .map_or(true, |status| usable_manager(status.state))
+    }
+
     pub(crate) async fn launch(settings: BrowserSettings) -> anyhow::Result<Self> {
         settings.validate()?;
         pool::prepare_profile(&settings)?;
@@ -287,6 +301,12 @@ fn browser_config(settings: &BrowserSettings) -> anyhow::Result<BrowserConfig> {
         .map_err(|_| anyhow::anyhow!("invalid browser launch configuration"))
 }
 
+/// A manager reporting a terminal `Stopped` status can never serve another
+/// command, so the runtime rebuilds it rather than reusing a dead handle.
+fn usable_manager(state: BrowserState) -> bool {
+    state != BrowserState::Stopped
+}
+
 pub(super) fn read_status(status: &RwLock<BrowserStatus>) -> BrowserStatus {
     match status.read() {
         Ok(value) => value.clone(),
@@ -322,5 +342,20 @@ async fn run_handler(mut handler: Handler, events: mpsc::Sender<HandlerEvent>) {
     }
     if let Err(e) = events.send(HandlerEvent::Failed).await {
         tracing::debug!("handler event send failed: {e}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_a_terminal_stopped_manager_is_rebuilt() {
+        assert!(!usable_manager(BrowserState::Stopped));
+        assert!(usable_manager(BrowserState::Ready));
+        assert!(usable_manager(BrowserState::Challenged));
+        assert!(usable_manager(BrowserState::Restarting));
+        assert!(usable_manager(BrowserState::CoolingDown));
+        assert!(usable_manager(BrowserState::HumanRequired));
     }
 }

@@ -72,7 +72,7 @@ impl BrowserSession {
         let runtime = self.runtime.clone();
         let physical = ctx
             .run(move || async move {
-                Ok::<_, HandlerError>(Json(browser_readiness::physical_status(&runtime)))
+                Ok::<_, HandlerError>(Json(browser_readiness::physical_status(&runtime).await))
             })
             .name("observe physical browser status")
             .retry_policy(RunRetryPolicy::new().max_attempts(1))
@@ -168,7 +168,7 @@ async fn observe_ready(
     // instead of reusing potentially-stale cached observation.
     let status = if ctx.get::<bool>("cooldown-expired").await? == Some(true) {
         // Wait for active jobs to drain before issuing cooldown-expired Recover.
-        let physical = browser_readiness::physical_status(&runtime);
+        let physical = browser_readiness::physical_status(&runtime).await;
         if physical.active_requests == 0 {
             let navigation =
                 browser_readiness::act(ctx, runtime.clone(), BrowserAction::Recover).await?;
@@ -253,7 +253,7 @@ async fn handle_challenge(
         && ctx.get::<bool>("recovery-issued").await? != Some(true)
     {
         // Only issue recovery when no active jobs and not cooling down.
-        let physical = browser_readiness::physical_status(&runtime);
+        let physical = browser_readiness::physical_status(&runtime).await;
         if physical.active_requests == 0 && physical.cooldown_ms == 0 {
             // Issue recovery navigation. Mark recovery-issued AFTER the
             // navigation completes regardless of outcome — the navigation
@@ -295,12 +295,12 @@ async fn release_exhausted_recovery(
     ctx: &ObjectContext<'_>,
     runtime: Arc<Runtime>,
 ) -> Result<(), HandlerError> {
-    if browser_readiness::physical_status(&runtime).state != BrowserState::HumanRequired {
-        return Ok(());
-    }
-    browser_readiness::act(ctx, runtime, BrowserAction::Restart).await?;
     ctx.clear("challenge-started-ms");
     ctx.clear("recovery-issued");
+    let physical = browser_readiness::physical_status(&runtime).await;
+    if physical.state == BrowserState::HumanRequired {
+        browser_readiness::act(ctx, runtime, BrowserAction::Restart).await?;
+    }
     Ok(())
 }
 
