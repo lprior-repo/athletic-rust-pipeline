@@ -230,6 +230,15 @@ retained drop in the worker log predates the patched worker's start. The re-arm 
 until a full live collection runs clean end to end; whether the residual stalls shared this cause is not
 yet proven.
 
+**Live outdoor run on the patched client (2026-09-20, in progress at this writing).** Run
+`7be7e9dd68cd5dc51c0c03edf05b5503297eec772756350870a04a1ebd95e0b3` (outdoor boys, list `168416`,
+workbook `0a1d53f1…`, `live-store`) is the first live collection on the patched binary. Exactly two
+`SourceFailure` pauses appeared in its first minute, before the patched worker was serving it; from then on
+it acquired 90+ event pages with **no re-arms, no drops, and no pauses**, at a steady ~8 s/page. The
+progress supervisor was restarted detached so the lane stays polled past this session. Completion,
+publication, stopped-writer verification, and replay remain pending: this run is not qualification
+evidence until they exist.
+
 These changes make the lane self-healing meanwhile:
 
 - `receiptless_transport(code, has_receipt)` — only a transport fault that produced **no receipt** is
