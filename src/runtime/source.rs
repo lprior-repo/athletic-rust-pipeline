@@ -283,6 +283,10 @@ async fn run_step(
         // client lost the command response, no receipt exists, and retrying it
         // after re-arming the session is what lets a desynced lane continue.
         // Non-rankings requests keep the existing retryable behavior.
+        //
+        // The re-arm is not rankings-only: the same desynced client loses profile
+        // fetches, and a non-rankings retry that reuses the session meets the same
+        // fault until the row spends its attempt budget and the run parks.
         let retryable = if is_rankings {
             receiptless_transport(attempt.code, attempt.receipt.is_some())
         } else {
@@ -306,7 +310,7 @@ async fn run_step(
         Ok(Json(WorkflowStep::Attempt {
             finalized,
             retryable,
-            rearm: is_rankings && retryable,
+            rearm: retryable,
             delay_ms,
         }))
     })
