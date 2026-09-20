@@ -1,6 +1,7 @@
 /target/
 /out/
 /out*/
+/var/
 /checkpoint.jsonl
 /config.toml
 **/*.xlsx

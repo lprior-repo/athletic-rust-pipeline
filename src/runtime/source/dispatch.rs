@@ -26,6 +26,15 @@ impl ReadinessPolicy {
 /// Wait for the browser to become available using the legacy auto-recovery
 /// path.  Non-rankings requests use this because they may need the browser
 /// to self-recover through challenge/human-wait cycles.
+///
+/// Measured 2026-09-20 (scale-v15): this exclusive single-key handler is the
+/// per-lane throughput frame — it is entered exactly once per source operation,
+/// its ≈0.34 s duration equals the observed operation period (2.98 ops/s), and
+/// `tabs` (2→8) and `row_concurrency` (8→32) do not move it.  Probed a shared
+/// `capture_ready` fast path first; it degrades to ≈1.55 ops/s whenever the
+/// readiness bootstrap cannot answer (fixture lanes without a CDP endpoint), so
+/// it is not shipped.  A replacement must answer without a physical act and
+/// still leave this handler the only writer of readiness state.
 pub(super) async fn await_browser(ctx: &ObjectContext<'_>) -> Result<(), HandlerError> {
     use crate::runtime::browser_session::{
         BrowserSessionClient, ReadinessRequest, BROWSER_SESSION_KEY,
