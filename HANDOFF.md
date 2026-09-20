@@ -195,6 +195,33 @@ immediately. The diagnostic is the admin `sys_invocation` table (`status <> 'com
 CLI. Automatic export is separate: each `--output` destination gets its own `run_and_export`
 invocation, which waits for run completion before publishing.
 
+### Rankings transport retry and session re-arm (2026-09-20, later)
+
+The residual CDP desync surfaced as `browser transport failed` with `pause_reason: SourceFailure`:
+the client loses the command response while the source's pages replay network events, so
+`capture_body` (`Network.getResponseBody`) answers `{"code":-32000,"message":"No data found for
+resource with given identifier"}` and the attempt is classified `FailureCode::Transport` with **no
+receipt**. Rankings acquisition then paused after a single attempt, because `run_step` disabled
+retries outright for rankings (`is_rankings => retryable = false`) and `SourceCache` returns failures as
+*values*, so the Restate retry policy never saw them. A resume therefore re-issued the same page
+against the same desynced client and failed again: 30 consecutive supervisor rounds at 5 pages.
+
+Two changes make the lane self-healing:
+
+- `receiptless_transport(code, has_receipt)` — only a transport fault that produced **no receipt** is
+  retryable for rankings. Anything the source answered (403/429/challenge/parse) still retains its
+  receipt and returns immediately, so no observation is discarded and the source is not hammered.
+- `execute` re-arms the browser session (`BrowserSession/profile-0/recover`, the shared operator
+  recovery that preserves cooldown) before each such retry. Retrying without the re-arm meets the same
+  desynced client, which is why retries were disabled in the first place.
+
+Evidence: with the resume supervisor stopped, a single `rankings-resume` advanced `55m` from 22 to 28 to
+31 pages (`generation` 102→106) instead of stalling at one page per round. The supervisor's rounds also
+gained the recovery call — 6→9→10→13→17→22 pages across five rounds — because a bare resume does not
+clear the desync. Operator diagnosis uses the lane's own capture tooling
+(`lane-v14/live-capture/capture-live.mjs`, which drives CDP 9333 directly) and the admin
+`sys_invocation`/`sys_journal` tables.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
@@ -204,5 +231,7 @@ invocation, which waits for run completion before publishing.
 **Current-tree gate re-run (2026-09-20, canonical-URL and transport repair):** `cargo fmt`, `cargo clippy --all-targets --locked -- -D warnings`, and `cargo build --locked` are clean, and the 16-target command above re-ran 16/16 green on the repaired tree (library 153 passed / 2 ignored, `result_verify` 14/14), including the new `navigation_url_is_already_canonical` unit test.
 
 **scale-v15 stopped-writer verification (2026-09-20):** the frozen `out-v16` publication committed a complete `native-export-worker-v4` report — 120,716/120,716 aggregate rows across `Export` (111,939) and `Sheet1` (8,777), 1,569,308/1,569,308 source fields, 26/26 matched headers plus 11 appended, output sha256 `dee3ed6b…`, detail sha256 `1aead772…` — taken while the writer was stopped, with 117,887 rows explicitly pending because run `a8328b7f…` was interrupted. Cached replay for this lane is still unexecuted.
+
+**Current-tree gate re-run (2026-09-20, rankings transport retry):** `cargo fmt`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo build --locked`, and the 16-target command above are green — library 155 passed / 2 ignored (the two new `receiptless_transport` tests), every integration target ok including `result_verify` 14/14. The live lane was rebuilt and its worker restarted on this tree; `browser-start` re-attached the headed session to `ready` within 12 s, and run `57f88b34…` resumed at `55m` page 31.
 
 **Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20; the single-page and entitlement limits above constrain what a run can retrieve), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser at `ready`: the profile is now signed in, `browser-start` settles at `ready`, and acquisition fails only on the residual CDP client desync recorded above, which the resume supervisor works around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.

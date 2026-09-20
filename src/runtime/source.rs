@@ -37,6 +37,8 @@ enum WorkflowStep {
     Attempt {
         finalized: result::Finalized,
         retryable: bool,
+        #[serde(default)]
+        rearm: bool,
         delay_ms: u64,
     },
 }
@@ -135,6 +137,29 @@ impl SourceGateway {
     }
 }
 
+/// Whether a failed ranking attempt may be retried, given the fault code and
+/// whether the attempt produced a receipt.
+///
+/// Only a receipt-less transport fault qualifies: nothing was observed, so
+/// there is no evidence to preserve and no reason the same page cannot be
+/// fetched again once the browser session is re-armed.
+fn receiptless_transport(code: Option<FailureCode>, has_receipt: bool) -> bool {
+    code == Some(FailureCode::Transport) && !has_receipt
+}
+
+/// Re-arm the browser session before retrying a receipt-less transport fault.
+///
+/// A retry against the desynced client meets the same failure; the session's
+/// recovery navigation is what restores the page and preserves the cooldown.
+async fn rearm_browser_session(ctx: &SharedObjectContext<'_>) -> Result<(), HandlerError> {
+    use crate::runtime::browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY};
+    ctx.object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
+        .recover()
+        .call()
+        .await?;
+    Ok(())
+}
+
 async fn execute(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
@@ -185,12 +210,13 @@ async fn execute(
                 return Ok(outcome);
             }
         };
-        let (finalized, retryable, delay_ms) = match step {
+        let (finalized, retryable, rearm, delay_ms) = match step {
             WorkflowStep::Attempt {
                 finalized,
                 retryable,
+                rearm,
                 delay_ms,
-            } => (finalized, retryable, delay_ms),
+            } => (finalized, retryable, rearm, delay_ms),
             WorkflowStep::Blocked { failure } => {
                 return Ok(
                     last_finalized.map_or(FetchOutcome::Failed { failure }, |value| value.outcome)
@@ -204,6 +230,9 @@ async fn execute(
         last_finalized = Some(finalized);
         if !should_retry {
             break;
+        }
+        if rearm {
+            rearm_browser_session(ctx).await?;
         }
         publish_feedback(ctx, None, delay_ms).await?;
         ctx.sleep(Duration::from_millis(delay_ms)).await?;
@@ -247,11 +276,15 @@ async fn run_step(
         if attempt.code == Some(FailureCode::BrowserUnavailable) && !is_rankings {
             return Ok(Json(WorkflowStep::Deferred));
         }
-        // Rankings: never retry HTTP failures (403/429/challenge).
-        // Retain the actual receipt/evidence and return failure immediately.
+        // Rankings: never retry an attempt that observed the source.  A receipt
+        // (403/429/challenge/parse failure) carries the evidence and is returned
+        // immediately, so the source is never hammered and no observation is
+        // discarded.  A transport fault is a client-side fault: the browser
+        // client lost the command response, no receipt exists, and retrying it
+        // after re-arming the session is what lets a desynced lane continue.
         // Non-rankings requests keep the existing retryable behavior.
         let retryable = if is_rankings {
-            false
+            receiptless_transport(attempt.code, attempt.receipt.is_some())
         } else {
             attempt.retryable
         };
@@ -273,6 +306,7 @@ async fn run_step(
         Ok(Json(WorkflowStep::Attempt {
             finalized,
             retryable,
+            rearm: is_rankings && retryable,
             delay_ms,
         }))
     })

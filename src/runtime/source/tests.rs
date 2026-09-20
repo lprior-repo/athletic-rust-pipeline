@@ -49,3 +49,27 @@ fn absent_retry_after_uses_bounded_rate_limit_fallback() {
         Ok(Duration::from_secs(120))
     );
 }
+
+#[test]
+fn receiptless_transport_fault_is_retryable_for_rankings() {
+    // The browser client lost the command response: no receipt exists, nothing
+    // was observed, and the session re-arm makes the retry meaningful.
+    assert!(receiptless_transport(Some(FailureCode::Transport), false));
+}
+
+#[test]
+fn observed_ranking_faults_are_never_retried() {
+    // A receipt means the source answered (403/429/challenge/parse).  Retrying
+    // would hammer the source and risk discarding the retained evidence.
+    assert!(!receiptless_transport(Some(FailureCode::Transport), true));
+    assert!(!receiptless_transport(Some(FailureCode::HttpFailure), true));
+    assert!(!receiptless_transport(
+        Some(FailureCode::RateLimited),
+        false
+    ));
+    assert!(!receiptless_transport(
+        Some(FailureCode::BrowserUnavailable),
+        false
+    ));
+    assert!(!receiptless_transport(None, false));
+}
