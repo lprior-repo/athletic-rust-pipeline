@@ -77,7 +77,7 @@ enum Command {
 
 #[derive(Args, Debug)]
 struct ProviderArgs {
-    /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names.
+    /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule.
     name: String,
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
@@ -318,6 +318,18 @@ async fn main() -> Result<()> {
                     )
                     .await
                 }
+                "wayzata_schedule" => {
+                    providers::wayzata::collect(
+                        &context,
+                        &providers::wayzata::Options {
+                            years: args.seasons.clone(),
+                            limit: args.limit,
+                            refresh: args.refresh,
+                            observed_on: Some(observed_on),
+                        },
+                    )
+                    .await
+                }
                 "plain_names" => {
                     providers::plain_names::collect(
                         &context,
@@ -359,7 +371,7 @@ async fn main() -> Result<()> {
                     .await
                 }
                 other => bail!(
-                    "unknown adapter {other}; expected one of ks, wiaa, ihsa, ohsaa, mshsl, plain_names, athleticlive, athleticlive_athletes"
+                    "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes, athleticlive_athletes"
                 ),
             }
             .with_context(|| format!("adapter {}", args.name))?;

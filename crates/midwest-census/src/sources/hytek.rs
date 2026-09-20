@@ -40,7 +40,7 @@ static MARK_TOKEN: LazyLock<Regex> =
 /// Names arrive as `First Last` (PrimeTime) and as `Last, First` (TrackSide); the guard exists to
 /// catch a mis-sliced field, which shows up as digits from a neighbouring mark, not to police
 /// punctuation.
-fn looks_like_a_name(name: &str) -> bool {
+pub(crate) fn looks_like_a_name(name: &str) -> bool {
     !name.is_empty()
         && name.chars().any(char::is_alphabetic)
         && !name.chars().any(|ch| ch.is_ascii_digit())
@@ -50,7 +50,7 @@ fn looks_like_a_name(name: &str) -> bool {
 }
 
 /// Plain-text marks that are results rather than numbers.
-const NO_MARK: [&str; 8] = ["DNF", "DNS", "SCR", "NH", "FOUL", "NM", "DQ", "X"];
+pub(crate) const NO_MARK: [&str; 8] = ["DNF", "DNS", "SCR", "NH", "FOUL", "NM", "DQ", "X"];
 
 /// Hy-Tek prints text columns left-aligned at their label and numeric columns right-aligned to the
 /// label's right edge. Rows are therefore read by matching whitespace tokens against the header's
@@ -59,7 +59,7 @@ const NO_MARK: [&str; 8] = ["DNF", "DNS", "SCR", "NH", "FOUL", "NM", "DQ", "X"];
 const TEXT_LABELS: [&str; 5] = ["Name", "School", "Team", "Relay", "Athlete"];
 
 /// Numeric columns, longest label first so that `Semi-Finals` wins where `Finals` also starts.
-const NUMERIC_LABELS: [&str; 21] = [
+const NUMERIC_LABELS: [&str; 23] = [
     "Semi-Finals",
     "Preliminaries",
     "Prelims",
@@ -74,9 +74,11 @@ const NUMERIC_LABELS: [&str; 21] = [
     "English",
     "Score",
     "Points",
+    "Pts",
     "Best",
     "Seed",
     "Year",
+    "Yr",
     "H#",
     "Lane",
     "Flight",
@@ -100,11 +102,11 @@ const MARK_LABELS: [&str; 10] = [
 
 /// One labelled column of a section header.
 #[derive(Debug, Clone)]
-struct Column {
-    label: String,
-    start: usize,
-    end: usize,
-    numeric: bool,
+pub(crate) struct Column {
+    pub(crate) label: String,
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+    pub(crate) numeric: bool,
 }
 
 /// The column layout of the section currently being read.
@@ -117,13 +119,13 @@ struct Section {
 
 /// One whitespace-delimited token of a report line with its byte offsets.
 #[derive(Debug, Clone, Copy)]
-struct Token<'a> {
-    start: usize,
-    end: usize,
-    text: &'a str,
+pub(crate) struct Token<'a> {
+    pub(crate) start: usize,
+    pub(crate) end: usize,
+    pub(crate) text: &'a str,
 }
 
-fn tokens(line: &str) -> Vec<Token<'_>> {
+pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
     let mut out = Vec::new();
     let mut start: Option<usize> = None;
     for (index, ch) in line.char_indices() {
@@ -151,7 +153,7 @@ fn tokens(line: &str) -> Vec<Token<'_>> {
 
 /// Slice a line by column offsets, tolerating offsets that land off a character boundary (a name
 /// carrying a non-ASCII character shifts the byte offsets a header implies).
-fn substring(line: &str, start: usize, end: usize) -> String {
+pub(crate) fn substring(line: &str, start: usize, end: usize) -> String {
     let mut from = start.min(line.len());
     let mut to = end.min(line.len());
     while from < line.len() && !line.is_char_boundary(from) {
@@ -166,6 +168,56 @@ fn substring(line: &str, start: usize, end: usize) -> String {
     line[from..to].trim().to_string()
 }
 
+/// Every labelled column anchor of a report header line, in the order it is printed.
+///
+/// Shared by the Hy-Tek parser and the other fixed-column vendors: the label positions of a header
+/// line are the only reliable statement of where a row's fields sit, because heat, seed and second
+/// mark columns shift every following field.
+pub(crate) fn columns_from_header(header: &str) -> Vec<Column> {
+    let mut columns: Vec<Column> = Vec::new();
+    for (offset, _) in header.char_indices() {
+        if offset > 0 && !header[..offset].ends_with(' ') {
+            continue;
+        }
+        let rest = &header[offset..];
+        let matched = TEXT_LABELS
+            .iter()
+            .chain(NUMERIC_LABELS.iter())
+            .find(|label| {
+                rest.starts_with(**label)
+                    && rest[label.len()..]
+                        .chars()
+                        .next()
+                        .is_none_or(|ch| ch == ' ' || ch == '\t')
+            });
+        let Some(label) = matched else { continue };
+        if columns.iter().any(|column| column.start == offset) {
+            continue;
+        }
+        columns.push(Column {
+            label: (*label).to_string(),
+            start: offset,
+            end: offset + label.len(),
+            numeric: !TEXT_LABELS.contains(label),
+        });
+    }
+    columns
+}
+
+/// Grade as published in a result row: `12` or the class shorthand `Fr`/`So`/`Jr`/`Sr`.
+pub(crate) fn grade_from_token(token: &str) -> Option<Grade> {
+    if let Ok(year) = token.parse::<u8>() {
+        return Grade::new(year);
+    }
+    match token.trim_end_matches('.') {
+        "Fr" => Grade::new(9),
+        "So" => Grade::new(10),
+        "Jr" => Grade::new(11),
+        "Sr" => Grade::new(12),
+        _ => None,
+    }
+}
+
 impl Section {
     /// Read a section header. Returns `None` for anything that is not a results header: the line
     /// must begin with a text column and publish at least one mark column, which keeps team-score
@@ -175,33 +227,7 @@ impl Section {
         if !TEXT_LABELS.iter().any(|label| trimmed.starts_with(label)) {
             return None;
         }
-        let mut columns: Vec<Column> = Vec::new();
-        for (offset, _) in header.char_indices() {
-            if offset > 0 && !header[..offset].ends_with(' ') {
-                continue;
-            }
-            let rest = &header[offset..];
-            let matched = TEXT_LABELS
-                .iter()
-                .chain(NUMERIC_LABELS.iter())
-                .find(|label| {
-                    rest.starts_with(**label)
-                        && rest[label.len()..]
-                            .chars()
-                            .next()
-                            .is_none_or(|ch| ch == ' ' || ch == '\t')
-                });
-            let Some(label) = matched else { continue };
-            if columns.iter().any(|column| column.start == offset) {
-                continue;
-            }
-            columns.push(Column {
-                label: (*label).to_string(),
-                start: offset,
-                end: offset + label.len(),
-                numeric: !TEXT_LABELS.contains(label),
-            });
-        }
+        let columns = columns_from_header(header);
         if !columns
             .iter()
             .any(|column| MARK_LABELS.contains(&column.label.as_str()))
@@ -435,7 +461,9 @@ pub fn hytek_event_kind(label: &str) -> EventKind {
     if !matches!(direct, EventKind::Unmapped { .. }) {
         return direct;
     }
-    for suffix in ["dash", "run", "throw"] {
+    // `4x800 Relay` drops the unit that `4x200 Meter Relay` keeps, and `Sprint Medley Relay`
+    // spells the medley out, so the relay word is tried like the other noise words.
+    for suffix in ["dash", "run", "throw", "relay"] {
         if let Some(stripped) = compact.strip_suffix(suffix) {
             let candidate = EventKind::from_source_label(stripped);
             if !matches!(candidate, EventKind::Unmapped { .. }) {
@@ -472,8 +500,7 @@ fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Option<ParsedRo
     // Place sits left of the first labelled column and is optional (unranked rows print blank).
     let place = tokens
         .iter()
-        .filter(|token| token.end <= first_column_start)
-        .next_back()
+        .rfind(|token| token.end <= first_column_start)
         .and_then(|token| token.text.parse::<u16>().ok());
 
     let name_start = section.column("Name").map(|column| column.start);
@@ -887,6 +914,15 @@ mod tests {
         );
         assert_eq!(hytek_event_kind("3200 Meter Run"), EventKind::Track3200m);
         assert_eq!(hytek_event_kind("4x200 Meter Relay"), EventKind::Relay4x200);
+        assert_eq!(
+            hytek_event_kind("4x800 Relay"),
+            EventKind::Relay4x800,
+            "the unit is optional in relay labels"
+        );
+        assert_eq!(
+            hytek_event_kind("Sprint Medley Relay"),
+            EventKind::SprintMedley
+        );
         assert_eq!(hytek_event_kind("Shot Put"), EventKind::ShotPut);
         assert_eq!(hytek_event_kind("Discus Throw"), EventKind::Discus);
         assert_eq!(

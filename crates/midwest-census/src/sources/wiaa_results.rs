@@ -33,7 +33,7 @@ use anyhow::{Context, Result};
 
 /// Bump when a parser change alters what an already-journaled artifact yields: resume entries are
 /// only honoured for the current version, so a format fix re-reads the affected files.
-const PARSE_VERSION: u32 = 4;
+const PARSE_VERSION: u32 = 6;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -188,6 +188,33 @@ pub fn archive_artifacts(body: &str) -> Vec<ArchiveArtifact> {
     artifacts
 }
 
+/// Read a PDF release with the vendor parsers, most specific first.
+///
+/// The WIAA archive publishes PDFs from several timers: Hy-Tek's own reports, the "Compiled" export
+/// the association posts for meets without a Hy-Tek file, and cross-country files from Hy-Tek block
+/// and AccuRace layouts. Each parser states its own header requirement, so the first one that
+/// returns events owns the file and the runner reports which layout won.
+fn parse_pdf(
+    text: &str,
+    source: SourceRef,
+    archive_year: i16,
+) -> (
+    Option<crate::sources::result_file::ParsedMeet>,
+    Option<&'static str>,
+) {
+    let lines = crate::sources::hytek::lines_from_pdf_text(text);
+    if let Some(parsed) = crate::sources::hytek::parse(&lines, source.clone()) {
+        return (Some(parsed), Some("hytek"));
+    }
+    if let Some(parsed) = crate::sources::compiled::parse(&lines, source.clone(), archive_year) {
+        return (Some(parsed), Some("compiled"));
+    }
+    if let Some(parsed) = crate::sources::xc::parse(&lines, source, archive_year) {
+        return (Some(parsed), Some("xc"));
+    }
+    (None, None)
+}
+
 /// Read a PDF release through `pdftotext -layout`.
 ///
 /// The PDF is streamed in and the text out, so no temporary file is written; the writer runs on its
@@ -273,6 +300,7 @@ struct Stats {
     pdf_parsed: usize,
     pdf_unparsed: usize,
     pdf_tool_failures: usize,
+    pdf_layouts: std::collections::BTreeMap<String, usize>,
     rows: usize,
     rows_with_grade: usize,
     rows_without_school: usize,
@@ -400,12 +428,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 }
                 ArtifactFormat::Pdf => match pdftotext(&fetched.body) {
                     Ok(text) => {
-                        let parsed = crate::sources::hytek::parse(
-                            &crate::sources::hytek::lines_from_pdf_text(&text),
-                            source.clone(),
-                        );
-                        if parsed.is_some() {
+                        let (parsed, layout) = parse_pdf(&text, source.clone(), artifact.year);
+                        if let Some(layout) = layout {
                             stats.pdf_parsed += 1;
+                            *stats.pdf_layouts.entry(layout.to_string()).or_default() += 1;
                         } else {
                             stats.pdf_unparsed += 1;
                             report.note(format!(
@@ -504,6 +530,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         "pdf artifacts: {} parsed, {} not a known report layout, {} unreadable (pdftotext)",
         stats.pdf_parsed, stats.pdf_unparsed, stats.pdf_tool_failures
     ));
+    report.note(format!("pdf layouts: {:?}", stats.pdf_layouts));
     report.note(format!(
         "formats parsed: {:?}",
         stats
@@ -591,6 +618,11 @@ fn absorb(
         meet_evidence.note = Some(format!(
             "official WIAA artifact timed by {timer}; label {} ({})",
             artifact.label, artifact.extension
+        ));
+    } else if parsed.date.len() == 4 {
+        meet_evidence.note = Some(format!(
+            "date published only as the archive year {}; label {} ({})",
+            parsed.date, artifact.label, artifact.extension
         ));
     }
     meet.evidence.push(meet_evidence.clone());

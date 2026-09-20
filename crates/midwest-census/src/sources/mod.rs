@@ -5,6 +5,7 @@
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod coach_contacts;
+pub mod compiled;
 pub mod hytek;
 pub mod ihsa;
 pub mod ks;
@@ -14,8 +15,10 @@ pub mod ohsaa;
 pub mod plain_names;
 pub mod raceday;
 pub mod result_file;
+pub mod wayzata;
 pub mod wiaa;
 pub mod wiaa_results;
+pub mod xc;
 
 use crate::net::{FetchOptions, Fetcher};
 use crate::store::{Store, Table};
