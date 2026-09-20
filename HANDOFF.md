@@ -275,6 +275,18 @@ kill applied, the run's `updated_at` moved off the frozen 13:36:07 within a minu
 (`completed=1/8`, `review_required=1`, one row in flight) against the same collection and the lane's
 two-sheet, 8-row sample workbook.
 
+**The re-arm now covers the profile path too (source change, gates green).** `run_step` set
+`rearm: is_rankings && retryable`, so a profile fetch that lost its command response retried against the
+same desynced session until the row spent its attempt budget and parked. `rearm` is now plain
+`retryable`; the retryability rule itself is unchanged — rankings still require a receipt-less transport
+fault, non-rankings keep the earlier rule, and the re-arm still happens only before an actual retry.
+Gates on the changed tree (`503587e`): `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D
+warnings`, `cargo build --locked`, and the 16-target command — library 155 passed / 2 ignored,
+`result_verify` 14/14, every named target green. No unit test asserts the flag itself: it composes two
+already-tested predicates (`receiptless_transport` and the non-rankings retryable rule), and the change
+is exercised live by the next run that fetches profiles — the worker serving this run still runs the
+pre-change binary, since replacing it mid-run would park the in-flight rows.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
