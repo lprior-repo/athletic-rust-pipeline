@@ -17,8 +17,8 @@ use std::time::Duration;
 #[path = "rankings_helper.rs"]
 mod rankings_helper;
 use rankings_helper::{
-    build_interceptor_script, build_response, build_ui_url, click_numeric_page, parse_binding,
-    response_has_rows, validate_request, wait_for_active_page, BINDING_NAME,
+    build_interceptor_script, build_response, build_ui_url, click_numeric_page, page_extent,
+    parse_binding, validate_request, wait_for_active_page, BINDING_NAME,
 };
 
 /// Serve a `Results` capture through the persistent in-page fetch lane: the
@@ -50,17 +50,26 @@ async fn fetch_results(
     Ok(response)
 }
 
-/// Pagination follows the measured row-bearing signal: a page carrying ranked
-/// rows requests its successor, while an empty or unparsable page ends the
-/// chain. Publication seals that terminating page into the event's page count,
-/// so verification requires exactly `None` on the head page and `Some(page + 1)`
+/// Pagination follows the payload's own declared page depth: only a page whose
+/// rows fill `settings.depth` can have a successor, and a page carrying fewer
+/// rows is the last page of the list. Live measurement (2026-09-20, USA indoor
+/// division 173005, boys grade 11) fixed the shape: a complete `100m` list
+/// returned 71 rows against `depth: 100` while `200m` returned a full 100 plus
+/// the blurred tail row, and the source answered a `page=2` request with a
+/// byte-identical page-1 payload (`settings.page` stayed 1). Requesting a
+/// successor for a short page therefore cannot retrieve new evidence and would
+/// only raise a page-identity conflict, so the chain ends on the short page.
+/// Publication seals that terminating page into the event's page count, so
+/// verification requires exactly `None` on the head page and `Some(page + 1)`
 /// on every page before it.
 fn next_page_after(body: &[u8], page: u32) -> Option<u32> {
-    match response_has_rows(body) {
-        Ok(true) => page.checked_add(1),
+    match page_extent(body) {
         // Malformed pages end pagination: strict publication parsing rejects
         // them before a checkpoint is written.
-        Ok(false) | Err(_) => None,
+        Err(_) => None,
+        Ok((0, _)) => None,
+        Ok((rows, Some(depth))) if rows < depth => None,
+        Ok((_, _)) => page.checked_add(1),
     }
 }
 
@@ -85,6 +94,42 @@ mod pagination {
     fn an_unparsable_page_terminates_rather_than_advancing() {
         assert_eq!(next_page_after(b"<html>challenge</html>", 3), None);
         assert_eq!(next_page_after(b"", 3), None);
+    }
+
+    #[test]
+    fn a_page_below_its_declared_depth_ends_the_chain() {
+        // Live shape: a complete event list shorter than the declared depth.
+        let mut rows = String::new();
+        for rank in 1..=71 {
+            if rank > 1 {
+                rows.push(',');
+            }
+            rows.push_str(&format!("{{\"athleteId\":{rank}}}"));
+        }
+        let body =
+            format!("{{\"settings\":{{\"depth\":100,\"page\":1}},\"groupedRankings\":[[{rows}]]}}");
+        assert_eq!(next_page_after(body.as_bytes(), 1), None);
+    }
+
+    #[test]
+    fn a_page_filling_its_declared_depth_requests_its_successor() {
+        let mut rows = String::new();
+        for rank in 1..=100 {
+            if rank > 1 {
+                rows.push(',');
+            }
+            rows.push_str(&format!("{{\"athleteId\":{rank}}}"));
+        }
+        let body = format!("{{\"settings\":{{\"depth\":100}},\"groupedRankings\":[[{rows}]]}}");
+        assert_eq!(next_page_after(body.as_bytes(), 1), Some(2));
+    }
+
+    #[test]
+    fn default_settings_supply_the_depth_when_settings_are_absent() {
+        let short = br#"{"defaultSettings":{"depth":2},"groupedRankings":[[{"a":1}]]}"#;
+        assert_eq!(next_page_after(short, 1), None);
+        let full = br#"{"defaultSettings":{"depth":2},"groupedRankings":[[{"a":1},{"a":2}]]}"#;
+        assert_eq!(next_page_after(full, 1), Some(2));
     }
 }
 

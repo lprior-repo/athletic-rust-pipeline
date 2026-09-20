@@ -306,6 +306,39 @@ struct RankingQueryParams {
 struct RankingsEnvelope {
     #[serde(rename = "groupedRankings")]
     grouped_rankings: Vec<Vec<serde::de::IgnoredAny>>,
+    #[serde(default)]
+    settings: Option<EnvelopeSettings>,
+    #[serde(rename = "defaultSettings", default)]
+    default_settings: Option<EnvelopeSettings>,
+}
+
+/// The page-depth fields the source declares for a list response. Rows stay
+/// `IgnoredAny`; only the declared depth is materialized.
+#[derive(serde::Deserialize)]
+struct EnvelopeSettings {
+    depth: Option<u64>,
+}
+
+impl RankingsEnvelope {
+    fn row_count(&self) -> u64 {
+        self.grouped_rankings
+            .iter()
+            .map(|group| group.len() as u64)
+            .sum()
+    }
+
+    /// The declared page depth: `settings.depth` when the request echoed its
+    /// settings, otherwise the default settings echoed alongside.
+    fn declared_page_depth(&self) -> Option<u64> {
+        self.settings
+            .as_ref()
+            .and_then(|settings| settings.depth)
+            .or_else(|| {
+                self.default_settings
+                    .as_ref()
+                    .and_then(|settings| settings.depth)
+            })
+    }
 }
 
 /// Parse and validate the captured request body once, returning its validated page.
@@ -348,13 +381,13 @@ pub(super) fn validate_request(
     Ok(Some(request_page))
 }
 
-pub(super) fn response_has_rows(body: &[u8]) -> Result<bool, BrowserError> {
+/// The row count and declared page depth of a captured list response, used to
+/// decide whether another page can exist. A body that is not a rankings
+/// envelope is a protocol error for the caller to treat as terminal.
+pub(super) fn page_extent(body: &[u8]) -> Result<(u64, Option<u64>), BrowserError> {
     let envelope: RankingsEnvelope =
         serde_json::from_slice(body).map_err(|_| BrowserError::Protocol)?;
-    Ok(envelope
-        .grouped_rankings
-        .iter()
-        .any(|group| !group.is_empty()))
+    Ok((envelope.row_count(), envelope.declared_page_depth()))
 }
 
 async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {

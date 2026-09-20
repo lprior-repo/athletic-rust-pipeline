@@ -95,10 +95,38 @@ Remaining gaps are live-source qualification (real endpoints and manual challeng
 
 Historical synthetic and legacy-run material may remain in retained evidence, but must be labelled historical and must not be used as current-tree proof. Old live profiles/stores/journals and changed binaries remain preserved; they are not replaced or replayed. The same rule governs revisions: the pre-split rankings revision `2026-usa-boys-grade11-v1` is **retired** — a scope carrying it still deserializes (its absent `season_kind` defaults to outdoor) but `validate` rejects it with the retired revision named, so those stores are verified and exported by their retained pre-change binary rather than reinterpreted by this tree.
 
+## Live acquisition findings and pagination repair (2026-09-20)
+
+Captured through the lane's headed Chromium using the site's own requests; raw bodies are
+retained outside the repository at
+`~/.local/share/athletic-rust-pipeline/lane-v14/live-capture`.
+
+- **The live list report serves one page per event.** Requesting `page=2` for `100m` and `200m`
+  (boys grade 11, USA indoor division 173005) returned byte-identical page-1 payloads with
+  `settings.page = 1`: `site-page2-2026-09-20T1840Z-0.json` (`2ced3016…`) repeats
+  `site-page2-2026-09-20T1830200mZ-0.json` (`3b702d16…`) row for row, ranks 1..101. The source
+  ignores the page parameter, so a second page is not retrievable for this report.
+- **Rows are entitlement-limited for this session.** Every response declares `settings.depth = 100`
+  and `blurAfterDepth = 5`: five rows carry real athlete names and the remainder are masked
+  (`Xxxxx Xxxxx`) with a blurred tail row (`live-page-indoor-173005-m.2026-09-20T1730Z.json`,
+  `00796851…`). Complete per-event evidence therefore needs an entitled session; the lane's
+  refusals below are fail-closed restatements of that limit, not parse failures.
+- **Pagination rule repaired.** `next_page_after` used to request a successor for any non-empty
+  page, so a complete short page (`100m`: 71 rows against `depth: 100`) always asked for a page
+  the source answers with page-1 content, and strict publication then paused with
+  `page mismatch: expected 2, got 1`. The rule now requires the page to fill its declared depth
+  (`settings.depth`, falling back to `defaultSettings.depth`); a short page ends the chain.
+  Unit tests cover the live short and full shapes plus the fixture's declared depth.
+- **The live re-run remains unexecuted.** A fresh collection (`source_snapshot 839b9cad…`) was
+  created for run `fb564d0c…` with no pages acquired; after the worker restarts acquisition fails
+  with `browser transport failed` and `rankings-resume` intermittently answers
+  `409 Conflict: browser is not ready`. The repaired pagination therefore rests on unit and
+  regression evidence, not on a completed live collection, and the live collection gate stays open.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
 
 **Latest complete command:** `cargo test --lib --bins --test rankings_parser --test rankings_catalog --test rankings_scope --test rankings_indoor --test rankings_storage --test profile_html_bounds --test profile_merge_bounds --test search_html_bounds --test workbook_verify --test workbook_zip_layout --test native_parser_properties --test result_verify --test bundle_verify --test ingress_failure_surface` — 16/16 targets green (re-run 2026-09-20 on the current working tree: 226 passed, 0 failed; library 149 passed / 2 ignored), including the previously failing restored fixture, the workbook targets it had blocked, the CLI guards that reject a division flag without `--rankings`, the fixture-driven rankings verifier cases, the bounded-readiness escalation test, and the operator ingress-failure surface above.
 
-**Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+**Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20; the single-page and entitlement limits above constrain what a run can retrieve), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser recovered first: after the 2026-09-20 worker restarts, acquisition returns `browser transport failed` and `rankings-resume` intermittently answers `409 Conflict: browser is not ready`. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
