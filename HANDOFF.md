@@ -1,6 +1,6 @@
 # Current design handoff
 
-**Status: live rankings collection executed end to end; live row phase and the expanded roster pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has now completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions, and the live *collection* gate has since been executed against the real source (run `57f88b34…`: 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`) with its own row phase running. It still does not claim identity-matched delivery at workbook scale or expanded-roster coverage; the live lane's stopped-writer verification and cached replay remain unexecuted.
+**Status: the live end-to-end chain is executed for the indoor boys scope; workbook-scale identity-matched delivery and the expanded roster are pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions, and against the **real source** for indoor boys: run `57f88b34…` acquired 95/95 events terminal / 1,065 pages / `final_snapshot 40792b83…`, decided 8/8 workbook rows, published `lane-v14/out-live-full-3/result.xlsx` (`a4eb1fe7…`), verified against the stopped writer (`exit 0`, source SHA-256 matching before and after), and replayed byte-identically with zero new source requests. It still does not claim identity-matched delivery at workbook scale or expanded-roster coverage: the 8-row sample decisions are all `review_required` by design, and the girls indoor half of the expanded roster is a live collection in progress (run `fe726b41…`), not delivered coverage.
 
 ## Freeze and ownership
 
@@ -287,6 +287,54 @@ already-tested predicates (`receiptless_transport` and the non-rankings retryabl
 is exercised live by the next run that fetches profiles — the worker serving this run still runs the
 pre-change binary, since replacing it mid-run would park the in-flight rows.
 
+### Live row phase, publication, stopped-writer verification, replay (2026-09-20, later)
+
+**The live chain is now executed end to end for the indoor boys scope.** With the coordinator restored as
+described above, run `57f88b34…` finished its own row phase against the live source and the lane's
+two-sheet, 8-row sample workbook:
+
+- **Row phase complete** — `status` reports `coverage {selected 8, completed 8, review_required 8,
+  deterministic 0, local_review 0, no_match 0}`, `complete: true`, 0 pending (finished 20:46:26 UTC,
+  ≈5 min for 8 rows). The decision is `review_required` for every row because the sample workbook carries
+  no source-identity evidence: that is the fail-closed contract, not a parse failure. The rows ran on the
+  **pre-re-arm binary**, and the retry storm is visible in the admin table — `SourceGateway/fetch`
+  invocations went 212 → 488 across those 8 rows (≈35 attempts per row), each attempt paced by the
+  exclusive readiness gate at ≈1/s, which is exactly the pathology `rearm: retryable` removes.
+- **Owner-online export** — `result.xlsx` (8,241 B, sha256 `a4eb1fe7…`), `result.jsonl` (6,514,812 B,
+  sha256 `87cfd651…`), `result.commit.json` (sha256 `a4f0791b…`, `protocol native-export-worker-v4`,
+  `state: complete`, `completeness: complete`). The receipt's embedded verification block: source SHA-256
+  `0a1d53f1…` matching before and after, 2/2 sheets, 8/8 source rows, 120 source fields, 30 headers.
+- **Stopped-writer verification** — `hub stop lane-live-worker` (no lane-v14 writer process remained),
+  then `verify --input … --output out-live-full-3/result.xlsx --sha256 0a1d53f1… --store live-store`
+  returned **exit 0**: `output_sha256 a4eb1fe7…` matches the published workbook,
+  `source_hash_before_matches`/`after` true, and the projection reports 8 review / 0 accepted /
+  0 no-match / 0 pending. The same command is preserved as `lane-v14/post-run-chain.sh`.
+- **Worker restart on the repaired binary** — `hub restart lane-live-worker` brought up pid `2094087`
+  whose `/proc/<pid>/exe` sha256 is
+  `508dc0949ca29c352855302dd1e117cc11848b95d873f39bad9f67c0c6516812` (the re-arm build), against the
+  unchanged deployment `dp_15VGHjPnChtjVgUJzmtWTjb` (`http://127.0.0.1:21140/`, 13 services) — the frozen
+  binary from the earlier collection was not reused.
+- **Cached replay** — re-posting the identical `run_and_export` body answered `202` and
+  `inv_1cu7U1qigWj13rYf3sEVBgVLOEzieYeuYF` completed in **0.5 s** (20:47:49.263Z → .798Z), routing through
+  `ExportWorker/publish`. The three artifacts stayed **byte-identical**, `SourceGateway/fetch` stayed at
+  **488 → 488** (zero new source requests), and the run stayed `complete: true` with its collection at
+  `phase: Complete` / `final_snapshot 40792b83…`. A cached run therefore reproduces its publication
+  without touching the source.
+
+Operational scripts used (outside the repository, under `lane-v14/`):
+`collection-supervisor.sh <run> [rounds]` (re-arms + resumes until every event is terminal) and
+`row-supervisor.sh <run> [since-utc] [rounds]` (resumes parked invocations, re-arms on stall, stops on
+`complete=true`); the run-specific `resume-supervisor.sh` / `run-supervisor.sh` and the step-by-step
+`post-run-chain.sh` are retained beside them.
+
+**Live expanded-roster work in progress (started 2026-09-20):** girls indoor collection, run
+`fe726b41…` — scope revision `2026-usa-hs-grade11-indoor-girls-v2`, list `173005`, 94 scheduled events,
+`--rankings --rankings-gender f --rankings-season indoor`, auto-export to
+`lane-v14/out-live-girls/result.xlsx`, supervised by hub process `live-girls-supervisor`. It is a live
+collection under the same re-arm mitigation; its row phase, verification, and replay have not run, and no
+part of the expanded roster (athlete URLs, school history, all high-school performances, PRs, XC) is
+delivered by it.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
@@ -299,4 +347,6 @@ pre-change binary, since replacing it mid-run would park the in-flight rows.
 
 **Current-tree gate re-run (2026-09-20, rankings transport retry):** `cargo fmt`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo build --locked`, and the 16-target command above are green — library 155 passed / 2 ignored (the two new `receiptless_transport` tests), every integration target ok including `result_verify` 14/14. The live lane was rebuilt and its worker restarted on this tree; `browser-start` re-attached the headed session to `ready` within 12 s, and run `57f88b34…` resumed at `55m` page 31.
 
-**Next:** the live collection gate is executed (run `57f88b34…`, 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`); what remains for this lane is the rest of its own chain — the row phase now running, owner-online publication to `lane-v14/out-live-full-3/result.xlsx`, stopped-writer verification against the lane store, and cached replay — followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser at `ready`: the profile is now signed in, `browser-start` settles at `ready`, and acquisition fails only on the residual CDP client desync recorded above, which the resume supervisor works around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+**Live-chain gate (2026-09-20, current tree at `3f78fd9`):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets --locked -- -D warnings`, and the 16-target command above re-ran green on the tree that served the live chain — **232 passed / 0 failed** (library 155 passed / 2 ignored, main 3, every integration target ok including `result_verify` 14/14). The chain executed end to end on that tree against the live source: collection `95/95` events / `1,065` pages / `final_snapshot 40792b83…` → row phase `8/8` (`complete: true`, 8 `review_required`, 0 pending) → owner-online export `result.xlsx` `a4eb1fe7…` / `result.jsonl` `87cfd651…` / `result.commit.json` `a4f0791b…` (`native-export-worker-v4`, `completeness: complete`, 2 sheets, 8 rows, 120 fields, 30 headers) → stopped-writer `verify` exit 0 with the same `output_sha256` and source digest `0a1d53f1…` → worker restarted on the re-arm build (`508dc0949ca29c352855302dd1e117cc11848b95d873f39bad9f67c0c6516812`) → cached replay `202` in 0.5 s, byte-identical artifacts, `SourceGateway/fetch` unchanged at 488.
+
+**Next:** the live chain is executed for the indoor boys scope (run `57f88b34…`: 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`, 8/8 rows decided, publication `a4eb1fe7…`, stopped-writer verification exit 0, byte-identical replay with zero new source requests on the re-arm binary `508dc094…`). What remains: the girls indoor live collection now running (run `fe726b41…`, revision `2026-usa-hs-grade11-indoor-girls-v2`, list `173005`, 94 events, supervisor `live-girls-supervisor`) together with its own row phase, publication, verification, and replay; workbook-scale identity-matched delivery (the real 120,716-row workbook is bound at ≈0.31 rows/s per lane, ≈108 h for `--all`); and the expanded roster requirements in `SCOPE.md` (athlete URLs, school history, all available high-school performances, PRs, cross-country). Re-running the live lane needs the headed browser at `ready` on CDP `9333`: the profile is signed in, `browser-start` settles at `ready`, and acquisition still fails on the residual CDP client desync recorded above, which the supervisors work around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
