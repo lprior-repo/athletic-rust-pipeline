@@ -147,4 +147,17 @@ impl Actor {
         }
         Ok(self.status())
     }
+
+    /// Operator-requested relaunch: re-arm the one-shot recovery latch and
+    /// re-run the bootstrap navigation, so a session whose latch was consumed
+    /// can make progress again instead of reporting the stalled state forever.
+    pub(in crate::runtime::browser) async fn restart_page(
+        &mut self,
+    ) -> Result<BrowserStatus, BrowserError> {
+        self.recovery_used = false;
+        self.challenge_latched = false;
+        self.gate.revoke();
+        self.set_state(BrowserState::Restarting);
+        self.recover_page().await
+    }
 }

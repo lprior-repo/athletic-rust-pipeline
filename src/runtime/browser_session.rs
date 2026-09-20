@@ -5,12 +5,23 @@ use super::{
 };
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 
 pub const BROWSER_SESSION_KEY: &str = "profile-0";
 const MAX_OBSERVATIONS: usize = 17_280;
 const POLL_INTERVAL: Duration = Duration::from_secs(5);
 const READINESS_DEADLINE_MS: u64 = 24 * 60 * 60 * 1_000;
+
+/// Operator intent for the readiness workflow.
+///
+/// `operator` is true only when an operator explicitly re-ran readiness. That
+/// call may re-arm an exhausted recovery latch exactly once; internal waiters
+/// never clear a stall.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ReadinessRequest {
+    pub operator: bool,
+}
 
 pub struct BrowserSession {
     pub runtime: Arc<Runtime>,
@@ -27,8 +38,12 @@ impl BrowserSession {
     pub async fn await_ready(
         &self,
         ctx: ObjectContext<'_>,
+        request: Json<ReadinessRequest>,
     ) -> Result<Json<BrowserStatus>, HandlerError> {
         validate_key(ctx.key())?;
+        if request.0.operator {
+            release_exhausted_recovery(&ctx, self.runtime.clone()).await?;
+        }
         let started = browser_readiness::now_ms(&ctx).await?;
         let observations = futures::stream::iter(0..MAX_OBSERVATIONS)
             .then(|_| observe_ready(&ctx, self.runtime.clone(), started))
@@ -177,6 +192,15 @@ async fn observe_ready(
         return Ok(Some(status));
     }
     let status = handle_challenge(ctx, runtime, status, now).await?;
+    if status.state == BrowserState::HumanRequired {
+        // Escalation ends this wait with an explicit durable state instead of
+        // polling to the readiness deadline; the operator re-runs readiness
+        // after clearing the challenge or relaunching the browser.
+        ctx.set("status", Json(status.clone()));
+        ctx.clear("challenge-started-ms");
+        ctx.clear("recovery-issued");
+        return Ok(Some(status));
+    }
     ctx.set("status", Json(status));
     ctx.sleep(POLL_INTERVAL).await?;
     Ok(None)
@@ -215,10 +239,7 @@ async fn handle_challenge(
     mut status: BrowserStatus,
     now: u64,
 ) -> Result<BrowserStatus, HandlerError> {
-    if !matches!(
-        status.state,
-        BrowserState::Challenged | BrowserState::HumanRequired
-    ) {
+    if !can_escalate(status.state) {
         return Ok(status);
     }
     let started = match ctx.get::<u64>("challenge-started-ms").await? {
@@ -228,7 +249,9 @@ async fn handle_challenge(
             now
         }
     };
-    if ctx.get::<bool>("recovery-issued").await? != Some(true) {
+    if status.state == BrowserState::Challenged
+        && ctx.get::<bool>("recovery-issued").await? != Some(true)
+    {
         // Only issue recovery when no active jobs and not cooling down.
         let physical = browser_readiness::physical_status(&runtime);
         if physical.active_requests == 0 && physical.cooldown_ms == 0 {
@@ -259,9 +282,46 @@ fn merge_status(durable: Option<BrowserStatus>, mut physical: BrowserStatus) -> 
     physical
 }
 
+/// States that cannot recover without operator action: a challenge the human
+/// must clear, or a restart attempt that never reached a verdict.
+fn can_escalate(state: BrowserState) -> bool {
+    matches!(state, BrowserState::Challenged | BrowserState::Restarting)
+}
+
+/// Re-arm an exhausted session for one bounded attempt when an operator
+/// explicitly re-runs readiness. Without this, every caller keeps observing
+/// the same stalled state while the recovery latch stays consumed.
+async fn release_exhausted_recovery(
+    ctx: &ObjectContext<'_>,
+    runtime: Arc<Runtime>,
+) -> Result<(), HandlerError> {
+    if browser_readiness::physical_status(&runtime).state != BrowserState::HumanRequired {
+        return Ok(());
+    }
+    browser_readiness::act(ctx, runtime, BrowserAction::Restart).await?;
+    ctx.clear("challenge-started-ms");
+    ctx.clear("recovery-issued");
+    Ok(())
+}
+
 fn validate_key(key: &str) -> Result<(), HandlerError> {
     if key != BROWSER_SESSION_KEY {
         return Err(TerminalError::new("invalid browser session key").into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stalls_and_challenges_escalate_while_settled_states_do_not() {
+        assert!(can_escalate(BrowserState::Challenged));
+        assert!(can_escalate(BrowserState::Restarting));
+        assert!(!can_escalate(BrowserState::Ready));
+        assert!(!can_escalate(BrowserState::CoolingDown));
+        assert!(!can_escalate(BrowserState::HumanRequired));
+        assert!(!can_escalate(BrowserState::Stopped));
+    }
 }

@@ -151,6 +151,11 @@ impl Actor {
                     tracing::debug!("recover reply send failed");
                 }
             }
+            Some(Command::Restart { reply }) => {
+                if reply.send(self.restart_page().await).is_err() {
+                    tracing::debug!("restart reply send failed");
+                }
+            }
             Some(Command::Shutdown { reply }) => {
                 self.shutdown_reply = Some(reply);
                 self.draining = true;

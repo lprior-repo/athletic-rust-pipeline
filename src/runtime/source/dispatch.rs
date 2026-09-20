@@ -27,10 +27,12 @@ impl ReadinessPolicy {
 /// path.  Non-rankings requests use this because they may need the browser
 /// to self-recover through challenge/human-wait cycles.
 pub(super) async fn await_browser(ctx: &ObjectContext<'_>) -> Result<(), HandlerError> {
-    use crate::runtime::browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY};
+    use crate::runtime::browser_session::{
+        BrowserSessionClient, ReadinessRequest, BROWSER_SESSION_KEY,
+    };
     let call = ctx
         .object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
-        .await_ready()
+        .await_ready(Json(ReadinessRequest { operator: false }))
         .call();
     let handle = call.invocation_handle().await?;
     match call.await {

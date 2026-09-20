@@ -96,7 +96,17 @@ impl Runtime {
         self.browser
             .get_or_try_init(|| async move {
                 match settings.cdp_endpoint.clone() {
-                    Some(endpoint) => browser::BrowserManager::connect(endpoint, settings).await,
+                    Some(endpoint) => {
+                        match browser::BrowserManager::connect(endpoint, settings.clone()).await {
+                            Ok(manager) => Ok(manager),
+                            Err(error) => {
+                                tracing::warn!(
+                                "cdp endpoint unreachable ({error}); launching a managed browser"
+                            );
+                                browser::BrowserManager::launch(settings).await
+                            }
+                        }
+                    }
                     None => browser::BrowserManager::launch(settings).await,
                 }
             })

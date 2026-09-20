@@ -76,6 +76,9 @@ pub(super) enum Command {
     Recover {
         reply: oneshot::Sender<Result<BrowserStatus, BrowserError>>,
     },
+    Restart {
+        reply: oneshot::Sender<Result<BrowserStatus, BrowserError>>,
+    },
     Shutdown {
         reply: oneshot::Sender<anyhow::Result<()>>,
     },

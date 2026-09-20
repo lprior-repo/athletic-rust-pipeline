@@ -12,6 +12,7 @@ use std::{
 pub(crate) enum BrowserAction {
     Inspect,
     Recover,
+    Restart,
     HumanRequired,
 }
 
@@ -29,6 +30,7 @@ pub(crate) async fn act(
         let status = match action {
             BrowserAction::Inspect => browser.inspect().await,
             BrowserAction::Recover => browser.recover().await,
+            BrowserAction::Restart => browser.restart().await,
             BrowserAction::HumanRequired => {
                 browser.mark_human_required();
                 Ok(browser.status())

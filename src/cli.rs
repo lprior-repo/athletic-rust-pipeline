@@ -7,7 +7,7 @@ use args::{Cli, Command, Start};
 use athletic_rust_pipeline::{
     domain::identity::{EvidenceDigest, WorkbookDigest},
     runtime::{
-        browser_session::{BrowserSessionIngressClient, BROWSER_SESSION_KEY},
+        browser_session::{BrowserSessionIngressClient, ReadinessRequest, BROWSER_SESSION_KEY},
         control::{
             PipelineControlIngressClient, PrepareRequest, RankingControlsInput, RunAndExportRequest,
         },
@@ -87,7 +87,10 @@ pub async fn run() -> Result<()> {
                 transport::client(&ingress)?,
                 BROWSER_SESSION_KEY,
             );
-            let submitted = client.await_ready().send().await?;
+            let submitted = client
+                .await_ready(Json(ReadinessRequest { operator: true }))
+                .send()
+                .await?;
             emit(
                 &serde_json::json!({"invocation_id": submitted.invocation_handle().invocation_id()}),
             )

@@ -49,6 +49,8 @@ Chromium runs normally, headed, with one private persistent profile and a bounde
 
 A definitive challenge closes new profile admission while already-issued requests drain. Automatic readiness is bounded; unresolved challenges enter durable `human_required`. Only an actual successful, non-challenged source document allows resumption. Real Cloudflare interaction is manual human work in the same headed profile; no live challenge was automated for this documentation refresh.
 
+Exhaustion ends that wait instead of looping it: once a challenge or a stalled relaunch escalates, `await_ready` returns the durable status rather than polling to the readiness deadline. An explicit operator re-run of `browser-start` re-arms exactly one bounded attempt (a real recovery navigation) instead of reporting the same stalled state; internal waiters never clear a stall. A configured CDP endpoint that is not listening falls back to launching a managed browser on the configured profile instead of failing outright.
+
 ## CLI surface
 
 The current executable exposes:

@@ -205,6 +205,18 @@ impl BrowserManager {
         result.await.map_err(|_| BrowserError::Transport)?
     }
 
+    /// Operator-requested relaunch: re-arm the one-shot recovery latch and
+    /// re-run the bootstrap navigation. Each explicit call is one bounded
+    /// attempt; a session that latches again escalates back to human action.
+    pub(crate) async fn restart(&self) -> Result<BrowserStatus, BrowserError> {
+        let (reply, result) = oneshot::channel();
+        self.tx
+            .send(Command::Restart { reply })
+            .await
+            .map_err(|_| BrowserError::Unavailable)?;
+        result.await.map_err(|_| BrowserError::Transport)?
+    }
+
     pub(crate) fn mark_human_required(&self) {
         self.gate.revoke();
         write_state(&self.status, BrowserState::HumanRequired);
