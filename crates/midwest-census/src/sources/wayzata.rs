@@ -30,8 +30,9 @@
 //! # Coverage limits, stated rather than hidden
 //!
 //! * The venue is a free-text `Location` cell. A venue that names one of the provider's recurring
-//!   sites resolves to a state through [`venue_state`]; anything else is filed under the `??` state
-//!   so it can never collide with a real one, and the runner reports how many rows that is.
+//!   sites resolves to a state through [`venue_state`]; a school-shaped venue (`"Albany HS"`) goes
+//!   through the consolidated school snapshot via [`resolve_venue`]; anything else is filed under
+//!   the `??` state so it can never collide with a real one, and the runner reports how many.
 //! * The track schedule mixes indoor and outdoor seasons. A row in November-March is published as
 //!   [`Sport::IndoorTrack`], everything else as [`Sport::OutdoorTrack`]; the cross-country schedule
 //!   is [`Sport::CrossCountry`].
@@ -48,17 +49,18 @@
 use crate::model::{
     CanonicalMeet, CompetitionLevel, Evidence, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde_json::json;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::LazyLock;
 
 /// Bump when a parse change alters what an already-journaled schedule yields: resume entries are
 /// only honoured for the current version.
-const PARSE_VERSION: u32 = 1;
+const PARSE_VERSION: u32 = 3;
 
 /// The adapter's journal namespace and evidence source id.
 const ADAPTER_ID: &str = "wayzata_schedule";
@@ -295,6 +297,100 @@ pub fn venue_state(location: &str) -> Option<&'static str> {
         .map(|(_, state)| *state)
 }
 
+/// The states this provider operates in. It is asked only about school-shaped venues, and only
+/// inside its own region: seeking a venue name nationally turns "Austin HS" into a three-way tie
+/// with Indiana and Michigan, while the provider's Austin is the Minnesota one. A name that still
+/// answers in two region states is left unresolved.
+const REGION_STATES: [&str; 3] = ["MN", "IA", "WI"];
+
+/// How one schedule row's venue became a state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VenueResolution {
+    /// A recurring site the provider publishes ([`venue_state`]).
+    Site(&'static str),
+    /// A venue that names a school, resolved through the consolidated school snapshot.
+    School(&'static str),
+    /// Answers in more than one state, or in none: never guessed.
+    Unknown,
+}
+
+impl VenueResolution {
+    pub const fn state(self) -> Option<&'static str> {
+        match self {
+            VenueResolution::Site(state) | VenueResolution::School(state) => Some(state),
+            VenueResolution::Unknown => None,
+        }
+    }
+}
+
+/// The readings of a venue cell worth asking the school snapshot for.
+///
+/// Always the cell itself, plus - when it ends in a school suffix - the spelling with that suffix
+/// written out (`"Albany HS"` -> `"Albany High School"`). The shared resolver needs at least two
+/// tokens to tell "Albany" from the next Albany, so a truncated `"Albany"` would never match; the
+/// expanded spelling is what a canonical school name actually looks like.
+pub fn venue_candidates(location: &str) -> Vec<String> {
+    let trimmed = location.trim();
+    let mut candidates = vec![trimmed.to_string()];
+    for (suffix, expansion) in [
+        (" H.S.", " High School"),
+        (" H.S", " High School"),
+        (" HS.", " High School"),
+        (" HS", " High School"),
+        (" Middle School", " Middle School"),
+        (" School", " School"),
+    ] {
+        let Some(base) = trimmed.strip_suffix(suffix) else {
+            continue;
+        };
+        let base = base.trim();
+        if base.is_empty() {
+            continue;
+        }
+        let expanded = format!("{base}{expansion}");
+        if !candidates.contains(&expanded) {
+            candidates.push(expanded);
+        }
+    }
+    candidates
+}
+
+/// Resolve a venue cell to a state: the venue table first, the school snapshot second.
+///
+/// Only a single answering state is accepted, and answers are cached per venue string because a
+/// schedule repeats its sites.
+pub fn resolve_venue(
+    index: &SchoolIndex,
+    cache: &mut HashMap<String, VenueResolution>,
+    location: &str,
+) -> VenueResolution {
+    if let Some(cached) = cache.get(location) {
+        return *cached;
+    }
+    let resolution = match venue_state(location) {
+        Some(state) => VenueResolution::Site(state),
+        None => {
+            let candidates = venue_candidates(location);
+            let mut hits: Vec<&'static str> = REGION_STATES
+                .iter()
+                .copied()
+                .filter(|state| {
+                    candidates
+                        .iter()
+                        .any(|label| index.resolve(state, label).is_some())
+                })
+                .collect();
+            hits.dedup();
+            match hits.as_slice() {
+                [only] => VenueResolution::School(only),
+                _ => VenueResolution::Unknown,
+            }
+        }
+    };
+    cache.insert(location.to_string(), resolution);
+    resolution
+}
+
 /// Competition level from the meet name the provider publishes.
 pub fn level_of(name: &str) -> CompetitionLevel {
     let name = name.to_ascii_lowercase();
@@ -326,6 +422,7 @@ struct Stats {
     pages: usize,
     rows: usize,
     states_resolved: usize,
+    states_from_school: usize,
     states_unknown: usize,
     levels: BTreeMap<String, usize>,
     sports: BTreeMap<String, usize>,
@@ -363,6 +460,14 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         options.years.clone()
     };
 
+    // The venue table covers the provider's recurring sites; school-shaped venues ("Albany HS") go
+    // through the consolidated school snapshot instead, so a meet is filed in the state its host
+    // school is in. Before the snapshot exists every such venue stays `??`, and the run says so.
+    let schools: Vec<crate::model::CanonicalSchool> =
+        crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl")).unwrap_or_default();
+    let index = SchoolIndex::from_schools(&schools);
+    let mut venue_cache: HashMap<String, VenueResolution> = HashMap::new();
+
     let mut stats = Stats::default();
     let mut meets: BTreeMap<String, CanonicalMeet> = BTreeMap::new();
 
@@ -389,10 +494,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     break 'sport;
                 }
                 stats.rows += 1;
-                let state = venue_state(&row.location);
-                match state {
-                    Some(_) => stats.states_resolved += 1,
-                    None => {
+                let resolution = resolve_venue(&index, &mut venue_cache, &row.location);
+                let state = resolution.state();
+                match resolution {
+                    VenueResolution::Site(_) => stats.states_resolved += 1,
+                    VenueResolution::School(_) => stats.states_from_school += 1,
+                    VenueResolution::Unknown => {
                         stats.states_unknown += 1;
                         *stats
                             .unresolved_venues
@@ -466,8 +573,11 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         meets.len()
     ));
     report.note(format!(
-        "venue state resolution: resolved={} unresolved={} ({:?})",
-        stats.states_resolved, stats.states_unknown, stats.unresolved_venues
+        "venue state resolution: sites={} schools={} unresolved={} ({:?})",
+        stats.states_resolved,
+        stats.states_from_school,
+        stats.states_unknown,
+        stats.unresolved_venues
     ));
     report.note(format!("levels: {:?}", stats.levels));
     report.note(format!("sports: {:?}", stats.sports));
@@ -657,7 +767,7 @@ mod tests {
             report
                 .notes
                 .iter()
-                .any(|note| note.contains("venue state resolution") && note.contains("resolved=12")),
+                .any(|note| note.contains("venue state resolution") && note.contains("sites=12")),
             "the runner states its own venue resolution: {:?}",
             report.notes
         );
@@ -772,5 +882,69 @@ mod tests {
         let second = collect(&ctx, &options).await.expect("second run");
         assert_eq!(second.rows, 0, "both schedules are already journaled");
         assert_eq!(second.from_cache, 0, "and are not even read again");
+    }
+
+    #[test]
+    fn a_school_shaped_venue_is_read_with_its_suffix_written_out() {
+        assert_eq!(
+            venue_candidates("Albany HS"),
+            vec!["Albany HS", "Albany High School"]
+        );
+        assert_eq!(
+            venue_candidates("St. Croix Falls H.S."),
+            vec!["St. Croix Falls H.S.", "St. Croix Falls High School"]
+        );
+        assert_eq!(venue_candidates("Blake School"), vec!["Blake School"]);
+        assert_eq!(
+            venue_candidates("Bassett Creek Park"),
+            vec!["Bassett Creek Park"]
+        );
+        assert_eq!(venue_candidates(" HS"), vec!["HS"]);
+    }
+
+    #[test]
+    fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
+        // Canonical schools carry a normalized name, exactly as the store writes them.
+        let school = |state: &str, name: &str| {
+            crate::model::CanonicalSchool::new(state, name, crate::model::normalize_name(name)).0
+        };
+        let mut cache = HashMap::new();
+
+        // The same school name in two states is never guessed at.
+        let both = SchoolIndex::from_schools(&[
+            school("MN", "Albany High School"),
+            school("WI", "Albany High School"),
+        ]);
+        assert_eq!(
+            resolve_venue(&both, &mut cache, "Albany HS"),
+            VenueResolution::Unknown
+        );
+
+        // With one owner it resolves, including for the punctuated spelling a timer may print.
+        let one = SchoolIndex::from_schools(&[
+            school("MN", "Albany High School"),
+            school("WI", "River Falls High School"),
+        ]);
+        let mut cache = HashMap::new();
+        assert_eq!(
+            resolve_venue(&one, &mut cache, "Albany HS"),
+            VenueResolution::School("MN")
+        );
+        assert_eq!(
+            resolve_venue(&one, &mut cache, "Albany H.S."),
+            VenueResolution::School("MN")
+        );
+        assert_eq!(
+            resolve_venue(&one, &mut cache, "River Falls HS"),
+            VenueResolution::School("WI")
+        );
+        assert_eq!(
+            resolve_venue(&one, &mut cache, "Bassett Creek Park"),
+            VenueResolution::Unknown
+        );
+        assert_eq!(
+            resolve_venue(&one, &mut cache, "University of Minnesota"),
+            VenueResolution::Site("MN")
+        )
     }
 }
