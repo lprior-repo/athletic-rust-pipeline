@@ -172,6 +172,7 @@ fn fields(
         ("native.profile_url", annotations.profile_url),
         ("native.competing_school", annotations.competing_school),
         ("native.junior_evidence", annotations.junior_evidence),
+        ("native.junior_status", annotations.junior_status),
         ("native.acceptance_method", method),
         ("native.row_report_digest", digest.as_str().to_owned()),
         (
@@ -206,20 +207,23 @@ fn annotations_for(
                 profile_url: profile.profile_url.as_str().to_owned(),
                 competing_school: competing_school(profile),
                 junior_evidence: junior_evidence(profile),
+                junior_status: junior_status(profile),
             }
         })
 }
 
 /// Expanded-roster annotations the accepted profile already evidences: its profile URL,
-/// the school the athlete competed for in the newest evidenced season, and every
-/// season-bound grade observation. All empty when no profile was accepted; the school and
-/// grade strings are not claims of a complete history — that stays in the retained profile
-/// evidence and the JSONL sidecar, including the season/result behind each observation.
+/// the school the athlete competed for in the newest evidenced season, every season-bound
+/// grade observation, and the roster verdict that the newest grade row supports. All empty
+/// when no profile was accepted; the school and grade strings are not claims of a complete
+/// history — that stays in the retained profile evidence and the JSONL sidecar, including
+/// the season/result behind each observation.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct AcceptedAnnotations {
     profile_url: String,
     competing_school: String,
     junior_evidence: String,
+    junior_status: String,
 }
 
 fn competing_school(profile: &ProfileEvidence) -> String {
@@ -255,6 +259,29 @@ fn junior_evidence(profile: &ProfileEvidence) -> String {
         .map(|(season, grade)| format!("grade {grade} @ {season}"))
         .collect::<Vec<_>>()
         .join("; ")
+}
+
+/// The roster verdict, decided only by the newest season-bound grade row: the season is
+/// part of the verdict, and an athlete whose grades never include a standard US high-school
+/// grade stays undetermined rather than assumed. Name, age, and graduation year are never
+/// consulted.
+fn junior_status(profile: &ProfileEvidence) -> String {
+    let Some((season, grade)) = profile
+        .grades
+        .iter()
+        .map(|grade| (grade.season, grade.grade))
+        .max()
+    else {
+        return String::new();
+    };
+    let name = match grade {
+        9 => "freshman",
+        10 => "sophomore",
+        11 => "junior",
+        12 => "senior",
+        _ => return String::new(),
+    };
+    format!("{name} @ {season}")
 }
 
 #[derive(Debug, Serialize)]

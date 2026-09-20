@@ -183,9 +183,24 @@ fn roster_fields_report_newest_season_school_and_season_bound_grades() {
         annotations.junior_evidence,
         "grade 11 @ 2026; grade 10 @ 2025"
     );
+    assert_eq!(annotations.junior_status, "junior @ 2026");
     assert_eq!(
         annotations.profile_url,
         "https://athletic.net/athlete/7/track-and-field"
     );
     assert_eq!(annotations_for(&[], None), AcceptedAnnotations::default());
+
+    let mut unnamed_grade = profile(9, Vec::new());
+    unnamed_grade.grades.push(GradeAtSeason {
+        team_id: 1,
+        season: 2027,
+        grade: 13,
+        evidence: evidence("/grade-2027".to_owned()),
+    });
+    let verdict = annotations_for(
+        &[unnamed_grade],
+        Some(AthleteId::new(9).expect("synthetic athlete id")),
+    );
+    assert_eq!(verdict.junior_status, "");
+    assert_eq!(verdict.junior_evidence, "grade 13 @ 2027");
 }
