@@ -1,0 +1,150 @@
+{
+ "timed_out": false,
+ "_shards": {
+  "total": 1,
+  "successful": 1,
+  "skipped": 0,
+  "failed": 0
+ },
+ "hits": {
+  "total": {
+   "value": 176,
+   "relation": "eq"
+  },
+  "max_score": 0.0,
+  "hits": [
+   {
+    "_index": "athlete_list",
+    "_id": "49187209",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Abilene",
+      "i": 1650834,
+      "n": "Abilene",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17624
+     },
+     "g": "Female",
+     "i": 49187209,
+     "y": "12",
+     "mi": 73566,
+     "ani": 30987335,
+     "n": "Cessia Berruecos"
+    }
+   },
+   {
+    "_index": "athlete_list",
+    "_id": "49187211",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Abilene",
+      "i": 1650834,
+      "n": "Abilene",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17624
+     },
+     "g": "Female",
+     "i": 49187211,
+     "y": "11",
+     "mi": 73566,
+     "ani": 30987350,
+     "n": "Danei Laubscher"
+    }
+   },
+   {
+    "_index": "athlete_list",
+    "_id": "49187212",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Abilene",
+      "i": 1650834,
+      "n": "Abilene",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17624
+     },
+     "g": "Female",
+     "i": 49187212,
+     "y": "11",
+     "mi": 73566,
+     "ani": 30987325,
+     "n": "Sofia Amador"
+    }
+   },
+   {
+    "_index": "athlete_list",
+    "_id": "49187154",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Abilene",
+      "i": 1650834,
+      "n": "Abilene",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17624
+     },
+     "g": "Male",
+     "i": 49187154,
+     "y": "11",
+     "mi": 73566,
+     "ani": 24940187,
+     "n": "Luke Watson"
+    }
+   },
+   {
+    "_index": "athlete_list",
+    "_id": "49187215",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Chapman",
+      "i": 1650835,
+      "n": "Chapman",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17676
+     },
+     "g": "Male",
+     "i": 49187215,
+     "y": "12",
+     "mi": 73566,
+     "ani": 21318358,
+     "n": "Kaden Hitz"
+    }
+   },
+   {
+    "_index": "athlete_list",
+    "_id": "49187217",
+    "_score": 0.0,
+    "_source": {
+     "t": {
+      "f": "Chapman",
+      "i": 1650835,
+      "n": "Chapman",
+      "cco": "USA",
+      "mi": 73566,
+      "he": true,
+      "ani": 17676
+     },
+     "g": "Male",
+     "i": 49187217,
+     "y": "12",
+     "mi": 73566,
+     "ani": 23792020,
+     "n": "Keith Marshall"
+    }
+   }
+  ]
+ }
+}

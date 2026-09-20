@@ -216,6 +216,14 @@ fn parse_groups(
         })
 }
 
+/// The source publishes `AthleteID: 0` for rows it keeps anonymous; only a
+/// positive id is an identity signal.
+fn published_athlete_id(row: &serde_json::Value) -> Option<u64> {
+    row.get("AthleteID")
+        .and_then(|value| value.as_u64())
+        .filter(|athlete_id| *athlete_id != 0)
+}
+
 fn parse_row(
     row: &serde_json::Value,
     group_index: usize,
@@ -252,10 +260,11 @@ fn parse_row(
     });
     if expected.is_relay {
         observation.id_results.push(id_result);
-    } else if let Some(athlete_id) = row.get("AthleteID").and_then(|value| value.as_u64()) {
-        if athlete_id == 0 {
-            return Err(PageParseError::ZeroAthleteId);
-        }
+    } else if published_athlete_id(row).is_some() {
+        // The observation is content-addressed, so rows the source publishes
+        // with a real athlete id keep contributing here; an anonymous row
+        // (`AthleteID: 0`) stays counted in `source_rows` without joining an
+        // identity and without failing the page.
         observation.id_results.push(id_result);
     }
     if expected.is_relay || row.get("GradeID").and_then(|value| value.as_u64()) != Some(11) {
@@ -277,10 +286,8 @@ fn parse_individual_candidate(
     observation: &mut PageObservation,
     (candidate_index, unresolved, candidate_count): (u64, u64, u64),
 ) -> Result<(u64, u64, u64), PageParseError> {
-    let identity = row
-        .get("AthleteID")
-        .and_then(|value| value.as_u64())
-        .zip(row.get("AthleteName").and_then(|value| value.as_str()));
+    let identity =
+        published_athlete_id(row).zip(row.get("AthleteName").and_then(|value| value.as_str()));
     let parsed = identity.and_then(|(id, name)| {
         CanonicalName::parse(name)
             .ok()
@@ -387,8 +394,6 @@ pub enum PageParseError {
     ZeroRowNumber,
     #[error("IDResult must be non-zero")]
     ZeroResultId,
-    #[error("AthleteID must be non-zero when present")]
-    ZeroAthleteId,
     #[error("page row limit exceeded")]
     PageRowsLimitExceeded,
     #[error("page candidate limit exceeded")]

@@ -20,7 +20,9 @@ pub fn ingress_error(error: ClientError) -> anyhow::Error {
             .map(|IngressFailure { message }| (response.status(), message))
     });
     match detail {
-        Some((status, message)) => anyhow::anyhow!("ingress returned HTTP status {status}: {message}"),
+        Some((status, message)) => {
+            anyhow::anyhow!("ingress returned HTTP status {status}: {message}")
+        }
         None => error.into(),
     }
 }

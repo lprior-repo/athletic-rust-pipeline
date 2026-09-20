@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Streaming XLSX athlete matching pipeline with deterministic source evidence and local models"
 license = "MIT"
+
+[workspace]
+members = ["crates/midwest-census"]
+
 [features]
 default = []
 fuzzing = []

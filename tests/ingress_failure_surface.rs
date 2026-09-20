@@ -10,8 +10,7 @@ use std::{
     process::Command,
 };
 
-const FAILURE: &str =
-    r#"{"code":500,"message":"requested concurrency exceeds worker capacity","source":"invocation"}"#;
+const FAILURE: &str = r#"{"code":500,"message":"requested concurrency exceeds worker capacity","source":"invocation"}"#;
 
 fn failing_ingress() -> String {
     let listener = TcpListener::bind("127.0.0.1:0").expect("binding a loopback ingress");

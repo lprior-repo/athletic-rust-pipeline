@@ -1,0 +1,1245 @@
+//! Canonical model for the independent Midwest HS TF/XC recruiting graph.
+//!
+//! Identity rules enforced here:
+//!
+//! * Every entity has a **locally minted, deterministic opaque id** derived from its natural key.
+//!   No external vendor id is ever the canonical identity; vendor ids live in
+//!   [`SourceIdentity`] lists and can disappear without invalidating a canonical record.
+//! * Cohort membership is [`GradYear`] — an absolute, immutable property. Grade level is never a
+//!   cohort key; it is recorded as [`ObservedGrade`] together with the school year and source that
+//!   observed it, and only *deterministically implies* a [`GradYear`].
+//! * Events are described by our own ontology ([`EventKind`]); vendor event names are source evidence
+//!   ([`SourceEventLabel`]), not canonical keys.
+
+use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
+use std::fmt;
+use std::marker::PhantomData;
+
+// -------------------------------------------------------------------------------------------------
+// Identifiers
+// -------------------------------------------------------------------------------------------------
+
+/// Marker types for [`Id`] tags.
+pub mod tag {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct School;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Team;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Coach;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Athlete;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Meet;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Event;
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct Performance;
+}
+
+/// A canonical, locally minted identifier: `<prefix>_<16 lowercase hex chars>`.
+///
+/// The value is the first 64 bits of `SHA-256(prefix || '\u{1f}' || natural key parts…)`. It is
+/// deterministic across runs and machines, so re-running a collector against the same evidence
+/// yields the same canonical ids, while remaining independent of any external vendor.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Id<T> {
+    value: String,
+    #[serde(skip)]
+    _tag: PhantomData<T>,
+}
+
+impl<T> Id<T> {
+    pub fn mint(prefix: &str, parts: &[&str]) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update(prefix.as_bytes());
+        for part in parts {
+            hasher.update([0x1f]);
+            hasher.update(part.as_bytes());
+        }
+        let digest = hasher.finalize();
+        let mut hex = String::with_capacity(17 + 16);
+        hex.push_str(prefix);
+        hex.push('_');
+        for byte in &digest[..8] {
+            hex.push_str(&format!("{byte:02x}"));
+        }
+        Self {
+            value: hex,
+            _tag: PhantomData,
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.value
+    }
+}
+
+impl<T> fmt::Display for Id<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.value)
+    }
+}
+
+pub type SchoolId = Id<tag::School>;
+pub type TeamId = Id<tag::Team>;
+pub type CoachId = Id<tag::Coach>;
+pub type AthleteId = Id<tag::Athlete>;
+pub type MeetId = Id<tag::Meet>;
+pub type EventId = Id<tag::Event>;
+pub type PerformanceId = Id<tag::Performance>;
+
+// -------------------------------------------------------------------------------------------------
+// Time, grade, cohort
+// -------------------------------------------------------------------------------------------------
+
+/// A school year, identified by its starting calendar year (2025 = "2025-26").
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SchoolYear(pub i16);
+
+impl SchoolYear {
+    pub const fn start_year(self) -> i16 {
+        self.0
+    }
+
+    /// `"2025-26"`.
+    pub fn short(self) -> String {
+        let end = (self.0 + 1) % 100;
+        format!("{}-{end:02}", self.0)
+    }
+
+    /// The school year that contains `date` for competition purposes (Aug 1 boundary).
+    pub fn containing(year: i16, month: u8) -> Self {
+        if month >= 8 {
+            SchoolYear(year)
+        } else {
+            SchoolYear(year - 1)
+        }
+    }
+}
+
+/// Grade level as observed in a specific school year: 9..=12.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct Grade(u8);
+
+impl Grade {
+    pub fn new(grade: u8) -> Option<Self> {
+        (9..=12).contains(&grade).then_some(Grade(grade))
+    }
+
+    pub const fn get(self) -> u8 {
+        self.0
+    }
+}
+
+impl fmt::Display for Grade {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// An absolute graduating class, e.g. `GradYear(2027)` = "Class of 2027".
+///
+/// This is the only sanctioned cohort key.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct GradYear(pub i16);
+
+impl GradYear {
+    /// Class of 2027.
+    pub const CO2027: GradYear = GradYear(2027);
+
+    pub fn new(year: i16) -> Option<Self> {
+        (2020..=2040).contains(&year).then_some(GradYear(year))
+    }
+
+    /// `grade` observed during `school_year` implies `grad_year = start + (13 - grade)`.
+    ///
+    /// Grade 11 in 2025-26 -> 2027. Grade 12 in 2026-27 -> 2027. Grade 9 in 2025-26 -> 2029.
+    pub fn of(grade: Grade, school_year: SchoolYear) -> Self {
+        GradYear(school_year.start_year() + 13 - i16::from(grade.get()))
+    }
+}
+
+impl fmt::Display for GradYear {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+/// A grade observation: grade + the school year it was observed in + where it came from.
+///
+/// Never collapse this into a bare `grade`, and never overwrite it when a newer observation
+/// arrives: history is evidence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ObservedGrade {
+    pub grade: Grade,
+    pub school_year: SchoolYear,
+    pub source: SourceRef,
+}
+
+impl ObservedGrade {
+    pub fn grad_year(&self) -> GradYear {
+        GradYear::of(self.grade, self.school_year)
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Provenance
+// -------------------------------------------------------------------------------------------------
+
+/// A registered data source. `id` is a stable slug used in evidence and reports.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct SourceRef {
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+impl SourceRef {
+    pub fn new(id: impl Into<String>, url: Option<String>) -> Self {
+        Self { id: id.into(), url }
+    }
+
+    pub fn id(id: impl Into<String>) -> Self {
+        Self {
+            id: id.into(),
+            url: None,
+        }
+    }
+}
+
+/// How a fact was established.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvidenceMethod {
+    /// Read directly from a fetched document (HTML/JSON/PDF/CSV).
+    Fetched,
+    /// Extracted by parsing a fetched document.
+    Parsed,
+    /// Deterministically derived from other evidence (e.g. grade + school year -> grad year).
+    Derived,
+    /// Asserted by an upstream dataset that is itself under evidence (legacy import).
+    Inherited,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Evidence {
+    pub source: SourceRef,
+    pub method: EvidenceMethod,
+    /// ISO-8601 date the source was observed.
+    pub observed_on: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+}
+
+impl Evidence {
+    pub fn fetched(source: SourceRef, observed_on: impl Into<String>) -> Self {
+        Self {
+            source,
+            method: EvidenceMethod::Fetched,
+            observed_on: observed_on.into(),
+            note: None,
+        }
+    }
+
+    pub fn parsed(source: SourceRef, observed_on: impl Into<String>) -> Self {
+        Self {
+            source,
+            method: EvidenceMethod::Parsed,
+            observed_on: observed_on.into(),
+            note: None,
+        }
+    }
+
+    pub fn derived(
+        source: SourceRef,
+        observed_on: impl Into<String>,
+        note: impl Into<String>,
+    ) -> Self {
+        Self {
+            source,
+            method: EvidenceMethod::Derived,
+            observed_on: observed_on.into(),
+            note: Some(note.into()),
+        }
+    }
+}
+
+/// Namespace of an external identity. Namespaces are open-ended by design (`Other("...")`) so new
+/// providers never force a model change; the well-known ones are enumerated for type safety.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceNamespace {
+    MilesplitSchool,
+    MilesplitTeam,
+    MilesplitAthlete,
+    MilesplitMeet,
+    TfrrsTeam,
+    TfrrsAthlete,
+    DirectAthleticsTeam,
+    DirectAthleticsAthlete,
+    /// `association` is the state association slug (`wiaa`, `ihsa`, `kshsaa`, …).
+    AssociationSchool {
+        association: String,
+    },
+    AssociationAthlete {
+        association: String,
+    },
+    TimerTeam {
+        provider: String,
+    },
+    TimerAthlete {
+        provider: String,
+    },
+    TimerMeet {
+        provider: String,
+    },
+    /// Historical Athletic.net-derived ids retained as legacy evidence only.
+    LegacyAthleticNet {
+        kind: String,
+    },
+    Other(String),
+}
+
+impl SourceNamespace {
+    /// True when the namespace is supplied by one of the platform's own adapters rather than by
+    /// Athletic.net or its mirror.
+    ///
+    /// Only `legacy_athletic_net` is non-core by definition. Timer namespaces stay core: the
+    /// AthleticLIVE-derived rows that carry them are already excluded by their evidence source id,
+    /// while a real timing provider (`pttiming`, `wayzata`, …) is a core source.
+    pub fn is_core(&self) -> bool {
+        !matches!(self, SourceNamespace::LegacyAthleticNet { .. })
+    }
+}
+
+impl fmt::Display for SourceNamespace {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SourceNamespace::MilesplitSchool => f.write_str("milesplit_school"),
+            SourceNamespace::MilesplitTeam => f.write_str("milesplit_team"),
+            SourceNamespace::MilesplitAthlete => f.write_str("milesplit_athlete"),
+            SourceNamespace::MilesplitMeet => f.write_str("milesplit_meet"),
+            SourceNamespace::TfrrsTeam => f.write_str("tfrrs_team"),
+            SourceNamespace::TfrrsAthlete => f.write_str("tfrrs_athlete"),
+            SourceNamespace::DirectAthleticsTeam => f.write_str("direct_athletics_team"),
+            SourceNamespace::DirectAthleticsAthlete => f.write_str("direct_athletics_athlete"),
+            SourceNamespace::AssociationSchool { association } => {
+                write!(f, "association_school:{association}")
+            }
+            SourceNamespace::AssociationAthlete { association } => {
+                write!(f, "association_athlete:{association}")
+            }
+            SourceNamespace::TimerTeam { provider } => write!(f, "timer_team:{provider}"),
+            SourceNamespace::TimerAthlete { provider } => write!(f, "timer_athlete:{provider}"),
+            SourceNamespace::TimerMeet { provider } => write!(f, "timer_meet:{provider}"),
+            SourceNamespace::LegacyAthleticNet { kind } => {
+                write!(f, "legacy_athletic_net:{kind}")
+            }
+            SourceNamespace::Other(value) => f.write_str(value),
+        }
+    }
+}
+
+/// An identity this entity carries in some external system.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct SourceIdentity {
+    pub namespace: SourceNamespace,
+    pub id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+impl SourceIdentity {
+    pub fn new(namespace: SourceNamespace, id: impl Into<String>) -> Self {
+        Self {
+            namespace,
+            id: id.into(),
+            url: None,
+        }
+    }
+
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
+    }
+}
+
+/// Confidence in an identity merge or field value, 0..=100.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct Confidence(pub u8);
+
+impl Confidence {
+    pub const CERTAIN: Confidence = Confidence(100);
+    pub const HIGH: Confidence = Confidence(85);
+    pub const MEDIUM: Confidence = Confidence(65);
+    pub const LOW: Confidence = Confidence(40);
+
+    pub fn new(value: u8) -> Self {
+        Confidence(value.min(100))
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Classification
+// -------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Gender {
+    Boys,
+    Girls,
+    Mixed,
+    Unknown,
+}
+
+impl Gender {
+    pub fn parse_milesplit(value: &str) -> Self {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "m" | "male" | "boys" | "boy" => Gender::Boys,
+            "f" | "female" | "girls" | "girl" => Gender::Girls,
+            _ => Gender::Unknown,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Sport {
+    OutdoorTrack,
+    IndoorTrack,
+    CrossCountry,
+}
+
+/// A team is (school, sport, gender side, season).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalTeam {
+    pub id: TeamId,
+    pub school: SchoolId,
+    pub sport: Sport,
+    pub gender: Gender,
+    pub school_year: SchoolYear,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub level: Option<String>,
+    pub source_identities: Vec<SourceIdentity>,
+    pub evidence: Vec<Evidence>,
+}
+
+/// Meet competition level, from our own vocabulary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CompetitionLevel {
+    Invitational,
+    Dual,
+    Conference,
+    District,
+    Regional,
+    Sectional,
+    State,
+    National,
+    Unknown,
+}
+
+// -------------------------------------------------------------------------------------------------
+// Event ontology
+// -------------------------------------------------------------------------------------------------
+
+/// Our own event taxonomy. Vendor strings map into this via [`EventKind::from_source_label`].
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EventKind {
+    Track100m,
+    Track200m,
+    Track400m,
+    Track800m,
+    Track1600m,
+    Track3200m,
+    Track1Mile,
+    Track3000m,
+    Track5000m,
+    Track110mHurdles,
+    Track100mHurdles,
+    Track300mHurdles,
+    Track400mHurdles,
+    Track2000mSteeplechase,
+    Track3000mSteeplechase,
+    /// Cross-country race; the published distance varies by division and course.
+    CrossCountry,
+    Relay4x100,
+    Relay4x200,
+    Relay4x400,
+    Relay4x800,
+    SprintMedley,
+    DistanceMedley,
+    HighJump,
+    LongJump,
+    TripleJump,
+    PoleVault,
+    ShotPut,
+    Discus,
+    Javelin,
+    Hammer,
+    WeightThrow,
+    Pentathlon,
+    Heptathlon,
+    Decathlon,
+    /// Recognized source label that has no canonical home yet.
+    Unmapped {
+        label: String,
+    },
+}
+
+impl EventKind {
+    /// Map a source label (`"1600m"`, `"110mH"`, `"Shot Put"`, `"4x400m Relay"`, …) to the ontology.
+    ///
+    /// Unknown labels are preserved as [`EventKind::Unmapped`] rather than dropped.
+    pub fn from_source_label(label: &str) -> Self {
+        let normalized: String = label
+            .chars()
+            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '_')
+            .collect::<String>()
+            .to_ascii_lowercase();
+        let compact = normalized.replace("meters", "m").replace("metre", "m");
+        match compact.as_str() {
+            "100m" => EventKind::Track100m,
+            "200m" => EventKind::Track200m,
+            "400m" => EventKind::Track400m,
+            "800m" => EventKind::Track800m,
+            "1600m" => EventKind::Track1600m,
+            "3200m" => EventKind::Track3200m,
+            "1mile" | "mile" => EventKind::Track1Mile,
+            "3000m" | "3k" => EventKind::Track3000m,
+            "5000m" | "5k" => EventKind::Track5000m,
+            "110mh" | "110h" | "110mhurdles" | "110mhhurdles" => EventKind::Track110mHurdles,
+            "100mh" | "100h" | "100mhurdles" => EventKind::Track100mHurdles,
+            "300mh" | "300h" | "300mhurdles" | "300mhhurdles" => EventKind::Track300mHurdles,
+            "400mh" | "400h" => EventKind::Track400mHurdles,
+            "2000msteeplechase" | "2ksteeplechase" | "2000msteeple" => {
+                EventKind::Track2000mSteeplechase
+            }
+            "3000msteeplechase" | "3ksteeplechase" | "3000msteeple" => {
+                EventKind::Track3000mSteeplechase
+            }
+            "crosscountry" | "xc" | "crosscountryrace" => EventKind::CrossCountry,
+            "4x100m" | "4x100" | "4x100mrelay" | "400mrelay" => EventKind::Relay4x100,
+            "4x200m" | "4x200" | "4x200mrelay" | "800mrelay" => EventKind::Relay4x200,
+            "4x400m" | "4x400" | "4x400mrelay" | "1600mrelay" => EventKind::Relay4x400,
+            "4x800m" | "4x800" | "4x800mrelay" | "3200mrelay" => EventKind::Relay4x800,
+            "sprintmedley" | "smed" | "smr" => EventKind::SprintMedley,
+            "distancemedley" | "dmed" | "dmr" => EventKind::DistanceMedley,
+            "highjump" | "hj" => EventKind::HighJump,
+            "longjump" | "lj" => EventKind::LongJump,
+            "triplejump" | "tj" => EventKind::TripleJump,
+            "polevault" | "pv" => EventKind::PoleVault,
+            "shotput" | "shot" | "sp" => EventKind::ShotPut,
+            "discus" | "disc" => EventKind::Discus,
+            "javelin" | "jav" | "jt" => EventKind::Javelin,
+            "hammer" | "ht" => EventKind::Hammer,
+            "weightthrow" | "wt" => EventKind::WeightThrow,
+            "pentathlon" => EventKind::Pentathlon,
+            "heptathlon" => EventKind::Heptathlon,
+            "decathlon" => EventKind::Decathlon,
+            _ => EventKind::Unmapped {
+                label: label.trim().to_string(),
+            },
+        }
+    }
+
+    pub fn is_field(&self) -> bool {
+        matches!(
+            self,
+            EventKind::HighJump
+                | EventKind::LongJump
+                | EventKind::TripleJump
+                | EventKind::PoleVault
+                | EventKind::ShotPut
+                | EventKind::Discus
+                | EventKind::Javelin
+                | EventKind::Hammer
+                | EventKind::WeightThrow
+                | EventKind::Pentathlon
+                | EventKind::Heptathlon
+                | EventKind::Decathlon
+        )
+    }
+
+    pub fn is_relay(&self) -> bool {
+        matches!(
+            self,
+            EventKind::Relay4x100
+                | EventKind::Relay4x200
+                | EventKind::Relay4x400
+                | EventKind::Relay4x800
+                | EventKind::SprintMedley
+                | EventKind::DistanceMedley
+        )
+    }
+}
+
+/// A raw event label seen at a source, retained as evidence next to the mapped [`EventKind`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SourceEventLabel {
+    pub source: SourceRef,
+    pub label: String,
+}
+
+// -------------------------------------------------------------------------------------------------
+// Canonical entities
+// -------------------------------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalSchool {
+    pub id: SchoolId,
+    pub name: String,
+    pub normalized_name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub city: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub association: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub classification: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enrollment: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub school_website: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub athletics_website: Option<String>,
+    pub co_op: bool,
+    pub aliases: Vec<String>,
+    pub source_identities: Vec<SourceIdentity>,
+    pub evidence: Vec<Evidence>,
+}
+
+impl CanonicalSchool {
+    /// Build a school from its natural key (state + normalized name) so that id minting is
+    /// deterministic and identical no matter which adapter saw the school first.
+    pub fn mint(state: &str, name: &str, normalized_name: &str) -> SchoolId {
+        let _ = name;
+        // The key is the normalized name with whitespace/punctuation removed. Providers publish the
+        // same school both as a display name ("Aberdeen Central") and as a URL slug
+        // ("aberdeencentral"), so the compressed form is what makes those two observations mint one
+        // canonical school instead of two.
+        let compressed: String = normalized_name
+            .chars()
+            .filter(char::is_ascii_alphanumeric)
+            .collect();
+        Id::mint("sch", &[&state.to_ascii_uppercase(), &compressed])
+    }
+
+    pub fn new(
+        state: &str,
+        name: impl Into<String>,
+        normalized_name: impl Into<String>,
+    ) -> (Self, SchoolId) {
+        let name = name.into();
+        let normalized_name = normalized_name.into();
+        let id = CanonicalSchool::mint(state, &name, &normalized_name);
+        (
+            Self {
+                id: id.clone(),
+                name,
+                normalized_name,
+                city: None,
+                state: Some(state.to_ascii_uppercase()),
+                association: None,
+                classification: None,
+                enrollment: None,
+                school_website: None,
+                athletics_website: None,
+                co_op: false,
+                aliases: Vec::new(),
+                source_identities: Vec::new(),
+                evidence: Vec::new(),
+            },
+            id,
+        )
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalCoach {
+    pub id: CoachId,
+    pub name: String,
+    pub school: SchoolId,
+    /// `None` for school-wide roles (athletic director) that are not bound to a single sport.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sport: Option<Sport>,
+    pub gender: Gender,
+    pub role: CoachRole,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub professional_email: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub phone: Option<String>,
+    pub source_identities: Vec<SourceIdentity>,
+    pub evidence: Vec<Evidence>,
+}
+
+impl CanonicalCoach {
+    pub fn new(
+        school: &SchoolId,
+        name: impl Into<String>,
+        sport: Option<Sport>,
+        gender: Gender,
+        role: CoachRole,
+    ) -> Self {
+        let name = name.into();
+        let id = Id::mint(
+            "coa",
+            &[
+                school.as_str(),
+                &normalize_name(&name),
+                &format!("{sport:?}"),
+                &format!("{gender:?}"),
+                &format!("{role:?}"),
+            ],
+        );
+        Self {
+            id,
+            name,
+            school: school.clone(),
+            sport,
+            gender,
+            role,
+            professional_email: None,
+            phone: None,
+            source_identities: Vec::new(),
+            evidence: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CoachRole {
+    HeadCoach,
+    AssistantCoach,
+    AthleticDirector,
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalAthlete {
+    pub id: AthleteId,
+    pub canonical_name: String,
+    pub known_names: Vec<String>,
+    pub grad_year: GradYear,
+    pub school: SchoolId,
+    pub gender: Gender,
+    pub sports: Vec<Sport>,
+    /// Grade observations, newest last; never collapsed into `grad_year` alone.
+    pub observed_grades: Vec<ObservedGrade>,
+    pub public_profile_urls: Vec<String>,
+    pub source_identities: Vec<SourceIdentity>,
+    pub evidence: Vec<Evidence>,
+    pub identity_confidence: Confidence,
+}
+
+impl CanonicalAthlete {
+    /// Mint an athlete from (school, normalized name, grad year, gender).
+    ///
+    /// Two sources that agree on those four facts produce the same canonical athlete without any
+    /// shared vendor id.
+    pub fn mint(school: &SchoolId, name: &str, grad_year: GradYear, gender: Gender) -> AthleteId {
+        Id::mint(
+            "ath",
+            &[
+                school.as_str(),
+                &normalize_name(name),
+                &grad_year.0.to_string(),
+                match gender {
+                    Gender::Boys => "m",
+                    Gender::Girls => "f",
+                    _ => "u",
+                },
+            ],
+        )
+    }
+
+    pub fn new(
+        school: &SchoolId,
+        name: impl Into<String>,
+        grad_year: GradYear,
+        gender: Gender,
+    ) -> Self {
+        let canonical_name = name.into();
+        let id = CanonicalAthlete::mint(school, &canonical_name, grad_year, gender);
+        Self {
+            id,
+            canonical_name: canonical_name.clone(),
+            known_names: vec![canonical_name],
+            grad_year,
+            school: school.clone(),
+            gender,
+            sports: Vec::new(),
+            observed_grades: Vec::new(),
+            public_profile_urls: Vec::new(),
+            source_identities: Vec::new(),
+            evidence: Vec::new(),
+            identity_confidence: Confidence::MEDIUM,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalMeet {
+    pub id: MeetId,
+    pub name: String,
+    pub normalized_name: String,
+    pub date: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+    pub state: String,
+    pub level: CompetitionLevel,
+    pub sports: Vec<Sport>,
+    pub source_identities: Vec<SourceIdentity>,
+    pub source_urls: Vec<String>,
+    pub evidence: Vec<Evidence>,
+}
+
+impl CanonicalMeet {
+    /// Meet identity = state + date + normalized name.
+    ///
+    /// Location is deliberately excluded: providers spell the same venue differently ("UW-La Crosse"
+    /// vs "La Crosse, WI"), and a meet that one source publishes with a location and another without
+    /// must still be one canonical meet. The observed location is retained on the record as a field.
+    pub fn mint(state: &str, date: &str, name: &str, _location: Option<&str>) -> MeetId {
+        Id::mint(
+            "meet",
+            &[&state.to_ascii_uppercase(), date, &normalize_name(name)],
+        )
+    }
+
+    pub fn new(
+        state: &str,
+        name: impl Into<String>,
+        date: impl Into<String>,
+        level: CompetitionLevel,
+    ) -> Self {
+        let name = name.into();
+        let date = date.into();
+        let normalized_name = normalize_name(&name);
+        let id = CanonicalMeet::mint(state, &date, &name, None);
+        Self {
+            id,
+            name,
+            normalized_name,
+            date,
+            end_date: None,
+            location: None,
+            state: state.to_ascii_uppercase(),
+            level,
+            sports: Vec::new(),
+            source_identities: Vec::new(),
+            source_urls: Vec::new(),
+            evidence: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct CanonicalEvent {
+    pub id: EventId,
+    pub meet: MeetId,
+    pub kind: EventKind,
+    pub gender: Gender,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub division: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub round: Option<String>,
+    pub source_labels: Vec<SourceEventLabel>,
+    pub evidence: Vec<Evidence>,
+}
+
+impl CanonicalEvent {
+    pub fn new(
+        meet: &MeetId,
+        kind: EventKind,
+        gender: Gender,
+        division: Option<&str>,
+        round: Option<&str>,
+    ) -> Self {
+        let id = Id::mint(
+            "evt",
+            &[
+                meet.as_str(),
+                &format!("{kind:?}"),
+                match gender {
+                    Gender::Boys => "m",
+                    Gender::Girls => "f",
+                    _ => "u",
+                },
+                division.unwrap_or(""),
+                round.unwrap_or(""),
+            ],
+        );
+        Self {
+            id,
+            meet: meet.clone(),
+            kind,
+            gender,
+            division: division.map(str::to_string),
+            round: round.map(str::to_string),
+            source_labels: Vec::new(),
+            evidence: Vec::new(),
+        }
+    }
+}
+
+/// A mark's unit context. Track marks are times (or points for combined events), field marks are
+/// distances/heights in metric or imperial notation, exactly as published by the source.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum Mark {
+    /// Seconds (e.g. `10.94`, `4:41.23` already converted to 281.23).
+    TimeSeconds(f64),
+    /// Metres, converted from the published imperial/metric value.
+    DistanceMetres(f64),
+    /// A field mark preserved in the source's own notation (e.g. `5' 4"`, `42-06.5`).
+    FieldImperial { feet_mark: String, metres: f64 },
+    /// Combined-event or team points.
+    Points(f64),
+    /// Published verbatim, not yet parsed.
+    Raw(String),
+}
+
+impl Mark {
+    pub fn raw(&self) -> &str {
+        match self {
+            Mark::Raw(value) => value,
+            Mark::TimeSeconds(_) => "time",
+            Mark::DistanceMetres(_) => "distance",
+            Mark::FieldImperial { .. } => "field",
+            Mark::Points(_) => "points",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CanonicalPerformance {
+    pub id: PerformanceId,
+    pub athlete: AthleteId,
+    pub team: TeamId,
+    pub event: EventId,
+    pub meet: MeetId,
+    pub date: String,
+    pub mark: Mark,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wind_mps: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub place: Option<u16>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub heat: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub round: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub timing: Option<TimingMethod>,
+    /// The athlete's grade at the moment of this performance, when the source publishes it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub observed_grade: Option<Grade>,
+    pub evidence: Vec<Evidence>,
+    /// Provider-local result key, used for idempotent upserts.
+    pub source_key: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimingMethod {
+    Fat,
+    Hand,
+    Unknown,
+}
+
+impl CanonicalPerformance {
+    pub fn mint(
+        athlete: &AthleteId,
+        meet: &MeetId,
+        kind: &EventKind,
+        date: &str,
+        source_key: &str,
+    ) -> PerformanceId {
+        Id::mint(
+            "perf",
+            &[
+                athlete.as_str(),
+                meet.as_str(),
+                &format!("{kind:?}"),
+                date,
+                source_key,
+            ],
+        )
+    }
+}
+
+// -------------------------------------------------------------------------------------------------
+// Contact policy
+// -------------------------------------------------------------------------------------------------
+
+/// Consumer mailboxes. An address on one of these domains is a personal mailbox rather than a
+/// school/sport contact, so the collection contract drops it wherever a provider publishes one.
+pub const CONSUMER_MAIL_DOMAINS: [&str; 12] = [
+    "gmail.com",
+    "googlemail.com",
+    "hotmail.com",
+    "outlook.com",
+    "live.com",
+    "msn.com",
+    "yahoo.com",
+    "aol.com",
+    "icloud.com",
+    "me.com",
+    "protonmail.com",
+    "proton.me",
+];
+
+/// Keep a published address only when it is not a consumer mailbox; `None` for a malformed address
+/// or a personal mailbox.
+pub fn professional_email(address: &str) -> Option<String> {
+    let address = address.trim();
+    let (local, domain) = address.split_once('@')?;
+    if local.is_empty() || domain.is_empty() {
+        return None;
+    }
+    let domain = domain.to_ascii_lowercase();
+    let consumer = CONSUMER_MAIL_DOMAINS.iter().any(|base| {
+        domain == *base
+            || domain
+                .strip_suffix(base)
+                .is_some_and(|prefix| prefix.ends_with('.'))
+    });
+    (!consumer).then(|| address.to_string())
+}
+
+// -------------------------------------------------------------------------------------------------
+// Normalization
+// -------------------------------------------------------------------------------------------------
+
+/// Normalize a person/school/meet name for identity comparisons: lowercase, strip diacritics and
+/// punctuation, collapse whitespace, drop school-type suffixes that vary between sources
+/// ("high school", "hs", "school", "academy" is *kept* because it is distinguishing).
+pub fn normalize_name(raw: &str) -> String {
+    let lowered = raw.trim().to_lowercase();
+    let mut out = String::with_capacity(lowered.len());
+    for ch in lowered.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch);
+        } else if ch.is_whitespace()
+            || ch == '-'
+            || ch == '\''
+            || ch == '.'
+            || ch == ','
+            || ch == '/'
+        {
+            out.push(' ');
+        } else if !ch.is_ascii() {
+            if let Some(replacement) = strip_diacritic(ch) {
+                out.push(replacement);
+            }
+        }
+    }
+    let collapsed = out.split_whitespace().collect::<Vec<_>>().join(" ");
+    let mut parts: Vec<&str> = collapsed.split(' ').collect();
+    for suffix in [
+        "high school",
+        "hs",
+        "highschool",
+        "school",
+        "sr high",
+        "senior high",
+    ] {
+        let tokens: Vec<&str> = suffix.split(' ').collect();
+        if parts.len() > tokens.len() && parts.ends_with(&tokens) {
+            parts.truncate(parts.len() - tokens.len());
+        }
+    }
+    parts.join(" ")
+}
+
+fn strip_diacritic(ch: char) -> Option<char> {
+    // A tiny, deterministic folding table is enough for Midwest school/person names; anything else
+    // falls back to the unaccented ASCII range when possible.
+    let folded = match ch {
+        'á' | 'à' | 'â' | 'ä' | 'ã' | 'å' | 'ā' => 'a',
+        'é' | 'è' | 'ê' | 'ë' | 'ē' | 'ę' => 'e',
+        'í' | 'ì' | 'î' | 'ï' | 'ī' => 'i',
+        'ó' | 'ò' | 'ô' | 'ö' | 'õ' | 'ō' | 'ø' => 'o',
+        'ú' | 'ù' | 'û' | 'ü' | 'ū' => 'u',
+        'ñ' | 'ń' => 'n',
+        'ç' | 'ć' => 'c',
+        'š' | 'ś' => 's',
+        'ž' | 'ź' | 'ż' => 'z',
+        'ý' | 'ÿ' => 'y',
+        'ł' => 'l',
+        'æ' => 'a',
+        'œ' => 'o',
+        'ß' => 's',
+        _ => return None,
+    };
+    Some(folded)
+}
+
+/// Sort a `"Last, First"` roster name into `"First Last"`; leave other shapes alone.
+pub fn flip_last_first(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if let Some((last, first)) = trimmed.split_once(',') {
+        let last = last.trim();
+        let first = first.trim();
+        if !last.is_empty() && !first.is_empty() {
+            return format!("{first} {last}");
+        }
+    }
+    trimmed.to_string()
+}
+
+/// A deterministic fingerprint of an entity's identifying fields, used by change detection.
+pub fn content_fingerprint<T: Serialize>(value: &T) -> String {
+    let json = serde_json::to_string(value).unwrap_or_default();
+    let mut hasher = Sha256::new();
+    hasher.update(json.as_bytes());
+    let digest = hasher.finalize();
+    digest[..12].iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Convenience map for counters used by adapter reports.
+pub type Counters = BTreeMap<String, u64>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn consumer_mailboxes_are_not_professional_contacts() {
+        assert_eq!(professional_email("coach@gmail.com"), None);
+        assert_eq!(professional_email("Coach.Smith@GMAIL.com"), None);
+        assert_eq!(professional_email("x@sub.gmail.com"), None);
+        assert_eq!(professional_email("a@proton.me"), None);
+        assert_eq!(professional_email("not-an-address"), None);
+        assert_eq!(professional_email("@gmail.com"), None);
+    }
+
+    #[test]
+    fn school_domains_survive_the_filter() {
+        assert_eq!(
+            professional_email(" jstoik@ofsd.k12.wi.us "),
+            Some("jstoik@ofsd.k12.wi.us".to_string())
+        );
+        assert_eq!(
+            professional_email("nmiller@llhs.org"),
+            Some("nmiller@llhs.org".to_string())
+        );
+        // A school domain that merely contains a consumer domain string stays.
+        assert_eq!(
+            professional_email("ad@notgmail.com"),
+            Some("ad@notgmail.com".to_string())
+        );
+    }
+
+    #[test]
+    fn grad_year_is_derived_from_grade_and_school_year() {
+        let grade11 = Grade::new(11).unwrap();
+        assert_eq!(GradYear::of(grade11, SchoolYear(2025)), GradYear::CO2027);
+        let grade12 = Grade::new(12).unwrap();
+        assert_eq!(GradYear::of(grade12, SchoolYear(2025)), GradYear(2026));
+        assert_eq!(GradYear::of(grade12, SchoolYear(2026)), GradYear::CO2027);
+        assert_eq!(
+            GradYear::of(Grade::new(9).unwrap(), SchoolYear(2026)),
+            GradYear(2030)
+        );
+    }
+
+    #[test]
+    fn observed_grade_retains_context() {
+        let observed = ObservedGrade {
+            grade: Grade::new(11).unwrap(),
+            school_year: SchoolYear(2025),
+            source: SourceRef::id("milesplit_roster"),
+        };
+        assert_eq!(observed.grad_year(), GradYear::CO2027);
+        assert_eq!(observed.school_year.short(), "2025-26");
+    }
+
+    #[test]
+    fn ids_are_deterministic_and_prefixed() {
+        let a = CanonicalSchool::mint("WI", "Abbotsford High School", "abbotsford");
+        let b = CanonicalSchool::mint("WI", "Abbotsford High School", "abbotsford");
+        assert_eq!(a, b);
+        assert!(a.as_str().starts_with("sch_"));
+        assert_eq!(a.as_str().len(), 20);
+        let other = CanonicalSchool::mint("MN", "Abbotsford High School", "abbotsford");
+        assert_ne!(a, other, "state participates in the natural key");
+    }
+
+    #[test]
+    fn athlete_identity_ignores_source_ids() {
+        let school = CanonicalSchool::mint("WI", "Abbotsford", "abbotsford");
+        let from_roster =
+            CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear(2027), Gender::Boys);
+        let from_tfrrs =
+            CanonicalAthlete::mint(&school, "Julian  Aguilera", GradYear(2027), Gender::Boys);
+        assert_eq!(from_roster, from_tfrrs);
+    }
+
+    #[test]
+    fn event_ontology_maps_common_labels() {
+        assert_eq!(EventKind::from_source_label("1600m"), EventKind::Track1600m);
+        assert_eq!(
+            EventKind::from_source_label("110mH"),
+            EventKind::Track110mHurdles
+        );
+        assert_eq!(
+            EventKind::from_source_label("4x400m Relay"),
+            EventKind::Relay4x400
+        );
+        assert_eq!(EventKind::from_source_label("Shot Put"), EventKind::ShotPut);
+        assert_eq!(
+            EventKind::from_source_label("3,200m"),
+            EventKind::Unmapped {
+                label: "3,200m".into()
+            }
+        );
+        assert!(EventKind::ShotPut.is_field());
+        assert!(EventKind::Relay4x800.is_relay());
+    }
+
+    #[test]
+    fn name_normalization_folds_school_suffixes_and_diacritics() {
+        assert_eq!(normalize_name("Abbotsford High School"), "abbotsford");
+        assert_eq!(
+            normalize_name("  Glencoe-Silver   Lake HS "),
+            "glencoe silver lake"
+        );
+        assert_eq!(normalize_name("César Chávez School"), "cesar chavez");
+    }
+
+    #[test]
+    fn roster_names_flip_to_natural_order() {
+        assert_eq!(flip_last_first("Aguilera, Julian"), "Julian Aguilera");
+        assert_eq!(flip_last_first("Julian Aguilera"), "Julian Aguilera");
+    }
+
+    #[test]
+    fn meet_identity_is_date_and_name_scoped() {
+        let a = CanonicalMeet::mint("WI", "2026-05-29", "D3 Sectional #3", None);
+        let b = CanonicalMeet::mint("WI", "2026-05-29", "D3 sectional #3", None);
+        let c = CanonicalMeet::mint("WI", "2026-05-30", "D3 Sectional #3", None);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+        let d = CanonicalMeet::mint("WI", "2026-05-29", "D3 Sectional #3", Some("La Crosse, WI"));
+        assert_eq!(a, d, "venue spelling must not fork meet identity");
+        let built = CanonicalMeet::new(
+            "WI",
+            "D3 Sectional #3",
+            "2026-05-29",
+            CompetitionLevel::Sectional,
+        );
+        assert_eq!(built.id, a, "constructor and mint must agree");
+    }
+}
