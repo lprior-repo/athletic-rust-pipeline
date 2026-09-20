@@ -147,7 +147,7 @@ fn roster_fields_report_newest_season_school_and_season_bound_grades() {
             evidence: evidence("/old-school".to_owned()),
         },
         location: None,
-        seasons: vec![2024],
+        seasons: vec![2024, 2025],
         level: Some(1),
     });
     selected.teams.push(TeamEvidence {
@@ -179,6 +179,10 @@ fn roster_fields_report_newest_season_school_and_season_bound_grades() {
         Some(AthleteId::new(7).expect("synthetic athlete id")),
     );
     assert_eq!(annotations.competing_school, "New High");
+    assert_eq!(
+        annotations.school_history,
+        "2026 New High; 2025 Old High; 2024 Old High"
+    );
     assert_eq!(
         annotations.junior_evidence,
         "grade 11 @ 2026; grade 10 @ 2025"

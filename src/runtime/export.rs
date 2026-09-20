@@ -31,6 +31,7 @@ pub const EXPORT_HEADERS: &[&str] = &[
     "native.athlete_id",
     "native.profile_url",
     "native.competing_school",
+    "native.school_history",
     "native.junior_evidence",
     "native.junior_status",
     "native.acceptance_method",

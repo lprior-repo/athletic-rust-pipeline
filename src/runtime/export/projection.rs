@@ -171,6 +171,7 @@ fn fields(
         ("native.athlete_id", athlete_id),
         ("native.profile_url", annotations.profile_url),
         ("native.competing_school", annotations.competing_school),
+        ("native.school_history", annotations.school_history),
         ("native.junior_evidence", annotations.junior_evidence),
         ("native.junior_status", annotations.junior_status),
         ("native.acceptance_method", method),
@@ -206,6 +207,7 @@ fn annotations_for(
             AcceptedAnnotations {
                 profile_url: profile.profile_url.as_str().to_owned(),
                 competing_school: competing_school(profile),
+                school_history: school_history(profile),
                 junior_evidence: junior_evidence(profile),
                 junior_status: junior_status(profile),
             }
@@ -213,15 +215,16 @@ fn annotations_for(
 }
 
 /// Expanded-roster annotations the accepted profile already evidences: its profile URL,
-/// the school the athlete competed for in the newest evidenced season, every season-bound
-/// grade observation, and the roster verdict that the newest grade row supports. All empty
-/// when no profile was accepted; the school and grade strings are not claims of a complete
-/// history — that stays in the retained profile evidence and the JSONL sidecar, including
-/// the season/result behind each observation.
+/// the school the athlete competed for in the newest evidenced season, the season-and-school
+/// pairs behind that history, every season-bound grade observation, and the roster verdict
+/// the newest grade row supports. All empty when no profile was accepted; the school and
+/// grade strings are not claims of a complete history — that stays in the retained profile
+/// evidence and the JSONL sidecar, including the season/result behind each observation.
 #[derive(Debug, Default, PartialEq, Eq)]
 struct AcceptedAnnotations {
     profile_url: String,
     competing_school: String,
+    school_history: String,
     junior_evidence: String,
     junior_status: String,
 }
@@ -244,6 +247,28 @@ fn competing_school(profile: &ProfileEvidence) -> String {
     names.sort_unstable();
     names.dedup();
     names.join("; ")
+}
+
+/// Every (season, school) pair the profile evidences, newest season first, so a transfer
+/// keeps both schools attached to the seasons they were observed in instead of rewriting
+/// the school behind earlier performances.
+fn school_history(profile: &ProfileEvidence) -> String {
+    let mut observations: Vec<(u16, &str)> = profile
+        .teams
+        .iter()
+        .flat_map(|team| {
+            team.seasons
+                .iter()
+                .map(move |season| (*season, team.name.value.as_str()))
+        })
+        .collect();
+    observations.sort_unstable_by(|left, right| right.cmp(left));
+    observations.dedup();
+    observations
+        .into_iter()
+        .map(|(season, school)| format!("{season} {school}"))
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 fn junior_evidence(profile: &ProfileEvidence) -> String {
