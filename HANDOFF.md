@@ -252,6 +252,16 @@ progress supervisor was restarted detached so the lane stays polled past this se
 publication, stopped-writer verification, and replay remain pending: this run is not qualification
 evidence until they exist.
 
+**Unattended outdoor tail (2026-09-20, running).** `lane-v14/finish-live-outdoor.sh` (detached as
+`live-outdoor-tail`) waits for the boys publish, takes the stopped-writer verification, restarts the
+worker, and replays the identical request body built from the run's own `status` request plus its
+destination; then it starts the outdoor girls scope (`start --rankings --rankings-gender f
+--rankings-season outdoor --output out-live-outdoor-girls/result.xlsx`), supervises its collection and row
+phase, and takes the same tail. A publication appearing outside the expected out directory fails the
+scope rather than being reported as a replay. The writer stop/restart inside the script mirrors the
+scale-v15 finisher (`pgrep` on `live-worker.toml`, SIGTERM, `nohup` restart of the same build), so the
+hub's `lane-live-worker` entry reads `exited` after the stop and the restarted worker is unmanaged.
+
 These changes make the lane self-healing meanwhile:
 
 - `receiptless_transport(code, has_receipt)` — only a transport fault that produced **no receipt** is
@@ -392,9 +402,9 @@ roster (athlete URLs, school history, all high-school performances, PRs, XC) is 
 **Live-chain gate (2026-09-20, current tree at `3f78fd9`):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets --locked -- -D warnings`, and the 16-target command above re-ran green on the tree that served the live chain — **232 passed / 0 failed** (library 156 passed / 2 ignored, main 3, every integration target ok including `result_verify` 14/14). The chain executed end to end on that tree against the live source: collection `95/95` events / `1,065` pages / `final_snapshot 40792b83…` → row phase `8/8` (`complete: true`, 8 `review_required`, 0 pending) → owner-online export `result.xlsx` `a4eb1fe7…` / `result.jsonl` `87cfd651…` / `result.commit.json` `a4f0791b…` (`native-export-worker-v4`, `completeness: complete`, 2 sheets, 8 rows, 120 fields, 30 headers) → stopped-writer `verify` exit 0 with the same `output_sha256` and source digest `0a1d53f1…` → worker restarted on the re-arm build (`508dc0949ca29c352855302dd1e117cc11848b95d873f39bad9f67c0c6516812`) → cached replay `202` in 0.5 s, byte-identical artifacts, `SourceGateway/fetch` unchanged at 488.
 
 **Next:** the live chain is executed for the indoor boys scope (run `57f88b34…`: 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`, 8/8 rows decided, publication `a4eb1fe7…`, stopped-writer verification exit 0, byte-identical replay with zero new source requests on the re-arm binary `508dc094…`) and for the indoor girls scope (run `fe726b41…`: 94/94 events over 816 pages, 8/8 rows decided, publication `8322bae9…` / `44f9f773…` / `fc6c12fe…`, stopped-writer verification exit 0 against `live-store`, byte-identical cached replay with zero new source requests on build `cfdae271…`). What remains: outdoor live collection (the boys run `7be7e9dd…` is in flight on the patched client; the
-girls scope is the same `start` with `--rankings --rankings-gender f --rankings-season outdoor` and the
-lane input `live-store/source-workbooks/0a1d53f1….xlsx` as both `--input` and `--sha256` — the lane serves
-one run at a time) and both cross-country scopes (no `--rankings-season` value models cross-country yet, so
+girls scope is started by the same tail script with `--rankings --rankings-gender f --rankings-season
+outdoor` and the lane input `live-store/source-workbooks/0a1d53f1….xlsx`; the lane serves one run at a time) and both cross-country scopes (no `--rankings-season` value models cross-country yet, so
 XC needs a source-kind addition, not a flag); workbook-scale identity-matched delivery (the real 120,716-row workbook is bound at ≈0.31 rows/s per lane, ≈108 h for `--all`; its bounded 5,000-row selection, stopped-writer verification, and cached replay are now qualified — see the scale-v15 chain entry above); and the expanded roster requirements in `SCOPE.md` (athlete URLs, school history, all available high-school performances, PRs, cross-country). Re-running the live lane needs the headed browser at `ready` on CDP `9333`: the profile is signed in, `browser-start` settles at `ready`, and acquisition still stalls on the residual transport failure recorded above — now attributed to profile-restored
-tabs accumulating on every recovery relaunch, repaired in `Actor::bootstrap` and worked around by the lane
-supervisor while a pre-repair worker runs. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+tabs accumulating on every recovery relaunch. `Actor::bootstrap` closes those pages when the worker launches
+its own browser; the live lane attaches to the persistent headed browser (`cdp_endpoint`), where foreign
+pages are deliberately left alone, so the supervisor's prune is the operative control there. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
