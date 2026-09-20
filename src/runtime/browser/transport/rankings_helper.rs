@@ -406,8 +406,8 @@ pub(super) fn page_extent(body: &[u8]) -> Result<(u64, Option<u64>), BrowserErro
 }
 
 async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {
-    let result = page
-        .evaluate(
+    let result = transport(
+        page.evaluate(
             r#"(() => {
                 const pagination = document.querySelector('.pagination');
                 if (!pagination) return null;
@@ -420,8 +420,9 @@ async fn active_page(page: &Page) -> Result<Option<u32>, BrowserError> {
                 return Number.isInteger(value) && value > 0 ? value : null;
             })()"#,
         )
-        .await
-        .map_err(|_| BrowserError::Transport)?;
+        .await,
+        "active_page",
+    )?;
     decode_page_value(result)
 }
 
@@ -494,9 +495,7 @@ pub(super) async fn click_numeric_page(
         }})()"#,
         requested_page = requested_page,
     );
-    page.evaluate(&*js)
-        .await
-        .map_err(|_| BrowserError::Transport)?
+    transport(page.evaluate(&*js).await, "click_numeric_page")?
         .into_value::<bool>()
         .map_err(|_| BrowserError::Protocol)
 }
