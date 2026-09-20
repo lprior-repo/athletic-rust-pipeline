@@ -85,26 +85,13 @@ pub(super) async fn run_catalog_step(
         return Ok(());
     }
     let runtime = runtime.clone();
-    let requested_families = state.scope.requested_families.clone();
-    let list_id = state.scope.list_id;
-    let season = state.scope.season;
-    let projection_grade = state.scope.projection_grade;
+    let scope = state.scope.clone();
     let retained = outcome.clone();
     let published = ctx
         .run(move || async move {
             let store = runtime.store.clone();
             let result = runtime
-                .blocking(move || {
-                    publication::catalog(
-                        &store,
-                        &requested_families,
-                        list_id,
-                        season,
-                        projection_grade,
-                        collection,
-                        &retained,
-                    )
-                })
+                .blocking(move || publication::catalog(&store, &scope, collection, &retained))
                 .await;
             Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
         })
@@ -210,7 +197,7 @@ pub(super) async fn run_page_step(
     let gender = state.scope.gender.clone();
     let revision = state.scope.revision.clone();
     let list_id = state.scope.list_id;
-    let season = state.scope.season;
+    let season = state.scope.source_season_id();
     let projection_grade = state.scope.projection_grade;
     let published = ctx
         .run(move || async move {

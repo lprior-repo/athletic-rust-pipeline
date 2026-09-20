@@ -473,6 +473,10 @@ mod lane_smoke {
     const API_PATH: &str = "/api/v1/tfRankings/GetRankings";
     const MEASURED_BODY: &str = r#"{"reportType":"div","mode":"list","divListId":168416,"indoor":null,"eventShort":"100m","gender":"m","qParams":{"grades":[11],"page":1},"qualifyingListKey":"","version":2,"debug":""}"#;
 
+    /// The fixture holds one global scenario, so a test that sets a scenario
+    /// must not overlap another test running against the same origin.
+    static SCENARIO: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
     fn var(key: &str, fallback: &str) -> String {
         std::env::var(key).unwrap_or_else(|_| fallback.to_owned())
     }
@@ -576,6 +580,7 @@ mod lane_smoke {
     #[tokio::test]
     #[ignore = "requires a fixture origin and a CDP browser"]
     async fn results_capture_costs_one_physical_post() {
+        let _scenario = SCENARIO.lock().await;
         let fixture = origin();
         set_scenario(&fixture, "normal").await;
         let (_browser, page) = parked_page(&fixture).await;
@@ -620,6 +625,7 @@ mod lane_smoke {
     #[tokio::test]
     #[ignore = "requires a fixture origin and a CDP browser"]
     async fn challenge_response_revokes_the_gate_and_ends_pagination() {
+        let _scenario = SCENARIO.lock().await;
         let fixture = origin();
         set_scenario(&fixture, "challenge").await;
         let (_browser, page) = parked_page(&fixture).await;

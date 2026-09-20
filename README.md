@@ -2,9 +2,9 @@
 
 This repository contains the native Rust/Restate athlete-evidence pipeline. It ingests an XLSX workbook, acquires bounded source evidence through the headed Chromium transport, performs deterministic parsing and identity assessment, optionally sends genuine ambiguity to one assigned local model lane, and publishes an immutable XLSX plus JSONL evidence sidecar.
 
-This README describes the **current design**. It is not a claim that live collection, full-workbook matching, or end-to-end replay qualification has completed. Historical experiments are labelled as historical in [HANDOFF.md](HANDOFF.md).
+This README describes the **current design**. It is not a claim that live collection, workbook-scale matching, or expanded-roster delivery has completed. Fixture-mode end-to-end qualification (collection -> matching -> owner-online export -> stopped-writer verification -> cached replay) is executed and recorded in the qualification status below; historical experiments are labelled as historical in [HANDOFF.md](HANDOFF.md).
 
-The clarified expansion target is **USA Grade 11/junior boys and girls, indoor track, outdoor track, and cross-country**, with athlete URLs, competing-school history, all available high-school performances, and evidence-backed event-specific PRs. See [the expanded roster contract](SCOPE.md#expanded-roster-target--requested-not-yet-complete). This target is broader than the implemented boys rankings collector and is not a completed-delivery claim.
+The clarified expansion target is **USA Grade 11/junior boys and girls, indoor track, outdoor track, and cross-country**, with athlete URLs, competing-school history, all available high-school performances, and evidence-backed event-specific PRs. See [the expanded roster contract](SCOPE.md#expanded-roster-target--requested-not-yet-complete). The rankings collector is division-parameterized (gender x season kind) and evidence-backs both 2026 division lists, but this target remains broader than anything qualified end-to-end and is not a completed-delivery claim.
 
 ## Product contract
 
@@ -37,7 +37,7 @@ CLI -> PipelineControl / RunCoordinator
 
 ## Rankings collection
 
-`start --rankings` creates a scope for the fixed list, gender, season, event-family manifest, projection grade, and page cap. `EventCatalog::from_nav` validates list/season metadata, removes walk events, rejects malformed or conflicting event IDs, records absent families, and expands each observed variant into a `RankingsPlan`. Individual pages accept Grade 11 candidates. Relay pages carry system placeholder grade metadata; only a roster member whose relay-team ID joins the row and whose member grade is 11 becomes a projected candidate.
+`start --rankings` creates a scope for one division: fixed list, gender, season, event-family manifest, projection grade, and page cap. Division selection is explicit (`--rankings-gender {m,f}`, `--rankings-season {outdoor,indoor}`); the evidence-backed 2026 table maps outdoor to list `168416` and indoor to `173005`, and each division carries its own revision (`2026-usa-hs-grade11-<kind>-<boys|girls>-v2`). `EventCatalog::from_nav` selects the configured list through the kind-specific `seasons` entry (`"2026"` outdoor, `"12026"` indoor), requires the navigation's own division to be that list or its level, removes walk events, rejects malformed or conflicting event IDs, records absent families, and expands each observed variant into a `RankingsPlan`. Individual pages accept Grade 11 candidates. Relay pages carry system placeholder grade metadata; only a roster member whose relay-team ID joins the row and whose member grade is 11 becomes a projected candidate.
 
 Each successful source response has a content digest, request URL/method/body, status/media type, byte count, timing, and ranking capture metadata. Page publication stores the raw receipt, parsed observation, immutable checkpoint, and `RankingPageIndex` with source row positions, candidates, and roster observations. A collection seals only when every planned event page is terminal and the final snapshot binds the same scope and source snapshot.
 
@@ -59,7 +59,7 @@ browser-start, browser-status, export, verify,
 rankings-status, rankings-pause, rankings-resume
 ```
 
-`start` requires `--per-sheet N` or `--all`, an input path, and its pre-recorded SHA-256. `--rankings` enables the optional discovery collection. `--output PATH` submits `run-and-export`, which queues the durable run and export publication automatically; the returned `submitted` state is not completion. Inspect status and run independent verification after the owner has published and the writer is stopped.
+`start` requires `--per-sheet N` or `--all`, an input path, and its pre-recorded SHA-256. `--rankings` enables the optional discovery collection, with `--rankings-gender` and `--rankings-season` selecting the division. `--output PATH` submits `run-and-export`, which queues the durable run and export publication automatically; the returned `submitted` state is not completion. Inspect status and run independent verification after the owner has published and the writer is stopped.
 
 Examples (use private, already configured endpoints and new output paths):
 
@@ -79,12 +79,14 @@ cargo run --release -- verify --input /path/input.xlsx --output /path/result.xls
 
 The fresh evidence currently available is limited and explicitly scoped:
 
-- Fresh production/test-library compilation succeeded. Strict Clippy passed at an earlier integration checkpoint; the subsequent storage/request repairs still require the final current-tree gate.
+- Current-tree gates are green: `cargo fmt --check`, `cargo check --all-targets`, and `cargo clippy --all-targets -- -D warnings` are clean, and the 15-target test command passes in full (217 tests; library 144 passed / 2 ignored).
+- The restored fixture is repaired: `result_verify` passes 14/14, and the workbook targets that the earlier failing command blocked now run.
 - A serialization measurement compared 344,131 with 13,131 allocations over 1,000 synthetic iterations, 331 fewer allocations per iteration. This is an allocation observation, not a throughput claim.
 - The native parser passed the retained corpus: 95 queries, 4,256 receipt digest checks, 340,238 individual results, 57,629 relay-member results, and 142,705 unique athletes. The report retains 15,724 unresolved roster results rather than inventing members.
 - All 26 private storage scenarios passed after repairing replay, counters, and multiple references per athlete/checkpoint. The distinct-position oracle was corrected to count positions, not result/position pairs.
-- Focused parser/storage/bundle regressions and the durable request-serialization regression passed. The restored result verifier passed 13 of 14 scenarios; one fixture still uses an obsolete assessment enum spelling. The later workbook targets did not run because that command stopped at the failure.
-- The private native fixture layout is Restate admin 21041, ingress 21042, fixture 21043, and worker 21140; the worker is not deployed. These are qualification details, not readiness evidence.
-- Full native automated collection -> matching -> export -> replay remains pending execution. No live-collection readiness claim is made.
+- Focused parser/storage/bundle regressions and the durable request-serialization regression passed.
+- The private native fixture deployment is Restate admin 21041, ingress 21042, fixture 21046, worker 21140, with the worker deployed and serving the fixture transport.
+- End-to-end fixture qualification has executed for the outdoor boys and indoor girls divisions: collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay. Indoor girls run `6f3c0c59…` bound list `173005` through revision `2026-usa-hs-grade11-indoor-girls-v2`, completed 95 of 95 events, published its XLSX/JSONL/receipt, passed `verify` against the stopped store (source hash before/after match; 6 accepted, 1 no-match, 1 review, 0 pending), and replayed with zero new source requests and byte-identical output. Outdoor boys run `3c726c6d…` bound list `168416`, froze source traffic for a full 25 s pause window, and completed after explicit resume.
+- Live-source collection, workbook-scale identity matching, and the expanded roster (indoor/outdoor/XC completeness, athlete URLs, school history, PRs) are not qualified. No live-collection readiness claim is made.
 
 Quality commands are plans until their result is recorded for the current tree. Do not infer current status from historical build, formatter, Clippy, unit, fuzz, or benchmark records. Removed alpha/exhaustive/restate-native commands, removed tools, stale benchmark targets, and campaign documents are not part of the interface.

@@ -60,8 +60,13 @@ pub(super) fn collection(
         capture: RankingsCapture::Navigation,
     };
     let raw = outcome(&snapshot.catalog_outcome, &resource, &origin, store)?;
-    let catalog = EventCatalog::from_nav(&raw, &scope.requested_families)?;
-    if catalog.list_id != scope.list_id || catalog.season_id != scope.season {
+    let catalog = EventCatalog::from_nav(
+        &raw,
+        &scope.requested_families,
+        scope.season_kind,
+        scope.list_id,
+    )?;
+    if catalog.list_id != scope.list_id || catalog.season_id != scope.source_season_id() {
         bail!("navigation scope differs from frozen collection scope");
     }
     let retained: EventCatalog = load(
@@ -76,7 +81,11 @@ pub(super) fn collection(
         .iter()
         .map(|family| family.family.clone())
         .collect();
-    let plan = catalog.into_plan(bound.collection.clone(), scope.projection_grade)?;
+    let plan = catalog.into_plan(
+        bound.collection.clone(),
+        scope.projection_grade,
+        &scope.gender,
+    )?;
     let retained_plan: RankingsPlan =
         load(store, snapshot.plan_ref.as_ref().context("missing plan")?)?;
     if serde_json::to_value(&plan)? != serde_json::to_value(retained_plan)? {

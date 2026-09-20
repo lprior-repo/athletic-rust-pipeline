@@ -15,7 +15,7 @@ use athletic_rust_pipeline::{
         export_worker::{ExportRequest, ExportWorkerIngressClient, PublishedExport},
         identity::fingerprint,
         import::ImportRequest,
-        rankings::RankingsScope,
+        rankings::{RankingsScope, SeasonKind},
         run::RunCoordinatorIngressClient,
         run_protocol::{preparation_key, Selection},
         worker,
@@ -216,8 +216,17 @@ async fn start(args: Start) -> Result<()> {
         workbook: WorkbookDigest::parse(&args.sha256)?,
     };
     let rankings_scope = if args.rankings {
-        let scope = RankingsScope::requested(args.max_pages_per_event)
-            .context("building rankings scope")?;
+        let season_kind = match args.rankings_season.as_str() {
+            "indoor" => SeasonKind::Indoor,
+            "outdoor" => SeasonKind::Outdoor,
+            other => bail!("unsupported rankings season: {other}"),
+        };
+        let scope = RankingsScope::for_division(
+            season_kind,
+            &args.rankings_gender,
+            args.max_pages_per_event,
+        )
+        .context("building rankings scope")?;
         Some(scope)
     } else {
         None

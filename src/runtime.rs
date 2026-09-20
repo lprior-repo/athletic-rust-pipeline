@@ -24,6 +24,7 @@ pub mod run;
 pub mod run_protocol;
 pub mod rankings {
     pub mod catalog;
+    pub mod division;
     pub mod page;
     pub mod types;
     pub use super::protocol::{RankingPageObservation, RankingsCapture};
@@ -33,6 +34,7 @@ pub mod rankings {
         RankingSourceRow,
     };
     pub use catalog::{EventCatalog, RequestedFamily};
+    pub use division::{expected_revision, season_list_id, SeasonKind, SEASON_YEAR};
     pub use page::parse::{parse_page_response, PageParseError};
     pub use types::{
         is_excluded, ExpectedPageContext, IndividualCandidate, NavEvent, PageObservation,

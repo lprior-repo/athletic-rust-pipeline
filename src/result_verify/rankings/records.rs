@@ -49,7 +49,7 @@ pub(super) fn verify(
             &raw,
             &ExpectedPageContext {
                 division_id: snapshot.scope.list_id,
-                season_id: snapshot.scope.season,
+                season_id: snapshot.scope.source_season_id(),
                 gender: &snapshot.scope.gender,
                 event_short: &event.short,
                 event_id: Some(event.event_id),

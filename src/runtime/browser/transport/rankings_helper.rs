@@ -446,7 +446,7 @@ pub(super) async fn click_numeric_page(
         }})()"#,
         requested_page = requested_page,
     );
-    page.evaluate(&js[..])
+    page.evaluate(&*js)
         .await
         .map_err(|_| BrowserError::Transport)?
         .into_value::<bool>()

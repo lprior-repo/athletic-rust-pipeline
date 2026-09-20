@@ -39,7 +39,10 @@ impl Actor {
         // Close owned pages before waiting the handler — prevents handler
         // from holding live Page handles after browser drop.
         for slot in self.pages.drain(..) {
-            let _ = slot.page.close().await;
+            match slot.page.close().await {
+                Ok(()) => {}
+                Err(e) => tracing::debug!("page close failed during shutdown: {e}"),
+            }
         }
         let mut browser = self
             .browser

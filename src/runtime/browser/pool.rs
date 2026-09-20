@@ -57,6 +57,8 @@ fn restrict_directory(_path: &Path) -> anyhow::Result<()> {
 
 pub(super) fn reject_pending(pending: &mut VecDeque<Pending>, error: BrowserError) {
     pending.drain(..).for_each(|item| {
-        let _ = item.reply.send(Err(error));
+        if item.reply.send(Err(error)).is_err() {
+            tracing::debug!("pending reply send failed");
+        }
     });
 }

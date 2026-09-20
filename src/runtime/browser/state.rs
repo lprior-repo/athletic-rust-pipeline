@@ -5,7 +5,12 @@ use std::time::{Duration, Instant};
 impl Actor {
     pub(in crate::runtime::browser) fn set_cooldown(&mut self, delay: Duration) {
         match self.cooldown_until.lock() {
-            Ok(mut value) => *value = (!delay.is_zero()).then_some(Instant::now() + delay),
+            Ok(mut value) => {
+                *value = (!delay.is_zero()).then(|| match Instant::now().checked_add(delay) {
+                    Some(v) => v,
+                    None => Instant::now() + Duration::from_secs(300), // overflow guard
+                })
+            }
             Err(error) => *error.into_inner() = None,
         }
     }

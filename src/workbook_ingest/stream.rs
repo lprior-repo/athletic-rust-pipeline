@@ -152,11 +152,11 @@ impl SheetState {
             .iter()
             .enumerate()
             .map(|(column, header)| {
-                let index = column as u32;
+                let index = u32::try_from(column).context("column index overflow")?;
                 let value = cells.get(&index).map_or_else(String::new, Clone::clone);
-                (header.clone(), value)
+                Ok((header.clone(), value))
             })
-            .collect();
+            .collect::<Result<BTreeMap<String, String>>>()?;
         self.actual_data_rows = self
             .actual_data_rows
             .checked_add(1)
@@ -217,9 +217,10 @@ fn build_headers(cells: &BTreeMap<u32, String>) -> Result<Vec<String>> {
         .context("worksheet header width overflow")?;
     let headers: Vec<String> = (0..width)
         .map(|column| {
-            cells
-                .get(&(column as u32))
-                .map_or_else(String::new, Clone::clone)
+            u32::try_from(column)
+                .ok()
+                .and_then(|index| cells.get(&index).cloned())
+                .unwrap_or_default()
         })
         .collect();
     if headers.iter().any(String::is_empty) {

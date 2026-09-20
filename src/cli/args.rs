@@ -106,13 +106,88 @@ pub struct Start {
     pub snapshot: String,
     #[arg(long, default_value = "stage")]
     pub execution: String,
-    /// Enable rankings acquisition for 2026 USA boys Grade11
+    /// Enable rankings acquisition for the 2026 USA Grade 11 division scope
     #[arg(long)]
     pub rankings: bool,
+    /// Source division gender for rankings acquisition
+    #[arg(long, default_value = "m", value_parser = ["m", "f"], requires = "rankings")]
+    pub rankings_gender: String,
+    /// Source season kind for rankings acquisition
+    #[arg(
+        long,
+        default_value = "outdoor",
+        value_parser = ["outdoor", "indoor"],
+        requires = "rankings"
+    )]
+    pub rankings_season: String,
     /// Max pages per event (bounded safety cap 10000)
     #[arg(long, default_value = "10000")]
     pub max_pages_per_event: u32,
     /// Publish a verified final workbook automatically after run completion.
     #[arg(long)]
     pub output: Option<PathBuf>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_start(extra: &[&str]) -> Result<Cli, clap::Error> {
+        let mut args = vec![
+            "athletic-rust-pipeline",
+            "start",
+            "--input",
+            "input.xlsx",
+            "--sha256",
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "--all",
+        ];
+        args.extend_from_slice(extra);
+        Cli::try_parse_from(args)
+    }
+
+    #[test]
+    fn division_flags_without_rankings_are_rejected() {
+        let cases: [&[&str]; 3] = [
+            &["--rankings-gender", "f"],
+            &["--rankings-season", "indoor"],
+            &["--rankings-gender", "f", "--rankings-season", "indoor"],
+        ];
+        for flags in cases {
+            let Err(error) = parse_start(flags) else {
+                panic!("division flags must require --rankings: {flags:?}");
+            };
+            assert!(
+                error.to_string().contains("--rankings"),
+                "the rejection must name the missing flag, got: {error}"
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_division_selection_survives_parsing() {
+        let cli = parse_start(&[
+            "--rankings",
+            "--rankings-gender",
+            "f",
+            "--rankings-season",
+            "indoor",
+        ])
+        .expect("division selection with --rankings is valid");
+        let Command::Start(start) = cli.command else {
+            panic!("expected the start command");
+        };
+        assert_eq!(start.rankings_gender, "f");
+        assert_eq!(start.rankings_season, "indoor");
+    }
+
+    #[test]
+    fn rankings_alone_keeps_the_outdoor_boys_defaults() {
+        let cli = parse_start(&["--rankings"]).expect("--rankings alone is valid");
+        let Command::Start(start) = cli.command else {
+            panic!("expected the start command");
+        };
+        assert_eq!(start.rankings_gender, "m");
+        assert_eq!(start.rankings_season, "outdoor");
+    }
 }

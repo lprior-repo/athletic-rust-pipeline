@@ -169,8 +169,8 @@ pub(super) fn parse_zip64_extra(
         let header = extra
             .get(position..header_end)
             .context("ZIP extra field is truncated")?;
-        let id = u16::from_le_bytes([header[0], header[1]]);
-        let size = usize::from(u16::from_le_bytes([header[2], header[3]]));
+        let id = read_u16_from(header, 0)?;
+        let size = usize::from(read_u16_from(header, 2)?);
         let end = header_end
             .checked_add(size)
             .context("ZIP extra field length overflow")?;
@@ -231,18 +231,28 @@ fn read_u32(reader: &mut File, position: u64, limit: u64) -> Result<u32> {
     read_u32_slice(&bytes, 0)
 }
 
-pub(super) fn read_u16_slice(bytes: &[u8], offset: usize) -> Result<u16> {
+pub(super) fn read_u16_from(bytes: &[u8], offset: usize) -> Result<u16> {
     let value = bytes
         .get(offset..offset.checked_add(2).context("ZIP field offset overflow")?)
         .context("ZIP field is truncated")?;
-    Ok(u16::from_le_bytes([value[0], value[1]]))
+    let arr: [u8; 2] = value.try_into().context("ZIP field is truncated")?;
+    Ok(u16::from_le_bytes(arr))
 }
 
-pub(super) fn read_u32_slice(bytes: &[u8], offset: usize) -> Result<u32> {
+pub(super) fn read_u16_slice(bytes: &[u8], offset: usize) -> Result<u16> {
+    read_u16_from(bytes, offset)
+}
+
+pub(super) fn read_u32_from(bytes: &[u8], offset: usize) -> Result<u32> {
     let value = bytes
         .get(offset..offset.checked_add(4).context("ZIP field offset overflow")?)
         .context("ZIP field is truncated")?;
-    Ok(u32::from_le_bytes([value[0], value[1], value[2], value[3]]))
+    let arr: [u8; 4] = value.try_into().context("ZIP field is truncated")?;
+    Ok(u32::from_le_bytes(arr))
+}
+
+pub(super) fn read_u32_slice(bytes: &[u8], offset: usize) -> Result<u32> {
+    read_u32_from(bytes, offset)
 }
 
 pub(super) fn read_u64_slice(bytes: &[u8], offset: usize) -> Result<u64> {

@@ -84,7 +84,9 @@ impl BrowserManager {
             Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
         };
         if let Err(error) = bootstrap_result {
-            let _ = manager.shutdown().await;
+            if let Err(e) = manager.shutdown().await {
+                tracing::warn!("browser shutdown during bootstrap failure: {e}");
+            }
             return Err(error);
         }
         Ok(manager)
@@ -143,7 +145,9 @@ impl BrowserManager {
             Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
         };
         if let Err(error) = bootstrap_result {
-            let _ = manager.shutdown().await;
+            if let Err(e) = manager.shutdown().await {
+                tracing::warn!("browser shutdown during bootstrap failure: {e}");
+            }
             return Err(error);
         }
         Ok(manager)
@@ -209,7 +213,10 @@ impl BrowserManager {
     pub(crate) async fn shutdown(&self) -> anyhow::Result<()> {
         self.gate.revoke();
         write_state(&self.status, BrowserState::Stopped);
-        let deadline = tokio::time::Instant::now() + SHUTDOWN_TIMEOUT;
+        let deadline = match tokio::time::Instant::now().checked_add(SHUTDOWN_TIMEOUT) {
+            Some(value) => value,
+            None => tokio::time::Instant::now() + std::time::Duration::from_secs(300), // overflow guard
+        };
         let (reply, result) = oneshot::channel();
         let send_result =
             tokio::time::timeout_at(deadline, self.tx.send(Command::Shutdown { reply })).await;
@@ -295,9 +302,13 @@ pub(super) fn remaining_ms(cooldown: &Mutex<Option<Instant>>) -> u64 {
 async fn run_handler(mut handler: Handler, events: mpsc::Sender<HandlerEvent>) {
     while let Some(result) = handler.next().await {
         if result.is_err() {
-            let _ = events.send(HandlerEvent::Failed).await;
+            if let Err(e) = events.send(HandlerEvent::Failed).await {
+                tracing::debug!("handler event send failed: {e}");
+            }
             return;
         }
     }
-    let _ = events.send(HandlerEvent::Failed).await;
+    if let Err(e) = events.send(HandlerEvent::Failed).await {
+        tracing::debug!("handler event send failed: {e}");
+    }
 }

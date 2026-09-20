@@ -14,11 +14,15 @@ impl Actor {
         reply: oneshot::Sender<Result<BrowserResponse, BrowserError>>,
     ) {
         if !self.gate.is_ready() {
-            let _ = reply.send(Err(BrowserError::HumanRequired));
+            if reply.send(Err(BrowserError::HumanRequired)).is_err() {
+                tracing::debug!("human required reply dropped");
+            }
             return;
         }
         if self.pending.len() >= self.queue_capacity {
-            let _ = reply.send(Err(BrowserError::Unavailable));
+            if reply.send(Err(BrowserError::Unavailable)).is_err() {
+                tracing::debug!("unavailable reply dropped");
+            }
             return;
         }
         self.pending.push_back(Pending { request, reply });
@@ -32,8 +36,13 @@ impl Actor {
             let Some(item) = self.pending.pop_front() else {
                 break;
             };
-            let page = self.pages[slot].page.clone();
-            self.pages[slot].busy = true;
+            let page = match self.pages.get(slot) {
+                Some(slot) => slot.page.clone(),
+                None => continue,
+            };
+            if let Some(slot) = self.pages.get_mut(slot) {
+                slot.busy = true;
+            }
             self.challenge_target = Some(ChallengeTarget {
                 url: item.request.url.clone(),
                 post: item.request.body().is_some(),
@@ -91,7 +100,9 @@ impl Actor {
                         self.apply_cooldown(response);
                     }
                 }
-                let _ = job.reply.send(job.result);
+                if job.reply.send(job.result).is_err() {
+                    tracing::debug!("job reply dropped");
+                }
             }
             Some(Err(_)) => {
                 tracing::warn!("browser job panicked or was aborted; requesting shutdown");

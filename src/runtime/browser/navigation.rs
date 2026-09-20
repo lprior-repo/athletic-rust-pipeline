@@ -64,7 +64,10 @@ pub(crate) async fn bootstrap(
 
     let navigation = page.goto(NavigateParams::new(target.to_string()));
     tokio::pin!(navigation);
-    let deadline = Instant::now() + timeout;
+    let deadline = match Instant::now().checked_add(timeout) {
+        Some(value) => value,
+        None => Instant::now() + Duration::from_secs(300), // overflow guard
+    };
     let mut navigation_done = false;
 
     let mut latest_request_id: Option<RequestId> = None;

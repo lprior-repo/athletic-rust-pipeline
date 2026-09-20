@@ -1,3 +1,4 @@
+use super::division::{SeasonKind, SEASON_YEAR};
 use super::types::{is_excluded, NavEvent, RankedEvent, RankingsPlan};
 use crate::domain::identity::EvidenceDigest;
 use crate::runtime::protocol::RankingsCapture;
@@ -47,11 +48,19 @@ pub struct AbsentFamily {
 impl EventCatalog {
     /// Build a catalog from a GetNavInfo response and the requested event manifest.
     /// Walk is excluded. Shuttle hurdles (r+h) are preserved.
+    ///
+    /// The requested division is `expected_list_id`, which the nav must select
+    /// through the kind-specific `seasons` key (outdoor `"2026"`, indoor
+    /// `"12026"`). The nav itself is level-scoped, so its `divListId` is either
+    /// that level or the selected list. The catalog's `list_id` is the selected
+    /// list, which is what publication and verification compare against scope.
     pub fn from_nav(
         nav: &serde_json::Value,
         requested_families: &[RequestedFamily],
+        season_kind: SeasonKind,
+        expected_list_id: u64,
     ) -> Result<Self, CatalogError> {
-        let list_id = nav
+        let nav_div_list_id = nav
             .get("divListId")
             .and_then(|value| value.as_u64())
             .ok_or(CatalogError::MissingDivListId)?;
@@ -59,16 +68,27 @@ impl EventCatalog {
             .get("levelDivId")
             .and_then(|value| value.as_u64())
             .ok_or(CatalogError::MissingLevelDivId)?;
-        let season_value = nav
+        let season_key = season_kind.seasons_key(SEASON_YEAR);
+        let list_id = nav
             .get("seasons")
             .and_then(|value| value.as_object())
-            .and_then(|seasons| seasons.get("2026"))
+            .and_then(|seasons| seasons.get(&season_key))
             .and_then(|value| value.as_u64())
-            .ok_or(CatalogError::MissingSeason2026)?;
-        if season_value != list_id {
+            .ok_or_else(|| CatalogError::MissingSeason {
+                key: season_key.clone(),
+            })?;
+        if list_id != expected_list_id {
             return Err(CatalogError::SeasonListIdMismatch {
-                expected: list_id,
-                actual: season_value,
+                key: season_key,
+                expected: expected_list_id,
+                actual: list_id,
+            });
+        }
+        if nav_div_list_id != expected_list_id && nav_div_list_id != level_div_id {
+            return Err(CatalogError::NavDivisionMismatch {
+                nav_div_list_id,
+                level_div_id,
+                expected: expected_list_id,
             });
         }
         let events_array = nav
@@ -135,7 +155,7 @@ impl EventCatalog {
         Ok(Self {
             list_id,
             level_div_id,
-            season_id: 2026,
+            season_id: season_kind.season_id(SEASON_YEAR),
             observed,
             families,
             absent_families,
@@ -147,6 +167,7 @@ impl EventCatalog {
         self,
         collection: EvidenceDigest,
         grade: u8,
+        gender: &str,
     ) -> Result<RankingsPlan, CatalogError> {
         let events = self
             .families
@@ -184,7 +205,7 @@ impl EventCatalog {
         Ok(RankingsPlan {
             collection,
             list_id: self.list_id,
-            gender: "m".to_owned(),
+            gender: gender.to_owned(),
             grade,
             events,
         })
@@ -217,12 +238,24 @@ pub enum CatalogError {
     MissingDivListId,
     #[error("missing levelDivId in nav response")]
     MissingLevelDivId,
-    #[error("missing 2026 season in nav response")]
-    MissingSeason2026,
+    #[error("missing season {key} in nav response")]
+    MissingSeason { key: String },
     #[error("no matching events found for any requested family")]
     NoMatchingEvents,
-    #[error("seasons['2026'] must equal list_id: expected {expected}, got {actual}")]
-    SeasonListIdMismatch { expected: u64, actual: u64 },
+    #[error("seasons['{key}'] must select the requested division list {expected}, got {actual}")]
+    SeasonListIdMismatch {
+        key: String,
+        expected: u64,
+        actual: u64,
+    },
+    #[error(
+        "nav covers division {nav_div_list_id} outside level {level_div_id} and the requested list {expected}"
+    )]
+    NavDivisionMismatch {
+        nav_div_list_id: u64,
+        level_div_id: u64,
+        expected: u64,
+    },
     #[error("missing events array in nav response")]
     MissingEvents,
     #[error("malformed nav event")]

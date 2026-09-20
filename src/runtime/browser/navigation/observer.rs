@@ -59,8 +59,14 @@ pub(crate) async fn start_observer(
     stop: CancellationToken,
     gate: Arc<ProfileGate>,
 ) -> Result<PageObserver, BrowserError> {
-    let max_resource_buffer_size = MAX_SOURCE_RESPONSE_BYTES as i64;
-    let max_total_buffer_size = (MAX_SOURCE_RESPONSE_BYTES * 2) as i64;
+    let max_resource_buffer_size = match i64::try_from(MAX_SOURCE_RESPONSE_BYTES) {
+        Ok(v) => v,
+        Err(_) => return Err(BrowserError::Protocol),
+    };
+    let max_total_buffer_size = match max_resource_buffer_size.checked_mul(2) {
+        Some(v) => v,
+        None => return Err(BrowserError::Protocol),
+    };
     page.execute(
         network::EnableParams::builder()
             .max_resource_buffer_size(max_resource_buffer_size)

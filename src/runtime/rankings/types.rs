@@ -2,6 +2,9 @@ use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::domain::name::CanonicalName;
 use crate::runtime::protocol::RankingsCapture;
 use crate::runtime::rankings::catalog::RequestedFamily;
+use crate::runtime::rankings::division::{
+    self, expected_revision, normalize_gender, season_list_id, SeasonKind,
+};
 use serde::{Deserialize, Serialize};
 
 /// A complete rankings collection plan covering all requested
@@ -16,9 +19,17 @@ pub struct RankingsPlan {
 }
 
 /// Rankings scope: immutable collection parameters derived from scope.
+///
+/// One scope covers exactly one seasonal division (season kind + gender).
+/// `list_id` and `revision` are evidence-backed: see `division`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RankingsScope {
     pub revision: String,
+    /// Absent in scopes written before the division split, which were
+    /// outdoor-only; those revisions are retired rather than reinterpreted
+    /// (see `division::expected_revision`).
+    #[serde(default)]
+    pub season_kind: SeasonKind,
     pub list_id: u64,
     pub season: u64,
     pub gender: String,
@@ -29,49 +40,88 @@ pub struct RankingsScope {
     pub requested_families: Vec<RequestedFamily>,
 }
 impl RankingsScope {
-    /// Construct the canonical 2026 USA boys Grade 11 scope with all 46
+    /// Construct the canonical 2026 USA outdoor boys Grade 11 scope with all 46
     /// requested event families. The caller supplies only the per-event
     /// page cap; everything else is fixed by the specification.
     pub fn requested(max_pages_per_event: u32) -> anyhow::Result<Self> {
+        Self::for_division(SeasonKind::Outdoor, "m", max_pages_per_event)
+    }
+
+    /// Construct one seasonal division scope for the given source request
+    /// gender code (`"m"` or `"f"`). Everything else is fixed by the
+    /// specification and validated against the captured source contract.
+    pub fn for_division(
+        season_kind: SeasonKind,
+        gender: &str,
+        max_pages_per_event: u32,
+    ) -> anyhow::Result<Self> {
         if max_pages_per_event == 0 || max_pages_per_event > 10_000 {
             anyhow::bail!("max_pages_per_event must be 1..=10000");
         }
-        let families = Self::default_families();
-        Ok(Self {
-            revision: "2026-usa-boys-grade11-v1".to_owned(),
-            list_id: 168416,
-            season: 2026,
-            gender: "m".to_owned(),
+        let gender = normalize_gender(gender)
+            .ok_or_else(|| anyhow::anyhow!("unsupported gender: {gender}"))?;
+        let list_id = season_list_id(season_kind, division::SEASON_YEAR)
+            .ok_or_else(|| anyhow::anyhow!("unsupported season: {season_kind:?}"))?;
+        let revision = expected_revision(season_kind, gender)
+            .ok_or_else(|| anyhow::anyhow!("unsupported gender: {gender}"))?;
+        let scope = Self {
+            revision,
+            season_kind,
+            list_id,
+            season: division::SEASON_YEAR,
+            gender: gender.to_owned(),
             projection_grade: 11,
             country: "USA".to_owned(),
             level: 4,
             max_pages_per_event,
-            requested_families: families,
-        })
+            requested_families: Self::default_families(),
+        };
+        scope.validate()?;
+        Ok(scope)
     }
 
-    /// Only the canonical source scope may enter the durable collection.
+    /// Source season identifier this scope binds to: the kind-specific value
+    /// the captured nav keys its `seasons` map by (outdoor `2026`, indoor
+    /// `12026`), which is also the `SeasonID` a division page must report.
+    pub fn source_season_id(&self) -> u64 {
+        self.season_kind.season_id(self.season)
+    }
+
+    /// Only an evidence-backed source division scope may enter the durable
+    /// collection: list id, season, gender, and revision must agree.
     pub fn validate(&self) -> anyhow::Result<()> {
-        if self.list_id != 168416 || self.revision != "2026-usa-boys-grade11-v1" {
-            anyhow::bail!("unsupported ranking list or revision");
-        }
         if self.country != "USA" {
             anyhow::bail!("unsupported country: {}", self.country);
         }
         if self.level != 4 {
             anyhow::bail!("unsupported level: {}", self.level);
         }
-        if self.season != 2026 {
+        if self.season != division::SEASON_YEAR {
             anyhow::bail!("unsupported season: {}", self.season);
         }
-        if self.gender != "m" {
-            anyhow::bail!("unsupported gender: {}", self.gender);
-        }
+        let gender = normalize_gender(&self.gender)
+            .ok_or_else(|| anyhow::anyhow!("unsupported gender: {}", self.gender))?;
         if self.projection_grade != 11 {
             anyhow::bail!("unsupported projection_grade: {}", self.projection_grade);
         }
         if self.max_pages_per_event == 0 || self.max_pages_per_event > 10_000 {
             anyhow::bail!("max_pages_per_event must be 1..=10000");
+        }
+        let expected_list = season_list_id(self.season_kind, self.season).ok_or_else(|| {
+            anyhow::anyhow!("unsupported season kind or season: {:?}", self.season_kind)
+        })?;
+        if self.list_id != expected_list {
+            anyhow::bail!(
+                "{} {} division list must be {expected_list}, got {}",
+                self.season_kind.label(),
+                self.season,
+                self.list_id
+            );
+        }
+        let expected = expected_revision(self.season_kind, gender)
+            .ok_or_else(|| anyhow::anyhow!("unsupported gender for revision: {}", self.gender))?;
+        if self.revision != expected {
+            anyhow::bail!("unsupported ranking scope revision: {}", self.revision);
         }
         let manifest_matches = self.requested_families.len() == REQUESTED_FAMILY_MANIFEST.len()
             && self
@@ -87,8 +137,8 @@ impl RankingsScope {
         Ok(())
     }
 
-    /// The 46 requested families for 2026 USA high school boys Grade 11.
-    /// The catalog expands these dynamically into ~95 observed variants.
+    /// The 46 requested families for the 2026 USA high-school Grade 11 scope.
+    /// The catalog expands these dynamically into the observed variants.
     fn default_families() -> Vec<RequestedFamily> {
         REQUESTED_FAMILY_MANIFEST
             .iter()

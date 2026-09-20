@@ -3,8 +3,7 @@ use crate::{
     runtime::{
         protocol::{DocumentReceipt, FetchOutcome, RankingsCapture},
         rankings::{
-            parse_page_response, EventCatalog, ExpectedPageContext, PageObservation,
-            RequestedFamily,
+            parse_page_response, EventCatalog, ExpectedPageContext, PageObservation, RankingsScope,
         },
     },
     store::{
@@ -49,10 +48,7 @@ fn raw(store: &ArtifactStore, receipt: &DocumentReceipt) -> anyhow::Result<serde
 
 pub(super) fn catalog(
     store: &ArtifactStore,
-    requested_families: &[RequestedFamily],
-    list_id: u64,
-    season: u64,
-    projection_grade: u8,
+    scope: &RankingsScope,
     collection: EvidenceDigest,
     outcome: &FetchOutcome,
 ) -> anyhow::Result<CatalogPublication> {
@@ -64,8 +60,13 @@ pub(super) fn catalog(
     if capture.capture != RankingsCapture::Navigation {
         bail!("wrong catalog capture kind");
     }
-    let mut catalog = EventCatalog::from_nav(&raw(store, receipt)?, requested_families)?;
-    if catalog.list_id != list_id || catalog.season_id != season {
+    let mut catalog = EventCatalog::from_nav(
+        &raw(store, receipt)?,
+        &scope.requested_families,
+        scope.season_kind,
+        scope.list_id,
+    )?;
+    if catalog.list_id != scope.list_id || catalog.season_id != scope.source_season_id() {
         bail!("catalog list or season differs from requested scope");
     }
     let catalog_digest = put(store, &catalog)?;
@@ -73,7 +74,7 @@ pub(super) fn catalog(
         .into_iter()
         .map(|family| family.family)
         .collect();
-    let plan = catalog.into_plan(collection, projection_grade)?;
+    let plan = catalog.into_plan(collection, scope.projection_grade, &scope.gender)?;
     let plan_digest = put(store, &plan)?;
     let events = plan
         .events

@@ -99,11 +99,11 @@ impl Actor {
                     Some(value) => value
                         .to_str()
                         .ok()
-                        .and_then(|v| v.parse().ok())
+                        .and_then(|v| v.parse::<u64>().ok())
                         .unwrap_or(30),
                     None => 30,
                 };
-                self.apply_cooldown_duration(Duration::from_secs(delay as u64));
+                self.apply_cooldown_duration(Duration::from_secs(delay));
             }
         }
     }
@@ -115,7 +115,9 @@ impl Actor {
         let now = Instant::now();
         let until = match now.checked_add(delay) {
             Some(value) => value,
-            None => now + Duration::from_secs(86_400),
+            // A deadline the platform clock cannot represent must not panic;
+            // bound it to the longest representable fallback instead.
+            None => now.checked_add(Duration::from_secs(86_400)).unwrap_or(now),
         };
         let current = match self.cooldown_until.lock() {
             Ok(value) => *value,
@@ -134,14 +136,20 @@ impl Actor {
     pub(in crate::runtime::browser) async fn command(&mut self, command: Option<Command>) {
         match command {
             Some(Command::Bootstrap { reply }) => {
-                let _ = reply.send(self.bootstrap().await);
+                if reply.send(self.bootstrap().await).is_err() {
+                    tracing::debug!("bootstrap reply send failed");
+                }
             }
             Some(Command::Fetch { request, reply }) => self.accept_fetch(request, reply),
             Some(Command::Inspect { reply }) => {
-                let _ = reply.send(self.inspect_page().await);
+                if reply.send(self.inspect_page().await).is_err() {
+                    tracing::debug!("inspect reply send failed");
+                }
             }
             Some(Command::Recover { reply }) => {
-                let _ = reply.send(self.recover_page().await);
+                if reply.send(self.recover_page().await).is_err() {
+                    tracing::debug!("recover reply send failed");
+                }
             }
             Some(Command::Shutdown { reply }) => {
                 self.shutdown_reply = Some(reply);
