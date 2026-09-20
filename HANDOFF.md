@@ -1,6 +1,6 @@
 # Current design handoff
 
-**Status: fixture-mode end-to-end qualification executed; live collection and the expanded roster pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has now completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions. It still does not claim live collection readiness, identity-matched delivery at workbook scale, or expanded-roster coverage.
+**Status: live rankings collection executed end to end; live row phase and the expanded roster pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has now completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions, and the live *collection* gate has since been executed against the real source (run `57f88b34…`: 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`) with its own row phase running. It still does not claim identity-matched delivery at workbook scale or expanded-roster coverage; the live lane's stopped-writer verification and cached replay remain unexecuted.
 
 ## Freeze and ownership
 
@@ -231,6 +231,50 @@ clear the desync. Operator diagnosis uses the lane's own capture tooling
 (`lane-v14/live-capture/capture-live.mjs`, which drives CDP 9333 directly) and the admin
 `sys_invocation`/`sys_journal` tables.
 
+### Live collection completed; paused-workflow recovery (2026-09-20, later)
+
+**The live collection gate is executed.** Run `57f88b34…` (all events, `--rankings --rankings-gender m
+--rankings-season indoor`, `--max-pages-per-event` at its default 10000) acquired the full scope through
+the entitled headed profile: `rankings-status` reports `phase: Complete`, `terminal: 95/95`,
+`pages: 1065`, `catalog_outcome: retrieved`,
+`final_snapshot 40792b83cfb168de5de876773f1312e41af3c34fc49782a991bdd6d9d4389dd6`,
+`plan_ref 24d3e3ae7c49cc0c`. The bounded supervisor (`live-resume-supervisor`) carried the closing rounds
+(85 → 89 → 94 → 95 terminal, 1,011 → 1,065 pages) and exited 0 on `COLLECTION COMPLETE`. Every one of
+those rounds re-arms through `browser-start` + `rankings-resume`, because the CDP client desync recorded
+above persists — the completion is a live collection under the re-arm mitigation, not evidence that the
+client drift is gone.
+
+Two operational facts were established while bringing the run's own workflow forward; the worker was
+replaced under the running lane (repaired build) while the coordinator invocation was in flight:
+
+- **A paused workflow invocation does not resume onto a replaced worker.** `PATCH /invocations/{id}/resume`
+  on the paused `RunCoordinator/run` returns `200`, and the invocation is `paused` again within seconds
+  with **zero journal growth** (`journal_size` unchanged across repeated polls) — the continuation never
+  reaches the handler. The worker logs the refusal at each attempt:
+  `restate_sdk::http_server: Error serving connection 127.0.0.1:…: hyper::Error(Http2, Error { kind: GoAway(b"", ENHANCE_YOUR_CALM, Library) })`,
+  i.e. the Restate → worker HTTP/2 stream is rejected before the invocation body runs. This is distinct
+  from a missing pinned deployment: `GET /deployments` still lists `dp_15VGHjPnChtjVgUJzmtWTjb`
+  (`http://127.0.0.1:21140/`, 13 services). The cause sits between the SDK and the server (transport),
+  not in pipeline logic, and repeating the resume does not clear it.
+- **`cancel` does not terminate a paused invocation; `kill` does.** `DELETE /invocations/{id}?mode=cancel`
+  answers `202` for both the paused `RunCoordinator/run` and its live `run_and_export`; the export
+  invocation reaches terminal `completed`, but the paused coordinator keeps `status = paused` (cancel is
+  observed at a cancellation point, which a paused invocation never reaches). `?mode=kill` on the same id
+  returns `202` and the row moves to terminal `completed`.
+
+**Working recovery — re-submit the identical request.** `start` derives the run identity from the request
+(`request.key()`) and the collection identity from the same plan, so re-sending the *identical*
+`run_and_export` body attaches a **new** `RunCoordinator/run` invocation to the **already-`Complete`**
+collection: nothing is re-acquired. The body was recovered from the paused invocation's journal entry 0 —
+`{"request":{"manifest":"d2d564fc…","snapshot":"e8605d26…","selection":{"scope":"all"},"concurrency":1,"execution":"stage"},"destination":"…/lane-v14/out-live-full-3/result.xlsx"}`
+— and posted to the ingress path the CLI itself uses,
+`POST <ingress>/restate/send/PipelineControl/run_and_export` (`202 Accepted`, new invocation id). The
+order matters: kill the paused coordinator first, because the queued successor stays `pending` until the
+exclusive `global` key is free; canceling the stale `run_and_export` alone leaves the lock held. With the
+kill applied, the run's `updated_at` moved off the frozen 13:36:07 within a minute and the row phase began
+(`completed=1/8`, `review_required=1`, one row in flight) against the same collection and the lane's
+two-sheet, 8-row sample workbook.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
@@ -243,4 +287,4 @@ clear the desync. Operator diagnosis uses the lane's own capture tooling
 
 **Current-tree gate re-run (2026-09-20, rankings transport retry):** `cargo fmt`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo build --locked`, and the 16-target command above are green — library 155 passed / 2 ignored (the two new `receiptless_transport` tests), every integration target ok including `result_verify` 14/14. The live lane was rebuilt and its worker restarted on this tree; `browser-start` re-attached the headed session to `ready` within 12 s, and run `57f88b34…` resumed at `55m` page 31.
 
-**Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20; the single-page and entitlement limits above constrain what a run can retrieve), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser at `ready`: the profile is now signed in, `browser-start` settles at `ready`, and acquisition fails only on the residual CDP client desync recorded above, which the resume supervisor works around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+**Next:** the live collection gate is executed (run `57f88b34…`, 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`); what remains for this lane is the rest of its own chain — the row phase now running, owner-online publication to `lane-v14/out-live-full-3/result.xlsx`, stopped-writer verification against the lane store, and cached replay — followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser at `ready`: the profile is now signed in, `browser-start` settles at `ready`, and acquisition fails only on the residual CDP client desync recorded above, which the resume supervisor works around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
