@@ -227,8 +227,18 @@ captured frame, so the guard fails if the patch stops applying or the model drif
 the patched binary (`0ed78cc33bf90020863e55485ecdbe5c2ada8c7f03c142fd05f1656ebad7fd46`): the same headed
 dashboard navigation that dropped a frame every 1-3 s on the previous build produced none, and every
 retained drop in the worker log predates the patched worker's start. The re-arm supervision stays in place
-until a full live collection runs clean end to end; whether the residual stalls shared this cause is not
-yet proven.
+until a full live collection runs clean end to end. The residual stalls are **independent of the dropped
+frames**: on the patched binary the frame loss is gone (no `WS Invalid message` or `parse_errors` line
+after the patched worker started), yet `SourceFailure` pauses continue at roughly one per two to four
+pages, each cleared by the supervisor's re-arm.
+That stall is a second, distinct defect and it is identified: a launched Chromium restores the profile's
+previous tabs, so every recovery relaunch left another restored dashboard page beside the two-page pool.
+The extra pages kept loading and competed for the same renderer capacity, so each stall made the next one
+likelier (observed: seven leaked pages, ~33-40 s/page late in the run; ~6-10 s/page once pruned mid-run,
+and the stalled run resumed advancing). `Actor::bootstrap` now closes pages the pool does not track when
+this process launched the browser; attached loopback sessions keep their pages. The code change passes fmt,
+strict Clippy, and the full test suite, and its live effect is verified on the next relaunch. While a
+patched worker runs, the lane supervisor also prunes restored tabs after every recovery.
 
 **Live outdoor run on the patched client (2026-09-20, in progress at this writing).** Run
 `7be7e9dd68cd5dc51c0c03edf05b5503297eec772756350870a04a1ebd95e0b3` (outdoor boys, list `168416`,

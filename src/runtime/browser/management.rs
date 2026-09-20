@@ -4,7 +4,7 @@ use crate::runtime::browser::{
     pool::{self, PageSlot},
     BrowserError, BrowserResponse, BrowserState,
 };
-use chromiumoxide::cdp::browser_protocol::target::CreateTargetParams;
+use chromiumoxide::cdp::browser_protocol::target::{CreateTargetParams, TargetId};
 use std::time::{Duration, Instant};
 
 impl Actor {
@@ -224,7 +224,38 @@ impl Actor {
         Ok(())
     }
 
+    /// A launched Chromium restores the profile's previous tabs, so a relaunch
+    /// accumulates pages this pool never tracks. They keep loading and compete
+    /// with the pool for renderer capacity, which raises the odds that the next
+    /// acquisition fails and the following recovery adds another one. Attached
+    /// (loopback) sessions share a browser this process did not start, so their
+    /// pages are left alone.
+    async fn close_restored_pages(&mut self) -> anyhow::Result<()> {
+        let tracked: std::collections::HashSet<TargetId> = self
+            .pages
+            .iter()
+            .map(|slot| slot.page.target_id().clone())
+            .collect();
+        let browser = self
+            .browser
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("browser unavailable"))?;
+        let pages = browser
+            .pages()
+            .await
+            .map_err(|_| anyhow::anyhow!("browser page list failed"))?;
+        for page in pages {
+            if !tracked.contains(page.target_id()) {
+                let _ = page.close().await;
+            }
+        }
+        Ok(())
+    }
+
     async fn bootstrap(&mut self) -> Result<(), anyhow::Error> {
+        if self.launched {
+            self.close_restored_pages().await?;
+        }
         self.create_pages().await
     }
 }
