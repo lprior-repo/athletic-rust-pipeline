@@ -133,12 +133,51 @@ retained outside the repository at
   `409 Conflict: browser is not ready`). The repaired pagination therefore rests on unit and
   regression evidence, not on a completed live collection, and the live collection gate stays open.
 
+### Entitled profile: pagination and transport repair (2026-09-20, later)
+
+The operator signed in to the lane's headed profile (`/dashboard/960929`) and the session serves
+complete rank lists again: `55m` accepted pages 1 through 9 (`next_page: 10`) and `100m` page 2
+returned ranks 100..201, so the earlier "the source ignores the page parameter" limit belongs to the
+anonymous session, not to the report. Entitlement also restored unblurred names for the rows that
+were masked before (101/101 named where five were).
+
+Two defects surfaced while collecting under that session; both are repaired in source:
+
+- **The source canonicalises navigation URLs.** A live four-shape probe through CDP
+  `Page.navigate` shows `…/list/173005/m/55m/?page=1&grades=11` is served as
+  `…/list/173005/m/55m?grades=11` — the trailing slash and the `page=1` query are stripped, while
+  `grades` is kept. A canonicalising navigation makes Chromium report `net::ERR_ABORTED` for the
+  original document, which `classify_observation` read as `Transport`; the run then paused with
+  `browser transport failed` and the readiness workflow escalated to `Restarting`/`human_required`.
+  `build_ui_url` now emits the canonical URL the source serves unchanged (page depth travels only in
+  the API payload) and both navigation paths ignore browser-aborted (`net::ERR_ABORTED` or
+  `canceled`) documents instead of latching a failure. Unit test:
+  `navigation_url_is_already_canonical`.
+- **The CDP client desynchronises on this site's heavy pages.** `chromiumoxide::handler` logs
+  hundreds of `WS Invalid message: data did not match any variant of untagged enum Message` per page
+  load. The fetch path used to enable `Network.enable(maxTotalBufferSize 32 MiB,
+  maxResourceBufferSize 8 MiB, enableDurableMessages true)`; a durable buffer makes Chromium replay
+  buffered events the client cannot parse, and lost responses surface as `Transport`. The fetch path
+  now enables default `Network` — the ranking payload arrives through the injected binding, so no
+  buffered replay is required — and transport failures log their stage
+  (`browser transport failure: {stage}: {error}`) instead of discarding the cause.
+
+Collection advances again under the entitled session, but each resume still stops after a few pages
+on the residual client desync. The run is resumable and idempotent per event page, so a bounded
+supervisor (`~/.local/share/athletic-rust-pipeline/lane-v14/resume-supervisor.sh`, hub process
+`live-resume-supervisor`) re-arms `browser-start` and `rankings-resume`, stopping on completion or
+after twelve rounds without new pages. Measured under it: `55m` advanced 4 -> 8 -> 9 accepted pages
+across resumes. This is an operational mitigation for a client defect, not a completed live
+collection; run `bbad8a7c…` (12-page cap, auto-export) remains non-terminal.
+
 ## Quality command ledger
 
 **Executed (current tree):** `cargo fmt --check`, `cargo check --all-targets`, `cargo clippy --all-targets -- -D warnings`, and the 16-target test command — all green (226 tests re-verified 2026-09-20 on the current working tree), with the library at 149 passed / 2 ignored and every named target passing; the bounded-readiness escalation unit test (`can_escalate` over the state lattice); the live readiness-recovery cycles recorded above (fallback launch, bounded escalation, operator re-arm, restored `ready`); retained-corpus qualification; all 26 private storage scenarios; focused parser/storage/bundle regressions; the request-serialization regression that failed before its repair and passed afterward; the indoor girls and indoor boys runs with publication, stopped-writer verification, and cached replay; the outdoor boys pause/resume run; the verification-binding mutation check for the criterion tests (reverting `source_season_id()` fails all three rankings verifier tests; reverting the verifier's scope gender binding fails the gender rejection case — the restored tree passes); and the retained standalone `girls-store` verify re-run with the current binary ( exit 0, `output_sha256 b29af985…` matching the retained `out-girls/result.xlsx`, `detail_sha256 83524f6f…`, source SHA-256 `0a1d53f1…` matching before and after, 8 source rows -> 6 accepted / 1 no-match / 1 review / 0 pending).
 
 **Latest complete command:** `cargo test --lib --bins --test rankings_parser --test rankings_catalog --test rankings_scope --test rankings_indoor --test rankings_storage --test profile_html_bounds --test profile_merge_bounds --test search_html_bounds --test workbook_verify --test workbook_zip_layout --test native_parser_properties --test result_verify --test bundle_verify --test ingress_failure_surface` — 16/16 targets green (re-run 2026-09-20 on the current working tree: 226 passed, 0 failed; library 149 passed / 2 ignored), including the previously failing restored fixture, the workbook targets it had blocked, the CLI guards that reject a division flag without `--rankings`, the fixture-driven rankings verifier cases, the bounded-readiness escalation test, and the operator ingress-failure surface above.
 
+**Current-tree gate re-run (2026-09-20, canonical-URL and transport repair):** `cargo fmt`, `cargo clippy --all-targets --locked -- -D warnings`, and `cargo build --locked` are clean, and the 16-target command above re-ran 16/16 green on the repaired tree (library 153 passed / 2 ignored, `result_verify` 14/14), including the new `navigation_url_is_already_canonical` unit test.
+
 **scale-v15 stopped-writer verification (2026-09-20):** the frozen `out-v16` publication committed a complete `native-export-worker-v4` report — 120,716/120,716 aggregate rows across `Export` (111,939) and `Sheet1` (8,777), 1,569,308/1,569,308 source fields, 26/26 matched headers plus 11 appended, output sha256 `dee3ed6b…`, detail sha256 `1aead772…` — taken while the writer was stopped, with 117,887 rows explicitly pending because run `a8328b7f…` was interrupted. Cached replay for this lane is still unexecuted.
 
-**Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20; the single-page and entitlement limits above constrain what a run can retrieve), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser recovered first: after the 2026-09-20 worker restarts, acquisition returns `browser transport failed` and `rankings-resume` intermittently answers `409 Conflict: browser is not ready`. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+**Next:** a live *collection* run against the real source remains the first unexecuted gate (the indoor navigation and boys/girls division pages were captured 2026-09-20; the single-page and entitlement limits above constrain what a run can retrieve), followed by workbook-scale identity-matched delivery and the expanded roster requirements in `SCOPE.md`. Re-running it needs the lane's headed browser at `ready`: the profile is now signed in, `browser-start` settles at `ready`, and acquisition fails only on the residual CDP client desync recorded above, which the resume supervisor works around until a client repair lands. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.

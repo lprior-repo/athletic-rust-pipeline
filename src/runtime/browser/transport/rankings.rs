@@ -18,7 +18,7 @@ use std::time::Duration;
 mod rankings_helper;
 use rankings_helper::{
     build_interceptor_script, build_response, build_ui_url, click_numeric_page, page_extent,
-    parse_binding, validate_request, wait_for_active_page, BINDING_NAME,
+    parse_binding, transport, validate_request, wait_for_active_page, BINDING_NAME,
 };
 
 /// Serve a `Results` capture through the persistent in-page fetch lane: the
@@ -161,49 +161,57 @@ pub(crate) async fn fetch_rankings(
     let mut script_id: Option<ScriptIdentifier> = None;
     let mut binding_attempted = false;
     let result = tokio::time::timeout_at(absolute_deadline, async {
-        page.execute(
-            chromiumoxide::cdp::browser_protocol::network::EnableParams::builder()
-                .max_total_buffer_size(33_554_432)
-                .max_resource_buffer_size(8_388_608)
-                .enable_durable_messages(true)
-                .build(),
-        )
-        .await
-        .map_err(|_| BrowserError::Transport)?;
-        page.execute(chromiumoxide::cdp::js_protocol::runtime::EnableParams::default())
-            .await
-            .map_err(|_| BrowserError::Transport)?;
-        let installed = page
-            .execute(
+        // Default Network.enable. A durable 32 MiB event buffer makes Chromium
+        // replay oversized buffered messages that the CDP client cannot parse
+        // ("WS Invalid message"), which desynchronises command responses and
+        // surfaces as transport failures. The ranking payload is captured by
+        // the injected binding, so no buffered replay is required.
+        transport(
+            page.execute(chromiumoxide::cdp::browser_protocol::network::EnableParams::default())
+                .await,
+            "network.enable",
+        )?;
+        transport(
+            page.execute(chromiumoxide::cdp::js_protocol::runtime::EnableParams::default())
+                .await,
+            "runtime.enable",
+        )?;
+        let installed = transport(
+            page.execute(
                 AddScriptToEvaluateOnNewDocumentParams::builder()
                     .source(script)
                     .build()
                     .map_err(|_| BrowserError::Protocol)?,
             )
-            .await
-            .map_err(|_| BrowserError::Transport)?;
+            .await,
+            "add_interceptor_script",
+        )?;
         script_id = Some(installed.identifier.clone());
         binding_attempted = true;
-        page.execute(
-            AddBindingParams::builder()
-                .name(BINDING_NAME)
-                .build()
-                .map_err(|_| BrowserError::Protocol)?,
-        )
-        .await
-        .map_err(|_| BrowserError::Transport)?;
-        let binding_events = page
-            .event_listener::<EventBindingCalled>()
-            .await
-            .map_err(|_| BrowserError::Transport)?;
-        let response_events = page
-            .event_listener::<EventResponseReceived>()
-            .await
-            .map_err(|_| BrowserError::Transport)?;
+        transport(
+            page.execute(
+                AddBindingParams::builder()
+                    .name(BINDING_NAME)
+                    .build()
+                    .map_err(|_| BrowserError::Protocol)?,
+            )
+            .await,
+            "add_binding",
+        )?;
+        let binding_events = transport(
+            page.event_listener::<EventBindingCalled>().await,
+            "binding_listener",
+        )?;
+        let response_events = transport(
+            page.event_listener::<EventResponseReceived>().await,
+            "response_listener",
+        )?;
         let ui_url = build_ui_url(source_origin, action)?;
-        page.goto(chromiumoxide::cdp::browser_protocol::page::NavigateParams::new(ui_url))
-            .await
-            .map_err(|_| BrowserError::Transport)?;
+        transport(
+            page.goto(chromiumoxide::cdp::browser_protocol::page::NavigateParams::new(ui_url))
+                .await,
+            "navigate",
+        )?;
         let events = futures::stream::select(
             binding_events
                 .map(CaptureEvent::Binding)

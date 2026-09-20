@@ -16,6 +16,7 @@ use tokio::time::Duration;
 use tokio_util::sync::CancellationToken;
 
 use super::super::{gate::ProfileGate, transport, BrowserError};
+use super::REDIRECT_ABORT;
 use crate::runtime::protocol::MAX_SOURCE_RESPONSE_BYTES;
 use crate::runtime::source::http::challenge::{cf_header_challenge, html_body_challenge};
 
@@ -198,6 +199,9 @@ impl PageObserver {
                         }
                     }
                     if latest_request_id.as_ref() == Some(&event.request_id) {
+                        if event.error_text == REDIRECT_ABORT || event.canceled == Some(true) {
+                            continue;
+                        }
                         observation.failed = true;
                         observation.body_complete = true;
                         store_observation(&self.page, observation.clone())?;

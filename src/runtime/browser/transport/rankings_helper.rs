@@ -235,6 +235,18 @@ pub(super) struct CapturedRanking {
     pub(super) capture_kind: RankingsCapture,
 }
 
+/// Map a CDP failure to the coarse transport error the operator contract
+/// exposes, keeping the underlying cause in the log.
+pub(super) fn transport<T, E: std::fmt::Display>(
+    result: Result<T, E>,
+    stage: &'static str,
+) -> Result<T, BrowserError> {
+    result.map_err(|error| {
+        tracing::warn!(stage, "browser transport failure: {error}");
+        BrowserError::Transport
+    })
+}
+
 /// Validate captured data and build BrowserResponse.
 pub(super) fn build_response(captured: CapturedRanking) -> Result<BrowserResponse, BrowserError> {
     // Require captured headers.
@@ -264,20 +276,23 @@ pub(super) fn build_response(captured: CapturedRanking) -> Result<BrowserRespons
     })
 }
 
-/// Build the UI URL with trailing slash: /.../list/{list_id}/{gender}/{event}/?page=N
+/// Build the navigation URL the source serves unchanged:
+/// `/TrackAndField/rankings/list/{list_id}/{gender}/{event}?grades=N`.
+///
+/// The page depth travels in the API payload (`qParams.page`), never in this
+/// landing URL. The source canonicalises a trailing slash and a `page` query
+/// away, and a canonicalising navigation makes Chromium abort the original
+/// document, which the navigation layer must not read as a transport failure.
 pub(super) fn build_ui_url(
     source_origin: &url::Url,
     action: &RankingsAction,
 ) -> Result<String, BrowserError> {
     let mut builder = source_origin
         .join(&format!(
-            "/TrackAndField/rankings/list/{}/{}/{}/",
+            "/TrackAndField/rankings/list/{}/{}/{}",
             action.list_id, action.gender, action.event_short
         ))
         .map_err(|_| BrowserError::Protocol)?;
-    builder
-        .query_pairs_mut()
-        .append_pair("page", &action.page.to_string());
     if let Some(grade) = action.grade {
         builder
             .query_pairs_mut()
@@ -518,6 +533,34 @@ mod tests {
                 Err(BrowserError::Protocol)
             ));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn navigation_url_is_already_canonical() -> anyhow::Result<()> {
+        let origin = url::Url::parse("https://www.athletic.net")?;
+        let action = RankingsAction {
+            list_id: 173_005,
+            gender: "m".to_owned(),
+            grade: Some(11),
+            event_short: "55m".to_owned(),
+            page: 3,
+            capture: RankingsCapture::Navigation,
+        };
+        // The source strips a trailing slash and the `page` query, and a
+        // canonicalising navigation aborts its own first document.
+        assert_eq!(
+            build_ui_url(&origin, &action)?,
+            "https://www.athletic.net/TrackAndField/rankings/list/173005/m/55m?grades=11"
+        );
+        let ungraded = RankingsAction {
+            grade: None,
+            ..action
+        };
+        assert_eq!(
+            build_ui_url(&origin, &ungraded)?,
+            "https://www.athletic.net/TrackAndField/rankings/list/173005/m/55m"
+        );
         Ok(())
     }
 }

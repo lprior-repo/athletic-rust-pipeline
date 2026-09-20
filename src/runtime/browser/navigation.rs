@@ -19,6 +19,13 @@ mod observer;
 pub(crate) use observer::start_observer;
 use observer::{is_main_document_for, load_observation, navigation_status, Observation};
 
+/// Chromium reports `net::ERR_ABORTED` for a request the browser itself
+/// superseded, which includes the original document of a redirect chain. The
+/// rankings source canonicalises navigations (it strips a trailing slash and a
+/// `page=1` query), so a redirect-free URL is not always available and the
+/// abandoned first document MUST NOT latch a transport failure.
+pub(super) const REDIRECT_ABORT: &str = "net::ERR_ABORTED";
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum NavigationOutcome {
     Ready,
@@ -168,6 +175,9 @@ pub(crate) async fn bootstrap(
                     }
                 }
                 if document_id.as_ref() == Some(&event.request_id) {
+                    if event.error_text == REDIRECT_ABORT || event.canceled == Some(true) {
+                        continue;
+                    }
                     observation.failed = true;
                     observation.body_complete = true;
                 }
