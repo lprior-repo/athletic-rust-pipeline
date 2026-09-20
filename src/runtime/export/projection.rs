@@ -82,7 +82,7 @@ pub(crate) fn project_report(
             .filter_map(|acquisition| acquisition.profile.clone())
             .collect::<Vec<_>>()
     });
-    let profile_url = accepted_profile_url(&selected_profiles, accepted.map(|(id, _)| id));
+    let annotations = annotations_for(&selected_profiles, accepted.map(|(id, _)| id));
     let (candidate_count, strength) = assessment
         .as_ref()
         .map_or((String::new(), String::new()), assessment_summary);
@@ -99,7 +99,7 @@ pub(crate) fn project_report(
         &report,
         digest,
         accepted,
-        profile_url,
+        annotations,
         candidate_count,
         strength,
         pr_summary,
@@ -153,7 +153,7 @@ fn fields(
     report: &super::RowReport,
     digest: &crate::domain::identity::EvidenceDigest,
     accepted: Option<(AthleteId, &'static str)>,
-    profile_url: String,
+    annotations: AcceptedAnnotations,
     candidate_count: String,
     strength: String,
     pr_summary: String,
@@ -169,7 +169,9 @@ fn fields(
             status(&report.resolution).to_owned(),
         ),
         ("native.athlete_id", athlete_id),
-        ("native.profile_url", profile_url),
+        ("native.profile_url", annotations.profile_url),
+        ("native.competing_school", annotations.competing_school),
+        ("native.junior_evidence", annotations.junior_evidence),
         ("native.acceptance_method", method),
         ("native.row_report_digest", digest.as_str().to_owned()),
         (
@@ -192,13 +194,67 @@ fn fields(
     .collect()
 }
 
-fn accepted_profile_url(profiles: &[ProfileEvidence], athlete_id: Option<AthleteId>) -> String {
+fn annotations_for(
+    profiles: &[ProfileEvidence],
+    athlete_id: Option<AthleteId>,
+) -> AcceptedAnnotations {
     profiles
         .iter()
         .find(|profile| Some(profile.athlete_id) == athlete_id)
-        .map_or_else(String::new, |profile| {
-            profile.profile_url.as_str().to_owned()
+        .map_or_else(AcceptedAnnotations::default, |profile| {
+            AcceptedAnnotations {
+                profile_url: profile.profile_url.as_str().to_owned(),
+                competing_school: competing_school(profile),
+                junior_evidence: junior_evidence(profile),
+            }
         })
+}
+
+/// Expanded-roster annotations the accepted profile already evidences: its profile URL,
+/// the school the athlete competed for in the newest evidenced season, and every
+/// season-bound grade observation. All empty when no profile was accepted; the school and
+/// grade strings are not claims of a complete history — that stays in the retained profile
+/// evidence and the JSONL sidecar, including the season/result behind each observation.
+#[derive(Debug, Default, PartialEq, Eq)]
+struct AcceptedAnnotations {
+    profile_url: String,
+    competing_school: String,
+    junior_evidence: String,
+}
+
+fn competing_school(profile: &ProfileEvidence) -> String {
+    let Some(newest) = profile
+        .teams
+        .iter()
+        .filter_map(|team| team.seasons.iter().copied().max())
+        .max()
+    else {
+        return String::new();
+    };
+    let mut names: Vec<&str> = profile
+        .teams
+        .iter()
+        .filter(|team| team.seasons.contains(&newest))
+        .map(|team| team.name.value.as_str())
+        .collect();
+    names.sort_unstable();
+    names.dedup();
+    names.join("; ")
+}
+
+fn junior_evidence(profile: &ProfileEvidence) -> String {
+    let mut observations: Vec<(u16, u8)> = profile
+        .grades
+        .iter()
+        .map(|grade| (grade.season, grade.grade))
+        .collect();
+    observations.sort_unstable_by(|left, right| right.cmp(left));
+    observations.dedup();
+    observations
+        .into_iter()
+        .map(|(season, grade)| format!("grade {grade} @ {season}"))
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 #[derive(Debug, Serialize)]

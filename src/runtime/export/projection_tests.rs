@@ -1,9 +1,10 @@
 use super::*;
 use crate::domain::{
     evidence::{
-        BestClaim, EvidenceRef, Observed, ProfileEvidence, ResultAttribution, ResultEvidence, Sport,
+        BestClaim, EvidenceRef, GradeAtSeason, Observed, ProfileEvidence, ResultAttribution,
+        ResultEvidence, Sport, TeamEvidence,
     },
-    facts::AthleteName,
+    facts::{AthleteName, SchoolName},
     identity::{AthleteId, EvidenceDigest, ProfileUrl},
 };
 use serde_json::Value;
@@ -134,4 +135,57 @@ fn oversized_selected_profile_moves_summary_to_detail_sidecar_without_truncation
         .as_str()
         .is_some_and(|text| text.contains("JSONL")));
     assert!(summary.get("observed_best").is_none());
+}
+
+#[test]
+fn roster_fields_report_newest_season_school_and_season_bound_grades() {
+    let mut selected = profile(7, Vec::new());
+    selected.teams.push(TeamEvidence {
+        team_id: 11,
+        name: Observed {
+            value: SchoolName::parse("Old High").expect("synthetic school"),
+            evidence: evidence("/old-school".to_owned()),
+        },
+        location: None,
+        seasons: vec![2024],
+        level: Some(1),
+    });
+    selected.teams.push(TeamEvidence {
+        team_id: 12,
+        name: Observed {
+            value: SchoolName::parse("New High").expect("synthetic school"),
+            evidence: evidence("/new-school".to_owned()),
+        },
+        location: None,
+        seasons: vec![2026],
+        level: Some(1),
+    });
+    selected.grades.push(GradeAtSeason {
+        team_id: 12,
+        season: 2026,
+        grade: 11,
+        evidence: evidence("/grade-2026".to_owned()),
+    });
+    selected.grades.push(GradeAtSeason {
+        team_id: 11,
+        season: 2025,
+        grade: 10,
+        evidence: evidence("/grade-2025".to_owned()),
+    });
+    let unrelated = profile(8, Vec::new());
+
+    let annotations = annotations_for(
+        &[selected, unrelated],
+        Some(AthleteId::new(7).expect("synthetic athlete id")),
+    );
+    assert_eq!(annotations.competing_school, "New High");
+    assert_eq!(
+        annotations.junior_evidence,
+        "grade 11 @ 2026; grade 10 @ 2025"
+    );
+    assert_eq!(
+        annotations.profile_url,
+        "https://athletic.net/athlete/7/track-and-field"
+    );
+    assert_eq!(annotations_for(&[], None), AcceptedAnnotations::default());
 }
