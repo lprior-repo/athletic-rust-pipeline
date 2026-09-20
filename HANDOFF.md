@@ -162,13 +162,29 @@ Two defects surfaced while collecting under that session; both are repaired in s
   buffered replay is required — and transport failures log their stage
   (`browser transport failure: {stage}: {error}`) instead of discarding the cause.
 
-Collection advances again under the entitled session, but each resume still stops after a few pages
-on the residual client desync. The run is resumable and idempotent per event page, so a bounded
+Collection advances again under the entitled session; the transport failures above are gone, and the
+remaining stop is a configuration boundary rather than a source limit. Run `bbad8a7c…` was submitted
+with `--max-pages-per-event 12` as an early qualification bound; under the entitled profile it
+accepted twelve distinct full pages for `55m` (`next_page: 13`) and then paused with
+`pause_reason: PageLimit`, so multi-page acquisition is now observed end to end and the cap — not the
+source and not the transport — ended the chain. `start` defaults the cap to 10000 with a short page
+ending the chain, so the live gate was re-submitted with that default as run `c25150c2…` (`--all`,
+`--rankings --rankings-gender m --rankings-season indoor`, automatic export to
+`lane-v14/out-live-full/result.xlsx`).
+
+Because each resume still stops after a few pages on the residual CDP client desync, a bounded
 supervisor (`~/.local/share/athletic-rust-pipeline/lane-v14/resume-supervisor.sh`, hub process
-`live-resume-supervisor`) re-arms `browser-start` and `rankings-resume`, stopping on completion or
-after twelve rounds without new pages. Measured under it: `55m` advanced 4 -> 8 -> 9 accepted pages
-across resumes. This is an operational mitigation for a client defect, not a completed live
-collection; run `bbad8a7c…` (12-page cap, auto-export) remains non-terminal.
+`live-resume-supervisor`) re-arms `browser-start` and `rankings-resume` and stops on completion or
+after twelve rounds without new pages. This is an operational mitigation for a client defect, not a
+completed live collection; both live runs remain non-terminal.
+
+`start` derives the run identity from the plan and source, so **resubmitting the same workbook and scope
+with a different `--max-pages-per-event` reuses the existing run** rather than lifting the cap: Restate
+answers `submitted` and deduplicates on the previously used identity, and the 12-page run above is the
+one that keeps running. Lifting a cap therefore needs a new run identity (a byte-identical source copy
+at a new path is enough) or a run submitted without the cap in the first place. Automatic export is
+separate: each `--output` destination gets its own `PipelineControl/run_and_export` invocation, which
+waits for run completion before publishing.
 
 ## Quality command ledger
 
