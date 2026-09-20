@@ -201,12 +201,21 @@ The residual CDP desync surfaced as `browser transport failed` with `pause_reaso
 the client loses the command response while the source's pages replay network events, so
 `capture_body` (`Network.getResponseBody`) answers `{"code":-32000,"message":"No data found for
 resource with given identifier"}` and the attempt is classified `FailureCode::Transport` with **no
-receipt**. Rankings acquisition then paused after a single attempt, because `run_step` disabled
-retries outright for rankings (`is_rankings => retryable = false`) and `SourceCache` returns failures as
-*values*, so the Restate retry policy never saw them. A resume therefore re-issued the same page
-against the same desynced client and failed again: 30 consecutive supervisor rounds at 5 pages.
+receipt**. Its origin is now identified: the worker log shows the CDP client discarding
+WebSocket frames it cannot deserialize, continuously, every 1–3 s while acquisition runs —
 
-Two changes make the lane self-healing:
+```
+WARN chromiumoxide::handler: WS Invalid message: data did not match any variant of untagged enum Message
+```
+
+The lane is pinned to `chromiumoxide = "=0.9.1"` (the newest release, published 2026-02-25) and drives
+Chromium 151.0.7922.173, so this is protocol drift inside the CDP client, not pipeline logic: a
+single unparseable frame is dropped, and when it is the completion for a request the lane is awaiting,
+the body is no longer retrievable and the attempt fails. Closing this properly means upstreaming a
+tolerant message model (or logging the dropped `method` to prove which events are lost) or reducing
+reliance on that channel — out of reach of a configuration change, since no newer client exists.
+
+These changes make the lane self-healing meanwhile:
 
 - `receiptless_transport(code, has_receipt)` — only a transport fault that produced **no receipt** is
   retryable for rankings. Anything the source answered (403/429/challenge/parse) still retains its
