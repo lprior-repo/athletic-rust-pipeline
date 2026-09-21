@@ -121,6 +121,21 @@ pub trait Entity: Serialize + DeserializeOwned + Clone {
     /// [`Store::scan`], so a rule that lives here holds for the report, the workbook, the snapshot
     /// and the Restate handlers at once.
     fn publish(&mut self) {}
+
+    /// How many of this entity's rows carry something the contract withheld. [`Store::consolidate`]
+    /// sums this in the same pass that writes the snapshot, so reporting the count never re-scans
+    /// the table.
+    fn withheld_mailboxes(&self) -> usize {
+        0
+    }
+}
+
+/// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
+/// collection contract withheld a consumer mailbox from.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Consolidated {
+    pub rows: usize,
+    pub withheld: usize,
 }
 
 /// The id field alone, borrowed out of a serialized observation so an append can key the row without
@@ -321,8 +336,9 @@ impl Store {
     }
 
     /// Merge a table and write the materialized snapshot as JSONL, the read model every report and
-    /// spreadsheet consumes. Returns the number of distinct entities written.
-    pub fn consolidate<T: Entity>(&self, table: Table, out_path: &Path) -> Result<usize> {
+    /// spreadsheet consumes. The withheld count comes out of the same merge pass that writes the
+    /// rows, so reporting it never re-scans the table.
+    pub fn consolidate<T: Entity>(&self, table: Table, out_path: &Path) -> Result<Consolidated> {
         let rows = self.scan::<T>(table)?;
         if let Some(parent) = out_path.parent() {
             std::fs::create_dir_all(parent)
@@ -331,20 +347,25 @@ impl Store {
         let file = std::fs::File::create(out_path)
             .with_context(|| format!("creating {}", out_path.display()))?;
         let mut writer = BufWriter::new(file);
+        let mut withheld = 0_usize;
         for record in &rows {
+            withheld = withheld.saturating_add(record.withheld_mailboxes());
             serde_json::to_writer(&mut writer, record)
                 .with_context(|| format!("writing {}", out_path.display()))?;
             writer.write_all(b"\n")?;
         }
         writer.flush()?;
         self.flush()?;
-        Ok(rows.len())
+        Ok(Consolidated {
+            rows: rows.len(),
+            withheld,
+        })
     }
 
     /// Force the write-ahead journal to disk.
     /// Consolidate one table through the entity type that owns its rows. The table-to-type mapping
     /// lives here, next to the `Entity` impls, so callers stay free of a seven-arm match.
-    pub fn consolidate_table(&self, table: Table, out_path: &Path) -> Result<usize> {
+    pub fn consolidate_table(&self, table: Table, out_path: &Path) -> Result<Consolidated> {
         match table {
             Table::Schools => self.consolidate::<CanonicalSchool>(table, out_path),
             Table::Teams => self.consolidate::<CanonicalTeam>(table, out_path),
@@ -698,6 +719,10 @@ impl Entity for CanonicalCoach {
             }
         }
     }
+
+    fn withheld_mailboxes(&self) -> usize {
+        usize::from(self.email_withheld)
+    }
 }
 
 impl Entity for CanonicalAthlete {
@@ -846,7 +871,8 @@ mod tests {
         let out = dir.path().join("out/schools.jsonl");
         let count = store
             .consolidate::<CanonicalSchool>(Table::Schools, &out)
-            .unwrap();
+            .unwrap()
+            .rows;
         assert_eq!(count, 1);
         let merged: CanonicalSchool = serde_json::from_str(
             std::fs::read_to_string(&out)

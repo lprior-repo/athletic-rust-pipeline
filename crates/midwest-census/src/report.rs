@@ -98,8 +98,6 @@ pub struct Census {
     pub scope: String,
     pub totals: StateCensus,
     pub by_state: BTreeMap<String, StateCensus>,
-    /// School counts per state, taken from the school table (a school can exist with no athletes).
-    pub schools_by_state: BTreeMap<String, usize>,
     pub athletes_by_grad_year: BTreeMap<String, usize>,
     pub class_of_2027_sports: SportsBreakdown,
     pub providers: ProviderCoverage,
@@ -696,7 +694,6 @@ pub fn build_census(store: &Store, scope: Scope) -> Result<Census> {
         scope: scope.as_str().to_string(),
         totals: totals_of(&by_state, &counts),
         by_state,
-        schools_by_state: schools_by_state(&schools),
         athletes_by_grad_year: athlete_rollup.by_grad_year,
         class_of_2027_sports: athlete_rollup.co2027.sports,
         providers: ProviderCoverage {

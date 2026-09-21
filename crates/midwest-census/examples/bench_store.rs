@@ -232,7 +232,8 @@ fn scan_and_consolidate(store: &Store, dir: &TempDir, distinct: usize) -> Result
     let started = Instant::now();
     let written = store
         .consolidate::<CanonicalSchool>(TABLE, &out)
-        .context("consolidating schools")?;
+        .context("consolidating schools")?
+        .rows;
     let consolidate = measure("consolidate", written, "entities", started.elapsed())?;
     anyhow::ensure!(
         written == distinct,

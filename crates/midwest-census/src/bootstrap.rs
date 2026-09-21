@@ -107,12 +107,19 @@ pub async fn serve_until(
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<DrainReport> {
     init_tracing();
-    std::fs::create_dir_all(&options.data_dir)
-        .with_context(|| format!("creating {}", options.data_dir.display()))?;
-    let store = Arc::new(
-        Store::open(&options.data_dir)
-            .with_context(|| format!("opening the store under {}", options.data_dir.display()))?,
-    );
+    // Opening the store is synchronous, fsync-heavy work: it belongs on the blocking pool, not on
+    // the runtime thread that will own the endpoint.
+    let data_dir = options.data_dir.clone();
+    let store = tokio::task::spawn_blocking(move || -> Result<Arc<Store>> {
+        std::fs::create_dir_all(&data_dir)
+            .with_context(|| format!("creating {}", data_dir.display()))?;
+        Store::open(&data_dir)
+            .map(Arc::new)
+            .with_context(|| format!("opening the store under {}", data_dir.display()))
+    })
+    .await
+    .context("joining the store bootstrap task")?
+    .context("opening the store")?;
     if !options.listen.ip().is_loopback() {
         // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
         anyhow::bail!(

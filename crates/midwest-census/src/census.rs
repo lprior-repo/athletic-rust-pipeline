@@ -412,15 +412,6 @@ pub async fn collect_milesplit(
     Ok(report)
 }
 
-/// How many coaches the merge withheld a consumer mailbox from.
-///
-/// The withholding itself happens in [`crate::store::Entity::publish`], so every reader sees the
-/// same projection; this only counts what the contract dropped.
-pub(crate) fn withheld_coach_emails(store: &Store) -> Result<usize> {
-    let coaches: Vec<crate::model::CanonicalCoach> = store.scan(Table::Coaches)?;
-    Ok(coaches.iter().filter(|coach| coach.email_withheld).count())
-}
-
 /// Merge append logs into snapshots under `out/`, returning per-table counts.
 pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
     let out = store.out_dir();
@@ -428,44 +419,49 @@ pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
     let mut counts = Vec::new();
     counts.push((
         "schools".to_string(),
-        store.consolidate::<CanonicalSchool>(Table::Schools, &out.join("schools.jsonl"))?,
+        store
+            .consolidate::<CanonicalSchool>(Table::Schools, &out.join("schools.jsonl"))?
+            .rows,
     ));
     counts.push((
         "teams".to_string(),
-        store.consolidate::<CanonicalTeam>(Table::Teams, &out.join("teams.jsonl"))?,
+        store
+            .consolidate::<CanonicalTeam>(Table::Teams, &out.join("teams.jsonl"))?
+            .rows,
     ));
     let coaches_path = out.join("coaches.jsonl");
-    counts.push((
-        "coaches".to_string(),
-        store.consolidate::<crate::model::CanonicalCoach>(Table::Coaches, &coaches_path)?,
-    ));
-    // The merge withholds consumer mailboxes before the snapshot is written, so this is a count of
-    // the same rule the report and the workbook already went through.
-    counts.push((
-        "coaches_email_withheld".to_string(),
-        withheld_coach_emails(store)?,
-    ));
+    let coaches =
+        store.consolidate::<crate::model::CanonicalCoach>(Table::Coaches, &coaches_path)?;
+    counts.push(("coaches".to_string(), coaches.rows));
+    // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
+    // same rule the report and the workbook already went through.
+    counts.push(("coaches_email_withheld".to_string(), coaches.withheld));
     counts.push((
         "athletes".to_string(),
-        store.consolidate::<CanonicalAthlete>(Table::Athletes, &out.join("athletes.jsonl"))?,
+        store
+            .consolidate::<CanonicalAthlete>(Table::Athletes, &out.join("athletes.jsonl"))?
+            .rows,
     ));
     counts.push((
         "meets".to_string(),
-        store.consolidate::<crate::model::CanonicalMeet>(Table::Meets, &out.join("meets.jsonl"))?,
+        store
+            .consolidate::<crate::model::CanonicalMeet>(Table::Meets, &out.join("meets.jsonl"))?
+            .rows,
     ));
     counts.push((
         "events".to_string(),
-        store.consolidate::<crate::model::CanonicalEvent>(
-            Table::Events,
-            &out.join("events.jsonl"),
-        )?,
+        store
+            .consolidate::<crate::model::CanonicalEvent>(Table::Events, &out.join("events.jsonl"))?
+            .rows,
     ));
     counts.push((
         "performances".to_string(),
-        store.consolidate::<crate::model::CanonicalPerformance>(
-            Table::Performances,
-            &out.join("performances.jsonl"),
-        )?,
+        store
+            .consolidate::<crate::model::CanonicalPerformance>(
+                Table::Performances,
+                &out.join("performances.jsonl"),
+            )?
+            .rows,
     ));
     Ok(counts)
 }

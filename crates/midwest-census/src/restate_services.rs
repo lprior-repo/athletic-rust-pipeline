@@ -155,16 +155,12 @@ fn consolidate_tables(store: &Store, tables: &[Table]) -> anyhow::Result<Vec<Con
     let mut out = Vec::with_capacity(tables.len());
     for table in tables {
         let path = store.table_path(*table);
-        let rows = store.consolidate_table(*table, &path)?;
-        // Same rule as the CLI: the merge withholds consumer mailboxes before anything is written.
-        let emails_withheld = if *table == Table::Coaches {
-            Some(crate::census::withheld_coach_emails(store)?)
-        } else {
-            None
-        };
+        let consolidated = store.consolidate_table(*table, &path)?;
+        // Same rule as the CLI: the count comes out of the merge that wrote the snapshot.
+        let emails_withheld = (*table == Table::Coaches).then_some(consolidated.withheld);
         out.push(ConsolidatedTable {
             table: table.file().to_string(),
-            rows,
+            rows: consolidated.rows,
             emails_withheld,
         });
     }
