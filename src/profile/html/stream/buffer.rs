@@ -1,26 +1,13 @@
-use anyhow::{anyhow, bail, Context, Result};
+//! Streaming element, text, and script capture state for the profile parse.
+
+use super::bounds::append_bounded;
+use super::structure::implicitly_closes;
+use super::Parsed;
+use super::{MAX_CONTAINERS, MAX_DEPTH};
+use crate::domain::identity::AthleteId;
+use anyhow::{bail, Context, Result};
 use html_escape::decode_html_entities;
 use lol_html::html_content::{Element, EndTag, TextChunk, TextType};
-use lol_html::Selector;
-use lol_html::{DocumentContentHandlers, ElementContentHandlers, Settings};
-use std::borrow::Cow;
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::domain::identity::AthleteId;
-use crate::html_bounds::rewrite_bounded;
-
-const MAX_CAPTURE_BYTES: usize = 2 * 1024 * 1024;
-const MAX_CONTAINERS: usize = 4096;
-const MAX_CANDIDATES: usize = 4096;
-const MAX_DEPTH: usize = 128;
-
-pub(super) struct Parsed {
-    pub canonical: Vec<String>,
-    pub og_url: Vec<String>,
-    pub scripts: Vec<String>,
-    pub cohorts: Vec<(usize, String)>,
-}
 
 struct Scope {
     locator_index: usize,
@@ -34,7 +21,7 @@ struct Frame {
     script: bool,
 }
 
-struct StreamState {
+pub(super) struct StreamState {
     requested: AthleteId,
     canonical: Vec<String>,
     og_url: Vec<String>,
@@ -47,49 +34,8 @@ struct StreamState {
     text_type: Option<TextType>,
 }
 
-pub(super) fn parse(source: &str, requested: AthleteId) -> Result<Parsed> {
-    let state = Rc::new(RefCell::new(StreamState::new(requested)));
-    let selector = "*"
-        .parse::<Selector>()
-        .map_err(|error| anyhow!("profile selector: {error:?}"))?;
-    let element_state = Rc::clone(&state);
-    let text_state = Rc::clone(&state);
-    let handlers =
-        ElementContentHandlers::default().element(move |element: &mut Element<'_, '_>| {
-            element_state
-                .borrow_mut()
-                .start(element)
-                .map_err(handler_error)?;
-            if element.can_have_content() {
-                let end_state = Rc::clone(&element_state);
-                element.on_end_tag(Box::new(move |end: &mut EndTag<'_>| {
-                    end_state.borrow_mut().end(end).map_err(handler_error)
-                }))?;
-            }
-            Ok(())
-        });
-    let settings = Settings {
-        element_content_handlers: vec![(Cow::Owned(selector), handlers)],
-        document_content_handlers: vec![DocumentContentHandlers::default().text(
-            move |text: &mut TextChunk<'_>| {
-                text_state.borrow_mut().text(text).map_err(handler_error)
-            },
-        )],
-        ..Settings::new()
-    };
-    rewrite_bounded(source, settings)?;
-    Rc::try_unwrap(state)
-        .map_err(|_| anyhow!("profile parser retained callback state"))?
-        .into_inner()
-        .finish()
-}
-
-fn handler_error(error: anyhow::Error) -> Box<dyn std::error::Error + Send + Sync> {
-    error.into()
-}
-
 impl StreamState {
-    fn new(requested: AthleteId) -> Self {
+    pub(super) fn new(requested: AthleteId) -> Self {
         Self {
             requested,
             canonical: Vec::new(),
@@ -104,7 +50,7 @@ impl StreamState {
         }
     }
 
-    fn start(&mut self, element: &mut Element<'_, '_>) -> Result<()> {
+    pub(super) fn start(&mut self, element: &mut Element<'_, '_>) -> Result<()> {
         let tag = element.tag_name().to_ascii_lowercase();
         self.reject_implicit_close(&tag)?;
         self.collect_metadata(&tag, element)?;
@@ -134,7 +80,7 @@ impl StreamState {
         Ok(())
     }
 
-    fn end(&mut self, end: &mut EndTag<'_>) -> Result<()> {
+    pub(super) fn end(&mut self, end: &mut EndTag<'_>) -> Result<()> {
         let expected = self
             .frames
             .last()
@@ -150,7 +96,7 @@ impl StreamState {
         Ok(())
     }
 
-    fn text(&mut self, text: &mut TextChunk<'_>) -> Result<()> {
+    pub(super) fn text(&mut self, text: &mut TextChunk<'_>) -> Result<()> {
         self.text_type = Some(text.text_type());
         self.capture_first_chunk(text)?;
         if text.last_in_text_node() {
@@ -259,20 +205,6 @@ impl StreamState {
         Ok((scope, inherited.is_some_and(|(_, excluded)| excluded)))
     }
 
-    fn push_candidate(output: &mut Vec<String>, value: String) -> Result<()> {
-        if value.len() > MAX_CAPTURE_BYTES {
-            bail!("profile identity URL exceeds capture bound");
-        }
-        if output.len() >= MAX_CANDIDATES {
-            bail!("profile identity URL count exceeds bound");
-        }
-        output
-            .try_reserve(1)
-            .context("allocating identity URL evidence")?;
-        output.push(value);
-        Ok(())
-    }
-
     fn append_scope(&mut self, owner: usize, value: &str) -> Result<()> {
         let scope = self
             .scopes
@@ -303,14 +235,7 @@ impl StreamState {
         Ok(())
     }
 
-    fn ensure_capacity(&self, current: usize, max: usize, label: &str) -> Result<()> {
-        if current >= max {
-            bail!("profile {label} exceeds bound");
-        }
-        Ok(())
-    }
-
-    fn finish(self) -> Result<Parsed> {
+    pub(super) fn finish(self) -> Result<Parsed> {
         if !self.frames.is_empty() || self.script_buffer.is_some() || !self.text_node.is_empty() {
             bail!("profile HTML ended with an ambiguous open scope");
         }
@@ -326,62 +251,4 @@ impl StreamState {
             cohorts,
         })
     }
-}
-
-fn append_bounded(output: &mut String, value: &str) -> Result<()> {
-    let next = output
-        .len()
-        .checked_add(value.len())
-        .context("profile capture byte count overflow")?;
-    if next > MAX_CAPTURE_BYTES {
-        bail!("profile capture exceeds bound");
-    }
-    output
-        .try_reserve(value.len())
-        .context("allocating profile capture")?;
-    output.push_str(value);
-    Ok(())
-}
-
-fn implicitly_closes(current: &str, next: &str) -> bool {
-    matches!(
-        (current, next),
-        (
-            "p",
-            "address"
-                | "article"
-                | "aside"
-                | "blockquote"
-                | "div"
-                | "dl"
-                | "fieldset"
-                | "footer"
-                | "form"
-                | "h1"
-                | "h2"
-                | "h3"
-                | "h4"
-                | "h5"
-                | "h6"
-                | "header"
-                | "hgroup"
-                | "hr"
-                | "main"
-                | "menu"
-                | "nav"
-                | "ol"
-                | "p"
-                | "pre"
-                | "section"
-                | "table"
-                | "ul"
-        ) | ("li", "li")
-            | ("dt" | "dd", "dt" | "dd")
-            | ("rt" | "rp", "rt" | "rp")
-            | ("option", "option" | "optgroup")
-            | ("optgroup", "optgroup")
-            | ("thead" | "tbody" | "tfoot", "thead" | "tbody" | "tfoot")
-            | ("tr", "tr")
-            | ("td" | "th", "td" | "th")
-    )
 }

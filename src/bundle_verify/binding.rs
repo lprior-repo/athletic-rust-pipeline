@@ -1,88 +1,21 @@
-//! Cross-artifact verification. Source fields are independently read by the field
-//! verifier; the streamed XLSX annotations must also bind the verified JSONL rows.
+use super::{pr_summary::build_pr_summary, MAX_DETAIL_ROW_BYTES};
 use crate::{
-    domain::{
-        evidence::{BestClaim, EvidenceRef, ProfileEvidence},
-        identity::{EvidenceDigest, ProfileUrl, WorkbookDigest},
-        marks::MarkValue,
-        performance_evidence::{
-            summarize_performances, BestClaimKind, Completeness, PerformanceContext,
-            PerformanceSummary,
-        },
-    },
+    domain::identity::{EvidenceDigest, ProfileUrl, WorkbookDigest},
     model::SourceRecord,
-    result_verify::{verify_results, ResultVerificationReport},
     runtime::{
         acquisition::ProfileAcquisition,
         row_protocol::{AcceptanceMethod, RowReport, RowResolution},
     },
     store::ArtifactStore,
     workbook_ingest,
-    workbook_verify::{verify_fields, VerificationReport},
 };
 use anyhow::{bail, Context, Result};
-use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
+use serde::Deserialize;
 use std::{
     fs::File,
     io::{BufRead, BufReader, Read},
     path::Path,
 };
-
-const MAX_DETAIL_ROW_BYTES: u64 = 128 * 1024 * 1024;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BundleVerificationReport {
-    pub fields: VerificationReport,
-    pub results: ResultVerificationReport,
-    pub output_sha256: String,
-    pub detail_sha256: String,
-}
-/// Verifies retained evidence consistency and revalidates raw exclusion receipts.
-pub fn verify_bundle(
-    original: &Path,
-    output: &Path,
-    expected_sha: &WorkbookDigest,
-    extra_headers: &[String],
-    store: &ArtifactStore,
-) -> Result<BundleVerificationReport> {
-    let detail = output.with_extension("jsonl");
-    let output_sha256 = hash_file(output)?;
-    let detail_sha256 = hash_file(&detail)?;
-    let fields = verify_fields(original, output, expected_sha, extra_headers)?;
-    let results = verify_results(&detail, store)?;
-    if results.total_rows != fields.matched_row_count {
-        bail!("sidecar row accounting differs from preserved source rows");
-    }
-    bind_rows(output, &detail, expected_sha, extra_headers, store)?;
-    if hash_file(output)? != output_sha256
-        || hash_file(&detail)? != detail_sha256
-        || hash_file(original)? != expected_sha.as_str()
-    {
-        bail!("bundle or original changed during verification");
-    }
-    Ok(BundleVerificationReport {
-        fields,
-        results,
-        output_sha256,
-        detail_sha256,
-    })
-}
-
-fn hash_file(path: &Path) -> Result<String> {
-    let mut reader = BufReader::new(File::open(path)?);
-    let mut digest = Sha256::new();
-    loop {
-        let chunk = reader.fill_buf()?;
-        if chunk.is_empty() {
-            break;
-        }
-        digest.update(chunk);
-        let length = chunk.len();
-        reader.consume(length);
-    }
-    Ok(format!("{:x}", digest.finalize()))
-}
 
 #[derive(Deserialize)]
 struct DetailBinding {
@@ -92,7 +25,8 @@ struct DetailBinding {
     assessment: Option<serde_json::Value>,
     profile_artifacts: Vec<serde_json::Value>,
 }
-fn bind_rows(
+
+pub(super) fn bind_rows(
     output: &Path,
     detail: &Path,
     expected_sha: &WorkbookDigest,
@@ -237,6 +171,7 @@ fn check_resolution(row: &SourceRecord, resolution: &RowResolution) -> Result<()
     }
     Ok(())
 }
+
 fn check_terminal_annotations(
     row: &SourceRecord,
     bound: &DetailBinding,
@@ -292,137 +227,6 @@ fn assessment_summary(value: &serde_json::Value) -> (String, String) {
         .max()
         .map_or_else(String::new, |value| value.to_string());
     (count, strength)
-}
-const MAX_EXCEL_CELL_UTF16_UNITS: usize = 32_767;
-
-#[derive(Debug, Serialize)]
-struct PrSummary<'a> {
-    observed_best: Vec<CompactObservedBest<'a>>,
-    source_personal_best_claims: Vec<CompactSourcePersonalBestClaim<'a>>,
-    completeness: Completeness,
-}
-
-#[derive(Debug, Serialize)]
-struct CompactObservedBest<'a> {
-    context: &'a PerformanceContext,
-    result_id: u64,
-    displayed_mark: &'a str,
-    comparable_mark: Option<MarkValue>,
-    evidence: &'a EvidenceRef,
-}
-
-#[derive(Debug, Serialize)]
-struct CompactSourcePersonalBestClaim<'a> {
-    kind: &'a BestClaimKind,
-    result_id: u64,
-    raw: &'a BestClaim,
-    claimed: Option<bool>,
-    evidence: &'a EvidenceRef,
-}
-
-#[derive(Debug, Serialize)]
-struct PrSummaryOverflow<'a> {
-    storage: &'static str,
-    source_key: &'a str,
-    report_digest: &'a EvidenceDigest,
-    selected_athlete_id: u64,
-    observed_best_group_count: usize,
-    explanation: &'static str,
-}
-
-fn build_pr_summary(
-    profiles: &[ProfileEvidence],
-    athlete_id: crate::domain::identity::AthleteId,
-    source_key: &str,
-    report_digest: &EvidenceDigest,
-) -> Result<String> {
-    let results = profiles
-        .iter()
-        .filter(|profile| profile.athlete_id == athlete_id)
-        .flat_map(|profile| profile.results.iter().cloned())
-        .collect::<Vec<_>>();
-    let summary: PerformanceSummary =
-        summarize_performances(&results).context("summarizing selected-athlete performances")?;
-    let compact = PrSummary {
-        observed_best: summary
-            .observed_best_groups
-            .iter()
-            .map(compact_observed_best)
-            .collect(),
-        source_personal_best_claims: compact_source_claims(&summary),
-        completeness: summary.completeness,
-    };
-    let encoded = serde_json::to_string(&compact)
-        .context("serializing selected-athlete performance summary")?;
-    if encoded.encode_utf16().count() <= MAX_EXCEL_CELL_UTF16_UNITS {
-        return Ok(encoded);
-    }
-    let overflow = PrSummaryOverflow {
-        storage: "detail_sidecar",
-        source_key,
-        report_digest,
-        selected_athlete_id: athlete_id.get(),
-        observed_best_group_count: summary.observed_best_groups.len(),
-        explanation:
-            "full selected-athlete observations and source claims are retained in row JSONL",
-    };
-    let encoded = serde_json::to_string(&overflow)
-        .context("serializing selected-athlete summary sidecar reference")?;
-    if encoded.encode_utf16().count() > MAX_EXCEL_CELL_UTF16_UNITS {
-        bail!("selected-athlete summary sidecar reference exceeds Excel cell limit");
-    }
-    Ok(encoded)
-}
-
-fn compact_observed_best<'a>(
-    group: &'a crate::domain::performance_evidence::ObservedBestGroup,
-) -> CompactObservedBest<'a> {
-    let comparable_mark = match &group.best.mark {
-        crate::domain::performance_evidence::MarkObservation::Parsed(mark) => mark.comparable(),
-        crate::domain::performance_evidence::MarkObservation::Unsupported { .. } => None,
-    };
-    CompactObservedBest {
-        context: &group.context,
-        result_id: group.best.result_id,
-        displayed_mark: &group.best.displayed_mark,
-        comparable_mark,
-        evidence: &group.best.evidence,
-    }
-}
-
-fn compact_source_claims<'a>(
-    summary: &'a PerformanceSummary,
-) -> Vec<CompactSourcePersonalBestClaim<'a>> {
-    let selected_results = summary
-        .observed_best_groups
-        .iter()
-        .map(|group| {
-            (
-                group.best.result_id,
-                group.best.evidence.document.as_str(),
-                group.best.evidence.locator.as_str(),
-            )
-        })
-        .collect::<std::collections::BTreeSet<_>>();
-    summary
-        .source_best_claims
-        .iter()
-        .filter(|claim| {
-            matches!(&claim.kind, BestClaimKind::PersonalBest)
-                && selected_results.contains(&(
-                    claim.result_id,
-                    claim.evidence.document.as_str(),
-                    claim.evidence.locator.as_str(),
-                ))
-        })
-        .map(|claim| CompactSourcePersonalBestClaim {
-            kind: &claim.kind,
-            result_id: claim.result_id,
-            raw: &claim.raw,
-            claimed: claim.claimed,
-            evidence: &claim.evidence,
-        })
-        .collect()
 }
 
 fn check_field(row: &SourceRecord, name: &str, expected: &str) -> Result<()> {
