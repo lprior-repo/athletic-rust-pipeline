@@ -21,18 +21,155 @@ cargo run --release -p midwest-census -- <command>
   collect         Walk rosters and emit canonical entities for the given states
   import-coaches  Import the researched official coach-contact CSV into canonical entities
   provider        Run one association contact adapter by name
-  consolidate     Merge append logs into `out/*.jsonl` snapshots
-  report          Compute the measured census from consolidated snapshots
+  consolidate     Merge append observations into `out/*.jsonl` snapshots
+  report          Compute the measured census from the store
+  bests           Reduce to one best mark per athlete and event   [--grad-year 2027] [--limit N] [--all]
+  workbook        Build the census workbook (.xlsx) and sidecars [--out PATH] [--grad-year 2027] [--limit N]
+  fjall-stats     Print per-table observation counts and the database footprint
+  import-legacy   Run the one-time pre-Fjall JSONL import, then print the store stats
+  serve           Print the command that runs the `midwest-serve` Restate endpoint
 
 Global: --store <dir> (default var/midwest-census), --delay-ms <n>, --user-agent <ua>
 ```
 
-A full cycle is `collect` → `provider <name>` per adapter → `consolidate` → `report`
-(`report --core` for the Athletic.net-free scope). Every adapter is resumable: a unit of work is
-journaled with its parser version, and a re-run skips what an unchanged parser already produced.
-Each provider takes `--seasons`, `--limit` and `--refresh`.
+A full cycle is `collect` → `provider <name>` per adapter → `consolidate` → `report` / `bests` /
+`workbook` (`report --core` for the Athletic.net-free scope). Every adapter is resumable: a unit of
+work is journaled with its parser version, and a re-run skips what an unchanged parser already
+produced. Each provider takes `--seasons`, `--limit` and `--refresh`.
+
+`bests` and `workbook` default to the class of 2027 and take `--limit`; `bests --all` reduces every
+athlete in the core scope instead, and is rejected in combination with `--grad-year` rather than
+silently ignoring it. The cohort selector is a `u16` on the command line, so a negative year never
+reaches the store and a year above `i16::MAX` is rejected instead of truncated. `fjall-stats` reports
+what the database holds, table by table, and `import-legacy` runs the one-time import and then prints
+the same statistics. `serve` prints the service command; it never starts a server itself.
+
+The CLI holds the store for the life of the command because the Fjall database takes an exclusive
+lock, which is what keeps two runs from interleaving writes. The same lock means `midwest-serve` and
+a batch command cannot work against one `--store` at the same time — stop the service before running
+`collect`, or point them at different stores.
+
+## Storage: Fjall
+
+The store is a [Fjall](https://fjall-rs.github.io) database (`fjall =3.1.10`) — an embedded LSM-tree
+key-value store written in safe Rust — under `<store>/fjall`. One process owns a database at a time:
+`Store::open` takes an exclusive lock on it, so a run either holds the store for its whole life or
+fails with that reason instead of interleaving writes with another process.
+
+| keyspace | key | value |
+|---|---|---|
+| `entities` | `<table>\0<entity-id>\0<sequence:u64 big-endian>` | one observation, as JSON |
+| `journal` | `<phase>\0<key>` | `{key, at, payload}` — the resume ledger |
+| `meta` | `<name>` | small JSON and scalar values, including the legacy-import markers |
+
+Observations are append-only: appending the same entity twice stores two rows, and
+`Store::scan::<T>(Table::X)` merges them through `Entity::merge` and then applies
+`Entity::publish` — the collection contract, applied once per merged entity so the report, the
+workbook, the snapshot and the Restate handlers all see the same projection. (A coach's consumer
+mailbox is withheld there, and the count of withheld rows comes from `census::withheld_coach_emails`.)
+That is the guarantee the old JSONL entity logs provided, now applied at read time. Sequence numbers are seeded from the last key
+present at open, and the sequence component is big-endian so byte order is numerical order, so a
+reopened database never reuses a sequence number and never overwrites an observation.
+
+Each batch of observations commits with `SyncData` (`fdatasync`) — the cheapest mode that survives a
+machine crash — and `flush()` upgrades to `SyncAll` at consolidation and at shutdown. A lost tail
+costs re-running an adapter, and the resume journal is durable per completed unit of work, so a
+resumed run does not repeat finished work. A scan aborts with a typed error if a table holds more
+than 20,000,000 observations (`store::MAX_ROWS_PER_TABLE`) rather than exhausting memory; the cap
+counts observations read, not merged rows. The LSM cache is bounded at 256 MiB.
+
+`out/*.jsonl` is the materialized read model: `consolidate` writes one snapshot per table through
+`Store::consolidate::<T>`. Every command reads the merged tree through `Store::scan::<T>` — `report`,
+`bests` and the workbook included — so they see every committed observation without waiting for a
+consolidation pass, and the snapshot is what goes out as the tabular record beside them. `bests`
+writing `out/best-results-*.jsonl` therefore needs no prior `consolidate`.
+
+Databases created before this substrate keep their rows in `<store>/entities/*.jsonl` and their
+resume ledger in `<store>/journal/*.jsonl`. `Store::open` imports both exactly once: a table is
+marked imported only after all of its observations are committed, so an interrupted import resumes
+instead of restarting, and later opens skip it. The JSONL files stay in place as the record of what
+the database was built from, and `import-legacy` runs that path and prints the import source next to
+the resulting store statistics.
+
+## Durable execution: Restate
+
+`midwest-serve` (same crate, `restate-sdk =0.12.0`) exposes the same store and the same reports as
+the batch CLI, with Restate owning the journal: every handler effect runs inside `ctx.run`, so a
+retry or a restart replays the journaled result instead of repeating a completed step. The service
+does not fetch: a producer hands it a table and its observation rows, and `Ingest.record` appends
+them to the same Fjall database the CLI would.
+
+```text
+midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30
+run it with: cargo run --release -p midwest-census --bin midwest-serve -- --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30
+```
+
+The endpoint speaks HTTP/2 without an upgrade dance (hyper's `http2::Builder`), so a plain HTTP/1.1
+client sees an `UnexpectedMessage`; `curl --http2-prior-knowledge` and `reqwest` with
+`http2_prior_knowledge()` are the working clients. `--listen` refuses any non-loopback address: the
+endpoint carries no request-identity key, so it must not leave the machine. Reports land under
+`<data-dir>/out`, exactly where the batch CLI writes them.
+
+`midwest-census serve` prints those two lines: the service command and how to run the same binary
+under cargo. The current `--store` fills the `--data-dir` value, the rest are the service defaults,
+and it never starts a server itself.
+
+| kind | wire name | shape |
+|---|---|---|
+| service | `Census` | `status`, `consolidate`, `report`, `bests`, `workbook`; each heavy job runs on `spawn_blocking` behind a semaphore sized by `--max-concurrent`, inside `ctx.run`, so a restart replays the journal value rather than repeating a completed pass |
+| virtual object | `Ingest` | one object per source endpoint, which is what makes the per-endpoint cursor and window bookkeeping safe against concurrent writers: `state`, `record`, `complete_window` |
+| workflow | `Sweep` | observes the ingest objects over `windows` windows (`window_seconds` apart, durable sleeps), exits early when `interrupt` is resolved, and reports per-endpoint observation counts, endpoints that never accepted an observation, and where the pass wrote its report |
+
+Shutdown is a protocol rather than a flag: intake stops, in-flight invocations get `--drain-timeout`
+seconds to finish, whatever outlives the deadline is aborted and counted, and the store is flushed
+(`SyncAll`) before the database is dropped. The last line the service prints is that drain
+certificate — `accepted`, `completed`, `cancelled`, `timed_out`, `aborted`, `panicked`.
+
+## Reports and the workbook
+
+Three commands turn the store into evidence:
+
+* `report` — the census itself: `out/report.json` (and `out/report-core.json` for the core scope)
+  plus `out/census-by-state*.csv`. It reduces the merged store tables directly.
+* `bests` — one best mark per `(athlete, event)`, compared only within a mark's own measure with
+  relays excluded, written as `out/best-results-<cohort>.jsonl` and `.csv`, where the cohort is
+  `co2027` or `all`. It reads the merged store, so it never depends on a prior `consolidate`.
+* `workbook` — the census as one `.xlsx` with nine sheets (goal & method, summary, by state for each
+  scope, Athletic.net marginal, best results, meets, evidence mix, method notes) and the best-mark
+  sidecars beside it. Every cell is copied from the typed census or the best-mark reduction, nothing
+  is recomputed, and the file is written by the same `rust_xlsxwriter` dependency the rest of the
+  crate uses. `--out` chooses the path; the default is
+  `<store>/out/midwest-census-<generated-on>.xlsx`.
+
+These commands replace `reports/build-census-workbook.py`, which transformed the two scope reports
+into a workbook by emitting flat ODS XML and converting it with headless LibreOffice. That script is
+deleted: the crate writes the workbook in process and nothing in the repository runs Python. The
+2026-09-20 workbook and its CSVs under `reports/` are the output of that earlier run and are kept as
+the record of it, including the sheet that names the command they were built with.
+
+## Measurement harness
+
+Two example targets measure the substrate and the reduction. Both build their own bounded synthetic
+corpus in a temporary store, so neither touches the store you collected into, and both print
+`metric=<name> ...` lines plus one `json={...}` summary line:
+
+```text
+cargo run --release -p midwest-census --example bench_store  -- --rows 200000 --batch 1000 --scan
+cargo run --release -p midwest-census --example bench_census -- --schools 500
+```
+
+`bench_store` measures the store itself: single appends, batched appends, and — with `--scan` — the
+merge-scan and consolidation. `bench_census` drives a deterministic corpus through the whole
+pipeline, report and workbook steps included. Every phase asserts the counts it produced before
+reporting a rate, so a run cannot silently measure a store that lost rows. Run them from the crate
+directory as `cargo run --release --example bench_store`; from the repository root they need
+`-p midwest-census`. No timing is quoted in this README — measure the machine in hand.
 
 ## Measured, 2026-09-20
+
+Both tables below are a snapshot of that day's ingestion, taken before the Fjall substrate and the
+Restate layer landed; they are a record of a run, not a claim about any store held now. Re-run
+`consolidate`, `report` and `workbook` to measure the store in hand.
 
 | scope | athletes | Class of 2027 | boys | girls | grade-evidenced | profile URL | coach | coach email |
 |---|---|---|---|---|---|---|---|---|
@@ -72,7 +209,7 @@ is never dereferenced by a core run.
 | A | OHSAA (OH) | `ohsaa` | schools, head coach names by sport |
 | A | KSHSAA (KS) | `ks` | member schools, athletic-director name and email |
 | A | NDHSAA + NSAA (ND, NE) | `plain_names` | school universes, coach names (no email published) |
-| A | researched official contact graph | `coach_contacts` | artifact import: school / sport / role + published email |
+| A | researched official contact graph | `coach_contacts` (`import-coaches`) | artifact import: school / sport / role + published email |
 | B | MileSplit-style state sites | `milesplit` (driven by `teams` and `collect`) | rosters, graded athletes, profile URLs |
 | D | vendor result artifacts | `result_file` dispatching `hytek`, `compiled`, `xc`, `raceday` | performances with grade evidence |
 | E | Wayzata Results (MN / IA / WI timer) | `wayzata` | meet inventory from published schedules |
@@ -115,6 +252,8 @@ Minnesota one. Unresolved venues are filed under `??` rather than guessed: on th
   Iowa depends on which association artifacts have been ingested.
 - Grade evidence is "grade observed in a source", not a verified graduation year; the platform keeps
   `GradYear` and `ObservedGrade` as separate fields for exactly that reason.
-- 183 tests pass. The adapters added in this workspace (`wayzata`, `compiled`, `xc`) are clippy-clean;
-  the crate still carries 17 pre-existing warnings in `ohsaa`, `plain_names`, `wiaa`, `net`, `mshsl`,
-  `hytek`, `athleticlive_athletes`, `report` and `census`.
+- Test and lint counts are not restated here because every slice of work moves them: the
+  2026-09-20 record was 183 passing tests and 17 clippy warnings; both are now cleared, and the
+  crate is clippy-clean. The workspace gate is the current answer: `cargo fmt --check`,
+  `cargo clippy --workspace --all-targets --all-features`, and
+  `cargo test --workspace --all-features` from the repository root.

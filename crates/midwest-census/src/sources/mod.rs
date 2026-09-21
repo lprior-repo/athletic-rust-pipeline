@@ -2,6 +2,13 @@
 //! trait indirection because adapters differ in shape (single request, paginated index, artifact
 //! walk) and the orchestration in [`crate::census`] calls them directly.
 
+//! Shared concurrency bound for bounded fan-out across adapters.
+//!
+//! This constant is the default maximum number of concurrent async operations
+//! (HTTP requests, file walks, pagination batches) that any single adapter
+//! may run. Adapters that need a different bound may override it locally.
+pub const CONCURRENCY_BOUND: usize = 8;
+
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod coach_contacts;

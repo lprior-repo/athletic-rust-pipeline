@@ -174,22 +174,24 @@ fn push_row(
     division: Option<String>,
     row: ParsedRow,
 ) {
-    let event = match events
-        .iter_mut()
-        .find(|event| &event.gender == gender && event.label == label)
+    if events
+        .iter()
+        .find(|e| &e.gender == gender && e.label == label)
+        .is_none()
     {
-        Some(event) => event,
-        None => {
-            events.push(ParsedEvent {
-                label: label.to_string(),
-                kind: EventKind::CrossCountry,
-                gender: *gender,
-                division,
-                round: Some("finals".to_string()),
-                rows: Vec::new(),
-            });
-            events.last_mut().expect("just pushed")
-        }
+        events.push(ParsedEvent {
+            label: label.to_string(),
+            kind: EventKind::CrossCountry,
+            gender: *gender,
+            division,
+            round: Some("finals".to_string()),
+            rows: Vec::new(),
+        });
+    }
+    let event = if let Some(e) = events.last_mut() {
+        e
+    } else {
+        return;
     };
     event.rows.push(row);
 }

@@ -40,10 +40,11 @@ use crate::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity,
     SourceNamespace, SourceRef, Sport,
 };
-use crate::net::FetchOptions;
+use crate::net::{FetchOptions, FetchOutcome};
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use futures::stream::{self, StreamExt};
 use std::collections::{BTreeMap, HashSet};
 
 /// Host serving the WIAA school directory.
@@ -357,7 +358,7 @@ fn hex_nibble(byte: u8) -> Option<u8> {
 pub fn decode_cfemail(encoded: &str) -> Option<String> {
     let hex = encoded.trim();
     let bytes = hex.as_bytes();
-    if bytes.len() < 4 || bytes.len() % 2 != 0 {
+    if bytes.len() < 4 || !bytes.len().is_multiple_of(2) {
         return None;
     }
     let mut decoded_bytes = Vec::with_capacity(bytes.len() / 2);
@@ -688,7 +689,7 @@ pub fn school_entities(
         association: ASSOCIATION.to_string(),
     };
 
-    let (mut school, school_id) = CanonicalSchool::new("WI", &name, &normalize_name(&name));
+    let (mut school, school_id) = CanonicalSchool::new("WI", &name, normalize_name(&name));
     school.city = page
         .city
         .as_deref()
@@ -817,15 +818,29 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         return Ok(report);
     }
 
-    // -- index: one request per directory letter -------------------------------------------------
+    // -- index: bounded-concurrency fetch per directory letter (N=8) ----------------------------
+    const LETTER_CONCURRENCY: usize = 8;
     let letters = letters_for(&options.school_names);
+    // Collect (letter_index, result) pairs so we can process in submission order.
+    let letter_results: Vec<(usize, Result<FetchOutcome>)> =
+        stream::iter(letters.iter().enumerate())
+            .map(|(i, letter)| {
+                let url = format!("{HOST}{INDEX_PATH}?LetterBtn={letter}");
+                let opts = fetch_options(ctx, options);
+                async move { (i, ctx.fetcher.get(&url, &opts).await) }
+            })
+            .buffer_unordered(LETTER_CONCURRENCY)
+            .collect::<Vec<_>>()
+            .await;
+
+    // Process results in submission order for deterministic error tracking.
     let mut index: Vec<IndexEntry> = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
     let mut letters_ok = 0usize;
     let mut first_problem: Option<String> = None;
-    for letter in &letters {
-        let url = format!("{HOST}{INDEX_PATH}?LetterBtn={letter}");
-        match ctx.fetcher.get(&url, &fetch_options(ctx, options)).await {
+    for (i, result) in letter_results {
+        let letter = letters[i];
+        match result {
             Ok(outcome) if outcome.status == 200 => {
                 letters_ok = letters_ok.saturating_add(1);
                 for entry in parse_directory_letter(&outcome.text()) {
@@ -899,29 +914,56 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let mut skipped_admin_roles: Vec<String> = Vec::new();
     let mut skipped_coach_rows = 0usize;
 
-    for entry in &index {
+    // -- schools: bounded-concurrency fetch per school page (N=8) ----------------------------
+    const SCHOOL_CONCURRENCY: usize = 8;
+    // Phase 1: identify eligible schools (skip already journaled, apply filter).
+    let eligible: Vec<(usize, &IndexEntry)> = index
+        .iter()
+        .enumerate()
+        .filter(|(_, entry)| {
+            if let Some(wanted) = wanted.as_ref() {
+                if !wanted.contains(&normalize_name(&entry.name)) {
+                    skipped_filter = skipped_filter.saturating_add(1);
+                    return false;
+                }
+            }
+            let key = format!("WI:{}", entry.org_id);
+            if done.contains(&key) {
+                skipped_done = skipped_done.saturating_add(1);
+                return false;
+            }
+            true
+        })
+        .collect();
+
+    // Phase 2: fetch all school pages in parallel (bounded concurrency N=8).
+    // Each fetch is independent — same host, but rate-limited by the fetcher's gate.
+    let fetch_results: Vec<(usize, Result<FetchOutcome>)> = stream::iter(eligible)
+        .map(|(idx, entry)| {
+            let url = entry.page_url();
+            let page_options = FetchOptions {
+                allow_not_found: true,
+                ..fetch_options(ctx, options)
+            };
+            async move { (idx, ctx.fetcher.get(&url, &page_options).await) }
+        })
+        .buffer_unordered(SCHOOL_CONCURRENCY)
+        .collect::<Vec<_>>()
+        .await;
+
+    // Phase 3: process results in submission order (deterministic).
+    for (idx, result) in fetch_results {
+        let entry = &index[idx];
+        let key = format!("WI:{}", entry.org_id);
+
+        // Respect limit after collection.
         if let Some(limit) = options.limit {
             if processed >= limit {
                 break;
             }
         }
-        if let Some(wanted) = wanted.as_ref() {
-            if !wanted.contains(&normalize_name(&entry.name)) {
-                skipped_filter = skipped_filter.saturating_add(1);
-                continue;
-            }
-        }
-        let key = format!("WI:{}", entry.org_id);
-        if done.contains(&key) {
-            skipped_done = skipped_done.saturating_add(1);
-            continue;
-        }
-        let url = entry.page_url();
-        let page_options = FetchOptions {
-            allow_not_found: true,
-            ..fetch_options(ctx, options)
-        };
-        let outcome = match ctx.fetcher.get(&url, &page_options).await {
+
+        let outcome = match result {
             Ok(outcome) => outcome,
             Err(error) => {
                 page_failures = page_failures.saturating_add(1);
@@ -1150,7 +1192,7 @@ mod tests {
         // Abbotsford mints the same school.
         assert_eq!(
             extract.school.id,
-            CanonicalSchool::new("WI", "Abbotsford", &normalize_name("Abbotsford")).1
+            CanonicalSchool::new("WI", "Abbotsford", normalize_name("Abbotsford")).1
         );
         let identity = extract
             .school

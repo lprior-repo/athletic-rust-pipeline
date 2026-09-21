@@ -523,10 +523,8 @@ pub fn parse_ad_page(html: &str) -> AdPage {
         let role = pending.iter().find_map(|label| classify_role(label));
         pending.clear();
         match role {
-            Some("athletic director") => {
-                if ad.director.is_none() {
-                    ad.director = Some((name, email));
-                }
+            Some("athletic director") if ad.director.is_none() => {
+                ad.director = Some((name, email));
             }
             Some(label) => ad.office_roles.push((label.to_string(), name)),
             None => {
@@ -674,7 +672,7 @@ pub fn school_entities(
 
     // Build school
     let (mut school, school_id) =
-        CanonicalSchool::new(STATE, &result.name, &normalize_name(&result.name));
+        CanonicalSchool::new(STATE, &result.name, normalize_name(&result.name));
     school.city = city;
     school.association = Some(ASSOCIATION.to_string());
     school.source_identities.push(
@@ -711,7 +709,7 @@ pub fn school_entities(
                 SourceNamespace::AssociationSchool {
                     association: "ohsaa".into(),
                 },
-                &format!("ad:{}", result.ohsaa_id),
+                format!("ad:{}", result.ohsaa_id),
             )
             .with_url(ad_url.clone()),
         );
@@ -743,7 +741,7 @@ pub fn school_entities(
                         SourceNamespace::AssociationSchool {
                             association: "ohsaa".into(),
                         },
-                        &format!("coach:{}:{}:boys", result.ohsaa_id, sport_key(&sport)),
+                        format!("coach:{}:{}:boys", result.ohsaa_id, sport_key(&sport)),
                     )
                     .with_url(sports_url.clone()),
                 );
@@ -770,7 +768,7 @@ pub fn school_entities(
                         SourceNamespace::AssociationSchool {
                             association: "ohsaa".into(),
                         },
-                        &format!("coach:{}:{}:girls", result.ohsaa_id, sport_key(&sport)),
+                        format!("coach:{}:{}:girls", result.ohsaa_id, sport_key(&sport)),
                     )
                     .with_url(sports_url.clone()),
                 );

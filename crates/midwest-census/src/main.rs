@@ -1,15 +1,21 @@
 //! `midwest-census` CLI. Every subcommand is safe to re-run: HTTP bodies are cached, finished work
-//! is journaled and entity logs are append-only, so an interrupted walk continues where it stopped.
+//! is journaled in the Fjall store, and observations are append-only, so an interrupted walk
+//! continues where it stopped.
+//!
+//! One process owns the store at a time: the database takes an exclusive lock in
+//! [`Store::open`], so a run either holds the store for its whole life or fails with the reason
+//! instead of interleaving writes with another process.
 
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
+use midwest_census::bootstrap::ServeOptions;
 use midwest_census::model::SchoolYear;
 use midwest_census::net::{FetchOptions, Fetcher};
 use midwest_census::sources::default_host_delays;
 use midwest_census::sources::milesplit::{self, SITES};
-use midwest_census::store::Store;
-use midwest_census::{census, report};
-use std::path::PathBuf;
+use midwest_census::store::{Store, Table};
+use midwest_census::{bests, census, report, workbook};
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[derive(Parser, Debug)]
@@ -61,9 +67,9 @@ enum Command {
     },
     /// Run one association contact adapter by name.
     Provider(ProviderArgs),
-    /// Merge append logs into `out/*.jsonl` snapshots.
+    /// Merge append observations into `out/*.jsonl` snapshots.
     Consolidate,
-    /// Compute the measured census from consolidated snapshots.
+    /// Compute the measured census from the store.
     Report {
         /// Print the census JSON to stdout as well as writing files.
         #[arg(long)]
@@ -73,6 +79,16 @@ enum Command {
         #[arg(long)]
         core: bool,
     },
+    /// Reduce the consolidated tables to one best mark per athlete and event.
+    Bests(BestsArgs),
+    /// Build the census workbook (`.xlsx`) and its text sidecars.
+    Workbook(WorkbookArgs),
+    /// Print the Fjall store's per-table observation counts and on-disk footprint.
+    FjallStats,
+    /// Import pre-Fjall JSONL journals into the store (one-time), then print the store stats.
+    ImportLegacy,
+    /// Print the command that runs the `midwest-serve` Restate endpoint.
+    Serve,
 }
 
 #[derive(Args, Debug)]
@@ -127,8 +143,33 @@ struct CollectArgs {
     observed_on: Option<String>,
 }
 
-fn build_fetcher(cli: &Cli) -> Result<Fetcher> {
-    let store = Store::open(&cli.store)?;
+#[derive(Args, Debug)]
+struct BestsArgs {
+    /// Graduation year the cohort is selected by (2027 = the class of 2027).
+    #[arg(long, default_value_t = 2027, conflicts_with = "all")]
+    grad_year: u16,
+    /// Keep only the first N rows of the reduction.
+    #[arg(long)]
+    limit: Option<usize>,
+    /// Reduce every athlete in the core scope instead of one graduating class.
+    #[arg(long)]
+    all: bool,
+}
+
+#[derive(Args, Debug)]
+struct WorkbookArgs {
+    /// Where to write the `.xlsx` (defaults to `<store>/out/midwest-census-<generated-on>.xlsx`).
+    #[arg(long)]
+    out: Option<PathBuf>,
+    /// Graduation year used for the cohort sheets (2027 = the class of 2027).
+    #[arg(long, default_value_t = 2027)]
+    grad_year: u16,
+    /// Cap the per-athlete best-mark sheet at N rows.
+    #[arg(long)]
+    limit: Option<usize>,
+}
+
+fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
     Fetcher::new(
         store.http_cache_dir(),
         cli.user_agent.clone(),
@@ -157,7 +198,7 @@ async fn main() -> Result<()> {
             }
         }
         Command::Fetch { url, refresh } => {
-            let fetcher = build_fetcher(&cli)?;
+            let fetcher = build_fetcher(&cli, &store)?;
             let outcome = fetcher
                 .get(
                     url,
@@ -178,7 +219,7 @@ async fn main() -> Result<()> {
             println!("url={}", outcome.url);
         }
         Command::Teams { states, refresh } => {
-            let fetcher = build_fetcher(&cli)?;
+            let fetcher = build_fetcher(&cli, &store)?;
             for state in states {
                 let teams = census::collect_state_teams(&fetcher, &store, state, *refresh).await?;
                 println!("{state}\tteams={}", teams.len());
@@ -198,7 +239,7 @@ async fn main() -> Result<()> {
                     bail!("unknown state code {state}");
                 }
             }
-            let fetcher = build_fetcher(&cli)?;
+            let fetcher = build_fetcher(&cli, &store)?;
             let options = census::CollectOptions {
                 states,
                 limit_per_state: args.limit_per_state,
@@ -225,7 +266,7 @@ async fn main() -> Result<()> {
             println!("{}", serde_json::to_string_pretty(&report)?);
         }
         Command::Provider(args) => {
-            let fetcher = build_fetcher(&cli)?;
+            let fetcher = build_fetcher(&cli, &store)?;
             let observed_on = args
                 .observed_on
                 .clone()
@@ -371,7 +412,7 @@ async fn main() -> Result<()> {
                     .await
                 }
                 other => bail!(
-                    "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes, athleticlive_athletes"
+                    "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes"
                 ),
             }
             .with_context(|| format!("adapter {}", args.name))?;
@@ -394,7 +435,7 @@ async fn main() -> Result<()> {
             println!("wrote {}", json_path.display());
             println!("wrote {}", csv_path.display());
             println!(
-                "scope={} totals: schools={} athletes={} co2027={} (boys={} girls={}) profile_url={} mult_isource={} coaches={}",
+                "scope={} totals: schools={} athletes={} co2027={} (boys={} girls={}) profile_url={} multisource={} coaches={}",
                 census.scope,
                 census.totals.schools,
                 census.totals.athletes,
@@ -409,6 +450,122 @@ async fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&census)?);
             }
         }
+        Command::Bests(args) => run_bests(&store, args)?,
+        Command::Workbook(args) => run_workbook(&store, args)?,
+        Command::FjallStats => print_store_stats(&store)?,
+        Command::ImportLegacy => run_legacy_import(&store)?,
+        Command::Serve => print_serve_command(&cli),
     }
     Ok(())
+}
+
+/// One best mark per `(athlete, event)` for one cohort, written as `out/best-results-<cohort>.*`.
+///
+/// The reduction is core-scoped, exactly as the workbook's best-results sheet is: Athletic.net and
+/// the AthleticLIVE derivative contribute nothing. `--all` widens the cohort to every athlete in that
+/// scope instead of one graduating class, and clap rejects it alongside `--grad-year`.
+fn run_bests(store: &Store, args: &BestsArgs) -> Result<()> {
+    let grad_year = if args.all {
+        None
+    } else {
+        Some(school_year(args.grad_year)?)
+    };
+    let options = bests::Options {
+        scope: report::Scope::Core,
+        grad_year,
+        limit: args.limit,
+    };
+    let rows = bests::build(store, &options).context("reducing the best marks")?;
+    let cohort = cohort_label(grad_year);
+    let (jsonl, csv) =
+        bests::write(store, &rows, &cohort).context("writing the best-mark sidecars")?;
+    println!("cohort={cohort} rows={}", rows.len());
+    println!("wrote {}", jsonl.display());
+    println!("wrote {}", csv.display());
+    Ok(())
+}
+
+/// The census workbook and its sidecars, written by the crate's own Rust writer.
+fn run_workbook(store: &Store, args: &WorkbookArgs) -> Result<()> {
+    let options = workbook::Options {
+        grad_year: Some(school_year(args.grad_year)?),
+        out: args.out.clone(),
+        limit: args.limit,
+    };
+    let path = workbook::build(store, &options).context("building the census workbook")?;
+    println!("wrote {}", path.display());
+    Ok(())
+}
+
+/// `<table>\t<observations>` for every table, then the store's own totals.
+fn print_store_stats(store: &Store) -> Result<()> {
+    let stats = store.stats().context("reading the Fjall store stats")?;
+    println!("store\t{}", store.root().display());
+    for (table, observations) in &stats.tables {
+        println!("{table}\t{observations}");
+    }
+    println!("observations\t{}", stats.observations);
+    println!("bytes_on_disk\t{}", stats.bytes_on_disk);
+    Ok(())
+}
+
+/// [`Store::open`] performs the one-time pre-Fjall JSONL import before a command sees the store, so
+/// this reports the import source it read, then the resulting store. A table is marked imported in
+/// the store's `meta` keyspace and is never imported twice; the JSONL files are left in place as the
+/// record of what the database was built from.
+fn run_legacy_import(store: &Store) -> Result<()> {
+    for table in Table::ALL {
+        let path = store.table_path(table);
+        match legacy_journal_bytes(&path)? {
+            Some(bytes) => println!(
+                "legacy\t{}\t{bytes} bytes\t{}",
+                table.file(),
+                path.display()
+            ),
+            None => println!("legacy\t{}\tabsent", table.file()),
+        }
+    }
+    println!(
+        "legacy_journal_dir\t{}",
+        store.root().join("journal").display()
+    );
+    print_store_stats(store)
+}
+
+/// Size of one legacy entity journal, or `None` when the pre-Fjall file was never written.
+fn legacy_journal_bytes(path: &Path) -> Result<Option<u64>> {
+    match std::fs::metadata(path) {
+        Ok(metadata) => Ok(Some(metadata.len())),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(error) => Err(error).with_context(|| format!("reading {}", path.display())),
+    }
+}
+
+/// `bests::write` and `workbook` agree on this label: `co2027` for one class, `all` for every cohort.
+fn cohort_label(grad_year: Option<i16>) -> String {
+    grad_year.map_or_else(|| "all".to_string(), |year| format!("co{year}"))
+}
+
+/// Cohort fields are `i16`; the CLI takes `u16` so a negative year is a parse error, and rejects the
+/// values above `i16::MAX` instead of truncating them.
+fn school_year(grad_year: u16) -> Result<i16> {
+    i16::try_from(grad_year)
+        .with_context(|| format!("--grad-year {grad_year} is not a representable year"))
+}
+
+/// `midwest-serve` owns the Restate endpoint; this reports how to start it against this store.
+///
+/// The flags and their values come from the service's own defaults, so the printed command cannot
+/// drift from what `midwest-serve` parses.
+fn print_serve_command(cli: &Cli) {
+    let defaults = ServeOptions::default();
+    let flags = format!(
+        "--listen {} --data-dir {} --max-concurrent {} --drain-timeout {}",
+        defaults.listen,
+        cli.store.display(),
+        defaults.max_concurrent,
+        defaults.drain_timeout.as_secs()
+    );
+    println!("midwest-serve {flags}");
+    println!("run it with: cargo run --release -p midwest-census --bin midwest-serve -- {flags}");
 }

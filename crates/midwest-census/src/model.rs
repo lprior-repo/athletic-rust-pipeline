@@ -153,6 +153,12 @@ impl GradYear {
     /// Class of 2027.
     pub const CO2027: GradYear = GradYear(2027);
 
+    /// Raw graduation year, e.g. `2027`. The tuple field stays public for pattern matching, the
+    /// accessor is what domain code should read so a future invariant change lands in one place.
+    pub const fn get(self) -> i16 {
+        self.0
+    }
+
     pub fn new(year: i16) -> Option<Self> {
         (2020..=2040).contains(&year).then_some(GradYear(year))
     }
@@ -431,6 +437,27 @@ pub struct CanonicalTeam {
     pub evidence: Vec<Evidence>,
 }
 
+impl CanonicalTeam {
+    /// One team per (school, sport, gender side, school year). The same four values always mint the
+    /// same id, so a provider re-publishing a roster upserts the team instead of duplicating it.
+    pub fn mint(
+        school: &SchoolId,
+        sport: Sport,
+        gender: Gender,
+        school_year: SchoolYear,
+    ) -> TeamId {
+        Id::mint(
+            "team",
+            &[
+                school.as_str(),
+                &format!("{sport:?}"),
+                &format!("{gender:?}"),
+                &school_year.start_year().to_string(),
+            ],
+        )
+    }
+}
+
 /// Meet competition level, from our own vocabulary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -680,6 +707,12 @@ pub struct CanonicalCoach {
     pub phone: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
+    /// Set by the merge when a consumer mailbox was dropped from `professional_email`. Not
+    /// serialized: it is derived from the observation bodies on every read, so re-importing the
+    /// entity log re-derives it. A withheld row serializes without the key, where the pre-Fjall
+    /// pipeline wrote an explicit `null`.
+    #[serde(skip)]
+    pub email_withheld: bool,
 }
 
 impl CanonicalCoach {
@@ -712,6 +745,7 @@ impl CanonicalCoach {
             phone: None,
             source_identities: Vec::new(),
             evidence: Vec::new(),
+            email_withheld: false,
         }
     }
 }

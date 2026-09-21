@@ -1728,12 +1728,16 @@ name = "midwest-census"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "calamine",
  "chrono",
  "clap",
  "csv",
+ "fjall",
  "futures",
  "regex",
  "reqwest",
+ "restate-sdk",
+ "rust_xlsxwriter",
  "serde",
  "serde_json",
  "sha2 0.10.9",

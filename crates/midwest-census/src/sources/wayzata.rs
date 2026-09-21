@@ -464,7 +464,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     // through the consolidated school snapshot instead, so a meet is filed in the state its host
     // school is in. Before the snapshot exists every such venue stays `??`, and the run says so.
     let schools: Vec<crate::model::CanonicalSchool> =
-        crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl")).unwrap_or_default();
+        ctx.store.scan(crate::store::Table::Schools)?;
     let index = SchoolIndex::from_schools(&schools);
     let mut venue_cache: HashMap<String, VenueResolution> = HashMap::new();
 
@@ -772,17 +772,8 @@ mod tests {
             report.notes
         );
 
-        // The meets are on the append log with core evidence and the provider's own key.
-        let mut appended: Vec<CanonicalMeet> = Vec::new();
-        for line in std::fs::read_to_string(store.table_path(Table::Meets))
-            .expect("meets log")
-            .lines()
-        {
-            if line.trim().is_empty() {
-                continue;
-            }
-            appended.push(serde_json::from_str(line).expect("meet json"));
-        }
+        // The meets are in the store with core evidence and the provider's own key.
+        let appended: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("scan meets from Fjall");
         assert!(
             appended.len() >= 20,
             "most rows mint a distinct meet; {} were appended",
