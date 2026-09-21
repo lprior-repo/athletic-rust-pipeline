@@ -1,8 +1,5 @@
 {
-  "clippy": {
-    "athletic_rust_pipeline\tclippy::question_mark": 1,
-    "athletic_rust_pipeline\tclippy::too_many_arguments": 1
-  },
+  "clippy": {},
   "note": "Debt baseline for tools/gate.sh. Numbers may only shrink; refresh with tools/gate.sh --update-baseline after a burndown.",
   "scan": {
     "athletic-rust-pipeline": {
@@ -13,7 +10,7 @@
       "files": 305,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 36643,
+      "production_lines": 36656,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,

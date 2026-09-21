@@ -380,3 +380,88 @@ Notes for the next phase:
   `xtask` subcommands and deleted; `tools/gate.sh` invokes the Rust tools. Bash and jq remain.
 - **Housekeeping:** three merged `feature/*` worktrees (87 GB of stale `target/`) removed and
   their branches deleted; a verified-dead-code sweep (zero-reference `pub` items) is in flight.
+
+## 10. Wave 2 outcome (2026-09-21)
+
+The parallel wave that carried Phases 1–7 from "planned" to "measured": capability seams and
+region-owned drain in both crates, the decomposition of the remaining oversize files, the parser
+defects the property suites found, the verification pack, determinism models, benchmarks and the
+operations pass. It ran as concurrent lanes over disjoint file sets and was validated by the full
+gate on the frozen tree:
+
+```
+--- fmt: PASS   --- check: PASS   --- doc: PASS   --- tests: PASS
+--- domain purity: PASS   --- module seams: PASS   --- ratchet: PASS
+--- deny: PASS  --- audit: PASS  --- machete: PASS  --- geiger: PASS
+--- bench presence: PASS        gate: PASS (debt ratchet holds; counts above)
+```
+
+Measured movement (wave 1 → wave 2; `tools/quality-baseline.json` refreshed with
+`--update-baseline --allow-increase` for the line-count counters):
+
+| Metric | Wave 1 end | Wave 2 end |
+| --- | --- | --- |
+| census strict clippy (arithmetic / as / indexing / string_slice) | 68 / 7 / 4 / 1 | **0 / 0 / 0 / 0** |
+| root strict clippy (whole gate lint set) | 0 | **0** (baseline `clippy` map is empty) |
+| scan as-casts: root / census | 0 / 7 | 0 / **0** |
+| scan expect / unwrap / panic / indexing / unsafe / assert | 0 | 0 (both crates) |
+| files over 300 lines | 23 | **0** |
+| functions over 60 lines / over 25 logical lines | 0 / 551 | 0 / **549** |
+| production lines: root / census | 34308 / 22912 | 36656 (+2348) / 24039 (+1127) |
+| scanned files: root / census | 238 / 125 | 305 (+67) / 160 (+35) |
+| tests (gate lane, `--all-features`) | 465 passed, 2 skipped | **582 passed**, 2 skipped |
+
+What the lanes landed:
+
+- **Capability seams (root and census).** `clock`, `outcome` (outcome lattice), region-owned
+  `spawn`/`Spawner` with a drain certificate, drain counters (`completed`/`cancelled`/`panicked`/
+  `remaining`), telemetry instruments, and the console/OTLP feature gates.
+- **Decomposition to the size budget.** The root's RD1–RD7 splits plus the census bootstrap,
+  adapter and `wiaa::collect` splits took `files_over_300_lines` from 23 entries to none, without
+  moving a behavior: every split is covered by the golden corpus and the parity suites.
+- **Parser defects the new suites found, fixed with regression tests.** A FOUL row under a relay
+  header in the shared Hy-Tek reader (the sections capture drops the jump section's header), and
+  RaceDay's `rows_parsed` counting 0 for a finish list whose events carried 82 rows.
+- **Property suites and a parse seam.** `merge_properties` (writer laws) and
+  `parser_roundtrip_properties` (prefix laws, format dispatch across every fixture, both Hy-Tek
+  front ends agreeing) plus the module-seam walker, which is now a gate lane with an allow-list
+  that fails closed.
+- **Verification pack.** Kani harnesses wired through `#[cfg(kani)]` includes in both crates,
+  `cargo-mutants` configured for `census-domain` (116 caught, 0 missed), four fuzz targets seeded
+  from fixtures (1000 iterations each, zero crash artifacts), and
+  `docs/VERIFICATION-EVIDENCE.md` recording claims, commands, raw tails and the explicit non-claims.
+- **Determinism.** Pause-time tests that assert the pacing and backoff timers exactly, and two
+  loom models (store sequence allocation; the region ledger) that compile only under
+  `--features loom`, with mutation-checked teeth.
+- **Performance.** A census criterion harness (`benches/core.rs`: six parse benches, three
+  school-index benches, two store-scan benches) whose corpora are asserted against the goldens
+  before any number is reported, and the gate's bench-presence lane now compiles it.
+
+Attribution for the baseline refresh (the ratchet holds these numbers from here):
+
+- The line and file counters rose because wave 2 *added capability and evidence* — seams, drain
+  plumbing, splits, tests-in-module-dirs, benches — not because debt was tolerated. No counter of
+  a forbidden construct moved in either direction except `as_cast` (census 7 → 0).
+- The census clippy map is empty: the Phase 1 remainder recorded in §8 is closed, and the root's
+  two new diagnostics (`too_many_arguments`, `question_mark`) were fixed rather than recorded
+  (`Actor::new`'s four shared handles became one `ActorHandles`; `join_actor` uses `?`).
+- The `--all-features` lanes are now known to be a real constraint on feature-gated code:
+  `console_subscriber::spawn()` panics without `RUSTFLAGS="--cfg tokio_unstable"`, so the
+  `tokio-console` layer is installed only under that cfg (declared in
+  `[workspace.lints.rust]` check-cfg) and the feature is a documented no-op without it.
+
+Open items, recorded honestly rather than rounded up:
+
+- **Kani verdicts are partial.** Of 27 harnesses: 4 verified (cohort derivation, saturation, and
+  the grade/year agreement: 122/128/59/327 checks, 0 failed), 5 runs failed *inside* CBMC (four
+  out-of-memory, one SMT-conversion crash — no counterexamples printed), and the remaining
+  harnesses are being swept sequentially on this machine (129 GiB, one CBMC at a time). The
+  evidence doc carries the per-harness state and the exact commands.
+- **Fuzzing is a bounded smoke run** (1000 iterations per target), not a soak; the SHA-NI `sha2`
+  backend is stubbed away by the `cpuid` stub and is therefore not verified.
+- **Integrity review candidates** (7 `struct_with_many_options` sites across the two crates) are
+  reported but not ratcheted yet — they are Phase 3/4 review material, not a gate failure.
+- **Geiger's stale-target failure mode recurred** in a new shape: a deleted scratch test
+  (`crates/midwest-census/tests/zz_scratch_repro.rs`) left a `target/debug` dep-info artifact that
+  the lane could not match. Deleting the artifact fixed it; a `cargo clean` is not required, and
+  the lane now passes on the tree as it stands.
