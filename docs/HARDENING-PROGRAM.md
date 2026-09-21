@@ -409,7 +409,7 @@ Measured movement (wave 1 → wave 2; `tools/quality-baseline.json` refreshed wi
 | functions over 60 lines / over 25 logical lines | 0 / 551 | 0 / **549** |
 | production lines: root / census | 34308 / 22912 | 36656 (+2348) / 24039 (+1127) |
 | scanned files: root / census | 238 / 125 | 305 (+67) / 160 (+35) |
-| tests (gate lane, `--all-features`) | 465 passed, 2 skipped | **582 passed**, 2 skipped |
+| tests (gate lane, `--all-features`) | 465 passed, 2 skipped | **583 passed**, 2 skipped |
 
 What the lanes landed:
 
@@ -452,11 +452,24 @@ Attribution for the baseline refresh (the ratchet holds these numbers from here)
 
 Open items, recorded honestly rather than rounded up:
 
-- **Kani verdicts are partial.** Of 27 harnesses: 4 verified (cohort derivation, saturation, and
-  the grade/year agreement: 122/128/59/327 checks, 0 failed), 5 runs failed *inside* CBMC (four
-  out-of-memory, one SMT-conversion crash — no counterexamples printed), and the remaining
-  harnesses are being swept sequentially on this machine (129 GiB, one CBMC at a time). The
-  evidence doc carries the per-harness state and the exact commands.
+- **Kani verdicts are partial, and the sweep that closed the window did not change that.** Of 27
+  harnesses: **4 verified** (cohort derivation, saturation, and the grade/year agreement:
+  122/128/59/327 checks, 0 failed), **7 env-blocked** (six CBMC out-of-memory, one solver-conversion
+  crash; no `Failed Checks:` line anywhere), **0 counterexamples**, **16 with no verdict** (13 never
+  started, 3 killed before a verdict). The OOM is not a concurrency artifact: the largest harness
+  died on CBMC's own memory path after 710 s as the *only* CBMC on the box, with 76 GiB free at
+  start and a peak 21 GiB `VmHWM`. Two environment notes are recorded in the evidence doc:
+  `cargo kani` fails in 0.1 s with `failed to start cargo metadata` unless `CARGO_HOME` is exported
+  (while `cargo kani --version` still succeeds, so the probe looks green), and the `normalize_name`
+  harnesses cost CBMC hundreds of seconds inside `core::slice::memchr` whatever the property.
+- **The pack produced one real defect, and it is fixed.** `normalize_name` stripped each school-type
+  suffix at most once per pass, so `"X School School"` normalized to `"x school"` and normalized
+  again to `"x"` — not idempotent, while `SchoolId::mint` keys school identity on that string, so two
+  adapters could mint two IDs for one school depending on how often a name passed through
+  normalization. It now strips to a fixpoint (`strip_type_suffix` loops until nothing is removed),
+  which is the property the pack published and the repeated-suffix harness asserted; the regression
+  is pinned by `model::tests::normalize_name_reaches_a_fixpoint_on_repeated_suffixes` and the
+  harness's doc comment was updated from "expected to fail" to the fixpoint contract.
 - **Fuzzing is a bounded smoke run** (1000 iterations per target), not a soak; the SHA-NI `sha2`
   backend is stubbed away by the `cpuid` stub and is therefore not verified.
 - **Integrity review candidates** (7 `struct_with_many_options` sites across the two crates) are

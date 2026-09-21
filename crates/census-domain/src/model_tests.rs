@@ -263,6 +263,30 @@ fn normalize_name_strips_school_suffixes_only_from_longer_names() {
 }
 
 #[test]
+fn normalize_name_reaches_a_fixpoint_on_repeated_suffixes() {
+    // A trailing suffix that survives one pass would mint a different `SchoolId` for a source that
+    // re-normalizes a name another source already normalized.
+    for (raw, expected) in [
+        ("X School School", "x"),
+        ("Center Grove High School High School", "center grove"),
+        ("A B HS School", "a b"),
+        ("A B School Sr High", "a b"),
+    ] {
+        assert_eq!(normalize_name(raw), expected, "raw {raw:?}");
+    }
+    for raw in [
+        "Abbotsford High School",
+        "X School School",
+        "A B School Sr High",
+        "HS",
+        "",
+    ] {
+        let once = normalize_name(raw);
+        assert_eq!(normalize_name(&once), once, "not idempotent on {raw:?}");
+    }
+}
+
+#[test]
 fn flip_last_first_handles_both_shapes() {
     assert_eq!(flip_last_first("Aguilera, Julian"), "Julian Aguilera");
     assert_eq!(flip_last_first(" Aguilera , Julian "), "Julian Aguilera");

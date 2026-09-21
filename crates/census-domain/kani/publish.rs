@@ -198,13 +198,14 @@ fn check_normalize_idempotent() {
     }
 }
 
-/// A name whose normalized form still ends in a dropped type suffix loses another token on the next
-/// pass, so re-normalizing a key is not always the identity.
+/// A name whose normalized form ends in a second type suffix has to reach the same key as the name
+/// without it: `"x school school"` normalizes to `"x"` in one call, so a second call is the
+/// identity.
 ///
-/// This harness asserts the universal claim the pack published ("`normalize_name` idempotency") and
-/// is expected to fail on the current model: `"x school school"` normalizes to `"x school"`, and
-/// that normalizes again to `"x"`. The repair belongs in `src/model.rs`, which this lane does not
-/// own; the failure is reported verbatim in `docs/VERIFICATION-EVIDENCE.md`.
+/// This is the repeated-suffix arm of the idempotency claim the pack publishes. It was a live
+/// counterexample in the first pass (`"x school school"` normalized to `"x school"`, which
+/// normalized again to `"x"`, and `SchoolId::mint` keys on that string); `normalize_name` now
+/// strips type suffixes until none applies, which is the fixpoint this harness asserts.
 #[kani::proof]
 #[kani::unwind(64)]
 fn check_normalize_idempotent_repeated_suffix() {
