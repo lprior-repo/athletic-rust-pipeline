@@ -1,0 +1,14 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+edition = "2021"
+description = "Repository developer commands: quality gate, source fixtures and tests, census reports, adapter scaffolding"
+license = "MIT"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }

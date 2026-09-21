@@ -155,3 +155,21 @@ shows it. If a lane is blocked, say exactly which command failed and where the f
 See `docs/adr/` for the short ADR set: Fjall remains the system of record; Restate owns retries;
 `GraduationYear` (not grade) is cohort identity; meet-first acquisition beats per-athlete fetching;
 AI cannot override a deterministic contradiction; Excel is the recruiter query layer.
+
+## 11. Developer commands (`cargo run -p xtask --`)
+
+`xtask/` wraps the repository's real tools; it reimplements none of them and prints every child
+command before running it. Full command reference: `xtask/README.md`.
+
+```bash
+cargo run -p xtask -- gate [-- --update-baseline]        # tools/gate.sh, arguments passed through
+cargo run -p xtask -- source-test <source>               # nextest -E 'test(<source>)'
+cargo run -p xtask -- source-fixture <source>            # what is captured under tests/fixtures/<source>/
+cargo run -p xtask -- census-status --store <dir>        # midwest-census report --core
+cargo run -p xtask -- coverage      --store <dir>        # midwest-census report (every source)
+cargo run -p xtask -- new-source <name>                  # scaffold a directory-layout adapter
+```
+
+`new-source` is the layout the decomposition moves the flat `sources/<name>.rs` adapters to:
+`mod.rs`, `parse.rs` (pure), `map.rs`, a module README, the fixture README, and one appended
+`pub mod <name>;`. It refuses any name that already exists and never edits an existing adapter.

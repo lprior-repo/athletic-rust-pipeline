@@ -1,0 +1,6 @@
+# cargo-xtask: `cargo xtask <command>` is `cargo run -p xtask -- <command>`.
+#
+# Kept to the alias alone — no build or target settings, so the gate lanes keep running against the
+# same toolchain and flags whether or not this file is present.
+[alias]
+xtask = "run -p xtask --"

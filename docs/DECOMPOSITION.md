@@ -48,8 +48,9 @@ crates/midwest-census/src/sources/<name>/
     tests.rs    the existing #[cfg(test)] module, moved verbatim
 ```
 
-`cargo xtask new-source <name>` generates exactly this layout, so new adapters start where decomposed
-ones end.
+`cargo xtask new-source <name>` generates this layout with the fixture-driven `#[cfg(test)]` module
+inside `parse.rs`; when an adapter's tests outgrow that file, the module moves to the sibling
+`tests.rs` shown above (that is the step every decomposed adapter below performs).
 
 ## Census targets (line counts at the start of Phase 2)
 
