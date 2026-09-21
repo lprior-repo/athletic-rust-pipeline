@@ -1,0 +1,91 @@
+{
+  "query_from_0": {
+    "_source": [
+      "i",
+      "n",
+      "y",
+      "g",
+      "mi",
+      "ani",
+      "t"
+    ],
+    "from": 0,
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "terms": {
+              "mi": [
+                73566
+              ]
+            }
+          },
+          {
+            "terms": {
+              "y": [
+                "11",
+                "12",
+                "JR",
+                "SR",
+                "Jr",
+                "Sr"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "size": 2000,
+    "track_total_hits": true
+  },
+  "query_from_2000": {
+    "_source": [
+      "i",
+      "n",
+      "y",
+      "g",
+      "mi",
+      "ani",
+      "t"
+    ],
+    "from": 2000,
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "terms": {
+              "mi": [
+                73566
+              ]
+            }
+          },
+          {
+            "terms": {
+              "y": [
+                "11",
+                "12",
+                "JR",
+                "SR",
+                "Jr",
+                "Sr"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "size": 2000,
+    "track_total_hits": true
+  },
+  "skipped_implausible": 0,
+  "targets": [
+    {
+      "athleticlive_meet_id": 73566,
+      "date": "2025-04-25",
+      "meet_id": "meet_48047dec004c160f",
+      "name": "Abilene Invitational",
+      "state": "KS",
+      "tenant": "reddirt"
+    }
+  ]
+}

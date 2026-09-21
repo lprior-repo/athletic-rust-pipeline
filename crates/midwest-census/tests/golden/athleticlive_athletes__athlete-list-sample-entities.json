@@ -1,0 +1,441 @@
+{
+  "athletes": [
+    {
+      "canonical_name": "Sofia Amador",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "girls",
+      "grad_year": 2026,
+      "id": "ath_40e61491940b193b",
+      "identity_confidence": 65,
+      "known_names": [
+        "Sofia Amador"
+      ],
+      "observed_grades": [
+        {
+          "grade": 11,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/30987325/track-and-field"
+      ],
+      "school": "sch_75152c829b97d64c",
+      "source_identities": [
+        {
+          "id": "30987325",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    },
+    {
+      "canonical_name": "Keith Marshall",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "boys",
+      "grad_year": 2025,
+      "id": "ath_5de8f27cdc7331fe",
+      "identity_confidence": 65,
+      "known_names": [
+        "Keith Marshall"
+      ],
+      "observed_grades": [
+        {
+          "grade": 12,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/23792020/track-and-field"
+      ],
+      "school": "sch_8b987f567cbfdb9d",
+      "source_identities": [
+        {
+          "id": "23792020",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    },
+    {
+      "canonical_name": "Kaden Hitz",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "boys",
+      "grad_year": 2025,
+      "id": "ath_7575f4b15d7386b9",
+      "identity_confidence": 65,
+      "known_names": [
+        "Kaden Hitz"
+      ],
+      "observed_grades": [
+        {
+          "grade": 12,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/21318358/track-and-field"
+      ],
+      "school": "sch_8b987f567cbfdb9d",
+      "source_identities": [
+        {
+          "id": "21318358",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    },
+    {
+      "canonical_name": "Luke Watson",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "boys",
+      "grad_year": 2026,
+      "id": "ath_a1596abfc892f504",
+      "identity_confidence": 65,
+      "known_names": [
+        "Luke Watson"
+      ],
+      "observed_grades": [
+        {
+          "grade": 11,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/24940187/track-and-field"
+      ],
+      "school": "sch_75152c829b97d64c",
+      "source_identities": [
+        {
+          "id": "24940187",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    },
+    {
+      "canonical_name": "Cessia Berruecos",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "girls",
+      "grad_year": 2025,
+      "id": "ath_e510d8b145da6391",
+      "identity_confidence": 65,
+      "known_names": [
+        "Cessia Berruecos"
+      ],
+      "observed_grades": [
+        {
+          "grade": 12,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/30987335/track-and-field"
+      ],
+      "school": "sch_75152c829b97d64c",
+      "source_identities": [
+        {
+          "id": "30987335",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    },
+    {
+      "canonical_name": "Danei Laubscher",
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "girls",
+      "grad_year": 2026,
+      "id": "ath_e82c75c6a16a4e3b",
+      "identity_confidence": 65,
+      "known_names": [
+        "Danei Laubscher"
+      ],
+      "observed_grades": [
+        {
+          "grade": 11,
+          "school_year": 2024,
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "public_profile_urls": [
+        "https://www.athletic.net/athlete/30987350/track-and-field"
+      ],
+      "school": "sch_75152c829b97d64c",
+      "source_identities": [
+        {
+          "id": "30987350",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "athlete"
+            }
+          }
+        }
+      ],
+      "sports": [
+        "outdoor_track"
+      ]
+    }
+  ],
+  "rows": 6,
+  "rows_with_athlete_id": 6,
+  "rows_with_grade": 6,
+  "rows_with_team_id": 6,
+  "rows_without_school": 0,
+  "schools": [
+    {
+      "aliases": [],
+      "co_op": false,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "id": "sch_75152c829b97d64c",
+      "name": "Abilene",
+      "normalized_name": "abilene",
+      "source_identities": [],
+      "state": "KS"
+    },
+    {
+      "aliases": [],
+      "co_op": false,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "id": "sch_8b987f567cbfdb9d",
+      "name": "Chapman",
+      "normalized_name": "chapman",
+      "source_identities": [],
+      "state": "KS"
+    }
+  ],
+  "teams": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "team_7ecc48fd9cc86584",
+      "level": "high_school",
+      "school": "sch_75152c829b97d64c",
+      "school_year": 2024,
+      "source_identities": [
+        {
+          "id": "1650834",
+          "namespace": {
+            "timer_team": {
+              "provider": "reddirt"
+            }
+          }
+        },
+        {
+          "id": "17624",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "team"
+            }
+          }
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "team_8214d156dbf3483f",
+      "level": "high_school",
+      "school": "sch_75152c829b97d64c",
+      "school_year": 2024,
+      "source_identities": [
+        {
+          "id": "1650834",
+          "namespace": {
+            "timer_team": {
+              "provider": "reddirt"
+            }
+          }
+        },
+        {
+          "id": "17624",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "team"
+            }
+          }
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "athleticlive_athletes",
+            "url": "https://search.athletic.live/athlete_list/_search (mi=73566)"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "team_04253214afccf15d",
+      "level": "high_school",
+      "school": "sch_8b987f567cbfdb9d",
+      "school_year": 2024,
+      "source_identities": [
+        {
+          "id": "1650835",
+          "namespace": {
+            "timer_team": {
+              "provider": "reddirt"
+            }
+          }
+        },
+        {
+          "id": "17676",
+          "namespace": {
+            "legacy_athletic_net": {
+              "kind": "team"
+            }
+          }
+        }
+      ],
+      "sport": "outdoor_track"
+    }
+  ]
+}

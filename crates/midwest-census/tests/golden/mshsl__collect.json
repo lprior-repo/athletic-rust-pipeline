@@ -1,0 +1,183 @@
+{
+  "coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_015c3e60a56c296c",
+      "name": "Jim Henrickson",
+      "professional_email": "jhenrickson@isd1.org",
+      "role": "athletic_director",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "7:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      ]
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/593477"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_05deb0a6185a2042",
+      "name": "Adam Carlson",
+      "professional_email": "acarlson@isd1.org",
+      "role": "head_coach",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "593477:adam carlson",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/593477"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/593478"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-girls/2027"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_1840bb47a12a1720",
+      "name": "Ava Carlson",
+      "professional_email": "avacarlson@isd1.org",
+      "role": "head_coach",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "593478:ava carlson",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/593478"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_f245493627dce0e2",
+      "name": "Alan Hills",
+      "professional_email": "ahills@isd1.org",
+      "role": "athletic_director",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "7:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      ]
+    }
+  ],
+  "report": {
+    "adapter": "mshsl",
+    "errors": 0,
+    "from_cache": 5,
+    "notes": [
+      "1 school(s) processed (0 already journalled): 2 athletic-director row(s), 2 sport-coach row(s), 4 with a professional email",
+      "10 Administration-block entry/entries were office roles (principal, superintendent, AD administrative assistant, trainer, advisors, Title IX, sports representatives) and were not emitted",
+      "AD contacts come from the school page Administration block (Cloudflare-obfuscated addresses decoded locally); sport coaches come from /api/coaches/<team nid> reached through /jsonapi/views/teams/list_school, filtered to MSHSL coach levels and school-domain addresses - personal-domain addresses and every phone column are never parsed"
+    ],
+    "requests": 0,
+    "rows": 1,
+    "unit": "schools",
+    "with_email": 4
+  },
+  "schools": [
+    {
+      "aliases": [],
+      "association": "mshsl",
+      "city": "Aitkin",
+      "co_op": false,
+      "enrollment": 291,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school"
+          }
+        }
+      ],
+      "id": "sch_49f3afc6e56effda",
+      "name": "Aitkin High School",
+      "normalized_name": "aitkin",
+      "school_website": "https://isd1.rschoolteams.com/",
+      "source_identities": [
+        {
+          "id": "7",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      ],
+      "state": "MN"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "rows": [
+    {
+      "name": "DUBLIN COFFMAN",
+      "city": "Dublin",
+      "ohsaa_id": "474",
+      "page_url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474",
+      "sports_url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474",
+      "ad_url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
+    }
+  ],
+  "query": "DUBLIN COFFMAN",
+  "resolved": {
+    "name": "DUBLIN COFFMAN",
+    "city": "Dublin",
+    "ohsaa_id": "474",
+    "page_url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474",
+    "sports_url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474",
+    "ad_url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
+  },
+  "notes": []
+}

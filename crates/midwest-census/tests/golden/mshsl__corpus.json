@@ -1,0 +1,46 @@
+[
+  {
+    "digest": "c08dab41c0232cc1b848d4da68c2e9e4e2e293d8df494b252f6ad10e8b732ca7",
+    "fixture": "coach_records_aitkin_track-and-field-boys.json"
+  },
+  {
+    "digest": "1e857a832e5470b99dea0888817f0c928bef502b956ce72bcb17c20cd6715c8f",
+    "fixture": "coach_records_aitkin_track-and-field-girls.json"
+  },
+  {
+    "digest": "61c303b30a9638fce03e0c94d44fac25b728b0eb0e3c58a5bd53ba46f5f3e428",
+    "fixture": "coach_records_wayzata_track_boys.json"
+  },
+  {
+    "digest": "fe1dfe433b8fd6eabb1042505577fd6d648744c241c1c42e0aef102de7caf689",
+    "fixture": "school_detail_academic-arts-high-school.html"
+  },
+  {
+    "digest": "70c775c315cc4058a84f07a3bf65eeb8fefce2af9eaf5cbbe57b8b34c931a3a0",
+    "fixture": "school_detail_aitkin-high-school.html"
+  },
+  {
+    "digest": "254aa99b32577d8a7798681a521c7abcc1626f7ef72689d589700a27100c608b",
+    "fixture": "school_detail_foley-high-school.html"
+  },
+  {
+    "digest": "52b999b73030b51dc20a443dbd521c65d01d9ae66a8283ffc8884dd3427add11",
+    "fixture": "school_detail_wayzata-high-school.html"
+  },
+  {
+    "digest": "d9c54ee7edabaa0c59eadc340058dac918627432acdeeb33ee52cf2b2a53f557",
+    "fixture": "schools_listing.html"
+  },
+  {
+    "digest": "43793ff9359c73ef9157cdc53707c9225365d4cf446747d1fa98b185cfc86970",
+    "fixture": "schools_listing_first_page.html"
+  },
+  {
+    "digest": "45f4107b4ee0e658a995b7895f5c3b33d5e43574b11016841f6d2a4f07b04e6a",
+    "fixture": "team_nodes_aitkin.json"
+  },
+  {
+    "digest": "b9fadfb915c8be04f08706332ef32fe7212c05bcf0f321c4b965460394f1e053",
+    "fixture": "team_nodes_wayzata.json"
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "source": "wiaa_results",
+  "files": [
+    {
+      "file": "d1boysstateresults-dash.htm",
+      "digest": "dce4bb4f5a1f33c4f29e2721796b035bb88f9fa202c8b5223f82697e20c09040"
+    },
+    {
+      "file": "d1boysstateresults-dash.txt",
+      "digest": "b43a2839197c69a6886634327e7cadc88dd746ab36dc7f8741244c10b8d9f426"
+    },
+    {
+      "file": "d1boysstateresults-sections.htm",
+      "digest": "35194804244295322c8ac451cad31288ec4e7cc5eba30d19879e75cf2c304695"
+    },
+    {
+      "file": "racinesectionalb-finish-list.htm",
+      "digest": "f499e33215f8d9762548c1212d51d9aab897cbdb9628ccfb0dd9ccd06a5b1f05"
+    },
+    {
+      "file": "seed-column-regional.htm",
+      "digest": "26a588c136fee147a39000a76e40dd7f06336659487eb22384c12c2540df176b"
+    },
+    {
+      "file": "trackside-regional.htm",
+      "digest": "5f4a44ebdd16dbc357b9b766e732596445df386cab8db0ba53fdb5d6d9d9b012"
+    }
+  ]
+}

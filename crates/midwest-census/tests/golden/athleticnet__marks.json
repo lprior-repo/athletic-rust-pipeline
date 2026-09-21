@@ -1,0 +1,92 @@
+{
+  "marks": [
+    {
+      "event": "Track800m",
+      "mark": [
+        {
+          "TimeSeconds": 77.8
+        },
+        true
+      ],
+      "published": "1:17.80a"
+    },
+    {
+      "event": "Track3200m",
+      "mark": [
+        {
+          "TimeSeconds": 581.23
+        },
+        false
+      ],
+      "published": "9:41.23"
+    },
+    {
+      "event": "Track100m",
+      "mark": [
+        {
+          "TimeSeconds": 11.32
+        },
+        false
+      ],
+      "published": "11.32q"
+    },
+    {
+      "event": "LongJump",
+      "mark": [
+        {
+          "FieldImperial": {
+            "feet_mark": "5-04.25",
+            "metres": 1.63195
+          }
+        },
+        false
+      ],
+      "published": "5-04.25"
+    },
+    {
+      "event": "ShotPut",
+      "mark": [
+        {
+          "DistanceMetres": 12.34
+        },
+        false
+      ],
+      "published": "12.34m"
+    },
+    {
+      "event": "Decathlon",
+      "mark": [
+        {
+          "Points": 3456.0
+        },
+        false
+      ],
+      "published": "3,456"
+    },
+    {
+      "event": "Track1600m",
+      "mark": null,
+      "published": "DNS"
+    },
+    {
+      "event": "Track1600m",
+      "mark": null,
+      "published": "ND"
+    },
+    {
+      "event": "Track1600m",
+      "mark": null,
+      "published": "FOUL"
+    },
+    {
+      "event": "Track1600m",
+      "mark": null,
+      "published": "X"
+    },
+    {
+      "event": "Track1600m",
+      "mark": null,
+      "published": ""
+    }
+  ]
+}

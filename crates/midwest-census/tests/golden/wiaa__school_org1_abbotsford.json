@@ -1,0 +1,111 @@
+{
+  "name": "Abbotsford",
+  "level": "High School",
+  "city": "Abbotsford",
+  "conference": "Marawood",
+  "enrollment": 214,
+  "website": "http://www.abbotsford.k12.wi.us",
+  "admins": [
+    {
+      "role": "Superintendent",
+      "name": "Ryan Bargender",
+      "email": "rbargender@abbotsford.k12.wi.us"
+    },
+    {
+      "role": "Principal",
+      "name": "Melissa Pilgrim",
+      "email": "mpilgrim@abbotsford.k12.wi.us"
+    },
+    {
+      "role": "Athletic Director",
+      "name": "Alex Larson",
+      "email": "alarson@abbotsford.k12.wi.us"
+    }
+  ],
+  "coaches": [
+    {
+      "sport": "Boys Baseball",
+      "name": "Brett Nelson",
+      "role": "Head Coach",
+      "email": "bnelson@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Boys Basketball",
+      "name": "Garrett Rau",
+      "role": "Head Coach",
+      "email": "grau@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Boys Football",
+      "name": "JACOB KNAPMILLER",
+      "role": "Head Coach",
+      "email": "jknapmiller@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Boys Hockey",
+      "name": "Klayton Kree",
+      "role": "Head Coach",
+      "email": "kreekl@medford.k12.wi.us"
+    },
+    {
+      "sport": "Boys Track and Field",
+      "name": "JACOB KNAPMILLER",
+      "role": "Head Coach",
+      "email": "jknapmiller@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Boys Wrestling",
+      "name": "Steven Wozniak",
+      "role": "Head Coach",
+      "email": "swozniak@colby.k12.wi.us"
+    },
+    {
+      "sport": "Girls Basketball",
+      "name": "Kaylee Meyer",
+      "role": "Head Coach",
+      "email": "kjmeyer23@gmail.com"
+    },
+    {
+      "sport": "Girls Cross Country",
+      "name": "Dillon Novak",
+      "role": "Head Coach",
+      "email": "dnovak@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Girls Hockey",
+      "name": "Bruce Peterson",
+      "role": "Head Coach",
+      "email": "peterbr@medford.k12.wi.us"
+    },
+    {
+      "sport": "Girls Softball",
+      "name": "Al Kneifl",
+      "role": "Head Coach",
+      "email": "akneifl@charter.net"
+    },
+    {
+      "sport": "Girls Swimming & Diving",
+      "name": "Monica Tesmer",
+      "role": "Head Coach",
+      "email": "mtesmer@colby.k12.wi.us"
+    },
+    {
+      "sport": "Girls Track and Field",
+      "name": "JACOB KNAPMILLER",
+      "role": "Head Coach",
+      "email": "jknapmiller@abbotsford.k12.wi.us"
+    },
+    {
+      "sport": "Girls Volleyball",
+      "name": "John Kreeger",
+      "role": "Head Coach",
+      "email": "kreegerj@yahoo.com"
+    },
+    {
+      "sport": "Girls Wrestling",
+      "name": "Steven Wozniak",
+      "role": "Head Coach",
+      "email": "swozniak@colby.k12.wi.us"
+    }
+  ]
+}

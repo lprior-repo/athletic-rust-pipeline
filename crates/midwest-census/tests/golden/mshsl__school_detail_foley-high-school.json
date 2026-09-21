@@ -1,0 +1,182 @@
+{
+  "ad_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/foley-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_56d336ec077162d8",
+      "name": "Matthew Bueckers",
+      "professional_email": "mbueckers@apps.isd51.org",
+      "role": "athletic_director",
+      "school": "sch_4d1911d124457284",
+      "source_identities": [
+        {
+          "id": "175:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/foley-high-school"
+        }
+      ]
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/foley-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_b600dbe46de55395",
+      "name": "Alyssa Stewart",
+      "role": "athletic_director",
+      "school": "sch_4d1911d124457284",
+      "source_identities": [
+        {
+          "id": "175:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/foley-high-school"
+        }
+      ]
+    }
+  ],
+  "detail": {
+    "admin": [
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "mbueckers@apps.isd51.org"
+        ],
+        "name": "Matthew Bueckers",
+        "role": "Activities Director"
+      },
+      {
+        "ad_role": "athletic_director",
+        "emails": [],
+        "name": "Alyssa Stewart",
+        "role": "Assistant Activities Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [
+          "cogross@apps.isd51.org"
+        ],
+        "name": "Corri Gross",
+        "role": "AD Administrative Assistant"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Joel Foss",
+        "role": "Principal"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Daniel Posthumus",
+        "role": "Superintendent"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Janel Hesch",
+        "role": "Band Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Jody Martinson",
+        "role": "Choir Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Joel Foss",
+        "role": "Title IX Officer"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Matthew Bueckers",
+        "role": "Boys Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Matthew Bueckers",
+        "role": "Girls Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Logan Jesperson, MS, LAT, ATC",
+        "role": "Athletic Trainer/Medical"
+      }
+    ],
+    "enrollment": 533,
+    "name": "Foley High School",
+    "school_id": "175",
+    "website": "http://www.foley.k12.mn.us"
+  },
+  "domains": [
+    "apps.isd51.org",
+    "foley.k12.mn.us"
+  ],
+  "row": {
+    "city": null,
+    "name": "Foley High School",
+    "slug": "foley-high-school"
+  },
+  "school": {
+    "aliases": [],
+    "association": "mshsl",
+    "co_op": false,
+    "enrollment": 533,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "mshsl",
+          "url": "https://www.mshsl.org/schools/foley-high-school"
+        }
+      }
+    ],
+    "id": "sch_4d1911d124457284",
+    "name": "Foley High School",
+    "normalized_name": "foley",
+    "school_website": "http://www.foley.k12.mn.us",
+    "source_identities": [
+      {
+        "id": "175",
+        "namespace": {
+          "association_school": {
+            "association": "mshsl"
+          }
+        },
+        "url": "https://www.mshsl.org/schools/foley-high-school"
+      }
+    ],
+    "state": "MN"
+  },
+  "school_id": "sch_4d1911d124457284",
+  "school_key": "175"
+}

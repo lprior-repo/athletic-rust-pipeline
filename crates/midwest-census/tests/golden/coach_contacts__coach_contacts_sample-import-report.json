@@ -1,0 +1,13 @@
+{
+  "adapter": "coach_contacts_csv",
+  "errors": 0,
+  "from_cache": 0,
+  "notes": [
+    "schools=6",
+    "rows_without_coach_role=3"
+  ],
+  "requests": 0,
+  "rows": 13,
+  "unit": "coaches",
+  "with_email": 8
+}

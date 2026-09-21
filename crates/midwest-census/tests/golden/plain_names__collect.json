@@ -1,0 +1,369 @@
+{
+  "coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_2171d4a22222c9ab",
+      "name": "Jaime Watson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_377e0fa38b43d3b8",
+      "name": "Zeb Noyd",
+      "role": "head_coach",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_3b322b071da552e9",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_457e24906815484b",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_49d504fe3a01085a",
+      "name": "Troy Thorson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_5704a6574ab3b879",
+      "name": "Toni Fowler",
+      "role": "head_coach",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_58b9c28453650590",
+      "name": "Toni Fowler",
+      "role": "head_coach",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_7c80ceebb3e112ea",
+      "name": "Alan Frank",
+      "role": "athletic_director",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_86efd97d4a5ae3da",
+      "name": "Logan Midthun",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_93e762d58dfcf99e",
+      "name": "Aub Boucher",
+      "role": "athletic_director",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_c14232d9ecd2bc32",
+      "name": "Corissa Kolesar",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_cb76fa91a095f95a",
+      "name": "James Moe",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_d1605b78f84e15e5",
+      "name": "Toni Fowler",
+      "role": "head_coach",
+      "school": "sch_2c870270b29ff075",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_d4c078d336b91e8c",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_e1878ddecef68c6e",
+      "name": "Troy Thorson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    }
+  ],
+  "report": {
+    "adapter": "plain_names",
+    "errors": 0,
+    "from_cache": 4,
+    "notes": [
+      "ndhsaa: 1 of 169 member schools parsed (160 already journalled, 0 failed); 9 coach rows (3 athletic/activities directors); TF/XC coach slots named 4/4; 169 listings",
+      "ndhsaa: 0 of 1 school pages walked contain any email string; names only: provider publishes no coach email (every coach entity has professional_email=None)",
+      "nsaa: 1 of 312 member schools parsed (0 already journalled, 0 failed); 6 coach rows (2 athletic/activities directors, 4 sport rows); TF/XC coach slots named 4/4",
+      "nsaa: 0 of 34 directory rows carry an email string (0 of them in coach/AD rows); names only: provider publishes no coach email",
+      "wrote 2 schools and 15 coach/AD rows",
+      "names only: provider publishes no coach email"
+    ],
+    "requests": 0,
+    "rows": 2,
+    "unit": "schools",
+    "with_email": 0
+  },
+  "schools": [
+    {
+      "aliases": [],
+      "association": "ndhsaa",
+      "city": "West Fargo",
+      "co_op": false,
+      "enrollment": 1399,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "id": "sch_1b752c954c9ada64",
+      "name": "West Fargo Sheyenne High School",
+      "normalized_name": "west fargo sheyenne",
+      "school_website": "https://www.west-fargo.k12.nd.us/shs/activities",
+      "source_identities": [
+        {
+          "id": "1045",
+          "namespace": {
+            "association_school": {
+              "association": "ndhsaa"
+            }
+          },
+          "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+        }
+      ],
+      "state": "ND"
+    },
+    {
+      "aliases": [],
+      "association": "nsaa",
+      "city": "Hastings",
+      "co_op": false,
+      "enrollment": 215,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "nsaa",
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        }
+      ],
+      "id": "sch_2c870270b29ff075",
+      "name": "Adams Central",
+      "normalized_name": "adams central",
+      "school_website": "http://www.adamscentral.us/",
+      "source_identities": [
+        {
+          "id": "Adams Central",
+          "namespace": {
+            "association_school": {
+              "association": "nsaa"
+            }
+          },
+          "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+        }
+      ],
+      "state": "NE"
+    }
+  ]
+}

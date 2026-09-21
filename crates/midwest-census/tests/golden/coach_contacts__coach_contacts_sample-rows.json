@@ -1,0 +1,1114 @@
+{
+  "file": "coach_contacts_sample.csv",
+  "rows": [
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_6475782dda0ce83d",
+          "name": "JACOB KNAPMILLER",
+          "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+          "role": "head_coach",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_ba340c94164e0578",
+          "name": "Alex Larson",
+          "professional_email": "alarson@abbotsford.k12.wi.us",
+          "role": "athletic_director",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ]
+        }
+      ],
+      "row": 2,
+      "school": {
+        "aliases": [
+          "Abbotsford WI"
+        ],
+        "city": "Abbotsford",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          }
+        ],
+        "id": "sch_b5ea31ddfcd999ba",
+        "name": "Abbotsford",
+        "normalized_name": "abbotsford",
+        "source_identities": [
+          {
+            "id": "1",
+            "namespace": {
+              "association_school": {
+                "association": "wiaa"
+              }
+            },
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          }
+        ],
+        "state": "WI"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_7111b7979c9fb377",
+          "name": "Dillon Novak",
+          "professional_email": "dnovak@abbotsford.k12.wi.us",
+          "role": "head_coach",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_ba340c94164e0578",
+          "name": "Alex Larson",
+          "professional_email": "alarson@abbotsford.k12.wi.us",
+          "role": "athletic_director",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ]
+        }
+      ],
+      "row": 3,
+      "school": {
+        "aliases": [
+          "Abbotsford WI"
+        ],
+        "city": "Abbotsford",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          }
+        ],
+        "id": "sch_b5ea31ddfcd999ba",
+        "name": "Abbotsford",
+        "normalized_name": "abbotsford",
+        "source_identities": [
+          {
+            "id": "1",
+            "namespace": {
+              "association_school": {
+                "association": "wiaa"
+              }
+            },
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          }
+        ],
+        "state": "WI"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_5372f3ac1deccf5f",
+          "name": "JACOB KNAPMILLER",
+          "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+          "role": "head_coach",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_ba340c94164e0578",
+          "name": "Alex Larson",
+          "professional_email": "alarson@abbotsford.k12.wi.us",
+          "role": "athletic_director",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ]
+        }
+      ],
+      "row": 4,
+      "school": {
+        "aliases": [
+          "Abbotsford WI"
+        ],
+        "city": "Abbotsford",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          }
+        ],
+        "id": "sch_b5ea31ddfcd999ba",
+        "name": "Abbotsford",
+        "normalized_name": "abbotsford",
+        "source_identities": [
+          {
+            "id": "1",
+            "namespace": {
+              "association_school": {
+                "association": "wiaa"
+              }
+            },
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          }
+        ],
+        "state": "WI"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_ba340c94164e0578",
+          "name": "Alex Larson",
+          "professional_email": "alarson@abbotsford.k12.wi.us",
+          "role": "athletic_director",
+          "school": "sch_b5ea31ddfcd999ba",
+          "source_identities": [
+            {
+              "id": "1:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "wiaa"
+                }
+              },
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          ]
+        }
+      ],
+      "row": 5,
+      "school": {
+        "aliases": [
+          "Abbotsford WI"
+        ],
+        "city": "Abbotsford",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+            }
+          }
+        ],
+        "id": "sch_b5ea31ddfcd999ba",
+        "name": "Abbotsford",
+        "normalized_name": "abbotsford",
+        "source_identities": [
+          {
+            "id": "1",
+            "namespace": {
+              "association_school": {
+                "association": "wiaa"
+              }
+            },
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          }
+        ],
+        "state": "WI"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_d678e6f05edf6def",
+          "name": "Derek Berns",
+          "professional_email": "dberns@abileneschools.org",
+          "role": "athletic_director",
+          "school": "sch_75152c829b97d64c",
+          "source_identities": [
+            {
+              "id": "abilene:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "kshsaa"
+                }
+              },
+              "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+            }
+          ]
+        }
+      ],
+      "row": 6,
+      "school": {
+        "aliases": [
+          "Abilene KS"
+        ],
+        "city": "Abilene",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+            }
+          }
+        ],
+        "id": "sch_75152c829b97d64c",
+        "name": "Abilene HS",
+        "normalized_name": "abilene",
+        "source_identities": [
+          {
+            "id": "abilene",
+            "namespace": {
+              "association_school": {
+                "association": "kshsaa"
+              }
+            },
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        ],
+        "state": "KS"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_d1605b78f84e15e5",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_7c80ceebb3e112ea",
+          "name": "Alan Frank",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ]
+        }
+      ],
+      "row": 7,
+      "school": {
+        "aliases": [],
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          }
+        ],
+        "id": "sch_2c870270b29ff075",
+        "name": "Adams Central",
+        "normalized_name": "adams central",
+        "source_identities": [
+          {
+            "id": "adams central",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+          }
+        ],
+        "state": "NE"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_5704a6574ab3b879",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_7c80ceebb3e112ea",
+          "name": "Alan Frank",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ]
+        }
+      ],
+      "row": 8,
+      "school": {
+        "aliases": [],
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          }
+        ],
+        "id": "sch_2c870270b29ff075",
+        "name": "Adams Central",
+        "normalized_name": "adams central",
+        "source_identities": [
+          {
+            "id": "adams central",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+          }
+        ],
+        "state": "NE"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_377e0fa38b43d3b8",
+          "name": "Zeb Noyd",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_7c80ceebb3e112ea",
+          "name": "Alan Frank",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [
+            {
+              "id": "adams central:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "nsaa"
+                }
+              },
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          ]
+        }
+      ],
+      "row": 9,
+      "school": {
+        "aliases": [],
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+            }
+          }
+        ],
+        "id": "sch_2c870270b29ff075",
+        "name": "Adams Central",
+        "normalized_name": "adams central",
+        "source_identities": [
+          {
+            "id": "adams central",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+          }
+        ],
+        "state": "NE"
+      }
+    },
+    {
+      "coaches": [],
+      "row": 10,
+      "school": {
+        "aliases": [
+          "Kentwood MI"
+        ],
+        "city": "Kentwood",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+            }
+          }
+        ],
+        "id": "sch_7ddf91cfded99415",
+        "name": "East Kentwood HS",
+        "normalized_name": "east kentwood",
+        "source_identities": [
+          {
+            "id": "east kentwood",
+            "namespace": {
+              "association_school": {
+                "association": "mhsaa"
+              }
+            },
+            "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+          }
+        ],
+        "state": "MI"
+      }
+    },
+    {
+      "coaches": [],
+      "row": 11,
+      "school": {
+        "aliases": [
+          "Kentwood MI"
+        ],
+        "city": "Kentwood",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+            }
+          }
+        ],
+        "id": "sch_7ddf91cfded99415",
+        "name": "East Kentwood HS",
+        "normalized_name": "east kentwood",
+        "source_identities": [
+          {
+            "id": "east kentwood",
+            "namespace": {
+              "association_school": {
+                "association": "mhsaa"
+              }
+            },
+            "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+          }
+        ],
+        "state": "MI"
+      }
+    },
+    {
+      "coaches": [],
+      "row": 12,
+      "school": {
+        "aliases": [
+          "Kentwood MI"
+        ],
+        "city": "Kentwood",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+            }
+          }
+        ],
+        "id": "sch_7ddf91cfded99415",
+        "name": "East Kentwood HS",
+        "normalized_name": "east kentwood",
+        "source_identities": [
+          {
+            "id": "east kentwood",
+            "namespace": {
+              "association_school": {
+                "association": "mhsaa"
+              }
+            },
+            "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+          }
+        ],
+        "state": "MI"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_5ea8b4ce876aeaaf",
+          "name": "Bo Beck",
+          "role": "athletic_director",
+          "school": "sch_0a2e8f359b89463c",
+          "source_identities": [
+            {
+              "id": "aberdeencentral:ad",
+              "namespace": {
+                "other": "bound"
+              },
+              "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+            }
+          ]
+        }
+      ],
+      "row": 13,
+      "school": {
+        "aliases": [],
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+            }
+          }
+        ],
+        "id": "sch_0a2e8f359b89463c",
+        "name": "aberdeencentral",
+        "normalized_name": "aberdeencentral",
+        "source_identities": [
+          {
+            "id": "aberdeencentral",
+            "namespace": {
+              "other": "bound"
+            },
+            "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+          }
+        ],
+        "state": "SD"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_5ea8b4ce876aeaaf",
+          "name": "Bo Beck",
+          "role": "athletic_director",
+          "school": "sch_0a2e8f359b89463c",
+          "source_identities": [
+            {
+              "id": "aberdeencentral:ad",
+              "namespace": {
+                "other": "bound"
+              },
+              "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+            }
+          ]
+        }
+      ],
+      "row": 14,
+      "school": {
+        "aliases": [],
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+            }
+          }
+        ],
+        "id": "sch_0a2e8f359b89463c",
+        "name": "aberdeencentral",
+        "normalized_name": "aberdeencentral",
+        "source_identities": [
+          {
+            "id": "aberdeencentral",
+            "namespace": {
+              "other": "bound"
+            },
+            "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+          }
+        ],
+        "state": "SD"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_22d92f82f872737d",
+          "name": "Barry Mink",
+          "professional_email": "bmink@atown276.net",
+          "role": "head_coach",
+          "school": "sch_aae2f1a63267d711",
+          "source_identities": [
+            {
+              "id": "0101:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "ihsa"
+                }
+              },
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          ],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_a28ffe1ce4e20daf",
+          "name": "Reid Kelso",
+          "professional_email": "rkelso@atown276.net",
+          "role": "athletic_director",
+          "school": "sch_aae2f1a63267d711",
+          "source_identities": [
+            {
+              "id": "0101:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "ihsa"
+                }
+              },
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          ]
+        }
+      ],
+      "row": 15,
+      "school": {
+        "aliases": [
+          "Abingdon IL"
+        ],
+        "city": "Abingdon",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          }
+        ],
+        "id": "sch_aae2f1a63267d711",
+        "name": "Abingdon-Avon High School",
+        "normalized_name": "abingdon avon",
+        "source_identities": [
+          {
+            "id": "0101",
+            "namespace": {
+              "association_school": {
+                "association": "ihsa"
+              }
+            },
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          }
+        ],
+        "state": "IL"
+      }
+    },
+    {
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_31429b046ed36234",
+          "name": "Justin Rakestraw",
+          "professional_email": "jrakestraw@atown276.net",
+          "role": "head_coach",
+          "school": "sch_aae2f1a63267d711",
+          "source_identities": [
+            {
+              "id": "0101:Some(HeadCoach)",
+              "namespace": {
+                "association_school": {
+                  "association": "ihsa"
+                }
+              },
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          ],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-19",
+              "source": {
+                "id": "coach_contacts_csv",
+                "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_a28ffe1ce4e20daf",
+          "name": "Reid Kelso",
+          "professional_email": "rkelso@atown276.net",
+          "role": "athletic_director",
+          "school": "sch_aae2f1a63267d711",
+          "source_identities": [
+            {
+              "id": "0101:ad",
+              "namespace": {
+                "association_school": {
+                  "association": "ihsa"
+                }
+              },
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          ]
+        }
+      ],
+      "row": 16,
+      "school": {
+        "aliases": [
+          "Abingdon IL"
+        ],
+        "city": "Abingdon",
+        "co_op": false,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-19",
+            "source": {
+              "id": "coach_contacts_csv",
+              "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+            }
+          }
+        ],
+        "id": "sch_aae2f1a63267d711",
+        "name": "Abingdon-Avon High School",
+        "normalized_name": "abingdon avon",
+        "source_identities": [
+          {
+            "id": "0101",
+            "namespace": {
+              "association_school": {
+                "association": "ihsa"
+              }
+            },
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          }
+        ],
+        "state": "IL"
+      }
+    }
+  ]
+}

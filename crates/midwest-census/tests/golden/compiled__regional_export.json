@@ -1,0 +1,213 @@
+{
+  "name": "D1 Regional 8B - Appleton North",
+  "date": "2026-05-26",
+  "end_date": null,
+  "timer": null,
+  "rows_parsed": 15,
+  "rows_skipped": 2,
+  "events": [
+    {
+      "label": "4x800 Relay",
+      "kind": "relay4x800",
+      "gender": "girls",
+      "division": "Division 1",
+      "round": "finals",
+      "rows": [
+        {
+          "place": 1,
+          "name": "",
+          "grade": null,
+          "school": "HORTONVILLE",
+          "mark": {
+            "TimeSeconds": 595.11
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": 10.0,
+          "legs": [
+            {
+              "position": 1,
+              "name": "Wloszczynski, Lexi",
+              "grade": 10
+            },
+            {
+              "position": 2,
+              "name": "Young, Ellie",
+              "grade": 9
+            },
+            {
+              "position": 3,
+              "name": "Falbo, Hailey",
+              "grade": 12
+            },
+            {
+              "position": 4,
+              "name": "Huza, Hannah",
+              "grade": 12
+            }
+          ]
+        },
+        {
+          "place": 2,
+          "name": "",
+          "grade": null,
+          "school": "APPLETON NORTH",
+          "mark": {
+            "TimeSeconds": 596.5
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": 8.0,
+          "legs": [
+            {
+              "position": 1,
+              "name": "Dehlinger, Audry",
+              "grade": 11
+            },
+            {
+              "position": 2,
+              "name": "Brazzale, Elise",
+              "grade": 10
+            },
+            {
+              "position": 3,
+              "name": "Busch, Sophia",
+              "grade": 12
+            },
+            {
+              "position": 4,
+              "name": "Helmbrecht, Ava",
+              "grade": 12
+            }
+          ]
+        },
+        {
+          "place": 3,
+          "name": "",
+          "grade": null,
+          "school": "KIMBERLY",
+          "mark": {
+            "TimeSeconds": 603.38
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": 6.0,
+          "legs": []
+        }
+      ]
+    },
+    {
+      "label": "100 Meters",
+      "kind": "track100m",
+      "gender": "girls",
+      "division": "Division 1",
+      "round": "preliminaries",
+      "rows": [
+        {
+          "place": 1,
+          "name": "Parrish, Ashley",
+          "grade": 11,
+          "school": "APPLETON NOR…",
+          "mark": {
+            "TimeSeconds": 12.3
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 2,
+          "name": "Thompson, Emily",
+          "grade": 12,
+          "school": "APPLETON NOR…",
+          "mark": {
+            "TimeSeconds": 12.74
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 3,
+          "name": "Rades, Jayla",
+          "grade": 11,
+          "school": "HORTONVILLE",
+          "mark": {
+            "TimeSeconds": 12.83
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 4,
+          "name": "Rezash, Johannah",
+          "grade": 12,
+          "school": "WEST DE PERE",
+          "mark": {
+            "TimeSeconds": 13.12
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 5,
+          "name": "Lopez, Eilianyz",
+          "grade": 10,
+          "school": "WEST DE PERE",
+          "mark": {
+            "TimeSeconds": 13.38
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 6,
+          "name": "Hammen, Allie",
+          "grade": 9,
+          "school": "APPLETON WEST",
+          "mark": {
+            "TimeSeconds": 13.39
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 7,
+          "name": "Josephson, Sydney",
+          "grade": 9,
+          "school": "KAUKAUNA",
+          "mark": {
+            "TimeSeconds": 13.44
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 8,
+          "name": "Olson, Denise",
+          "grade": 12,
+          "school": "APPLETON EAST",
+          "mark": {
+            "TimeSeconds": 13.55
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        }
+      ]
+    }
+  ]
+}

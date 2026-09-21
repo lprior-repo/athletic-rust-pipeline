@@ -1,0 +1,135 @@
+[
+  {
+    "date": "2025-08-21",
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "athleticlive_meets_csv"
+        }
+      }
+    ],
+    "id": "meet_0806a27bada43ac5",
+    "level": "invitational",
+    "location": "Princeton, IL",
+    "name": "Logan Invitational",
+    "normalized_name": "logan invitational",
+    "source_identities": [
+      {
+        "id": "55488",
+        "namespace": {
+          "timer_meet": {
+            "provider": "athleticlive"
+          }
+        }
+      },
+      {
+        "id": "257957",
+        "namespace": {
+          "legacy_athletic_net": {
+            "kind": "meet"
+          }
+        },
+        "url": "https://www.athletic.net/TrackAndField/meet/257957/info"
+      },
+      {
+        "id": "55488",
+        "namespace": {
+          "timer_meet": {
+            "provider": "live_results"
+          }
+        }
+      }
+    ],
+    "source_urls": [],
+    "sports": [],
+    "state": "IL"
+  },
+  {
+    "date": "2025-08-16",
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "athleticlive_meets_csv"
+        }
+      }
+    ],
+    "id": "meet_2a53d0e2f33e8e3c",
+    "level": "invitational",
+    "location": "Lombard, IL",
+    "name": "4th Annual St. Pius X Knights Chicagoland Cross Country Classic",
+    "normalized_name": "4th annual st pius x knights chicagoland cross country classic",
+    "source_identities": [
+      {
+        "id": "55274",
+        "namespace": {
+          "timer_meet": {
+            "provider": "live_results"
+          }
+        }
+      },
+      {
+        "id": "259955",
+        "namespace": {
+          "legacy_athletic_net": {
+            "kind": "meet"
+          }
+        },
+        "url": "https://www.athletic.net/TrackAndField/meet/259955/info"
+      },
+      {
+        "id": "55274",
+        "namespace": {
+          "timer_meet": {
+            "provider": "palatine"
+          }
+        }
+      }
+    ],
+    "source_urls": [],
+    "sports": [],
+    "state": "IL"
+  },
+  {
+    "date": "2025-10-07",
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "athleticlive_meets_csv"
+        }
+      }
+    ],
+    "id": "meet_5cec98e23c09b606",
+    "level": "invitational",
+    "location": "Harvard, IL",
+    "name": "Harvard 28th Annual Dan Jazo Relays",
+    "normalized_name": "harvard 28th annual dan jazo relays",
+    "source_identities": [
+      {
+        "id": "57884",
+        "namespace": {
+          "timer_meet": {
+            "provider": "live_results"
+          }
+        }
+      },
+      {
+        "id": "267134",
+        "namespace": {
+          "legacy_athletic_net": {
+            "kind": "meet"
+          }
+        },
+        "url": "https://www.athletic.net/TrackAndField/meet/267134/info"
+      }
+    ],
+    "source_urls": [],
+    "sports": [],
+    "state": "IL"
+  }
+]

@@ -1,0 +1,434 @@
+{
+  "classification": [
+    {
+      "alias": "/schools/wayzata-high-school/alpine-skiing-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/alpine-skiing-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/badminton-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/baseball/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/basketball-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/basketball-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cheerleading/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/clay-target/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "sport": {
+        "gender": "boys",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "sport": {
+        "gender": "girls",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "alias": "/schools/wayzata-high-school/dance-team-high-kick/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/dance-team-jazz/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/debate/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/football/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/golf-boys/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/golf-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/gymnastics-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/hockey-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/hockey-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/lacrosse-boys/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/lacrosse-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/music/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/nordic-ski-racing-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/nordic-ski-racing-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/robotics/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/soccer-boys/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/soccer-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/softball-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/speech/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/swimming-and-diving-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/swimming-and-diving-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/synchronized-swimming-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/tennis-boys/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/tennis-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-boys/2027",
+      "sport": {
+        "gender": "boys",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-girls/2027",
+      "sport": {
+        "gender": "girls",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "alias": "/schools/wayzata-high-school/volleyball-boys/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/volleyball-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/wayzata-high-school/wrestling/2026-2027",
+      "sport": null
+    }
+  ],
+  "nodes": [
+    {
+      "alias": "/schools/wayzata-high-school/alpine-skiing-boys/2026-2027",
+      "nid": "589000",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/alpine-skiing-boys/2026-2027",
+      "title": "Wayzata High School Alpine Skiing, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/alpine-skiing-girls/2026-2027",
+      "nid": "589001",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/alpine-skiing-girls/2026-2027",
+      "title": "Wayzata High School Alpine Skiing, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/badminton-girls/2027",
+      "nid": "589002",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/badminton-girls/2027",
+      "title": "Wayzata High School Badminton, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/baseball/2027",
+      "nid": "589003",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/baseball/2027",
+      "title": "Wayzata High School Baseball"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/basketball-boys/2026-2027",
+      "nid": "589004",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/basketball-boys/2026-2027",
+      "title": "Wayzata High School Basketball, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/basketball-girls/2026-2027",
+      "nid": "589005",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/basketball-girls/2026-2027",
+      "title": "Wayzata High School Basketball, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cheerleading/2026",
+      "nid": "589006",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/cheerleading/2026",
+      "title": "Wayzata High School Cheerleading"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/clay-target/2027",
+      "nid": "589007",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/clay-target/2027",
+      "title": "Wayzata High School Clay Target"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "nid": "589008",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "title": "Wayzata High School Cross Country Running, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "nid": "589009",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "title": "Wayzata High School Cross Country Running, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/dance-team-high-kick/2026-2027",
+      "nid": "589010",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/dance-team-high-kick/2026-2027",
+      "title": "Wayzata High School Dance, High Kick"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/dance-team-jazz/2026-2027",
+      "nid": "589011",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/dance-team-jazz/2026-2027",
+      "title": "Wayzata High School Dance, Jazz"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/debate/2026-2027",
+      "nid": "589012",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/debate/2026-2027",
+      "title": "Wayzata High School Debate"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/football/2026",
+      "nid": "589013",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/football/2026",
+      "title": "Wayzata High School Football"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/golf-boys/2027",
+      "nid": "589014",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/golf-boys/2027",
+      "title": "Wayzata High School Golf, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/golf-girls/2027",
+      "nid": "589015",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/golf-girls/2027",
+      "title": "Wayzata High School Golf, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/gymnastics-girls/2026-2027",
+      "nid": "589016",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/gymnastics-girls/2026-2027",
+      "title": "Wayzata High School Gymnastics, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/hockey-boys/2026-2027",
+      "nid": "589017",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/hockey-boys/2026-2027",
+      "title": "Wayzata High School Hockey, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/hockey-girls/2026-2027",
+      "nid": "589018",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/hockey-girls/2026-2027",
+      "title": "Wayzata High School Hockey, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/lacrosse-boys/2027",
+      "nid": "589019",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/lacrosse-boys/2027",
+      "title": "Wayzata High School Lacrosse, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/lacrosse-girls/2027",
+      "nid": "589020",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/lacrosse-girls/2027",
+      "title": "Wayzata High School Lacrosse, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/music/2027",
+      "nid": "589021",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/music/2027",
+      "title": "Wayzata High School Music"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/nordic-ski-racing-boys/2026-2027",
+      "nid": "589022",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/nordic-ski-racing-boys/2026-2027",
+      "title": "Wayzata High School Nordic Ski Racing, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/nordic-ski-racing-girls/2026-2027",
+      "nid": "589023",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/nordic-ski-racing-girls/2026-2027",
+      "title": "Wayzata High School Nordic Ski Racing, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/robotics/2027",
+      "nid": "589024",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/robotics/2027",
+      "title": "Wayzata High School Robotics"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/soccer-boys/2026",
+      "nid": "589025",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/soccer-boys/2026",
+      "title": "Wayzata High School Soccer, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/soccer-girls/2026",
+      "nid": "589026",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/soccer-girls/2026",
+      "title": "Wayzata High School Soccer, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/softball-girls/2027",
+      "nid": "589027",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/softball-girls/2027",
+      "title": "Wayzata High School Softball, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/speech/2027",
+      "nid": "589028",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/speech/2027",
+      "title": "Wayzata High School Speech"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/swimming-and-diving-boys/2026-2027",
+      "nid": "589029",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/swimming-and-diving-boys/2026-2027",
+      "title": "Wayzata High School Swimming and Diving, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/swimming-and-diving-girls/2026",
+      "nid": "589030",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/swimming-and-diving-girls/2026",
+      "title": "Wayzata High School Swimming and Diving, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/synchronized-swimming-girls/2027",
+      "nid": "589031",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/synchronized-swimming-girls/2027",
+      "title": "Wayzata High School Synchronized Swimming, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/tennis-boys/2027",
+      "nid": "589032",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/tennis-boys/2027",
+      "title": "Wayzata High School Tennis, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/tennis-girls/2026",
+      "nid": "589033",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/tennis-girls/2026",
+      "title": "Wayzata High School Tennis, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-boys/2027",
+      "nid": "589034",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027",
+      "title": "Wayzata High School Track and Field, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-girls/2027",
+      "nid": "589035",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-girls/2027",
+      "title": "Wayzata High School Track and Field, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/volleyball-boys/2027",
+      "nid": "589036",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/volleyball-boys/2027",
+      "title": "Wayzata High School Volleyball, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/volleyball-girls/2026",
+      "nid": "589037",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/volleyball-girls/2026",
+      "title": "Wayzata High School Volleyball, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/wrestling/2026-2027",
+      "nid": "589038",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/wrestling/2026-2027",
+      "title": "Wayzata High School Wrestling"
+    }
+  ],
+  "selected": [
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "nid": "589008",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-boys/2026",
+      "title": "Wayzata High School Cross Country Running, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "nid": "589009",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/cross-country-running-girls/2026",
+      "title": "Wayzata High School Cross Country Running, Girls"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-boys/2027",
+      "nid": "589034",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027",
+      "title": "Wayzata High School Track and Field, Boys"
+    },
+    {
+      "alias": "/schools/wayzata-high-school/track-and-field-girls/2027",
+      "nid": "589035",
+      "page_url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-girls/2027",
+      "title": "Wayzata High School Track and Field, Girls"
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "records": [
+    {
+      "school_id": "0101",
+      "name_formal": "Abingdon-Avon High School",
+      "name_ihsa": "Abingdon (A.-Avon)",
+      "name_short": null,
+      "city": "Abingdon",
+      "membership_type": "full member",
+      "kind": "public",
+      "enrollment_type": "Public",
+      "has_boundary": "true",
+      "is_cps": "false",
+      "url": null
+    },
+    {
+      "school_id": "0102",
+      "name_formal": "Addison Trail High School",
+      "name_ihsa": "Addison (A. Trail)",
+      "name_short": null,
+      "city": "Addison",
+      "membership_type": "full member",
+      "kind": "public",
+      "enrollment_type": "Public",
+      "has_boundary": "true",
+      "is_cps": "false",
+      "url": null
+    },
+    {
+      "school_id": "0104",
+      "name_formal": "Edwards County High School",
+      "name_ihsa": "Albion (Edwards County)",
+      "name_short": null,
+      "city": "Albion",
+      "membership_type": "full member",
+      "kind": "public",
+      "enrollment_type": "Public",
+      "has_boundary": "true",
+      "is_cps": "false",
+      "url": null
+    }
+  ],
+  "schools": [
+    {
+      "school": {
+        "id": "sch_aae2f1a63267d711",
+        "name": "Abingdon-Avon High School",
+        "normalized_name": "abingdon avon",
+        "city": "Abingdon",
+        "state": "IL",
+        "association": "ihsa",
+        "co_op": false,
+        "aliases": [],
+        "source_identities": [
+          {
+            "namespace": {
+              "association_school": {
+                "association": "ihsa"
+              }
+            },
+            "id": "0101",
+            "url": "https://api.ihsa.org/v1/schools"
+          }
+        ],
+        "evidence": [
+          {
+            "source": {
+              "id": "ihsa",
+              "url": "https://api.ihsa.org/v1/schools"
+            },
+            "method": "parsed",
+            "observed_on": "2026-09-20"
+          }
+        ]
+      },
+      "school_id": "sch_aae2f1a63267d711"
+    },
+    {
+      "school": {
+        "id": "sch_91d9788688248efb",
+        "name": "Addison Trail High School",
+        "normalized_name": "addison trail",
+        "city": "Addison",
+        "state": "IL",
+        "association": "ihsa",
+        "co_op": false,
+        "aliases": [],
+        "source_identities": [
+          {
+            "namespace": {
+              "association_school": {
+                "association": "ihsa"
+              }
+            },
+            "id": "0102",
+            "url": "https://api.ihsa.org/v1/schools"
+          }
+        ],
+        "evidence": [
+          {
+            "source": {
+              "id": "ihsa",
+              "url": "https://api.ihsa.org/v1/schools"
+            },
+            "method": "parsed",
+            "observed_on": "2026-09-20"
+          }
+        ]
+      },
+      "school_id": "sch_91d9788688248efb"
+    },
+    {
+      "school": {
+        "id": "sch_7f98e150148fe7e3",
+        "name": "Edwards County High School",
+        "normalized_name": "edwards county",
+        "city": "Albion",
+        "state": "IL",
+        "association": "ihsa",
+        "co_op": false,
+        "aliases": [],
+        "source_identities": [
+          {
+            "namespace": {
+              "association_school": {
+                "association": "ihsa"
+              }
+            },
+            "id": "0104",
+            "url": "https://api.ihsa.org/v1/schools"
+          }
+        ],
+        "evidence": [
+          {
+            "source": {
+              "id": "ihsa",
+              "url": "https://api.ihsa.org/v1/schools"
+            },
+            "method": "parsed",
+            "observed_on": "2026-09-20"
+          }
+        ]
+      },
+      "school_id": "sch_7f98e150148fe7e3"
+    }
+  ]
+}

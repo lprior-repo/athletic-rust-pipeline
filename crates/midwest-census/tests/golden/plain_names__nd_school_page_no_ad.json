@@ -1,0 +1,187 @@
+{
+  "ad_coaches": [],
+  "member": {
+    "id": "1378",
+    "slug": "mandan-classical-academy",
+    "url": "https://ndhsaa.com/schools/1378/mandan-classical-academy"
+  },
+  "offerings": [
+    {
+      "co_op": "Mandan",
+      "coaches": [
+        "Bill Greb"
+      ],
+      "label": "Boys' Cross Country",
+      "sport": {
+        "gender": "boys",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "co_op": "Mandan",
+      "coaches": [
+        "Gregory Brown"
+      ],
+      "label": "Girls' Cross Country",
+      "sport": {
+        "gender": "girls",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "co_op": "Bismarck St. Mary's",
+      "coaches": [
+        "Jeff Tescher"
+      ],
+      "label": "Football",
+      "sport": null
+    },
+    {
+      "co_op": "St. Mary's/Shiloh Christian",
+      "coaches": [
+        "Matthew Mullally"
+      ],
+      "label": "Girls' Golf",
+      "sport": null
+    },
+    {
+      "co_op": "Mandan",
+      "coaches": [
+        "Aaron Mc Elwee"
+      ],
+      "label": "Boys' Soccer",
+      "sport": null
+    },
+    {
+      "co_op": "Mandan",
+      "coaches": [
+        "Claudia Schoellkopf"
+      ],
+      "label": "Girls' Swimming and Diving",
+      "sport": null
+    },
+    {
+      "co_op": "Mandan",
+      "coaches": [
+        "Paul Christen"
+      ],
+      "label": "Boys' Tennis",
+      "sport": null
+    },
+    {
+      "co_op": "Bismarck St. Mary's",
+      "coaches": [
+        "Alison Podhradsky"
+      ],
+      "label": "Volleyball",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Music - Instrumental",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Music - Vocal",
+      "sport": null
+    }
+  ],
+  "school": {
+    "aliases": [],
+    "association": "ndhsaa",
+    "city": "Mandan",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "ndhsaa",
+          "url": "https://ndhsaa.com/schools/1378/mandan-classical-academy"
+        }
+      }
+    ],
+    "id": "sch_923bf42605772b4c",
+    "name": "Mandan Classical Academy",
+    "normalized_name": "mandan classical academy",
+    "school_website": "https://www.chestertonmandan.org",
+    "source_identities": [
+      {
+        "id": "1378",
+        "namespace": {
+          "association_school": {
+            "association": "ndhsaa"
+          }
+        },
+        "url": "https://ndhsaa.com/schools/1378/mandan-classical-academy"
+      }
+    ],
+    "state": "ND"
+  },
+  "school_id": "sch_923bf42605772b4c",
+  "sport_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1378/mandan-classical-academy"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_80fa82f51fdbef4d",
+      "name": "Bill Greb",
+      "role": "unknown",
+      "school": "sch_923bf42605772b4c",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1378/mandan-classical-academy"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_08b6f4446ef99208",
+      "name": "Gregory Brown",
+      "role": "unknown",
+      "school": "sch_923bf42605772b4c",
+      "source_identities": [],
+      "sport": "cross_country"
+    }
+  ],
+  "staff": [
+    {
+      "label": "Address",
+      "name": "410 Collins Avenue, Mandan, ND 58554",
+      "role": null
+    },
+    {
+      "label": "Mailing Address",
+      "name": "410 Collins Avenue, Mandan, ND 58554",
+      "role": null
+    },
+    {
+      "label": "Superintendent",
+      "name": "Thomas Hoopes",
+      "role": null
+    },
+    {
+      "label": "Staff",
+      "name": "Rachel Wermerskirchen",
+      "role": null
+    }
+  ]
+}

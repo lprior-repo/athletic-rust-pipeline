@@ -1,0 +1,79 @@
+{
+  "api_url": "https://www.mshsl.org/api/coaches/593478",
+  "domains": [
+    "isd1.org",
+    "isd1.rschoolteams.com"
+  ],
+  "entities": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/593478"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-girls/2027"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_1840bb47a12a1720",
+      "name": "Ava Carlson",
+      "professional_email": "avacarlson@isd1.org",
+      "role": "head_coach",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "593478:ava carlson",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/593478"
+        }
+      ],
+      "sport": "outdoor_track"
+    }
+  ],
+  "node": {
+    "alias": "/schools/aitkin-high-school/track-and-field-girls/2027",
+    "nid": "593478",
+    "page_url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-girls/2027",
+    "title": "Aitkin High School Track and Field, Girls"
+  },
+  "records": [
+    {
+      "accepted_email": "avacarlson@isd1.org",
+      "email": "avacarlson@isd1.org",
+      "level": "Head Coach",
+      "name": "Ava Carlson",
+      "published_level": true,
+      "role": "head_coach"
+    },
+    {
+      "accepted_email": "jlong@isd1.org",
+      "email": "jlong@isd1.org",
+      "level": "Non-MSHSL Coach",
+      "name": "Jason Long",
+      "published_level": false,
+      "role": null
+    },
+    {
+      "accepted_email": "jforbord@isd1.org",
+      "email": "jforbord@isd1.org",
+      "level": "Non-MSHSL Coach",
+      "name": "Jeri Forbord",
+      "published_level": false,
+      "role": null
+    }
+  ],
+  "school_id": "sch_49f3afc6e56effda",
+  "slug": "aitkin-high-school"
+}

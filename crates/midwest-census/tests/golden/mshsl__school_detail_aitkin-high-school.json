@@ -1,0 +1,192 @@
+{
+  "ad_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_015c3e60a56c296c",
+      "name": "Jim Henrickson",
+      "professional_email": "jhenrickson@isd1.org",
+      "role": "athletic_director",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "7:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      ]
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/aitkin-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_f245493627dce0e2",
+      "name": "Alan Hills",
+      "professional_email": "ahills@isd1.org",
+      "role": "athletic_director",
+      "school": "sch_49f3afc6e56effda",
+      "source_identities": [
+        {
+          "id": "7:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      ]
+    }
+  ],
+  "detail": {
+    "admin": [
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "jhenrickson@isd1.org"
+        ],
+        "name": "Jim Henrickson",
+        "role": "Activities Director"
+      },
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "ahills@isd1.org"
+        ],
+        "name": "Alan Hills",
+        "role": "Assistant Activities Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Lisa DeMars",
+        "role": "Principal"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Dan Stifter",
+        "role": "Superintendent"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Taylor Meeks",
+        "role": "Band Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Jennifer Johnson",
+        "role": "Choir Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Briana Tetrick",
+        "role": "Yearbook Advisor"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Jason Henke",
+        "role": "Newspaper Advisor"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Lisa DeMars",
+        "role": "Title IX Officer"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Jim Henrickson",
+        "role": "Boys Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Jim Henrickson",
+        "role": "Girls Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [
+          "MCarley@rwhealth.org"
+        ],
+        "name": "Marc Carley, DPT, ATC",
+        "role": "Athletic Trainer/Medical"
+      }
+    ],
+    "enrollment": 291,
+    "name": "Aitkin High School",
+    "school_id": "7",
+    "website": "https://isd1.rschoolteams.com/"
+  },
+  "domains": [
+    "isd1.org",
+    "isd1.rschoolteams.com"
+  ],
+  "row": {
+    "city": "Aitkin",
+    "name": "Aitkin High School",
+    "slug": "aitkin-high-school"
+  },
+  "school": {
+    "aliases": [],
+    "association": "mshsl",
+    "city": "Aitkin",
+    "co_op": false,
+    "enrollment": 291,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "mshsl",
+          "url": "https://www.mshsl.org/schools/aitkin-high-school"
+        }
+      }
+    ],
+    "id": "sch_49f3afc6e56effda",
+    "name": "Aitkin High School",
+    "normalized_name": "aitkin",
+    "school_website": "https://isd1.rschoolteams.com/",
+    "source_identities": [
+      {
+        "id": "7",
+        "namespace": {
+          "association_school": {
+            "association": "mshsl"
+          }
+        },
+        "url": "https://www.mshsl.org/schools/aitkin-high-school"
+      }
+    ],
+    "state": "MN"
+  },
+  "school_id": "sch_49f3afc6e56effda",
+  "school_key": "7"
+}

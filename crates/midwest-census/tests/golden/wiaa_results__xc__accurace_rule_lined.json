@@ -1,0 +1,58 @@
+{
+  "name": "WIAA Division 3 Sectional Championship Meet",
+  "date": "2025-10-25",
+  "end_date": null,
+  "timer": null,
+  "events": [
+    {
+      "label": "5000 Meter Run",
+      "kind": "cross_country",
+      "gender": "boys",
+      "division": null,
+      "round": "finals",
+      "rows": [
+        {
+          "place": 1,
+          "name": "Jonathan Simon",
+          "grade": 10,
+          "school": "St. Ambrose/Abundant Life",
+          "mark": {
+            "TimeSeconds": 981.6
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 2,
+          "name": "Will Rzentkowski",
+          "grade": 11,
+          "school": "Madison Country Day",
+          "mark": {
+            "TimeSeconds": 1005.7
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 3,
+          "name": "David Simon",
+          "grade": 11,
+          "school": "St. Ambrose/Abundant Life",
+          "mark": {
+            "TimeSeconds": 1015.4
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        }
+      ]
+    }
+  ],
+  "rows_parsed": 3,
+  "rows_skipped": 0
+}

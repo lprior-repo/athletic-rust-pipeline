@@ -1,0 +1,22 @@
+[
+  {
+    "digest": "6233f167da8f093fccc4dd1329a9e246fc996a0a7ddeec886623e2e37d81ac87",
+    "fixture": "d1boysstateresults-dash.htm"
+  },
+  {
+    "digest": "c5c265d03be8874797911e2822876895a8d759f9017db13d429f1557a2423772",
+    "fixture": "d1boysstateresults-sections.htm"
+  },
+  {
+    "digest": "251b80420ee289b0e5e72fe9309353f409781546e1d95148575c8ca34d9ffd9e",
+    "fixture": "d1boysstateresults-dash.txt"
+  },
+  {
+    "digest": "913d9c70866dedf5e2bdecbfc78429a203650459a3b2eb3af9665de1fe566bd2",
+    "fixture": "trackside-regional.htm"
+  },
+  {
+    "digest": "6e177a10240721d42d5ae3bbd8724c263b65f558436432d3017034acabc7590a",
+    "fixture": "seed-column-regional.htm"
+  }
+]

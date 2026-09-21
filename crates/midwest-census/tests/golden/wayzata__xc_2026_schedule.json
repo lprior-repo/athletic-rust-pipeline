@@ -1,0 +1,92 @@
+[
+  {
+    "date": "2026-08-27",
+    "name": "River Falls Extreme Meet",
+    "location": "UW-River Falls",
+    "slug": "v70kmd",
+    "aria_label": "event: August 27 12:00 AM: River Falls Extreme Meet at UW-River Falls: Results",
+    "venue_state": "WI",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-27",
+    "name": "Early Bird Invitational",
+    "location": "Princeton Middle School",
+    "slug": "kjqhzx",
+    "aria_label": "event: August 27 12:00 AM: Early Bird Invitational at Princeton Middle School: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-27",
+    "name": "St. Croix Falls Invitational",
+    "location": "St. Croix Falls HS",
+    "slug": "hmhk90",
+    "aria_label": "event: August 27 12:00 AM: St. Croix Falls Invitational at St. Croix Falls HS: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-28",
+    "name": "Kevin Moorhead Northwood's Invitational",
+    "location": "Northwoods Park",
+    "slug": "90pw98",
+    "aria_label": "event: August 28 12:00 AM: Kevin Moorhead Northwood's Invitational at Northwoods Park: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-29",
+    "name": "Ron Kretsch Invitational",
+    "location": "Bassett Creek Park",
+    "slug": "jh9a5s",
+    "aria_label": "event: August 29 12:00 AM: Ron Kretsch Invitational at Bassett Creek Park: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-31",
+    "name": "Wabasha-Kellogg Gallop",
+    "location": "Coffee Mill Golf Course",
+    "slug": "j9z306",
+    "aria_label": "event: August 31 12:00 AM: Wabasha-Kellogg Gallop at Coffee Mill Golf Course: Results",
+    "venue_state": null,
+    "level": "unknown"
+  },
+  {
+    "date": "2026-08-31",
+    "name": "Milaca Early Bird Invitational",
+    "location": "Stones Throw Golf Course",
+    "slug": "5v7w88",
+    "aria_label": "event: August 31 12:00 AM: Milaca Early Bird Invitational at Stones Throw Golf Course: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-08-31",
+    "name": "Central Minnesota River Run",
+    "location": "The Vintage Golf Course",
+    "slug": "1zd0y3",
+    "aria_label": "event: August 31 12:00 AM: Central Minnesota River Run at The Vintage Golf Course: Results",
+    "venue_state": null,
+    "level": "unknown"
+  },
+  {
+    "date": "2026-08-31",
+    "name": "Albert Lea Invitational",
+    "location": "Bancroft Bay Park",
+    "slug": "081i82",
+    "aria_label": "event: August 31 12:00 AM: Albert Lea Invitational at Bancroft Bay Park: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-09-01",
+    "name": "Newman Catholic Invitational",
+    "location": "North Iowa Medical Center Mercy - West Campus",
+    "slug": "afclfy",
+    "aria_label": "event: September 1 12:00 AM: Newman Catholic Invitational at North Iowa Medical Center Mercy - West Campus: Results",
+    "venue_state": null,
+    "level": "invitational"
+  }
+]

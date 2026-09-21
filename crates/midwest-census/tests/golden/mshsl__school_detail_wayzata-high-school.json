@@ -1,0 +1,213 @@
+{
+  "ad_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_b48c3a5780229c93",
+      "name": "Meghan Potter",
+      "professional_email": "meghan.potter@wayzataschools.org",
+      "role": "athletic_director",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "611:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/wayzata-high-school"
+        }
+      ]
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_27bde0b0a15d7295",
+      "name": "Sydney Helmbrecht",
+      "professional_email": "sydney.helmbrecht@wayzataschools.org",
+      "role": "athletic_director",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "611:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/wayzata-high-school"
+        }
+      ]
+    }
+  ],
+  "detail": {
+    "admin": [
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "meghan.potter@wayzataschools.org"
+        ],
+        "name": "Meghan Potter",
+        "role": "Activities Director"
+      },
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "sydney.helmbrecht@wayzataschools.org"
+        ],
+        "name": "Sydney Helmbrecht",
+        "role": "Assistant Activities Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [
+          "chris.easton@wayzataschools.org"
+        ],
+        "name": "Chris Easton",
+        "role": "AD Administrative Assistant"
+      },
+      {
+        "ad_role": null,
+        "emails": [
+          "kari.rohrich@wayzataschools.org"
+        ],
+        "name": "Kari Rohrich",
+        "role": "AD Administrative Assistant"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Scott Gengler",
+        "role": "Principal"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Robb Virgin",
+        "role": "Superintendent"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Donald Krubsack",
+        "role": "Band Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Mark Gitch",
+        "role": "Orchestra Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Eliza Lewis-O'Connor",
+        "role": "Choir Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Michelle Jacklitch",
+        "role": "Yearbook Advisor"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Casey Zylla",
+        "role": "Newspaper Advisor"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Dave Lutz",
+        "role": "Title IX Officer"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Meghan Potter",
+        "role": "Boys Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Meghan Potter",
+        "role": "Girls Sports Representative"
+      },
+      {
+        "ad_role": null,
+        "emails": [
+          "chris.thein@wayzataschools.org"
+        ],
+        "name": "Chris Thein, MS, ATC, NREMT & Matt Stoneberg, MS, ATC, PES",
+        "role": "Athletic Trainer/Medical"
+      }
+    ],
+    "enrollment": 3533,
+    "name": "Wayzata High School",
+    "school_id": "611",
+    "website": "http://www.wayzatatrojans.org"
+  },
+  "domains": [
+    "wayzataschools.org",
+    "wayzatatrojans.org"
+  ],
+  "row": {
+    "city": null,
+    "name": "Wayzata High School",
+    "slug": "wayzata-high-school"
+  },
+  "school": {
+    "aliases": [],
+    "association": "mshsl",
+    "co_op": false,
+    "enrollment": 3533,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "mshsl",
+          "url": "https://www.mshsl.org/schools/wayzata-high-school"
+        }
+      }
+    ],
+    "id": "sch_64d7d657fe666f82",
+    "name": "Wayzata High School",
+    "normalized_name": "wayzata",
+    "school_website": "http://www.wayzatatrojans.org",
+    "source_identities": [
+      {
+        "id": "611",
+        "namespace": {
+          "association_school": {
+            "association": "mshsl"
+          }
+        },
+        "url": "https://www.mshsl.org/schools/wayzata-high-school"
+      }
+    ],
+    "state": "MN"
+  },
+  "school_id": "sch_64d7d657fe666f82",
+  "school_key": "611"
+}

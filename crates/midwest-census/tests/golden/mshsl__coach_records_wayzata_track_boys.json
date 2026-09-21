@@ -1,0 +1,451 @@
+{
+  "api_url": "https://www.mshsl.org/api/coaches/589034",
+  "domains": [
+    "wayzataschools.org",
+    "wayzatatrojans.org"
+  ],
+  "entities": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_bb28921a503f67dc",
+      "name": "Aaron Berndt",
+      "professional_email": "aaron.berndt@wayzataschools.org",
+      "role": "head_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:aaron berndt",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_b5d97010ded1241f",
+      "name": "Brandon Heebink",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:brandon heebink",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_2de4b059b251663d",
+      "name": "Cody DeBoer",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:cody deboer",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_9980c470efb0f1ad",
+      "name": "Steven Porter",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:steven porter",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_900aa8e2bb0145d6",
+      "name": "Mark Popp",
+      "professional_email": "mark.popp@wayzataschools.org",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:mark popp",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_3a05b6e5917bc10a",
+      "name": "Sean Giesen",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:sean giesen",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_8570eba52168746c",
+      "name": "Tyler Trimberger",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:tyler trimberger",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_7386affa4296223e",
+      "name": "Michael Smith",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:michael smith",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_86b21427d1419bb7",
+      "name": "Benjamin Froehling",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:benjamin froehling",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/api/coaches/589034"
+          }
+        },
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_dc9e18dad9363648",
+      "name": "Edward Clifton",
+      "role": "assistant_coach",
+      "school": "sch_64d7d657fe666f82",
+      "source_identities": [
+        {
+          "id": "589034:edward clifton",
+          "namespace": {
+            "other": "mshsl_team_coach"
+          },
+          "url": "https://www.mshsl.org/api/coaches/589034"
+        }
+      ],
+      "sport": "outdoor_track"
+    }
+  ],
+  "node": {
+    "alias": "/schools/wayzata-high-school/track-and-field-boys/2027",
+    "nid": "589034",
+    "page_url": "https://www.mshsl.org/schools/wayzata-high-school/track-and-field-boys/2027",
+    "title": "Wayzata High School Track and Field, Boys"
+  },
+  "records": [
+    {
+      "accepted_email": "aaron.berndt@wayzataschools.org",
+      "email": "aaron.berndt@wayzataschools.org",
+      "level": "Head Coach",
+      "name": "Aaron Berndt",
+      "published_level": true,
+      "role": "head_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Brandon Heebink",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Cody DeBoer",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Steven Porter",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": "mark.popp@wayzataschools.org",
+      "email": "mark.popp@wayzataschools.org",
+      "level": "Assistant Coach",
+      "name": "Mark Popp",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": "giesen21@hotmail.com",
+      "level": "Assistant Coach",
+      "name": "Sean Giesen",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Tyler Trimberger",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": "mike95asmith@gmail.com",
+      "level": "Assistant Coach",
+      "name": "Michael Smith",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Benjamin Froehling",
+      "published_level": true,
+      "role": "assistant_coach"
+    },
+    {
+      "accepted_email": null,
+      "email": null,
+      "level": "Assistant Coach",
+      "name": "Edward Clifton",
+      "published_level": true,
+      "role": "assistant_coach"
+    }
+  ],
+  "school_id": "sch_64d7d657fe666f82",
+  "slug": "wayzata-high-school"
+}

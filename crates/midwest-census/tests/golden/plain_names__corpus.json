@@ -1,0 +1,26 @@
+[
+  {
+    "digest": "6003a64e2aebd22b33a8a32cb633b8669a0f28a11a7690b4d7146f3351226925",
+    "fixture": "nd_school_page.html"
+  },
+  {
+    "digest": "6a829a1b413d4189899c81bd5b9b1938ea1fdd870e7fa294876a9c1b38b8aac2",
+    "fixture": "nd_school_page_no_ad.html"
+  },
+  {
+    "digest": "d693db7b7f562fba8d56613eb6d4ccd22dace3877e64e882ee83703f78d05102",
+    "fixture": "nd_schools_index.html"
+  },
+  {
+    "digest": "aab397bfc1aa6387f89f0a5174e1ca3bfab6a13c9269571f9c7506aac287815d",
+    "fixture": "nsaa_directory_export.html"
+  },
+  {
+    "digest": "39ece5bffb67130fb920f707823048882a6279b7a1cbd1e3a32449e315dbec4d",
+    "fixture": "nsaa_directory_form.html"
+  },
+  {
+    "digest": "e964b465ec72e6de6a645007fd6d2802d78a01e06b0ff139f7f91030e7bd185b",
+    "fixture": "nsaa_school_get_adams_central.html"
+  }
+]

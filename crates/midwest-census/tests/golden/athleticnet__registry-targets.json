@@ -1,0 +1,13 @@
+{
+  "registry": "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n",
+  "targets": [
+    {
+      "athlete_id": 28127170,
+      "state": "AK"
+    },
+    {
+      "athlete_id": 26631105,
+      "state": "WI"
+    }
+  ]
+}

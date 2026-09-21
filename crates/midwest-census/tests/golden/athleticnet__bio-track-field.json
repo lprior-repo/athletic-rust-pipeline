@@ -1,0 +1,75 @@
+{
+  "athlete": {
+    "first_name": "Natalia",
+    "gender": "F",
+    "id": 28127170,
+    "last_name": "Casillas",
+    "name": "Natalia Casillas",
+    "school_id": 13850
+  },
+  "events": [
+    {
+      "id": 20,
+      "label": "200 Meters"
+    }
+  ],
+  "grades": {
+    "13850_2026": 11
+  },
+  "meets": [
+    {
+      "end_date": "2025-05-03T00:00:00",
+      "meet_id": "589334",
+      "name": "SOHI Invite"
+    }
+  ],
+  "results_tf": [
+    {
+      "division": "Varsity",
+      "event_id": 20,
+      "fat": 1,
+      "id": 1,
+      "meet_id": 589334,
+      "place": "3",
+      "result": "26.10a",
+      "result_date": "2025-05-02T00:00:00",
+      "round": "F",
+      "school_id": 13850,
+      "season_id": 2026,
+      "wind": 1.2
+    },
+    {
+      "division": "Varsity",
+      "event_id": 20,
+      "fat": 0,
+      "id": 2,
+      "meet_id": 589334,
+      "place": null,
+      "result": "DNS",
+      "result_date": "2025-05-02T00:00:00",
+      "round": "P",
+      "school_id": 13850,
+      "season_id": 2026,
+      "wind": null
+    }
+  ],
+  "results_xc": null,
+  "seasons": [
+    {
+      "display": "2026 Indoor",
+      "school_id": 13850,
+      "season_id": 2026
+    },
+    {
+      "display": "2026 Outdoor",
+      "school_id": 13850,
+      "season_id": 2026
+    }
+  ],
+  "teams": [
+    {
+      "school_id": "13850",
+      "school_name": "Seton Catholic"
+    }
+  ]
+}

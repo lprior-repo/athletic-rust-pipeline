@@ -1,0 +1,186 @@
+[
+  {
+    "aliases": [],
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+        }
+      }
+    ],
+    "id": "sch_0a2e8f359b89463c",
+    "name": "aberdeencentral",
+    "normalized_name": "aberdeencentral",
+    "source_identities": [
+      {
+        "id": "aberdeencentral",
+        "namespace": {
+          "other": "bound"
+        },
+        "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+      }
+    ],
+    "state": "SD"
+  },
+  {
+    "aliases": [],
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+        }
+      }
+    ],
+    "id": "sch_2c870270b29ff075",
+    "name": "Adams Central",
+    "normalized_name": "adams central",
+    "source_identities": [
+      {
+        "id": "adams central",
+        "namespace": {
+          "association_school": {
+            "association": "nsaa"
+          }
+        },
+        "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+      }
+    ],
+    "state": "NE"
+  },
+  {
+    "aliases": [
+      "Abilene KS"
+    ],
+    "city": "Abilene",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+        }
+      }
+    ],
+    "id": "sch_75152c829b97d64c",
+    "name": "Abilene HS",
+    "normalized_name": "abilene",
+    "source_identities": [
+      {
+        "id": "abilene",
+        "namespace": {
+          "association_school": {
+            "association": "kshsaa"
+          }
+        },
+        "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+      }
+    ],
+    "state": "KS"
+  },
+  {
+    "aliases": [
+      "Kentwood MI"
+    ],
+    "city": "Kentwood",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+        }
+      }
+    ],
+    "id": "sch_7ddf91cfded99415",
+    "name": "East Kentwood HS",
+    "normalized_name": "east kentwood",
+    "source_identities": [
+      {
+        "id": "east kentwood",
+        "namespace": {
+          "association_school": {
+            "association": "mhsaa"
+          }
+        },
+        "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+      }
+    ],
+    "state": "MI"
+  },
+  {
+    "aliases": [
+      "Abingdon IL"
+    ],
+    "city": "Abingdon",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+        }
+      }
+    ],
+    "id": "sch_aae2f1a63267d711",
+    "name": "Abingdon-Avon High School",
+    "normalized_name": "abingdon avon",
+    "source_identities": [
+      {
+        "id": "0101",
+        "namespace": {
+          "association_school": {
+            "association": "ihsa"
+          }
+        },
+        "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+      }
+    ],
+    "state": "IL"
+  },
+  {
+    "aliases": [
+      "Abbotsford WI"
+    ],
+    "city": "Abbotsford",
+    "co_op": false,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-19",
+        "source": {
+          "id": "coach_contacts_csv",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+        }
+      }
+    ],
+    "id": "sch_b5ea31ddfcd999ba",
+    "name": "Abbotsford",
+    "normalized_name": "abbotsford",
+    "source_identities": [
+      {
+        "id": "1",
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+      }
+    ],
+    "state": "WI"
+  }
+]

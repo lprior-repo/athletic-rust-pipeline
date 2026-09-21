@@ -1,0 +1,119 @@
+[
+  {
+    "date": "2026-01-04",
+    "name": "USATF Minnesota All-Comers Meet #3",
+    "location": "University of Minnesota",
+    "slug": "7vqvs7",
+    "aria_label": "track event: January 4 12:00 AM: USATF Minnesota All-Comers Meet #3 at University of Minnesota: Results",
+    "venue_state": "MN",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-09",
+    "name": "Hawkeye Invitational Day 1",
+    "location": "University of Iowa",
+    "slug": "gqumkk",
+    "aria_label": "track event: January 9 12:00 AM: Hawkeye Invitational Day 1 at University of Iowa: Results",
+    "venue_state": "IA",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-10",
+    "name": "Hawkeye Invitational Day 2",
+    "location": "University of Iowa",
+    "slug": "gqumkk",
+    "aria_label": "track event: January 10 12:00 AM: Hawkeye Invitational Day 2 at University of Iowa: Results",
+    "venue_state": "IA",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-10",
+    "name": "Minnesota Open",
+    "location": "University of Minnesota",
+    "slug": "15nug0",
+    "aria_label": "track event: January 10 12:00 AM: Minnesota Open at University of Minnesota: Results",
+    "venue_state": "MN",
+    "level": "unknown"
+  },
+  {
+    "date": "2026-01-11",
+    "name": "Quad City Classic",
+    "location": "Augustana College",
+    "slug": "yzez24",
+    "aria_label": "track event: January 11 12:00 AM: Quad City Classic at Augustana College: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-11",
+    "name": "Track Minnesota Invitational",
+    "location": "Macalester College",
+    "slug": "fn52zx",
+    "aria_label": "track event: January 11 12:00 AM: Track Minnesota Invitational at Macalester College: Results",
+    "venue_state": "MN",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-17",
+    "name": "Chelsey M Henkenius Invitational",
+    "location": "Wartburg College",
+    "slug": "6v95xo",
+    "aria_label": "track event: January 17 12:00 AM: Chelsey M Henkenius Invitational at Wartburg College: Results",
+    "venue_state": "IA",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-18",
+    "name": "USATF Minnesota All-Comers Meet #4",
+    "location": "University of Minnesota",
+    "slug": "arhlq3",
+    "aria_label": "track event: January 18 12:00 AM: USATF Minnesota All-Comers Meet #4 at University of Minnesota: Results",
+    "venue_state": "MN",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-23",
+    "name": "Larry Wieczorek Invitational Day 1",
+    "location": "University of Iowa",
+    "slug": "mr68ty",
+    "aria_label": "track event: January 23 12:00 AM: Larry Wieczorek Invitational Day 1 at University of Iowa: Results",
+    "venue_state": "IA",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-24",
+    "name": "Larry Wieczorek Invitational Day 2",
+    "location": "University of Iowa",
+    "slug": "mr68ty",
+    "aria_label": "track event: January 24 12:00 AM: Larry Wieczorek Invitational Day 2 at University of Iowa: Results",
+    "venue_state": "IA",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-24",
+    "name": "Vanessa Seljeskog Classic",
+    "location": "Macalester College",
+    "slug": "yqskzb",
+    "aria_label": "track event: January 24 12:00 AM: Vanessa Seljeskog Classic at Macalester College: Results",
+    "venue_state": "MN",
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-24",
+    "name": "CSB/SJU Alumni Meet",
+    "location": "St. John's University",
+    "slug": "ar41us",
+    "aria_label": "track event: January 24 12:00 AM: CSB/SJU Alumni Meet at St. John's University: Results",
+    "venue_state": null,
+    "level": "invitational"
+  },
+  {
+    "date": "2026-01-30",
+    "name": "Jack Johnson Classic",
+    "location": "University of Minnesota",
+    "slug": "u6b65a",
+    "aria_label": "track event: January 30 12:00 AM: Jack Johnson Classic at University of Minnesota: Results",
+    "venue_state": "MN",
+    "level": "invitational"
+  }
+]

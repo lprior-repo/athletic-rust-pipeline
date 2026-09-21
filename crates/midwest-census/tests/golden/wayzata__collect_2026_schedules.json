@@ -1,0 +1,872 @@
+{
+  "report": {
+    "adapter": "wayzata_schedule",
+    "rows": 23,
+    "requests": 0,
+    "from_cache": 2,
+    "errors": 0,
+    "with_email": 0,
+    "unit": "meet-schedule rows",
+    "notes": [
+      "https://www.wayzataresults.com/sports/track/2026/schedule: 13 competition rows",
+      "https://www.wayzataresults.com/sports/xc/2026/schedule: 10 competition rows",
+      "schedules: 2 pages read, 23 competition rows, 23 core meets minted",
+      "venue state resolution: sites=12 schools=0 unresolved=11 ({\"Augustana College\": 1, \"Bancroft Bay Park\": 1, \"Bassett Creek Park\": 1, \"Coffee Mill Golf Course\": 1, \"North Iowa Medical Center Mercy - West Campus\": 1, \"Northwoods Park\": 1, \"Princeton Middle School\": 1, \"St. Croix Falls HS\": 1, \"St. John's University\": 1, \"Stones Throw Golf Course\": 1, \"The Vintage Golf Course\": 1})",
+      "levels: {\"Invitational\": 20, \"Unknown\": 3}",
+      "sports: {\"CrossCountry\": 10, \"IndoorTrack\": 13}"
+    ]
+  },
+  "meets": [
+    {
+      "id": "meet_0e308c4699a1eff3",
+      "name": "Wabasha-Kellogg Gallop",
+      "normalized_name": "wabasha kellogg gallop",
+      "date": "2026-08-31",
+      "location": "Coffee Mill Golf Course",
+      "state": "??",
+      "level": "unknown",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "j9z306"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/j9z306",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 31 12:00 AM: Wabasha-Kellogg Gallop at Coffee Mill Golf Course: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_22d429726ff93cce",
+      "name": "Hawkeye Invitational Day 1",
+      "normalized_name": "hawkeye invitational day 1",
+      "date": "2026-01-09",
+      "location": "University of Iowa",
+      "state": "IA",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "gqumkk"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/gqumkk",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 9 12:00 AM: Hawkeye Invitational Day 1 at University of Iowa: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_36f2e20244d712a5",
+      "name": "Chelsey M Henkenius Invitational",
+      "normalized_name": "chelsey m henkenius invitational",
+      "date": "2026-01-17",
+      "location": "Wartburg College",
+      "state": "IA",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "6v95xo"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/6v95xo",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 17 12:00 AM: Chelsey M Henkenius Invitational at Wartburg College: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_45f37b0129393625",
+      "name": "Larry Wieczorek Invitational Day 2",
+      "normalized_name": "larry wieczorek invitational day 2",
+      "date": "2026-01-24",
+      "location": "University of Iowa",
+      "state": "IA",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "mr68ty"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/mr68ty",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 24 12:00 AM: Larry Wieczorek Invitational Day 2 at University of Iowa: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_493529e12761af79",
+      "name": "St. Croix Falls Invitational",
+      "normalized_name": "st croix falls invitational",
+      "date": "2026-08-27",
+      "location": "St. Croix Falls HS",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "hmhk90"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/hmhk90",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 27 12:00 AM: St. Croix Falls Invitational at St. Croix Falls HS: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_4ca71a051f0e0802",
+      "name": "Central Minnesota River Run",
+      "normalized_name": "central minnesota river run",
+      "date": "2026-08-31",
+      "location": "The Vintage Golf Course",
+      "state": "??",
+      "level": "unknown",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "1zd0y3"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/1zd0y3",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 31 12:00 AM: Central Minnesota River Run at The Vintage Golf Course: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_52a77e7114de9df4",
+      "name": "Track Minnesota Invitational",
+      "normalized_name": "track minnesota invitational",
+      "date": "2026-01-11",
+      "location": "Macalester College",
+      "state": "MN",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "fn52zx"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/fn52zx",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 11 12:00 AM: Track Minnesota Invitational at Macalester College: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_5862067a9ba10e67",
+      "name": "Vanessa Seljeskog Classic",
+      "normalized_name": "vanessa seljeskog classic",
+      "date": "2026-01-24",
+      "location": "Macalester College",
+      "state": "MN",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "yqskzb"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/yqskzb",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 24 12:00 AM: Vanessa Seljeskog Classic at Macalester College: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_698fb7bbdf82f1ab",
+      "name": "Newman Catholic Invitational",
+      "normalized_name": "newman catholic invitational",
+      "date": "2026-09-01",
+      "location": "North Iowa Medical Center Mercy - West Campus",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "afclfy"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/afclfy",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: September 1 12:00 AM: Newman Catholic Invitational at North Iowa Medical Center Mercy - West Campus: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_77f6f6bfa4b67eaf",
+      "name": "Hawkeye Invitational Day 2",
+      "normalized_name": "hawkeye invitational day 2",
+      "date": "2026-01-10",
+      "location": "University of Iowa",
+      "state": "IA",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "gqumkk"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/gqumkk",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 10 12:00 AM: Hawkeye Invitational Day 2 at University of Iowa: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_78f3f52e89b5bf9f",
+      "name": "Quad City Classic",
+      "normalized_name": "quad city classic",
+      "date": "2026-01-11",
+      "location": "Augustana College",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "yzez24"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/yzez24",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 11 12:00 AM: Quad City Classic at Augustana College: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_796659e13c377ef6",
+      "name": "USATF Minnesota All-Comers Meet #3",
+      "normalized_name": "usatf minnesota all comers meet 3",
+      "date": "2026-01-04",
+      "location": "University of Minnesota",
+      "state": "MN",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "7vqvs7"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/7vqvs7",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 4 12:00 AM: USATF Minnesota All-Comers Meet #3 at University of Minnesota: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_81e311d2aacdb164",
+      "name": "Jack Johnson Classic",
+      "normalized_name": "jack johnson classic",
+      "date": "2026-01-30",
+      "location": "University of Minnesota",
+      "state": "MN",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "u6b65a"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/u6b65a",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 30 12:00 AM: Jack Johnson Classic at University of Minnesota: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_9c7142f03dcdb36d",
+      "name": "CSB/SJU Alumni Meet",
+      "normalized_name": "csb sju alumni meet",
+      "date": "2026-01-24",
+      "location": "St. John's University",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "ar41us"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/ar41us",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 24 12:00 AM: CSB/SJU Alumni Meet at St. John's University: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_a0de6bd563ad4cb8",
+      "name": "Early Bird Invitational",
+      "normalized_name": "early bird invitational",
+      "date": "2026-08-27",
+      "location": "Princeton Middle School",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "kjqhzx"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/kjqhzx",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 27 12:00 AM: Early Bird Invitational at Princeton Middle School: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_a11d017cf6738198",
+      "name": "Albert Lea Invitational",
+      "normalized_name": "albert lea invitational",
+      "date": "2026-08-31",
+      "location": "Bancroft Bay Park",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "081i82"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/081i82",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 31 12:00 AM: Albert Lea Invitational at Bancroft Bay Park: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_bb040a52e1a45c45",
+      "name": "Kevin Moorhead Northwood's Invitational",
+      "normalized_name": "kevin moorhead northwood s invitational",
+      "date": "2026-08-28",
+      "location": "Northwoods Park",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "90pw98"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/90pw98",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 28 12:00 AM: Kevin Moorhead Northwood's Invitational at Northwoods Park: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_bb0b270d8a86468a",
+      "name": "USATF Minnesota All-Comers Meet #4",
+      "normalized_name": "usatf minnesota all comers meet 4",
+      "date": "2026-01-18",
+      "location": "University of Minnesota",
+      "state": "MN",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "arhlq3"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/arhlq3",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 18 12:00 AM: USATF Minnesota All-Comers Meet #4 at University of Minnesota: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_c244ccd50305706b",
+      "name": "Ron Kretsch Invitational",
+      "normalized_name": "ron kretsch invitational",
+      "date": "2026-08-29",
+      "location": "Bassett Creek Park",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "jh9a5s"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/jh9a5s",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 29 12:00 AM: Ron Kretsch Invitational at Bassett Creek Park: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_c9b5c77ab2e4869c",
+      "name": "Minnesota Open",
+      "normalized_name": "minnesota open",
+      "date": "2026-01-10",
+      "location": "University of Minnesota",
+      "state": "MN",
+      "level": "unknown",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "15nug0"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/15nug0",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 10 12:00 AM: Minnesota Open at University of Minnesota: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_f0d4e02f52c6d76f",
+      "name": "Milaca Early Bird Invitational",
+      "normalized_name": "milaca early bird invitational",
+      "date": "2026-08-31",
+      "location": "Stones Throw Golf Course",
+      "state": "??",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "5v7w88"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/5v7w88",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 31 12:00 AM: Milaca Early Bird Invitational at Stones Throw Golf Course: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_f1695cf6b9de1097",
+      "name": "River Falls Extreme Meet",
+      "normalized_name": "river falls extreme meet",
+      "date": "2026-08-27",
+      "location": "UW-River Falls",
+      "state": "WI",
+      "level": "invitational",
+      "sports": [
+        "cross_country"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "v70kmd"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/v70kmd",
+        "https://www.wayzataresults.com/sports/xc/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/xc/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: event: August 27 12:00 AM: River Falls Extreme Meet at UW-River Falls: Results"
+        }
+      ]
+    },
+    {
+      "id": "meet_fffb1e786f89d332",
+      "name": "Larry Wieczorek Invitational Day 1",
+      "normalized_name": "larry wieczorek invitational day 1",
+      "date": "2026-01-23",
+      "location": "University of Iowa",
+      "state": "IA",
+      "level": "invitational",
+      "sports": [
+        "indoor_track"
+      ],
+      "source_identities": [
+        {
+          "namespace": {
+            "timer_meet": {
+              "provider": "wayzata"
+            }
+          },
+          "id": "mr68ty"
+        }
+      ],
+      "source_urls": [
+        "https://www.wayzataresults.com/links/mr68ty",
+        "https://www.wayzataresults.com/sports/track/2026/schedule"
+      ],
+      "evidence": [
+        {
+          "source": {
+            "id": "wayzata_schedule",
+            "url": "https://www.wayzataresults.com/sports/track/2026/schedule"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "note": "provider schedule row: track event: January 23 12:00 AM: Larry Wieczorek Invitational Day 1 at University of Iowa: Results"
+        }
+      ]
+    }
+  ]
+}

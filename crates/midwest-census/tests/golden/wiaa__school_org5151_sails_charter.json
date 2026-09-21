@@ -1,0 +1,31 @@
+{
+  "name": "S.A.I.L.S. CHARTER",
+  "level": "High School",
+  "city": "Sparta",
+  "conference": null,
+  "enrollment": 35,
+  "website": "http://www.spartan.org/calendar/sails/",
+  "admins": [
+    {
+      "role": "Superintendent",
+      "name": "Sam Russ",
+      "email": "sruss@spartan.org"
+    },
+    {
+      "role": "Principal",
+      "name": "Wendy Bernett",
+      "email": "wbernett@spartan.org"
+    },
+    {
+      "role": "Athletic Director",
+      "name": "John Blaha",
+      "email": "jblaha@spartan.org"
+    },
+    {
+      "role": "Athletic Director",
+      "name": "Adam Dow",
+      "email": "adow@spartan.org"
+    }
+  ],
+  "coaches": []
+}

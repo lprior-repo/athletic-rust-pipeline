@@ -1,0 +1,97 @@
+{
+  "name": "WIAA State Cross Country Championships",
+  "date": "2025-11-01",
+  "end_date": null,
+  "timer": null,
+  "events": [
+    {
+      "label": "TEAM SCORE",
+      "kind": "cross_country",
+      "gender": "boys",
+      "division": "Division 1",
+      "round": "finals",
+      "rows": [
+        {
+          "place": 6,
+          "name": "Cooper Erickson",
+          "grade": 12,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 950.2
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 28,
+          "name": "Bennett Story",
+          "grade": 12,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 993.6
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 9,
+          "name": "Garrett Strong",
+          "grade": 10,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 959.9
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 32,
+          "name": "Alex Dziak",
+          "grade": 11,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 1001.3
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 10,
+          "name": "Fisher Carroll",
+          "grade": 9,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 963.1
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 58,
+          "name": "Donald Voetberg",
+          "grade": 12,
+          "school": "SPASH",
+          "mark": {
+            "TimeSeconds": 1026.6
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        }
+      ]
+    }
+  ],
+  "rows_parsed": 6,
+  "rows_skipped": 2
+}

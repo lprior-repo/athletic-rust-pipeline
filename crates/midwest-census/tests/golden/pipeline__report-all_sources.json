@@ -1,0 +1,131 @@
+{
+  "generated_on": "<date>",
+  "store_dir": "<store>",
+  "scope": "all_sources",
+  "totals": {
+    "state": "TOTAL",
+    "schools": 73,
+    "athletes": 304,
+    "class_of_2027": 86,
+    "class_of_2027_boys": 54,
+    "class_of_2027_girls": 32,
+    "class_of_2027_unknown_gender": 0,
+    "class_of_2027_with_profile_url": 14,
+    "class_of_2027_with_grad_year_evidence": 86,
+    "class_of_2027_multisource": 0,
+    "class_of_2027_with_coach": 14,
+    "class_of_2027_with_coach_email": 14,
+    "coaches": 20,
+    "coaches_with_email": 18
+  },
+  "by_state": {
+    "KS": {
+      "state": "KS",
+      "schools": 2,
+      "athletes": 6,
+      "class_of_2027": 0,
+      "class_of_2027_boys": 0,
+      "class_of_2027_girls": 0,
+      "class_of_2027_unknown_gender": 0,
+      "class_of_2027_with_profile_url": 0,
+      "class_of_2027_with_grad_year_evidence": 0,
+      "class_of_2027_multisource": 0,
+      "class_of_2027_with_coach": 0,
+      "class_of_2027_with_coach_email": 0,
+      "coaches": 0,
+      "coaches_with_email": 0
+    },
+    "OH": {
+      "state": "OH",
+      "schools": 3,
+      "athletes": 0,
+      "class_of_2027": 0,
+      "class_of_2027_boys": 0,
+      "class_of_2027_girls": 0,
+      "class_of_2027_unknown_gender": 0,
+      "class_of_2027_with_profile_url": 0,
+      "class_of_2027_with_grad_year_evidence": 0,
+      "class_of_2027_multisource": 0,
+      "class_of_2027_with_coach": 0,
+      "class_of_2027_with_coach_email": 0,
+      "coaches": 9,
+      "coaches_with_email": 7
+    },
+    "WI": {
+      "state": "WI",
+      "schools": 68,
+      "athletes": 298,
+      "class_of_2027": 86,
+      "class_of_2027_boys": 54,
+      "class_of_2027_girls": 32,
+      "class_of_2027_unknown_gender": 0,
+      "class_of_2027_with_profile_url": 14,
+      "class_of_2027_with_grad_year_evidence": 86,
+      "class_of_2027_multisource": 0,
+      "class_of_2027_with_coach": 14,
+      "class_of_2027_with_coach_email": 14,
+      "coaches": 11,
+      "coaches_with_email": 11
+    }
+  },
+  "athletes_by_grad_year": {
+    "2024": 17,
+    "2025": 76,
+    "2026": 91,
+    "2027": 86,
+    "2028": 30,
+    "2029": 2,
+    "2030": 2
+  },
+  "class_of_2027_sports": {
+    "indoor_only": 1,
+    "outdoor_only": 46,
+    "cross_country_only": 26,
+    "multi_sport": 4,
+    "none": 9
+  },
+  "providers": {
+    "namespaces": {
+      "milesplit_athlete": 14
+    },
+    "multisource_athletes": 0,
+    "athletic_net_urls_known": 0,
+    "grade_evidence_sources": {
+      "milesplit_wi": 14,
+      "wiaa_results": 74
+    }
+  },
+  "coach_roles": {
+    "athleticdirector": 6,
+    "headcoach": 14
+  },
+  "coach_sports": {
+    "crosscountry": 7,
+    "outdoortrack": 7,
+    "school_wide": 6
+  },
+  "coach_sources": {
+    "association_school:ohsaa": 9
+  },
+  "meets": {
+    "total": 8,
+    "with_athletic_net_id": 3,
+    "by_state": {
+      "IL": 3,
+      "KS": 1,
+      "WI": 4
+    },
+    "by_provider": {
+      "timer_meet:athleticlive": 1,
+      "timer_meet:live_results": 3,
+      "timer_meet:palatine": 1,
+      "timer_meet:reddirt": 1
+    },
+    "first_date": "2023",
+    "last_date": "2025-10-07"
+  },
+  "duplicate_school_names": 0,
+  "notes": [
+    "scope=all_sources schools=73 athletes=304 coaches=20 from <store>/out"
+  ]
+}

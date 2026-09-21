@@ -1,0 +1,71 @@
+{
+  "name": "WIAA D3 Sectional @ Sheboygan Lutheran",
+  "date": "2025",
+  "end_date": null,
+  "timer": null,
+  "events": [
+    {
+      "label": "Varsity",
+      "kind": "cross_country",
+      "gender": "boys",
+      "division": null,
+      "round": "finals",
+      "rows": [
+        {
+          "place": 1,
+          "name": "Wyatt See",
+          "grade": 12,
+          "school": "Poynette",
+          "mark": {
+            "TimeSeconds": 1004.1
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 2,
+          "name": "Nicholas Schubert",
+          "grade": 11,
+          "school": "Ozaukee",
+          "mark": {
+            "TimeSeconds": 1015.5
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 3,
+          "name": "Eddy Giebler",
+          "grade": 10,
+          "school": "Sheboygan Area Lutheran",
+          "mark": {
+            "TimeSeconds": 1020.7
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 4,
+          "name": "Paceler Moll",
+          "grade": 10,
+          "school": "Poynette",
+          "mark": {
+            "TimeSeconds": 1038.1
+          },
+          "wind_mps": null,
+          "heat": null,
+          "points": null,
+          "legs": []
+        }
+      ]
+    }
+  ],
+  "rows_parsed": 4,
+  "rows_skipped": 0
+}

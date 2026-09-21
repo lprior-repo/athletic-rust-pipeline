@@ -1,0 +1,27 @@
+{
+  "refusals": [
+    {
+      "refusal": "a registry without a per-line state needs exactly one --states value, got 2 (WI,AK)",
+      "registry": "28127170\n",
+      "states": [
+        "WI",
+        "AK"
+      ]
+    },
+    {
+      "refusal": "registry line 1: `ALASKA` is not a two-letter state code",
+      "registry": "28127170,Alaska\n",
+      "states": []
+    },
+    {
+      "refusal": "registry line 1: `natalia` is not an athlete id",
+      "registry": "natalia\n",
+      "states": []
+    },
+    {
+      "refusal": "registry line 1: expected `athlete_id[,ST]`, got `28127170,AK,extra`",
+      "registry": "28127170,AK,extra\n",
+      "states": []
+    }
+  ]
+}

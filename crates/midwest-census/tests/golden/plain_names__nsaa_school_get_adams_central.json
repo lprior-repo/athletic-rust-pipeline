@@ -1,0 +1,387 @@
+{
+  "schools": [
+    {
+      "city": "Hastings",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_7c80ceebb3e112ea",
+          "name": "Alan Frank",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_93e762d58dfcf99e",
+          "name": "Aub Boucher",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_d1605b78f84e15e5",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_5704a6574ab3b879",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_377e0fa38b43d3b8",
+          "name": "Zeb Noyd",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_58b9c28453650590",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 215,
+      "homepage": "http://www.adamscentral.us/",
+      "name": "Adams Central",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Shawn Scott",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Scott Harrington",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Alan Frank",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Mattison Tinant",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Alan Frank",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Assistant Athletic Director",
+          "name": "Aub Boucher",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Baseball",
+          "name": "Tim Stroman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Zac Foster",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Evan Smith",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Dave Johnson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Josh Lewis",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Rod Hartman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Girls)",
+          "name": "Rod Hartman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Becky Fisher",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Journalism",
+          "name": "Crystal Hassenstab",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Doyle Hanshaw",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Hugo Madera",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Robert Collins",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Softball",
+          "name": "Danielle Wahl",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Doyle Hanshaw",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Strength Coach",
+          "name": "Teran Boyer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Penny Birky",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Swimming (Boys)",
+          "name": "Co-op w/Hastings",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Swimming (Girls)",
+          "name": "Co-op w/Hastings",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Boys)",
+          "name": "Ed Sughroue",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Girls)",
+          "name": "Ed Sughroue",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Zeb Noyd",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Sean Vonderfecht",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Libby Lollman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Chris Trampe",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Girls Wrestling",
+          "name": "Teran Boyer",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Hastings",
+        "co_op": false,
+        "enrollment": 215,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+            }
+          }
+        ],
+        "id": "sch_2c870270b29ff075",
+        "name": "Adams Central",
+        "normalized_name": "adams central",
+        "school_website": "http://www.adamscentral.us/",
+        "source_identities": [
+          {
+            "id": "Adams Central",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_2c870270b29ff075",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+    }
+  ]
+}

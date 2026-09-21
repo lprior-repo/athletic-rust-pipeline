@@ -1,0 +1,14 @@
+{
+  "cases": {
+    "ohsaa__ad_centerville": "89776f9900053e321c2526bf05fc0fef8699def37800d223e6e4d9a6e963605a",
+    "ohsaa__ad_dublin_coffman": "a9932cfcd423b0140d3f92013e666b31240e24805397357f62777dcc2baaaa5f",
+    "ohsaa__ad_malformed": "0c4fa2ace6f677335b32a5ccee2d8e8af5f92c5a3c1009c3a61b912742270a43",
+    "ohsaa__search_dublin_coffman": "0c9824fcd3d2e7137155e139eb76fd1c4978e052576b4755790d9203570294dd",
+    "ohsaa__search_duplicate_rows": "70751f7faa0dac45c352098691f09756837f79fbefbb02aa6aa2043fcee3efcd",
+    "ohsaa__search_no_results": "186a711b94f47c7ec231f0f33d65a697f1459c465075682f4753e96848a2e102",
+    "ohsaa__sports_centerville": "e4c4b2434888f514337a48a06c2dbee2838a31dd4933a9b1ef67735a40649825",
+    "ohsaa__sports_dublin_coffman": "1ff0a736b54e85ca4a1f160f9a710e48fd462d1aad76b002342b134ed6e13afa",
+    "ohsaa__sports_malformed": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "inputs": 9
+}

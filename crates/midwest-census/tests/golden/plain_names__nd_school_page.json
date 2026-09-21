@@ -1,0 +1,535 @@
+{
+  "ad_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_86efd97d4a5ae3da",
+      "name": "Logan Midthun",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_cb76fa91a095f95a",
+      "name": "James Moe",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_c14232d9ecd2bc32",
+      "name": "Corissa Kolesar",
+      "role": "athletic_director",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": []
+    }
+  ],
+  "member": {
+    "id": "1045",
+    "slug": "west-fargo-sheyenne",
+    "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+  },
+  "offerings": [
+    {
+      "co_op": null,
+      "coaches": [
+        "Troy Thorson",
+        "Jared Slinde"
+      ],
+      "label": "Boys' Cross Country",
+      "sport": {
+        "gender": "boys",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Troy Thorson",
+        "Jared Slinde"
+      ],
+      "label": "Girls' Cross Country",
+      "sport": {
+        "gender": "girls",
+        "sport": "cross_country"
+      }
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Hayden Reynolds",
+        "Jeremy Newton"
+      ],
+      "label": "Football",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Dan Wolf"
+      ],
+      "label": "Girls' Golf",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Jonahtan Melendez-Soloaga"
+      ],
+      "label": "Boys' Soccer",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Erich Richardson"
+      ],
+      "label": "Girls' Swimming and Diving",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Huanzhong (Dan) Gu"
+      ],
+      "label": "Boys' Tennis",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Leah Newton"
+      ],
+      "label": "Volleyball",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Tim Brandt"
+      ],
+      "label": "Boys' Basketball",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Morgan Milbrath"
+      ],
+      "label": "Girls' Basketball",
+      "sport": null
+    },
+    {
+      "co_op": "West Fargo Sheyenne",
+      "coaches": [
+        "David Benson"
+      ],
+      "label": "Boys' Ice Hockey",
+      "sport": null
+    },
+    {
+      "co_op": "West Fargo",
+      "coaches": [
+        "Kennedy Blair"
+      ],
+      "label": "Girls' Ice Hockey",
+      "sport": null
+    },
+    {
+      "co_op": "West Fargo Sheyenne",
+      "coaches": [
+        "Hallie Peterson",
+        "Makenzie Preston"
+      ],
+      "label": "Boys' Swimming and Diving",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Lex Lunde"
+      ],
+      "label": "Boys' Wrestling",
+      "sport": null
+    },
+    {
+      "co_op": "West Fargo United",
+      "coaches": [
+        "Zachary Francois"
+      ],
+      "label": "Girls' Wrestling",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Jason Beilke"
+      ],
+      "label": "Baseball",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Dan Wolf"
+      ],
+      "label": "Boys' Golf",
+      "sport": null
+    },
+    {
+      "co_op": "West Fargo Sheyenne",
+      "coaches": [
+        "Amer Vatres"
+      ],
+      "label": "Girls' Soccer",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Jason Balvik"
+      ],
+      "label": "Girls' Softball",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Huanzhong (Dan) Gu"
+      ],
+      "label": "Girls' Tennis",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Jared Slinde"
+      ],
+      "label": "Boys' Track and Field",
+      "sport": {
+        "gender": "boys",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "co_op": null,
+      "coaches": [
+        "Jaime Watson"
+      ],
+      "label": "Girls' Track and Field",
+      "sport": {
+        "gender": "girls",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Debate",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Music - Instrumental",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Music - Orchestra",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Music - Vocal",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Speech",
+      "sport": null
+    },
+    {
+      "co_op": null,
+      "coaches": [],
+      "label": "Student Congress",
+      "sport": null
+    }
+  ],
+  "school": {
+    "aliases": [],
+    "association": "ndhsaa",
+    "city": "West Fargo",
+    "co_op": false,
+    "enrollment": 1399,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "ndhsaa",
+          "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+        }
+      }
+    ],
+    "id": "sch_1b752c954c9ada64",
+    "name": "West Fargo Sheyenne High School",
+    "normalized_name": "west fargo sheyenne",
+    "school_website": "https://www.west-fargo.k12.nd.us/shs/activities",
+    "source_identities": [
+      {
+        "id": "1045",
+        "namespace": {
+          "association_school": {
+            "association": "ndhsaa"
+          }
+        },
+        "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+      }
+    ],
+    "state": "ND"
+  },
+  "school_id": "sch_1b752c954c9ada64",
+  "sport_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_49d504fe3a01085a",
+      "name": "Troy Thorson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_457e24906815484b",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_e1878ddecef68c6e",
+      "name": "Troy Thorson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_3b322b071da552e9",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "cross_country"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "boys",
+      "id": "coa_d4c078d336b91e8c",
+      "name": "Jared Slinde",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ndhsaa",
+            "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+          }
+        }
+      ],
+      "gender": "girls",
+      "id": "coa_2171d4a22222c9ab",
+      "name": "Jaime Watson",
+      "role": "unknown",
+      "school": "sch_1b752c954c9ada64",
+      "source_identities": [],
+      "sport": "outdoor_track"
+    }
+  ],
+  "staff": [
+    {
+      "label": "Address",
+      "name": "800 40th Ave E., West Fargo, ND 58078",
+      "role": null
+    },
+    {
+      "label": "Mailing Address",
+      "name": "800 40th Ave E., West Fargo, ND 58078",
+      "role": null
+    },
+    {
+      "label": "Fax",
+      "name": "701-499-6687",
+      "role": null
+    },
+    {
+      "label": "Superintendent",
+      "name": "Beth Slette",
+      "role": null
+    },
+    {
+      "label": "Assistant Superintendent",
+      "name": "Vincent Williams",
+      "role": null
+    },
+    {
+      "label": "Principal",
+      "name": "Ryan Salisbury",
+      "role": null
+    },
+    {
+      "label": "Vice/Assistant Principal",
+      "name": "Ryan Bodell",
+      "role": null
+    },
+    {
+      "label": "Athletic Director",
+      "name": "Logan Midthun",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Athletic Director",
+      "name": "James Moe",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Assistant Athletic Director",
+      "name": "Corissa Kolesar",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Activities Director",
+      "name": "Logan Midthun",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Activities Director",
+      "name": "James Moe",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Assistant Activities Director",
+      "name": "Corissa Kolesar",
+      "role": "athletic_director"
+    },
+    {
+      "label": "Business Manager",
+      "name": "Levi Bachmeier",
+      "role": null
+    },
+    {
+      "label": "Tech Director",
+      "name": "Ed Mitchell",
+      "role": null
+    },
+    {
+      "label": "School Song",
+      "name": "Mustang Stampede",
+      "role": null
+    },
+    {
+      "label": "School Colors",
+      "name": "Royal Blue, Orange",
+      "role": null
+    },
+    {
+      "label": "Mascot",
+      "name": "Mustangs",
+      "role": null
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "ad_coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "mshsl",
+            "url": "https://www.mshsl.org/schools/academic-arts-high-school"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_eb8d0b1041ca2af6",
+      "name": "Hannah Couch",
+      "professional_email": "hannah.couch@academicarts.org",
+      "role": "athletic_director",
+      "school": "sch_fab19d6e0dc4d28c",
+      "source_identities": [
+        {
+          "id": "733:ad",
+          "namespace": {
+            "association_school": {
+              "association": "mshsl"
+            }
+          },
+          "url": "https://www.mshsl.org/schools/academic-arts-high-school"
+        }
+      ]
+    }
+  ],
+  "detail": {
+    "admin": [
+      {
+        "ad_role": "athletic_director",
+        "emails": [
+          "hannah.couch@academicarts.org"
+        ],
+        "name": "Hannah Couch",
+        "role": "Activities Director"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Davi Hicks",
+        "role": "Principal"
+      },
+      {
+        "ad_role": null,
+        "emails": [],
+        "name": "Davi Hicks",
+        "role": "Superintendent"
+      }
+    ],
+    "enrollment": 69,
+    "name": "Academic Arts High School",
+    "school_id": "733",
+    "website": null
+  },
+  "domains": [
+    "academicarts.org"
+  ],
+  "row": {
+    "city": "West St. Paul",
+    "name": "Academic Arts High School",
+    "slug": "academic-arts-high-school"
+  },
+  "school": {
+    "aliases": [],
+    "association": "mshsl",
+    "city": "West St. Paul",
+    "co_op": false,
+    "enrollment": 69,
+    "evidence": [
+      {
+        "method": "parsed",
+        "observed_on": "2026-09-20",
+        "source": {
+          "id": "mshsl",
+          "url": "https://www.mshsl.org/schools/academic-arts-high-school"
+        }
+      }
+    ],
+    "id": "sch_fab19d6e0dc4d28c",
+    "name": "Academic Arts High School",
+    "normalized_name": "academic arts",
+    "source_identities": [
+      {
+        "id": "733",
+        "namespace": {
+          "association_school": {
+            "association": "mshsl"
+          }
+        },
+        "url": "https://www.mshsl.org/schools/academic-arts-high-school"
+      }
+    ],
+    "state": "MN"
+  },
+  "school_id": "sch_fab19d6e0dc4d28c",
+  "school_key": "733"
+}

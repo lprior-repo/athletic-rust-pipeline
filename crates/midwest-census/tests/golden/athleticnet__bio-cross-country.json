@@ -1,0 +1,41 @@
+{
+  "athlete": {
+    "first_name": "Natalia",
+    "gender": "F",
+    "id": 28127170,
+    "last_name": "Casillas",
+    "name": "Natalia Casillas",
+    "school_id": 13850
+  },
+  "events": null,
+  "grades": {
+    "13850_2026": 11
+  },
+  "meets": [
+    {
+      "end_date": "2025-09-02T00:00:00",
+      "meet_id": "223703",
+      "name": "Chandler Invitational"
+    }
+  ],
+  "results_tf": null,
+  "results_xc": [
+    {
+      "distance": 5000,
+      "division": "Varsity",
+      "id": 47122798,
+      "meet_id": 223703,
+      "place": "68",
+      "result": "25:31.2",
+      "school_id": 13850,
+      "season_id": 2025
+    }
+  ],
+  "seasons": [],
+  "teams": [
+    {
+      "school_id": "13850",
+      "school_name": "Seton Catholic"
+    }
+  ]
+}

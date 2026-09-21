@@ -1,0 +1,143 @@
+{
+  "file": "athlete-list-sample.json",
+  "rows": [
+    {
+      "ani": 30987335,
+      "athletic_net_athlete_id": 30987335,
+      "gender": "Female",
+      "grade_token": "12",
+      "i": 49187209,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Cessia Berruecos",
+      "row_id": 49187209,
+      "team": {
+        "ab": null,
+        "ani": 17624,
+        "athletic_net_team_id": 17624,
+        "athleticlive_team_id": 1650834,
+        "f": "Abilene",
+        "i": 1650834,
+        "is_cross_country": false,
+        "n": "Abilene",
+        "school_name": "Abilene",
+        "xc": null
+      }
+    },
+    {
+      "ani": 30987350,
+      "athletic_net_athlete_id": 30987350,
+      "gender": "Female",
+      "grade_token": "11",
+      "i": 49187211,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Danei Laubscher",
+      "row_id": 49187211,
+      "team": {
+        "ab": null,
+        "ani": 17624,
+        "athletic_net_team_id": 17624,
+        "athleticlive_team_id": 1650834,
+        "f": "Abilene",
+        "i": 1650834,
+        "is_cross_country": false,
+        "n": "Abilene",
+        "school_name": "Abilene",
+        "xc": null
+      }
+    },
+    {
+      "ani": 30987325,
+      "athletic_net_athlete_id": 30987325,
+      "gender": "Female",
+      "grade_token": "11",
+      "i": 49187212,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Sofia Amador",
+      "row_id": 49187212,
+      "team": {
+        "ab": null,
+        "ani": 17624,
+        "athletic_net_team_id": 17624,
+        "athleticlive_team_id": 1650834,
+        "f": "Abilene",
+        "i": 1650834,
+        "is_cross_country": false,
+        "n": "Abilene",
+        "school_name": "Abilene",
+        "xc": null
+      }
+    },
+    {
+      "ani": 24940187,
+      "athletic_net_athlete_id": 24940187,
+      "gender": "Male",
+      "grade_token": "11",
+      "i": 49187154,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Luke Watson",
+      "row_id": 49187154,
+      "team": {
+        "ab": null,
+        "ani": 17624,
+        "athletic_net_team_id": 17624,
+        "athleticlive_team_id": 1650834,
+        "f": "Abilene",
+        "i": 1650834,
+        "is_cross_country": false,
+        "n": "Abilene",
+        "school_name": "Abilene",
+        "xc": null
+      }
+    },
+    {
+      "ani": 21318358,
+      "athletic_net_athlete_id": 21318358,
+      "gender": "Male",
+      "grade_token": "12",
+      "i": 49187215,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Kaden Hitz",
+      "row_id": 49187215,
+      "team": {
+        "ab": null,
+        "ani": 17676,
+        "athletic_net_team_id": 17676,
+        "athleticlive_team_id": 1650835,
+        "f": "Chapman",
+        "i": 1650835,
+        "is_cross_country": false,
+        "n": "Chapman",
+        "school_name": "Chapman",
+        "xc": null
+      }
+    },
+    {
+      "ani": 23792020,
+      "athletic_net_athlete_id": 23792020,
+      "gender": "Male",
+      "grade_token": "12",
+      "i": 49187217,
+      "meet_id": 73566,
+      "mi": 73566,
+      "name": "Keith Marshall",
+      "row_id": 49187217,
+      "team": {
+        "ab": null,
+        "ani": 17676,
+        "athletic_net_team_id": 17676,
+        "athleticlive_team_id": 1650835,
+        "f": "Chapman",
+        "i": 1650835,
+        "is_cross_country": false,
+        "n": "Chapman",
+        "school_name": "Chapman",
+        "xc": null
+      }
+    }
+  ]
+}

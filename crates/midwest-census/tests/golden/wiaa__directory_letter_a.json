@@ -1,0 +1,44 @@
+[
+  {
+    "org_id": "1",
+    "name": "ABBOTSFORD",
+    "level": "High School",
+    "city": "Abbotsford",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+  },
+  {
+    "org_id": "5053",
+    "name": "ABBOTSFORD MIDDLE",
+    "level": "Middle School",
+    "city": "Abbotsford",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5053"
+  },
+  {
+    "org_id": "2",
+    "name": "ABUNDANT LIFE CHRISTIAN",
+    "level": "High School",
+    "city": "Madison",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=2"
+  },
+  {
+    "org_id": "3",
+    "name": "ADAMS-FRIENDSHIP",
+    "level": "High School",
+    "city": "Adams",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=3"
+  },
+  {
+    "org_id": "5288",
+    "name": "ADAMS-FRIENDSHIP MIDDLE",
+    "level": "Middle School",
+    "city": "Friendship",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5288"
+  },
+  {
+    "org_id": "5102",
+    "name": "ADVANCED LEARNING ACADEMY OF WISCONSIN CHARTER",
+    "level": "High School",
+    "city": "Barron",
+    "page_url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5102"
+  }
+]

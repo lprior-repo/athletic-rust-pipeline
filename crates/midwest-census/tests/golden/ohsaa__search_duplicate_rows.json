@@ -1,0 +1,22 @@
+{
+  "rows": [
+    {
+      "name": "MENTOR",
+      "city": "Mentor",
+      "ohsaa_id": "1016",
+      "page_url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=1016",
+      "sports_url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=1016",
+      "ad_url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=1016"
+    }
+  ],
+  "query": "MENTOR",
+  "resolved": {
+    "name": "MENTOR",
+    "city": "Mentor",
+    "ohsaa_id": "1016",
+    "page_url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=1016",
+    "sports_url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=1016",
+    "ad_url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=1016"
+  },
+  "notes": []
+}

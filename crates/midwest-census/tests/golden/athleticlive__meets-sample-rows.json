@@ -1,0 +1,65 @@
+{
+  "file": "meets-sample.csv",
+  "rows": [
+    {
+      "athleticlive_meet_id": "55274",
+      "athleticnet_meet_id": "259955",
+      "city_state": "Lombard, IL",
+      "end": null,
+      "has_results": true,
+      "implausible_year": false,
+      "name": "4th Annual St. Pius X Knights Chicagoland Cross Country Classic",
+      "start": "2025-08-16",
+      "state_code": "IL",
+      "tenant": "live_results"
+    },
+    {
+      "athleticlive_meet_id": "55274",
+      "athleticnet_meet_id": "259955",
+      "city_state": "Lombard, IL",
+      "end": null,
+      "has_results": true,
+      "implausible_year": false,
+      "name": "4th Annual St. Pius X Knights Chicagoland Cross Country Classic",
+      "start": "2025-08-16",
+      "state_code": "IL",
+      "tenant": "palatine"
+    },
+    {
+      "athleticlive_meet_id": "55488",
+      "athleticnet_meet_id": "257957",
+      "city_state": "Princeton, IL",
+      "end": null,
+      "has_results": true,
+      "implausible_year": false,
+      "name": "Logan Invitational",
+      "start": "2025-08-21",
+      "state_code": "IL",
+      "tenant": "athleticlive"
+    },
+    {
+      "athleticlive_meet_id": "55488",
+      "athleticnet_meet_id": "257957",
+      "city_state": "Princeton, IL",
+      "end": null,
+      "has_results": true,
+      "implausible_year": false,
+      "name": "Logan Invitational",
+      "start": "2025-08-21",
+      "state_code": "IL",
+      "tenant": "live_results"
+    },
+    {
+      "athleticlive_meet_id": "57884",
+      "athleticnet_meet_id": "267134",
+      "city_state": "Harvard, IL",
+      "end": null,
+      "has_results": true,
+      "implausible_year": false,
+      "name": "Harvard 28th Annual Dan Jazo Relays",
+      "start": "2025-10-07",
+      "state_code": "IL",
+      "tenant": "live_results"
+    }
+  ]
+}

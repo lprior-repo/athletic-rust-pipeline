@@ -1,0 +1,495 @@
+{
+  "file": "d1boysstateresults-sections.htm",
+  "extension": "htm",
+  "format": "hytek_html",
+  "archive_year": 2025,
+  "meet": {
+    "name": "WIAA Track & Field State Championships",
+    "date": "2025-06-06",
+    "end_date": "2025-06-07",
+    "timer": "PrimeTime Timing",
+    "events": [
+      {
+        "label": "100 Meter Dash",
+        "kind": "track100m",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "preliminaries",
+        "rows": []
+      },
+      {
+        "label": "4x100 Meter Relay",
+        "kind": "relay4x100",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "preliminaries",
+        "rows": [
+          {
+            "place": 1,
+            "name": "",
+            "grade": null,
+            "school": "Homestead",
+            "mark": {
+              "TimeSeconds": 41.61
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": [
+              {
+                "position": 1,
+                "name": "Jamir Erving",
+                "grade": 11
+              },
+              {
+                "position": 2,
+                "name": "Sean O'Byrne",
+                "grade": 12
+              },
+              {
+                "position": 3,
+                "name": "Jackson Montgomery",
+                "grade": 12
+              },
+              {
+                "position": 4,
+                "name": "Lucas Mersky",
+                "grade": 12
+              },
+              {
+                "position": 5,
+                "name": "Brady Hunt",
+                "grade": 11
+              },
+              {
+                "position": 6,
+                "name": "Hudson Nolte",
+                "grade": 11
+              }
+            ]
+          },
+          {
+            "place": 2,
+            "name": "",
+            "grade": null,
+            "school": "Arrowhead",
+            "mark": {
+              "TimeSeconds": 41.86
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": null,
+            "legs": [
+              {
+                "position": 1,
+                "name": "Presley Bencz",
+                "grade": 11
+              },
+              {
+                "position": 2,
+                "name": "Trey Resch",
+                "grade": 10
+              },
+              {
+                "position": 3,
+                "name": "Harper Hughes",
+                "grade": 11
+              },
+              {
+                "position": 4,
+                "name": "Ashton Baumann",
+                "grade": 12
+              },
+              {
+                "position": 5,
+                "name": "Joel Siner",
+                "grade": 10
+              },
+              {
+                "position": 6,
+                "name": "Caleb Hicks",
+                "grade": 11
+              }
+            ]
+          },
+          {
+            "place": 3,
+            "name": "",
+            "grade": null,
+            "school": "Monona Grove",
+            "mark": {
+              "TimeSeconds": 42.07
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": [
+              {
+                "position": 1,
+                "name": "Nicolas Lindert Olivencia",
+                "grade": 11
+              },
+              {
+                "position": 2,
+                "name": "Henry Hogan",
+                "grade": 11
+              },
+              {
+                "position": 3,
+                "name": "Hewitt Mayfield",
+                "grade": 12
+              },
+              {
+                "position": 4,
+                "name": "Calen Woerth",
+                "grade": 12
+              },
+              {
+                "position": 5,
+                "name": "Isiah Tecpoyotl",
+                "grade": 11
+              },
+              {
+                "position": 6,
+                "name": "Tremayne Habeck",
+                "grade": 11
+              }
+            ]
+          },
+          {
+            "place": 4,
+            "name": "",
+            "grade": null,
+            "school": "Oshkosh North",
+            "mark": {
+              "TimeSeconds": 41.89
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": null,
+            "legs": [
+              {
+                "position": 1,
+                "name": "Dalton Clark",
+                "grade": 11
+              },
+              {
+                "position": 2,
+                "name": "Joshua Zietlow",
+                "grade": 12
+              },
+              {
+                "position": 3,
+                "name": "Evan Auler",
+                "grade": 11
+              },
+              {
+                "position": 4,
+                "name": "Jamare Scott",
+                "grade": 11
+              },
+              {
+                "position": 5,
+                "name": "Tyler Farnsworth",
+                "grade": 11
+              },
+              {
+                "position": 6,
+                "name": "Logan Schettle",
+                "grade": 12
+              }
+            ]
+          },
+          {
+            "place": 5,
+            "name": "",
+            "grade": null,
+            "school": "Oak Creek",
+            "mark": {
+              "TimeSeconds": 42.03
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": [
+              {
+                "position": 1,
+                "name": "Gavin Schilling",
+                "grade": 11
+              },
+              {
+                "position": 2,
+                "name": "Dennis Morris",
+                "grade": 10
+              }
+            ]
+          },
+          {
+            "place": null,
+            "name": "",
+            "grade": null,
+            "school": "Donavin Bond              10 Nicolet",
+            "mark": {
+              "Raw": "FOUL"
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          }
+        ]
+      },
+      {
+        "label": "Shot Put",
+        "kind": "shot_put",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "finals",
+        "rows": [
+          {
+            "place": 1,
+            "name": "Hunter Sprangers",
+            "grade": 12,
+            "school": "Kimberly",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "61-03.50",
+                "metres": 18.6817
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 10.0,
+            "legs": []
+          },
+          {
+            "place": 2,
+            "name": "Connor Fontaine",
+            "grade": 12,
+            "school": "De Pere",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "60-10.00",
+                "metres": 18.541999999999998
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 8.0,
+            "legs": []
+          },
+          {
+            "place": 3,
+            "name": "Brady Schauer",
+            "grade": 12,
+            "school": "Sun Prairie East",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "57-06.50",
+                "metres": 17.5387
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 6.0,
+            "legs": []
+          },
+          {
+            "place": 4,
+            "name": "D'Angelo Clapper",
+            "grade": 12,
+            "school": "Franklin",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "56-05.00",
+                "metres": 17.1958
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 5.0,
+            "legs": []
+          },
+          {
+            "place": 5,
+            "name": "Ethan Knecht",
+            "grade": 12,
+            "school": "Marshfield",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "55-07.50",
+                "metres": 16.9545
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 4.0,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Terron McCall",
+            "grade": 12,
+            "school": "Homestead",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "55-00.50",
+                "metres": 16.776699999999998
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 3.0,
+            "legs": []
+          },
+          {
+            "place": 7,
+            "name": "Matthew Griffith",
+            "grade": 12,
+            "school": "Marquette Univ.",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "54-10.50",
+                "metres": 16.7259
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": 2.0,
+            "legs": []
+          },
+          {
+            "place": 8,
+            "name": "Malachi Spencer",
+            "grade": 12,
+            "school": "Oconomowoc",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "54-02.50",
+                "metres": 16.5227
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 1.0,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Luka Ivancevic",
+            "grade": 11,
+            "school": "Homestead",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "53-05.25",
+                "metres": 16.28775
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 10,
+            "name": "Benjamin Kosmatka",
+            "grade": 10,
+            "school": "Muskego",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "53-03.75",
+                "metres": 16.24965
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 11,
+            "name": "Derek Brooks",
+            "grade": 12,
+            "school": "Stevens Point",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "52-07.75",
+                "metres": 16.04645
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 12,
+            "name": "Sawyer Hanlon",
+            "grade": 12,
+            "school": "Kimberly",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "52-06.50",
+                "metres": 16.014699999999998
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 13,
+            "name": "Jaedyn Coleman",
+            "grade": 12,
+            "school": "Beloit Memorial",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "52-04.50",
+                "metres": 15.963899999999999
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 14,
+            "name": "Atlin Steinhoff",
+            "grade": 12,
+            "school": "Tomah",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "52-01.25",
+                "metres": 15.88135
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 15,
+            "name": "Will McCorison",
+            "grade": 12,
+            "school": "Wausau West",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "52-00.50",
+                "metres": 15.8623
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          }
+        ]
+      }
+    ],
+    "rows_parsed": 21,
+    "rows_skipped": 2
+  }
+}

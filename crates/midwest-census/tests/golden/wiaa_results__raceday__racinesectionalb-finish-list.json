@@ -1,0 +1,1085 @@
+{
+  "name": "WIAA D2 XC Sectionals - Boys Race",
+  "date": "2023",
+  "end_date": null,
+  "timer": "RaceDay Scoring",
+  "events": [
+    {
+      "label": "Cross Country",
+      "kind": "cross_country",
+      "gender": "boys",
+      "division": "Division 2",
+      "round": "finals",
+      "rows": [
+        {
+          "place": 1,
+          "name": "Jack Hefty",
+          "grade": 11,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1033.69
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 1.0,
+          "legs": []
+        },
+        {
+          "place": 2,
+          "name": "Kaden Fridley",
+          "grade": 12,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1042.54
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 2.0,
+          "legs": []
+        },
+        {
+          "place": 3,
+          "name": "Alex Arndt",
+          "grade": 12,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1045.27
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 3.0,
+          "legs": []
+        },
+        {
+          "place": 4,
+          "name": "Nate Holden",
+          "grade": 12,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1067.32
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 4.0,
+          "legs": []
+        },
+        {
+          "place": 5,
+          "name": "Derek Morrison",
+          "grade": 11,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1069.72
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 5.0,
+          "legs": []
+        },
+        {
+          "place": 6,
+          "name": "Zachary Haleem",
+          "grade": 9,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1071.19
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 6.0,
+          "legs": []
+        },
+        {
+          "place": 7,
+          "name": "Miles Nickelsburg",
+          "grade": 11,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1072.42
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 7.0,
+          "legs": []
+        },
+        {
+          "place": 8,
+          "name": "Dylan Yurs",
+          "grade": 11,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1077.64
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 8.0,
+          "legs": []
+        },
+        {
+          "place": 9,
+          "name": "Oliver Melson",
+          "grade": 11,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1086.19
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 9.0,
+          "legs": []
+        },
+        {
+          "place": 10,
+          "name": "Xavier Zei",
+          "grade": 11,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1096.78
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 10.0,
+          "legs": []
+        },
+        {
+          "place": 11,
+          "name": "Reagan Flickinger",
+          "grade": 11,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1099.84
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 11.0,
+          "legs": []
+        },
+        {
+          "place": 12,
+          "name": "Henry Gapinski",
+          "grade": 10,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1104.34
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 12.0,
+          "legs": []
+        },
+        {
+          "place": 13,
+          "name": "Bradley Galvin",
+          "grade": 12,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1107.67
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 13.0,
+          "legs": []
+        },
+        {
+          "place": 14,
+          "name": "AJ Zisky",
+          "grade": 12,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1113.61
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 14.0,
+          "legs": []
+        },
+        {
+          "place": 15,
+          "name": "Lukas Miller",
+          "grade": 9,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1117.9
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 15.0,
+          "legs": []
+        },
+        {
+          "place": 16,
+          "name": "Josiah Hutchinson",
+          "grade": 10,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1125.91
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 16.0,
+          "legs": []
+        },
+        {
+          "place": 17,
+          "name": "Nathan Shallenberger",
+          "grade": 11,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1132.24
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 17.0,
+          "legs": []
+        },
+        {
+          "place": 18,
+          "name": "Isaac Fiedler",
+          "grade": 10,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1136.41
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 18.0,
+          "legs": []
+        },
+        {
+          "place": 19,
+          "name": "Kevin Vaughn",
+          "grade": 10,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1139.32
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 19.0,
+          "legs": []
+        },
+        {
+          "place": 20,
+          "name": "Sawyer Jahns",
+          "grade": 10,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1142.96
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 20.0,
+          "legs": []
+        },
+        {
+          "place": 21,
+          "name": "Zack Schroeder",
+          "grade": 9,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1151.17
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 21.0,
+          "legs": []
+        },
+        {
+          "place": 22,
+          "name": "Elijah Henningfeld",
+          "grade": 10,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1152.94
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 22.0,
+          "legs": []
+        },
+        {
+          "place": 23,
+          "name": "Samuel Baca",
+          "grade": 10,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1154.56
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 23.0,
+          "legs": []
+        },
+        {
+          "place": 24,
+          "name": "Thomas Zondag",
+          "grade": 9,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1154.62
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 24.0,
+          "legs": []
+        },
+        {
+          "place": 25,
+          "name": "Onyx Thompson",
+          "grade": 11,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1156.84
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 25.0,
+          "legs": []
+        },
+        {
+          "place": 26,
+          "name": "Jonathon Ellifson",
+          "grade": 12,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1160.26
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 26.0,
+          "legs": []
+        },
+        {
+          "place": 27,
+          "name": "Josh Freitag",
+          "grade": 10,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1161.1
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 27.0,
+          "legs": []
+        },
+        {
+          "place": 28,
+          "name": "Tyler Michalski",
+          "grade": 10,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1162.78
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 28.0,
+          "legs": []
+        },
+        {
+          "place": 29,
+          "name": "Darrien Jagiello",
+          "grade": 12,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1163.98
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 29.0,
+          "legs": []
+        },
+        {
+          "place": 30,
+          "name": "Nathaniel Ligman",
+          "grade": 10,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1164.82
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 30.0,
+          "legs": []
+        },
+        {
+          "place": 31,
+          "name": "Caden Pagenkopf",
+          "grade": 11,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1165.06
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 31.0,
+          "legs": []
+        },
+        {
+          "place": 32,
+          "name": "Ben Markham",
+          "grade": 12,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1165.12
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 32.0,
+          "legs": []
+        },
+        {
+          "place": 33,
+          "name": "Keegan DeBlare",
+          "grade": 9,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1166.56
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 33.0,
+          "legs": []
+        },
+        {
+          "place": 34,
+          "name": "Brady Gehring",
+          "grade": 12,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1172.35
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 34.0,
+          "legs": []
+        },
+        {
+          "place": 35,
+          "name": "Amran Avila Montoya",
+          "grade": 9,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1174.9
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 35.0,
+          "legs": []
+        },
+        {
+          "place": 36,
+          "name": "Evan Doerksen",
+          "grade": 9,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1182.59
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 37,
+          "name": "Sean Moore",
+          "grade": 10,
+          "school": "Racine St. Catherine&#x27;s",
+          "mark": {
+            "TimeSeconds": 1185.4
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 38,
+          "name": "Jose Pilo",
+          "grade": 11,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1186.93
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 37.0,
+          "legs": []
+        },
+        {
+          "place": 39,
+          "name": "Xavier Calhoun-Johnson",
+          "grade": 10,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1188.85
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 38.0,
+          "legs": []
+        },
+        {
+          "place": 40,
+          "name": "Quincy Boudreau",
+          "grade": 12,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1189.51
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 41,
+          "name": "Brady Goeb",
+          "grade": 9,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1192.78
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 40.0,
+          "legs": []
+        },
+        {
+          "place": 42,
+          "name": "Reid Henningfeld",
+          "grade": 10,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1195.93
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 41.0,
+          "legs": []
+        },
+        {
+          "place": 43,
+          "name": "Catcher Belott",
+          "grade": 9,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1196.17
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 44,
+          "name": "Varick Schroeder",
+          "grade": 11,
+          "school": "Delavan-Darien",
+          "mark": {
+            "TimeSeconds": 1202.5
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 45,
+          "name": "Trevor Kooyenga",
+          "grade": 9,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1202.53
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 44.0,
+          "legs": []
+        },
+        {
+          "place": 46,
+          "name": "Bryce Bayley",
+          "grade": 9,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1203.1
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 45.0,
+          "legs": []
+        },
+        {
+          "place": 47,
+          "name": "Marko Krecak",
+          "grade": 11,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1204.18
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 48,
+          "name": "Cipriano Sanapaw",
+          "grade": 9,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1215.25
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 47.0,
+          "legs": []
+        },
+        {
+          "place": 49,
+          "name": "Noah Chudada",
+          "grade": 9,
+          "school": "Whitnall",
+          "mark": {
+            "TimeSeconds": 1217.29
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 50,
+          "name": "Aiden DeBlare",
+          "grade": 11,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1219.36
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 51,
+          "name": "Trevor Murphy",
+          "grade": 9,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1232.26
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 50.0,
+          "legs": []
+        },
+        {
+          "place": 52,
+          "name": "Alfonso Jimenez",
+          "grade": 12,
+          "school": "Saint Anthony",
+          "mark": {
+            "TimeSeconds": 1234.63
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 53,
+          "name": "Symon Beyer",
+          "grade": 9,
+          "school": "Jefferson",
+          "mark": {
+            "TimeSeconds": 1235.59
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 54,
+          "name": "Finn Pecht",
+          "grade": 10,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1244.71
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 55,
+          "name": "Cesar Garcia-Pina",
+          "grade": 12,
+          "school": "St. Augustine Preparatory Academ",
+          "mark": {
+            "TimeSeconds": 1249.27
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 56,
+          "name": "Shawn Weigand",
+          "grade": 9,
+          "school": "Shoreland Lutheran",
+          "mark": {
+            "TimeSeconds": 1253.89
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 57,
+          "name": "Karsten Kammholz",
+          "grade": 10,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1255.51
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 54.0,
+          "legs": []
+        },
+        {
+          "place": 58,
+          "name": "Rhys Hohner",
+          "grade": 9,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1265.05
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 55.0,
+          "legs": []
+        },
+        {
+          "place": 59,
+          "name": "Isaac Villarello",
+          "grade": 11,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1266.76
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 60,
+          "name": "Adrian Wencka",
+          "grade": 9,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1283.83
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 61,
+          "name": "Thomas Foyer",
+          "grade": 11,
+          "school": "Saint Thomas More",
+          "mark": {
+            "TimeSeconds": 1296.76
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 62,
+          "name": "Andrew O&#x27;Toole",
+          "grade": 11,
+          "school": "Whitewater",
+          "mark": {
+            "TimeSeconds": 1302.96
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 63,
+          "name": "Matthew Markham",
+          "grade": 9,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1309.75
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 60.0,
+          "legs": []
+        },
+        {
+          "place": 64,
+          "name": "Sawyer Flickinger",
+          "grade": 9,
+          "school": "Clinton",
+          "mark": {
+            "TimeSeconds": 1312.99
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 65,
+          "name": "Jack Kammermeier",
+          "grade": 12,
+          "school": "Big Foot/Williams Bay",
+          "mark": {
+            "TimeSeconds": 1327.6
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 66,
+          "name": "Jonathon Beltran",
+          "grade": 11,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1330.09
+          },
+          "wind_mps": null,
+          "heat": "1",
+          "points": 63.0,
+          "legs": []
+        },
+        {
+          "place": 67,
+          "name": "Sean Gratschmayr",
+          "grade": 9,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1335.28
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 64.0,
+          "legs": []
+        },
+        {
+          "place": 68,
+          "name": "Aaron Thomas",
+          "grade": 9,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1346.32
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 65.0,
+          "legs": []
+        },
+        {
+          "place": 69,
+          "name": "Tyler Nielson",
+          "grade": 9,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1346.38
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 70,
+          "name": "Jorge Lara Valenciano",
+          "grade": 10,
+          "school": "St. Augustine Preparatory Academ",
+          "mark": {
+            "TimeSeconds": 1364.59
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 71,
+          "name": "Eddie Taggatz",
+          "grade": 9,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1371.22
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 67.0,
+          "legs": []
+        },
+        {
+          "place": 72,
+          "name": "Joshua Dussault",
+          "grade": 9,
+          "school": "St. Augustine Preparatory Academ",
+          "mark": {
+            "TimeSeconds": 1437.73
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 73,
+          "name": "Tiernan Kurth",
+          "grade": 12,
+          "school": "East Troy",
+          "mark": {
+            "TimeSeconds": 1441.84
+          },
+          "wind_mps": null,
+          "heat": "7",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 74,
+          "name": "Mauricio Alvarez",
+          "grade": 12,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1446.52
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": 69.0,
+          "legs": []
+        },
+        {
+          "place": 75,
+          "name": "Alexander Gonzalez",
+          "grade": 10,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1585.39
+          },
+          "wind_mps": null,
+          "heat": "3",
+          "points": 70.0,
+          "legs": []
+        },
+        {
+          "place": 76,
+          "name": "Oliver Ramos",
+          "grade": 10,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1625.02
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": 71.0,
+          "legs": []
+        },
+        {
+          "place": 77,
+          "name": "Antonio Padilla",
+          "grade": 12,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1682.35
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 72.0,
+          "legs": []
+        },
+        {
+          "place": 78,
+          "name": "John Mazaba-Carballo",
+          "grade": 12,
+          "school": "Cristo Rey Jesuit",
+          "mark": {
+            "TimeSeconds": 1799.74
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 79,
+          "name": "Manuel Reyna",
+          "grade": 9,
+          "school": "St. Augustine Preparatory Academ",
+          "mark": {
+            "TimeSeconds": 1805.77
+          },
+          "wind_mps": null,
+          "heat": "4",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 80,
+          "name": "Adolfo Hermida",
+          "grade": 11,
+          "school": "Saint Anthony",
+          "mark": {
+            "TimeSeconds": 1807.69
+          },
+          "wind_mps": null,
+          "heat": "2",
+          "points": null,
+          "legs": []
+        },
+        {
+          "place": 81,
+          "name": "Paul Yang",
+          "grade": 11,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1807.84
+          },
+          "wind_mps": null,
+          "heat": "5",
+          "points": 74.0,
+          "legs": []
+        },
+        {
+          "place": 82,
+          "name": "Andre Nance",
+          "grade": 10,
+          "school": "Martin Luther",
+          "mark": {
+            "TimeSeconds": 1808.57
+          },
+          "wind_mps": null,
+          "heat": "6",
+          "points": null,
+          "legs": []
+        }
+      ]
+    }
+  ],
+  "rows_parsed": 0,
+  "rows_skipped": 0
+}

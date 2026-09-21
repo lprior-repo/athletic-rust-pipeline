@@ -1,0 +1,170 @@
+{
+  "name": "Gale-Ettrick-Trempealeau",
+  "level": "High School",
+  "city": "Galesville",
+  "conference": "Coulee",
+  "enrollment": 380,
+  "website": "http://www.getschools.k12.wi.us/district",
+  "admins": [
+    {
+      "role": "Superintendent",
+      "name": "Michele Butler",
+      "email": "michelebutler@getschools.k12.wi.us"
+    },
+    {
+      "role": "Principal",
+      "name": "Jamie Oliver",
+      "email": "jamieoliver@getschools.k12.wi.us"
+    },
+    {
+      "role": "Athletic Director",
+      "name": "Jake Perner",
+      "email": "jakeperner@getschools.k12.wi.us"
+    },
+    {
+      "role": "AD Admin Assistant",
+      "name": "Sheryl Byom",
+      "email": "sherylbyom@getschools.k12.wi.us"
+    }
+  ],
+  "coaches": [
+    {
+      "sport": "Boys Baseball",
+      "name": "Scott Hovell",
+      "role": "Head Coach",
+      "email": "goldglovedsj11@hotmail.com"
+    },
+    {
+      "sport": "Boys Basketball",
+      "name": "Ian Anderson",
+      "role": "Head Coach",
+      "email": "iananderson@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Boys Cross Country",
+      "name": "Paula Gold",
+      "role": "Head Coach",
+      "email": "paulagold@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Boys Football",
+      "name": "Dan Henken",
+      "role": "Head Coach",
+      "email": "coachhenken@gmail.com"
+    },
+    {
+      "sport": "Boys Golf",
+      "name": "Michael Jon Mullikin",
+      "role": "Head Coach",
+      "email": "michaeljonmullikin@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Boys Hockey",
+      "name": "Tim Franzini",
+      "role": "Head Coach",
+      "email": "timfranzini4@charter.net"
+    },
+    {
+      "sport": "Boys Swimming & Diving",
+      "name": "Henry Bauer",
+      "role": "Head Coach",
+      "email": "bauer.henry001@gmail.com"
+    },
+    {
+      "sport": "Boys Track and Field",
+      "name": "Ryan Mendez",
+      "role": "Head Coach",
+      "email": "ryanmendez@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Boys Wrestling",
+      "name": "Pete Peterson",
+      "role": "Head Coach",
+      "email": "petepeterson@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Boys Wrestling",
+      "name": "Steve Kurschner",
+      "role": "Head Coach",
+      "email": "stevekurschner@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Basketball",
+      "name": "Brenden Klish",
+      "role": "Head Coach",
+      "email": "brendenklish@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Cross Country",
+      "name": "Paula Gold",
+      "role": "Head Coach",
+      "email": "paulagold@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Golf",
+      "name": "Madison Schmidt",
+      "role": "Head Coach",
+      "email": "madisonschmidt@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Gymnastics",
+      "name": "Carley Boos",
+      "role": "Head Coach",
+      "email": "cm_boos@hotmail.com"
+    },
+    {
+      "sport": "Girls Gymnastics",
+      "name": "Morgan Siekert",
+      "role": "Head Coach",
+      "email": "morgansiekert@gmail.com"
+    },
+    {
+      "sport": "Girls Hockey",
+      "name": "Jamie Olson",
+      "role": "Head Coach",
+      "email": "olson.jamie@wsalem.k12.wi.us"
+    },
+    {
+      "sport": "Girls Soccer",
+      "name": "Brant Young",
+      "role": "Head Coach",
+      "email": "youngb@mel-min.k12.wi.us"
+    },
+    {
+      "sport": "Girls Softball",
+      "name": "Steve Lyga",
+      "role": "Head Coach",
+      "email": "stevelyga77@gmail.com"
+    },
+    {
+      "sport": "Girls Swimming & Diving",
+      "name": "Abi Schauske",
+      "role": "Head Coach",
+      "email": "schabi@holmen.k12.wi.us"
+    },
+    {
+      "sport": "Girls Track and Field",
+      "name": "Paula Gold",
+      "role": "Head Coach",
+      "email": "paulagold@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Volleyball",
+      "name": "Marc Baures",
+      "role": "Head Coach",
+      "email": "marcbaures@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Wrestling",
+      "name": "Pete Peterson",
+      "role": "Head Coach",
+      "email": "petepeterson@getschools.k12.wi.us"
+    },
+    {
+      "sport": "Girls Wrestling",
+      "name": "Steve Kurschner",
+      "role": "Head Coach",
+      "email": "Kurschner.steve@mel-min.k12.wi.us"
+    }
+  ]
+}

@@ -1,0 +1,1659 @@
+{
+  "fixture": "seed-column-regional.htm",
+  "lines": 135,
+  "meet": {
+    "date": "2025-05-27",
+    "end_date": null,
+    "events": [
+      {
+        "division": "Division 3",
+        "gender": "boys",
+        "kind": "discus",
+        "label": "Discus Throw",
+        "round": "finals",
+        "rows": [
+          {
+            "grade": 10,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "145-09",
+                "metres": 44.4246
+              }
+            },
+            "name": "Moore-Girard, Liam",
+            "place": 1,
+            "points": 10.0,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "139-03",
+                "metres": 42.4434
+              }
+            },
+            "name": "Gotham, Andrew",
+            "place": 2,
+            "points": 8.0,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "138-05",
+                "metres": 42.1894
+              }
+            },
+            "name": "Ludescher, Chanse",
+            "place": 3,
+            "points": 6.0,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "130-02",
+                "metres": 39.6748
+              }
+            },
+            "name": "Romero, Isaiah",
+            "place": 4,
+            "points": 5.0,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "127-05",
+                "metres": 38.8366
+              }
+            },
+            "name": "Siegenthaler, Ben",
+            "place": 5,
+            "points": 4.0,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "123-07",
+                "metres": 37.6682
+              }
+            },
+            "name": "Edwards, Nate",
+            "place": 6,
+            "points": 3.0,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "121-08",
+                "metres": 37.083999999999996
+              }
+            },
+            "name": "Lee, Devon",
+            "place": 7,
+            "points": 2.0,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "118-11",
+                "metres": 36.245799999999996
+              }
+            },
+            "name": "Klatt, Ben",
+            "place": 8,
+            "points": 1.0,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "114-01",
+                "metres": 34.7726
+              }
+            },
+            "name": "Schroeder, Otto",
+            "place": 9,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "109-06",
+                "metres": 33.3756
+              }
+            },
+            "name": "Sykora, Liam",
+            "place": 10,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "107-07",
+                "metres": 32.791399999999996
+              }
+            },
+            "name": "Klatt, Logan",
+            "place": 11,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "107-00",
+                "metres": 32.6136
+              }
+            },
+            "name": "Wahl, James",
+            "place": 12,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "101-08",
+                "metres": 30.988
+              }
+            },
+            "name": "Kempen, Jasper",
+            "place": 13,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "100-01",
+                "metres": 30.505399999999998
+              }
+            },
+            "name": "Riebe, John",
+            "place": 14,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "98-05",
+                "metres": 29.9974
+              }
+            },
+            "name": "Accola, Kaleb",
+            "place": 15,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "97-08",
+                "metres": 29.7688
+              }
+            },
+            "name": "Harelstad, AJ",
+            "place": 16,
+            "points": null,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "97-02",
+                "metres": 29.6164
+              }
+            },
+            "name": "Bergren, Max",
+            "place": 17,
+            "points": null,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "93-10",
+                "metres": 28.6004
+              }
+            },
+            "name": "Barker, Josh",
+            "place": 18,
+            "points": null,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "91-08",
+                "metres": 27.939999999999998
+              }
+            },
+            "name": "Blodgett, Jake",
+            "place": 19,
+            "points": null,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "86-02",
+                "metres": 26.2636
+              }
+            },
+            "name": "Bowen, Wyatt",
+            "place": 20,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "85-05",
+                "metres": 26.035
+              }
+            },
+            "name": "Robinson, Mark",
+            "place": 21,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "82-04",
+                "metres": 25.0952
+              }
+            },
+            "name": "Petersen, Jack",
+            "place": 22,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "78-09",
+                "metres": 24.003
+              }
+            },
+            "name": "Kane, Tommy",
+            "place": 23,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "78-04",
+                "metres": 23.875999999999998
+              }
+            },
+            "name": "Christianson, Carter",
+            "place": 24,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "77-11",
+                "metres": 23.749
+              }
+            },
+            "name": "Jaedike, Logan",
+            "place": 25,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "62-09.50",
+                "metres": 19.1389
+              }
+            },
+            "name": "Sahlin, Jayden",
+            "place": 26,
+            "points": null,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "58-06",
+                "metres": 17.8308
+              }
+            },
+            "name": "Yang, Andrew",
+            "place": 27,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "Raw": "FOUL"
+            },
+            "name": "Miniatt, Ben",
+            "place": null,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "Raw": "FOUL"
+            },
+            "name": "Frank, Aden",
+            "place": null,
+            "points": null,
+            "school": "Bruce",
+            "wind_mps": null
+          }
+        ]
+      },
+      {
+        "division": "Division 3",
+        "gender": "girls",
+        "kind": "high_jump",
+        "label": "High Jump",
+        "round": "finals",
+        "rows": [
+          {
+            "grade": 10,
+            "heat": "10",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-00.00",
+                "metres": 1.524
+              }
+            },
+            "name": "Petersen, Natalie",
+            "place": 1,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "8",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-10.00",
+                "metres": 1.4731999999999998
+              }
+            },
+            "name": "Siegenthaler, Anne",
+            "place": 2,
+            "points": null,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "5.50",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-08.00",
+                "metres": 1.4223999999999999
+              }
+            },
+            "name": "Turauski, Ella",
+            "place": 3,
+            "points": 5.5,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "5.50",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-08.00",
+                "metres": 1.4223999999999999
+              }
+            },
+            "name": "Balciar, Kaelyn",
+            "place": 3,
+            "points": 5.5,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "4",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-08.00",
+                "metres": 1.4223999999999999
+              }
+            },
+            "name": "Lovelady, Elise",
+            "place": 5,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-08.00",
+                "metres": 1.4223999999999999
+              }
+            },
+            "name": "Multhauf, Ava",
+            "place": 6,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-06.00",
+                "metres": 1.3716
+              }
+            },
+            "name": "Buhr, Lydia",
+            "place": 7,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "0.50",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-06.00",
+                "metres": 1.3716
+              }
+            },
+            "name": "Sikora, Sophia",
+            "place": 8,
+            "points": 0.5,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "0.50",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-06.00",
+                "metres": 1.3716
+              }
+            },
+            "name": "Hautaumaki, Anna",
+            "place": 8,
+            "points": 0.5,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-04.00",
+                "metres": 1.3208
+              }
+            },
+            "name": "Alms, Alexis",
+            "place": 10,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "4-04.00",
+                "metres": 1.3208
+              }
+            },
+            "name": "Mattson, Aunia",
+            "place": 10,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Pavlik, Abby",
+            "place": null,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Helland, Kaitlyn",
+            "place": null,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Soldberg, Izzy",
+            "place": null,
+            "points": null,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Pogodzinski, Ann",
+            "place": null,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Wagner, Selah",
+            "place": null,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          }
+        ]
+      },
+      {
+        "division": "Division 3",
+        "gender": "girls",
+        "kind": "long_jump",
+        "label": "Long Jump",
+        "round": "finals",
+        "rows": [
+          {
+            "grade": 11,
+            "heat": "10",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "16-08.00",
+                "metres": 5.08
+              }
+            },
+            "name": "Gago, Marika",
+            "place": 1,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "8",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "15-08.00",
+                "metres": 4.7752
+              }
+            },
+            "name": "Siegenthaler, Erin",
+            "place": 2,
+            "points": null,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "6",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "15-06.00",
+                "metres": 4.7244
+              }
+            },
+            "name": "Voeltz, Cora",
+            "place": 3,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "5",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "14-08.75",
+                "metres": 4.48945
+              }
+            },
+            "name": "Larson, Sydney",
+            "place": 4,
+            "points": null,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "4",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "14-05.50",
+                "metres": 4.4069
+              }
+            },
+            "name": "Hautaumaki, Anna",
+            "place": 5,
+            "points": null,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "14-01.75",
+                "metres": 4.31165
+              }
+            },
+            "name": "Leavens, Veronika",
+            "place": 6,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "14-00.00",
+                "metres": 4.2672
+              }
+            },
+            "name": "Niles, Taryn",
+            "place": 7,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "13-08.50",
+                "metres": 4.1783
+              }
+            },
+            "name": "Olson, Ashlyn",
+            "place": 8,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "13-06.00",
+                "metres": 4.1148
+              }
+            },
+            "name": "Schlough, Kylee",
+            "place": 9,
+            "points": null,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "13-04.00",
+                "metres": 4.064
+              }
+            },
+            "name": "Johnson, Calli",
+            "place": 10,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "13-03.00",
+                "metres": 4.0386
+              }
+            },
+            "name": "Holden, Chelsi",
+            "place": 11,
+            "points": null,
+            "school": "Boyceville",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-09.00",
+                "metres": 3.8861999999999997
+              }
+            },
+            "name": "Branville, Callie",
+            "place": 12,
+            "points": null,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-03.00",
+                "metres": 3.7338
+              }
+            },
+            "name": "Nelson, Aubrey",
+            "place": 13,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-02.00",
+                "metres": 3.7083999999999997
+              }
+            },
+            "name": "Draxler, Gretchen",
+            "place": 14,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-06.00",
+                "metres": 3.5052
+              }
+            },
+            "name": "Heidtke, Maycee",
+            "place": 15,
+            "points": null,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-05.00",
+                "metres": 3.4798
+              }
+            },
+            "name": "Rudeen, Avianca",
+            "place": 16,
+            "points": null,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "10-06.00",
+                "metres": 3.2003999999999997
+              }
+            },
+            "name": "Rudeen, Valencia",
+            "place": 17,
+            "points": null,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "10-05.50",
+                "metres": 3.1877
+              }
+            },
+            "name": "Helland, Kaitlyn",
+            "place": 18,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "10-02.00",
+                "metres": 3.0987999999999998
+              }
+            },
+            "name": "Jacobson, Krystilyn",
+            "place": 19,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "8-00.00",
+                "metres": 2.4383999999999997
+              }
+            },
+            "name": "Wilson, Kendall",
+            "place": 20,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "7-11.00",
+                "metres": 2.413
+              }
+            },
+            "name": "Alfarano, Lorenza",
+            "place": 21,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "FOUL"
+            },
+            "name": "Mittlestaedt, Kaitlyn",
+            "place": null,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          }
+        ]
+      },
+      {
+        "division": "Division 3",
+        "gender": "boys",
+        "kind": "pole_vault",
+        "label": "Pole Vault",
+        "round": "finals",
+        "rows": [
+          {
+            "grade": 12,
+            "heat": "10",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-03.00",
+                "metres": 3.7338
+              }
+            },
+            "name": "Gilbertson, Trevor",
+            "place": 1,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "8",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-00.00",
+                "metres": 3.6576
+              }
+            },
+            "name": "Standaert, Ben",
+            "place": 2,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "6",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "12-00.00",
+                "metres": 3.6576
+              }
+            },
+            "name": "Cain, Evan",
+            "place": 3,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "5",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-06.00",
+                "metres": 3.5052
+              }
+            },
+            "name": "Blackstock, Kyle",
+            "place": 4,
+            "points": null,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "4",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-06.00",
+                "metres": 3.5052
+              }
+            },
+            "name": "Nelson, Noah",
+            "place": 5,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "3",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-06.00",
+                "metres": 3.5052
+              }
+            },
+            "name": "Mikunda, Alex",
+            "place": 6,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "11-00.00",
+                "metres": 3.3528
+              }
+            },
+            "name": "Foss, Adam",
+            "place": 7,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "10-00.00",
+                "metres": 3.048
+              }
+            },
+            "name": "Briggs, Sven",
+            "place": 8,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "10-00.00",
+                "metres": 3.048
+              }
+            },
+            "name": "Rogers, Tyler",
+            "place": 9,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "9-06.00",
+                "metres": 2.8956
+              }
+            },
+            "name": "DeJongh, Bryce",
+            "place": 10,
+            "points": null,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Lindberg, Hudson",
+            "place": null,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Hoffman, Rj",
+            "place": null,
+            "points": null,
+            "school": "Prairie Farm",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": null,
+            "legs": [],
+            "mark": {
+              "Raw": "NH"
+            },
+            "name": "Wagner, Paul",
+            "place": null,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          }
+        ]
+      },
+      {
+        "division": "Division 3",
+        "gender": "girls",
+        "kind": "shot_put",
+        "label": "Shot Put",
+        "round": "finals",
+        "rows": [
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "35-09.00",
+                "metres": 10.8966
+              }
+            },
+            "name": "Roehl, Reese",
+            "place": 1,
+            "points": 10.0,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "35-00.50",
+                "metres": 10.6807
+              }
+            },
+            "name": "Flick, Kyra",
+            "place": 2,
+            "points": 8.0,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "31-09.50",
+                "metres": 9.6901
+              }
+            },
+            "name": "Meyer, Shelby",
+            "place": 3,
+            "points": 6.0,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "31-06.00",
+                "metres": 9.6012
+              }
+            },
+            "name": "Paff, Megan",
+            "place": 4,
+            "points": 5.0,
+            "school": "Cornell-Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "31-01.00",
+                "metres": 9.4742
+              }
+            },
+            "name": "Nobles, Charley",
+            "place": 5,
+            "points": 4.0,
+            "school": "Bruce",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "30-11.50",
+                "metres": 9.4361
+              }
+            },
+            "name": "Hydukovich, Clara",
+            "place": 6,
+            "points": 3.0,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "29-08.50",
+                "metres": 9.0551
+              }
+            },
+            "name": "Gotham, Whittney",
+            "place": 7,
+            "points": 2.0,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 12,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "29-04.50",
+                "metres": 8.9535
+              }
+            },
+            "name": "Van Den Heuvel, Eva",
+            "place": 8,
+            "points": 1.0,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "28-10.00",
+                "metres": 8.7884
+              }
+            },
+            "name": "Waldrop, Lauren",
+            "place": 9,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "26-09.50",
+                "metres": 8.1661
+              }
+            },
+            "name": "Roehl, Brylee",
+            "place": 10,
+            "points": null,
+            "school": "Flambeau",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "26-04.00",
+                "metres": 8.026399999999999
+              }
+            },
+            "name": "Prouty, Hailey",
+            "place": 11,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "26-03.00",
+                "metres": 8.001
+              }
+            },
+            "name": "Pelkey, Haileyann",
+            "place": 12,
+            "points": null,
+            "school": "McDonell Central",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "26-03.00",
+                "metres": 8.001
+              }
+            },
+            "name": "Kuc, Katya",
+            "place": 12,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "26-02.00",
+                "metres": 7.9756
+              }
+            },
+            "name": "Meyer, Molly",
+            "place": 14,
+            "points": null,
+            "school": "Clear Lake",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "25-11.00",
+                "metres": 7.8994
+              }
+            },
+            "name": "Moreno-Guillet, Yadi",
+            "place": 15,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "25-06.00",
+                "metres": 7.772399999999999
+              }
+            },
+            "name": "Christensen, Megan",
+            "place": 16,
+            "points": null,
+            "school": "Colfax",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "24-08.00",
+                "metres": 7.5184
+              }
+            },
+            "name": "Sanchez, Naudia",
+            "place": 17,
+            "points": null,
+            "school": "Chetek/Weyer",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "24-07.00",
+                "metres": 7.492999999999999
+              }
+            },
+            "name": "Tucker, Elli",
+            "place": 18,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 9,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "23-09.00",
+                "metres": 7.239
+              }
+            },
+            "name": "Bjorkstrand, Peyton",
+            "place": 19,
+            "points": null,
+            "school": "New Auburn",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "23-06.50",
+                "metres": 7.1754999999999995
+              }
+            },
+            "name": "Fox, Lillie",
+            "place": 20,
+            "points": null,
+            "school": "Glenwood City",
+            "wind_mps": null
+          },
+          {
+            "grade": 11,
+            "heat": "2",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "22-11.00",
+                "metres": 6.984999999999999
+              }
+            },
+            "name": "Chosa, Lailah",
+            "place": 21,
+            "points": null,
+            "school": "Ladysmith",
+            "wind_mps": null
+          },
+          {
+            "grade": 10,
+            "heat": "1",
+            "legs": [],
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "22-11.00",
+                "metres": 6.984999999999999
+              }
+            },
+            "name": "Robinson, Kalliegh",
+            "place": 21,
+            "points": null,
+            "school": "New Auburn",
+            "wind_mps": null
+          }
+        ]
+      }
+    ],
+    "name": "WIAA Division 3 Colfax Regional",
+    "rows_parsed": 102,
+    "rows_skipped": 0,
+    "timer": "Dunn St. Croix Conference"
+  },
+  "shape": "html"
+}

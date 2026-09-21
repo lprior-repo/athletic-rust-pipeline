@@ -1,0 +1,522 @@
+{
+  "file": "trackside-regional.htm",
+  "extension": "htm",
+  "format": "hytek_html",
+  "archive_year": 2025,
+  "meet": {
+    "name": "WIAA Division 1 Badger Regional",
+    "date": "2025-05-27",
+    "end_date": null,
+    "timer": "TrackSide Timing",
+    "events": [
+      {
+        "label": "Discus Throw",
+        "kind": "discus",
+        "gender": "girls",
+        "division": "Division 1",
+        "round": "finals",
+        "rows": [
+          {
+            "place": 1,
+            "name": "Ashlin Nottestad",
+            "grade": 12,
+            "school": "Badger",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "115-10",
+                "metres": 35.306
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 10.0,
+            "legs": []
+          },
+          {
+            "place": 2,
+            "name": "Kaci Peters",
+            "grade": 11,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "112-07",
+                "metres": 34.3154
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 8.0,
+            "legs": []
+          },
+          {
+            "place": 3,
+            "name": "Sarah Hensler",
+            "grade": 12,
+            "school": "Badger",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "84-11",
+                "metres": 25.8826
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 6.0,
+            "legs": []
+          },
+          {
+            "place": 4,
+            "name": "Kaydence Christensen",
+            "grade": 11,
+            "school": "Westosha Central",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "83-01",
+                "metres": 25.3238
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 5.0,
+            "legs": []
+          },
+          {
+            "place": 5,
+            "name": "Cali Landeman",
+            "grade": 10,
+            "school": "Burlington",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "82-01",
+                "metres": 25.019
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 4.0,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Paige Vraney",
+            "grade": 9,
+            "school": "Westosha Central",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "81-06",
+                "metres": 24.8412
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 2.5,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Breeya Katterhagen",
+            "grade": 11,
+            "school": "Union Grove",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "81-06",
+                "metres": 24.8412
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": 2.5,
+            "legs": []
+          },
+          {
+            "place": 8,
+            "name": "Emilyanne Giese",
+            "grade": 11,
+            "school": "Badger",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "78-08",
+                "metres": 23.9776
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": 1.0,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Alanna Gontscharow",
+            "grade": 12,
+            "school": "Kenosha Tremper",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "76-09",
+                "metres": 23.3934
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 10,
+            "name": "Abbie Ivan",
+            "grade": 10,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "76-05",
+                "metres": 23.2918
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 11,
+            "name": "Aimee Ivan",
+            "grade": 10,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "75-10",
+                "metres": 23.114
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 11,
+            "name": "Brie Ratzburg",
+            "grade": 10,
+            "school": "Indian Trail",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "75-10",
+                "metres": 23.114
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 13,
+            "name": "Tatijana Ninkovic",
+            "grade": 12,
+            "school": "Burlington",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "73-10",
+                "metres": 22.5044
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 14,
+            "name": "Lucy Salmon",
+            "grade": 10,
+            "school": "Kenosha Tremper",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "72-10",
+                "metres": 22.1996
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 15,
+            "name": "Elizabeth Nickolette",
+            "grade": 12,
+            "school": "Westosha Central",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "71-09",
+                "metres": 21.8694
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 16,
+            "name": "Janyiah Carter",
+            "grade": 11,
+            "school": "Kenosha Bradford",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "70-08",
+                "metres": 21.539199999999997
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 17,
+            "name": "Jamir Timmons",
+            "grade": 12,
+            "school": "Kenosha Bradford",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "55-01",
+                "metres": 16.7894
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          }
+        ]
+      },
+      {
+        "label": "High Jump",
+        "kind": "high_jump",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "finals",
+        "rows": [
+          {
+            "place": 1,
+            "name": "Euphrates Willis",
+            "grade": 12,
+            "school": "Indian Trail",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "6-02.00",
+                "metres": 1.8796
+              }
+            },
+            "wind_mps": null,
+            "heat": "10",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 2,
+            "name": "Armani Chew",
+            "grade": 12,
+            "school": "Kenosha Bradford",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-11.00",
+                "metres": 1.8034
+              }
+            },
+            "wind_mps": null,
+            "heat": "8",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 3,
+            "name": "Kaden Kranz",
+            "grade": 11,
+            "school": "Westosha Central",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-11.00",
+                "metres": 1.8034
+              }
+            },
+            "wind_mps": null,
+            "heat": "6",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 4,
+            "name": "Max Davis",
+            "grade": 12,
+            "school": "Badger",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-10.00",
+                "metres": 1.778
+              }
+            },
+            "wind_mps": null,
+            "heat": "5",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 5,
+            "name": "Robert Raymond",
+            "grade": 11,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-09.00",
+                "metres": 1.7526
+              }
+            },
+            "wind_mps": null,
+            "heat": "4",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Evan Burks-Payne",
+            "grade": 11,
+            "school": "Kenosha Tremper",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-06.00",
+                "metres": 1.6764
+              }
+            },
+            "wind_mps": null,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 7,
+            "name": "Aseph Ledtke",
+            "grade": 11,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-06.00",
+                "metres": 1.6764
+              }
+            },
+            "wind_mps": null,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 8,
+            "name": "Connor Nolan",
+            "grade": 10,
+            "school": "Badger",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-06.00",
+                "metres": 1.6764
+              }
+            },
+            "wind_mps": null,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Emmett Jackson",
+            "grade": 12,
+            "school": "Westosha Central",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-04.00",
+                "metres": 1.6256
+              }
+            },
+            "wind_mps": null,
+            "heat": null,
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Alex Rogan",
+            "grade": 12,
+            "school": "Burlington",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-04.00",
+                "metres": 1.6256
+              }
+            },
+            "wind_mps": null,
+            "heat": null,
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Joshua Criss",
+            "grade": 11,
+            "school": "Kenosha Tremper",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-04.00",
+                "metres": 1.6256
+              }
+            },
+            "wind_mps": null,
+            "heat": null,
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Logan Scharinger",
+            "grade": 10,
+            "school": "Wilmot Union",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-04.00",
+                "metres": 1.6256
+              }
+            },
+            "wind_mps": null,
+            "heat": null,
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 13,
+            "name": "Autry Kuntz",
+            "grade": 10,
+            "school": "Kenosha Tremper",
+            "mark": {
+              "FieldImperial": {
+                "feet_mark": "5-02.00",
+                "metres": 1.5748
+              }
+            },
+            "wind_mps": null,
+            "heat": null,
+            "points": null,
+            "legs": []
+          }
+        ]
+      },
+      {
+        "label": "High Jump",
+        "kind": "high_jump",
+        "gender": "girls",
+        "division": "Division 1",
+        "round": null,
+        "rows": []
+      }
+    ],
+    "rows_parsed": 30,
+    "rows_skipped": 0
+  }
+}

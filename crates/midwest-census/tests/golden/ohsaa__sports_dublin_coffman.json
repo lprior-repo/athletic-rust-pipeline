@@ -1,0 +1,26 @@
+[
+  {
+    "label": "Cross Country",
+    "sport": "cross_country",
+    "boys": {
+      "name": "Joe DePalma",
+      "email": "depalma_joseph@dublinschools.net"
+    },
+    "girls": {
+      "name": "Greg King",
+      "email": "king_greg@dublinschools.net"
+    }
+  },
+  {
+    "label": "Track & Field",
+    "sport": "outdoor_track",
+    "boys": {
+      "name": "James Legins",
+      "email": "j.legins106@gmail.com"
+    },
+    "girls": {
+      "name": "Greg King",
+      "email": "king_greg@dublinschools.net"
+    }
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "adapter": "athleticlive",
+  "errors": 0,
+  "from_cache": 0,
+  "notes": [
+    "rows read: 5",
+    "rows with implausible years (outside 2015-2030): 0 (refused at write; skipped this run: 0)",
+    "distinct tenants: 3",
+    "rows with an Athletic.net meet id: 5/5",
+    "meets written: 3 (journal had 0)",
+    "date span: 2025-08-16..2025-10-07",
+    "evidence method: Parsed"
+  ],
+  "requests": 0,
+  "rows": 3,
+  "unit": "meets",
+  "with_email": 0
+}

@@ -1,0 +1,216 @@
+{
+  "classification": [
+    {
+      "alias": "/schools/aitkin-high-school/golf-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/baseball/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/basketball-boys/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/basketball-girls/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/clay-target/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/dance-team-high-kick/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/dance-team-jazz/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/football/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/music/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/one-act-play/2026-2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/robotics/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/softball-girls/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/tennis-boys/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/tennis-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-boys/2027",
+      "sport": {
+        "gender": "boys",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-girls/2027",
+      "sport": {
+        "gender": "girls",
+        "sport": "outdoor_track"
+      }
+    },
+    {
+      "alias": "/schools/aitkin-high-school/visual-arts/2027",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/volleyball-girls/2026",
+      "sport": null
+    },
+    {
+      "alias": "/schools/aitkin-high-school/wrestling/2026-2027",
+      "sport": null
+    }
+  ],
+  "nodes": [
+    {
+      "alias": "/schools/aitkin-high-school/golf-girls/2027",
+      "nid": "590286",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/golf-girls/2027",
+      "title": "Aitkin High School Golf, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/baseball/2027",
+      "nid": "593464",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/baseball/2027",
+      "title": "Aitkin High School Baseball"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/basketball-boys/2026-2027",
+      "nid": "593465",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/basketball-boys/2026-2027",
+      "title": "Aitkin High School Basketball, Boys"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/basketball-girls/2026-2027",
+      "nid": "593466",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/basketball-girls/2026-2027",
+      "title": "Aitkin High School Basketball, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/clay-target/2027",
+      "nid": "593467",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/clay-target/2027",
+      "title": "Aitkin High School Clay Target"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/dance-team-high-kick/2026-2027",
+      "nid": "593468",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/dance-team-high-kick/2026-2027",
+      "title": "Aitkin - Dance, High Kick"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/dance-team-jazz/2026-2027",
+      "nid": "593469",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/dance-team-jazz/2026-2027",
+      "title": "Aitkin - Dance, Jazz"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/football/2026",
+      "nid": "593470",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/football/2026",
+      "title": "Aitkin High School Football"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/music/2027",
+      "nid": "593471",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/music/2027",
+      "title": "Aitkin High School Music"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/one-act-play/2026-2027",
+      "nid": "593472",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/one-act-play/2026-2027",
+      "title": "Aitkin High School One Act Play"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/robotics/2027",
+      "nid": "593473",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/robotics/2027",
+      "title": "Aitkin High School Robotics"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/softball-girls/2027",
+      "nid": "593474",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/softball-girls/2027",
+      "title": "Aitkin High School Softball, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/tennis-boys/2027",
+      "nid": "593475",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/tennis-boys/2027",
+      "title": "Aitkin High School Tennis, Boys"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/tennis-girls/2026",
+      "nid": "593476",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/tennis-girls/2026",
+      "title": "Aitkin/Crosby-Ironton - Tennis, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-boys/2027",
+      "nid": "593477",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-boys/2027",
+      "title": "Aitkin High School Track and Field, Boys"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-girls/2027",
+      "nid": "593478",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-girls/2027",
+      "title": "Aitkin High School Track and Field, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/visual-arts/2027",
+      "nid": "593479",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/visual-arts/2027",
+      "title": "Aitkin High School Visual Arts"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/volleyball-girls/2026",
+      "nid": "593480",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/volleyball-girls/2026",
+      "title": "Aitkin High School Volleyball, Girls"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/wrestling/2026-2027",
+      "nid": "593481",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/wrestling/2026-2027",
+      "title": "Aitkin High School Wrestling"
+    }
+  ],
+  "selected": [
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-boys/2027",
+      "nid": "593477",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-boys/2027",
+      "title": "Aitkin High School Track and Field, Boys"
+    },
+    {
+      "alias": "/schools/aitkin-high-school/track-and-field-girls/2027",
+      "nid": "593478",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school/track-and-field-girls/2027",
+      "title": "Aitkin High School Track and Field, Girls"
+    }
+  ]
+}

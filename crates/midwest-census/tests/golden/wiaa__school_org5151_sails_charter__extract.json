@@ -1,0 +1,82 @@
+{
+  "school": {
+    "id": "sch_a102b9cea33dea91",
+    "name": "S.A.I.L.S. CHARTER",
+    "normalized_name": "s a i l s charter",
+    "city": "Sparta",
+    "state": "WI",
+    "association": "wiaa",
+    "enrollment": 35,
+    "school_website": "http://www.spartan.org/calendar/sails/",
+    "co_op": false,
+    "aliases": [
+      "Sparta WI"
+    ],
+    "source_identities": [
+      {
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "id": "5151",
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151"
+      }
+    ],
+    "evidence": [
+      {
+        "source": {
+          "id": "wiaa_directory",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151"
+        },
+        "method": "parsed",
+        "observed_on": "2026-09-20"
+      }
+    ]
+  },
+  "coaches": [
+    {
+      "id": "coa_f38a0dfeca6fcce1",
+      "name": "John Blaha",
+      "school": "sch_a102b9cea33dea91",
+      "gender": "mixed",
+      "role": "athletic_director",
+      "professional_email": "jblaha@spartan.org",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_b9e7282b93b4ef29",
+      "name": "Adam Dow",
+      "school": "sch_a102b9cea33dea91",
+      "gender": "mixed",
+      "role": "athletic_director",
+      "professional_email": "adow@spartan.org",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=5151"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    }
+  ],
+  "skipped_admin_roles": [
+    "Superintendent",
+    "Principal"
+  ],
+  "skipped_coach_rows": 0
+}

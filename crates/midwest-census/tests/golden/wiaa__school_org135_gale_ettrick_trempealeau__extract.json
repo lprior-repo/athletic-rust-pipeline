@@ -1,0 +1,145 @@
+{
+  "school": {
+    "id": "sch_42ebe94d9f4a76b2",
+    "name": "Gale-Ettrick-Trempealeau",
+    "normalized_name": "gale ettrick trempealeau",
+    "city": "Galesville",
+    "state": "WI",
+    "association": "wiaa",
+    "classification": "Coulee",
+    "enrollment": 380,
+    "school_website": "http://www.getschools.k12.wi.us/district",
+    "co_op": false,
+    "aliases": [
+      "Galesville WI"
+    ],
+    "source_identities": [
+      {
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "id": "135",
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+      }
+    ],
+    "evidence": [
+      {
+        "source": {
+          "id": "wiaa_directory",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+        },
+        "method": "parsed",
+        "observed_on": "2026-09-20"
+      }
+    ]
+  },
+  "coaches": [
+    {
+      "id": "coa_1798aec2b19441c5",
+      "name": "Jake Perner",
+      "school": "sch_42ebe94d9f4a76b2",
+      "gender": "mixed",
+      "role": "athletic_director",
+      "professional_email": "jakeperner@getschools.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_fb9770327e41e347",
+      "name": "Paula Gold",
+      "school": "sch_42ebe94d9f4a76b2",
+      "sport": "cross_country",
+      "gender": "boys",
+      "role": "head_coach",
+      "professional_email": "paulagold@getschools.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_c7d68d22d85ef487",
+      "name": "Ryan Mendez",
+      "school": "sch_42ebe94d9f4a76b2",
+      "sport": "outdoor_track",
+      "gender": "boys",
+      "role": "head_coach",
+      "professional_email": "ryanmendez@getschools.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_74fe8fd1f95ee443",
+      "name": "Paula Gold",
+      "school": "sch_42ebe94d9f4a76b2",
+      "sport": "cross_country",
+      "gender": "girls",
+      "role": "head_coach",
+      "professional_email": "paulagold@getschools.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_9352a2c8164a4cb0",
+      "name": "Paula Gold",
+      "school": "sch_42ebe94d9f4a76b2",
+      "sport": "outdoor_track",
+      "gender": "girls",
+      "role": "head_coach",
+      "professional_email": "paulagold@getschools.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=135"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    }
+  ],
+  "skipped_admin_roles": [
+    "Superintendent",
+    "Principal",
+    "AD Admin Assistant"
+  ],
+  "skipped_coach_rows": 19
+}

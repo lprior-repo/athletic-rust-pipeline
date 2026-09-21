@@ -1,0 +1,124 @@
+{
+  "school": {
+    "id": "sch_b5ea31ddfcd999ba",
+    "name": "Abbotsford",
+    "normalized_name": "abbotsford",
+    "city": "Abbotsford",
+    "state": "WI",
+    "association": "wiaa",
+    "classification": "Marawood",
+    "enrollment": 214,
+    "school_website": "http://www.abbotsford.k12.wi.us",
+    "co_op": false,
+    "aliases": [
+      "Abbotsford WI"
+    ],
+    "source_identities": [
+      {
+        "namespace": {
+          "association_school": {
+            "association": "wiaa"
+          }
+        },
+        "id": "1",
+        "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+      }
+    ],
+    "evidence": [
+      {
+        "source": {
+          "id": "wiaa_directory",
+          "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+        },
+        "method": "parsed",
+        "observed_on": "2026-09-20"
+      }
+    ]
+  },
+  "coaches": [
+    {
+      "id": "coa_ba340c94164e0578",
+      "name": "Alex Larson",
+      "school": "sch_b5ea31ddfcd999ba",
+      "gender": "mixed",
+      "role": "athletic_director",
+      "professional_email": "alarson@abbotsford.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_6475782dda0ce83d",
+      "name": "JACOB KNAPMILLER",
+      "school": "sch_b5ea31ddfcd999ba",
+      "sport": "outdoor_track",
+      "gender": "boys",
+      "role": "head_coach",
+      "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_7111b7979c9fb377",
+      "name": "Dillon Novak",
+      "school": "sch_b5ea31ddfcd999ba",
+      "sport": "cross_country",
+      "gender": "girls",
+      "role": "head_coach",
+      "professional_email": "dnovak@abbotsford.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    },
+    {
+      "id": "coa_5372f3ac1deccf5f",
+      "name": "JACOB KNAPMILLER",
+      "school": "sch_b5ea31ddfcd999ba",
+      "sport": "outdoor_track",
+      "gender": "girls",
+      "role": "head_coach",
+      "professional_email": "jknapmiller@abbotsford.k12.wi.us",
+      "source_identities": [],
+      "evidence": [
+        {
+          "source": {
+            "id": "wiaa_directory",
+            "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+          },
+          "method": "parsed",
+          "observed_on": "2026-09-20"
+        }
+      ]
+    }
+  ],
+  "skipped_admin_roles": [
+    "Superintendent",
+    "Principal"
+  ],
+  "skipped_coach_rows": 11
+}

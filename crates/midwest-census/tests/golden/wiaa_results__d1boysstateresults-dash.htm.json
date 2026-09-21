@@ -1,0 +1,458 @@
+{
+  "file": "d1boysstateresults-dash.htm",
+  "extension": "htm",
+  "format": "hytek_html",
+  "archive_year": 2025,
+  "meet": {
+    "name": "WIAA Track & Field State Championships",
+    "date": "2025-06-06",
+    "end_date": "2025-06-07",
+    "timer": "PrimeTime Timing",
+    "events": [
+      {
+        "label": "100 Meter Dash",
+        "kind": "track100m",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "preliminaries",
+        "rows": [
+          {
+            "place": 1,
+            "name": "Ben Lemirand",
+            "grade": 12,
+            "school": "West De Pere",
+            "mark": {
+              "TimeSeconds": 10.56
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 2,
+            "name": "Jamare Scott",
+            "grade": 11,
+            "school": "Oshkosh North",
+            "mark": {
+              "TimeSeconds": 10.66
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 3,
+            "name": "Nolan Schmidbauer",
+            "grade": 11,
+            "school": "Waukesha West",
+            "mark": {
+              "TimeSeconds": 10.73
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 4,
+            "name": "Ryan Heiman",
+            "grade": 11,
+            "school": "Arrowhead",
+            "mark": {
+              "TimeSeconds": 10.59
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 5,
+            "name": "Caeden Oppold",
+            "grade": 12,
+            "school": "Oconomowoc",
+            "mark": {
+              "TimeSeconds": 10.79
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": 10.786,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Jaiden Alvarado-Jones",
+            "grade": 12,
+            "school": "Milw. King",
+            "mark": {
+              "TimeSeconds": 10.79
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": 10.79,
+            "legs": []
+          },
+          {
+            "place": 7,
+            "name": "Shawn Parish",
+            "grade": 11,
+            "school": "Marquette Univ.",
+            "mark": {
+              "TimeSeconds": 10.86
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": 10.852,
+            "legs": []
+          },
+          {
+            "place": 8,
+            "name": "Kingston Penn",
+            "grade": 10,
+            "school": "Middleton",
+            "mark": {
+              "TimeSeconds": 10.86
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": 10.858,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Sean O'Byrne",
+            "grade": 12,
+            "school": "Homestead",
+            "mark": {
+              "TimeSeconds": 10.86
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": 10.86,
+            "legs": []
+          },
+          {
+            "place": 10,
+            "name": "Malachi Mack",
+            "grade": 12,
+            "school": "Wauwatosa East",
+            "mark": {
+              "TimeSeconds": 10.9
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": 10.892,
+            "legs": []
+          },
+          {
+            "place": 11,
+            "name": "Martin Lindholm",
+            "grade": 12,
+            "school": "Reedsburg Area",
+            "mark": {
+              "TimeSeconds": 10.9
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": 10.899,
+            "legs": []
+          },
+          {
+            "place": 12,
+            "name": "Nathan Tucker",
+            "grade": 9,
+            "school": "Union Grove",
+            "mark": {
+              "TimeSeconds": 10.95
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": 10.942,
+            "legs": []
+          },
+          {
+            "place": 13,
+            "name": "Kevion Dickerson",
+            "grade": 10,
+            "school": "Milw. Riverside",
+            "mark": {
+              "TimeSeconds": 10.95
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": 10.943,
+            "legs": []
+          },
+          {
+            "place": 14,
+            "name": "Alejandro Pagan Vega",
+            "grade": 11,
+            "school": "Kimberly",
+            "mark": {
+              "TimeSeconds": 10.96
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 15,
+            "name": "Gavin Larsen",
+            "grade": 9,
+            "school": "Marshfield",
+            "mark": {
+              "TimeSeconds": 10.97
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 16,
+            "name": "Frank Wiedmeyer",
+            "grade": 12,
+            "school": "Brookfield Cent.",
+            "mark": {
+              "TimeSeconds": 10.99
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 17,
+            "name": "Rashahn Hayes",
+            "grade": 12,
+            "school": "Milw. King",
+            "mark": {
+              "TimeSeconds": 11.0
+            },
+            "wind_mps": 0.8,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 18,
+            "name": "Jamarion Moore",
+            "grade": 12,
+            "school": "Madison Memorial",
+            "mark": {
+              "TimeSeconds": 11.05
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": 11.042,
+            "legs": []
+          },
+          {
+            "place": 19,
+            "name": "Khail Belden",
+            "grade": 11,
+            "school": "EC Memorial",
+            "mark": {
+              "TimeSeconds": 11.05
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": 11.043,
+            "legs": []
+          },
+          {
+            "place": 20,
+            "name": "Ezekiel McCandless",
+            "grade": 11,
+            "school": "EC North",
+            "mark": {
+              "TimeSeconds": 11.05
+            },
+            "wind_mps": 0.4,
+            "heat": "1",
+            "points": 11.048,
+            "legs": []
+          },
+          {
+            "place": 21,
+            "name": "Ben Kolb",
+            "grade": 11,
+            "school": "Fond Du Lac",
+            "mark": {
+              "TimeSeconds": 11.18
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 22,
+            "name": "Brody Hanson",
+            "grade": 12,
+            "school": "Hortonville",
+            "mark": {
+              "TimeSeconds": 11.22
+            },
+            "wind_mps": 0.2,
+            "heat": "3",
+            "points": null,
+            "legs": []
+          }
+        ]
+      },
+      {
+        "label": "100 Meter Dash",
+        "kind": "track100m",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "finals",
+        "rows": [
+          {
+            "place": 1,
+            "name": "Ben Lemirand",
+            "grade": 12,
+            "school": "West De Pere",
+            "mark": {
+              "TimeSeconds": 10.57
+            },
+            "wind_mps": 1.0,
+            "heat": "10",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 2,
+            "name": "Ryan Heiman",
+            "grade": 11,
+            "school": "Arrowhead",
+            "mark": {
+              "TimeSeconds": 10.59
+            },
+            "wind_mps": 1.0,
+            "heat": "8",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 3,
+            "name": "Jamare Scott",
+            "grade": 11,
+            "school": "Oshkosh North",
+            "mark": {
+              "TimeSeconds": 10.79
+            },
+            "wind_mps": 1.0,
+            "heat": "6",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 4,
+            "name": "Jaiden Alvarado-Jones",
+            "grade": 12,
+            "school": "Milw. King",
+            "mark": {
+              "TimeSeconds": 10.84
+            },
+            "wind_mps": 1.0,
+            "heat": "5",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 5,
+            "name": "Nolan Schmidbauer",
+            "grade": 11,
+            "school": "Waukesha West",
+            "mark": {
+              "TimeSeconds": 10.87
+            },
+            "wind_mps": 1.0,
+            "heat": "4",
+            "points": 10.864,
+            "legs": []
+          },
+          {
+            "place": 6,
+            "name": "Caeden Oppold",
+            "grade": 12,
+            "school": "Oconomowoc",
+            "mark": {
+              "TimeSeconds": 10.87
+            },
+            "wind_mps": 1.0,
+            "heat": "3",
+            "points": 10.87,
+            "legs": []
+          },
+          {
+            "place": 7,
+            "name": "Kingston Penn",
+            "grade": 10,
+            "school": "Middleton",
+            "mark": {
+              "TimeSeconds": 10.89
+            },
+            "wind_mps": 1.0,
+            "heat": "2",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 8,
+            "name": "Sean O'Byrne",
+            "grade": 12,
+            "school": "Homestead",
+            "mark": {
+              "TimeSeconds": 10.92
+            },
+            "wind_mps": 1.0,
+            "heat": "1",
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 9,
+            "name": "Shawn Parish",
+            "grade": 11,
+            "school": "Marquette Univ.",
+            "mark": {
+              "TimeSeconds": 10.97
+            },
+            "wind_mps": 1.0,
+            "heat": null,
+            "points": null,
+            "legs": []
+          },
+          {
+            "place": 10,
+            "name": "Malachi Mack",
+            "grade": 12,
+            "school": "Wauwatosa East",
+            "mark": {
+              "TimeSeconds": 11.24
+            },
+            "wind_mps": 1.0,
+            "heat": null,
+            "points": null,
+            "legs": []
+          }
+        ]
+      },
+      {
+        "label": "200 Meter Dash",
+        "kind": "track200m",
+        "gender": "boys",
+        "division": "Division 1",
+        "round": "preliminaries",
+        "rows": []
+      }
+    ],
+    "rows_parsed": 32,
+    "rows_skipped": 0
+  }
+}

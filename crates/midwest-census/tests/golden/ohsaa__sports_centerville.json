@@ -1,0 +1,23 @@
+[
+  {
+    "label": "Cross Country",
+    "sport": "cross_country",
+    "boys": {
+      "name": "James Weckesser",
+      "email": "steeple844@aol.com"
+    },
+    "girls": {
+      "name": "Ali Erickson",
+      "email": "ali.erickson@centerville.k12.oh.us"
+    }
+  },
+  {
+    "label": "Track & Field",
+    "sport": "outdoor_track",
+    "boys": {
+      "name": "Matt Somerlot",
+      "email": "matt.somerlot@centerville.k12.oh.us"
+    },
+    "girls": null
+  }
+]

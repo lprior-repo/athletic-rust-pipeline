@@ -1,0 +1,2554 @@
+{
+  "schools": [
+    {
+      "city": "Hastings",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_7c80ceebb3e112ea",
+          "name": "Alan Frank",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_93e762d58dfcf99e",
+          "name": "Aub Boucher",
+          "role": "athletic_director",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_d1605b78f84e15e5",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_5704a6574ab3b879",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_377e0fa38b43d3b8",
+          "name": "Zeb Noyd",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_58b9c28453650590",
+          "name": "Toni Fowler",
+          "role": "head_coach",
+          "school": "sch_2c870270b29ff075",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 215,
+      "homepage": "http://www.adamscentral.us/",
+      "name": "Adams Central",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Shawn Scott",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Scott Harrington",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Alan Frank",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Mattison Tinant",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Alan Frank",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Assistant Athletic Director",
+          "name": "Aub Boucher",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Baseball",
+          "name": "Tim Stroman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Zac Foster",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Evan Smith",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Dave Johnson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Josh Lewis",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Rod Hartman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Girls)",
+          "name": "Rod Hartman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Becky Fisher",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Journalism",
+          "name": "Crystal Hassenstab",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Doyle Hanshaw",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Hugo Madera",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Robert Collins",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Softball",
+          "name": "Danielle Wahl",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Doyle Hanshaw",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Strength Coach",
+          "name": "Teran Boyer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Penny Birky",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Swimming (Boys)",
+          "name": "Co-op w/Hastings",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Swimming (Girls)",
+          "name": "Co-op w/Hastings",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Boys)",
+          "name": "Ed Sughroue",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Girls)",
+          "name": "Ed Sughroue",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Zeb Noyd",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Toni Fowler",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Sean Vonderfecht",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Libby Lollman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Chris Trampe",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Girls Wrestling",
+          "name": "Teran Boyer",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Hastings",
+        "co_op": false,
+        "enrollment": 215,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+            }
+          }
+        ],
+        "id": "sch_2c870270b29ff075",
+        "name": "Adams Central",
+        "normalized_name": "adams central",
+        "school_website": "http://www.adamscentral.us/",
+        "source_identities": [
+          {
+            "id": "Adams Central",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_2c870270b29ff075",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Adams+Central"
+    },
+    {
+      "city": "Ainsworth",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_040610515f32d23d",
+          "name": "Luke Wroblewski",
+          "role": "athletic_director",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_a1fadc92218379d3",
+          "name": "Trey Schlueter",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_732083df44ec0961",
+          "name": "Katie Winters",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_573bcf304b75e044",
+          "name": "Trey Schlueter",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_4e0aa511e0d0628b",
+          "name": "Katie Winters",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_0ff0da565087bc28",
+          "name": "Jake Nelson",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_89bdd37b11eb37d5",
+          "name": "Jake Nelson",
+          "role": "head_coach",
+          "school": "sch_91cd09e4e8f1b845",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 69,
+      "homepage": "http://www.ainsworthschools.org",
+      "name": "Ainsworth",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Dale Hafer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Cory Friedrich",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Kari Painter",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Luke Wroblewski",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Sandi Nelson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Brad Wilkins",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Trey Schlueter/Katie Winters",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Trey Schlueter/Katie Winters",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Wade Alberts",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Brenda Konkoleski",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Girls)",
+          "name": "Heather Lutter",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Lisa Schlueter",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Erin Rathe",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Kayla Nilson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Heather Lutter",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Heather Lutter",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Pam Barrow",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Jake Nelson",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Jake Nelson",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Jerry Bockman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Jeri Graff",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Jake Graff",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Ainsworth",
+        "co_op": false,
+        "enrollment": 69,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+            }
+          }
+        ],
+        "id": "sch_91cd09e4e8f1b845",
+        "name": "Ainsworth",
+        "normalized_name": "ainsworth",
+        "school_website": "http://www.ainsworthschools.org",
+        "source_identities": [
+          {
+            "id": "Ainsworth",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_91cd09e4e8f1b845",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ainsworth"
+    },
+    {
+      "city": "Allen",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_6838764dd8890372",
+          "name": "Casey Brentlinger",
+          "role": "athletic_director",
+          "school": "sch_69b6f43d01121d2f",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_511fb551d83cfcda",
+          "name": "Casey Brentlinger",
+          "role": "head_coach",
+          "school": "sch_69b6f43d01121d2f",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_c76ad40425d7bce0",
+          "name": "Casey Brentlinger",
+          "role": "head_coach",
+          "school": "sch_69b6f43d01121d2f",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_5f12f70c63c787ef",
+          "name": "Bri Ostrand",
+          "role": "head_coach",
+          "school": "sch_69b6f43d01121d2f",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_40aa2ee0ac6bd50c",
+          "name": "Bri Ostrand",
+          "role": "head_coach",
+          "school": "sch_69b6f43d01121d2f",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 26,
+      "homepage": "https://www.allenschools.org/",
+      "name": "Allen",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Mike Pattee",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Chris Blohm",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Casey Brentlinger",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Becky Stapleton",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Casey Brentlinger",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Basketball (Boys)",
+          "name": "Austin Coffman",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Basketball (Girls)",
+          "name": "Bri Ostrand",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Jason Olesen",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Cross-Country (Boys)",
+          "name": "Casey Brentlinger",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Cross-Country (Girls)",
+          "name": "Casey Brentlinger",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Football",
+          "name": "Jake Kneifl",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Golf (Boys)",
+          "name": "DJ Smith",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Golf (Girls)",
+          "name": "Christina Patefield",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Kristin Smith",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "D.J. Smith",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "D.J. Smith",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Marlene Levine",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Speech",
+          "name": "Kristin Moeller",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Desiree Kneifl",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Track & Field (Boys)",
+          "name": "Bri Ostrand",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Track & Field (Girls)",
+          "name": "Bri Ostrand",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Volleyball",
+          "name": "Carly Dickens",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Wrestling",
+          "name": "Truman Wood",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Girls Wrestling",
+          "name": "Truman Wood",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Allen",
+        "co_op": false,
+        "enrollment": 26,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+            }
+          }
+        ],
+        "id": "sch_69b6f43d01121d2f",
+        "name": "Allen",
+        "normalized_name": "allen",
+        "school_website": "https://www.allenschools.org/",
+        "source_identities": [
+          {
+            "id": "Allen",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_69b6f43d01121d2f",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Allen"
+    },
+    {
+      "city": "Alliance",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_934b2547a58b56c5",
+          "name": "Chris Geary",
+          "role": "athletic_director",
+          "school": "sch_e2c091cba000d40c",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_04de3f5625690c96",
+          "name": "Kelly Erickson",
+          "role": "head_coach",
+          "school": "sch_e2c091cba000d40c",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_dd9063cf96ccd4a9",
+          "name": "Kelly Erickson",
+          "role": "head_coach",
+          "school": "sch_e2c091cba000d40c",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_a4ade278aae57805",
+          "name": "Nate Lanik",
+          "role": "head_coach",
+          "school": "sch_e2c091cba000d40c",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_7e8a59898ebab680",
+          "name": "Nate Lanik",
+          "role": "head_coach",
+          "school": "sch_e2c091cba000d40c",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 320,
+      "homepage": "http://www.alliancebulldogs.org",
+      "name": "Alliance",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Dr. Troy Unzicker",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Chris Stein",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Chris Geary",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Marissa Rotness",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Chris Geary",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Jordan Mills",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Mickenzie Foster",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Tim Kollars",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Kelly Erickson",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Kelly Erickson",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Tristin Stein",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Rennie Failor",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Girls)",
+          "name": "Berlyn Clear",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Nate Lanik",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Lori Jensen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Wendy Rhoads",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Erica Haskell",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Softball",
+          "name": "Payten Gibson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Katie Ackerman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Katie Ackerman",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Boys)",
+          "name": "Scott Mills",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Tennis (Girls)",
+          "name": "Scott Mills",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Nate Lanik",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Nate Lanik",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Tim Devlin",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Unified Bowling",
+          "name": "Wendy Rhoads",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Unified Track & Field",
+          "name": "Nate Lanik",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Tabitha Unzicker",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "William Schwartzkopf",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Girls Wrestling",
+          "name": "Madeline Girard",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Alliance",
+        "co_op": false,
+        "enrollment": 320,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+            }
+          }
+        ],
+        "id": "sch_e2c091cba000d40c",
+        "name": "Alliance",
+        "normalized_name": "alliance",
+        "school_website": "http://www.alliancebulldogs.org",
+        "source_identities": [
+          {
+            "id": "Alliance",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_e2c091cba000d40c",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alliance"
+    },
+    {
+      "city": "Alma",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_a9f8d678b2a5cf06",
+          "name": "Isaac Frecks",
+          "role": "athletic_director",
+          "school": "sch_eab0af6d00a86ef8",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_a5441deabe755f25",
+          "name": "Laurie Kermmoade",
+          "role": "head_coach",
+          "school": "sch_eab0af6d00a86ef8",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_5ce095ff346c6c61",
+          "name": "Laurie Kermmoade",
+          "role": "head_coach",
+          "school": "sch_eab0af6d00a86ef8",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_9ce8184deec77cec",
+          "name": "Isaac Frecks",
+          "role": "head_coach",
+          "school": "sch_eab0af6d00a86ef8",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_7313696368d3a13e",
+          "name": "Isaac Frecks",
+          "role": "head_coach",
+          "school": "sch_eab0af6d00a86ef8",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 103,
+      "homepage": "http://almacardinals.org/",
+      "name": "Alma",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Jon Davis",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Stephanie Brandyberry",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Isaac Frecks",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Hannah Sindelar",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Isaac Frecks",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Mike Ford",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Amanda Davis",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Nick Simonson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Laurie Kermmoade",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Laurie Kermmoade",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Brendan Johnsen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Brendan Johnsen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Brittney Biskup",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Journalism",
+          "name": "Courtney Stottler",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "John Heldridge",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "John Heldridge",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Mattie Kreifels",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Softball",
+          "name": "Paige Houser(Co-op w/Southern Valley)",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Courtney Stottler",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Hannah Bartling",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Isaac Frecks",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Isaac Frecks",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Skyler Hellmuth",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Kris Eddy",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Girls Wrestling",
+          "name": "Kris Eddy",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Alma",
+        "co_op": false,
+        "enrollment": 103,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+            }
+          }
+        ],
+        "id": "sch_eab0af6d00a86ef8",
+        "name": "Alma",
+        "normalized_name": "alma",
+        "school_website": "http://almacardinals.org/",
+        "source_identities": [
+          {
+            "id": "Alma",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_eab0af6d00a86ef8",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Alma"
+    },
+    {
+      "city": "Amherst",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_c985bb5250f54dd8",
+          "name": "Nathan Dietz",
+          "role": "athletic_director",
+          "school": "sch_dfce92d8a3202e1d",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_ec24f02f4e99c98b",
+          "name": "Dana Dietz",
+          "role": "head_coach",
+          "school": "sch_dfce92d8a3202e1d",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_cccc8f6a00bae664",
+          "name": "Dana Dietz",
+          "role": "head_coach",
+          "school": "sch_dfce92d8a3202e1d",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_cd48a3aff15cf809",
+          "name": "Faron Klingelhoefer",
+          "role": "head_coach",
+          "school": "sch_dfce92d8a3202e1d",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_1378cbeb7798c5be",
+          "name": "Faron Klingelhoefer",
+          "role": "head_coach",
+          "school": "sch_dfce92d8a3202e1d",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 75,
+      "homepage": "http://www.amherstbroncos.org",
+      "name": "Amherst",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Roger Thomsen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Roger Thomsen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Nathan Dietz",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Carlene Abbott",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Nathan Dietz",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Connor Beranek",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "JD Carson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Les Adelung",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Boys)",
+          "name": "Dana Dietz",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Cross-Country (Girls)",
+          "name": "Dana Dietz",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Faron Klingelhoefer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Brian Fisher",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Bobbi Sorensen",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Journalism",
+          "name": "Dana Dietz",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Josh Hughes",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Josh Hughes",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Jason Stubbs",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Soccer (Boys)",
+          "name": "Co-op w/Kearney Catholic/Gibbon",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Soccer (Girls)",
+          "name": "Co-op w/Kearney Catholic/Gibbon",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Softball",
+          "name": "Sydnee Tidwell",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Jason Stubbs",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Strength Coach",
+          "name": "Faron Klingelhoefer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Faron Klingelhoefer",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Faron Klingelhoefer",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Aaron Klingelhoefer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Jonie Fader",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Chase Klingelhoefer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Girls Wrestling",
+          "name": "Chase Klingelhoefer",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Amherst",
+        "co_op": false,
+        "enrollment": 75,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+            }
+          }
+        ],
+        "id": "sch_dfce92d8a3202e1d",
+        "name": "Amherst",
+        "normalized_name": "amherst",
+        "school_website": "http://www.amherstbroncos.org",
+        "source_identities": [
+          {
+            "id": "Amherst",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_dfce92d8a3202e1d",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Amherst"
+    },
+    {
+      "city": "Merna",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_0885b5ac75494e73",
+          "name": "Chanc McIntosh",
+          "role": "athletic_director",
+          "school": "sch_cb7df8ad53bb8710",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_2993a2d71016815d",
+          "name": "Katie Hoblyn",
+          "role": "head_coach",
+          "school": "sch_cb7df8ad53bb8710",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_8d7d481c7f48087c",
+          "name": "Jason Reed",
+          "role": "head_coach",
+          "school": "sch_cb7df8ad53bb8710",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 50,
+      "homepage": "https://www.a-mps.org",
+      "name": "Anselmo-Merna",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Lloyd McIntyre",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Chanc McIntosh",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Chanc McIntosh",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Chanc McIntosh",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Boys)",
+          "name": "Troy Gilligan",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Basketball (Girls)",
+          "name": "Trent Kirchmann",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Ben Cooksley",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Football",
+          "name": "Troy Gilligan",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Golf (Boys)",
+          "name": "Lloyd McIntyre",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Molli Miller",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Journalism",
+          "name": "Leah Ryan",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "DeAnna Baker",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "DeAnna Baker",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Lori Klein",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Jordyn Bartak",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Callie Zutavern",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Boys)",
+          "name": "Katie Hoblyn",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Track & Field (Girls)",
+          "name": "Jason Reed",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Trainer",
+          "name": "Traci Johnson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Volleyball",
+          "name": "Katie Hoblyn",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Wrestling",
+          "name": "Jake Wells",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Girls Wrestling",
+          "name": "Matt Zutavern",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Merna",
+        "co_op": false,
+        "enrollment": 50,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+            }
+          }
+        ],
+        "id": "sch_cb7df8ad53bb8710",
+        "name": "Anselmo-Merna",
+        "normalized_name": "anselmo merna",
+        "school_website": "https://www.a-mps.org",
+        "source_identities": [
+          {
+            "id": "Anselmo-Merna",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_cb7df8ad53bb8710",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Anselmo-Merna"
+    },
+    {
+      "city": "Ansley",
+      "coaches": [
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_bac2472e376c18c4",
+          "name": "Aaron Wagner",
+          "role": "athletic_director",
+          "school": "sch_72456408810bad4a",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "mixed",
+          "id": "coa_c4ae592cc2aa4b1a",
+          "name": "Garrod Fernau",
+          "role": "athletic_director",
+          "school": "sch_72456408810bad4a",
+          "source_identities": []
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_1ad57e555cc03034",
+          "name": "Cayley Bailey",
+          "role": "head_coach",
+          "school": "sch_72456408810bad4a",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_1bb6be67789f515c",
+          "name": "Cayley Bailey",
+          "role": "head_coach",
+          "school": "sch_72456408810bad4a",
+          "source_identities": [],
+          "sport": "cross_country"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "boys",
+          "id": "coa_f8e41b99cbebc117",
+          "name": "Jamee Smith",
+          "role": "head_coach",
+          "school": "sch_72456408810bad4a",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        },
+        {
+          "evidence": [
+            {
+              "method": "parsed",
+              "observed_on": "2026-09-20",
+              "source": {
+                "id": "nsaa",
+                "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+              }
+            }
+          ],
+          "gender": "girls",
+          "id": "coa_893a3b65fd4eaacb",
+          "name": "Jamee Smith",
+          "role": "head_coach",
+          "school": "sch_72456408810bad4a",
+          "source_identities": [],
+          "sport": "outdoor_track"
+        }
+      ],
+      "enrollment": 39,
+      "homepage": "http://www.ansleypublicschool.org",
+      "name": "Ansley",
+      "roles": [
+        {
+          "co_op": false,
+          "label": "Superintendent",
+          "name": "Kim Jonas",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Principal",
+          "name": "Garrod Fernau",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Activities Director",
+          "name": "Aaron Wagner",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "AD Secretary",
+          "name": "Chrissy Slingsby",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Athletic Director",
+          "name": "Aaron Wagner",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": false,
+          "label": "Assistant Athletic Director",
+          "name": "Garrod Fernau",
+          "row": {
+            "kind": "athletic_director"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Basketball (Boys)",
+          "name": "Jeffery Cunningham (Co-op w/Litchfield)",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Basketball (Girls)",
+          "name": "Garrod Fernau (Co-op w/Litchfield)",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Board President",
+          "name": "Jaimee Bailey",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Cross-Country (Boys)",
+          "name": "Cayley Bailey (Co-op w/Litchfield)",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Cross-Country (Girls)",
+          "name": "Cayley Bailey (Co-op w/Litchfield)",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "cross_country"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Football",
+          "name": "Matt Drew (Co-op w/Litchfield)",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Guidance Counselor",
+          "name": "Milissa Birnie",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Instrumental)",
+          "name": "Kalli Johnson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Music (Vocal)",
+          "name": "Kalli Johnson",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Play Production",
+          "name": "Kalla Sawyer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Speech",
+          "name": "Kalla Sawyer",
+          "row": null
+        },
+        {
+          "co_op": false,
+          "label": "Student Council Sponsor",
+          "name": "Elizabeth Curlo",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Track & Field (Boys)",
+          "name": "Jamee Smith (Co-op w/Litchfield)",
+          "row": {
+            "gender": "boys",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Track & Field (Girls)",
+          "name": "Jamee Smith (Co-op w/Litchfield)",
+          "row": {
+            "gender": "girls",
+            "kind": "sport_coach",
+            "sport": "outdoor_track"
+          }
+        },
+        {
+          "co_op": true,
+          "label": "Volleyball",
+          "name": "Jamee Smith(Co-op w/Litchfield)",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Wrestling",
+          "name": "Bo Slingsby",
+          "row": null
+        },
+        {
+          "co_op": true,
+          "label": "Girls Wrestling",
+          "name": "Bo Slingsby",
+          "row": null
+        }
+      ],
+      "school": {
+        "aliases": [],
+        "association": "nsaa",
+        "city": "Ansley",
+        "co_op": false,
+        "enrollment": 39,
+        "evidence": [
+          {
+            "method": "parsed",
+            "observed_on": "2026-09-20",
+            "source": {
+              "id": "nsaa",
+              "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+            }
+          }
+        ],
+        "id": "sch_72456408810bad4a",
+        "name": "Ansley",
+        "normalized_name": "ansley",
+        "school_website": "http://www.ansleypublicschool.org",
+        "source_identities": [
+          {
+            "id": "Ansley",
+            "namespace": {
+              "association_school": {
+                "association": "nsaa"
+              }
+            },
+            "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+          }
+        ],
+        "state": "NE"
+      },
+      "school_id": "sch_72456408810bad4a",
+      "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=Ansley"
+    }
+  ]
+}

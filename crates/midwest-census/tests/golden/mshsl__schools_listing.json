@@ -1,0 +1,54 @@
+{
+  "next_page": 1,
+  "next_page_url": "https://www.mshsl.org/schools?page=1",
+  "rows": [
+    {
+      "city": "Clearwater",
+      "name": "Aasen Home School",
+      "page_url": "https://www.mshsl.org/schools/aasen-home-school",
+      "slug": "aasen-home-school"
+    },
+    {
+      "city": "West St. Paul",
+      "name": "Academic Arts High School",
+      "page_url": "https://www.mshsl.org/schools/academic-arts-high-school",
+      "slug": "academic-arts-high-school"
+    },
+    {
+      "city": "Richfield",
+      "name": "Academy of Holy Angels",
+      "page_url": "https://www.mshsl.org/schools/academy-holy-angels",
+      "slug": "academy-holy-angels"
+    },
+    {
+      "city": "Ada",
+      "name": "Ada-Borup-West High School",
+      "page_url": "https://www.mshsl.org/schools/ada-borup-west-high-school",
+      "slug": "ada-borup-west-high-school"
+    },
+    {
+      "city": "Adrian",
+      "name": "Adrian High School",
+      "page_url": "https://www.mshsl.org/schools/adrian-high-school",
+      "slug": "adrian-high-school"
+    },
+    {
+      "city": "Minnetonka",
+      "name": "Agape Christi Academy",
+      "page_url": "https://www.mshsl.org/schools/agape-christi-academy",
+      "slug": "agape-christi-academy"
+    },
+    {
+      "city": "Minneapolis",
+      "name": "Aim Academy of Science and Technology",
+      "page_url": "https://www.mshsl.org/schools/aim-academy-science-and-technology",
+      "slug": "aim-academy-science-and-technology"
+    },
+    {
+      "city": "Aitkin",
+      "name": "Aitkin High School",
+      "page_url": "https://www.mshsl.org/schools/aitkin-high-school",
+      "slug": "aitkin-high-school"
+    }
+  ]
+}
