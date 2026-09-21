@@ -42,6 +42,10 @@ CLI -> PipelineControl / RunCoordinator
 
 Each successful source response has a content digest, request URL/method/body, status/media type, byte count, timing, and ranking capture metadata. Page publication stores the raw receipt, parsed observation, immutable checkpoint, and `RankingPageIndex` with source row positions, candidates, and roster observations. A collection seals only when every planned event page is terminal and the final snapshot binds the same scope and source snapshot.
 
+Pagination terminates on what the source actually serves. A request past the listing end can come back as the listing head (`settings.page` 1) or as an empty `{}` body; both end the event's page chain instead of raising a transport or parser failure, and any other page-identity conflict remains an error. The declared `minCount` is a lower bound the source does not always serve: the outdoor boys grade 11 `200m` list declares 654 while its own pagination widget renders every page after the first as `aria-disabled` for this session (a signed-out profile; the entitled 2026-09-20 runs paged 246 pages of the same shape). When a terminal page cannot reach that bound, the shortfall is recorded as a warning and stays visible through the terminal observation's `min_count`; it does not block the run.
+
+Relay pages keep rows whose identity the source masked. A masked row arrives with `AthleteID: 0` while `relayTeams` still carries its roster, so the roster join cannot be verified; the row is retained with `roster_present: Some(false)` and counted in `rows_missing_roster`, and the export reports `relay_membership_complete: false`. A roster that is present but joins by the wrong `IDResult`/`RelayTeamID` pair remains an error.
+
 The source body bound is 32 MiB. Ranking page parsing has a separate 8 MiB accounted capture bound; neither is a total-process RSS guarantee. `SourceCache` caches successful outcomes. Failed rankings outcomes are intentionally not cached, so a resumed gateway operation receives a fresh audit identity and can retry the source rather than replaying a cached failure.
 
 ## Browser and source safety
