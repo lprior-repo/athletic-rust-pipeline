@@ -262,6 +262,19 @@ scope rather than being reported as a replay. The writer stop/restart inside the
 scale-v15 finisher (`pgrep` on `live-worker.toml`, SIGTERM, `nohup` restart of the same build), so the
 hub's `lane-live-worker` entry reads `exited` after the stop and the restarted worker is unmanaged.
 
+**Stall diagnosis and supervision hardening (2026-09-20).** The outdoor boys collection stopped advancing at
+217 pages for an hour while supervision kept failing: each `BrowserSession/recover` reported the cached manager
+as not running, rebuilt it, and the rebuild's shutdown then aborted after its timeout, in a ~16 s loop (visible
+in `lane-live-worker`). The tab target itself was gone — `browser-status` read `stopped` and CDP `9333` held a
+single `about:blank` — while the browser process stayed up, so re-arms could not rebuild the pool. A plain
+`browser-start` returned the session to `ready` with two tabs, and the collection resumed six seconds later
+(217 → 248 pages). Three changes follow: the collection supervisor now exits 2 instead of 0 when it exhausts
+no-progress, logs the browser state every round, and after eight fruitless re-arms closes **every** page
+(`prune-tabs.py 0 --all`) so the next `browser-start` rebuilds the pool from scratch; and `row-keeper.sh`
+covers the row phases without needing the run id, because the row supervisor's resume is global over parked
+invocations and the completed-invocation count is a liveness signal. The keeper re-arms only after four
+minutes of silence with parked work, since a re-arm navigates the lane and desyncs an in-flight page read.
+
 These changes make the lane self-healing meanwhile:
 
 - `receiptless_transport(code, has_receipt)` — only a transport fault that produced **no receipt** is
