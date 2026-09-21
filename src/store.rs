@@ -85,6 +85,17 @@ pub use rankings::{
 };
 
 impl ArtifactStore {
+    /// Clear a page marker left by a publication that did not complete, so a
+    /// retried page step can publish its fresh capture of the same page.
+    pub fn drop_rankings_page(
+        &self,
+        collection: &EvidenceDigest,
+        event_short: &str,
+        page: u32,
+    ) -> Result<bool> {
+        rankings::backend::drop_rankings_page(&self.inner, collection, event_short, page)
+    }
+
     pub fn put_rankings_page(&self, index: &RankingPageIndex) -> Result<()> {
         rankings::backend::put_rankings_page(&self.inner, index)
     }

@@ -11,6 +11,39 @@ const MAX_CANDIDATES: usize = 1_024;
 const MAX_ROWS: usize = 1_024;
 const MAX_ROSTERS: usize = 1_024;
 
+/// Clear a page marker that no completed publication backs.
+///
+/// A page step that fails after its index write leaves a marker for evidence the
+/// run never sealed. Restate re-executes the whole step after a pause, so the
+/// retry arrives with a fresh and equally valid capture of the same page, which
+/// the stale marker would reject forever. The run advances past every page it
+/// publishes, so a finished publication is never re-published: an existing
+/// marker for the page currently being published can only be abandoned state.
+/// Staged row and candidate keys stay; they are idempotent observations of the
+/// same page.
+pub(in crate::store) fn drop_rankings_page(
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+    page: u32,
+) -> Result<bool, StoreError> {
+    validate_event_short(event_short)?;
+    let _writer = store.writer.lock().map_err(|_| StoreError::Database)?;
+    let key = page_marker_key(collection, event_short, page)?;
+    let existed = store
+        .rankings
+        .get(&key)
+        .map_err(|_| StoreError::CorruptData)?
+        .is_some();
+    if existed {
+        store
+            .rankings
+            .remove(&key)
+            .map_err(|_| StoreError::Database)?;
+    }
+    Ok(existed)
+}
+
 pub(in crate::store) fn put_rankings_page(
     store: &StoreInner,
     index: &RankingPageIndex,

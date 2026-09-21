@@ -78,6 +78,45 @@ fn duplicate_publication_is_idempotent_but_changed_row_conflicts() {
 }
 
 #[test]
+fn a_stale_page_marker_is_cleared_so_the_page_can_be_republished() {
+    let (_dir, store) = open_store();
+    let collection = store.put_bytes(b"collection").expect("collection digest");
+    let checkpoint = store.put_bytes(b"checkpoint").expect("checkpoint digest");
+    let page = |result_id: u64| super::RankingPageIndex {
+        collection: collection.clone(),
+        event_short: "100m".to_owned(),
+        page: 1,
+        checkpoint: checkpoint.clone(),
+        rows: vec![super::RankingSourceRow {
+            result_id,
+            row_number: result_id,
+        }],
+        candidates: Vec::new(),
+        rosters: Vec::new(),
+    };
+    store.put_rankings_page(&page(1)).expect("first publication");
+    store
+        .put_rankings_page(&page(1))
+        .expect("identical replay is idempotent");
+    assert!(matches!(
+        store.put_rankings_page(&page(2)),
+        Err(StoreError::RankingConflict)
+    ));
+    assert!(store
+        .drop_rankings_page(&collection, "100m", 1)
+        .expect("drop the marker left by an unfinished publication"));
+    store
+        .put_rankings_page(&page(2))
+        .expect("fresh evidence publishes once the stale marker is cleared");
+    assert!(
+        store
+            .drop_rankings_page(&collection, "100m", 1)
+            .expect("the republished page owns its marker again"),
+        "the republished page must own a marker"
+    );
+}
+
+#[test]
 fn source_rows_are_isolated_and_ordered_by_sheet_then_numeric_row() {
     let (_dir, store) = open_store();
     let first = record("Sheet", 10, "ten");

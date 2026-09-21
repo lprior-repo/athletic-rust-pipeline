@@ -140,11 +140,28 @@ pub(super) fn page(
         event.next_page,
         digest.clone(),
     )?;
+    store.drop_rankings_page(&index.collection, &event.event_short, event.next_page)?;
     store.put_rankings_page(&index)?;
     if terminal {
         let stats = store.ranking_event_stats(&index.collection, &event.event_short)?;
+        // The source's minCount is not always reachable. The outdoor boys grade
+        // 11 200m listing declares 654 rows while its own pagination widget
+        // renders every page after the first as disabled (measured 2026-09-21
+        // through the source UI in an independent browser with a trusted click)
+        // and its API answers a page-2 request with a byte-identical page-1
+        // body. Sealing with the rows the source actually served keeps the
+        // element honest: the terminal observation retains the declared
+        // minCount, so the shortfall stays visible in the retained evidence
+        // instead of wedging the collection on an unreachable bound.
         if stats.row_positions < min_count || stats.max_row_position < min_count {
-            bail!("terminal ranking page does not cover the source minCount lower bound");
+            tracing::warn!(
+                event = %event.event_short,
+                min_count,
+                row_positions = stats.row_positions,
+                max_row_position = stats.max_row_position,
+                pages = stats.pages,
+                "terminal ranking page is short of the source minCount lower bound"
+            );
         }
     }
     Ok(PagePublication {

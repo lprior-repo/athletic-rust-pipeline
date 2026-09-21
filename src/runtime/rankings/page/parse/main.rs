@@ -14,15 +14,23 @@ pub fn parse_page_response(
     expected: &ExpectedPageContext<'_>,
 ) -> Result<PageObservation, PageParseError> {
     let mut observation = PageObservation::default();
-    validate_scope(raw, expected, &mut observation)?;
-    let groups = raw
-        .get("groupedRankings")
-        .and_then(|value| value.as_array())
-        .ok_or(PageParseError::MissingGroupedRankings)?;
+    let clamped = validate_scope(raw, expected, &mut observation)?;
     let raw_min_count = raw
         .get("minCount")
         .and_then(|value| value.as_u64())
         .ok_or(PageParseError::MissingMinCount)?;
+    if clamped {
+        // The source answered a request past the listing's last page with the
+        // listing's first page: the list is exhausted, and this response owns no
+        // rows of the requested page. Publication seals it as the event's
+        // terminal page, so page one is not indexed a second time.
+        observation.min_count = raw_min_count;
+        return Ok(observation);
+    }
+    let groups = raw
+        .get("groupedRankings")
+        .and_then(|value| value.as_array())
+        .ok_or(PageParseError::MissingGroupedRankings)?;
     let (_, unresolved, candidate_count) = parse_groups(groups, expected, &mut observation)?;
     observation.grade_11_candidates = candidate_count;
     observation.unresolved_individual_identities = unresolved;
@@ -35,11 +43,13 @@ pub fn parse_page_response(
     Ok(observation)
 }
 
+/// Validate the response against the request that produced it. Returns whether
+/// the source answered a past-end request with the listing's first page.
 fn validate_scope(
     raw: &serde_json::Value,
     expected: &ExpectedPageContext<'_>,
     observation: &mut PageObservation,
-) -> Result<(), PageParseError> {
+) -> Result<bool, PageParseError> {
     let div = raw.get("division").ok_or(PageParseError::MissingDivision)?;
     let div_id = div
         .get("ID")
@@ -96,7 +106,7 @@ fn validate_request_metadata(
     raw: &serde_json::Value,
     expected: &ExpectedPageContext<'_>,
     observation: &mut PageObservation,
-) -> Result<(), PageParseError> {
+) -> Result<bool, PageParseError> {
     let root_gender = raw
         .get("gender")
         .and_then(|value| value.as_str())
@@ -138,20 +148,25 @@ fn validate_settings(
     raw: &serde_json::Value,
     expected: &ExpectedPageContext<'_>,
     observation: &mut PageObservation,
-) -> Result<(), PageParseError> {
+) -> Result<bool, PageParseError> {
     let settings = raw.get("settings").ok_or(PageParseError::MissingSettings)?;
     let page = settings
         .get("page")
         .and_then(|value| value.as_u64())
         .ok_or(PageParseError::MissingPage)?;
     let actual_page = u32::try_from(page).map_err(|_| PageParseError::InvalidPageNumber)?;
-    if actual_page != expected.page {
+    // A request past the listing's last page is answered with the listing's
+    // first page. Every other page identity conflict stays an error.
+    let clamped = actual_page != expected.page;
+    if clamped && !(actual_page == 1 && expected.page > 1) {
         return Err(PageParseError::PageMismatch {
             expected: expected.page,
             actual: actual_page,
         });
     }
-    observation.request_page = Some(actual_page);
+    if !clamped {
+        observation.request_page = Some(actual_page);
+    }
     let depth = settings
         .get("depth")
         .and_then(|value| value.as_u64())
@@ -164,7 +179,8 @@ fn validate_settings(
         .get("grades")
         .and_then(|value| value.as_array())
         .ok_or(PageParseError::MissingGrades)?;
-    validate_grades(grades, expected)
+    validate_grades(grades, expected)?;
+    Ok(clamped)
 }
 
 fn validate_grades(
@@ -434,4 +450,72 @@ pub enum PageParseError {
         roster_relay_team_id: u64,
         row_athlete_id: u64,
     },
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{parse_page_response, PageParseError};
+    use crate::runtime::rankings::ExpectedPageContext;
+    use serde_json::json;
+
+    const DIVISION: u64 = 168416;
+    const SEASON: u64 = 2026;
+
+    fn expected(page: u32) -> ExpectedPageContext<'static> {
+        ExpectedPageContext {
+            division_id: DIVISION,
+            season_id: SEASON,
+            gender: "m",
+            event_short: "100m",
+            event_id: Some(3),
+            is_relay: false,
+            requested_grade: Some(11),
+            page,
+        }
+    }
+
+    fn page_body(settings_page: u64) -> serde_json::Value {
+        json!({
+            "division": {"ID": DIVISION, "SeasonID": SEASON, "BaseDiv": {"Country": "USA", "Level": 4}},
+            "gender": "m",
+            "eventShort": "100m",
+            "eventId": 3,
+            "settings": {"page": settings_page, "depth": 100, "grades": [11]},
+            "minCount": 24_500,
+            "groupedRankings": [[]],
+        })
+    }
+
+    #[test]
+    fn a_request_past_the_listing_end_parses_as_an_empty_terminal_page() {
+        // Live shape: the app's own request for page 246 of the outdoor boys
+        // grade 11 `100m` list came back carrying `settings.page` 1.
+        let observation = parse_page_response(&page_body(1), &expected(246))
+            .expect("past-end page parses as the exhausted list");
+        assert_eq!(observation.min_count, 24_500);
+        assert_eq!(observation.settings_page_depth, 100);
+        assert_eq!(observation.request_page, None);
+        assert!(observation.grade_11_candidates_list.is_empty());
+        assert!(observation.source_rows.is_empty());
+    }
+
+    #[test]
+    fn a_listing_head_request_keeps_its_page_identity() {
+        let observation =
+            parse_page_response(&page_body(1), &expected(1)).expect("head page parses");
+        assert_eq!(observation.request_page, Some(1));
+    }
+
+    #[test]
+    fn any_other_page_identity_conflict_stays_an_error() {
+        let error = parse_page_response(&page_body(5), &expected(246))
+            .expect_err("a mismatched page identity is rejected");
+        assert!(matches!(
+            error,
+            PageParseError::PageMismatch {
+                expected: 246,
+                actual: 5
+            }
+        ));
+    }
 }

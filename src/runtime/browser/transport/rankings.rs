@@ -17,8 +17,8 @@ use std::time::Duration;
 #[path = "rankings_helper.rs"]
 mod rankings_helper;
 use rankings_helper::{
-    build_interceptor_script, build_response, build_ui_url, click_numeric_page, page_extent,
-    parse_binding, transport, validate_request, wait_for_active_page, BINDING_NAME,
+    build_interceptor_script, build_response, build_ui_url, click_numeric_page, declared_page,
+    page_extent, parse_binding, transport, validate_request, wait_for_active_page, BINDING_NAME,
 };
 
 /// Serve a `Results` capture through the persistent in-page fetch lane: the
@@ -59,10 +59,19 @@ async fn fetch_results(
 /// byte-identical page-1 payload (`settings.page` stayed 1). Requesting a
 /// successor for a short page therefore cannot retrieve new evidence and would
 /// only raise a page-identity conflict, so the chain ends on the short page.
-/// Publication seals that terminating page into the event's page count, so
-/// verification requires exactly `None` on the head page and `Some(page + 1)`
-/// on every page before it.
+/// The same declared page-1 answer is the source's response to a request past
+/// the listing's last page (measured live on the USA outdoor division 168416,
+/// boys grade 11 `100m`: the app's own request carried `page=246` and the
+/// capture declared `settings.page: 1`). A list whose final page fills the
+/// declared depth would otherwise request a successor that never exists, so a
+/// deep request answered with the listing's first page terminates the chain
+/// instead of advancing. Publication seals that terminating page into the
+/// event's page count, so verification requires exactly `None` on the head page
+/// and `Some(page + 1)` on every page before it.
 fn next_page_after(body: &[u8], page: u32) -> Option<u32> {
+    if page > 1 && declared_page(body) == Some(1) {
+        return None;
+    }
     match page_extent(body) {
         // Malformed pages end pagination: strict publication parsing rejects
         // them before a checkpoint is written.
@@ -130,6 +139,25 @@ mod pagination {
         assert_eq!(next_page_after(short, 1), None);
         let full = br#"{"defaultSettings":{"depth":2},"groupedRankings":[[{"a":1},{"a":2}]]}"#;
         assert_eq!(next_page_after(full, 1), Some(2));
+    }
+
+    #[test]
+    fn a_deep_request_answered_with_the_listing_head_ends_the_chain() {
+        // Live shape: the final page filled the declared depth and requested its
+        // successor, and the source answered that request with the listing's
+        // first page carrying the full row count plus the blurred tail.
+        let mut rows = String::new();
+        for rank in 1..=101 {
+            if rank > 1 {
+                rows.push(',');
+            }
+            rows.push_str(&format!("{{\"athleteId\":{rank}}}"));
+        }
+        let body =
+            format!("{{\"settings\":{{\"depth\":100,\"page\":1}},\"groupedRankings\":[[{rows}]]}}");
+        assert_eq!(next_page_after(body.as_bytes(), 246), None);
+        // The listing head itself still requests its successor.
+        assert_eq!(next_page_after(body.as_bytes(), 1), Some(2));
     }
 }
 
