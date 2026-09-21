@@ -482,3 +482,14 @@ The outdoor boys run `7be7e9dd…` (list `168416`, 95 events) exposed source and
 - **The declared `minCount` is unreachable for this session.** Measured through the site's own UI in an independent browser, every page link after the first is `aria-disabled="true"` for `100m` and `200m` alike, while `minCount` reads 654 (`200m`), 701 (`100m`), and 1,288 (`4x100m`). The coverage guard now records a shortfall warning and seals what the source served; the terminal observation keeps `min_count`, so the gap stays visible in the evidence instead of wedging the run.
 - **Relay pages arrive with masked rows.** The live `4x100m` page served 101 rows with 76 rosters, and 96 rows carry `AthleteID: 0` (only five are readable). A masked row whose roster cannot be joined is retained as `roster_present: Some(false)` and counted in `rows_missing_roster`, so relay events seal and the export reports `relay_membership_complete: false`; `4x100m` and `4x200m` sealed at pages 0/1 before this repair.
 - **Acquisition pauses on `SourceFailure`** (the source refuses a fetch) and clears on `rankings-resume`. The run needed repeated resumes, which is the operator path the CLI already documents.
+
+### Source-surface discovery for the expanded roster (2026-09-21)
+
+Read-only probes through the same headed transport, run to scope the requested expansion before building against it, settled three questions and left a fourth open (scripts and digests retained at `lane-v14/live-capture/probe-2026-09-21/`; summary in [SCOPE.md](SCOPE.md#source-surfaces-for-the-expanded-roster--discovery-findings)):
+
+- **The Track & Field rankings API has no cross-country surface.** `GetNavInfo`'s `seasons` map holds only indoor keys (`12004`–`12027`) and outdoor keys (`2004`–`2027`), and its `events` list is track-only; the payload contains no occurrence of cross-country at all.
+- **`/CrossCountry/rankings` is a landing surface.** It returns `200` and renders a video page; it issues no rankings request.
+- **There is no cross-country API namespace.** `/api/v1/xcRankings`, `/api/v1/xcRankings/GetNavInfo`, and `/api/v1/crossCountry/GetNavInfo` all return `404`.
+- **Athlete profile URLs do not resolve anonymously.** For a candidate ID taken from the outdoor boys run's own discovery output (`15673387`), `/TrackAndField/athlete/{id}` and `/CrossCountry/athlete/{id}` both redirect to the site home page, and `/athlete/{id}` returns `404`. The probes used the same signed-out profile the outdoor runs used, so this is not evidence that profiles do not exist; it is evidence that they are not anonymously addressable at those shapes.
+
+The expanded roster therefore needs a new source surface rather than a new parameter on the qualified collector, and the profile question stays open until an entitled session is available. No collection was driven by these probes; they navigated and read only.
