@@ -4,6 +4,9 @@
 //! from the repository root and a relative `--store var/midwest-census` resolves the same way here
 //! as it does in `AGENTS.md`.
 
+use anyhow::{Context, Result};
+use std::ffi::OsStr;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Repository root: this crate sits directly under it.
@@ -37,4 +40,35 @@ pub fn relative(path: &Path) -> String {
         |_| path.display().to_string(),
         |inside| inside.display().to_string(),
     )
+}
+
+/// Every `.rs` file under `dir`, recursively, sorted by path.
+///
+/// Directory symlinks are not descended into and symlinked `.rs` files are listed, which is what
+/// `pathlib.Path.rglob("*.rs")` did for the deleted Python scans. A directory that cannot be read is
+/// an error rather than an empty list: a scan that silently measured zero files would report debt as
+/// burnt down.
+pub fn rust_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    collect_rust_files(dir, &mut files)?;
+    files.sort();
+    Ok(files)
+}
+
+/// Depth-first collection behind [`rust_files`].
+fn collect_rust_files(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
+    let entries = fs::read_dir(dir).with_context(|| format!("listing {}", relative(dir)))?;
+    for entry in entries {
+        let entry = entry.with_context(|| format!("listing {}", relative(dir)))?;
+        let path = entry.path();
+        let kind = entry
+            .file_type()
+            .with_context(|| format!("reading the type of {}", relative(&path)))?;
+        if kind.is_dir() {
+            collect_rust_files(&path, files)?;
+        } else if path.extension() == Some(OsStr::new("rs")) {
+            files.push(path);
+        }
+    }
+    Ok(())
 }

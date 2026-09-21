@@ -1,17 +1,23 @@
 //! `xtask`: this repository's developer commands.
 //!
-//! Every subcommand runs the real tool — `tools/gate.sh`, `cargo nextest`, the `midwest-census`
-//! binary, or the scaffold generator — and prints the exact child command before running it, so a
-//! shell session and this harness cannot drift apart.
+//! Every subcommand either runs the real tool — `tools/gate.sh`, `cargo nextest`, the
+//! `midwest-census` binary, the scaffold generator — or measures the tree in process (`scan`,
+//! `integrity`, `domain-purity`), and prints the exact child command before running it, so a shell
+//! session and this harness cannot drift apart.
 //!
 //! Children run with the repository root as their working directory, whatever directory `xtask`
 //! itself was invoked from.
 
 #![forbid(unsafe_code)]
 
+mod baseline;
 mod cmd;
+mod integrity;
+mod json;
 mod paths;
+mod purity;
 mod scaffold;
+mod scan;
 mod source_fixture;
 mod templates;
 
@@ -40,6 +46,33 @@ enum Command {
         #[arg(last = true, value_name = "GATE_ARG")]
         args: Vec<String>,
     },
+    /// Count forbidden constructs and size-budget overruns in production code; JSON on stdout.
+    Scan,
+    /// List the type-integrity review candidates of the domain modules; JSON on stdout.
+    Integrity,
+    /// Rewrite the debt baseline from current measurements.
+    QualityBaseline {
+        /// The baseline to write, e.g. `tools/quality-baseline.json`.
+        baseline: PathBuf,
+        /// The gate's clippy tallies: `crate<TAB>lint<TAB>count` lines.
+        clippy: PathBuf,
+        /// The `scan` report the clippy tallies are ratcheted with.
+        scan: PathBuf,
+        /// Permit an increase: without it, the update refuses any number that would grow.
+        #[arg(long)]
+        allow_increase: bool,
+    },
+    /// Compare current measurements against the debt baseline; fail when any metric grew.
+    Ratchet {
+        /// The baseline to compare against, e.g. `tools/quality-baseline.json`.
+        baseline: PathBuf,
+        /// The gate's clippy tallies: `crate<TAB>lint<TAB>count` lines.
+        clippy: PathBuf,
+        /// The `scan` report to compare with the baseline's recorded scan.
+        scan: PathBuf,
+    },
+    /// Prove the `census-domain` dependency tree carries no async or I/O package.
+    DomainPurity,
     /// Run the midwest-census tests that cover one source (`cargo nextest -E 'test(<source>)'`).
     SourceTest {
         /// Source name as it appears in test names, e.g. `wiaa`, `mshsl`, `wiaa_results`.
@@ -84,6 +117,20 @@ fn main() -> ExitCode {
 fn run() -> Result<()> {
     match Cli::parse().command {
         Command::Gate { args } => Cmd::new("bash").arg("tools/gate.sh").args(args).run(),
+        Command::Scan => scan::run(),
+        Command::Integrity => integrity::run(),
+        Command::QualityBaseline {
+            baseline,
+            clippy,
+            scan,
+            allow_increase,
+        } => baseline::update(&baseline, &clippy, &scan, allow_increase),
+        Command::Ratchet {
+            baseline,
+            clippy,
+            scan,
+        } => baseline::ratchet(&baseline, &clippy, &scan),
+        Command::DomainPurity => purity::run(),
         Command::SourceTest { source } => source_test(&source),
         Command::SourceFixture { source } => source_fixture::list(&source),
         Command::CensusStatus { store } => census_report(&store, Scope::Core),

@@ -11,6 +11,10 @@
 #
 # Lanes: fmt, check, doc, tests, strict clippy (source targets), production scan + size budgets,
 #        debt ratchet, deny, audit, machete, geiger, bench presence.
+#
+# Every lane that measures code is a `xtask` subcommand — `scan`, `integrity`, `domain-purity`,
+# `quality-baseline`, `ratchet` — so the measurements live next to the rest of the developer
+# commands and nothing here carries analysis code of its own.
 set -uo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")/.." || exit 2
@@ -127,15 +131,19 @@ main() {
   printf '  total diagnostics: %s\n' "$(awk '{s+=$3} END {print s+0}' "$tmp/clippy.tsv")"
 
   printf '\n=== production scan (forbidden constructs + size budgets) ===\n'
-  python3 tools/production_scan.py > "$tmp/scan.json"
-  jq -r '.crates | to_entries[] | "  \(.key): expect=\(.value.expect) unwrap=\(.value.unwrap) unsafe=\(.value.unsafe) assert=\(.value.assert_family) panic=\(.value.panic) indexing=\(.value.indexing) as=\(.value.as_cast) prod_lines=\(.value.production_lines)"' "$tmp/scan.json"
-  jq -r '"  structure: files>300=\(.structure.files_over_300_lines | length) fns>60=\(.structure.functions_over_60_lines) fns>25logical=\(.structure.functions_over_25_logical_lines)"' "$tmp/scan.json"
+  if cargo run -q -p xtask -- scan > "$tmp/scan.json"; then
+    jq -r '.crates | to_entries[] | "  \(.key): expect=\(.value.expect) unwrap=\(.value.unwrap) unsafe=\(.value.unsafe) assert=\(.value.assert_family) panic=\(.value.panic) indexing=\(.value.indexing) as=\(.value.as_cast) prod_lines=\(.value.production_lines)"' "$tmp/scan.json"
+    jq -r '"  structure: files>300=\(.structure.files_over_300_lines | length) fns>60=\(.structure.functions_over_60_lines) fns>25logical=\(.structure.functions_over_25_logical_lines)"' "$tmp/scan.json"
+  else
+    printf -- '--- production scan: FAIL\n'
+    FAILURES+=("production scan")
+  fi
 
   printf '\n=== domain type integrity (review candidates, ratcheted in the DDD phase) ===\n'
-  python3 tools/type_integrity_scan.py | jq -r 'to_entries[] | "  \(.key): bool_sigs=\(.value.bool_in_signature | length) primitive_ids=\(.value.primitive_id_param | length) many_option_structs=\(.value.struct_with_many_options | length)"'
+  cargo run -q -p xtask -- integrity | jq -r 'to_entries[] | "  \(.key): bool_sigs=\(.value.bool_in_signature | length) primitive_ids=\(.value.primitive_id_param | length) many_option_structs=\(.value.struct_with_many_options | length)"'
 
   printf '\n=== domain purity (census-domain normal tree) ===\n'
-  if python3 tools/check_domain_purity.py; then
+  if cargo run -q -p xtask -- domain-purity; then
     printf -- '--- domain purity: PASS\n'
   else
     printf -- '--- domain purity: FAIL\n'
@@ -146,7 +154,7 @@ main() {
     printf '\n=== baseline update ===\n'
     local extra=()
     [ "$ALLOW_INCREASE" = 1 ] && extra+=(--allow-increase)
-    if python3 tools/update_baseline.py "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json" "${extra[@]}"; then
+    if cargo run -q -p xtask -- quality-baseline "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json" "${extra[@]}"; then
       printf -- '--- baseline update: PASS\n'
     else
       printf -- '--- baseline update: FAIL\n'
@@ -159,7 +167,7 @@ main() {
   if [ ! -f "$BASELINE" ]; then
     printf 'no baseline at %s: run tools/gate.sh --update-baseline once\n' "$BASELINE"
     FAILURES+=("ratchet")
-  elif python3 tools/ratchet.py "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json"; then
+  elif cargo run -q -p xtask -- ratchet "$BASELINE" "$tmp/clippy.tsv" "$tmp/scan.json"; then
     printf -- '--- ratchet: PASS\n'
   else
     printf -- '--- ratchet: FAIL\n'

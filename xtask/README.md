@@ -1,8 +1,10 @@
 # `xtask` — repository developer commands
 
 One binary that runs the repository's real tools, and prints the exact child command before it runs
-it, so a terminal session and this harness cannot drift apart. Nothing here reimplements `gate.sh`,
-`nextest`, the census CLI or the scaffold: every subcommand either shells out or writes files.
+it, so a terminal session and this harness cannot drift apart. The measurement subcommands — `scan`,
+`integrity`, `domain-purity`, `quality-baseline`, `ratchet` — are the exception: they are the gate's
+measurement layer, which used to be a set of Python scripts under `tools/`. Everything else shells
+out or writes files.
 
 ## Running it
 
@@ -26,6 +28,11 @@ named in the message; there is no stack trace.
 | Command | Runs |
 | --- | --- |
 | `gate [-- <args>]` | `bash tools/gate.sh [<args>]` |
+| `scan` | measures this repository's production code; JSON on stdout |
+| `integrity` | lists the domain type-integrity candidates; JSON on stdout |
+| `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the debt baseline |
+| `ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the debt baseline |
+| `domain-purity` | proves the `census-domain` tree carries no async/I/O package |
 | `source-test <source>` | `cargo nextest run -p midwest-census -E 'test(<source>)'` |
 | `source-fixture <source>` | reads `crates/midwest-census/tests/fixtures/<source>/` and lists it |
 | `census-status --store <dir>` | `cargo run -q -p midwest-census --bin midwest-census -- --store <dir> report --core` |
@@ -44,6 +51,37 @@ cargo xtask gate -- --allow-increase   # (only with --update-baseline)
 The gate is the whole workspace: fmt, check `--all-targets`, doc, tests, strict clippy, the scans,
 the debt ratchet, and every optional tool lane that is installed. This command does not weaken any
 of it — it forwards arguments, prints the command, and reports the child's status.
+
+### `scan`, `integrity`, `domain-purity`
+
+```bash
+cargo xtask scan           # JSON: forbidden constructs + size budgets, per crate
+cargo xtask integrity      # JSON: type-integrity candidates per domain root
+cargo xtask domain-purity  # the census-domain normal tree; fails on a banned package
+```
+
+`scan` and `integrity` write JSON to stdout and nothing else, which is how `tools/gate.sh` feeds them
+to `jq`. `scan` covers `src/` and `crates/midwest-census/src` — exactly the crates the debt baseline
+records — counts forbidden constructs in production-reachable code (a `#[cfg(test)]` that gates a
+module ends the region; test files are skipped throughout), and reports the size budgets
+(`files_over_300_lines`, `functions_over_60_lines`, `functions_over_25_logical_lines`).
+
+`domain-purity` runs `cargo tree -p census-domain --edges normal --prefix none` and fails when the
+tree carries an async runtime, store engine, HTTP client, service framework or browser engine: normal
+edges only, so dev-dependencies and build scripts cannot taint the verdict either way.
+
+### `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]`
+
+Rewrites the debt baseline from the gate's clippy tallies and a `scan` report. The shape is fixed —
+`note`, `clippy` (keyed `crate<TAB>lint`), `scan` (keyed by crate), `structure` — and the update
+refuses to raise any number without `--allow-increase`, because a burndown is the only legitimate
+reason for the baseline to move down.
+
+### `ratchet <baseline> <clippy.tsv> <scan.json>`
+
+Compares those same two measurements with the baseline, exits non-zero when any metric grew, and
+prints every change as `[DOWN]` or `[UP]`. A file over 300 lines is identified by its path: a new path
+is debt, a known path that grew is debt, and a known path that shrank prints as burndown.
 
 ### `source-test <source>`
 
@@ -108,7 +146,9 @@ capture lands, until the real parser replaces the placeholder.
 ## What it does not do
 
 - No reimplementation: `gate`, `source-test`, `census-status` and `coverage` are thin wrappers around
-  the tools that own the behaviour.
+  the tools that own the behaviour. The measurement subcommands do implement the gate's measurements,
+  because those measurements are this repository's own policy rather than another tool's job — they
+  are the Rust replacements for the deleted `tools/*.py` scripts.
 - No shell interpretation: arguments are passed as an argument vector, so an argument with spaces or
   quotes is never re-split. `--` separates this binary's flags from the child's.
 - No project-wide validation by itself: `new-source` writes files and prints paths, it does not run
