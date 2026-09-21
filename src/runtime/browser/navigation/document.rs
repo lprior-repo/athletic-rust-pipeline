@@ -6,7 +6,6 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-
 use chromiumoxide::cdp::browser_protocol::network::{
     EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
     RequestId,

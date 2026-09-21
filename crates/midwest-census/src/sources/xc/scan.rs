@@ -159,4 +159,3 @@ fn push_row(
     };
     event.rows.push(row);
 }
-

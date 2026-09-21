@@ -239,4 +239,3 @@ fn html_unescape(value: &str) -> String {
         .replace("&gt;", ">")
         .replace("&nbsp;", " ")
 }
-

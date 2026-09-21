@@ -18,8 +18,8 @@ fn review_input() -> ReviewInput {
 #[test]
 fn stable_selected_case_requires_supplied_evidence() {
     let response = json!({"choices":[{"finish_reason":"stop","message":{"content":"{\"decision\":\"select\",\"athlete_id\":7,\"reason\":\"same team\",\"evidence\":[{\"document\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"locator\":\"team/name\"}]}","refusal":null}}]});
-    let verdict = parse_response(response.to_string().as_bytes(), &review_input())
-        .expect("selected verdict");
+    let verdict =
+        parse_response(response.to_string().as_bytes(), &review_input()).expect("selected verdict");
     assert!(
         matches!(verdict, AssistantVerdict::Select { athlete_id, .. } if athlete_id.get() == 7)
     );

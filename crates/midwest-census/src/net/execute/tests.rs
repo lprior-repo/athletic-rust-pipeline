@@ -36,7 +36,10 @@ async fn turns_for_one_host_are_spaced_by_exactly_the_robots_delay() {
     let start = tokio::time::Instant::now();
     // Nothing is reserved for the host yet, so the first turn waits for nothing.
     fetcher.wait_turn(HOST).await;
-    assert_eq!(tokio::time::Instant::now().duration_since(start), Duration::ZERO);
+    assert_eq!(
+        tokio::time::Instant::now().duration_since(start),
+        Duration::ZERO
+    );
 
     // The first turn reserved a slot one delay ahead, so the second leaves exactly that delay.
     fetcher.wait_turn(HOST).await;
@@ -68,14 +71,18 @@ async fn a_partial_advance_leaves_the_next_turn_gated() {
     // inside its wait.
     let mut turn = Box::pin(fetcher.wait_turn(HOST));
     assert!(
-        tokio::time::timeout(Duration::ZERO, &mut turn).await.is_err(),
+        tokio::time::timeout(Duration::ZERO, &mut turn)
+            .await
+            .is_err(),
         "the turn passed the gate without waiting for the host's spacing"
     );
 
     // One millisecond short of the reserved slot: still gated.
     tokio::time::advance(Duration::from_millis(2999)).await;
     assert!(
-        tokio::time::timeout(Duration::ZERO, &mut turn).await.is_err(),
+        tokio::time::timeout(Duration::ZERO, &mut turn)
+            .await
+            .is_err(),
         "a partial advance opened the gate early"
     );
 
@@ -99,7 +106,9 @@ async fn an_authorized_host_is_never_paced_faster_than_the_policy_ceiling() {
         Duration::from_millis(1),
         vec!["example.test".to_string()],
     );
-    fetcher.host_gate(HOST, Some(Duration::from_millis(1))).await;
+    fetcher
+        .host_gate(HOST, Some(Duration::from_millis(1)))
+        .await;
 
     let start = tokio::time::Instant::now();
     fetcher.wait_turn(HOST).await;
@@ -141,11 +150,7 @@ async fn a_retry_backoff_advances_by_exactly_the_schedule() {
 
     // The schedule this measured is the documented one: 500 ms doubling per attempt, ±25% jitter.
     // Without that, an exact delta would only prove that a sleep slept.
-    for (attempt, low, high) in [
-        (1_u32, 375_u64, 625_u64),
-        (2, 750, 1250),
-        (3, 1500, 2500),
-    ] {
+    for (attempt, low, high) in [(1_u32, 375_u64, 625_u64), (2, 750, 1250), (3, 1500, 2500)] {
         let delay = jittered_delay(attempt).as_millis();
         assert!(
             delay >= u128::from(low) && delay <= u128::from(high),

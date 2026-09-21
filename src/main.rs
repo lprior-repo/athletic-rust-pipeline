@@ -25,8 +25,9 @@ async fn main() -> Result<()> {
 ///
 /// * `tokio-console` layers `console_subscriber::spawn()` under the same filter and fmt layer.
 ///   Tokio emits its task spans only under `cfg(all(tokio_unstable, feature = "tracing"))` (its
-///   `cfg_trace!` macro), so build with `RUSTFLAGS="--cfg tokio_unstable"` to observe tasks:
-///   without it this feature still compiles and the console simply reports none.
+///   `cfg_trace!` macro) and `console_subscriber::spawn()` panics in a build without the flag, so
+///   the layer is installed only under `RUSTFLAGS="--cfg tokio_unstable"`; without it this feature
+///   compiles, starts no console server, and notes the skip at `debug`.
 /// * `otlp` adds an OpenTelemetry tracing layer that exports the same spans over OTLP. Endpoint,
 ///   protocol and headers come from the standard `OTEL_EXPORTER_OTLP_*` environment variables, and
 ///   spans are batched, so [`Telemetry::shutdown`] flushes them before `main` returns. Runs that
@@ -67,7 +68,7 @@ where
 
 /// The `tokio-console` layer: task, resource and async-op visibility in the same registry, so the
 /// console observes exactly what the stderr layer prints.
-#[cfg(feature = "tokio-console")]
+#[cfg(all(feature = "tokio-console", tokio_unstable))]
 fn with_console<S>(
     subscriber: S,
 ) -> Result<impl tracing::Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>>
@@ -75,6 +76,21 @@ where
     S: tracing::Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,
 {
     Ok(subscriber.with(console_subscriber::spawn()))
+}
+
+/// The `tokio-console` feature in a build without `RUSTFLAGS="--cfg tokio_unstable"`: the layer is
+/// skipped, because `console_subscriber::spawn()` panics in that build and tokio emits no task
+/// spans for it to record anyway. The subscriber comes back unchanged and the skip is noted at
+/// `debug`, so an operator who wonders why the console is empty has a line to find.
+#[cfg(all(feature = "tokio-console", not(tokio_unstable)))]
+fn with_console<S>(subscriber: S) -> Result<S>
+where
+    S: tracing::Subscriber + for<'lookup> tracing_subscriber::registry::LookupSpan<'lookup>,
+{
+    tracing::debug!(
+        "tokio-console feature is on but tokio is not built with `--cfg tokio_unstable`"
+    );
+    Ok(subscriber)
 }
 
 /// The OTLP layer and its provider, or the subscriber unchanged when the feature is off.

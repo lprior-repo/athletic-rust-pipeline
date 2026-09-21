@@ -154,7 +154,10 @@ mod tests {
         let result = runtime
             .blocking(|| -> Result<()> { panic!("bounded action panics") })
             .await;
-        assert!(result.is_err(), "a panicking action does not return a value");
+        assert!(
+            result.is_err(),
+            "a panicking action does not return a value"
+        );
 
         let report = runtime.drain_within(Duration::from_secs(5)).await;
         assert_eq!(report.accepted, 1);

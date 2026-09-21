@@ -105,7 +105,9 @@ async fn resolve_assignment(
     }
     match assigned {
         Some(lane) if lane == expected_lane => Ok(Assignment::Bound(lane)),
-        Some(_) => Err(terminal("review case durable assignment contradicts its key")),
+        Some(_) => Err(terminal(
+            "review case durable assignment contradicts its key",
+        )),
         None => {
             ctx.set("assignment", Json(expected_lane));
             Ok(Assignment::Bound(expected_lane))

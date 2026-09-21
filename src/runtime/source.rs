@@ -2,7 +2,7 @@
 //!
 //! The object impl here owns the ingress surface only — scope check, request build, and the
 //! admission/observation delegations. The retry workflow lives in [`workflow`], one journaled
-//! attempt in [`attempt`], and pacing in `admission`/`dispatch`.
+//! attempt in `attempt`, and pacing in `admission`/`dispatch`.
 
 mod admission;
 mod attempt;

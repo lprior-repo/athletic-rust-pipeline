@@ -1,6 +1,8 @@
 //! Human review transitions: what a supplied review choice may override.
 
-use super::{Assessment, CandidateReason, Decision, FinalDecision, ReviewChoice, SearchCompleteness};
+use super::{
+    Assessment, CandidateReason, Decision, FinalDecision, ReviewChoice, SearchCompleteness,
+};
 use crate::domain::identity::AthleteId;
 use anyhow::{bail, Result};
 

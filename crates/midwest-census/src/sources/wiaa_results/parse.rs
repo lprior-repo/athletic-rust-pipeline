@@ -6,8 +6,8 @@
 //! external `pdftotext` call for `ArtifactFormat::Pdf`, which the caller can handle separately
 //! if pure dispatch is required.
 
-use crate::sources::result_file::ParsedMeet;
 use super::classify::ArtifactFormat;
+use crate::sources::result_file::ParsedMeet;
 
 /// Dispatch one artifact body to the parser its format selects.
 ///
@@ -41,12 +41,10 @@ pub fn parse_result_body(
             let text = String::from_utf8_lossy(body);
             crate::sources::raceday::parse(&text, source, year).ok()
         }
-        Pdf => {
-            match pdftotext(body) {
-                Ok(text) => parse_pdf(&text, source, year).0,
-                Err(_) => None,
-            }
-        }
+        Pdf => match pdftotext(body) {
+            Ok(text) => parse_pdf(&text, source, year).0,
+            Err(_) => None,
+        },
         Unparsed => None,
     }
 }

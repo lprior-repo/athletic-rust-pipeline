@@ -39,4 +39,3 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
         rows_skipped: scan.rows_skipped,
     })
 }
-

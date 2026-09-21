@@ -20,12 +20,11 @@ pub(crate) async fn act(
     action: BrowserAction,
 ) -> Result<BrowserStatus, HandlerError> {
     ctx.run(move || async move {
-        let browser = runtime
-            .ensure_browser()
-            .await
-            .map_err(|_| TerminalError::new(
+        let browser = runtime.ensure_browser().await.map_err(|_| {
+            TerminalError::new(
                 "persistent browser startup failed; inspect local worker diagnostics",
-            ))?;
+            )
+        })?;
         let status = dispatch_action(&browser, action)
             .await
             .map_err(|error| TerminalError::new(error.to_string()))?;

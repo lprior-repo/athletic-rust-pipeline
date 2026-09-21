@@ -99,8 +99,13 @@ impl CaptureRun<'_> {
     /// Install the capture hooks, subscribe to the delivery streams, and navigate.
     async fn wire_page(
         &mut self,
-    ) -> Result<(EventStream<EventBindingCalled>, EventStream<EventResponseReceived>), BrowserError>
-    {
+    ) -> Result<
+        (
+            EventStream<EventBindingCalled>,
+            EventStream<EventResponseReceived>,
+        ),
+        BrowserError,
+    > {
         self.install().await?;
         let binding_events = transport(
             self.page.event_listener::<EventBindingCalled>().await,

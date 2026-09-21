@@ -37,7 +37,8 @@ pub(super) async fn seal_rankings_collection(
     let Some(scope) = &inputs.snapshot.rankings else {
         return Ok(());
     };
-    let collection = rankings_collection::collection_fingerprint(&scope.revision, &request.snapshot)?;
+    let collection =
+        rankings_collection::collection_fingerprint(&scope.revision, &request.snapshot)?;
     let collection_req = rankings_collection::CollectionRequest {
         source_snapshot: request.snapshot.clone(),
     };
@@ -50,7 +51,10 @@ pub(super) async fn seal_rankings_collection(
     Ok(())
 }
 
-pub(super) async fn validate_snapshot(runtime: &Runtime, request: &RunRequest) -> anyhow::Result<()> {
+pub(super) async fn validate_snapshot(
+    runtime: &Runtime,
+    request: &RunRequest,
+) -> anyhow::Result<()> {
     if usize::from(request.concurrency.get()) > runtime.config.row_concurrency() {
         anyhow::bail!("requested row concurrency exceeds worker capacity");
     }

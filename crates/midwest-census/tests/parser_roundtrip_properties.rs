@@ -136,13 +136,27 @@ fn tail_blocks() -> impl Strategy<Value = Vec<String>> {
 /// `round`, which a later marker line re-labels on the still-open section, and `legs`, which a
 /// following `1) Name 11` line appends to the relay row the open section ends with.
 fn prefix_survives(shorter: &ParsedMeet, longer: &ParsedMeet) -> Result<(), TestCaseError> {
-    if (shorter.name.as_str(), shorter.date.as_str(), shorter.timer.as_ref())
-        != (longer.name.as_str(), longer.date.as_str(), longer.timer.as_ref())
-    {
+    if (
+        shorter.name.as_str(),
+        shorter.date.as_str(),
+        shorter.timer.as_ref(),
+    ) != (
+        longer.name.as_str(),
+        longer.date.as_str(),
+        longer.timer.as_ref(),
+    ) {
         return Err(TestCaseError::fail(format!(
             "identity moved: {:?} became {:?}",
-            (shorter.name.as_str(), shorter.date.as_str(), shorter.timer.as_ref()),
-            (longer.name.as_str(), longer.date.as_str(), longer.timer.as_ref())
+            (
+                shorter.name.as_str(),
+                shorter.date.as_str(),
+                shorter.timer.as_ref()
+            ),
+            (
+                longer.name.as_str(),
+                longer.date.as_str(),
+                longer.timer.as_ref()
+            )
         )));
     }
     if longer.events.len() < shorter.events.len() || longer.rows_parsed < shorter.rows_parsed {
@@ -170,16 +184,18 @@ fn prefix_survives(shorter: &ParsedMeet, longer: &ParsedMeet) -> Result<(), Test
                 extended.rows.len()
             )));
         }
-        let frozen = if index == open { rows.saturating_sub(1) } else { rows };
+        let frozen = if index == open {
+            rows.saturating_sub(1)
+        } else {
+            rows
+        };
         if extended.rows[..frozen] != event.rows[..frozen] {
             return Err(TestCaseError::fail(format!(
                 "event {index} rewrote parsed rows: {:?} became {:?}",
                 event.rows, extended.rows
             )));
         }
-        if index == open
-            && rows > 0
-            && !legs_grew(&event.rows[rows - 1], &extended.rows[rows - 1])
+        if index == open && rows > 0 && !legs_grew(&event.rows[rows - 1], &extended.rows[rows - 1])
         {
             return Err(TestCaseError::fail(format!(
                 "event {index} rewrote its open relay row: {:?} became {:?}",

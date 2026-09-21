@@ -120,7 +120,10 @@ mod tests {
                 }));
                 assert!(caught.is_err(), "the unit panicked");
             });
-            assert!(handle.join().is_ok(), "the panic was caught inside the thread");
+            assert!(
+                handle.join().is_ok(),
+                "the panic was caught inside the thread"
+            );
         });
 
         let report = counters.snapshot();

@@ -25,7 +25,6 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-
 /// Collect this provider's schools and AD contacts into the canonical store.
 ///
 /// Strategy:

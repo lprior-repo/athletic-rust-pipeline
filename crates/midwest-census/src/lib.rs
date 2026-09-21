@@ -26,12 +26,12 @@
 
 #![forbid(unsafe_code)]
 
-pub mod outcome;
-pub mod clock;
 pub mod bests;
 pub mod bootstrap;
 pub mod census;
+pub mod clock;
 pub mod net;
+pub mod outcome;
 pub mod report;
 pub mod restate_services;
 pub mod school_index;

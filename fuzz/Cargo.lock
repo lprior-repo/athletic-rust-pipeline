@@ -767,7 +767,6 @@ dependencies = [
  "census-domain",
  "libfuzzer-sys",
  "midwest-census",
- "serde_json",
 ]
 
 [[package]]

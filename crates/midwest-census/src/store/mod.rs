@@ -288,8 +288,9 @@ impl Store {
             .map_err(|source| StoreError::Flush { source })
     }
 }
-#[cfg(test)]
-mod tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
-#[cfg(kani)] include!("../../kani/store_wiring.rs");
+#[cfg(test)]
+mod tests;
+#[cfg(kani)]
+include!("../../kani/store_wiring.rs");

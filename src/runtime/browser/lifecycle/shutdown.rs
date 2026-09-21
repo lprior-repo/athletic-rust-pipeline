@@ -43,13 +43,19 @@ impl BrowserManager {
         match tokio::time::timeout_at(deadline, self.tx.send(Command::Shutdown { reply })).await {
             Ok(Ok(())) => match tokio::time::timeout_at(deadline, result).await {
                 Ok(Ok(report)) => (report, None),
-                Ok(Err(_)) => (DrainReport::default(), Some(anyhow::anyhow!("browser actor stopped"))),
+                Ok(Err(_)) => (
+                    DrainReport::default(),
+                    Some(anyhow::anyhow!("browser actor stopped")),
+                ),
                 Err(_) => (
                     DrainReport::default(),
                     Some(anyhow::anyhow!("browser shutdown reply timed out")),
                 ),
             },
-            Ok(Err(_)) => (DrainReport::default(), Some(anyhow::anyhow!("browser actor stopped"))),
+            Ok(Err(_)) => (
+                DrainReport::default(),
+                Some(anyhow::anyhow!("browser actor stopped")),
+            ),
             Err(_) => (
                 DrainReport::default(),
                 Some(anyhow::anyhow!("browser shutdown send timed out")),
@@ -65,9 +71,7 @@ impl BrowserManager {
         let mut guard = self.join.lock().await;
         let join = guard.take();
         drop(guard);
-        let Some(mut handle) = join else {
-            return None;
-        };
+        let mut handle = join?;
         match tokio::time::timeout_at(deadline, &mut handle).await {
             Ok(Ok(Ok(()))) => None,
             Ok(Ok(Err(error))) => Some(error),

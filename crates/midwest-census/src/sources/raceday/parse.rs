@@ -67,8 +67,14 @@ fn read_tables(
     let mut tables = Tables::default();
     for table in patterns.table.find_iter(body).map(|m| m.as_str()) {
         let labels = table_labels(table, tags, patterns.head, patterns.row, patterns.cell);
-        let (rows, skipped) =
-            table_rows(table, &labels, tags, patterns.row, patterns.cell, patterns.body);
+        let (rows, skipped) = table_rows(
+            table,
+            &labels,
+            tags,
+            patterns.row,
+            patterns.cell,
+            patterns.body,
+        );
         tables.rows_skipped = tables.rows_skipped.saturating_add(skipped);
         if rows.is_empty() {
             continue;

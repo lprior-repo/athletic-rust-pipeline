@@ -26,9 +26,10 @@
 #![forbid(unsafe_code)]
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalSchool, CanonicalTeam,
-    CoachRole, CompetitionLevel, Confidence, EventKind, Evidence, Grade, Gender, GradYear,
-    ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalSchool,
+    CanonicalTeam, CoachRole, CompetitionLevel, Confidence, EventKind, Evidence, Gender, GradYear,
+    Grade, ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef,
+    Sport,
 };
 use midwest_census::store::Entity;
 use proptest::prelude::*;
@@ -66,7 +67,12 @@ fn word(max: usize) -> impl Strategy<Value = String> {
 
 fn state() -> impl Strategy<Value = String> {
     prop_oneof![
-        Just("WI"), Just("OH"), Just("IL"), Just("KS"), Just("IA"), Just("MN")
+        Just("WI"),
+        Just("OH"),
+        Just("IL"),
+        Just("KS"),
+        Just("IA"),
+        Just("MN")
     ]
     .prop_map(str::to_string)
 }
@@ -80,11 +86,7 @@ fn sport() -> impl Strategy<Value = Sport> {
 }
 
 fn gender() -> impl Strategy<Value = Gender> {
-    prop_oneof![
-        Just(Gender::Boys),
-        Just(Gender::Girls),
-        Just(Gender::Mixed),
-    ]
+    prop_oneof![Just(Gender::Boys), Just(Gender::Girls), Just(Gender::Mixed),]
 }
 
 fn grade() -> impl Strategy<Value = Grade> {
@@ -143,8 +145,14 @@ fn school() -> impl Strategy<Value = CanonicalSchool> {
 }
 
 fn team() -> impl Strategy<Value = CanonicalTeam> {
-    (school(), sport(), gender(), school_year(), prop::option::of(word(10))).prop_map(
-        |(school, sport, gender, year, level)| CanonicalTeam {
+    (
+        school(),
+        sport(),
+        gender(),
+        school_year(),
+        prop::option::of(word(10)),
+    )
+        .prop_map(|(school, sport, gender, year, level)| CanonicalTeam {
             id: CanonicalTeam::mint(&school.id, sport, gender, year),
             school: school.id,
             sport,
@@ -153,8 +161,7 @@ fn team() -> impl Strategy<Value = CanonicalTeam> {
             level,
             source_identities: Vec::new(),
             evidence: Vec::new(),
-        },
-    )
+        })
 }
 
 fn coach() -> impl Strategy<Value = CanonicalCoach> {
@@ -185,8 +192,14 @@ fn coach_with_email(address: String) -> CanonicalCoach {
 }
 
 fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
-    (school(), word(20), grad_year(), gender(), prop::collection::vec(sport(), 0..=2)).prop_map(
-        |(school, name, grad_year, gender, mut sports)| {
+    (
+        school(),
+        word(20),
+        grad_year(),
+        gender(),
+        prop::collection::vec(sport(), 0..=2),
+    )
+        .prop_map(|(school, name, grad_year, gender, mut sports)| {
             let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender);
             // A row the store wrote carries set-shaped vectors: `Sport` is `Ord`, so sorting and
             // de-duplicating is how a set is held here.
@@ -194,8 +207,7 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
             sports.dedup();
             athlete.sports = sports;
             athlete
-        },
-    )
+        })
 }
 
 fn meet() -> impl Strategy<Value = CanonicalMeet> {

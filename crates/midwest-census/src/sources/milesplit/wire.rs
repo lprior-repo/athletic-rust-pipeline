@@ -103,4 +103,3 @@ pub struct Roster {
     pub team: TeamRef,
     pub athletes: Vec<RosterAthlete>,
 }
-

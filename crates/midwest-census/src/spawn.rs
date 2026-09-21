@@ -252,7 +252,7 @@ fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T
     }
 }
 
-#[cfg(test)]
-mod tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
+#[cfg(test)]
+mod tests;

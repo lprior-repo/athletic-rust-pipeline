@@ -23,8 +23,10 @@ otlp = ["dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry_sdk
 # `tokio-console` layers `console_subscriber::spawn()` next to the stderr layer. It compiles with or
 # without `RUSTFLAGS="--cfg tokio_unstable"` (that is why this feature can stay inside the gate's
 # all-features lanes), but tokio only emits its task spans under `cfg(all(tokio_unstable, feature =
-# "tracing"))` — see tokio's `cfg_trace!` in `src/macros/cfg.rs` — so without the flag the console
-# connects and sees no tasks. Build with the flag to observe them.
+# "tracing"))` — see tokio's `cfg_trace!` in `src/macros/cfg.rs` — and `console_subscriber::spawn()`
+# panics outright in a build without the flag. `main` therefore installs the layer only under
+# `cfg(tokio_unstable)` and notes the skip at `debug` otherwise. Build with the flag to observe
+# tasks.
 tokio-console = ["dep:console-subscriber", "tokio/tracing"]
 
 [dependencies]
@@ -103,7 +105,7 @@ unsafe_code = "forbid"
 unused_must_use = "deny"
 # `kani` is the harness cfg both census crates switch on (`#[cfg(kani)] include!("../kani/...")`);
 # declaring it keeps the zero-warning doctrine instead of ignoring the lint per crate.
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(tokio_unstable)'] }
 
 [workspace.lints.clippy]
 dbg_macro = "deny"

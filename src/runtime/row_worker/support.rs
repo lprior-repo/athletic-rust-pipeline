@@ -1,5 +1,5 @@
-use super::discovery::{DiscoveryState, ProfileState};
 use super::super::Runtime;
+use super::discovery::{DiscoveryState, ProfileState};
 use crate::{
     model::SourceRecord,
     runtime::{
@@ -231,7 +231,13 @@ pub(crate) async fn assess_and_publish(
     profiles: ProfileState,
     search: crate::domain::decision::SearchCompleteness,
 ) -> std::result::Result<
-    (ProfileState, (crate::domain::identity::EvidenceDigest, crate::domain::decision::Assessment)),
+    (
+        ProfileState,
+        (
+            crate::domain::identity::EvidenceDigest,
+            crate::domain::decision::Assessment,
+        ),
+    ),
     TerminalError,
 > {
     let source = source.clone();

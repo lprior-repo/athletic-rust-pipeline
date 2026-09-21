@@ -88,9 +88,12 @@ impl Counters {
 
     /// Reserve `count` consecutive sequences for one table.
     pub(super) fn reserve(&self, table: Table, count: u64) -> StoreResult<u64> {
-        let counter = self.0.get(table.file()).ok_or_else(|| StoreError::Invariant {
-            detail: format!("table {} has no sequence counter", table.file()),
-        })?;
+        let counter = self
+            .0
+            .get(table.file())
+            .ok_or_else(|| StoreError::Invariant {
+                detail: format!("table {} has no sequence counter", table.file()),
+            })?;
         Ok(counter.reserve(count))
     }
 

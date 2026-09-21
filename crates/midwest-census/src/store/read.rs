@@ -7,8 +7,8 @@ use census_domain::model::{
 };
 use fjall::Keyspace;
 use std::collections::{BTreeMap, HashSet};
-use std::io::{BufWriter, Write};
 use std::io::BufRead;
+use std::io::{BufWriter, Write};
 use std::path::Path;
 
 use super::keys::{key_label, split_observation_key, table_prefix};
@@ -203,7 +203,9 @@ fn json_failure(path: &Path, source: serde_json::Error) -> StoreError {
 ///
 /// A single unparseable row is tolerated; a second one is a [`StoreError::Json`], because a
 /// truncated tail can lose one trailing row and nothing else.
-pub fn read_rows<T: for<'de> serde::Deserialize<'de>>(path: &std::path::Path) -> StoreResult<Vec<T>> {
+pub fn read_rows<T: for<'de> serde::Deserialize<'de>>(
+    path: &std::path::Path,
+) -> StoreResult<Vec<T>> {
     if !path.exists() {
         return Ok(Vec::new());
     }

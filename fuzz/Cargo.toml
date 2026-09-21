@@ -11,7 +11,6 @@ cargo-fuzz = true
 census-domain = { path = "../crates/census-domain" }
 midwest-census = { path = "../crates/midwest-census" }
 libfuzzer-sys = "0.4"
-serde_json = "1"
 
 [[bin]]
 name = "hytek"

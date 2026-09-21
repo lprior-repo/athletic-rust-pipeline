@@ -19,8 +19,11 @@ fn an_individual_row_under_a_relay_header_keeps_its_athlete_grade_and_school() {
     // sits under the relay header that names only a `School` column. It is still an individual
     // row: reading its label as a school would file the athlete under the school and empty the
     // name, which downstream reports as an unresolved school instead of a performance.
-    let meet = parse(&lines_from_html(SECTIONS), SourceRef::new("wiaa_results", None))
-        .expect("the fixture has a meet header");
+    let meet = parse(
+        &lines_from_html(SECTIONS),
+        SourceRef::new("wiaa_results", None),
+    )
+    .expect("the fixture has a meet header");
     let relay = meet
         .events
         .iter()
@@ -52,8 +55,11 @@ fn an_individual_row_under_a_relay_header_keeps_its_athlete_grade_and_school() {
 fn the_relay_rows_around_it_stay_school_labels() {
     // The same section's relay rows name schools and list their legs; the identity reader must not
     // reach into them.
-    let meet = parse(&lines_from_html(SECTIONS), SourceRef::new("wiaa_results", None))
-        .expect("the fixture has a meet header");
+    let meet = parse(
+        &lines_from_html(SECTIONS),
+        SourceRef::new("wiaa_results", None),
+    )
+    .expect("the fixture has a meet header");
     let relay = meet
         .events
         .iter()

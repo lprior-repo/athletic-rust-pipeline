@@ -22,8 +22,8 @@ fn parses_school_from_record() {
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let record = &records[0]; // Abilene HS
 
-    let (school, id) = parse_school(record, "https://example.com/api", "2026-09-20")
-        .expect("Abilene has a name");
+    let (school, id) =
+        parse_school(record, "https://example.com/api", "2026-09-20").expect("Abilene has a name");
 
     assert_eq!(school.name, "Abilene HS");
     assert_eq!(school.state.as_deref(), Some("KS"));
@@ -63,8 +63,8 @@ fn parses_school_from_record() {
 fn parses_ad_coach_from_record() {
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let record = &records[0];
-    let (_, school_id) = parse_school(record, "https://example.com/api", "2026-09-20")
-        .expect("Abilene has a name");
+    let (_, school_id) =
+        parse_school(record, "https://example.com/api", "2026-09-20").expect("Abilene has a name");
 
     let coach = parse_ad_coach(record, &school_id, "https://example.com/api", "2026-09-20")
         .expect("Abilene has an AD");
@@ -83,8 +83,7 @@ fn parses_ad_coach_from_record() {
 fn honorific_stripped_from_ad_name() {
     let mut record = parse_records(FIXTURE).expect("fixture must parse")[0].clone();
     record.ad_name = Some("Coach Derek Berns".to_string());
-    let (_, school_id) =
-        parse_school(&record, "https://example.com/api", "2026-09-20").unwrap();
+    let (_, school_id) = parse_school(&record, "https://example.com/api", "2026-09-20").unwrap();
     let coach =
         parse_ad_coach(&record, &school_id, "https://example.com/api", "2026-09-20").unwrap();
     assert_eq!(coach.name, "Derek Berns");
@@ -124,8 +123,7 @@ fn no_cell_phones_or_principal_data_in_entities() {
     let records = parse_records(FIXTURE).expect("fixture must parse");
 
     for record in &records {
-        let (_, school_id) =
-            parse_school(record, "https://example.com/api", "2026-09-20").unwrap();
+        let (_, school_id) = parse_school(record, "https://example.com/api", "2026-09-20").unwrap();
         let coach = parse_ad_coach(record, &school_id, "https://example.com/api", "2026-09-20");
 
         // Coach phone field must be None.
@@ -156,11 +154,8 @@ fn empty_ad_name_yields_none() {
     let records = parse_records(FIXTURE).expect("fixture must parse");
     let mut record = records[0].clone();
     record.ad_name = Some("".to_string());
-    let (_, school_id) =
-        parse_school(&record, "https://example.com/api", "2026-09-20").unwrap();
-    assert!(
-        parse_ad_coach(&record, &school_id, "https://example.com/api", "2026-09-20").is_none()
-    );
+    let (_, school_id) = parse_school(&record, "https://example.com/api", "2026-09-20").unwrap();
+    assert!(parse_ad_coach(&record, &school_id, "https://example.com/api", "2026-09-20").is_none());
 }
 
 #[test]

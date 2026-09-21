@@ -13,7 +13,10 @@
 //! `SystemClock` is the only production implementation; `TestClock` is the deterministic double.
 
 use restate_sdk::prelude::*;
-use std::{sync::Arc, time::{Duration, SystemTime, UNIX_EPOCH}};
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 #[cfg(test)]
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -84,11 +87,11 @@ impl TestClock {
             .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
                 Some(current.saturating_add(by))
             });
-        let _ = self.monotonic_offset_ms.fetch_update(
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-            |current| Some(current.saturating_add(by)),
-        );
+        let _ =
+            self.monotonic_offset_ms
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+                    Some(current.saturating_add(by))
+                });
     }
 }
 

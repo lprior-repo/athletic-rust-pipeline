@@ -7,8 +7,8 @@
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
-use crate::store::StoreError;
 use crate::outcome::DrainState;
+use crate::store::StoreError;
 
 use super::USAGE;
 
@@ -85,10 +85,7 @@ pub enum BootstrapError {
     },
     /// The store bootstrap task panicked or was cancelled.
     #[error("joining the store bootstrap task failed: {reason}")]
-    StoreTask {
-        state: DrainState,
-        reason: String,
-    },
+    StoreTask { state: DrainState, reason: String },
     /// The store could not be flushed on the way out.
     #[error("persisting the store during shutdown failed: {source}")]
     StoreFlush {

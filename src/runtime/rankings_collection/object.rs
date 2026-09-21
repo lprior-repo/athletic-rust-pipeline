@@ -1,6 +1,6 @@
 use super::helpers::{self, run_catalog_step, run_page_step, schedule_step, terminal};
 use super::state::{
-    collection_fingerprint, CollectionPhase, CollectionPauseReason, CollectionRequest,
+    collection_fingerprint, CollectionPauseReason, CollectionPhase, CollectionRequest,
     CollectionState, RankingsCollectionState,
 };
 use crate::domain::identity::EvidenceDigest;

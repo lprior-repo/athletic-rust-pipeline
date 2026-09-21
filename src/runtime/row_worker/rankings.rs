@@ -1,5 +1,5 @@
-use super::discovery::DiscoveryState;
 use super::super::row_protocol::{RankingDiscoveryEvidence, RowJob};
+use super::discovery::DiscoveryState;
 use super::{TerminalError, MAX_CANDIDATES};
 use crate::{domain::name::CanonicalName, runtime::Runtime, store::rankings::RankingLookup};
 use restate_sdk::prelude::*;

@@ -12,8 +12,8 @@
 use loom::sync::{Arc, Mutex};
 use loom::thread;
 
-use super::TaskReport;
 use super::ledger::Ledger;
+use super::TaskReport;
 use crate::outcome::DrainState;
 
 /// The ledger next to the count of units the region's set still holds — the two numbers the report's

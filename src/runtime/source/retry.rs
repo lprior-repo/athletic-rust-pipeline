@@ -50,8 +50,13 @@ pub(crate) fn retryable_status(status: u16) -> bool {
 /// definition and must not be switched to the monotonic reading. A clock that cannot be read fails
 /// closed with the same `Err` an unusable header produces, which makes the caller non-retryable
 /// instead of retrying on a substituted instant.
-pub(crate) fn retry_after_now(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, &'static str> {
-    let unix_ms = clock.now_unix_ms().map_err(|_| "system clock is unreadable")?;
+pub(crate) fn retry_after_now(
+    clock: &dyn Clock,
+    headers: &HeaderMap,
+) -> Result<Duration, &'static str> {
+    let unix_ms = clock
+        .now_unix_ms()
+        .map_err(|_| "system clock is unreadable")?;
     let now = clock::unix_ms_to_system_time(unix_ms)
         .ok_or("system clock is outside the representable range")?;
     retry_after(headers, now)

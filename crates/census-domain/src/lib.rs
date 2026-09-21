@@ -11,7 +11,7 @@
 pub mod error;
 pub mod model;
 
-#[cfg(kani)] include!("../kani/census_domain_wiring.rs");
+#[cfg(kani)]
+include!("../kani/census_domain_wiring.rs");
 
 pub use error::DomainError;
-

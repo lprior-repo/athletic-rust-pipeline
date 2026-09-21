@@ -91,7 +91,11 @@ async fn gather_query(
 }
 
 /// Decode one acquired query artifact into the row's discovery state.
-async fn fold_query_artifact(runtime: &Runtime, state: &mut DiscoveryState, digest: &EvidenceDigest) {
+async fn fold_query_artifact(
+    runtime: &Runtime,
+    state: &mut DiscoveryState,
+    digest: &EvidenceDigest,
+) {
     match runtime.load_json::<QueryEvidence>(digest).await {
         Ok(artifact) => fold_query(runtime, state, &artifact).await,
         Err(error) => state

@@ -100,17 +100,30 @@ pub(super) struct JobResult {
     pub(super) result: Result<BrowserResponse, BrowserError>,
 }
 
+/// The shared handles the actor is built with: the readiness/cooldown state the manager reads too,
+/// the profile gate that admits navigations, and the clock the actor timestamps with. The manager
+/// hands these same `Arc`s to its handlers, so they travel as one value instead of four arguments.
+pub(super) struct ActorHandles {
+    pub(super) status: Arc<RwLock<BrowserStatus>>,
+    pub(super) cooldown_until: Arc<Mutex<Option<Instant>>>,
+    pub(super) gate: Arc<ProfileGate>,
+    pub(super) clock: Arc<dyn Clock>,
+}
+
 impl Actor {
     pub(super) fn new(
         connection: BrowserConnection,
         settings: BrowserSettings,
         rx: mpsc::Receiver<Command>,
         handler_pair: (mpsc::Receiver<HandlerEvent>, JoinHandle<()>),
-        status: Arc<RwLock<BrowserStatus>>,
-        cooldown_until: Arc<Mutex<Option<Instant>>>,
-        gate: Arc<ProfileGate>,
-        clock: Arc<dyn Clock>,
+        handles: ActorHandles,
     ) -> Self {
+        let ActorHandles {
+            status,
+            cooldown_until,
+            gate,
+            clock,
+        } = handles;
         let queue_capacity = settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1);
         Self {
             browser: Some(connection.browser),

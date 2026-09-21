@@ -3,7 +3,7 @@
 use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Confidence, Evidence, Gender,
-    Grade, GradYear, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
+    GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
     SourceRef, Sport,
 };
 

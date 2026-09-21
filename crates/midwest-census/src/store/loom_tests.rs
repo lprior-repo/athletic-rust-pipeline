@@ -10,8 +10,8 @@
 //! space — each starting where the last ended, so no sequence is handed out twice and none is
 //! skipped — in every interleaving the model explores.
 
-use loom::sync::Arc;
 use loom::sync::atomic::{AtomicU64, Ordering};
+use loom::sync::Arc;
 use loom::thread;
 
 use super::sequences::{Reserve, SequenceCounter};
@@ -67,7 +67,10 @@ fn concurrent_writers_tile_the_sequence_space() {
             );
             next += count;
         }
-        assert_eq!(next, 5, "the counter handed out a sequence nobody asked for");
+        assert_eq!(
+            next, 5,
+            "the counter handed out a sequence nobody asked for"
+        );
         assert_eq!(
             counter.next(),
             5,

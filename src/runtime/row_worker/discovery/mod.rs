@@ -68,7 +68,10 @@ pub(crate) async fn assess_candidates(
     snapshot: &EvidenceDigest,
     discovery: &RowDiscovery,
 ) -> Result<
-    (ProfileState, (EvidenceDigest, crate::domain::decision::Assessment)),
+    (
+        ProfileState,
+        (EvidenceDigest, crate::domain::decision::Assessment),
+    ),
     HandlerError,
 > {
     let (profiles, _profile_refs) = execute_profiles(

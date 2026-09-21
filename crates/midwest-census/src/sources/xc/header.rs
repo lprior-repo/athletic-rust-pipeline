@@ -47,7 +47,6 @@ pub(super) fn header(lines: &[String]) -> Option<(String, Option<String>)> {
     Some((name?, date))
 }
 
-
 const MONTHS: [&str; 12] = [
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
 ];
@@ -74,4 +73,3 @@ fn parse_date(line: &str) -> Option<String> {
         captures.get(2)?.as_str().parse::<u32>().ok()?
     ))
 }
-

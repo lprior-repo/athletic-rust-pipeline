@@ -42,26 +42,25 @@ impl Actor {
             .ok_or(BrowserError::Unavailable)?
             .page
             .clone();
-        let outcome =
-            match navigation::inspect(
-                &page,
-                &self.settings.source_origin,
-                self.gate.clone(),
-                self.clock.as_ref(),
-            )
-            .await
-            {
-                Ok(value) => value,
-                Err(error) => {
-                    // Failed inspection: revoke admission and mark handled
-                    // so generic gate.closed does not turn invalid metadata
-                    // into a fresh automatic challenge navigation.
-                    self.gate.revoke();
-                    self.challenge_latched = true;
-                    self.set_state(BrowserState::Restarting);
-                    return Err(error);
-                }
-            };
+        let outcome = match navigation::inspect(
+            &page,
+            &self.settings.source_origin,
+            self.gate.clone(),
+            self.clock.as_ref(),
+        )
+        .await
+        {
+            Ok(value) => value,
+            Err(error) => {
+                // Failed inspection: revoke admission and mark handled
+                // so generic gate.closed does not turn invalid metadata
+                // into a fresh automatic challenge navigation.
+                self.gate.revoke();
+                self.challenge_latched = true;
+                self.set_state(BrowserState::Restarting);
+                return Err(error);
+            }
+        };
         let is_ready = matches!(outcome, NavigationOutcome::Ready);
         self.apply_navigation(outcome);
         if !is_ready || !self.gate.try_open(snap.generation) {

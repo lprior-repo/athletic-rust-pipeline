@@ -7,7 +7,7 @@
 //! partially built manager through `shutdown` instead of dropping a live actor.
 
 use super::super::{
-    actor::{Actor, BrowserConnection, Command, HandlerEvent},
+    actor::{Actor, ActorHandles, BrowserConnection, Command, HandlerEvent},
     gate::ProfileGate,
     pool, BrowserSettings, BrowserState, BrowserStatus,
 };
@@ -81,10 +81,12 @@ async fn finish_startup(
         settings,
         rx,
         (handler_rx, handler_join),
-        status.clone(),
-        cooldown_until.clone(),
-        gate.clone(),
-        clock.clone(),
+        ActorHandles {
+            status: status.clone(),
+            cooldown_until: cooldown_until.clone(),
+            gate: gate.clone(),
+            clock: clock.clone(),
+        },
     );
     // `Actor::run` instruments itself, but a spawn does not carry the spawner's span into the
     // task, so the actor's own span would start a fresh root trace. This span names the session.
@@ -119,7 +121,11 @@ async fn finish_bootstrap(manager: BrowserManager) -> anyhow::Result<BrowserMana
     };
     if let Err(error) = bootstrap_result {
         let (report, failure) = manager.shutdown().await;
-        tracing::warn!(?report, ?failure, "browser drained after a bootstrap failure");
+        tracing::warn!(
+            ?report,
+            ?failure,
+            "browser drained after a bootstrap failure"
+        );
         return Err(error);
     }
     Ok(manager)

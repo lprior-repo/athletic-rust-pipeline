@@ -81,7 +81,10 @@ impl Actor {
         }
         let remaining = count(self.observers.len());
         self.region.abandon(remaining);
-        tracing::warn!(remaining, "browser page observers unresolved at the shutdown deadline");
+        tracing::warn!(
+            remaining,
+            "browser page observers unresolved at the shutdown deadline"
+        );
     }
 
     /// Abort and reap every outstanding fetch job.
@@ -101,7 +104,10 @@ impl Actor {
         }
         let remaining = count(self.jobs.len());
         self.region.abandon(remaining);
-        tracing::warn!(remaining, "browser fetch jobs unresolved at the shutdown deadline");
+        tracing::warn!(
+            remaining,
+            "browser fetch jobs unresolved at the shutdown deadline"
+        );
     }
 
     /// Close owned pages before waiting the handler — prevents the handler from

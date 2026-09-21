@@ -171,9 +171,17 @@ fn emit_batch<'t>(
     stats.athletes = stats.athletes.saturating_add(entities.athletes.len());
     stats.schools = stats.schools.saturating_add(entities.schools.len());
     stats.teams = stats.teams.saturating_add(entities.teams.len());
-    stats.rows_with_grade = stats.rows_with_grade.saturating_add(entities.rows_with_grade);
-    stats.rows_with_athlete_id = stats.rows_with_athlete_id.saturating_add(entities.rows_with_athlete_id);
-    stats.rows_with_team_id = stats.rows_with_team_id.saturating_add(entities.rows_with_team_id);
-    stats.rows_without_school = stats.rows_without_school.saturating_add(entities.rows_without_school);
+    stats.rows_with_grade = stats
+        .rows_with_grade
+        .saturating_add(entities.rows_with_grade);
+    stats.rows_with_athlete_id = stats
+        .rows_with_athlete_id
+        .saturating_add(entities.rows_with_athlete_id);
+    stats.rows_with_team_id = stats
+        .rows_with_team_id
+        .saturating_add(entities.rows_with_team_id);
+    stats.rows_without_school = stats
+        .rows_without_school
+        .saturating_add(entities.rows_without_school);
     Ok(())
 }

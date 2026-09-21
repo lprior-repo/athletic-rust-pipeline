@@ -19,6 +19,6 @@ pub use records::{
     RankingsPageCheckpoint,
 };
 pub use state::{
-    collection_fingerprint, CollectionPhase, CollectionPauseReason, CollectionRequest,
+    collection_fingerprint, CollectionPauseReason, CollectionPhase, CollectionRequest,
     CollectionState, EventProgress, RankingsCollectionState,
 };
