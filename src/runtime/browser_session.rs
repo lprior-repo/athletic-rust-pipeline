@@ -1,17 +1,19 @@
-use super::{
-    browser::{BrowserState, BrowserStatus},
-    browser_readiness::{self, BrowserAction},
-    Runtime,
-};
+use super::{browser::BrowserStatus, browser_readiness, Runtime};
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+
+mod readiness;
+mod recovery;
+mod status;
+
+use readiness::observe_ready;
+use recovery::release_exhausted_recovery;
+use status::{merge_status, validate_key};
 
 pub const BROWSER_SESSION_KEY: &str = "profile-0";
 const MAX_OBSERVATIONS: usize = 17_280;
-const POLL_INTERVAL: Duration = Duration::from_secs(5);
-const READINESS_DEADLINE_MS: u64 = 24 * 60 * 60 * 1_000;
 
 /// Operator intent for the readiness workflow.
 ///
@@ -149,179 +151,5 @@ impl BrowserSession {
     }
 }
 
-async fn observe_ready(
-    ctx: &ObjectContext<'_>,
-    runtime: Arc<Runtime>,
-    started: u64,
-) -> Result<Option<BrowserStatus>, HandlerError> {
-    let observed = browser_readiness::act(ctx, runtime.clone(), BrowserAction::Inspect).await?;
-    let now = browser_readiness::now_ms(ctx).await?;
-    if now.saturating_sub(started) >= READINESS_DEADLINE_MS {
-        return Err(TerminalError::new_with_code(
-            408,
-            "browser readiness deadline exhausted; operator action required",
-        )
-        .into());
-    }
-    let status = respect_cooldown(ctx, observed, now).await?;
-    // Cooldown expired — issue a fresh navigation to verify recovery
-    // instead of reusing potentially-stale cached observation.
-    let status = if ctx.get::<bool>("cooldown-expired").await? == Some(true) {
-        // Wait for active jobs to drain before issuing cooldown-expired Recover.
-        let physical = browser_readiness::physical_status(&runtime).await;
-        if physical.active_requests == 0 {
-            let navigation =
-                browser_readiness::act(ctx, runtime.clone(), BrowserAction::Recover).await?;
-            // Retain the navigation outcome regardless of state — verify
-            // the navigation actually occurred, not just whether it reached Ready.
-            if navigation.state == BrowserState::Ready {
-                ctx.clear("cooldown-expired");
-            }
-            navigation
-        } else {
-            status
-        }
-    } else {
-        status
-    };
-    if status.state == BrowserState::Ready {
-        ctx.clear("challenge-started-ms");
-        ctx.clear("recovery-issued");
-        ctx.clear("cooldown-expired");
-        ctx.set("status", Json(status.clone()));
-        return Ok(Some(status));
-    }
-    let status = handle_challenge(ctx, runtime, status, now).await?;
-    if status.state == BrowserState::HumanRequired {
-        // Escalation ends this wait with an explicit durable state instead of
-        // polling to the readiness deadline; the operator re-runs readiness
-        // after clearing the challenge or relaunching the browser.
-        ctx.set("status", Json(status.clone()));
-        ctx.clear("challenge-started-ms");
-        ctx.clear("recovery-issued");
-        return Ok(Some(status));
-    }
-    ctx.set("status", Json(status));
-    ctx.sleep(POLL_INTERVAL).await?;
-    Ok(None)
-}
-
-async fn respect_cooldown(
-    ctx: &ObjectContext<'_>,
-    mut status: BrowserStatus,
-    now: u64,
-) -> Result<BrowserStatus, HandlerError> {
-    let previous = ctx
-        .get::<u64>("cooldown-until-ms")
-        .await?
-        .map_or(0, |value| value);
-    let observed = now
-        .checked_add(status.cooldown_ms)
-        .ok_or_else(|| TerminalError::new("browser cooldown deadline overflow"))?;
-    let deadline = previous.max(observed);
-    if deadline > now {
-        ctx.set("cooldown-until-ms", deadline);
-        ctx.clear("cooldown-expired");
-        status.cooldown_ms = deadline.saturating_sub(now);
-        if status.state == BrowserState::Ready {
-            status.state = BrowserState::CoolingDown;
-        }
-    } else if previous > 0 {
-        ctx.clear("cooldown-until-ms");
-        ctx.set("cooldown-expired", true);
-    }
-    Ok(status)
-}
-
-async fn handle_challenge(
-    ctx: &ObjectContext<'_>,
-    runtime: Arc<Runtime>,
-    mut status: BrowserStatus,
-    now: u64,
-) -> Result<BrowserStatus, HandlerError> {
-    if !can_escalate(status.state) {
-        return Ok(status);
-    }
-    let started = match ctx.get::<u64>("challenge-started-ms").await? {
-        Some(value) => value,
-        None => {
-            ctx.set("challenge-started-ms", now);
-            now
-        }
-    };
-    if status.state == BrowserState::Challenged
-        && ctx.get::<bool>("recovery-issued").await? != Some(true)
-    {
-        // Only issue recovery when no active jobs and not cooling down.
-        let physical = browser_readiness::physical_status(&runtime).await;
-        if physical.active_requests == 0 && physical.cooldown_ms == 0 {
-            // Issue recovery navigation. Mark recovery-issued AFTER the
-            // navigation completes regardless of outcome — the navigation
-            // itself is the recovery attempt, not just a Ready result.
-            status = browser_readiness::act(ctx, runtime.clone(), BrowserAction::Recover).await?;
-            // Only set recovery-issued once per challenge cycle.
-            // Do NOT clear it on duplicate challenge observations.
-            ctx.set("recovery-issued", true);
-        }
-    }
-    let window = u64::try_from(runtime.config.browser_settings().challenge_wait.as_millis())
-        .map_err(|_| TerminalError::new("browser challenge window overflow"))?;
-    if status.state != BrowserState::Ready && now.saturating_sub(started) >= window {
-        status = browser_readiness::act(ctx, runtime, BrowserAction::HumanRequired).await?;
-    }
-    Ok(status)
-}
-
-fn merge_status(durable: Option<BrowserStatus>, mut physical: BrowserStatus) -> BrowserStatus {
-    if let Some(durable) = durable {
-        if physical.state == BrowserState::Ready && durable.state != BrowserState::Ready {
-            physical.state = durable.state;
-            physical.cooldown_ms = durable.cooldown_ms;
-        }
-    }
-    physical
-}
-
-/// States that cannot recover without operator action: a challenge the human
-/// must clear, or a restart attempt that never reached a verdict.
-fn can_escalate(state: BrowserState) -> bool {
-    matches!(state, BrowserState::Challenged | BrowserState::Restarting)
-}
-
-/// Re-arm an exhausted session for one bounded attempt when an operator
-/// explicitly re-runs readiness. Without this, every caller keeps observing
-/// the same stalled state while the recovery latch stays consumed.
-async fn release_exhausted_recovery(
-    ctx: &ObjectContext<'_>,
-    runtime: Arc<Runtime>,
-) -> Result<(), HandlerError> {
-    ctx.clear("challenge-started-ms");
-    ctx.clear("recovery-issued");
-    let physical = browser_readiness::physical_status(&runtime).await;
-    if physical.state == BrowserState::HumanRequired {
-        browser_readiness::act(ctx, runtime, BrowserAction::Restart).await?;
-    }
-    Ok(())
-}
-
-fn validate_key(key: &str) -> Result<(), HandlerError> {
-    if key != BROWSER_SESSION_KEY {
-        return Err(TerminalError::new("invalid browser session key").into());
-    }
-    Ok(())
-}
-
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn stalls_and_challenges_escalate_while_settled_states_do_not() {
-        assert!(can_escalate(BrowserState::Challenged));
-        assert!(can_escalate(BrowserState::Restarting));
-        assert!(!can_escalate(BrowserState::Ready));
-        assert!(!can_escalate(BrowserState::CoolingDown));
-        assert!(!can_escalate(BrowserState::HumanRequired));
-        assert!(!can_escalate(BrowserState::Stopped));
-    }
-}
+mod tests;
