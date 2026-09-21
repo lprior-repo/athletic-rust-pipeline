@@ -2,7 +2,7 @@
 
 use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::decode::process_response;
-use crate::net::request::{build_request, jittered_delay, RequestBody};
+use crate::net::request::{build_request, wait_backoff, RequestBody};
 use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher, MAX_RETRIES};
 use std::path::Path;
 use std::sync::Arc;
@@ -154,13 +154,12 @@ impl Fetcher {
             url: plan.url.to_string(),
         };
         if attempt < MAX_RETRIES {
-            let delay = jittered_delay(attempt);
+            let delay = wait_backoff(attempt).await;
             debug!(
                 attempt,
                 delay_ms = delay.as_millis(),
                 "retrying after backoff"
             );
-            tokio::time::sleep(delay).await;
             return Ok(Step::Retry(error));
         }
         let mut stats = self.stats.lock().await;
@@ -184,14 +183,13 @@ impl Fetcher {
         // (5xx) and client errors (429 rate-limit).
         if error.retryable() {
             if attempt < MAX_RETRIES {
-                let delay = jittered_delay(attempt);
+                let delay = wait_backoff(attempt).await;
                 debug!(
                     attempt,
                     status,
                     delay_ms = delay.as_millis(),
                     "retrying on server error"
                 );
-                tokio::time::sleep(delay).await;
                 return Step::Retry(error);
             }
         } else if status == 404 && !plan.options.allow_not_found {

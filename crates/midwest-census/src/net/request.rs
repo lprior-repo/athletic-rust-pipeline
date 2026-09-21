@@ -120,6 +120,17 @@ pub(super) fn jittered_delay(attempt: u32) -> Duration {
     Duration::from_millis(delay_ms)
 }
 
+/// Wait out one retry's backoff, and report the delay it consumed.
+///
+/// The schedule ([`jittered_delay`]) and the wait live in one module so a retrying loop cannot wait
+/// something other than what it logged, and a paused-clock test can assert both halves of the
+/// policy: the delay is the schedule's, and the clock moved by exactly it.
+pub(super) async fn wait_backoff(attempt: u32) -> Duration {
+    let delay = jittered_delay(attempt);
+    tokio::time::sleep(delay).await;
+    delay
+}
+
 /// splitmix64 over one counter: cheap, deterministic, and dependency-free.
 fn mix_attempt(attempt: u32) -> u64 {
     let mut z = u64::from(attempt).wrapping_add(0x9E37_79B9_7F4A_7C15);

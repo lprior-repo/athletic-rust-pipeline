@@ -201,3 +201,6 @@ fn request_target(url: &str) -> Result<(String, String, String), FetchError> {
     };
     Ok((host, origin, path_and_query))
 }
+
+#[cfg(test)]
+mod tests;
