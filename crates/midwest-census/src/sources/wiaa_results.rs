@@ -21,8 +21,8 @@
 //! canonical athlete instead of creating a parallel one.
 
 use crate::model::{
-    tag, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
-    CompetitionLevel, Evidence, Gender, GradYear, Grade, Id, ObservedGrade, SchoolId, SchoolYear,
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
+    CompetitionLevel, Evidence, Gender, GradYear, Grade, ObservedGrade, SchoolId, SchoolYear,
     SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
 use crate::school_index::SchoolIndex;
@@ -825,15 +825,7 @@ fn team_for(
     teams
         .entry(key)
         .or_insert_with(|| {
-            let id = Id::<tag::Team>::mint(
-                "team",
-                &[
-                    school.as_str(),
-                    &format!("{sport:?}"),
-                    &format!("{gender:?}"),
-                    &school_year.start_year().to_string(),
-                ],
-            );
+            let id = CanonicalTeam::mint(school, sport, gender, school_year);
             CanonicalTeam {
                 id,
                 school: school.clone(),

@@ -279,7 +279,7 @@ fn parse_date(line: &str) -> Option<String> {
 fn block_starts(line: &str) -> Option<Vec<usize>> {
     let starts: Vec<usize> = BLOCK_START
         .captures_iter(line)
-        .map(|captures| captures.get(0).expect("group 0").start())
+        .filter_map(|captures| captures.get(0).map(|m| m.start()))
         .collect();
     (!starts.is_empty()).then_some(starts)
 }
@@ -334,19 +334,22 @@ fn event_of(slice: &str) -> Option<(Gender, String, Option<String>, Option<Strin
     let trimmed = trimmed.trim();
     let round = ROUND_TAIL
         .captures(trimmed)
-        .map(|captures| match captures[1].to_ascii_lowercase().as_str() {
-            "prelims" | "preliminaries" => "preliminaries",
-            "semis" | "semi-finals" | "semifinals" => "semi-finals",
-            _ => "finals",
+        .and_then(|captures| {
+            let label = captures.get(1)?.as_str().to_ascii_lowercase();
+            Some(match label.as_str() {
+                "prelims" | "preliminaries" => "preliminaries",
+                "semis" | "semi-finals" | "semifinals" => "semi-finals",
+                _ => "finals",
+            })
         })
         .map(str::to_string);
     let head = ROUND_TAIL.replace(trimmed, "");
     let captures = EVENT_LABEL.captures(head.trim())?;
-    let gender = match captures[1].to_ascii_lowercase().as_str() {
+    let gender = match captures.get(1)?.as_str().to_ascii_lowercase().as_str() {
         "boys" | "men" => Gender::Boys,
         _ => Gender::Girls,
     };
-    let label = captures[2].trim().to_string();
+    let label = captures.get(2)?.as_str().trim().to_string();
     if label.is_empty() {
         return None;
     }
@@ -416,8 +419,6 @@ fn parse_row(line: &str, line_tokens: &[hytek::Token<'_>], block: &Block) -> Opt
         legs: Vec::new(),
     })
 }
-
-/// Relay legs are printed under the relay row, two per line: `1) Wloszczynski, Lexi 10`.
 fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> bool {
     if !block.kind.is_relay() {
         return false;
@@ -428,15 +429,25 @@ fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> bool {
     let slice = substring(line, block.start, block.limit);
     let mut found = false;
     for captures in RELAY_LEG.captures_iter(&slice) {
-        let name = captures[2].trim().trim_end_matches(',').to_string();
+        let name = captures
+            .get(2)
+            .map(|m| m.as_str().trim().trim_end_matches(','))
+            .unwrap_or_default()
+            .to_string();
         if !looks_like_a_name(&name) {
             continue;
         }
-        let position = captures[1].parse::<u8>().ok().unwrap_or(0);
+        let position = captures
+            .get(1)
+            .map(|m| m.as_str().parse::<u8>())
+            .and_then(|r| r.ok())
+            .unwrap_or(0);
         row.legs.push(RelayLeg {
             position,
             name,
-            grade: grade_from_token(captures[3].trim()),
+            grade: captures
+                .get(3)
+                .and_then(|m| grade_from_token(m.as_str().trim())),
         });
         found = true;
     }

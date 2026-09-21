@@ -153,6 +153,12 @@ impl GradYear {
     /// Class of 2027.
     pub const CO2027: GradYear = GradYear(2027);
 
+    /// Raw graduation year, e.g. `2027`. The tuple field stays public for pattern matching, the
+    /// accessor is what domain code should read so a future invariant change lands in one place.
+    pub const fn get(self) -> i16 {
+        self.0
+    }
+
     pub fn new(year: i16) -> Option<Self> {
         (2020..=2040).contains(&year).then_some(GradYear(year))
     }
@@ -429,6 +435,27 @@ pub struct CanonicalTeam {
     pub level: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
+}
+
+impl CanonicalTeam {
+    /// One team per (school, sport, gender side, school year). The same four values always mint the
+    /// same id, so a provider re-publishing a roster upserts the team instead of duplicating it.
+    pub fn mint(
+        school: &SchoolId,
+        sport: Sport,
+        gender: Gender,
+        school_year: SchoolYear,
+    ) -> TeamId {
+        Id::mint(
+            "team",
+            &[
+                school.as_str(),
+                &format!("{sport:?}"),
+                &format!("{gender:?}"),
+                &school_year.start_year().to_string(),
+            ],
+        )
+    }
 }
 
 /// Meet competition level, from our own vocabulary.

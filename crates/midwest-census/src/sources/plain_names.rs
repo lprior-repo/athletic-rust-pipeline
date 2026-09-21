@@ -375,7 +375,7 @@ pub fn parse_nd_school_page(
         .filter(|name| !name.is_empty())?;
 
     let url = member.url();
-    let (mut school, school_id) = CanonicalSchool::new("ND", &name, &normalize_name(&name));
+    let (mut school, school_id) = CanonicalSchool::new("ND", &name, normalize_name(&name));
     school.city = nd_city(html);
     school.enrollment = nd_enrollment(html);
     school.school_website = ND_WEBSITE_REGEX
@@ -751,7 +751,7 @@ pub fn parse_nsaa_school(
     observed_on: &str,
 ) -> (CanonicalSchool, SchoolId) {
     let (mut canonical, school_id) =
-        CanonicalSchool::new("NE", &school.name, &normalize_name(&school.name));
+        CanonicalSchool::new("NE", &school.name, normalize_name(&school.name));
     canonical.city = school.city.clone();
     canonical.enrollment = school.enrollment;
     canonical.school_website = school.homepage.clone();
@@ -1284,7 +1284,7 @@ mod tests {
         let (_, same_school) = CanonicalSchool::new(
             "ND",
             "West Fargo Sheyenne HS",
-            &normalize_name("West Fargo Sheyenne HS"),
+            normalize_name("West Fargo Sheyenne HS"),
         );
         assert_eq!(school_id, same_school);
     }
@@ -2013,11 +2013,8 @@ mod tests {
                     .into_iter()
                     .map(|coach| {
                         format!(
-                            "{}|{:?}|{}|{:?}",
-                            coach.name,
-                            coach.sport,
-                            format!("{:?}", coach.gender),
-                            coach.role
+                            "{}|{:?}|{:?}|{:?}",
+                            coach.name, coach.sport, coach.gender, coach.role
                         )
                     })
                     .collect();

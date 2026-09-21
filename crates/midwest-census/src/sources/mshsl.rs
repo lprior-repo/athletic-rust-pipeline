@@ -381,9 +381,7 @@ pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
 /// the "next" anchor, which is what a Drupal pager renders on every page but the last.
 pub fn parse_next_listing_page(html: &str, current: usize) -> Option<usize> {
     let next = current.checked_add(1)?;
-    let Some(link) = PAGE_LINK.as_ref() else {
-        return None;
-    };
+    let link = PAGE_LINK.as_ref()?;
     let numbered = link
         .captures_iter(html)
         .filter_map(|capture| capture.get(1))
@@ -1749,9 +1747,9 @@ mod tests {
             report.notes
         );
 
-        let schools =
-            crate::report::read_rows::<CanonicalSchool>(&store.table_path(Table::Schools))
-                .expect("schools log");
+        let schools = store
+            .scan::<CanonicalSchool>(Table::Schools)
+            .expect("schools log");
         assert_eq!(schools.len(), 1);
         assert_eq!(schools[0].name, "Aitkin High School");
         assert_eq!(schools[0].state.as_deref(), Some("MN"));
@@ -1759,7 +1757,8 @@ mod tests {
         assert_eq!(schools[0].association.as_deref(), Some("mshsl"));
         assert_eq!(schools[0].enrollment, Some(291));
 
-        let coaches = crate::report::read_rows::<CanonicalCoach>(&store.table_path(Table::Coaches))
+        let coaches = store
+            .scan::<CanonicalCoach>(Table::Coaches)
             .expect("coaches log");
         assert_eq!(
             coaches.len(),
@@ -1838,13 +1837,15 @@ mod tests {
         assert_eq!(second.rows, 0, "the school was already journalled");
         assert_eq!(second.requests, 0);
         assert_eq!(
-            crate::report::read_rows::<CanonicalSchool>(&store.table_path(Table::Schools))
+            store
+                .scan::<CanonicalSchool>(Table::Schools)
                 .expect("schools log")
                 .len(),
             1
         );
         assert_eq!(
-            crate::report::read_rows::<CanonicalCoach>(&store.table_path(Table::Coaches))
+            store
+                .scan::<CanonicalCoach>(Table::Coaches)
                 .expect("coaches log")
                 .len(),
             4

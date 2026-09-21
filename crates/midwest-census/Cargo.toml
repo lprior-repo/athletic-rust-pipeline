@@ -9,14 +9,21 @@ license = "MIT"
 name = "midwest-census"
 path = "src/main.rs"
 
+[[bin]]
+name = "midwest-serve"
+path = "src/bin/midwest-serve.rs"
+
 [dependencies]
 anyhow = "1"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap = { version = "4.5", features = ["derive"] }
 csv = "1"
+fjall = "=3.1.10"
 futures = "0.3"
 regex = "1.11"
 reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
+restate-sdk = { version = "=0.12.0", default-features = false, features = ["http_server", "aws_lc_rs", "reqwest-client"] }
+rust_xlsxwriter = { version = "=0.99.1", features = ["constant_memory"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10"
@@ -28,5 +35,6 @@ unicode-normalization = "0.1"
 url = { version = "2.5", features = ["serde"] }
 
 [dev-dependencies]
+calamine = "=0.36.1"
 tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }
 tempfile = "3"

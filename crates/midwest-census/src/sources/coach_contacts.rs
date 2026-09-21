@@ -509,15 +509,24 @@ mod tests {
         let report = import_csv(&store, &path, "2026-09-20").unwrap();
         assert!(report.rows > 0, "coach rows imported: {}", report.rows);
 
-        let read = |table: Table| -> Vec<serde_json::Value> {
-            std::fs::read_to_string(store.table_path(table))
+        let read_schools = || -> Vec<serde_json::Value> {
+            store
+                .scan::<CanonicalSchool>(Table::Schools)
                 .unwrap()
-                .lines()
-                .map(|line| serde_json::from_str(line).unwrap())
+                .into_iter()
+                .map(|v| serde_json::to_value(&v).unwrap())
                 .collect()
         };
-        let schools = read(Table::Schools);
-        let coaches = read(Table::Coaches);
+        let read_coaches = || -> Vec<serde_json::Value> {
+            store
+                .scan::<CanonicalCoach>(Table::Coaches)
+                .unwrap()
+                .into_iter()
+                .map(|v| serde_json::to_value(&v).unwrap())
+                .collect()
+        };
+        let schools = read_schools();
+        let coaches = read_coaches();
 
         // Four Abbotsford rows collapse to one school record; the MI slug/name forms stay distinct
         // from each other but each is a single record.

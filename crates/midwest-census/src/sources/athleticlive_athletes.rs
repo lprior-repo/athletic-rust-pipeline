@@ -39,9 +39,8 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::model::{
-    tag, CanonicalAthlete, CanonicalMeet, CanonicalSchool, CanonicalTeam, Evidence, Gender,
-    GradYear, Grade, Id, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
-    Sport,
+    CanonicalAthlete, CanonicalMeet, CanonicalSchool, CanonicalTeam, Evidence, Gender, GradYear,
+    Grade, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
@@ -403,7 +402,7 @@ pub fn build_entities(
         let (mut school, school_id) = CanonicalSchool::new(
             &target.state,
             school_name,
-            &crate::model::normalize_name(school_name),
+            crate::model::normalize_name(school_name),
         );
         if !school.evidence.iter().any(|e| e == &evidence) {
             school.evidence.push(evidence.clone());
@@ -422,15 +421,7 @@ pub fn build_entities(
             school_year,
         );
         let team_entry = teams.entry(team_key).or_insert_with(|| {
-            let id = Id::<tag::Team>::mint(
-                "team",
-                &[
-                    school_id.as_str(),
-                    &format!("{sport:?}"),
-                    &format!("{gender:?}"),
-                    &school_year.start_year().to_string(),
-                ],
-            );
+            let id = CanonicalTeam::mint(&school_id, sport, gender, school_year);
             CanonicalTeam {
                 id,
                 school: school_id.clone(),
@@ -518,8 +509,7 @@ pub fn build_entities(
 
 /// Collect athlete rows for every timer-published meet and emit canonical entities.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
-    let meets: Vec<CanonicalMeet> =
-        crate::report::read_rows(&ctx.store.table_path(Table::Meets)).unwrap_or_default();
+    let meets: Vec<CanonicalMeet> = ctx.store.scan(Table::Meets)?;
     if meets.is_empty() {
         bail!("no meets in the store: run the `athleticlive` adapter first");
     }

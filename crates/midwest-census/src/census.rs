@@ -5,7 +5,9 @@
 //! re-invokes with the same arguments and only the unfinished units are fetched again. HTTP bodies
 //! are additionally cached on disk, so even a re-fetch costs no network traffic unless `--refresh`.
 
-use crate::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam, SchoolYear};
+use crate::model::{
+    CanonicalAthlete, CanonicalSchool, CanonicalTeam, Gender, GradYear, SchoolYear,
+};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::store::{Store, Table};
@@ -85,6 +87,7 @@ fn rosters_phase(state: &str) -> String {
 }
 
 /// Fetch (or read the cached copy of) one state's team index.
+#[tracing::instrument(skip(fetcher, store))]
 pub async fn collect_state_teams(
     fetcher: &Fetcher,
     store: &Store,
@@ -124,7 +127,108 @@ struct Shared {
     errors: Vec<String>,
 }
 
+/// Rosters not yet journaled for `state`, plus how many were skipped because they already were.
+///
+/// The filter walks the state's team index once; `journal_keys` is the resume ledger.
+fn pending_rosters(store: &Store, teams: &[TeamRef], state: &str) -> Result<(Vec<TeamRef>, usize)> {
+    let done = store.journal_keys(&rosters_phase(state))?;
+    let pending: Vec<TeamRef> = teams
+        .iter()
+        .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))
+        .cloned()
+        .collect();
+    let skipped = teams.len().saturating_sub(pending.len());
+    Ok((pending, skipped))
+}
+
+/// Class-of-2027 athletes in a roster.
+fn count_co2027(roster: &Roster) -> usize {
+    roster
+        .athletes
+        .iter()
+        .filter(|athlete| athlete.grad_year == GradYear::CO2027)
+        .count()
+}
+
+/// Class-of-2027 athletes of one gender in a roster.
+fn count_cohort(roster: &Roster, gender: Gender) -> usize {
+    roster
+        .athletes
+        .iter()
+        .filter(|athlete| athlete.grad_year == GradYear::CO2027 && athlete.gender == gender)
+        .count()
+}
+
+/// Fold one roster outcome into the shared progress state and journal the completed unit of work.
+///
+/// A failed fetch is recorded instead of ending the walk, and a failed journal write is recorded
+/// instead of dropped: either way the unit stays unfinished and the next run repeats it.
+async fn record_roster(
+    shared: &Mutex<Shared>,
+    store: &Store,
+    state: &str,
+    team: &TeamRef,
+    outcome: Result<Roster>,
+) {
+    let roster = match outcome {
+        Ok(roster) => roster,
+        Err(error) => {
+            let mut guard = shared.lock().await;
+            guard.errors.push(format!("{}: {error:#}", team.url));
+            return;
+        }
+    };
+    let co2027 = count_co2027(&roster);
+    let mut guard = shared.lock().await;
+    guard.rosters = guard.rosters.saturating_add(1);
+    if roster.athletes.is_empty() {
+        guard.empty = guard.empty.saturating_add(1);
+    }
+    guard.athletes = guard.athletes.saturating_add(roster.athletes.len());
+    guard.co2027 = guard.co2027.saturating_add(co2027);
+    guard.co2027_boys = guard
+        .co2027_boys
+        .saturating_add(count_cohort(&roster, Gender::Boys));
+    guard.co2027_girls = guard
+        .co2027_girls
+        .saturating_add(count_cohort(&roster, Gender::Girls));
+    let payload = serde_json::json!({
+        "team": team.name,
+        "athletes": roster.athletes.len(),
+        "co2027": co2027,
+    });
+    let journal = store.journal_done(
+        &rosters_phase(state),
+        &format!("{}:{}", state, team.id),
+        &payload,
+    );
+    if let Err(error) = journal {
+        guard
+            .errors
+            .push(format!("{}: journal {error:#}", team.url));
+    }
+}
+
+/// The progress row for one state, with the first few errors kept for the report.
+fn progress_of(state: &str, teams: usize, skipped: usize, shared: &Shared) -> StateProgress {
+    StateProgress {
+        state: state.to_string(),
+        teams,
+        rosters_done: shared.rosters,
+        rosters_skipped: skipped,
+        athletes: shared.athletes,
+        class_of_2027: shared.co2027,
+        class_of_2027_boys: shared.co2027_boys,
+        class_of_2027_girls: shared.co2027_girls,
+        empty_rosters: shared.empty,
+        errors: shared.errors.iter().take(5).cloned().collect(),
+    }
+}
+
 /// Walk every team roster for one state (resumable), emitting canonical entities.
+///
+/// Bounded by the state's team index, with at most `options.concurrency` rosters in flight.
+#[tracing::instrument(skip(fetcher, store, teams, options))]
 pub async fn collect_state_rosters(
     fetcher: &Fetcher,
     store: &Store,
@@ -133,15 +237,7 @@ pub async fn collect_state_rosters(
     state: &str,
 ) -> Result<StateProgress> {
     let site: Site = milesplit::site_for_state(state)?;
-    let phase = rosters_phase(state);
-    let done = store.journal_keys(&phase)?;
-    let pending: Vec<TeamRef> = teams
-        .iter()
-        .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))
-        .cloned()
-        .collect();
-    let skipped = teams.len() - pending.len();
-
+    let (pending, skipped) = pending_rosters(store, teams, state)?;
     let shared = Arc::new(Mutex::new(Shared {
         athletes: 0,
         co2027: 0,
@@ -152,14 +248,11 @@ pub async fn collect_state_rosters(
         errors: Vec::new(),
     }));
 
-    let per_state_limit = options.limit_per_state;
-    let working: Vec<TeamRef> = match per_state_limit {
+    let working: Vec<TeamRef> = match options.limit_per_state {
         Some(limit) => pending.into_iter().take(limit).collect(),
         None => pending,
     };
 
-    let fetcher_ref = fetcher;
-    let store_ref = store;
     let observed_on = options.observed_on.clone();
     let school_year = options.school_year;
     let refresh = options.refresh;
@@ -167,12 +260,11 @@ pub async fn collect_state_rosters(
 
     stream::iter(working.into_iter().map(|team| {
         let shared = Arc::clone(&shared);
-        let site = site;
         let observed_on = observed_on.clone();
         async move {
             let outcome = fetch_and_store_roster(
-                fetcher_ref,
-                store_ref,
+                fetcher,
+                store,
                 &site,
                 &team,
                 school_year,
@@ -180,50 +272,7 @@ pub async fn collect_state_rosters(
                 refresh,
             )
             .await;
-            let mut guard = shared.lock().await;
-            match outcome {
-                Ok(roster) => {
-                    guard.rosters += 1;
-                    if roster.athletes.is_empty() {
-                        guard.empty += 1;
-                    }
-                    let co2027 = roster
-                        .athletes
-                        .iter()
-                        .filter(|athlete| athlete.grad_year == crate::model::GradYear::CO2027)
-                        .count();
-                    guard.athletes += roster.athletes.len();
-                    guard.co2027 += co2027;
-                    guard.co2027_boys += roster
-                        .athletes
-                        .iter()
-                        .filter(|athlete| {
-                            athlete.grad_year == crate::model::GradYear::CO2027
-                                && athlete.gender == crate::model::Gender::Boys
-                        })
-                        .count();
-                    guard.co2027_girls += roster
-                        .athletes
-                        .iter()
-                        .filter(|athlete| {
-                            athlete.grad_year == crate::model::GradYear::CO2027
-                                && athlete.gender == crate::model::Gender::Girls
-                        })
-                        .count();
-                    let _ = store_ref.journal_done(
-                        &format!("milesplit_rosters_{}", state.to_ascii_lowercase()),
-                        &format!("{}:{}", state, team.id),
-                        &serde_json::json!({
-                            "team": team.name,
-                            "athletes": roster.athletes.len(),
-                            "co2027": co2027,
-                        }),
-                    );
-                }
-                Err(error) => {
-                    guard.errors.push(format!("{}: {error:#}", team.url));
-                }
-            }
+            record_roster(&shared, store, state, &team, outcome).await;
         }
     }))
     .buffer_unordered(concurrency)
@@ -231,18 +280,7 @@ pub async fn collect_state_rosters(
     .await;
 
     let guard = shared.lock().await;
-    Ok(StateProgress {
-        state: state.to_string(),
-        teams: teams.len(),
-        rosters_done: guard.rosters,
-        rosters_skipped: skipped,
-        athletes: guard.athletes,
-        class_of_2027: guard.co2027,
-        class_of_2027_boys: guard.co2027_boys,
-        class_of_2027_girls: guard.co2027_girls,
-        empty_rosters: guard.empty,
-        errors: guard.errors.iter().take(5).cloned().collect(),
-    })
+    Ok(progress_of(state, teams.len(), skipped, &guard))
 }
 
 async fn fetch_and_store_roster(
@@ -272,34 +310,28 @@ async fn fetch_and_store_roster(
     Ok(roster)
 }
 
-/// Full MileSplit walk across the requested states.
-///
-/// States are walked concurrently (each state is a different host) while every individual host keeps
-/// its one-request-at-a-time, rate-limited discipline. Progress is journaled per state and per roster,
-/// so an interrupted run resumes without refetching anything already collected.
-pub async fn collect_milesplit(
+/// Walk one state: its team index, then every roster in it.
+async fn walk_state(
     fetcher: &Fetcher,
     store: &Store,
+    state: &str,
     options: &CollectOptions,
-) -> Result<CollectReport> {
-    let started = std::time::Instant::now();
-    let state_concurrency = options.state_concurrency.max(1);
+) -> Result<StateProgress> {
+    let teams = collect_state_teams(fetcher, store, state, options.refresh)
+        .await
+        .with_context(|| format!("collecting {state} team index"))?;
+    collect_state_rosters(fetcher, store, &teams, options, state).await
+}
 
-    let results: Vec<(String, Result<StateProgress>)> =
-        stream::iter(options.states.iter().cloned().map(|state| async move {
-            let outcome = async {
-                let teams = collect_state_teams(fetcher, store, &state, options.refresh)
-                    .await
-                    .with_context(|| format!("collecting {state} team index"))?;
-                collect_state_rosters(fetcher, store, &teams, options, &state).await
-            }
-            .await;
-            (state, outcome)
-        }))
-        .buffer_unordered(state_concurrency)
-        .collect()
-        .await;
+/// `usize` -> `u64` for the report counters, saturating where the value cannot fit.
+fn count(value: usize) -> u64 {
+    u64::try_from(value).unwrap_or(u64::MAX)
+}
 
+/// Fold the per-state outcomes into one report, returning it with the states that failed.
+///
+/// Bounded by the number of requested states.
+fn summarize_states(results: Vec<(String, Result<StateProgress>)>) -> (CollectReport, Vec<String>) {
     let mut report = CollectReport {
         states: Vec::new(),
         teams_total: 0,
@@ -315,11 +347,14 @@ pub async fn collect_milesplit(
     for (state, outcome) in results {
         match outcome {
             Ok(progress) => {
-                report.teams_total += progress.teams;
-                report.rosters_fetched += progress.rosters_done;
-                report.athletes_total += progress.athletes;
-                report.class_of_2027_total += progress.class_of_2027;
-                report.errors += progress.errors.len() as u64;
+                report.teams_total = report.teams_total.saturating_add(progress.teams);
+                report.rosters_fetched =
+                    report.rosters_fetched.saturating_add(progress.rosters_done);
+                report.athletes_total = report.athletes_total.saturating_add(progress.athletes);
+                report.class_of_2027_total = report
+                    .class_of_2027_total
+                    .saturating_add(progress.class_of_2027);
+                report.errors = report.errors.saturating_add(count(progress.errors.len()));
                 info!(
                     state,
                     teams = progress.teams,
@@ -335,6 +370,33 @@ pub async fn collect_milesplit(
     report
         .states
         .sort_by(|left, right| left.state.cmp(&right.state));
+    (report, failures)
+}
+
+/// Full MileSplit walk across the requested states.
+///
+/// States are walked concurrently (each state is a different host) while every individual host keeps
+/// its one-request-at-a-time, rate-limited discipline. Progress is journaled per state and per roster,
+/// so an interrupted run resumes without refetching anything already collected.
+#[tracing::instrument(skip(fetcher, store, options), fields(states = options.states.len()))]
+pub async fn collect_milesplit(
+    fetcher: &Fetcher,
+    store: &Store,
+    options: &CollectOptions,
+) -> Result<CollectReport> {
+    let started = std::time::Instant::now();
+    let state_concurrency = options.state_concurrency.max(1);
+
+    let results: Vec<(String, Result<StateProgress>)> =
+        stream::iter(options.states.iter().cloned().map(|state| async move {
+            let outcome = walk_state(fetcher, store, &state, options).await;
+            (state, outcome)
+        }))
+        .buffer_unordered(state_concurrency)
+        .collect()
+        .await;
+
+    let (mut report, failures) = summarize_states(results);
     let stats = fetcher.stats().await;
     report.requests = stats.requests;
     report.cache_hits = stats.cache_hits;
@@ -353,7 +415,9 @@ pub async fn collect_milesplit(
 
 /// Drop `professional_email` values that sit on consumer mail domains from a consolidated snapshot,
 /// returning how many rows were withheld. Rows keep every other field.
-fn scrub_consumer_emails(path: &Path) -> Result<usize> {
+///
+/// The loop is bounded by the line count of the snapshot `consolidate` just wrote.
+pub(crate) fn scrub_consumer_emails(path: &Path) -> Result<usize> {
     let raw = std::fs::read_to_string(path)?;
     let mut withheld = 0usize;
     let mut rewritten = String::with_capacity(raw.len());
@@ -368,8 +432,11 @@ fn scrub_consumer_emails(path: &Path) -> Result<usize> {
             .and_then(|value| value.as_str())
             .is_some_and(|email| crate::model::professional_email(email).is_none());
         if is_personal {
-            row["professional_email"] = serde_json::Value::Null;
-            withheld += 1;
+            // The guard above proved the field is a string, so the row is a JSON object.
+            if let Some(object) = row.as_object_mut() {
+                object.insert("professional_email".to_string(), serde_json::Value::Null);
+            }
+            withheld = withheld.saturating_add(1);
         }
         rewritten.push_str(&serde_json::to_string(&row)?);
         rewritten.push('\n');

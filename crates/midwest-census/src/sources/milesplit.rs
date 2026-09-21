@@ -151,18 +151,30 @@ static SEASON_CELL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 pub fn parse_team_index(html: &str) -> Result<Vec<TeamRef>> {
     let mut teams = Vec::new();
     for capture in TEAM_ROW_REGEX.captures_iter(html) {
-        let url = capture.get(1).expect("group 1").as_str().to_string();
-        let id = capture.get(2).expect("group 2").as_str().to_string();
-        let slug = capture.get(3).expect("group 3").as_str().to_string();
-        let name = capture.get(4).expect("group 4").as_str().trim().to_string();
-        let city_state = capture.get(5).expect("group 5").as_str().trim().to_string();
+        let Some(url_match) = capture.get(1) else {
+            continue;
+        };
+        let Some(id_match) = capture.get(2) else {
+            continue;
+        };
+        let Some(slug_match) = capture.get(3) else {
+            continue;
+        };
+        let name = capture
+            .get(4)
+            .map(|m| m.as_str().trim().to_string())
+            .unwrap_or_default();
+        let city_state = capture
+            .get(5)
+            .map(|m| m.as_str().trim().to_string())
+            .unwrap_or_default();
         if name.is_empty() {
             continue;
         }
         teams.push(TeamRef {
-            id,
-            slug,
-            url,
+            id: id_match.as_str().to_string(),
+            slug: slug_match.as_str().to_string(),
+            url: url_match.as_str().to_string(),
             name,
             city_state,
         });
@@ -182,44 +194,45 @@ pub fn parse_roster(html: &str, team: TeamRef) -> Result<Roster> {
 
     let mut athletes = Vec::new();
     for row in ATHLETE_ROW_REGEX.captures_iter(html) {
-        let row_html = row.get(1).expect("row").as_str();
+        let Some(row_match) = row.get(1) else {
+            continue;
+        };
+        let row_html = row_match.as_str();
         let Some(athlete) = link.captures(row_html) else {
             continue;
         };
-        let profile_url = athlete.get(1).expect("url").as_str().to_string();
-        let athlete_id = athlete.get(2).expect("id").as_str().to_string();
-        let roster_name = html_unescape(athlete.get(3).expect("name").as_str().trim());
+        let Some(url_match) = athlete.get(1) else {
+            continue;
+        };
+        let Some(id_match) = athlete.get(2) else {
+            continue;
+        };
+        let roster_name = athlete
+            .get(3)
+            .map(|m| html_unescape(m.as_str().trim()))
+            .unwrap_or_default();
         if roster_name.is_empty() {
             continue;
         }
         let gender = gender_cell
             .captures(row_html)
-            .map(|capture| Gender::parse_milesplit(capture.get(1).expect("gender").as_str()))
+            .and_then(|capture| Some(Gender::parse_milesplit(capture.get(1)?.as_str())))
             .unwrap_or(Gender::Unknown);
-        let Some(grad_year) = grad_cell
-            .captures(row_html)
-            .and_then(|capture| {
-                capture
-                    .get(1)
-                    .expect("grad")
-                    .as_str()
-                    .trim()
-                    .parse::<i16>()
-                    .ok()
-            })
-            .and_then(GradYear::new)
-        else {
+        let Some(grad_year) = grad_cell.captures(row_html).and_then(|capture| {
+            let grad_str = capture.get(1)?.as_str().trim();
+            let parsed = grad_str.parse::<i16>().ok()?;
+            GradYear::new(parsed)
+        }) else {
             continue;
         };
         let mut seasons = Vec::new();
         for capture in season_cell.captures_iter(row_html) {
             let season_id: u8 = capture
                 .get(1)
-                .expect("season id")
-                .as_str()
-                .parse()
+                .map(|m| m.as_str().parse::<u8>())
+                .and_then(|r| r.ok())
                 .unwrap_or(0);
-            let active = capture.get(2).expect("icon").as_str() == "yes";
+            let active = capture.get(2).map(|m| m.as_str() == "yes").unwrap_or(false);
             seasons.push((season_id, active));
         }
         // Cells appear in header order: Indoor, Outdoor, XC. The `data-season-id` is informational
@@ -233,8 +246,8 @@ pub fn parse_roster(html: &str, team: TeamRef) -> Result<Roster> {
             roster_name,
             gender,
             grad_year,
-            athlete_id,
-            profile_url,
+            athlete_id: id_match.as_str().to_string(),
+            profile_url: url_match.as_str().to_string(),
             indoor,
             outdoor,
             xc,
@@ -392,15 +405,7 @@ pub fn roster_entities(
     let teams = seen_sports
         .into_iter()
         .map(|(sport, gender)| {
-            let id = Id::<tag::Team>::mint(
-                "team",
-                &[
-                    school_id.as_str(),
-                    &format!("{sport:?}"),
-                    &format!("{gender:?}"),
-                    &school_year.start_year().to_string(),
-                ],
-            );
+            let id = CanonicalTeam::mint(&school_id, sport, gender, school_year);
             CanonicalTeam {
                 id,
                 school: school_id.clone(),

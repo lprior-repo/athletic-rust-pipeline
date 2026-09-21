@@ -695,11 +695,10 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
 }
 
 /// Mark plus the wind, heat and points published beside it.
-fn parse_marks(
-    kind: &EventKind,
-    mark_token: &str,
-    tail: &str,
-) -> Option<(Mark, Option<f64>, Option<String>, Option<f64>)> {
+/// `(mark, wind m/s, timing label, place)` — what one published mark token resolves to.
+type ParsedMark = (Mark, Option<f64>, Option<String>, Option<f64>);
+
+fn parse_marks(kind: &EventKind, mark_token: &str, tail: &str) -> Option<ParsedMark> {
     let upper = mark_token.to_ascii_uppercase();
     let mark = if NO_MARK.contains(&upper.as_str()) {
         Mark::Raw(mark_token.to_string())
