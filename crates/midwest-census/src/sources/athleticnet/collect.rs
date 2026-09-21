@@ -280,7 +280,7 @@ fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
     if !path.exists() {
         return Ok(SchoolIndex::from_schools(&[]));
     }
-    let schools: Vec<CanonicalSchool> = crate::report::read_rows(&path)?;
+    let schools: Vec<CanonicalSchool> = crate::store::read::read_rows(&path)?;
     Ok(SchoolIndex::from_schools(&schools))
 }
 

@@ -43,9 +43,6 @@ pub enum CrawlError {
     /// The store rejected an append or scan.
     #[error(transparent)]
     Store(#[from] crate::store::StoreError),
-    /// A report-side reader failed (adapters read exported rows through `report::read_rows`).
-    #[error(transparent)]
-    Report(#[from] crate::report::ReportError),
     /// Counters, offsets or sizing math overflowed.
     #[error("arithmetic overflow: {detail}")]
     Arithmetic { detail: String },

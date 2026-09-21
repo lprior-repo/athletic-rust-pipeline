@@ -19,11 +19,15 @@
 //! * [`workbook`] — the census as one spreadsheet.
 //! * [`restate_services`] — durable Restate services over the same adapters (survive crashes, retry
 //!   per step, resume from the journal).
+//! * [`spawn`] — the region-owned task spawner: every task a region starts joins back through one
+//!   set, and a drain reaps it inside a deadline instead of leaving it orphaned.
 //! * [`bootstrap`] — the service supervisor: task region, cancel/drain/finalize shutdown, drain
 //!   report.
 
 #![forbid(unsafe_code)]
 
+pub mod outcome;
+pub mod clock;
 pub mod bests;
 pub mod bootstrap;
 pub mod census;
@@ -32,6 +36,7 @@ pub mod report;
 pub mod restate_services;
 pub mod school_index;
 pub mod sources;
+pub mod spawn;
 pub mod store;
 pub mod workbook;
 

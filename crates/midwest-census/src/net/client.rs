@@ -11,8 +11,10 @@ use tokio::sync::Mutex;
 pub(super) struct HostState {
     pub(super) gate: Arc<Mutex<()>>,
     /// When the next request to this host may start (reserved before sleeping so that the spacing
-    /// holds even when several tasks queue behind the gate).
-    pub(super) next_allowed: Option<std::time::Instant>,
+    /// holds even when several tasks queue behind the gate). A `tokio::time::Instant` because that
+    /// is what the clock capability hands out, which is what lets `tokio::time::pause` drive the
+    /// pacing in tests.
+    pub(super) next_allowed: Option<tokio::time::Instant>,
     pub(super) delay: Duration,
 }
 

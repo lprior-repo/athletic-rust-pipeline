@@ -169,15 +169,19 @@ server-side journal/state, and content-addressed local artifacts.
 1. `init_tracing()` (idempotent: a second call is a no-op, not a panic).
 2. Open the store on the blocking pool — `create_dir_all(data_dir)`, then `Store::open`, because
    "Opening the store is synchronous, fsync-heavy work: it belongs on the blocking pool"
-   (`bootstrap.rs:112-124`). `Store::open` is also where legacy recovery happens: pre-Fjall
+   (`bootstrap/serve.rs`). The job is started *through the region* (`Spawner::blocking`), so the
+   drain in step 4 owns it: a supervisor that stops early cannot leave an opening store behind it.
+   `Store::open` is also where legacy recovery happens: pre-Fjall
    `entities/*.jsonl` and `journal/*.jsonl` are imported exactly once and marked under `meta`, and the
    sequence counter is "seeded from the last key present at open time" (`store.rs:1-40`).
 3. Reject a non-loopback `--listen`; bind the listener; install the stop future (SIGINT/SIGTERM or
    the caller's `shutdown`, recording a `StopReason`), then build the endpoint with
-   `restate_services::build_endpoint(store, max_concurrent)` and spawn exactly one task running
+   `restate_services::build_endpoint(store, max_concurrent, region)` and spawn exactly one task —
+   through the same region, which every service in the endpoint also starts its jobs on — running
    `HttpServer::new(endpoint).serve_with_cancel(listener, stop)`.
-4. Drain that region inside `drain_timeout` (`JoinSet` + deadline; survivors are aborted and counted,
-   not leaked), then finalize: `store.flush()` (`PersistMode::SyncAll`) and drop the store — "after the
+4. Drain that region inside `drain_timeout`: `Spawner::drain` reaps the natural exits and, at the
+   deadline, aborts and counts the survivors (`JoinSet` + deadline; survivors are aborted and counted,
+   not leaked). Then finalize: `store.flush()` (`PersistMode::SyncAll`) and drop the store — "after the
    region is empty: nothing can still be writing when the journal is synced".
 5. Return `DrainReport { accepted, completed, cancelled, timed_out, aborted, panicked, stop_reason }`
    (`bootstrap.rs:83-92`), which `midwest-serve` prints as one line before exiting.

@@ -3,7 +3,8 @@ use std::sync::Arc;
 use restate_sdk::prelude::*;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
-use crate::bootstrap::Clock;
+use crate::clock::Clock;
+use crate::spawn::Spawner;
 use crate::store::Store;
 use crate::{bests, workbook};
 
@@ -20,11 +21,24 @@ pub struct Census {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
     load: Arc<Semaphore>,
+    /// The shell's region: every heavy job this service runs is started through it, so an aborted
+    /// invocation leaves the work owned by the region instead of running unattached.
+    region: Arc<Spawner>,
 }
 
 impl Census {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, load: Arc<Semaphore>) -> Self {
-        Self { store, clock, load }
+    pub fn new(
+        store: Arc<Store>,
+        clock: Arc<dyn Clock>,
+        load: Arc<Semaphore>,
+        region: Arc<Spawner>,
+    ) -> Self {
+        Self {
+            store,
+            clock,
+            load,
+            region,
+        }
     }
 
     /// Cap concurrent heavy jobs; a closed semaphore means the service is shutting down.
@@ -58,6 +72,7 @@ impl Census {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all, fields(tables = request.tables.len()))]
     async fn consolidate(
         &self,
         ctx: Context<'_>,
@@ -65,11 +80,12 @@ impl Census {
     ) -> Result<Json<ConsolidateReply>, HandlerError> {
         let tables = resolve_tables(&request.tables)?;
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let permit = self.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(move || consolidate_tables(&store, &tables))
+                blocking(region, move || consolidate_tables(&store, &tables))
                     .await
                     .map(|tables| Json(ConsolidateReply { tables }))
                     .map_err(job_error)
@@ -79,6 +95,7 @@ impl Census {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all)]
     async fn report(
         &self,
         ctx: Context<'_>,
@@ -86,11 +103,12 @@ impl Census {
     ) -> Result<Json<ReportReply>, HandlerError> {
         let scope = resolve_scope(request.scope.as_deref())?;
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let permit = self.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(move || build_report(&store, scope))
+                blocking(region, move || build_report(&store, scope))
                     .await
                     .map(Json)
                     .map_err(job_error)
@@ -100,6 +118,7 @@ impl Census {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all)]
     async fn bests(
         &self,
         ctx: Context<'_>,
@@ -111,11 +130,12 @@ impl Census {
             limit: request.limit,
         };
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let permit = self.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(move || build_bests(&store, &options))
+                blocking(region, move || build_bests(&store, &options))
                     .await
                     .map(Json)
                     .map_err(job_error)
@@ -125,6 +145,7 @@ impl Census {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all)]
     async fn workbook(
         &self,
         ctx: Context<'_>,
@@ -136,11 +157,12 @@ impl Census {
             ..workbook::Options::default()
         };
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let permit = self.permit().await?;
         let reply = ctx
             .run(move || async move {
                 let _permit = permit;
-                blocking(move || build_workbook(&store, &options))
+                blocking(region, move || build_workbook(&store, &options))
                     .await
                     .map(Json)
                     .map_err(job_error)

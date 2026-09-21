@@ -32,6 +32,8 @@ use std::time::Duration;
 use thiserror::Error;
 use tokio::sync::Mutex;
 
+use crate::clock::{Clock, SystemClock};
+
 mod cache;
 mod client;
 mod decode;
@@ -267,12 +269,18 @@ impl Fetcher {
 // Time helpers
 // ---------------------------------------------------------------------------
 
+/// Wall-clock timestamp for request evidence and cache metadata.
+///
+/// Delegates to the [`Clock`] capability so the crate has one source of wall-clock time: the
+/// signatures stay as they are, because their callers — cache writes, decode, the collection
+/// default — carry no clock of their own to inject.
 pub fn now_iso8601() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    SystemClock.today_iso8601()
 }
 
+/// Today's date (`YYYY-MM-DD`), the default `observed_on` for a collection.
 pub fn today_iso() -> String {
-    chrono::Utc::now().format("%Y-%m-%d").to_string()
+    SystemClock.today()
 }
 
 // ---------------------------------------------------------------------------

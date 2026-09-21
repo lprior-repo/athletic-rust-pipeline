@@ -1,13 +1,22 @@
-//! Drain accounting for the owned task region: the report it returns and the bounded reap.
+//! Drain accounting for the owned task region: the report the shell returns and the bounded reap.
+//!
+//! The region itself — one [`Spawner`] over one `JoinSet` — lives in [`crate::spawn`]. This module
+//! is the shell's view of it: the report an operator reads and the integration test asserts on,
+//! plus — for tests that build a set by hand — the drain entry point that takes one.
 
-use std::time::Duration;
-
-use tokio::task::JoinSet;
-
-use crate::outcome::DrainState;
+use crate::spawn::{SpawnError, TaskReport};
 
 use super::error::BootstrapError;
 use super::stop::StopReason;
+
+// The drain entry point below is test-facing — the supervisor drains the region itself — so its
+// parameter types are imported only when a test builds a set to hand it.
+#[cfg(test)]
+use crate::spawn::Spawner;
+#[cfg(test)]
+use std::time::Duration;
+#[cfg(test)]
+use tokio::task::JoinSet;
 
 /// What the region did before it stopped.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -22,51 +31,46 @@ pub struct DrainReport {
     pub stop_reason: StopReason,
 }
 
-fn bump(counter: &mut u64, by: u64) -> u64 {
-    *counter = counter.saturating_add(by);
-    *counter
+impl DrainReport {
+    /// The shell's report from the region's count.
+    ///
+    /// The seven task counters are the region's, verbatim. The stop reason stays the shell's,
+    /// because the shell is what saw how the stop arrived: it defaults to
+    /// [`StopReason::ServerExit`] and the supervisor overwrites it with what it observed.
+    pub(super) fn from_counted(counted: TaskReport) -> Self {
+        Self {
+            accepted: counted.accepted,
+            completed: counted.completed,
+            cancelled: counted.cancelled,
+            timed_out: counted.timed_out,
+            remaining: counted.remaining,
+            aborted: counted.aborted,
+            panicked: counted.panicked,
+            ..Self::default()
+        }
+    }
+}
+
+/// A region count that does not fit a report field is the shell's own overflow: the refusal is
+/// reported as a failure rather than as a smaller, quieter number.
+pub(super) fn count_error(error: SpawnError) -> BootstrapError {
+    match error {
+        SpawnError::TaskCountOverflow => BootstrapError::TaskCountOverflow,
+    }
 }
 
 /// Bounded drain of an owned task region: reap natural exits, then abort and count the rest.
-
+///
+/// The supervisor's own drain is [`Spawner::drain`] on the region it owns. This entry point serves a
+/// caller that already holds a set — the supervisor's drain tests build one directly — and it keeps
+/// their report meaning exactly: the tasks handed in, counted by the one implementation in
+/// [`crate::spawn`].
+#[cfg(test)]
 pub(super) async fn drain(
-    mut tasks: JoinSet<()>,
+    tasks: JoinSet<()>,
     timeout: Duration,
 ) -> Result<DrainReport, BootstrapError> {
-    let mut report = DrainReport::default();
-    let accepted = u64::try_from(tasks.len()).map_err(|_| BootstrapError::TaskCountOverflow)?;
-    bump(&mut report.accepted, accepted);
-    let deadline = tokio::time::Instant::now() + timeout;
-
-    while !tasks.is_empty() {
-        match tokio::time::timeout_at(deadline, tasks.join_next()).await {
-            Ok(Some(result)) => match DrainState::from_join(result) {
-                DrainState::Completed => {
-                    bump(&mut report.completed, 1);
-                }
-                DrainState::Panicked => {
-                    tracing::error!("task panicked during shutdown");
-                    bump(&mut report.panicked, 1);
-                }
-                DrainState::Cancelled => {
-                    bump(&mut report.cancelled, 1);
-                }
-            },
-            Ok(None) => break,
-            Err(_) => {
-                tracing::warn!(?timeout, "drain deadline reached; aborting remaining tasks");
-                report.remaining =
-                    u64::try_from(tasks.len()).map_err(|_| BootstrapError::TaskCountOverflow)?;
-                bump(&mut report.timed_out, report.remaining);
-                tasks.abort_all();
-                // Reap the aborted tasks so their resources (sockets, file handles) are released
-                // before this returns.
-                while tasks.join_next().await.is_some() {
-                    bump(&mut report.aborted, 1);
-                }
-                break;
-            }
-        }
-    }
-    Ok(report)
+    let region = Spawner::adopting(tasks).map_err(count_error)?;
+    let counted = region.drain(timeout).await.map_err(count_error)?;
+    Ok(DrainReport::from_counted(counted))
 }

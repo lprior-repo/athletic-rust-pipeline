@@ -40,7 +40,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 /// `consolidate` have not been run yet, which is an operator error rather than a parse failure.
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
     let schools: Vec<CanonicalSchool> =
-        crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
+        crate::store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
     if schools.is_empty() {
         return Err(CrawlError::Invariant {
             detail: "no consolidated schools: run `collect` and `consolidate` before the \

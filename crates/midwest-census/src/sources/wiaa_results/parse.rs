@@ -1,3 +1,56 @@
+//! Pure layout dispatch for WIAA result artifacts.
+//!
+//! This module exposes a single public entry point — [`parse_result_body`] — that routes an
+//! artifact body to the correct parser based on its declared format. It is the seam the fuzz
+//! lane needs: no network, no file I/O, no clock, no randomness. The only side effect is the
+//! external `pdftotext` call for `ArtifactFormat::Pdf`, which the caller can handle separately
+//! if pure dispatch is required.
+
+use crate::sources::result_file::ParsedMeet;
+use super::classify::ArtifactFormat;
+
+/// Dispatch one artifact body to the parser its format selects.
+///
+/// This is the pure seam the fuzz lane needs: given raw bytes and a declared format, the function
+/// routes to the correct parser without any network, file, or clock dependency. For
+/// [`ArtifactFormat::Pdf`] the external `pdftotext` tool is invoked (returning `None` on failure);
+/// all other arms are purely in-process.
+///
+/// The `body` parameter is raw bytes — for text formats the function decodes via
+/// `from_utf8_lossy`, and for PDF it is passed directly to `pdftotext`.
+pub fn parse_result_body(
+    body: &[u8],
+    format: ArtifactFormat,
+    source: SourceRef,
+    year: i16,
+) -> Option<ParsedMeet> {
+    use ArtifactFormat::{HytekHtml, HytekText, Pdf, RaceDay, Unparsed};
+
+    match format {
+        HytekHtml => {
+            let text = String::from_utf8_lossy(body);
+            let lines = crate::sources::hytek::lines_from_html(&text);
+            crate::sources::hytek::parse(&lines, source)
+        }
+        HytekText => {
+            let text = String::from_utf8_lossy(body);
+            let lines = crate::sources::hytek::lines_from_text(&text);
+            crate::sources::hytek::parse(&lines, source)
+        }
+        RaceDay => {
+            let text = String::from_utf8_lossy(body);
+            crate::sources::raceday::parse(&text, source, year).ok()
+        }
+        Pdf => {
+            match pdftotext(body) {
+                Ok(text) => parse_pdf(&text, source, year).0,
+                Err(_) => None,
+            }
+        }
+        Unparsed => None,
+    }
+}
+
 use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::SourceRef;
 use std::io::Write;

@@ -3,8 +3,9 @@ use std::time::Duration;
 
 use restate_sdk::prelude::*;
 
-use crate::bootstrap::Clock;
+use crate::clock::Clock;
 use crate::report::ReportResult;
+use crate::spawn::Spawner;
 use crate::store::Store;
 
 use super::ingest::IngestClient;
@@ -17,17 +18,31 @@ use super::{blocking, job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SI
 pub struct Sweep {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
+    /// The shell's region: the report write runs through it, so a cancelled workflow leaves the
+    /// region, not the runtime, owning the job.
+    region: Arc<Spawner>,
 }
 
 impl Sweep {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>) -> Self {
-        Self { store, clock }
+    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, region: Arc<Spawner>) -> Self {
+        Self {
+            store,
+            clock,
+            region,
+        }
     }
 }
 
 #[workflow]
 impl Sweep {
     #[handler]
+    #[tracing::instrument(
+        skip_all,
+        fields(
+            windows = request.windows,
+            endpoints = request.endpoints.len()
+        )
+    )]
     async fn run(
         &self,
         ctx: WorkflowContext<'_>,
@@ -61,11 +76,12 @@ impl Sweep {
             report_path: None,
         };
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let written = ctx
             .run(move || async move {
                 // The closure's error type is spelled out: the report's typed error converts into a
                 // `JobError` through `From`, and inference alone cannot choose between the two.
-                blocking(move || -> ReportResult<Json<SweepReport>> {
+                blocking(region, move || -> ReportResult<Json<SweepReport>> {
                     let path = write_sweep_report(&store, &report, &today)?;
                     report.report_path = Some(path.display().to_string());
                     Ok(Json(report))

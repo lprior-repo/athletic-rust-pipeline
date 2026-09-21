@@ -8,6 +8,7 @@ use census_domain::model::{
 use fjall::Keyspace;
 use std::collections::{BTreeMap, HashSet};
 use std::io::{BufWriter, Write};
+use std::io::BufRead;
 use std::path::Path;
 use std::sync::atomic::Ordering;
 
@@ -202,4 +203,42 @@ fn json_failure(path: &Path, source: serde_json::Error) -> StoreError {
         detail: format!("writing {}", path.display()),
         source,
     }
+}
+/// Read a JSONL snapshot file into typed rows.
+///
+/// A single unparseable row is tolerated; a second one is a [`StoreError::Json`], because a
+/// truncated tail can lose one trailing row and nothing else.
+pub fn read_rows<T: for<'de> serde::Deserialize<'de>>(path: &std::path::Path) -> StoreResult<Vec<T>> {
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let file = std::fs::File::open(path).map_err(|source| StoreError::Io {
+        path: path.to_path_buf(),
+        source,
+    })?;
+    let mut rows = Vec::new();
+    let mut unparseable = 0usize;
+    for (index, line) in std::io::BufReader::new(file).lines().enumerate() {
+        let line = line.map_err(|source| StoreError::Io {
+            path: path.to_path_buf(),
+            source,
+        })?;
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        match serde_json::from_str::<T>(trimmed) {
+            Ok(row) => rows.push(row),
+            Err(error) => {
+                unparseable = unparseable.saturating_add(1);
+                if unparseable > 1 {
+                    return Err(StoreError::Json {
+                        detail: format!("{}:{}", path.display(), index.saturating_add(1)),
+                        source: error,
+                    });
+                }
+            }
+        }
+    }
+    Ok(rows)
 }

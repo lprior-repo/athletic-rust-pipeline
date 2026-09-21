@@ -5,9 +5,8 @@
 //! wire shape: a hand-written mirror silently drifts from the model and would report on fields that
 //! no longer exist.
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::collections::BTreeMap;
-use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 // ---------------------------------------------------------------------------
@@ -88,42 +87,6 @@ pub use core_scope::{is_core_source, retain_core, CoreScoped, Scope, NON_CORE_SO
 
 /// Stream a JSONL entity log, tolerating a truncated tail from an interrupted run.
 ///
-/// This reads a *materialized snapshot*: the census itself reads the store through
-/// [`Store::scan`](crate::store::Store::scan), and this survives for callers that re-read an
-/// export they just wrote. Every iteration consumes one line of a finite file, so the loop
-/// terminates on the line count.
-///
-/// A single unparseable row is tolerated; a second one is a [`ReportError::Decode`], because a
-/// truncated tail can lose one trailing row and nothing else.
-pub fn read_rows<T: for<'de> Deserialize<'de>>(path: &Path) -> ReportResult<Vec<T>> {
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let file = std::fs::File::open(path).map_err(|source| io_error(path, source))?;
-    let mut rows = Vec::new();
-    let mut unparseable = 0usize;
-    for (index, line) in BufReader::new(file).lines().enumerate() {
-        let line = line.map_err(|source| io_error(path, source))?;
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        match serde_json::from_str::<T>(trimmed) {
-            Ok(row) => rows.push(row),
-            Err(error) => {
-                unparseable = unparseable.saturating_add(1);
-                if unparseable > 1 {
-                    return Err(ReportError::Decode {
-                        path: path.to_path_buf(),
-                        line: index.saturating_add(1),
-                        source: error,
-                    });
-                }
-            }
-        }
-    }
-    Ok(rows)
-}
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct StateCensus {

@@ -80,9 +80,8 @@ async fn resolve_schools(
     let mut to_process = if !options.school_names.is_empty() {
         search_schools(ctx, options, report).await?
     } else {
-        let existing = crate::report::read_rows::<census_domain::model::CanonicalSchool>(
-            &ctx.store.out_dir().join("schools.jsonl"),
-        )?;
+        let existing: Vec<census_domain::model::CanonicalSchool> =
+            crate::store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
         existing
             .into_iter()
             .filter(|s| matches!(&s.association, Some(a) if a.as_str() == "ohsaa"))

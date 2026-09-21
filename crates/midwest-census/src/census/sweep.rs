@@ -6,6 +6,7 @@
 //! `collect_milesplit` walks the requested states concurrently — one host's pacing discipline per
 //! state — failing only after reporting what completed first.
 
+use crate::clock::{Clock, SystemClock};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::sources::{CrawlError, CrawlResult};
@@ -242,7 +243,7 @@ pub async fn collect_milesplit(
     store: &Store,
     options: &CollectOptions,
 ) -> CrawlResult<CollectReport> {
-    let started = std::time::Instant::now();
+    let started = SystemClock.now();
     let state_concurrency = options.state_concurrency.max(1);
 
     let results: Vec<(String, CrawlResult<StateProgress>)> =

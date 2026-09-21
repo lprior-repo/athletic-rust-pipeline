@@ -39,6 +39,7 @@ use std::collections::HashMap;
 
 pub use archive::{archive_artifacts, ArchiveArtifact};
 pub use classify::{artifact_format, level_of, school_year_for, ArtifactFormat};
+pub use parse::parse_result_body;
 pub use run::collect;
 
 /// The four WIAA archive pages, with the sport each one publishes.

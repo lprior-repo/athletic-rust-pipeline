@@ -11,7 +11,9 @@
 //! edge a violation again, because the check fails closed. `(sources, store)` is listed although
 //! `ARCHITECTURE.md` calls it a direction violation — `AdapterContext` carries `&Store` today.
 //! When the adapters return entity batches instead, delete the row and the walker starts
-//! enforcing the narrower graph.
+//! enforcing the narrower graph. `spawn` is the region's task spawner: it reads the clock for its
+//! drain deadline and classifies completion through the outcome lattice, and the two modules that
+//! own a region (`bootstrap`, `restate_services`) start their tasks through it.
 //!
 //! Comment lines and test code are out of scope: files named `tests.rs`, files under a `tests/`
 //! directory, and the region after the `#[cfg(test)]` that opens a module, because none of them
@@ -69,6 +71,8 @@ const ALLOWED: &[(&str, &str)] = &[
     ("sources", "net"),
     ("sources", "school_index"),
     ("sources", "store"),
+    ("spawn", "clock"),
+    ("spawn", "outcome"),
     ("store", "clock"),
     ("workbook", "bests"),
     ("workbook", "report"),

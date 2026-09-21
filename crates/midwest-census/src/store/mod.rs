@@ -117,7 +117,7 @@ pub type StoreResult<T> = std::result::Result<T, StoreError>;
 mod entities;
 mod keys;
 mod legacy;
-mod read;
+pub mod read;
 mod write;
 
 /// Hard ceiling on the observations one table may hold. A table larger than this aborts the scan
@@ -295,6 +295,6 @@ impl Store {
             .map_err(|source| StoreError::Flush { source })
     }
 }
-
 #[cfg(test)]
 mod tests;
+#[cfg(kani)] include!("../kani/store_wiring.rs");

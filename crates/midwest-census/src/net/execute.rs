@@ -4,6 +4,7 @@ use super::cache::{read_cache, CacheMeta};
 use super::client::HostState;
 use super::request::RequestBody;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELAY};
+use crate::clock::{Clock, SystemClock};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -46,7 +47,7 @@ impl Fetcher {
             let mut hosts = self.hosts.lock().await;
             match hosts.get_mut(host) {
                 Some(s) => {
-                    let now = std::time::Instant::now();
+                    let now = SystemClock.now();
                     // The reserved slot is a floor: resume from the later of "now" and the slot,
                     // then push the slot one delay further. `checked_add` keeps the instant
                     // arithmetic panic-free, and a clock far enough out to overflow `Instant`

@@ -5,9 +5,10 @@
 //! breaking API change; add a `#[handler(name = "...")]` instead.
 //!
 //! * `Census` — request/response over the store: `status`, `consolidate`, `report`, `bests`,
-//!   `workbook`. Each heavy job runs on `spawn_blocking` behind a semaphore sized by
-//!   `--max-concurrent`, inside `ctx.run`, so a restart replays the journal value instead of redoing
-//!   a completed pass.
+//!   `workbook`. Each heavy job runs as a region task on the blocking pool — started through the
+//!   shell's [`Spawner`], behind a semaphore sized by `--max-concurrent`, inside `ctx.run` — so a
+//!   restart replays the journal value instead of redoing a completed pass, and a shutdown drain
+//!   owns the job even when the invocation that started it was cancelled.
 //! * `Ingest` — a virtual object keyed by endpoint (`mshsl`, `wiha`, …). Restate serializes
 //!   invocations per key, which is what makes the per-endpoint cursor and window bookkeeping safe
 //!   against concurrent writers.
@@ -17,14 +18,16 @@
 //! Handler bodies stay thin; the work sits in free functions that take `&Store`, so the interesting
 //! behaviour is testable without a Restate runtime.
 
+use crate::outcome::Outcome;
+use crate::spawn::Spawner;
+use crate::store::{Store, StoreError, Table};
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 use tokio::sync::Semaphore;
 
-use crate::bootstrap::Clock;
+use crate::clock::Clock;
 use crate::report::{ReportError, Scope};
-use crate::store::{Store, StoreError, Table};
 
 mod census;
 mod ingest;
@@ -123,25 +126,35 @@ struct TransientFailure {
     message: String,
 }
 
-/// Run a blocking job off the runtime, classifying the outcome for retry.
+/// Run a blocking job as a region task, classifying the outcome for retry.
 ///
 /// `E` is whatever the job reports: the store's and the report's typed errors convert through the
 /// `From` impls above, and a job that already knows its own outcome — an input bound it refused —
 /// hands back a [`JobError`] unchanged. A panicked or cancelled task is always terminal: replaying
 /// the journal value that panicked would panic again.
-async fn blocking<T, E>(job: impl FnOnce() -> Result<T, E> + Send + 'static) -> Result<T, JobError>
+///
+/// The job goes through the region the shell handed in, so an invocation that is aborted mid-await
+/// leaves the work owned (and reaped) by the region rather than running unattached.
+#[tracing::instrument(skip_all)]
+async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
 where
+    F: FnOnce() -> Result<T, E> + Send + 'static,
     T: Send + 'static,
     E: Into<JobError> + Send + 'static,
 {
-    match tokio::task::spawn_blocking(job).await {
-        Ok(Ok(value)) => Ok(value),
-        Ok(Err(error)) => Err(error.into()),
-        Err(join) if join.is_panic() => Err(JobError::Terminal {
-            message: format!("job panicked: {join}"),
+    match spawner.blocking(job).await {
+        Outcome::Ok(value) => Ok(value),
+        Outcome::Err(error) => Err(error.into()),
+        Outcome::Panicked => Err(JobError::Terminal {
+            message: "job panicked".to_string(),
         }),
-        Err(join) => Err(JobError::Terminal {
-            message: format!("job cancelled: {join}"),
+        Outcome::Cancelled => Err(JobError::Terminal {
+            message: "job cancelled".to_string(),
+        }),
+        // A region job cannot report a timeout — the abort path reports a cancellation — but the
+        // lattice is total and a job that never returned is terminal either way.
+        Outcome::Timeout => Err(JobError::Terminal {
+            message: "job timed out".to_string(),
         }),
     }
 }
@@ -193,13 +206,26 @@ fn cohort_label(grad_year: Option<i16>) -> String {
 
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,
 /// `Ingest`, `Sweep`.
-pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize) -> Endpoint {
-    let clock: Arc<dyn Clock> = Arc::new(crate::bootstrap::SystemClock);
+///
+/// The `region` is the shell's spawner: every blocking job these services run is started through it,
+/// so a shrunk service surface still leaves nothing running that the drain does not own.
+#[tracing::instrument(skip_all, fields(max_concurrent))]
+pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spawner>) -> Endpoint {
+    let clock: Arc<dyn Clock> = Arc::new(crate::clock::SystemClock);
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     Endpoint::builder()
-        .bind(Census::new(Arc::clone(&store), Arc::clone(&clock), load))
-        .bind(Ingest::new(Arc::clone(&store), Arc::clone(&clock)))
-        .bind(Sweep::new(store, clock))
+        .bind(Census::new(
+            Arc::clone(&store),
+            Arc::clone(&clock),
+            load,
+            Arc::clone(&region),
+        ))
+        .bind(Ingest::new(
+            Arc::clone(&store),
+            Arc::clone(&clock),
+            Arc::clone(&region),
+        ))
+        .bind(Sweep::new(store, clock, region))
         .build()
 }
 

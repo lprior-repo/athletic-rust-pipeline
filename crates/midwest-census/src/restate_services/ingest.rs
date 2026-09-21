@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::bootstrap::Clock;
+use crate::clock::Clock;
+use crate::spawn::Spawner;
 use crate::store::Store;
 
 use super::jobs::append_observations;
@@ -14,11 +15,18 @@ use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
 pub struct Ingest {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
+    /// The shell's region: the append runs through it, so an aborted invocation cannot leave a
+    /// writer behind the drain does not own.
+    region: Arc<Spawner>,
 }
 
 impl Ingest {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>) -> Self {
-        Self { store, clock }
+    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, region: Arc<Spawner>) -> Self {
+        Self {
+            store,
+            clock,
+            region,
+        }
     }
 
     /// Read the endpoint's state. An endpoint that has never recorded anything reads as empty
@@ -60,6 +68,7 @@ impl Ingest {
     }
 
     #[handler]
+    #[tracing::instrument(skip_all, fields(rows = request.rows.len()))]
     async fn record(
         &self,
         ctx: ObjectContext<'_>,
@@ -67,11 +76,12 @@ impl Ingest {
     ) -> Result<Json<IngestReply>, HandlerError> {
         let table = resolve_table(&request.table)?;
         let store = Arc::clone(&self.store);
+        let region = Arc::clone(&self.region);
         let rows = request.rows;
         let today = self.clock.today();
         let appended = ctx
             .run(move || async move {
-                blocking(move || append_observations(&store, table, &rows))
+                blocking(region, move || append_observations(&store, table, &rows))
                     .await
                     // The accepted count reaches the wire as `u64`. A host where it does not fit is
                     // a hard failure: a clamped "appended" figure would be a fabricated total.
