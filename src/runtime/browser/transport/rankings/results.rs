@@ -1,5 +1,6 @@
 use super::rankings_helper::{declared_page, page_extent};
 use crate::runtime::browser::{gate::ProfileGate, BrowserError, BrowserResponse};
+use crate::runtime::clock::Clock;
 use crate::runtime::protocol::{RankingPageObservation, RankingsCapture};
 use crate::runtime::source::request::{self, RankingsAction};
 use chromiumoxide::Page;
@@ -16,6 +17,7 @@ pub(super) async fn fetch_results(
     request_timeout: Duration,
     gate: Arc<ProfileGate>,
     source_origin: &url::Url,
+    clock: &dyn Clock,
 ) -> Result<BrowserResponse, BrowserError> {
     let request = request::rankings_spec(source_origin, action.clone())
         .map_err(|_| BrowserError::Protocol)?;
@@ -23,7 +25,7 @@ pub(super) async fn fetch_results(
         Some(body) => serde_json::to_string(&body).map_err(|_| BrowserError::Protocol)?,
         None => return Err(BrowserError::Protocol),
     };
-    let mut response = super::super::fetch(page, &request, request_timeout, gate).await?;
+    let mut response = super::super::fetch(page, &request, request_timeout, gate, clock).await?;
     let next_page = next_page_after(&response.body, action.page);
     response.rankings = Some(RankingPageObservation {
         capture: RankingsCapture::Results,

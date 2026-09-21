@@ -1,6 +1,6 @@
 //! CDP event loop that drives one in-page fetch to completion.
 
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use chromiumoxide::cdp::browser_protocol::network::{
     EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
@@ -12,8 +12,9 @@ use chromiumoxide::Page;
 use futures::StreamExt;
 
 use super::fetch_state::{FetchCapture, FetchEvent};
-use super::{fail, request_method, script, FetchArguments, MAX_CAPTURE_EVENTS};
+use super::{fail, request_method, script, subscribe, FetchArguments, MAX_CAPTURE_EVENTS};
 use crate::runtime::browser::BrowserError;
+use crate::runtime::clock::Clock;
 use crate::runtime::protocol::MAX_SOURCE_RESPONSE_BYTES;
 use crate::runtime::source::request::RequestSpec;
 
@@ -31,26 +32,11 @@ pub(super) struct FetchListeners {
 /// Extra-info is subscribed BEFORE dispatch — it is needed for redirect detection.
 pub(super) async fn subscribe_fetch(page: &Page) -> Result<FetchListeners, BrowserError> {
     Ok(FetchListeners {
-        requests: page
-            .event_listener::<EventRequestWillBeSent>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        responses: page
-            .event_listener::<EventResponseReceived>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        finished: page
-            .event_listener::<EventLoadingFinished>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        failures: page
-            .event_listener::<EventLoadingFailed>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        extra: page
-            .event_listener::<EventResponseReceivedExtraInfo>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
+        requests: subscribe(page).await?,
+        responses: subscribe(page).await?,
+        finished: subscribe(page).await?,
+        failures: subscribe(page).await?,
+        extra: subscribe(page).await?,
     })
 }
 
@@ -84,13 +70,13 @@ pub(super) async fn drive_capture(
     capture: &mut FetchCapture<'_>,
     listeners: FetchListeners,
     request_timeout: Duration,
+    clock: &dyn Clock,
 ) -> Result<(), BrowserError> {
     let call = fetch_call(capture.request, capture.request_body, request_timeout)?;
     let evaluation = capture.page.evaluate_function(call);
     tokio::pin!(evaluation);
-    let deadline = Instant::now()
-        .checked_add(request_timeout)
-        .unwrap_or_else(Instant::now);
+    let now = clock.now_instant();
+    let deadline = now.checked_add(request_timeout).unwrap_or(now);
     let FetchListeners {
         mut requests,
         mut responses,
@@ -99,7 +85,7 @@ pub(super) async fn drive_capture(
         mut extra,
     } = listeners;
     for _ in 0..MAX_CAPTURE_EVENTS {
-        let remaining = deadline.saturating_duration_since(Instant::now());
+        let remaining = deadline.saturating_duration_since(clock.now_instant());
         if remaining.is_zero() {
             return Err(fail(capture.page, capture.gate, BrowserError::Timeout).await);
         }

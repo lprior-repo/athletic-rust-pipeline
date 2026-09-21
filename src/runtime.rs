@@ -4,14 +4,17 @@ pub mod browser;
 mod browser_config;
 mod browser_readiness;
 pub mod browser_session;
+pub(crate) mod clock;
 pub(crate) mod config;
 pub mod control;
+pub mod drain;
 pub mod export;
 pub mod export_worker;
 mod http_audit;
 pub mod identity;
 pub mod import;
 pub mod import_worker;
+mod lifecycle;
 pub mod profile_worker;
 pub mod protocol;
 pub mod query_worker;
@@ -51,6 +54,8 @@ pub use config::{ExecutionMode, ModelLane, WorkerConfig};
 
 use crate::store::ArtifactStore;
 use anyhow::{Context, Result};
+use clock::{Clock, SystemClock};
+use drain::DrainCounts;
 use std::{path::Path, sync::Arc};
 use tokio::sync::Semaphore;
 use tokio_util::task::TaskTracker;
@@ -62,6 +67,8 @@ pub struct Runtime {
     browser: tokio::sync::RwLock<Option<Arc<browser::BrowserManager>>>,
     cpu: Arc<Semaphore>,
     tasks: TaskTracker,
+    drain_counts: Arc<DrainCounts>,
+    clock: Arc<dyn Clock>,
 }
 
 impl Runtime {
@@ -88,78 +95,101 @@ impl Runtime {
             browser: tokio::sync::RwLock::new(None),
             cpu,
             tasks: TaskTracker::new(),
+            drain_counts: Arc::new(DrainCounts::default()),
+            clock: Arc::new(SystemClock),
         }))
     }
 
-    /// Return a running browser manager, rebuilding a dead one.
-    ///
-    /// A manager whose actor task has exited (its command channel closed, or a
-    /// terminal `Stopped` status) can never serve another command; replacing the
-    /// cached handle is the only way back, so a long run recovers without a
-    /// worker restart.
-    pub(crate) async fn ensure_browser(&self) -> Result<Arc<browser::BrowserManager>> {
-        if let Some(existing) = self.browser.read().await.clone() {
-            if existing.is_alive() {
-                return Ok(existing);
-            }
-            tracing::warn!("cached browser manager is not running; rebuilding it");
-        }
-        let mut slot = self.browser.write().await;
-        if let Some(existing) = slot.clone() {
-            if existing.is_alive() {
-                return Ok(existing);
-            }
-        }
-        let settings = self.config.browser_settings();
-        let manager = match settings.cdp_endpoint.clone() {
-            Some(endpoint) => {
-                match browser::BrowserManager::connect(endpoint, settings.clone()).await {
-                    Ok(manager) => manager,
-                    Err(error) => {
-                        tracing::warn!(
-                            "cdp endpoint unreachable ({error}); launching a managed browser"
-                        );
-                        browser::BrowserManager::launch(settings).await?
-                    }
-                }
-            }
-            None => browser::BrowserManager::launch(settings).await?,
-        };
-        let manager = Arc::new(manager);
-        *slot = Some(manager.clone());
-        Ok(manager)
+    /// The one clock every deadline, cooldown and timeout in this runtime reads.
+    pub(crate) fn clock(&self) -> Arc<dyn Clock> {
+        self.clock.clone()
     }
 
     pub(crate) async fn browser(&self) -> Option<Arc<browser::BrowserManager>> {
         self.browser.read().await.clone()
     }
+}
 
-    pub async fn blocking<T, F>(&self, action: F) -> Result<T>
-    where
-        T: Send + 'static,
-        F: FnOnce() -> Result<T> + Send + 'static,
-    {
-        let token = self.tasks.token();
-        if self.tasks.is_closed() {
-            anyhow::bail!("worker is draining");
-        }
-        let permit = self.cpu.clone().acquire_owned().await?;
-        tokio::task::spawn_blocking(move || {
-            let (_token, _permit) = (token, permit);
-            action()
-        })
-        .await
-        .context("joining bounded worker action")?
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runtime::drain::DrainReport;
+    use std::time::Duration;
+    use tempfile::tempdir;
+
+    fn config(path: &Path) -> Arc<Runtime> {
+        // The store root must be created by the store: `prepare_root` makes it private (0o700),
+        // while a path handed in already existing is only validated, and a fixture directory is
+        // world-readable by construction.
+        let text = format!(
+            "mode = \"fixture\"\nstorage_dir = \"{}\"\nsource_origin = \"http://127.0.0.1/\"\nsource_interval_ms = 0\nrequest_timeout_seconds = 1\ncpu_workers = 1\nrow_concurrency = 1\nq5_url = \"http://127.0.0.1/\"\nq5_model = \"q5\"\nq4_url = \"http://127.0.0.1/\"\nq4_model = \"q4\"\n",
+            path.join("store").display()
+        );
+        let file = path.join("worker.toml");
+        std::fs::write(&file, text).expect("synthetic worker config");
+        Runtime::open(&file).expect("runtime opens on a synthetic config")
     }
 
-    pub async fn drain(&self) -> Result<()> {
-        let browser_result = match self.browser.write().await.take() {
-            Some(browser) => browser.shutdown().await,
-            None => Ok(()),
-        };
-        self.cpu.close();
-        self.tasks.close();
-        self.tasks.wait().await;
-        browser_result
+    #[tokio::test]
+    async fn a_finished_blocking_unit_is_certified_as_completed() {
+        let directory = tempdir().expect("temporary storage");
+        let runtime = config(directory.path());
+        assert_eq!(runtime.blocking(|| Ok(7)).await.expect("action runs"), 7);
+
+        let report = runtime.drain_within(Duration::from_secs(5)).await;
+        assert_eq!(
+            report,
+            DrainReport {
+                accepted: 1,
+                completed: 1,
+                ..DrainReport::default()
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn a_panicking_blocking_unit_is_certified_as_panicked() {
+        let directory = tempdir().expect("temporary storage");
+        let runtime = config(directory.path());
+        let result = runtime
+            .blocking(|| -> Result<()> { panic!("bounded action panics") })
+            .await;
+        assert!(result.is_err(), "a panicking action does not return a value");
+
+        let report = runtime.drain_within(Duration::from_secs(5)).await;
+        assert_eq!(report.accepted, 1);
+        assert_eq!(report.panicked, 1);
+        assert_eq!(report.completed, 0);
+        assert_eq!(report.remaining, 0);
+    }
+
+    #[tokio::test]
+    async fn a_unit_still_running_at_the_deadline_stays_remaining() {
+        let directory = tempdir().expect("temporary storage");
+        let runtime = config(directory.path());
+        let (entered, started) = tokio::sync::oneshot::channel();
+        let worker = Arc::clone(&runtime);
+        let running = tokio::spawn(async move {
+            worker
+                .blocking(move || {
+                    let _ = entered.send(());
+                    std::thread::sleep(Duration::from_millis(300));
+                    Ok(())
+                })
+                .await
+        });
+        started.await.expect("the blocking unit started");
+
+        let report = runtime.drain_within(Duration::from_millis(20)).await;
+        assert_eq!(report.accepted, 1);
+        assert_eq!(report.timed_out, 1);
+        assert_eq!(report.remaining, 1);
+        assert_eq!(report.completed, 0);
+
+        assert!(running.await.expect("join").is_ok(), "the unit still runs");
+        assert!(
+            runtime.blocking(|| Ok(())).await.is_err(),
+            "admission is closed"
+        );
     }
 }

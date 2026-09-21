@@ -118,9 +118,19 @@ pub(super) async fn execute(
         }
     }
 
-    let finalized = match last_finalized {
-        Some(finalized) => finalized,
-        None => return Ok(uncertain_effect("no attempts completed")),
+    final_outcome(ctx, is_rankings, last_finalized).await
+}
+
+/// Resolve the workflow's final outcome: the last finalized step, or an uncertain effect.
+///
+/// The final feedback is published exactly once here, after the loop decided to stop.
+async fn final_outcome(
+    ctx: &SharedObjectContext<'_>,
+    is_rankings: bool,
+    last_finalized: Option<result::Finalized>,
+) -> Result<FetchOutcome, HandlerError> {
+    let Some(finalized) = last_finalized else {
+        return Ok(uncertain_effect("no attempts completed"));
     };
     publish_final_feedback(ctx, &finalized, is_rankings).await?;
     Ok(finalized.outcome)

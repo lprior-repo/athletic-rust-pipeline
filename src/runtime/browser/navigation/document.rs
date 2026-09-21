@@ -4,7 +4,8 @@
 //! CDP event streams and the document observation they build.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+
 
 use chromiumoxide::cdp::browser_protocol::network::{
     EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
@@ -14,6 +15,7 @@ use chromiumoxide::cdp::browser_protocol::page::FrameId;
 use chromiumoxide::listeners::EventStream;
 use chromiumoxide::Page;
 use reqwest::header::{HeaderMap, CONTENT_TYPE};
+use tokio::time::Instant;
 
 use super::observer::Observation;
 use super::observer::{empty_observation, is_current, is_main_document_for, navigation_status};
@@ -32,22 +34,10 @@ pub(super) struct BootstrapEvents {
 /// Subscribe to the navigation streams in the order the capture loop expects.
 pub(super) async fn bootstrap_events(page: &Page) -> Result<BootstrapEvents, BrowserError> {
     Ok(BootstrapEvents {
-        requests: page
-            .event_listener::<EventRequestWillBeSent>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        responses: page
-            .event_listener::<EventResponseReceived>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        finished: page
-            .event_listener::<EventLoadingFinished>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
-        failures: page
-            .event_listener::<EventLoadingFailed>()
-            .await
-            .map_err(|_| BrowserError::Transport)?,
+        requests: transport::subscribe(page).await?,
+        responses: transport::subscribe(page).await?,
+        finished: transport::subscribe(page).await?,
+        failures: transport::subscribe(page).await?,
     })
 }
 

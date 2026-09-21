@@ -12,76 +12,34 @@ use super::super::{
     pool, BrowserSettings, BrowserState, BrowserStatus,
 };
 use super::BrowserManager;
+use crate::runtime::clock::Clock;
 use chromiumoxide::{handler::HandlerConfig, Browser, BrowserConfig, Handler};
 use futures::StreamExt;
 use std::sync::{Arc, Mutex, RwLock};
 use tokio::sync::{mpsc, oneshot, Mutex as AsyncMutex};
+use tracing::Instrument;
 
 const QUEUE_MULTIPLIER: usize = 4;
 const HANDLER_QUEUE: usize = 256;
 
 impl BrowserManager {
     #[tracing::instrument(skip_all, fields(tabs = settings.tabs, headed = settings.headed))]
-    pub(crate) async fn launch(settings: BrowserSettings) -> anyhow::Result<Self> {
+    pub(crate) async fn launch(
+        settings: BrowserSettings,
+        clock: Arc<dyn Clock>,
+    ) -> anyhow::Result<Self> {
         settings.validate()?;
         pool::prepare_profile(&settings)?;
         let config = browser_config(&settings)?;
         let (browser, handler) = Browser::launch(config).await?;
-        let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
-        let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
-        let handler_join = tokio::spawn(run_handler(handler, handler_tx));
-        let status = Arc::new(RwLock::new(BrowserStatus {
-            state: BrowserState::Restarting,
-            active_requests: 0,
-            tabs: settings.tabs,
-            cooldown_ms: 0,
-        }));
-        let cooldown_until = Arc::new(Mutex::new(None));
-        let gate = Arc::new(ProfileGate::new());
-        let actor = Actor::new(
-            BrowserConnection {
-                browser,
-                launched: true,
-            },
-            settings,
-            rx,
-            (handler_rx, handler_join),
-            status.clone(),
-            cooldown_until.clone(),
-            gate.clone(),
-        );
-
-        let join = tokio::spawn(actor.run());
-        let manager = Self {
-            tx,
-            status,
-            cooldown_until,
-            gate,
-            join: Arc::new(AsyncMutex::new(Some(join))),
-        };
-        let (reply, result) = oneshot::channel();
-        manager
-            .tx
-            .send(Command::Bootstrap { reply })
-            .await
-            .map_err(|_| anyhow::anyhow!("browser actor stopped during startup"))?;
-        let bootstrap_result = match result.await {
-            Ok(value) => value,
-            Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
-        };
-        if let Err(error) = bootstrap_result {
-            if let Err(e) = manager.shutdown().await {
-                tracing::warn!("browser shutdown during bootstrap failure: {e}");
-            }
-            return Err(error);
-        }
-        Ok(manager)
+        finish_startup(browser, handler, true, settings, clock).await
     }
 
     #[tracing::instrument(skip_all)]
     pub(crate) async fn connect(
         cdp_url: url::Url,
         settings: BrowserSettings,
+        clock: Arc<dyn Clock>,
     ) -> anyhow::Result<Self> {
         settings.validate()?;
         let handler_config = HandlerConfig {
@@ -90,55 +48,92 @@ impl BrowserManager {
         };
         let (browser, handler) =
             Browser::connect_with_config(cdp_url.as_str(), handler_config).await?;
-        let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
-        let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
-        let handler_join = tokio::spawn(run_handler(handler, handler_tx));
-        let status = Arc::new(RwLock::new(BrowserStatus {
-            state: BrowserState::Restarting,
-            active_requests: 0,
-            tabs: settings.tabs,
-            cooldown_ms: 0,
-        }));
-        let cooldown_until = Arc::new(Mutex::new(None));
-        let gate = Arc::new(ProfileGate::new());
-        let actor = Actor::new(
-            BrowserConnection {
-                browser,
-                launched: false,
-            },
-            settings,
-            rx,
-            (handler_rx, handler_join),
-            status.clone(),
-            cooldown_until.clone(),
-            gate.clone(),
-        );
-        let join = tokio::spawn(actor.run());
-        let manager = Self {
-            tx,
-            status,
-            cooldown_until,
-            gate,
-            join: Arc::new(AsyncMutex::new(Some(join))),
-        };
-        let (reply, result) = oneshot::channel();
-        manager
-            .tx
-            .send(Command::Bootstrap { reply })
-            .await
-            .map_err(|_| anyhow::anyhow!("browser actor stopped during startup"))?;
-        let bootstrap_result = match result.await {
-            Ok(value) => value,
-            Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
-        };
-        if let Err(error) = bootstrap_result {
-            if let Err(e) = manager.shutdown().await {
-                tracing::warn!("browser shutdown during bootstrap failure: {e}");
-            }
-            return Err(error);
-        }
-        Ok(manager)
+        finish_startup(browser, handler, false, settings, clock).await
     }
+}
+
+/// Build the manager around a live browser and bootstrap it.
+///
+/// Both constructors converge here: the command channel, the handler pump, the shared
+/// status/cooldown/gate handles, the actor and its bootstrap are identical, and `launched` is the
+/// only difference that outlives construction.
+async fn finish_startup(
+    browser: Browser,
+    handler: Handler,
+    launched: bool,
+    settings: BrowserSettings,
+    clock: Arc<dyn Clock>,
+) -> anyhow::Result<BrowserManager> {
+    let (tx, rx) = mpsc::channel(settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1));
+    let (handler_tx, handler_rx) = mpsc::channel(HANDLER_QUEUE);
+    let handler_join = spawn_handler(handler, handler_tx);
+    let status = Arc::new(RwLock::new(BrowserStatus {
+        state: BrowserState::Restarting,
+        active_requests: 0,
+        tabs: settings.tabs,
+        cooldown_ms: 0,
+    }));
+    let cooldown_until = Arc::new(Mutex::new(None));
+    let gate = Arc::new(ProfileGate::new());
+    let tabs = settings.tabs;
+    let actor = Actor::new(
+        BrowserConnection { browser, launched },
+        settings,
+        rx,
+        (handler_rx, handler_join),
+        status.clone(),
+        cooldown_until.clone(),
+        gate.clone(),
+        clock.clone(),
+    );
+    // `Actor::run` instruments itself, but a spawn does not carry the spawner's span into the
+    // task, so the actor's own span would start a fresh root trace. This span names the session.
+    let span = tracing::info_span!("browser.actor", tabs, launched);
+    let join = tokio::spawn(actor.run().instrument(span));
+    let manager = BrowserManager {
+        tx,
+        status,
+        cooldown_until,
+        gate,
+        join: Arc::new(AsyncMutex::new(Some(join))),
+        clock,
+    };
+    finish_bootstrap(manager).await
+}
+
+/// Bootstrap a freshly built manager and drain it when the bootstrap fails.
+///
+/// A failed bootstrap MUST drain the partially built manager through `shutdown` instead of dropping
+/// a live actor: dropping aborts the actor task mid-step, while the drain revokes the gate, closes
+/// the browser and counts what it took down. The bootstrap error is the one returned either way.
+async fn finish_bootstrap(manager: BrowserManager) -> anyhow::Result<BrowserManager> {
+    let (reply, result) = oneshot::channel();
+    manager
+        .tx
+        .send(Command::Bootstrap { reply })
+        .await
+        .map_err(|_| anyhow::anyhow!("browser actor stopped during startup"))?;
+    let bootstrap_result = match result.await {
+        Ok(value) => value,
+        Err(_) => Err(anyhow::anyhow!("browser actor stopped during startup")),
+    };
+    if let Err(error) = bootstrap_result {
+        let (report, failure) = manager.shutdown().await;
+        tracing::warn!(?report, ?failure, "browser drained after a bootstrap failure");
+        return Err(error);
+    }
+    Ok(manager)
+}
+
+/// Spawn the CDP handler pump with its own span.
+///
+/// `tokio::spawn` does not carry the caller's span into the task, so the pump is instrumented
+/// explicitly; the actor task is instrumented by its own `#[instrument]`.
+fn spawn_handler(
+    handler: Handler,
+    events: mpsc::Sender<HandlerEvent>,
+) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(run_handler(handler, events).instrument(tracing::info_span!("browser.handler")))
 }
 
 fn browser_config(settings: &BrowserSettings) -> anyhow::Result<BrowserConfig> {

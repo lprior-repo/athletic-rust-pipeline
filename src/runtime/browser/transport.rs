@@ -4,12 +4,15 @@ use std::time::Duration;
 use chromiumoxide::cdp::browser_protocol::network::{
     EventRequestWillBeSent, EventResponseReceived,
 };
+use chromiumoxide::cdp::IntoEventKind;
+use chromiumoxide::listeners::EventStream;
 use chromiumoxide::Page;
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
 use super::{gate::ProfileGate, BrowserError, BrowserResponse};
+use crate::runtime::clock::Clock;
 use crate::runtime::source::http::challenge::cf_header_challenge;
 use crate::runtime::source::request::RequestSpec;
 mod capture;
@@ -22,6 +25,18 @@ pub(super) use capture::{capture_body, response_headers};
 use fetch_loop::{drive_capture, subscribe_fetch};
 use fetch_state::{complete_fetch, FetchCapture};
 pub(super) use rankings::fetch_rankings;
+
+/// Subscribe to one CDP event stream.
+///
+/// Every capture loop subscribes the same way, so the one-liner lives once: the fetch lane's five
+/// streams and the navigation lane's four are both field lists over this.
+pub(in crate::runtime::browser) async fn subscribe<T: IntoEventKind>(
+    page: &Page,
+) -> Result<EventStream<T>, BrowserError> {
+    page.event_listener::<T>()
+        .await
+        .map_err(|_| BrowserError::Transport)
+}
 
 async fn fail(page: &Page, gate: &ProfileGate, original: BrowserError) -> BrowserError {
     let result = cleanup::cleanup(page, gate).await;
@@ -62,6 +77,7 @@ pub(crate) async fn fetch(
     request: &RequestSpec,
     request_timeout: Duration,
     gate: Arc<ProfileGate>,
+    clock: &dyn Clock,
 ) -> Result<BrowserResponse, BrowserError> {
     let snap = gate.snapshot();
     if !snap.ready {
@@ -79,7 +95,7 @@ pub(crate) async fn fetch(
         .transpose()
         .map_err(|_| BrowserError::Protocol)?;
     let mut capture = FetchCapture::new(page, &gate, request, request_body.as_deref());
-    drive_capture(&mut capture, listeners, request_timeout).await?;
+    drive_capture(&mut capture, listeners, request_timeout, clock).await?;
     complete_fetch(capture).await
 }
 

@@ -4,8 +4,26 @@ use crate::runtime::browser::{
     pool::{self, PageSlot},
     BrowserError, BrowserResponse, BrowserState,
 };
+use crate::runtime::drain::{count, DrainReport};
+use crate::runtime::source::retry::retry_after_now;
 use chromiumoxide::cdp::browser_protocol::target::{CreateTargetParams, TargetId};
-use std::time::{Duration, Instant};
+use std::{future::Future, time::Duration};
+use tokio::sync::oneshot;
+use tracing::Instrument;
+
+/// Send one command's result back, logging a receiver that went away.
+///
+/// A dropped reply is not an error: the caller was cancelled, and the work it asked for is done
+/// either way.
+async fn reply_with<T>(
+    label: &'static str,
+    reply: oneshot::Sender<T>,
+    result: impl Future<Output = T>,
+) {
+    if reply.send(result.await).is_err() {
+        tracing::debug!(reply = label, "browser command reply dropped");
+    }
+}
 
 impl Actor {
     pub(in crate::runtime::browser) fn complete_observer(
@@ -20,7 +38,7 @@ impl Actor {
                 self.draining = true;
                 self.shutdown.cancel();
                 self.observer_stop.cancel();
-                pool::reject_pending(&mut self.pending, BrowserError::Unavailable);
+                self.reject_pending(BrowserError::Unavailable);
             }
             None => {}
         }
@@ -50,7 +68,7 @@ impl Actor {
         if !is_cooling {
             self.set_state(BrowserState::Challenged);
         }
-        pool::reject_pending(&mut self.pending, BrowserError::HumanRequired);
+        self.reject_pending(BrowserError::HumanRequired);
     }
 
     pub(in crate::runtime::browser) fn apply_navigation(&mut self, outcome: NavigationOutcome) {
@@ -89,10 +107,7 @@ impl Actor {
     }
 
     pub(in crate::runtime::browser) fn apply_cooldown(&mut self, response: &BrowserResponse) {
-        match crate::runtime::source::retry::retry_after(
-            &response.headers,
-            std::time::SystemTime::now(),
-        ) {
+        match retry_after_now(self.clock.as_ref(), &response.headers) {
             Ok(delay) => self.apply_cooldown_duration(delay),
             Err(_) => {
                 let delay = match response.headers.get("Retry-After") {
@@ -112,7 +127,7 @@ impl Actor {
         if delay.is_zero() {
             return;
         }
-        let now = Instant::now();
+        let now = self.clock.now_instant();
         let until = match now.checked_add(delay) {
             Some(value) => value,
             // A deadline the platform clock cannot represent must not panic;
@@ -133,45 +148,52 @@ impl Actor {
         self.set_state(BrowserState::CoolingDown);
     }
 
+    /// Handle one command, or the closed command channel.
+    ///
+    /// Each arm is one ingress call: the four that answer a caller go through `reply_with`, and the
+    /// two drain entries share `begin_drain`.
     pub(in crate::runtime::browser) async fn command(&mut self, command: Option<Command>) {
         match command {
             Some(Command::Bootstrap { reply }) => {
-                if reply.send(self.bootstrap().await).is_err() {
-                    tracing::debug!("bootstrap reply send failed");
-                }
+                reply_with("bootstrap", reply, self.bootstrap()).await;
             }
             Some(Command::Fetch { request, reply }) => self.accept_fetch(request, reply),
             Some(Command::Inspect { reply }) => {
-                if reply.send(self.inspect_page().await).is_err() {
-                    tracing::debug!("inspect reply send failed");
-                }
+                reply_with("inspect", reply, self.inspect_page()).await;
             }
             Some(Command::Recover { reply }) => {
-                if reply.send(self.recover_page().await).is_err() {
-                    tracing::debug!("recover reply send failed");
-                }
+                reply_with("recover", reply, self.recover_page()).await;
             }
             Some(Command::Restart { reply }) => {
-                if reply.send(self.restart_page().await).is_err() {
-                    tracing::debug!("restart reply send failed");
-                }
+                reply_with("restart", reply, self.restart_page()).await;
             }
-            Some(Command::Shutdown { reply }) => {
-                self.shutdown_reply = Some(reply);
-                self.draining = true;
-                self.shutdown.cancel();
-                self.observer_stop.cancel();
-                self.gate.revoke();
-                pool::reject_pending(&mut self.pending, BrowserError::Shutdown);
-            }
-            None => {
-                self.draining = true;
-                self.shutdown.cancel();
-                self.observer_stop.cancel();
-                self.gate.revoke();
-                pool::reject_pending(&mut self.pending, BrowserError::Shutdown);
-            }
+            Some(Command::Shutdown { reply }) => self.begin_drain(Some(reply)),
+            None => self.begin_drain(None),
         }
+    }
+
+    /// Start the drain: keep the reply that carries the region certificate, then revoke every
+    /// admission path. The `Shutdown` command and a closed command channel are the same drain.
+    fn begin_drain(&mut self, reply: Option<oneshot::Sender<DrainReport>>) {
+        if let Some(reply) = reply {
+            self.shutdown_reply = Some(reply);
+        }
+        self.draining = true;
+        self.shutdown.cancel();
+        self.observer_stop.cancel();
+        self.gate.revoke();
+        self.reject_pending(BrowserError::Shutdown);
+    }
+
+    /// Reject every queued request, counting each as accepted-then-cancelled.
+    ///
+    /// A queued request is a unit this actor took responsibility for, so whichever path rejects it
+    /// the certificate says so; the caller learns the reason from its own reply channel.
+    pub(in crate::runtime::browser) fn reject_pending(&mut self, cause: BrowserError) {
+        let rejected = count(self.pending.len());
+        self.region.accept(rejected);
+        self.region.cancel(rejected);
+        pool::reject_pending(&mut self.pending, cause);
     }
 
     pub(in crate::runtime::browser) async fn create_pages(&mut self) -> anyhow::Result<()> {
@@ -205,12 +227,17 @@ impl Actor {
             )
             .await
             .map_err(|_| anyhow::anyhow!("browser page observer failed to start"))?;
-            self.observers.spawn(observer.run());
+            self.observers
+                .spawn(observer.run().instrument(tracing::info_span!(
+                    "browser.observer",
+                    target = %page.target_id().inner()
+                )));
             let outcome = navigation::bootstrap(
                 &page,
                 &self.settings.source_origin,
                 self.settings.request_timeout,
                 self.gate.clone(),
+                self.clock.as_ref(),
             )
             .await
             .map_err(|_| anyhow::anyhow!("browser bootstrap failed"))?;

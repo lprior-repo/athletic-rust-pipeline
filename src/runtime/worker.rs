@@ -10,6 +10,7 @@ use restate_sdk::prelude::{Endpoint, HttpServer};
 use std::{net::SocketAddr, path::Path};
 use tokio::signal::unix::{signal, Signal, SignalKind};
 
+#[tracing::instrument(skip_all, fields(bind = %bind))]
 pub async fn serve(config: &Path, bind: SocketAddr) -> Result<()> {
     if !bind.ip().is_loopback() {
         bail!("worker must bind a loopback address");
@@ -63,7 +64,8 @@ pub async fn serve(config: &Path, bind: SocketAddr) -> Result<()> {
     HttpServer::new(endpoint)
         .serve_with_cancel(listener, shutdown(terminate, interrupt))
         .await;
-    runtime.drain().await?;
+    // The drain logs its own certificate; there is nothing a failure here could still act on.
+    runtime.drain().await;
     Ok(())
 }
 

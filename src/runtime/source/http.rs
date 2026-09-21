@@ -15,10 +15,7 @@ use reqwest::{
     StatusCode,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    sync::Arc,
-    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
-};
+use std::{sync::Arc, time::Duration};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct AttemptResult {
@@ -40,7 +37,8 @@ struct ReceiptData {
 }
 
 pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> AttemptResult {
-    let started = Instant::now();
+    let clock = runtime.clock();
+    let started = clock.now_instant();
     let browser = match runtime.ensure_browser().await {
         Ok(browser) => browser,
         Err(_) => {
@@ -57,7 +55,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
         Err(error) => return browser_failure(error),
     };
     let status = response.status;
-    let backoff = retry::retry_after(&response.headers, SystemTime::now());
+    let backoff = retry::retry_after_now(clock.as_ref(), &response.headers);
     let media_type = media_type(&response.headers);
     let challenged = challenge::cf_header_challenge(&response.headers)
         || challenge::html_body_challenge(&media_type, &response.body);
@@ -95,7 +93,12 @@ async fn receipt(
     request_action: Option<&RequestAction>,
 ) -> Result<DocumentReceipt, String> {
     let bytes = u64::try_from(data.body.len()).map_err(|_| "source byte count overflow")?;
-    let fetched_at_unix_ms = now_ms()?;
+    // Receipt timestamps are wall clock by definition: they are read back by operators and by the
+    // export bundle, so a monotonic reading would be meaningless.
+    let fetched_at_unix_ms = runtime
+        .clock()
+        .now_unix_ms()
+        .map_err(|error| error.to_string())?;
     let elapsed_ms = millis(data.elapsed)?;
     let store = runtime.store.clone();
     let digest = runtime
@@ -253,13 +256,6 @@ fn failure(
 
 fn millis(value: Duration) -> Result<u64, &'static str> {
     u64::try_from(value.as_millis()).map_err(|_| "duration exceeds supported milliseconds")
-}
-
-fn now_ms() -> Result<u64, String> {
-    let elapsed = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|_| "system clock predates Unix epoch")?;
-    millis(elapsed).map_err(str::to_owned)
 }
 
 #[cfg(test)]

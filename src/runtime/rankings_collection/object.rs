@@ -5,8 +5,10 @@ use super::state::{
 };
 use crate::domain::identity::EvidenceDigest;
 use crate::runtime::run_protocol::SourceSnapshot;
+use crate::runtime::Runtime;
 use anyhow::Result;
 use restate_sdk::prelude::*;
+use std::sync::Arc;
 
 #[restate_sdk::object(
     ingress_private = true,
@@ -17,6 +19,7 @@ use restate_sdk::prelude::*;
 impl RankingsCollectionState {
     /// Starting an existing collection never implicitly resumes a source failure.
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key()))]
     pub async fn start_or_resume(
         &self,
         ctx: ObjectContext<'_>,
@@ -31,6 +34,21 @@ impl RankingsCollectionState {
             }
             return Ok(existing);
         }
+        let state = self.bind_request(&ctx, request).await?;
+        persist(&ctx, &state)?;
+        schedule_step(&ctx, &state).await?;
+        Ok(Json(state))
+    }
+
+    /// Bind a fresh collection object to the scope its source snapshot names.
+    ///
+    /// The scope is validated and the object key is checked against the source-snapshot
+    /// fingerprint before any state is written, so a mis-keyed call cannot create a collection.
+    async fn bind_request(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: CollectionRequest,
+    ) -> Result<CollectionState, HandlerError> {
         let snapshot: SourceSnapshot = ctx
             .run(|| {
                 let rt = self.runtime.clone();
@@ -54,7 +72,7 @@ impl RankingsCollectionState {
                 "collection object key differs from source snapshot fingerprint",
             ));
         }
-        let state = CollectionState {
+        Ok(CollectionState {
             source_snapshot: request.source_snapshot,
             scope,
             phase: CollectionPhase::CatalogStep,
@@ -69,16 +87,11 @@ impl RankingsCollectionState {
             pause_reason: None,
             last_outcome: None,
             pause_detail: None,
-        };
-        ctx.set(
-            "state",
-            restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?,
-        );
-        schedule_step(&ctx, &state).await?;
-        Ok(Json(state))
+        })
     }
 
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key(), generation = %generation))]
     pub async fn step(
         &self,
         ctx: ObjectContext<'_>,
@@ -108,31 +121,13 @@ impl RankingsCollectionState {
         let collection = collection_fingerprint(&state.scope.revision, &state.source_snapshot)
             .map_err(terminal)?;
 
-        let result = match state.phase {
-            CollectionPhase::CatalogStep => {
-                run_catalog_step(&ctx, &self.runtime, &mut state, collection).await
-            }
-            CollectionPhase::PageStep => {
-                run_page_step(&ctx, &self.runtime, &mut state, collection).await
-            }
-            CollectionPhase::Complete | CollectionPhase::Paused(_) => return Ok(Json(state)),
-        };
-        if let Err(error) = result {
-            helpers::pause(
-                &mut state,
-                CollectionPauseReason::InvalidEvidence,
-                format!("{error:?}"),
-            );
-        }
+        run_phase(&ctx, &self.runtime, &mut state, collection).await;
 
         let finished = matches!(
             state.phase,
             CollectionPhase::Complete | CollectionPhase::Paused(_)
         );
-        ctx.set(
-            "state",
-            restate_sdk::serde::Serialize::serialize(&Json(&state)).map_err(terminal)?,
-        );
+        persist(&ctx, &state)?;
         if finished {
             return Ok(Json(state));
         }
@@ -223,4 +218,37 @@ impl RankingsCollectionState {
             .map(|j| j.0);
         Ok(Json(state.and_then(|s| s.final_snapshot)))
     }
+}
+
+/// Advance the collection by one phase, pausing it when the phase failed.
+///
+/// A failed phase is a property of the evidence, not of the call: it records a pause so the
+/// collection object stays inspectable instead of retrying into the same failure.
+async fn run_phase(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    state: &mut CollectionState,
+    collection: EvidenceDigest,
+) {
+    let result = match state.phase {
+        CollectionPhase::CatalogStep => run_catalog_step(ctx, runtime, state, collection).await,
+        CollectionPhase::PageStep => run_page_step(ctx, runtime, state, collection).await,
+        CollectionPhase::Complete | CollectionPhase::Paused(_) => return,
+    };
+    if let Err(error) = result {
+        helpers::pause(
+            state,
+            CollectionPauseReason::InvalidEvidence,
+            format!("{error:?}"),
+        );
+    }
+}
+
+/// Write the collection state back to the durable object.
+fn persist(ctx: &ObjectContext<'_>, state: &CollectionState) -> Result<(), HandlerError> {
+    ctx.set(
+        "state",
+        restate_sdk::serde::Serialize::serialize(&Json(state)).map_err(terminal)?,
+    );
+    Ok(())
 }

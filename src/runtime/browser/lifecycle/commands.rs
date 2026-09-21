@@ -42,7 +42,7 @@ impl BrowserManager {
 
     pub(crate) fn status(&self) -> BrowserStatus {
         let status = read_status(&self.status);
-        let cooldown_ms = remaining_ms(&self.cooldown_until);
+        let cooldown_ms = remaining_ms(self.clock.as_ref(), &self.cooldown_until);
         // Never report Ready when the gate is closed — a stale Ready
         // observation from a previous bootstrap would incorrectly signal
         // that the browser is available. Convert to Challenged instead.

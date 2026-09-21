@@ -36,6 +36,7 @@ pub struct ExportWorker {
 )]
 impl ExportWorker {
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key(), run = %input.0.run.as_str()))]
     pub async fn publish(
         &self,
         ctx: ObjectContext<'_>,
@@ -46,24 +47,10 @@ impl ExportWorker {
         if request.key().map_err(terminal)? != ctx.key() {
             return Err(terminal("export request does not bind object key"));
         }
-        if let Some(owner) = ctx.get::<Json<EvidenceDigest>>("owner-run").await? {
-            if owner.0 != request.run {
-                return Err(terminal("export destination belongs to another run"));
-            }
-        } else {
-            ctx.set("owner-run", Json(request.run.clone()));
-        }
-        if let Some(result) = ctx.get::<Json<PublishedExport>>(RESULT_STATE).await? {
+        if let Some(result) = bind_owner(&ctx, &request).await? {
             return Ok(result);
         }
-        let snapshot = ctx
-            .object_client::<RunCoordinatorClient>("global")
-            .snapshot(Json(request.run.clone()))
-            .call()
-            .await?;
-        let Some(snapshot) = snapshot.0 else {
-            return Err(terminal("run snapshot is not available"));
-        };
+        let snapshot = resolve_snapshot(&ctx, &request.run).await?;
         let stage =
             acquire_stage(&ctx, &self.runtime, &request.run, &destination, snapshot).await?;
         if stage.run != request.run || stage.destination != destination {
@@ -71,6 +58,39 @@ impl ExportWorker {
         }
         publish_stage(&ctx, &self.runtime, stage, destination).await
     }
+}
+
+/// Bind the destination to its owning run and replay a published result.
+///
+/// `Ok(Some(_))` means this export already published; the handler returns the retained result
+/// without touching the filesystem again.
+async fn bind_owner(
+    ctx: &ObjectContext<'_>,
+    request: &ExportRequest,
+) -> Result<Option<Json<PublishedExport>>, HandlerError> {
+    if let Some(owner) = ctx.get::<Json<EvidenceDigest>>("owner-run").await? {
+        if owner.0 != request.run {
+            return Err(terminal("export destination belongs to another run"));
+        }
+    } else {
+        ctx.set("owner-run", Json(request.run.clone()));
+    }
+    Ok(ctx.get::<Json<PublishedExport>>(RESULT_STATE).await?)
+}
+
+/// Read the sealed run snapshot this export is a projection of.
+async fn resolve_snapshot(
+    ctx: &ObjectContext<'_>,
+    run: &EvidenceDigest,
+) -> Result<ExportSnapshot, HandlerError> {
+    let snapshot = ctx
+        .object_client::<RunCoordinatorClient>("global")
+        .snapshot(Json(run.clone()))
+        .call()
+        .await?;
+    snapshot
+        .0
+        .ok_or_else(|| terminal("run snapshot is not available"))
 }
 
 /// Reuses the durable stage receipt, or computes it once inside an idempotent run block.

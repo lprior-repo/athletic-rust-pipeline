@@ -1,13 +1,15 @@
 use super::{Actor, BrowserError, BrowserState, BrowserStatus, NavigationOutcome};
 use crate::runtime::browser::navigation;
+use crate::runtime::clock::Clock;
 use chromiumoxide::Page;
-use std::time::Instant;
+use std::sync::{Arc, Mutex};
+use tokio::time::Instant;
 use url::Url;
 
 /// Check if cooldown is currently active (until > now; poison => closed).
-fn has_active_cooldown(cooldown_until: &std::sync::Arc<std::sync::Mutex<Option<Instant>>>) -> bool {
+fn has_active_cooldown(clock: &dyn Clock, cooldown_until: &Arc<Mutex<Option<Instant>>>) -> bool {
     match cooldown_until.lock() {
-        Ok(value) => value.is_some_and(|until| until > Instant::now()),
+        Ok(value) => value.is_some_and(|until| until > clock.now_instant()),
         Err(error) => error.into_inner().is_some(),
     }
 }
@@ -31,7 +33,7 @@ impl Actor {
         // Gate is closed but recovery_used — snapshot generation BEFORE async
         let snap = self.gate.snapshot();
         // Compute active cooldown BEFORE try_open to avoid opening then closing.
-        if has_active_cooldown(&self.cooldown_until) {
+        if has_active_cooldown(self.clock.as_ref(), &self.cooldown_until) {
             return Ok(self.status());
         }
         let page = self
@@ -41,7 +43,13 @@ impl Actor {
             .page
             .clone();
         let outcome =
-            match navigation::inspect(&page, &self.settings.source_origin, self.gate.clone()).await
+            match navigation::inspect(
+                &page,
+                &self.settings.source_origin,
+                self.gate.clone(),
+                self.clock.as_ref(),
+            )
+            .await
             {
                 Ok(value) => value,
                 Err(error) => {
@@ -84,7 +92,7 @@ impl Actor {
         // Capture generation before async navigation.
         let generation_snapshot = self.gate.snapshot();
         // Compute active cooldown BEFORE try_open.
-        if has_active_cooldown(&self.cooldown_until) {
+        if has_active_cooldown(self.clock.as_ref(), &self.cooldown_until) {
             return Ok(self.status());
         }
         let outcome = self.navigate_for_recovery(&page, &target).await?;
@@ -124,13 +132,20 @@ impl Actor {
         target: &Url,
     ) -> Result<NavigationOutcome, BrowserError> {
         let outcome = if self.recovery_used {
-            navigation::inspect(page, &self.settings.source_origin, self.gate.clone()).await
+            navigation::inspect(
+                page,
+                &self.settings.source_origin,
+                self.gate.clone(),
+                self.clock.as_ref(),
+            )
+            .await
         } else {
             let result = navigation::bootstrap(
                 page,
                 target,
                 self.settings.request_timeout,
                 self.gate.clone(),
+                self.clock.as_ref(),
             )
             .await;
             // Set recovery_used AFTER successful bootstrap navigation.

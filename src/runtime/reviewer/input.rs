@@ -3,8 +3,9 @@ use crate::runtime::{
     protocol::{DocumentReceipt, ReviewInput, ReviewJob, MAX_REVIEW_INPUT_BYTES},
     Runtime,
 };
+use crate::runtime::clock::Clock;
 use anyhow::{anyhow, bail, Result};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::Arc;
 
 pub struct PreparedReview {
     pub input: ReviewInput,
@@ -53,7 +54,12 @@ pub async fn store_request(
     runtime.blocking(move || Ok(store.put_bytes(&bytes)?)).await
 }
 
+/// Build the immutable HTTP receipt for one local model response.
+///
+/// The timestamp is wall clock, not the monotonic instant used for the elapsed measurement: a
+/// receipt is read back by operators and by the export bundle.
 pub fn receipt(
+    clock: &Arc<dyn Clock>,
     digest: crate::domain::identity::EvidenceDigest,
     source_url: String,
     status: u16,
@@ -61,12 +67,9 @@ pub fn receipt(
     bytes: usize,
     elapsed_ms: u64,
 ) -> Result<DocumentReceipt> {
-    let fetched_at_unix_ms = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_err(|error| anyhow!(error.to_string()))?
-        .as_millis();
-    let fetched_at_unix_ms =
-        u64::try_from(fetched_at_unix_ms).map_err(|error| anyhow!(error.to_string()))?;
+    let fetched_at_unix_ms = clock
+        .now_unix_ms()
+        .map_err(|error| anyhow!(error.to_string()))?;
     let bytes = u64::try_from(bytes).map_err(|error| anyhow!(error.to_string()))?;
     Ok(DocumentReceipt {
         digest,

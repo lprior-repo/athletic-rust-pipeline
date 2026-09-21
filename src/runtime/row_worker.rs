@@ -2,22 +2,16 @@ mod discovery;
 mod rankings;
 mod review;
 mod support;
-use discovery::{execute_profiles, execute_queries, DiscoveryState, ProfileState};
+use discovery::{assess_candidates, discover_candidates, DiscoveryState};
 use review::resolve_assessment;
-use support::{publish, publish_report, publish_terminal, source_validation, validate_job};
+use support::{publish_report, publish_terminal, source_validation, validate_job};
 
 use super::{
-    row_protocol::{
-        DiscoverySummary, RankingDiscoveryEvidence, RowJob, RowReport, ROW_PROTOCOL_REVISION,
-    },
+    row_protocol::{RowJob, RowReport, ROW_PROTOCOL_REVISION},
     Runtime,
 };
 use crate::{
-    domain::{
-        decision,
-        identity::{EvidenceDigest, SourceRowKey},
-        name::CanonicalName,
-    },
+    domain::identity::{EvidenceDigest, SourceRowKey},
     model::SourceRecord,
     search::{self, SearchQuery},
 };
@@ -32,6 +26,18 @@ pub struct RowWorker {
     pub runtime: Arc<Runtime>,
 }
 
+/// The query plan for one row, or the issue that makes the row terminal before any search.
+enum QueryPlan {
+    Queries(Vec<SearchQuery>),
+    Invalid(String),
+}
+
+/// The validated source row, or the terminal report already published in its place.
+enum RowSource {
+    Ready(SourceRecord),
+    Terminal(Json<EvidenceDigest>),
+}
+
 #[restate_sdk::object(
     ingress_private = true,
     lazy_state = true,
@@ -42,6 +48,7 @@ pub struct RowWorker {
 )]
 impl RowWorker {
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key()))]
     pub async fn process(
         &self,
         ctx: ObjectContext<'_>,
@@ -52,43 +59,41 @@ impl RowWorker {
         if let Some(result) = ctx.get::<Json<EvidenceDigest>>("result").await? {
             return Ok(result);
         }
-        let source = match self.load_source(&job).await? {
-            Some(source) => source,
-            None => {
-                return publish_terminal(
-                    &ctx,
-                    self.runtime.clone(),
-                    job,
-                    vec!["source row was not found in the immutable workbook snapshot".to_owned()],
-                )
-                .await
-            }
+        let source = match self.load_validated_source(&ctx, &job).await? {
+            RowSource::Ready(source) => source,
+            RowSource::Terminal(report) => return Ok(report),
         };
-        if let Some(issue) = source_validation(&source) {
-            return publish_terminal(&ctx, self.runtime.clone(), job, vec![issue]).await;
-        }
-        let queries = match search::query_plan(&source) {
-            Ok(queries) if !queries.is_empty() => queries,
-            Ok(_) => {
-                return publish_terminal(
-                    &ctx,
-                    self.runtime.clone(),
-                    job,
-                    vec!["query plan validation produced no searches".to_owned()],
-                )
-                .await
-            }
-            Err(error) => {
-                return publish_terminal(
-                    &ctx,
-                    self.runtime.clone(),
-                    job,
-                    vec![format!("query plan validation failed: {error}")],
-                )
-                .await
+        let queries = match plan_queries(&source) {
+            QueryPlan::Queries(queries) => queries,
+            QueryPlan::Invalid(issue) => {
+                return publish_terminal(&ctx, self.runtime.clone(), job, vec![issue]).await
             }
         };
         self.execute_row(&ctx, job, source, queries).await
+    }
+
+    /// Load the immutable source row, or report why the row is terminal before any network work.
+    async fn load_validated_source(
+        &self,
+        ctx: &ObjectContext<'_>,
+        job: &RowJob,
+    ) -> Result<RowSource, HandlerError> {
+        let Some(source) = self.load_source(job).await? else {
+            let report = publish_terminal(
+                ctx,
+                self.runtime.clone(),
+                job.clone(),
+                vec!["source row was not found in the immutable workbook snapshot".to_owned()],
+            )
+            .await?;
+            return Ok(RowSource::Terminal(report));
+        };
+        if let Some(issue) = source_validation(&source) {
+            let report =
+                publish_terminal(ctx, self.runtime.clone(), job.clone(), vec![issue]).await?;
+            return Ok(RowSource::Terminal(report));
+        }
+        Ok(RowSource::Ready(source))
     }
 
     async fn load_source(&self, job: &RowJob) -> Result<Option<SourceRecord>, HandlerError> {
@@ -116,6 +121,7 @@ impl RowWorker {
             .map_err(terminal)
     }
 
+    #[tracing::instrument(skip_all, fields(snapshot = %job.snapshot.as_str()))]
     async fn execute_row(
         &self,
         ctx: &ObjectContext<'_>,
@@ -123,27 +129,9 @@ impl RowWorker {
         source: SourceRecord,
         queries: Vec<SearchQuery>,
     ) -> Result<Json<EvidenceDigest>, HandlerError> {
-        let mut discovery =
-            execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
-        let query_refs = std::mem::take(&mut discovery.refs);
-        let source_name = CanonicalName::from_source(&source).ok().flatten();
-        let rankings_evidence = self
-            .fold_rankings_lookup(ctx, &job, source_name, &mut discovery)
-            .await?;
-        let summary = self
-            .publish_summary(ctx, &job, &discovery, &query_refs, rankings_evidence)
-            .await?;
-        let (profiles, _profile_refs) = execute_profiles(
-            ctx,
-            self.runtime.clone(),
-            &job.snapshot,
-            &source,
-            &discovery.candidate_ids,
-        )
-        .await?;
-        let search = search_completeness(&discovery, &profiles, &summary);
+        let mut discovery = discover_candidates(ctx, &self.runtime, &job, &source, queries).await?;
         let (mut profiles, assessed) =
-            assess_and_publish(ctx, self.runtime.clone(), &source, profiles, search).await?;
+            assess_candidates(ctx, &self.runtime, &source, &job.snapshot, &discovery).await?;
         let (resolution, review, mut issues) = resolve_assessment(
             ctx,
             self.runtime.clone(),
@@ -152,7 +140,7 @@ impl RowWorker {
             &assessed,
         )
         .await?;
-        fold_issues(&mut issues, &mut discovery, &mut profiles);
+        fold_issues(&mut issues, &mut discovery.state, &mut profiles);
         publish_report(
             ctx,
             self.runtime.clone(),
@@ -160,91 +148,31 @@ impl RowWorker {
                 revision: ROW_PROTOCOL_REVISION.to_owned(),
                 job,
                 resolution,
-                discovery: Some(summary),
+                discovery: Some(discovery.summary),
                 candidates: profiles.coverage,
                 assessment: Some(assessed.0),
-                query_evidence: query_refs,
+                query_evidence: discovery.query_refs,
                 review,
                 issues,
             },
         )
         .await
     }
+}
 
-    async fn fold_rankings_lookup(
-        &self,
-        ctx: &ObjectContext<'_>,
-        job: &RowJob,
-        source_name: Option<CanonicalName>,
-        discovery: &mut DiscoveryState,
-    ) -> Result<Option<RankingDiscoveryEvidence>, HandlerError> {
-        let Some(ranking_ref) = &job.rankings else {
-            return Ok(None);
-        };
-        let collection = ranking_ref.collection.clone();
-        let bound_snapshot = ranking_ref.snapshot.clone();
-        let (lookup, lookup_incomplete) = rankings::perform_rankings_lookup(
-            ctx,
-            self.runtime.clone(),
-            collection,
-            bound_snapshot,
-            source_name.clone(),
-        )
-        .await?;
-        if lookup_incomplete || lookup.truncated {
-            discovery.incomplete = true;
-        }
-        let mut candidate_limit = false;
-        let records = &lookup.records;
-        for ref_entry in records {
-            if discovery.candidate_ids.contains(&ref_entry.athlete_id) {
-                continue;
-            }
-            if discovery.candidate_ids.len() == MAX_CANDIDATES {
-                candidate_limit = true;
-                break;
-            }
-            discovery.candidate_ids.insert(ref_entry.athlete_id);
-        }
-        if candidate_limit {
-            discovery.candidate_limit = true;
-        }
-        Ok(Some(RankingDiscoveryEvidence {
-            canonical_name: source_name,
-            collection: ranking_ref.clone(),
-            lookup,
-        }))
-    }
-
-    async fn publish_summary(
-        &self,
-        ctx: &ObjectContext<'_>,
-        job: &RowJob,
-        discovery: &DiscoveryState,
-        query_refs: &[EvidenceDigest],
-        rankings: Option<RankingDiscoveryEvidence>,
-    ) -> std::result::Result<EvidenceDigest, TerminalError> {
-        publish(
-            ctx,
-            self.runtime.clone(),
-            "row-discovery-summary",
-            DiscoverySummary {
-                job: job.clone(),
-                candidate_ids: discovery.candidate_ids.clone(),
-                query_artifacts: query_refs.to_vec(),
-                complete: discovery.complete(),
-                issues: discovery.issues.clone(),
-                rankings,
-            },
-        )
-        .await
+/// Classify the query plan: the searches to run, or the issue that makes the row terminal.
+fn plan_queries(source: &SourceRecord) -> QueryPlan {
+    match search::query_plan(source) {
+        Ok(queries) if !queries.is_empty() => QueryPlan::Queries(queries),
+        Ok(_) => QueryPlan::Invalid("query plan validation produced no searches".to_owned()),
+        Err(error) => QueryPlan::Invalid(format!("query plan validation failed: {error}")),
     }
 }
 
 fn fold_issues(
     issues: &mut Vec<String>,
     discovery: &mut DiscoveryState,
-    profiles: &mut ProfileState,
+    profiles: &mut discovery::ProfileState,
 ) {
     issues.extend(std::mem::take(&mut discovery.issues));
     issues.extend(std::mem::take(&mut profiles.issues));
@@ -253,45 +181,6 @@ fn fold_issues(
             "candidate limit exceeded: only the first {MAX_CANDIDATES} unique athlete IDs were acquired"
         ));
     }
-}
-
-fn search_completeness(
-    discovery: &DiscoveryState,
-    profiles: &ProfileState,
-    evidence: &EvidenceDigest,
-) -> decision::SearchCompleteness {
-    if discovery.complete() && profiles.complete() {
-        decision::SearchCompleteness::Complete {
-            evidence: evidence.clone(),
-        }
-    } else {
-        decision::SearchCompleteness::Incomplete {
-            reasons: vec![format!(
-                "discovery complete: {}; profile acquisition complete: {}",
-                discovery.complete(),
-                profiles.complete()
-            )],
-        }
-    }
-}
-
-async fn assess_and_publish(
-    ctx: &ObjectContext<'_>,
-    runtime: Arc<Runtime>,
-    source: &SourceRecord,
-    profiles: ProfileState,
-    search: decision::SearchCompleteness,
-) -> std::result::Result<(ProfileState, (EvidenceDigest, decision::Assessment)), TerminalError> {
-    let source = source.clone();
-    let (profiles, assessment) = runtime
-        .blocking(move || {
-            let assessment = decision::assess(&source, profiles.evidence(), search)?;
-            Ok((profiles, assessment))
-        })
-        .await
-        .map_err(|error| TerminalError::new(error.to_string()))?;
-    let digest = publish(ctx, runtime, "row-assessment", assessment.clone()).await?;
-    Ok((profiles, (digest, assessment)))
 }
 
 fn terminal(error: impl std::fmt::Display) -> HandlerError {

@@ -54,6 +54,58 @@ pub(super) async fn await_browser(ctx: &ObjectContext<'_>) -> Result<(), Handler
     }
 }
 
+/// One admission-plus-step attempt: `Some(step)` ends the window, `None` tries again.
+///
+/// Rankings: if the gate races closed after admission, Deferred becomes an immediate Blocked —
+/// not a 64-iteration retry loop. Legacy retains the existing loops.
+async fn attempt_once(
+    gateway: &SourceGateway,
+    ctx: &SharedObjectContext<'_>,
+    request: &request::RequestSpec,
+    operation: &crate::domain::identity::EvidenceDigest,
+    interval: Duration,
+    attempt_index: usize,
+    policy: ReadinessPolicy,
+) -> Result<Option<WorkflowStep>, StepError> {
+    if let Some(failure) = admission::acquire(ctx, policy)
+        .await
+        .map_err(StepError::Admission)?
+    {
+        return Ok(Some(WorkflowStep::Blocked { failure }));
+    }
+    let step = run_step(
+        gateway,
+        ctx,
+        request.clone(),
+        operation.clone(),
+        interval,
+        attempt_index,
+    )
+    .await
+    .map_err(StepError::Effect)?;
+    match step {
+        WorkflowStep::Deferred if policy == ReadinessPolicy::Rankings => {
+            Ok(Some(WorkflowStep::Blocked {
+                failure: crate::runtime::protocol::OperationFailure {
+                    code: crate::runtime::protocol::FailureCode::BrowserUnavailable,
+                    message: "browser admission closed after readiness check; rankings gate raced"
+                        .into(),
+                    http_status: None,
+                    retries: crate::runtime::protocol::RetryEvidence::NotAttempted,
+                    evidence: Vec::new(),
+                },
+            }))
+        }
+        WorkflowStep::Deferred => {
+            ctx.sleep(Duration::from_secs(1))
+                .await
+                .map_err(|error| StepError::Admission(error.into()))?;
+            Ok(None)
+        }
+        other => Ok(Some(other)),
+    }
+}
+
 pub(super) async fn admitted_step(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
@@ -64,46 +116,16 @@ pub(super) async fn admitted_step(
     policy: ReadinessPolicy,
 ) -> Result<WorkflowStep, StepError> {
     let steps = futures::stream::iter(0..64)
-        .then(|_| async {
-            if let Some(failure) = admission::acquire(ctx, policy)
-                .await
-                .map_err(StepError::Admission)?
-            {
-                return Ok(Some(WorkflowStep::Blocked { failure }));
-            }
-            let step = run_step(
+        .then(|_| {
+            attempt_once(
                 gateway,
                 ctx,
-                request.clone(),
-                operation.clone(),
+                request,
+                operation,
                 interval,
                 attempt_index,
+                policy,
             )
-            .await
-            .map_err(StepError::Effect)?;
-            // Rankings: if the gate races closed after admission, Deferred
-            // becomes an immediate Blocked — not a 64-iteration retry loop.
-            // Legacy retains existing loops.
-            match step {
-                WorkflowStep::Deferred if policy == ReadinessPolicy::Rankings => {
-                    Ok(Some(WorkflowStep::Blocked {
-                        failure: crate::runtime::protocol::OperationFailure {
-                            code: crate::runtime::protocol::FailureCode::BrowserUnavailable,
-                            message: "browser admission closed after readiness check; rankings gate raced".into(),
-                            http_status: None,
-                            retries: crate::runtime::protocol::RetryEvidence::NotAttempted,
-                            evidence: Vec::new(),
-                        },
-                    }))
-                }
-                WorkflowStep::Deferred => {
-                    ctx.sleep(Duration::from_secs(1))
-                        .await
-                        .map_err(|error| StepError::Admission(error.into()))?;
-                    Ok::<_, StepError>(None)
-                }
-                other => Ok(Some(other)),
-            }
         })
         .try_filter_map(|step| async { Ok(step) });
     futures::pin_mut!(steps);

@@ -5,12 +5,10 @@ use super::super::{
 };
 use super::{terminal, RunIdentity};
 use crate::domain::identity::EvidenceDigest;
+use crate::runtime::clock;
 use crate::runtime::rankings_collection::RankingCollectionRef;
 use restate_sdk::prelude::*;
-use std::{
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::sync::Arc;
 
 pub(super) struct Results<'a, 'ctx> {
     ctx: &'a ObjectContext<'ctx>,
@@ -29,7 +27,7 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         selected: u64,
         collection_ref: Option<crate::runtime::rankings_collection::RankingCollectionRef>,
     ) -> Result<Self, HandlerError> {
-        let now = journal_time(ctx).await?;
+        let now = journal_time(ctx, &runtime).await?;
         let progress = RunProgress {
             request: identity.request,
             coverage: Coverage {
@@ -94,7 +92,7 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
         if self.progress.pending_rows.len() == RESULT_PAGE_ROWS {
             self.flush().await?;
         }
-        self.progress.updated_at_unix_ms = journal_time(self.ctx).await?;
+        self.progress.updated_at_unix_ms = journal_time(self.ctx, &self.runtime).await?;
         self.ctx.set(
             &self.progress_key,
             restate_sdk::serde::Serialize::serialize(&Json(&self.progress)).map_err(terminal)?,
@@ -130,7 +128,7 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
             ));
         }
         self.flush().await?;
-        self.progress.updated_at_unix_ms = journal_time(self.ctx).await?;
+        self.progress.updated_at_unix_ms = journal_time(self.ctx, &self.runtime).await?;
         let summary = RunSummary {
             coverage: self.progress.coverage.clone(),
             started_at_unix_ms: self.progress.started_at_unix_ms,
@@ -163,15 +161,10 @@ impl<'a, 'ctx> Results<'a, 'ctx> {
     }
 }
 
-async fn journal_time(ctx: &ObjectContext<'_>) -> Result<u64, HandlerError> {
-    Ok(ctx
-        .run(|| async {
-            let duration = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_err(terminal)?;
-            u64::try_from(duration.as_millis()).map_err(terminal)
-        })
-        .name("observe run time")
-        .retry_policy(RunRetryPolicy::new().max_attempts(1))
-        .await?)
+/// Journaled wall-clock read for run progress timestamps.
+///
+/// The name is the journal identity of this entry and MUST NOT change while an invocation that
+/// wrote it can still be replayed.
+async fn journal_time(ctx: &ObjectContext<'_>, runtime: &Runtime) -> Result<u64, HandlerError> {
+    clock::journal_unix_ms(ctx, &runtime.clock(), "observe run time").await
 }

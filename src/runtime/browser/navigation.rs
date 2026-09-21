@@ -1,18 +1,19 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::Duration;
 
-use chromiumoxide::cdp::browser_protocol::page::NavigateParams;
+use chromiumoxide::cdp::browser_protocol::page::{FrameId, NavigateParams};
 use chromiumoxide::Page;
 use futures::StreamExt;
 use reqwest::header::HeaderMap;
 use url::Url;
 
 use super::{gate::ProfileGate, BrowserError};
-use crate::runtime::source::retry::retry_after as retry_after_source;
+use crate::runtime::clock::Clock;
+use crate::runtime::source::retry::retry_after_now;
 
 mod document;
 mod observer;
-use document::{bootstrap_events, navigation_deadline, DocumentState};
+use document::{bootstrap_events, navigation_deadline, BootstrapEvents, DocumentState};
 pub(crate) use observer::start_observer;
 use observer::{load_observation, Observation};
 
@@ -43,53 +44,94 @@ pub(crate) async fn bootstrap(
     target: &Url,
     timeout: Duration,
     gate: Arc<ProfileGate>,
+    clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
-    let main_frame = page
-        .mainframe()
+    let main_frame = resolve_main_frame(page).await?;
+    let mut events = bootstrap_events(page).await?;
+    let loop_context = NavigationLoop {
+        page,
+        target,
+        main_frame: &main_frame,
+        deadline: navigation_deadline(clock.now_instant(), timeout),
+        clock,
+        gate: &gate,
+    };
+    let mut state = DocumentState::new(target.to_string());
+    loop_context.run(&mut events, &mut state).await?;
+    classify_observation(state.into_observation(), &gate, clock)
+}
+
+/// Resolve the frame every captured event is judged against.
+async fn resolve_main_frame(page: &Page) -> Result<FrameId, BrowserError> {
+    page.mainframe()
         .await
         .map_err(|_| BrowserError::Transport)?
-        .ok_or(BrowserError::Unavailable)?;
-    let mut events = bootstrap_events(page).await?;
+        .ok_or(BrowserError::Unavailable)
+}
 
-    let navigation = page.goto(NavigateParams::new(target.to_string()));
-    tokio::pin!(navigation);
-    let deadline = navigation_deadline(Instant::now(), timeout);
-    let mut state = DocumentState::new(target.to_string());
+/// The half of a navigation loop that does not change while it runs.
+///
+/// The mutable half — the event streams and the document — stays a separate argument, so the loop
+/// body reads as one `select!` over the things that move.
+struct NavigationLoop<'a> {
+    page: &'a Page,
+    target: &'a Url,
+    main_frame: &'a FrameId,
+    deadline: tokio::time::Instant,
+    clock: &'a dyn Clock,
+    gate: &'a ProfileGate,
+}
 
-    loop {
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
-            return Err(BrowserError::Timeout);
-        }
-        tokio::select! {
-            biased;
-            result = &mut navigation, if !state.navigated() => {
-                result.map_err(|_| BrowserError::Transport)?;
-                state.mark_navigated();
+impl NavigationLoop<'_> {
+    /// Drive the navigation and its event streams until the document is complete or the deadline
+    /// expires.
+    ///
+    /// One absolute deadline governs the whole loop: every pass recomputes the remaining budget, so
+    /// a stream that keeps producing events cannot extend the navigation, and the `sleep` arm is
+    /// what turns the deadline into `BrowserError::Timeout`.
+    async fn run(
+        &self,
+        events: &mut BootstrapEvents,
+        state: &mut DocumentState,
+    ) -> Result<(), BrowserError> {
+        let navigation = self.page.goto(NavigateParams::new(self.target.to_string()));
+        tokio::pin!(navigation);
+        loop {
+            let remaining = self
+                .deadline
+                .saturating_duration_since(self.clock.now_instant());
+            if remaining.is_zero() {
+                return Err(BrowserError::Timeout);
             }
-            event = events.requests.next() => {
-                let Some(event) = event else { return Err(BrowserError::Transport); };
-                state.on_request(page, &event, &main_frame).await?;
+            tokio::select! {
+                biased;
+                result = &mut navigation, if !state.navigated() => {
+                    result.map_err(|_| BrowserError::Transport)?;
+                    state.mark_navigated();
+                }
+                event = events.requests.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    state.on_request(self.page, &event, self.main_frame).await?;
+                }
+                event = events.responses.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    state.on_response(event, self.gate)?;
+                }
+                event = events.finished.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    state.on_finished(self.page, event).await?;
+                }
+                event = events.failures.next() => {
+                    let Some(event) = event else { return Err(BrowserError::Transport); };
+                    state.on_failure(&event);
+                }
+                _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
             }
-            event = events.responses.next() => {
-                let Some(event) = event else { return Err(BrowserError::Transport); };
-                state.on_response(event, &gate)?;
+            if state.complete() {
+                return Ok(());
             }
-            event = events.finished.next() => {
-                let Some(event) = event else { return Err(BrowserError::Transport); };
-                state.on_finished(page, event).await?;
-            }
-            event = events.failures.next() => {
-                let Some(event) = event else { return Err(BrowserError::Transport); };
-                state.on_failure(&event);
-            }
-            _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
-        }
-        if state.complete() {
-            break;
         }
     }
-    classify_observation(state.into_observation(), &gate)
 }
 
 /// Inspect a page's current navigation state. Classifies outcome and
@@ -102,6 +144,7 @@ pub(crate) async fn inspect(
     page: &Page,
     origin: &Url,
     gate: Arc<ProfileGate>,
+    clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
     let current_url = page.url().await.map_err(|_| BrowserError::Transport)?;
     let ready = page
@@ -132,16 +175,17 @@ pub(crate) async fn inspect(
     if !ready {
         return Ok(NavigationOutcome::Pending);
     }
-    classify_observation(observation, &gate)
+    classify_observation(observation, &gate, clock)
 }
 
 fn classify_observation(
     observation: Observation,
     gate: &ProfileGate,
+    clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
     // Check 429/cooldown FIRST — Retry-After header takes precedence.
     if observation.status.is_some() && observation.status.unwrap_or(0) == 429 {
-        let cooldown = retry_after(&observation.headers)?;
+        let cooldown = retry_after(clock, &observation.headers)?;
         if observation.challenged || observation.body_challenged {
             gate.revoke();
         }
@@ -169,6 +213,7 @@ fn classify_observation(
     }
     if status == 503 {
         return Ok(NavigationOutcome::CoolingDown(retry_after(
+            clock,
             &observation.headers,
         )?));
     }
@@ -177,9 +222,8 @@ fn classify_observation(
     }
     Ok(NavigationOutcome::Ready)
 }
-fn retry_after(headers: &HeaderMap) -> Result<Duration, BrowserError> {
-    let delay =
-        retry_after_source(headers, SystemTime::now()).map_err(|_| BrowserError::Protocol)?;
+fn retry_after(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, BrowserError> {
+    let delay = retry_after_now(clock, headers).map_err(|_| BrowserError::Protocol)?;
     // Absent or zero Retry-After — use conservative 60s.
     if delay.is_zero() {
         return Ok(Duration::from_secs(60));

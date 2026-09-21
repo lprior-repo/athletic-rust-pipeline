@@ -217,6 +217,7 @@ mod lane_smoke {
             gate.clone(),
             &fixture,
             1,
+            &crate::runtime::clock::SystemClock,
         )
         .await
         .expect("lane response");
@@ -261,6 +262,7 @@ mod lane_smoke {
             gate.clone(),
             &fixture,
             1,
+            &crate::runtime::clock::SystemClock,
         )
         .await
         .expect("lane response");

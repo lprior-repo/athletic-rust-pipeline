@@ -1,8 +1,5 @@
 use super::{
-    acquisition::ACQUISITION_REVISION,
     import::{SourceManifest, INGESTION_REVISION},
-    rankings_collection::{RankingCollectionRef, RankingsCollectionStateClient},
-    row_worker::RowWorkerClient,
     run_protocol::{
         ExportSnapshot, RunProgress, RunRequest, SourceSnapshot, MAX_RUN_ROWS, RESULT_PAGE_ROWS,
     },
@@ -11,10 +8,12 @@ use super::{
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::BTreeMap, sync::Arc};
+use std::sync::Arc;
 
+mod pipeline;
 mod results;
 mod source_rows;
+use pipeline::{drive, seal_rankings_collection, validate_snapshot, RunInputs};
 use results::Results;
 use source_rows::SourceRows;
 
@@ -44,6 +43,7 @@ pub struct PageRequest {
 )]
 impl RunCoordinator {
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key()))]
     pub async fn run(
         &self,
         ctx: ObjectContext<'_>,
@@ -60,7 +60,17 @@ impl RunCoordinator {
         {
             return Ok(result);
         }
-        validate_snapshot(&self.runtime, &request)
+        let inputs = self.load_run_inputs(&request).await?;
+        // Initialize Results/progress BEFORE collection wait
+        let (mut rows, mut results) = self.open_results(&ctx, &request, &inputs, key).await?;
+        seal_rankings_collection(&ctx, &request, &inputs, (&mut rows, &mut results)).await?;
+        drive(&ctx, &self.runtime, &request, (&mut rows, &mut results)).await?;
+        Ok(Json(results.finish().await?))
+    }
+
+    /// Load and validate the two immutable inputs a run binds.
+    async fn load_run_inputs(&self, request: &RunRequest) -> Result<RunInputs, HandlerError> {
+        validate_snapshot(&self.runtime, request)
             .await
             .map_err(terminal)?;
         let manifest: SourceManifest = self.load_digest(&request.manifest).await?;
@@ -71,10 +81,20 @@ impl RunCoordinator {
         }
         // Load source snapshot to check for rankings scope
         let snapshot: SourceSnapshot = self.load_digest(&request.snapshot).await?;
-        // Initialize Results/progress BEFORE collection wait
-        let mut rows = SourceRows::new(&manifest, &request, None).map_err(terminal)?;
-        let mut results = Results::new(
-            &ctx,
+        Ok(RunInputs { manifest, snapshot })
+    }
+
+    /// Open the durable progress record for this run key.
+    async fn open_results<'a, 'ctx>(
+        &self,
+        ctx: &'a ObjectContext<'ctx>,
+        request: &RunRequest,
+        inputs: &RunInputs,
+        key: String,
+    ) -> Result<(SourceRows, Results<'a, 'ctx>), HandlerError> {
+        let rows = SourceRows::new(&inputs.manifest, request, None).map_err(terminal)?;
+        let results = Results::new(
+            ctx,
             self.runtime.clone(),
             RunIdentity {
                 key,
@@ -84,24 +104,7 @@ impl RunCoordinator {
             None,
         )
         .await?;
-        // If rankings scope exists, start collection and wait for sealed snapshot
-        if let Some(scope) = &snapshot.rankings {
-            let collection = super::rankings_collection::collection_fingerprint(
-                &scope.revision,
-                &request.snapshot,
-            )?;
-            let collection_req = super::rankings_collection::CollectionRequest {
-                source_snapshot: request.snapshot.clone(),
-            };
-            let client = ctx.object_client::<RankingsCollectionStateClient>(collection.as_str());
-            client.start_or_resume(Json(collection_req)).call().await?;
-            let sealed = wait_for_collection_sealed(&ctx, &collection).await?;
-            // Update Results with sealed collection_ref
-            results.update_collection_ref(sealed.clone())?;
-            rows.update_rankings(sealed);
-        }
-        drive(&ctx, &self.runtime, &request, (&mut rows, &mut results)).await?;
-        Ok(Json(results.finish().await?))
+        Ok((rows, results))
     }
 
     /// Decodes one immutable run input from the runtime as a handler error.
@@ -202,98 +205,6 @@ impl RunCoordinator {
     }
 }
 
-async fn validate_snapshot(runtime: &Runtime, request: &RunRequest) -> anyhow::Result<()> {
-    if usize::from(request.concurrency.get()) > runtime.config.row_concurrency() {
-        anyhow::bail!("requested row concurrency exceeds worker capacity");
-    }
-    let snapshot: SourceSnapshot = runtime.load_json(&request.snapshot).await?;
-    if snapshot.revision != ACQUISITION_REVISION
-        || snapshot.source_origin != runtime.config.source_origin().as_str()
-    {
-        anyhow::bail!("source snapshot does not bind this worker source contract");
-    }
-    if snapshot.label.is_empty()
-        || snapshot.label.len() > 128
-        || snapshot.label.chars().any(char::is_control)
-    {
-        anyhow::bail!("source snapshot label is invalid");
-    }
-    Ok(())
-}
-
-async fn drive(
-    ctx: &ObjectContext<'_>,
-    runtime: &Runtime,
-    request: &RunRequest,
-    work: (&mut SourceRows, &mut Results<'_, '_>),
-) -> Result<(), HandlerError> {
-    let (rows, results) = work;
-    let mut futures = DurableFuturesUnordered::new();
-    let mut jobs = BTreeMap::new();
-    let result: Result<(), HandlerError> = async {
-        let mut exhausted = false;
-        loop {
-            while !exhausted && futures.len() < usize::from(request.concurrency.get()) {
-                match rows.next(runtime, request).await.map_err(terminal)? {
-                    Some(job) => {
-                        let key = job.key().map_err(terminal)?;
-                        let future = ctx
-                            .object_client::<RowWorkerClient>(&key)
-                            .process(Json(job))
-                            .call();
-                        let handle = future.invocation_handle().await?;
-                        let index = futures.push(future);
-                        if jobs.insert(index, (key, handle)).is_some() {
-                            return Err(terminal("duplicate durable future index"));
-                        }
-                    }
-                    None => exhausted = true,
-                }
-            }
-            let Some((index, outcome)) = futures.next().await? else {
-                break;
-            };
-            let (job_key, _) = jobs
-                .remove(&index)
-                .ok_or_else(|| terminal("completion has no admitted source row"))?;
-            results.record(&job_key, outcome?.0).await?;
-        }
-        if !jobs.is_empty() {
-            return Err(terminal("run ended with unaccounted durable row calls"));
-        }
-        Ok(())
-    }
-    .await;
-    if result.is_err() {
-        jobs.values().for_each(|(_, handle)| handle.cancel());
-        for _ in 0..futures.len() {
-            futures.next().await?;
-        }
-    }
-    result
-}
-
-/// Observe the other object's shared state through journaled SDK calls.
-async fn wait_for_collection_sealed(
-    ctx: &ObjectContext<'_>,
-    collection: &EvidenceDigest,
-) -> Result<RankingCollectionRef, HandlerError> {
-    loop {
-        let snapshot = ctx
-            .object_client::<RankingsCollectionStateClient>(collection.as_str())
-            .snapshot_ref()
-            .call()
-            .await?
-            .0;
-        if let Some(snapshot) = snapshot {
-            return Ok(RankingCollectionRef {
-                collection: collection.clone(),
-                snapshot,
-            });
-        }
-        ctx.sleep(std::time::Duration::from_secs(1)).await?;
-    }
-}
 fn terminal(error: impl std::fmt::Display) -> HandlerError {
     TerminalError::new(error.to_string()).into()
 }

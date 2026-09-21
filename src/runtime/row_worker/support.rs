@@ -1,9 +1,13 @@
+use super::discovery::{DiscoveryState, ProfileState};
 use super::super::Runtime;
 use crate::{
     model::SourceRecord,
     runtime::{
         protocol::ReviewInput,
-        row_protocol::{RowJob, RowReport, RowResolution, ROW_PROTOCOL_REVISION},
+        row_protocol::{
+            DiscoverySummary, RankingDiscoveryEvidence, RowJob, RowReport, RowResolution,
+            ROW_PROTOCOL_REVISION,
+        },
     },
 };
 use anyhow::Context;
@@ -171,4 +175,73 @@ mod tests {
             source_validation(&source(&[("Schools Name", "Central")])).expect("missing name issue");
         assert!(issue.contains("complete athlete name"));
     }
+}
+
+/// Fold one row's discovery summary into a published artifact.
+pub(crate) async fn publish_discovery_summary(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    job: &RowJob,
+    discovery: &DiscoveryState,
+    query_refs: &[crate::domain::identity::EvidenceDigest],
+    rankings: Option<RankingDiscoveryEvidence>,
+) -> std::result::Result<crate::domain::identity::EvidenceDigest, TerminalError> {
+    publish(
+        ctx,
+        runtime.clone(),
+        "row-discovery-summary",
+        DiscoverySummary {
+            job: job.clone(),
+            candidate_ids: discovery.candidate_ids.clone(),
+            query_artifacts: query_refs.to_vec(),
+            complete: discovery.complete(),
+            issues: discovery.issues.clone(),
+            rankings,
+        },
+    )
+    .await
+}
+
+/// Why a row's search is or is not complete enough to decide on.
+pub(crate) fn search_completeness(
+    discovery: &DiscoveryState,
+    profiles: &ProfileState,
+    evidence: &crate::domain::identity::EvidenceDigest,
+) -> crate::domain::decision::SearchCompleteness {
+    if discovery.complete() && profiles.complete() {
+        crate::domain::decision::SearchCompleteness::Complete {
+            evidence: evidence.clone(),
+        }
+    } else {
+        crate::domain::decision::SearchCompleteness::Incomplete {
+            reasons: vec![format!(
+                "discovery complete: {}; profile acquisition complete: {}",
+                discovery.complete(),
+                profiles.complete()
+            )],
+        }
+    }
+}
+
+/// Score the acquired profiles off the runtime thread, then publish the assessment.
+pub(crate) async fn assess_and_publish(
+    ctx: &ObjectContext<'_>,
+    runtime: Arc<Runtime>,
+    source: &SourceRecord,
+    profiles: ProfileState,
+    search: crate::domain::decision::SearchCompleteness,
+) -> std::result::Result<
+    (ProfileState, (crate::domain::identity::EvidenceDigest, crate::domain::decision::Assessment)),
+    TerminalError,
+> {
+    let source = source.clone();
+    let (profiles, assessment) = runtime
+        .blocking(move || {
+            let assessment = crate::domain::decision::assess(&source, profiles.evidence(), search)?;
+            Ok((profiles, assessment))
+        })
+        .await
+        .map_err(|error| TerminalError::new(error.to_string()))?;
+    let digest = publish(ctx, runtime, "row-assessment", assessment.clone()).await?;
+    Ok((profiles, (digest, assessment)))
 }

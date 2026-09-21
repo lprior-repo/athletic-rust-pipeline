@@ -46,7 +46,7 @@ impl BrowserSession {
         if request.0.operator {
             release_exhausted_recovery(&ctx, self.runtime.clone()).await?;
         }
-        let started = browser_readiness::now_ms(&ctx).await?;
+        let started = browser_readiness::now_ms(&ctx, &self.runtime.clock()).await?;
         let observations = futures::stream::iter(0..MAX_OBSERVATIONS)
             .then(|_| observe_ready(&ctx, self.runtime.clone(), started))
             .try_filter_map(|status| async { Ok(status) });

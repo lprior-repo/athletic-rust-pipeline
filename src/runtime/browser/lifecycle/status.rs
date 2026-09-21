@@ -7,10 +7,9 @@
 //! panic.
 
 use super::super::{BrowserState, BrowserStatus};
-use std::{
-    sync::{Mutex, RwLock},
-    time::Instant,
-};
+use crate::runtime::clock::Clock;
+use std::sync::{Mutex, RwLock};
+use tokio::time::Instant;
 
 /// A manager reporting a terminal `Stopped` status can never serve another
 /// command, so the runtime rebuilds it rather than reusing a dead handle.
@@ -35,13 +34,20 @@ pub(in crate::runtime::browser) fn write_state(
     }
 }
 
-pub(in crate::runtime::browser) fn remaining_ms(cooldown: &Mutex<Option<Instant>>) -> u64 {
+pub(in crate::runtime::browser) fn remaining_ms(
+    clock: &dyn Clock,
+    cooldown: &Mutex<Option<Instant>>,
+) -> u64 {
     let until = match cooldown.lock() {
         Ok(value) => *value,
         Err(error) => *error.into_inner(),
     };
     until.map_or(0, |value| {
-        u64::try_from(value.saturating_duration_since(Instant::now()).as_millis())
-            .unwrap_or(u64::MAX)
+        u64::try_from(
+            value
+                .saturating_duration_since(clock.now_instant())
+                .as_millis(),
+        )
+        .unwrap_or(u64::MAX)
     })
 }

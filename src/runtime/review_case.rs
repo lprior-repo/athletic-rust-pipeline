@@ -66,44 +66,66 @@ impl ReviewCase {
         }
 
         let expected_lane = assigned_lane(&expected_key).map_err(terminal)?;
-        let assigned = ctx
-            .get::<Json<ModelLane>>("assignment")
-            .await?
-            .map(|value| value.0);
-        let retained = ctx.get::<Json<ReviewOutcome>>("result").await?;
-        if let Some(result) = retained {
-            let lane = outcome_lane(&result.0);
-            if assigned != Some(expected_lane) || lane != expected_lane {
-                return Err(terminal(
-                    "review case has contradictory durable result assignment",
-                ));
-            }
-            return Ok(result);
-        }
-
-        let lane = match assigned {
-            Some(lane) if lane == expected_lane => lane,
-            Some(_) => {
-                return Err(terminal(
-                    "review case durable assignment contradicts its key",
-                ))
-            }
-            None => {
-                ctx.set("assignment", Json(expected_lane));
-                expected_lane
-            }
+        let lane = match resolve_assignment(&ctx, expected_lane).await? {
+            Assignment::Retained(result) => return Ok(result),
+            Assignment::Bound(lane) => lane,
         };
-        let outcome = ctx
-            .object_client::<LocalReviewerClient>(lane.key())
-            .review(Json(ReviewJob {
-                input: digest,
-                lane,
-            }))
-            .call()
-            .await?;
-        ctx.set("result", Json(outcome.0.clone()));
-        Ok(outcome)
+        dispatch_to_lane(&ctx, lane, digest).await
     }
+}
+
+/// What the durable assignment state says about this case.
+enum Assignment {
+    /// A result is already recorded; the handler returns it unchanged.
+    Retained(Json<ReviewOutcome>),
+    /// The lane this case is durably bound to.
+    Bound(ModelLane),
+}
+
+/// Read the durable assignment, short-circuiting on an already-recorded result.
+///
+/// Both directions of the binding are checked: a retained result whose lane disagrees with the
+/// key, or an assignment that contradicts it, is a contradiction rather than a reason to redo work.
+async fn resolve_assignment(
+    ctx: &ObjectContext<'_>,
+    expected_lane: ModelLane,
+) -> Result<Assignment, HandlerError> {
+    let assigned = ctx
+        .get::<Json<ModelLane>>("assignment")
+        .await?
+        .map(|value| value.0);
+    if let Some(result) = ctx.get::<Json<ReviewOutcome>>("result").await? {
+        let lane = outcome_lane(&result.0);
+        if assigned != Some(expected_lane) || lane != expected_lane {
+            return Err(terminal(
+                "review case has contradictory durable result assignment",
+            ));
+        }
+        return Ok(Assignment::Retained(result));
+    }
+    match assigned {
+        Some(lane) if lane == expected_lane => Ok(Assignment::Bound(lane)),
+        Some(_) => Err(terminal("review case durable assignment contradicts its key")),
+        None => {
+            ctx.set("assignment", Json(expected_lane));
+            Ok(Assignment::Bound(expected_lane))
+        }
+    }
+}
+
+/// Send the case to the reviewer lane that owns it and record the outcome durably.
+async fn dispatch_to_lane(
+    ctx: &ObjectContext<'_>,
+    lane: ModelLane,
+    input: EvidenceDigest,
+) -> Result<Json<ReviewOutcome>, HandlerError> {
+    let outcome = ctx
+        .object_client::<LocalReviewerClient>(lane.key())
+        .review(Json(ReviewJob { input, lane }))
+        .call()
+        .await?;
+    ctx.set("result", Json(outcome.0.clone()));
+    Ok(outcome)
 }
 
 async fn load_review_input(runtime: Arc<Runtime>, digest: &EvidenceDigest) -> Result<ReviewInput> {

@@ -40,19 +40,15 @@ struct FinalizedReview {
 )]
 impl LocalReviewer {
     #[handler]
+    #[tracing::instrument(skip_all, fields(key = %ctx.key(), lane = ?job.0.lane))]
     pub async fn review(
         &self,
         ctx: ObjectContext<'_>,
         job: Json<ReviewJob>,
     ) -> Result<Json<ReviewOutcome>, HandlerError> {
         let job = job.into_inner();
-        validate_lane(&ctx, job.lane)?;
-        if let Some(failure) = ctx.get::<Json<OperationFailure>>("blocked").await? {
-            return Ok(Json(ReviewOutcome::Failed {
-                lane: job.lane,
-                request: None,
-                failure: failure.0,
-            }));
+        if let Some(outcome) = resolve_lane(&ctx, job.lane).await? {
+            return Ok(outcome);
         }
         let prepared = input::prepare(&self.runtime, &job)
             .await
@@ -61,10 +57,7 @@ impl LocalReviewer {
         let finalized = self
             .execute(&ctx, &prepared, request.clone(), job.lane)
             .await?;
-        if finalized.cooldown_ms != 0 {
-            ctx.sleep(Duration::from_millis(finalized.cooldown_ms))
-                .await?;
-        }
+        apply_cooldown(&ctx, finalized.cooldown_ms).await?;
         if finalized.blocked {
             if let ReviewOutcome::Failed { failure, .. } = &finalized.outcome {
                 ctx.set("blocked", Json(failure.clone()));
@@ -153,3 +146,30 @@ impl LocalReviewer {
 
 #[cfg(test)]
 mod tests;
+
+/// Resolve the lane this reviewer serves, or the outcome that short-circuits a blocked lane.
+///
+/// A blocked lane answers with its durable failure instead of calling out again.
+async fn resolve_lane(
+    ctx: &ObjectContext<'_>,
+    lane: ModelLane,
+) -> Result<Option<Json<ReviewOutcome>>, HandlerError> {
+    validate_lane(ctx, lane)?;
+    let Some(failure) = ctx.get::<Json<OperationFailure>>("blocked").await? else {
+        return Ok(None);
+    };
+    Ok(Some(Json(ReviewOutcome::Failed {
+        lane,
+        request: None,
+        failure: failure.0,
+    })))
+}
+
+/// Honour the lane's cadence before the next call.
+async fn apply_cooldown(ctx: &ObjectContext<'_>, cooldown_ms: u64) -> Result<(), HandlerError> {
+    if cooldown_ms == 0 {
+        return Ok(());
+    }
+    ctx.sleep(Duration::from_millis(cooldown_ms)).await?;
+    Ok(())
+}

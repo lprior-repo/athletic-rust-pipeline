@@ -20,40 +20,39 @@ pub(crate) enum CleanupResult {
 /// Rust calls ABORT with await_promise(true); only Ok(Ok(true)) confirms.
 /// On unconfirmed cleanup: revoke gate AND close the page (bounded).
 pub(crate) async fn cleanup(page: &Page, gate: &ProfileGate) -> CleanupResult {
+    match confirm_abort(page).await {
+        Some(true) => CleanupResult::Confirmed,
+        _ => unconfirmed(page, gate).await,
+    }
+}
+
+/// Run ABORT under its timeout and decode the `confirmed` flag it returns.
+///
+/// `None` folds every non-confirming shape — an unbuildable call, a transport failure, a timeout,
+/// or a payload without `confirmed: true` — because they all mean the same thing to the caller:
+/// the page may still be fetching, so the page has to go.
+async fn confirm_abort(page: &Page) -> Option<bool> {
     let call = runtime::CallFunctionOnParams::builder()
         .function_declaration(ABORT_FUNCTION)
         .return_by_value(true)
         .await_promise(true)
-        .build();
-    let Ok(call) = call else {
-        close_page_bounded(page, gate).await;
-        return CleanupResult::Unconfirmed;
-    };
-    let result = timeout(FETCH_TIMEOUT, page.evaluate_function(call)).await;
-    match result {
-        Ok(Ok(value)) => {
-            // Decode {ok: bool, confirmed: bool} via typed extraction.
-            let confirmed = value
-                .into_value::<serde_json::Value>()
-                .ok()
-                .and_then(|v| v.get("confirmed").and_then(|c| c.as_bool()))
-                .unwrap_or(false);
-            if confirmed {
-                CleanupResult::Confirmed
-            } else {
-                close_page_bounded(page, gate).await;
-                CleanupResult::Unconfirmed
-            }
-        }
-        Ok(Err(_)) => {
-            close_page_bounded(page, gate).await;
-            CleanupResult::Unconfirmed
-        }
-        Err(_) => {
-            close_page_bounded(page, gate).await;
-            CleanupResult::Unconfirmed
-        }
-    }
+        .build()
+        .ok()?;
+    let value = timeout(FETCH_TIMEOUT, page.evaluate_function(call))
+        .await
+        .ok()?
+        .ok()?;
+    // Decode {ok: bool, confirmed: bool} via typed extraction.
+    value
+        .into_value::<serde_json::Value>()
+        .ok()
+        .and_then(|v| v.get("confirmed").and_then(|c| c.as_bool()))
+}
+
+/// Revoke admission, close the page, and report the cleanup as unconfirmed.
+async fn unconfirmed(page: &Page, gate: &ProfileGate) -> CleanupResult {
+    close_page_bounded(page, gate).await;
+    CleanupResult::Unconfirmed
 }
 
 async fn close_page_bounded(page: &Page, gate: &ProfileGate) {

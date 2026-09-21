@@ -1,6 +1,7 @@
 mod capture;
 mod results;
 mod session;
+mod teardown;
 
 #[path = "../rankings_helper/mod.rs"]
 mod rankings_helper;

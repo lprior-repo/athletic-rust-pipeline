@@ -5,13 +5,13 @@ use super::{
 };
 use crate::runtime::{
     protocol::{FailureCode, ReviewInput, MAX_REVIEW_RESPONSE_BYTES},
-    source::retry::{retry_after, retryable_status},
+    source::retry::{retry_after_now, retryable_status},
 };
 use anyhow::{anyhow, Result};
 use futures::TryStreamExt;
 use reqwest::{header::CONTENT_TYPE, StatusCode};
 use restate_sdk::prelude::*;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::Duration;
 
 // SDK retry policy starts at one second. Retry-After values beyond that
 // cannot be represented by the SDK policy and are handled as a durable
@@ -24,13 +24,14 @@ pub async fn request_once(
     request: &ChatRequest,
     input: &ReviewInput,
 ) -> Result<Attempt, HandlerError> {
-    let started = Instant::now();
+    let clock = runtime.clock();
+    let started = clock.now_instant();
     let response = match runtime.http.post(endpoint).json(request).send().await {
         Ok(response) => response,
         Err(error) => return Ok(transport_failure(error)),
     };
     let status = response.status();
-    let retry_after = retry_after(response.headers(), SystemTime::now());
+    let retry_after = retry_after_now(clock.as_ref(), response.headers());
     let media_type = response
         .headers()
         .get(CONTENT_TYPE)
@@ -148,7 +149,7 @@ async fn store_response(
     status: StatusCode,
     media_type: &str,
     body: Vec<u8>,
-    started: Instant,
+    started: tokio::time::Instant,
 ) -> Result<crate::runtime::protocol::DocumentReceipt> {
     let size = body.len();
     let store = runtime.store.clone();
@@ -158,6 +159,7 @@ async fn store_response(
     let elapsed =
         u64::try_from(started.elapsed().as_millis()).map_err(|error| anyhow!(error.to_string()))?;
     input::receipt(
+        &runtime.clock(),
         digest,
         endpoint.to_owned(),
         status.as_u16(),
@@ -212,87 +214,5 @@ fn http_failure(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use reqwest::header::{HeaderMap, HeaderValue, RETRY_AFTER};
-
-    fn receipt(status: u16) -> crate::runtime::protocol::DocumentReceipt {
-        crate::runtime::protocol::DocumentReceipt {
-            digest: crate::domain::identity::EvidenceDigest::parse(
-                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            )
-            .expect("synthetic digest"),
-            source_url: "http://127.0.0.1:9000/v1/chat/completions".to_owned(),
-            http_status: status,
-            media_type: "application/json".to_owned(),
-            bytes: 1,
-            fetched_at_unix_ms: 1,
-            elapsed_ms: 1,
-            rankings: None,
-        }
-    }
-
-    #[test]
-    fn shared_retry_after_parser_accepts_delta_and_http_date_but_rejects_excessive_values() {
-        let now = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
-        let mut headers = HeaderMap::new();
-        headers.insert(RETRY_AFTER, HeaderValue::from_static("7"));
-        assert_eq!(retry_after(&headers, now), Ok(Duration::from_secs(7)));
-        headers.insert(RETRY_AFTER, HeaderValue::from_static("86401"));
-        assert!(retry_after(&headers, now).is_err());
-        let date = httpdate::fmt_http_date(now + Duration::from_secs(11));
-        headers.insert(RETRY_AFTER, HeaderValue::from_str(&date).expect("date"));
-        assert_eq!(retry_after(&headers, now), Ok(Duration::from_secs(11)));
-    }
-
-    #[test]
-    fn unsafe_retry_after_fails_closed_without_retrying() {
-        let mut headers = HeaderMap::new();
-        headers.insert(RETRY_AFTER, HeaderValue::from_static("not-a-delay"));
-        let parsed = retry_after(&headers, SystemTime::UNIX_EPOCH);
-        let attempt = http_failure(StatusCode::TOO_MANY_REQUESTS, receipt(429), parsed);
-        assert!(!attempt.retryable());
-        assert!(matches!(
-            attempt,
-            Attempt::Failure {
-                code: FailureCode::RateLimited,
-                retryable: false,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn retry_after_beyond_sdk_delay_is_nonretryable_with_cooldown() {
-        let attempt = http_failure(
-            StatusCode::SERVICE_UNAVAILABLE,
-            receipt(503),
-            Ok(Duration::from_secs(2)),
-        );
-        assert!(!attempt.retryable());
-        assert!(matches!(
-            attempt,
-            Attempt::Failure {
-                retry_after_ms: 2_000,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn missing_retry_after_allows_sdk_retry() {
-        let attempt = http_failure(
-            StatusCode::SERVICE_UNAVAILABLE,
-            receipt(503),
-            Ok(Duration::ZERO),
-        );
-        assert!(attempt.retryable());
-        assert!(matches!(
-            attempt,
-            Attempt::Failure {
-                retry_after_ms: 0,
-                ..
-            }
-        ));
-    }
-}
+#[path = "transport_tests.rs"]
+mod tests;

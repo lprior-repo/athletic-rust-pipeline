@@ -58,6 +58,7 @@ impl Actor {
             );
             let nonce = self.next_capture_nonce();
             let source_origin = self.settings.source_origin.clone();
+            let clock = self.clock.clone();
             let span = tracing::info_span!("browser.job", slot, nonce);
             self.jobs.spawn(
                 async move {
@@ -65,7 +66,7 @@ impl Actor {
                     if let crate::runtime::source::request::RequestAction::Rankings(ref action) = request.action {
                         tokio::select! {
                             _ = shutdown.cancelled() => Err(BrowserError::Shutdown),
-                            result = transport::fetch_rankings(&page, action, timeout, gate, &source_origin, nonce) => result,
+                            result = transport::fetch_rankings(&page, action, timeout, gate, &source_origin, nonce, clock.as_ref()) => result,
                         }
                     } else {
                         Err(BrowserError::Protocol)
@@ -73,7 +74,7 @@ impl Actor {
                 } else {
                     tokio::select! {
                         _ = shutdown.cancelled() => Err(BrowserError::Shutdown),
-                        result = transport::fetch(&page, &request, timeout, gate) => result,
+                        result = transport::fetch(&page, &request, timeout, gate, clock.as_ref()) => result,
                     }
                 };
                 JobResult {

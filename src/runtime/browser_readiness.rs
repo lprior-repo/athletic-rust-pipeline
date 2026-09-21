@@ -1,12 +1,10 @@
 use super::{
-    browser::{BrowserState, BrowserStatus},
+    browser::{BrowserError, BrowserManager, BrowserState, BrowserStatus},
+    clock::{self, Clock},
     Runtime,
 };
 use restate_sdk::prelude::*;
-use std::{
-    sync::Arc,
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::sync::Arc;
 
 #[derive(Clone, Copy)]
 pub(crate) enum BrowserAction {
@@ -22,21 +20,15 @@ pub(crate) async fn act(
     action: BrowserAction,
 ) -> Result<BrowserStatus, HandlerError> {
     ctx.run(move || async move {
-        let browser = runtime.ensure_browser().await.map_err(|_| {
-            TerminalError::new(
+        let browser = runtime
+            .ensure_browser()
+            .await
+            .map_err(|_| TerminalError::new(
                 "persistent browser startup failed; inspect local worker diagnostics",
-            )
-        })?;
-        let status = match action {
-            BrowserAction::Inspect => browser.inspect().await,
-            BrowserAction::Recover => browser.recover().await,
-            BrowserAction::Restart => browser.restart().await,
-            BrowserAction::HumanRequired => {
-                browser.mark_human_required();
-                Ok(browser.status())
-            }
-        }
-        .map_err(|error| TerminalError::new(error.to_string()))?;
+            ))?;
+        let status = dispatch_action(&browser, action)
+            .await
+            .map_err(|error| TerminalError::new(error.to_string()))?;
         Ok::<_, HandlerError>(Json(status))
     })
     .name("browser profile lifecycle action")
@@ -44,6 +36,22 @@ pub(crate) async fn act(
     .await
     .map(|value| value.0)
     .map_err(Into::into)
+}
+
+/// One operator action against a manager that is already known to be reachable.
+async fn dispatch_action(
+    browser: &BrowserManager,
+    action: BrowserAction,
+) -> Result<BrowserStatus, BrowserError> {
+    match action {
+        BrowserAction::Inspect => browser.inspect().await,
+        BrowserAction::Recover => browser.recover().await,
+        BrowserAction::Restart => browser.restart().await,
+        BrowserAction::HumanRequired => {
+            browser.mark_human_required();
+            Ok(browser.status())
+        }
+    }
 }
 
 pub(crate) async fn physical_status(runtime: &Runtime) -> BrowserStatus {
@@ -58,13 +66,13 @@ pub(crate) async fn physical_status(runtime: &Runtime) -> BrowserStatus {
     }
 }
 
-pub(crate) async fn now_ms(ctx: &ObjectContext<'_>) -> Result<u64, HandlerError> {
-    ctx.run(|| async {
-        let elapsed = SystemTime::now().duration_since(UNIX_EPOCH)?;
-        Ok(u64::try_from(elapsed.as_millis())?)
-    })
-    .name("browser workflow clock")
-    .retry_policy(RunRetryPolicy::new().max_attempts(1))
-    .await
-    .map_err(Into::into)
+/// Journaled wall-clock read for the readiness workflow.
+///
+/// Thin naming of [`clock::journal_unix_ms`]: the name below is the journal identity of this
+/// entry and MUST NOT change while an invocation that wrote it can still be replayed.
+pub(crate) async fn now_ms(
+    ctx: &ObjectContext<'_>,
+    clock: &Arc<dyn Clock>,
+) -> Result<u64, HandlerError> {
+    clock::journal_unix_ms(ctx, clock, "browser workflow clock").await
 }

@@ -4,15 +4,16 @@ use super::{
     pool::{self, PageSlot, Pending},
     BrowserError, BrowserResponse, BrowserSettings, BrowserState, BrowserStatus,
 };
+use crate::runtime::{clock::Clock, drain::DrainReport};
 use chromiumoxide::Browser;
 use std::{
     collections::VecDeque,
     sync::{Arc, Mutex, RwLock},
-    time::Instant,
 };
 use tokio::{
     sync::{mpsc, oneshot},
     task::{JoinHandle, JoinSet},
+    time::Instant,
 };
 use tokio_util::sync::CancellationToken;
 // CancellationToken kept only for observer_stop (page observer lifecycle)
@@ -40,7 +41,7 @@ pub(super) struct Actor {
     pub(super) status: Arc<RwLock<BrowserStatus>>,
     pub(super) cooldown_until: Arc<Mutex<Option<Instant>>>,
     // ready field removed — gate.is_ready() is the single source of truth
-    pub(super) shutdown_reply: Option<oneshot::Sender<anyhow::Result<()>>>,
+    pub(super) shutdown_reply: Option<oneshot::Sender<DrainReport>>,
     pub(super) draining: bool,
     pub(super) queue_capacity: usize,
     pub(super) observers: JoinSet<Result<(), BrowserError>>,
@@ -50,6 +51,10 @@ pub(super) struct Actor {
     pub(super) panic_shutdown: bool,
     pub(super) capture_sequence: u64,
     pub(super) launched: bool,
+    pub(super) clock: Arc<dyn Clock>,
+    /// What this actor still owes: queued requests it rejects, plus the tasks it joins at
+    /// `close_browser`. Handed to the runtime as the region's drain certificate.
+    pub(super) region: DrainReport,
 }
 
 pub(super) struct BrowserConnection {
@@ -80,7 +85,7 @@ pub(super) enum Command {
         reply: oneshot::Sender<Result<BrowserStatus, BrowserError>>,
     },
     Shutdown {
-        reply: oneshot::Sender<anyhow::Result<()>>,
+        reply: oneshot::Sender<DrainReport>,
     },
 }
 
@@ -104,6 +109,7 @@ impl Actor {
         status: Arc<RwLock<BrowserStatus>>,
         cooldown_until: Arc<Mutex<Option<Instant>>>,
         gate: Arc<ProfileGate>,
+        clock: Arc<dyn Clock>,
     ) -> Self {
         let queue_capacity = settings.tabs.saturating_mul(QUEUE_MULTIPLIER).max(1);
         Self {
@@ -130,6 +136,8 @@ impl Actor {
             panic_shutdown: false,
             capture_sequence: 0,
             launched: connection.launched,
+            clock,
+            region: DrainReport::default(),
         }
     }
 
@@ -150,22 +158,17 @@ impl Actor {
                 self.observer_stop.cancel();
                 self.gate.revoke();
                 pool::reject_pending(&mut self.pending, BrowserError::Shutdown);
-                let result = self.close_browser().await;
+                let (report, failure) = self.close_browser().await;
                 if let Some(reply) = self.shutdown_reply.take() {
-                    if reply
-                        .send(
-                            result
-                                .as_ref()
-                                .map(|_| ())
-                                .map_err(|error| anyhow::anyhow!(error.to_string())),
-                        )
-                        .is_err()
-                    {
-                        tracing::debug!("browser shutdown reply receiver dropped");
+                    if reply.send(report).is_err() {
+                        tracing::debug!("browser shutdown report receiver dropped");
                     }
                 }
                 self.set_state(BrowserState::Stopped);
-                return result;
+                return match failure {
+                    Some(error) => Err(error),
+                    None => Ok(()),
+                };
             }
             tokio::select! {
                 command = self.rx.recv() => self.command(command).await,
@@ -174,10 +177,11 @@ impl Actor {
                         self.gate.revoke();
                         self.shutdown.cancel();
                         pool::reject_pending(&mut self.pending, BrowserError::Unavailable);
-                        let cleanup = self.close_browser().await;
-                        return match cleanup {
-                            Ok(()) => Err(anyhow::anyhow!("browser handler stopped")),
-                            Err(error) => Err(anyhow::anyhow!("browser handler stopped; cleanup failed: {}", error)),
+                        let (report, failure) = self.close_browser().await;
+                        tracing::warn!(?report, "browser region drained after a handler failure");
+                        return match failure {
+                            None => Err(anyhow::anyhow!("browser handler stopped")),
+                            Some(error) => Err(anyhow::anyhow!("browser handler stopped; cleanup failed: {}", error)),
                         };
                     }
                 }

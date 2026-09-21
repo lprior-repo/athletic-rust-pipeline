@@ -7,13 +7,12 @@
 //! `browser::state` uses too.
 
 use super::{actor::Command, gate::ProfileGate, BrowserStatus};
-use std::{
-    sync::{Arc, Mutex, RwLock},
-    time::Instant,
-};
+use crate::runtime::clock::Clock;
+use std::sync::{Arc, Mutex, RwLock};
 use tokio::{
     sync::{mpsc, Mutex as AsyncMutex},
     task::JoinHandle,
+    time::Instant,
 };
 
 mod commands;
@@ -29,6 +28,7 @@ pub(crate) struct BrowserManager {
     cooldown_until: Arc<Mutex<Option<Instant>>>,
     gate: Arc<ProfileGate>,
     join: Arc<AsyncMutex<Option<JoinHandle<anyhow::Result<()>>>>>,
+    clock: Arc<dyn Clock>,
 }
 impl Drop for BrowserManager {
     fn drop(&mut self) {

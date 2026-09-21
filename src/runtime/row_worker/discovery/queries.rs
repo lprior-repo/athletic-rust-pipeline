@@ -46,35 +46,58 @@ async fn run_query(
             return Ok(());
         }
     };
+    match gather_query(ctx, &key, job).await? {
+        // A failed call leaves the query unaquired and is recorded, not propagated: the row's
+        // completeness verdict is what carries the shortfall.
+        QueryGather::Unavailable(issue) => state.issues.push(issue),
+        QueryGather::Acquired(digest) => {
+            state.refs.push(digest.clone());
+            fold_query_artifact(runtime, state, &digest).await;
+        }
+    }
+    Ok(())
+}
+
+/// One query worker call: its artifact digest, or the issue that leaves the query unaquired.
+enum QueryGather {
+    Acquired(EvidenceDigest),
+    Unavailable(String),
+}
+
+/// Call the query worker and classify the answer; only a cancelled lane propagates.
+async fn gather_query(
+    ctx: &ObjectContext<'_>,
+    key: &str,
+    job: QueryJob,
+) -> std::result::Result<QueryGather, TerminalError> {
     let call = ctx
-        .object_client::<QueryWorkerClient>(&key)
+        .object_client::<QueryWorkerClient>(key)
         .gather(Json(job))
         .call();
     let handle = call
         .invocation_handle()
         .await
         .map_err(|error| TerminalError::new(error.to_string()))?;
-    let digest = match call.await {
-        Ok(value) => value.0,
+    match call.await {
+        Ok(value) => Ok(QueryGather::Acquired(value.0)),
         Err(error) if error.code() == 409 => {
             handle.cancel();
-            return Err(error);
+            Err(error)
         }
-        Err(error) => {
-            state
-                .issues
-                .push(format!("query worker call failed: {error}"));
-            return Ok(());
-        }
-    };
-    state.refs.push(digest.clone());
-    match runtime.load_json::<QueryEvidence>(&digest).await {
+        Err(error) => Ok(QueryGather::Unavailable(format!(
+            "query worker call failed: {error}"
+        ))),
+    }
+}
+
+/// Decode one acquired query artifact into the row's discovery state.
+async fn fold_query_artifact(runtime: &Runtime, state: &mut DiscoveryState, digest: &EvidenceDigest) {
+    match runtime.load_json::<QueryEvidence>(digest).await {
         Ok(artifact) => fold_query(runtime, state, &artifact).await,
         Err(error) => state
             .issues
             .push(format!("query artifact could not be decoded: {error}")),
     }
-    Ok(())
 }
 
 /// Folds one acquired query artifact into `state`: candidates, issues and completeness.

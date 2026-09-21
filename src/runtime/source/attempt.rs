@@ -13,6 +13,7 @@ use super::SourceGateway;
 use crate::runtime::http_audit;
 use crate::runtime::protocol::FailureCode;
 use restate_sdk::prelude::*;
+use std::sync::Arc;
 use std::time::Duration;
 
 /// Whether a failed ranking attempt may be retried, given the fault code and
@@ -34,8 +35,6 @@ pub(super) async fn run_step(
     attempt_index: usize,
 ) -> Result<WorkflowStep, TerminalError> {
     let runtime = gateway.runtime.clone();
-    let record_operation = operation.clone();
-    let load_operation = operation.clone();
     // `attempt_index` is a retry ordinal bounded by `retry::MAX_ATTEMPTS`, so a
     // saturating increment is the exact attempt count and cannot overflow.
     let last_attempt = attempt_index.saturating_add(1) == retry::MAX_ATTEMPTS;
@@ -54,20 +53,44 @@ pub(super) async fn run_step(
             request,
             result: attempt,
         };
-        let digest = http_audit::record(runtime.clone(), record_operation, captured).await?;
-        let records = http_audit::load(runtime, load_operation).await?;
-        let finalized =
-            result::finish_workflow(operation, records, Ok(Json(digest)), last_attempt)?;
-        Ok(Json(WorkflowStep::Attempt {
-            finalized,
+        journal_attempt(
+            runtime,
+            operation,
+            captured,
             retryable,
-            rearm: retryable,
             delay_ms,
-        }))
+            last_attempt,
+        )
+        .await
     })
     .retry_policy(RunRetryPolicy::new().max_attempts(1))
     .await
     .map(|json| json.0)
+}
+
+/// Journal one attempt's evidence and finalize its workflow step.
+///
+/// The record/load pair is one journaled unit: the digest returned is the one the finalized step
+/// carries, so a replay that loads the audit records sees exactly the attempt that was recorded.
+async fn journal_attempt(
+    runtime: Arc<crate::runtime::Runtime>,
+    operation: crate::domain::identity::EvidenceDigest,
+    captured: observation::CapturedAttempt,
+    retryable: bool,
+    delay_ms: u64,
+    last_attempt: bool,
+) -> Result<Json<WorkflowStep>, HandlerError> {
+    let record_operation = operation.clone();
+    let load_operation = operation.clone();
+    let digest = http_audit::record(runtime.clone(), record_operation, captured).await?;
+    let records = http_audit::load(runtime, load_operation).await?;
+    let finalized = result::finish_workflow(operation, records, Ok(Json(digest)), last_attempt)?;
+    Ok(Json(WorkflowStep::Attempt {
+        finalized,
+        retryable,
+        rearm: retryable,
+        delay_ms,
+    }))
 }
 
 /// Classify one attempt for retry and compute its pacing delay.

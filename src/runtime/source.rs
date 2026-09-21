@@ -77,7 +77,12 @@ impl SourceGateway {
         &self,
         ctx: ObjectContext<'_>,
     ) -> Result<Json<AdmissionDecision>, HandlerError> {
-        admission::admit(&ctx, self.runtime.config.source_interval()).await
+        admission::admit(
+            &ctx,
+            self.runtime.config.source_interval(),
+            &self.runtime.clock(),
+        )
+        .await
     }
 
     #[handler]
@@ -127,7 +132,7 @@ impl SourceGateway {
         ctx: ObjectContext<'_>,
         feedback: Json<AdmissionFeedback>,
     ) -> Result<(), HandlerError> {
-        admission::observe(&ctx, feedback.0).await
+        admission::observe(&ctx, feedback.0, &self.runtime.clock()).await
     }
 }
 
