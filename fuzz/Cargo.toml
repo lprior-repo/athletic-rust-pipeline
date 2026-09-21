@@ -1,0 +1,44 @@
+[package]
+name = "fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+census-domain = { path = "../crates/census-domain" }
+midwest-census = { path = "../crates/midwest-census" }
+libfuzzer-sys = "0.4"
+serde_json = "1"
+
+[[bin]]
+name = "hytek"
+path = "fuzz_targets/hytek.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "compiled"
+path = "fuzz_targets/compiled.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "xc"
+path = "fuzz_targets/xc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "raceday"
+path = "fuzz_targets/raceday.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]

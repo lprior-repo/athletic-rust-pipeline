@@ -1,0 +1,24 @@
+# cargo-mutants configuration for census-domain
+#
+# Phase 6 verification: mutation testing threshold.
+# All mutants must be caught — no missed mutants allowed.
+#
+# Threshold: 0 missed mutants.
+# Run: `cargo mutants --manifest-path crates/census-domain/Cargo.toml`
+
+[report]
+# Print caught and missed counts on completion.
+caught = true
+missed = true
+
+[include]
+# Only mutate production code in src/.
+paths = ["src/"]
+
+[exclude]
+# Exclude test code from mutation (it's covered by normal tests).
+paths = ["src/**/tests"]
+
+[env]
+# Ensure the mutants build with the same features.
+CARGO_TERM_COLOR = "always"

@@ -24,7 +24,10 @@
 /fuzz/target/
 /fuzz/artifacts/
 /fuzz/coverage/
+/fuzz/corpus/
 !/fuzz/corpus/workbook_ingestion/seed-valid.xlsx
 !/fuzz/corpus/xlsx_zip_stream/seed-valid.xlsx
 __pycache__/
 *.pyc
+/rust_out
+/mutants.out/
