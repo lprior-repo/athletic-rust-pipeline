@@ -38,9 +38,7 @@
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicU64;
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -118,6 +116,7 @@ mod entities;
 mod keys;
 mod legacy;
 pub mod read;
+mod sequences;
 mod write;
 
 /// Hard ceiling on the observations one table may hold. A table larger than this aborts the scan
@@ -222,7 +221,7 @@ pub struct Store {
     journal: Keyspace,
     meta: Keyspace,
     /// Next observation sequence per table; seeded from the last key found at open.
-    sequences: BTreeMap<&'static str, AtomicU64>,
+    sequences: sequences::Counters,
 }
 
 impl Store {
@@ -249,13 +248,7 @@ impl Store {
             .keyspace(META, KeyspaceCreateOptions::default)
             .map_err(|source| StoreError::Open { source })?;
 
-        let mut sequences = BTreeMap::new();
-        for table in Table::ALL {
-            let next = Self::last_sequence(&entities, table)?
-                .map(|seq| seq.saturating_add(1))
-                .unwrap_or(0);
-            sequences.insert(table.file(), AtomicU64::new(next));
-        }
+        let sequences = sequences::Counters::seeded(&entities)?;
 
         let store = Self {
             root,
@@ -297,4 +290,6 @@ impl Store {
 }
 #[cfg(test)]
 mod tests;
+#[cfg(all(feature = "loom", test))]
+mod loom_tests;
 #[cfg(kani)] include!("../../kani/store_wiring.rs");

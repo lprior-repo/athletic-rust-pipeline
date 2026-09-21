@@ -2,7 +2,6 @@
 
 use fjall::PersistMode;
 use serde::Serialize;
-use std::sync::atomic::Ordering;
 
 use super::keys::{observation_id, observation_key};
 use super::{Store, StoreError, StoreResult, Table};
@@ -11,14 +10,7 @@ use crate::clock::{Clock, SystemClock};
 impl Store {
     /// Reserve `count` consecutive observation sequences for a table.
     pub(super) fn reserve(&self, table: Table, count: u64) -> StoreResult<u64> {
-        let counter = self
-            .sequences
-            .get(table.file())
-            .ok_or_else(|| StoreError::Invariant {
-                detail: format!("table {} has no sequence counter", table.file()),
-            })?;
-        let start = counter.fetch_add(count, Ordering::Relaxed);
-        Ok(start)
+        self.sequences.reserve(table, count)
     }
 
     /// Append observations to a table. Each observation is its own row, exactly like the JSONL

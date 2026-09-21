@@ -23,10 +23,13 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
 use tokio::sync::oneshot;
-use tokio::task::{JoinError, JoinSet};
+use tokio::task::JoinSet;
 
 use crate::clock::{Clock, SystemClock};
 use crate::outcome::{DrainState, Outcome};
+
+mod ledger;
+use ledger::Ledger;
 
 /// What one region did with the tasks it owned.
 ///
@@ -65,13 +68,13 @@ enum Completion<T, E> {
     Panicked,
 }
 
-/// The tasks one region owns, plus the count of everything it has finished.
+/// The tasks one region owns, plus the ledger of everything it has counted.
 ///
 /// One lock holds both, so the counters can never disagree with the set they describe.
 #[derive(Default)]
 struct Region {
     tasks: JoinSet<()>,
-    report: TaskReport,
+    ledger: Ledger,
 }
 
 impl Region {
@@ -81,7 +84,7 @@ impl Region {
     /// shutdown holds one entry for every job the region ever ran.
     fn reap_finished(&mut self) {
         while let Some(joined) = self.tasks.try_join_next() {
-            count(&mut self.report, joined);
+            self.ledger.classify(DrainState::from_join(joined));
         }
     }
 }
@@ -111,12 +114,11 @@ impl Spawner {
     /// exactly the set they handed in while the counting itself lives here, once.
     pub fn adopting(tasks: JoinSet<()>) -> Result<Self, SpawnError> {
         let held = narrow(tasks.len())?;
-        let report = TaskReport {
-            accepted: held,
-            ..TaskReport::default()
-        };
         Ok(Self {
-            region: Mutex::new(Region { tasks, report }),
+            region: Mutex::new(Region {
+                tasks,
+                ledger: Ledger::holding(held),
+            }),
         })
     }
 
@@ -128,7 +130,7 @@ impl Spawner {
     {
         let mut region = self.lock();
         region.tasks.spawn(task);
-        bump(&mut region.report.accepted, 1);
+        region.ledger.accept();
         region.reap_finished();
     }
 
@@ -186,11 +188,10 @@ impl Spawner {
                         Err(_) => {
                             let remaining = narrow(region.tasks.len())?;
                             tracing::warn!(remaining, "drain deadline reached; aborting");
-                            region.report.remaining = remaining;
-                            bump(&mut region.report.timed_out, remaining);
+                            region.ledger.note_deadline(remaining);
                             region.tasks.abort_all();
                             while let Some(joined) = region.tasks.join_next().await {
-                                count_reaped(&mut region.report, joined);
+                                region.ledger.classify_reaped(DrainState::from_join(joined));
                             }
                             break;
                         }
@@ -199,11 +200,11 @@ impl Spawner {
                 None => region.tasks.join_next().await,
             };
             match joined {
-                Some(joined) => count(&mut region.report, joined),
+                Some(joined) => region.ledger.classify(DrainState::from_join(joined)),
                 None => break,
             }
         }
-        Ok(region.report)
+        Ok(region.ledger.report())
     }
 
     /// Register `job` as a region task and count it as accepted.
@@ -213,19 +214,17 @@ impl Spawner {
     {
         let mut region = self.lock();
         region.tasks.spawn_blocking(job);
-        bump(&mut region.report.accepted, 1);
+        region.ledger.accept();
         region.reap_finished();
     }
 
     /// Take the set and its counters, leaving the region empty for whatever comes next.
     fn take(&self) -> Region {
         let mut region = self.lock();
-        let taken = Region {
+        Region {
             tasks: std::mem::take(&mut region.tasks),
-            report: region.report,
-        };
-        region.report = TaskReport::default();
-        taken
+            ledger: std::mem::take(&mut region.ledger),
+        }
     }
 
     /// The lock is held only across bookkeeping — register, count, release — so no guard ever
@@ -238,38 +237,6 @@ impl Spawner {
             Err(poisoned) => poisoned.into_inner(),
         }
     }
-}
-
-/// Count one task that finished inside the drain deadline.
-fn count(report: &mut TaskReport, joined: Result<(), JoinError>) {
-    match DrainState::from_join(joined) {
-        DrainState::Completed => bump(&mut report.completed, 1),
-        DrainState::Cancelled => bump(&mut report.cancelled, 1),
-        DrainState::Panicked => {
-            tracing::error!("a region task panicked");
-            bump(&mut report.panicked, 1);
-        }
-    }
-}
-
-/// Count one task the drain reclaimed after the deadline.
-///
-/// The one difference from [`count`]: a cancellation reaped here is the abort this drain just
-/// issued, which the report calls `aborted`, not a cancellation that arrived on its own.
-fn count_reaped(report: &mut TaskReport, joined: Result<(), JoinError>) {
-    match DrainState::from_join(joined) {
-        DrainState::Completed => bump(&mut report.completed, 1),
-        DrainState::Panicked => {
-            tracing::error!("a region task panicked");
-            bump(&mut report.panicked, 1);
-        }
-        DrainState::Cancelled => bump(&mut report.aborted, 1),
-    }
-}
-
-/// Add to a counter without wrapping.
-fn bump(counter: &mut u64, by: u64) {
-    *counter = counter.saturating_add(by);
 }
 
 /// A set size as a report field.
@@ -287,3 +254,5 @@ fn publish<T, E>(tx: oneshot::Sender<Completion<T, E>>, completion: Completion<T
 
 #[cfg(test)]
 mod tests;
+#[cfg(all(feature = "loom", test))]
+mod loom_tests;

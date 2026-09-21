@@ -10,7 +10,6 @@ use std::collections::{BTreeMap, HashSet};
 use std::io::{BufWriter, Write};
 use std::io::BufRead;
 use std::path::Path;
-use std::sync::atomic::Ordering;
 
 use super::keys::{key_label, split_observation_key, table_prefix};
 use super::{
@@ -117,11 +116,7 @@ impl Store {
         for table in Table::ALL {
             // Per-table counts come from the sequence counters, which are exact: the next free
             // sequence equals the number of observations ever appended to that table.
-            let next = self
-                .sequences
-                .get(table.file())
-                .map(|counter| counter.load(Ordering::Relaxed))
-                .unwrap_or(0);
+            let next = self.sequences.appended(table);
             observations = observations.saturating_add(next);
             tables.push((table.file().to_string(), next));
         }

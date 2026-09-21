@@ -158,3 +158,45 @@ async fn a_task_started_after_a_drain_belongs_to_the_next_one() {
     assert_eq!(second.accepted, 1);
     assert_eq!(second.completed, 1);
 }
+
+#[tokio::test(start_paused = true)]
+async fn a_drain_counts_finished_work_and_the_deadline_separately() {
+    let spawner = Spawner::new();
+    spawner.spawn(async {});
+    spawner.spawn(pending());
+    // The clock is paused, so the finished task is reaped before the deadline arrives and the
+    // deadline only fires once the drain has nothing left to reap but the task that never finishes.
+    let counted = spawner
+        .drain(Duration::from_millis(1))
+        .await
+        .expect("a small set fits the report");
+    assert_eq!(counted.accepted, 2);
+    assert_eq!(
+        counted.completed, 1,
+        "the task that finished is counted as finished, not as reclaimed"
+    );
+    assert_eq!(counted.timed_out, 1);
+    assert_eq!(
+        counted.remaining, 1,
+        "the deadline found exactly the task still in flight"
+    );
+    assert_eq!(counted.aborted, 1);
+    assert_eq!(
+        counted.accepted,
+        counted.completed + counted.cancelled + counted.panicked + counted.aborted,
+        "the report accounts for every unit it accepted"
+    );
+}
+
+#[test]
+fn counts_saturate_instead_of_wrapping() {
+    // The report promises counts that never wrap into a smaller, quieter number, and a region
+    // adopted at the ceiling is the one place that promise is reachable.
+    let mut ledger = super::ledger::Ledger::holding(u64::MAX);
+    ledger.accept();
+    assert_eq!(
+        ledger.report().accepted,
+        u64::MAX,
+        "a count at its ceiling stays there"
+    );
+}

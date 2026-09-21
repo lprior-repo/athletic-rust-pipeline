@@ -16,6 +16,13 @@ path = "src/main.rs"
 name = "midwest-serve"
 path = "src/bin/midwest-serve.rs"
 
+[features]
+# `loom` compiles the concurrency models for the store's sequence allocation and the region
+# ledger. The models live behind `cfg(all(feature = "loom", test))`, so a default build neither
+# compiles the dependency nor the models; run them with `cargo test -p midwest-census --features
+# loom --lib` (the models bound their own exploration, so the all-features gate lane stays quick).
+loom = ["dep:loom"]
+
 [dependencies]
 anyhow = "1"
 census-domain = { path = "../census-domain" }
@@ -24,6 +31,7 @@ clap = { version = "4.5", features = ["derive"] }
 csv = "1"
 fjall = "=3.1.10"
 futures = "0.3"
+loom = { version = "0.7", optional = true }
 regex = "1.11"
 reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
 restate-sdk = { version = "=0.12.0", default-features = false, features = ["http_server", "aws_lc_rs", "reqwest-client"] }
@@ -39,7 +47,15 @@ url = { version = "2.5", features = ["serde"] }
 
 [dev-dependencies]
 calamine = "=0.36.1"
+criterion = "0.8"
 loom = "0.7"
 proptest = "1"
 tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }
 tempfile = "3"
+
+# The committed measurement target: result-file parsing, school-label resolution and the read-time
+# merge, on the entry points the census actually drives. `harness = false` hands the run to
+# criterion; helpers live in `benches/core/`.
+[[bench]]
+name = "core"
+harness = false

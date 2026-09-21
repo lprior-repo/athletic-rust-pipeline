@@ -1970,6 +1970,7 @@ dependencies = [
  "census-domain",
  "chrono",
  "clap",
+ "criterion",
  "csv",
  "fjall",
  "futures",
