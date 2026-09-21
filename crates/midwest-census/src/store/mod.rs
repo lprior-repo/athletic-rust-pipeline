@@ -297,4 +297,4 @@ impl Store {
 }
 #[cfg(test)]
 mod tests;
-#[cfg(kani)] include!("../kani/store_wiring.rs");
+#[cfg(kani)] include!("../../kani/store_wiring.rs");
