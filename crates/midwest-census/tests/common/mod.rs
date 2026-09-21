@@ -65,9 +65,7 @@ pub fn fixtures(source: &str) -> Result<Vec<PathBuf>> {
 
 /// The fixture file name (last path component) as a `String`.
 pub fn file_name(path: &Path) -> Result<String> {
-    let name = path
-        .file_name()
-        .context("fixture path has no file name")?;
+    let name = path.file_name().context("fixture path has no file name")?;
     Ok(name.to_string_lossy().into_owned())
 }
 
