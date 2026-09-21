@@ -66,7 +66,8 @@ Observations are append-only: appending the same entity twice stores two rows, a
 `Store::scan::<T>(Table::X)` merges them through `Entity::merge` and then applies
 `Entity::publish` — the collection contract, applied once per merged entity so the report, the
 workbook, the snapshot and the Restate handlers all see the same projection. (A coach's consumer
-mailbox is withheld there, and the count of withheld rows comes from `census::withheld_coach_emails`.)
+mailbox is withheld there, and `Store::consolidate` reports how many rows it withheld from that same
+merge pass, as `Consolidated::withheld`.)
 That is the guarantee the old JSONL entity logs provided, now applied at read time. Sequence numbers are seeded from the last key
 present at open, and the sequence component is big-endian so byte order is numerical order, so a
 reopened database never reuses a sequence number and never overwrites an observation.

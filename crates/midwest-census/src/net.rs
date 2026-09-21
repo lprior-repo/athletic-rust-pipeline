@@ -39,6 +39,15 @@ const REQUEST_TIMEOUT_SECS: u64 = 45;
 const MAX_RETRIES: u32 = 3;
 const RETRY_BASE_DELAY_MS: u64 = 500;
 
+/// Hard pacing ceiling for an explicitly authorized host: 2 requests/second.
+///
+/// `robots.txt` stays authoritative by default. `--authorized-host` records an operator decision
+/// that one host's rules are logged rather than enforced, because the operator has authorized that
+/// host explicitly. Speed is *not* part of that authorization: the ceiling the collection policy
+/// states (2 rps per host) is applied as a floor on spacing for every authorized host, so raising
+/// `--delay-ms` never lets an authorized host be hit faster than the policy allows.
+const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
+
 // ---------------------------------------------------------------------------
 // Error types
 // ---------------------------------------------------------------------------

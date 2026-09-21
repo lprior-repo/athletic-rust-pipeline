@@ -93,7 +93,8 @@ enum Command {
 
 #[derive(Args, Debug)]
 struct ProviderArgs {
-    /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule.
+    /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule,
+    /// athleticlive, athleticlive_athletes.
     name: String,
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
