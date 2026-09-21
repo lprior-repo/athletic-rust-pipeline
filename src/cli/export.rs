@@ -16,6 +16,7 @@ use restate_sdk::ingress::{InvocationHandle, Output};
 use restate_sdk::prelude::*;
 use std::time::Duration;
 
+#[tracing::instrument(skip_all, fields(command = "export"))]
 pub(super) async fn export_run(ingress: &str, run: &str, output: std::path::PathBuf) -> Result<()> {
     let request = ExportRequest {
         run: EvidenceDigest::parse(run)?,

@@ -18,6 +18,7 @@ use athletic_rust_pipeline::{
 };
 use restate_sdk::prelude::*;
 
+#[tracing::instrument(skip_all, fields(command = "start"))]
 pub(super) async fn start(args: Start) -> Result<()> {
     let selection = match (args.per_sheet, args.all) {
         (Some(rows), false) => Selection::PerSheet { rows },

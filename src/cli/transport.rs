@@ -62,6 +62,7 @@ fn http_client() -> Result<reqwest::Client> {
         .build()?)
 }
 
+#[tracing::instrument(skip_all, fields(command = "deploy"))]
 pub async fn deploy(admin: &str, endpoint: &str) -> Result<serde_json::Value> {
     let admin = local_origin(admin)?;
     let endpoint = local_origin(endpoint)?;

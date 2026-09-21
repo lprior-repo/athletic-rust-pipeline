@@ -4,12 +4,11 @@
 use super::output::emit;
 use anyhow::{bail, Context, Result};
 use athletic_rust_pipeline::{
-    domain::identity::WorkbookDigest,
-    runtime::export::EXPORT_HEADERS,
-    store::ArtifactStore,
+    domain::identity::WorkbookDigest, runtime::export::EXPORT_HEADERS, store::ArtifactStore,
 };
 use std::{fs, path::Path};
 
+#[tracing::instrument(skip_all, fields(command = "verify"))]
 pub(super) async fn verify_retained_bundle(
     input: std::path::PathBuf,
     output: std::path::PathBuf,

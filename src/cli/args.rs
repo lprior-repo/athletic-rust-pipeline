@@ -87,6 +87,26 @@ pub enum Command {
     },
 }
 
+impl Command {
+    /// The subcommand's name, recorded on the CLI dispatch span so a trace identifies which
+    /// operator command produced it without recording any argument value.
+    pub(super) fn name(&self) -> &'static str {
+        match self {
+            Command::Worker { .. } => "worker",
+            Command::Deploy { .. } => "deploy",
+            Command::Start(_) => "start",
+            Command::Status { .. } => "status",
+            Command::BrowserStart { .. } => "browser-start",
+            Command::BrowserStatus { .. } => "browser-status",
+            Command::Export { .. } => "export",
+            Command::Verify { .. } => "verify",
+            Command::RankingsStatus { .. } => "rankings-status",
+            Command::RankingsPause { .. } => "rankings-pause",
+            Command::RankingsResume { .. } => "rankings-resume",
+        }
+    }
+}
+
 #[derive(Args)]
 #[command(group(clap::ArgGroup::new("selection").required(true).args(["per_sheet", "all"])))]
 pub struct Start {

@@ -21,8 +21,15 @@ use athletic_rust_pipeline::runtime::worker;
 use clap::Parser;
 use output::emit;
 
+/// Dispatch the operator's subcommand.
+///
+/// The span carries the subcommand name only: argument values (paths, ingress URLs, digests) stay
+/// out of the logs, and the name is recorded once `clap` has parsed the command line.
+#[tracing::instrument(skip_all, fields(command = tracing::field::Empty))]
 pub async fn run() -> Result<()> {
-    match Cli::parse().command {
+    let Cli { command } = Cli::parse();
+    tracing::Span::current().record("command", command.name());
+    match command {
         Command::Worker { config, bind } => worker::serve(&config, bind).await,
         Command::Deploy { admin, endpoint } => emit(&transport::deploy(&admin, &endpoint).await?),
         Command::Start(args) => start::start(args).await,
