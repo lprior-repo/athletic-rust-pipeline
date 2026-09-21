@@ -14,7 +14,7 @@ Completed (each proven by its parity target, `tests/golden/` unchanged, and flat
 | --- | --- |
 | `sources/plain_names.rs` 2482 | `plain_names/{mod,parse,nd,nd_coaches,nsaa,nsaa_coaches,tests}.rs` — 163–279 lines each |
 | `sources/mshsl.rs` 1870 | `mshsl/{mod,parse,text,teams,map,collect,tests}.rs` — 93–261 |
-| `sources/wiaa.rs` 1559 | pending |
+| `sources/wiaa.rs` 1559 | `wiaa/{mod,collect,primitives,parse,map,tests}.rs` — 125–470 (`collect.rs` 314 holds the unchanged 292-line `collect`, the Phase 2b target) |
 | `sources/ohsaa.rs` 1393 | `ohsaa/{mod,collect,parse,pages,map,tests}.rs` — 69–273 |
 | `sources/athleticnet.rs` 1315 | `athleticnet/{mod,parse,map,absorb,collect,tests}.rs` — 161–298 |
 | `sources/hytek.rs` 1163 | `hytek/{mod,columns,parse,map,tests}.rs` — 171–287 |
@@ -24,23 +24,43 @@ Completed (each proven by its parity target, `tests/golden/` unchanged, and flat
 | root `bundle_verify.rs` 433 | `bundle_verify/{mod,digest,binding,pr_summary}.rs` — 22–237 |
 | root `profile/html/stream.rs` 387 | `stream/{mod,buffer,bounds,structure}.rs` — 43–254 |
 | root `result_verify/checks.rs` + `positive.rs` (346 + 388) | `checks/{mod,row,artifacts}` + `checks/positive/{mod,identity,acceptance}` — 98–178 |
+| `sources/ihsa.rs` 1147 | `ihsa/{mod,parse,staff,map,collect,tests}.rs` — 59–498 |
+| `sources/wiaa_results.rs` 1009 | `wiaa_results/{mod,archive,classify,map,parse,run,tests}.rs` — 61–300 |
+| `sources/wayzata.rs` 1006 | `wayzata/{mod,parse,map,tests}.rs` — 177–342 |
+| `sources/athleticlive_athletes.rs` 985 | `athleticlive_athletes/{mod,parse,tokens,map,tests}.rs` — 67–299 |
+| `net.rs` 1120 | `net/{mod,client,request,execute,cache,decode,robots,tests}.rs` — 55–293 |
+| `store.rs` 1061 | `store/{mod,keys,write,read,legacy,entities,tests}.rs` — 81–241 |
+| root `runtime/browser/transport/rankings.rs` 734 | `rankings/{mod,results,session,capture,tests}.rs` — 11–276 |
+| root `runtime/browser/transport/rankings_helper.rs` 592 | `rankings_helper/{mod,interceptor,capture,request,pagination,tests}.rs` — 12–159 |
+| root `runtime/profile_worker.rs` 616 | `profile_worker/{mod,intake,parsing,state,folding,reporting}.rs` — 81–213 |
+| root `runtime/source/request.rs` 467 | `request/{mod,action,body,build,tests}.rs` — 25–208 |
+| root `search/parser/stream.rs` 412 | `stream/{mod,capture,row,link,bounds}.rs` — 49–124 |
 
-Remaining targets are the entries in `files_over_300_lines` from `tools/production_scan.py`: the census
-core modules (`model.rs` 1327, `net.rs` 1120, `store.rs` 1061, `report.rs` 894, `restate_services.rs` 862,
-`workbook.rs` 844, `main.rs` 740, `census.rs` 467, `bests.rs` 414, the remaining source adapters
-`ihsa.rs` / `wiaa_results.rs` / `wayzata.rs` / `athleticlive_athletes.rs` / `compiled.rs` / `xc.rs` /
-`milesplit.rs` / `coach_contacts.rs` / `ks.rs` / `athleticlive.rs`) and the root `runtime/` and
-`search/` workers.
+Remaining targets are the 39 entries in `files_over_300_lines` from `tools/production_scan.py` (down
+from 62): the census core modules (`model.rs` 1327, `report.rs` 894, `restate_services.rs` 862,
+`workbook.rs` 844, `main.rs` 740, `census.rs` 467, `bests.rs` 414, `bootstrap.rs` 382), the remaining
+source adapters (`compiled.rs` 674 / `xc.rs` 604 / `milesplit.rs` 591 / `coach_contacts.rs` 586 /
+`ks.rs` 528 / `athleticlive.rs` 526 / `raceday.rs` 320), and the root `runtime/`, `store/`, `domain/`
+and `workbook_*` modules.
 
-Two rules learned during this phase, both now enforced:
+Three rules learned during this phase, all now enforced:
 
 * A directory split adds lines (per-file `use` blocks, `mod` declarations, re-export lists). Crate-level
   `production_lines` may therefore rise while oversized files fall. That rise is split overhead, not
   drift: it is checked against a written list before the baseline is refreshed once, at the end of a
   wave — never per pull request.
 * A file may exceed 300 lines only when the single unchanged function it holds is itself longer than
-  300 lines (`sources/wiaa/collect.rs` 307 and `sources/athleticnet/absorb.rs` 298 sit at that floor),
-  and those functions are the targets of the next phase, which may not be reached by a move.
+  300 lines (`sources/wiaa/collect.rs` 314 holds that 292-line `collect`; `sources/athleticnet/absorb.rs`
+  298 sits just above it), and those functions are the targets of the next phase, which may not be
+  reached by a move.
+* The two function counters measure *visible* functions: a function is invisible while a predecessor's
+  brace span overshoots (a `{` or `}` inside a string or comment), and invisible while a signature
+  wraps under rustfmt's 100-column rule is a different kind of visible. Splitting a file can therefore
+  *raise* `functions_over_60_lines` / `functions_over_25_logical_lines` without adding or rewriting a
+  single function. Measured by name against the baseline commit, that accounted for all seven crossings
+  in the 62 → 39 wave (+5 logical: four functions in `runtime/browser/transport/rankings.rs` that the
+  overshooting span had hidden, plus `write_cache` 23 → 28 from its wrapped `pub(super)` signature;
+  +2 of those also crossed 60). Attribute by name, then refresh the baseline once.
 
 ## The guarantee
 
