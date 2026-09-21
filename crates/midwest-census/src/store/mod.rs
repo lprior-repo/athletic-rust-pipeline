@@ -1,0 +1,226 @@
+//! Fjall-backed entity store: append-only observations, deduplicated snapshots, resume journal.
+//!
+//! Collection is interrupted constantly (politeness delays, network, operator), so every adapter
+//! appends observations instead of rewriting state. The substrate is [Fjall](https://fjall-rs.github.io),
+//! an embedded LSM-tree key-value store in safe Rust: writes land in a write-ahead journal and a
+//! memtable, and are compacted into immutable sorted tables, so an interrupted run costs at most the
+//! observations that were never flushed — never a rewritten snapshot.
+//!
+//! # Keyspace layout
+//!
+//! ```text
+//! entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON
+//! journal:  <phase>\0<key>                                    -> {key, at, payload}
+//! meta:     <name>                                            -> small JSON/scalar
+//! ```
+//!
+//! Observations are append-only: appending the same entity twice writes two rows, and
+//! [`Store::consolidate`] merges them through [`Entity::merge`], which is exactly the guarantee the
+//! JSONL journals used to provide. The sequence component is **big-endian** so byte order is
+//! numerical order, and it is seeded from the last key present at open time, so reopening a database
+//! never reuses a sequence number and never overwrites an observation.
+//!
+//! # Durability
+//!
+//! Batches are committed to the journal with [`PersistMode::SyncData`] (`fdatasync`), which is the
+//! cheapest mode that survives a machine crash. [`Store::flush`] upgrades this to
+//! [`PersistMode::SyncAll`] and is called at consolidation and at shutdown. A lost tail costs
+//! re-running an adapter, and the resume journal is durable per completed unit of work, so a
+//! resumed run does not repeat finished work.
+//!
+//! # Legacy journals
+//!
+//! Databases created before the Fjall substrate keep their rows in `<store>/entities/*.jsonl` and
+//! their resume ledger in `<store>/journal/*.jsonl`. [`Store::open`] imports both exactly once
+//! (recorded under `meta`), skipping the import when the marker is present, so a partially imported
+//! database finishes importing on the next open without duplicating observations.
+
+use anyhow::{Context, Result};
+use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use std::collections::BTreeMap;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicU64;
+
+mod entities;
+mod keys;
+mod legacy;
+mod read;
+mod write;
+
+/// Hard ceiling on the observations one table may hold. A table larger than this aborts the scan
+/// with a typed error instead of exhausting memory: the bound is what keeps Rule 2 (bounded control
+/// flow) honest for a store whose input size is not known in advance.
+pub const MAX_ROWS_PER_TABLE: u64 = 20_000_000;
+
+/// Longest entity id the store accepts. Ids ride verbatim inside observation keys, and Fjall
+/// asserts keys stay under 64 KiB; this ceiling keeps that assertion unreachable for callers.
+pub const MAX_ID_BYTES: usize = 512;
+
+/// Unified cache for the LSM tree. Bounded on purpose: the default is sized to the machine, and this
+/// process is expected to share the machine with a browser and a text editor.
+const CACHE_BYTES: u64 = 256 * 1024 * 1024;
+
+const DB_DIR: &str = "fjall";
+const ENTITIES: &str = "entities";
+const JOURNAL: &str = "journal";
+const META: &str = "meta";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Table {
+    Schools,
+    Teams,
+    Coaches,
+    Athletes,
+    Meets,
+    Events,
+    Performances,
+}
+
+impl Table {
+    pub fn file(self) -> &'static str {
+        match self {
+            Table::Schools => "schools",
+            Table::Teams => "teams",
+            Table::Coaches => "coaches",
+            Table::Athletes => "athletes",
+            Table::Meets => "meets",
+            Table::Events => "events",
+            Table::Performances => "performances",
+        }
+    }
+
+    pub const ALL: [Table; 7] = [
+        Table::Schools,
+        Table::Teams,
+        Table::Coaches,
+        Table::Athletes,
+        Table::Meets,
+        Table::Events,
+        Table::Performances,
+    ];
+
+    /// Parse a wire name (`"schools"`) back into a table. Unknown names are rejected so a typo in an
+    /// ingest request cannot silently create a table nobody scans.
+    pub fn from_wire(name: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|table| table.file() == name)
+    }
+}
+
+/// An entity that knows its own canonical id and how to absorb a duplicate observation.
+pub trait Entity: Serialize + DeserializeOwned + Clone {
+    fn entity_id(&self) -> &str;
+    fn merge(&mut self, other: Self);
+
+    /// Apply the collection contract to a merged entity. Every read of the store goes through
+    /// [`Store::scan`], so a rule that lives here holds for the report, the workbook, the snapshot
+    /// and the Restate handlers at once.
+    fn publish(&mut self) {}
+
+    /// How many of this entity's rows carry something the contract withheld. [`Store::consolidate`]
+    /// sums this in the same pass that writes the snapshot, so reporting the count never re-scans
+    /// the table.
+    fn withheld_mailboxes(&self) -> usize {
+        0
+    }
+}
+
+/// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
+/// collection contract withheld a consumer mailbox from.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Consolidated {
+    pub rows: usize,
+    pub withheld: usize,
+}
+
+/// Per-table row counts and the database's on-disk footprint. Counts are the LSM tree's own
+/// estimates (`approximate_len`), which is what a status command needs without scanning millions of
+/// rows.
+#[derive(Debug, Clone, Serialize)]
+pub struct StoreStats {
+    pub tables: Vec<(String, u64)>,
+    pub observations: u64,
+    pub bytes_on_disk: u64,
+}
+
+pub struct Store {
+    root: PathBuf,
+    db: Database,
+    entities: Keyspace,
+    journal: Keyspace,
+    meta: Keyspace,
+    /// Next observation sequence per table; seeded from the last key found at open.
+    sequences: BTreeMap<&'static str, AtomicU64>,
+}
+
+impl Store {
+    pub fn open(root: impl AsRef<Path>) -> Result<Self> {
+        let root = root.as_ref().to_path_buf();
+        for sub in ["http", "out"] {
+            let dir = root.join(sub);
+            std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
+        }
+        let db = Database::builder(root.join(DB_DIR))
+            .cache_size(CACHE_BYTES)
+            .open()
+            .with_context(|| format!("opening the Fjall database under {}", root.display()))?;
+        let entities = db
+            .keyspace(ENTITIES, KeyspaceCreateOptions::default)
+            .context("opening the entities keyspace")?;
+        let journal = db
+            .keyspace(JOURNAL, KeyspaceCreateOptions::default)
+            .context("opening the journal keyspace")?;
+        let meta = db
+            .keyspace(META, KeyspaceCreateOptions::default)
+            .context("opening the meta keyspace")?;
+
+        let mut sequences = BTreeMap::new();
+        for table in Table::ALL {
+            let next = Self::last_sequence(&entities, table)?
+                .map(|seq| seq.saturating_add(1))
+                .unwrap_or(0);
+            sequences.insert(table.file(), AtomicU64::new(next));
+        }
+
+        let store = Self {
+            root,
+            db,
+            entities,
+            journal,
+            meta,
+            sequences,
+        };
+        store.import_legacy()?;
+        Ok(store)
+    }
+
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    pub fn http_cache_dir(&self) -> PathBuf {
+        self.root.join("http")
+    }
+
+    pub fn out_dir(&self) -> PathBuf {
+        self.root.join("out")
+    }
+
+    /// Where a pre-Fjall store kept this table's append log. Reads no longer come from here; the
+    /// path survives as the one-time import source and as the materialized export location.
+    pub fn table_path(&self, table: Table) -> PathBuf {
+        self.root
+            .join("entities")
+            .join(format!("{}.jsonl", table.file()))
+    }
+
+    pub fn flush(&self) -> Result<()> {
+        self.db
+            .persist(PersistMode::SyncAll)
+            .context("persisting the Fjall journal")
+    }
+}
+
+#[cfg(test)]
+mod tests;
