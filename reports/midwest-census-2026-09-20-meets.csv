@@ -1,0 +1,34 @@
+Core meet inventory
+Total,1532
+
+By state,Meets
+WI,796
+??,442
+MN,209
+IA,85
+
+By provider key,Meets
+timer_meet:wayzata,931
+timer_meet:live_results,192
+timer_meet:athleticlive,4
+timer_meet:badgerstate,1
+timer_meet:onyourmarks,1
+
+All sources,Meets
+Total,11007
+With Athletic.net meet id,9593
+
+By state (all sources),Meets
+IL,1994
+WI,1560
+MI,1429
+OH,1232
+MN,1054
+IA,1051
+NE,589
+MO,569
+??,442
+IN,381
+SD,364
+KS,181
+ND,161

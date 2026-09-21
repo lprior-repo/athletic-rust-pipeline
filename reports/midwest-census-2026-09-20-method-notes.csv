@@ -1,0 +1,7 @@
+Result-artifact parsing,"96 parsed artifacts before the vendor layouts landed; 1,740 after (Compiled 763, cross-country 380, Hy-Tek 597); 834,254 result rows, 264,167 grade-bearing."
+Class-of-2027 evidence,"The artifact corpus added 4,323 Wisconsin class-of-2027 athletes to core (14,958 to 19,281)."
+North Dakota and South Dakota,"349 teams collected, 29,746 athletes, 4,712 class-of-2027, no errors."
+Wayzata schedules,"537 competition rows over two 2026 schedules minted 536 core meets; 304 rows resolved to a state (95 recurring sites, 209 schools)."
+Unresolved venues,"Filed under ?? rather than guessed; they are meet inventory, not athlete evidence."
+Coach coverage,"WI, MN, IL, OH, NE and ND publish directories; MI, MO, IN and KS still have none."
+Tests,183 tests pass; the adapters added here are clippy-clean.
