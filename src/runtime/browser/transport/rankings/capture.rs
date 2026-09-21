@@ -52,50 +52,11 @@ async fn process_binding_event(
     context: &CaptureContext<'_>,
     page_one_seen: &mut bool,
 ) -> Result<Option<CapturedRanking>, BrowserError> {
-    if event.name != BINDING_NAME {
+    let Some(package) = binding_package(event, context) else {
         return Ok(None);
-    }
-    let package: serde_json::Value = match serde_json::from_str(&event.payload) {
-        Ok(value) => value,
-        Err(_) => return Ok(None),
     };
-    let expected_kind = match context.action.capture {
-        RankingsCapture::Navigation => "navigation",
-        RankingsCapture::Results => "results",
-    };
-    if package.get("nonce").and_then(serde_json::Value::as_u64) != Some(context.nonce)
-        || package.get("kind").and_then(serde_json::Value::as_str) != Some(expected_kind)
-    {
+    let Some(parsed) = resolve_binding(&package, context)? else {
         return Ok(None);
-    }
-    let route_url = package
-        .get("requestUrl")
-        .and_then(serde_json::Value::as_str);
-    let route_method = package.get("method").and_then(serde_json::Value::as_str);
-    if !route_url.is_some_and(|url| {
-        route_method.is_some_and(|method| {
-            validate_route(url, context.origin, context.action.capture.clone(), method)
-        })
-    }) {
-        return Ok(None);
-    }
-    let parsed = match parse_binding(&package, context.action.capture.clone()) {
-        Ok(value) => value,
-        Err(BrowserError::PayloadLimit) => {
-            context.gate.revoke();
-            return Err(BrowserError::PayloadLimit);
-        }
-        Err(BrowserError::Unavailable) => {
-            context.gate.revoke();
-            return Err(BrowserError::Unavailable);
-        }
-        Err(BrowserError::Redirect) => return Err(BrowserError::Redirect),
-        Err(BrowserError::Shutdown) => return Err(BrowserError::Shutdown),
-        Err(BrowserError::TaskPanicked) => return Err(BrowserError::TaskPanicked),
-        Err(BrowserError::HumanRequired) => return Err(BrowserError::HumanRequired),
-        Err(BrowserError::Timeout | BrowserError::Transport | BrowserError::Protocol) => {
-            return Ok(None);
-        }
     };
     if parsed.challenge {
         context.gate.revoke();
@@ -114,14 +75,85 @@ async fn process_binding_event(
     if request_page == context.action.page {
         return Ok(Some(parsed));
     }
-    if !*page_one_seen && request_page == 1 {
-        *page_one_seen = true;
-        wait_for_active_page(context.page, 1, context.deadline).await?;
-        if !click_numeric_page(context.page, context.action.page).await? {
-            return Err(BrowserError::Timeout);
-        }
-    }
+    click_through_first_page(context, request_page, page_one_seen).await?;
     Ok(None)
+}
+
+/// Decode one binding payload and check it is ours: nonce, kind and route.
+fn binding_package(
+    event: &EventBindingCalled,
+    context: &CaptureContext<'_>,
+) -> Option<serde_json::Value> {
+    if event.name != BINDING_NAME {
+        return None;
+    }
+    let package: serde_json::Value = serde_json::from_str(&event.payload).ok()?;
+    let expected_kind = match context.action.capture {
+        RankingsCapture::Navigation => "navigation",
+        RankingsCapture::Results => "results",
+    };
+    if package.get("nonce").and_then(serde_json::Value::as_u64) != Some(context.nonce)
+        || package.get("kind").and_then(serde_json::Value::as_str) != Some(expected_kind)
+    {
+        return None;
+    }
+    let route_url = package
+        .get("requestUrl")
+        .and_then(serde_json::Value::as_str);
+    let route_method = package.get("method").and_then(serde_json::Value::as_str);
+    if !route_url.is_some_and(|url| {
+        route_method.is_some_and(|method| {
+            validate_route(url, context.origin, context.action.capture.clone(), method)
+        })
+    }) {
+        return None;
+    }
+    Some(package)
+}
+
+/// Parse a routed payload, revoking the gate for the errors that carry evidence.
+///
+/// `None` means "this payload is not a rankings capture", not a failure.
+fn resolve_binding(
+    package: &serde_json::Value,
+    context: &CaptureContext<'_>,
+) -> Result<Option<CapturedRanking>, BrowserError> {
+    match parse_binding(package, context.action.capture.clone()) {
+        Ok(value) => Ok(Some(value)),
+        Err(BrowserError::PayloadLimit) => {
+            context.gate.revoke();
+            Err(BrowserError::PayloadLimit)
+        }
+        Err(BrowserError::Unavailable) => {
+            context.gate.revoke();
+            Err(BrowserError::Unavailable)
+        }
+        Err(BrowserError::Redirect) => Err(BrowserError::Redirect),
+        Err(BrowserError::Shutdown) => Err(BrowserError::Shutdown),
+        Err(BrowserError::TaskPanicked) => Err(BrowserError::TaskPanicked),
+        Err(BrowserError::HumanRequired) => Err(BrowserError::HumanRequired),
+        Err(BrowserError::Timeout | BrowserError::Transport | BrowserError::Protocol) => Ok(None),
+    }
+}
+
+/// The requested page is behind page one — click through to it once.
+///
+/// Page one is only consumed when it is one ahead of the requested page and no
+/// previous payload has already spent the flag.
+async fn click_through_first_page(
+    context: &CaptureContext<'_>,
+    request_page: u32,
+    page_one_seen: &mut bool,
+) -> Result<(), BrowserError> {
+    if *page_one_seen || request_page != 1 {
+        return Ok(());
+    }
+    *page_one_seen = true;
+    wait_for_active_page(context.page, 1, context.deadline).await?;
+    if !click_numeric_page(context.page, context.action.page).await? {
+        return Err(BrowserError::Timeout);
+    }
+    Ok(())
 }
 
 fn observe_response_event(

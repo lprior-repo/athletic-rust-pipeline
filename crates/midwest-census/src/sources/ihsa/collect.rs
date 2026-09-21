@@ -2,9 +2,9 @@
 //! school, journalling progress so a re-run resumes without re-processing.
 
 use super::map::{parse_coach, parse_school, reveal_address_for};
-use super::parse::{parse_email, parse_schools, parse_staff};
+use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, IHSA_API};
-use crate::model::{CanonicalCoach, CanonicalSchool, Evidence, SourceRef};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, Evidence, SchoolId, SourceRef};
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
@@ -25,30 +25,71 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let mut report = AdapterReport::new("ihsa", "schools");
     report.unit = "schools".to_string();
 
-    // Snapshot fetcher stats before work.
     let before = ctx.fetcher.stats().await;
-
-    // Load the resume set (keys already journalled in this phase).
     let done_keys: HashSet<String> = ctx.store.journal_keys("ihsa_schools")?;
 
-    let limit = options.limit;
-    // Tally counters saturate: they feed diagnostics only, so an impossible overflow floors at
-    // `usize::MAX` instead of panicking or wrapping silently.
-    let mut processed = 0usize;
-    let mut skipped = 0usize;
-    let mut schools: Vec<CanonicalSchool> = Vec::new();
-    let mut coaches: Vec<CanonicalCoach> = Vec::new();
-    // PersonID → revealed address within the current school (a person can hold several titles).
-    let mut revealed_emails: HashMap<i64, Option<String>> = HashMap::new();
-
-    // ── Step 1: Fetch the schools list ───────────────────────────────────
     let schools_url = format!("{IHSA_API}/v1/schools");
-    let outcome = match ctx.fetcher.get(&schools_url, &ctx.fetch_options()).await {
+    let Some(records) = fetch_school_records(ctx, &mut report, &schools_url).await? else {
+        return Ok(report);
+    };
+
+    let mut run = IhsaRun {
+        options,
+        schools: Vec::new(),
+        coaches: Vec::new(),
+        revealed_emails: HashMap::new(),
+        processed: 0,
+        skipped: 0,
+    };
+
+    for record in &records {
+        if options.limit.is_some_and(|max| run.processed >= max) {
+            break;
+        }
+        process_record(ctx, record, &schools_url, &done_keys, &mut run, &mut report).await?;
+    }
+
+    append_all(ctx, &run)?;
+
+    // Finalize stats and counts.
+    let after = ctx.fetcher.stats().await;
+    let delta_requests = after.requests.saturating_sub(before.requests);
+    report.rows = u64::try_from(run.processed).context("ihsa school count exceeds u64")?;
+    report.requests = delta_requests;
+    report.note(format!(
+        "fetched {} Illinois schools from IHSA; {} already done",
+        run.processed, run.skipped
+    ));
+
+    Ok(report)
+}
+
+/// Mutable state for one `collect` run: what is being built, the run's options and the tallies.
+///
+/// Tally counters saturate: they feed diagnostics only, so an impossible overflow floors at
+/// `usize::MAX` instead of panicking or wrapping silently.
+struct IhsaRun<'a> {
+    options: &'a Options,
+    schools: Vec<CanonicalSchool>,
+    coaches: Vec<CanonicalCoach>,
+    /// PersonID → revealed address within the current school (a person can hold several titles).
+    revealed_emails: HashMap<i64, Option<String>>,
+    processed: usize,
+    skipped: usize,
+}
+
+/// Fetch and parse the state-wide schools list; `None` when the request failed.
+async fn fetch_school_records(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+    schools_url: &str,
+) -> Result<Option<Vec<SchoolRecord>>> {
+    let outcome = match ctx.fetcher.get(schools_url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
             report.errors = report.errors.saturating_add(1);
             report.note(format!("failed to fetch IHSA schools: {e}"));
-            return Ok(report);
+            return Ok(None);
         }
     };
 
@@ -57,176 +98,199 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     if outcome.from_cache {
         report.from_cache = report.from_cache.saturating_add(1);
     }
+    Ok(Some(records))
+}
 
-    // ── Step 2: For each school, fetch staff and parse ───────────────────
-    for record in &records {
-        // Honour limit.
-        if let Some(max) = limit {
-            if processed >= max {
-                break;
-            }
-        }
+/// Process one school record: parse the school, fetch its staff, emit coaches and journal it.
+async fn process_record(
+    ctx: &AdapterContext<'_>,
+    record: &SchoolRecord,
+    schools_url: &str,
+    done_keys: &HashSet<String>,
+    run: &mut IhsaRun<'_>,
+    report: &mut AdapterReport,
+) -> Result<()> {
+    // Skip already-processed schools (resume support).
+    let journal_key = format!("IL:{}", record.school_id);
+    if done_keys.contains(&journal_key) {
+        run.skipped = run.skipped.saturating_add(1);
+        return Ok(());
+    }
+    run.revealed_emails.clear();
 
-        // Skip already-processed schools (resume support).
-        let journal_key = format!("IL:{}", record.school_id);
-        if done_keys.contains(&journal_key) {
-            skipped = skipped.saturating_add(1);
+    // Parse school.
+    let Some((school, school_id)) = parse_school(record, schools_url, &run.options.observed_on)
+    else {
+        return Ok(());
+    };
+    run.schools.push(school);
+
+    let staff_url = format!("{IHSA_API}/v1/schools/{}/staff2", record.school_id);
+    let Some(staff) = fetch_staff(ctx, &staff_url, record, &journal_key, run, report).await? else {
+        return Ok(());
+    };
+
+    emit_coaches(ctx, record, &staff, &school_id, &staff_url, run, report).await;
+
+    // Journal this school as done.
+    journal_school(
+        ctx,
+        &journal_key,
+        &serde_json::json!({
+            "school_id": record.school_id,
+            "name": record.name_formal,
+        }),
+    )?;
+
+    run.processed = run.processed.saturating_add(1);
+    Ok(())
+}
+
+/// Emit one coach per staff person, revealing the addresses the census pays for.
+///
+/// `staff2` carries a `HasEmail` flag but never the address itself; the address is behind
+/// `GET /v1/schools/{id}/staff/{PersonID}/email` (the "Show email" button). One reveal per person,
+/// and only for the roles the census ships: the recruiting projection reads TF/XC head coaches and
+/// ADs, so a bowling coach's address is not worth a request.
+async fn emit_coaches(
+    ctx: &AdapterContext<'_>,
+    record: &SchoolRecord,
+    staff: &[StaffPerson],
+    school_id: &SchoolId,
+    staff_url: &str,
+    run: &mut IhsaRun<'_>,
+    report: &mut AdapterReport,
+) {
+    for person in staff {
+        let Some(mut coach) = parse_coach(person, school_id, staff_url, &run.options.observed_on)
+        else {
             continue;
-        }
-        revealed_emails.clear();
-
-        // Parse school.
-        let (school, school_id) = match parse_school(record, &schools_url, &options.observed_on) {
-            Some(pair) => pair,
-            None => continue,
         };
-        schools.push(school);
-
-        // Fetch staff for this school.
-        let staff_url = format!("{IHSA_API}/v1/schools/{}/staff2", record.school_id);
-        let staff_outcome = match ctx.fetcher.get(&staff_url, &ctx.fetch_options()).await {
-            Ok(o) => o,
-            Err(e) => {
-                report.errors = report.errors.saturating_add(1);
-                report.note(format!(
-                    "failed to fetch staff for school {}: {e}",
-                    record.school_id
-                ));
-                ctx.store
-                    .journal_done(
-                        "ihsa_schools",
-                        &journal_key,
-                        &serde_json::json!({
-                            "school_id": record.school_id,
-                            "name": record.name_formal,
-                            "error": e.to_string(),
-                        }),
-                    )
-                    .context("journaling ihsa school progress")?;
-                processed = processed.saturating_add(1);
-                continue;
-            }
-        };
-        report.requests = report.requests.saturating_add(1);
-        if staff_outcome.from_cache {
-            report.from_cache = report.from_cache.saturating_add(1);
-        }
-
-        // Parse staff and emit coaches.
-        let staff = match parse_staff(&staff_outcome.text()) {
-            Ok(env) => env,
-            Err(e) => {
-                report.errors = report.errors.saturating_add(1);
-                report.note(format!(
-                    "failed to parse staff for school {}: {e}",
-                    record.school_id
-                ));
-                ctx.store
-                    .journal_done(
-                        "ihsa_schools",
-                        &journal_key,
-                        &serde_json::json!({
-                            "school_id": record.school_id,
-                            "name": record.name_formal,
-                            "parse_error": e.to_string(),
-                        }),
-                    )
-                    .context("journaling ihsa school progress")?;
-                processed = processed.saturating_add(1);
-                continue;
-            }
-        };
-
-        for person in &staff {
-            if let Some(mut coach) =
-                parse_coach(person, &school_id, &staff_url, &options.observed_on)
-            {
-                // `staff2` carries a `HasEmail` flag but never the address itself; the address is
-                // behind `GET /v1/schools/{id}/staff/{PersonID}/email` (the "Show email" button).
-                // One reveal per person, and only for the roles the census ships: the recruiting
-                // projection reads TF/XC head coaches and ADs, so a bowling coach's address is not
-                // worth a request.
-                if person.has_email == Some(true) && reveal_address_for(&coach) {
-                    let email_url = format!(
-                        "{IHSA_API}/v1/schools/{}/staff/{}/email",
-                        record.school_id, person.person_id
-                    );
-                    let revealed = match revealed_emails.entry(person.person_id) {
-                        std::collections::hash_map::Entry::Occupied(slot) => slot.get().clone(),
-                        std::collections::hash_map::Entry::Vacant(slot) => {
-                            let value =
-                                match ctx.fetcher.get(&email_url, &ctx.fetch_options()).await {
-                                    Ok(outcome) => {
-                                        report.requests = report.requests.saturating_add(1);
-                                        if outcome.from_cache {
-                                            report.from_cache = report.from_cache.saturating_add(1);
-                                        }
-                                        parse_email(&outcome.text())
-                                    }
-                                    Err(e) => {
-                                        report.errors = report.errors.saturating_add(1);
-                                        report.note(format!(
-                                            "email reveal failed for person {}: {e}",
-                                            person.person_id
-                                        ));
-                                        None
-                                    }
-                                };
-                            slot.insert(value.clone());
-                            value
+        if person.has_email == Some(true) && reveal_address_for(&coach) {
+            let email_url = format!(
+                "{IHSA_API}/v1/schools/{}/staff/{}/email",
+                record.school_id, person.person_id
+            );
+            let revealed = match run.revealed_emails.entry(person.person_id) {
+                std::collections::hash_map::Entry::Occupied(slot) => slot.get().clone(),
+                std::collections::hash_map::Entry::Vacant(slot) => {
+                    let value = match ctx.fetcher.get(&email_url, &ctx.fetch_options()).await {
+                        Ok(outcome) => {
+                            report.requests = report.requests.saturating_add(1);
+                            if outcome.from_cache {
+                                report.from_cache = report.from_cache.saturating_add(1);
+                            }
+                            parse_email(&outcome.text())
+                        }
+                        Err(e) => {
+                            report.errors = report.errors.saturating_add(1);
+                            report.note(format!(
+                                "email reveal failed for person {}: {e}",
+                                person.person_id
+                            ));
+                            None
                         }
                     };
-                    if let Some(address) = revealed {
-                        coach.professional_email = Some(address);
-                        coach.evidence.push(Evidence::parsed(
-                            SourceRef::new("ihsa", Some(email_url)),
-                            &options.observed_on,
-                        ));
-                    }
+                    slot.insert(value.clone());
+                    value
                 }
-                if coach.professional_email.is_some() {
-                    report.with_email = report.with_email.saturating_add(1);
-                }
-                coaches.push(coach);
+            };
+            if let Some(address) = revealed {
+                coach.professional_email = Some(address);
+                coach.evidence.push(Evidence::parsed(
+                    SourceRef::new("ihsa", Some(email_url)),
+                    &run.options.observed_on,
+                ));
             }
         }
+        if coach.professional_email.is_some() {
+            report.with_email = report.with_email.saturating_add(1);
+        }
+        run.coaches.push(coach);
+    }
+}
 
-        // Journal this school as done.
-        ctx.store
-            .journal_done(
-                "ihsa_schools",
-                &journal_key,
+/// Journal one school's progress on `ihsa_schools`.
+fn journal_school(
+    ctx: &AdapterContext<'_>,
+    journal_key: &str,
+    details: &serde_json::Value,
+) -> Result<()> {
+    ctx.store
+        .journal_done("ihsa_schools", journal_key, details)
+        .context("journaling ihsa school progress")
+}
+
+/// Fetch and parse one school's staff list; `None` when either step failed and was journalled.
+async fn fetch_staff(
+    ctx: &AdapterContext<'_>,
+    staff_url: &str,
+    record: &SchoolRecord,
+    journal_key: &str,
+    run: &mut IhsaRun<'_>,
+    report: &mut AdapterReport,
+) -> Result<Option<Vec<StaffPerson>>> {
+    let staff_outcome = match ctx.fetcher.get(staff_url, &ctx.fetch_options()).await {
+        Ok(o) => o,
+        Err(e) => {
+            report.errors = report.errors.saturating_add(1);
+            report.note(format!(
+                "failed to fetch staff for school {}: {e}",
+                record.school_id
+            ));
+            journal_school(
+                ctx,
+                journal_key,
                 &serde_json::json!({
                     "school_id": record.school_id,
                     "name": record.name_formal,
+                    "error": e.to_string(),
                 }),
-            )
-            .context("journaling ihsa school progress")?;
-
-        processed = processed.saturating_add(1);
+            )?;
+            run.processed = run.processed.saturating_add(1);
+            return Ok(None);
+        }
+    };
+    report.requests = report.requests.saturating_add(1);
+    if staff_outcome.from_cache {
+        report.from_cache = report.from_cache.saturating_add(1);
     }
 
-    // Append all schools and coaches to the store.
-    if !schools.is_empty() {
+    let staff = match parse_staff(&staff_outcome.text()) {
+        Ok(env) => env,
+        Err(e) => {
+            report.errors = report.errors.saturating_add(1);
+            report.note(format!(
+                "failed to parse staff for school {}: {e}",
+                record.school_id
+            ));
+            journal_school(
+                ctx,
+                journal_key,
+                &serde_json::json!({
+                    "school_id": record.school_id,
+                    "name": record.name_formal,
+                    "parse_error": e.to_string(),
+                }),
+            )?;
+            run.processed = run.processed.saturating_add(1);
+            return Ok(None);
+        }
+    };
+    Ok(Some(staff))
+}
+
+/// Append the run's schools and coaches, each table only when it has rows.
+fn append_all(ctx: &AdapterContext<'_>, run: &IhsaRun<'_>) -> Result<()> {
+    if !run.schools.is_empty() {
         ctx.store
-            .append_many(Table::Schools, &schools)
+            .append_many(Table::Schools, &run.schools)
             .context("writing ihsa schools")?;
     }
-    if !coaches.is_empty() {
+    if !run.coaches.is_empty() {
         ctx.store
-            .append_many(Table::Coaches, &coaches)
+            .append_many(Table::Coaches, &run.coaches)
             .context("writing ihsa coaches")?;
     }
-
-    // Finalize stats and counts.
-    let after = ctx.fetcher.stats().await;
-    let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = u64::try_from(processed).context("ihsa school count exceeds u64")?;
-    report.requests = delta_requests;
-    report.note(format!(
-        "fetched {} Illinois schools from IHSA; {} already done",
-        processed, skipped
-    ));
-
-    Ok(report)
+    Ok(())
 }

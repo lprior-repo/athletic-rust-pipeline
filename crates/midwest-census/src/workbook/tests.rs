@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark, SchoolYear,
     SourceRef, Sport,

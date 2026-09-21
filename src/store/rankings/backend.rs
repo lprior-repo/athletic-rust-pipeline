@@ -4,7 +4,7 @@ use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::domain::name::CanonicalName;
 use crate::store::backend::StoreInner;
 use crate::store::StoreError;
-use fjall::{Keyspace, Readable};
+use fjall::{Keyspace, OwnedWriteBatch, Readable};
 use sha2::{Digest, Sha256};
 
 const MAX_CANDIDATES: usize = 1_024;
@@ -63,22 +63,8 @@ pub(in crate::store) fn put_rankings_page(
 
     let marker_key = page_marker_key(&index.collection, &index.event_short, index.page)?;
 
-    // Check for page conflict or replay no-op.
-    if let Some(existing) = store
-        .rankings
-        .get(&marker_key)
-        .map_err(|_| StoreError::CorruptData)?
-    {
-        return if existing.as_ref() == index_hash.as_slice() {
-            Ok(())
-        } else {
-            Err(StoreError::RankingConflict)
-        };
-    }
-
-    // Check seal after page check so we allow replay after normal seal.
-    if load_seal(&store.rankings, &index.collection)?.is_some() {
-        return Err(StoreError::RankingConflict);
+    if page_published(store, index, &marker_key, index_hash.as_slice())? {
+        return Ok(());
     }
 
     let mut batch = store.database.batch();
@@ -89,6 +75,65 @@ pub(in crate::store) fn put_rankings_page(
     batch.insert(&store.rankings, marker_key, index_hash.as_slice());
     total_batch_bytes = total_batch_bytes.saturating_add(serialized.len());
 
+    insert_row_presence(store, index, &mut batch, &mut total_batch_bytes)?;
+    let event_athletes =
+        insert_candidate_presence(store, index, &mut batch, &mut total_batch_bytes)?;
+    insert_roster_presence(store, index, &mut batch, &mut total_batch_bytes)?;
+    insert_event_athletes(
+        store,
+        index,
+        &event_athletes,
+        &mut batch,
+        &mut total_batch_bytes,
+    )?;
+
+    // Bound total serialized batch bytes.
+    const MAX_RANKINGS_BATCH_BYTES: usize = 32 * 1024 * 1024;
+    if total_batch_bytes > MAX_RANKINGS_BATCH_BYTES {
+        return Err(StoreError::BatchTooLarge);
+    }
+
+    batch
+        .durability(Some(fjall::PersistMode::SyncAll))
+        .commit()
+        .map_err(|_| StoreError::CorruptData)?;
+    Ok(())
+}
+
+/// Reports whether this exact page is already published, rejecting any other marker.
+fn page_published(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    marker_key: &[u8],
+    index_hash: &[u8],
+) -> Result<bool, StoreError> {
+    // Check for page conflict or replay no-op.
+    if let Some(existing) = store
+        .rankings
+        .get(marker_key)
+        .map_err(|_| StoreError::CorruptData)?
+    {
+        return if existing.as_ref() == index_hash {
+            Ok(true)
+        } else {
+            Err(StoreError::RankingConflict)
+        };
+    }
+
+    // Check seal after page check so we allow replay after normal seal.
+    if load_seal(&store.rankings, &index.collection)?.is_some() {
+        return Err(StoreError::RankingConflict);
+    }
+    Ok(false)
+}
+
+/// Inserts the source-result and row-position presence keys for one page.
+fn insert_row_presence(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    batch: &mut OwnedWriteBatch,
+    total_batch_bytes: &mut usize,
+) -> Result<(), StoreError> {
     let mut source_results: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut max_row_position: u64 = 0;
 
@@ -101,7 +146,7 @@ pub(in crate::store) fn put_rankings_page(
 
     for result_id in &source_results {
         let key = presence_source_result(&index.collection, &index.event_short, *result_id)?;
-        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+        *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
 
@@ -112,47 +157,27 @@ pub(in crate::store) fn put_rankings_page(
             row.result_id,
             row.row_number,
         )?;
-        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+        *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
+    Ok(())
+}
 
+/// Inserts the candidate reference and eligible presence keys, returning event athletes.
+fn insert_candidate_presence(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    batch: &mut OwnedWriteBatch,
+    total_batch_bytes: &mut usize,
+) -> Result<std::collections::BTreeSet<u64>, StoreError> {
     // Event-level athlete presence keys (were missing, causing zero unique counters).
     let mut event_athletes: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut grade11_individual: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> =
         std::collections::BTreeSet::new();
-    let mut roster_missing: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut roster_present: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
 
     for entry in &index.candidates {
-        let ref_entry = RankingRecordRef {
-            athlete_id: entry.athlete_id,
-            checkpoint: index.checkpoint.clone(),
-            kind: entry.kind,
-            record_index: entry.record_index,
-        };
-
-        // Serialize once and share value for both inserts.
-        let ref_serialized =
-            serde_json::to_vec(&ref_entry).map_err(|_| StoreError::Serialization)?;
-        let ref_bytes = ref_serialized.as_slice();
-
-        let ref_key = athlete_ref_key(&index.collection, &ref_entry)?;
-        total_batch_bytes =
-            total_batch_bytes.saturating_add(ref_key.len().saturating_add(ref_bytes.len()));
-        batch.insert(&store.rankings, ref_key, ref_bytes);
-
-        let name_key = name_ref_key(
-            &index.collection,
-            entry.name.as_str(),
-            entry.athlete_id,
-            &index.checkpoint,
-            entry.kind,
-            entry.record_index,
-        )?;
-        total_batch_bytes =
-            total_batch_bytes.saturating_add(name_key.len().saturating_add(ref_bytes.len()));
-        batch.insert(&store.rankings, name_key, ref_bytes);
+        insert_candidate_refs(store, index, entry, batch, total_batch_bytes)?;
 
         // Track event-level athlete for stats.
         let _ = event_athletes.insert(entry.athlete_id.get());
@@ -166,7 +191,7 @@ pub(in crate::store) fn put_rankings_page(
                     entry.result_id,
                     entry.athlete_id,
                 )?;
-                total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+                *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
                 batch.insert(&store.rankings, key, []);
             }
             RankingCandidateKind::RelayMember => {
@@ -177,49 +202,97 @@ pub(in crate::store) fn put_rankings_page(
                     entry.result_id,
                     entry.athlete_id,
                 )?;
-                total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+                *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
                 batch.insert(&store.rankings, key, []);
             }
         }
     }
+    Ok(event_athletes)
+}
+
+/// Inserts the athlete and name reference keys for one candidate.
+fn insert_candidate_refs(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    entry: &RankingCandidateEntry,
+    batch: &mut OwnedWriteBatch,
+    total_batch_bytes: &mut usize,
+) -> Result<(), StoreError> {
+    let ref_entry = RankingRecordRef {
+        athlete_id: entry.athlete_id,
+        checkpoint: index.checkpoint.clone(),
+        kind: entry.kind,
+        record_index: entry.record_index,
+    };
+
+    // Serialize once and share value for both inserts.
+    let ref_serialized = serde_json::to_vec(&ref_entry).map_err(|_| StoreError::Serialization)?;
+    let ref_bytes = ref_serialized.as_slice();
+
+    let ref_key = athlete_ref_key(&index.collection, &ref_entry)?;
+    *total_batch_bytes =
+        total_batch_bytes.saturating_add(ref_key.len().saturating_add(ref_bytes.len()));
+    batch.insert(&store.rankings, ref_key, ref_bytes);
+
+    let name_key = name_ref_key(
+        &index.collection,
+        entry.name.as_str(),
+        entry.athlete_id,
+        &index.checkpoint,
+        entry.kind,
+        entry.record_index,
+    )?;
+    *total_batch_bytes =
+        total_batch_bytes.saturating_add(name_key.len().saturating_add(ref_bytes.len()));
+    batch.insert(&store.rankings, name_key, ref_bytes);
+    Ok(())
+}
+
+/// Inserts the roster present and missing presence keys for one page.
+fn insert_roster_presence(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    batch: &mut OwnedWriteBatch,
+    total_batch_bytes: &mut usize,
+) -> Result<(), StoreError> {
+    let mut roster_missing: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
+    let mut roster_present: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
 
     for roster in &index.rosters {
         if roster.present {
             let _ = roster_present.insert(roster.result_id);
             let key =
                 presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
-            total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+            *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
             batch.insert(&store.rankings, key, []);
         } else {
             let _ = roster_missing.insert(roster.result_id);
             let key =
                 presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
-            total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+            *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
             batch.insert(&store.rankings, key, []);
         }
     }
+    Ok(())
+}
 
-    // Write event-level athlete presence keys.
-    for athlete_id in &event_athletes {
+/// Writes event-level athlete presence keys.
+fn insert_event_athletes(
+    store: &StoreInner,
+    index: &RankingPageIndex,
+    event_athletes: &std::collections::BTreeSet<u64>,
+    batch: &mut OwnedWriteBatch,
+    total_batch_bytes: &mut usize,
+) -> Result<(), StoreError> {
+    for athlete_id in event_athletes {
         let key = super::presence_keys::presence_event_athlete(
             &index.collection,
             &index.event_short,
             AthleteId::try_from(*athlete_id).map_err(|_| StoreError::InvalidRankingInput)?,
         )?;
-        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+        *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
-
-    // Bound total serialized batch bytes.
-    const MAX_RANKINGS_BATCH_BYTES: usize = 32 * 1024 * 1024;
-    if total_batch_bytes > MAX_RANKINGS_BATCH_BYTES {
-        return Err(StoreError::BatchTooLarge);
-    }
-
-    batch
-        .durability(Some(fjall::PersistMode::SyncAll))
-        .commit()
-        .map_err(|_| StoreError::CorruptData)?;
     Ok(())
 }
 

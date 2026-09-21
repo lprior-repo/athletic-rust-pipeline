@@ -1,7 +1,7 @@
 //! Published-payload decoding: the wire structs Athletic.net returns, and the token readers
 //! that turn a published mark, timing flag, round or grade letter into platform vocabulary.
 
-use crate::model::{EventKind, Gender, Mark, Sport, TimingMethod};
+use census_domain::model::{EventKind, Gender, Mark, Sport, TimingMethod};
 use crate::sources::hytek::{parse_field_mark, parse_time, NO_MARK};
 use serde::Deserialize;
 use std::collections::BTreeMap;

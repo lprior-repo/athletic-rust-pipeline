@@ -1,6 +1,8 @@
 use super::{Actor, BrowserError, BrowserState, BrowserStatus, NavigationOutcome};
 use crate::runtime::browser::navigation;
+use chromiumoxide::Page;
 use std::time::Instant;
+use url::Url;
 
 /// Check if cooldown is currently active (until > now; poison => closed).
 fn has_active_cooldown(cooldown_until: &std::sync::Arc<std::sync::Mutex<Option<Instant>>>) -> bool {
@@ -78,56 +80,14 @@ impl Actor {
             .ok_or(BrowserError::Unavailable)?
             .page
             .clone();
-        let target = self.challenge_target.as_ref().map_or_else(
-            || self.settings.source_origin.clone(),
-            |value| {
-                if value.post {
-                    self.settings.source_origin.clone()
-                } else {
-                    value.url.clone()
-                }
-            },
-        );
+        let target = self.recovery_target();
         // Capture generation before async navigation.
         let generation_snapshot = self.gate.snapshot();
         // Compute active cooldown BEFORE try_open.
         if has_active_cooldown(&self.cooldown_until) {
             return Ok(self.status());
         }
-        let outcome = if self.recovery_used {
-            match navigation::inspect(&page, &self.settings.source_origin, self.gate.clone()).await
-            {
-                Ok(value) => value,
-                Err(error) => {
-                    self.gate.revoke();
-                    self.challenge_latched = true;
-                    self.set_state(BrowserState::Restarting);
-                    return Err(error);
-                }
-            }
-        } else {
-            let target_clone = target.clone();
-            let result = navigation::bootstrap(
-                &page,
-                &target_clone,
-                self.settings.request_timeout,
-                self.gate.clone(),
-            )
-            .await;
-            // Set recovery_used AFTER successful bootstrap navigation.
-            // This ensures we don't clear a challenge by inspecting an
-            // unchanged Ready homepage before recovery.
-            self.recovery_used = true;
-            match result {
-                Ok(value) => value,
-                Err(error) => {
-                    self.gate.revoke();
-                    self.challenge_latched = true;
-                    self.set_state(BrowserState::Restarting);
-                    return Err(error);
-                }
-            }
-        };
+        let outcome = self.navigate_for_recovery(&page, &target).await?;
         let is_ready = matches!(outcome, NavigationOutcome::Ready);
         self.apply_navigation(outcome);
         // Only open the gate when the outcome is Ready and no concurrent revocation occurred.
@@ -136,7 +96,62 @@ impl Actor {
         }
         // CAS successful — gate is now open, reset challenge_latched for next cycle.
         self.challenge_latched = false;
-        // Finish remaining tabs after first-tab challenge resolves.
+        self.complete_recovery_tabs().await
+    }
+
+    /// Target for the recovery navigation: a GET challenge target keeps its
+    /// own URL, a POST one downgrades to the source origin.
+    fn recovery_target(&self) -> Url {
+        self.challenge_target.as_ref().map_or_else(
+            || self.settings.source_origin.clone(),
+            |value| {
+                if value.post {
+                    self.settings.source_origin.clone()
+                } else {
+                    value.url.clone()
+                }
+            },
+        )
+    }
+
+    /// Navigate for recovery: inspect after a consumed latch, else bootstrap.
+    ///
+    /// A failed navigation revokes admission and latches the challenge before
+    /// the error is handed back to the caller.
+    async fn navigate_for_recovery(
+        &mut self,
+        page: &Page,
+        target: &Url,
+    ) -> Result<NavigationOutcome, BrowserError> {
+        let outcome = if self.recovery_used {
+            navigation::inspect(page, &self.settings.source_origin, self.gate.clone()).await
+        } else {
+            let result = navigation::bootstrap(
+                page,
+                target,
+                self.settings.request_timeout,
+                self.gate.clone(),
+            )
+            .await;
+            // Set recovery_used AFTER successful bootstrap navigation.
+            // This ensures we don't clear a challenge by inspecting an
+            // unchanged Ready homepage before recovery.
+            self.recovery_used = true;
+            result
+        };
+        match outcome {
+            Ok(value) => Ok(value),
+            Err(error) => {
+                self.gate.revoke();
+                self.challenge_latched = true;
+                self.set_state(BrowserState::Restarting);
+                Err(error)
+            }
+        }
+    }
+
+    /// Finish remaining tabs after first-tab challenge resolves.
+    async fn complete_recovery_tabs(&mut self) -> Result<BrowserStatus, BrowserError> {
         if self.gate.is_ready() && self.pages.len() < self.settings.tabs {
             if let Err(_error) = self.create_pages().await {
                 self.gate.revoke();

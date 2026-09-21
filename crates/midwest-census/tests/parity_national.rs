@@ -29,7 +29,7 @@
 mod common;
 
 use anyhow::{bail, Context, Result};
-use midwest_census::model::{
+use census_domain::model::{
     CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
 };
 use midwest_census::net::{FetchOptions, Fetcher};
@@ -628,9 +628,9 @@ async fn coach_contacts_csv_parity() -> Result<()> {
         let harness = Harness::new()?;
         let report = coach_contacts::import_csv(&harness.store, &path, OBSERVED_ON)
             .with_context(|| format!("importing {SOURCE}/{file}"))?;
-        let schools: Vec<midwest_census::model::CanonicalSchool> =
+        let schools: Vec<census_domain::model::CanonicalSchool> =
             harness.store.scan(Table::Schools)?;
-        let coaches: Vec<midwest_census::model::CanonicalCoach> =
+        let coaches: Vec<census_domain::model::CanonicalCoach> =
             harness.store.scan(Table::Coaches)?;
         if schools.len() != expected_schools.len() || coaches.len() != expected_coaches.len() {
             bail!(

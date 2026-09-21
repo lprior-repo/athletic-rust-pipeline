@@ -109,17 +109,7 @@ pub async fn serve_until(
     init_tracing();
     // Opening the store is synchronous, fsync-heavy work: it belongs on the blocking pool, not on
     // the runtime thread that will own the endpoint.
-    let data_dir = options.data_dir.clone();
-    let store = tokio::task::spawn_blocking(move || -> Result<Arc<Store>> {
-        std::fs::create_dir_all(&data_dir)
-            .with_context(|| format!("creating {}", data_dir.display()))?;
-        Store::open(&data_dir)
-            .map(Arc::new)
-            .with_context(|| format!("opening the store under {}", data_dir.display()))
-    })
-    .await
-    .context("joining the store bootstrap task")?
-    .context("opening the store")?;
+    let store = open_store(options.data_dir.clone()).await?;
     if !options.listen.ip().is_loopback() {
         // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
         anyhow::bail!(
@@ -134,22 +124,7 @@ pub async fn serve_until(
     let bound = listener.local_addr().context("reading the bound address")?;
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit as u8));
-    let stop = {
-        let reason = Arc::clone(&reason);
-        async move {
-            tokio::select! {
-                outcome = wait_for_shutdown_signal() => {
-                    if let Err(error) = outcome {
-                        tracing::warn!(%error, "shutdown signal watcher failed");
-                    }
-                    reason.store(StopReason::Signal as u8, Ordering::SeqCst);
-                }
-                () = shutdown => {
-                    reason.store(StopReason::Requested as u8, Ordering::SeqCst);
-                }
-            }
-        }
-    };
+    let stop = stop_watch(Arc::clone(&reason), shutdown);
 
     let endpoint = restate_services::build_endpoint(store.clone(), options.max_concurrent);
     let mut tasks: JoinSet<()> = JoinSet::new();
@@ -169,6 +144,36 @@ pub async fn serve_until(
     finalized.context("persisting the store during shutdown")?;
     tracing::info!(?report, "census service stopped");
     Ok(report)
+}
+
+/// Open (creating if needed) the store on the blocking pool.
+async fn open_store(data_dir: PathBuf) -> Result<Arc<Store>> {
+    tokio::task::spawn_blocking(move || -> Result<Arc<Store>> {
+        std::fs::create_dir_all(&data_dir)
+            .with_context(|| format!("creating {}", data_dir.display()))?;
+        Store::open(&data_dir)
+            .map(Arc::new)
+            .with_context(|| format!("opening the store under {}", data_dir.display()))
+    })
+    .await
+    .context("joining the store bootstrap task")?
+    .context("opening the store")
+}
+
+/// Resolve when a shutdown signal arrives or the caller's `shutdown` future resolves, recording
+/// which of the two stopped the endpoint.
+async fn stop_watch(reason: Arc<AtomicU8>, shutdown: impl Future<Output = ()> + Send + 'static) {
+    tokio::select! {
+        outcome = wait_for_shutdown_signal() => {
+            if let Err(error) = outcome {
+                tracing::warn!(%error, "shutdown signal watcher failed");
+            }
+            reason.store(StopReason::Signal as u8, Ordering::SeqCst);
+        }
+        () = shutdown => {
+            reason.store(StopReason::Requested as u8, Ordering::SeqCst);
+        }
+    }
 }
 
 /// Wait for SIGINT/SIGTERM (or Ctrl-C where the platform has no signals).

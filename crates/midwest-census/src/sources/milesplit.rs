@@ -9,7 +9,7 @@
 //! `/api/`, `/rankings`, `/virtual-meets` and `/contact` are robots-disallowed and are never
 //! requested; the roster HTML carries the same graduating-year evidence the JSON API would provide.
 
-use crate::model::*;
+use census_domain::model::*;
 use crate::net::{FetchOptions, Fetcher};
 use anyhow::{bail, Context, Result};
 use regex::Regex;
@@ -233,63 +233,91 @@ pub fn parse_roster(html: &str, team: TeamRef) -> Result<Roster> {
         let Some(row_match) = row.get(1) else {
             continue;
         };
-        let row_html = row_match.as_str();
-        let Some(athlete) = link.captures(row_html) else {
+        let Some(athlete) = roster_athlete(
+            row_match.as_str(),
+            link,
+            gender_cell,
+            grad_cell,
+            season_cell,
+        )?
+        else {
             continue;
         };
-        let Some(url_match) = athlete.get(1) else {
-            continue;
-        };
-        let Some(id_match) = athlete.get(2) else {
-            continue;
-        };
-        let roster_name = athlete
-            .get(3)
-            .map(|m| html_unescape(m.as_str().trim()))
-            .unwrap_or_default();
-        if roster_name.is_empty() {
-            continue;
-        }
-        let gender = gender_cell
-            .captures(row_html)
-            .and_then(|capture| Some(Gender::parse_milesplit(capture.get(1)?.as_str())))
-            .unwrap_or(Gender::Unknown);
-        let Some(grad_year) = grad_cell.captures(row_html).and_then(|capture| {
-            let grad_str = capture.get(1)?.as_str().trim();
-            let parsed = grad_str.parse::<i16>().ok()?;
-            GradYear::new(parsed)
-        }) else {
-            continue;
-        };
-        let mut seasons = Vec::new();
-        for capture in season_cell.captures_iter(row_html) {
-            let season_id: u8 = capture
-                .get(1)
-                .map(|m| m.as_str().parse::<u8>())
-                .and_then(|r| r.ok())
-                .unwrap_or(0);
-            let active = capture.get(2).map(|m| m.as_str() == "yes").unwrap_or(false);
-            seasons.push((season_id, active));
-        }
-        // Cells appear in header order: Indoor, Outdoor, XC. The `data-season-id` is informational
-        // (1 = indoor, 2 = outdoor, 3 = XC); position is authoritative.
-        let indoor = seasons.first().map(|(_, active)| *active).unwrap_or(false);
-        let outdoor = seasons.get(1).map(|(_, active)| *active).unwrap_or(false);
-        let xc = seasons.get(2).map(|(_, active)| *active).unwrap_or(false);
-
-        athletes.push(RosterAthlete {
-            name: flip_last_first(&roster_name),
-            roster_name,
-            gender,
-            grad_year,
-            athlete_id: id_match.as_str().to_string(),
-            profile_url: url_match.as_str().to_string(),
-            indoor,
-            outdoor,
-            xc,
-        });
+        athletes.push(athlete);
     }
     Ok(Roster { team, athletes })
+}
+
+/// One `<li class="athlete-row data-row">` row as an athlete, or `None` for a row that carries no
+/// usable athlete: no profile link, no roster name, or no parseable graduating year.
+fn roster_athlete(
+    row_html: &str,
+    link: &Regex,
+    gender_cell: &Regex,
+    grad_cell: &Regex,
+    season_cell: &Regex,
+) -> Result<Option<RosterAthlete>> {
+    let Some(athlete) = link.captures(row_html) else {
+        return Ok(None);
+    };
+    let Some(url_match) = athlete.get(1) else {
+        return Ok(None);
+    };
+    let Some(id_match) = athlete.get(2) else {
+        return Ok(None);
+    };
+    let roster_name = athlete
+        .get(3)
+        .map(|m| html_unescape(m.as_str().trim()))
+        .unwrap_or_default();
+    if roster_name.is_empty() {
+        return Ok(None);
+    }
+    let gender = gender_cell
+        .captures(row_html)
+        .and_then(|capture| Some(Gender::parse_milesplit(capture.get(1)?.as_str())))
+        .unwrap_or(Gender::Unknown);
+    let Some(grad_year) = grad_cell.captures(row_html).and_then(|capture| {
+        let grad_str = capture.get(1)?.as_str().trim();
+        let parsed = grad_str.parse::<i16>().ok()?;
+        GradYear::new(parsed)
+    }) else {
+        return Ok(None);
+    };
+    let (indoor, outdoor, xc) = active_seasons(season_cell, row_html);
+
+    Ok(Some(RosterAthlete {
+        name: flip_last_first(&roster_name),
+        roster_name,
+        gender,
+        grad_year,
+        athlete_id: id_match.as_str().to_string(),
+        profile_url: url_match.as_str().to_string(),
+        indoor,
+        outdoor,
+        xc,
+    }))
+}
+
+/// Which of the row's three season cells are active, as `(indoor, outdoor, xc)`.
+///
+/// Cells appear in header order: Indoor, Outdoor, XC. The `data-season-id` is informational
+/// (1 = indoor, 2 = outdoor, 3 = XC); position is authoritative.
+fn active_seasons(season_cell: &Regex, row_html: &str) -> (bool, bool, bool) {
+    let mut seasons = Vec::new();
+    for capture in season_cell.captures_iter(row_html) {
+        let season_id: u8 = capture
+            .get(1)
+            .map(|m| m.as_str().parse::<u8>())
+            .and_then(|r| r.ok())
+            .unwrap_or(0);
+        let active = capture.get(2).map(|m| m.as_str() == "yes").unwrap_or(false);
+        seasons.push((season_id, active));
+    }
+    let indoor = seasons.first().map(|(_, active)| *active).unwrap_or(false);
+    let outdoor = seasons.get(1).map(|(_, active)| *active).unwrap_or(false);
+    let xc = seasons.get(2).map(|(_, active)| *active).unwrap_or(false);
+    (indoor, outdoor, xc)
 }
 
 fn html_unescape(value: &str) -> String {
@@ -389,6 +417,46 @@ pub fn roster_entities(
     observed_on: &str,
     site: &Site,
 ) -> (CanonicalSchool, Vec<CanonicalAthlete>, Vec<CanonicalTeam>) {
+    let (school, school_id, source) = roster_school(roster, state, observed_on, site);
+
+    let mut seen_sports: Vec<(Sport, Gender)> = Vec::new();
+    let mut athletes = Vec::new();
+    for entry in &roster.athletes {
+        for sport in entry.sports() {
+            let key = (sport, entry.gender);
+            if !seen_sports.contains(&key) {
+                seen_sports.push(key);
+            }
+        }
+        athletes.push(roster_athlete_entity(
+            entry,
+            &school_id,
+            &source,
+            school_year,
+            observed_on,
+            site,
+        ));
+    }
+
+    let teams = roster_teams(
+        seen_sports,
+        &school_id,
+        school_year,
+        &source,
+        &roster.team,
+        observed_on,
+    );
+    (school, athletes, teams)
+}
+
+/// The school a roster belongs to, plus the id it minted and the source reference every entity of
+/// the roster is stamped with.
+fn roster_school(
+    roster: &Roster,
+    state: &str,
+    observed_on: &str,
+    site: &Site,
+) -> (CanonicalSchool, SchoolId, SourceRef) {
     let source = SourceRef::new(
         site.source_id(),
         Some(format!("{}/roster", roster.team.url)),
@@ -403,48 +471,56 @@ pub fn roster_entities(
     school
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on.to_string()));
+    (school, school_id, source)
+}
 
-    let mut seen_sports: Vec<(Sport, Gender)> = Vec::new();
-    let mut athletes = Vec::new();
-    for entry in &roster.athletes {
-        for sport in entry.sports() {
-            let key = (sport, entry.gender);
-            if !seen_sports.contains(&key) {
-                seen_sports.push(key);
-            }
-        }
-        let mut athlete = CanonicalAthlete::new(
-            &school_id,
-            entry.name.clone(),
-            entry.grad_year,
-            entry.gender,
-        );
-        athlete.known_names = vec![entry.name.clone(), entry.roster_name.clone()];
-        athlete.sports = entry.sports();
-        if let Some(observation) = entry.observed_grade(school_year, source.clone()) {
-            athlete.observed_grades.push(observation);
-        }
-        athlete.public_profile_urls.push(entry.profile_url.clone());
-        athlete.source_identities.push(
-            SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
-                .with_url(entry.profile_url.clone()),
-        );
-        athlete.evidence.push(Evidence::parsed(
-            SourceRef::new(site.source_id(), Some(entry.profile_url.clone())),
-            observed_on.to_string(),
-        ));
-        athlete.identity_confidence = if entry.grad_year == GradYear::CO2027 {
-            Confidence::HIGH
-        } else {
-            Confidence::MEDIUM
-        };
-        athletes.push(athlete);
+/// One roster entry as a canonical athlete: its names, sports, observed grade, profile identity and
+/// the evidence that ties it back to the page it was read from.
+fn roster_athlete_entity(
+    entry: &RosterAthlete,
+    school_id: &SchoolId,
+    source: &SourceRef,
+    school_year: SchoolYear,
+    observed_on: &str,
+    site: &Site,
+) -> CanonicalAthlete {
+    let mut athlete =
+        CanonicalAthlete::new(school_id, entry.name.clone(), entry.grad_year, entry.gender);
+    athlete.known_names = vec![entry.name.clone(), entry.roster_name.clone()];
+    athlete.sports = entry.sports();
+    if let Some(observation) = entry.observed_grade(school_year, source.clone()) {
+        athlete.observed_grades.push(observation);
     }
+    athlete.public_profile_urls.push(entry.profile_url.clone());
+    athlete.source_identities.push(
+        SourceIdentity::new(SourceNamespace::MilesplitAthlete, entry.athlete_id.clone())
+            .with_url(entry.profile_url.clone()),
+    );
+    athlete.evidence.push(Evidence::parsed(
+        SourceRef::new(site.source_id(), Some(entry.profile_url.clone())),
+        observed_on.to_string(),
+    ));
+    athlete.identity_confidence = if entry.grad_year == GradYear::CO2027 {
+        Confidence::HIGH
+    } else {
+        Confidence::MEDIUM
+    };
+    athlete
+}
 
-    let teams = seen_sports
+/// One canonical team per sport/gender the roster carries, keyed by the team page's own id.
+fn roster_teams(
+    seen_sports: Vec<(Sport, Gender)>,
+    school_id: &SchoolId,
+    school_year: SchoolYear,
+    source: &SourceRef,
+    team: &TeamRef,
+    observed_on: &str,
+) -> Vec<CanonicalTeam> {
+    seen_sports
         .into_iter()
         .map(|(sport, gender)| {
-            let id = CanonicalTeam::mint(&school_id, sport, gender, school_year);
+            let id = CanonicalTeam::mint(school_id, sport, gender, school_year);
             CanonicalTeam {
                 id,
                 school: school_id.clone(),
@@ -454,15 +530,13 @@ pub fn roster_entities(
                 level: Some("high_school".to_string()),
                 source_identities: vec![SourceIdentity::new(
                     SourceNamespace::MilesplitTeam,
-                    roster.team.id.clone(),
+                    team.id.clone(),
                 )
-                .with_url(roster.team.url.clone())],
+                .with_url(team.url.clone())],
                 evidence: vec![Evidence::parsed(source.clone(), observed_on.to_string())],
             }
         })
-        .collect();
-
-    (school, athletes, teams)
+        .collect()
 }
 
 /// MileSplit team rows use the school name; strip a trailing gender marker if present.

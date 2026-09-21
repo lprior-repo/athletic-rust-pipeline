@@ -30,6 +30,22 @@ pub(super) fn parse_identity(
     digest: &EvidenceDigest,
     issues: &mut Vec<EvidenceIssue>,
 ) -> Result<(Observed<AthleteName>, Option<BioIdentityObservation>)> {
+    let athlete = observed_athlete(root, requested)?;
+    let (value, identity) = bio_identity(athlete, requested, sport, digest, issues)?;
+    Ok((
+        Observed {
+            value,
+            evidence: ev(digest, "/athlete/FirstName+/LastName"),
+        },
+        identity,
+    ))
+}
+
+/// The embedded athlete object, once it is known to be the requested athlete.
+fn observed_athlete(
+    root: &Map<String, Value>,
+    requested: AthleteId,
+) -> Result<&Map<String, Value>> {
     let athlete = root
         .get("athlete")
         .and_then(Value::as_object)
@@ -45,6 +61,17 @@ pub(super) fn parse_identity(
             requested.get()
         );
     }
+    Ok(athlete)
+}
+
+/// Combined display name plus the per-component observation, absent when a component is empty.
+fn bio_identity(
+    athlete: &Map<String, Value>,
+    requested: AthleteId,
+    sport: Sport,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) -> Result<(AthleteName, Option<BioIdentityObservation>)> {
     let first = athlete_text(athlete.get("FirstName"), "FirstName")?;
     let last = athlete_text(athlete.get("LastName"), "LastName")?;
     let first_trimmed = first.trim();
@@ -79,13 +106,7 @@ pub(super) fn parse_identity(
         }),
         _ => None,
     };
-    Ok((
-        Observed {
-            value,
-            evidence: ev(digest, "/athlete/FirstName+/LastName"),
-        },
-        identity,
-    ))
+    Ok((value, identity))
 }
 
 fn athlete_text(value: Option<&Value>, key: &str) -> Result<String> {

@@ -46,31 +46,42 @@ pub(super) fn parse_individual_candidate(
     let next_count = candidate_count
         .checked_add(1)
         .ok_or(PageParseError::CounterOverflow)?;
-    observation
-        .grade_11_candidates_list
-        .push(IndividualCandidate {
-            athlete_id,
-            name,
-            id_result: row
-                .get("IDResult")
-                .and_then(|value| value.as_u64())
-                .ok_or(PageParseError::MissingRowIdResult)?,
-            grade_id: 11,
-            team_id: row.get("TeamID").and_then(|value| value.as_u64()),
-            team_name: row
-                .get("TeamName")
-                .and_then(|value| value.as_str())
-                .map(str::to_owned),
-            state: row
-                .get("State")
-                .and_then(|value| value.as_str())
-                .map(str::to_owned),
-            country: row
-                .get("Country")
-                .and_then(|value| value.as_str())
-                .map(str::to_owned),
-            record_index,
-            source_locator: Some(format!("/groupedRankings/{group_index}/{row_index}")),
-        });
+    let candidate = candidate_record(row, group_index, row_index, athlete_id, name, record_index)?;
+    observation.grade_11_candidates_list.push(candidate);
     Ok((next_index, unresolved, next_count))
+}
+
+/// Project one eligible row into its candidate record with source provenance.
+fn candidate_record(
+    row: &serde_json::Value,
+    group_index: usize,
+    row_index: usize,
+    athlete_id: AthleteId,
+    name: CanonicalName,
+    record_index: u64,
+) -> Result<IndividualCandidate, PageParseError> {
+    Ok(IndividualCandidate {
+        athlete_id,
+        name,
+        id_result: row
+            .get("IDResult")
+            .and_then(|value| value.as_u64())
+            .ok_or(PageParseError::MissingRowIdResult)?,
+        grade_id: 11,
+        team_id: row.get("TeamID").and_then(|value| value.as_u64()),
+        team_name: row
+            .get("TeamName")
+            .and_then(|value| value.as_str())
+            .map(str::to_owned),
+        state: row
+            .get("State")
+            .and_then(|value| value.as_str())
+            .map(str::to_owned),
+        country: row
+            .get("Country")
+            .and_then(|value| value.as_str())
+            .map(str::to_owned),
+        record_index,
+        source_locator: Some(format!("/groupedRankings/{group_index}/{row_index}")),
+    })
 }

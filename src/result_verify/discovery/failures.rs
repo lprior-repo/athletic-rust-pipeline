@@ -1,7 +1,7 @@
 use crate::{
     runtime::{
         acquisition::QueryEvidence,
-        protocol::{FailureCode, SourceResource},
+        protocol::{FailureCode, OperationFailure, SourceResource},
     },
     search::parse_page,
     store::ArtifactStore,
@@ -39,6 +39,24 @@ pub(super) fn verify(
         // denial receipt; infrastructure failures need not reproduce on replay.
         return Ok(());
     }
+    verify_malformed(
+        evidence,
+        failure,
+        start,
+        reconciliation_start,
+        origin,
+        store,
+    )
+}
+
+fn verify_malformed(
+    evidence: &QueryEvidence,
+    failure: &OperationFailure,
+    start: u32,
+    reconciliation_start: Option<u32>,
+    origin: &Url,
+    store: &ArtifactStore,
+) -> Result<()> {
     let (receipt, previous) = failure
         .evidence
         .split_last()
@@ -71,11 +89,11 @@ pub(super) fn verify(
         {
             bail!("query reconciliation failure differs from its final page operation");
         }
-    } else {
-        let raw = store.get_bytes(&receipt.digest)?;
-        if parse_page(&evidence.query, start, receipt.digest.clone(), &raw).is_ok() {
-            bail!("malformed query failure has a parseable captured response");
-        }
+        return Ok(());
+    }
+    let raw = store.get_bytes(&receipt.digest)?;
+    if parse_page(&evidence.query, start, receipt.digest.clone(), &raw).is_ok() {
+        bail!("malformed query failure has a parseable captured response");
     }
     Ok(())
 }

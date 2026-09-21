@@ -40,6 +40,62 @@ pub(crate) fn project_report(
     digest: &crate::domain::identity::EvidenceDigest,
 ) -> Result<Projection> {
     let report: super::RowReport = load_json(store, digest)?;
+    let artifacts = load_artifacts(store, &report)?;
+    let profiles = load_acquisitions(store, &report)?;
+    let accepted = acceptance(&report.resolution);
+    let selected_profiles = accepted.map_or_else(Vec::new, |(athlete_id, _)| {
+        profiles
+            .iter()
+            .filter(|acquisition| {
+                acquisition.complete
+                    && acquisition.athlete_id == athlete_id
+                    && acquisition.profile.is_some()
+            })
+            .filter_map(|acquisition| acquisition.profile.clone())
+            .collect::<Vec<_>>()
+    });
+    let annotations = annotations_for(&selected_profiles, accepted.map(|(id, _)| id));
+    let (candidate_count, strength) = artifacts
+        .assessment
+        .as_ref()
+        .map_or((String::new(), String::new()), assessment_summary);
+    let pr_summary = match accepted {
+        Some((athlete_id, _)) => build_pr_summary(
+            &selected_profiles,
+            athlete_id,
+            report.job.source.as_str(),
+            digest,
+        )?,
+        None => String::new(),
+    };
+    let fields = fields(
+        &report,
+        digest,
+        accepted,
+        annotations,
+        candidate_count,
+        strength,
+        pr_summary,
+    );
+    Ok(Projection {
+        report,
+        discovery: artifacts.discovery,
+        identity_artifacts: artifacts.identity_artifacts,
+        assessment: artifacts.assessment,
+        profile_artifacts: artifacts.profile_artifacts,
+        fields,
+    })
+}
+
+/// Every optional artifact one report row points at, decoded once each.
+struct LoadedArtifacts {
+    discovery: Option<Value>,
+    identity_artifacts: Vec<Value>,
+    assessment: Option<Value>,
+    profile_artifacts: Vec<Value>,
+}
+
+fn load_artifacts(store: &ArtifactStore, report: &RowReport) -> Result<LoadedArtifacts> {
     let discovery = report
         .discovery
         .as_ref()
@@ -65,7 +121,19 @@ pub(crate) fn project_report(
         .filter_map(|candidate| candidate.profile())
         .map(|value| load_profile(store, value).map(|(raw, _)| raw))
         .collect::<Result<Vec<_>>>()?;
-    let profiles = report
+    Ok(LoadedArtifacts {
+        discovery,
+        identity_artifacts,
+        assessment,
+        profile_artifacts,
+    })
+}
+
+fn load_acquisitions(
+    store: &ArtifactStore,
+    report: &RowReport,
+) -> Result<Vec<super::ProfileAcquisition>> {
+    let loaded = report
         .candidates
         .iter()
         .filter_map(|candidate| match candidate {
@@ -74,52 +142,11 @@ pub(crate) fn project_report(
             }
             _ => None,
         })
-        .collect::<Result<Vec<_>>>()?
+        .collect::<Result<Vec<_>>>()?;
+    Ok(loaded
         .into_iter()
         .map(|(_, acquisition)| acquisition)
-        .collect::<Vec<_>>();
-    let accepted = acceptance(&report.resolution);
-    let selected_profiles = accepted.map_or_else(Vec::new, |(athlete_id, _)| {
-        profiles
-            .iter()
-            .filter(|acquisition| {
-                acquisition.complete
-                    && acquisition.athlete_id == athlete_id
-                    && acquisition.profile.is_some()
-            })
-            .filter_map(|acquisition| acquisition.profile.clone())
-            .collect::<Vec<_>>()
-    });
-    let annotations = annotations_for(&selected_profiles, accepted.map(|(id, _)| id));
-    let (candidate_count, strength) = assessment
-        .as_ref()
-        .map_or((String::new(), String::new()), assessment_summary);
-    let pr_summary = match accepted {
-        Some((athlete_id, _)) => build_pr_summary(
-            &selected_profiles,
-            athlete_id,
-            report.job.source.as_str(),
-            digest,
-        )?,
-        None => String::new(),
-    };
-    let fields = fields(
-        &report,
-        digest,
-        accepted,
-        annotations,
-        candidate_count,
-        strength,
-        pr_summary,
-    );
-    Ok(Projection {
-        report,
-        discovery,
-        identity_artifacts,
-        assessment,
-        profile_artifacts,
-        fields,
-    })
+        .collect())
 }
 
 fn load_profile(

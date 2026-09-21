@@ -129,76 +129,89 @@ fn candidate(
 ) -> Result<()> {
     let index = usize::try_from(record.record_index)?;
     match record.kind {
-        RankingCandidateKind::Individual => {
-            let candidate = parsed
-                .grade_11_candidates_list
-                .get(index)
-                .context("individual record index outside observation")?;
-            if candidate.athlete_id != record.athlete_id
-                || candidate.name != *name
-                || candidate.grade_id != 11
-            {
-                bail!("individual ranking record differs from source identity or grade");
-            }
-            let row = raw
-                .pointer(
-                    candidate
-                        .source_locator
-                        .as_deref()
-                        .context("individual source locator missing")?,
-                )
-                .context("individual source locator does not resolve")?;
-            raw_identity(row, "AthleteID", record, name)?;
-            if row.get("IDResult").and_then(Value::as_u64) != Some(candidate.id_result)
-                || !parsed
-                    .source_rows
-                    .iter()
-                    .any(|source| source.result_id == candidate.id_result)
-            {
-                bail!("individual ranking result differs from raw source row");
-            }
-        }
-        RankingCandidateKind::RelayMember => {
-            let member = parsed
-                .verified_relay_members
-                .get(index)
-                .context("relay record index outside observation")?;
-            if member.athlete_id != record.athlete_id
-                || member.name != *name
-                || member.grade_id != 11
-            {
-                bail!("relay ranking record differs from source identity or grade");
-            }
-            let row = raw
-                .pointer(
-                    member
-                        .row_locator
-                        .as_deref()
-                        .context("relay row locator missing")?,
-                )
-                .context("relay row locator does not resolve")?;
-            let team = raw
-                .pointer(&format!("/relayTeams/{}", member.id_result))
-                .context("relay roster missing")?;
-            let index = member
-                .member_locator
-                .context("relay member locator missing")?;
-            let retained_member = team
-                .get("Members")
-                .and_then(Value::as_array)
-                .and_then(|members| members.get(index))
-                .context("relay member locator does not resolve")?;
-            raw_identity(retained_member, "IDAthlete", record, name)?;
-            if row.get("IDResult").and_then(Value::as_u64) != Some(member.id_result)
-                || team.get("IDResult").and_then(Value::as_u64) != Some(member.id_result)
-                || team.get("RelayTeamID").and_then(Value::as_u64)
-                    != Some(member.roster_relay_team_id)
-                || row.get("AthleteID").and_then(Value::as_u64) != Some(member.row_athlete_id)
-                || member.roster_relay_team_id != member.row_athlete_id
-            {
-                bail!("relay raw roster join differs from the source ranking row");
-            }
-        }
+        RankingCandidateKind::Individual => individual_candidate(record, name, parsed, raw, index),
+        RankingCandidateKind::RelayMember => relay_candidate(record, name, parsed, raw, index),
+    }
+}
+
+fn individual_candidate(
+    record: &RankingRecordRef,
+    name: &CanonicalName,
+    parsed: &PageObservation,
+    raw: &Value,
+    index: usize,
+) -> Result<()> {
+    let candidate = parsed
+        .grade_11_candidates_list
+        .get(index)
+        .context("individual record index outside observation")?;
+    if candidate.athlete_id != record.athlete_id
+        || candidate.name != *name
+        || candidate.grade_id != 11
+    {
+        bail!("individual ranking record differs from source identity or grade");
+    }
+    let row = raw
+        .pointer(
+            candidate
+                .source_locator
+                .as_deref()
+                .context("individual source locator missing")?,
+        )
+        .context("individual source locator does not resolve")?;
+    raw_identity(row, "AthleteID", record, name)?;
+    if row.get("IDResult").and_then(Value::as_u64) != Some(candidate.id_result)
+        || !parsed
+            .source_rows
+            .iter()
+            .any(|source| source.result_id == candidate.id_result)
+    {
+        bail!("individual ranking result differs from raw source row");
+    }
+    Ok(())
+}
+
+fn relay_candidate(
+    record: &RankingRecordRef,
+    name: &CanonicalName,
+    parsed: &PageObservation,
+    raw: &Value,
+    index: usize,
+) -> Result<()> {
+    let member = parsed
+        .verified_relay_members
+        .get(index)
+        .context("relay record index outside observation")?;
+    if member.athlete_id != record.athlete_id || member.name != *name || member.grade_id != 11 {
+        bail!("relay ranking record differs from source identity or grade");
+    }
+    let row = raw
+        .pointer(
+            member
+                .row_locator
+                .as_deref()
+                .context("relay row locator missing")?,
+        )
+        .context("relay row locator does not resolve")?;
+    let team = raw
+        .pointer(&format!("/relayTeams/{}", member.id_result))
+        .context("relay roster missing")?;
+    let index = member
+        .member_locator
+        .context("relay member locator missing")?;
+    let retained_member = team
+        .get("Members")
+        .and_then(Value::as_array)
+        .and_then(|members| members.get(index))
+        .context("relay member locator does not resolve")?;
+    raw_identity(retained_member, "IDAthlete", record, name)?;
+    if row.get("IDResult").and_then(Value::as_u64) != Some(member.id_result)
+        || team.get("IDResult").and_then(Value::as_u64) != Some(member.id_result)
+        || team.get("RelayTeamID").and_then(Value::as_u64) != Some(member.roster_relay_team_id)
+        || row.get("AthleteID").and_then(Value::as_u64) != Some(member.row_athlete_id)
+        || member.roster_relay_team_id != member.row_athlete_id
+    {
+        bail!("relay raw roster join differs from the source ranking row");
     }
     Ok(())
 }

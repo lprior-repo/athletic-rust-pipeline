@@ -99,33 +99,44 @@ fn write_workbook(
         &[38, 22, 16, 14],
         false,
     )?;
+    write_state_sheets(&mut book, core, all_sources)?;
+    write_artifact_sheets(&mut book, core, all_sources, bests)?;
+
+    book.save(path)
+        .with_context(|| format!("saving the workbook to {}", path.display()))?;
+    Ok(())
+}
+
+/// Both per-state views, in published sheet order: core first, then every source.
+fn write_state_sheets(book: &mut Workbook, core: &Census, all_sources: &Census) -> Result<()> {
+    let widths = [
+        10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
+    ];
+    for (name, census) in [
+        ("By state - core", core),
+        ("By state - all sources", all_sources),
+    ] {
+        write_sheet(book, name, state_sheet(census)?, &widths, false)?;
+    }
+    Ok(())
+}
+
+/// The marginal, best-results, meet, evidence and method sheets, in published sheet order.
+fn write_artifact_sheets(
+    book: &mut Workbook,
+    core: &Census,
+    all_sources: &Census,
+    bests: &[BestResult],
+) -> Result<()> {
     write_sheet(
-        &mut book,
-        "By state - core",
-        state_sheet(core)?,
-        &[
-            10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
-        ],
-        false,
-    )?;
-    write_sheet(
-        &mut book,
-        "By state - all sources",
-        state_sheet(all_sources)?,
-        &[
-            10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
-        ],
-        false,
-    )?;
-    write_sheet(
-        &mut book,
+        book,
         "Athletic.net marginal",
         marginal_sheet(core, all_sources)?,
         &[10, 16, 12, 30, 12, 16, 14],
         false,
     )?;
     write_sheet(
-        &mut book,
+        book,
         "Best results",
         best_sheet(bests)?,
         &[
@@ -134,23 +145,20 @@ fn write_workbook(
         true,
     )?;
     write_sheet(
-        &mut book,
+        book,
         "Meets",
         meets_sheet(core, all_sources)?,
         &[34, 12, 34, 12],
         false,
     )?;
     write_sheet(
-        &mut book,
+        book,
         "Evidence mix",
         evidence_sheet(all_sources)?,
         &[40, 12, 40, 12],
         false,
     )?;
-    write_sheet(&mut book, "Method notes", method_sheet(), &[30, 110], false)?;
-
-    book.save(path)
-        .with_context(|| format!("saving the workbook to {}", path.display()))?;
+    write_sheet(book, "Method notes", method_sheet(), &[30, 110], false)?;
     Ok(())
 }
 

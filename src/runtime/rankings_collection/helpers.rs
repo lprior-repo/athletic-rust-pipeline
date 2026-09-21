@@ -119,46 +119,7 @@ pub(super) async fn run_page_step(
     collection: EvidenceDigest,
 ) -> Result<(), HandlerError> {
     let Some(index) = state.events.iter().position(|event| !event.terminal) else {
-        let runtime = runtime.clone();
-        let scope = state.scope.clone();
-        let source_snapshot = state.source_snapshot.clone();
-        let catalog_outcome = state
-            .catalog_outcome
-            .clone()
-            .ok_or_else(|| terminal("catalog acquisition provenance missing"))?;
-        let catalog_ref = state.catalog_ref.clone();
-        let plan_ref = state.plan_ref.clone();
-        let events = state.events.clone();
-        let absent_families = state.absent_families.clone();
-        let snapshot = ctx
-            .run(move || async move {
-                let store = runtime.store.clone();
-                runtime
-                    .blocking(move || {
-                        publication::seal(
-                            &store,
-                            publication::SealInput {
-                                scope,
-                                source_snapshot,
-                                catalog_outcome,
-                                catalog_ref,
-                                plan_ref,
-                                events,
-                                absent_families,
-                            },
-                            collection,
-                        )
-                    })
-                    .await
-                    .map(Json)
-                    .map_err(terminal)
-            })
-            .name("seal completed ranking collection")
-            .await?
-            .0;
-        state.final_snapshot = Some(snapshot);
-        state.phase = CollectionPhase::Complete;
-        return Ok(());
+        return seal_completed(ctx, runtime, state, collection).await;
     };
     state.current_event_index = index;
     let event = state
@@ -193,6 +154,73 @@ pub(super) async fn run_page_step(
         );
         return Ok(());
     }
+    let published = publish_page(ctx, runtime, state, event, collection, outcome).await?;
+    match published {
+        Ok(published) => advance_event(state, index, published)?,
+        Err(error) => pause(state, CollectionPauseReason::InvalidEvidence, error),
+    }
+    Ok(())
+}
+
+/// Seal the collection once every event family has reached a terminal page.
+async fn seal_completed(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    state: &mut CollectionState,
+    collection: EvidenceDigest,
+) -> Result<(), HandlerError> {
+    let runtime = runtime.clone();
+    let scope = state.scope.clone();
+    let source_snapshot = state.source_snapshot.clone();
+    let catalog_outcome = state
+        .catalog_outcome
+        .clone()
+        .ok_or_else(|| terminal("catalog acquisition provenance missing"))?;
+    let catalog_ref = state.catalog_ref.clone();
+    let plan_ref = state.plan_ref.clone();
+    let events = state.events.clone();
+    let absent_families = state.absent_families.clone();
+    let snapshot = ctx
+        .run(move || async move {
+            let store = runtime.store.clone();
+            runtime
+                .blocking(move || {
+                    publication::seal(
+                        &store,
+                        publication::SealInput {
+                            scope,
+                            source_snapshot,
+                            catalog_outcome,
+                            catalog_ref,
+                            plan_ref,
+                            events,
+                            absent_families,
+                        },
+                        collection,
+                    )
+                })
+                .await
+                .map(Json)
+                .map_err(terminal)
+        })
+        .name("seal completed ranking collection")
+        .await?
+        .0;
+    state.final_snapshot = Some(snapshot);
+    state.phase = CollectionPhase::Complete;
+    Ok(())
+}
+
+/// Publish the acquired page and its index, returning the page publication the
+/// caller advances the event cursor with.
+async fn publish_page(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    state: &CollectionState,
+    event: EventProgress,
+    collection: EvidenceDigest,
+    outcome: FetchOutcome,
+) -> Result<Result<publication::PagePublication, String>, HandlerError> {
     let runtime = runtime.clone();
     let gender = state.scope.gender.clone();
     let revision = state.scope.revision.clone();
@@ -230,26 +258,29 @@ pub(super) async fn run_page_step(
             Ok::<_, HandlerError>(Json(result.map_err(|error| error.to_string())))
         })
         .name("publish validated ranking page and index")
-        .await?
-        .0;
-    match published {
-        Ok(published) => {
-            let event = state
-                .events
-                .get_mut(index)
-                .ok_or_else(|| terminal("missing ranking event"))?;
-            event.head_checkpoint = Some(published.checkpoint);
-            event.next_page = event
-                .next_page
-                .checked_add(1)
-                .ok_or_else(|| terminal("ranking page overflow"))?;
-            event.page_count = event
-                .page_count
-                .checked_add(1)
-                .ok_or_else(|| terminal("ranking page count overflow"))?;
-            event.terminal = published.terminal;
-        }
-        Err(error) => pause(state, CollectionPauseReason::InvalidEvidence, error),
-    }
+        .await?;
+    Ok(published.0)
+}
+
+/// Advance one event's cursor over the page that was just published.
+fn advance_event(
+    state: &mut CollectionState,
+    index: usize,
+    published: publication::PagePublication,
+) -> Result<(), HandlerError> {
+    let event = state
+        .events
+        .get_mut(index)
+        .ok_or_else(|| terminal("missing ranking event"))?;
+    event.head_checkpoint = Some(published.checkpoint);
+    event.next_page = event
+        .next_page
+        .checked_add(1)
+        .ok_or_else(|| terminal("ranking page overflow"))?;
+    event.page_count = event
+        .page_count
+        .checked_add(1)
+        .ok_or_else(|| terminal("ranking page count overflow"))?;
+    event.terminal = published.terminal;
     Ok(())
 }

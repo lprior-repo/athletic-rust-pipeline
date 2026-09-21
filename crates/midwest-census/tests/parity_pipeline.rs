@@ -63,7 +63,7 @@ use std::time::Duration;
 use anyhow::{bail, ensure, Context, Result};
 use calamine::{open_workbook_auto, Data, Reader};
 use midwest_census::bests::{self, BestResult, Measure};
-use midwest_census::model::{
+use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence,
     GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
@@ -162,12 +162,12 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
         "the result-file adapter's report changed when the store was rebuilt"
     );
 
-    // The workbook, at the byte level: same size, and every part identical once the one part that
-    // carries the file's creation time is set aside.
-    assert_eq!(
-        first.workbook.byte_len, second.workbook.byte_len,
-        "the workbook changed size when the store was rebuilt"
-    );
+    // The workbook, at the byte level: every part identical once the one part that carries the
+    // file's creation time is set aside. The container's raw size is deliberately not asserted:
+    // `docProps/core.xml` holds `rust_xlsxwriter`'s creation stamp, whose text moves with the
+    // wall clock, so the deflated size of an unchanged workbook drifts by a few bytes across runs
+    // (observed 21293..21297). The per-part CRC map below is the stronger claim: it is identical
+    // only if every part's uncompressed bytes are.
     assert_eq!(
         first.workbook.parts, second.workbook.parts,
         "an xlsx part changed when the store was rebuilt"
@@ -1516,7 +1516,6 @@ fn assert_best_reduction(rows: &[BestResult], store: &Store, scope: Scope) -> Re
 /// between the two runs, which share a store path).
 struct Workbook {
     bytes: Vec<u8>,
-    byte_len: usize,
     /// CRC-32 of every xlsx part except [`CORE_PART`], keyed by part name.
     parts: BTreeMap<String, u32>,
     /// Sheets (name, cell count and a per-sheet digest), xlsx parts, the total cell count and a
@@ -1580,7 +1579,6 @@ impl Workbook {
             "content_digest": common::digest(&cells)?,
         });
         Ok(Self {
-            byte_len: bytes.len(),
             parts,
             shape,
             bytes,

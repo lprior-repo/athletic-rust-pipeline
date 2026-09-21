@@ -5,7 +5,7 @@
 //! readers below are the ones the other vendors call (`compiled`, `xc`, `athleticnet`), and they
 //! live beside the Hy-Tek parser that gave them their names.
 
-use crate::model::Grade;
+use census_domain::model::Grade;
 
 /// Names arrive as `First Last` (PrimeTime) and as `Last, First` (TrackSide); the guard exists to
 /// catch a mis-sliced field, which shows up as digits from a neighbouring mark, not to police

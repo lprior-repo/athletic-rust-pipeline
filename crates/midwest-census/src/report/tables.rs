@@ -3,7 +3,7 @@
 use super::notes::{add, bump};
 use super::rows::RowCounts;
 use super::{MeetCoverage, StateCensus};
-use crate::model::{CanonicalMeet, CanonicalSchool, SourceNamespace};
+use census_domain::model::{CanonicalMeet, CanonicalSchool, SourceNamespace};
 use std::collections::BTreeMap;
 
 /// Meet-table coverage, one pass over the merged meet rows.

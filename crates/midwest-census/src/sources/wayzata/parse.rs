@@ -1,7 +1,7 @@
 //! The provider's two published schedules: their page URL, the shape of one schedule row, and
 //! the parser that reads a rendered schedule table into those rows.
 
-use crate::model::Sport;
+use census_domain::model::Sport;
 use anyhow::Result;
 use regex::Regex;
 use std::sync::LazyLock;

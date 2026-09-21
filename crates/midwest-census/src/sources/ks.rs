@@ -16,7 +16,7 @@
 //! `SchoolFax`, `Email`, `TwitterUserName` — any phone field, any home or cell number, and any
 //! non-coaching office role data. Those columns are not part of the schema.
 
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
 };
@@ -242,17 +242,61 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     // Load the resume set (keys already journalled in this phase).
     let done_keys: HashSet<String> = ctx.store.journal_keys("kshsaa_schools")?;
 
-    let limit = options.limit;
-    let mut processed = 0usize;
-    let mut skipped = 0usize;
-    let mut skipped_no_ad = 0usize;
-    let mut schools: Vec<CanonicalSchool> = Vec::new();
-    let mut coaches: Vec<CanonicalCoach> = Vec::new();
+    let tally = collect_records(&records, ctx, options, &url, &done_keys, &mut report)?;
+    append_ks_entities(ctx, &tally.schools, &tally.coaches)?;
 
-    for record in &records {
+    // Finalize stats and counts.
+    let after = ctx.fetcher.stats().await;
+    let delta_requests = after.requests.saturating_sub(before.requests);
+    report.rows = tally.processed as u64;
+    report.requests = delta_requests;
+    report.note(format!(
+        "fetched {} schools from KSHSAA; {} already done; {} skipped (no AD name)",
+        tally.processed, tally.skipped, tally.skipped_no_ad
+    ));
+
+    Ok(report)
+}
+
+/// What one journaled directory record contributed.
+struct KsRecord {
+    school: CanonicalSchool,
+    coach: Option<CanonicalCoach>,
+}
+
+/// What one directory pass accumulated, besides the email count, which is recorded on the report as
+/// each record is read.
+struct KsTally {
+    processed: usize,
+    skipped: usize,
+    skipped_no_ad: usize,
+    schools: Vec<CanonicalSchool>,
+    coaches: Vec<CanonicalCoach>,
+}
+
+/// Walk the directory once: journalled schools are counted as skipped, the rest are read and
+/// journalled as done so a re-run resumes past them.
+fn collect_records(
+    records: &[KshsaaRecord],
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    url: &str,
+    done_keys: &HashSet<String>,
+    report: &mut AdapterReport,
+) -> Result<KsTally> {
+    let limit = options.limit;
+    let mut tally = KsTally {
+        processed: 0,
+        skipped: 0,
+        skipped_no_ad: 0,
+        schools: Vec::new(),
+        coaches: Vec::new(),
+    };
+
+    for record in records {
         // Honour limit.
         if let Some(max) = limit {
-            if processed >= max {
+            if tally.processed >= max {
                 break;
             }
         }
@@ -260,66 +304,76 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         // Skip already-processed schools (resume support).
         let journal_key = format!("KS:{}", record.identifier);
         if done_keys.contains(&journal_key) {
-            skipped += 1;
+            tally.skipped += 1;
             continue;
         }
 
-        // Parse school.
-        let (school, school_id) = match parse_school(record, &url, &options.observed_on) {
-            Some(pair) => pair,
-            None => continue,
+        let Some(read) = collect_record(record, ctx, url, &options.observed_on, &journal_key)?
+        else {
+            continue;
         };
-
-        // Parse AD coach.
-        if let Some(coach) = parse_ad_coach(record, &school_id, &url, &options.observed_on) {
+        if let Some(coach) = read.coach {
             if coach.professional_email.is_some() {
                 report.with_email += 1;
             }
-            coaches.push(coach);
+            tally.coaches.push(coach);
         } else {
-            skipped_no_ad += 1;
+            tally.skipped_no_ad += 1;
         }
-
-        schools.push(school);
-
-        // Journal this school as done.
-        ctx.store
-            .journal_done(
-                "kshsaa_schools",
-                &journal_key,
-                &serde_json::json!({
-                    "identifier": record.identifier,
-                    "school_name": record.school_name,
-                }),
-            )
-            .context("journaling kshsaa school progress")?;
-
-        processed += 1;
+        tally.schools.push(read.school);
+        tally.processed += 1;
     }
+    Ok(tally)
+}
 
-    // Append all schools and coaches to the store.
+/// One directory record: its school, the AD coach it publishes (absent when the AD name is empty),
+/// and the journal entry that marks the school done.
+fn collect_record(
+    record: &KshsaaRecord,
+    ctx: &AdapterContext<'_>,
+    url: &str,
+    observed_on: &str,
+    journal_key: &str,
+) -> Result<Option<KsRecord>> {
+    // Parse school.
+    let Some((school, school_id)) = parse_school(record, url, observed_on) else {
+        return Ok(None);
+    };
+
+    // Parse AD coach.
+    let coach = parse_ad_coach(record, &school_id, url, observed_on);
+
+    // Journal this school as done.
+    ctx.store
+        .journal_done(
+            "kshsaa_schools",
+            journal_key,
+            &serde_json::json!({
+                "identifier": record.identifier,
+                "school_name": record.school_name,
+            }),
+        )
+        .context("journaling kshsaa school progress")?;
+    Ok(Some(KsRecord { school, coach }))
+}
+
+/// Append all schools and coaches of one pass to the store.
+fn append_ks_entities(
+    ctx: &AdapterContext<'_>,
+    schools: &[CanonicalSchool],
+    coaches: &[CanonicalCoach],
+) -> Result<()> {
     if !schools.is_empty() {
         ctx.store
-            .append_many(Table::Schools, &schools)
+            .append_many(Table::Schools, schools)
             .context("writing kshsaa schools")?;
     }
     if !coaches.is_empty() {
         ctx.store
-            .append_many(Table::Coaches, &coaches)
+            .append_many(Table::Coaches, coaches)
             .context("writing kshsaa coaches")?;
     }
-
-    // Finalize stats and counts.
-    let after = ctx.fetcher.stats().await;
-    let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = processed as u64;
-    report.requests = delta_requests;
-    report.note(format!(
-        "fetched {} schools from KSHSAA; {} already done; {} skipped (no AD name)",
-        processed, skipped, skipped_no_ad
-    ));
-
-    Ok(report)
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------

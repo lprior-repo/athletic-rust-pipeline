@@ -1,7 +1,7 @@
 //! The event-specific rules: which events are never an athlete's personal best, and which sport an
 //! event belongs to.
 
-use crate::model::EventKind;
+use census_domain::model::EventKind;
 
 /// `true` for squad events, which are never an athlete's personal best.
 pub const fn is_relay(kind: &EventKind) -> bool {

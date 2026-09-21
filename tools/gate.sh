@@ -134,6 +134,14 @@ main() {
   printf '\n=== domain type integrity (review candidates, ratcheted in the DDD phase) ===\n'
   python3 tools/type_integrity_scan.py | jq -r 'to_entries[] | "  \(.key): bool_sigs=\(.value.bool_in_signature | length) primitive_ids=\(.value.primitive_id_param | length) many_option_structs=\(.value.struct_with_many_options | length)"'
 
+  printf '\n=== domain purity (census-domain normal tree) ===\n'
+  if python3 tools/check_domain_purity.py; then
+    printf -- '--- domain purity: PASS\n'
+  else
+    printf -- '--- domain purity: FAIL\n'
+    FAILURES+=("domain purity")
+  fi
+
   if [ "$UPDATE" = 1 ]; then
     printf '\n=== baseline update ===\n'
     local extra=()

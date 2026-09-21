@@ -87,18 +87,51 @@ fn project_row(
         .filter(|id| *id != 0)
         .ok_or(PageParseError::MissingRowIdResult)?;
     let roster = teams.and_then(|entries| entries.get(&result_id.to_string()));
+    let Some(roster) = roster else {
+        return mark_roster_absent(observation, flattened);
+    };
+    project_roster_row(
+        row,
+        roster,
+        result_id,
+        group_index,
+        row_index,
+        flattened,
+        observation,
+    )
+}
+
+/// Mark one row as carrying no roster entry the join can resolve.
+fn mark_roster_absent(
+    observation: &mut PageObservation,
+    flattened: usize,
+) -> Result<(), PageParseError> {
+    observation
+        .source_rows
+        .get_mut(flattened)
+        .ok_or(PageParseError::MissingRowNum)?
+        .roster_present = Some(false);
+    observation.rows_missing_roster = observation
+        .rows_missing_roster
+        .checked_add(1)
+        .ok_or(PageParseError::CounterOverflow)?;
+    Ok(())
+}
+
+/// Project one row that carries a roster entry into its verified members.
+fn project_roster_row(
+    row: &Value,
+    roster: &Value,
+    result_id: u64,
+    group_index: usize,
+    row_index: usize,
+    flattened: usize,
+    observation: &mut PageObservation,
+) -> Result<(), PageParseError> {
     let source = observation
         .source_rows
         .get_mut(flattened)
         .ok_or(PageParseError::MissingRowNum)?;
-    let Some(roster) = roster else {
-        source.roster_present = Some(false);
-        observation.rows_missing_roster = observation
-            .rows_missing_roster
-            .checked_add(1)
-            .ok_or(PageParseError::CounterOverflow)?;
-        return Ok(());
-    };
     let row_athlete = row.get("AthleteID").and_then(Value::as_u64);
     // A blurred row keeps its roster entry in the payload but not its identity:
     // this session receives `AthleteID: 0` for masked rows while `relayTeams`

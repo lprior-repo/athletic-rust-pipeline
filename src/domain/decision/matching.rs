@@ -115,30 +115,8 @@ fn candidate_facts(
     });
     let mailing_location_matches = school_location_matches(profiles, source);
     let location_corroborated = mailing_location_matches;
-    let participation_confirmed = profiles.iter().any(|profile| {
-        profile.results.iter().any(|result| {
-            result.result_id > 0
-                && matches!(
-                    result.attribution,
-                    crate::domain::evidence::ResultAttribution::Individual
-                        | crate::domain::evidence::ResultAttribution::VerifiedRelayMember { .. }
-                )
-        })
-    });
-    let evidence_conflict = profiles
-        .iter()
-        .flat_map(|profile| &profile.issues)
-        .any(|issue| {
-            matches!(
-                issue.code.as_str(),
-                "identity_conflict"
-                    | "identity_invalid"
-                    | "html_identity_mismatch"
-                    | "team_conflict"
-                    | "identity_incomplete"
-                    | "profile_url_conflict"
-            )
-        });
+    let participation_confirmed = participation_observed(profiles);
+    let evidence_conflict = identity_evidence_conflict(profiles);
     let hard_eligible = matches!(coverage, CandidateCoverage::Complete)
         && exact_name
         && !name_conflict
@@ -157,6 +135,36 @@ fn candidate_facts(
         evidence_conflict,
         coverage,
     }
+}
+
+fn participation_observed(profiles: &[&ProfileEvidence]) -> bool {
+    profiles.iter().any(|profile| {
+        profile.results.iter().any(|result| {
+            result.result_id > 0
+                && matches!(
+                    result.attribution,
+                    crate::domain::evidence::ResultAttribution::Individual
+                        | crate::domain::evidence::ResultAttribution::VerifiedRelayMember { .. }
+                )
+        })
+    })
+}
+
+fn identity_evidence_conflict(profiles: &[&ProfileEvidence]) -> bool {
+    profiles
+        .iter()
+        .flat_map(|profile| &profile.issues)
+        .any(|issue| {
+            matches!(
+                issue.code.as_str(),
+                "identity_conflict"
+                    | "identity_invalid"
+                    | "html_identity_mismatch"
+                    | "team_conflict"
+                    | "identity_incomplete"
+                    | "profile_url_conflict"
+            )
+        })
 }
 
 fn school_location_matches(profiles: &[&ProfileEvidence], source: &SourceIdentity) -> bool {

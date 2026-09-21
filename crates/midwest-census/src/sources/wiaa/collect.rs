@@ -1,16 +1,19 @@
 //! The WIAA directory walk (`collect`), moved verbatim from the flat adapter module.
 
-use crate::model::normalize_name;
-use crate::net::{FetchOptions, FetchOutcome};
+use crate::net::{FetchOutcome, FetchStats};
 use crate::sources::{AdapterContext, AdapterReport};
-use crate::store::Table;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use futures::stream::{self, StreamExt};
 use std::collections::{BTreeMap, HashSet};
 
-use super::parse::{parse_directory_letter, parse_school_page, IndexEntry};
+use super::parse::{parse_directory_letter, IndexEntry};
+use super::primitives::meaningful;
 use super::{count, fetch_options, letters_for, Options, HOST, INDEX_PATH};
-use super::{map::school_entities, primitives::meaningful};
+
+#[path = "collect_schools.rs"]
+mod collect_schools;
+
+use collect_schools::{plan_schools, process_school, SchoolTally};
 
 // -------------------------------------------------------------------------------------------------
 // Collection
@@ -44,6 +47,55 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         return Ok(report);
     }
 
+    let LetterScan { index, letters } = scan_index(ctx, options, &mut report, &before).await?;
+    let level_summary = summarize_levels(&index);
+
+    // -- schools: one request per school ---------------------------------------------------------
+    let done = ctx.store.journal_keys("wiaa_schools")?;
+    let mut tally = SchoolTally::default();
+    let fetch_results = plan_schools(ctx, options, &index, &done, &mut tally).await;
+
+    // Phase 3: process results in submission order (deterministic).
+    for (idx, result) in fetch_results {
+        let Some(entry) = index.get(idx) else {
+            continue;
+        };
+
+        // Respect limit after collection.
+        if let Some(limit) = options.limit {
+            if tally.processed >= limit {
+                break;
+            }
+        }
+
+        process_school(ctx, &mut report, &mut tally, entry, result, &observed_on).await?;
+    }
+
+    let after = ctx.fetcher.stats().await;
+    report.rows = count(tally.processed);
+    report.requests = after.requests.saturating_sub(before.requests);
+    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+    report.with_email = tally.with_email;
+
+    note_index(&mut report, letters, index.len(), &level_summary);
+    note_written(&mut report, &tally);
+    note_skips(&mut report, tally, options.limit);
+    Ok(report)
+}
+
+/// The directory index: its entries (deduplicated by org id) and how many letters were walked.
+struct LetterScan {
+    index: Vec<IndexEntry>,
+    letters: usize,
+}
+
+/// Walk the directory letters and build the school index they list.
+async fn scan_index(
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    report: &mut AdapterReport,
+    before: &FetchStats,
+) -> Result<LetterScan> {
     // -- index: bounded-concurrency fetch per directory letter (N=8) ----------------------------
     const LETTER_CONCURRENCY: usize = 8;
     let letters = letters_for(&options.school_names);
@@ -59,6 +111,30 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             .collect::<Vec<_>>()
             .await;
 
+    let (index, letters_ok, first_problem) = absorb_letters(&letters, letter_results, report);
+    if letters_ok == 0 {
+        let after = ctx.fetcher.stats().await;
+        report.requests = after.requests.saturating_sub(before.requests);
+        report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+        anyhow::bail!(
+            "WIAA directory index {HOST}{INDEX_PATH} returned no usable letter fragment ({} request(s) attempted): {}",
+            letters.len(),
+            first_problem.unwrap_or_else(|| "no response".to_string())
+        );
+    }
+
+    Ok(LetterScan {
+        index,
+        letters: letters.len(),
+    })
+}
+
+/// Read the letter fragments in submission order: parse rows, dedupe ids, track the first problem.
+fn absorb_letters(
+    letters: &[char],
+    letter_results: Vec<(usize, Result<FetchOutcome>)>,
+    report: &mut AdapterReport,
+) -> (Vec<IndexEntry>, usize, Option<String>) {
     // Process results in submission order for deterministic error tracking.
     let mut index: Vec<IndexEntry> = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
@@ -95,189 +171,37 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             }
         }
     }
-    if letters_ok == 0 {
-        let after = ctx.fetcher.stats().await;
-        report.requests = after.requests.saturating_sub(before.requests);
-        report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
-        anyhow::bail!(
-            "WIAA directory index {HOST}{INDEX_PATH} returned no usable letter fragment ({} request(s) attempted): {}",
-            letters.len(),
-            first_problem.unwrap_or_else(|| "no response".to_string())
-        );
-    }
+    (index, letters_ok, first_problem)
+}
 
+/// Count the listed schools per published level, for the index note.
+fn summarize_levels(index: &[IndexEntry]) -> String {
     let mut levels: BTreeMap<String, u64> = BTreeMap::new();
-    for entry in &index {
+    for entry in index {
         let level = meaningful(&entry.level).unwrap_or_else(|| "unstated".to_string());
         let slot = levels.entry(level).or_insert(0);
         *slot = slot.saturating_add(1);
     }
-    let level_summary = levels
+    levels
         .iter()
         .map(|(level, count)| format!("{level}={count}"))
         .collect::<Vec<_>>()
-        .join(", ");
+        .join(", ")
+}
 
-    // -- schools: one request per school ---------------------------------------------------------
-    let done = ctx.store.journal_keys("wiaa_schools")?;
-    let wanted: Option<HashSet<String>> = if options.school_names.is_empty() {
-        None
-    } else {
-        Some(
-            options
-                .school_names
-                .iter()
-                .map(|name| normalize_name(name))
-                .collect(),
-        )
-    };
-
-    let mut processed = 0usize;
-    let mut skipped_done = 0usize;
-    let mut skipped_filter = 0usize;
-    let mut not_found = 0usize;
-    let mut page_failures = 0usize;
-    let mut coach_rows = 0usize;
-    let mut with_email = 0u64;
-    let mut skipped_admin_roles: Vec<String> = Vec::new();
-    let mut skipped_coach_rows = 0usize;
-
-    // -- schools: bounded-concurrency fetch per school page (N=8) ----------------------------
-    const SCHOOL_CONCURRENCY: usize = 8;
-    // Phase 1: identify eligible schools (skip already journaled, apply filter).
-    let eligible: Vec<(usize, &IndexEntry)> = index
-        .iter()
-        .enumerate()
-        .filter(|(_, entry)| {
-            if let Some(wanted) = wanted.as_ref() {
-                if !wanted.contains(&normalize_name(&entry.name)) {
-                    skipped_filter = skipped_filter.saturating_add(1);
-                    return false;
-                }
-            }
-            let key = format!("WI:{}", entry.org_id);
-            if done.contains(&key) {
-                skipped_done = skipped_done.saturating_add(1);
-                return false;
-            }
-            true
-        })
-        .collect();
-
-    // Phase 2: fetch all school pages in parallel (bounded concurrency N=8).
-    // Each fetch is independent — same host, but rate-limited by the fetcher's gate.
-    let fetch_results: Vec<(usize, Result<FetchOutcome>)> = stream::iter(eligible)
-        .map(|(idx, entry)| {
-            let url = entry.page_url();
-            let page_options = FetchOptions {
-                allow_not_found: true,
-                ..fetch_options(ctx, options)
-            };
-            async move { (idx, ctx.fetcher.get(&url, &page_options).await) }
-        })
-        .buffer_unordered(SCHOOL_CONCURRENCY)
-        .collect::<Vec<_>>()
-        .await;
-
-    // Phase 3: process results in submission order (deterministic).
-    for (idx, result) in fetch_results {
-        let Some(entry) = index.get(idx) else {
-            continue;
-        };
-        let key = format!("WI:{}", entry.org_id);
-
-        // Respect limit after collection.
-        if let Some(limit) = options.limit {
-            if processed >= limit {
-                break;
-            }
-        }
-
-        let outcome = match result {
-            Ok(outcome) => outcome,
-            Err(error) => {
-                page_failures = page_failures.saturating_add(1);
-                report.errors = report.errors.saturating_add(1);
-                if page_failures <= 5 {
-                    report.note(format!("school {key}: {error}"));
-                }
-                continue;
-            }
-        };
-        if outcome.status == 404 {
-            not_found = not_found.saturating_add(1);
-            continue;
-        }
-        if outcome.status != 200 {
-            page_failures = page_failures.saturating_add(1);
-            report.errors = report.errors.saturating_add(1);
-            if page_failures <= 5 {
-                report.note(format!("school {key}: HTTP {}", outcome.status));
-            }
-            continue;
-        }
-
-        let page = parse_school_page(&outcome.text());
-        let Some(extract) = school_entities(entry, &page, &observed_on) else {
-            page_failures = page_failures.saturating_add(1);
-            report.errors = report.errors.saturating_add(1);
-            if page_failures <= 5 {
-                report.note(format!("school {key}: page carried no school name"));
-            }
-            continue;
-        };
-
-        ctx.store
-            .append(Table::Schools, &extract.school)
-            .with_context(|| format!("writing WIAA school {key}"))?;
-        ctx.store
-            .append_many(Table::Coaches, &extract.coaches)
-            .with_context(|| format!("writing WIAA coaches for {key}"))?;
-
-        let school_with_email = extract
-            .coaches
-            .iter()
-            .filter(|coach| coach.professional_email.is_some())
-            .count();
-        with_email = with_email.saturating_add(count(school_with_email));
-        coach_rows = coach_rows.saturating_add(extract.coaches.len());
-        skipped_coach_rows = skipped_coach_rows.saturating_add(extract.skipped_coach_rows);
-        for role in extract.skipped_admin_roles {
-            if !skipped_admin_roles.iter().any(|seen| seen == &role) {
-                skipped_admin_roles.push(role);
-            }
-        }
-
-        let payload = serde_json::json!({
-            "org_id": entry.org_id,
-            "name": extract.school.name,
-            "city": extract.school.city,
-            "conference": extract.school.classification,
-            "level": page.level,
-            "coaches": extract.coaches.len(),
-            "coaches_with_email": school_with_email,
-        });
-        ctx.store
-            .journal_done("wiaa_schools", &key, &payload)
-            .with_context(|| format!("journaling WIAA school {key}"))?;
-        ctx.store
-            .journal_done("wiaa_coaches", &key, &payload)
-            .with_context(|| format!("journaling WIAA coaches for {key}"))?;
-
-        processed = processed.saturating_add(1);
-    }
-
-    let after = ctx.fetcher.stats().await;
-    report.rows = count(processed);
-    report.requests = after.requests.saturating_sub(before.requests);
-    report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
-    report.with_email = with_email;
-
+/// Note how many directory letters were requested and how many schools they listed.
+fn note_index(report: &mut AdapterReport, letters: usize, index_len: usize, level_summary: &str) {
     report.note(format!(
         "index: {} letter request(s), {} schools listed ({level_summary})",
-        letters.len(),
-        index.len()
+        letters, index_len
     ));
+}
+
+/// Note how many schools and coach rows were written, and the published email fill rate.
+fn note_written(report: &mut AdapterReport, tally: &SchoolTally) {
+    let processed = tally.processed;
+    let coach_rows = tally.coach_rows;
+    let with_email = tally.with_email;
     report.note(format!(
         "wrote {processed} schools and {coach_rows} AD/head-coach rows to the store"
     ));
@@ -292,23 +216,31 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             .unwrap_or(0);
         format!("published coach/AD email fill rate: {with_email}/{coach_rows} rows ({percent}%)")
     });
+}
+
+/// Note what the walk skipped, which administration roles it refused, and the applied limit.
+fn note_skips(report: &mut AdapterReport, tally: SchoolTally, limit: Option<usize>) {
+    let skipped_done = tally.skipped_done;
+    let skipped_filter = tally.skipped_filter;
+    let not_found = tally.not_found;
+    let page_failures = tally.page_failures;
+    let skipped_coach_rows = tally.skipped_coach_rows;
     report.note(format!(
         "skipped {skipped_done} already journaled, {skipped_filter} outside the requested school names, {not_found} HTTP 404, {page_failures} page failures"
     ));
     report.note(format!(
         "not imported: {skipped_coach_rows} coach-table rows outside TF/XC or without a coaching role, {} non-director administration roles",
-        count(skipped_admin_roles.len())
+        count(tally.skipped_admin_roles.len())
     ));
-    if !skipped_admin_roles.is_empty() {
-        let mut sorted = skipped_admin_roles;
+    if !tally.skipped_admin_roles.is_empty() {
+        let mut sorted = tally.skipped_admin_roles;
         sorted.sort_unstable();
         report.note(format!(
             "non-director admin roles seen: {}",
             sorted.join(", ")
         ));
     }
-    if let Some(limit) = options.limit {
+    if let Some(limit) = limit {
         report.note(format!("limit applied: {limit} school(s)"));
     }
-    Ok(report)
 }

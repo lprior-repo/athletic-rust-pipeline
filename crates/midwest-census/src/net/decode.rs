@@ -23,19 +23,7 @@ pub(super) async fn process_response(
     stats: &mut FetchStats,
 ) -> Result<FetchOutcome> {
     let status = response.status().as_u16();
-    let headers = response.headers().clone();
-    let etag = headers
-        .get(reqwest::header::ETAG)
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
-    let last_modified = headers
-        .get(reqwest::header::LAST_MODIFIED)
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
-    let content_type = headers
-        .get(reqwest::header::CONTENT_TYPE)
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
+    let (etag, last_modified, content_type) = header_strings(response.headers());
 
     stats.requests = stats.requests.saturating_add(1);
     let per_host_entry = stats.per_host.entry(host.to_string()).or_insert(0);
@@ -46,35 +34,7 @@ pub(super) async fn process_response(
         bail!("unexpected 304 in process_response");
     }
 
-    let declared = headers
-        .get(reqwest::header::CONTENT_LENGTH)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| v.parse::<usize>().ok());
-    if declared.map(|len| len > MAX_BODY_BYTES).unwrap_or(false) {
-        return Err(FetchError::TooLarge {
-            url: url.to_string(),
-        }
-        .into());
-    }
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?;
-    if bytes.len() > MAX_BODY_BYTES {
-        return Err(FetchError::TooLarge {
-            url: url.to_string(),
-        }
-        .into());
-    }
-    let body_vec = bytes.to_vec();
-    let sha256 = {
-        let mut hasher = Sha256::new();
-        hasher.update(&body_vec);
-        sha256_prefix16(hasher)
-    };
+    let (body_vec, sha256) = read_checked_body(response, url).await?;
     let meta = CacheMeta {
         url: url.to_string(),
         method: method.to_string(),
@@ -105,4 +65,53 @@ pub(super) async fn process_response(
         content_type,
         body: body_vec,
     })
+}
+
+/// The three response headers the cache keeps, as owned strings.
+fn header_strings(
+    headers: &reqwest::header::HeaderMap,
+) -> (Option<String>, Option<String>, Option<String>) {
+    let header = |name: reqwest::header::HeaderName| {
+        headers
+            .get(name)
+            .and_then(|v| v.to_str().ok())
+            .map(str::to_string)
+    };
+    (
+        header(reqwest::header::ETAG),
+        header(reqwest::header::LAST_MODIFIED),
+        header(reqwest::header::CONTENT_TYPE),
+    )
+}
+
+/// Read the response body inside the size cap, and hash what was read.
+async fn read_checked_body(response: reqwest::Response, url: &str) -> Result<(Vec<u8>, String)> {
+    let declared = response
+        .headers()
+        .get(reqwest::header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse::<usize>().ok());
+    if declared.map(|len| len > MAX_BODY_BYTES).unwrap_or(false) {
+        return Err(FetchError::TooLarge {
+            url: url.to_string(),
+        }
+        .into());
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|source| FetchError::Transport {
+            url: url.to_string(),
+            source,
+        })?;
+    if bytes.len() > MAX_BODY_BYTES {
+        return Err(FetchError::TooLarge {
+            url: url.to_string(),
+        }
+        .into());
+    }
+    let body = bytes.to_vec();
+    let mut hasher = Sha256::new();
+    hasher.update(&body);
+    Ok((body, sha256_prefix16(hasher)))
 }

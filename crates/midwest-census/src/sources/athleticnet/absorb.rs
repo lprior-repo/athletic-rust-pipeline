@@ -1,14 +1,13 @@
 //! One payload's rows: the walk from a decoded bio to canonical rows, refusing the rest.
 
-use super::map::{
-    grade_in, meet_for, profile_url, school_for, store_performance, Accumulator, PerformanceInput,
-    Stats,
-};
-use super::parse::{gender_of, parse_mark, round_of, timing_of, Bio};
+mod rows;
+
+use super::map::{profile_url, school_for, Accumulator, Stats};
+use super::parse::{gender_of, Bio};
 use super::{Scope, Target};
-use crate::model::{
-    AthleteId, CanonicalAthlete, EventKind, Evidence, Grade, ObservedGrade, SchoolId, SchoolYear,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+use census_domain::model::{
+    AthleteId, CanonicalAthlete, Evidence, Gender, GradYear, Grade, ObservedGrade, SchoolId,
+    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
@@ -31,27 +30,7 @@ pub(super) fn absorb(
         stats.gender_unknown += 1;
         return 0;
     };
-
-    // Grade observations: `grades` maps "<SchoolID>_<SeasonID>" to the grade that season, which is
-    // what makes a class year derived rather than assumed.
-    let mut observed_grades: Vec<ObservedGrade> = Vec::new();
-    for (key, grade) in bio.grades.iter().flatten() {
-        let Some((_, season)) = key.split_once('_') else {
-            continue;
-        };
-        let (Ok(grade), Ok(season)) = (u8::try_from(*grade), season.parse::<i16>()) else {
-            continue;
-        };
-        let Some(grade) = Grade::new(grade) else {
-            continue;
-        };
-        observed_grades.push(ObservedGrade {
-            grade,
-            school_year: SchoolYear::containing(season, 5),
-            source: source.clone(),
-        });
-    }
-    observed_grades.sort_by_key(|observation| observation.school_year);
+    let observed_grades = grade_observations(bio, source);
     let Some(latest) = observed_grades.last().cloned() else {
         stats.athletes_without_grade += 1;
         return 0;
@@ -62,237 +41,136 @@ pub(super) fn absorb(
         stats.athletes_without_school += 1;
         return 0;
     };
-    // School names are published once per payload, keyed by the school id the rows carry.
-    let school_names: HashMap<String, &str> = bio
-        .teams
-        .iter()
-        .map(|(id, team)| (id.clone(), team.school_name.as_str()))
-        .collect();
-    let Some(school) = school_for(
-        &athlete_school.to_string(),
-        target.state.as_deref(),
-        &school_names,
-        index,
-        resolved,
+    let mut ctx = Ctx {
         source,
         observed_on,
+        index,
+        resolved,
         stats,
         accumulated,
-    ) else {
-        stats.rows_without_state += 1;
+        target,
+        school_names: school_names(bio),
+        observed_grades,
+        seasons: season_sports(bio),
+    };
+    let Some(school) = ctx.canonical_school(&athlete_school.to_string()) else {
         return 0;
     };
+    let athlete_id = ctx.athlete_id(&school, &name, grad_year, gender);
+    match scope {
+        Scope::TrackField => ctx.track_rows(bio, &athlete_id, gender),
+        Scope::CrossCountry => ctx.cross_rows(bio, &athlete_id, gender),
+    }
+}
 
-    let athlete_id: AthleteId =
-        match accumulated
-            .athletes
-            .get(&format!("{}:{}", target.athlete_id, school.as_str()))
-        {
+/// One payload's walk: the identity it resolved, the schools its rows name, and where rows go.
+struct Ctx<'a> {
+    source: &'a SourceRef,
+    observed_on: &'a str,
+    index: &'a SchoolIndex,
+    resolved: &'a mut HashMap<String, SchoolId>,
+    stats: &'a mut Stats,
+    accumulated: &'a mut Accumulator,
+    target: &'a Target,
+    school_names: HashMap<String, &'a str>,
+    observed_grades: Vec<ObservedGrade>,
+    seasons: HashMap<(i64, i16), Option<Sport>>,
+}
+
+impl<'a> Ctx<'a> {
+    /// The canonical school a payload names, counting a payload whose state cannot be resolved.
+    fn canonical_school(&mut self, school_id: &str) -> Option<SchoolId> {
+        let school = school_for(
+            school_id,
+            self.target.state.as_deref(),
+            &self.school_names,
+            self.index,
+            self.resolved,
+            self.source,
+            self.observed_on,
+            self.stats,
+            self.accumulated,
+        );
+        if school.is_none() {
+            self.stats.rows_without_state += 1;
+        }
+        school
+    }
+
+    /// The athlete every row of this payload hangs off, minted once per (athlete id, school).
+    fn athlete_id(
+        &mut self,
+        school: &SchoolId,
+        name: &str,
+        grad_year: GradYear,
+        gender: Gender,
+    ) -> AthleteId {
+        let key = format!("{}:{}", self.target.athlete_id, school.as_str());
+        let id = match self.accumulated.athletes.get(&key) {
             Some(existing) => existing.id.clone(),
             None => {
-                let mut athlete = CanonicalAthlete::new(&school, &name, grad_year, gender);
+                let mut athlete = CanonicalAthlete::new(school, name, grad_year, gender);
                 athlete
                     .public_profile_urls
-                    .push(profile_url(target.athlete_id));
+                    .push(profile_url(self.target.athlete_id));
                 let id = athlete.id.clone();
-                accumulated.athletes.insert(
-                    format!("{}:{}", target.athlete_id, school.as_str()),
-                    athlete,
-                );
+                self.accumulated.athletes.insert(key.clone(), athlete);
                 id
             }
         };
-    if let Some(athlete) =
-        accumulated
-            .athletes
-            .get_mut(&format!("{}:{}", target.athlete_id, school.as_str()))
-    {
-        athlete.observed_grades = observed_grades.clone();
-        athlete.evidence = vec![Evidence::fetched(source.clone(), observed_on)];
-        athlete.source_identities = vec![SourceIdentity {
-            namespace: SourceNamespace::AthleticNet {
-                kind: "athlete".to_string(),
-            },
-            id: target.athlete_id.to_string(),
-            url: Some(profile_url(target.athlete_id)),
-        }];
+        let observed_grades = self.observed_grades.clone();
+        if let Some(athlete) = self.accumulated.athletes.get_mut(&key) {
+            athlete.observed_grades = observed_grades;
+            athlete.evidence = vec![Evidence::fetched(self.source.clone(), self.observed_on)];
+            athlete.source_identities = vec![SourceIdentity {
+                namespace: SourceNamespace::AthleticNet {
+                    kind: "athlete".to_string(),
+                },
+                id: self.target.athlete_id.to_string(),
+                url: Some(profile_url(self.target.athlete_id)),
+            }];
+        }
+        id
     }
+}
 
-    // Season entries are the only place the indoor/outdoor split is published, keyed by the
-    // athlete's school + season.
-    let seasons: HashMap<(i64, i16), Option<Sport>> = bio
-        .seasons
+/// Grade observations: `grades` maps "<SchoolID>_<SeasonID>" to the grade that season, which is
+/// what makes a class year derived rather than assumed.
+fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
+    let mut observed: Vec<ObservedGrade> = Vec::new();
+    for (key, grade) in bio.grades.iter().flatten() {
+        let Some((_, season)) = key.split_once('_') else {
+            continue;
+        };
+        let (Ok(grade), Ok(season)) = (u8::try_from(*grade), season.parse::<i16>()) else {
+            continue;
+        };
+        let Some(grade) = Grade::new(grade) else {
+            continue;
+        };
+        observed.push(ObservedGrade {
+            grade,
+            school_year: SchoolYear::containing(season, 5),
+            source: source.clone(),
+        });
+    }
+    observed.sort_by_key(|observation| observation.school_year);
+    observed
+}
+
+/// School names are published once per payload, keyed by the school id the rows carry.
+fn school_names(bio: &Bio) -> HashMap<String, &str> {
+    bio.teams
+        .iter()
+        .map(|(id, team)| (id.clone(), team.school_name.as_str()))
+        .collect()
+}
+
+/// Season entries are the only place the indoor/outdoor split is published, keyed by the
+/// payload's school + season.
+fn season_sports(bio: &Bio) -> HashMap<(i64, i16), Option<Sport>> {
+    bio.seasons
         .iter()
         .map(|season| ((season.school_id, season.season_id), season.sport()))
-        .collect();
-
-    let mut rows = 0u64;
-    match scope {
-        Scope::TrackField => {
-            let labels: HashMap<i64, &str> = bio
-                .events
-                .iter()
-                .flatten()
-                .map(|event| (event.id, event.label.as_str()))
-                .collect();
-            for row in bio.results_tf.iter().flatten() {
-                stats.rows_seen += 1;
-                let Some(season_id) = row.season_id else {
-                    stats.rows_no_season += 1;
-                    continue;
-                };
-                let Some(sport) = seasons
-                    .get(&(row.school_id.unwrap_or_default(), season_id))
-                    .copied()
-                    .flatten()
-                else {
-                    *stats
-                        .rows_unknown_season
-                        .entry(season_id.to_string())
-                        .or_default() += 1;
-                    continue;
-                };
-                let Some(label) = row.event_id.and_then(|id| labels.get(&id).copied()) else {
-                    stats.rows_no_event += 1;
-                    continue;
-                };
-                let kind = EventKind::from_source_label(label);
-                let Some((mark, auto)) = parse_mark(&kind, &row.result) else {
-                    stats.rows_no_mark += 1;
-                    continue;
-                };
-                let Some(meet) = meet_for(
-                    row.meet_id,
-                    bio,
-                    target.state.as_deref(),
-                    source,
-                    observed_on,
-                    accumulated,
-                ) else {
-                    stats.rows_unknown_meet += 1;
-                    continue;
-                };
-                let Some(date) = row.date().or_else(|| Some(meet.date.clone())) else {
-                    stats.rows_unknown_meet += 1;
-                    continue;
-                };
-                let Some(school) = school_for(
-                    &row.school_id.unwrap_or_default().to_string(),
-                    target.state.as_deref(),
-                    &school_names,
-                    index,
-                    resolved,
-                    source,
-                    observed_on,
-                    stats,
-                    accumulated,
-                ) else {
-                    stats.rows_without_state += 1;
-                    continue;
-                };
-                let school_year = SchoolYear::containing(season_id, 5);
-                let grade = grade_in(&observed_grades, school_year);
-                store_performance(
-                    accumulated,
-                    source,
-                    observed_on,
-                    PerformanceInput {
-                        athlete: &athlete_id,
-                        school: &school,
-                        meet: &meet,
-                        kind: &kind,
-                        sport,
-                        gender,
-                        school_year,
-                        grade,
-                        date,
-                        mark,
-                        wind_mps: row.wind,
-                        place: row.place.as_deref(),
-                        round: round_of(row.round.as_deref()),
-                        timing: timing_of(row.fat, auto),
-                        division: row.division.clone(),
-                        source_key: format!("athleticnet:{}-{}", target.athlete_id, row.id),
-                        label: Some(label),
-                    },
-                );
-                rows += 1;
-                stats.rows_absorbed += 1;
-            }
-        }
-        Scope::CrossCountry => {
-            for row in bio.results_xc.iter().flatten() {
-                stats.rows_seen += 1;
-                let Some(season_id) = row.season_id else {
-                    stats.rows_no_season += 1;
-                    continue;
-                };
-                let kind = EventKind::CrossCountry;
-                let Some((mark, auto)) = parse_mark(&kind, &row.result) else {
-                    stats.rows_no_mark += 1;
-                    continue;
-                };
-                let Some(meet) = meet_for(
-                    row.meet_id,
-                    bio,
-                    target.state.as_deref(),
-                    source,
-                    observed_on,
-                    accumulated,
-                ) else {
-                    stats.rows_unknown_meet += 1;
-                    continue;
-                };
-                let date = meet.date.clone();
-                let Some(school) = school_for(
-                    &row.school_id.unwrap_or_default().to_string(),
-                    target.state.as_deref(),
-                    &school_names,
-                    index,
-                    resolved,
-                    source,
-                    observed_on,
-                    stats,
-                    accumulated,
-                ) else {
-                    stats.rows_without_state += 1;
-                    continue;
-                };
-                // A cross-country season is a fall season, so its school year starts in the same
-                // calendar year the season is named for.
-                let school_year = SchoolYear::containing(season_id, 9);
-                let grade = grade_in(&observed_grades, school_year);
-                store_performance(
-                    accumulated,
-                    source,
-                    observed_on,
-                    PerformanceInput {
-                        athlete: &athlete_id,
-                        school: &school,
-                        meet: &meet,
-                        kind: &kind,
-                        sport: Sport::CrossCountry,
-                        gender,
-                        school_year,
-                        grade,
-                        date,
-                        mark,
-                        wind_mps: None,
-                        place: row.place.as_deref(),
-                        round: None,
-                        timing: timing_of(0, auto),
-                        division: row
-                            .division
-                            .clone()
-                            .or_else(|| row.distance.map(|metres| format!("{metres}m"))),
-                        source_key: format!("athleticnet:{}-{}", target.athlete_id, row.id),
-                        label: None,
-                    },
-                );
-                rows += 1;
-                stats.rows_absorbed += 1;
-            }
-        }
-    }
-    rows
+        .collect()
 }

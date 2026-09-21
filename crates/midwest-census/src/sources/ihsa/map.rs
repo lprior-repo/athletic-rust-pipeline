@@ -3,7 +3,7 @@
 
 use super::parse::{nonempty, SchoolRecord, StaffPerson};
 use super::staff::{parse_coach_title, parse_role, strip_honorific};
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };

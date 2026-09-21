@@ -5,7 +5,7 @@
 //! wire shape: a hand-written mirror silently drifts from the model and would report on fields that
 //! no longer exist.
 
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,
 };
 use anyhow::{Context, Result};

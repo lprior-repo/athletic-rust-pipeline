@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::*;
+use census_domain::model::*;
 
 fn school(name: &str) -> CanonicalSchool {
     CanonicalSchool::new("WI", name, normalize_name(name)).0

@@ -7,10 +7,12 @@ use self::request::normalize_destination;
 use self::staging::{stage_export, StageReceipt};
 
 use super::run::RunCoordinatorClient;
+use super::run_protocol::ExportSnapshot;
 use super::Runtime;
 use crate::domain::identity::EvidenceDigest;
 use anyhow::Result;
 use restate_sdk::prelude::*;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 pub use self::publishing::{BundleState, PublishedExport};
@@ -62,55 +64,73 @@ impl ExportWorker {
         let Some(snapshot) = snapshot.0 else {
             return Err(terminal("run snapshot is not available"));
         };
-        let stage = match ctx.get::<Json<StageReceipt>>(STAGE_STATE).await? {
-            Some(receipt) => receipt.0,
-            None => {
-                let runtime = self.runtime.clone();
-                let stage_runtime = runtime.clone();
-                let run = request.run.clone();
-                let stage_destination = destination.clone();
-                let receipt = ctx
-                    .run(move || async move {
-                        runtime
-                            .blocking(move || {
-                                stage_export(stage_runtime, run, stage_destination, snapshot)
-                            })
-                            .await
-                            .map(Json)
-                            .map_err(terminal)
-                    })
-                    .name("stage verified export bundle")
-                    .retry_policy(RunRetryPolicy::new().max_attempts(4))
-                    .await?;
-                // If the SDK loses the acknowledgement after this run, its kept stage may orphan.
-                ctx.set(
-                    STAGE_STATE,
-                    restate_sdk::serde::Serialize::serialize(&receipt).map_err(terminal)?,
-                );
-                receipt.0
-            }
-        };
+        let stage =
+            acquire_stage(&ctx, &self.runtime, &request.run, &destination, snapshot).await?;
         if stage.run != request.run || stage.destination != destination {
             return Err(terminal("durable export stage contradicts request binding"));
         }
-        let runtime = self.runtime.clone();
-        let published = ctx
-            .run(move || async move {
-                runtime
-                    .blocking(move || publish_bundle(stage, destination))
-                    .await
-                    .map(Json)
-                    .map_err(terminal)
-            })
-            .name("publish verified export bundle")
-            .retry_policy(RunRetryPolicy::new().max_attempts(4))
-            .await?;
-        ctx.set(
-            RESULT_STATE,
-            restate_sdk::serde::Serialize::serialize(&published).map_err(terminal)?,
-        );
-        Ok(published)
+        publish_stage(&ctx, &self.runtime, stage, destination).await
     }
+}
+
+/// Reuses the durable stage receipt, or computes it once inside an idempotent run block.
+async fn acquire_stage(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    run: &EvidenceDigest,
+    destination: &Path,
+    snapshot: ExportSnapshot,
+) -> Result<StageReceipt, HandlerError> {
+    if let Some(receipt) = ctx.get::<Json<StageReceipt>>(STAGE_STATE).await? {
+        return Ok(receipt.0);
+    }
+    let runtime = runtime.clone();
+    let stage_runtime = runtime.clone();
+    let run = run.clone();
+    let stage_destination = destination.to_owned();
+    let receipt = ctx
+        .run(move || async move {
+            runtime
+                .blocking(move || stage_export(stage_runtime, run, stage_destination, snapshot))
+                .await
+                .map(Json)
+                .map_err(terminal)
+        })
+        .name("stage verified export bundle")
+        .retry_policy(RunRetryPolicy::new().max_attempts(4))
+        .await?;
+    // If the SDK loses the acknowledgement after this run, its kept stage may orphan.
+    ctx.set(
+        STAGE_STATE,
+        restate_sdk::serde::Serialize::serialize(&receipt).map_err(terminal)?,
+    );
+    Ok(receipt.0)
+}
+
+/// Publishes the verified stage and durably records the published result for replay.
+async fn publish_stage(
+    ctx: &ObjectContext<'_>,
+    runtime: &Arc<Runtime>,
+    stage: StageReceipt,
+    destination: PathBuf,
+) -> Result<Json<PublishedExport>, HandlerError> {
+    let runtime = runtime.clone();
+    let published = ctx
+        .run(move || async move {
+            runtime
+                .blocking(move || publish_bundle(stage, destination))
+                .await
+                .map(Json)
+                .map_err(terminal)
+        })
+        .name("publish verified export bundle")
+        .retry_policy(RunRetryPolicy::new().max_attempts(4))
+        .await?;
+    ctx.set(
+        RESULT_STATE,
+        restate_sdk::serde::Serialize::serialize(&published).map_err(terminal)?,
+    );
+    Ok(published)
 }
 
 fn terminal(error: impl std::fmt::Display) -> HandlerError {

@@ -81,19 +81,7 @@ impl LocalReviewer {
         lane: ModelLane,
     ) -> Result<FinalizedReview, HandlerError> {
         let operation = http_audit::operation_key(ctx.invocation_id(), "local-review-http")?;
-        let effect = match run_attempt(
-            ctx,
-            self.runtime.clone(),
-            operation.clone(),
-            prepared.endpoint.clone(),
-            prepared.request.clone(),
-            prepared.input.clone(),
-        )
-        .await
-        {
-            Err(error) if error.code() == 409 => return Err(error.into()),
-            effect => effect,
-        };
+        let effect = self.run_effect(ctx, prepared, operation.clone()).await?;
         let runtime = self.runtime.clone();
         let finalization_operation = operation.clone();
         let finalization_request = request.clone();
@@ -133,6 +121,32 @@ impl LocalReviewer {
                     blocked: true,
                 })
             }
+        }
+    }
+
+    /// Runs one local model attempt. `Err` is the cancelled-lane signal; a model failure stays in
+    /// the inner result, which `finalize` classifies from the retained attempt evidence.
+    async fn run_effect(
+        &self,
+        ctx: &ObjectContext<'_>,
+        prepared: &PreparedReview,
+        operation: crate::domain::identity::EvidenceDigest,
+    ) -> std::result::Result<
+        std::result::Result<Json<crate::domain::identity::EvidenceDigest>, TerminalError>,
+        TerminalError,
+    > {
+        match run_attempt(
+            ctx,
+            self.runtime.clone(),
+            operation,
+            prepared.endpoint.clone(),
+            prepared.request.clone(),
+            prepared.input.clone(),
+        )
+        .await
+        {
+            Err(error) if error.code() == 409 => Err(error),
+            effect => Ok(effect),
         }
     }
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{CompetitionLevel, GradYear, Grade};
+use census_domain::model::{CompetitionLevel, GradYear, Grade};
 
 const ARCHIVE_HTML: &str = r#"
         <h3><strong>2025 Track &amp; Field State Results</strong></h3>

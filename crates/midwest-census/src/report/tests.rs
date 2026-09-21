@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, Gender, GradYear, SourceIdentity,
     SourceNamespace, Sport,
 };
@@ -15,22 +15,22 @@ fn core_scope_keeps_only_non_athletic_net_evidence() {
     let mut mirrored =
         CanonicalAthlete::new(&school_id, "Mirror Only", GradYear::CO2027, Gender::Boys);
     mirrored.evidence.push(Evidence::parsed(
-        crate::model::SourceRef::new("athleticlive_athletes", None),
+        census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
     ));
     let mut host = CanonicalAthlete::new(&school_id, "Host Only", GradYear::CO2027, Gender::Boys);
     host.evidence.push(Evidence::parsed(
-        crate::model::SourceRef::new("athleticnet", None),
+        census_domain::model::SourceRef::new("athleticnet", None),
         "2026-09-20",
     ));
     let mut core_athlete =
         CanonicalAthlete::new(&school_id, "Core Athlete", GradYear::CO2027, Gender::Boys);
     core_athlete.evidence.push(Evidence::parsed(
-        crate::model::SourceRef::new("athleticlive_athletes", None),
+        census_domain::model::SourceRef::new("athleticlive_athletes", None),
         "2026-09-20",
     ));
     core_athlete.evidence.push(Evidence::parsed(
-        crate::model::SourceRef::new("milesplit_roster", None),
+        census_domain::model::SourceRef::new("milesplit_roster", None),
         "2026-09-20",
     ));
     store.append(Table::Athletes, &mirrored).unwrap();

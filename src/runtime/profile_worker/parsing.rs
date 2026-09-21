@@ -7,7 +7,7 @@ use super::intake::receipts;
 use super::team::{self, TeamObservation};
 use crate::{
     domain::{
-        evidence::{EvidenceIssue, ProfileEvidence},
+        evidence::{EvidenceIssue, ProfileEvidence, Sport},
         identity::AthleteId,
         name::BioIdentityObservation,
     },
@@ -181,8 +181,31 @@ async fn parse_team(
             source_failure: None,
         };
     };
+    match fetch_team(runtime, receipt, team_id, sport, season).await {
+        Ok(observation) => ParsedTeam {
+            responses,
+            observation: Some(observation),
+            failure: None,
+            source_failure: None,
+        },
+        Err(error) => ParsedTeam {
+            responses,
+            observation: None,
+            failure: Some(error),
+            source_failure: None,
+        },
+    }
+}
+
+async fn fetch_team(
+    runtime: Arc<Runtime>,
+    receipt: DocumentReceipt,
+    team_id: u64,
+    sport: Sport,
+    season: u16,
+) -> Result<TeamObservation, String> {
     let store = runtime.store.clone();
-    match runtime
+    runtime
         .blocking(move || {
             let bytes = store.get_bytes(&receipt.digest)?;
             team::parse_team_nav(
@@ -196,18 +219,5 @@ async fn parse_team(
             )
         })
         .await
-    {
-        Ok(observation) => ParsedTeam {
-            responses,
-            observation: Some(observation),
-            failure: None,
-            source_failure: None,
-        },
-        Err(error) => ParsedTeam {
-            responses,
-            observation: None,
-            failure: Some(error.to_string()),
-            source_failure: None,
-        },
-    }
+        .map_err(|error| error.to_string())
 }

@@ -1,23 +1,20 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
-use chromiumoxide::cdp::browser_protocol::network::{
-    EventLoadingFailed, EventLoadingFinished, EventRequestWillBeSent, EventResponseReceived,
-    RequestId,
-};
 use chromiumoxide::cdp::browser_protocol::page::NavigateParams;
 use chromiumoxide::Page;
 use futures::StreamExt;
-use reqwest::header::{HeaderMap, CONTENT_TYPE};
+use reqwest::header::HeaderMap;
 use url::Url;
 
-use super::{gate::ProfileGate, transport, BrowserError};
-use crate::runtime::source::http::challenge::{cf_header_challenge, html_body_challenge};
+use super::{gate::ProfileGate, BrowserError};
 use crate::runtime::source::retry::retry_after as retry_after_source;
 
+mod document;
 mod observer;
+use document::{bootstrap_events, navigation_deadline, DocumentState};
 pub(crate) use observer::start_observer;
-use observer::{is_main_document_for, load_observation, navigation_status, Observation};
+use observer::{load_observation, Observation};
 
 /// Chromium reports `net::ERR_ABORTED` for a request the browser itself
 /// superseded, which includes the original document of a redirect chain. The
@@ -52,48 +49,12 @@ pub(crate) async fn bootstrap(
         .await
         .map_err(|_| BrowserError::Transport)?
         .ok_or(BrowserError::Unavailable)?;
-    let mut requests = page
-        .event_listener::<EventRequestWillBeSent>()
-        .await
-        .map_err(|_| BrowserError::Transport)?;
-    let mut responses = page
-        .event_listener::<EventResponseReceived>()
-        .await
-        .map_err(|_| BrowserError::Transport)?;
-    let mut finished = page
-        .event_listener::<EventLoadingFinished>()
-        .await
-        .map_err(|_| BrowserError::Transport)?;
-    let mut failures = page
-        .event_listener::<EventLoadingFailed>()
-        .await
-        .map_err(|_| BrowserError::Transport)?;
+    let mut events = bootstrap_events(page).await?;
 
     let navigation = page.goto(NavigateParams::new(target.to_string()));
     tokio::pin!(navigation);
-    let now = Instant::now();
-    let deadline = match now.checked_add(timeout) {
-        Some(value) => value,
-        // A deadline the platform clock cannot represent must not panic;
-        // bound it to the longest representable fallback instead.
-        None => now.checked_add(Duration::from_secs(300)).unwrap_or(now),
-    };
-    let mut navigation_done = false;
-
-    let mut latest_request_id: Option<RequestId> = None;
-    let mut document_id: Option<RequestId> = None;
-    let mut observation = Observation {
-        url: target.to_string(),
-        status: None,
-        headers: HeaderMap::new(),
-        challenged: false,
-        body_challenged: false,
-        body_complete: false,
-        failed: false,
-        denied: false,
-    };
-    let mut pending_response: Option<Arc<EventResponseReceived>> = None;
-    let mut pending_finished: Option<RequestId> = None;
+    let deadline = navigation_deadline(Instant::now(), timeout);
+    let mut state = DocumentState::new(target.to_string());
 
     loop {
         let remaining = deadline.saturating_duration_since(Instant::now());
@@ -102,96 +63,33 @@ pub(crate) async fn bootstrap(
         }
         tokio::select! {
             biased;
-            result = &mut navigation, if !navigation_done => {
+            result = &mut navigation, if !state.navigated() => {
                 result.map_err(|_| BrowserError::Transport)?;
-                navigation_done = true;
+                state.mark_navigated();
             }
-            event = requests.next() => {
+            event = events.requests.next() => {
                 let Some(event) = event else { return Err(BrowserError::Transport); };
-                if is_main_document_for(&event, &main_frame) {
-                    let id = event.request_id.clone();
-                    latest_request_id = Some(id.clone());
-                    document_id = Some(id.clone());
-                    observation.url = event.request.url.clone();
-                    observation.status = None;
-                    observation.headers = HeaderMap::new();
-                    observation.challenged = false;
-                    observation.body_challenged = false;
-                    observation.body_complete = false;
-                    observation.failed = false;
-                    pending_response.take();
-                    if pending_finished.as_ref() == Some(&id) {
-                        let body = transport::capture_body(page, id.clone()).await?;
-                        let media_type = observation
-                            .headers
-                            .get(CONTENT_TYPE)
-                            .and_then(|value| value.to_str().ok())
-                            .map_or("", |value| value);
-                        observation.body_challenged = html_body_challenge(media_type, &body);
-                        observation.body_complete = true;
-                    }
-                }
+                state.on_request(page, &event, &main_frame).await?;
             }
-            event = responses.next() => {
+            event = events.responses.next() => {
                 let Some(event) = event else { return Err(BrowserError::Transport); };
-                if let Some(latest) = &latest_request_id {
-                    if latest != &event.request_id {
-                        continue;
-                    }
-                }
-                if document_id.as_ref() == Some(&event.request_id) {
-                    observation.status = Some(navigation_status(event.response.status)?);
-                    observation.headers = transport::response_headers(&event)?;
-                    observation.challenged = cf_header_challenge(&observation.headers);
-                    if observation.challenged {
-                        gate.revoke();
-                    }
-                } else if document_id.is_none() {
-                    pending_response = Some(event);
-                }
+                state.on_response(event, &gate)?;
             }
-            event = finished.next() => {
+            event = events.finished.next() => {
                 let Some(event) = event else { return Err(BrowserError::Transport); };
-                if let Some(latest) = &latest_request_id {
-                    if latest != &event.request_id {
-                        continue;
-                    }
-                }
-                if document_id.as_ref() == Some(&event.request_id) {
-                    let body = transport::capture_body(page, event.request_id.clone()).await?;
-                    let media_type = observation
-                        .headers
-                        .get(CONTENT_TYPE)
-                        .and_then(|value| value.to_str().ok())
-                        .map_or("", |value| value);
-                    observation.body_challenged = html_body_challenge(media_type, &body);
-                    observation.body_complete = true;
-                } else if document_id.is_none() {
-                    pending_finished = Some(event.request_id.clone());
-                }
+                state.on_finished(page, event).await?;
             }
-            event = failures.next() => {
+            event = events.failures.next() => {
                 let Some(event) = event else { return Err(BrowserError::Transport); };
-                if let Some(latest) = &latest_request_id {
-                    if latest != &event.request_id {
-                        continue;
-                    }
-                }
-                if document_id.as_ref() == Some(&event.request_id) {
-                    if event.error_text == REDIRECT_ABORT || event.canceled == Some(true) {
-                        continue;
-                    }
-                    observation.failed = true;
-                    observation.body_complete = true;
-                }
+                state.on_failure(&event);
             }
             _ = tokio::time::sleep(remaining) => return Err(BrowserError::Timeout),
         }
-        if navigation_done && observation.status.is_some() && observation.body_complete {
+        if state.complete() {
             break;
         }
     }
-    classify_observation(observation, &gate)
+    classify_observation(state.into_observation(), &gate)
 }
 
 /// Inspect a page's current navigation state. Classifies outcome and

@@ -41,7 +41,7 @@ use crate::sources::AdapterContext;
 
 /// Host serving the WIAA school directory.
 pub const HOST: &str = "https://schools.wiaawi.org";
-/// Evidence/adapter slug used in [`SourceRef`](crate::model::SourceRef)s.
+/// Evidence/adapter slug used in [`SourceRef`](census_domain::model::SourceRef)s.
 pub const SOURCE_ID: &str = "wiaa_directory";
 /// Association slug carried by every school identity this adapter mints.
 pub const ASSOCIATION: &str = "wiaa";

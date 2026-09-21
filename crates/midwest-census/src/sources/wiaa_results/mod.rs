@@ -31,7 +31,7 @@ mod map;
 mod parse;
 mod run;
 
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, Sport,
 };
 use crate::sources::AdapterContext;

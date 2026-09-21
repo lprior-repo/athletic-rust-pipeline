@@ -33,50 +33,131 @@ pub(super) fn parse_result(
         "resultsXC"
     };
     let locator = format!("/{key}/{index}");
-    let result_id = required_u64(obj, "IDResult", &locator, context.digest, issues);
+    let joins = join_fields(obj, &locator, context, issues);
+    let (event_id, event_name, event_description, event_type, units, personal_event) =
+        event_info(obj, context, &locator, issues);
+    let mark = mark_field(obj, &locator, context, issues);
+    let short_code = short_code_field(obj, &locator, context, issues);
+    let result_url = result_link(&short_code, joins.reported, personal_event, joins.meet_id);
+    Some(ResultEvidence {
+        result_id: joins.result_id,
+        sport: context.sport,
+        event_id,
+        event_name,
+        event_description,
+        event_type,
+        mark,
+        units,
+        season: joins.season,
+        team_id: joins.team_id,
+        meet_id: joins.meet_id,
+        meet_name: optional_text(obj.get("meetName"))
+            .or_else(|| context.meets.get(&joins.meet_id).cloned().flatten()),
+        date: optional_text(obj.get("ResultDate")),
+        wind: optional_display(obj.get("Wind")),
+        timing: timing(obj.get("FAT")),
+        personal_best: best_claim(obj.get("PersonalBest"), context.sport),
+        season_best: best_claim(obj.get("SeasonBest"), context.sport),
+        attribution: attribution(
+            context.athlete,
+            joins.reported,
+            personal_event,
+            context.relays,
+        ),
+        short_code,
+        result_url,
+        evidence: ev(context.digest, locator),
+    })
+}
+
+/// Result identifiers plus the team and meet joins they must satisfy.
+struct ResultJoins {
+    result_id: u64,
+    reported: Option<u64>,
+    season: u16,
+    team_id: u64,
+    meet_id: u64,
+}
+
+fn join_fields(
+    obj: &Map<String, Value>,
+    locator: &str,
+    context: &ResultContext<'_>,
+    issues: &mut Vec<EvidenceIssue>,
+) -> ResultJoins {
+    let result_id = required_u64(obj, "IDResult", locator, context.digest, issues);
     let reported = obj
         .get("AthleteID")
         .and_then(Value::as_u64)
         .filter(|value| bounded_id(*value));
-    let season = required_u16(obj, "SeasonID", &locator, context.digest, issues);
-    let team_id = obj
-        .get("SchoolID")
+    let season = required_u16(obj, "SeasonID", locator, context.digest, issues);
+    let team_id = bounded_u64(obj, "SchoolID");
+    let meet_id = bounded_u64(obj, "MeetID");
+    join_issues(team_id, meet_id, locator, context, issues);
+    ResultJoins {
+        result_id,
+        reported,
+        season,
+        team_id,
+        meet_id,
+    }
+}
+
+fn bounded_u64(obj: &Map<String, Value>, key: &str) -> u64 {
+    obj.get(key)
         .and_then(Value::as_u64)
         .filter(|value| bounded_id(*value))
-        .map_or(0, |value| value);
-    let meet_id = obj
-        .get("MeetID")
-        .and_then(Value::as_u64)
-        .filter(|value| bounded_id(*value))
-        .map_or(0, |value| value);
+        .map_or(0, |value| value)
+}
+
+fn join_issues(
+    team_id: u64,
+    meet_id: u64,
+    locator: &str,
+    context: &ResultContext<'_>,
+    issues: &mut Vec<EvidenceIssue>,
+) {
     if team_id == 0 || !context.teams.contains(&team_id) {
         issues.push(issue(
             "missing_team_join",
             "result SchoolID does not join allTeams",
-            Some(ev(context.digest, locator.clone())),
+            Some(ev(context.digest, locator.to_owned())),
         ));
     }
     if meet_id == 0 || !context.meets.contains_key(&meet_id) {
         issues.push(issue(
             "missing_meet_join",
             "result MeetID does not join meets",
-            Some(ev(context.digest, locator.clone())),
+            Some(ev(context.digest, locator.to_owned())),
         ));
     }
-    let (event_id, event_name, event_description, event_type, units, personal_event) =
-        event_info(obj, context, &locator, issues);
-    let mark = obj
-        .get("Result")
+}
+
+fn mark_field(
+    obj: &Map<String, Value>,
+    locator: &str,
+    context: &ResultContext<'_>,
+    issues: &mut Vec<EvidenceIssue>,
+) -> String {
+    obj.get("Result")
         .filter(|value| !value.is_null())
         .map(display_value)
         .unwrap_or_else(|| {
             issues.push(issue(
                 "missing_result_mark",
                 "result has no Result display mark",
-                Some(ev(context.digest, locator.clone())),
+                Some(ev(context.digest, locator.to_owned())),
             ));
             String::new()
-        });
+        })
+}
+
+fn short_code_field(
+    obj: &Map<String, Value>,
+    locator: &str,
+    context: &ResultContext<'_>,
+    issues: &mut Vec<EvidenceIssue>,
+) -> Option<String> {
     let short_code = obj
         .get("shortCode")
         .and_then(Value::as_str)
@@ -87,37 +168,23 @@ pub(super) fn parse_result(
         issues.push(issue(
             "missing_short_code",
             "result has no valid shortCode",
-            Some(ev(context.digest, locator.clone())),
+            Some(ev(context.digest, locator.to_owned())),
         ));
     }
-    let result_url = short_code
+    short_code
+}
+
+/// Only a reported athlete in a personal event at a known meet gets a result link.
+fn result_link(
+    short_code: &Option<String>,
+    reported: Option<u64>,
+    personal_event: bool,
+    meet_id: u64,
+) -> Option<String> {
+    short_code
         .as_ref()
         .filter(|_| reported.is_some_and(|value| value > 0) && personal_event && meet_id > 0)
-        .map(|code| format!("http://www.athletic.net/result/{code}"));
-    Some(ResultEvidence {
-        result_id,
-        sport: context.sport,
-        event_id,
-        event_name,
-        event_description,
-        event_type,
-        mark,
-        units,
-        season,
-        team_id,
-        meet_id,
-        meet_name: optional_text(obj.get("meetName"))
-            .or_else(|| context.meets.get(&meet_id).cloned().flatten()),
-        date: optional_text(obj.get("ResultDate")),
-        wind: optional_display(obj.get("Wind")),
-        timing: timing(obj.get("FAT")),
-        personal_best: best_claim(obj.get("PersonalBest"), context.sport),
-        season_best: best_claim(obj.get("SeasonBest"), context.sport),
-        attribution: attribution(context.athlete, reported, personal_event, context.relays),
-        short_code,
-        result_url,
-        evidence: ev(context.digest, locator),
-    })
+        .map(|code| format!("http://www.athletic.net/result/{code}"))
 }
 fn event_info(
     obj: &Map<String, Value>,

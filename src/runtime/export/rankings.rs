@@ -3,7 +3,9 @@ use crate::{
     domain::identity::EvidenceDigest,
     runtime::{
         identity::fingerprint,
-        rankings_collection::{collection_fingerprint, CollectionFinalSnapshot},
+        rankings_collection::{
+            collection_fingerprint, CollectionFinalSnapshot, RankingCollectionRef,
+        },
         run_protocol::{RunProgress, SourceSnapshot},
     },
     store::ArtifactStore,
@@ -55,13 +57,25 @@ pub(super) fn coverage(
     let Some(bound) = &progress.collection_ref else {
         return Ok(Some(result));
     };
-    if bound.collection != collection
-        || store.ranking_snapshot(&collection)?.as_ref() != Some(&bound.snapshot)
+    seal_coverage(store, progress, bound, &collection, &mut result)?;
+    Ok(Some(result))
+}
+
+/// Validates the sealed collection the export binds and fills in its relay counters.
+fn seal_coverage(
+    store: &ArtifactStore,
+    progress: &RunProgress,
+    bound: &RankingCollectionRef,
+    collection: &EvidenceDigest,
+    result: &mut RankingsExportCoverage,
+) -> Result<()> {
+    if bound.collection != *collection
+        || store.ranking_snapshot(collection)?.as_ref() != Some(&bound.snapshot)
     {
         bail!("export collection differs from the source snapshot or immutable seal");
     }
     let final_snapshot: CollectionFinalSnapshot = load_json(store, &bound.snapshot)?;
-    if final_snapshot.collection != collection
+    if final_snapshot.collection != *collection
         || final_snapshot.source_snapshot != progress.request.snapshot
         || fingerprint(&final_snapshot.scope)? != result.scope_fingerprint
     {
@@ -74,7 +88,7 @@ pub(super) fn coverage(
             count
                 .checked_add(
                     store
-                        .ranking_event_stats(&collection, &event.event_short)?
+                        .ranking_event_stats(collection, &event.event_short)?
                         .unresolved_roster_results,
                 )
                 .context("relay roster count overflow")
@@ -95,5 +109,5 @@ pub(super) fn coverage(
     result.absent_families = final_snapshot.coverage.absent_families;
     result.unique_athletes = Some(final_snapshot.unique_athletes);
     result.unresolved_roster_results = Some(missing);
-    Ok(Some(result))
+    Ok(())
 }

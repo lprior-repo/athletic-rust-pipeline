@@ -53,7 +53,7 @@ pub struct Options {
 // The moved test module reaches these through `use super::*`; no production path in this
 // file needs them, so they are bound for tests only instead of widening their visibility.
 #[cfg(test)]
-use crate::model::{normalize_name, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport};
+use census_domain::model::{normalize_name, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport};
 
 #[cfg(test)]
 mod tests;

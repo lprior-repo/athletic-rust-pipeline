@@ -7,7 +7,7 @@
 
 use super::parse::{clean_text, nonempty, without_comments};
 use super::NSAA_FORM_URL;
-use crate::model::{Gender, Sport};
+use census_domain::model::{Gender, Sport};
 use anyhow::Result;
 use regex::Regex;
 use std::sync::LazyLock;

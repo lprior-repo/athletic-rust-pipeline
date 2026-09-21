@@ -1,4 +1,4 @@
-use crate::model::{CompetitionLevel, SchoolYear, Sport};
+use census_domain::model::{CompetitionLevel, SchoolYear, Sport};
 
 /// Classify an artifact by what the platform can do with it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -96,16 +96,9 @@ fn attach_team(
     observation: TeamObservation,
     complete: &mut bool,
 ) -> ProfileEvidence {
-    if !profile.documents.contains(&observation.evidence.document) {
-        profile
-            .documents
-            .push(observation.evidence.document.clone());
-    }
-    let joined = profile
-        .teams
-        .iter()
-        .filter(|team| team.team_id == observation.requested.team_id);
-    if joined.clone().next().is_none() {
+    retain_team_document(&mut profile, &observation);
+    let (has_history, name_conflict, location_conflict) = team_join_state(&profile, &observation);
+    if !has_history {
         profile.issues.push(EvidenceIssue {
             code: "team_history_join_missing".to_owned(),
             message: "TeamNav response has no matching bio team history".to_owned(),
@@ -113,6 +106,41 @@ fn attach_team(
         });
         *complete = false;
         return profile;
+    }
+    record_team_conflicts(&mut profile, &observation, name_conflict, location_conflict);
+    *complete &= !name_conflict && !location_conflict;
+    profile.teams.push(TeamEvidence {
+        team_id: observation.requested.team_id,
+        name: Observed {
+            value: observation.name,
+            evidence: observation.evidence.clone(),
+        },
+        location: observation.location.map(|value| Observed {
+            value,
+            evidence: observation.evidence,
+        }),
+        seasons: vec![observation.requested.season],
+        level: observation.level,
+    });
+    profile
+}
+
+fn retain_team_document(profile: &mut ProfileEvidence, observation: &TeamObservation) {
+    if !profile.documents.contains(&observation.evidence.document) {
+        profile
+            .documents
+            .push(observation.evidence.document.clone());
+    }
+}
+
+/// Whether the observation joins the retained team history, and its two conflict verdicts.
+fn team_join_state(profile: &ProfileEvidence, observation: &TeamObservation) -> (bool, bool, bool) {
+    let joined = profile
+        .teams
+        .iter()
+        .filter(|team| team.team_id == observation.requested.team_id);
+    if joined.clone().next().is_none() {
+        return (false, false, false);
     }
     let name_conflict = joined
         .clone()
@@ -124,6 +152,15 @@ fn attach_team(
                 .is_some_and(|known| !known.value.compatible_with(location))
         })
     });
+    (true, name_conflict, location_conflict)
+}
+
+fn record_team_conflicts(
+    profile: &mut ProfileEvidence,
+    observation: &TeamObservation,
+    name_conflict: bool,
+    location_conflict: bool,
+) {
     [
         (
             name_conflict,
@@ -145,19 +182,4 @@ fn attach_team(
             evidence: Some(observation.evidence.clone()),
         });
     });
-    *complete &= !name_conflict && !location_conflict;
-    profile.teams.push(TeamEvidence {
-        team_id: observation.requested.team_id,
-        name: Observed {
-            value: observation.name,
-            evidence: observation.evidence.clone(),
-        },
-        location: observation.location.map(|value| Observed {
-            value,
-            evidence: observation.evidence,
-        }),
-        seasons: vec![observation.requested.season],
-        level: observation.level,
-    });
-    profile
 }

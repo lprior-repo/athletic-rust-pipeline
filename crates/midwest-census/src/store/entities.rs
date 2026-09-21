@@ -1,7 +1,7 @@
 //! `Entity` for the canonical types: the id a row is keyed by, and how a duplicate observation is
 //! absorbed at read time.
 
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam,
 };
@@ -85,7 +85,7 @@ impl Entity for CanonicalCoach {
         let Some(email) = self.professional_email.as_deref() else {
             return;
         };
-        match crate::model::professional_email(email) {
+        match census_domain::model::professional_email(email) {
             Some(published) if published == email => {}
             Some(published) => self.professional_email = Some(published),
             None => {
@@ -124,13 +124,13 @@ impl Entity for CanonicalAthlete {
             .iter()
             .any(|observation| observation.grad_year() != self.grad_year)
         {
-            self.identity_confidence = crate::model::Confidence::LOW;
+            self.identity_confidence = census_domain::model::Confidence::LOW;
         } else if self
             .observed_grades
             .iter()
             .any(|observation| observation.grad_year() == self.grad_year)
         {
-            self.identity_confidence = crate::model::Confidence::HIGH;
+            self.identity_confidence = census_domain::model::Confidence::HIGH;
         }
     }
 }
@@ -147,7 +147,7 @@ impl Entity for CanonicalMeet {
         if self.end_date.is_none() {
             self.end_date = other.end_date;
         }
-        if self.level == crate::model::CompetitionLevel::Unknown {
+        if self.level == census_domain::model::CompetitionLevel::Unknown {
             self.level = other.level;
         }
         union_vec(&mut self.sports, &other.sports);

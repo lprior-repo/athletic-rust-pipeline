@@ -5,7 +5,7 @@
 //! school and a mark. Parsers differ only in how they read the vendor's markup; the adapter that
 //! mints canonical entities reads this one shape.
 
-use crate::model::{EventKind, Gender, Grade, Mark};
+use census_domain::model::{EventKind, Gender, Grade, Mark};
 
 /// One parsed result file.
 #[derive(Debug, Clone, PartialEq)]

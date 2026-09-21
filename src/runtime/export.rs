@@ -92,30 +92,15 @@ pub fn export_to(
         .map(|header| (*header).to_owned())
         .collect::<Vec<_>>();
     let mut workbook = WorkbookExport::new(&manifest, &headers)?;
-    let parent = publish::destination_parent(destination)?;
-    let mut temporary =
-        NamedTempFile::new_in(&parent).context("creating detail artifact temporary")?;
-    let mut coverage = initial_coverage(progress);
-    write_artifacts(
+    let (detail_sha256, coverage) = write_detail(
         store,
+        progress,
         &manifest,
         &reports,
         &mut workbook,
-        &mut temporary,
-        &mut coverage,
+        destination,
+        &detail_path,
     )?;
-    index::validate_export_coverage(
-        &coverage,
-        &progress.coverage,
-        reports.completed,
-        manifest.stats.actual_data_rows,
-    )?;
-    temporary
-        .as_file()
-        .sync_all()
-        .context("syncing detail artifact")?;
-    let detail_sha256 = publish::sha256_file(temporary.path())?;
-    publish::persist_detail(temporary, &detail_path, parent)?;
     let stats = workbook
         .finish(destination)
         .context("publishing workbook export")?;
@@ -135,6 +120,43 @@ pub fn export_to(
         completeness,
         rankings,
     })
+}
+
+/// Streams the detail artifact beside the destination, then seals it, hashing both files.
+fn write_detail(
+    store: &ArtifactStore,
+    progress: &RunProgress,
+    manifest: &SourceManifest,
+    reports: &index::ReportIndex,
+    workbook: &mut WorkbookExport,
+    destination: &Path,
+    detail_path: &Path,
+) -> Result<(String, ExportCoverage)> {
+    let parent = publish::destination_parent(destination)?;
+    let mut temporary =
+        NamedTempFile::new_in(&parent).context("creating detail artifact temporary")?;
+    let mut coverage = initial_coverage(progress);
+    write_artifacts(
+        store,
+        manifest,
+        reports,
+        workbook,
+        &mut temporary,
+        &mut coverage,
+    )?;
+    index::validate_export_coverage(
+        &coverage,
+        &progress.coverage,
+        reports.completed,
+        manifest.stats.actual_data_rows,
+    )?;
+    temporary
+        .as_file()
+        .sync_all()
+        .context("syncing detail artifact")?;
+    let detail_sha256 = publish::sha256_file(temporary.path())?;
+    publish::persist_detail(temporary, detail_path, parent)?;
+    Ok((detail_sha256, coverage))
 }
 
 fn initial_coverage(progress: &RunProgress) -> ExportCoverage {

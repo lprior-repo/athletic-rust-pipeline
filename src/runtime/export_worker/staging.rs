@@ -59,28 +59,7 @@ pub(super) fn stage_export(
         &snapshot.page_digests,
         &xlsx_path,
     )?;
-    let manifest: SourceManifest = decode_manifest(&runtime, &snapshot.progress)?;
-    let headers = EXPORT_HEADERS
-        .iter()
-        .map(|header| (*header).to_owned())
-        .collect::<Vec<_>>();
-    let verification = verify_bundle(
-        &manifest.original,
-        &xlsx_path,
-        &manifest.workbook,
-        &headers,
-        &runtime.store,
-    )
-    .context("independently verifying staged workbook and result evidence")?;
-    let results = &verification.results;
-    if results.total_rows != report.coverage.source_rows
-        || results.accepted_rows != report.coverage.accepted_rows
-        || results.review_rows != report.coverage.review_rows
-        || results.no_match_rows != report.coverage.no_match_rows
-        || results.pending_rows != report.coverage.pending_rows
-    {
-        bail!("independent result counts differ from export coverage");
-    }
+    let verification = verify_staged(&runtime, &snapshot.progress, &xlsx_path, &report)?;
     let xlsx_sha256 = sha256_file(&xlsx_path)?;
     let detail_sha256 = sha256_file(&detail_path)?;
     let directory = temporary.keep();
@@ -95,6 +74,38 @@ pub(super) fn stage_export(
         report,
         verification,
     })
+}
+
+/// Re-verifies the staged workbook against the manifest and the export's own coverage counts.
+fn verify_staged(
+    runtime: &Runtime,
+    progress: &RunProgress,
+    xlsx_path: &Path,
+    report: &ExportReport,
+) -> Result<BundleVerificationReport> {
+    let manifest: SourceManifest = decode_manifest(runtime, progress)?;
+    let headers = EXPORT_HEADERS
+        .iter()
+        .map(|header| (*header).to_owned())
+        .collect::<Vec<_>>();
+    let verification = verify_bundle(
+        &manifest.original,
+        xlsx_path,
+        &manifest.workbook,
+        &headers,
+        &runtime.store,
+    )
+    .context("independently verifying staged workbook and result evidence")?;
+    let results = &verification.results;
+    if results.total_rows != report.coverage.source_rows
+        || results.accepted_rows != report.coverage.accepted_rows
+        || results.review_rows != report.coverage.review_rows
+        || results.no_match_rows != report.coverage.no_match_rows
+        || results.pending_rows != report.coverage.pending_rows
+    {
+        bail!("independent result counts differ from export coverage");
+    }
+    Ok(verification)
 }
 
 fn decode_manifest(runtime: &Runtime, progress: &RunProgress) -> Result<SourceManifest> {

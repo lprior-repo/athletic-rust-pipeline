@@ -1,5 +1,5 @@
 use super::headers::parse_headers;
-use super::stream::{cell_event, CellRows, Row};
+use super::stream::{cell_event, CellEvent, CellRows, Row};
 use super::{SheetCounts, MAX_EXCEL_ROW};
 use anyhow::{bail, Context, Result};
 use calamine::Xlsx;
@@ -35,6 +35,35 @@ where
     };
     let mut source_rows = CellRows::new(source_next);
     let mut output_rows = CellRows::new(output_next);
+    let (source_width, output_width, mut counts) = verify_headers(
+        &mut source_rows,
+        &mut output_rows,
+        extra_headers,
+        source_header_bytes,
+        output_header_bytes,
+    )?;
+    compare_rows(
+        &mut source_rows,
+        &mut output_rows,
+        source_width,
+        output_width,
+        &mut counts,
+    )?;
+    Ok(counts)
+}
+
+/// Reads both header rows and validates the output header layout and total width.
+fn verify_headers<SF, OF>(
+    source_rows: &mut CellRows<SF>,
+    output_rows: &mut CellRows<OF>,
+    extra_headers: &[String],
+    source_header_bytes: &mut usize,
+    output_header_bytes: &mut usize,
+) -> Result<(usize, usize, SheetCounts)>
+where
+    SF: FnMut() -> Result<Option<CellEvent>>,
+    OF: FnMut() -> Result<Option<CellEvent>>,
+{
     let source_header = source_rows
         .next()
         .transpose()?
@@ -64,7 +93,7 @@ where
     {
         bail!("supplied extra header collides with a source header");
     }
-    let mut counts = SheetCounts {
+    let counts = SheetCounts {
         source_headers: u64::try_from(source_headers.len())
             .context("source header count conversion overflow")?,
         output_headers: u64::try_from(output_headers.len())
@@ -73,18 +102,27 @@ where
             .context("matched header count conversion overflow")?,
         ..SheetCounts::default()
     };
+    Ok((source_headers.len(), output_headers.len(), counts))
+}
+
+/// Walks both sheets in lockstep, comparing every data row.
+fn compare_rows<SF, OF>(
+    source_rows: &mut CellRows<SF>,
+    output_rows: &mut CellRows<OF>,
+    source_width: usize,
+    output_width: usize,
+    counts: &mut SheetCounts,
+) -> Result<()>
+where
+    SF: FnMut() -> Result<Option<CellEvent>>,
+    OF: FnMut() -> Result<Option<CellEvent>>,
+{
     loop {
         match (source_rows.next(), output_rows.next()) {
             (Some(source), Some(output)) => {
                 let source = source?;
                 let output = output?;
-                compare_row(
-                    &source,
-                    &output,
-                    source_headers.len(),
-                    output_headers.len(),
-                    &mut counts,
-                )?;
+                compare_row(&source, &output, source_width, output_width, counts)?;
             }
             (Some(source), None) => {
                 source?;
@@ -97,7 +135,7 @@ where
             (None, None) => break,
         }
     }
-    Ok(counts)
+    Ok(())
 }
 
 fn compare_row(
@@ -125,6 +163,21 @@ fn compare_row(
     {
         bail!("output worksheet contains a field outside its declared headers");
     }
+    add_row_counts(counts, source_width)?;
+    let columns = u32::try_from(source_width).context("source field column count overflow")?;
+    (0..columns).try_for_each(|column| {
+        let expected = source.cells.get(&column).map_or("", String::as_str);
+        let actual = output.cells.get(&column).map_or("", String::as_str);
+        if expected == actual {
+            Ok(())
+        } else {
+            bail!("source field differs at worksheet row and column")
+        }
+    })
+}
+
+/// Counts one matched row and its source fields into the running totals.
+fn add_row_counts(counts: &mut SheetCounts, source_width: usize) -> Result<()> {
     counts.source_rows = counts
         .source_rows
         .checked_add(1)
@@ -150,14 +203,5 @@ fn compare_row(
         .matched_fields
         .checked_add(width)
         .context("matched field count overflow")?;
-    let columns = u32::try_from(source_width).context("source field column count overflow")?;
-    (0..columns).try_for_each(|column| {
-        let expected = source.cells.get(&column).map_or("", String::as_str);
-        let actual = output.cells.get(&column).map_or("", String::as_str);
-        if expected == actual {
-            Ok(())
-        } else {
-            bail!("source field differs at worksheet row and column")
-        }
-    })
+    Ok(())
 }

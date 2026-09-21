@@ -1,4 +1,4 @@
-use crate::model::{CoachRole, Gender, Sport};
+use census_domain::model::{CoachRole, Gender, Sport};
 use serde::Deserialize;
 
 use super::text::clean;

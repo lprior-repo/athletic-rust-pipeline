@@ -29,7 +29,7 @@
 mod common;
 
 use anyhow::{bail, ensure, Context, Result};
-use midwest_census::model::{
+use census_domain::model::{
     CanonicalCoach, CanonicalSchool, EventKind, Gender, Grade, Mark, SourceRef,
 };
 use midwest_census::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};

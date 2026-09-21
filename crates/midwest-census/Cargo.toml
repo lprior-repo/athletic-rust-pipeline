@@ -18,6 +18,7 @@ path = "src/bin/midwest-serve.rs"
 
 [dependencies]
 anyhow = "1"
+census-domain = { path = "../census-domain" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap = { version = "4.5", features = ["derive"] }
 csv = "1"

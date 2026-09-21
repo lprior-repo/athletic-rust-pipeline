@@ -1,7 +1,7 @@
 //! Read path: prefix iteration over the entities keyspace, the merging scan, consolidation to
 //! JSONL, store statistics and the journal reads that back a resumed run.
 
-use crate::model::{
+use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam,
 };

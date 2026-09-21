@@ -120,16 +120,7 @@ impl PageObserver {
         let cancelled = self.stop.cancelled();
         tokio::pin!(cancelled);
         let mut latest_request_id: Option<RequestId> = None;
-        let mut observation = Observation {
-            url: String::new(),
-            status: None,
-            headers: HeaderMap::new(),
-            challenged: false,
-            body_challenged: false,
-            body_complete: false,
-            failed: false,
-            denied: false,
-        };
+        let mut observation = empty_observation(String::new());
         let mut body_futures = FuturesUnordered::new();
         loop {
             tokio::select! {
@@ -137,68 +128,30 @@ impl PageObserver {
                 _ = &mut cancelled => return Ok(()),
                 event = self.requests.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if !is_main_document_for(&event, &self.main_frame) {
-                        continue;
-                    }
-                    let id = event.request_id.clone();
-                    latest_request_id = Some(id.clone());
+                    if !is_main_document_for(&event, &self.main_frame) { continue; }
+                    latest_request_id = Some(event.request_id.clone());
                     observation = empty_observation(event.request.url.clone());
                     body_futures.clear();
                 }
                 event = self.responses.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if let Some(latest) = &latest_request_id {
-                        if latest != &event.request_id {
-                            continue;
-                        }
-                    }
-                    if latest_request_id.as_ref() == Some(&event.request_id) {
-                        observation.status = Some(navigation_status(event.response.status)?);
-                        observation.headers = transport::response_headers(&event)?;
-                        // Observe API denials during browser navigation.
-                        if let Some(status) = observation.status {
-                            if status == 403 || status == 429 {
-                                observation.denied = true;
-                                self.gate.revoke();
-                            }
-                        }
-                        observation.challenged = cf_header_challenge(&observation.headers);
-                        if observation.challenged {
-                            self.gate.revoke();
-                        }
+                    if !is_current(&latest_request_id, &event.request_id) { continue; }
+                    if latest_request_id.is_some() {
+                        self.record_status(&mut observation, &event)?;
                     }
                 }
                 event = self.finished.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if let Some(latest) = &latest_request_id {
-                        if latest != &event.request_id {
-                            continue;
-                        }
-                    }
-                    if latest_request_id.as_ref() == Some(&event.request_id) {
-                        let page = self.page.clone();
+                    if !is_current(&latest_request_id, &event.request_id) { continue; }
+                    if latest_request_id.is_some() {
                         let id = event.request_id.clone();
-                        let fut = async move {
-                            let body_result = timeout(
-                                BODY_CAPTURE_TIMEOUT,
-                                transport::capture_body(&page, id.clone()),
-                            )
-                            .await
-                            .map_err(|_| BrowserError::Timeout)
-                            .and_then(|b| b);
-                            (id, body_result)
-                        };
-                        body_futures.push(fut);
+                        body_futures.push(capture_body_bounded(self.page.clone(), id));
                     }
                 }
                 event = self.failures.next() => {
                     let Some(event) = event else { return Err(BrowserError::Transport); };
-                    if let Some(latest) = &latest_request_id {
-                        if latest != &event.request_id {
-                            continue;
-                        }
-                    }
-                    if latest_request_id.as_ref() == Some(&event.request_id) {
+                    if !is_current(&latest_request_id, &event.request_id) { continue; }
+                    if latest_request_id.is_some() {
                         if event.error_text == REDIRECT_ABORT || event.canceled == Some(true) {
                             continue;
                         }
@@ -215,30 +168,73 @@ impl PageObserver {
                         continue;
                     }
                     match body_result {
-                        Ok(body) => {
-                            observation.body_challenged =
-                                html_body_challenge(
-                                    observation
-                                        .headers
-                                        .get(CONTENT_TYPE)
-                                        .and_then(|v| v.to_str().ok())
-                                        .map_or("", |v| v),
-                                    &body,
-                                );
-                            if observation.body_challenged {
-                                self.gate.revoke();
-                            }
-                            observation.body_complete = true;
-                            store_observation(&self.page, observation.clone())?;
-                        }
-                        Err(e) => {
-                            tracing::debug!("body capture failed: {e}");
-                        }
+                        Ok(body) => self.record_body(&mut observation, &body)?,
+                        Err(e) => tracing::debug!("body capture failed: {e}"),
                     }
                 }
             }
         }
     }
+
+    /// Fold response headers into the tracked observation, revoking on denial
+    /// or header challenge.
+    fn record_status(
+        &self,
+        observation: &mut Observation,
+        event: &EventResponseReceived,
+    ) -> Result<(), BrowserError> {
+        observation.status = Some(navigation_status(event.response.status)?);
+        observation.headers = transport::response_headers(event)?;
+        // Observe API denials during browser navigation.
+        if let Some(status) = observation.status {
+            if status == 403 || status == 429 {
+                observation.denied = true;
+                self.gate.revoke();
+            }
+        }
+        observation.challenged = cf_header_challenge(&observation.headers);
+        if observation.challenged {
+            self.gate.revoke();
+        }
+        Ok(())
+    }
+
+    /// Fold a captured body into the tracked observation, revoking on challenge.
+    fn record_body(&self, observation: &mut Observation, body: &[u8]) -> Result<(), BrowserError> {
+        observation.body_challenged = html_body_challenge(
+            observation
+                .headers
+                .get(CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .map_or("", |value| value),
+            body,
+        );
+        if observation.body_challenged {
+            self.gate.revoke();
+        }
+        observation.body_complete = true;
+        store_observation(&self.page, observation.clone())
+    }
+}
+
+/// Capture one response body, bounded by the body-capture timeout.
+async fn capture_body_bounded(
+    page: Page,
+    id: RequestId,
+) -> (RequestId, Result<Vec<u8>, BrowserError>) {
+    let body_result = timeout(
+        BODY_CAPTURE_TIMEOUT,
+        transport::capture_body(&page, id.clone()),
+    )
+    .await
+    .map_err(|_| BrowserError::Timeout)
+    .and_then(|body| body);
+    (id, body_result)
+}
+
+/// True when the event belongs to the document the observer is tracking.
+pub(super) fn is_current(latest: &Option<RequestId>, event: &RequestId) -> bool {
+    latest.as_ref().is_none_or(|current| current == event)
 }
 
 pub(super) fn is_main_document_for(event: &EventRequestWillBeSent, main_frame: &FrameId) -> bool {

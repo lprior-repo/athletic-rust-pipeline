@@ -6,7 +6,7 @@
 //! `collect_milesplit` walks the requested states concurrently — one host's pacing discipline per
 //! state — failing only after reporting what completed first.
 
-use crate::model::{Gender, SchoolYear};
+use census_domain::model::{Gender, SchoolYear};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::store::{Store, Table};

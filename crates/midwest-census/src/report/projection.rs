@@ -8,7 +8,7 @@ use super::rows::{
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
 use super::{retain_core, Census, ProviderCoverage, Scope, StateCensus};
-use crate::model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear};
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear};
 use crate::store::{Store, Table};
 use anyhow::Result;
 use std::collections::{BTreeMap, HashMap};

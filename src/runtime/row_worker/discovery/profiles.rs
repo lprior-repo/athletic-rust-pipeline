@@ -85,85 +85,141 @@ pub(crate) async fn execute_profiles(
             snapshot: snapshot.clone(),
             athlete_id: id,
         };
-        let probe_digest = match identify(ctx, &job).await {
-            Ok(digest) => digest,
-            Err(error) if error.code() == 409 => return Err(error),
-            Err(error) => {
-                state.complete = false;
-                state.coverage.push(CandidateCoverage::Incomplete {
-                    athlete_id: id,
-                    probe: None,
-                    profile: None,
-                    issues: vec![format!("profile identify failed for {}: {error}", id.get())],
-                });
-                continue;
-            }
-        };
-        refs.push(probe_digest.clone());
-        let probe = match load_artifact::<ProfileProbe>(runtime.clone(), &probe_digest, state.bytes)
-            .await
-        {
-            Ok(ProfileLoad::Loaded { artifact, bytes }) => {
-                state.bytes = state.bytes.saturating_add(bytes);
-                artifact
-            }
-            Ok(ProfileLoad::Limited { bytes }) => {
-                state.complete = false;
-                state.coverage.push(CandidateCoverage::Incomplete {
-                    athlete_id: id,
-                    probe: Some(probe_digest),
-                    profile: None,
-                    issues: vec![format!("profile probe exceeds row budget at {bytes} bytes")],
-                });
-                continue;
-            }
-            Err(error) => {
-                state.complete = false;
-                state.coverage.push(CandidateCoverage::Incomplete {
-                    athlete_id: id,
-                    probe: Some(probe_digest),
-                    profile: None,
-                    issues: vec![format!("profile probe could not be decoded: {error}")],
-                });
-                continue;
-            }
-        };
-        let candidate_exclusion = exclusion(source_name.as_ref(), &probe);
-        state.probe_profiles.insert(id, probe.profiles);
-        if let Some(exclusion) = candidate_exclusion {
-            state.exclusions.push(exclusion);
-            let Some(source_name) = source_name.clone() else {
-                state.complete = false;
-                state
-                    .issues
-                    .push("source canonical name is missing".to_owned());
-                continue;
-            };
-            state.coverage.push(CandidateCoverage::NameExcluded {
-                athlete_id: id,
-                probe: probe_digest,
-                source_name,
-            });
+        let Some((probe_digest, probe)) =
+            load_probe(ctx, runtime.clone(), &job, id, &mut state, &mut refs).await?
+        else {
             continue;
-        }
-        let digest = match gather(ctx, &job).await {
-            Ok(digest) => digest,
-            Err(error) if error.code() == 409 => return Err(error),
-            Err(error) => {
-                state.complete = false;
-                state.coverage.push(CandidateCoverage::Incomplete {
-                    athlete_id: id,
-                    probe: Some(probe_digest),
-                    profile: None,
-                    issues: vec![format!("profile gather failed for {}: {error}", id.get())],
-                });
-                continue;
-            }
         };
-        refs.push(digest.clone());
-        add_full_profile(&mut state, id, probe_digest, digest, runtime.clone()).await;
+        let Some(probe_digest) =
+            record_probe(&mut state, source_name.as_ref(), id, probe_digest, probe)
+        else {
+            continue;
+        };
+        complete_profile(
+            ctx,
+            runtime.clone(),
+            &job,
+            id,
+            probe_digest,
+            &mut state,
+            &mut refs,
+        )
+        .await?;
     }
     Ok((state, refs))
+}
+
+/// Identifies one candidate and loads its probe artifact. `Ok(None)` records the row-level failure
+/// in `state` and leaves that candidate's acquisition incomplete; a cancelled lane aborts.
+async fn load_probe(
+    ctx: &ObjectContext<'_>,
+    runtime: Arc<Runtime>,
+    job: &ProfileJob,
+    id: AthleteId,
+    state: &mut ProfileState,
+    refs: &mut Vec<EvidenceDigest>,
+) -> std::result::Result<Option<(EvidenceDigest, Box<ProfileProbe>)>, TerminalError> {
+    let probe_digest = match identify(ctx, job).await {
+        Ok(digest) => digest,
+        Err(error) if error.code() == 409 => return Err(error),
+        Err(error) => {
+            state.complete = false;
+            state.coverage.push(CandidateCoverage::Incomplete {
+                athlete_id: id,
+                probe: None,
+                profile: None,
+                issues: vec![format!("profile identify failed for {}: {error}", id.get())],
+            });
+            return Ok(None);
+        }
+    };
+    refs.push(probe_digest.clone());
+    let probe = match load_artifact::<ProfileProbe>(runtime, &probe_digest, state.bytes).await {
+        Ok(ProfileLoad::Loaded { artifact, bytes }) => {
+            state.bytes = state.bytes.saturating_add(bytes);
+            artifact
+        }
+        Ok(ProfileLoad::Limited { bytes }) => {
+            state.complete = false;
+            state.coverage.push(CandidateCoverage::Incomplete {
+                athlete_id: id,
+                probe: Some(probe_digest),
+                profile: None,
+                issues: vec![format!("profile probe exceeds row budget at {bytes} bytes")],
+            });
+            return Ok(None);
+        }
+        Err(error) => {
+            state.complete = false;
+            state.coverage.push(CandidateCoverage::Incomplete {
+                athlete_id: id,
+                probe: Some(probe_digest),
+                profile: None,
+                issues: vec![format!("profile probe could not be decoded: {error}")],
+            });
+            return Ok(None);
+        }
+    };
+    Ok(Some((probe_digest, probe)))
+}
+
+/// Retains the probe and records a name exclusion when one applies. The returned digest is `None`
+/// exactly when the candidate needs no full profile acquisition.
+fn record_probe(
+    state: &mut ProfileState,
+    source_name: Option<&CanonicalName>,
+    id: AthleteId,
+    probe_digest: EvidenceDigest,
+    probe: Box<ProfileProbe>,
+) -> Option<EvidenceDigest> {
+    let candidate_exclusion = exclusion(source_name, &probe);
+    state.probe_profiles.insert(id, probe.profiles);
+    let Some(exclusion) = candidate_exclusion else {
+        return Some(probe_digest);
+    };
+    state.exclusions.push(exclusion);
+    let Some(source_name) = source_name.cloned() else {
+        state.complete = false;
+        state
+            .issues
+            .push("source canonical name is missing".to_owned());
+        return None;
+    };
+    state.coverage.push(CandidateCoverage::NameExcluded {
+        athlete_id: id,
+        probe: probe_digest,
+        source_name,
+    });
+    None
+}
+
+/// Gathers the full profile for one identified candidate and records it in `state`.
+async fn complete_profile(
+    ctx: &ObjectContext<'_>,
+    runtime: Arc<Runtime>,
+    job: &ProfileJob,
+    id: AthleteId,
+    probe_digest: EvidenceDigest,
+    state: &mut ProfileState,
+    refs: &mut Vec<EvidenceDigest>,
+) -> std::result::Result<(), TerminalError> {
+    let digest = match gather(ctx, job).await {
+        Ok(digest) => digest,
+        Err(error) if error.code() == 409 => return Err(error),
+        Err(error) => {
+            state.complete = false;
+            state.coverage.push(CandidateCoverage::Incomplete {
+                athlete_id: id,
+                probe: Some(probe_digest),
+                profile: None,
+                issues: vec![format!("profile gather failed for {}: {error}", id.get())],
+            });
+            return Ok(());
+        }
+    };
+    refs.push(digest.clone());
+    add_full_profile(state, id, probe_digest, digest, runtime).await;
+    Ok(())
 }
 
 fn exclusion(source: Option<&CanonicalName>, probe: &ProfileProbe) -> Option<NameExclusion> {

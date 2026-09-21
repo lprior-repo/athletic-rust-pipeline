@@ -1,6 +1,6 @@
 //! How a mark is compared: one measure per mark scale, and the direction that wins in it.
 
-use crate::model::Mark;
+use census_domain::model::Mark;
 
 /// How a mark is compared. Nothing crosses measures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

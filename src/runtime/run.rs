@@ -10,7 +10,7 @@ use super::{
 };
 use crate::domain::identity::EvidenceDigest;
 use restate_sdk::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{collections::BTreeMap, sync::Arc};
 
 mod results;
@@ -63,22 +63,14 @@ impl RunCoordinator {
         validate_snapshot(&self.runtime, &request)
             .await
             .map_err(terminal)?;
-        let manifest: SourceManifest = self
-            .runtime
-            .load_json(&request.manifest)
-            .await
-            .map_err(terminal)?;
+        let manifest: SourceManifest = self.load_digest(&request.manifest).await?;
         if manifest.ingestion_revision != INGESTION_REVISION {
             return Err(terminal(
                 "source manifest uses an incompatible ingestion revision",
             ));
         }
         // Load source snapshot to check for rankings scope
-        let snapshot: SourceSnapshot = self
-            .runtime
-            .load_json(&request.snapshot)
-            .await
-            .map_err(terminal)?;
+        let snapshot: SourceSnapshot = self.load_digest(&request.snapshot).await?;
         // Initialize Results/progress BEFORE collection wait
         let mut rows = SourceRows::new(&manifest, &request, None).map_err(terminal)?;
         let mut results = Results::new(
@@ -110,6 +102,14 @@ impl RunCoordinator {
         }
         drive(&ctx, &self.runtime, &request, (&mut rows, &mut results)).await?;
         Ok(Json(results.finish().await?))
+    }
+
+    /// Decodes one immutable run input from the runtime as a handler error.
+    async fn load_digest<T: DeserializeOwned + Send + 'static>(
+        &self,
+        digest: &EvidenceDigest,
+    ) -> Result<T, HandlerError> {
+        self.runtime.load_json(digest).await.map_err(terminal)
     }
 
     #[handler]

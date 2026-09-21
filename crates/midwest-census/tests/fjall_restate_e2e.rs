@@ -14,7 +14,7 @@
 //! external Restate server is needed, and no network traffic leaves the machine.
 
 use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
-use midwest_census::model::{
+use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
@@ -121,8 +121,8 @@ fn add_athlete(
     index: usize,
     slot: usize,
     school_id: &SchoolId,
-    team_id: &midwest_census::model::TeamId,
-    meet_id: &midwest_census::model::MeetId,
+    team_id: &census_domain::model::TeamId,
+    meet_id: &census_domain::model::MeetId,
 ) {
     let gender = if (index + slot).is_multiple_of(2) {
         Gender::Boys

@@ -34,19 +34,24 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
-use crate::model::CanonicalMeet;
+use census_domain::model::CanonicalMeet;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 
+mod batches;
 mod map;
 mod parse;
+mod targets;
 mod tokens;
 
-pub use map::{build_entities, meet_targets, BatchEntities, MeetSelection, MeetTarget};
+use batches::run_batches;
+
+pub use map::{build_entities, BatchEntities};
 pub use parse::{AthleteHit, HitTeam};
+pub use targets::{meet_targets, MeetSelection, MeetTarget};
 pub use tokens::{gender_from_token, grade_from_token, school_year_for_date, sport_for};
 
 /// Elasticsearch result window: `from + size` may not exceed this.
@@ -133,127 +138,28 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let mut stats = BatchStats::default();
     let (requests_before, cache_before) = stats_of(ctx).await;
 
-    while let Some(batch) = queue.pop_front() {
-        if let Some(limit) = options.limit {
-            if stats.meets >= limit {
-                break;
-            }
-        }
-        let ids: Vec<u64> = batch.iter().map(|t| t.athleticlive_meet_id).collect();
-        let mut from = 0usize;
-        let mut hits: Vec<AthleteHit> = Vec::new();
-        let mut total = 0usize;
-        loop {
-            let body = batch_query(&ids, from);
-            let outcome = ctx
-                .fetcher
-                .post_json(
-                    ENDPOINT,
-                    &body,
-                    &crate::net::FetchOptions {
-                        refresh: options.refresh,
-                        allow_not_found: false,
-                        headers: vec![("accept".to_string(), "application/json".to_string())],
-                    },
-                )
-                .await
-                .context("querying athleticlive athlete_list")?;
-            if outcome.status != 200 {
-                report.errors += 1;
-                report.note(format!(
-                    "batch of {} meets returned HTTP {} at offset {from}",
-                    ids.len(),
-                    outcome.status
-                ));
-                break;
-            }
-            let parsed: Value = outcome.json().context("parsing athlete_list response")?;
-            let page_total = parsed
-                .pointer("/hits/total/value")
-                .and_then(Value::as_u64)
-                .unwrap_or(0) as usize;
-            if from == 0 {
-                total = page_total;
-            }
-            let sources: Vec<Value> = parsed
-                .pointer("/hits/hits")
-                .and_then(Value::as_array)
-                .map(|hits| {
-                    hits.iter()
-                        .map(|hit| hit.get("_source").cloned().unwrap_or(Value::Null))
-                        .collect()
-                })
-                .unwrap_or_default();
-            let page: Vec<AthleteHit> = serde_json::from_value(Value::Array(sources))
-                .context("decoding athlete_list hits")?;
-            let fetched = page.len();
-            hits.extend(page);
-            from += fetched;
-            if fetched == 0 || from >= total || from + PAGE_SIZE > RESULT_WINDOW {
-                break;
-            }
-        }
+    run_batches(ctx, options, &by_id, &mut queue, &mut stats, &mut report).await?;
+    finish_run(
+        ctx,
+        options,
+        &stats,
+        &mut report,
+        requests_before,
+        cache_before,
+    )
+    .await;
+    Ok(report)
+}
 
-        // A batch whose total exceeds the Elasticsearch result window must be split: the missing
-        // rows are not recoverable by paging past 10,000.
-        if total > RESULT_WINDOW {
-            if batch.len() > 1 {
-                let (left, right) = batch.split_at(batch.len() / 2);
-                queue.push_front(right.to_vec());
-                queue.push_front(left.to_vec());
-                stats.splits += 1;
-                report.note(format!(
-                    "split a {}-meet batch ({} rows exceeds the {}-row result window)",
-                    batch.len(),
-                    total,
-                    RESULT_WINDOW
-                ));
-                continue;
-            }
-            // Every larger batch was split and re-queued above, so exactly one meet remains here.
-            let Some(target) = batch.first() else {
-                continue;
-            };
-            report.note(format!(
-                "meet {} alone has {} rows: only {} were retrievable in one result window",
-                target.athleticlive_meet_id, total, RESULT_WINDOW
-            ));
-        }
-
-        if hits.is_empty() {
-            for target in &batch {
-                ctx.store.journal_done(
-                    "athleticlive_rosters",
-                    &target.athleticlive_meet_id.to_string(),
-                    &json!({ "meet": target.name, "rows": 0 }),
-                )?;
-            }
-            stats.meets += batch.len();
-            continue;
-        }
-
-        let entities = build_entities(&hits, &by_id, &options.observed_on, ctx.school_year);
-        ctx.store.append_many(Table::Schools, &entities.schools)?;
-        ctx.store.append_many(Table::Teams, &entities.teams)?;
-        ctx.store.append_many(Table::Athletes, &entities.athletes)?;
-        for target in &batch {
-            ctx.store.journal_done(
-                "athleticlive_rosters",
-                &target.athleticlive_meet_id.to_string(),
-                &json!({ "meet": target.name, "batch_rows": hits.len() }),
-            )?;
-        }
-        stats.meets += batch.len();
-        stats.rows += entities.rows;
-        stats.athletes += entities.athletes.len();
-        stats.schools += entities.schools.len();
-        stats.teams += entities.teams.len();
-        stats.rows_with_grade += entities.rows_with_grade;
-        stats.rows_with_athlete_id += entities.rows_with_athlete_id;
-        stats.rows_with_team_id += entities.rows_with_team_id;
-        stats.rows_without_school += entities.rows_without_school;
-    }
-
+/// Read the fetcher totals after the walk and note what the run produced.
+async fn finish_run(
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    stats: &BatchStats,
+    report: &mut AdapterReport,
+    requests_before: u64,
+    cache_before: u64,
+) {
     let (requests_after, cache_after) = stats_of(ctx).await;
     report.rows = stats.athletes as u64;
     report.requests = requests_after.saturating_sub(requests_before);
@@ -273,7 +179,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     if !options.states.is_empty() {
         report.note(format!("state filter: {}", options.states.join(",")));
     }
-    Ok(report)
 }
 
 #[derive(Debug, Default)]

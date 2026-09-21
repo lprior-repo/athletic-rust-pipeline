@@ -4,7 +4,7 @@ use serde_json::{Map, Value};
 use std::collections::BTreeMap;
 
 use crate::domain::evidence::{EvidenceIssue, GradeAtSeason, Observed, TeamEvidence};
-use crate::domain::facts::SchoolName;
+use crate::domain::facts::{Location, SchoolName};
 use crate::domain::identity::EvidenceDigest;
 use crate::profile::parse_location;
 
@@ -16,7 +16,18 @@ pub(super) fn parse_teams(
     digest: &EvidenceDigest,
     issues: &mut Vec<EvidenceIssue>,
 ) -> (Vec<TeamEvidence>, Vec<GradeAtSeason>) {
-    let mut affiliations: BTreeMap<u64, Vec<u16>> = BTreeMap::new();
+    season_issues(root, digest, issues);
+    let affiliations = season_affiliations(root, digest, issues);
+    let teams = team_index(root, &affiliations, digest, issues);
+    (teams, parse_grades(root.get("grades"), digest, issues))
+}
+
+/// `allSeasons` is optional but, when present, must be an array within the retention bound.
+fn season_issues(
+    root: &Map<String, Value>,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) {
     if root
         .get("allSeasons")
         .is_some_and(|value| !value.is_array() && !value.is_null())
@@ -36,6 +47,15 @@ pub(super) fn parse_teams(
             issues,
         );
     }
+}
+
+/// School ID to the seasons that school appears in, in source order.
+fn season_affiliations(
+    root: &Map<String, Value>,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) -> BTreeMap<u64, Vec<u16>> {
+    let mut affiliations: BTreeMap<u64, Vec<u16>> = BTreeMap::new();
     root.get("allSeasons")
         .and_then(Value::as_array)
         .into_iter()
@@ -66,24 +86,29 @@ pub(super) fn parse_teams(
                 )),
             }
         });
-    let teams = match root.get("allTeams").and_then(Value::as_object) {
-        Some(map) => {
-            retain_cap_issue(map.len(), "teams_truncated", "/allTeams", digest, issues);
-            map.iter()
-                .take(MAX_ITEMS)
-                .filter_map(|(key, value)| parse_team(key, value, &affiliations, digest, issues))
-                .collect()
-        }
-        None => {
-            issues.push(issue(
-                "unknown_teams_shape",
-                "allTeams is absent or not an object",
-                Some(ev(digest, "/allTeams")),
-            ));
-            Vec::new()
-        }
+    affiliations
+}
+
+/// `allTeams` is required; every retained entry is parsed against the season affiliations.
+fn team_index(
+    root: &Map<String, Value>,
+    affiliations: &BTreeMap<u64, Vec<u16>>,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) -> Vec<TeamEvidence> {
+    let Some(map) = root.get("allTeams").and_then(Value::as_object) else {
+        issues.push(issue(
+            "unknown_teams_shape",
+            "allTeams is absent or not an object",
+            Some(ev(digest, "/allTeams")),
+        ));
+        return Vec::new();
     };
-    (teams, parse_grades(root.get("grades"), digest, issues))
+    retain_cap_issue(map.len(), "teams_truncated", "/allTeams", digest, issues);
+    map.iter()
+        .take(MAX_ITEMS)
+        .filter_map(|(key, value)| parse_team(key, value, affiliations, digest, issues))
+        .collect()
 }
 
 fn parse_team(
@@ -93,17 +118,7 @@ fn parse_team(
     digest: &EvidenceDigest,
     issues: &mut Vec<EvidenceIssue>,
 ) -> Option<TeamEvidence> {
-    let id = match key.parse::<u64>().ok().filter(|value| *value > 0) {
-        Some(id) => id,
-        None => {
-            issues.push(issue(
-                "invalid_team_id",
-                "allTeams key is not a positive integer",
-                Some(ev(digest, format!("/allTeams/{key}"))),
-            ));
-            return None;
-        }
-    };
+    let id = team_id_of(key, digest, issues)?;
     let Some(obj) = value.as_object() else {
         issues.push(issue(
             "unknown_team_shape",
@@ -112,34 +127,8 @@ fn parse_team(
         ));
         return None;
     };
-    let name = obj
-        .get("SchoolName")
-        .and_then(Value::as_str)
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .and_then(|value| SchoolName::parse(value).ok());
-    let Some(name) = name else {
-        issues.push(issue(
-            "team_name_missing",
-            "team has no valid SchoolName",
-            Some(ev(digest, format!("/allTeams/{key}/SchoolName"))),
-        ));
-        return None;
-    };
-    let location = match parse_location(obj) {
-        Ok(value) => value.map(|value| Observed {
-            value,
-            evidence: ev(digest, format!("/allTeams/{key}")),
-        }),
-        Err(error) => {
-            issues.push(issue(
-                "invalid_team_location",
-                &error.to_string(),
-                Some(ev(digest, format!("/allTeams/{key}"))),
-            ));
-            None
-        }
-    };
+    let name = team_name(obj, key, digest, issues)?;
+    let location = team_location(obj, key, digest, issues);
     Some(TeamEvidence {
         team_id: id,
         name: Observed {
@@ -153,6 +142,63 @@ fn parse_team(
             .and_then(Value::as_u64)
             .and_then(|value| u8::try_from(value).ok()),
     })
+}
+
+fn team_id_of(key: &str, digest: &EvidenceDigest, issues: &mut Vec<EvidenceIssue>) -> Option<u64> {
+    let Some(id) = key.parse::<u64>().ok().filter(|value| *value > 0) else {
+        issues.push(issue(
+            "invalid_team_id",
+            "allTeams key is not a positive integer",
+            Some(ev(digest, format!("/allTeams/{key}"))),
+        ));
+        return None;
+    };
+    Some(id)
+}
+
+fn team_name(
+    obj: &Map<String, Value>,
+    key: &str,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) -> Option<SchoolName> {
+    let Some(name) = obj
+        .get("SchoolName")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .and_then(|value| SchoolName::parse(value).ok())
+    else {
+        issues.push(issue(
+            "team_name_missing",
+            "team has no valid SchoolName",
+            Some(ev(digest, format!("/allTeams/{key}/SchoolName"))),
+        ));
+        return None;
+    };
+    Some(name)
+}
+
+fn team_location(
+    obj: &Map<String, Value>,
+    key: &str,
+    digest: &EvidenceDigest,
+    issues: &mut Vec<EvidenceIssue>,
+) -> Option<Observed<Location>> {
+    match parse_location(obj) {
+        Ok(value) => value.map(|value| Observed {
+            value,
+            evidence: ev(digest, format!("/allTeams/{key}")),
+        }),
+        Err(error) => {
+            issues.push(issue(
+                "invalid_team_location",
+                &error.to_string(),
+                Some(ev(digest, format!("/allTeams/{key}"))),
+            ));
+            None
+        }
+    }
 }
 
 fn parse_grades(

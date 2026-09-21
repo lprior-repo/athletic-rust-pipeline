@@ -7,8 +7,8 @@
 //!
 //! Layers:
 //!
-//! * [`model`] — canonical entities with locally minted deterministic ids, grad-year cohorts and
-//!   `ObservedGrade` evidence instead of mutable grade fields.
+//! * [`census_domain::model`] — canonical entities with locally minted deterministic ids, grad-year
+//!   cohorts and `ObservedGrade` evidence instead of mutable grade fields.
 //! * [`net`] — robots-enforcing, cache-first, per-host-rate-limited fetcher with request evidence.
 //! * [`store`] — Fjall-backed observation store: append-only observations per entity, merged at
 //!   read time, with materialized JSONL snapshots for the read model.
@@ -27,7 +27,7 @@
 pub mod bests;
 pub mod bootstrap;
 pub mod census;
-pub mod model;
+pub mod fingerprint;
 pub mod net;
 pub mod report;
 pub mod restate_services;

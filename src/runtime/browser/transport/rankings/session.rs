@@ -9,12 +9,13 @@ use crate::runtime::protocol::RankingsCapture;
 use crate::runtime::source::request::RankingsAction;
 use chromiumoxide::cdp::browser_protocol::network::EventResponseReceived;
 use chromiumoxide::cdp::browser_protocol::page::{
-    AddScriptToEvaluateOnNewDocumentParams, RemoveScriptToEvaluateOnNewDocumentParams,
-    ScriptIdentifier,
+    AddScriptToEvaluateOnNewDocumentParams, NavigateParams,
+    RemoveScriptToEvaluateOnNewDocumentParams, ScriptIdentifier,
 };
 use chromiumoxide::cdp::js_protocol::runtime::{
     AddBindingParams, EventBindingCalled, RemoveBindingParams,
 };
+use chromiumoxide::listeners::EventStream;
 use chromiumoxide::Page;
 use futures::{StreamExt, TryStreamExt};
 use std::sync::Arc;
@@ -45,60 +46,116 @@ pub(crate) async fn fetch_rankings(
         .ok_or(BrowserError::Protocol)?;
     let origin = source_origin.origin().ascii_serialization();
     let script = build_interceptor_script(&origin, nonce).map_err(|_| BrowserError::Protocol)?;
-    let mut script_id: Option<ScriptIdentifier> = None;
-    let mut binding_attempted = false;
-    let result = tokio::time::timeout_at(absolute_deadline, async {
+    let mut attempt = CaptureRun {
+        page,
+        action,
+        source_origin,
+        gate: &gate,
+        nonce,
+        origin: &origin,
+        script,
+        deadline: absolute_deadline,
+        script_id: None,
+        binding_attempted: false,
+    };
+    let result = tokio::time::timeout_at(absolute_deadline, attempt.run()).await;
+    shutdown_capture(&attempt).await?;
+    match result {
+        Ok(inner) => inner,
+        Err(_) => Err(BrowserError::Timeout),
+    }
+}
+
+/// One rankings capture attempt: the wired page plus the setup handles that
+/// cleanup has to remove afterwards.
+struct CaptureRun<'a> {
+    page: &'a Page,
+    action: &'a RankingsAction,
+    source_origin: &'a url::Url,
+    gate: &'a ProfileGate,
+    nonce: u64,
+    origin: &'a str,
+    script: String,
+    deadline: tokio::time::Instant,
+    script_id: Option<ScriptIdentifier>,
+    binding_attempted: bool,
+}
+
+impl CaptureRun<'_> {
+    /// Wire the page, navigate to the rankings UI, and stream events until one
+    /// rankings response is captured. The caller's deadline cancels this future.
+    async fn run(&mut self) -> Result<BrowserResponse, BrowserError> {
+        self.install().await?;
+        let binding_events = transport(
+            self.page.event_listener::<EventBindingCalled>().await,
+            "binding_listener",
+        )?;
+        let response_events = transport(
+            self.page.event_listener::<EventResponseReceived>().await,
+            "response_listener",
+        )?;
+        let ui_url = build_ui_url(self.source_origin, self.action)?;
+        transport(
+            self.page.goto(NavigateParams::new(ui_url)).await,
+            "navigate",
+        )?;
+        self.collect(binding_events, response_events).await
+    }
+
+    /// Enable the domains the capture needs, then install the interceptor script
+    /// and the binding that delivers the payload.
+    async fn install(&mut self) -> Result<(), BrowserError> {
         // Default Network.enable. A durable 32 MiB event buffer makes Chromium
         // replay oversized buffered messages that the CDP client cannot parse
         // ("WS Invalid message"), which desynchronises command responses and
         // surfaces as transport failures. The ranking payload is captured by
         // the injected binding, so no buffered replay is required.
         transport(
-            page.execute(chromiumoxide::cdp::browser_protocol::network::EnableParams::default())
+            self.page
+                .execute(chromiumoxide::cdp::browser_protocol::network::EnableParams::default())
                 .await,
             "network.enable",
         )?;
         transport(
-            page.execute(chromiumoxide::cdp::js_protocol::runtime::EnableParams::default())
+            self.page
+                .execute(chromiumoxide::cdp::js_protocol::runtime::EnableParams::default())
                 .await,
             "runtime.enable",
         )?;
         let installed = transport(
-            page.execute(
-                AddScriptToEvaluateOnNewDocumentParams::builder()
-                    .source(script)
-                    .build()
-                    .map_err(|_| BrowserError::Protocol)?,
-            )
-            .await,
+            self.page
+                .execute(
+                    AddScriptToEvaluateOnNewDocumentParams::builder()
+                        .source(std::mem::take(&mut self.script))
+                        .build()
+                        .map_err(|_| BrowserError::Protocol)?,
+                )
+                .await,
             "add_interceptor_script",
         )?;
-        script_id = Some(installed.identifier.clone());
-        binding_attempted = true;
+        self.script_id = Some(installed.identifier.clone());
+        self.binding_attempted = true;
         transport(
-            page.execute(
-                AddBindingParams::builder()
-                    .name(BINDING_NAME)
-                    .build()
-                    .map_err(|_| BrowserError::Protocol)?,
-            )
-            .await,
+            self.page
+                .execute(
+                    AddBindingParams::builder()
+                        .name(BINDING_NAME)
+                        .build()
+                        .map_err(|_| BrowserError::Protocol)?,
+                )
+                .await,
             "add_binding",
         )?;
-        let binding_events = transport(
-            page.event_listener::<EventBindingCalled>().await,
-            "binding_listener",
-        )?;
-        let response_events = transport(
-            page.event_listener::<EventResponseReceived>().await,
-            "response_listener",
-        )?;
-        let ui_url = build_ui_url(source_origin, action)?;
-        transport(
-            page.goto(chromiumoxide::cdp::browser_protocol::page::NavigateParams::new(ui_url))
-                .await,
-            "navigate",
-        )?;
+        Ok(())
+    }
+
+    /// Fold the binding and response streams into ranked candidates until one is
+    /// captured, bounded by the attempt deadline.
+    async fn collect(
+        &self,
+        binding_events: EventStream<EventBindingCalled>,
+        response_events: EventStream<EventResponseReceived>,
+    ) -> Result<BrowserResponse, BrowserError> {
         let events = futures::stream::select(
             binding_events
                 .map(CaptureEvent::Binding)
@@ -108,17 +165,15 @@ pub(crate) async fn fetch_rankings(
                 .chain(futures::stream::once(async { CaptureEvent::Closed })),
         )
         .take(MAX_CAPTURE_EVENTS)
-        .take_until(tokio::time::sleep_until(absolute_deadline));
+        .take_until(tokio::time::sleep_until(self.deadline));
         futures::pin_mut!(events);
-        let capture_gate = gate.as_ref();
-        let capture_origin = origin.as_str();
         let capture_context = CaptureContext {
-            page,
-            action,
-            origin: capture_origin,
-            nonce,
-            deadline: absolute_deadline,
-            gate: capture_gate,
+            page: self.page,
+            action: self.action,
+            origin: self.origin,
+            nonce: self.nonce,
+            deadline: self.deadline,
+            gate: self.gate,
         };
         let capture_context = &capture_context;
         let candidates = futures::stream::unfold(
@@ -137,44 +192,46 @@ pub(crate) async fn fetch_rankings(
             .await
             .transpose()?
             .ok_or(BrowserError::Timeout)?;
-        let response = build_response(captured)?;
-        Ok::<_, BrowserError>(response)
-    })
-    .await;
+        build_response(captured)
+    }
+}
+
+/// Run capture cleanup, revoking admission and closing the page when it fails.
+async fn shutdown_capture(attempt: &CaptureRun<'_>) -> Result<(), BrowserError> {
     let cleanup = tokio::time::timeout(
         Duration::from_secs(5),
-        cleanup_capture(page, script_id.as_ref(), binding_attempted),
+        cleanup_capture(
+            attempt.page,
+            attempt.script_id.as_ref(),
+            attempt.binding_attempted,
+        ),
     )
     .await;
     match cleanup {
-        Ok(Ok(())) => {}
+        Ok(Ok(())) => Ok(()),
         Ok(Err(error)) => {
-            gate.revoke();
-            tokio::time::timeout(
-                Duration::from_secs(5),
-                page.execute(chromiumoxide::cdp::browser_protocol::page::CloseParams::default()),
-            )
-            .await
-            .map_err(|_| BrowserError::Timeout)?
-            .map_err(|_| BrowserError::Transport)?;
-            return Err(error);
+            attempt.gate.revoke();
+            close_failed_page(attempt.page).await?;
+            Err(error)
         }
         Err(_) => {
-            gate.revoke();
-            tokio::time::timeout(
-                Duration::from_secs(5),
-                page.execute(chromiumoxide::cdp::browser_protocol::page::CloseParams::default()),
-            )
-            .await
-            .map_err(|_| BrowserError::Timeout)?
-            .map_err(|_| BrowserError::Transport)?;
-            return Err(BrowserError::Timeout);
+            attempt.gate.revoke();
+            close_failed_page(attempt.page).await?;
+            Err(BrowserError::Timeout)
         }
     }
-    match result {
-        Ok(inner) => inner,
-        Err(_) => Err(BrowserError::Timeout),
-    }
+}
+
+/// Close a page whose capture cleanup failed, bounded like the cleanup itself.
+async fn close_failed_page(page: &Page) -> Result<(), BrowserError> {
+    tokio::time::timeout(
+        Duration::from_secs(5),
+        page.execute(chromiumoxide::cdp::browser_protocol::page::CloseParams::default()),
+    )
+    .await
+    .map_err(|_| BrowserError::Timeout)?
+    .map_err(|_| BrowserError::Transport)?;
+    Ok(())
 }
 
 async fn cleanup_capture(

@@ -24,7 +24,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{bail, ensure, Context, Result};
-use midwest_census::model::{
+use census_domain::model::{
     CanonicalCoach, CanonicalSchool, Gender, Grade, SchoolId, SchoolYear, SourceRef, Sport,
 };
 use midwest_census::net::Fetcher;

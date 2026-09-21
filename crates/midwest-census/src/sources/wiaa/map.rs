@@ -1,15 +1,15 @@
 //! Canonical mapping: parsed WIAA rows -> schools, athletic directors and coaches.
 //!
 //! Nothing here reads the network, the store or a file: it takes the row shapes from `parse`
-//! and returns the canonical types from `crate::model`.
+//! and returns the canonical types from `census_domain::model`.
 
-use crate::model::{
-    normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity,
-    SourceNamespace, SourceRef, Sport,
+use census_domain::model::{
+    normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use std::collections::HashSet;
 
-use super::parse::{IndexEntry, SchoolPage};
+use super::parse::{CoachRow, IndexEntry, SchoolPage, StaffRow};
 use super::primitives::{clean, meaningful, valid_email};
 use super::{ASSOCIATION, SOURCE_ID};
 
@@ -145,11 +145,51 @@ pub fn school_entities(
     let name = meaningful(&page.name).or_else(|| meaningful(&entry.name))?;
     let page_url = entry.page_url();
     let source = SourceRef::new(SOURCE_ID, Some(page_url.clone()));
+    let (school, school_id) = school_from_page(entry, page, &name, &page_url, &source, observed_on);
+
+    let mut coaches: Vec<CanonicalCoach> = Vec::new();
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut skipped_admin_roles: Vec<String> = Vec::new();
+    push_admin_coaches(
+        &mut coaches,
+        &mut seen,
+        &mut skipped_admin_roles,
+        &page.admins,
+        &school_id,
+        &source,
+        observed_on,
+    );
+    let skipped_coach_rows = push_sport_coaches(
+        &mut coaches,
+        &mut seen,
+        &page.coaches,
+        &school_id,
+        &source,
+        observed_on,
+    );
+
+    Some(SchoolExtract {
+        school,
+        coaches,
+        skipped_admin_roles,
+        skipped_coach_rows,
+    })
+}
+
+/// Build the canonical school (and its id) from the index row and the page's identity block.
+fn school_from_page(
+    entry: &IndexEntry,
+    page: &SchoolPage,
+    name: &str,
+    page_url: &str,
+    source: &SourceRef,
+    observed_on: &str,
+) -> (CanonicalSchool, SchoolId) {
     let namespace = SourceNamespace::AssociationSchool {
         association: ASSOCIATION.to_string(),
     };
 
-    let (mut school, school_id) = CanonicalSchool::new("WI", &name, normalize_name(&name));
+    let (mut school, school_id) = CanonicalSchool::new("WI", name, normalize_name(name));
     school.city = page
         .city
         .as_deref()
@@ -163,17 +203,26 @@ pub fn school_entities(
     school.enrollment = page.enrollment;
     school.school_website = page.website.as_deref().and_then(meaningful);
     school.source_identities.push(
-        SourceIdentity::new(namespace.clone(), entry.org_id.clone()).with_url(page_url.clone()),
+        SourceIdentity::new(namespace.clone(), entry.org_id.clone()).with_url(page_url.to_string()),
     );
     school
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
+    (school, school_id)
+}
 
-    let mut coaches: Vec<CanonicalCoach> = Vec::new();
-    let mut seen: HashSet<String> = HashSet::new();
-    let mut skipped_admin_roles: Vec<String> = Vec::new();
-
-    for admin in &page.admins {
+/// Append the administration table's athletic-director rows, recording the roles that were not
+/// directors so the run report can name them.
+fn push_admin_coaches(
+    coaches: &mut Vec<CanonicalCoach>,
+    seen: &mut HashSet<String>,
+    skipped_admin_roles: &mut Vec<String>,
+    admins: &[StaffRow],
+    school_id: &SchoolId,
+    source: &SourceRef,
+    observed_on: &str,
+) {
+    for admin in admins {
         let Some(role) = parse_admin_role(&admin.role) else {
             if !skipped_admin_roles.iter().any(|seen| seen == &admin.role) {
                 skipped_admin_roles.push(admin.role.clone());
@@ -184,7 +233,7 @@ pub fn school_entities(
         if person.is_empty() {
             continue;
         }
-        let mut coach = CanonicalCoach::new(&school_id, person, None, Gender::Mixed, role);
+        let mut coach = CanonicalCoach::new(school_id, person, None, Gender::Mixed, role);
         coach.professional_email = admin.email.as_deref().and_then(valid_email);
         coach
             .evidence
@@ -193,9 +242,19 @@ pub fn school_entities(
             coaches.push(coach);
         }
     }
+}
 
+/// Append the head-coach table's TF/XC rows and return how many rows the model refused.
+fn push_sport_coaches(
+    coaches: &mut Vec<CanonicalCoach>,
+    seen: &mut HashSet<String>,
+    rows: &[CoachRow],
+    school_id: &SchoolId,
+    source: &SourceRef,
+    observed_on: &str,
+) -> usize {
     let mut skipped_coach_rows = 0usize;
-    for row in &page.coaches {
+    for row in rows {
         let Some((sport, gender)) = parse_sport_label(&row.sport) else {
             skipped_coach_rows = skipped_coach_rows.saturating_add(1);
             continue;
@@ -209,7 +268,7 @@ pub fn school_entities(
             skipped_coach_rows = skipped_coach_rows.saturating_add(1);
             continue;
         }
-        let mut coach = CanonicalCoach::new(&school_id, person, Some(sport), gender, role);
+        let mut coach = CanonicalCoach::new(school_id, person, Some(sport), gender, role);
         coach.professional_email = row.email.as_deref().and_then(valid_email);
         coach
             .evidence
@@ -218,11 +277,5 @@ pub fn school_entities(
             coaches.push(coach);
         }
     }
-
-    Some(SchoolExtract {
-        school,
-        coaches,
-        skipped_admin_roles,
-        skipped_coach_rows,
-    })
+    skipped_coach_rows
 }

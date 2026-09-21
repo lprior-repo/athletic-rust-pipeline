@@ -4,7 +4,7 @@
 //! caller keeps its journal and re-runs, so a partial walk is reported rather than discarded — and
 //! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
-use crate::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam};
+use census_domain::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam};
 use crate::store::{Store, Table};
 use anyhow::Result;
 use tracing::info;
@@ -82,7 +82,7 @@ pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
     ));
     let coaches_path = out.join("coaches.jsonl");
     let coaches =
-        store.consolidate::<crate::model::CanonicalCoach>(Table::Coaches, &coaches_path)?;
+        store.consolidate::<census_domain::model::CanonicalCoach>(Table::Coaches, &coaches_path)?;
     counts.push(("coaches".to_string(), coaches.rows));
     // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
     // same rule the report and the workbook already went through.
@@ -96,19 +96,19 @@ pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
     counts.push((
         "meets".to_string(),
         store
-            .consolidate::<crate::model::CanonicalMeet>(Table::Meets, &out.join("meets.jsonl"))?
+            .consolidate::<census_domain::model::CanonicalMeet>(Table::Meets, &out.join("meets.jsonl"))?
             .rows,
     ));
     counts.push((
         "events".to_string(),
         store
-            .consolidate::<crate::model::CanonicalEvent>(Table::Events, &out.join("events.jsonl"))?
+            .consolidate::<census_domain::model::CanonicalEvent>(Table::Events, &out.join("events.jsonl"))?
             .rows,
     ));
     counts.push((
         "performances".to_string(),
         store
-            .consolidate::<crate::model::CanonicalPerformance>(
+            .consolidate::<census_domain::model::CanonicalPerformance>(
                 Table::Performances,
                 &out.join("performances.jsonl"),
             )?

@@ -55,7 +55,7 @@ use anyhow::Result;
 
 // The module doc links `CoachRole`; rustdoc needs it in scope, rustc does not.
 #[cfg(doc)]
-use crate::model::CoachRole;
+use census_domain::model::CoachRole;
 
 /// NDHSAA member-school index (server-rendered HTML, 169 schools, no pagination).
 pub const ND_SCHOOLS_URL: &str = "https://ndhsaa.com/schools";
@@ -100,8 +100,10 @@ pub struct Options {
 
 mod nd;
 mod nd_coaches;
+mod nd_walk;
 mod nsaa;
 mod nsaa_coaches;
+mod nsaa_walk;
 mod parse;
 
 pub use nd::{

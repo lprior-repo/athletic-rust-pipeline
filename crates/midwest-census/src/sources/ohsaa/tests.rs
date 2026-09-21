@@ -1,7 +1,7 @@
 //! Unit tests for the `ohsaa` adapter: fixtures in, parsed rows and canonical entities out.
 
 use super::*;
-use crate::model::{CoachRole, Gender, Sport};
+use census_domain::model::{CoachRole, Gender, Sport};
 
 // ── Fixture data ─────────────────────────────────────────────────────
 

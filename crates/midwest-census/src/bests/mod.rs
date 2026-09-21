@@ -11,7 +11,7 @@
 //! * **Relays are not personal bests.** A 4x400 split is a squad mark; including it would put a
 //!   number in an athlete's PR column that the athlete did not run alone.
 //! * **Marks are compared only within their own measure.** A time is never compared against a
-//!   distance, so an unparsed [`Mark::Raw`](crate::model::Mark::Raw) value is carried but never
+//!   distance, so an unparsed [`Mark::Raw`](census_domain::model::Mark::Raw) value is carried but never
 //!   chosen as a best.
 
 use crate::report::Scope;
@@ -24,7 +24,7 @@ mod reduce;
 mod write;
 
 #[cfg(test)]
-use crate::model::{EventKind, Mark};
+use census_domain::model::{EventKind, Mark};
 #[cfg(test)]
 use crate::store::Store;
 

@@ -3,7 +3,7 @@
 
 use super::notes::bump;
 use super::{SportsBreakdown, StateCensus};
-use crate::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, Gender, Sport};
+use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, Gender, Sport};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 fn is_track_or_xc(sport: Sport) -> bool {

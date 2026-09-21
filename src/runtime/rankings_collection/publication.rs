@@ -1,3 +1,5 @@
+mod projection;
+
 use super::*;
 use crate::{
     runtime::{
@@ -105,21 +107,7 @@ pub(super) fn page(
     collection: EvidenceDigest,
     outcome: FetchOutcome,
 ) -> anyhow::Result<PagePublication> {
-    let receipt = receipt(&outcome)?;
-    let capture = receipt
-        .rankings
-        .as_ref()
-        .context("ranking capture metadata missing")?;
-    if capture.capture != RankingsCapture::Results {
-        bail!("wrong results capture kind");
-    }
-    if capture
-        .next_page
-        .is_some_and(|next| event.next_page.checked_add(1) != Some(next))
-    {
-        bail!("pagination does not advance to the next consecutive page");
-    }
-    let terminal = capture.next_page.is_none();
+    let (receipt, terminal) = validated_capture(&outcome, event)?;
     let observation = parse_page_response(&raw(store, receipt)?, expected)?;
     let min_count = observation.min_count;
     let index_collection = collection.clone();
@@ -143,31 +131,66 @@ pub(super) fn page(
     store.drop_rankings_page(&index.collection, &event.event_short, event.next_page)?;
     store.put_rankings_page(&index)?;
     if terminal {
-        let stats = store.ranking_event_stats(&index.collection, &event.event_short)?;
-        // The source's minCount is not always reachable. The outdoor boys grade
-        // 11 200m listing declares 654 rows while its own pagination widget
-        // renders every page after the first as disabled (measured 2026-09-21
-        // through the source UI in an independent browser with a trusted click)
-        // and its API answers a page-2 request with a byte-identical page-1
-        // body. Sealing with the rows the source actually served keeps the
-        // element honest: the terminal observation retains the declared
-        // minCount, so the shortfall stays visible in the retained evidence
-        // instead of wedging the collection on an unreachable bound.
-        if stats.row_positions < min_count || stats.max_row_position < min_count {
-            tracing::warn!(
-                event = %event.event_short,
-                min_count,
-                row_positions = stats.row_positions,
-                max_row_position = stats.max_row_position,
-                pages = stats.pages,
-                "terminal ranking page is short of the source minCount lower bound"
-            );
-        }
+        warn_terminal_shortfall(store, &index.collection, &event.event_short, min_count)?;
     }
     Ok(PagePublication {
         checkpoint: digest,
         terminal,
     })
+}
+
+/// Validate the acquired document's ranking capture metadata against the event
+/// cursor, returning its receipt and whether the page terminates the event.
+fn validated_capture<'a>(
+    outcome: &'a FetchOutcome,
+    event: &EventProgress,
+) -> anyhow::Result<(&'a DocumentReceipt, bool)> {
+    let receipt = receipt(outcome)?;
+    let capture = receipt
+        .rankings
+        .as_ref()
+        .context("ranking capture metadata missing")?;
+    if capture.capture != RankingsCapture::Results {
+        bail!("wrong results capture kind");
+    }
+    if capture
+        .next_page
+        .is_some_and(|next| event.next_page.checked_add(1) != Some(next))
+    {
+        bail!("pagination does not advance to the next consecutive page");
+    }
+    Ok((receipt, capture.next_page.is_none()))
+}
+
+/// Warn when a terminal page is short of the source's declared minCount bound.
+///
+/// The source's minCount is not always reachable. The outdoor boys grade
+/// 11 200m listing declares 654 rows while its own pagination widget
+/// renders every page after the first as disabled (measured 2026-09-21
+/// through the source UI in an independent browser with a trusted click)
+/// and its API answers a page-2 request with a byte-identical page-1
+/// body. Sealing with the rows the source actually served keeps the
+/// element honest: the terminal observation retains the declared
+/// minCount, so the shortfall stays visible in the retained evidence
+/// instead of wedging the collection on an unreachable bound.
+fn warn_terminal_shortfall(
+    store: &ArtifactStore,
+    collection: &EvidenceDigest,
+    event_short: &str,
+    min_count: u64,
+) -> anyhow::Result<()> {
+    let stats = store.ranking_event_stats(collection, event_short)?;
+    if stats.row_positions < min_count || stats.max_row_position < min_count {
+        tracing::warn!(
+            event = %event_short,
+            min_count,
+            row_positions = stats.row_positions,
+            max_row_position = stats.max_row_position,
+            pages = stats.pages,
+            "terminal ranking page is short of the source minCount lower bound"
+        );
+    }
+    Ok(())
 }
 
 fn page_index(
@@ -177,60 +200,15 @@ fn page_index(
     page: u32,
     checkpoint: EvidenceDigest,
 ) -> anyhow::Result<RankingPageIndex> {
-    let PageObservation {
-        grade_11_candidates_list,
-        verified_relay_members,
-        source_rows,
-        ..
-    } = observation;
-    let individual = grade_11_candidates_list
-        .into_iter()
-        .enumerate()
-        .map(|(index, candidate)| {
-            Ok(RankingCandidateEntry {
-                name: candidate.name,
-                athlete_id: candidate.athlete_id,
-                kind: RankingCandidateKind::Individual,
-                record_index: u32::try_from(index)?,
-                result_id: candidate.id_result,
-            })
-        });
-    let relay = verified_relay_members
-        .into_iter()
-        .enumerate()
-        .map(|(index, member)| {
-            Ok(RankingCandidateEntry {
-                name: member.name,
-                athlete_id: member.athlete_id,
-                kind: RankingCandidateKind::RelayMember,
-                record_index: u32::try_from(index)?,
-                result_id: member.id_result,
-            })
-        });
+    let (candidates, rows, rosters) = projection::index_parts(observation)?;
     Ok(RankingPageIndex {
         collection,
         event_short: event.to_owned(),
         page,
         checkpoint,
-        candidates: individual
-            .chain(relay)
-            .collect::<anyhow::Result<Vec<_>>>()?,
-        rows: source_rows
-            .iter()
-            .map(|row| RankingSourceRow {
-                result_id: row.result_id,
-                row_number: row.row_number,
-            })
-            .collect(),
-        rosters: source_rows
-            .iter()
-            .filter_map(|row| {
-                row.roster_present.map(|present| RankingRosterObservation {
-                    result_id: row.result_id,
-                    present,
-                })
-            })
-            .collect(),
+        candidates,
+        rows,
+        rosters,
     })
 }
 

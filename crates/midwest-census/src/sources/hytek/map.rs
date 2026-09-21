@@ -4,7 +4,7 @@
 //! prose instead of in fixed columns; the readers here turn each into the canonical shape the
 //! model carries: an ISO date, an event kind, a round marker, or a `Mark` with its wind and heat.
 
-use crate::model::{EventKind, Gender, Mark};
+use census_domain::model::{EventKind, Gender, Mark};
 use crate::sources::result_file::ParsedEvent;
 use regex::Regex;
 use std::sync::LazyLock;

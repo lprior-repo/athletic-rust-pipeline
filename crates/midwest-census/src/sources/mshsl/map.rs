@@ -1,4 +1,4 @@
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
 };
@@ -185,7 +185,7 @@ fn domain_within(domain: &str, base: &str) -> bool {
 pub fn accept_coach_email(address: &str, domains: &[String]) -> Option<String> {
     let address = address.trim();
     let domain = email_domain(address)?;
-    if crate::model::CONSUMER_MAIL_DOMAINS
+    if census_domain::model::CONSUMER_MAIL_DOMAINS
         .iter()
         .any(|consumer| domain_within(&domain, consumer))
     {

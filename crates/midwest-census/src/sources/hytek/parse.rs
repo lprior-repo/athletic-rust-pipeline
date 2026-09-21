@@ -4,7 +4,7 @@
 //! against that layout: place left of the first labelled column, the school or name text columns
 //! sliced to the next numeric anchor, the mark and its trailing wind, heat and points columns.
 
-use crate::model::{EventKind, Grade};
+use census_domain::model::{EventKind, Grade};
 use crate::sources::result_file::{ParsedRow, RelayLeg};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -134,45 +134,7 @@ pub(super) fn starts_like_a_row(trimmed: &str) -> bool {
 
 pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Option<ParsedRow> {
     let tokens = tokens(line);
-    let first_column_start = section.columns.first()?.start;
-
-    // Place sits left of the first labelled column and is optional (unranked rows print blank).
-    let place = tokens
-        .iter()
-        .rfind(|token| token.end <= first_column_start)
-        .and_then(|token| token.text.parse::<u16>().ok());
-
-    let name_start = section.column("Name").map(|column| column.start);
-    // Relay sections print the school where individual sections print the athlete; `Team` and
-    // `Relay` are the same idea under other names.
-    let school_start = ["School", "Team", "Relay", "Athlete"]
-        .iter()
-        .find_map(|label| section.column(label).map(|column| column.start))
-        .or(name_start)?;
-
-    let school = match section.next_numeric_start(&tokens, school_start) {
-        Some(end) => substring(line, school_start, end),
-        None => substring(line, school_start, line.len()),
-    };
-    let name = match name_start {
-        Some(start) => {
-            let end = section
-                .next_numeric_start(&tokens, start)
-                .unwrap_or(school_start);
-            substring(line, start, end)
-        }
-        None => String::new(),
-    };
-    if school.is_empty() || school.contains(')') {
-        return None;
-    }
-    if !name.is_empty() && !looks_like_a_name(&name) {
-        return None;
-    }
-    let grade = section
-        .numeric_token(&tokens, "Year")
-        .and_then(|token| token.text.parse::<u8>().ok())
-        .and_then(Grade::new);
+    let (place, name, school, grade) = row_identity(line, &tokens, section)?;
 
     // The mark is a published result column, never the `Seed` entry mark.
     let mut marks = None;
@@ -206,6 +168,58 @@ pub(super) fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Opti
     })
 }
 
+/// Place, name, school and grade of one row — the identity columns every layout publishes.
+///
+/// `None` is the line that is not an athlete row: a row whose section names no school column, a
+/// blank or bracketed school, or a name that does not read as one.
+fn row_identity(
+    line: &str,
+    tokens: &[Token<'_>],
+    section: &Section,
+) -> Option<(Option<u16>, String, String, Option<Grade>)> {
+    let first_column_start = section.columns.first()?.start;
+
+    // Place sits left of the first labelled column and is optional (unranked rows print blank).
+    let place = tokens
+        .iter()
+        .rfind(|token| token.end <= first_column_start)
+        .and_then(|token| token.text.parse::<u16>().ok());
+
+    let name_start = section.column("Name").map(|column| column.start);
+    // Relay sections print the school where individual sections print the athlete; `Team` and
+    // `Relay` are the same idea under other names.
+    let school_start = ["School", "Team", "Relay", "Athlete"]
+        .iter()
+        .find_map(|label| section.column(label).map(|column| column.start))
+        .or(name_start)?;
+
+    let school = match section.next_numeric_start(tokens, school_start) {
+        Some(end) => substring(line, school_start, end),
+        None => substring(line, school_start, line.len()),
+    };
+    let name = match name_start {
+        Some(start) => {
+            let end = section
+                .next_numeric_start(tokens, start)
+                .unwrap_or(school_start);
+            substring(line, start, end)
+        }
+        None => String::new(),
+    };
+    if school.is_empty() || school.contains(')') {
+        return None;
+    }
+    if !name.is_empty() && !looks_like_a_name(&name) {
+        return None;
+    }
+    let grade = section
+        .numeric_token(tokens, "Year")
+        .and_then(|token| token.text.parse::<u8>().ok())
+        .and_then(Grade::new);
+
+    Some((place, name, school, grade))
+}
+
 pub(super) fn parse_legs(trimmed: &str, filled: usize) -> Vec<RelayLeg> {
     let Ok(relay_leg) = relay_leg_regex() else {
         return Vec::new();
@@ -227,7 +241,7 @@ pub(super) fn parse_legs(trimmed: &str, filled: usize) -> Vec<RelayLeg> {
         let grade = captures
             .get(3)
             .and_then(|m| m.as_str().parse::<u8>().ok())
-            .and_then(crate::model::Grade::new);
+            .and_then(census_domain::model::Grade::new);
         if name.is_empty() {
             continue;
         }

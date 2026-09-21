@@ -37,7 +37,7 @@ pub use parse::{parse_search, resolve_school_name, strip_honorific};
 
 /// Host serving the OHSAA officials portal.
 pub const HOST: &str = "https://officials.myohsaa.org";
-/// Evidence/adapter slug used in [`SourceRef`](crate::model::SourceRef)s.
+/// Evidence/adapter slug used in [`SourceRef`](census_domain::model::SourceRef)s.
 pub const SOURCE_ID: &str = "ohsaa_portal";
 /// Association slug carried by every school identity this adapter mints.
 pub const ASSOCIATION: &str = "ohsaa";

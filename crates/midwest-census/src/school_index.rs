@@ -19,7 +19,7 @@
 //!
 //! Anything else is reported as unresolved. A label that matches two schools is never guessed.
 
-use crate::model::{normalize_name, CanonicalSchool, SchoolId};
+use census_domain::model::{normalize_name, CanonicalSchool, SchoolId};
 use std::collections::HashMap;
 
 /// How a school label was resolved onto a canonical school.
@@ -177,7 +177,7 @@ impl SchoolIndex {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::CanonicalSchool;
+    use census_domain::model::CanonicalSchool;
 
     fn index() -> SchoolIndex {
         let names = [

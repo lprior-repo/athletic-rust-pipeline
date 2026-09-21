@@ -1,7 +1,7 @@
 //! Staff, coach and title parsing: honorific stripping, and the title → role/sport/gender
 //! rules that decide which published titles are coaching roles at all.
 
-use crate::model::{CoachRole, Gender, Sport};
+use census_domain::model::{CoachRole, Gender, Sport};
 
 /// Strip leading honorifics so "Mr. Barry Mink" and "Barry Mink" mint the same coach identity.
 pub fn strip_honorific(value: &str) -> String {

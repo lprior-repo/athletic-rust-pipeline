@@ -549,15 +549,7 @@ impl EventKind {
     ///
     /// Unknown labels are preserved as [`EventKind::Unmapped`] rather than dropped.
     pub fn from_source_label(label: &str) -> Self {
-        let normalized: String = label
-            .chars()
-            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '_')
-            .collect::<String>()
-            .to_ascii_lowercase();
-        let compact = normalized
-            .replace("meters", "m")
-            .replace("metre", "m")
-            .replace("meter", "m");
+        let compact = Self::normalized_label(label);
         match compact.as_str() {
             "100m" => EventKind::Track100m,
             "200m" => EventKind::Track200m,
@@ -609,6 +601,20 @@ impl EventKind {
                 label: label.trim().to_string(),
             },
         }
+    }
+
+    /// Fold a source label to its compact form: no spaces, `-` or `_`, lowercase, and
+    /// `meters`/`metre`/`meter` all read as `m`.
+    fn normalized_label(label: &str) -> String {
+        let normalized: String = label
+            .chars()
+            .filter(|c| !c.is_whitespace() && *c != '-' && *c != '_')
+            .collect::<String>()
+            .to_ascii_lowercase();
+        normalized
+            .replace("meters", "m")
+            .replace("metre", "m")
+            .replace("meter", "m")
     }
 
     pub fn is_field(&self) -> bool {
@@ -1165,16 +1171,6 @@ pub fn flip_last_first(raw: &str) -> String {
         }
     }
     trimmed.to_string()
-}
-
-/// A deterministic fingerprint of an entity's identifying fields, used by change detection.
-pub fn content_fingerprint<T: Serialize>(value: &T) -> String {
-    let json = serde_json::to_string(value).unwrap_or_default();
-    let mut hasher = Sha256::new();
-    hasher.update(json.as_bytes());
-    let digest = hasher.finalize();
-    // `take(12)` is the 96-bit fingerprint prefix (SHA-256 always yields 32 bytes).
-    digest.iter().take(12).map(|b| format!("{b:02x}")).collect()
 }
 
 /// Convenience map for counters used by adapter reports.

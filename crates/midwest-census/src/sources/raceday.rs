@@ -14,7 +14,7 @@
 //! no date anywhere, the caller supplies the archive year; the meet is then stamped with year
 //! precision rather than with an invented day.
 
-use crate::model::{EventKind, Gender, Grade, Mark, SourceRef};
+use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 use crate::sources::hytek::parse_time;
 use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
 use regex::Regex;
@@ -68,12 +68,7 @@ fn tags_regex() -> anyhow::Result<&'static Regex> {
 /// publishes no date of its own.
 pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedMeet> {
     let tags = tags_regex()?;
-    let title = title_regex()?
-        .captures(body)
-        .and_then(|captures| captures.get(1))
-        .map(|m| text_of(tags, m.as_str()))
-        .filter(|title| !title.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("no title found in RaceDay export"))?;
+    let title = race_title(body, tags)?;
     let name = race_name(&title)?;
     let gender = if title.to_ascii_lowercase().contains("girls") {
         Gender::Girls
@@ -90,83 +85,15 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
 
     let mut events = Vec::new();
     for table in table_pattern.find_iter(body).map(|m| m.as_str()) {
-        let labels: Vec<String> = head_pattern
-            .find(table)
-            .map(|head| {
-                // The last header row carries one label per data column.
-                row_pattern
-                    .find_iter(head.as_str())
-                    .last()
-                    .map(|row| {
-                        cell_pattern
-                            .captures_iter(row.as_str())
-                            .map(|captures| {
-                                text_of(
-                                    tags,
-                                    captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
-                                )
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default()
-            })
-            .unwrap_or_default();
-        let Some(name_column) = label_index(&labels, &["Name"]) else {
-            continue;
-        };
-        let grade_column = label_index(&labels, &["Year", "Grade", "Yr"]);
-        let school_column = label_index(&labels, &["Team Name", "School", "Team"]);
-        let place_column = label_index(&labels, &["Place"]);
-        let points_column = label_index(&labels, &["Score", "Points"]);
-        let heat_column = label_index(&labels, &["Team Member Place"]);
-
-        let mut rows = Vec::new();
-        let Some(tbody) = body_pattern.find(table) else {
-            continue;
-        };
-        for row in row_pattern.find_iter(tbody.as_str()) {
-            let cells: Vec<String> = cell_pattern
-                .captures_iter(row.as_str())
-                .map(|captures| {
-                    text_of(
-                        tags,
-                        captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
-                    )
-                })
-                .collect();
-            let cell = |index: Option<usize>| -> Option<String> {
-                index
-                    .and_then(|index| cells.get(index))
-                    .map(|value| value.trim().to_string())
-                    .filter(|value| !value.is_empty())
-            };
-            let Some(athlete) = cell(Some(name_column)) else {
-                continue;
-            };
-            // The final time is the right-most cell that reads as a time; earlier columns are
-            // cumulative splits.
-            let mark = cells
-                .iter()
-                .filter_map(|value| parse_time(value.trim()))
-                .next_back()
-                .map(Mark::TimeSeconds);
-            let Some(mark) = mark else {
-                continue;
-            };
-            rows.push(ParsedRow {
-                place: cell(place_column).and_then(|value| value.parse().ok()),
-                name: athlete,
-                grade: cell(grade_column)
-                    .and_then(|value| value.parse::<u8>().ok())
-                    .and_then(Grade::new),
-                school: cell(school_column).unwrap_or_default(),
-                mark,
-                wind_mps: None,
-                heat: cell(heat_column),
-                points: cell(points_column).and_then(|value| value.parse().ok()),
-                legs: Vec::new(),
-            });
-        }
+        let labels = table_labels(table, tags, head_pattern, row_pattern, cell_pattern);
+        let rows = table_rows(
+            table,
+            &labels,
+            tags,
+            row_pattern,
+            cell_pattern,
+            body_pattern,
+        );
         if rows.is_empty() {
             continue;
         }
@@ -191,6 +118,117 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
         rows_parsed: 0,
         rows_skipped: 0,
     })
+}
+
+/// The text of the export's `<h3>`, which is the race title.
+fn race_title(body: &str, tags: &Regex) -> anyhow::Result<String> {
+    title_regex()?
+        .captures(body)
+        .and_then(|captures| captures.get(1))
+        .map(|m| text_of(tags, m.as_str()))
+        .filter(|title| !title.is_empty())
+        .ok_or_else(|| anyhow::anyhow!("no title found in RaceDay export"))
+}
+
+/// The column labels of one table, in printing order.
+///
+/// The last header row carries one label per data column; a table with no header row yields none.
+fn table_labels(
+    table: &str,
+    tags: &Regex,
+    head_pattern: &Regex,
+    row_pattern: &Regex,
+    cell_pattern: &Regex,
+) -> Vec<String> {
+    head_pattern
+        .find(table)
+        .map(|head| {
+            row_pattern
+                .find_iter(head.as_str())
+                .last()
+                .map(|row| table_cells(row.as_str(), tags, cell_pattern))
+                .unwrap_or_default()
+        })
+        .unwrap_or_default()
+}
+
+/// Every athlete row of one table.
+///
+/// Columns are matched by header label, so a table whose header carries no `Name` column — a team
+/// summary, a split table — yields no rows at all.
+fn table_rows(
+    table: &str,
+    labels: &[String],
+    tags: &Regex,
+    row_pattern: &Regex,
+    cell_pattern: &Regex,
+    body_pattern: &Regex,
+) -> Vec<ParsedRow> {
+    let Some(name_column) = label_index(labels, &["Name"]) else {
+        return Vec::new();
+    };
+    let grade_column = label_index(labels, &["Year", "Grade", "Yr"]);
+    let school_column = label_index(labels, &["Team Name", "School", "Team"]);
+    let place_column = label_index(labels, &["Place"]);
+    let points_column = label_index(labels, &["Score", "Points"]);
+    let heat_column = label_index(labels, &["Team Member Place"]);
+
+    let Some(tbody) = body_pattern.find(table) else {
+        return Vec::new();
+    };
+    let mut rows = Vec::new();
+    for row in row_pattern.find_iter(tbody.as_str()) {
+        let cells = table_cells(row.as_str(), tags, cell_pattern);
+        let cell = |index: Option<usize>| -> Option<String> {
+            index
+                .and_then(|index| cells.get(index))
+                .map(|value| value.trim().to_string())
+                .filter(|value| !value.is_empty())
+        };
+        let Some(athlete) = cell(Some(name_column)) else {
+            continue;
+        };
+        let Some(mark) = final_time(&cells) else {
+            continue;
+        };
+        rows.push(ParsedRow {
+            place: cell(place_column).and_then(|value| value.parse().ok()),
+            name: athlete,
+            grade: cell(grade_column)
+                .and_then(|value| value.parse::<u8>().ok())
+                .and_then(Grade::new),
+            school: cell(school_column).unwrap_or_default(),
+            mark,
+            wind_mps: None,
+            heat: cell(heat_column),
+            points: cell(points_column).and_then(|value| value.parse().ok()),
+            legs: Vec::new(),
+        });
+    }
+    rows
+}
+
+/// The row's own time: the right-most cell that reads as a time, because the earlier columns are
+/// cumulative splits.
+fn final_time(cells: &[String]) -> Option<Mark> {
+    cells
+        .iter()
+        .filter_map(|value| parse_time(value.trim()))
+        .next_back()
+        .map(Mark::TimeSeconds)
+}
+
+/// The text of every cell of one table row, tags stripped.
+fn table_cells(row_html: &str, tags: &Regex, cell_pattern: &Regex) -> Vec<String> {
+    cell_pattern
+        .captures_iter(row_html)
+        .map(|captures| {
+            text_of(
+                tags,
+                captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
+            )
+        })
+        .collect()
 }
 
 /// `WIAA D2 XC Sectionals - Boys Race Team Finish List-XC` → `WIAA D2 XC Sectionals - Boys Race`.

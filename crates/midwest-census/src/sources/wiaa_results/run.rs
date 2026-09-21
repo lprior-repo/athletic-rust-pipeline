@@ -1,41 +1,81 @@
-use super::map::absorb;
-use super::parse::{parse_pdf, pdftotext};
-use super::{
-    archive_artifacts, artifact_format, stats_of, Accumulator, ArtifactFormat, Options, Stats,
-    ARCHIVES, PARSE_VERSION,
-};
-use crate::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, SchoolId,
-    SourceRef,
+use super::{archive_artifacts, stats_of, Accumulator, Options, Stats, ARCHIVES, PARSE_VERSION};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
+    CanonicalTeam, SchoolId, SourceRef, Sport,
 };
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
-use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+#[path = "run_artifacts.rs"]
+mod run_artifacts;
+
+use run_artifacts::process_artifact;
 
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
     let mut report = AdapterReport::new("wiaa_results", "artifacts");
     let (requests_before, cache_before) = stats_of(ctx).await;
 
-    let schools: Vec<crate::model::CanonicalSchool> =
+    let schools: Vec<CanonicalSchool> =
         crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
     anyhow::ensure!(
         !schools.is_empty(),
         "no consolidated schools: run `collect` and `consolidate` before the wiaa_results provider"
     );
-    let index = SchoolIndex::from_schools(&schools);
-    let mut resolved: HashMap<String, Option<SchoolId>> = HashMap::new();
+    let mut run = ArtifactRun::new(&schools, resumed_urls(ctx)?);
 
-    let mut stats = Stats::default();
-    let mut accumulated = Accumulator::default();
-    let source = SourceRef::new("wiaa_results", None);
-    // Only artifacts that yielded entities (or that are deliberately skipped as non-parsable
-    // formats) are resumed over; a parse failure is retried on the next run, which is cheap
-    // because the body is already in the HTTP cache.
-    let mut reported_missing_tool = false;
-    let done: std::collections::HashSet<String> = ctx
+    for (archive_url, sport) in ARCHIVES {
+        collect_archive(ctx, options, &mut report, &mut run, archive_url, sport).await?;
+    }
+
+    let counts = append_entities(ctx, run.accumulated)?;
+    let (requests_after, cache_after) = stats_of(ctx).await;
+    report.rows = u64::try_from(run.stats.artifacts_parsed)
+        .context("parsed artifact count does not fit in u64")?;
+    report.requests = requests_after.saturating_sub(requests_before);
+    report.from_cache = cache_after.saturating_sub(cache_before);
+    note_artifacts(&mut report, &run.stats);
+    note_entities(&mut report, &counts);
+    note_resolution(&mut report, &run.stats);
+    Ok(report)
+}
+
+/// What one walk of the archive pages carries across them: the school index, the resume set, the
+/// run counters and the entities minted so far.
+struct ArtifactRun {
+    index: SchoolIndex,
+    source: SourceRef,
+    resolved: HashMap<String, Option<SchoolId>>,
+    stats: Stats,
+    accumulated: Accumulator,
+    done: HashSet<String>,
+    reported_missing_tool: bool,
+}
+
+impl ArtifactRun {
+    /// Build the run state from the consolidated schools and the journal's resume set.
+    fn new(schools: &[CanonicalSchool], done: HashSet<String>) -> Self {
+        Self {
+            index: SchoolIndex::from_schools(schools),
+            source: SourceRef::new("wiaa_results", None),
+            resolved: HashMap::new(),
+            stats: Stats::default(),
+            accumulated: Accumulator::default(),
+            done,
+            reported_missing_tool: false,
+        }
+    }
+}
+
+/// The artifact URLs already journaled at the current parser version.
+///
+/// Only artifacts that yielded entities (or that are deliberately skipped as non-parsable
+/// formats) are resumed over; a parse failure is retried on the next run, which is cheap
+/// because the body is already in the HTTP cache.
+fn resumed_urls(ctx: &AdapterContext<'_>) -> Result<HashSet<String>> {
+    Ok(ctx
         .store
         .journal_payloads("wiaa_results")?
         .into_iter()
@@ -52,171 +92,65 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 .and_then(serde_json::Value::as_str)
                 .map(str::to_string)
         })
-        .collect();
+        .collect())
+}
 
-    for (archive_url, sport) in ARCHIVES {
-        let archive = ctx
-            .fetcher
-            .get(archive_url, &ctx.fetch_options())
-            .await
-            .with_context(|| format!("fetching the WIAA archive page {archive_url}"))?;
-        let body = archive.text();
-        let artifacts = archive_artifacts(&body)?;
-        report.note(format!(
-            "{archive_url}: {} result artifacts ({} in the requested seasons)",
-            artifacts.len(),
-            artifacts
-                .iter()
-                .filter(|artifact| options.seasons.is_empty()
-                    || options.seasons.contains(&artifact.year))
-                .count()
-        ));
-        'artifact: for artifact in artifacts {
-            if !options.seasons.is_empty() && !options.seasons.contains(&artifact.year) {
-                continue;
-            }
-            if options
-                .limit
-                .is_some_and(|limit| stats.artifacts_seen >= limit)
-            {
-                break 'artifact;
-            }
-            stats.artifacts_seen = stats.artifacts_seen.saturating_add(1);
-            if done.contains(&artifact.url) {
-                continue;
-            }
-            let extension = artifact.extension.as_str();
-            if artifact_format(extension, None) == ArtifactFormat::Unparsed {
-                stats.artifacts_unparsed = stats.artifacts_unparsed.saturating_add(1);
-                let formats = stats.formats.entry(extension.to_string()).or_default();
-                *formats = formats.saturating_add(1);
-                ctx.store.journal_done(
-                    "wiaa_results",
-                    &artifact.url,
-                    &json!({
-                        "url": artifact.url,
-                        "parser": PARSE_VERSION,
-                        "format": "indexed_only",
-                        "year": artifact.year,
-                        "stem": artifact.stem
-                    }),
-                )?;
-                continue;
-            }
-            let fetched = match ctx.fetcher.get(&artifact.url, &ctx.fetch_options()).await {
-                Ok(meta) => meta,
-                Err(error) => {
-                    stats.artifacts_failed = stats.artifacts_failed.saturating_add(1);
-                    report.note(format!("{}: {error}", artifact.url));
-                    continue;
-                }
-            };
-            let body = fetched.text();
-            let format = artifact_format(extension, Some(&body));
-            if format == ArtifactFormat::Unparsed {
-                stats.artifacts_unsupported = stats.artifacts_unsupported.saturating_add(1);
-                report.note(format!("{}: unrecognised result format", artifact.url));
-                continue;
-            }
-            let parsed = match format {
-                ArtifactFormat::HytekHtml => crate::sources::hytek::parse(
-                    &crate::sources::hytek::lines_from_html(&body),
-                    source.clone(),
-                ),
-                ArtifactFormat::HytekText => crate::sources::hytek::parse(
-                    &crate::sources::hytek::lines_from_text(&body),
-                    source.clone(),
-                ),
-                ArtifactFormat::RaceDay => {
-                    // RaceDay reports its own typed parse error; for this runner a body that is not a
-                    // RaceDay report is the same thing the other arms return as `None` — an artifact
-                    // that yielded no meet, reported below as an unparsed body. The cause goes to the
-                    // run notes so the failure is diagnosable rather than only counted.
-                    match crate::sources::raceday::parse(&body, source.clone(), artifact.year) {
-                        Ok(parsed) => Some(parsed),
-                        Err(error) => {
-                            report.note(format!("{}: {error}", artifact.url));
-                            None
-                        }
-                    }
-                }
-                ArtifactFormat::Pdf => match pdftotext(&fetched.body) {
-                    Ok(text) => {
-                        let (parsed, layout) = parse_pdf(&text, source.clone(), artifact.year);
-                        if let Some(layout) = layout {
-                            stats.pdf_parsed = stats.pdf_parsed.saturating_add(1);
-                            let layouts = stats.pdf_layouts.entry(layout.to_string()).or_default();
-                            *layouts = layouts.saturating_add(1);
-                        } else {
-                            stats.pdf_unparsed = stats.pdf_unparsed.saturating_add(1);
-                            report.note(format!(
-                                "{}: pdf text is not a report this parser knows",
-                                artifact.url
-                            ));
-                        }
-                        parsed
-                    }
-                    Err(error) => {
-                        stats.pdf_tool_failures = stats.pdf_tool_failures.saturating_add(1);
-                        if !reported_missing_tool {
-                            reported_missing_tool = true;
-                            report.note(format!(
-                                "pdftotext unavailable or failing ({error}); PDF artifacts are                                  enumerated but not read"
-                            ));
-                        }
-                        None
-                    }
-                },
-                ArtifactFormat::Unparsed => None,
-            };
-            let Some(parsed) = parsed else {
-                if format != ArtifactFormat::Pdf {
-                    stats.artifacts_parse_failed = stats.artifacts_parse_failed.saturating_add(1);
-                }
-                if format != ArtifactFormat::Pdf {
-                    report.note(format!(
-                        "{}: {} body did not parse as a result report",
-                        artifact.url,
-                        format.as_str()
-                    ));
-                }
-                continue;
-            };
-            stats.artifacts_parsed = stats.artifacts_parsed.saturating_add(1);
-            let parsed_formats = stats
-                .formats
-                .entry(format.as_str().to_string())
-                .or_default();
-            *parsed_formats = parsed_formats.saturating_add(1);
-            let seasons = stats.seasons.entry(artifact.year).or_default();
-            *seasons = seasons.saturating_add(1);
-            let rows = absorb(
-                &parsed,
-                &artifact,
-                sport,
-                &options.observed_on,
-                &index,
-                &mut resolved,
-                &mut stats,
-                &mut accumulated,
-            );
-            ctx.store.journal_done(
-                "wiaa_results",
-                &artifact.url,
-                &json!({
-                    "url": artifact.url,
-                    "parser": PARSE_VERSION,
-                    "format": format.as_str(),
-                    "year": artifact.year,
-                    "parsed": true,
-                    "meet": parsed.name,
-                    "date": parsed.date,
-                    "rows": rows,
-                }),
-            )?;
+/// Fetch one archive page and read every artifact it lists.
+async fn collect_archive(
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    report: &mut AdapterReport,
+    run: &mut ArtifactRun,
+    archive_url: &str,
+    sport: Sport,
+) -> Result<()> {
+    let archive = ctx
+        .fetcher
+        .get(archive_url, &ctx.fetch_options())
+        .await
+        .with_context(|| format!("fetching the WIAA archive page {archive_url}"))?;
+    let body = archive.text();
+    let artifacts = archive_artifacts(&body)?;
+    report.note(format!(
+        "{archive_url}: {} result artifacts ({} in the requested seasons)",
+        artifacts.len(),
+        artifacts
+            .iter()
+            .filter(
+                |artifact| options.seasons.is_empty() || options.seasons.contains(&artifact.year)
+            )
+            .count()
+    ));
+    'artifact: for artifact in artifacts {
+        if !options.seasons.is_empty() && !options.seasons.contains(&artifact.year) {
+            continue;
         }
+        if options
+            .limit
+            .is_some_and(|limit| run.stats.artifacts_seen >= limit)
+        {
+            break 'artifact;
+        }
+        run.stats.artifacts_seen = run.stats.artifacts_seen.saturating_add(1);
+        if run.done.contains(&artifact.url) {
+            continue;
+        }
+        process_artifact(ctx, options, report, run, &artifact, sport).await?;
     }
+    Ok(())
+}
 
+/// Canonical entity counts, for the run note.
+struct EntityCounts {
+    meets: usize,
+    events: usize,
+    athletes: usize,
+    teams: usize,
+    performances: usize,
+}
+
+/// Append one batch per table and return what was written.
+fn append_entities(ctx: &AdapterContext<'_>, accumulated: Accumulator) -> Result<EntityCounts> {
     // One append per table keeps the entity logs tight and the run resumable.
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
     let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();
@@ -228,12 +162,17 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     ctx.store.append_many(Table::Athletes, &athletes)?;
     ctx.store.append_many(Table::Events, &events)?;
     ctx.store.append_many(Table::Performances, &performances)?;
+    Ok(EntityCounts {
+        meets: meets.len(),
+        events: events.len(),
+        athletes: athletes.len(),
+        teams: teams.len(),
+        performances: performances.len(),
+    })
+}
 
-    let (requests_after, cache_after) = stats_of(ctx).await;
-    report.rows = u64::try_from(stats.artifacts_parsed)
-        .context("parsed artifact count does not fit in u64")?;
-    report.requests = requests_after.saturating_sub(requests_before);
-    report.from_cache = cache_after.saturating_sub(cache_before);
+/// Note what the run saw, parsed, skipped and failed on, by format and season.
+fn note_artifacts(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "artifacts: {} seen, {} parsed, {} skipped (unrecognised extension), {} unsupported, {} \
          unparsed-body, {} failed",
@@ -265,14 +204,18 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         "result rows: {} (grade-bearing {}), relay legs {}, rows without a school label {}",
         stats.rows, stats.rows_with_grade, stats.relay_legs, stats.rows_without_school
     ));
+}
+
+/// Note how many canonical entities the run appended.
+fn note_entities(report: &mut AdapterReport, counts: &EntityCounts) {
     report.note(format!(
         "canonical entities: meets {} events {} athletes {} teams {} performances {}",
-        meets.len(),
-        events.len(),
-        athletes.len(),
-        teams.len(),
-        performances.len()
+        counts.meets, counts.events, counts.athletes, counts.teams, counts.performances
     ));
+}
+
+/// Note how published school labels resolved, and which ones did not.
+fn note_resolution(report: &mut AdapterReport, stats: &Stats) {
     report.note(format!(
         "school label resolution: {}",
         stats
@@ -296,5 +239,4 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 .join(", ")
         ));
     }
-    Ok(report)
 }

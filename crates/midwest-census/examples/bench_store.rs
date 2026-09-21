@@ -17,7 +17,7 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use midwest_census::model::{normalize_name, CanonicalSchool, Evidence, SourceRef};
+use census_domain::model::{normalize_name, CanonicalSchool, Evidence, SourceRef};
 use midwest_census::store::{Store, Table};
 use serde::Serialize;
 use serde_json::json;

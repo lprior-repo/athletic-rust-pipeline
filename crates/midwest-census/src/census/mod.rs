@@ -12,7 +12,7 @@
 //! the run report and the merged snapshots. This file holds the options, the progress and report
 //! types, and the journal phase keys the three share.
 
-use crate::model::SchoolYear;
+use census_domain::model::SchoolYear;
 use crate::sources::milesplit;
 use serde::Serialize;
 

@@ -125,29 +125,14 @@ impl QueryWorker {
             } => {
                 let status = receipt.http_status;
                 let evidence = response_evidence(&receipt, previous_responses.clone());
-                let bytes = match load_response(self.runtime.clone(), &receipt.digest).await {
+                let parsed = match self.parse_page(job, start, &receipt).await {
                     Ok(value) => value,
-                    Err(error) => {
+                    Err(PageFailure::Artifact(error)) => {
                         failures.push(artifact_failure(error, retries, Some(status), evidence));
                         return Ok(false);
                     }
-                };
-                let parsed = match parse_response(
-                    self.runtime.clone(),
-                    &job.query,
-                    start,
-                    receipt.digest.clone(),
-                    bytes,
-                )
-                .await
-                {
-                    Ok(Ok(value)) => value,
-                    Ok(Err(error)) => {
+                    Err(PageFailure::Malformed(error)) => {
                         failures.push(parse_failure(error, retries, Some(status), evidence));
-                        return Ok(false);
-                    }
-                    Err(error) => {
-                        failures.push(artifact_failure(error, retries, Some(status), evidence));
                         return Ok(false);
                     }
                 };
@@ -176,6 +161,38 @@ impl QueryWorker {
             }
         }
     }
+
+    /// Loads and parses one retrieved page; the caller owns the failure evidence.
+    async fn parse_page(
+        &self,
+        job: &QueryJob,
+        start: u32,
+        receipt: &DocumentReceipt,
+    ) -> Result<SearchPage, PageFailure> {
+        let bytes = match load_response(self.runtime.clone(), &receipt.digest).await {
+            Ok(value) => value,
+            Err(error) => return Err(PageFailure::Artifact(error)),
+        };
+        match parse_response(
+            self.runtime.clone(),
+            &job.query,
+            start,
+            receipt.digest.clone(),
+            bytes,
+        )
+        .await
+        {
+            Ok(Ok(value)) => Ok(value),
+            Ok(Err(error)) => Err(PageFailure::Malformed(error)),
+            Err(error) => Err(PageFailure::Artifact(error)),
+        }
+    }
+}
+
+/// Which `OperationFailure` a page that never reconciled is recorded as.
+enum PageFailure {
+    Artifact(anyhow::Error),
+    Malformed(anyhow::Error),
 }
 
 fn response_evidence(

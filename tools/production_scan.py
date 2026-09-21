@@ -216,19 +216,25 @@ def count_indexing(lines: list[str]) -> int:
 
 
 def scan_functions(path: pathlib.Path, production: list[str]) -> tuple[int, int]:
+    # Braces are counted on masked lines. A `{` that is character-literal, string-literal or
+    # comment text opens no block, and counting it left the walk's depth above zero for the rest of
+    # the file: `profile/html/state.rs`'s `decode` measured an 85-line span because of
+    # `rest.find('{')`, and every function after it was swallowed into that one span.
+    mask = CodeMask()
+    masked = [mask.apply(line) for line in production]
     over_60 = 0
     over_logical = 0
     index = 0
-    while index < len(production):
+    while index < len(masked):
         match = FN_RE.match(production[index])
         if not match:
             index += 1
             continue
         depth = 0
         end = index
-        while end < len(production):
-            depth += production[end].count("{") - production[end].count("}")
-            if depth <= 0 and "{" in "".join(production[index:end + 1]):
+        while end < len(masked):
+            depth += masked[end].count("{") - masked[end].count("}")
+            if depth <= 0 and any("{" in line for line in masked[index:end + 1]):
                 break
             end += 1
         body = production[index:end + 1]

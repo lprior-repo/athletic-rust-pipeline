@@ -30,7 +30,7 @@ mod columns;
 mod map;
 mod parse;
 
-use crate::model::SourceRef;
+use census_domain::model::SourceRef;
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -93,36 +93,10 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
         if trimmed.is_empty() {
             continue;
         }
-        if let Some(parsed) = Section::from_header(line) {
-            if let Some(event) = events.last_mut() {
-                event.round = parsed.round.map(str::to_string);
-            }
-            section = Some(parsed);
+        if apply_marker(line, trimmed, &mut events, &mut section) {
             continue;
         }
-        if let Some(event) = event_header(trimmed) {
-            events.push(event);
-            continue;
-        }
-        if let Some(round) = round_marker(trimmed) {
-            if let Some(event) = events.last_mut() {
-                event.round = Some(round.to_string());
-            }
-            continue;
-        }
-        // Relay legs belong to the relay row above them.
-        if place_prefix.is_some_and(|pattern| pattern.is_match(trimmed)) {
-            if let Some(event) = events.last_mut() {
-                if event.kind.is_relay() {
-                    if let Some(row) = event.rows.last_mut() {
-                        let legs = parse_legs(trimmed, row.legs.len());
-                        if !legs.is_empty() {
-                            row.legs.extend(legs);
-                            continue;
-                        }
-                    }
-                }
-            }
+        if extend_relay_legs(trimmed, &mut events, place_prefix) {
             continue;
         }
         let Some(event) = events.last_mut() else {
@@ -151,6 +125,57 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
         rows_parsed: row_lines,
         rows_skipped: skipped_rows,
     })
+}
+
+/// Read a line that describes the stream itself rather than one athlete: a section header, an event
+/// header or a round marker. `true` when the line was one of those and the stream state now holds.
+fn apply_marker(
+    line: &str,
+    trimmed: &str,
+    events: &mut Vec<ParsedEvent>,
+    section: &mut Option<Section>,
+) -> bool {
+    if let Some(parsed) = Section::from_header(line) {
+        if let Some(event) = events.last_mut() {
+            event.round = parsed.round.map(str::to_string);
+        }
+        *section = Some(parsed);
+        return true;
+    }
+    if let Some(event) = event_header(trimmed) {
+        events.push(event);
+        return true;
+    }
+    if let Some(round) = round_marker(trimmed) {
+        if let Some(event) = events.last_mut() {
+            event.round = Some(round.to_string());
+        }
+        return true;
+    }
+    false
+}
+
+/// Relay legs belong to the relay row above them; a leg line is consumed either way, because a
+/// `1) Name 11` line is never a row of its own.
+fn extend_relay_legs(
+    trimmed: &str,
+    events: &mut [ParsedEvent],
+    place_prefix: Option<&Regex>,
+) -> bool {
+    if !place_prefix.is_some_and(|pattern| pattern.is_match(trimmed)) {
+        return false;
+    }
+    if let Some(event) = events.last_mut() {
+        if event.kind.is_relay() {
+            if let Some(row) = event.rows.last_mut() {
+                let legs = parse_legs(trimmed, row.legs.len());
+                if !legs.is_empty() {
+                    row.legs.extend(legs);
+                }
+            }
+        }
+    }
+    true
 }
 
 /// Split an HTML result file into report lines.

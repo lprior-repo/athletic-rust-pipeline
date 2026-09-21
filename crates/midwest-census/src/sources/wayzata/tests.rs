@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{CompetitionLevel, Sport};
+use census_domain::model::{CompetitionLevel, Sport};
 use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
 
@@ -144,7 +144,7 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: crate::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear(2026),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = Options {
@@ -262,7 +262,7 @@ async fn a_journaled_schedule_is_skipped_on_the_next_run() {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: crate::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear(2026),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = Options {
@@ -299,7 +299,7 @@ fn a_school_shaped_venue_is_read_with_its_suffix_written_out() {
 fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
     // Canonical schools carry a normalized name, exactly as the store writes them.
     let school = |state: &str, name: &str| {
-        crate::model::CanonicalSchool::new(state, name, crate::model::normalize_name(name)).0
+        census_domain::model::CanonicalSchool::new(state, name, census_domain::model::normalize_name(name)).0
     };
     let mut cache = HashMap::new();
 

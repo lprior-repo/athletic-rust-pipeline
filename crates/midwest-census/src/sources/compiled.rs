@@ -16,7 +16,7 @@
 //! export states its layout through label positions and nothing else. Grades are published twice:
 //! as the `Yr` column for individuals and per leg for relay members.
 
-use crate::model::{EventKind, Gender, Mark, SourceRef};
+use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use crate::sources::hytek::{
     self, columns_from_header, grade_from_token, looks_like_a_name, substring, tokens, Column,
 };
@@ -201,60 +201,12 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
             continue;
         }
         if let Some(columns) = column_anchors(line) {
-            // The column header of a page states where every field sits, and blocks on the same page
-            // share it. A block owns the columns from its own header up to the next block's identity
-            // column, because the score columns of the left event print left of where the right
-            // event's athlete column begins.
-            let bounds: Vec<usize> = blocks
-                .iter()
-                .skip(1)
-                .map(|next| {
-                    columns
-                        .iter()
-                        .find(|column| {
-                            column.start >= next.start && is_identity_column(&column.label)
-                        })
-                        .or_else(|| columns.iter().find(|column| column.start >= next.start))
-                        .map(|column| column.start)
-                        .unwrap_or(usize::MAX)
-                })
-                .chain(std::iter::once(usize::MAX))
-                .collect();
-            let mut low = blocks.first().map(|block| block.start).unwrap_or(0);
-            for (block, high) in blocks.iter_mut().zip(bounds) {
-                block.columns = columns
-                    .iter()
-                    .filter(|column| column.start >= low && column.start < high)
-                    .cloned()
-                    .collect();
-                block.limit = high;
-                low = high;
-            }
+            rebind_columns(&mut blocks, &columns);
             continue;
         }
-        let line_tokens = tokens(line);
-        for block in blocks.iter() {
-            let slice = substring(line, block.start, block.end);
-            if slice.is_empty() {
-                continue;
-            }
-            // A block's `index` names the event it built, so this lookup always resolves; a file
-            // that somehow lost the pairing is left to the next layout instead of being read
-            // against the wrong event.
-            let event = events.get_mut(block.index)?;
-            if let Some(row) = parse_row(line, &line_tokens, block) {
-                rows_parsed = rows_parsed.saturating_add(1);
-                event.rows.push(row);
-                continue;
-            }
-            if attach_legs(line, block, event)? {
-                rows_parsed = rows_parsed.saturating_add(1);
-                continue;
-            }
-            if starts_like_a_row(&slice) {
-                rows_skipped = rows_skipped.saturating_add(1);
-            }
-        }
+        let (parsed, skipped) = read_blocks(line, &blocks, &mut events)?;
+        rows_parsed = rows_parsed.saturating_add(parsed);
+        rows_skipped = rows_skipped.saturating_add(skipped);
     }
 
     let events: Vec<ParsedEvent> = events
@@ -276,6 +228,67 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
         rows_parsed,
         rows_skipped,
     })
+}
+
+/// Re-anchor every block of the page against the column header line they share.
+///
+/// The column header of a page states where every field sits, and blocks on the same page share it.
+/// A block owns the columns from its own header up to the next block's identity column, because the
+/// score columns of the left event print left of where the right event's athlete column begins.
+fn rebind_columns(blocks: &mut [Block], columns: &[Column]) {
+    let bounds: Vec<usize> = blocks
+        .iter()
+        .skip(1)
+        .map(|next| {
+            columns
+                .iter()
+                .find(|column| column.start >= next.start && is_identity_column(&column.label))
+                .or_else(|| columns.iter().find(|column| column.start >= next.start))
+                .map(|column| column.start)
+                .unwrap_or(usize::MAX)
+        })
+        .chain(std::iter::once(usize::MAX))
+        .collect();
+    let mut low = blocks.first().map(|block| block.start).unwrap_or(0);
+    for (block, high) in blocks.iter_mut().zip(bounds) {
+        block.columns = columns
+            .iter()
+            .filter(|column| column.start >= low && column.start < high)
+            .cloned()
+            .collect();
+        block.limit = high;
+        low = high;
+    }
+}
+
+/// Every block's reading of one line, as the number of rows read and the number skipped.
+///
+/// A block's `index` names the event it built, so this lookup always resolves; a file that somehow
+/// lost the pairing is left to the next layout instead of being read against the wrong event.
+fn read_blocks(line: &str, blocks: &[Block], events: &mut [ParsedEvent]) -> Option<(usize, usize)> {
+    let line_tokens = tokens(line);
+    let mut parsed = 0usize;
+    let mut skipped = 0usize;
+    for block in blocks {
+        let slice = substring(line, block.start, block.end);
+        if slice.is_empty() {
+            continue;
+        }
+        let event = events.get_mut(block.index)?;
+        if let Some(row) = parse_row(line, &line_tokens, block) {
+            parsed = parsed.saturating_add(1);
+            event.rows.push(row);
+            continue;
+        }
+        if attach_legs(line, block, event)? {
+            parsed = parsed.saturating_add(1);
+            continue;
+        }
+        if starts_like_a_row(&slice) {
+            skipped = skipped.saturating_add(1);
+        }
+    }
+    Some((parsed, skipped))
 }
 
 /// Meet name and date from the print header.
@@ -599,22 +612,22 @@ Girls' 4x800 Relay Division 1                     Finals                    Girl
                 RelayLeg {
                     position: 1,
                     name: "Wloszczynski, Lexi".into(),
-                    grade: crate::model::Grade::new(10)
+                    grade: census_domain::model::Grade::new(10)
                 },
                 RelayLeg {
                     position: 2,
                     name: "Young, Ellie".into(),
-                    grade: crate::model::Grade::new(9)
+                    grade: census_domain::model::Grade::new(9)
                 },
                 RelayLeg {
                     position: 3,
                     name: "Falbo, Hailey".into(),
-                    grade: crate::model::Grade::new(12)
+                    grade: census_domain::model::Grade::new(12)
                 },
                 RelayLeg {
                     position: 4,
                     name: "Huza, Hannah".into(),
-                    grade: crate::model::Grade::new(12)
+                    grade: census_domain::model::Grade::new(12)
                 },
             ],
             "both leg lines belong to the relay row above them"
@@ -644,7 +657,7 @@ Girls' 4x800 Relay Division 1                     Finals                    Girl
         );
         let leader = &dash.rows[0];
         assert_eq!(leader.name, "Parrish, Ashley");
-        assert_eq!(leader.grade, crate::model::Grade::new(11));
+        assert_eq!(leader.grade, census_domain::model::Grade::new(11));
         assert_eq!(leader.place, Some(1));
         // The source itself truncates long school names with an ellipsis; the parser keeps it.
         assert_eq!(leader.school, "APPLETON NOR\u{2026}");

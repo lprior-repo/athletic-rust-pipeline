@@ -20,7 +20,7 @@
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use midwest_census::model::{
+use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
     Id, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,

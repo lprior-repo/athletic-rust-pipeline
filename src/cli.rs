@@ -17,7 +17,7 @@ use athletic_rust_pipeline::{
         import::ImportRequest,
         rankings::{RankingsScope, SeasonKind},
         run::RunCoordinatorIngressClient,
-        run_protocol::{preparation_key, Selection},
+        run_protocol::{preparation_key, RunRequest, Selection},
         worker,
     },
     store::ArtifactStore,
@@ -33,139 +33,150 @@ pub async fn run() -> Result<()> {
         Command::Worker { config, bind } => worker::serve(&config, bind).await,
         Command::Deploy { admin, endpoint } => emit(&transport::deploy(&admin, &endpoint).await?),
         Command::Start(args) => start(args).await,
-        Command::Status { ingress, run } => {
-            let client =
-                RunCoordinatorIngressClient::from_client(transport::client(&ingress)?, "global");
-            let response = client
-                .status(Json(EvidenceDigest::parse(&run)?))
-                .call()
-                .await
-                .map_err(transport::ingress_error)?
-                .into_body()
-                .map_err(transport::ingress_error)?;
-            emit(&response.0)
-        }
-        Command::RankingsStatus { ingress, run } => {
-            let input = RankingControlsInput {
-                run: EvidenceDigest::parse(&run)?,
-            };
-            let client = transport::client(&ingress)?;
-            let control = PipelineControlIngressClient::from_client(client);
-            let state = control
-                .rankings_progress(Json(input))
-                .call()
-                .await
-                .map_err(transport::ingress_error)?
-                .into_body()
-                .map_err(transport::ingress_error)?;
-            emit(&state.0)
-        }
-        Command::RankingsPause { ingress, run } => {
-            let input = RankingControlsInput {
-                run: EvidenceDigest::parse(&run)?,
-            };
-            let client = transport::client(&ingress)?;
-            let control = PipelineControlIngressClient::from_client(client);
-            control
-                .rankings_pause(Json(input))
-                .call()
-                .await
-                .map_err(transport::ingress_error)?
-                .into_body()
-                .map_err(transport::ingress_error)?;
-            emit(&serde_json::json!({"status": "paused"}))
-        }
-        Command::RankingsResume { ingress, run } => {
-            let input = RankingControlsInput {
-                run: EvidenceDigest::parse(&run)?,
-            };
-            let client = transport::client(&ingress)?;
-            let control = PipelineControlIngressClient::from_client(client);
-            control
-                .rankings_resume(Json(input))
-                .call()
-                .await
-                .map_err(transport::ingress_error)?
-                .into_body()
-                .map_err(transport::ingress_error)?;
-            emit(&serde_json::json!({"status": "resumed"}))
-        }
-        Command::BrowserStart { ingress } => {
-            let client = BrowserSessionIngressClient::from_client(
-                transport::client(&ingress)?,
-                BROWSER_SESSION_KEY,
-            );
-            let submitted = client
-                .await_ready(Json(ReadinessRequest { operator: true }))
-                .send()
-                .await
-                .map_err(transport::ingress_error)?;
-            emit(
-                &serde_json::json!({"invocation_id": submitted.invocation_handle().invocation_id()}),
-            )
-        }
-        Command::BrowserStatus { ingress } => {
-            let client = BrowserSessionIngressClient::from_client(
-                transport::client(&ingress)?,
-                BROWSER_SESSION_KEY,
-            );
-            let response = client
-                .status()
-                .call()
-                .await
-                .map_err(transport::ingress_error)?
-                .into_body()
-                .map_err(transport::ingress_error)?;
-            emit(&response.0)
-        }
+        Command::Status { ingress, run } => run_status(&ingress, &run).await,
+        Command::RankingsStatus { ingress, run } => rankings_status(&ingress, &run).await,
+        Command::RankingsPause { ingress, run } => rankings_pause(&ingress, &run).await,
+        Command::RankingsResume { ingress, run } => rankings_resume(&ingress, &run).await,
+        Command::BrowserStart { ingress } => browser_start(&ingress).await,
+        Command::BrowserStatus { ingress } => browser_status(&ingress).await,
         Command::Export {
             ingress,
             run,
             output,
-        } => {
-            let request = ExportRequest {
-                run: EvidenceDigest::parse(&run)?,
-                destination: destination(output)?,
-            };
-            let key = request.key()?;
-            let request_key = fingerprint(&("native-export-v4", &request))?;
-            let client = ExportWorkerIngressClient::from_client(transport::client(&ingress)?, &key);
-            let submitted = client
-                .publish(Json(request))
-                .idempotency_key(request_key.as_str())
-                .send()
-                .await
-                .map_err(transport::ingress_error)?;
-            emit(&await_export(submitted.invocation_handle()).await?)
-        }
+        } => export_run(&ingress, &run, output).await,
         Command::Verify {
             input,
             output,
             sha256,
             store,
-        } => {
-            let digest = WorkbookDigest::parse(&sha256)?;
-            let report = tokio::task::spawn_blocking(move || {
-                let artifact_store = existing_stopped_store(&store)?;
-                let headers = EXPORT_HEADERS
-                    .iter()
-                    .map(|header| (*header).to_owned())
-                    .collect::<Vec<_>>();
-                athletic_rust_pipeline::bundle_verify::verify_bundle(
-                    &input,
-                    &output,
-                    &digest,
-                    &headers,
-                    &artifact_store,
-                )
-            })
-            .await
-            .context("joining independent bundle verification")??;
-            emit(
-                &serde_json::json!({"scope": "source_preservation_and_retained_result_evidence_consistency", "verification": report}),
-            )
-        }
+        } => verify_retained_bundle(input, output, &sha256, store).await,
     }
+}
+
+async fn run_status(ingress: &str, run: &str) -> Result<()> {
+    let client = RunCoordinatorIngressClient::from_client(transport::client(ingress)?, "global");
+    let response = client
+        .status(Json(EvidenceDigest::parse(run)?))
+        .call()
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?;
+    emit(&response.0)
+}
+
+fn rankings_input(run: &str) -> Result<RankingControlsInput> {
+    Ok(RankingControlsInput {
+        run: EvidenceDigest::parse(run)?,
+    })
+}
+
+async fn rankings_status(ingress: &str, run: &str) -> Result<()> {
+    let input = rankings_input(run)?;
+    let control = PipelineControlIngressClient::from_client(transport::client(ingress)?);
+    let state = control
+        .rankings_progress(Json(input))
+        .call()
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?;
+    emit(&state.0)
+}
+
+async fn rankings_pause(ingress: &str, run: &str) -> Result<()> {
+    let input = rankings_input(run)?;
+    let control = PipelineControlIngressClient::from_client(transport::client(ingress)?);
+    control
+        .rankings_pause(Json(input))
+        .call()
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?;
+    emit(&serde_json::json!({"status": "paused"}))
+}
+
+async fn rankings_resume(ingress: &str, run: &str) -> Result<()> {
+    let input = rankings_input(run)?;
+    let control = PipelineControlIngressClient::from_client(transport::client(ingress)?);
+    control
+        .rankings_resume(Json(input))
+        .call()
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?;
+    emit(&serde_json::json!({"status": "resumed"}))
+}
+
+async fn browser_start(ingress: &str) -> Result<()> {
+    let client =
+        BrowserSessionIngressClient::from_client(transport::client(ingress)?, BROWSER_SESSION_KEY);
+    let submitted = client
+        .await_ready(Json(ReadinessRequest { operator: true }))
+        .send()
+        .await
+        .map_err(transport::ingress_error)?;
+    emit(&serde_json::json!({"invocation_id": submitted.invocation_handle().invocation_id()}))
+}
+
+async fn browser_status(ingress: &str) -> Result<()> {
+    let client =
+        BrowserSessionIngressClient::from_client(transport::client(ingress)?, BROWSER_SESSION_KEY);
+    let response = client
+        .status()
+        .call()
+        .await
+        .map_err(transport::ingress_error)?
+        .into_body()
+        .map_err(transport::ingress_error)?;
+    emit(&response.0)
+}
+
+async fn export_run(ingress: &str, run: &str, output: std::path::PathBuf) -> Result<()> {
+    let request = ExportRequest {
+        run: EvidenceDigest::parse(run)?,
+        destination: destination(output)?,
+    };
+    let key = request.key()?;
+    let request_key = fingerprint(&("native-export-v4", &request))?;
+    let client = ExportWorkerIngressClient::from_client(transport::client(ingress)?, &key);
+    let submitted = client
+        .publish(Json(request))
+        .idempotency_key(request_key.as_str())
+        .send()
+        .await
+        .map_err(transport::ingress_error)?;
+    emit(&await_export(submitted.invocation_handle()).await?)
+}
+
+async fn verify_retained_bundle(
+    input: std::path::PathBuf,
+    output: std::path::PathBuf,
+    sha256: &str,
+    store: std::path::PathBuf,
+) -> Result<()> {
+    let digest = WorkbookDigest::parse(sha256)?;
+    let report = tokio::task::spawn_blocking(move || {
+        let artifact_store = existing_stopped_store(&store)?;
+        let headers = EXPORT_HEADERS
+            .iter()
+            .map(|header| (*header).to_owned())
+            .collect::<Vec<_>>();
+        athletic_rust_pipeline::bundle_verify::verify_bundle(
+            &input,
+            &output,
+            &digest,
+            &headers,
+            &artifact_store,
+        )
+    })
+    .await
+    .context("joining independent bundle verification")??;
+    emit(
+        &serde_json::json!({"scope": "source_preservation_and_retained_result_evidence_consistency", "verification": report}),
+    )
 }
 
 async fn await_export(
@@ -239,22 +250,7 @@ async fn start(args: Start) -> Result<()> {
             .context("canonicalizing source workbook")?,
         workbook: WorkbookDigest::parse(&args.sha256)?,
     };
-    let rankings_scope = if args.rankings {
-        let season_kind = match args.rankings_season.as_str() {
-            "indoor" => SeasonKind::Indoor,
-            "outdoor" => SeasonKind::Outdoor,
-            other => bail!("unsupported rankings season: {other}"),
-        };
-        let scope = RankingsScope::for_division(
-            season_kind,
-            &args.rankings_gender,
-            args.max_pages_per_event,
-        )
-        .context("building rankings scope")?;
-        Some(scope)
-    } else {
-        None
-    };
+    let rankings_scope = rankings_scope_for(&args)?;
     let request = PrepareRequest {
         source,
         selection,
@@ -277,22 +273,7 @@ async fn start(args: Start) -> Result<()> {
         .0;
     let key = prepared.key()?;
     if let Some(output) = args.output {
-        let automated = RunAndExportRequest {
-            request: prepared,
-            destination: destination(output)?,
-        };
-        let automation_key = fingerprint(&("run-and-export-v1", &automated))?;
-        let submitted = control
-            .run_and_export(Json(automated))
-            .idempotency_key(automation_key.as_str())
-            .send()
-            .await
-            .map_err(transport::ingress_error)?;
-        return emit(&serde_json::json!({
-            "run": key, "invocation": submitted.invocation_handle().invocation_id(),
-            "state": "submitted", "automatic_export": true,
-            "note": "Restate publishes the verified export after run completion; submission is not completion."
-        }));
+        return submit_with_export(&control, prepared, output, key).await;
     }
     let coordinator = RunCoordinatorIngressClient::from_client(client, "global");
     let sent = coordinator
@@ -305,6 +286,49 @@ async fn start(args: Start) -> Result<()> {
         &serde_json::json!({"run": key, "invocation": sent.invocation_handle().invocation_id(),
         "state": "submitted", "note": "Submission is not completion; inspect status and verified export."}),
     )
+}
+
+fn rankings_scope_for(args: &Start) -> Result<Option<RankingsScope>> {
+    if args.rankings {
+        let season_kind = match args.rankings_season.as_str() {
+            "indoor" => SeasonKind::Indoor,
+            "outdoor" => SeasonKind::Outdoor,
+            other => bail!("unsupported rankings season: {other}"),
+        };
+        let scope = RankingsScope::for_division(
+            season_kind,
+            &args.rankings_gender,
+            args.max_pages_per_event,
+        )
+        .context("building rankings scope")?;
+        Ok(Some(scope))
+    } else {
+        Ok(None)
+    }
+}
+
+async fn submit_with_export(
+    control: &PipelineControlIngressClient<reqwest::Client>,
+    prepared: RunRequest,
+    output: std::path::PathBuf,
+    key: String,
+) -> Result<()> {
+    let automated = RunAndExportRequest {
+        request: prepared,
+        destination: destination(output)?,
+    };
+    let automation_key = fingerprint(&("run-and-export-v1", &automated))?;
+    let submitted = control
+        .run_and_export(Json(automated))
+        .idempotency_key(automation_key.as_str())
+        .send()
+        .await
+        .map_err(transport::ingress_error)?;
+    emit(&serde_json::json!({
+        "run": key, "invocation": submitted.invocation_handle().invocation_id(),
+        "state": "submitted", "automatic_export": true,
+        "note": "Restate publishes the verified export after run completion; submission is not completion."
+    }))
 }
 
 fn destination(path: std::path::PathBuf) -> Result<std::path::PathBuf> {

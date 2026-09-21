@@ -2,7 +2,7 @@ mod discovery;
 mod rankings;
 mod review;
 mod support;
-use discovery::{execute_profiles, execute_queries, ProfileState};
+use discovery::{execute_profiles, execute_queries, DiscoveryState, ProfileState};
 use review::resolve_assessment;
 use support::{publish, publish_report, publish_terminal, source_validation, validate_job};
 
@@ -127,58 +127,12 @@ impl RowWorker {
             execute_queries(ctx, self.runtime.clone(), &job.snapshot, queries).await?;
         let query_refs = std::mem::take(&mut discovery.refs);
         let source_name = CanonicalName::from_source(&source).ok().flatten();
-        let rankings_evidence = if let Some(ranking_ref) = &job.rankings {
-            let collection = ranking_ref.collection.clone();
-            let bound_snapshot = ranking_ref.snapshot.clone();
-            let (lookup, lookup_incomplete) = rankings::perform_rankings_lookup(
-                ctx,
-                self.runtime.clone(),
-                collection,
-                bound_snapshot,
-                source_name.clone(),
-            )
+        let rankings_evidence = self
+            .fold_rankings_lookup(ctx, &job, source_name, &mut discovery)
             .await?;
-            if lookup_incomplete || lookup.truncated {
-                discovery.incomplete = true;
-            }
-            let mut candidate_limit = false;
-            let records = &lookup.records;
-            for ref_entry in records {
-                if discovery.candidate_ids.contains(&ref_entry.athlete_id) {
-                    continue;
-                }
-                if discovery.candidate_ids.len() == MAX_CANDIDATES {
-                    candidate_limit = true;
-                    break;
-                }
-                discovery.candidate_ids.insert(ref_entry.athlete_id);
-            }
-            if candidate_limit {
-                discovery.candidate_limit = true;
-            }
-            let evidence = RankingDiscoveryEvidence {
-                canonical_name: source_name,
-                collection: ranking_ref.clone(),
-                lookup,
-            };
-            Some(evidence)
-        } else {
-            None
-        };
-        let summary = publish(
-            ctx,
-            self.runtime.clone(),
-            "row-discovery-summary",
-            DiscoverySummary {
-                job: job.clone(),
-                candidate_ids: discovery.candidate_ids.clone(),
-                query_artifacts: query_refs.clone(),
-                complete: discovery.complete(),
-                issues: discovery.issues.clone(),
-                rankings: rankings_evidence,
-            },
-        )
-        .await?;
+        let summary = self
+            .publish_summary(ctx, &job, &discovery, &query_refs, rankings_evidence)
+            .await?;
         let (profiles, _profile_refs) = execute_profiles(
             ctx,
             self.runtime.clone(),
@@ -187,20 +141,8 @@ impl RowWorker {
             &discovery.candidate_ids,
         )
         .await?;
-        let search = if discovery.complete() && profiles.complete() {
-            decision::SearchCompleteness::Complete {
-                evidence: summary.clone(),
-            }
-        } else {
-            decision::SearchCompleteness::Incomplete {
-                reasons: vec![format!(
-                    "discovery complete: {}; profile acquisition complete: {}",
-                    discovery.complete(),
-                    profiles.complete()
-                )],
-            }
-        };
-        let (profiles, assessed) =
+        let search = search_completeness(&discovery, &profiles, &summary);
+        let (mut profiles, assessed) =
             assess_and_publish(ctx, self.runtime.clone(), &source, profiles, search).await?;
         let (resolution, review, mut issues) = resolve_assessment(
             ctx,
@@ -210,13 +152,7 @@ impl RowWorker {
             &assessed,
         )
         .await?;
-        issues.extend(discovery.issues);
-        issues.extend(profiles.issues);
-        if discovery.candidate_limit {
-            issues.push(format!(
-                "candidate limit exceeded: only the first {MAX_CANDIDATES} unique athlete IDs were acquired"
-            ));
-        }
+        fold_issues(&mut issues, &mut discovery, &mut profiles);
         publish_report(
             ctx,
             self.runtime.clone(),
@@ -233,6 +169,109 @@ impl RowWorker {
             },
         )
         .await
+    }
+
+    async fn fold_rankings_lookup(
+        &self,
+        ctx: &ObjectContext<'_>,
+        job: &RowJob,
+        source_name: Option<CanonicalName>,
+        discovery: &mut DiscoveryState,
+    ) -> Result<Option<RankingDiscoveryEvidence>, HandlerError> {
+        let Some(ranking_ref) = &job.rankings else {
+            return Ok(None);
+        };
+        let collection = ranking_ref.collection.clone();
+        let bound_snapshot = ranking_ref.snapshot.clone();
+        let (lookup, lookup_incomplete) = rankings::perform_rankings_lookup(
+            ctx,
+            self.runtime.clone(),
+            collection,
+            bound_snapshot,
+            source_name.clone(),
+        )
+        .await?;
+        if lookup_incomplete || lookup.truncated {
+            discovery.incomplete = true;
+        }
+        let mut candidate_limit = false;
+        let records = &lookup.records;
+        for ref_entry in records {
+            if discovery.candidate_ids.contains(&ref_entry.athlete_id) {
+                continue;
+            }
+            if discovery.candidate_ids.len() == MAX_CANDIDATES {
+                candidate_limit = true;
+                break;
+            }
+            discovery.candidate_ids.insert(ref_entry.athlete_id);
+        }
+        if candidate_limit {
+            discovery.candidate_limit = true;
+        }
+        Ok(Some(RankingDiscoveryEvidence {
+            canonical_name: source_name,
+            collection: ranking_ref.clone(),
+            lookup,
+        }))
+    }
+
+    async fn publish_summary(
+        &self,
+        ctx: &ObjectContext<'_>,
+        job: &RowJob,
+        discovery: &DiscoveryState,
+        query_refs: &[EvidenceDigest],
+        rankings: Option<RankingDiscoveryEvidence>,
+    ) -> std::result::Result<EvidenceDigest, TerminalError> {
+        publish(
+            ctx,
+            self.runtime.clone(),
+            "row-discovery-summary",
+            DiscoverySummary {
+                job: job.clone(),
+                candidate_ids: discovery.candidate_ids.clone(),
+                query_artifacts: query_refs.to_vec(),
+                complete: discovery.complete(),
+                issues: discovery.issues.clone(),
+                rankings,
+            },
+        )
+        .await
+    }
+}
+
+fn fold_issues(
+    issues: &mut Vec<String>,
+    discovery: &mut DiscoveryState,
+    profiles: &mut ProfileState,
+) {
+    issues.extend(std::mem::take(&mut discovery.issues));
+    issues.extend(std::mem::take(&mut profiles.issues));
+    if discovery.candidate_limit {
+        issues.push(format!(
+            "candidate limit exceeded: only the first {MAX_CANDIDATES} unique athlete IDs were acquired"
+        ));
+    }
+}
+
+fn search_completeness(
+    discovery: &DiscoveryState,
+    profiles: &ProfileState,
+    evidence: &EvidenceDigest,
+) -> decision::SearchCompleteness {
+    if discovery.complete() && profiles.complete() {
+        decision::SearchCompleteness::Complete {
+            evidence: evidence.clone(),
+        }
+    } else {
+        decision::SearchCompleteness::Incomplete {
+            reasons: vec![format!(
+                "discovery complete: {}; profile acquisition complete: {}",
+                discovery.complete(),
+                profiles.complete()
+            )],
+        }
     }
 }
 

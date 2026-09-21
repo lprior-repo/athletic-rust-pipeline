@@ -9,7 +9,7 @@ license = "MIT"
 workspace = true
 
 [workspace]
-members = ["crates/midwest-census", "xtask"]
+members = ["crates/census-domain", "crates/midwest-census", "xtask"]
 
 [features]
 default = []

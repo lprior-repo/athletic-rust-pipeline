@@ -1,7 +1,7 @@
 //! Published-token readers: the grade, gender and sport vocabularies, and the school
 //! year a row's meet date belongs to.
 
-use crate::model::{Gender, Grade, SchoolYear, Sport};
+use census_domain::model::{Gender, Grade, SchoolYear, Sport};
 
 /// Parse a grade token from the athlete index.
 ///

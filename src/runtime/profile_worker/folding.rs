@@ -1,14 +1,14 @@
 use super::super::{
-    acquisition::{ProfileAcquisition, ProfileJob},
-    protocol::{FailureCode, SourceResource},
+    acquisition::{ProfileAcquisition, ProfileJob, TeamRequest},
+    protocol::{DocumentReceipt, FailureCode, OperationFailure, SourceResource},
     Runtime,
 };
 use super::{
     intake::{acquire, initial_resources, retry_evidence},
-    parsing::{parse_sources, parse_teams},
+    parsing::{parse_sources, parse_teams, ParsedTeam},
     reporting::{failure, issue},
     state::{absorb_initial, finalize_profile, BuildState},
-    team,
+    team::{self, TeamObservation},
 };
 use anyhow::Result;
 use restate_sdk::prelude::*;
@@ -52,40 +52,18 @@ pub(super) async fn team_phase(
             "/allSeasons",
         ));
     }
-    let resources = requests
-        .into_iter()
-        .map(|request| SourceResource::Team {
-            team_id: request.team_id,
-            sport: request.sport,
-            season: request.season,
-        })
-        .collect();
+    let resources = team_resources(requests);
     let fetched = acquire(ctx, &job.snapshot, resources).await?;
     state
         .operations
         .extend(fetched.iter().map(|(_, outcome)| retry_evidence(outcome)));
     let parsed = parse_teams(runtime, fetched).await;
-    let observations = parsed
-        .into_iter()
-        .try_fold(Vec::new(), |mut observations, item| {
-            state.responses.extend(item.responses.clone());
-            if let Some(message) = item.failure {
-                state.complete = false;
-                state.failures.push(failure(
-                    FailureCode::MalformedResponse,
-                    message,
-                    item.responses.clone(),
-                )?);
-            }
-            if let Some(source_failure) = item.source_failure {
-                state.complete = false;
-                state.failures.push(source_failure);
-            }
-            if let Some(observation) = item.observation {
-                observations.push(observation);
-            }
-            Ok::<_, HandlerError>(observations)
-        })?;
+    let observations = absorb_teams(
+        &mut state.responses,
+        &mut state.failures,
+        &mut state.complete,
+        parsed,
+    )?;
     let profile = finalize_profile(
         state.profiles,
         state.html,
@@ -102,4 +80,44 @@ pub(super) async fn team_phase(
         failures: state.failures,
         complete: state.complete,
     })
+}
+
+fn team_resources(requests: Vec<TeamRequest>) -> Vec<SourceResource> {
+    requests
+        .into_iter()
+        .map(|request| SourceResource::Team {
+            team_id: request.team_id,
+            sport: request.sport,
+            season: request.season,
+        })
+        .collect()
+}
+
+fn absorb_teams(
+    responses: &mut Vec<DocumentReceipt>,
+    failures: &mut Vec<OperationFailure>,
+    complete: &mut bool,
+    parsed: Vec<ParsedTeam>,
+) -> Result<Vec<TeamObservation>, HandlerError> {
+    parsed
+        .into_iter()
+        .try_fold(Vec::new(), |mut observations, item| {
+            responses.extend(item.responses.clone());
+            if let Some(message) = item.failure {
+                *complete = false;
+                failures.push(failure(
+                    FailureCode::MalformedResponse,
+                    message,
+                    item.responses.clone(),
+                )?);
+            }
+            if let Some(source_failure) = item.source_failure {
+                *complete = false;
+                failures.push(source_failure);
+            }
+            if let Some(observation) = item.observation {
+                observations.push(observation);
+            }
+            Ok::<_, HandlerError>(observations)
+        })
 }

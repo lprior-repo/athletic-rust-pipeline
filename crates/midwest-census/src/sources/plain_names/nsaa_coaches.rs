@@ -1,21 +1,17 @@
 //! Nebraska (NSAA): directory rows → canonical school/coach entities, plus the per-school walk
 //! that fetches each member page, journals it and writes the rows.
 
-use super::nsaa::{
-    nsaa_school_url, parse_nsaa_directory, parse_nsaa_school_names, NsaaRow, NsaaSchool,
-};
-use super::parse::{email_regex, is_office_role, split_person_names};
-use super::{
-    observed_on, Options, NSAA_ADAPTER_ID, NSAA_COACHES_PHASE, NSAA_FORM_URL, NSAA_SCHOOLS_PHASE,
-};
-use crate::model::{
+use super::nsaa::{parse_nsaa_school_names, NsaaRow, NsaaSchool};
+use super::nsaa_walk::NsaaWalk;
+use super::parse::{is_office_role, split_person_names};
+use super::{observed_on, Options, NSAA_ADAPTER_ID, NSAA_FORM_URL, NSAA_SCHOOLS_PHASE};
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
-use crate::store::Table;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::collections::HashSet;
 
 /// Classify one NSAA directory row label.
@@ -125,12 +121,39 @@ pub(super) async fn collect_nebraska(
     fetch: &FetchOptions,
     report: &mut AdapterReport,
 ) -> Result<(u64, u64)> {
+    let Some(members) = nsaa_members(ctx, fetch, report).await? else {
+        return Ok((0, 0));
+    };
+    let mut walk = NsaaWalk::new(observed_on(ctx, options));
+    let journal = ctx.store.journal_keys(NSAA_SCHOOLS_PHASE)?;
+
+    for name in &members {
+        if walk.limit_reached(options.limit) {
+            break;
+        }
+        let key = format!("NE:{name}");
+        if journal.contains(&key) {
+            walk.note_resumed();
+            continue;
+        }
+        walk.visit(ctx, fetch, report, name).await?;
+    }
+
+    walk.publish(ctx, report, members.len())
+}
+
+/// The NSAA directory form's member-school names; `None` means the failure is on the report.
+async fn nsaa_members(
+    ctx: &AdapterContext<'_>,
+    fetch: &FetchOptions,
+    report: &mut AdapterReport,
+) -> Result<Option<Vec<String>>> {
     let form = match ctx.fetcher.get(NSAA_FORM_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {
             report.errors = report.errors.saturating_add(1);
             report.note(format!("nsaa: {NSAA_FORM_URL} failed: {error}"));
-            return Ok((0, 0));
+            return Ok(None);
         }
     };
     let members = parse_nsaa_school_names(&form.text())?;
@@ -139,124 +162,7 @@ pub(super) async fn collect_nebraska(
         report.note(format!(
             "nsaa: {NSAA_FORM_URL} carried no member-school options"
         ));
-        return Ok((0, 0));
+        return Ok(None);
     }
-
-    let observed_on = observed_on(ctx, options);
-    let journal = ctx.store.journal_keys(NSAA_SCHOOLS_PHASE)?;
-    // Counters saturate: they only feed the report, and no source carries 2^64 rows.
-    let mut schools: Vec<CanonicalSchool> = Vec::new();
-    let mut coaches: Vec<CanonicalCoach> = Vec::new();
-    let mut processed = 0usize;
-    let mut resumed = 0usize;
-    let mut failed = 0usize;
-    let mut ad_rows = 0usize;
-    let mut sport_rows = 0usize;
-    let mut slots = 0usize;
-    let mut slots_named = 0usize;
-    let mut rows_with_email = 0usize;
-    let mut coach_rows_with_email = 0usize;
-    let mut role_rows = 0usize;
-
-    for name in &members {
-        if options.limit.is_some_and(|limit| processed >= limit) {
-            break;
-        }
-        let key = format!("NE:{name}");
-        if journal.contains(&key) {
-            resumed = resumed.saturating_add(1);
-            continue;
-        }
-        let url = nsaa_school_url(name);
-        let page = match ctx.fetcher.get(&url, fetch).await {
-            Ok(outcome) => outcome,
-            Err(error) => {
-                failed = failed.saturating_add(1);
-                report.errors = report.errors.saturating_add(1);
-                report.note(format!("nsaa: {url} failed: {error}"));
-                continue;
-            }
-        };
-        let blocks = parse_nsaa_directory(&page.text())?;
-        let Some(entry) = blocks
-            .iter()
-            .find(|entry| &entry.name == name)
-            .or_else(|| blocks.first())
-        else {
-            failed = failed.saturating_add(1);
-            report.errors = report.errors.saturating_add(1);
-            report.note(format!("nsaa: {url} carried no school block"));
-            continue;
-        };
-
-        let (school, school_id) = parse_nsaa_school(entry, &url, &observed_on);
-        let school_coaches = nsaa_coaches(entry, &school_id, &url, &observed_on)?;
-        for role in &entry.roles {
-            role_rows = role_rows.saturating_add(1);
-            if email_regex()?.is_match(&role.name) {
-                rows_with_email = rows_with_email.saturating_add(1);
-                if parse_nsaa_row(&role.label).is_some() {
-                    coach_rows_with_email = coach_rows_with_email.saturating_add(1);
-                }
-            }
-            if matches!(
-                parse_nsaa_row(&role.label),
-                Some(NsaaRow::SportCoach { .. })
-            ) {
-                slots = slots.saturating_add(1);
-                if !split_person_names(&role.name)?.is_empty() {
-                    slots_named = slots_named.saturating_add(1);
-                }
-            }
-        }
-        ad_rows = ad_rows.saturating_add(
-            school_coaches
-                .iter()
-                .filter(|coach| coach.role == CoachRole::AthleticDirector)
-                .count(),
-        );
-        sport_rows = sport_rows.saturating_add(
-            school_coaches
-                .iter()
-                .filter(|coach| coach.role == CoachRole::HeadCoach)
-                .count(),
-        );
-        let coach_count = school_coaches.len();
-        coaches.extend(school_coaches);
-        schools.push(school);
-
-        ctx.store.journal_done(
-            NSAA_SCHOOLS_PHASE,
-            &key,
-            &serde_json::json!({ "published_rows": entry.roles.len() }),
-        )?;
-        ctx.store.journal_done(
-            NSAA_COACHES_PHASE,
-            &key,
-            &serde_json::json!({ "coach_rows": coach_count }),
-        )?;
-        processed = processed.saturating_add(1);
-    }
-
-    let school_rows = u64::try_from(schools.len()).context("nsaa school count exceeds u64")?;
-    let coach_rows = u64::try_from(coaches.len()).context("nsaa coach count exceeds u64")?;
-    ctx.store
-        .append_many(Table::Schools, &schools)
-        .context("writing nsaa schools")?;
-    ctx.store
-        .append_many(Table::Coaches, &coaches)
-        .context("writing nsaa coaches")?;
-
-    report.note(format!(
-        "nsaa: {processed} of {} member schools parsed ({resumed} already journalled, {failed} failed); \
-         {coach_rows} coach rows ({ad_rows} athletic/activities directors, {sport_rows} sport rows); \
-         TF/XC coach slots named {slots_named}/{slots}",
-        members.len()
-    ));
-    report.note(format!(
-        "nsaa: {rows_with_email} of {role_rows} directory rows carry an email string \
-         ({coach_rows_with_email} of them in coach/AD rows); \
-         names only: provider publishes no coach email"
-    ));
-    Ok((school_rows, coach_rows))
+    Ok(Some(members))
 }

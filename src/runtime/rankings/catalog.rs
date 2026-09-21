@@ -60,6 +60,30 @@ impl EventCatalog {
         season_kind: SeasonKind,
         expected_list_id: u64,
     ) -> Result<Self, CatalogError> {
+        let (list_id, level_div_id) = Self::nav_scope(nav, season_kind, expected_list_id)?;
+        let events_array = nav
+            .get("events")
+            .and_then(|value| value.as_array())
+            .ok_or(CatalogError::MissingEvents)?;
+        let observed = Self::observed_events(events_array)?;
+        let (families, absent_families) = Self::family_coverage(&observed, requested_families);
+        Ok(Self {
+            list_id,
+            level_div_id,
+            season_id: season_kind.season_id(SEASON_YEAR),
+            observed,
+            families,
+            absent_families,
+        })
+    }
+
+    /// Resolve the nav's selected list and level division, rejecting any nav
+    /// that does not select the expected list for the given season kind.
+    fn nav_scope(
+        nav: &serde_json::Value,
+        season_kind: SeasonKind,
+        expected_list_id: u64,
+    ) -> Result<(u64, u64), CatalogError> {
         let nav_div_list_id = nav
             .get("divListId")
             .and_then(|value| value.as_u64())
@@ -91,10 +115,12 @@ impl EventCatalog {
                 expected: expected_list_id,
             });
         }
-        let events_array = nav
-            .get("events")
-            .and_then(|value| value.as_array())
-            .ok_or(CatalogError::MissingEvents)?;
+        Ok((list_id, level_div_id))
+    }
+
+    /// Collect the nav's events in order, rejecting malformed entries and
+    /// duplicate ids that disagree with the first observation.
+    fn observed_events(events_array: &[serde_json::Value]) -> Result<Vec<NavEvent>, CatalogError> {
         let (_, observed) = events_array.iter().try_fold(
             (HashMap::<u64, usize>::new(), Vec::<NavEvent>::new()),
             |(mut seen_ids, mut observed), value| {
@@ -123,7 +149,16 @@ impl EventCatalog {
                 Ok((seen_ids, observed))
             },
         )?;
-        let (families, absent_families) = requested_families.iter().fold(
+        Ok(observed)
+    }
+
+    /// Match every requested family against the observed events, recording the
+    /// families that have no observed variant as absent.
+    fn family_coverage(
+        observed: &[NavEvent],
+        requested_families: &[RequestedFamily],
+    ) -> (Vec<EventFamily>, Vec<AbsentFamily>) {
+        requested_families.iter().fold(
             (Vec::new(), Vec::new()),
             |(mut families, mut absent_families), requested| {
                 let variants = observed
@@ -151,15 +186,7 @@ impl EventCatalog {
                 }
                 (families, absent_families)
             },
-        );
-        Ok(Self {
-            list_id,
-            level_div_id,
-            season_id: season_kind.season_id(SEASON_YEAR),
-            observed,
-            families,
-            absent_families,
-        })
+        )
     }
 
     /// Convert catalog into a RankingsPlan with the given collection metadata.

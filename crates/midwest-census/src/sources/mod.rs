@@ -40,7 +40,7 @@ pub struct AdapterContext<'a> {
     pub fetcher: &'a Fetcher,
     pub store: &'a Store,
     pub refresh: bool,
-    pub school_year: crate::model::SchoolYear,
+    pub school_year: census_domain::model::SchoolYear,
     pub observed_on: String,
 }
 

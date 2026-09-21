@@ -385,6 +385,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "census-domain"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sha2 0.10.9",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1740,6 +1748,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "calamine",
+ "census-domain",
  "chrono",
  "clap",
  "csv",

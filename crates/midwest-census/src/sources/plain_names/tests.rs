@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 use std::collections::HashSet;
@@ -1169,7 +1169,7 @@ async fn collect_skips_providers_it_was_not_asked_for() {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: crate::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear(2026),
         observed_on: OBSERVED_ON.to_string(),
     };
 

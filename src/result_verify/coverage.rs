@@ -7,6 +7,7 @@ use crate::{
         candidate::CandidateCoverage as AssessedCoverage,
         decision::{CandidateReason, SearchCompleteness},
         identity::{AthleteId, EvidenceDigest},
+        name::CanonicalName,
     },
     runtime::{
         acquisition::{ProfileAcquisition, ProfileProbe},
@@ -47,6 +48,16 @@ pub(super) fn verify(row: &DetailRow, store: &ArtifactStore) -> Result<()> {
     verify_discovery(&row.source, report, &discovery, &origin, store)?;
     let assessment = decode_assessment(row)?;
     verify_assessment(report, &discovery, &assessment)?;
+    verify_candidate_artifacts(row, report, &assessment, &origin, store)
+}
+
+fn verify_candidate_artifacts(
+    row: &DetailRow,
+    report: &RowReport,
+    assessment: &AssessmentWire,
+    origin: &url::Url,
+    store: &ArtifactStore,
+) -> Result<()> {
     let mut probes = row.identity_artifacts.iter();
     let mut profiles = row.profile_artifacts.iter();
     report
@@ -87,7 +98,7 @@ pub(super) fn verify(row: &DetailRow, store: &ArtifactStore) -> Result<()> {
                 reason,
                 probe.as_ref(),
                 profile.as_ref(),
-                &origin,
+                origin,
                 store,
             )
         })?;
@@ -223,44 +234,60 @@ fn verify_candidate(
     }
     let kind = match candidate {
         CandidateCoverage::Complete { .. } => {
-            super::complete::verify(
-                probe.context("complete coverage has no initial probe")?,
-                profile.context("complete coverage has no full acquisition")?,
-            )?;
-            super::raw_profiles::verify(
-                profile.context("complete coverage has no full acquisition")?,
-                probe.context("complete coverage has no initial probe")?,
-                origin,
-                store,
-            )?;
-            AssessedCoverage::Complete
+            verify_complete_evidence(probe, profile, origin, store)?
         }
         CandidateCoverage::Incomplete { .. } => AssessedCoverage::Incomplete,
         CandidateCoverage::NameExcluded { source_name, .. } => {
-            super::raw_profiles::verify_probe(
-                probe.context("exclusion probe missing")?,
-                origin,
-                store,
-            )?;
-            let witness = super::exclusions::verify(
-                &row.source,
-                source_name,
-                probe.context("exclusion probe missing")?,
-            )?;
-            if !witness
-                .documents()
-                .iter()
-                .all(|digest| reason.evidence().contains(digest))
-            {
-                bail!("excluded candidate assessment omits identity witness documents");
-            }
-            AssessedCoverage::NameExcluded
+            verify_exclusion_evidence(&row.source, source_name, probe, reason, origin, store)?
         }
     };
     if reason.coverage() != kind || (kind != AssessedCoverage::Complete && reason.hard_eligible()) {
         bail!("candidate assessment changes acquisition coverage or eligibility");
     }
     Ok(())
+}
+
+fn verify_complete_evidence(
+    probe: Option<&ProfileProbe>,
+    profile: Option<&ProfileAcquisition>,
+    origin: &url::Url,
+    store: &ArtifactStore,
+) -> Result<AssessedCoverage> {
+    super::complete::verify(
+        probe.context("complete coverage has no initial probe")?,
+        profile.context("complete coverage has no full acquisition")?,
+    )?;
+    super::raw_profiles::verify(
+        profile.context("complete coverage has no full acquisition")?,
+        probe.context("complete coverage has no initial probe")?,
+        origin,
+        store,
+    )?;
+    Ok(AssessedCoverage::Complete)
+}
+
+fn verify_exclusion_evidence(
+    source: &crate::model::SourceRecord,
+    source_name: &CanonicalName,
+    probe: Option<&ProfileProbe>,
+    reason: &CandidateReason,
+    origin: &url::Url,
+    store: &ArtifactStore,
+) -> Result<AssessedCoverage> {
+    super::raw_profiles::verify_probe(probe.context("exclusion probe missing")?, origin, store)?;
+    let witness = super::exclusions::verify(
+        source,
+        source_name,
+        probe.context("exclusion probe missing")?,
+    )?;
+    if !witness
+        .documents()
+        .iter()
+        .all(|digest| reason.evidence().contains(digest))
+    {
+        bail!("excluded candidate assessment omits identity witness documents");
+    }
+    Ok(AssessedCoverage::NameExcluded)
 }
 
 pub(super) fn verify_selected(report: &RowReport, selected: AthleteId) -> Result<()> {

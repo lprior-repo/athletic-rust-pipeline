@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace};
+use census_domain::model::{GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace};
 
 const SAMPLE: &str =
     include_str!("../../../tests/fixtures/athleticlive_athletes/athlete-list-sample.json");
@@ -9,7 +9,7 @@ fn targets_for() -> Vec<MeetTarget> {
         "KS",
         "Abilene Invitational",
         "2025-04-25",
-        crate::model::CompetitionLevel::Invitational,
+        census_domain::model::CompetitionLevel::Invitational,
     );
     meet.source_identities.push(SourceIdentity::new(
         SourceNamespace::TimerMeet {
@@ -153,7 +153,7 @@ fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
         "KS",
         "Abilene Invitational",
         "2025-04-25",
-        crate::model::CompetitionLevel::Invitational,
+        census_domain::model::CompetitionLevel::Invitational,
     );
     meet.source_identities.push(SourceIdentity::new(
         SourceNamespace::TimerMeet {
@@ -172,7 +172,7 @@ fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
         "SD",
         "Dakota XC",
         "2025-10-04",
-        crate::model::CompetitionLevel::Invitational,
+        census_domain::model::CompetitionLevel::Invitational,
     );
     let mut other_state = other_state;
     other_state.source_identities.push(SourceIdentity::new(
@@ -198,7 +198,7 @@ fn implausible_meet_dates_are_skipped_and_counted() {
         "KS",
         "Sample Meet",
         "2222-04-15",
-        crate::model::CompetitionLevel::Invitational,
+        census_domain::model::CompetitionLevel::Invitational,
     );
     placeholder.source_identities.push(SourceIdentity::new(
         SourceNamespace::TimerMeet {
@@ -210,7 +210,7 @@ fn implausible_meet_dates_are_skipped_and_counted() {
         "KS",
         "Abilene Invitational",
         "2025-04-25",
-        crate::model::CompetitionLevel::Invitational,
+        census_domain::model::CompetitionLevel::Invitational,
     );
     real.source_identities.push(SourceIdentity::new(
         SourceNamespace::TimerMeet {

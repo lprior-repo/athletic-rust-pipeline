@@ -8,77 +8,23 @@ pub(crate) fn parse_binding(
     capture_kind: RankingsCapture,
 ) -> Result<CapturedRanking, BrowserError> {
     // Parse error BEFORE required success fields.
-    if let Some(err) = data.get("error").and_then(|v| v.as_str()) {
-        return match err {
-            "payload_limit" => Err(BrowserError::PayloadLimit),
-            "fetch_failed"
-            | "capture_failed"
-            | "unsupported_request_body"
-            | "request_payload_limit" => Err(BrowserError::Transport),
-            _other => Err(BrowserError::Protocol),
-        };
+    if let Some(err) = data.get("error").and_then(|value| value.as_str()) {
+        return Err(binding_error(err));
     }
 
     // Required success fields.
-    let status = data
-        .get("status")
-        .and_then(|v| v.as_u64())
-        .and_then(|v| u16::try_from(v).ok())
-        .ok_or(BrowserError::Protocol)?;
-
-    let request_url = data
-        .get("requestUrl")
-        .and_then(|v| v.as_str())
-        .ok_or(BrowserError::Protocol)?
-        .to_string();
-
-    let method = data
-        .get("method")
-        .and_then(|v| v.as_str())
-        .ok_or(BrowserError::Protocol)?
-        .to_string();
-
+    let status = binding_status(data)?;
+    let request_url = required_str(data, "requestUrl")?.to_string();
+    let method = required_str(data, "method")?.to_string();
     let request_body = data.get("requestBody").and_then(|value| value.as_str());
     if request_body.is_some_and(|body| body.len() > 64 * 1024) {
         return Err(BrowserError::PayloadLimit);
     }
 
-    let body_str = data
-        .get("body")
-        .and_then(|v| v.as_str())
-        .ok_or(BrowserError::Protocol)?;
-
-    let body_bytes = data
-        .get("bodyBytes")
-        .and_then(|v| v.as_u64())
-        .ok_or(BrowserError::Protocol)
-        .and_then(|value| usize::try_from(value).map_err(|_| BrowserError::PayloadLimit))?;
-    if body_bytes > 8 * 1024 * 1024 {
-        return Err(BrowserError::PayloadLimit);
-    }
-    if body_str.len() > 11_184_812 {
-        return Err(BrowserError::PayloadLimit);
-    }
-    let body = base64::engine::general_purpose::STANDARD
-        .decode(body_str)
-        .map_err(|_| BrowserError::Protocol)?;
+    let (body, body_bytes) = binding_body(data)?;
 
     // Collect allowed response headers.
-    let headers = match data.get("headers").and_then(|v| v.as_object()) {
-        Some(h) => h.iter().try_fold(HeaderMap::new(), |mut hm, (k, val)| {
-            if let Some(s) = val.as_str() {
-                let key = k
-                    .parse::<reqwest::header::HeaderName>()
-                    .map_err(|_| BrowserError::Protocol)?;
-                let value = s
-                    .parse::<reqwest::header::HeaderValue>()
-                    .map_err(|_| BrowserError::Protocol)?;
-                hm.insert(key, value);
-            }
-            Ok::<_, BrowserError>(hm)
-        })?,
-        None => return Err(BrowserError::Protocol),
-    };
+    let headers = binding_headers(data)?;
 
     // Challenge flag from cf-mitigated header.
     let challenge = headers.get("cf-mitigated").is_some();
@@ -93,6 +39,74 @@ pub(crate) fn parse_binding(
         headers,
         capture_kind,
     })
+}
+
+/// Map the interceptor's `error` field onto the error the operator contract exposes.
+fn binding_error(err: &str) -> BrowserError {
+    match err {
+        "payload_limit" => BrowserError::PayloadLimit,
+        "fetch_failed"
+        | "capture_failed"
+        | "unsupported_request_body"
+        | "request_payload_limit" => BrowserError::Transport,
+        _other => BrowserError::Protocol,
+    }
+}
+
+/// Read one required string field of the binding payload.
+fn required_str<'a>(data: &'a serde_json::Value, key: &str) -> Result<&'a str, BrowserError> {
+    data.get(key)
+        .and_then(|value| value.as_str())
+        .ok_or(BrowserError::Protocol)
+}
+
+/// Read the required response status.
+fn binding_status(data: &serde_json::Value) -> Result<u16, BrowserError> {
+    data.get("status")
+        .and_then(|value| value.as_u64())
+        .and_then(|value| u16::try_from(value).ok())
+        .ok_or(BrowserError::Protocol)
+}
+
+/// Decode the required body plus its declared byte count, enforcing both limits.
+fn binding_body(data: &serde_json::Value) -> Result<(Vec<u8>, usize), BrowserError> {
+    let body_str = required_str(data, "body")?;
+    let body_bytes = data
+        .get("bodyBytes")
+        .and_then(|value| value.as_u64())
+        .ok_or(BrowserError::Protocol)
+        .and_then(|value| usize::try_from(value).map_err(|_| BrowserError::PayloadLimit))?;
+    if body_bytes > 8 * 1024 * 1024 {
+        return Err(BrowserError::PayloadLimit);
+    }
+    if body_str.len() > 11_184_812 {
+        return Err(BrowserError::PayloadLimit);
+    }
+    let body = base64::engine::general_purpose::STANDARD
+        .decode(body_str)
+        .map_err(|_| BrowserError::Protocol)?;
+    Ok((body, body_bytes))
+}
+
+/// Collect the allowed response headers, rejecting malformed names and values.
+fn binding_headers(data: &serde_json::Value) -> Result<HeaderMap, BrowserError> {
+    let Some(values) = data.get("headers").and_then(|value| value.as_object()) else {
+        return Err(BrowserError::Protocol);
+    };
+    values
+        .iter()
+        .try_fold(HeaderMap::new(), |mut headers, (name, value)| {
+            if let Some(value) = value.as_str() {
+                let key = name
+                    .parse::<reqwest::header::HeaderName>()
+                    .map_err(|_| BrowserError::Protocol)?;
+                let header = value
+                    .parse::<reqwest::header::HeaderValue>()
+                    .map_err(|_| BrowserError::Protocol)?;
+                headers.insert(key, header);
+            }
+            Ok::<_, BrowserError>(headers)
+        })
 }
 #[derive(Debug)]
 pub(crate) struct CapturedRanking {

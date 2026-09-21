@@ -12,11 +12,11 @@
 //! This adapter performs no HTTP. `Options::input` MUST point at the CSV; the research corpus is
 //! the source of record and is never edited here.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::{bail, Context, Result};
 
-use crate::model::{
+use census_domain::model::{
     CanonicalMeet, CompetitionLevel, Evidence, EvidenceMethod, MeetId, SourceIdentity,
     SourceNamespace, SourceRef,
 };
@@ -60,61 +60,63 @@ pub struct MeetRow {
     pub has_results: bool,
 }
 
+/// Full US state name -> postal code, as AthleticLIVE publishes them.
+const STATES: [(&str, &str); 51] = [
+    ("Alabama", "AL"),
+    ("Alaska", "AK"),
+    ("Arizona", "AZ"),
+    ("Arkansas", "AR"),
+    ("California", "CA"),
+    ("Colorado", "CO"),
+    ("Connecticut", "CT"),
+    ("Delaware", "DE"),
+    ("District of Columbia", "DC"),
+    ("Florida", "FL"),
+    ("Georgia", "GA"),
+    ("Hawaii", "HI"),
+    ("Idaho", "ID"),
+    ("Illinois", "IL"),
+    ("Indiana", "IN"),
+    ("Iowa", "IA"),
+    ("Kansas", "KS"),
+    ("Kentucky", "KY"),
+    ("Louisiana", "LA"),
+    ("Maine", "ME"),
+    ("Maryland", "MD"),
+    ("Massachusetts", "MA"),
+    ("Michigan", "MI"),
+    ("Minnesota", "MN"),
+    ("Mississippi", "MS"),
+    ("Missouri", "MO"),
+    ("Montana", "MT"),
+    ("Nebraska", "NE"),
+    ("Nevada", "NV"),
+    ("New Hampshire", "NH"),
+    ("New Jersey", "NJ"),
+    ("New Mexico", "NM"),
+    ("New York", "NY"),
+    ("North Carolina", "NC"),
+    ("North Dakota", "ND"),
+    ("Ohio", "OH"),
+    ("Oklahoma", "OK"),
+    ("Oregon", "OR"),
+    ("Pennsylvania", "PA"),
+    ("Rhode Island", "RI"),
+    ("South Carolina", "SC"),
+    ("South Dakota", "SD"),
+    ("Tennessee", "TN"),
+    ("Texas", "TX"),
+    ("Utah", "UT"),
+    ("Vermont", "VT"),
+    ("Virginia", "VA"),
+    ("Washington", "WA"),
+    ("West Virginia", "WV"),
+    ("Wisconsin", "WI"),
+    ("Wyoming", "WY"),
+];
+
 /// Map a full US state name (as published by AthleticLIVE) to its postal code.
 pub fn state_code(name: &str) -> Option<&'static str> {
-    const STATES: [(&str, &str); 51] = [
-        ("Alabama", "AL"),
-        ("Alaska", "AK"),
-        ("Arizona", "AZ"),
-        ("Arkansas", "AR"),
-        ("California", "CA"),
-        ("Colorado", "CO"),
-        ("Connecticut", "CT"),
-        ("Delaware", "DE"),
-        ("District of Columbia", "DC"),
-        ("Florida", "FL"),
-        ("Georgia", "GA"),
-        ("Hawaii", "HI"),
-        ("Idaho", "ID"),
-        ("Illinois", "IL"),
-        ("Indiana", "IN"),
-        ("Iowa", "IA"),
-        ("Kansas", "KS"),
-        ("Kentucky", "KY"),
-        ("Louisiana", "LA"),
-        ("Maine", "ME"),
-        ("Maryland", "MD"),
-        ("Massachusetts", "MA"),
-        ("Michigan", "MI"),
-        ("Minnesota", "MN"),
-        ("Mississippi", "MS"),
-        ("Missouri", "MO"),
-        ("Montana", "MT"),
-        ("Nebraska", "NE"),
-        ("Nevada", "NV"),
-        ("New Hampshire", "NH"),
-        ("New Jersey", "NJ"),
-        ("New Mexico", "NM"),
-        ("New York", "NY"),
-        ("North Carolina", "NC"),
-        ("North Dakota", "ND"),
-        ("Ohio", "OH"),
-        ("Oklahoma", "OK"),
-        ("Oregon", "OR"),
-        ("Pennsylvania", "PA"),
-        ("Rhode Island", "RI"),
-        ("South Carolina", "SC"),
-        ("South Dakota", "SD"),
-        ("Tennessee", "TN"),
-        ("Texas", "TX"),
-        ("Utah", "UT"),
-        ("Vermont", "VT"),
-        ("Virginia", "VA"),
-        ("Washington", "WA"),
-        ("West Virginia", "WV"),
-        ("Wisconsin", "WI"),
-        ("Wyoming", "WY"),
-    ];
     let trimmed = name.trim();
     STATES
         .iter()
@@ -283,21 +285,9 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
             &row.name,
             row.city_state.as_deref(),
         );
-        let entry = meets.entry(id.clone()).or_insert_with(|| {
-            let mut meet = CanonicalMeet::new(
-                &row.state_code,
-                row.name.clone(),
-                row.start.clone(),
-                infer_level(&row.name),
-            );
-            meet.end_date = row.end.clone();
-            meet.location = row.city_state.clone();
-            meet.evidence.push(Evidence::parsed(
-                SourceRef::new(source_label, None),
-                observed_on,
-            ));
-            meet
-        });
+        let entry = meets
+            .entry(id.clone())
+            .or_insert_with(|| meet_from_row(row, observed_on, source_label));
         if entry.end_date.is_none() {
             entry.end_date = row.end.clone();
         }
@@ -310,13 +300,7 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
             },
             row.athleticlive_meet_id.clone(),
         );
-        if !entry
-            .source_identities
-            .iter()
-            .any(|existing| existing == &timer_identity)
-        {
-            entry.source_identities.push(timer_identity);
-        }
+        push_identity(&mut entry.source_identities, timer_identity);
         if let Some(an_id) = &row.athleticnet_meet_id {
             let an_identity = SourceIdentity::new(
                 SourceNamespace::LegacyAthleticNet {
@@ -327,16 +311,34 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
             .with_url(format!(
                 "https://www.athletic.net/TrackAndField/meet/{an_id}/info"
             ));
-            if !entry
-                .source_identities
-                .iter()
-                .any(|existing| existing == &an_identity)
-            {
-                entry.source_identities.push(an_identity);
-            }
+            push_identity(&mut entry.source_identities, an_identity);
         }
     }
     meets.into_values().collect()
+}
+
+/// One canonical meet as a single harvest row publishes it.
+fn meet_from_row(row: &MeetRow, observed_on: &str, source_label: &str) -> CanonicalMeet {
+    let mut meet = CanonicalMeet::new(
+        &row.state_code,
+        row.name.clone(),
+        row.start.clone(),
+        infer_level(&row.name),
+    );
+    meet.end_date = row.end.clone();
+    meet.location = row.city_state.clone();
+    meet.evidence.push(Evidence::parsed(
+        SourceRef::new(source_label, None),
+        observed_on,
+    ));
+    meet
+}
+
+/// Record a source identity once, whichever row or tenant published it first.
+fn push_identity(identities: &mut Vec<SourceIdentity>, identity: SourceIdentity) {
+    if !identities.contains(&identity) {
+        identities.push(identity);
+    }
 }
 
 /// Import AthleticLIVE meets into the canonical store.
@@ -366,6 +368,19 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     }
 
     let done = ctx.store.journal_keys("athleticlive_meets")?;
+    let (written, skipped_corrupt) = write_meets(ctx, meets, &done)?;
+    note_coverage(&mut report, &filtered, &done, written, skipped_corrupt);
+    Ok(report)
+}
+
+/// Write the harvest meets that are neither already journaled nor impossibly dated.
+///
+/// Returns how many were written and how many were refused for an impossible date.
+fn write_meets(
+    ctx: &AdapterContext<'_>,
+    meets: Vec<CanonicalMeet>,
+    done: &HashSet<String>,
+) -> Result<(usize, usize)> {
     let mut written = 0usize;
     let mut skipped_corrupt = 0usize;
     for meet in meets {
@@ -387,7 +402,17 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         )?;
         written += 1;
     }
+    Ok((written, skipped_corrupt))
+}
 
+/// Record what the run read, kept and refused on the supplied report.
+fn note_coverage(
+    report: &mut AdapterReport,
+    filtered: &[MeetRow],
+    done: &HashSet<String>,
+    written: usize,
+    skipped_corrupt: usize,
+) {
     let tenants: BTreeSet<&str> = filtered.iter().map(|r| r.tenant.as_str()).collect();
     let with_an = filtered
         .iter()
@@ -417,7 +442,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     }
     let observed = EvidenceMethod::Parsed;
     report.note(format!("evidence method: {observed:?}"));
-    Ok(report)
 }
 
 #[cfg(test)]

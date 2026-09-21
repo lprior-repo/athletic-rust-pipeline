@@ -22,7 +22,7 @@
 //! Rows carry a team label, a place, a time and a grade; the canonical meet name and date come from
 //! the file's own header lines.
 
-use crate::model::{EventKind, Gender, Mark, SourceRef};
+use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use crate::sources::hytek::{self, grade_from_token, looks_like_a_name, substring};
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
 use regex::Regex;
@@ -135,73 +135,13 @@ const MONTHS: [&str; 12] = [
 pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<ParsedMeet> {
     let (name, date) = header(lines)?;
     let date = date.unwrap_or_else(|| archive_year.to_string());
-    let mut events: Vec<ParsedEvent> = Vec::new();
-    // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
-    let mut rows_parsed = 0usize;
-    let mut rows_skipped = 0usize;
-    // Current reading state.
-    let mut gender = Gender::Boys;
-    let mut label = "Varsity".to_string();
-    let mut division: Option<String> = None;
-    let mut team: Option<String> = None;
-    let mut spans: Option<Vec<(usize, usize)>> = None;
-
+    let mut scan = XcScan::new();
     for line in lines {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        if let Some(banner) = section_banner().ok()?.captures(trimmed) {
-            let inner = banner.get(1)?.as_str().trim();
-            if let Some((next_gender, next_label)) = race_heading(inner) {
-                gender = next_gender;
-                label = next_label;
-                team = None;
-                division = None;
-            }
-            continue;
-        }
-        if let Some(division_capture) = division_regex().ok()?.captures(trimmed) {
-            division = Some(format!("Division {}", division_capture.get(1)?.as_str()));
-            continue;
-        }
-        if spans.is_none() {
-            spans = rule_spans(line);
-        }
-        if let Some((next_gender, next_label)) = section_heading(trimmed) {
-            gender = next_gender;
-            label = next_label;
-            team = None;
-            continue;
-        }
-        if let Some(captures) = team_block().ok()?.captures(line) {
-            team = Some(captures.get(2)?.as_str().trim().to_string());
-            continue;
-        }
-        let block = block_rows(line, team.as_deref());
-        if !block.is_empty() {
-            for row in block {
-                rows_parsed = rows_parsed.saturating_add(1);
-                push_row(&mut events, &gender, &label, division.clone(), row);
-            }
-            continue;
-        }
-        if let Some(row) = grade_table_row(line) {
-            rows_parsed = rows_parsed.saturating_add(1);
-            push_row(&mut events, &gender, &label, division.clone(), row);
-            continue;
-        }
-        if let Some(row) = accurace_row(line, spans.as_deref()) {
-            rows_parsed = rows_parsed.saturating_add(1);
-            push_row(&mut events, &gender, &label, division.clone(), row);
-            continue;
-        }
-        if starts_like_a_row(trimmed) {
-            rows_skipped = rows_skipped.saturating_add(1);
-        }
+        scan.read_line(line)?;
     }
 
-    let events: Vec<ParsedEvent> = events
+    let events: Vec<ParsedEvent> = scan
+        .events
         .into_iter()
         .filter(|event| !event.rows.is_empty())
         .collect();
@@ -217,9 +157,132 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
         end_date: None,
         timer: None,
         events,
-        rows_parsed,
-        rows_skipped,
+        rows_parsed: scan.rows_parsed,
+        rows_skipped: scan.rows_skipped,
     })
+}
+
+/// The reading state a cross-country file accumulates as its lines are scanned: the events read so
+/// far, the row counters, and the gender, label, division and team the next row inherits.
+struct XcScan {
+    events: Vec<ParsedEvent>,
+    rows_parsed: usize,
+    rows_skipped: usize,
+    gender: Gender,
+    label: String,
+    division: Option<String>,
+    team: Option<String>,
+    /// The `====` rule of the file's rule-lined table, once one has been read.
+    spans: Option<Vec<(usize, usize)>>,
+}
+
+impl XcScan {
+    fn new() -> Self {
+        Self {
+            events: Vec::new(),
+            // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
+            rows_parsed: 0,
+            rows_skipped: 0,
+            gender: Gender::Boys,
+            label: "Varsity".to_string(),
+            division: None,
+            team: None,
+            spans: None,
+        }
+    }
+
+    /// Read one line: a heading line moves the reading state on, a data line pushes its rows.
+    ///
+    /// `None` is the regex-compile failure the original propagated per line: a broken literal
+    /// pattern means no file can be read, so the rest of the line stream is never walked.
+    fn read_line(&mut self, line: &str) -> Option<()> {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return Some(());
+        }
+        if self.read_heading(line, trimmed)? {
+            return Some(());
+        }
+        self.read_rows(line, trimmed);
+        Some(())
+    }
+
+    /// A section banner, a `Division N` label, the `====` rule of the rule-lined table, a gender
+    /// heading or a team block. `true` when the line was one of those.
+    fn read_heading(&mut self, line: &str, trimmed: &str) -> Option<bool> {
+        if let Some(banner) = section_banner().ok()?.captures(trimmed) {
+            let inner = banner.get(1)?.as_str().trim();
+            if let Some((next_gender, next_label)) = race_heading(inner) {
+                self.gender = next_gender;
+                self.label = next_label;
+                self.team = None;
+                self.division = None;
+            }
+            return Some(true);
+        }
+        if let Some(division_capture) = division_regex().ok()?.captures(trimmed) {
+            self.division = Some(format!("Division {}", division_capture.get(1)?.as_str()));
+            return Some(true);
+        }
+        if self.spans.is_none() {
+            self.spans = rule_spans(line);
+        }
+        if let Some((next_gender, next_label)) = section_heading(trimmed) {
+            self.gender = next_gender;
+            self.label = next_label;
+            self.team = None;
+            return Some(true);
+        }
+        if let Some(captures) = team_block().ok()?.captures(line) {
+            self.team = Some(captures.get(2)?.as_str().trim().to_string());
+            return Some(true);
+        }
+        Some(false)
+    }
+
+    /// A Hy-Tek team block, the padded grade table or the rule-lined AccuRace table; a line that
+    /// merely starts like a row counts as skipped.
+    fn read_rows(&mut self, line: &str, trimmed: &str) {
+        let block = block_rows(line, self.team.as_deref());
+        if !block.is_empty() {
+            for row in block {
+                self.rows_parsed = self.rows_parsed.saturating_add(1);
+                push_row(
+                    &mut self.events,
+                    &self.gender,
+                    &self.label,
+                    self.division.clone(),
+                    row,
+                );
+            }
+            return;
+        }
+        if let Some(row) = grade_table_row(line) {
+            self.rows_parsed = self.rows_parsed.saturating_add(1);
+            push_row(
+                &mut self.events,
+                &self.gender,
+                &self.label,
+                self.division.clone(),
+                row,
+            );
+            return;
+        }
+        if let Some(row) = accurace_row(line, self.spans.as_deref()) {
+            self.rows_parsed = self.rows_parsed.saturating_add(1);
+            push_row(
+                &mut self.events,
+                &self.gender,
+                &self.label,
+                self.division.clone(),
+                row,
+            );
+            return;
+        }
+        if starts_like_a_row(trimmed) {
+            self.rows_skipped = self.rows_skipped.saturating_add(1);
+        }
+    }
 }
 
 fn push_row(
@@ -538,7 +601,7 @@ Place Pts Place Bib#    Name                  Gr   Team                         
             .ok_or_else(|| anyhow::anyhow!("the state file publishes a scorer"))?;
         assert_eq!(first.name, "Cooper Erickson");
         assert_eq!(first.school, "SPASH", "the team block names the school");
-        assert_eq!(first.grade, crate::model::Grade::new(12));
+        assert_eq!(first.grade, census_domain::model::Grade::new(12));
         assert_eq!(first.place, Some(6), "the place is the overall place");
         assert_eq!(first.mark, Mark::TimeSeconds(950.2));
         // A row that prints no school of its own must not be guessed into an athlete.
@@ -568,9 +631,9 @@ Place Pts Place Bib#    Name                  Gr   Team                         
             .ok_or_else(|| anyhow::anyhow!("the table publishes four rows"))?;
         assert_eq!(first.name, "Wyatt See");
         assert_eq!(first.school, "Poynette");
-        assert_eq!(first.grade, crate::model::Grade::new(12));
+        assert_eq!(first.grade, census_domain::model::Grade::new(12));
         assert_eq!(first.mark, Mark::TimeSeconds(1004.1));
-        assert_eq!(second.grade, crate::model::Grade::new(11));
+        assert_eq!(second.grade, census_domain::model::Grade::new(11));
         assert_eq!(second.school, "Ozaukee");
         Ok(())
     }
@@ -596,7 +659,7 @@ Place Pts Place Bib#    Name                  Gr   Team                         
             .ok_or_else(|| anyhow::anyhow!("the AccuRace file publishes a row"))?;
         assert_eq!(first.name, "Jonathan Simon");
         assert_eq!(first.school, "St. Ambrose/Abundant Life");
-        assert_eq!(first.grade, crate::model::Grade::new(10));
+        assert_eq!(first.grade, census_domain::model::Grade::new(10));
         assert_eq!(first.place, Some(1));
         assert_eq!(first.mark, Mark::TimeSeconds(981.6));
         Ok(())

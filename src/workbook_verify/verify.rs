@@ -26,64 +26,7 @@ pub fn verify_fields(
     if source_names != output_names {
         bail!("output workbook sheets do not match source sheets in original order");
     }
-    let mut source_book: Xlsx<BufReader<File>> =
-        open_workbook(original).context("opening original workbook with calamine")?;
-    let mut output_book: Xlsx<BufReader<File>> =
-        open_workbook(output).context("opening output workbook with calamine")?;
-    let mut source_header_bytes = 0_usize;
-    let mut output_header_bytes = 0_usize;
-    let counts = source_names.iter().try_fold(
-        SheetCounts::default(),
-        |mut total, name| -> Result<SheetCounts> {
-            let sheet = verify_sheet(
-                &mut source_book,
-                &mut output_book,
-                name,
-                extra_headers,
-                &mut source_header_bytes,
-                &mut output_header_bytes,
-            )?;
-            total.source_rows = total
-                .source_rows
-                .checked_add(sheet.source_rows)
-                .context("source row count overflow")?;
-            total.output_rows = total
-                .output_rows
-                .checked_add(sheet.output_rows)
-                .context("output row count overflow")?;
-            total.matched_rows = total
-                .matched_rows
-                .checked_add(sheet.matched_rows)
-                .context("matched row count overflow")?;
-            total.source_fields = total
-                .source_fields
-                .checked_add(sheet.source_fields)
-                .context("source field count overflow")?;
-            total.output_fields = total
-                .output_fields
-                .checked_add(sheet.output_fields)
-                .context("output field count overflow")?;
-            total.matched_fields = total
-                .matched_fields
-                .checked_add(sheet.matched_fields)
-                .context("matched field count overflow")?;
-            total.source_headers = total
-                .source_headers
-                .checked_add(sheet.source_headers)
-                .context("source header count overflow")?;
-            total.output_headers = total
-                .output_headers
-                .checked_add(sheet.output_headers)
-                .context("output header count overflow")?;
-            total.matched_headers = total
-                .matched_headers
-                .checked_add(sheet.matched_headers)
-                .context("matched header count overflow")?;
-            Ok(total)
-        },
-    )?;
-    drop(source_book);
-    drop(output_book);
+    let counts = count_sheets(original, output, &source_names, extra_headers)?;
     let source_after = hash_file(original)?;
     if source_after != expected {
         bail!("original workbook hash after verification does not match expected digest");
@@ -111,6 +54,80 @@ pub fn verify_fields(
         appended_header_count: u64::try_from(extra_headers.len())
             .context("extra header count conversion overflow")?,
     })
+}
+
+/// Verifies every source sheet against the output sheet and totals their counts.
+fn count_sheets(
+    original: &Path,
+    output: &Path,
+    source_names: &[String],
+    extra_headers: &[String],
+) -> Result<SheetCounts> {
+    let mut source_book: Xlsx<BufReader<File>> =
+        open_workbook(original).context("opening original workbook with calamine")?;
+    let mut output_book: Xlsx<BufReader<File>> =
+        open_workbook(output).context("opening output workbook with calamine")?;
+    let mut source_header_bytes = 0_usize;
+    let mut output_header_bytes = 0_usize;
+    let counts = source_names.iter().try_fold(
+        SheetCounts::default(),
+        |mut total, name| -> Result<SheetCounts> {
+            let sheet = verify_sheet(
+                &mut source_book,
+                &mut output_book,
+                name,
+                extra_headers,
+                &mut source_header_bytes,
+                &mut output_header_bytes,
+            )?;
+            accumulate_counts(&mut total, sheet)?;
+            Ok(total)
+        },
+    )?;
+    drop(source_book);
+    drop(output_book);
+    Ok(counts)
+}
+
+/// Adds one sheet's counts into the running totals.
+fn accumulate_counts(total: &mut SheetCounts, sheet: SheetCounts) -> Result<()> {
+    total.source_rows = total
+        .source_rows
+        .checked_add(sheet.source_rows)
+        .context("source row count overflow")?;
+    total.output_rows = total
+        .output_rows
+        .checked_add(sheet.output_rows)
+        .context("output row count overflow")?;
+    total.matched_rows = total
+        .matched_rows
+        .checked_add(sheet.matched_rows)
+        .context("matched row count overflow")?;
+    total.source_fields = total
+        .source_fields
+        .checked_add(sheet.source_fields)
+        .context("source field count overflow")?;
+    total.output_fields = total
+        .output_fields
+        .checked_add(sheet.output_fields)
+        .context("output field count overflow")?;
+    total.matched_fields = total
+        .matched_fields
+        .checked_add(sheet.matched_fields)
+        .context("matched field count overflow")?;
+    total.source_headers = total
+        .source_headers
+        .checked_add(sheet.source_headers)
+        .context("source header count overflow")?;
+    total.output_headers = total
+        .output_headers
+        .checked_add(sheet.output_headers)
+        .context("output header count overflow")?;
+    total.matched_headers = total
+        .matched_headers
+        .checked_add(sheet.matched_headers)
+        .context("matched header count overflow")?;
+    Ok(())
 }
 
 fn open_sheet_names(original: &Path, output: &Path) -> Result<(Vec<String>, Vec<String>)> {

@@ -55,6 +55,14 @@ pub(super) fn best_sheet(bests: &[BestResult]) -> Result<Vec<Vec<Cell>>> {
 }
 
 pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+    let mut rows = meets_totals(core, all_sources)?;
+    rows.extend(meets_by_state(core, all_sources)?);
+    rows.extend(meets_by_provider(core)?);
+    Ok(rows)
+}
+
+/// The inventory header: both scopes' totals and the core scope's date range.
+fn meets_totals(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Core meet inventory",
         "Meets",
@@ -89,10 +97,14 @@ pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec
             ),
         ));
     }
+    Ok(rows)
+}
 
+/// The per-state counts of both scopes, side by side.
+fn meets_by_state(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
     let core_states: Vec<(&String, &usize)> = sorted_counts(&core.meets.by_state);
     let all_states: Vec<(&String, &usize)> = sorted_counts(&all_sources.meets.by_state);
-    rows.push(row!());
+    let mut rows = vec![row!()];
     rows.push(row!(
         "By state (core)",
         "Meets",
@@ -117,9 +129,13 @@ pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec
                 .unwrap_or(Cell::Empty),
         ));
     }
+    Ok(rows)
+}
 
+/// The core scope's counts by provider key.
+fn meets_by_provider(core: &Census) -> Result<Vec<Vec<Cell>>> {
     let providers: Vec<(&String, &usize)> = sorted_counts(&core.meets.by_provider);
-    rows.push(row!());
+    let mut rows = vec![row!()];
     rows.push(row!("By provider key (core)", "Meets", "", ""));
     for (provider, count) in providers {
         rows.push(row!(

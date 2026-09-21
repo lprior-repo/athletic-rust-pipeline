@@ -1,4 +1,4 @@
-use crate::model::SourceRef;
+use census_domain::model::SourceRef;
 
 /// Read a PDF release with the vendor parsers, most specific first.
 ///

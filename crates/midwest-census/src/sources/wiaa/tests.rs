@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 

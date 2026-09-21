@@ -6,7 +6,7 @@ use super::types::{RankingCollectionStats, RankingEventStats};
 use crate::domain::identity::EvidenceDigest;
 use crate::store::backend::StoreInner;
 use crate::store::StoreError;
-use fjall::Readable;
+use fjall::{Readable, Snapshot};
 
 /// Decode a fixed-width big-endian u64 at the given offset from the key.
 fn decode_be_u64(key: &[u8], offset: usize) -> Result<u64, StoreError> {
@@ -69,6 +69,33 @@ pub(in crate::store) fn ranking_event_stats(
     let _writer = store.writer.lock().map_err(|_| StoreError::Database)?;
     let snap = store.database.snapshot();
 
+    let (pages, source_results) = count_page_records(&snap, store, collection, event_short)?;
+    let (row_positions, max_row_position) =
+        row_position_stats(&snap, store, collection, event_short)?;
+    let (grade11_individual_results, grade11_relay_member_results) =
+        eligible_counts(&snap, store, collection, event_short)?;
+    let unresolved_roster_results = unresolved_roster_count(&snap, store, collection, event_short)?;
+    let unique_athletes = unique_athlete_count(&snap, store, collection, event_short)?;
+
+    Ok(RankingEventStats {
+        pages,
+        source_results,
+        row_positions,
+        max_row_position,
+        grade11_individual_results,
+        grade11_relay_member_results,
+        unique_athletes,
+        unresolved_roster_results,
+    })
+}
+
+/// Counts published pages and distinct source results for one event.
+fn count_page_records(
+    snap: &Snapshot,
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Result<(u64, u64), StoreError> {
     let page_prefix = super::keys::page_prefix(collection, event_short);
     let page_prefix_len = page_prefix.len();
     let mut pages = 0_u64;
@@ -90,7 +117,16 @@ pub(in crate::store) fn ranking_event_stats(
         let _result = decode_suffix(&key, source_prefix_len)?;
         source_results = next_count(source_results)?;
     }
+    Ok((pages, source_results))
+}
 
+/// Counts distinct row positions and the highest one for one event.
+fn row_position_stats(
+    snap: &Snapshot,
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Result<(u64, u64), StoreError> {
     let row_prefix = row_position_prefix(collection, event_short);
     let row_prefix_len = row_prefix.len();
     let mut positions = std::collections::BTreeSet::new();
@@ -102,7 +138,16 @@ pub(in crate::store) fn ranking_event_stats(
         max_row_position = max_row_position.max(position);
     }
     let row_positions = u64::try_from(positions.len()).map_err(|_| StoreError::CorruptData)?;
+    Ok((row_positions, max_row_position))
+}
 
+/// Counts eligible grade-11 individual and relay-member results for one event.
+fn eligible_counts(
+    snap: &Snapshot,
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Result<(u64, u64), StoreError> {
     let individual_prefix = eligible_individual_prefix(collection, event_short);
     let individual_prefix_len = individual_prefix.len();
     let mut grade11_individual_results = 0_u64;
@@ -124,7 +169,16 @@ pub(in crate::store) fn ranking_event_stats(
         let _pair = decode_pair(&key, relay_prefix_len)?;
         grade11_relay_member_results = next_count(grade11_relay_member_results)?;
     }
+    Ok((grade11_individual_results, grade11_relay_member_results))
+}
 
+/// Counts roster results with no matching present-roster key for one event.
+fn unresolved_roster_count(
+    snap: &Snapshot,
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Result<u64, StoreError> {
     let present_prefix = roster_present_prefix(collection, event_short);
     let present_prefix_len = present_prefix.len();
     for guard in snap.prefix(&store.rankings, &present_prefix) {
@@ -147,7 +201,16 @@ pub(in crate::store) fn ranking_event_stats(
             unresolved_roster_results = next_count(unresolved_roster_results)?;
         }
     }
+    Ok(unresolved_roster_results)
+}
 
+/// Counts distinct athletes recorded for one event.
+fn unique_athlete_count(
+    snap: &Snapshot,
+    store: &StoreInner,
+    collection: &EvidenceDigest,
+    event_short: &str,
+) -> Result<u64, StoreError> {
     let mut athlete_prefix = event_athlete_prefix(collection);
     athlete_prefix.extend_from_slice(event_short.as_bytes());
     athlete_prefix.push(0);
@@ -158,17 +221,7 @@ pub(in crate::store) fn ranking_event_stats(
         let _athlete = decode_suffix(&key, athlete_prefix_len)?;
         unique_athletes = next_count(unique_athletes)?;
     }
-
-    Ok(RankingEventStats {
-        pages,
-        source_results,
-        row_positions,
-        max_row_position,
-        grade11_individual_results,
-        grade11_relay_member_results,
-        unique_athletes,
-        unresolved_roster_results,
-    })
+    Ok(unique_athletes)
 }
 
 /// Count distinct real athletes across a collection.

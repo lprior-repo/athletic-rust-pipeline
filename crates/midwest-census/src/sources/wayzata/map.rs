@@ -1,7 +1,7 @@
 //! Mapping one schedule row onto the canonical model: the venue cell to a state, and the
 //! published meet name to its competition level.
 
-use crate::model::CompetitionLevel;
+use census_domain::model::CompetitionLevel;
 use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
 

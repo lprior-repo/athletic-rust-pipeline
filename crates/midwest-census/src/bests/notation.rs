@@ -1,6 +1,6 @@
 //! Published notation for a mark.
 
-use crate::model::Mark;
+use census_domain::model::Mark;
 
 /// Published notation for a mark: `10.94`, `4:41.23`, `5' 4"`, `42.10 m`, `3120 pts`.
 pub fn mark_text(mark: &Mark) -> String {

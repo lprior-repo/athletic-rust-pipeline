@@ -5,6 +5,8 @@ use anyhow::{bail, Context, Result};
 use serde_json::Value;
 
 const MAX_TREE_ITEMS: usize = 4096;
+/// Opening brace of the embedded `anetSiteAppParams` JSON object.
+const EMBEDDED_JSON_START: char = '{';
 type Hints = (Vec<TreeHint>, Vec<Observed<AthleteName>>);
 
 pub(super) fn parse(
@@ -49,17 +51,23 @@ fn decode(script: &str) -> Result<Option<Value>> {
     let rest = script
         .get(marker..)
         .context("invalid embedded-state boundary")?;
+    Ok(Some(embedded_value(embedded_json(rest)?)?))
+}
+
+/// Slice from the embedded object's opening brace to the end of the marker's text.
+fn embedded_json(rest: &str) -> Result<&str> {
     let start = rest
-        .find('{')
+        .find(EMBEDDED_JSON_START)
         .context("embedded profile state has no JSON object")?;
-    let json = rest
-        .get(start..)
-        .context("invalid embedded JSON boundary")?;
+    rest.get(start..).context("invalid embedded JSON boundary")
+}
+
+fn embedded_value(json: &str) -> Result<Value> {
     let value = serde_json::Deserializer::from_str(json)
         .into_iter::<Value>()
         .next()
         .context("embedded profile JSON is empty")??;
-    Ok(Some(value))
+    Ok(value)
 }
 
 fn collect(

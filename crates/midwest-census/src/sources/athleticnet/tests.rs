@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{EventKind, Mark, SourceNamespace};
+use census_domain::model::{EventKind, Mark, SourceNamespace};
 use crate::report::is_core_source;
 
 fn payload(body: &str) -> Bio {

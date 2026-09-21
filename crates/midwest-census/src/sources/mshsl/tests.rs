@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 use crate::sources::AdapterContext;
@@ -652,7 +652,7 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: crate::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear(2026),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = Options {

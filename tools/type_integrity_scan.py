@@ -21,7 +21,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 
 DOMAIN_PATHS = {
     "root-domain": REPO / "src" / "domain",
-    "census-model": REPO / "crates" / "midwest-census" / "src" / "model.rs",
+    "census-domain": REPO / "crates" / "census-domain" / "src",
 }
 
 PUB_FN = re.compile(r"^\s*pub\s+(?:async\s+)?fn\s+([a-zA-Z0-9_]+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)\s*(?:->\s*([^{]+))?")

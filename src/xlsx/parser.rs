@@ -66,52 +66,10 @@ pub(crate) fn load_shared_strings(path: &Path) -> Result<Vec<String>> {
     reader.config_mut().trim_text(false);
     let mut buffer = Vec::new();
     let mut document = XmlDocument::default();
-    let mut strings = Vec::new();
-    let mut total_bytes = 0_usize;
-    let mut in_item = false;
-    let mut in_text = false;
-    let mut current = String::new();
+    let mut strings = SharedStrings::default();
     loop {
         let event = reader.read_event_into(&mut buffer)?;
-        match &event {
-            Event::Start(element) if element.name().as_ref() == b"si" => {
-                in_item = true;
-                current.clear();
-            }
-            Event::Start(element) if in_item && element.name().as_ref() == b"t" => in_text = true,
-            Event::Text(text) if in_item && in_text => {
-                append_text(&mut current, &super::cells::decode_xml_text(text.as_ref())?)?;
-            }
-            Event::CData(text) if in_item && in_text => {
-                append_text(&mut current, std::str::from_utf8(text.as_ref())?)?;
-            }
-            Event::GeneralRef(reference) if in_item && in_text => {
-                let character = super::cells::decode_reference(reference)?;
-                let mut bytes = [0_u8; 4];
-                append_text(&mut current, character.encode_utf8(&mut bytes))?;
-            }
-            Event::End(element) if element.name().as_ref() == b"t" => in_text = false,
-            Event::End(element) if element.name().as_ref() == b"si" => {
-                if strings.len() >= MAX_SHARED_STRINGS {
-                    bail!(
-                        "shared string count exceeds the {} entry limit",
-                        MAX_SHARED_STRINGS
-                    );
-                }
-                total_bytes = total_bytes
-                    .checked_add(current.len())
-                    .context("shared string byte count overflow")?;
-                if total_bytes > MAX_SHARED_STRING_TOTAL_BYTES {
-                    bail!(
-                        "shared string bytes exceed the {} byte limit",
-                        MAX_SHARED_STRING_TOTAL_BYTES
-                    );
-                }
-                strings.push(std::mem::take(&mut current));
-                in_item = false;
-            }
-            _ => {}
-        }
+        strings.observe(&event)?;
         let eof = matches!(&event, Event::Eof);
         document.observe(&event)?;
         buffer.clear();
@@ -120,7 +78,78 @@ pub(crate) fn load_shared_strings(path: &Path) -> Result<Vec<String>> {
         }
     }
     document.finish("sst")?;
-    Ok(strings)
+    Ok(strings.into_strings())
+}
+
+/// Shared-string table accumulated one XML event at a time.
+#[derive(Default)]
+struct SharedStrings {
+    strings: Vec<String>,
+    current: String,
+    total_bytes: usize,
+    in_item: bool,
+    in_text: bool,
+}
+
+impl SharedStrings {
+    fn observe(&mut self, event: &Event<'_>) -> Result<()> {
+        match event {
+            Event::Start(element) if element.name().as_ref() == b"si" => {
+                self.in_item = true;
+                self.current.clear();
+            }
+            Event::Start(element) if self.in_item && element.name().as_ref() == b"t" => {
+                self.in_text = true;
+            }
+            Event::Text(text) if self.in_item && self.in_text => {
+                append_text(
+                    &mut self.current,
+                    &super::cells::decode_xml_text(text.as_ref())?,
+                )?;
+            }
+            Event::CData(text) if self.in_item && self.in_text => {
+                append_text(&mut self.current, std::str::from_utf8(text.as_ref())?)?;
+            }
+            Event::GeneralRef(reference) if self.in_item && self.in_text => {
+                let character = super::cells::decode_reference(reference)?;
+                let mut bytes = [0_u8; 4];
+                append_text(&mut self.current, character.encode_utf8(&mut bytes))?;
+            }
+            Event::End(element) if element.name().as_ref() == b"t" => self.in_text = false,
+            Event::End(element) if element.name().as_ref() == b"si" => {
+                self.finish_item()?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    /// Closes the current `<si>` item, enforcing the count and byte budgets.
+    fn finish_item(&mut self) -> Result<()> {
+        if self.strings.len() >= MAX_SHARED_STRINGS {
+            bail!(
+                "shared string count exceeds the {} entry limit",
+                MAX_SHARED_STRINGS
+            );
+        }
+        self.total_bytes = self
+            .total_bytes
+            .checked_add(self.current.len())
+            .context("shared string byte count overflow")?;
+        if self.total_bytes > MAX_SHARED_STRING_TOTAL_BYTES {
+            bail!(
+                "shared string bytes exceed the {} byte limit",
+                MAX_SHARED_STRING_TOTAL_BYTES
+            );
+        }
+        self.strings.push(std::mem::take(&mut self.current));
+        self.in_item = false;
+        Ok(())
+    }
+
+    fn into_strings(self) -> Vec<String> {
+        self.strings
+    }
 }
 
 fn append_text(current: &mut String, text: &str) -> Result<()> {

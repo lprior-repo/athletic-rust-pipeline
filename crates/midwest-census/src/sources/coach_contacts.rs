@@ -10,9 +10,9 @@
 //! home addresses, cell numbers, athlete contacts. Those columns are not part of this schema, so they
 //! cannot leak through the importer.
 
-use crate::model::{
+use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use crate::sources::AdapterReport;
 use crate::store::{Store, Table};
@@ -221,86 +221,22 @@ fn identity_key(url: &str) -> Option<String> {
 pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> Result<RowEntities> {
     let state = clean(&row.state).to_ascii_uppercase();
     let school_name = clean(&row.school);
-    let (mut school, school_id) =
-        CanonicalSchool::new(&state, &school_name, normalize_name(&school_name));
-    school.city = nonempty(&row.city);
-    if let Some(city) = school.city.clone() {
-        school.aliases.push(format!("{city} {state}"));
-    }
-    let observed_on = if row.last_observed.trim().is_empty() {
-        default_observed_on.to_string()
-    } else {
-        clean(&row.last_observed)
-    };
-    let source_url = nonempty(&row.source_url);
-    let namespace = source_url
-        .as_deref()
-        .map(namespace_for_url)
-        .unwrap_or_else(|| SourceNamespace::Other("coach_contacts_csv".to_string()));
-    let key = source_url
-        .as_deref()
-        .and_then(identity_key)
-        .unwrap_or_else(|| normalize_name(&school_name));
+    let (mut school, school_id) = school_with_city(&state, &school_name, &row.city);
+    let source = RowSource::of(row, default_observed_on, &school_name);
     school.source_identities.push(
-        SourceIdentity::new(namespace.clone(), key.clone())
-            .with_url(source_url.clone().unwrap_or_default()),
+        SourceIdentity::new(source.namespace.clone(), source.key.clone())
+            .with_url(source.url.clone().unwrap_or_default()),
     );
     school.evidence.push(Evidence::parsed(
-        SourceRef::new("coach_contacts_csv", source_url.clone()),
-        observed_on.clone(),
+        SourceRef::new("coach_contacts_csv", source.url.clone()),
+        source.observed_on.clone(),
     ));
 
-    let mut coaches = Vec::new();
-    let sport_gender = parse_sport(&row.sport);
     let role = parse_role(&format!("{} {}", row.role, row.sport));
-    let source_ref = SourceRef::new("coach_contacts_csv", source_url.clone());
+    let mut coaches = Vec::new();
 
-    match role {
-        // A sport-scoped coaching row.
-        Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown) => {
-            if let Some(coach_name) = nonempty(&row.coach_name) {
-                let (sport, gender) = sport_gender.unwrap_or((Sport::OutdoorTrack, Gender::Mixed));
-                let mut coach = CanonicalCoach::new(
-                    &school_id,
-                    strip_honorific(&coach_name),
-                    sport_gender.map(|_| sport),
-                    gender,
-                    role.ok_or_else(|| anyhow::anyhow!("coaching role"))?,
-                );
-                coach.professional_email = nonempty(&row.public_professional_email);
-                coach.source_identities.push(
-                    SourceIdentity::new(namespace.clone(), format!("{key}:{role:?}"))
-                        .with_url(source_url.clone().unwrap_or_default()),
-                );
-                coach
-                    .evidence
-                    .push(Evidence::parsed(source_ref.clone(), observed_on.clone()));
-                coaches.push(coach);
-            }
-        }
-        // A school-wide athletic-director row.
-        Some(CoachRole::AthleticDirector) => {
-            if let Some(ad_name) = nonempty(&row.ad_name).or_else(|| nonempty(&row.coach_name)) {
-                let mut coach = CanonicalCoach::new(
-                    &school_id,
-                    strip_honorific(&ad_name),
-                    None,
-                    Gender::Mixed,
-                    CoachRole::AthleticDirector,
-                );
-                coach.professional_email =
-                    nonempty(&row.ad_email).or_else(|| nonempty(&row.public_professional_email));
-                coach.source_identities.push(
-                    SourceIdentity::new(namespace.clone(), format!("{key}:ad"))
-                        .with_url(source_url.clone().unwrap_or_default()),
-                );
-                coach
-                    .evidence
-                    .push(Evidence::parsed(source_ref.clone(), observed_on.clone()));
-                coaches.push(coach);
-            }
-        }
-        None => {}
+    if let Some(coach) = primary_coach(row, &school_id, &source, role)? {
+        coaches.push(coach);
     }
 
     // Coaching rows in IA/IL/NE/OH/WI also carry the school's AD columns; import that person so the
@@ -311,27 +247,184 @@ pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> Result<
         role,
         Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown)
     ) {
-        if let Some(ad_name) = nonempty(&row.ad_name) {
-            let mut coach = CanonicalCoach::new(
-                &school_id,
-                strip_honorific(&ad_name),
-                None,
-                Gender::Mixed,
-                CoachRole::AthleticDirector,
-            );
-            coach.professional_email = nonempty(&row.ad_email);
-            coach.source_identities.push(
-                SourceIdentity::new(namespace, format!("{key}:ad"))
-                    .with_url(source_url.clone().unwrap_or_default()),
-            );
-            coach
-                .evidence
-                .push(Evidence::parsed(source_ref, observed_on));
+        if let Some(coach) = imported_ad(row, &school_id, &source) {
             coaches.push(coach);
         }
     }
 
     Ok(RowEntities { school, coaches })
+}
+
+/// The source coordinates one CSV row carries: when it was observed, the provider namespace and
+/// identity key, the row's URL, and the evidence reference every entity cites.
+struct RowSource {
+    observed_on: String,
+    namespace: SourceNamespace,
+    key: String,
+    url: Option<String>,
+    source_ref: SourceRef,
+}
+
+impl RowSource {
+    /// Read one row's source coordinates; `school_name` keys the identity when the row has no URL.
+    fn of(row: &CoachContactRow, default_observed_on: &str, school_name: &str) -> Self {
+        let observed_on = if row.last_observed.trim().is_empty() {
+            default_observed_on.to_string()
+        } else {
+            clean(&row.last_observed)
+        };
+        let url = nonempty(&row.source_url);
+        let namespace = url
+            .as_deref()
+            .map(namespace_for_url)
+            .unwrap_or_else(|| SourceNamespace::Other("coach_contacts_csv".to_string()));
+        let key = url
+            .as_deref()
+            .and_then(identity_key)
+            .unwrap_or_else(|| normalize_name(school_name));
+        Self {
+            source_ref: SourceRef::new("coach_contacts_csv", url.clone()),
+            observed_on,
+            namespace,
+            key,
+            url,
+        }
+    }
+}
+
+/// The canonical school one CSV row describes, with the city alias the row publishes.
+fn school_with_city(state: &str, school_name: &str, city: &str) -> (CanonicalSchool, SchoolId) {
+    let (mut school, school_id) =
+        CanonicalSchool::new(state, school_name, normalize_name(school_name));
+    school.city = nonempty(city);
+    if let Some(city) = school.city.clone() {
+        school.aliases.push(format!("{city} {state}"));
+    }
+    (school, school_id)
+}
+
+/// The sport a row's label resolves to (`None` when it names none) and the gender side it covers.
+fn sport_of(row: &CoachContactRow) -> (Option<Sport>, Gender) {
+    let sport_gender = parse_sport(&row.sport);
+    let (sport, gender) = sport_gender.unwrap_or((Sport::OutdoorTrack, Gender::Mixed));
+    (sport_gender.map(|_| sport), gender)
+}
+
+/// The role a sport-scoped coaching row must name; the message is the one the builder raised.
+fn required_role(role: Option<CoachRole>) -> Result<CoachRole> {
+    role.ok_or_else(|| anyhow::anyhow!("coaching role"))
+}
+
+/// Set a coach row's email and attach its provider identity and evidence.
+fn attach_source(
+    coach: &mut CanonicalCoach,
+    identity: String,
+    email: Option<String>,
+    source: &RowSource,
+) {
+    coach.professional_email = email;
+    coach.source_identities.push(
+        SourceIdentity::new(source.namespace.clone(), identity)
+            .with_url(source.url.clone().unwrap_or_default()),
+    );
+    coach.evidence.push(Evidence::parsed(
+        source.source_ref.clone(),
+        source.observed_on.clone(),
+    ));
+}
+
+/// The primary coach entity one CSV row describes: a sport coach, a school-wide AD, or nothing.
+fn primary_coach(
+    row: &CoachContactRow,
+    school_id: &SchoolId,
+    source: &RowSource,
+    role: Option<CoachRole>,
+) -> Result<Option<CanonicalCoach>> {
+    match role {
+        // A sport-scoped coaching row.
+        Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown) => {
+            sport_coach(row, school_id, source, role)
+        }
+        // A school-wide athletic-director row.
+        Some(CoachRole::AthleticDirector) => Ok(ad_coach(row, school_id, source)),
+        None => Ok(None),
+    }
+}
+
+/// The sport-scoped coaching entity one row describes, when the row names a coach.
+fn sport_coach(
+    row: &CoachContactRow,
+    school_id: &SchoolId,
+    source: &RowSource,
+    role: Option<CoachRole>,
+) -> Result<Option<CanonicalCoach>> {
+    let Some(CoachRole::HeadCoach | CoachRole::AssistantCoach | CoachRole::Unknown) = role else {
+        return Ok(None);
+    };
+    let Some(coach_name) = nonempty(&row.coach_name) else {
+        return Ok(None);
+    };
+    let (sport, gender) = sport_of(row);
+    let identity = format!("{}:{role:?}", source.key);
+    let email = nonempty(&row.public_professional_email);
+    let mut coach = CanonicalCoach::new(
+        school_id,
+        strip_honorific(&coach_name),
+        sport,
+        gender,
+        required_role(role)?,
+    );
+    attach_source(&mut coach, identity, email, source);
+    Ok(Some(coach))
+}
+
+/// The school-wide athletic-director entity an AD row describes.
+fn ad_coach(
+    row: &CoachContactRow,
+    school_id: &SchoolId,
+    source: &RowSource,
+) -> Option<CanonicalCoach> {
+    let ad_name = nonempty(&row.ad_name).or_else(|| nonempty(&row.coach_name))?;
+    let email = nonempty(&row.ad_email).or_else(|| nonempty(&row.public_professional_email));
+    Some(ad_entity(
+        school_id,
+        strip_honorific(&ad_name),
+        email,
+        source,
+    ))
+}
+
+/// The athletic office a coaching row's AD columns describe.
+fn imported_ad(
+    row: &CoachContactRow,
+    school_id: &SchoolId,
+    source: &RowSource,
+) -> Option<CanonicalCoach> {
+    let ad_name = nonempty(&row.ad_name)?;
+    Some(ad_entity(
+        school_id,
+        strip_honorific(&ad_name),
+        nonempty(&row.ad_email),
+        source,
+    ))
+}
+
+/// Build the athletic-director coach entity both AD branches share.
+fn ad_entity(
+    school_id: &SchoolId,
+    name: String,
+    email: Option<String>,
+    source: &RowSource,
+) -> CanonicalCoach {
+    let mut coach = CanonicalCoach::new(
+        school_id,
+        name,
+        None,
+        Gender::Mixed,
+        CoachRole::AthleticDirector,
+    );
+    attach_source(&mut coach, format!("{}:ad", source.key), email, source);
+    coach
 }
 
 /// Import a contact CSV, writing canonical schools and coaches into the store.
@@ -353,45 +446,83 @@ pub fn import_csv(
     let mut skipped_roles = 0usize;
 
     for (index, record) in reader.deserialize::<CoachContactRow>().enumerate() {
-        let row = record.with_context(|| {
-            format!("row {} of {}", index.saturating_add(2), csv_path.display())
-        })?;
-        if row.school.trim().is_empty() || row.state.trim().is_empty() {
-            anyhow::bail!("row {} has no school/state", index.saturating_add(2));
-        }
+        let row = contact_row(record, index, csv_path)?;
         let entities = row_entities(&row, default_observed_on)?;
-        if entities.coaches.is_empty() {
+        if merge_entities(&mut schools, &mut coaches, entities) {
             skipped_roles = skipped_roles.saturating_add(1);
-        }
-        let school_id = entities.school.id.clone();
-        schools
-            .entry(school_id.as_str().to_string())
-            .or_insert(entities.school);
-        for coach in entities.coaches {
-            match coaches.get_mut(&coach.id) {
-                Some(existing) => {
-                    if existing.professional_email.is_none() {
-                        existing.professional_email = coach.professional_email.clone();
-                    }
-                    for evidence in coach.evidence.iter().cloned() {
-                        if !existing.evidence.contains(&evidence) {
-                            existing.evidence.push(evidence);
-                        }
-                    }
-                    for identity in coach.source_identities.iter().cloned() {
-                        if !existing.source_identities.contains(&identity) {
-                            existing.source_identities.push(identity);
-                        }
-                    }
-                }
-                None => {
-                    coaches.insert(coach.id.clone(), coach);
-                }
-            }
         }
     }
     let _ = Table::Coaches;
 
+    write_entities(store, &mut report, schools, coaches, skipped_roles)?;
+    Ok(report)
+}
+
+/// Deserialize one CSV record, rejecting a row with no school or state.
+fn contact_row(
+    record: Result<CoachContactRow, csv::Error>,
+    index: usize,
+    csv_path: &Path,
+) -> Result<CoachContactRow> {
+    let row = record
+        .with_context(|| format!("row {} of {}", index.saturating_add(2), csv_path.display()))?;
+    if row.school.trim().is_empty() || row.state.trim().is_empty() {
+        anyhow::bail!("row {} has no school/state", index.saturating_add(2));
+    }
+    Ok(row)
+}
+
+/// Fold one row's entities into the accumulated schools and coaches.
+///
+/// Returns `true` when the row carried no coach role.
+fn merge_entities(
+    schools: &mut BTreeMap<String, CanonicalSchool>,
+    coaches: &mut BTreeMap<CoachId, CanonicalCoach>,
+    entities: RowEntities,
+) -> bool {
+    let school_id = entities.school.id.clone();
+    schools
+        .entry(school_id.as_str().to_string())
+        .or_insert(entities.school);
+    let without_coach_role = entities.coaches.is_empty();
+    for coach in entities.coaches {
+        merge_coach(coaches, coach);
+    }
+    without_coach_role
+}
+
+/// Union one coach row into the map entry it shares an identity with.
+fn merge_coach(coaches: &mut BTreeMap<CoachId, CanonicalCoach>, coach: CanonicalCoach) {
+    match coaches.get_mut(&coach.id) {
+        Some(existing) => {
+            if existing.professional_email.is_none() {
+                existing.professional_email = coach.professional_email.clone();
+            }
+            for evidence in coach.evidence.iter().cloned() {
+                if !existing.evidence.contains(&evidence) {
+                    existing.evidence.push(evidence);
+                }
+            }
+            for identity in coach.source_identities.iter().cloned() {
+                if !existing.source_identities.contains(&identity) {
+                    existing.source_identities.push(identity);
+                }
+            }
+        }
+        None => {
+            coaches.insert(coach.id.clone(), coach);
+        }
+    }
+}
+
+/// Write the accumulated entities and fill in the report's counters and notes.
+fn write_entities(
+    store: &Store,
+    report: &mut AdapterReport,
+    schools: BTreeMap<String, CanonicalSchool>,
+    coaches: BTreeMap<CoachId, CanonicalCoach>,
+    skipped_roles: usize,
+) -> Result<()> {
     let school_records: Vec<CanonicalSchool> = schools.into_values().collect();
     let coach_records: Vec<CanonicalCoach> = coaches.into_values().collect();
     store.append_many(Table::Schools, &school_records)?;
@@ -406,7 +537,7 @@ pub fn import_csv(
         .unwrap_or(u64::MAX);
     report.note(format!("schools={}", school_records.len()));
     report.note(format!("rows_without_coach_role={skipped_roles}"));
-    Ok(report)
+    Ok(())
 }
 
 #[cfg(test)]

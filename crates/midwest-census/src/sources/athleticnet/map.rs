@@ -2,11 +2,11 @@
 //! store, plus the published-flag readers they apply to a row.
 
 use super::parse::Bio;
-use crate::model::{
+use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, Grade, Mark,
-    ObservedGrade, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace,
-    SourceRef, Sport, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventId, EventKind, Evidence, Gender, Grade,
+    Mark, ObservedGrade, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace,
+    SourceRef, Sport, TeamId, TimingMethod,
 };
 use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
@@ -175,53 +175,8 @@ pub(super) fn store_performance(
     observed_on: &str,
     input: PerformanceInput<'_>,
 ) {
-    let team_id = CanonicalTeam::mint(input.school, input.sport, input.gender, input.school_year);
-    if !accumulated.teams.contains_key(team_id.as_str()) {
-        accumulated.teams.insert(
-            team_id.as_str().to_string(),
-            CanonicalTeam {
-                id: team_id.clone(),
-                school: input.school.clone(),
-                sport: input.sport,
-                gender: input.gender,
-                school_year: input.school_year,
-                level: Some("high_school".to_string()),
-                source_identities: Vec::new(),
-                evidence: vec![Evidence::parsed(source.clone(), observed_on)],
-            },
-        );
-    }
-
-    let event = accumulated
-        .events
-        .entry(format!(
-            "{}:{:?}:{:?}:{}",
-            input.meet.id.as_str(),
-            input.kind,
-            input.gender,
-            input.division.clone().unwrap_or_default()
-        ))
-        .or_insert_with(|| {
-            let mut event = CanonicalEvent::new(
-                &input.meet.id,
-                input.kind.clone(),
-                input.gender,
-                input.division.as_deref(),
-                input.round.as_deref(),
-            );
-            if let Some(label) = input.label {
-                event.source_labels.push(SourceEventLabel {
-                    source: source.clone(),
-                    label: label.to_string(),
-                });
-            }
-            event
-                .evidence
-                .push(Evidence::parsed(source.clone(), observed_on));
-            event
-        })
-        .id
-        .clone();
+    let team_id = ensure_team(accumulated, source, observed_on, &input);
+    let event = ensure_event(accumulated, source, observed_on, &input);
 
     let performance_id = CanonicalPerformance::mint(
         input.athlete,
@@ -250,4 +205,69 @@ pub(super) fn store_performance(
             evidence: vec![Evidence::parsed(source.clone(), observed_on)],
             source_key: input.source_key,
         });
+}
+
+/// The team a performance belongs to, minted on first sight.
+fn ensure_team(
+    accumulated: &mut Accumulator,
+    source: &SourceRef,
+    observed_on: &str,
+    input: &PerformanceInput<'_>,
+) -> TeamId {
+    let team_id = CanonicalTeam::mint(input.school, input.sport, input.gender, input.school_year);
+    if !accumulated.teams.contains_key(team_id.as_str()) {
+        accumulated.teams.insert(
+            team_id.as_str().to_string(),
+            CanonicalTeam {
+                id: team_id.clone(),
+                school: input.school.clone(),
+                sport: input.sport,
+                gender: input.gender,
+                school_year: input.school_year,
+                level: Some("high_school".to_string()),
+                source_identities: Vec::new(),
+                evidence: vec![Evidence::parsed(source.clone(), observed_on)],
+            },
+        );
+    }
+    team_id
+}
+
+/// The event a performance belongs to, minted on first sight.
+fn ensure_event(
+    accumulated: &mut Accumulator,
+    source: &SourceRef,
+    observed_on: &str,
+    input: &PerformanceInput<'_>,
+) -> EventId {
+    accumulated
+        .events
+        .entry(format!(
+            "{}:{:?}:{:?}:{}",
+            input.meet.id.as_str(),
+            input.kind,
+            input.gender,
+            input.division.clone().unwrap_or_default()
+        ))
+        .or_insert_with(|| {
+            let mut event = CanonicalEvent::new(
+                &input.meet.id,
+                input.kind.clone(),
+                input.gender,
+                input.division.as_deref(),
+                input.round.as_deref(),
+            );
+            if let Some(label) = input.label {
+                event.source_labels.push(SourceEventLabel {
+                    source: source.clone(),
+                    label: label.to_string(),
+                });
+            }
+            event
+                .evidence
+                .push(Evidence::parsed(source.clone(), observed_on));
+            event
+        })
+        .id
+        .clone()
 }

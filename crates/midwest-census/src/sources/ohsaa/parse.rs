@@ -4,7 +4,7 @@
 //! fixture-testable and reusable by the durable services.
 
 use super::map::SearchResult;
-use crate::model::{normalize_name, Sport};
+use census_domain::model::{normalize_name, Sport};
 use std::collections::{BTreeMap, HashSet};
 
 // ── String primitives ──────────────────────────────────────────────────────

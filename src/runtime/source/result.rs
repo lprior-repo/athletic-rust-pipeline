@@ -7,6 +7,9 @@ use crate::{
     },
     store::AttemptEvidence,
 };
+mod classification;
+
+use classification::{attempt_outcome, terminated_outcome};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -41,96 +44,15 @@ fn finish_with_retries(
     exhausted: bool,
 ) -> Result<Finalized, HandlerError> {
     let returned = effect.as_ref().ok().map(|value| &value.0);
-    let mut selected = None;
-    let mut evidence = Vec::new();
-    let mut cooldown_ms = 0;
-    for record in records {
-        cooldown_ms = cooldown_ms.max(record.value.retry_after_ms);
-        if returned == Some(&record.digest) {
-            if selected.is_none() {
-                selected = Some(record.value);
-            } else if let Some(receipt) = record.value.receipt {
-                evidence.push(receipt);
-            }
-        } else if let Some(receipt) = record.value.receipt {
-            evidence.push(receipt);
-        }
-    }
+    let AttemptScan {
+        selected,
+        evidence,
+        cooldown_ms,
+    } = scan_attempts(records, returned);
     let selected_cooldown_ms = selected.as_ref().map(|attempt| attempt.retry_after_ms);
     let (outcome, blocked) = match (effect, selected) {
-        (Ok(_), Some(attempt)) => {
-            let retry_exhausted = exhausted && attempt.retryable;
-            let challenged = attempt.code == Some(FailureCode::BrowserChallenge);
-            let blocked = (retry_exhausted && (attempt.status == Some(429) || challenged))
-                || (challenged && !attempt.retryable)
-                || attempt.code == Some(FailureCode::AccessDenied)
-                || (!challenged && matches!(attempt.status, Some(401 | 403)))
-                || (matches!(attempt.status, Some(429 | 503))
-                    && !attempt.retryable
-                    && attempt.retry_after_ms == 0)
-                || attempt.code == Some(FailureCode::ArtifactFailure);
-            let code = retry_exhausted
-                .then_some(FailureCode::RetryExhausted)
-                .or(attempt.code);
-            match code {
-                None => {
-                    let receipt = attempt.receipt.ok_or_else(|| {
-                        TerminalError::new_with_code(
-                            http_audit::AUDIT_FAILURE,
-                            "successful source attempt is missing its receipt",
-                        )
-                    })?;
-                    (
-                        FetchOutcome::Retrieved {
-                            receipt,
-                            retries,
-                            previous_responses: evidence,
-                        },
-                        false,
-                    )
-                }
-                Some(code) => {
-                    evidence.extend(attempt.receipt);
-                    (
-                        FetchOutcome::Failed {
-                            failure: OperationFailure {
-                                code,
-                                message: attempt.message,
-                                http_status: attempt.status,
-                                retries,
-                                evidence,
-                            },
-                        },
-                        blocked,
-                    )
-                }
-            }
-        }
-        (Err(error), _) => {
-            let code = if error.code() == http_audit::AUDIT_FAILURE {
-                FailureCode::ArtifactFailure
-            } else if error.code() == 500 {
-                FailureCode::RetryExhausted
-            } else {
-                FailureCode::UncertainEffect
-            };
-            let blocked = code == FailureCode::ArtifactFailure;
-            (
-                FetchOutcome::Failed {
-                    failure: OperationFailure {
-                        code,
-                        message: format!(
-                            "Restate source effect terminated with code {}; inspect retained attempt evidence",
-                            error.code()
-                        ),
-                        http_status: None,
-                        retries,
-                        evidence,
-                    },
-                },
-                blocked,
-            )
-        }
+        (Ok(_), Some(attempt)) => attempt_outcome(attempt, retries, evidence, exhausted)?,
+        (Err(error), _) => terminated_outcome(error, retries, evidence),
         (Ok(_), None) => {
             return Err(TerminalError::new_with_code(
                 http_audit::AUDIT_FAILURE,
@@ -148,6 +70,42 @@ fn finish_with_retries(
         cooldown_ms,
         blocked,
     })
+}
+
+/// Retained attempt evidence selected for the journaled source effect.
+struct AttemptScan {
+    selected: Option<AttemptResult>,
+    evidence: Vec<crate::runtime::protocol::DocumentReceipt>,
+    cooldown_ms: u64,
+}
+
+/// Scan retained attempts: the attempt whose digest is the returned effect is
+/// selected, every other retained receipt becomes prior-response evidence, and
+/// the cooldown is the largest one any attempt reported.
+fn scan_attempts(
+    records: Vec<AttemptEvidence<AttemptResult>>,
+    returned: Option<&EvidenceDigest>,
+) -> AttemptScan {
+    let mut selected = None;
+    let mut evidence = Vec::new();
+    let mut cooldown_ms = 0;
+    for record in records {
+        cooldown_ms = cooldown_ms.max(record.value.retry_after_ms);
+        if returned == Some(&record.digest) {
+            if selected.is_none() {
+                selected = Some(record.value);
+            } else if let Some(receipt) = record.value.receipt {
+                evidence.push(receipt);
+            }
+        } else if let Some(receipt) = record.value.receipt {
+            evidence.push(receipt);
+        }
+    }
+    AttemptScan {
+        selected,
+        evidence,
+        cooldown_ms,
+    }
 }
 
 #[cfg(test)]

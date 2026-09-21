@@ -4,7 +4,7 @@
 use anyhow::{bail, Context, Result};
 use clap::Args;
 use midwest_census::census;
-use midwest_census::model::SchoolYear;
+use census_domain::model::SchoolYear;
 use midwest_census::net::FetchOptions;
 use midwest_census::sources::milesplit::{self, SITES};
 use midwest_census::store::Store;

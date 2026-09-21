@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 use clap::Args;
-use midwest_census::model::SchoolYear;
+use census_domain::model::SchoolYear;
 use midwest_census::store::Store;
 use midwest_census::{bests, census, report, workbook};
 use std::path::PathBuf;
@@ -53,35 +53,7 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     let scope = scope_of(args.all_sources);
 
     match &args.input {
-        Some(input) => {
-            let fetcher = build_fetcher(cli, store)?;
-            let context = midwest_census::sources::AdapterContext {
-                fetcher: &fetcher,
-                store,
-                refresh: args.refresh,
-                school_year: SchoolYear(2026),
-                observed_on: observed_on.clone(),
-            };
-            let report = midwest_census::sources::athleticnet::collect(
-                &context,
-                &midwest_census::sources::athleticnet::Options {
-                    input: Some(input.clone()),
-                    limit: args.limit,
-                    refresh: args.refresh,
-                    observed_on,
-                    states: args.states.clone(),
-                },
-            )
-            .await
-            .with_context(|| format!("gathering the athletic.net registry {input}"))?;
-            println!(
-                "gather\tathleticnet\tathletes={} requests={} errors={}",
-                report.rows, report.requests, report.errors
-            );
-            for note in &report.notes {
-                println!("\t{note}");
-            }
-        }
+        Some(input) => gather_registry(cli, store, args, input, observed_on).await?,
         None => {
             println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
         }
@@ -98,20 +70,74 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     );
 
     for scope in [report::Scope::AllSources, report::Scope::Core] {
-        let census = report::build_census(store, scope).context("building the census")?;
-        let (json_path, csv_path) = report::write_census(store, &census, scope)?;
-        println!(
-            "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
-            json_path.display(),
-            census.scope,
-            census.totals.schools,
-            census.totals.athletes,
-            census.totals.class_of_2027_with_profile_url,
-            census.totals.class_of_2027_multisource
-        );
-        println!("\t{}", csv_path.display());
+        publish_scope(store, scope)?;
     }
 
+    publish_bests_and_workbook(store, args, scope, grad_year)
+}
+
+/// Gather the Athletic.net registry `--input` names, and print the stage's line.
+async fn gather_registry(
+    cli: &Cli,
+    store: &Store,
+    args: &RunArgs,
+    input: &str,
+    observed_on: String,
+) -> Result<()> {
+    let fetcher = build_fetcher(cli, store)?;
+    let context = midwest_census::sources::AdapterContext {
+        fetcher: &fetcher,
+        store,
+        refresh: args.refresh,
+        school_year: SchoolYear(2026),
+        observed_on: observed_on.clone(),
+    };
+    let report = midwest_census::sources::athleticnet::collect(
+        &context,
+        &midwest_census::sources::athleticnet::Options {
+            input: Some(input.to_string()),
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.states.clone(),
+        },
+    )
+    .await
+    .with_context(|| format!("gathering the athletic.net registry {input}"))?;
+    println!(
+        "gather\tathleticnet\tathletes={} requests={} errors={}",
+        report.rows, report.requests, report.errors
+    );
+    for note in &report.notes {
+        println!("\t{note}");
+    }
+    Ok(())
+}
+
+/// Build one scope's census, write its JSON and CSV, and print the stage's lines.
+fn publish_scope(store: &Store, scope: report::Scope) -> Result<()> {
+    let census = report::build_census(store, scope).context("building the census")?;
+    let (json_path, csv_path) = report::write_census(store, &census, scope)?;
+    println!(
+        "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
+        json_path.display(),
+        census.scope,
+        census.totals.schools,
+        census.totals.athletes,
+        census.totals.class_of_2027_with_profile_url,
+        census.totals.class_of_2027_multisource
+    );
+    println!("\t{}", csv_path.display());
+    Ok(())
+}
+
+/// Reduce the best marks, write them with their workbook, and print the stage's lines.
+fn publish_bests_and_workbook(
+    store: &Store,
+    args: &RunArgs,
+    scope: report::Scope,
+    grad_year: i16,
+) -> Result<()> {
     let bests = bests::Options {
         scope,
         grad_year: Some(grad_year),

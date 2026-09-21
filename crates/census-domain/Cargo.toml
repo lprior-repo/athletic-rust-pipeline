@@ -1,0 +1,13 @@
+[package]
+name = "census-domain"
+version = "0.1.0"
+edition = "2021"
+description = "Pure domain model for the Midwest census: canonical entities, deterministic ids, cohort identity. No async, no I/O."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
