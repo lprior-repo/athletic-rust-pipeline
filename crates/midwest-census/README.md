@@ -63,8 +63,11 @@ fails with that reason instead of interleaving writes with another process.
 | `meta` | `<name>` | small JSON and scalar values, including the legacy-import markers |
 
 Observations are append-only: appending the same entity twice stores two rows, and
-`Store::scan::<T>(Table::X)` merges them through `Entity::merge`. That is the guarantee the old
-JSONL entity logs provided, now applied at read time. Sequence numbers are seeded from the last key
+`Store::scan::<T>(Table::X)` merges them through `Entity::merge` and then applies
+`Entity::publish` — the collection contract, applied once per merged entity so the report, the
+workbook, the snapshot and the Restate handlers all see the same projection. (A coach's consumer
+mailbox is withheld there, and the count of withheld rows comes from `census::withheld_coach_emails`.)
+That is the guarantee the old JSONL entity logs provided, now applied at read time. Sequence numbers are seeded from the last key
 present at open, and the sequence component is big-endian so byte order is numerical order, so a
 reopened database never reuses a sequence number and never overwrites an observation.
 
@@ -76,13 +79,10 @@ than 20,000,000 observations (`store::MAX_ROWS_PER_TABLE`) rather than exhaustin
 counts observations read, not merged rows. The LSM cache is bounded at 256 MiB.
 
 `out/*.jsonl` is the materialized read model: `consolidate` writes one snapshot per table through
-`Store::consolidate::<T>`, and `bests` reads those files. `report` and the census sheets of the
-workbook read the merged tree directly through `Store::scan::<T>`, so they see every committed
-observation without waiting for a consolidation pass. The two paths can therefore differ by whatever
-was appended since the last `consolidate`: `report` always shows the whole tree, while the `bests`
-reduction and the workbook's best-results sheet show the snapshots as consolidated. Run
-`consolidate` before `bests` or `workbook` to make the snapshot current — nothing else writes those
-files.
+`Store::consolidate::<T>`. Every command reads the merged tree through `Store::scan::<T>` — `report`,
+`bests` and the workbook included — so they see every committed observation without waiting for a
+consolidation pass, and the snapshot is what goes out as the tabular record beside them. `bests`
+writing `out/best-results-*.jsonl` therefore needs no prior `consolidate`.
 
 Databases created before this substrate keep their rows in `<store>/entities/*.jsonl` and their
 resume ledger in `<store>/journal/*.jsonl`. `Store::open` imports both exactly once: a table is
@@ -133,7 +133,7 @@ Three commands turn the store into evidence:
   plus `out/census-by-state*.csv`. It reduces the merged store tables directly.
 * `bests` — one best mark per `(athlete, event)`, compared only within a mark's own measure with
   relays excluded, written as `out/best-results-<cohort>.jsonl` and `.csv`, where the cohort is
-  `co2027` or `all`. It reads the consolidated `out/*.jsonl` snapshots, so `consolidate` runs first.
+  `co2027` or `all`. It reads the merged store, so it never depends on a prior `consolidate`.
 * `workbook` — the census as one `.xlsx` with nine sheets (goal & method, summary, by state for each
   scope, Athletic.net marginal, best results, meets, evidence mix, method notes) and the best-mark
   sidecars beside it. Every cell is copied from the typed census or the best-mark reduction, nothing
@@ -253,8 +253,7 @@ Minnesota one. Unresolved venues are filed under `??` rather than guessed: on th
 - Grade evidence is "grade observed in a source", not a verified graduation year; the platform keeps
   `GradYear` and `ObservedGrade` as separate fields for exactly that reason.
 - Test and lint counts are not restated here because every slice of work moves them: the
-  2026-09-20 record was 183 passing tests, the adapters added then (`wayzata`, `compiled`, `xc`)
-  clippy-clean, and 17 pre-existing warnings in `ohsaa`, `plain_names`, `wiaa`, `net`, `mshsl`,
-  `hytek`, `athleticlive_athletes`, `report` and `census`. The workspace gate is the current answer:
-  `cargo fmt --check`, `cargo clippy --workspace --all-targets --all-features`, and
+  2026-09-20 record was 183 passing tests and 17 clippy warnings; both are now cleared, and the
+  crate is clippy-clean. The workspace gate is the current answer: `cargo fmt --check`,
+  `cargo clippy --workspace --all-targets --all-features`, and
   `cargo test --workspace --all-features` from the repository root.

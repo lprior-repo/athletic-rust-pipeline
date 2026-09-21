@@ -707,6 +707,12 @@ pub struct CanonicalCoach {
     pub phone: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
+    /// Set by the merge when a consumer mailbox was dropped from `professional_email`. Not
+    /// serialized: it is derived from the observation bodies on every read, so re-importing the
+    /// entity log re-derives it. A withheld row serializes without the key, where the pre-Fjall
+    /// pipeline wrote an explicit `null`.
+    #[serde(skip)]
+    pub email_withheld: bool,
 }
 
 impl CanonicalCoach {
@@ -739,6 +745,7 @@ impl CanonicalCoach {
             phone: None,
             source_identities: Vec::new(),
             evidence: Vec::new(),
+            email_withheld: false,
         }
     }
 }

@@ -617,7 +617,7 @@ fn totals_of(by_state: &BTreeMap<String, StateCensus>, counts: &RowCounts) -> St
             entry.class_of_2027_with_coach_email,
         );
     }
-    totals.state = "ALL".to_string();
+    totals.state = "TOTAL".to_string();
     totals.schools = counts.schools;
     totals.coaches = counts.coaches;
     totals.coaches_with_email = counts.coaches_with_email;
@@ -683,6 +683,13 @@ pub fn build_census(store: &Store, scope: Scope) -> Result<Census> {
     let mut by_state = athlete_rollup.by_state;
     apply_coach_states(&mut by_state, &coach_rollup.by_state);
 
+    // Both the workbook and the CSV read a state's school count off its `by_state` row, so it is
+    // filled once here from the school table rather than re-derived by each writer.
+    let school_counts = schools_by_state(&schools);
+    for (state, entry) in by_state.iter_mut() {
+        entry.schools = school_counts.get(state).copied().unwrap_or(0);
+    }
+
     Ok(Census {
         generated_on: crate::net::today_iso(),
         store_dir: store.root().display().to_string(),
@@ -727,7 +734,7 @@ pub fn write_census(
         csv.push_str(&format!(
             "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             row.state,
-            schools_of(census, &row.state),
+            row.schools,
             row.athletes,
             row.class_of_2027,
             row.class_of_2027_boys,
@@ -742,7 +749,8 @@ pub fn write_census(
         ));
     }
     csv.push_str(&format!(
-        "ALL,{},{},{},{},{},{},{},{},{},{},{},{}\n",
+        "{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
+        census.totals.state,
         census.totals.schools,
         census.totals.athletes,
         census.totals.class_of_2027,
@@ -758,15 +766,6 @@ pub fn write_census(
     ));
     std::fs::write(&csv_path, csv)?;
     Ok((json_path, csv_path))
-}
-
-/// Per-state school counts come from the school table, not from athlete-derived state buckets.
-fn schools_of(census: &Census, state: &str) -> usize {
-    census
-        .schools_by_state
-        .get(state)
-        .copied()
-        .unwrap_or_default()
 }
 
 #[cfg(test)]
@@ -877,6 +876,9 @@ mod tests {
         assert_eq!(census.totals.athletes, 1);
         assert_eq!(census.totals.class_of_2027, 1);
         assert_eq!(census.totals.schools, 1);
+        // The workbook prints a state's school count off its `by_state` row, so the row has to carry
+        // the count and not just the totals.
+        assert_eq!(census.by_state["WI"].schools, 1);
         assert!(!store.out_dir().join("athletes.jsonl").exists());
     }
 }

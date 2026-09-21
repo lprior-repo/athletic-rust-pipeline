@@ -14,7 +14,6 @@ use crate::store::{Store, Table};
 use anyhow::{bail, Context, Result};
 use futures::stream::{self, StreamExt};
 use serde::Serialize;
-use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
@@ -413,36 +412,13 @@ pub async fn collect_milesplit(
     Ok(report)
 }
 
-/// Drop `professional_email` values that sit on consumer mail domains from a consolidated snapshot,
-/// returning how many rows were withheld. Rows keep every other field.
+/// How many coaches the merge withheld a consumer mailbox from.
 ///
-/// The loop is bounded by the line count of the snapshot `consolidate` just wrote.
-pub(crate) fn scrub_consumer_emails(path: &Path) -> Result<usize> {
-    let raw = std::fs::read_to_string(path)?;
-    let mut withheld = 0usize;
-    let mut rewritten = String::with_capacity(raw.len());
-    for line in raw.lines() {
-        if line.trim().is_empty() {
-            continue;
-        }
-        let mut row: serde_json::Value =
-            serde_json::from_str(line).context("re-reading a consolidated coach row")?;
-        let is_personal = row
-            .get("professional_email")
-            .and_then(|value| value.as_str())
-            .is_some_and(|email| crate::model::professional_email(email).is_none());
-        if is_personal {
-            // The guard above proved the field is a string, so the row is a JSON object.
-            if let Some(object) = row.as_object_mut() {
-                object.insert("professional_email".to_string(), serde_json::Value::Null);
-            }
-            withheld = withheld.saturating_add(1);
-        }
-        rewritten.push_str(&serde_json::to_string(&row)?);
-        rewritten.push('\n');
-    }
-    std::fs::write(path, rewritten)?;
-    Ok(withheld)
+/// The withholding itself happens in [`crate::store::Entity::publish`], so every reader sees the
+/// same projection; this only counts what the contract dropped.
+pub(crate) fn withheld_coach_emails(store: &Store) -> Result<usize> {
+    let coaches: Vec<crate::model::CanonicalCoach> = store.scan(Table::Coaches)?;
+    Ok(coaches.iter().filter(|coach| coach.email_withheld).count())
 }
 
 /// Merge append logs into snapshots under `out/`, returning per-table counts.
@@ -463,10 +439,12 @@ pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
         "coaches".to_string(),
         store.consolidate::<crate::model::CanonicalCoach>(Table::Coaches, &coaches_path)?,
     ));
-    // Contract enforcement at the single choke point: the shipped coach projection never carries a
-    // personal mailbox, whichever adapter accepted one.
-    let withheld = scrub_consumer_emails(&coaches_path)?;
-    counts.push(("coaches_email_withheld".to_string(), withheld));
+    // The merge withholds consumer mailboxes before the snapshot is written, so this is a count of
+    // the same rule the report and the workbook already went through.
+    counts.push((
+        "coaches_email_withheld".to_string(),
+        withheld_coach_emails(store)?,
+    ));
     counts.push((
         "athletes".to_string(),
         store.consolidate::<CanonicalAthlete>(Table::Athletes, &out.join("athletes.jsonl"))?,

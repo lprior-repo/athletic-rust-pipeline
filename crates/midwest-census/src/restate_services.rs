@@ -156,10 +156,9 @@ fn consolidate_tables(store: &Store, tables: &[Table]) -> anyhow::Result<Vec<Con
     for table in tables {
         let path = store.table_path(*table);
         let rows = store.consolidate_table(*table, &path)?;
-        // Same choke point as the CLI: the shipped coaches projection never carries a personal
-        // mailbox, whichever adapter accepted one.
+        // Same rule as the CLI: the merge withholds consumer mailboxes before anything is written.
         let emails_withheld = if *table == Table::Coaches {
-            Some(crate::census::scrub_consumer_emails(&path)?)
+            Some(crate::census::withheld_coach_emails(store)?)
         } else {
             None
         };

@@ -116,6 +116,11 @@ impl Table {
 pub trait Entity: Serialize + DeserializeOwned + Clone {
     fn entity_id(&self) -> &str;
     fn merge(&mut self, other: Self);
+
+    /// Apply the collection contract to a merged entity. Every read of the store goes through
+    /// [`Store::scan`], so a rule that lives here holds for the report, the workbook, the snapshot
+    /// and the Restate handlers at once.
+    fn publish(&mut self) {}
 }
 
 /// The id field alone, borrowed out of a serialized observation so an append can key the row without
@@ -306,7 +311,13 @@ impl Store {
                 }
             }
         }
-        Ok(merged.into_values().collect())
+        Ok(merged
+            .into_values()
+            .map(|mut entity| {
+                entity.publish();
+                entity
+            })
+            .collect())
     }
 
     /// Merge a table and write the materialized snapshot as JSONL, the read model every report and
@@ -672,6 +683,21 @@ impl Entity for CanonicalCoach {
         union_vec(&mut self.source_identities, &other.source_identities);
         union_vec(&mut self.evidence, &other.evidence);
     }
+
+    fn publish(&mut self) {
+        let Some(email) = self.professional_email.as_deref() else {
+            return;
+        };
+        match crate::model::professional_email(email) {
+            Some(published) if published == email => {}
+            Some(published) => self.professional_email = Some(published),
+            None => {
+                // A personal mailbox never ships, whichever adapter accepted one.
+                self.professional_email = None;
+                self.email_withheld = true;
+            }
+        }
+    }
 }
 
 impl Entity for CanonicalAthlete {
@@ -961,5 +987,48 @@ mod tests {
             .unwrap();
         assert_eq!(schools, 3);
         assert_eq!(stats.observations, 3);
+    }
+
+    #[test]
+    fn a_consumer_mailbox_never_survives_a_read_but_a_school_address_does() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        let school = school("Abbotsford").id;
+        let mut withheld = CanonicalCoach::new(
+            &school,
+            "J. Riethmiller",
+            Some(Sport::OutdoorTrack),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+        );
+        withheld.professional_email = Some("jriethmiller.ptc@gmail.com".to_string());
+        let mut published = CanonicalCoach::new(
+            &school,
+            "A. Bender",
+            Some(Sport::CrossCountry),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+        );
+        published.professional_email = Some("abender@ofsd.k12.wi.us".to_string());
+        store
+            .append_many(Table::Coaches, &[withheld, published])
+            .unwrap();
+
+        let coaches = store.scan::<CanonicalCoach>(Table::Coaches).unwrap();
+        let withheld_row = coaches
+            .iter()
+            .find(|coach| coach.name == "J. Riethmiller")
+            .unwrap();
+        assert_eq!(withheld_row.professional_email, None);
+        assert!(withheld_row.email_withheld);
+        let published_row = coaches
+            .iter()
+            .find(|coach| coach.name == "A. Bender")
+            .unwrap();
+        assert_eq!(
+            published_row.professional_email.as_deref(),
+            Some("abender@ofsd.k12.wi.us")
+        );
+        assert!(!published_row.email_withheld);
     }
 }
