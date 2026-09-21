@@ -8,6 +8,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use crate::store::StoreError;
+use crate::outcome::DrainState;
 
 use super::USAGE;
 
@@ -83,10 +84,10 @@ pub enum BootstrapError {
         source: StoreError,
     },
     /// The store bootstrap task panicked or was cancelled.
-    #[error("joining the store bootstrap task failed: {source}")]
+    #[error("joining the store bootstrap task failed: {reason}")]
     StoreTask {
-        #[source]
-        source: tokio::task::JoinError,
+        state: DrainState,
+        reason: String,
     },
     /// The store could not be flushed on the way out.
     #[error("persisting the store during shutdown failed: {source}")]
