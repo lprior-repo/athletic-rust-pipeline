@@ -176,7 +176,7 @@ fn verify_query(
                 Ok(()) => Ok(()),
                 Err(_) => {
                     reconciliation_start = Some(expected_start);
-                    if index + 1 != evidence.pages.len() {
+                    if index.checked_add(1) != Some(evidence.pages.len()) {
                         bail!("query evidence retains a page after reconciliation failure");
                     }
                     Ok::<(), anyhow::Error>(())

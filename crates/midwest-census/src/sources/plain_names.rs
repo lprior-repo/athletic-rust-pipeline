@@ -26,7 +26,7 @@
 //! # Role policy (hard rule)
 //!
 //! * Office/building staff are never emitted as coaches or athletic directors: the token list in
-//!   [`OFFICE_ROLE_TOKENS`] drops secretaries, business managers, technology directors, trainers,
+//!   `OFFICE_ROLE_TOKENS` drops secretaries, business managers, technology directors, trainers,
 //!   principals and superintendents **before** any director/coach match is attempted, so an athletic
 //!   director's secretary and a superintendent are both unpresent regardless of seniority.
 //! * NDHSAA's table is headed "Coaches" and never says which name is the head coach, so sport-scoped
@@ -525,13 +525,7 @@ pub fn parse_nd_offerings(html: &str) -> Result<Vec<NdOffering>> {
         if label.is_empty() {
             continue;
         }
-        let co_op = match nd_coop_regex()?
-            .captures(&label)
-            .and_then(|coop| coop.get(1))
-        {
-            Some(value) => nonempty(&clean_text(value.as_str())?),
-            None => None,
-        };
+        let co_op = nd_co_op(&label)?;
         offerings.push(NdOffering {
             label: strip_coop_note(&label)?,
             coaches: split_person_names(&clean_text(names.as_str())?)?,
@@ -539,6 +533,17 @@ pub fn parse_nd_offerings(html: &str) -> Result<Vec<NdOffering>> {
         });
     }
     Ok(offerings)
+}
+
+/// Co-op annotation published inside a row label: `(Co-op: West Fargo Sheyenne)` → `West Fargo Sheyenne`.
+fn nd_co_op(label: &str) -> Result<Option<String>> {
+    let captured = nd_coop_regex()?
+        .captures(label)
+        .and_then(|coop| coop.get(1));
+    let Some(value) = captured else {
+        return Ok(None);
+    };
+    Ok(nonempty(&clean_text(value.as_str())?))
 }
 
 /// Map an NDHSAA sport label onto our ontology plus the gender side it covers.
@@ -1136,7 +1141,7 @@ async fn collect_nebraska(
     let form = match ctx.fetcher.get(NSAA_FORM_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {
-            report.errors += 1;
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("nsaa: {NSAA_FORM_URL} failed: {error}"));
             return Ok((0, 0));
         }
@@ -2440,6 +2445,7 @@ mod tests {
             None,
             std::time::Duration::from_millis(1),
             std::collections::HashMap::new(),
+            Vec::new(),
         )
         .expect("fetcher");
         let ctx = AdapterContext {

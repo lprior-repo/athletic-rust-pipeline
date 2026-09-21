@@ -307,3 +307,41 @@ Verus/Flux across aggregation ≈2–3 weeks).
 - **Restate/browser sessions in CI**: network-dependent lanes (adapters, browser) must run in a
   record/replay mode with captured fixtures; otherwise they are excluded from the gate by policy,
   not by accident.
+
+## 8. Wave 1 outcome (2026-09-21)
+
+A parallel lint-burndown wave — one agent per tracked file, sharing the target directory with cargo
+serializing the lock — executed the construct-removal half of Phase 1 against the frozen tree, and
+was validated by the full gate on a cleaned target directory.
+
+Measured movement (baseline → current; `tools/quality-baseline.json` refreshed with
+`--update-baseline --allow-increase` for the two line-count counters):
+
+| Lane | Before | After |
+| --- | --- | --- |
+| root strict clippy: arithmetic / as / indexing / string_slice / let_underscore | 36 / 10 / 2 / 2 / 1 | 0 / 0 / 0 / 0 / 0 |
+| census strict clippy: arithmetic | 240 | 68 |
+| census strict clippy: as / indexing / string_slice / expect / unwrap | 36 / 23 / 47 / 75 / 1 | 7 / 4 / 1 / 0 / 0 |
+| scan census: indexing / expect / as_cast | 128 / 75 / 32 | 0 / 0 / 7 |
+| scan root: indexing / as_cast | 225 / 11 | 0 / 0 |
+| gate tests | — | 465 run, 465 passed, 2 skipped |
+
+Gate result: **PASS on every lane** (fmt, check, doc, tests, strict clippy, production scan, domain
+type integrity, debt ratchet, deny, audit, machete, geiger, bench presence).
+
+Notes for the next phase:
+
+- Production-line and function-length counters rose by the converted code's explicit error handling
+  (root +121 lines, census +641 lines, functions >25 logical lines 434 → 439). The ratchet now
+  holds those numbers; Phase 2 decomposition is where they come back down.
+- The same window restored, from the pre-reset snapshot, the Athletic.net adapter and the `run`
+  one-command cycle that the 11:45 worktree reset had destroyed (see `HANDOFF.md`). Those ~1.3k
+  lines are the bulk of the census production-line increase; the recovery is proven by the
+  scratch-store smoke run and by the census suite (224 tests).
+- `cargo geiger` reads target-dir fingerprints, so a shared/polluted `target/` can fail that lane
+  with `Io(NotFound)` for deleted bench or bin targets (`benches/pipeline.rs`,
+  `src/bin/ownership-profile.rs`) instead of printing an unsafe verdict. `cargo clean` fixed it;
+  clean before trusting that lane when it fails with an Io error.
+- The census's remaining 68 arithmetic / 7 as-conversion / 4 indexing diagnostics are the tracked
+  Phase 1 remainder (aggregation and adapter modules), not regressions: every one of them is
+  `[DOWN]` or equal against the recorded baseline.

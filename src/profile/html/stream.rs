@@ -249,11 +249,12 @@ impl StreamState {
             .ok()
             .and_then(|value| (value == self.requested.get()).then_some(()));
         let scope = owner.map(|_| {
+            let index = self.scopes.len();
             self.scopes.push(Scope {
                 locator_index,
                 text: String::new(),
             });
-            self.scopes.len() - 1
+            index
         });
         Ok((scope, inherited.is_some_and(|(_, excluded)| excluded)))
     }

@@ -624,9 +624,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 ));
                 continue;
             }
+            // Every larger batch was split and re-queued above, so exactly one meet remains here.
+            let Some(target) = batch.first() else {
+                continue;
+            };
             report.note(format!(
                 "meet {} alone has {} rows: only {} were retrievable in one result window",
-                batch[0].athleticlive_meet_id, total, RESULT_WINDOW
+                target.athleticlive_meet_id, total, RESULT_WINDOW
             ));
         }
 

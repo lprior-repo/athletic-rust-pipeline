@@ -1,7 +1,11 @@
 # AGENTS.md — working in this repository
 
-Primary instruction document for coding agents. Read this before touching anything; read
-`ARCHITECTURE.md` for the system shape and `docs/HARDENING-PROGRAM.md` for the current phase plan.
+Primary instruction document for coding agents. Read this before touching anything; then
+`ARCHITECTURE.md` (system shape), `DOMAIN.md` (types and evidence rules),
+`SOURCE_ADAPTER_GUIDE.md` (adding a source adapter), `FJALL_SCHEMA.md` (storage),
+`RESTATE_WORKFLOWS.md` (durable work), `TESTING.md` (how to run and extend the suite),
+`PERFORMANCE.md` (measured baselines and bench harness), and `docs/HARDENING-PROGRAM.md`
+(current phase plan). Architecture decisions live in `docs/adr/`.
 
 ## 1. Repository map
 

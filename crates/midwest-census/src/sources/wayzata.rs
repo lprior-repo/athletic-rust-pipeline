@@ -800,6 +800,7 @@ mod tests {
             None,
             std::time::Duration::from_millis(1),
             std::collections::HashMap::new(),
+            Vec::new(),
         )
         .expect("fetcher");
         let ctx = AdapterContext {
@@ -917,6 +918,7 @@ mod tests {
             None,
             std::time::Duration::from_millis(1),
             std::collections::HashMap::new(),
+            Vec::new(),
         )
         .expect("fetcher");
         let ctx = AdapterContext {

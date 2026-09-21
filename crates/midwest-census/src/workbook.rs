@@ -21,6 +21,10 @@ pub struct Options {
     pub grad_year: Option<i16>,
     pub out: Option<PathBuf>,
     pub limit: Option<usize>,
+    /// Evidence scope the best-results sheet and its `bests::write` sidecars are reduced over. The
+    /// workbook always publishes both census scopes, but there is one best-results reduction, and
+    /// this is it.
+    pub scope: Scope,
 }
 
 impl Default for Options {
@@ -29,6 +33,7 @@ impl Default for Options {
             grad_year: Some(2027),
             out: None,
             limit: None,
+            scope: Scope::Core,
         }
     }
 }
@@ -52,8 +57,7 @@ impl Cell {
     }
 }
 
-/// Excel cells are `f64`, which holds every census count up to `u32::MAX` exactly; a larger count
-/// is an error rather than a silently rounded cell.
+/// Excel cells are `f64`, exact for every census count up to `u32::MAX`; larger counts are an error.
 fn count_as_number(value: usize) -> Result<f64> {
     let value = u32::try_from(value).context("cell count does not fit u32")?;
     Ok(f64::from(value))
@@ -92,7 +96,7 @@ pub fn build(store: &Store, options: &Options) -> Result<PathBuf> {
     let bests = bests::build(
         store,
         &bests::Options {
-            scope: Scope::Core,
+            scope: options.scope,
             grad_year: options.grad_year,
             limit: options.limit,
         },
@@ -244,13 +248,11 @@ fn write_sheet(
 
 fn share(part: usize, whole: usize) -> Result<Cell> {
     if whole == 0 {
-        Ok(Cell::text("n/a"))
-    } else {
-        Ok(Cell::text(format!(
-            "{:.1}%",
-            100.0 * count_as_number(part)? / count_as_number(whole)?
-        )))
+        return Ok(Cell::text("n/a"));
     }
+    let part = count_as_number(part)?;
+    let whole = count_as_number(whole)?;
+    Ok(Cell::text(format!("{:.1}%", 100.0 * part / whole)))
 }
 
 fn goal_sheet(core: &Census, grad_year: Option<i16>) -> Vec<Vec<Cell>> {

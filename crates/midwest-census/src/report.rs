@@ -784,11 +784,18 @@ mod tests {
         let (school, school_id) = CanonicalSchool::new("WI", "Abbotsford", "abbotsford");
         store.append(Table::Schools, &school).unwrap();
 
-        // One athlete reachable only through the AthleticLIVE mirror, one through MileSplit.
+        // One athlete reachable only through the AthleticLIVE mirror, one only through the
+        // Athletic.net host adapter, and one through MileSplit.
         let mut mirrored =
             CanonicalAthlete::new(&school_id, "Mirror Only", GradYear::CO2027, Gender::Boys);
         mirrored.evidence.push(Evidence::parsed(
             crate::model::SourceRef::new("athleticlive_athletes", None),
+            "2026-09-20",
+        ));
+        let mut host =
+            CanonicalAthlete::new(&school_id, "Host Only", GradYear::CO2027, Gender::Boys);
+        host.evidence.push(Evidence::parsed(
+            crate::model::SourceRef::new("athleticnet", None),
             "2026-09-20",
         ));
         let mut core_athlete =
@@ -802,10 +809,11 @@ mod tests {
             "2026-09-20",
         ));
         store.append(Table::Athletes, &mirrored).unwrap();
+        store.append(Table::Athletes, &host).unwrap();
         store.append(Table::Athletes, &core_athlete).unwrap();
 
-        let mut rows: Vec<CanonicalAthlete> = vec![mirrored, core_athlete];
-        assert_eq!(retain_core(&mut rows), 1);
+        let mut rows: Vec<CanonicalAthlete> = vec![mirrored, host, core_athlete];
+        assert_eq!(retain_core(&mut rows), 2);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].canonical_name, "Core Athlete");
     }

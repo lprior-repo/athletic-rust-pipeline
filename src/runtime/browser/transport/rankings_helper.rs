@@ -339,7 +339,11 @@ impl RankingsEnvelope {
     fn row_count(&self) -> u64 {
         self.grouped_rankings
             .iter()
-            .map(|group| group.len() as u64)
+            .map(|group| {
+                // A group longer than `u64::MAX` cannot be represented in the
+                // observation; saturating keeps pagination from under-counting.
+                u64::try_from(group.len()).map_or(u64::MAX, |count| count)
+            })
             .sum()
     }
 

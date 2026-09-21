@@ -276,7 +276,8 @@ fn write_sheet(workbook: &mut Workbook, name: &str, rows: Vec<&Row>) -> Result<(
         ];
         values.iter().enumerate().try_for_each(|(column, value)| {
             let column = u16::try_from(column).context("fixture data column overflow")?;
-            let excel_row = u32::try_from(offset + 1).context("fixture row overflow")?;
+            let next_row = offset.checked_add(1).context("fixture row overflow")?;
+            let excel_row = u32::try_from(next_row).context("fixture row overflow")?;
             worksheet
                 .write_string(excel_row, column, *value)
                 .map(|_| ())

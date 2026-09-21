@@ -169,7 +169,7 @@ pub fn response(status: StatusCode, content_type: &'static str, body: Vec<u8>) -
     response
 }
 pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
-    let team = 500 + id.saturating_sub(1000);
+    let team = 500_u64.saturating_add(id.saturating_sub(1000));
     let team = if matches!(case, Scenario::SplitLocation) && sport == "xc" {
         612
     } else {

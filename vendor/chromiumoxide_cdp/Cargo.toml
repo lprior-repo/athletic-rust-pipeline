@@ -36,9 +36,6 @@ repository = "https://github.com/mattsse/chromiumoxide"
 name = "chromiumoxide_cdp"
 path = "src/lib.rs"
 
-[dependencies.chromiumoxide_pdl]
-version = "0.9"
-
 [dependencies.chromiumoxide_types]
 version = "0.9"
 
@@ -48,9 +45,6 @@ features = ["derive"]
 
 [dependencies.serde_json]
 version = "1"
-
-[dev-dependencies.chromiumoxide_pdl]
-version = "0.9"
 
 [dev-dependencies.reqwest]
 version = "0.13"

@@ -461,7 +461,7 @@ fn injected_failure(state: &FixtureState, case: Scenario) -> bool {
                 if *value == 0 {
                     false
                 } else {
-                    *value -= 1;
+                    *value = value.saturating_sub(1);
                     true
                 }
             })

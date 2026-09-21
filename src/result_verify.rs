@@ -119,10 +119,8 @@ fn validate_line(line: &[u8], length: usize, detail: &Path, number: u64) -> Resu
     if line.last() != Some(&b'\n') {
         bail!("detail line {number} is not newline-terminated");
     }
-    if line[..line.len().saturating_sub(1)]
-        .iter()
-        .all(u8::is_ascii_whitespace)
-    {
+    // The terminator was verified above and is whitespace, so the whole line can be tested.
+    if line.iter().all(u8::is_ascii_whitespace) {
         bail!("detail line {number} is blank");
     }
     Ok(())

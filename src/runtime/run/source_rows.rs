@@ -90,11 +90,10 @@ impl SourceRows {
     ) -> Result<Option<RowJob>> {
         for _ in 0..self.sheets.len() {
             let index = self.next_sheet;
-            self.next_sheet = if index + 1 == self.sheets.len() {
-                0
-            } else {
-                index + 1
-            };
+            let next = index
+                .checked_add(1)
+                .context("source cursor index overflow")?;
+            self.next_sheet = if next == self.sheets.len() { 0 } else { next };
             let sheet = self
                 .sheets
                 .get_mut(index)
@@ -133,7 +132,9 @@ async fn refill(
         .selected
         .checked_sub(sheet.issued)
         .context("source selection underflow")?;
-    let limit = usize::try_from(remaining.min(SOURCE_PAGE_ROWS as u64))?;
+    let page_rows =
+        u64::try_from(SOURCE_PAGE_ROWS).context("source page size conversion overflow")?;
+    let limit = usize::try_from(remaining.min(page_rows))?;
     let store = runtime.store.clone();
     let workbook = workbook.clone();
     let name = sheet.name.clone();

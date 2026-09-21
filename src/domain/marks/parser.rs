@@ -126,18 +126,19 @@ fn decimal_scaled(raw: &str, scale: u64, field: &'static str) -> Result<u64, Dom
     let whole_value = parse_integer(whole, field)?
         .checked_mul(scale)
         .ok_or(DomainError::OutOfRange { field })?;
-    let fractional_value = if kept.is_empty() {
-        0
-    } else {
-        parse_integer(kept, field)?
-            .checked_mul(
-                10u64.pow(
-                    u32::try_from(precision - kept.len())
-                        .map_err(|_| DomainError::OutOfRange { field })?,
-                ),
-            )
-            .ok_or(DomainError::OutOfRange { field })?
-    };
+    let fractional_value =
+        if kept.is_empty() {
+            0
+        } else {
+            let missing_digits = precision
+                .checked_sub(kept.len())
+                .ok_or(DomainError::OutOfRange { field })?;
+            parse_integer(kept, field)?
+                .checked_mul(10u64.pow(
+                    u32::try_from(missing_digits).map_err(|_| DomainError::OutOfRange { field })?,
+                ))
+                .ok_or(DomainError::OutOfRange { field })?
+        };
     whole_value
         .checked_add(fractional_value)
         .ok_or(DomainError::OutOfRange { field })

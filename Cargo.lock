@@ -438,25 +438,8 @@ dependencies = [
 name = "chromiumoxide_cdp"
 version = "0.9.1"
 dependencies = [
- "chromiumoxide_pdl",
  "chromiumoxide_types",
  "serde",
- "serde_json",
-]
-
-[[package]]
-name = "chromiumoxide_pdl"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c602dea92337bc4d824668d78c5b79c3b4ddb29b40dd7218282bbe8fd3fc2091"
-dependencies = [
- "chromiumoxide_types",
- "either",
- "heck",
- "once_cell",
- "proc-macro2",
- "quote",
- "regex",
  "serde_json",
 ]
 
@@ -1776,7 +1759,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "unicode-normalization",
  "url",
 ]
 

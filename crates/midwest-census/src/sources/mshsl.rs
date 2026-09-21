@@ -220,7 +220,7 @@ struct TeamPathAlias {
 /// Decode a Cloudflare-obfuscated address: the first byte is the XOR key for the rest.
 ///
 /// Returns `None` for anything that is not a decodable hex payload (odd length, non-hex, empty result,
-/// non-UTF-8, or longer than [`MAX_CFEMAIL_HEX`]).
+/// non-UTF-8, or longer than `MAX_CFEMAIL_HEX`).
 pub fn decode_cfemail(encoded: &str) -> Option<String> {
     let hex = encoded.trim();
     if hex.is_empty() || hex.len() > MAX_CFEMAIL_HEX || !hex.len().is_multiple_of(2) {
@@ -880,13 +880,15 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
 
 /// `u64` view of a `usize` count: lossless on every supported target, saturating otherwise.
 fn count(value: usize) -> u64 {
+    // `clippy::manual_unwrap_or` (a `-D warnings` error) requires this over a `match`, and the
+    // fallback is unreachable on every supported target.
     u64::try_from(value).unwrap_or(u64::MAX)
 }
 
 /// Collect this provider's schools and coach/AD contacts into the canonical store.
 ///
 /// Per school: one school page (facts + AD rows), one team-node list and up to
-/// [`MAX_TEAMS_PER_SCHOOL`] coach requests. Progress is journalled per school, so a re-run resumes
+/// `MAX_TEAMS_PER_SCHOOL` coach requests. Progress is journalled per school, so a re-run resumes
 /// without re-fetching finished schools.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
     let mut report = AdapterReport::new(SOURCE_ID, "schools");
@@ -1714,6 +1716,7 @@ mod tests {
             None,
             std::time::Duration::from_millis(1),
             std::collections::HashMap::new(),
+            Vec::new(),
         )
         .expect("fetcher");
         let ctx = AdapterContext {

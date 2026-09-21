@@ -20,27 +20,60 @@ use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
 use regex::Regex;
 use std::sync::LazyLock;
 
-static TABLE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?is)<table[^>]*>.*?</table>").ok());
-static TITLE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?is)<h3[^>]*>(.*?)</h3>").ok());
-static ROW: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>").ok());
-static CELL: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?is)<t[hd][^>]*>(.*?)</t[hd]>").ok());
-static HEAD: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?is)<thead.*?</thead>").ok());
-static BODY: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?is)<tbody[^>]*>.*?</tbody>").ok());
-static TAGS: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").ok());
+static TABLE: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<table[^>]*>.*?</table>"));
+static TITLE: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<h3[^>]*>(.*?)</h3>"));
+static ROW: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>"));
+static CELL: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<t[hd][^>]*>(.*?)</t[hd]>"));
+static HEAD: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<thead.*?</thead>"));
+static BODY: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tbody[^>]*>.*?</tbody>"));
+static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
+
+// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
+// back as a typed error that the reader answers as "this file carries no meet" — never a panic.
+fn table_regex() -> anyhow::Result<&'static Regex> {
+    TABLE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn title_regex() -> anyhow::Result<&'static Regex> {
+    TITLE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn row_regex() -> anyhow::Result<&'static Regex> {
+    ROW.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn cell_regex() -> anyhow::Result<&'static Regex> {
+    CELL.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn head_regex() -> anyhow::Result<&'static Regex> {
+    HEAD.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn body_regex() -> anyhow::Result<&'static Regex> {
+    BODY.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn tags_regex() -> anyhow::Result<&'static Regex> {
+    TAGS.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
 
 /// Parse a RaceDay export. `year` is the season the file was archived under, used because the format
 /// publishes no date of its own.
 pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedMeet> {
-    let title = get_regex(&TITLE)?
+    let tags = tags_regex()?;
+    let title = title_regex()?
         .captures(body)
         .and_then(|captures| captures.get(1))
-        .map(|m| text_of(m.as_str()))
-        .filter(|title| !title.is_empty())?;
+        .map(|m| text_of(tags, m.as_str()))
+        .filter(|title| !title.is_empty())
+        .ok_or_else(|| anyhow::anyhow!("no title found in RaceDay export"))?;
     let name = race_name(&title)?;
     let gender = if title.to_ascii_lowercase().contains("girls") {
         Gender::Girls
@@ -49,20 +82,29 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
     };
     let division = division_of(&title);
 
+    let table_pattern = table_regex()?;
+    let head_pattern = head_regex()?;
+    let row_pattern = row_regex()?;
+    let cell_pattern = cell_regex()?;
+    let body_pattern = body_regex()?;
+
     let mut events = Vec::new();
-    for table in get_regex(&TABLE)?.find_iter(body).map(|m| m.as_str()) {
-        let labels: Vec<String> = get_regex(&HEAD)?
+    for table in table_pattern.find_iter(body).map(|m| m.as_str()) {
+        let labels: Vec<String> = head_pattern
             .find(table)
             .map(|head| {
                 // The last header row carries one label per data column.
-                get_regex(&ROW)?
+                row_pattern
                     .find_iter(head.as_str())
                     .last()
                     .map(|row| {
-                        get_regex(&CELL)?
+                        cell_pattern
                             .captures_iter(row.as_str())
                             .map(|captures| {
-                                text_of(captures.get(1).map(|m| m.as_str()).unwrap_or_default())
+                                text_of(
+                                    tags,
+                                    captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
+                                )
                             })
                             .collect()
                     })
@@ -79,13 +121,18 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
         let heat_column = label_index(&labels, &["Team Member Place"]);
 
         let mut rows = Vec::new();
-        let Some(tbody) = get_regex(&BODY)?.find(table) else {
+        let Some(tbody) = body_pattern.find(table) else {
             continue;
         };
-        for row in get_regex(&ROW)?.find_iter(tbody.as_str()) {
-            let cells: Vec<String> = get_regex(&CELL)?
+        for row in row_pattern.find_iter(tbody.as_str()) {
+            let cells: Vec<String> = cell_pattern
                 .captures_iter(row.as_str())
-                .map(|captures| text_of(captures.get(1).map(|m| m.as_str()).unwrap_or_default()))
+                .map(|captures| {
+                    text_of(
+                        tags,
+                        captures.get(1).map(|m| m.as_str()).unwrap_or_default(),
+                    )
+                })
                 .collect();
             let cell = |index: Option<usize>| -> Option<String> {
                 index
@@ -132,8 +179,9 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
             rows,
         });
     }
-    bail!("no events parsed from RaceDay export");
-    let _ = source;
+    if events.is_empty() {
+        anyhow::bail!("no events parsed from RaceDay export ({source:?})");
+    }
     Ok(ParsedMeet {
         name,
         date: format!("{year:04}"),
@@ -164,7 +212,8 @@ fn race_name(title: &str) -> anyhow::Result<String> {
 fn division_of(title: &str) -> Option<String> {
     let lowered = title.to_ascii_lowercase();
     if let Some(index) = lowered.find("division ") {
-        let rest = &title[index + "division ".len()..];
+        let start = index.saturating_add("division ".len());
+        let rest = title.get(start..).unwrap_or_default();
         let token: String = rest
             .chars()
             .take_while(|ch| ch.is_ascii_alphanumeric())
@@ -196,8 +245,8 @@ fn label_index(labels: &[String], names: &[&str]) -> Option<usize> {
     })
 }
 
-fn text_of(html: &str) -> String {
-    TAGS.replace_all(html, "")
+fn text_of(tags: &Regex, html: &str) -> String {
+    tags.replace_all(html, "")
         .replace("&nbsp;", " ")
         .replace("&amp;", "&")
         .replace('\u{a0}', " ")
@@ -205,12 +254,6 @@ fn text_of(html: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
-/// Unwrap a static `Option<Regex>`. These patterns are compile-time constants that never fail;
-/// the helper exists to convert the `Option` into a typed `anyhow::Result` at the first call site.
-fn get_regex(rx: &'static LazyLock<Option<Regex>>) -> anyhow::Result<&'static Regex> {
-    rx.get().context("static regex compilation failed")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -247,6 +290,7 @@ mod tests {
             "17:13.69 is the finish, not a mile split"
         );
         assert!(event.rows.len() > 20, "got {} rows", event.rows.len());
+        Ok(())
     }
 
     #[test]
@@ -258,6 +302,7 @@ mod tests {
                 "a team summary row has no grade: {row:?}"
             );
         }
+        Ok(())
     }
 
     #[test]

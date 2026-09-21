@@ -121,7 +121,9 @@ pub(crate) async fn fetch(
         .map_err(|_| BrowserError::Protocol)?;
     let evaluation = page.evaluate_function(call);
     tokio::pin!(evaluation);
-    let deadline = Instant::now() + request_timeout;
+    let deadline = Instant::now()
+        .checked_add(request_timeout)
+        .unwrap_or_else(Instant::now);
     let mut request_id: Option<RequestId> = None;
     let mut pending_response: Option<Arc<EventResponseReceived>> = None;
     let mut pending_finished: Option<RequestId> = None;

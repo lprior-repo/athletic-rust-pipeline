@@ -78,8 +78,8 @@ pub(crate) fn normalize(raw: &str) -> Option<String> {
 pub(crate) fn normalize_school(raw: &str) -> Option<String> {
     normalize(raw).map(|mut value| {
         let suffix = " high school";
-        if value.ends_with(suffix) {
-            value.truncate(value.len() - suffix.len());
+        if let Some(length) = value.strip_suffix(suffix).map(str::len) {
+            value.truncate(length);
         }
         value
     })

@@ -268,7 +268,7 @@ fn normalized_school(raw: &str) -> String {
     let mut value = normalized(raw);
     let suffix = " high school";
     if value.ends_with(suffix) {
-        value.truncate(value.len() - suffix.len());
+        value.truncate(value.len().saturating_sub(suffix.len()));
     }
     value
 }

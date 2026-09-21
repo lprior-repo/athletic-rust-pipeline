@@ -91,7 +91,7 @@ pub(super) fn collection(
     if serde_json::to_value(&plan)? != serde_json::to_value(retained_plan)? {
         bail!("ranking plan differs from independently expanded catalog");
     }
-    if snapshot.coverage.total_requested != plan.events.len() as u64
+    if snapshot.coverage.total_requested != u64::try_from(plan.events.len())?
         || snapshot.coverage.completed != snapshot.coverage.total_requested
         || snapshot.coverage.absent_families != absent
         || snapshot.event_heads.len() != plan.events.len()

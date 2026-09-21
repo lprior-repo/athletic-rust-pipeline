@@ -142,8 +142,7 @@ fn mark_without_suffix(raw: &str, timing: &TimingBasis) -> Result<String, &'stat
     if !corroborated {
         return Err("mark suffix lacks corroborating timing metadata");
     }
-    let end = value.len() - last.len_utf8();
-    let core = value[..end].trim_end();
+    let core = value.strip_suffix(last).map_or("", str::trim_end);
     if core.is_empty() {
         return Err("mark suffix has no numeric mark");
     }
@@ -186,7 +185,7 @@ fn explicit_distance_unit(raw: &str) -> SourceUnit {
     }
     let unit = mark
         .find(|character: char| character.is_ascii_alphabetic())
-        .map(|index| &mark[index..]);
+        .and_then(|index| mark.get(index..));
     source_unit(unit)
 }
 

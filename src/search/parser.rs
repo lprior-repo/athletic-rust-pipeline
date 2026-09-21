@@ -183,4 +183,23 @@ mod tests {
         assert!(!progress.complete());
         Ok(())
     }
+
+    #[test]
+    fn row_text_grown_past_the_bound_cannot_become_a_candidate() -> Result<()> {
+        let query = SearchQuery::new("Synthetic Runner", Sport::TrackField, 0)?;
+        let digest = EvidenceDigest::parse(&"a".repeat(64))?;
+        // Two 5 KiB text nodes stay under the 8 KiB per-node bound but overflow the row text bound.
+        let head = "x".repeat(5_000);
+        let tail = "y".repeat(5_000);
+        let body = serde_json::json!({"d":{"count":1,"pager":"","results":format!(
+            "<tr><td><a href='/athlete/7/track-and-field'>Synthetic Runner</a>\
+             {head}<span>{tail}</span></td></tr>")}});
+        let page = parse_page(&query, 0, digest, &serde_json::to_vec(&body)?)?;
+        assert!(page.candidates.is_empty());
+        assert_eq!(page.issues.len(), 1);
+        assert!(page.issues.iter().any(|issue| {
+            issue.code == "invalid_athlete_row" && issue.message == "search row text exceeds bound"
+        }));
+        Ok(())
+    }
 }

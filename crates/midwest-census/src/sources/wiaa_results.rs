@@ -451,7 +451,17 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     source.clone(),
                 ),
                 ArtifactFormat::RaceDay => {
-                    crate::sources::raceday::parse(&body, source.clone(), artifact.year)
+                    // RaceDay reports its own typed parse error; for this runner a body that is not a
+                    // RaceDay report is the same thing the other arms return as `None` — an artifact
+                    // that yielded no meet, reported below as an unparsed body. The cause goes to the
+                    // run notes so the failure is diagnosable rather than only counted.
+                    match crate::sources::raceday::parse(&body, source.clone(), artifact.year) {
+                        Ok(parsed) => Some(parsed),
+                        Err(error) => {
+                            report.note(format!("{}: {error}", artifact.url));
+                            None
+                        }
+                    }
                 }
                 ArtifactFormat::Pdf => match pdftotext(&fetched.body) {
                     Ok(text) => {

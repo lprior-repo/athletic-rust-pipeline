@@ -321,6 +321,12 @@ pub enum SourceNamespace {
     LegacyAthleticNet {
         kind: String,
     },
+    /// Athletic.net ids read through the owner-authorized athlete-bio adapter (`athlete`, `school`,
+    /// `meet`). Non-core: it is the same vendor the platform's own adapters exist to be
+    /// independent of.
+    AthleticNet {
+        kind: String,
+    },
     Other(String),
 }
 
@@ -328,11 +334,14 @@ impl SourceNamespace {
     /// True when the namespace is supplied by one of the platform's own adapters rather than by
     /// Athletic.net or its mirror.
     ///
-    /// Only `legacy_athletic_net` is non-core by definition. Timer namespaces stay core: the
+    /// Only the Athletic.net namespaces are non-core by definition. Timer namespaces stay core: the
     /// AthleticLIVE-derived rows that carry them are already excluded by their evidence source id,
     /// while a real timing provider (`pttiming`, `wayzata`, …) is a core source.
     pub fn is_core(&self) -> bool {
-        !matches!(self, SourceNamespace::LegacyAthleticNet { .. })
+        !matches!(
+            self,
+            SourceNamespace::LegacyAthleticNet { .. } | SourceNamespace::AthleticNet { .. }
+        )
     }
 }
 
@@ -359,6 +368,7 @@ impl fmt::Display for SourceNamespace {
             SourceNamespace::LegacyAthleticNet { kind } => {
                 write!(f, "legacy_athletic_net:{kind}")
             }
+            SourceNamespace::AthleticNet { kind } => write!(f, "athleticnet:{kind}"),
             SourceNamespace::Other(value) => f.write_str(value),
         }
     }
@@ -544,7 +554,10 @@ impl EventKind {
             .filter(|c| !c.is_whitespace() && *c != '-' && *c != '_')
             .collect::<String>()
             .to_ascii_lowercase();
-        let compact = normalized.replace("meters", "m").replace("metre", "m");
+        let compact = normalized
+            .replace("meters", "m")
+            .replace("metre", "m")
+            .replace("meter", "m");
         match compact.as_str() {
             "100m" => EventKind::Track100m,
             "200m" => EventKind::Track200m,
@@ -566,10 +579,18 @@ impl EventKind {
                 EventKind::Track3000mSteeplechase
             }
             "crosscountry" | "xc" | "crosscountryrace" => EventKind::CrossCountry,
-            "4x100m" | "4x100" | "4x100mrelay" | "400mrelay" => EventKind::Relay4x100,
-            "4x200m" | "4x200" | "4x200mrelay" | "800mrelay" => EventKind::Relay4x200,
-            "4x400m" | "4x400" | "4x400mrelay" | "1600mrelay" => EventKind::Relay4x400,
-            "4x800m" | "4x800" | "4x800mrelay" | "3200mrelay" => EventKind::Relay4x800,
+            "4x100m" | "4x100" | "4x100mrelay" | "4x100relay" | "400mrelay" => {
+                EventKind::Relay4x100
+            }
+            "4x200m" | "4x200" | "4x200mrelay" | "4x200relay" | "800mrelay" => {
+                EventKind::Relay4x200
+            }
+            "4x400m" | "4x400" | "4x400mrelay" | "4x400relay" | "1600mrelay" => {
+                EventKind::Relay4x400
+            }
+            "4x800m" | "4x800" | "4x800mrelay" | "4x800relay" | "3200mrelay" => {
+                EventKind::Relay4x800
+            }
             "sprintmedley" | "smed" | "smr" => EventKind::SprintMedley,
             "distancemedley" | "dmed" | "dmr" => EventKind::DistanceMedley,
             "highjump" | "hj" => EventKind::HighJump,
@@ -1245,6 +1266,19 @@ mod tests {
         assert_eq!(
             EventKind::from_source_label("4x400m Relay"),
             EventKind::Relay4x400
+        );
+        // Athletic.net publishes relays without the metre figure; Hy-Tek spells it singular.
+        assert_eq!(
+            EventKind::from_source_label("4x400 Relay"),
+            EventKind::Relay4x400
+        );
+        assert_eq!(
+            EventKind::from_source_label("4x100 Relay"),
+            EventKind::Relay4x100
+        );
+        assert_eq!(
+            EventKind::from_source_label("4x800 Meter Relay"),
+            EventKind::Relay4x800
         );
         assert_eq!(EventKind::from_source_label("Shot Put"), EventKind::ShotPut);
         assert_eq!(

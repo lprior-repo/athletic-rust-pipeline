@@ -245,8 +245,8 @@ impl Actor {
             .await
             .map_err(|_| anyhow::anyhow!("browser page list failed"))?;
         for page in pages {
-            if !tracked.contains(page.target_id()) {
-                let _ = page.close().await;
+            if !tracked.contains(page.target_id()) && page.close().await.is_err() {
+                tracing::debug!("restored page close failed");
             }
         }
         Ok(())

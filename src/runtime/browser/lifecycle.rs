@@ -243,7 +243,9 @@ impl BrowserManager {
         write_state(&self.status, BrowserState::Stopped);
         let deadline = match tokio::time::Instant::now().checked_add(SHUTDOWN_TIMEOUT) {
             Some(value) => value,
-            None => tokio::time::Instant::now() + std::time::Duration::from_secs(300), // overflow guard
+            None => tokio::time::Instant::now()
+                .checked_add(std::time::Duration::from_secs(300))
+                .unwrap_or_else(tokio::time::Instant::now), // overflow guard
         };
         let (reply, result) = oneshot::channel();
         let send_result =
