@@ -30,34 +30,39 @@ Strict clippy, measured on source targets (`--lib --bins --examples`), counted p
 
 | Lint | `athletic_rust_pipeline` (root) | `midwest_census` |
 |---|---:|---:|
-| `clippy::arithmetic_side_effects` | 36 | 240 |
-| `clippy::as_conversions` | 10 | 36 |
-| `clippy::expect_used` | 0 | 75 |
-| `clippy::indexing_slicing` | 2 | 23 |
-| `clippy::let_underscore_must_use` | 1 | 2 |
-| `clippy::string_slice` | 2 | 47 |
-| `clippy::unwrap_used` | 0 | 1 |
-| `clippy::explicit_counter_loop` | 0 | 1 |
+| `clippy::arithmetic_side_effects` | 36 | 64 |
+| `clippy::as_conversions` | 10 | 7 |
+| `clippy::expect_used` | 0 | 0 |
+| `clippy::indexing_slicing` | 2 | 4 |
+| `clippy::let_underscore_must_use` | 1 | 0 |
+| `clippy::string_slice` | 2 | 1 |
+| `clippy::unwrap_used` | 0 | 0 |
+| `clippy::explicit_counter_loop` | 0 | 0 |
 
 Production scan (`cargo xtask scan`; "production-reachable" = before the first `#[cfg(test)]` in a
 file, test files excluded):
 
 | Metric | root (`athletic-rust-pipeline`) | census (`midwest-census`) |
 |---|---:|---:|
-| `production_lines` | 31,487 | 19,204 |
-| `files` | 171 | 32 |
+| `production_lines` | 34,308 | 22,912 |
+| `files` | 238 | 125 |
 | `unsafe` | 0 | 0 |
-| `unwrap` | 0 | 1 |
-| `expect` | 0 | 75 |
-| `indexing` | 225 | 128 |
-| `as_cast` | 11 | 32 |
+| `unwrap` | 0 | 0 |
+| `expect` | 0 | 0 |
+| `indexing` | 0 | 0 |
+| `as_cast` | 0 | 7 |
 | `assert_family`, `panic`, `todo`, `dbg`, `unreachable` | 0 | 0 |
 
-Structure, workspace-wide: **61** files over 300 lines, **93** functions over 60 logical lines,
-**434** functions over 25 logical lines. Hot-path files currently on the oversize list:
+Structure, workspace-wide: **22** files over 300 lines, **0** functions over 60 logical lines,
+**551** functions over 25 logical lines. Hot-path files currently on the oversize list:
 `src/xlsx/parser/rows.rs` (331), `src/workbook_ingest/guards.rs` (322),
-`src/workbook_ingest/stream.rs` (310), `crates/midwest-census/src/store/` (1060),
-`crates/midwest-census/src/workbook/` (814). Phase 2 of the hardening program is scheduled to split
+`src/workbook_ingest/stream.rs` (310), `crates/midwest-census/src/bootstrap.rs` (384),
+`crates/midwest-census/src/sources/coach_contacts.rs` (553),
+`crates/midwest-census/src/sources/compiled.rs` (579),
+`crates/midwest-census/src/sources/ks.rs` (578),
+`crates/midwest-census/src/sources/milesplit.rs` (610),
+`crates/midwest-census/src/sources/raceday.rs` (327),
+`crates/midwest-census/src/sources/xc.rs` (551). Phase 2 of the hardening program is scheduled to split
 them; until then any hot-path edit has to fit inside the size budget or shrink it.
 
 ### 1.2 Program baselines — `docs/HARDENING-PROGRAM.md`
@@ -68,7 +73,7 @@ them; until then any hot-path edit has to fit inside the size budget or shrink i
 | Strict clippy result (§2.1) | exit 101, ≈440 errors (392 census lib, 51 root) |
 | Program per-lint totals (§2.1) | `arithmetic_side_effects` 244 (208 census / 36 root); `expect_used` 75; `string_slice` 49 (47/2); `as_conversions` 46 (36/10); `indexing_slicing` 25 (23/2); `let_underscore_must_use` 3 (3/0); `unwrap_used` 1 |
 | Census structure (§2.2) | 134 of 552 production functions over 25 logical lines; 33 over 60; 21 files over the 300-line budget |
-| Async inventory (§2.3) | `tokio::spawn` 1 census / 4 root; `spawn_blocking` 3/2; `buffer_unordered` 4/0; async fns with >3 `.await` "several"/"many"; tokio-console and OTLP absent; `tokio::time::pause`, loom, shuttle, turmoil absent |
+| Async inventory (§2.3) | `tokio::spawn` 0 census / 4 root; `spawn_blocking` 2/2; `buffer_unordered` 4/0; async fns with >3 `.await` "several"/"many"; tokio-console and OTLP absent; `tokio::time::pause`, loom, shuttle, turmoil absent |
 | Determinism evidence (§1) | rebuild reproduced 6 of 7 JSONL snapshots byte-identically; `coaches.jsonl` differs only in 917 withheld rows; the published workbook had 0 of 459 published numbers missing |
 | Build profile (§1, verified in `Cargo.toml`) | release: `lto = "thin"`, `codegen-units = 1`, `strip` |
 | Absent (§2.5) | no CI, no `benches/`, no criterion/divan, no fuzz targets |

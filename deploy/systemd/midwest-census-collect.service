@@ -16,13 +16,13 @@ Environment=RUST_LOG=info
 ExecStart=/bin/sh -c 'set -eu; \
   bin=target/release/midwest-census; \
   out=/var/lib/midwest-census; \
-  "$bin" --data-dir "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
-  "$bin" --data-dir "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --grad-year 2027; \
-  "$bin" --data-dir "$out" consolidate; \
-  "$bin" --data-dir "$out" report --print; \
-  "$bin" --data-dir "$out" bests; \
-  "$bin" --data-dir "$out" workbook; \
-  "$bin" --data-dir "$out" fjall-stats'
+  "$bin" --store "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
+  "$bin" --store "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --school-year 2027; \
+  "$bin" --store "$out" consolidate; \
+  "$bin" --store "$out" report --print; \
+  "$bin" --store "$out" bests; \
+  "$bin" --store "$out" workbook; \
+  "$bin" --store "$out" fjall-stats'
 Restart=on-failure
 RestartSec=300
 TimeoutStartSec=3600

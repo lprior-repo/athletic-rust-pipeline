@@ -115,6 +115,14 @@ Missing structurally: drain-progress certificate, outcome lattice (Ok/Err/Cancel
 Panicked), capability seams for clock/spawn, fairness checkpoints in long async loops, admission
 budgets audit for the browser session pool.
 
+| Check | census (measured now) | root (measured now) |
+|---|---|---|
+| `tokio::spawn` | 0 (bare; `JoinSet::spawn` at `bootstrap.rs:160`) | 4 |
+| `spawn_blocking` | 2 (production: `bootstrap.rs:180`, `restate_services/mod.rs:137`) | 2 |
+| `#[instrument]` | 6 (`census/sweep.rs:24,131,239`, `net/mod.rs:260`, `net/request.rs:17,28`) | 0 |
+| `println!`/`eprintln!` in production | 38 (7 files, all `cli/`/`bin/`; 0 in library paths) | — |
+| ambient clock (`SystemTime::now` / `Instant::now`) | 0 / 3 production (`tokio::Instant` at `bootstrap.rs:261`; `std::Instant` at `net/execute.rs:49`, `census/sweep.rs:245`) — also 3 `chrono::Utc::now()` sites reaching durable journal (`store/write.rs:73`) and published artifacts (`report/projection.rs:112`) | 9 / 14 |
+
 ### 2.4 DDD / Wlaschin
 
 - `crates/census-domain/src/model.rs` is already newtype-first (`SchoolId`, `AthleteId`, `MeetId`,
@@ -142,6 +150,12 @@ budgets audit for the browser session pool.
 - No backup/restore drill, no metrics export, no deployment artifacts for the Restate server.
 
 ---
+
+| Check | census (measured now) | root (measured now) |
+|---|---|---|
+| `[workspace.lints]` | exists (`Cargo.toml:61-73`: `unsafe_code=forbid`, `unused_must_use=deny`, clippy deny set) | exists |
+| `deny.toml` | exists (30 lines: advisories, licenses, sources) — **no `[bans]` section**; the "bans incl. async runtimes" in the plan does not exist. The tree scan replaced `wrappers` bans (no package-level ban exists today). | exists |
+| `.github/` CI | **absent** — zero workflows. `tools/gate.sh` is referenced but never executed by CI. | absent |
 
 ## 3. Program
 

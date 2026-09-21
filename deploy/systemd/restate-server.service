@@ -1,0 +1,33 @@
+[Unit]
+Description=Midwest census Restate server (state machine endpoint)
+Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=midwest
+Group=midwest
+WorkingDirectory=/opt/athletic-rust-pipeline
+Environment=RUST_LOG=info
+# The Restate server hosts the state machine that drives census/ingest/sweep.
+# It shares the same --data-dir store as the batch CLI. Ingress is loopback-only
+# (see OPERATIONS.md §Ingress posture) until owner decision 4 lands.
+ExecStart=/opt/athletic-rust-pipeline/target/release/midwest-serve \
+  --listen 127.0.0.1:9080 \
+  --data-dir /var/lib/midwest-census \
+  --max-concurrent 8 \
+  --drain-timeout 30
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/midwest-census
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
