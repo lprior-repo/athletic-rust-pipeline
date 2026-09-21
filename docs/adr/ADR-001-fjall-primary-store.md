@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented: `crates/midwest-census/src/store.rs` (Fjall keyspaces `entities`,
+Accepted. Implemented: `crates/midwest-census/src/store/` (Fjall keyspaces `entities`,
 `journal`, `meta`), `crates/midwest-census/src/bin/midwest-serve.rs`.
 
 ## Context

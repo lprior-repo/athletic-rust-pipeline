@@ -20,12 +20,12 @@ athletic-rust-pipeline/                  root crate `athletic-rust-pipeline`
   docs/                                  HARDENING-PROGRAM.md, OPERATIONS.md
   crates/midwest-census/                 census library + two binaries
     src/model.rs                         canonical entities, ids, grad-year cohorts, evidence
-    src/net.rs                           robots-enforcing, cache-first, per-host-paced fetcher
-    src/store.rs                         Fjall observation store (append-only + read-time merge)
+    src/net/                             robots-enforcing, cache-first, per-host-paced fetcher
+    src/store/                           Fjall observation store (append-only + read-time merge)
     src/sources/**                       one module per provider adapter
-    src/census.rs                        resumable batch orchestration
-    src/report.rs, bests.rs, workbook.rs measured census, PR reduction, spreadsheet export
-    src/restate_services.rs              durable services over the same adapters
+    src/census/                          resumable batch orchestration
+    src/report/, bests/, workbook/       measured census, PR reduction, spreadsheet export
+    src/restate_services/                durable services over the same adapters
     src/bootstrap.rs                     service supervisor: task region, cancel/drain/finalize
     src/bin/midwest-serve.rs             Restate endpoint binary
     tests/                               end-to-end tests (+ tests/fixtures/<source>/)
@@ -101,7 +101,7 @@ Required shape:
 
 ## 6. Source policy (non-negotiable)
 
-- Respect `robots.txt` (enforced in `crates/midwest-census/src/net.rs`), per-host pacing (~2 rps,
+- Respect `robots.txt` (enforced in `crates/midwest-census/src/net/`), per-host pacing (~2 rps,
   bounded concurrency via `sources::CONCURRENCY_BOUND`) and cache-before-network behaviour.
 - Never bypass a CAPTCHA, an authentication barrier or an access control. A served challenge latches
   the browser into `HumanRequired`; that latch is a correct outcome, not a bug to route around.
@@ -117,8 +117,8 @@ Required shape:
 Adapters are plain async functions taking `AdapterContext` and returning `AdapterReport`; there is no
 trait indirection by design (`crates/midwest-census/src/sources/mod.rs`). To add one:
 
-1. `crates/midwest-census/src/sources/<name>.rs` — parse at the boundary, emit canonical entities.
-2. Register the module in `sources/mod.rs` and dispatch it from `census.rs` (or expose it as a
+1. `crates/midwest-census/src/sources/<name>/` — parse at the boundary, emit canonical entities.
+2. Register the module in `sources/mod.rs` and dispatch it from `census/` (or expose it as a
    `provider <name>` CLI subcommand if it is one-shot).
 3. Append with `sources::append_all(&store, Table::X, &rows)`; never write keys directly.
 4. Fixtures go in `crates/midwest-census/tests/fixtures/<name>/` with a short README explaining
@@ -128,7 +128,7 @@ trait indirection by design (`crates/midwest-census/src/sources/mod.rs`). To add
 
 ## 8. Adding a durable workflow
 
-`crates/midwest-census/src/restate_services.rs` shows the pattern: a virtual object keyed by
+`crates/midwest-census/src/restate_services/` shows the pattern: a virtual object keyed by
 endpoint for cursor/window bookkeeping (state written as one value so a partially updated endpoint
 cannot exist), a sweep workflow that observes endpoints in request order, and an explicit ceiling
 (`MAX_SWEEP_ENDPOINTS`) on fan-out. Workflow identities are deterministic and stable across retries:

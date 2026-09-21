@@ -8,7 +8,7 @@ adapter author must satisfy; `DOMAIN.md` covers the types, `ARCHITECTURE.md` the
 ## Where an adapter lives
 
 ```text
-crates/midwest-census/src/sources/<name>.rs        the adapter (collect + parse + tests)
+crates/midwest-census/src/sources/<name>/          the adapter (collect + parse + tests)
 crates/midwest-census/src/sources/mod.rs           `pub mod <name>;`
 crates/midwest-census/src/main.rs                  dispatch arm under `Command::Provider`
 ```
@@ -67,7 +67,7 @@ adapter reads an operator-supplied athlete registry, never a search endpoint).
 * All requests go through `ctx.fetcher`; never construct a client locally, never bypass robots
   checks, never spoof a browser user agent to evade an access control.
 * Bounded concurrency only: stay within the crate's `CONCURRENCY_BOUND` unless the adapter
-  declares and justifies something narrower. Per-host pacing belongs to `net.rs`.
+  declares and justifies something narrower. Per-host pacing belongs to `net/`.
 * Respect access outcomes: a challenge/`403`/`429` is a terminal condition for that operation,
   recorded and surfaced, not something to grind through (see `docs/OPERATIONS.md`).
 * Operator-authorized hosts are declared globally (`--authorized-host`, recorded as
@@ -99,13 +99,13 @@ rather than silently counted.
   naive parsing: missing columns, `no mark` rows, wind/attempt columns, Unicode names, empty
   divisions.
 * Test the registry/input parser for rejection cases as well as acceptance (a malformed registry
-  line must fail loudly, not be guessed — see `athleticnet.rs`'s registry tests).
+  line must fail loudly, not be guessed — see `athleticnet/tests.rs`'s registry tests).
 * If your adapter is non-core, add a test asserting `is_core_source("<namespace>")` is false, so
   the core-scope guarantee cannot silently regress.
 
 ## Checklist for a new adapter
 
-1. `sources/<name>.rs` with `Options`, `Target`/subject type, parse layer, `collect`, tests.
+1. `sources/<name>/` with `Options`, `Target`/subject type, parse layer, `collect`, tests.
 2. Registry wiring (mod.rs, main.rs arm, `ProviderArgs` doc list).
 3. Namespace in `model.rs`; `NON_CORE_SOURCE_IDS` entry if the source is not core.
 4. Evidence on every fact; source-native stable ids in keys.

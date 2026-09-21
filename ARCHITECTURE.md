@@ -6,12 +6,12 @@ Two layers, one evidence store, one durable execution model.
    ROOT CRATE: athletic-rust-pipeline            CENSUS: crates/midwest-census
    ─────────────────────────────────────         ─────────────────────────────────
    Restate services (runtime/*.rs)               model.rs   canonical entities + evidence
-   browser session supervisor  ──┐               net.rs     polite fetcher (robots, cache, pacing)
-   ranking collection            │               store.rs   Fjall observation store
+   browser session supervisor  ──┐               net/       polite fetcher (robots, cache, pacing)
+   ranking collection            │               store/     Fjall observation store
    source dispatch / row workers │               sources/*  one adapter per provider
-   search, xlsx, workbook tools  │               census.rs  resumable orchestration
-   Fjall-backed store            │               report.rs / bests.rs / workbook.rs
-                                 │               restate_services.rs  durable services
+   search, xlsx, workbook tools  │               census/    resumable orchestration
+   Fjall-backed store            │               report/ / bests/ / workbook/
+                                 │               restate_services/  durable services
                                  └────────────── bootstrap.rs  supervisor: drain + certificate
 ```
 
@@ -35,7 +35,7 @@ drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> pani
 
 Fjall is the system of record. No PostgreSQL: the downstream interface is Excel, not interactive SQL.
 
-Census keyspaces (`Table` in `store.rs`): `schools`, `teams`, `coaches`, `athletes`, `meets`,
+Census keyspaces (`Table` in `store/mod.rs`): `schools`, `teams`, `coaches`, `athletes`, `meets`,
 `events`, `performances`, all under the `fjall/` directory inside `--data-dir`, plus `entities`,
 `journal` and `meta` keyspaces for the append-only observation log, the write journal and schema
 metadata. Keys are deterministic and sortable: `table-file prefix | entity id | big-endian

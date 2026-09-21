@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted. Implemented: census workbook writer (`crates/midwest-census/src/workbook.rs`, `src/xlsx/**`),
-best-mark reduction (`crates/midwest-census/src/bests.rs`), census report (`.../report.rs`).
+Accepted. Implemented: census workbook writer (`crates/midwest-census/src/workbook/`, `src/xlsx/**`),
+best-mark reduction (`crates/midwest-census/src/bests/`), census report (`.../report/`).
 
 ## Context
 
@@ -39,7 +39,7 @@ actual query workload is a handful of full exports per census run.
   than normalized schema purity.
 * Publishes both scopes in one artifact family: the full evidence scope and the core scope
   (Athletic.net and its AthleticLIVE derivative excluded) so an operator can see exactly what
-  the census concludes without the platform's own strongest source (see `report.rs`'s core
+  the census concludes without the platform's own strongest source (see `report/`'s core
   filter).
 * Row limits force partitioning (`Performances_00N`) — a deliberate, documented shape rather
   than one giant sheet.

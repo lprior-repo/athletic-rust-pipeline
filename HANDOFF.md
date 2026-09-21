@@ -11,14 +11,14 @@ The **outdoor girls live chain completed 2026-09-21** on run `3b7c07fa4e1f80d95f
 The owner authorized Athletic.net, and `crates/midwest-census` now carries both the authorization
 mechanism and its own Athletic.net adapter. Neither existed before this session.
 
-**Fetch authorization (`src/net.rs`).** `Fetcher` records operator-authorized hosts
+**Fetch authorization (`src/net/`).** `Fetcher` records operator-authorized hosts
 (`--authorized-host`, repeatable, a bare domain covering its subdomains) and counts their
 robots-blocked requests as `robots_authorized` instead of blocking them, still under the 2 rps
 per-host ceiling. An entry authorizes exactly the host it names plus anything below it — never the
 parent domain — so naming a narrow host cannot widen into a whole site. Evidence:
 `cargo test -p midwest-census --lib net::` → 9 passed.
 
-**`src/sources/athleticnet.rs`** reads
+**`src/sources/athleticnet/`** reads
 `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=<id>&sport=<tf|xc>&level=4` into canonical
 schools, meets, teams, athletes, events and performances. Verified contract (live responses,
 2026-09-21): the two `sport` calls are **not** interchangeable — an athlete with 40 track results
@@ -55,7 +55,7 @@ had filed 4 live performances as `Unmapped`; after the fix the same run stores `
 best-results reduction and overwrote `bests::write`'s sidecars, so an `--all-sources` reduction was
 silently replaced by an empty core-scoped one; `workbook::Options` now carries the scope and the
 `workbook`/`run` commands take `--all-sources`. Four `deny(unused_qualifications)` failures in
-`hytek.rs`, `ohsaa.rs`, `wayzata.rs` and `wiaa_results.rs` blocked a clean build and were repaired.
+`hytek/`, `ohsaa/`, `wayzata/` and `wiaa_results/` blocked a clean build and were repaired.
 Finally, `bests::write`'s CSV sidecar carried the header **twice** for any non-empty cohort:
 `csv::Writer`'s default `has_headers(true)` makes the first `serialize` emit a derived header *after*
 the explicit `write_record`, so a 5-row cohort shipped 7 lines (two identical headers). The writer
@@ -541,7 +541,7 @@ roster (athlete URLs, school history, all high-school performances, PRs, XC) is 
 **Next:** the live chain is executed for the indoor boys scope (run `57f88b34…`: 95/95 events terminal, 1,065 pages, `final_snapshot 40792b83…`, 8/8 rows decided, publication `a4eb1fe7…`, stopped-writer verification exit 0, byte-identical replay with zero new source requests on the re-arm binary `508dc094…`) and for the indoor girls scope (run `fe726b41…`: 94/94 events over 816 pages, 8/8 rows decided, publication `8322bae9…` / `44f9f773…` / `fc6c12fe…`, stopped-writer verification exit 0 against `live-store`, byte-identical cached replay with zero new source requests on build `cfdae271…`). Both outdoor scopes have since completed on the same tree: outdoor boys (run `7be7e9dd…`: 95/95 events over 385 pages, `final_snapshot ee97f6f1…`, 8/8 rows, publication `3ee370e1…` / `9060e7c0…` / `6b4011ac…`, stopped-writer verification exit 0, byte-identical cached replay with zero new source fetches) and outdoor girls (run `3b7c07fa…`: 94/94 events over 134 pages, 8/8 rows, publication `8656f9f0…` / `b64359d7…` / `7ea80cd5…`, stopped-writer verification exit 0, byte-identical cached replay with zero new source fetches); the row phase needed the frozen-coordinator repair twice on the girls run, and its first export died on `/tmp` exhaustion rather than source behaviour. What remains: both cross-country scopes and the athlete profile surface, which `SCOPE.md#source-surfaces-for-the-expanded-roster--discovery-findings` shows the qualified rankings API does not reach; workbook-scale identity-matched delivery (the real 120,716-row workbook is bound at ≈0.31 rows/s per lane, ≈108 h for `--all`; its bounded 5,000-row selection, stopped-writer verification, and cached replay are now qualified — see the scale-v15 chain entry above); and the expanded roster requirements in `SCOPE.md` (athlete URLs, school history, all available high-school performances, PRs, cross-country). Re-running the live lane needs the headed browser at `ready` on CDP `9333`: the profile is currently signed out (see the findings below), `browser-start` settles at `ready`, and acquisition still stalls on the residual transport failure recorded above — now attributed to profile-restored
 tabs accumulating on every recovery relaunch. `Actor::bootstrap` closes those pages when the worker launches
 its own browser; the live lane attaches to the persistent headed browser (`cdp_endpoint`), where foreign
-pages are deliberately left alone, so the supervisor's prune is the operative control there. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings.rs` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
+pages are deliberately left alone, so the supervisor's prune is the operative control there. The verifier's rankings path now has its own frozen synthetic collection fixture (`src/result_verify/rankings/` driving `tests/fixtures/rankings/`) in addition to the executed indoor stopped-writer verification. No broad unit suite or fuzz campaign is required by this handoff.
 
 ## Live acquisition findings and parser repairs (2026-09-21)
 
@@ -563,7 +563,7 @@ Read-only probes through the same headed transport, run to scope the requested e
 - **The athlete bio surface is anonymously reachable and already answers the expanded roster.** The site builds profile URLs with its own `athleteBioUrl` pipe — `/athlete/{athleteId}/track-and-field` and `/athlete/{athleteId}/cross-country` — and `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId={id}&sport={tf|xc}&level={0|4}` answered `200` while signed out, at 52,468 bytes for athlete `24416437` with `athlete`, `allSeasons`, `allTeams`, `grades`, `meets`, `resultsTF` (88 rows), `resultsXC`, `distancesXC`, `eventsTF`, and `relayTeamMembers`. `sport=xc` returned populated `resultsXC` for an athlete flagged `hasOtherSport`, and the XC bio route rendered a real bio page. The earlier "does not resolve anonymously" finding probed `/athlete/{id}` (missing the sport segment) and `/TrackAndField/athlete/{id}` (not the bio route), which is why it missed.
 - **`level=4` scopes the bio to high school.** Five athletes from the live outdoor list: `resultsTF` 88 / 87 / 428 / 80 / 162 at `level=0` versus 73 / 74 / 148 / 71 / 68 at `level=4`. The in-tree builder asks for `level=0` and filters downstream.
 
-The pipeline already implements this surface — `SourceResource::Bio` / `SourceResource::ProfileHtml` in `src/runtime/source/request.rs`, driven per athlete by `initial_resources` in `src/runtime/profile_worker.rs` for both sports plus the `/all` profile page — so the expansion needs an accepted identity to run, not a new collector. No collection was driven by these probes; they navigated and read only.
+The pipeline already implements this surface — `SourceResource::Bio` / `SourceResource::ProfileHtml` in `src/runtime/source/request/`, driven per athlete by `initial_resources` in `src/runtime/profile_worker/` for both sports plus the `/all` profile page — so the expansion needs an accepted identity to run, not a new collector. No collection was driven by these probes; they navigated and read only.
 
 ## Hardening wave 1 (2026-09-21, commit `cab6e5b`)
 

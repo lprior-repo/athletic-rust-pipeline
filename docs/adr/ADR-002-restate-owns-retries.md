@@ -3,7 +3,7 @@
 ## Status
 
 Accepted. Implemented in the browser/scrape runtime: durable work objects in `src/restate.rs`
-and `src/restate_services.rs`, single-attempt HTTP in `src/runtime/source/http.rs` and the
+and `src/restate_services/`, single-attempt HTTP in `src/runtime/source/http.rs` and the
 browser transport in `src/runtime/browser/**`.
 
 ## Context

@@ -123,7 +123,7 @@ budgets audit for the browser session pool.
 - Root already has an error taxonomy (`DomainError`, `StoreError`, `BrowserError`, `PageParseError`,
   `CatalogError`, `StepError`; 86 `thiserror` references).
 - **Census has no error taxonomy**: 38 `anyhow::` references, `thiserror` used in one place
-  (`FetchError`, `net.rs`), `Result<…>` on ~118 signatures. Domain failures are not enumerable.
+  (`FetchError`, `net/`), `Result<…>` on ~118 signatures. Domain failures are not enumerable.
 - Hexagonal violation by construction: one census crate mixes domain, fjall store, crawl adapters,
   reporting, workbook, and Restate services. Nothing prevents `tokio`/`fjall`/`reqwest` reaching
   domain code, because there is no domain crate.
@@ -172,7 +172,7 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
 ### Phase 2 — Decomposition to the size budget (4–6 d)
 - Split the 21 oversized census files along bounded-context seams; bring every production function
   under 60 lines (hot paths ≤25 logical).
-- Same pass for root's `browser/transport.rs`, `cli.rs`, `export_worker.rs`, `import_worker.rs`.
+- Same pass for root's `browser/transport.rs`, `cli.rs`, `export_worker/`, `import_worker.rs`.
 - Acceptance: no file > 300 lines; no production fn > 60 lines; parity of workbook/snapshot outputs
   re-verified byte-for-byte after the move.
 
@@ -206,7 +206,7 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
   clock/spawn in domain/application code; drain certificate test exists and asserts counts.
 
 ### Phase 5 — Determinism and replay evidence (3–4 d)
-- `tokio::time::pause/advance` tests for every retry/backoff/timeout path in `net.rs` and the root
+- `tokio::time::pause/advance` tests for every retry/backoff/timeout path in `net/` and the root
   reviewer transport.
 - `loom` models for the census store lock + ingest semaphore ordering; `proptest` seed capture for
   merge algebra (idempotent, commutative, associative) and for every parser round-trip.
@@ -267,8 +267,8 @@ Parallel ownership map (no two streams edit the same file):
 
 | Stream | Owns |
 |---|---|
-| A. Gates/burndown | `Cargo.toml`, `tools/`, `.github/`, then census `sources/*`, `net.rs`, `store.rs` |
-| B. Decomposition/DDD | `crates/midwest-census/src/model.rs`, `report.rs`, `workbook.rs`, `restate_services.rs`, new crates |
+| A. Gates/burndown | `Cargo.toml`, `tools/`, `.github/`, then census `sources/*`, `net/`, `store/` |
+| B. Decomposition/DDD | `crates/midwest-census/src/model.rs`, `report/`, `workbook/`, `restate_services/`, new crates |
 | C. Async hardening | root `src/runtime/**`, `src/main.rs`, `src/cli*` |
 | D. Verification | `benches/`, `fuzz/`, `kani/`, `tests/`, `docs/` |
 | E. Operations | `deploy/`, `tools/ops-*.sh`, runbooks |
