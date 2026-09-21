@@ -41,7 +41,7 @@ impl Entity for CanonicalSchool {
             self.athletics_website = other.athletics_website;
         }
         self.co_op |= other.co_op;
-        if other.name.len() > self.name.len() && self.name.starts_with(&other.name) {
+        if other.name.len() > self.name.len() && other.name.starts_with(&self.name) {
             // keep the longer, more specific name
             self.name = other.name;
         }

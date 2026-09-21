@@ -52,7 +52,29 @@ proptest! {
         reversed.merge(first);
         prop_assert_eq!(&reversed.city, &Some(other_city));
         prop_assert_eq!(reversed.enrollment, Some(other_enrollment));
-        prop_assert_eq!(reversed.co_op, co_op | other_co_op);
+        prop_assert_eq!(&reversed.co_op, &(co_op | other_co_op));
+    }
+
+    /// A name that extends the kept name as its prefix ("Nicolet" -> "Nicolet High School") is the
+    /// more specific legal name and replaces it; a shorter prefix of the kept name never does.
+    #[test]
+    fn school_name_keeps_the_longer_prefix_extension(
+        short in word(8),
+        suffix in word(10),
+    ) {
+        let long_form = format!("{short} {suffix}");
+        let (mut first, _) = CanonicalSchool::new("WI", "Madison", "madison");
+        let (mut second, _) = CanonicalSchool::new("WI", "Madison", "madison");
+        first.name = short.clone();
+        second.name = long_form.clone();
+
+        let mut extend = first.clone();
+        extend.merge(second.clone());
+        prop_assert_eq!(&extend.name, &long_form);
+
+        let mut shorten = second;
+        shorten.merge(first);
+        prop_assert_eq!(&shorten.name, &long_form);
     }
 
     #[test]
