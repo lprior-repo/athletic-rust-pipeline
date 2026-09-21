@@ -5,12 +5,12 @@ use super::nd::{parse_nd_school_refs, NdOffering, NdSchoolRef, NdStaffRole};
 use super::nd_walk::NdWalk;
 use super::parse::{is_office_role, strip_honorific};
 use super::{observed_on, Options, ND_ADAPTER_ID, ND_SCHOOLS_PHASE, ND_SCHOOLS_URL};
-use census_domain::model::{
-    CanonicalCoach, CoachId, CoachRole, Evidence, Gender, SchoolId, SourceRef, Sport,
-};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
 use anyhow::Result;
+use census_domain::model::{
+    CanonicalCoach, CoachId, CoachRole, Evidence, Gender, SchoolId, SourceRef, Sport,
+};
 use std::collections::HashSet;
 
 /// Map an NDHSAA sport label onto our ontology plus the gender side it covers.

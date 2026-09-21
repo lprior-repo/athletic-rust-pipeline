@@ -24,9 +24,9 @@ mod reduce;
 mod write;
 
 #[cfg(test)]
-use census_domain::model::{EventKind, Mark};
-#[cfg(test)]
 use crate::store::Store;
+#[cfg(test)]
+use census_domain::model::{EventKind, Mark};
 
 pub use events::{is_relay, sport_of};
 pub use measure::Measure;

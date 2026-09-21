@@ -67,16 +67,6 @@ impl Prospect {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct SearchHit {
-    pub url: String,
-    pub title: String,
-    pub snippet: String,
-    pub query: String,
-    #[serde(default)]
-    pub filter: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Mark {
     pub event: String,
     pub canonical_event: String,

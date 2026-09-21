@@ -4,8 +4,8 @@
 //! no trait indirection.
 
 use anyhow::{bail, Context, Result};
-use clap::Args;
 use census_domain::model::SchoolYear;
+use clap::Args;
 use midwest_census::sources::{self as providers, AdapterContext, AdapterReport};
 use midwest_census::store::Store;
 

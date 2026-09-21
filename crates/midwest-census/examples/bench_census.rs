@@ -19,13 +19,13 @@
 //! the counts it produced before reporting its rate.
 
 use anyhow::{Context, Result};
-use clap::Parser;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
     Id, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
     SourceRef, Sport, TeamId, TimingMethod,
 };
+use clap::Parser;
 use midwest_census::report::{self, Scope};
 use midwest_census::store::{Store, Table};
 use midwest_census::{bests, census, workbook};

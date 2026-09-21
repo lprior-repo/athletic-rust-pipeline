@@ -1,6 +1,6 @@
 use super::*;
-use census_domain::model::{EventKind, Mark, SourceNamespace};
 use crate::report::is_core_source;
+use census_domain::model::{EventKind, Mark, SourceNamespace};
 
 fn payload(body: &str) -> Bio {
     serde_json::from_str(body).expect("a payload this adapter reads")

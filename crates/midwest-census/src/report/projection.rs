@@ -8,9 +8,11 @@ use super::rows::{
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
 use super::{retain_core, Census, ProviderCoverage, Scope, StateCensus};
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear};
 use crate::store::{Store, Table};
 use anyhow::Result;
+use census_domain::model::{
+    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
+};
 use std::collections::{BTreeMap, HashMap};
 
 /// One pass over the merged athlete rows.

@@ -1,11 +1,11 @@
 use super::*;
+use crate::store::Table;
+use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark, SchoolYear,
     SourceRef, Sport,
 };
-use crate::store::Table;
-use calamine::{open_workbook, Reader, Xlsx};
 
 #[test]
 fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {

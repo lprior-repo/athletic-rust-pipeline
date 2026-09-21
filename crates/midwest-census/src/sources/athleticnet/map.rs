@@ -2,13 +2,13 @@
 //! store, plus the published-flag readers they apply to a row.
 
 use super::parse::Bio;
+use crate::school_index::SchoolIndex;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventId, EventKind, Evidence, Gender, Grade,
     Mark, ObservedGrade, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace,
     SourceRef, Sport, TeamId, TimingMethod,
 };
-use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
 
 /// Profile URL for an athlete id, in the form Athletic.net itself links to.

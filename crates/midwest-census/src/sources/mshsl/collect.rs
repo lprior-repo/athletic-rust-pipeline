@@ -1,9 +1,9 @@
 mod run;
 
-use census_domain::model::{CanonicalCoach, SchoolId};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
 use anyhow::Result;
+use census_domain::model::{CanonicalCoach, SchoolId};
 
 use self::run::MshslRun;
 use super::map::coach_entities;

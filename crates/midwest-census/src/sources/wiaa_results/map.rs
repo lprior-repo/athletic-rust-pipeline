@@ -1,10 +1,10 @@
 use super::{level_of, school_year_for, Accumulator, ArchiveArtifact, Stats};
+use crate::school_index::SchoolIndex;
+use crate::sources::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::{
     CanonicalEvent, CanonicalMeet, CompetitionLevel, EventId, Evidence, SchoolId, SchoolYear,
     SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
-use crate::school_index::SchoolIndex;
-use crate::sources::result_file::{ParsedEvent, ParsedMeet};
 use std::collections::HashMap;
 
 #[path = "map_rows.rs"]

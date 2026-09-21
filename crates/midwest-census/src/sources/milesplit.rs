@@ -9,9 +9,9 @@
 //! `/api/`, `/rankings`, `/virtual-meets` and `/contact` are robots-disallowed and are never
 //! requested; the roster HTML carries the same graduating-year evidence the JSON API would provide.
 
-use census_domain::model::*;
 use crate::net::{FetchOptions, Fetcher};
 use anyhow::{bail, Context, Result};
+use census_domain::model::*;
 use regex::Regex;
 use std::sync::LazyLock;
 

@@ -5,11 +5,11 @@ use super::super::map::absorb;
 use super::super::parse::{parse_pdf, pdftotext};
 use super::super::{artifact_format, ArchiveArtifact, ArtifactFormat, Options, PARSE_VERSION};
 use super::ArtifactRun;
-use census_domain::model::{SourceRef, Sport};
 use crate::net::FetchOutcome;
 use crate::sources::result_file::ParsedMeet;
 use crate::sources::{AdapterContext, AdapterReport};
 use anyhow::Result;
+use census_domain::model::{SourceRef, Sport};
 use serde_json::json;
 
 /// Read one artifact: index it when its extension is unparsable, otherwise parse and absorb it.

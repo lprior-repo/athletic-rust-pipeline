@@ -2,12 +2,12 @@
 //! performance store needs, then stored or counted as refused.
 
 use super::Ctx;
+use crate::sources::athleticnet::map::{grade_in, meet_for, store_performance, PerformanceInput};
+use crate::sources::athleticnet::parse::{parse_mark, round_of, timing_of, Bio, TfRow, XcRow};
 use census_domain::model::{
     AthleteId, CanonicalMeet, EventKind, Gender, Grade, Mark, SchoolId, SchoolYear, Sport,
     TimingMethod,
 };
-use crate::sources::athleticnet::map::{grade_in, meet_for, store_performance, PerformanceInput};
-use crate::sources::athleticnet::parse::{parse_mark, round_of, timing_of, Bio, TfRow, XcRow};
 use std::collections::HashMap;
 
 /// One row, resolved to the identifiers the performance store needs.

@@ -213,10 +213,6 @@ pub struct RankedEvent {
 }
 
 impl RankingsPlan {
-    pub fn event_count(&self) -> usize {
-        self.events.len()
-    }
-
     pub fn for_event(&self, short: &str) -> Option<&RankedEvent> {
         self.events.iter().find(|e| e.short == short)
     }

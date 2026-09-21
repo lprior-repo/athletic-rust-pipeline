@@ -31,10 +31,10 @@ mod map;
 mod parse;
 mod run;
 
+use crate::sources::AdapterContext;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, Sport,
 };
-use crate::sources::AdapterContext;
 use std::collections::HashMap;
 
 pub use archive::{archive_artifacts, ArchiveArtifact};

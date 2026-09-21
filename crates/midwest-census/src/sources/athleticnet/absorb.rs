@@ -5,11 +5,11 @@ mod rows;
 use super::map::{profile_url, school_for, Accumulator, Stats};
 use super::parse::{gender_of, Bio};
 use super::{Scope, Target};
+use crate::school_index::SchoolIndex;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, Evidence, Gender, GradYear, Grade, ObservedGrade, SchoolId,
     SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
-use crate::school_index::SchoolIndex;
 use std::collections::HashMap;
 
 /// Absorb one payload; returns the number of result rows stored.

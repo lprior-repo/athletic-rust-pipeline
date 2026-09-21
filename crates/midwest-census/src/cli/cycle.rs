@@ -1,8 +1,8 @@
 //! The `run` subcommand: the whole cycle in one command.
 
 use anyhow::{Context, Result};
-use clap::Args;
 use census_domain::model::SchoolYear;
+use clap::Args;
 use midwest_census::store::Store;
 use midwest_census::{bests, census, report, workbook};
 use std::path::PathBuf;

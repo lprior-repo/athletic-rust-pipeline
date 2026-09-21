@@ -96,8 +96,8 @@ async fn scan_index(
     report: &mut AdapterReport,
     before: &FetchStats,
 ) -> Result<LetterScan> {
-    // -- index: bounded-concurrency fetch per directory letter (N=8) ----------------------------
-    const LETTER_CONCURRENCY: usize = 8;
+    // -- index: bounded-concurrency fetch per directory letter (shared bound) --------------------
+    const LETTER_CONCURRENCY: usize = crate::sources::CONCURRENCY_BOUND;
     let letters = letters_for(&options.school_names);
     // Collect (letter_index, result) pairs so we can process in submission order.
     let letter_results: Vec<(usize, Result<FetchOutcome>)> =

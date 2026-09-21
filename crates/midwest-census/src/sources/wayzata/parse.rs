@@ -1,8 +1,8 @@
 //! The provider's two published schedules: their page URL, the shape of one schedule row, and
 //! the parser that reads a rendered schedule table into those rows.
 
-use census_domain::model::Sport;
 use anyhow::Result;
+use census_domain::model::Sport;
 use regex::Regex;
 use std::sync::LazyLock;
 

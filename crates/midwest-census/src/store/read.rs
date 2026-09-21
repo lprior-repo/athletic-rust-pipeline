@@ -1,11 +1,11 @@
 //! Read path: prefix iteration over the entities keyspace, the merging scan, consolidation to
 //! JSONL, store statistics and the journal reads that back a resumed run.
 
+use anyhow::{bail, Context, Result};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam,
 };
-use anyhow::{bail, Context, Result};
 use fjall::Keyspace;
 use std::collections::{BTreeMap, HashSet};
 use std::io::{BufWriter, Write};

@@ -37,9 +37,9 @@ use std::collections::{HashMap, VecDeque};
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
-use census_domain::model::CanonicalMeet;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
+use census_domain::model::CanonicalMeet;
 
 mod batches;
 mod map;
@@ -72,16 +72,6 @@ pub struct Options {
     /// Restrict to meets in these state codes; empty = every state present in the meet log.
     pub states: Vec<String>,
     pub school_names: Vec<String>,
-}
-
-impl Options {
-    pub fn for_states(states: Vec<String>, observed_on: impl Into<String>) -> Self {
-        Self {
-            states,
-            observed_on: observed_on.into(),
-            ..Default::default()
-        }
-    }
 }
 
 /// Build the Elasticsearch query for a batch of meet ids.

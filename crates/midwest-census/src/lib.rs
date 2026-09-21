@@ -27,7 +27,6 @@
 pub mod bests;
 pub mod bootstrap;
 pub mod census;
-pub mod fingerprint;
 pub mod net;
 pub mod report;
 pub mod restate_services;

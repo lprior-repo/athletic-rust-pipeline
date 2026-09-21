@@ -16,11 +16,11 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use anyhow::{bail, Context, Result};
 
+use crate::sources::{AdapterContext, AdapterReport};
 use census_domain::model::{
     CanonicalMeet, CompetitionLevel, Evidence, EvidenceMethod, MeetId, SourceIdentity,
     SourceNamespace, SourceRef,
 };
-use crate::sources::{AdapterContext, AdapterReport};
 
 /// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]

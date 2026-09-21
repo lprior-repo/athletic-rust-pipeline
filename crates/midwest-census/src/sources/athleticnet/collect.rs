@@ -7,15 +7,15 @@ use super::parse::Bio;
 use super::{
     parse_targets, Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
 };
-use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SchoolId, SourceRef,
-};
 use crate::net::FetchOptions;
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{ensure, Context, Result};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
+    CanonicalTeam, SchoolId, SourceRef,
+};
 use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 

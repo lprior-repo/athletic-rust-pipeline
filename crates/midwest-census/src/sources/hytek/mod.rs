@@ -30,8 +30,8 @@ mod columns;
 mod map;
 mod parse;
 
-use census_domain::model::SourceRef;
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
+use census_domain::model::SourceRef;
 use regex::Regex;
 use std::sync::LazyLock;
 

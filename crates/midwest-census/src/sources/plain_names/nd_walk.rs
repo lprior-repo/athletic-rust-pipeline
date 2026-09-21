@@ -11,11 +11,11 @@ use super::nd::{
 use super::nd_coaches::{nd_ad_coaches, nd_sport_coaches, parse_nd_sport};
 use super::parse::email_regex;
 use super::{ND_COACHES_PHASE, ND_SCHOOLS_PHASE};
-use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolId};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolId};
 
 /// One parsed NDHSAA school page: its heading and the row sets the entity builders read.
 struct NdPage {

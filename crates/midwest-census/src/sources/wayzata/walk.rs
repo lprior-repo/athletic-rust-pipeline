@@ -7,11 +7,11 @@
 use super::map::{level_of, resolve_venue, VenueResolution};
 use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER, UNKNOWN_STATE};
-use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 

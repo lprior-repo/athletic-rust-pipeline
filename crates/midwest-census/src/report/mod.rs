@@ -5,10 +5,10 @@
 //! wire shape: a hand-written mirror silently drifts from the model and would report on fields that
 //! no longer exist.
 
+use anyhow::{Context, Result};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,
 };
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader};

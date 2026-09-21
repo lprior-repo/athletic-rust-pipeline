@@ -1,12 +1,12 @@
 use super::{archive_artifacts, stats_of, Accumulator, Options, Stats, ARCHIVES, PARSE_VERSION};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SchoolId, SourceRef, Sport,
-};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
+    CanonicalTeam, SchoolId, SourceRef, Sport,
+};
 use std::collections::{HashMap, HashSet};
 
 #[path = "run_artifacts.rs"]

@@ -1,9 +1,9 @@
 use super::*;
+use crate::sources::AdapterContext;
+use crate::store::Table;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
-use crate::sources::AdapterContext;
-use crate::store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 

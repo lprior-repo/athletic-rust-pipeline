@@ -6,11 +6,11 @@
 //! `collect_milesplit` walks the requested states concurrently — one host's pacing discipline per
 //! state — failing only after reporting what completed first.
 
-use census_domain::model::{Gender, SchoolYear};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::store::{Store, Table};
 use anyhow::{bail, Context, Result};
+use census_domain::model::{Gender, SchoolYear};
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 use tokio::sync::Mutex;

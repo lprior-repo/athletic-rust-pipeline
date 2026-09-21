@@ -10,13 +10,13 @@
 //! home addresses, cell numbers, athlete contacts. Those columns are not part of this schema, so they
 //! cannot leak through the importer.
 
+use crate::sources::AdapterReport;
+use crate::store::{Store, Table};
+use anyhow::{Context, Result};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
-use crate::sources::AdapterReport;
-use crate::store::{Store, Table};
-use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::convert::{TryFrom, TryInto};

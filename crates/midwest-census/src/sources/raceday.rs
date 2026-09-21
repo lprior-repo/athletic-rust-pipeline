@@ -14,9 +14,9 @@
 //! no date anywhere, the caller supplies the archive year; the meet is then stamped with year
 //! precision rather than with an invented day.
 
-use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 use crate::sources::hytek::parse_time;
 use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
+use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 use regex::Regex;
 use std::sync::LazyLock;
 

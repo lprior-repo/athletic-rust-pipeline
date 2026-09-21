@@ -65,11 +65,6 @@ impl SearchProgress {
         &self.issues
     }
     #[must_use]
-    pub fn into_candidates(self) -> Vec<SearchCandidate> {
-        self.candidates
-    }
-
-    #[must_use]
     pub fn into_issues(self) -> Vec<SearchIssue> {
         self.issues
     }

@@ -2,9 +2,9 @@
 //! cached team indexes, the MileSplit roster walk and the coach-contact CSV import.
 
 use anyhow::{bail, Context, Result};
+use census_domain::model::SchoolYear;
 use clap::Args;
 use midwest_census::census;
-use census_domain::model::SchoolYear;
 use midwest_census::net::FetchOptions;
 use midwest_census::sources::milesplit::{self, SITES};
 use midwest_census::store::Store;

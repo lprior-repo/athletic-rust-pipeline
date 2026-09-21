@@ -5,10 +5,9 @@ use super::{FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS, RETRY_BAS
 use anyhow::{Context, Result};
 use std::time::Duration;
 
-/// Request payload for POSTs: form pairs or a pre-serialized JSON body.
+/// Request payload for POSTs: a pre-serialized JSON body.
 #[derive(Debug, Clone)]
 pub(super) enum RequestBody {
-    Form(Vec<(String, String)>),
     Json(String),
 }
 
@@ -19,30 +18,6 @@ impl Fetcher {
         tracing::Span::current().record("url", url);
         self.fetch("GET", url, None, options, REQUEST_TIMEOUT_SECS)
             .await
-    }
-
-    /// POST a form body; cached by body content so repeated runs are free.
-    #[tracing::instrument(skip(self, options, form), fields(url, method = "POST"))]
-    pub async fn post_form(
-        &self,
-        url: &str,
-        form: &[(String, String)],
-        options: &FetchOptions,
-    ) -> Result<FetchOutcome> {
-        tracing::Span::current().record("url", url);
-        let extra = form
-            .iter()
-            .map(|(k, v)| format!("{k}={v}"))
-            .collect::<Vec<_>>()
-            .join("&");
-        self.fetch(
-            "POST",
-            url,
-            Some((extra, RequestBody::Form(form.to_vec()))),
-            options,
-            REQUEST_TIMEOUT_SECS,
-        )
-        .await
     }
 
     /// POST a JSON body; cached by body content so repeated runs are free.
@@ -89,14 +64,6 @@ pub(super) fn build_request<'a>(
     if method == "POST" {
         if let Some(payload) = body {
             match payload {
-                RequestBody::Form(form) => {
-                    let encoded = url::form_urlencoded::Serializer::new(String::new())
-                        .extend_pairs(form.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-                        .finish();
-                    request = request
-                        .header("content-type", "application/x-www-form-urlencoded")
-                        .body(encoded);
-                }
                 RequestBody::Json(encoded) => {
                     request = request
                         .header("content-type", "application/json")

@@ -62,12 +62,12 @@ use std::time::Duration;
 
 use anyhow::{bail, ensure, Context, Result};
 use calamine::{open_workbook_auto, Data, Reader};
-use midwest_census::bests::{self, BestResult, Measure};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence,
     GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use midwest_census::bests::{self, BestResult, Measure};
 use midwest_census::net::Fetcher;
 use midwest_census::report::{self, Census, Scope};
 use midwest_census::school_index::SchoolIndex;

@@ -59,10 +59,6 @@ impl SearchQuery {
     }
 
     #[must_use]
-    pub fn cache_key(&self) -> String {
-        self.cache_identity()
-    }
-    #[must_use]
     pub fn sport(&self) -> Sport {
         self.sport
     }

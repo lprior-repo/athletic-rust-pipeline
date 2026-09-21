@@ -4,9 +4,9 @@
 //! caller keeps its journal and re-runs, so a partial walk is reported rather than discarded — and
 //! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
-use census_domain::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam};
 use crate::store::{Store, Table};
 use anyhow::Result;
+use census_domain::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam};
 use tracing::info;
 
 use super::{CollectReport, StateProgress};
@@ -96,13 +96,19 @@ pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
     counts.push((
         "meets".to_string(),
         store
-            .consolidate::<census_domain::model::CanonicalMeet>(Table::Meets, &out.join("meets.jsonl"))?
+            .consolidate::<census_domain::model::CanonicalMeet>(
+                Table::Meets,
+                &out.join("meets.jsonl"),
+            )?
             .rows,
     ));
     counts.push((
         "events".to_string(),
         store
-            .consolidate::<census_domain::model::CanonicalEvent>(Table::Events, &out.join("events.jsonl"))?
+            .consolidate::<census_domain::model::CanonicalEvent>(
+                Table::Events,
+                &out.join("events.jsonl"),
+            )?
             .rows,
     ));
     counts.push((

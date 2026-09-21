@@ -3,12 +3,12 @@
 
 use super::super::Stats;
 use super::{MeetContext, RowWriter};
+use crate::school_index::SchoolIndex;
+use crate::sources::result_file::ParsedRow;
 use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
     Grade, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TeamId,
 };
-use crate::school_index::SchoolIndex;
-use crate::sources::result_file::ParsedRow;
 use std::collections::HashMap;
 
 /// Count one result row and write its members, returning the athlete rows it produced.

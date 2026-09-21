@@ -4,11 +4,11 @@
 use super::super::map::{school_entities, SchoolExtract};
 use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
 use super::super::{count, fetch_options, Options};
-use census_domain::model::normalize_name;
 use crate::net::{FetchOptions, FetchOutcome};
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::normalize_name;
 use futures::stream::{self, StreamExt};
 use std::collections::HashSet;
 
@@ -66,9 +66,9 @@ pub(super) async fn plan_schools(
         })
         .collect();
 
-    // Phase 2: fetch all school pages in parallel (bounded concurrency N=8).
+    // Phase 2: fetch all school pages in parallel (bounded concurrency, shared bound).
     // Each fetch is independent — same host, but rate-limited by the fetcher's gate.
-    const SCHOOL_CONCURRENCY: usize = 8;
+    const SCHOOL_CONCURRENCY: usize = crate::sources::CONCURRENCY_BOUND;
     stream::iter(eligible)
         .map(|(idx, entry)| {
             let url = entry.page_url();

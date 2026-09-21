@@ -61,9 +61,9 @@ use walk::{completed_pages, Walk};
 
 // The module's test file reads these through `use super::*`; the walk itself imports them.
 #[cfg(test)]
-use census_domain::model::{CanonicalMeet, SourceIdentity, SourceNamespace};
-#[cfg(test)]
 use crate::store::Table;
+#[cfg(test)]
+use census_domain::model::{CanonicalMeet, SourceIdentity, SourceNamespace};
 #[cfg(test)]
 use serde_json::json;
 

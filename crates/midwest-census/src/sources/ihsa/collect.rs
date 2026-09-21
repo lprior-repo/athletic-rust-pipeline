@@ -4,10 +4,10 @@
 use super::map::{parse_coach, parse_school, reveal_address_for};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, IHSA_API};
-use census_domain::model::{CanonicalCoach, CanonicalSchool, Evidence, SchoolId, SourceRef};
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, Evidence, SchoolId, SourceRef};
 use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------

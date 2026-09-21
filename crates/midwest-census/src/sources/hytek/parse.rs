@@ -4,8 +4,8 @@
 //! against that layout: place left of the first labelled column, the school or name text columns
 //! sliced to the next numeric anchor, the mark and its trailing wind, heat and points columns.
 
-use census_domain::model::{EventKind, Grade};
 use crate::sources::result_file::{ParsedRow, RelayLeg};
+use census_domain::model::{EventKind, Grade};
 use regex::Regex;
 use std::sync::LazyLock;
 

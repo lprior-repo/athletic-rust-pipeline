@@ -8,11 +8,11 @@ use super::nsaa::{nsaa_school_url, parse_nsaa_directory, NsaaRow, NsaaSchool};
 use super::nsaa_coaches::{nsaa_coaches, parse_nsaa_row, parse_nsaa_school};
 use super::parse::{email_regex, split_person_names};
 use super::{NSAA_COACHES_PHASE, NSAA_SCHOOLS_PHASE};
-use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{Context, Result};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole};
 
 /// The school block `name` names, or the page's only block.
 fn named_block<'a>(blocks: &'a [NsaaSchool], name: &str) -> Option<&'a NsaaSchool> {

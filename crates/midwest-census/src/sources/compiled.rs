@@ -16,11 +16,11 @@
 //! export states its layout through label positions and nothing else. Grades are published twice:
 //! as the `Yr` column for individuals and per leg for relay members.
 
-use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use crate::sources::hytek::{
     self, columns_from_header, grade_from_token, looks_like_a_name, substring, tokens, Column,
 };
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
+use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use regex::Regex;
 use std::sync::LazyLock;
 

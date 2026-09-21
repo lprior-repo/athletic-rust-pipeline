@@ -1,5 +1,4 @@
 //! The MSHSL run: its resume set, request inputs, tallies and per-school steps.
-use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SchoolId};
 use crate::net::{FetchOptions, FetchStats};
 use crate::sources::mshsl::map::{
     ad_coaches, ad_role, provider_key, school_domains, school_entities,
@@ -12,6 +11,7 @@ use crate::sources::mshsl::{Options, MAX_LISTING_PAGES, SOURCE_ID};
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::{bail, Context, Result};
+use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SchoolId};
 use serde_json::json;
 use std::collections::HashSet;
 

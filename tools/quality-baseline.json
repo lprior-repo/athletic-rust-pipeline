@@ -15,7 +15,7 @@
       "files": 238,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 34332,
+      "production_lines": 34308,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,
@@ -26,10 +26,10 @@
       "assert_family": 0,
       "dbg": 0,
       "expect": 0,
-      "files": 121,
+      "files": 120,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 23034,
+      "production_lines": 21806,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,
@@ -45,7 +45,7 @@
       "athletic-rust-pipeline:src/profile/bio/events.rs (329)",
       "athletic-rust-pipeline:src/runtime/browser/lifecycle.rs (365)",
       "athletic-rust-pipeline:src/runtime/browser_session.rs (327)",
-      "athletic-rust-pipeline:src/runtime/rankings/types.rs (408)",
+      "athletic-rust-pipeline:src/runtime/rankings/types.rs (404)",
       "athletic-rust-pipeline:src/runtime/rankings_collection/mod.rs (339)",
       "athletic-rust-pipeline:src/runtime/reviewer/model.rs (380)",
       "athletic-rust-pipeline:src/runtime/source.rs (373)",
@@ -55,7 +55,6 @@
       "athletic-rust-pipeline:src/workbook_ingest/stream.rs (310)",
       "athletic-rust-pipeline:src/xlsx/parser/rows.rs (331)",
       "midwest-census:crates/midwest-census/src/bootstrap.rs (387)",
-      "midwest-census:crates/midwest-census/src/model.rs (1333)",
       "midwest-census:crates/midwest-census/src/sources/athleticlive.rs (550)",
       "midwest-census:crates/midwest-census/src/sources/coach_contacts.rs (717)",
       "midwest-census:crates/midwest-census/src/sources/compiled.rs (687)",
@@ -64,7 +63,7 @@
       "midwest-census:crates/midwest-census/src/sources/raceday.rs (358)",
       "midwest-census:crates/midwest-census/src/sources/xc.rs (667)"
     ],
-    "functions_over_25_logical_lines": 560,
+    "functions_over_25_logical_lines": 554,
     "functions_over_60_lines": 0
   }
 }

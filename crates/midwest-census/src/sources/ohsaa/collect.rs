@@ -6,11 +6,11 @@ use super::map::{school_entities, SchoolExtract, SearchResult};
 use super::pages::parse_ad_page;
 use super::parse::resolve_school_name;
 use super::{Options, HOST, SEARCH_PATH};
-use census_domain::model::SourceNamespace;
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport};
 use crate::store::Table;
 use anyhow::Result;
+use census_domain::model::SourceNamespace;
 use std::collections::HashSet;
 
 // ── Collection ─────────────────────────────────────────────────────────────

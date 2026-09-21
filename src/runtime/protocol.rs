@@ -12,7 +12,6 @@ use serde::{Deserialize, Serialize};
 pub const MAX_REVIEW_INPUT_BYTES: usize = 65_536;
 pub const MAX_REVIEW_RESPONSE_BYTES: usize = 32_768;
 pub const MAX_SOURCE_RESPONSE_BYTES: usize = 32 * 1024 * 1024;
-pub const MAX_RANKING_PAGE_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "kind")]

@@ -5,13 +5,13 @@ use super::nsaa::{parse_nsaa_school_names, NsaaRow, NsaaSchool};
 use super::nsaa_walk::NsaaWalk;
 use super::parse::{is_office_role, split_person_names};
 use super::{observed_on, Options, NSAA_ADAPTER_ID, NSAA_FORM_URL, NSAA_SCHOOLS_PHASE};
+use crate::net::FetchOptions;
+use crate::sources::{AdapterContext, AdapterReport};
+use anyhow::Result;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
-use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
 use std::collections::HashSet;
 
 /// Classify one NSAA directory row label.

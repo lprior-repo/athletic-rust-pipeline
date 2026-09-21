@@ -13,12 +13,12 @@
 //! routes any path whose last segment is `discover`), so discovery is driven directly here: no
 //! external Restate server is needed, and no network traffic leaves the machine.
 
-use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
+use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use midwest_census::report::{self, Census, Scope};
 use midwest_census::store::{Store, StoreStats, Table};
 use midwest_census::{bests, census, workbook};

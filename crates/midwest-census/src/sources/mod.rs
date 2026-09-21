@@ -32,7 +32,6 @@ use crate::net::{FetchOptions, Fetcher};
 use crate::store::{Store, Table};
 use anyhow::Result;
 use serde::Serialize;
-use std::path::PathBuf;
 use std::time::Duration;
 
 /// Shared per-run context handed to every adapter.
@@ -98,11 +97,6 @@ pub fn default_host_delays() -> std::collections::HashMap<String, Duration> {
     .into_iter()
     .map(|(host, delay)| (host.to_string(), delay))
     .collect()
-}
-
-/// Directory a run writes its store into.
-pub fn default_store_dir() -> PathBuf {
-    PathBuf::from("var/midwest-census")
 }
 
 /// Append a batch of entities, tolerating an empty batch.

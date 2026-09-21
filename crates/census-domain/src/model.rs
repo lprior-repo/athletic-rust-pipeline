@@ -404,7 +404,6 @@ impl SourceIdentity {
 pub struct Confidence(pub u8);
 
 impl Confidence {
-    pub const CERTAIN: Confidence = Confidence(100);
     pub const HIGH: Confidence = Confidence(85);
     pub const MEDIUM: Confidence = Confidence(65);
     pub const LOW: Confidence = Confidence(40);

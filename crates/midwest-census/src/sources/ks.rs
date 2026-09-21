@@ -16,13 +16,13 @@
 //! `SchoolFax`, `Email`, `TwitterUserName` — any phone field, any home or cell number, and any
 //! non-coaching office role data. Those columns are not part of the schema.
 
+use crate::sources::{AdapterContext, AdapterReport};
+use crate::store::Table;
+use anyhow::{Context, Result};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
 };
-use crate::sources::{AdapterContext, AdapterReport};
-use crate::store::Table;
-use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::HashSet;
 

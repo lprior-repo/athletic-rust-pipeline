@@ -7,10 +7,10 @@
 
 use super::parse::{clean_text, nonempty, split_person_names, strip_coop_note, without_comments};
 use super::{ND_ADAPTER_ID, ND_SCHOOL_BASE};
+use anyhow::Result;
 use census_domain::model::{
     normalize_name, CanonicalSchool, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
 };
-use anyhow::Result;
 use regex::Regex;
 use std::collections::HashSet;
 use std::sync::LazyLock;

@@ -22,9 +22,9 @@
 //! Rows carry a team label, a place, a time and a grade; the canonical meet name and date come from
 //! the file's own header lines.
 
-use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use crate::sources::hytek::{self, grade_from_token, looks_like_a_name, substring};
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
+use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 use regex::Regex;
 use std::sync::LazyLock;
 

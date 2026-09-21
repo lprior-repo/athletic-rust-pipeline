@@ -4,10 +4,10 @@
 //! counted rather than assumed away — and the two counters are the class-of-2027 cohort the census
 //! is judged on. Both are predicates over a roster, never over a report.
 
-use census_domain::model::{Gender, GradYear};
 use crate::sources::milesplit::{Roster, TeamRef};
 use crate::store::Store;
 use anyhow::Result;
+use census_domain::model::{Gender, GradYear};
 
 use super::rosters_phase;
 

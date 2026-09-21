@@ -1,12 +1,12 @@
 //! The reduction itself: one pass over the store's own rows, and the row order it publishes.
 
 use super::{is_relay, mark_text, sport_of, BestResult, Measure, Options};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventKind,
-};
 use crate::report::{retain_core, CoreScoped, Scope};
 use crate::store::{Entity, Store, Table};
 use anyhow::Result;
+use census_domain::model::{
+    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventKind,
+};
 use std::collections::HashMap;
 
 /// Reduce the consolidated tables to one best mark per `(athlete, event)`.
