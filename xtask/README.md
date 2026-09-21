@@ -7,15 +7,12 @@ it, so a terminal session and this harness cannot drift apart. Nothing here reim
 ## Running it
 
 ```bash
-cargo run -p xtask -- <command> [args]        # always works
+cargo xtask <command> [args]                  # via the alias in .cargo/config.toml
+cargo run -p xtask -- <command> [args]        # the same thing, spelled out
 ```
 
-`cargo xtask <command>` is the shorter form, and needs the alias in `.cargo/config.toml`:
-
-```toml
-[alias]
-xtask = "run -p xtask --"
-```
+`.cargo/config.toml` holds that one alias — `xtask = "run -p xtask --"` — and nothing else, so the
+gate lanes keep running against the same toolchain and flags with or without it.
 
 Children always execute with the repository root as their working directory, whatever directory
 `xtask` was invoked from — so a relative `--store var/midwest-census` means here exactly what
@@ -39,9 +36,9 @@ named in the message; there is no stack trace.
 ### `gate`
 
 ```bash
-cargo run -p xtask -- gate                       # every lane, like tools/gate.sh
-cargo run -p xtask -- gate -- --update-baseline  # arguments after `--` go to gate.sh
-cargo run -p xtask -- gate -- --allow-increase   # (only with --update-baseline)
+cargo xtask gate                       # every lane, like tools/gate.sh
+cargo xtask gate -- --update-baseline  # arguments after `--` go to gate.sh
+cargo xtask gate -- --allow-increase   # (only with --update-baseline)
 ```
 
 The gate is the whole workspace: fmt, check `--all-targets`, doc, tests, strict clippy, the scans,
@@ -51,7 +48,7 @@ of it — it forwards arguments, prints the command, and reports the child's sta
 ### `source-test <source>`
 
 ```bash
-cargo run -p xtask -- source-test wiaa
+cargo xtask source-test wiaa
 ```
 
 Nextest with a `test(<source>)` filter over the whole `midwest-census` package, which is how a
@@ -61,7 +58,7 @@ complete — `source-fixture` shows what exists, and the fixture directories are
 ### `source-fixture <source>`
 
 ```bash
-cargo run -p xtask -- source-fixture wiaa
+cargo xtask source-fixture wiaa
 ```
 
 Lists every regular file under the source's fixture directory, recursively, sorted, with byte sizes.
@@ -71,8 +68,8 @@ exist, not an empty listing.
 ### `census-status --store <dir>` and `coverage --store <dir>`
 
 ```bash
-cargo run -p xtask -- census-status --store var/midwest-census   # report --core
-cargo run -p xtask -- coverage      --store var/midwest-census   # report, every source
+cargo xtask census-status --store var/midwest-census   # report --core
+cargo xtask coverage      --store var/midwest-census   # report, every source
 ```
 
 Both run the shipped `midwest-census` binary, so both need the crate to build, and both write the
@@ -88,7 +85,7 @@ printed here would be invented.
 ### `new-source <name>`
 
 ```bash
-cargo run -p xtask -- new-source sondre-land   # names the module sondre_land
+cargo xtask new-source sondre-land   # names the module sondre_land
 ```
 
 Writes the decomposition-target layout and registers the module:

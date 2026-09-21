@@ -6,6 +6,42 @@ brings those numbers down by moving code to where it belongs — without changin
 behavior. The golden-corpus parity harness is the proof, and it must exist **before** any file in this
 plan is touched (already the case for every file below on the day the harness landed).
 
+## Status
+
+Completed (each proven by its parity target, `tests/golden/` unchanged, and flat-or-falling counters):
+
+| Unit | Result |
+| --- | --- |
+| `sources/plain_names.rs` 2482 | `plain_names/{mod,parse,nd,nd_coaches,nsaa,nsaa_coaches,tests}.rs` — 163–279 lines each |
+| `sources/mshsl.rs` 1870 | `mshsl/{mod,parse,text,teams,map,collect,tests}.rs` — 93–261 |
+| `sources/wiaa.rs` 1559 | pending |
+| `sources/ohsaa.rs` 1393 | `ohsaa/{mod,collect,parse,pages,map,tests}.rs` — 69–273 |
+| `sources/athleticnet.rs` 1315 | `athleticnet/{mod,parse,map,absorb,collect,tests}.rs` — 161–298 |
+| `sources/hytek.rs` 1163 | `hytek/{mod,columns,parse,map,tests}.rs` — 171–287 |
+| root `profile/bio.rs` 1035 | `profile/bio/{mod,identity,teams,results,distances,record,relays,fields}.rs` — 73–204 |
+| root `domain/performance_evidence/context.rs` 483 | `context/{mod,classify,mark,assemble,best,text}.rs` — 10–172 |
+| root `result_verify/rankings.rs` 464 | `rankings/{mod,records,verification,tests}.rs` |
+| root `bundle_verify.rs` 433 | `bundle_verify/{mod,digest,binding,pr_summary}.rs` — 22–237 |
+| root `profile/html/stream.rs` 387 | `stream/{mod,buffer,bounds,structure}.rs` — 43–254 |
+| root `result_verify/checks.rs` + `positive.rs` (346 + 388) | `checks/{mod,row,artifacts}` + `checks/positive/{mod,identity,acceptance}` — 98–178 |
+
+Remaining targets are the entries in `files_over_300_lines` from `tools/production_scan.py`: the census
+core modules (`model.rs` 1327, `net.rs` 1120, `store.rs` 1061, `report.rs` 894, `restate_services.rs` 862,
+`workbook.rs` 844, `main.rs` 740, `census.rs` 467, `bests.rs` 414, the remaining source adapters
+`ihsa.rs` / `wiaa_results.rs` / `wayzata.rs` / `athleticlive_athletes.rs` / `compiled.rs` / `xc.rs` /
+`milesplit.rs` / `coach_contacts.rs` / `ks.rs` / `athleticlive.rs`) and the root `runtime/` and
+`search/` workers.
+
+Two rules learned during this phase, both now enforced:
+
+* A directory split adds lines (per-file `use` blocks, `mod` declarations, re-export lists). Crate-level
+  `production_lines` may therefore rise while oversized files fall. That rise is split overhead, not
+  drift: it is checked against a written list before the baseline is refreshed once, at the end of a
+  wave — never per pull request.
+* A file may exceed 300 lines only when the single unchanged function it holds is itself longer than
+  300 lines (`sources/wiaa/collect.rs` 307 and `sources/athleticnet/absorb.rs` 298 sit at that floor),
+  and those functions are the targets of the next phase, which may not be reached by a move.
+
 ## The guarantee
 
 Every step below is a **move**, never a rewrite:

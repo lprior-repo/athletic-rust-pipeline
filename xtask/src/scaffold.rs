@@ -88,7 +88,7 @@ pub fn new_source(requested: &str) -> Result<()> {
         )));
     }
     println!(
-        "\nnext: capture a fixture under {}, then run `cargo run -p xtask -- source-test {name}`",
+        "\nnext: capture a fixture under {}, then run `cargo xtask source-test {name}`",
         paths::relative(&layout.fixtures)
     );
     Ok(())

@@ -87,8 +87,8 @@ remain, and the main pipeline already contains working implementations of the *p
 | Asset | Verdict | Why |
 |---|---|---|
 | `src/result_verify/assessment.rs::verify` (~10) | **PATTERN ONLY → port** | **Recompute** `decision::assess(...)` from the evidence and demand exact equality with the exported assessment — the single most valuable idea in the repo for the collector |
-| `src/result_verify/checks.rs::verify_embedded_artifacts` (~60) | **PATTERN ONLY → port** | Three-way identity per artifact: embedded JSON == typed serde re-serialization == retained bytes at the referenced digest |
-| `checks.rs::VerifiedState::add_to` (~33) | **PATTERN ONLY → port** | `checked_add` with an explicit overflow error; cohort counters must not wrap |
+| `src/result_verify/checks/artifacts.rs::verify_embedded_artifacts` (~60) | **PATTERN ONLY → port** | Three-way identity per artifact: embedded JSON == typed serde re-serialization == retained bytes at the referenced digest |
+| `checks/mod.rs::VerifiedState::add_to` (~33) | **PATTERN ONLY → port** | `checked_add` with an explicit overflow error; cohort counters must not wrap |
 | `src/result_verify.rs::verify_results` (~61) + `validate_line` (~113) | **PATTERN ONLY → port** | Stream a JSONL snapshot, cap each line, reject duplicate keys — the shape a census verifier needs |
 | `coverage.rs::verify` (~20) / `verify_discovery` (~115) | **PATTERN ONLY → port** | “Every reference is consumed exactly once, no unbound extras”; candidate-ID set equality between stages |
 | `assessment.rs::admit` (~145) + `ByteCount` | **PATTERN ONLY → port** | Replays the runtime's per-row byte budget instead of trusting it — directly reusable as the collector's per-athlete parse budget |

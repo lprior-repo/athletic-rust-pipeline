@@ -156,18 +156,18 @@ See `docs/adr/` for the short ADR set: Fjall remains the system of record; Resta
 `GraduationYear` (not grade) is cohort identity; meet-first acquisition beats per-athlete fetching;
 AI cannot override a deterministic contradiction; Excel is the recruiter query layer.
 
-## 11. Developer commands (`cargo run -p xtask --`)
+## 11. Developer commands (`cargo xtask`)
 
 `xtask/` wraps the repository's real tools; it reimplements none of them and prints every child
 command before running it. Full command reference: `xtask/README.md`.
 
 ```bash
-cargo run -p xtask -- gate [-- --update-baseline]        # tools/gate.sh, arguments passed through
-cargo run -p xtask -- source-test <source>               # nextest -E 'test(<source>)'
-cargo run -p xtask -- source-fixture <source>            # what is captured under tests/fixtures/<source>/
-cargo run -p xtask -- census-status --store <dir>        # midwest-census report --core
-cargo run -p xtask -- coverage      --store <dir>        # midwest-census report (every source)
-cargo run -p xtask -- new-source <name>                  # scaffold a directory-layout adapter
+cargo xtask gate [-- --update-baseline]        # tools/gate.sh, arguments passed through
+cargo xtask source-test <source>               # nextest -E 'test(<source>)'
+cargo xtask source-fixture <source>            # what is captured under tests/fixtures/<source>/
+cargo xtask census-status --store <dir>        # midwest-census report --core
+cargo xtask coverage      --store <dir>        # midwest-census report (every source)
+cargo xtask new-source <name>                  # scaffold a directory-layout adapter
 ```
 
 `new-source` is the layout the decomposition moves the flat `sources/<name>.rs` adapters to:

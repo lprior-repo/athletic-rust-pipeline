@@ -10,7 +10,7 @@ pub(crate) fn adapter_module(name: &str) -> String {
         r#"//! `{name}` source adapter (scaffold).
 //!
 //! Fixtures: `crates/midwest-census/tests/fixtures/{name}/`.
-//! This adapter's tests: `cargo run -p xtask -- source-test {name}` (see `xtask/README.md`).
+//! This adapter's tests: `cargo xtask source-test {name}` (see `xtask/README.md`).
 
 use crate::sources::{{AdapterContext, AdapterReport}};
 use anyhow::{{bail, Result}};
@@ -134,9 +134,8 @@ and their `robots.txt` status here once the walk exists.
 | `parse.rs` | pure parsing: captured text in, parsed rows out, no I/O |
 | `map.rs` | parsed rows to canonical entities from `crate::model` |
 
-A decomposed adapter carries this same layout with its existing `#[cfg(test)]` module moved to a
-sibling `tests.rs` (`docs/DECOMPOSITION.md`); a new adapter starts with the fixture-driven test
-inside `parse.rs` and keeps it there until there are real tests to move.
+When an adapter's tests outgrow `parse.rs`, its `#[cfg(test)]` module moves to the sibling `tests.rs`
+shown in `docs/DECOMPOSITION.md`; the scaffold starts with the fixture-driven test inside `parse.rs`.
 
 ## Fixtures
 
@@ -146,13 +145,12 @@ says what to capture and how to name it. Tests must run offline from those files
 ## Commands
 
 ```bash
-cargo run -p xtask -- source-fixture {name}   # what is captured for this source
-cargo run -p xtask -- source-test {name}      # this adapter's tests
+cargo xtask source-fixture {name}   # what is captured for this source
+cargo xtask source-test {name}      # this adapter's tests
 ```
 
-With the `xtask` alias in `.cargo/config.toml` (`[alias]`, `xtask = "run -p xtask --"`) those read
-`cargo xtask source-fixture {name}` and `cargo xtask source-test {name}`. Both forms run nextest with
-a `test({name})` filter over the crate.
+`cargo xtask` is the alias in `.cargo/config.toml`; `cargo run -p xtask -- source-test {name}` is the
+same command spelled out. Both run nextest with a `test({name})` filter over the crate.
 
 ## Before this adapter lands
 

@@ -89,6 +89,8 @@ parsers and report aggregation).
   `sources/ohsaa.rs::collect` 200; `net.rs::fetch` 190; `sources/ihsa.rs::collect` 173.
 - **21 census files exceed the 300-line budget**, worst `sources/plain_names.rs` 2,259,
   `mshsl.rs` 1,855, `wiaa.rs` 1,558, `ohsaa.rs` 1,420, `model.rs` 1,279.
+  (Measured at the time of this program. The Phase 2 decomposition later replaced those flat adapters
+  with directory modules — see `docs/DECOMPOSITION.md` for the current layout and counters.)
 
 ### 2.3 Async structure (async-rust-reviewer phases)
 
