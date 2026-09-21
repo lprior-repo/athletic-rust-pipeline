@@ -1,0 +1,41 @@
+# Phase 0 acceptance: CI runs the same gate the workstation runs.
+#
+# The pinned nightly comes from rust-toolchain.toml; rustup installs it (with its components) on
+# first use. Only the official checkout action is used — no third-party actions, so the workflow
+# adds nothing to the dependency surface the gate's deny lane audits.
+#
+# The optional tool lanes (nextest, deny, audit, machete, geiger) install best-effort. The gate is
+# built to stay honest without them — an absent tool prints SKIP next to its lane — so a failed
+# install narrows the run visibly instead of failing or, worse, silently weakening it.
+
+name: gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install the pinned toolchain and its components
+        run: rustup show
+      - name: Install the optional gate tools (best effort)
+        run: |
+          for tool in cargo-nextest cargo-deny cargo-audit cargo-machete cargo-geiger; do
+            cargo install "$tool" --locked || echo "gate tool unavailable: $tool (its lane will SKIP)"
+          done
+      - name: Gate
+        run: bash tools/gate.sh
