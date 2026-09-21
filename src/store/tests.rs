@@ -94,7 +94,9 @@ fn a_stale_page_marker_is_cleared_so_the_page_can_be_republished() {
         candidates: Vec::new(),
         rosters: Vec::new(),
     };
-    store.put_rankings_page(&page(1)).expect("first publication");
+    store
+        .put_rankings_page(&page(1))
+        .expect("first publication");
     store
         .put_rankings_page(&page(1))
         .expect("identical replay is idempotent");
