@@ -1,4 +1,4 @@
-use super::{MAX_CANDIDATES, MAX_PROFILE_BYTES_PER_ROW};
+use super::fetch::{gather, identify, load_artifact, ProfileLoad};
 use crate::{
     domain::{
         candidate::CandidateEvidence,
@@ -8,36 +8,16 @@ use crate::{
     },
     model::SourceRecord,
     runtime::{
-        acquisition::{ProfileAcquisition, ProfileJob, ProfileProbe, QueryEvidence, QueryJob},
-        profile_worker::ProfileWorkerClient,
-        query_worker::QueryWorkerClient,
+        acquisition::{ProfileAcquisition, ProfileJob, ProfileProbe},
         row_protocol::CandidateCoverage,
         Runtime,
     },
-    search::{SearchPage, SearchQuery},
 };
-use anyhow::{Context, Result};
 use restate_sdk::prelude::*;
-use serde::de::DeserializeOwned;
 use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
-
-#[derive(Debug, Default)]
-pub(crate) struct DiscoveryState {
-    pub incomplete: bool,
-    pub refs: Vec<EvidenceDigest>,
-    pub issues: Vec<String>,
-    pub candidate_ids: BTreeSet<AthleteId>,
-    pub candidate_limit: bool,
-}
-
-impl DiscoveryState {
-    pub(crate) fn complete(&self) -> bool {
-        !self.incomplete && !self.candidate_limit && self.issues.is_empty()
-    }
-}
 
 #[derive(Debug, Default)]
 pub(crate) struct ProfileState {
@@ -84,93 +64,6 @@ impl ProfileState {
                     }),
             }
         })
-    }
-}
-pub(crate) async fn execute_queries(
-    ctx: &ObjectContext<'_>,
-    runtime: Arc<Runtime>,
-    snapshot: &EvidenceDigest,
-    queries: Vec<SearchQuery>,
-) -> std::result::Result<DiscoveryState, TerminalError> {
-    let mut state = DiscoveryState::default();
-    for query in queries {
-        let job = QueryJob {
-            snapshot: snapshot.clone(),
-            query,
-        };
-        let key = match job.key() {
-            Ok(value) => value,
-            Err(error) => {
-                state
-                    .issues
-                    .push(format!("query key validation failed: {error}"));
-                continue;
-            }
-        };
-        let call = ctx
-            .object_client::<QueryWorkerClient>(&key)
-            .gather(Json(job))
-            .call();
-        let handle = call
-            .invocation_handle()
-            .await
-            .map_err(|error| TerminalError::new(error.to_string()))?;
-        let digest = match call.await {
-            Ok(value) => value.0,
-            Err(error) if error.code() == 409 => {
-                handle.cancel();
-                return Err(error);
-            }
-            Err(error) => {
-                state
-                    .issues
-                    .push(format!("query worker call failed: {error}"));
-                continue;
-            }
-        };
-        state.refs.push(digest.clone());
-        match runtime.load_json::<QueryEvidence>(&digest).await {
-            Ok(artifact) => {
-                add_candidates(&runtime, &mut state, &artifact).await;
-                state.issues.extend(
-                    artifact
-                        .issues
-                        .iter()
-                        .map(|issue| format!("query issue {}: {}", issue.code, issue.message)),
-                );
-                state.issues.extend(artifact.failures.iter().map(|failure| {
-                    format!("query failure {:?}: {}", failure.code, failure.message)
-                }));
-                state.incomplete |= !artifact.complete;
-            }
-            Err(error) => state
-                .issues
-                .push(format!("query artifact could not be decoded: {error}")),
-        }
-    }
-    Ok(state)
-}
-
-async fn add_candidates(runtime: &Runtime, state: &mut DiscoveryState, artifact: &QueryEvidence) {
-    for page in &artifact.pages {
-        if state.candidate_limit {
-            break;
-        }
-        match runtime.load_json::<SearchPage>(&page.parsed).await {
-            Ok(search_page) => search_page.results().iter().for_each(|candidate| {
-                if state.candidate_ids.contains(&candidate.id()) {
-                    return;
-                }
-                if state.candidate_ids.len() == MAX_CANDIDATES {
-                    state.candidate_limit = true;
-                    return;
-                }
-                state.candidate_ids.insert(candidate.id());
-            }),
-            Err(error) => state.issues.push(format!(
-                "search page artifact could not be decoded: {error}"
-            )),
-        }
     }
 }
 
@@ -347,85 +240,4 @@ async fn add_full_profile(
             });
         }
     }
-}
-
-async fn identify(
-    ctx: &ObjectContext<'_>,
-    job: &ProfileJob,
-) -> std::result::Result<EvidenceDigest, TerminalError> {
-    let key = job
-        .key()
-        .map_err(|error| TerminalError::new(error.to_string()))?;
-    let call = ctx
-        .object_client::<ProfileWorkerClient>(&key)
-        .identify(Json(job.clone()))
-        .call();
-    let handle = call
-        .invocation_handle()
-        .await
-        .map_err(|error| TerminalError::new(error.to_string()))?;
-    match call.await {
-        Ok(value) => Ok(value.0),
-        Err(error) if error.code() == 409 => {
-            handle.cancel();
-            Err(error)
-        }
-        Err(error) => Err(error),
-    }
-}
-
-async fn gather(
-    ctx: &ObjectContext<'_>,
-    job: &ProfileJob,
-) -> std::result::Result<EvidenceDigest, TerminalError> {
-    let key = job
-        .key()
-        .map_err(|error| TerminalError::new(error.to_string()))?;
-    let call = ctx
-        .object_client::<ProfileWorkerClient>(&key)
-        .gather(Json(job.clone()))
-        .call();
-    let handle = call
-        .invocation_handle()
-        .await
-        .map_err(|error| TerminalError::new(error.to_string()))?;
-    match call.await {
-        Ok(value) => Ok(value.0),
-        Err(error) if error.code() == 409 => {
-            handle.cancel();
-            Err(error)
-        }
-        Err(error) => Err(error),
-    }
-}
-
-enum ProfileLoad<T> {
-    Loaded { artifact: Box<T>, bytes: usize },
-    Limited { bytes: usize },
-}
-
-async fn load_artifact<T: DeserializeOwned + Send + 'static>(
-    runtime: Arc<Runtime>,
-    digest: &EvidenceDigest,
-    used: usize,
-) -> Result<ProfileLoad<T>> {
-    let store = runtime.store.clone();
-    let digest = digest.clone();
-    runtime
-        .blocking(move || {
-            let bytes = store.get_bytes(&digest)?;
-            if bytes.len() > MAX_PROFILE_BYTES_PER_ROW
-                || used
-                    .checked_add(bytes.len())
-                    .is_none_or(|total| total > MAX_PROFILE_BYTES_PER_ROW)
-            {
-                return Ok(ProfileLoad::Limited { bytes: bytes.len() });
-            }
-            let artifact = serde_json::from_slice(&bytes).context("decoding profile artifact")?;
-            Ok(ProfileLoad::Loaded {
-                artifact: Box::new(artifact),
-                bytes: bytes.len(),
-            })
-        })
-        .await
 }
