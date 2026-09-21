@@ -2,15 +2,14 @@
 
 use super::{is_relay, mark_text, sport_of, BestResult, Measure, Options};
 use crate::report::{retain_core, CoreScoped, Scope};
-use crate::store::{Entity, Store, Table};
-use anyhow::Result;
+use crate::store::{Entity, Store, StoreResult, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventKind,
 };
 use std::collections::HashMap;
 
 /// Reduce the consolidated tables to one best mark per `(athlete, event)`.
-pub fn build(store: &Store, options: &Options) -> Result<Vec<BestResult>> {
+pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
     // Read the store itself: the report reads the store too, and a snapshot left behind by an older
     // `consolidate` would silently disagree with it.
     let athletes: Vec<CanonicalAthlete> = scan_scoped(store, Table::Athletes, options.scope)?;
@@ -67,7 +66,7 @@ pub fn build(store: &Store, options: &Options) -> Result<Vec<BestResult>> {
 }
 
 /// Scan one table, keeping only the core scope's rows when that scope was asked for.
-fn scan_scoped<T>(store: &Store, table: Table, scope: Scope) -> Result<Vec<T>>
+fn scan_scoped<T>(store: &Store, table: Table, scope: Scope) -> StoreResult<Vec<T>>
 where
     T: Entity + CoreScoped,
 {

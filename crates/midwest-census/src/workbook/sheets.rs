@@ -4,8 +4,7 @@
 //! Every row is a column header or a census count copied out of `Census`/`StateCensus`; the counter
 //! tables are the only thing that decides which field backs a printed column.
 
-use crate::report::{Census, StateCensus};
-use anyhow::{Context, Result};
+use crate::report::{Census, ReportError, ReportResult, StateCensus};
 
 use super::cells::{cell, row, share, Cell};
 
@@ -78,7 +77,7 @@ const SUMMARY_ROWS: [StateCounter; 12] = [
     ("Schools", |row| row.schools),
 ];
 
-pub(super) fn summary_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn summary_sheet(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Metric",
         "Core (Athletic.net off)",
@@ -146,7 +145,7 @@ const STATE_COLUMNS: [StateCounter; 12] = [
     ("Coaches with email", |row| row.coaches_with_email),
 ];
 
-pub(super) fn state_sheet(census: &Census) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn state_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut header = vec![Cell::text("State")];
     header.extend(STATE_COLUMNS.iter().map(|(label, _)| Cell::text(*label)));
     header.extend(
@@ -170,7 +169,7 @@ pub(super) fn state_sheet(census: &Census) -> Result<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
-fn state_row(state: &str, row: &StateCensus) -> Result<Vec<Cell>> {
+fn state_row(state: &str, row: &StateCensus) -> ReportResult<Vec<Cell>> {
     let mut cells = vec![Cell::text(state)];
     for (_, pick) in STATE_COLUMNS {
         cells.push(Cell::number(pick(row))?);
@@ -188,20 +187,20 @@ fn state_row(state: &str, row: &StateCensus) -> Result<Vec<Cell>> {
 }
 
 /// A running total for the marginal sheet: counts never wrap, they fail instead.
-fn add_count(total: usize, count: usize) -> Result<usize> {
-    total
-        .checked_add(count)
-        .context("the marginal totals do not fit usize")
+fn add_count(total: usize, count: usize) -> ReportResult<usize> {
+    total.checked_add(count).ok_or(ReportError::CounterOverflow)
 }
 
 /// What the all-sources scope reports but the core scope does not: `all_sources - core`.
-fn marginal(all_sources: usize, core: usize) -> Result<usize> {
+fn marginal(all_sources: usize, core: usize) -> ReportResult<usize> {
     all_sources
         .checked_sub(core)
-        .context("the core scope reports more than the all-sources scope")
+        .ok_or_else(|| ReportError::Invariant {
+            detail: "the core scope reports more than the all-sources scope".to_string(),
+        })
 }
 
-pub(super) fn marginal_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn marginal_sheet(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&String, &StateCensus)> = all_sources.by_state.iter().collect();
     ordered.sort_by_key(|(_, row)| std::cmp::Reverse(row.class_of_2027));
     let mut rows = vec![row!(

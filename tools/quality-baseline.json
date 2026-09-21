@@ -1,6 +1,6 @@
 {
   "clippy": {
-    "midwest_census\tclippy::arithmetic_side_effects": 66,
+    "midwest_census\tclippy::arithmetic_side_effects": 64,
     "midwest_census\tclippy::as_conversions": 7,
     "midwest_census\tclippy::indexing_slicing": 4,
     "midwest_census\tclippy::string_slice": 1
@@ -26,10 +26,10 @@
       "assert_family": 0,
       "dbg": 0,
       "expect": 0,
-      "files": 120,
+      "files": 125,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 21806,
+      "production_lines": 22912,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,
@@ -54,16 +54,15 @@
       "athletic-rust-pipeline:src/workbook_ingest/guards.rs (322)",
       "athletic-rust-pipeline:src/workbook_ingest/stream.rs (310)",
       "athletic-rust-pipeline:src/xlsx/parser/rows.rs (331)",
-      "midwest-census:crates/midwest-census/src/bootstrap.rs (387)",
-      "midwest-census:crates/midwest-census/src/sources/athleticlive.rs (550)",
-      "midwest-census:crates/midwest-census/src/sources/coach_contacts.rs (717)",
-      "midwest-census:crates/midwest-census/src/sources/compiled.rs (687)",
-      "midwest-census:crates/midwest-census/src/sources/ks.rs (582)",
-      "midwest-census:crates/midwest-census/src/sources/milesplit.rs (665)",
-      "midwest-census:crates/midwest-census/src/sources/raceday.rs (358)",
-      "midwest-census:crates/midwest-census/src/sources/xc.rs (667)"
+      "midwest-census:crates/midwest-census/src/bootstrap.rs (384)",
+      "midwest-census:crates/midwest-census/src/sources/coach_contacts.rs (553)",
+      "midwest-census:crates/midwest-census/src/sources/compiled.rs (579)",
+      "midwest-census:crates/midwest-census/src/sources/ks.rs (578)",
+      "midwest-census:crates/midwest-census/src/sources/milesplit.rs (610)",
+      "midwest-census:crates/midwest-census/src/sources/raceday.rs (327)",
+      "midwest-census:crates/midwest-census/src/sources/xc.rs (551)"
     ],
-    "functions_over_25_logical_lines": 554,
+    "functions_over_25_logical_lines": 551,
     "functions_over_60_lines": 0
   }
 }

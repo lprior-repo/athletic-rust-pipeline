@@ -1,8 +1,7 @@
 mod run;
 
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{CanonicalCoach, SchoolId};
 
 use self::run::MshslRun;
@@ -75,7 +74,7 @@ fn count(value: usize) -> u64 {
 /// Per school: one school page (facts + AD rows), one team-node list and up to
 /// `MAX_TEAMS_PER_SCHOOL` coach requests. Progress is journalled per school, so a re-run resumes
 /// without re-fetching finished schools.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let stats_before = ctx.fetcher.stats().await;
     let Some(mut run) = MshslRun::start(ctx, options)? else {
         let mut report = AdapterReport::new(SOURCE_ID, "schools");

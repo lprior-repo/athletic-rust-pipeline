@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use super::*;
 
 #[test]
@@ -54,21 +56,66 @@ fn oversized_batches_are_refused_without_touching_the_store() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
     let rows = vec![serde_json::json!({"id": "x"}); MAX_ROWS_PER_REQUEST + 1];
-    assert!(append_observations(&store, Table::Schools, &rows).is_err());
+    // The ceiling is an admission bound, not a hiccup: it must reach Restate as a terminal outcome,
+    // or the invocation would replay a batch that can never fit.
+    let refused = append_observations(&store, Table::Schools, &rows)
+        .map_err(JobError::from)
+        .expect_err("a batch over the ceiling is refused");
+    assert!(matches!(refused, JobError::Terminal { .. }));
     assert_eq!(store.stats().unwrap().observations, 0);
 }
 
 #[test]
-fn transient_jobs_are_retryable_and_panics_are_terminal() {
+fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_retry() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    let transient = runtime.block_on(blocking(|| -> anyhow::Result<u8> {
-        anyhow::bail!("disk went away")
+
+    // The store's own bound was violated: replaying the same journal value cannot restore it.
+    let refused = runtime.block_on(blocking(|| {
+        Err::<u8, StoreError>(StoreError::Invariant {
+            detail: "50001 rows exceeds the per-request ceiling of 50000".to_string(),
+        })
+    }));
+    assert!(matches!(refused, Err(JobError::Terminal { .. })));
+
+    // Every other store failure is what a journaled retry repairs.
+    let transient = runtime.block_on(blocking(|| {
+        Err::<u8, StoreError>(StoreError::Io {
+            path: PathBuf::from("/dev/null/nowhere"),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+        })
     }));
     assert!(matches!(transient, Err(JobError::Transient { .. })));
-    let panicked = runtime.block_on(blocking(|| -> anyhow::Result<u8> {
+
+    // A report failure classifies through its own conversion, including the store failure it wraps.
+    let report = runtime.block_on(blocking(|| {
+        Err::<u8, ReportError>(ReportError::Store(StoreError::Invariant {
+            detail: "table schools would exceed 20000000 rows in one scan".to_string(),
+        }))
+    }));
+    assert!(matches!(report, Err(JobError::Terminal { .. })));
+
+    // A report-side invariant is terminal for the same reason a store-side one is: it is a bug, not
+    // a bad night, and the replay would reproduce it exactly.
+    let report_invariant = runtime.block_on(blocking(|| {
+        Err::<u8, ReportError>(ReportError::Invariant {
+            detail: "the core scope reports more than the all-sources scope".to_string(),
+        })
+    }));
+    assert!(matches!(report_invariant, Err(JobError::Terminal { .. })));
+
+    // Everything else the report path can fail with stays retryable.
+    let report_io = runtime.block_on(blocking(|| {
+        Err::<u8, ReportError>(ReportError::Io {
+            path: PathBuf::from("/dev/null/nowhere"),
+            source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+        })
+    }));
+    assert!(matches!(report_io, Err(JobError::Transient { .. })));
+
+    let panicked = runtime.block_on(blocking(|| -> Result<u8, JobError> {
         panic!("boom");
     }));
     assert!(matches!(panicked, Err(JobError::Terminal { .. })));

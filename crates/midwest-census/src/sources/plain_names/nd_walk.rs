@@ -12,9 +12,8 @@ use super::nd_coaches::{nd_ad_coaches, nd_sport_coaches, parse_nd_sport};
 use super::parse::email_regex;
 use super::{ND_COACHES_PHASE, ND_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, SchoolId};
 
 /// One parsed NDHSAA school page: its heading and the row sets the entity builders read.
@@ -33,7 +32,7 @@ fn journal_school(
     offerings: usize,
     coach_rows: usize,
     ad_rows: usize,
-) -> Result<()> {
+) -> CrawlResult<()> {
     ctx.store.journal_done(
         ND_SCHOOLS_PHASE,
         key,
@@ -43,7 +42,8 @@ fn journal_school(
         ND_COACHES_PHASE,
         key,
         &serde_json::json!({ "coach_rows": coach_rows, "ad_rows": ad_rows }),
-    )
+    )?;
+    Ok(())
 }
 
 /// One walk of the NDHSAA member index: the entity rows it accumulates and its report counters.
@@ -106,7 +106,7 @@ impl NdWalk {
         fetch: &FetchOptions,
         report: &mut AdapterReport,
         member: &NdSchoolRef,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let url = member.url();
         let Some(html) = self.page(ctx, fetch, report, &url).await else {
             return Ok(());
@@ -124,7 +124,7 @@ impl NdWalk {
         member: &NdSchoolRef,
         url: &str,
         report: &mut AdapterReport,
-    ) -> Result<Option<NdPage>> {
+    ) -> CrawlResult<Option<NdPage>> {
         let Some((school, school_id)) = parse_nd_school_page(html, member, &self.observed_on)?
         else {
             self.failed = self.failed.saturating_add(1);
@@ -162,7 +162,7 @@ impl NdWalk {
         url: &str,
         member: &NdSchoolRef,
         page: NdPage,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let ads = nd_ad_coaches(&page.staff, &page.school_id, url, &self.observed_on);
         let sport_coaches =
             nd_sport_coaches(&page.offerings, &page.school_id, url, &self.observed_on);
@@ -194,17 +194,16 @@ impl NdWalk {
         ctx: &AdapterContext<'_>,
         report: &mut AdapterReport,
         members: usize,
-    ) -> Result<(u64, u64)> {
+    ) -> CrawlResult<(u64, u64)> {
         let school_rows =
-            u64::try_from(self.schools.len()).context("ndhsaa school count exceeds u64")?;
-        let coach_rows =
-            u64::try_from(self.coaches.len()).context("ndhsaa coach count exceeds u64")?;
-        ctx.store
-            .append_many(Table::Schools, &self.schools)
-            .context("writing ndhsaa schools")?;
-        ctx.store
-            .append_many(Table::Coaches, &self.coaches)
-            .context("writing ndhsaa coaches")?;
+            u64::try_from(self.schools.len()).map_err(|_| CrawlError::Arithmetic {
+                detail: "ndhsaa school count exceeds u64".to_string(),
+            })?;
+        let coach_rows = u64::try_from(self.coaches.len()).map_err(|_| CrawlError::Arithmetic {
+            detail: "ndhsaa coach count exceeds u64".to_string(),
+        })?;
+        ctx.store.append_many(Table::Schools, &self.schools)?;
+        ctx.store.append_many(Table::Coaches, &self.coaches)?;
 
         self.summary(report, members, coach_rows);
         Ok((school_rows, coach_rows))

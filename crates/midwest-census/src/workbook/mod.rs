@@ -10,9 +10,8 @@
 //! best-mark reduction is readable as text too.
 
 use crate::bests::{self, BestResult};
-use crate::report::{build_census, Census, Scope};
+use crate::report::{build_census, io_error, xlsx_error, Census, ReportResult, Scope};
 use crate::store::Store;
-use anyhow::{Context, Result};
 use rust_xlsxwriter::Workbook;
 use std::path::{Path, PathBuf};
 
@@ -47,7 +46,7 @@ impl Default for Options {
 }
 
 /// Build the workbook and its text sidecars; returns the path of the `.xlsx`.
-pub fn build(store: &Store, options: &Options) -> Result<PathBuf> {
+pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
     let core = build_census(store, Scope::Core)?;
     let all_sources = build_census(store, Scope::AllSources)?;
     let bests = bests::build(
@@ -79,14 +78,15 @@ fn write_workbook(
     all_sources: &Census,
     bests: &[BestResult],
     grad_year: Option<i16>,
-) -> Result<()> {
+) -> ReportResult<()> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
+        std::fs::create_dir_all(parent).map_err(|source| io_error(parent, source))?;
     }
     let mut book = Workbook::new();
 
     write_sheet(
         &mut book,
+        path,
         "Goal & method",
         goal_sheet(core, grad_year),
         &[12, 96, 18, 12],
@@ -94,21 +94,26 @@ fn write_workbook(
     )?;
     write_sheet(
         &mut book,
+        path,
         "Summary",
         summary_sheet(core, all_sources)?,
         &[38, 22, 16, 14],
         false,
     )?;
-    write_state_sheets(&mut book, core, all_sources)?;
-    write_artifact_sheets(&mut book, core, all_sources, bests)?;
+    write_state_sheets(&mut book, path, core, all_sources)?;
+    write_artifact_sheets(&mut book, path, core, all_sources, bests)?;
 
-    book.save(path)
-        .with_context(|| format!("saving the workbook to {}", path.display()))?;
+    book.save(path).map_err(|source| xlsx_error(path, source))?;
     Ok(())
 }
 
 /// Both per-state views, in published sheet order: core first, then every source.
-fn write_state_sheets(book: &mut Workbook, core: &Census, all_sources: &Census) -> Result<()> {
+fn write_state_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    core: &Census,
+    all_sources: &Census,
+) -> ReportResult<()> {
     let widths = [
         10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
     ];
@@ -116,7 +121,7 @@ fn write_state_sheets(book: &mut Workbook, core: &Census, all_sources: &Census) 
         ("By state - core", core),
         ("By state - all sources", all_sources),
     ] {
-        write_sheet(book, name, state_sheet(census)?, &widths, false)?;
+        write_sheet(book, path, name, state_sheet(census)?, &widths, false)?;
     }
     Ok(())
 }
@@ -124,12 +129,14 @@ fn write_state_sheets(book: &mut Workbook, core: &Census, all_sources: &Census) 
 /// The marginal, best-results, meet, evidence and method sheets, in published sheet order.
 fn write_artifact_sheets(
     book: &mut Workbook,
+    path: &Path,
     core: &Census,
     all_sources: &Census,
     bests: &[BestResult],
-) -> Result<()> {
+) -> ReportResult<()> {
     write_sheet(
         book,
+        path,
         "Athletic.net marginal",
         marginal_sheet(core, all_sources)?,
         &[10, 16, 12, 30, 12, 16, 14],
@@ -137,6 +144,7 @@ fn write_artifact_sheets(
     )?;
     write_sheet(
         book,
+        path,
         "Best results",
         best_sheet(bests)?,
         &[
@@ -146,6 +154,7 @@ fn write_artifact_sheets(
     )?;
     write_sheet(
         book,
+        path,
         "Meets",
         meets_sheet(core, all_sources)?,
         &[34, 12, 34, 12],
@@ -153,12 +162,20 @@ fn write_artifact_sheets(
     )?;
     write_sheet(
         book,
+        path,
         "Evidence mix",
         evidence_sheet(all_sources)?,
         &[40, 12, 40, 12],
         false,
     )?;
-    write_sheet(book, "Method notes", method_sheet(), &[30, 110], false)?;
+    write_sheet(
+        book,
+        path,
+        "Method notes",
+        method_sheet(),
+        &[30, 110],
+        false,
+    )?;
     Ok(())
 }
 

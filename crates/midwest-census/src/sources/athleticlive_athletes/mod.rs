@@ -34,10 +34,9 @@
 
 use std::collections::{HashMap, VecDeque};
 
-use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
 use census_domain::model::CanonicalMeet;
 
@@ -89,15 +88,19 @@ pub fn batch_query(meet_ids: &[u64], from: usize) -> Value {
 }
 
 /// Collect athlete rows for every timer-published meet and emit canonical entities.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let meets: Vec<CanonicalMeet> = ctx.store.scan(Table::Meets)?;
     if meets.is_empty() {
-        bail!("no meets in the store: run the `athleticlive` adapter first");
+        return Err(CrawlError::Invariant {
+            detail: "no meets in the store: run the `athleticlive` adapter first".to_string(),
+        });
     }
     let selection = meet_targets(&meets, &options.states);
     let targets = selection.targets;
     if targets.is_empty() {
-        bail!("no timer-published meets matched the requested states");
+        return Err(CrawlError::Invariant {
+            detail: "no timer-published meets matched the requested states".to_string(),
+        });
     }
     let by_id: HashMap<u64, &MeetTarget> = targets
         .iter()

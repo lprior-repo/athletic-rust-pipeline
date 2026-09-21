@@ -23,8 +23,8 @@ use restate_sdk::prelude::*;
 use tokio::sync::Semaphore;
 
 use crate::bootstrap::Clock;
-use crate::report::Scope;
-use crate::store::{Store, Table};
+use crate::report::{ReportError, Scope};
+use crate::store::{Store, StoreError, Table};
 
 mod census;
 mod ingest;
@@ -76,6 +76,37 @@ pub enum JobError {
     Terminal { message: String },
 }
 
+/// Store work that failed, classified for retry.
+///
+/// Transient is the default and the deliberate one: a lock, a full volume, an in-flight compaction —
+/// each is exactly what a journaled retry repairs, and every job here is safe to repeat. An
+/// `Invariant` violation is the exception: the store's own writer maintains those, so replaying the
+/// same journal value cannot restore one.
+impl From<StoreError> for JobError {
+    fn from(error: StoreError) -> Self {
+        let message = error.to_string();
+        match error {
+            StoreError::Invariant { .. } => Self::Terminal { message },
+            _ => Self::Transient { message },
+        }
+    }
+}
+
+/// Report, bests and workbook work that failed: the same rule one layer up. A store failure
+/// delegates so its own classification survives, and a violated invariant is terminal here for the
+/// same reason it is in the store: the report's invariants are its own, so a replay cannot restore
+/// one.
+impl From<ReportError> for JobError {
+    fn from(error: ReportError) -> Self {
+        let message = error.to_string();
+        match error {
+            ReportError::Store(source) => Self::from(source),
+            ReportError::Invariant { .. } => Self::Terminal { message },
+            _ => Self::Transient { message },
+        }
+    }
+}
+
 /// Map a job outcome onto Restate's terminal/retryable split. Deliberately a plain function rather
 /// than a `From` impl: `HandlerError` already has a blanket `From<E: StdError>`, and letting
 /// `JobError` take that path would make every terminal failure silently retryable.
@@ -93,14 +124,19 @@ struct TransientFailure {
 }
 
 /// Run a blocking job off the runtime, classifying the outcome for retry.
-async fn blocking<T: Send + 'static>(
-    job: impl FnOnce() -> anyhow::Result<T> + Send + 'static,
-) -> Result<T, JobError> {
+///
+/// `E` is whatever the job reports: the store's and the report's typed errors convert through the
+/// `From` impls above, and a job that already knows its own outcome — an input bound it refused —
+/// hands back a [`JobError`] unchanged. A panicked or cancelled task is always terminal: replaying
+/// the journal value that panicked would panic again.
+async fn blocking<T, E>(job: impl FnOnce() -> Result<T, E> + Send + 'static) -> Result<T, JobError>
+where
+    T: Send + 'static,
+    E: Into<JobError> + Send + 'static,
+{
     match tokio::task::spawn_blocking(job).await {
         Ok(Ok(value)) => Ok(value),
-        Ok(Err(error)) => Err(JobError::Transient {
-            message: format!("{error:#}"),
-        }),
+        Ok(Err(error)) => Err(error.into()),
         Err(join) if join.is_panic() => Err(JobError::Terminal {
             message: format!("job panicked: {join}"),
         }),

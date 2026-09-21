@@ -1,4 +1,4 @@
-use anyhow::Result;
+use crate::sources::{CrawlError, CrawlResult};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
@@ -17,22 +17,29 @@ static TAGS: LazyLock<std::result::Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 
 /// The archive-page link pattern, or the compile error of the literal it was built from.
-fn link() -> Result<&'static Regex> {
-    LINK.as_ref()
-        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+fn link() -> CrawlResult<&'static Regex> {
+    LINK.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "LINK",
+        source: source.clone(),
+    })
 }
 
 /// The result-file URL pattern, or the compile error of the literal it was built from.
-fn result_path() -> Result<&'static Regex> {
+fn result_path() -> CrawlResult<&'static Regex> {
     RESULT_PATH
         .as_ref()
-        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "RESULT_PATH",
+            source: source.clone(),
+        })
 }
 
 /// The tag-stripping pattern, or the compile error of the literal it was built from.
-fn tags() -> Result<&'static Regex> {
-    TAGS.as_ref()
-        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+fn tags() -> CrawlResult<&'static Regex> {
+    TAGS.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TAGS",
+        source: source.clone(),
+    })
 }
 
 /// One artifact link found on an archive page.
@@ -48,7 +55,7 @@ pub struct ArchiveArtifact {
 }
 
 /// Extract every result-file link from an archive page, with its year from the URL path.
-pub fn archive_artifacts(body: &str) -> Result<Vec<ArchiveArtifact>> {
+pub fn archive_artifacts(body: &str) -> CrawlResult<Vec<ArchiveArtifact>> {
     let link = link()?;
     let result_path = result_path()?;
     let tags = tags()?;

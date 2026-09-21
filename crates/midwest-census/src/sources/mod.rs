@@ -9,6 +9,63 @@
 //! may run. Adapters that need a different bound may override it locally.
 pub const CONCURRENCY_BOUND: usize = 8;
 
+// ---------------------------------------------------------------------------
+// Error types
+// ---------------------------------------------------------------------------
+
+/// Adapter-layer failures. Every adapter returns [`CrawlResult`]; `anyhow` is reserved for the
+/// CLI shells.
+#[derive(Debug, thiserror::Error)]
+pub enum CrawlError {
+    /// A fetch failed (robots, HTTP status, timeout, transport, cache).
+    #[error(transparent)]
+    Fetch(#[from] crate::net::FetchError),
+    /// A `Regex` static failed to compile.
+    #[error("regex {pattern} failed to compile: {source}")]
+    RegexInit {
+        pattern: &'static str,
+        #[source]
+        source: regex::Error,
+    },
+    /// A JSON payload did not decode.
+    #[error("json decode failed for {url}: {source}")]
+    Decode {
+        url: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// A page's schema did not match the adapter's contract.
+    #[error("schema mismatch for {url}: {detail}")]
+    Schema { url: String, detail: String },
+    /// A canonical value could not be formed from parsed input.
+    #[error(transparent)]
+    Domain(#[from] census_domain::DomainError),
+    /// The store rejected an append or scan.
+    #[error(transparent)]
+    Store(#[from] crate::store::StoreError),
+    /// A report-side reader failed (adapters read exported rows through `report::read_rows`).
+    #[error(transparent)]
+    Report(#[from] crate::report::ReportError),
+    /// Counters, offsets or sizing math overflowed.
+    #[error("arithmetic overflow: {detail}")]
+    Arithmetic { detail: String },
+    /// A local file operation failed.
+    #[error("i/o failed for {path}: {source}")]
+    Io {
+        path: std::path::PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    /// An internal invariant was violated (a bug, not external input).
+    ///
+    /// Displays the carried message verbatim: golden corpora pin `error.to_string()`.
+    #[error("{detail}")]
+    Invariant { detail: String },
+}
+
+/// Result alias for adapter code.
+pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
+
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod athleticnet;
@@ -30,7 +87,6 @@ pub mod xc;
 
 use crate::net::{FetchOptions, Fetcher};
 use crate::store::{Store, Table};
-use anyhow::Result;
 use serde::Serialize;
 use std::time::Duration;
 
@@ -100,6 +156,10 @@ pub fn default_host_delays() -> std::collections::HashMap<String, Duration> {
 }
 
 /// Append a batch of entities, tolerating an empty batch.
-pub fn append_all<T: Serialize>(store: &Store, table: Table, rows: &[T]) -> Result<()> {
+pub fn append_all<T: Serialize>(
+    store: &Store,
+    table: Table,
+    rows: &[T],
+) -> crate::store::StoreResult<()> {
     store.append_many(table, rows)
 }

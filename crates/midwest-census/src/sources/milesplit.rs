@@ -9,8 +9,8 @@
 //! `/api/`, `/rankings`, `/virtual-meets` and `/contact` are robots-disallowed and are never
 //! requested; the roster HTML carries the same graduating-year evidence the JSON API would provide.
 
-use crate::net::{FetchOptions, Fetcher};
-use anyhow::{bail, Context, Result};
+use crate::net::{FetchError, FetchOptions, Fetcher};
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::*;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -145,44 +145,62 @@ static SEASON_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(
 
 // Accessors for the literal patterns above: a failed compile is a programming error, so it comes
 // back as a typed error the parsers hand to the caller — never a panic.
-fn team_row_regex() -> anyhow::Result<&'static Regex> {
+fn team_row_regex() -> CrawlResult<&'static Regex> {
     TEAM_ROW_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "TEAM_ROW_REGEX",
+            source: source.clone(),
+        })
 }
 
-fn athlete_row_regex() -> anyhow::Result<&'static Regex> {
+fn athlete_row_regex() -> CrawlResult<&'static Regex> {
     ATHLETE_ROW_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "ATHLETE_ROW_REGEX",
+            source: source.clone(),
+        })
 }
 
-fn athlete_link_regex() -> anyhow::Result<&'static Regex> {
+fn athlete_link_regex() -> CrawlResult<&'static Regex> {
     ATHLETE_LINK_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "ATHLETE_LINK_REGEX",
+            source: source.clone(),
+        })
 }
 
-fn gender_cell_regex() -> anyhow::Result<&'static Regex> {
+fn gender_cell_regex() -> CrawlResult<&'static Regex> {
     GENDER_CELL_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "GENDER_CELL_REGEX",
+            source: source.clone(),
+        })
 }
 
-fn grad_cell_regex() -> anyhow::Result<&'static Regex> {
+fn grad_cell_regex() -> CrawlResult<&'static Regex> {
     GRAD_CELL_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "GRAD_CELL_REGEX",
+            source: source.clone(),
+        })
 }
 
-fn season_cell_regex() -> anyhow::Result<&'static Regex> {
+fn season_cell_regex() -> CrawlResult<&'static Regex> {
     SEASON_CELL_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "SEASON_CELL_REGEX",
+            source: source.clone(),
+        })
 }
 
 /// Parse the per-state team index page.
-pub fn parse_team_index(html: &str) -> Result<Vec<TeamRef>> {
+pub fn parse_team_index(html: &str) -> CrawlResult<Vec<TeamRef>> {
     let row_regex = team_row_regex()?;
     let mut teams = Vec::new();
     for capture in row_regex.captures_iter(html) {
@@ -215,13 +233,17 @@ pub fn parse_team_index(html: &str) -> Result<Vec<TeamRef>> {
         });
     }
     if teams.is_empty() {
-        bail!("team index contained no team rows (markup change or empty state page)");
+        // The page carries no URL of its own, so the shape failure is reported against its text.
+        return Err(CrawlError::Invariant {
+            detail: "team index contained no team rows (markup change or empty state page)"
+                .to_string(),
+        });
     }
     Ok(teams)
 }
 
 /// Parse a graded roster page.
-pub fn parse_roster(html: &str, team: TeamRef) -> Result<Roster> {
+pub fn parse_roster(html: &str, team: TeamRef) -> CrawlResult<Roster> {
     let row_regex = athlete_row_regex()?;
     let link = athlete_link_regex()?;
     let gender_cell = gender_cell_regex()?;
@@ -256,7 +278,7 @@ fn roster_athlete(
     gender_cell: &Regex,
     grad_cell: &Regex,
     season_cell: &Regex,
-) -> Result<Option<RosterAthlete>> {
+) -> CrawlResult<Option<RosterAthlete>> {
     let Some(athlete) = link.captures(row_html) else {
         return Ok(None);
     };
@@ -335,14 +357,15 @@ pub async fn fetch_team_index(
     fetcher: &Fetcher,
     site: Site,
     options: &FetchOptions,
-) -> Result<Vec<TeamRef>> {
+) -> CrawlResult<Vec<TeamRef>> {
     let outcome = fetcher.get(&site.teams_url(), options).await?;
     if outcome.status != 200 {
-        bail!(
-            "team index {} returned HTTP {}",
-            outcome.url,
-            outcome.status
-        );
+        // A caller that set `allow_not_found` gets the 404 as an outcome rather than an error; the
+        // status is still a fetch failure to every caller that asked for the index itself.
+        return Err(CrawlError::Fetch(FetchError::Http {
+            status: outcome.status,
+            url: outcome.url.clone(),
+        }));
     }
     parse_team_index(&outcome.text())
 }
@@ -352,7 +375,7 @@ pub async fn fetch_roster(
     fetcher: &Fetcher,
     team: &TeamRef,
     options: &FetchOptions,
-) -> Result<Roster> {
+) -> CrawlResult<Roster> {
     let url = format!("{}/roster", team.url);
     let outcome = fetcher
         .get(
@@ -370,7 +393,10 @@ pub async fn fetch_roster(
         });
     }
     if outcome.status != 200 {
-        bail!("roster {} returned HTTP {}", url, outcome.status);
+        return Err(CrawlError::Fetch(FetchError::Http {
+            status: outcome.status,
+            url,
+        }));
     }
     parse_roster(&outcome.text(), team.clone())
 }
@@ -574,92 +600,11 @@ fn title_case(value: &str) -> String {
 }
 
 /// MileSplit's own site id (`wi`, `mn`, …) for a state code.
-pub fn site_for_state(code: &str) -> Result<Site> {
-    Site::for_state(code).with_context(|| format!("no MileSplit site registered for {code}"))
+pub fn site_for_state(code: &str) -> CrawlResult<Site> {
+    Site::for_state(code).ok_or_else(|| CrawlError::Invariant {
+        detail: format!("no MileSplit site registered for {code}"),
+    })
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    const TEAMS: &str = include_str!("../../tests/fixtures/milesplit/wi_teams_index.html");
-    const ROSTER: &str = include_str!("../../tests/fixtures/milesplit/wi_roster_52649.html");
-
-    #[test]
-    fn parses_team_index_rows() {
-        let teams = parse_team_index(TEAMS).unwrap();
-        assert_eq!(teams.len(), 40);
-        assert_eq!(teams[0].id, "52649");
-        assert_eq!(teams[0].name, "Abbotsford");
-        assert_eq!(teams[0].city_state, "ABBOTSFORD, WI, USA");
-    }
-
-    #[test]
-    fn parses_roster_rows_with_grad_year_and_seasons() {
-        let teams = parse_team_index(TEAMS).unwrap();
-        let roster = parse_roster(ROSTER, teams[0].clone()).unwrap();
-        assert_eq!(roster.athletes.len(), 25);
-        let first = &roster.athletes[0];
-        assert_eq!(first.name, "Julian Aguilera");
-        assert_eq!(first.roster_name, "Aguilera, Julian");
-        assert_eq!(first.grad_year, GradYear::CO2027);
-        assert_eq!(first.gender, Gender::Boys);
-        assert_eq!(first.athlete_id, "14399169");
-        assert!(first
-            .profile_url
-            .ends_with("/athletes/14399169-julian-aguilera"));
-        // This athlete's roster row carries no season flags (matched athlete, no imported results).
-        assert!(first.sports().is_empty());
-        let all_sports = roster
-            .athletes
-            .iter()
-            .find(|athlete| athlete.roster_name.starts_with("Altamirano"))
-            .expect("Altamirano row present in fixture");
-        assert_eq!(
-            all_sports.sports(),
-            vec![Sport::IndoorTrack, Sport::OutdoorTrack, Sport::CrossCountry]
-        );
-    }
-
-    #[test]
-    fn roster_entities_are_canonical_and_source_independent() {
-        let teams = parse_team_index(TEAMS).unwrap();
-        let roster = parse_roster(ROSTER, teams[0].clone()).unwrap();
-        let site = Site::for_state("WI").unwrap();
-        let (school, athletes, teams_out) =
-            roster_entities(&roster, "WI", SchoolYear(2026), "2026-09-20", &site);
-        assert_eq!(school.name, "Abbotsford");
-        assert_eq!(school.city.as_deref(), Some("Abbotsford"));
-        assert!(!athletes.is_empty());
-        assert!(teams_out.len() >= 2, "indoor/outdoor/XC team variants");
-        let aguilera = athletes
-            .iter()
-            .find(|athlete| athlete.canonical_name == "Julian Aguilera")
-            .unwrap();
-        assert_eq!(aguilera.grad_year, GradYear::CO2027);
-        // Grade observed on a 2026-27 roster is 12 for a 2027 graduate.
-        let observation = aguilera.observed_grades.first().unwrap();
-        assert_eq!(observation.grade.get(), 12);
-        assert_eq!(observation.grad_year(), GradYear::CO2027);
-        assert_eq!(
-            aguilera.id,
-            CanonicalAthlete::mint(
-                &school.id,
-                "Julian Aguilera",
-                GradYear::CO2027,
-                Gender::Boys
-            )
-        );
-    }
-
-    #[test]
-    fn malformed_html_fails_loudly() {
-        assert!(parse_team_index("<html><body>no rows</body></html>").is_err());
-        let teams = parse_team_index(TEAMS).unwrap();
-        let roster = parse_roster("<html></html>", teams[0].clone()).unwrap();
-        assert!(
-            roster.athletes.is_empty(),
-            "empty roster is data, not an error"
-        );
-    }
-}
+mod tests;

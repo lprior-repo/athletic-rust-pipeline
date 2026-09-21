@@ -8,8 +8,8 @@
 
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
+use crate::sources::{CrawlError, CrawlResult};
 use crate::store::{Store, Table};
-use anyhow::{bail, Context, Result};
 use census_domain::model::{Gender, SchoolYear};
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
@@ -27,7 +27,7 @@ pub async fn collect_state_teams(
     store: &Store,
     state: &str,
     refresh: bool,
-) -> Result<Vec<TeamRef>> {
+) -> CrawlResult<Vec<TeamRef>> {
     let site = milesplit::site_for_state(state)?;
     let phase = teams_phase(state);
     let known = store.journal_keys(&phase)?;
@@ -70,13 +70,13 @@ async fn record_roster(
     store: &Store,
     state: &str,
     team: &TeamRef,
-    outcome: Result<Roster>,
+    outcome: CrawlResult<Roster>,
 ) {
     let roster = match outcome {
         Ok(roster) => roster,
         Err(error) => {
             let mut guard = shared.lock().await;
-            guard.errors.push(format!("{}: {error:#}", team.url));
+            guard.errors.push(format!("{}: {error}", team.url));
             return;
         }
     };
@@ -105,9 +105,7 @@ async fn record_roster(
         &payload,
     );
     if let Err(error) = journal {
-        guard
-            .errors
-            .push(format!("{}: journal {error:#}", team.url));
+        guard.errors.push(format!("{}: journal {error}", team.url));
     }
 }
 
@@ -137,7 +135,7 @@ pub async fn collect_state_rosters(
     teams: &[TeamRef],
     options: &CollectOptions,
     state: &str,
-) -> Result<StateProgress> {
+) -> CrawlResult<StateProgress> {
     let site: Site = milesplit::site_for_state(state)?;
     let (pending, skipped) = pending_rosters(store, teams, state)?;
     let shared = Arc::new(Mutex::new(Shared {
@@ -193,7 +191,7 @@ async fn fetch_and_store_roster(
     school_year: SchoolYear,
     observed_on: &str,
     refresh: bool,
-) -> Result<Roster> {
+) -> CrawlResult<Roster> {
     let options = FetchOptions {
         refresh,
         allow_not_found: true,
@@ -218,11 +216,19 @@ async fn walk_state(
     store: &Store,
     state: &str,
     options: &CollectOptions,
-) -> Result<StateProgress> {
+) -> CrawlResult<StateProgress> {
     let teams = collect_state_teams(fetcher, store, state, options.refresh)
         .await
-        .with_context(|| format!("collecting {state} team index"))?;
+        .map_err(|error| team_index_failure(state, error))?;
     collect_state_rosters(fetcher, store, &teams, options, state).await
+}
+
+/// Frame a team-index failure with the state and the step, so a failure line names which half of a
+/// state's walk stopped.
+fn team_index_failure(state: &str, error: CrawlError) -> CrawlError {
+    CrawlError::Invariant {
+        detail: format!("collecting {state} team index: {error}"),
+    }
 }
 
 /// Full MileSplit walk across the requested states.
@@ -235,11 +241,11 @@ pub async fn collect_milesplit(
     fetcher: &Fetcher,
     store: &Store,
     options: &CollectOptions,
-) -> Result<CollectReport> {
+) -> CrawlResult<CollectReport> {
     let started = std::time::Instant::now();
     let state_concurrency = options.state_concurrency.max(1);
 
-    let results: Vec<(String, Result<StateProgress>)> =
+    let results: Vec<(String, CrawlResult<StateProgress>)> =
         stream::iter(options.states.iter().cloned().map(|state| async move {
             let outcome = walk_state(fetcher, store, &state, options).await;
             (state, outcome)
@@ -255,12 +261,14 @@ pub async fn collect_milesplit(
     report.elapsed_seconds = started.elapsed().as_secs_f64();
     if !failures.is_empty() {
         // Report what completed before failing: the caller keeps its journal and can re-run.
-        bail!(
-            "{} state(s) failed after {} rosters: {}",
-            failures.len(),
-            report.rosters_fetched,
-            failures.join("; ")
-        );
+        return Err(CrawlError::Invariant {
+            detail: format!(
+                "{} state(s) failed after {} rosters: {}",
+                failures.len(),
+                report.rosters_fetched,
+                failures.join("; ")
+            ),
+        });
     }
     Ok(report)
 }

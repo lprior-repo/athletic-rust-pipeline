@@ -107,13 +107,13 @@ enum Command {
 }
 
 pub(super) fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
-    Fetcher::new(
+    Ok(Fetcher::new(
         store.http_cache_dir(),
         cli.user_agent.clone(),
         Duration::from_millis(cli.delay_ms),
         default_host_delays(),
         cli.authorized_hosts.clone(),
-    )
+    )?)
 }
 
 /// Parse the arguments, open the store and dispatch the subcommand.

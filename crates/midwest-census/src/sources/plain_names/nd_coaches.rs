@@ -6,8 +6,7 @@ use super::nd_walk::NdWalk;
 use super::parse::{is_office_role, strip_honorific};
 use super::{observed_on, Options, ND_ADAPTER_ID, ND_SCHOOLS_PHASE, ND_SCHOOLS_URL};
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{
     CanonicalCoach, CoachId, CoachRole, Evidence, Gender, SchoolId, SourceRef, Sport,
 };
@@ -121,7 +120,7 @@ pub(super) async fn collect_north_dakota(
     options: &Options,
     fetch: &FetchOptions,
     report: &mut AdapterReport,
-) -> Result<(u64, u64)> {
+) -> CrawlResult<(u64, u64)> {
     let Some(members) = nd_members(ctx, fetch, report).await? else {
         return Ok((0, 0));
     };
@@ -148,7 +147,7 @@ async fn nd_members(
     ctx: &AdapterContext<'_>,
     fetch: &FetchOptions,
     report: &mut AdapterReport,
-) -> Result<Option<Vec<NdSchoolRef>>> {
+) -> CrawlResult<Option<Vec<NdSchoolRef>>> {
     let index = match ctx.fetcher.get(ND_SCHOOLS_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {

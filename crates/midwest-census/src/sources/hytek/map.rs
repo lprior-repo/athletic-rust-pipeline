@@ -5,6 +5,7 @@
 //! model carries: an ISO date, an event kind, a round marker, or a `Mark` with its wind and heat.
 
 use crate::sources::result_file::ParsedEvent;
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, Mark};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -24,20 +25,27 @@ static DATED: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
 
 // Accessors for the literal patterns above: a failed compile is a programming error, so it comes
 // back as a typed error that the readers answer as "this file carries no meet" — never a panic.
-fn event_header_regex() -> anyhow::Result<&'static Regex> {
+fn event_header_regex() -> CrawlResult<&'static Regex> {
     EVENT_HEADER
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "EVENT_HEADER",
+            source: source.clone(),
+        })
 }
 
-fn mark_token_regex() -> anyhow::Result<&'static Regex> {
-    MARK_TOKEN
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn mark_token_regex() -> CrawlResult<&'static Regex> {
+    MARK_TOKEN.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "MARK_TOKEN",
+        source: source.clone(),
+    })
 }
 
-fn dated_regex() -> anyhow::Result<&'static Regex> {
-    DATED.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn dated_regex() -> CrawlResult<&'static Regex> {
+    DATED.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "DATED",
+        source: source.clone(),
+    })
 }
 
 /// Plain-text marks that are results rather than numbers.

@@ -31,6 +31,7 @@ mod map;
 mod parse;
 
 pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::SourceRef;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -53,20 +54,32 @@ static TAG: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(
 
 // Accessors for the literal patterns above: a failed compile is a programming error, so it comes
 // back as a typed error that the readers answer as "this file carries no meet" — never a panic.
-fn pre_regex() -> anyhow::Result<&'static Regex> {
-    PRE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn pre_regex() -> CrawlResult<&'static Regex> {
+    PRE.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "PRE",
+        source: source.clone(),
+    })
 }
 
-fn para_regex() -> anyhow::Result<&'static Regex> {
-    PARA.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn para_regex() -> CrawlResult<&'static Regex> {
+    PARA.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "PARA",
+        source: source.clone(),
+    })
 }
 
-fn break_regex() -> anyhow::Result<&'static Regex> {
-    BREAK.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn break_regex() -> CrawlResult<&'static Regex> {
+    BREAK.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "BREAK",
+        source: source.clone(),
+    })
 }
 
-fn tag_regex() -> anyhow::Result<&'static Regex> {
-    TAG.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn tag_regex() -> CrawlResult<&'static Regex> {
+    TAG.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TAG",
+        source: source.clone(),
+    })
 }
 
 /// Parse a Hy-Tek report.

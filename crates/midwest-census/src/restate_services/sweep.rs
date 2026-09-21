@@ -4,6 +4,7 @@ use std::time::Duration;
 use restate_sdk::prelude::*;
 
 use crate::bootstrap::Clock;
+use crate::report::ReportResult;
 use crate::store::Store;
 
 use super::ingest::IngestClient;
@@ -62,7 +63,9 @@ impl Sweep {
         let store = Arc::clone(&self.store);
         let written = ctx
             .run(move || async move {
-                blocking(move || {
+                // The closure's error type is spelled out: the report's typed error converts into a
+                // `JobError` through `From`, and inference alone cannot choose between the two.
+                blocking(move || -> ReportResult<Json<SweepReport>> {
                     let path = write_sweep_report(&store, &report, &today)?;
                     report.report_path = Some(path.display().to_string());
                     Ok(Json(report))

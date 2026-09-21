@@ -1,7 +1,6 @@
 //! robots.txt: the once-per-host rule fetch and the `*`-group parser.
 
 use super::{FetchError, Fetcher};
-use anyhow::Result;
 use std::time::Duration;
 use tracing::debug;
 
@@ -70,7 +69,7 @@ impl Fetcher {
         rules
     }
 
-    async fn fetch_text_uncached(&self, url: &str) -> Result<(u16, String)> {
+    async fn fetch_text_uncached(&self, url: &str) -> Result<(u16, String), FetchError> {
         let response =
             self.client
                 .get(url)

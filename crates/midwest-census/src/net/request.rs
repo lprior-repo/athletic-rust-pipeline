@@ -1,8 +1,9 @@
 //! Request construction (verbs, bodies, conditional GET) and the retry backoff policy.
 
 use super::cache::CacheMeta;
-use super::{FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS, RETRY_BASE_DELAY_MS};
-use anyhow::{Context, Result};
+use super::{
+    FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS, RETRY_BASE_DELAY_MS,
+};
 use std::time::Duration;
 
 /// Request payload for POSTs: a pre-serialized JSON body.
@@ -14,7 +15,7 @@ pub(super) enum RequestBody {
 impl Fetcher {
     /// GET a URL with caching, robots enforcement and per-host politeness.
     #[tracing::instrument(skip(self, options), fields(url, method = "GET"))]
-    pub async fn get(&self, url: &str, options: &FetchOptions) -> Result<FetchOutcome> {
+    pub async fn get(&self, url: &str, options: &FetchOptions) -> Result<FetchOutcome, FetchError> {
         tracing::Span::current().record("url", url);
         self.fetch("GET", url, None, options, REQUEST_TIMEOUT_SECS)
             .await
@@ -30,9 +31,12 @@ impl Fetcher {
         url: &str,
         body: &serde_json::Value,
         options: &FetchOptions,
-    ) -> Result<FetchOutcome> {
+    ) -> Result<FetchOutcome, FetchError> {
         tracing::Span::current().record("url", url);
-        let encoded = serde_json::to_string(body).context("serializing JSON request body")?;
+        let encoded = serde_json::to_string(body).map_err(|source| FetchError::Encode {
+            target: url.to_string(),
+            source,
+        })?;
         self.fetch(
             "POST",
             url,
@@ -53,7 +57,7 @@ pub(super) fn build_request<'a>(
     headers: &[(String, String)],
     cached: Option<&'a CacheMeta>,
     refresh: bool,
-) -> Result<reqwest::RequestBuilder> {
+) -> Result<reqwest::RequestBuilder, FetchError> {
     let mut request = match method {
         "POST" => client.post(url),
         _ => client.get(url),

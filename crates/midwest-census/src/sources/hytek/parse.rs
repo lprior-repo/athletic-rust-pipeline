@@ -5,6 +5,7 @@
 //! sliced to the next numeric anchor, the mark and its trailing wind, heat and points columns.
 
 use crate::sources::result_file::{ParsedRow, RelayLeg};
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Grade};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -21,16 +22,20 @@ static PLACE_PREFIX: LazyLock<Result<Regex, regex::Error>> =
 
 // Accessors for the literal patterns above: a failed compile is a programming error, so it comes
 // back as a typed error that the readers answer as "this file carries no meet" — never a panic.
-fn relay_leg_regex() -> anyhow::Result<&'static Regex> {
-    RELAY_LEG
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn relay_leg_regex() -> CrawlResult<&'static Regex> {
+    RELAY_LEG.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "RELAY_LEG",
+        source: source.clone(),
+    })
 }
 
-pub(super) fn place_prefix_regex() -> anyhow::Result<&'static Regex> {
+pub(super) fn place_prefix_regex() -> CrawlResult<&'static Regex> {
     PLACE_PREFIX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "PLACE_PREFIX",
+            source: source.clone(),
+        })
 }
 
 /// Columns that carry a result mark, in the order a mark is taken when a row publishes several.

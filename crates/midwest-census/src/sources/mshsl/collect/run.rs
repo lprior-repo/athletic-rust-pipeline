@@ -8,9 +8,8 @@ use crate::sources::mshsl::parse::{
     school_page_url, SchoolDetail, SchoolListRow,
 };
 use crate::sources::mshsl::{Options, MAX_LISTING_PAGES, SOURCE_ID};
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{bail, Context, Result};
 use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SchoolId};
 use serde_json::json;
 use std::collections::HashSet;
@@ -36,7 +35,10 @@ pub(super) struct MshslRun<'a> {
 
 impl<'a> MshslRun<'a> {
     /// Gather this run's inputs and resume set; `None` when the states exclude Minnesota.
-    pub(super) fn start(ctx: &'a AdapterContext<'a>, options: &'a Options) -> Result<Option<Self>> {
+    pub(super) fn start(
+        ctx: &'a AdapterContext<'a>,
+        options: &'a Options,
+    ) -> CrawlResult<Option<Self>> {
         if !options.states.is_empty()
             && !options
                 .states
@@ -69,18 +71,21 @@ impl<'a> MshslRun<'a> {
     }
 
     /// Walk the listing pages, one row at a time, until they run out or pagination stops.
-    pub(super) async fn walk(&mut self) -> Result<()> {
+    pub(super) async fn walk(&mut self) -> CrawlResult<()> {
         let mut page = 0usize;
         'pages: while page < MAX_LISTING_PAGES {
             let url = listing_page_url(page);
-            let listed = self.ctx.fetcher.get(&url, &self.fetch).await;
-            let outcome =
-                listed.with_context(|| format!("fetching MSHSL school listing page {page}"))?;
+            // A fetch failure already names the URL; the page number rides in it.
+            let outcome = self.ctx.fetcher.get(&url, &self.fetch).await?;
             let html = outcome.text();
             let rows = parse_school_list(&html);
             if rows.is_empty() {
                 if page == 0 {
-                    bail!("MSHSL school listing {url} contained no school rows (markup change or empty page)");
+                    return Err(CrawlError::Schema {
+                        url,
+                        detail: "contained no school rows (markup change or empty page)"
+                            .to_string(),
+                    });
                 }
                 self.report.note(format!(
                     "listing page {url} contained no school rows; pagination stopped"
@@ -106,7 +111,7 @@ impl<'a> MshslRun<'a> {
     }
 
     /// Fetch and parse one listing row, then emit the school it names.
-    async fn process_row(&mut self, row: &SchoolListRow) -> Result<()> {
+    async fn process_row(&mut self, row: &SchoolListRow) -> CrawlResult<()> {
         if !self.wanted.is_empty() && !self.wanted.contains(&normalize_name(&row.name)) {
             return Ok(());
         }
@@ -144,7 +149,7 @@ impl<'a> MshslRun<'a> {
         school: &CanonicalSchool,
         school_id: &SchoolId,
         detail: &SchoolDetail,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let page_url = school_page_url(&row.slug);
         let school_key = provider_key(row, detail);
         let observed_on = &self.options.observed_on;
@@ -186,7 +191,7 @@ impl<'a> MshslRun<'a> {
         school: &CanonicalSchool,
         ads: &[CanonicalCoach],
         sport_coaches: &[CanonicalCoach],
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let key = format!("MN:{}", row.slug);
         let school_key = provider_key(row, detail);
         let page_url = school_page_url(&row.slug);
@@ -222,7 +227,8 @@ impl<'a> MshslRun<'a> {
                 "with_email": with_email,
                 "observed_on": self.options.observed_on,
             }),
-        )
+        )?;
+        Ok(())
     }
 
     /// Fill in the request deltas and the run notes, and hand back the report.

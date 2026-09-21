@@ -16,9 +16,8 @@
 //! `SchoolFax`, `Email`, `TwitterUserName` — any phone field, any home or cell number, and any
 //! non-coaching office role data. Those columns are not part of the schema.
 
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
@@ -97,9 +96,12 @@ pub struct KshsaaRecord {
 /// Parse the JSON envelope returned by the KSHSAA directory API.
 ///
 /// The response is a flat JSON array — no nesting. Returns the parsed records in API order.
-pub fn parse_records(body: &str) -> Result<Vec<KshsaaRecord>> {
+pub fn parse_records(body: &str) -> CrawlResult<Vec<KshsaaRecord>> {
     let records: Vec<KshsaaRecord> =
-        serde_json::from_str(body).context("KSHSAA directory JSON is not an array")?;
+        serde_json::from_str(body).map_err(|source| CrawlError::Decode {
+            url: "KSHSAA directory JSON".to_string(),
+            source,
+        })?;
     Ok(records)
 }
 
@@ -212,7 +214,7 @@ fn nonempty(value: &str) -> Option<String> {
 ///    all ~526 Kansas member schools.
 /// 2. Parse the JSON array; each record becomes one canonical school and one AD coach.
 /// 3. Journal progress per school so a re-run resumes without re-processing.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ks", "schools");
     report.unit = "schools".to_string();
 
@@ -283,7 +285,7 @@ fn collect_records(
     url: &str,
     done_keys: &HashSet<String>,
     report: &mut AdapterReport,
-) -> Result<KsTally> {
+) -> CrawlResult<KsTally> {
     let limit = options.limit;
     let mut tally = KsTally {
         processed: 0,
@@ -334,7 +336,7 @@ fn collect_record(
     url: &str,
     observed_on: &str,
     journal_key: &str,
-) -> Result<Option<KsRecord>> {
+) -> CrawlResult<Option<KsRecord>> {
     // Parse school.
     let Some((school, school_id)) = parse_school(record, url, observed_on) else {
         return Ok(None);
@@ -344,16 +346,14 @@ fn collect_record(
     let coach = parse_ad_coach(record, &school_id, url, observed_on);
 
     // Journal this school as done.
-    ctx.store
-        .journal_done(
-            "kshsaa_schools",
-            journal_key,
-            &serde_json::json!({
-                "identifier": record.identifier,
-                "school_name": record.school_name,
-            }),
-        )
-        .context("journaling kshsaa school progress")?;
+    ctx.store.journal_done(
+        "kshsaa_schools",
+        journal_key,
+        &serde_json::json!({
+            "identifier": record.identifier,
+            "school_name": record.school_name,
+        }),
+    )?;
     Ok(Some(KsRecord { school, coach }))
 }
 
@@ -362,16 +362,12 @@ fn append_ks_entities(
     ctx: &AdapterContext<'_>,
     schools: &[CanonicalSchool],
     coaches: &[CanonicalCoach],
-) -> Result<()> {
+) -> CrawlResult<()> {
     if !schools.is_empty() {
-        ctx.store
-            .append_many(Table::Schools, schools)
-            .context("writing kshsaa schools")?;
+        ctx.store.append_many(Table::Schools, schools)?;
     }
     if !coaches.is_empty() {
-        ctx.store
-            .append_many(Table::Coaches, coaches)
-            .context("writing kshsaa coaches")?;
+        ctx.store.append_many(Table::Coaches, coaches)?;
     }
     Ok(())
 }

@@ -50,8 +50,7 @@
 //! smoke run processes without disturbing the journal of a full walk.
 
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 
 // The module doc links `CoachRole`; rustdoc needs it in scope, rustc does not.
 #[cfg(doc)]
@@ -156,7 +155,7 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
 ///
 /// `options.states` selects the half to run: `ND` the North Dakota half, `NE` the Nebraska half, and
 /// an empty list both. Each half is independent, journalled separately and honours `options.limit`.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new(ADAPTER_ID, "schools");
     let before = ctx.fetcher.stats().await;
     let fetch = fetch_options(ctx, options);

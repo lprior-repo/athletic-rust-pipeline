@@ -35,13 +35,84 @@
 //! (recorded under `meta`), skipping the import when the marker is present, so a partially imported
 //! database finishes importing on the next open without duplicating observations.
 
-use anyhow::{Context, Result};
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicU64;
+
+// ---------------------------------------------------------------------------
+// Error types
+// ---------------------------------------------------------------------------
+
+/// Store failures: fjall, row encoding, journal bounds, counters and sidecar I/O.
+#[derive(Debug, thiserror::Error)]
+pub enum StoreError {
+    /// The database or a keyspace could not be opened.
+    #[error("store open failed: {source}")]
+    Open {
+        #[source]
+        source: fjall::Error,
+    },
+    /// The write-ahead journal could not be flushed.
+    #[error("store flush failed: {source}")]
+    Flush {
+        #[source]
+        source: fjall::Error,
+    },
+    /// A read or range scan failed.
+    #[error("store read failed: {source}")]
+    Read {
+        #[source]
+        source: fjall::Error,
+    },
+    /// An append or batch commit failed.
+    #[error("store write failed: {source}")]
+    Write {
+        #[source]
+        source: fjall::Error,
+    },
+    /// A stored row is not valid JSON.
+    #[error("row {key} is not valid json: {source}")]
+    Decode {
+        key: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// A row did not encode to JSON, or unkeyed bytes did not decode: `detail` names what failed.
+    #[error("{detail}: {source}")]
+    Json {
+        detail: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// A key, counter or row id violated an invariant the store's writer maintains.
+    #[error("{detail}")]
+    Invariant { detail: String },
+    /// One scan would exceed the configured row ceiling.
+    #[error("table {table} would exceed {max} rows in one scan")]
+    TooManyRows { table: String, max: usize },
+    /// The resume journal exceeded its byte ceiling.
+    #[error("resume journal exceeds {max} bytes")]
+    JournalTooLarge { max: usize },
+    /// The sequence counter at the end of its range.
+    #[error("sequence counter overflow")]
+    CounterOverflow,
+    /// A sidecar or artifact file operation failed.
+    #[error("i/o failed for {path}: {source}")]
+    Io {
+        path: std::path::PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    /// The one-time legacy journal import failed.
+    #[error("legacy import failed: {detail}")]
+    Legacy { detail: String },
+}
+
+/// Result alias for store code.
+pub type StoreResult<T> = std::result::Result<T, StoreError>;
 
 mod entities;
 mod keys;
@@ -155,25 +226,28 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn open(root: impl AsRef<Path>) -> Result<Self> {
+    pub fn open(root: impl AsRef<Path>) -> StoreResult<Self> {
         let root = root.as_ref().to_path_buf();
         for sub in ["http", "out"] {
             let dir = root.join(sub);
-            std::fs::create_dir_all(&dir).with_context(|| format!("creating {}", dir.display()))?;
+            std::fs::create_dir_all(&dir).map_err(|source| StoreError::Io {
+                path: dir.clone(),
+                source,
+            })?;
         }
         let db = Database::builder(root.join(DB_DIR))
             .cache_size(CACHE_BYTES)
             .open()
-            .with_context(|| format!("opening the Fjall database under {}", root.display()))?;
+            .map_err(|source| StoreError::Open { source })?;
         let entities = db
             .keyspace(ENTITIES, KeyspaceCreateOptions::default)
-            .context("opening the entities keyspace")?;
+            .map_err(|source| StoreError::Open { source })?;
         let journal = db
             .keyspace(JOURNAL, KeyspaceCreateOptions::default)
-            .context("opening the journal keyspace")?;
+            .map_err(|source| StoreError::Open { source })?;
         let meta = db
             .keyspace(META, KeyspaceCreateOptions::default)
-            .context("opening the meta keyspace")?;
+            .map_err(|source| StoreError::Open { source })?;
 
         let mut sequences = BTreeMap::new();
         for table in Table::ALL {
@@ -215,10 +289,10 @@ impl Store {
             .join(format!("{}.jsonl", table.file()))
     }
 
-    pub fn flush(&self) -> Result<()> {
+    pub fn flush(&self) -> StoreResult<()> {
         self.db
             .persist(PersistMode::SyncAll)
-            .context("persisting the Fjall journal")
+            .map_err(|source| StoreError::Flush { source })
     }
 }
 

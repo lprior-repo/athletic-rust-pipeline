@@ -20,6 +20,14 @@
 //!
 //! Time enters the application through the [`Clock`] capability rather than `SystemTime::now` inside
 //! domain logic, so a replayed workflow can run against a fixed date.
+//!
+//! # Errors
+//!
+//! Every stage below — flag parsing, the store, the bind, drain accounting — reports
+//! [`BootstrapError`]. `anyhow` survives in exactly one place: the [`serve`] and [`serve_until`]
+//! signatures, which `midwest-serve` prints with its chain and the integration test drives as
+//! `JoinSet<anyhow::Result<DrainReport>>`. Converting those two would push a type change into
+//! `bin/**` and `tests/**`, so the conversion happens once, at the boundary.
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -28,12 +36,16 @@ use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::{bail, Context, Result};
+use anyhow::Result;
 use restate_sdk::http_server::HttpServer;
 use tokio::task::JoinSet;
 
 use crate::restate_services;
 use crate::store::Store;
+
+mod error;
+
+pub use error::BootstrapError;
 
 /// Default fan-out cap for concurrent work started by the services.
 pub const DEFAULT_MAX_CONCURRENT: usize = 8;
@@ -102,26 +114,43 @@ pub async fn serve(options: ServeOptions) -> Result<DrainReport> {
 }
 
 /// Run until a signal or `shutdown` resolves, then drain and finalize.
+///
+/// The `anyhow::Result` here is the boundary documented at the top of this module: `midwest-serve`
+/// prints the chain, and the integration test drives this through
+/// `JoinSet<anyhow::Result<DrainReport>>`. One conversion, at the edge; every stage below is typed.
 pub async fn serve_until(
     options: ServeOptions,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<DrainReport> {
+    supervise(options, shutdown)
+        .await
+        .map_err(anyhow::Error::from)
+}
+
+/// The supervisor itself: open, bind, own the region, drain, finalize.
+async fn supervise(
+    options: ServeOptions,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+) -> Result<DrainReport, BootstrapError> {
     init_tracing();
     // Opening the store is synchronous, fsync-heavy work: it belongs on the blocking pool, not on
     // the runtime thread that will own the endpoint.
     let store = open_store(options.data_dir.clone()).await?;
     if !options.listen.ip().is_loopback() {
         // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
-        anyhow::bail!(
-            "--listen {} is not a loopback address: the endpoint has no identity key configured, \
-             so it must not be reachable from another host",
-            options.listen
-        );
+        return Err(BootstrapError::NonLoopbackListen {
+            listen: options.listen,
+        });
     }
     let listener = tokio::net::TcpListener::bind(options.listen)
         .await
-        .with_context(|| format!("binding {}", options.listen))?;
-    let bound = listener.local_addr().context("reading the bound address")?;
+        .map_err(|source| BootstrapError::Bind {
+            listen: options.listen,
+            source,
+        })?;
+    let bound = listener
+        .local_addr()
+        .map_err(|source| BootstrapError::BoundAddress { source })?;
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit as u8));
     let stop = stop_watch(Arc::clone(&reason), shutdown);
@@ -141,23 +170,27 @@ pub async fn serve_until(
     // Finalize after the region is empty: nothing can still be writing when the journal is synced.
     let finalized = store.flush();
     drop(store);
-    finalized.context("persisting the store during shutdown")?;
+    finalized.map_err(|source| BootstrapError::StoreFlush { source })?;
     tracing::info!(?report, "census service stopped");
     Ok(report)
 }
 
 /// Open (creating if needed) the store on the blocking pool.
-async fn open_store(data_dir: PathBuf) -> Result<Arc<Store>> {
-    tokio::task::spawn_blocking(move || -> Result<Arc<Store>> {
-        std::fs::create_dir_all(&data_dir)
-            .with_context(|| format!("creating {}", data_dir.display()))?;
+async fn open_store(data_dir: PathBuf) -> Result<Arc<Store>, BootstrapError> {
+    tokio::task::spawn_blocking(move || {
+        std::fs::create_dir_all(&data_dir).map_err(|source| BootstrapError::CreateDir {
+            path: data_dir.clone(),
+            source,
+        })?;
         Store::open(&data_dir)
             .map(Arc::new)
-            .with_context(|| format!("opening the store under {}", data_dir.display()))
+            .map_err(|source| BootstrapError::StoreOpen {
+                path: data_dir,
+                source,
+            })
     })
     .await
-    .context("joining the store bootstrap task")?
-    .context("opening the store")
+    .map_err(|source| BootstrapError::StoreTask { source })?
 }
 
 /// Resolve when a shutdown signal arrives or the caller's `shutdown` future resolves, recording
@@ -177,27 +210,53 @@ async fn stop_watch(reason: Arc<AtomicU8>, shutdown: impl Future<Output = ()> + 
 }
 
 /// Wait for SIGINT/SIGTERM (or Ctrl-C where the platform has no signals).
-async fn wait_for_shutdown_signal() -> Result<()> {
+async fn wait_for_shutdown_signal() -> Result<(), BootstrapError> {
     #[cfg(unix)]
     {
-        use tokio::signal::unix::{signal, SignalKind};
-        let mut terminate = signal(SignalKind::terminate()).context("subscribing to SIGTERM")?;
-        let mut interrupt = signal(SignalKind::interrupt()).context("subscribing to SIGINT")?;
-        tokio::select! {
-            _ = terminate.recv() => Ok(()),
-            _ = interrupt.recv() => Ok(()),
-        }
+        wait_for_unix_signal().await
     }
     #[cfg(not(unix))]
     {
-        tokio::signal::ctrl_c().await.context("waiting for Ctrl-C")
+        wait_for_ctrl_c().await
     }
 }
 
+/// Install the SIGTERM/SIGINT subscriptions and return when either one arrives.
+#[cfg(unix)]
+async fn wait_for_unix_signal() -> Result<(), BootstrapError> {
+    use tokio::signal::unix::{signal, SignalKind};
+
+    let mut terminate =
+        signal(SignalKind::terminate()).map_err(|source| BootstrapError::Signal {
+            signal: "SIGTERM",
+            source,
+        })?;
+    let mut interrupt =
+        signal(SignalKind::interrupt()).map_err(|source| BootstrapError::Signal {
+            signal: "SIGINT",
+            source,
+        })?;
+    tokio::select! {
+        _ = terminate.recv() => Ok(()),
+        _ = interrupt.recv() => Ok(()),
+    }
+}
+
+/// Wait for Ctrl-C on the platforms that have no signal subscriptions.
+#[cfg(not(unix))]
+async fn wait_for_ctrl_c() -> Result<(), BootstrapError> {
+    tokio::signal::ctrl_c()
+        .await
+        .map_err(|source| BootstrapError::Signal {
+            signal: "Ctrl-C",
+            source,
+        })
+}
+
 /// Bounded drain of an owned task region: reap natural exits, then abort and count the rest.
-async fn drain(mut tasks: JoinSet<()>, timeout: Duration) -> Result<DrainReport> {
+async fn drain(mut tasks: JoinSet<()>, timeout: Duration) -> Result<DrainReport, BootstrapError> {
     let mut report = DrainReport::default();
-    let accepted = u64::try_from(tasks.len()).context("task count does not fit u64")?;
+    let accepted = u64::try_from(tasks.len()).map_err(|_| BootstrapError::TaskCountOverflow)?;
     bump(&mut report.accepted, accepted);
     let deadline = tokio::time::Instant::now() + timeout;
 
@@ -218,7 +277,7 @@ async fn drain(mut tasks: JoinSet<()>, timeout: Duration) -> Result<DrainReport>
             Err(_) => {
                 tracing::warn!(?timeout, "drain deadline reached; aborting remaining tasks");
                 let remaining =
-                    u64::try_from(tasks.len()).context("task count does not fit u64")?;
+                    u64::try_from(tasks.len()).map_err(|_| BootstrapError::TaskCountOverflow)?;
                 bump(&mut report.timed_out, remaining);
                 tasks.abort_all();
                 // Reap the aborted tasks so their resources (sockets, file handles) are released
@@ -272,41 +331,49 @@ const USAGE: &str = "midwest-serve [--listen ADDR] [--data-dir DIR] \
 impl ServeOptions {
     /// Parse `--flag value` pairs. Unknown flags are rejected instead of ignored: a typo in a
     /// deployment script must not silently serve the wrong directory.
-    pub fn from_env(args: impl Iterator<Item = String>) -> Result<Self> {
+    pub fn from_env(args: impl Iterator<Item = String>) -> Result<Self, BootstrapError> {
         let mut options = ServeOptions::default();
         let mut args = args.peekable();
         while let Some(flag) = args.next() {
-            let mut value = |flag: &str| -> Result<String> {
-                args.next()
-                    .with_context(|| format!("{flag} needs a value\n{USAGE}"))
+            let mut value = |flag: &str| -> Result<String, BootstrapError> {
+                args.next().ok_or_else(|| BootstrapError::MissingValue {
+                    flag: flag.to_string(),
+                })
             };
             match flag.as_str() {
                 "--listen" => {
                     let raw = value("--listen")?;
                     options.listen = raw
                         .parse()
-                        .with_context(|| format!("{raw} is not a socket address"))?;
+                        .map_err(|source| BootstrapError::ListenNotAnAddress { raw, source })?;
                 }
                 "--data-dir" => options.data_dir = PathBuf::from(value("--data-dir")?),
                 "--max-concurrent" => {
                     let raw = value("--max-concurrent")?;
                     let parsed: usize = raw
                         .parse()
-                        .with_context(|| format!("{raw} is not a positive integer"))?;
+                        .map_err(|source| BootstrapError::ConcurrencyNotANumber { raw, source })?;
                     if parsed == 0 {
-                        bail!("--max-concurrent must be at least 1");
+                        return Err(BootstrapError::ConcurrencyIsZero);
                     }
                     options.max_concurrent = parsed;
                 }
                 "--drain-timeout" => {
                     let raw = value("--drain-timeout")?;
-                    let seconds: u64 = raw
-                        .parse()
-                        .with_context(|| format!("{raw} is not a number of seconds"))?;
+                    let seconds: u64 =
+                        raw.parse()
+                            .map_err(|source| BootstrapError::DrainTimeoutNotASeconds {
+                                raw,
+                                source,
+                            })?;
                     options.drain_timeout = Duration::from_secs(seconds);
                 }
-                "--help" | "-h" => bail!("{USAGE}"),
-                other => bail!("unknown flag {other}\n{USAGE}"),
+                "--help" | "-h" => return Err(BootstrapError::HelpRequested),
+                other => {
+                    return Err(BootstrapError::UnknownFlag {
+                        flag: other.to_string(),
+                    })
+                }
             }
         }
         Ok(options)
@@ -314,74 +381,4 @@ impl ServeOptions {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn options_parse_every_flag() {
-        let args = [
-            "--listen",
-            "127.0.0.1:9101",
-            "--data-dir",
-            "/tmp/db",
-            "--max-concurrent",
-            "3",
-            "--drain-timeout",
-            "7",
-        ]
-        .into_iter()
-        .map(str::to_string);
-        let options = ServeOptions::from_env(args).unwrap();
-        assert_eq!(options.listen.to_string(), "127.0.0.1:9101");
-        assert_eq!(options.data_dir.to_str(), Some("/tmp/db"));
-        assert_eq!(options.max_concurrent, 3);
-        assert_eq!(options.drain_timeout, Duration::from_secs(7));
-    }
-
-    #[test]
-    fn options_reject_unknown_flags_and_zero_concurrency() {
-        let unknown = ["--nope"].into_iter().map(str::to_string);
-        assert!(ServeOptions::from_env(unknown).is_err());
-        let zero = ["--max-concurrent", "0"].into_iter().map(str::to_string);
-        assert!(ServeOptions::from_env(zero).is_err());
-    }
-
-    #[test]
-    fn stop_reason_round_trips_through_its_wire_byte() {
-        for reason in [
-            StopReason::Signal,
-            StopReason::Requested,
-            StopReason::ServerExit,
-        ] {
-            let raw = reason as u8;
-            assert_eq!(StopReason::from_raw(raw), reason);
-        }
-        assert_eq!(StopReason::from_raw(200), StopReason::ServerExit);
-    }
-
-    #[tokio::test]
-    async fn drain_counts_aborted_tasks_after_the_deadline() {
-        let mut tasks: JoinSet<()> = JoinSet::new();
-        tasks.spawn(async {
-            std::future::pending::<()>().await;
-        });
-        let report = drain(tasks, Duration::from_millis(10)).await.unwrap();
-        assert_eq!(report.accepted, 1);
-        assert_eq!(report.timed_out, 1);
-        assert_eq!(report.aborted, 1);
-        assert_eq!(report.completed, 0);
-    }
-
-    #[tokio::test]
-    async fn drain_completes_tasks_that_finish_before_the_deadline() {
-        let mut tasks: JoinSet<()> = JoinSet::new();
-        tasks.spawn(async {});
-        tasks.spawn(async {
-            tokio::time::sleep(Duration::from_millis(1)).await;
-        });
-        let report = drain(tasks, Duration::from_secs(5)).await.unwrap();
-        assert_eq!(report.accepted, 2);
-        assert_eq!(report.completed, 2);
-        assert_eq!(report.aborted, 0);
-    }
-}
+mod tests;

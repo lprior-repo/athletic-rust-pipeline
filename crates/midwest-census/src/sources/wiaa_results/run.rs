@@ -1,8 +1,7 @@
 use super::{archive_artifacts, stats_of, Accumulator, Options, Stats, ARCHIVES, PARSE_VERSION};
 use crate::school_index::SchoolIndex;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceRef, Sport,
@@ -14,16 +13,10 @@ mod run_artifacts;
 
 use run_artifacts::process_artifact;
 
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("wiaa_results", "artifacts");
     let (requests_before, cache_before) = stats_of(ctx).await;
-
-    let schools: Vec<CanonicalSchool> =
-        crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
-    anyhow::ensure!(
-        !schools.is_empty(),
-        "no consolidated schools: run `collect` and `consolidate` before the wiaa_results provider"
-    );
+    let schools = consolidated_schools(ctx)?;
     let mut run = ArtifactRun::new(&schools, resumed_urls(ctx)?);
 
     for (archive_url, sport) in ARCHIVES {
@@ -31,15 +24,53 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     }
 
     let counts = append_entities(ctx, run.accumulated)?;
+    finish_report(
+        ctx,
+        &mut report,
+        &run.stats,
+        counts,
+        requests_before,
+        cache_before,
+    )
+    .await?;
+    Ok(report)
+}
+
+/// The consolidated schools this walk resolves against. An empty file means `collect` and
+/// `consolidate` have not been run yet, which is an operator error rather than a parse failure.
+fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
+    let schools: Vec<CanonicalSchool> =
+        crate::report::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
+    if schools.is_empty() {
+        return Err(CrawlError::Invariant {
+            detail: "no consolidated schools: run `collect` and `consolidate` before the \
+                     wiaa_results provider"
+                .to_string(),
+        });
+    }
+    Ok(schools)
+}
+
+/// Close the report once every archive page has been walked: the row count, the request and cache
+/// deltas against the stats captured at entry, and the per-item notes.
+async fn finish_report(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+    stats: &Stats,
+    counts: EntityCounts,
+    requests_before: u64,
+    cache_before: u64,
+) -> CrawlResult<()> {
     let (requests_after, cache_after) = stats_of(ctx).await;
-    report.rows = u64::try_from(run.stats.artifacts_parsed)
-        .context("parsed artifact count does not fit in u64")?;
+    report.rows = u64::try_from(stats.artifacts_parsed).map_err(|_| CrawlError::Arithmetic {
+        detail: "parsed artifact count does not fit in u64".to_string(),
+    })?;
     report.requests = requests_after.saturating_sub(requests_before);
     report.from_cache = cache_after.saturating_sub(cache_before);
-    note_artifacts(&mut report, &run.stats);
-    note_entities(&mut report, &counts);
-    note_resolution(&mut report, &run.stats);
-    Ok(report)
+    note_artifacts(report, stats);
+    note_entities(report, &counts);
+    note_resolution(report, stats);
+    Ok(())
 }
 
 /// What one walk of the archive pages carries across them: the school index, the resume set, the
@@ -74,7 +105,7 @@ impl ArtifactRun {
 /// Only artifacts that yielded entities (or that are deliberately skipped as non-parsable
 /// formats) are resumed over; a parse failure is retried on the next run, which is cheap
 /// because the body is already in the HTTP cache.
-fn resumed_urls(ctx: &AdapterContext<'_>) -> Result<HashSet<String>> {
+fn resumed_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     Ok(ctx
         .store
         .journal_payloads("wiaa_results")?
@@ -103,12 +134,8 @@ async fn collect_archive(
     run: &mut ArtifactRun,
     archive_url: &str,
     sport: Sport,
-) -> Result<()> {
-    let archive = ctx
-        .fetcher
-        .get(archive_url, &ctx.fetch_options())
-        .await
-        .with_context(|| format!("fetching the WIAA archive page {archive_url}"))?;
+) -> CrawlResult<()> {
+    let archive = ctx.fetcher.get(archive_url, &ctx.fetch_options()).await?;
     let body = archive.text();
     let artifacts = archive_artifacts(&body)?;
     report.note(format!(
@@ -150,7 +177,10 @@ struct EntityCounts {
 }
 
 /// Append one batch per table and return what was written.
-fn append_entities(ctx: &AdapterContext<'_>, accumulated: Accumulator) -> Result<EntityCounts> {
+fn append_entities(
+    ctx: &AdapterContext<'_>,
+    accumulated: Accumulator,
+) -> CrawlResult<EntityCounts> {
     // One append per table keeps the entity logs tight and the run resumable.
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
     let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();

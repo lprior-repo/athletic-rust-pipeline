@@ -1,7 +1,6 @@
 //! On-disk body/metadata cache: content-addressed keys and atomic writes.
 
 use super::{FetchError, Fetcher};
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -56,14 +55,21 @@ pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
     head.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-pub(super) fn read_cache(body_path: &Path, meta_path: &Path) -> Result<Option<CacheMeta>> {
+pub(super) fn read_cache(
+    body_path: &Path,
+    meta_path: &Path,
+) -> Result<Option<CacheMeta>, FetchError> {
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
     }
-    let meta = std::fs::read_to_string(meta_path)
-        .with_context(|| format!("reading cache metadata {}", meta_path.display()))?;
-    let meta: CacheMeta = serde_json::from_str(&meta)
-        .with_context(|| format!("decoding cache metadata {}", meta_path.display()))?;
+    let meta = std::fs::read_to_string(meta_path).map_err(|source| FetchError::Cache {
+        path: meta_path.to_path_buf(),
+        source,
+    })?;
+    let meta: CacheMeta = serde_json::from_str(&meta).map_err(|source| FetchError::Decode {
+        target: meta_path.display().to_string(),
+        source,
+    })?;
     Ok(Some(meta))
 }
 
@@ -72,7 +78,7 @@ pub(super) fn write_cache(
     meta_path: &Path,
     body: &[u8],
     meta: &CacheMeta,
-) -> Result<()> {
+) -> Result<(), FetchError> {
     let tmp_body = body_path.with_extension("body.tmp");
     std::fs::write(&tmp_body, body).map_err(|source| FetchError::Cache {
         path: tmp_body.clone(),
@@ -83,11 +89,13 @@ pub(super) fn write_cache(
         source,
     })?;
     let tmp_meta = meta_path.with_extension("meta.json.tmp");
-    std::fs::write(&tmp_meta, serde_json::to_vec_pretty(meta)?).map_err(|source| {
-        FetchError::Cache {
-            path: tmp_meta.clone(),
-            source,
-        }
+    let encoded = serde_json::to_vec_pretty(meta).map_err(|source| FetchError::Encode {
+        target: meta_path.display().to_string(),
+        source,
+    })?;
+    std::fs::write(&tmp_meta, encoded).map_err(|source| FetchError::Cache {
+        path: tmp_meta.clone(),
+        source,
     })?;
     std::fs::rename(&tmp_meta, meta_path).map_err(|source| FetchError::Cache {
         path: meta_path.to_path_buf(),

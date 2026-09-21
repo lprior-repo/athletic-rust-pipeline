@@ -7,8 +7,7 @@ use super::super::{artifact_format, ArchiveArtifact, ArtifactFormat, Options, PA
 use super::ArtifactRun;
 use crate::net::FetchOutcome;
 use crate::sources::result_file::ParsedMeet;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{SourceRef, Sport};
 use serde_json::json;
 
@@ -20,7 +19,7 @@ pub(super) async fn process_artifact(
     run: &mut ArtifactRun,
     artifact: &ArchiveArtifact,
     sport: Sport,
-) -> Result<()> {
+) -> CrawlResult<()> {
     let extension = artifact.extension.as_str();
     if artifact_format(extension, None) == ArtifactFormat::Unparsed {
         run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
@@ -174,7 +173,7 @@ fn record_parsed_artifact(
     format: ArtifactFormat,
     sport: Sport,
     observed_on: &str,
-) -> Result<()> {
+) -> CrawlResult<()> {
     run.stats.artifacts_parsed = run.stats.artifacts_parsed.saturating_add(1);
     let parsed_formats = run
         .stats

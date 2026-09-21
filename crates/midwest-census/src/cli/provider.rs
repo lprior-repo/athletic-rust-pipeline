@@ -81,7 +81,7 @@ async fn ks_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::ks::collect(
+    Ok(providers::ks::collect(
         context,
         &providers::ks::Options {
             limit: args.limit,
@@ -91,7 +91,7 @@ async fn ks_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn wiaa_results_report(
@@ -99,7 +99,7 @@ async fn wiaa_results_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::wiaa_results::collect(
+    Ok(providers::wiaa_results::collect(
         context,
         &providers::wiaa_results::Options {
             limit: args.limit,
@@ -110,7 +110,7 @@ async fn wiaa_results_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn wiaa_report(
@@ -118,7 +118,7 @@ async fn wiaa_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::wiaa::collect(
+    Ok(providers::wiaa::collect(
         context,
         &providers::wiaa::Options {
             limit: args.limit,
@@ -128,7 +128,7 @@ async fn wiaa_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn ihsa_report(
@@ -136,7 +136,7 @@ async fn ihsa_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::ihsa::collect(
+    Ok(providers::ihsa::collect(
         context,
         &providers::ihsa::Options {
             limit: args.limit,
@@ -146,7 +146,7 @@ async fn ihsa_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn ohsaa_report(
@@ -154,7 +154,7 @@ async fn ohsaa_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::ohsaa::collect(
+    Ok(providers::ohsaa::collect(
         context,
         &providers::ohsaa::Options {
             limit: args.limit,
@@ -164,7 +164,7 @@ async fn ohsaa_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn mshsl_report(
@@ -172,7 +172,7 @@ async fn mshsl_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::mshsl::collect(
+    Ok(providers::mshsl::collect(
         context,
         &providers::mshsl::Options {
             limit: args.limit,
@@ -182,7 +182,7 @@ async fn mshsl_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn wayzata_report(
@@ -190,7 +190,7 @@ async fn wayzata_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::wayzata::collect(
+    Ok(providers::wayzata::collect(
         context,
         &providers::wayzata::Options {
             years: args.seasons.clone(),
@@ -199,7 +199,7 @@ async fn wayzata_report(
             observed_on: Some(observed_on),
         },
     )
-    .await
+    .await?)
 }
 
 async fn plain_names_report(
@@ -207,7 +207,7 @@ async fn plain_names_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::plain_names::collect(
+    Ok(providers::plain_names::collect(
         context,
         &providers::plain_names::Options {
             limit: args.limit,
@@ -217,7 +217,7 @@ async fn plain_names_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn athleticlive_report(
@@ -225,7 +225,7 @@ async fn athleticlive_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::athleticlive::collect(
+    Ok(providers::athleticlive::collect(
         context,
         &providers::athleticlive::Options {
             input: args.input.clone(),
@@ -236,7 +236,7 @@ async fn athleticlive_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn athleticlive_athletes_report(
@@ -244,7 +244,7 @@ async fn athleticlive_athletes_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::athleticlive_athletes::collect(
+    Ok(providers::athleticlive_athletes::collect(
         context,
         &providers::athleticlive_athletes::Options {
             limit: args.limit,
@@ -254,7 +254,7 @@ async fn athleticlive_athletes_report(
             school_names: args.school_names.clone(),
         },
     )
-    .await
+    .await?)
 }
 
 async fn athleticnet_report(
@@ -262,7 +262,7 @@ async fn athleticnet_report(
     args: &ProviderArgs,
     observed_on: String,
 ) -> Result<AdapterReport> {
-    providers::athleticnet::collect(
+    Ok(providers::athleticnet::collect(
         context,
         &providers::athleticnet::Options {
             input: args.input.clone(),
@@ -272,5 +272,5 @@ async fn athleticnet_report(
             states: args.states.clone(),
         },
     )
-    .await
+    .await?)
 }

@@ -7,7 +7,7 @@
 
 use super::parse::{clean_text, nonempty, without_comments};
 use super::NSAA_FORM_URL;
-use anyhow::Result;
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{Gender, Sport};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -61,28 +61,40 @@ static NSAA_ENROLLMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
 static NSAA_HOMEPAGE_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r#"(?i)Homepage:\s*<a[^>]*href="([^"]+)""#));
 
-fn nsaa_row_regex() -> Result<&'static Regex> {
+fn nsaa_row_regex() -> CrawlResult<&'static Regex> {
     NSAA_ROW_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("nsaa directory row regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "nsaa directory row",
+            source: source.clone(),
+        })
 }
 
-fn nsaa_city_regex() -> Result<&'static Regex> {
+fn nsaa_city_regex() -> CrawlResult<&'static Regex> {
     NSAA_CITY_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("nsaa city regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "nsaa city",
+            source: source.clone(),
+        })
 }
 
-fn nsaa_enrollment_regex() -> Result<&'static Regex> {
+fn nsaa_enrollment_regex() -> CrawlResult<&'static Regex> {
     NSAA_ENROLLMENT_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("nsaa enrollment regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "nsaa enrollment",
+            source: source.clone(),
+        })
 }
 
-fn nsaa_homepage_regex() -> Result<&'static Regex> {
+fn nsaa_homepage_regex() -> CrawlResult<&'static Regex> {
     NSAA_HOMEPAGE_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("nsaa url regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "nsaa url",
+            source: source.clone(),
+        })
 }
 
 /// The directory screen's bulk sentinel: renders every school, so it is never a school name.
@@ -91,10 +103,13 @@ pub(super) const NSAA_ALL_SCHOOLS: &str = "View all schools";
 static NSAA_OPTION_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?s)<option([^>]*)>(.*?)</option>"));
 
-fn nsaa_option_regex() -> Result<&'static Regex> {
+fn nsaa_option_regex() -> CrawlResult<&'static Regex> {
     NSAA_OPTION_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("nsaa option regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "nsaa option",
+            source: source.clone(),
+        })
 }
 
 /// One-school request URL, e.g. `…/direxportscreen.php?session=&school=Adams+Central` (form-urlencoded
@@ -111,7 +126,7 @@ pub fn nsaa_school_url(name: &str) -> String {
 ///
 /// The list carries two non-school entries — a `disabled` placeholder and the `View all schools`
 /// bulk sentinel — and no `value` attributes, so the option text is the key space.
-pub fn parse_nsaa_school_names(html: &str) -> Result<Vec<String>> {
+pub fn parse_nsaa_school_names(html: &str) -> CrawlResult<Vec<String>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let mut names: Vec<String> = Vec::new();
@@ -136,7 +151,7 @@ pub fn parse_nsaa_school_names(html: &str) -> Result<Vec<String>> {
 }
 
 /// Every `<tr>` staff/coach row of one school block, in published order.
-fn nsaa_roles(block: &str) -> Result<Vec<NsaaRole>> {
+fn nsaa_roles(block: &str) -> CrawlResult<Vec<NsaaRole>> {
     let mut roles: Vec<NsaaRole> = Vec::new();
     for capture in nsaa_row_regex()?.captures_iter(block) {
         let (Some(attributes), Some(label), Some(value)) =
@@ -162,7 +177,7 @@ fn nsaa_roles(block: &str) -> Result<Vec<NsaaRole>> {
 ///
 /// One school view carries a single block; the screen's bulk form carries all 312 in the same
 /// markup, so the same parser serves both.
-pub fn parse_nsaa_directory(html: &str) -> Result<Vec<NsaaSchool>> {
+pub fn parse_nsaa_directory(html: &str) -> CrawlResult<Vec<NsaaSchool>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let mut schools: Vec<NsaaSchool> = Vec::new();

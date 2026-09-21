@@ -5,12 +5,11 @@
 //! rows come from the `bests` reduction, the rest are the census's own counters sorted for reading.
 
 use crate::bests::BestResult;
-use crate::report::Census;
-use anyhow::Result;
+use crate::report::{Census, ReportResult};
 
 use super::cells::{cell, row, Cell};
 
-pub(super) fn best_sheet(bests: &[BestResult]) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn best_sheet(bests: &[BestResult]) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Athlete",
         "School",
@@ -54,7 +53,7 @@ pub(super) fn best_sheet(bests: &[BestResult]) -> Result<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
-pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = meets_totals(core, all_sources)?;
     rows.extend(meets_by_state(core, all_sources)?);
     rows.extend(meets_by_provider(core)?);
@@ -62,7 +61,7 @@ pub(super) fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec
 }
 
 /// The inventory header: both scopes' totals and the core scope's date range.
-fn meets_totals(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+fn meets_totals(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Core meet inventory",
         "Meets",
@@ -101,7 +100,7 @@ fn meets_totals(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
 }
 
 /// The per-state counts of both scopes, side by side.
-fn meets_by_state(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
+fn meets_by_state(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let core_states: Vec<(&String, &usize)> = sorted_counts(&core.meets.by_state);
     let all_states: Vec<(&String, &usize)> = sorted_counts(&all_sources.meets.by_state);
     let mut rows = vec![row!()];
@@ -133,7 +132,7 @@ fn meets_by_state(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>>
 }
 
 /// The core scope's counts by provider key.
-fn meets_by_provider(core: &Census) -> Result<Vec<Vec<Cell>>> {
+fn meets_by_provider(core: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let providers: Vec<(&String, &usize)> = sorted_counts(&core.meets.by_provider);
     let mut rows = vec![row!()];
     rows.push(row!("By provider key (core)", "Meets", "", ""));
@@ -148,12 +147,12 @@ fn meets_by_provider(core: &Census) -> Result<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
-pub(super) fn evidence_sheet(census: &Census) -> Result<Vec<Vec<Cell>>> {
+pub(super) fn evidence_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = Vec::new();
     let section = |rows: &mut Vec<Vec<Cell>>,
                    title: &str,
                    counts: &std::collections::BTreeMap<String, usize>|
-     -> Result<()> {
+     -> ReportResult<()> {
         rows.push(row!(Cell::text(title), Cell::text("Count")));
         for (key, value) in sorted_counts(counts) {
             rows.push(row!(Cell::text(key.clone()), Cell::number(*value)?,));

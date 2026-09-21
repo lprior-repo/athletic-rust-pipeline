@@ -1,7 +1,7 @@
 //! The provider's two published schedules: their page URL, the shape of one schedule row, and
 //! the parser that reads a rendered schedule table into those rows.
 
-use anyhow::Result;
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::Sport;
 use regex::Regex;
 use std::sync::LazyLock;
@@ -77,48 +77,70 @@ static ARIA: LazyLock<Result<Regex, regex::Error>> =
 static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
 static DAY: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(\d{1,2})"));
 
-/// The compiled pattern in one slot above, or the compile error it carries.
-///
-/// Every pattern here is a literal, so a failure is a programming mistake rather than something a
-/// page can cause; it is reported as an error instead of panicking at first use.
-fn compiled(slot: &'static LazyLock<Result<Regex, regex::Error>>) -> Result<&'static Regex> {
-    slot.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+// Accessors for the literal patterns above: a failed compile is a programming mistake rather
+// than something a page can cause, so it is reported as a typed error naming the pattern —
+// never a panic at first use.
+fn row() -> CrawlResult<&'static Regex> {
+    ROW.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "ROW",
+        source: source.clone(),
+    })
 }
 
-fn row() -> Result<&'static Regex> {
-    compiled(&ROW)
+fn date_cell() -> CrawlResult<&'static Regex> {
+    DATE_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "DATE_CELL",
+        source: source.clone(),
+    })
 }
 
-fn date_cell() -> Result<&'static Regex> {
-    compiled(&DATE_CELL)
+fn name_cell() -> CrawlResult<&'static Regex> {
+    NAME_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "NAME_CELL",
+        source: source.clone(),
+    })
 }
 
-fn name_cell() -> Result<&'static Regex> {
-    compiled(&NAME_CELL)
+fn venue_cell() -> CrawlResult<&'static Regex> {
+    VENUE_CELL.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "VENUE_CELL",
+        source: source.clone(),
+    })
 }
 
-fn venue_cell() -> Result<&'static Regex> {
-    compiled(&VENUE_CELL)
+fn title() -> CrawlResult<&'static Regex> {
+    TITLE.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TITLE",
+        source: source.clone(),
+    })
 }
 
-fn title() -> Result<&'static Regex> {
-    compiled(&TITLE)
+fn link() -> CrawlResult<&'static Regex> {
+    LINK.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "LINK",
+        source: source.clone(),
+    })
 }
 
-fn link() -> Result<&'static Regex> {
-    compiled(&LINK)
+fn aria() -> CrawlResult<&'static Regex> {
+    ARIA.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "ARIA",
+        source: source.clone(),
+    })
 }
 
-fn aria() -> Result<&'static Regex> {
-    compiled(&ARIA)
+fn tags() -> CrawlResult<&'static Regex> {
+    TAGS.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TAGS",
+        source: source.clone(),
+    })
 }
 
-fn tags() -> Result<&'static Regex> {
-    compiled(&TAGS)
-}
-
-fn day() -> Result<&'static Regex> {
-    compiled(&DAY)
+fn day() -> CrawlResult<&'static Regex> {
+    DAY.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "DAY",
+        source: source.clone(),
+    })
 }
 
 const MONTHS: [&str; 12] = [
@@ -141,7 +163,7 @@ const MONTHS: [&str; 12] = [
 /// Rows are published under month headings; the heading is the only month a row carries, so it is
 /// tracked as the table is walked. A row without a date, a name or a venue is skipped: the platform
 /// cannot mint an identity for it.
-pub fn schedule_rows(body: &str, year: i16) -> Result<Vec<MeetRow>> {
+pub fn schedule_rows(body: &str, year: i16) -> CrawlResult<Vec<MeetRow>> {
     let mut rows = Vec::new();
     let mut month: Option<u8> = None;
     let day_pattern = day()?;
@@ -193,7 +215,7 @@ pub fn schedule_rows(body: &str, year: i16) -> Result<Vec<MeetRow>> {
 }
 
 /// A table cell's label: its `<span title="…">` when it has one, otherwise its stripped text.
-fn cell_text(cell: &Regex, row: &str) -> Result<String> {
+fn cell_text(cell: &Regex, row: &str) -> CrawlResult<String> {
     let Some(captures) = cell.captures(row) else {
         return Ok(String::new());
     };

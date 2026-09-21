@@ -4,10 +4,9 @@
 use super::super::map::{school_entities, SchoolExtract};
 use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
 use super::super::{count, fetch_options, Options};
-use crate::net::{FetchOptions, FetchOutcome};
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::net::{FetchError, FetchOptions, FetchOutcome};
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::normalize_name;
 use futures::stream::{self, StreamExt};
 use std::collections::HashSet;
@@ -33,7 +32,7 @@ pub(super) async fn plan_schools(
     index: &[IndexEntry],
     done: &HashSet<String>,
     tally: &mut SchoolTally,
-) -> Vec<(usize, Result<FetchOutcome>)> {
+) -> Vec<(usize, Result<FetchOutcome, FetchError>)> {
     let wanted: Option<HashSet<String>> = if options.school_names.is_empty() {
         None
     } else {
@@ -89,9 +88,9 @@ pub(super) async fn process_school(
     report: &mut AdapterReport,
     tally: &mut SchoolTally,
     entry: &IndexEntry,
-    result: Result<FetchOutcome>,
+    result: Result<FetchOutcome, FetchError>,
     observed_on: &str,
-) -> Result<()> {
+) -> CrawlResult<()> {
     let key = format!("WI:{}", entry.org_id);
     let outcome = match result {
         Ok(outcome) => outcome,
@@ -137,13 +136,9 @@ fn record_school(
     entry: &IndexEntry,
     page: &SchoolPage,
     extract: SchoolExtract,
-) -> Result<()> {
-    ctx.store
-        .append(Table::Schools, &extract.school)
-        .with_context(|| format!("writing WIAA school {key}"))?;
-    ctx.store
-        .append_many(Table::Coaches, &extract.coaches)
-        .with_context(|| format!("writing WIAA coaches for {key}"))?;
+) -> CrawlResult<()> {
+    ctx.store.append(Table::Schools, &extract.school)?;
+    ctx.store.append_many(Table::Coaches, &extract.coaches)?;
 
     let school_with_email = extract
         .coaches
@@ -170,12 +165,8 @@ fn record_school(
         "coaches": extract.coaches.len(),
         "coaches_with_email": school_with_email,
     });
-    ctx.store
-        .journal_done("wiaa_schools", key, &payload)
-        .with_context(|| format!("journaling WIAA school {key}"))?;
-    ctx.store
-        .journal_done("wiaa_coaches", key, &payload)
-        .with_context(|| format!("journaling WIAA coaches for {key}"))?;
+    ctx.store.journal_done("wiaa_schools", key, &payload)?;
+    ctx.store.journal_done("wiaa_coaches", key, &payload)?;
 
     tally.processed = tally.processed.saturating_add(1);
     Ok(())

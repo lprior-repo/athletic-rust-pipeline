@@ -4,9 +4,13 @@
 //! caller keeps its journal and re-runs, so a partial walk is reported rather than discarded — and
 //! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
-use crate::store::{Store, Table};
-use anyhow::Result;
-use census_domain::model::{CanonicalAthlete, CanonicalSchool, CanonicalTeam};
+use crate::sources::CrawlResult;
+use crate::store::{Entity, Store, StoreError, StoreResult, Table};
+use census_domain::model::{
+    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
+    CanonicalSchool, CanonicalTeam,
+};
+use std::path::Path;
 use tracing::info;
 
 use super::{CollectReport, StateProgress};
@@ -20,7 +24,7 @@ fn count(value: usize) -> u64 {
 ///
 /// Bounded by the number of requested states.
 pub(super) fn summarize_states(
-    results: Vec<(String, Result<StateProgress>)>,
+    results: Vec<(String, CrawlResult<StateProgress>)>,
 ) -> (CollectReport, Vec<String>) {
     let mut report = CollectReport {
         states: Vec::new(),
@@ -54,7 +58,7 @@ pub(super) fn summarize_states(
                 );
                 report.states.push(progress);
             }
-            Err(error) => failures.push(format!("{state}: {error:#}")),
+            Err(error) => failures.push(format!("{state}: {error}")),
         }
     }
     report
@@ -64,61 +68,51 @@ pub(super) fn summarize_states(
 }
 
 /// Merge append logs into snapshots under `out/`, returning per-table counts.
-pub fn consolidate(store: &Store) -> Result<Vec<(String, usize)>> {
+pub fn consolidate(store: &Store) -> StoreResult<Vec<(String, usize)>> {
     let out = store.out_dir();
-    std::fs::create_dir_all(&out)?;
+    std::fs::create_dir_all(&out).map_err(|source| StoreError::Io {
+        path: out.clone(),
+        source,
+    })?;
     let mut counts = Vec::new();
     counts.push((
         "schools".to_string(),
-        store
-            .consolidate::<CanonicalSchool>(Table::Schools, &out.join("schools.jsonl"))?
-            .rows,
+        table_rows::<CanonicalSchool>(store, Table::Schools, &out.join("schools.jsonl"))?,
     ));
     counts.push((
         "teams".to_string(),
-        store
-            .consolidate::<CanonicalTeam>(Table::Teams, &out.join("teams.jsonl"))?
-            .rows,
+        table_rows::<CanonicalTeam>(store, Table::Teams, &out.join("teams.jsonl"))?,
     ));
     let coaches_path = out.join("coaches.jsonl");
-    let coaches =
-        store.consolidate::<census_domain::model::CanonicalCoach>(Table::Coaches, &coaches_path)?;
+    let coaches = store.consolidate::<CanonicalCoach>(Table::Coaches, &coaches_path)?;
     counts.push(("coaches".to_string(), coaches.rows));
     // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
     // same rule the report and the workbook already went through.
     counts.push(("coaches_email_withheld".to_string(), coaches.withheld));
     counts.push((
         "athletes".to_string(),
-        store
-            .consolidate::<CanonicalAthlete>(Table::Athletes, &out.join("athletes.jsonl"))?
-            .rows,
+        table_rows::<CanonicalAthlete>(store, Table::Athletes, &out.join("athletes.jsonl"))?,
     ));
     counts.push((
         "meets".to_string(),
-        store
-            .consolidate::<census_domain::model::CanonicalMeet>(
-                Table::Meets,
-                &out.join("meets.jsonl"),
-            )?
-            .rows,
+        table_rows::<CanonicalMeet>(store, Table::Meets, &out.join("meets.jsonl"))?,
     ));
     counts.push((
         "events".to_string(),
-        store
-            .consolidate::<census_domain::model::CanonicalEvent>(
-                Table::Events,
-                &out.join("events.jsonl"),
-            )?
-            .rows,
+        table_rows::<CanonicalEvent>(store, Table::Events, &out.join("events.jsonl"))?,
     ));
     counts.push((
         "performances".to_string(),
-        store
-            .consolidate::<census_domain::model::CanonicalPerformance>(
-                Table::Performances,
-                &out.join("performances.jsonl"),
-            )?
-            .rows,
+        table_rows::<CanonicalPerformance>(
+            store,
+            Table::Performances,
+            &out.join("performances.jsonl"),
+        )?,
     ));
     Ok(counts)
+}
+
+/// The row count of one consolidated table, materialized as `path`.
+fn table_rows<T: Entity>(store: &Store, table: Table, path: &Path) -> StoreResult<usize> {
+    Ok(store.consolidate::<T>(table, path)?.rows)
 }

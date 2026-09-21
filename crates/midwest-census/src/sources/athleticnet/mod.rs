@@ -40,9 +40,10 @@
 //! # Layout
 //!
 //! `parse` decodes published payloads, `map` mints canonical entities, `absorb` walks one
-//! payload's rows into them, and `collect` drives the run and journals it.
+//! payload's rows into them, and `collect` drives the run and journals it. The registry contract
+//! lives here too: `parse_targets` reads the operator's file and `read_registry` is the run's way in.
 
-use anyhow::{ensure, Context, Result};
+use crate::sources::{CrawlError, CrawlResult};
 use std::collections::HashSet;
 
 mod absorb;
@@ -85,17 +86,26 @@ pub struct Target {
     pub state: Option<String>,
 }
 
+/// A registry refusal, carried verbatim in the error's detail.
+///
+/// The parity harness pins these messages (`golden/athleticnet__registry-refusals.json`), so the
+/// text reaches the operator exactly as the adapter wrote it, without a variant prefix.
+fn registry_refusal(detail: String) -> CrawlError {
+    CrawlError::Invariant { detail }
+}
+
 /// Parse the operator's athlete registry.
 ///
 /// Lines are `athlete_id` or `athlete_id,ST`; a single `--states` value fills in the state for
 /// targets that name none, and two or more are refused as ambiguous rather than guessed between.
-pub fn parse_targets(body: &str, default_states: &[String]) -> Result<Vec<Target>> {
-    ensure!(
-        default_states.len() <= 1,
-        "a registry without a per-line state needs exactly one --states value, got {} ({})",
-        default_states.len(),
-        default_states.join(",")
-    );
+pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<Target>> {
+    if default_states.len() > 1 {
+        return Err(registry_refusal(format!(
+            "a registry without a per-line state needs exactly one --states value, got {} ({})",
+            default_states.len(),
+            default_states.join(",")
+        )));
+    }
     let fallback = default_states
         .first()
         .map(|state| state.trim().to_ascii_uppercase())
@@ -109,32 +119,60 @@ pub fn parse_targets(body: &str, default_states: &[String]) -> Result<Vec<Target
         }
         let mut parts = line.split([',', '\t', ' ']).filter(|part| !part.is_empty());
         let id_text = parts.next().unwrap_or_default();
-        let athlete_id: u64 = id_text.parse().with_context(|| {
-            format!(
+        let athlete_id: u64 = id_text.parse().map_err(|_| {
+            registry_refusal(format!(
                 "registry line {}: `{id_text}` is not an athlete id",
                 number + 1
-            )
+            ))
         })?;
         let state = parts
             .next()
             .map(|state| state.trim().to_ascii_uppercase())
             .or_else(|| fallback.clone());
-        ensure!(
-            parts.next().is_none(),
-            "registry line {}: expected `athlete_id[,ST]`, got `{line}`",
-            number + 1
-        );
-        if let Some(state) = &state {
-            ensure!(
-                state.len() == 2 && state.chars().all(|c| c.is_ascii_alphabetic()),
-                "registry line {}: `{state}` is not a two-letter state code",
+        if parts.next().is_some() {
+            return Err(registry_refusal(format!(
+                "registry line {}: expected `athlete_id[,ST]`, got `{line}`",
                 number + 1
-            );
+            )));
+        }
+        if let Some(state) = &state {
+            if state.len() != 2 || !state.chars().all(|c| c.is_ascii_alphabetic()) {
+                return Err(registry_refusal(format!(
+                    "registry line {}: `{state}` is not a two-letter state code",
+                    number + 1
+                )));
+            }
         }
         // A registry may legitimately repeat an athlete across state files; read it once.
         if seen.insert(athlete_id) {
             targets.push(Target { athlete_id, state });
         }
+    }
+    Ok(targets)
+}
+
+/// Read the operator's registry file into targets.
+///
+/// Refuses a missing `--input` (the registry is the only way in: the search endpoint that would
+/// discover ids is disallowed by robots) and a registry that lists no athlete.
+fn read_registry(options: &Options) -> CrawlResult<Vec<Target>> {
+    let Some(input) = options.input.as_deref() else {
+        return Err(CrawlError::Invariant {
+            detail: "the athletic.net adapter needs --input with an athlete registry; its search \
+                     endpoint is disallowed by robots, so ids cannot be discovered by the tool"
+                .to_string(),
+        });
+    };
+    let body = std::fs::read_to_string(input).map_err(|source| CrawlError::Io {
+        path: std::path::PathBuf::from(input),
+        source,
+    })?;
+    let targets = parse_targets(&body, &options.states)?;
+    if targets.is_empty() {
+        return Err(CrawlError::Schema {
+            url: input.to_string(),
+            detail: "the athlete registry lists no athlete ids".to_string(),
+        });
     }
     Ok(targets)
 }

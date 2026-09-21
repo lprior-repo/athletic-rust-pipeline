@@ -4,9 +4,8 @@
 use super::map::{parse_coach, parse_school, reveal_address_for};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, IHSA_API};
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, Evidence, SchoolId, SourceRef};
 use std::collections::{HashMap, HashSet};
 
@@ -21,7 +20,7 @@ use std::collections::{HashMap, HashSet};
 /// 2. For each school, fetch `https://api.ihsa.org/v1/schools/{SchoolID}/staff2` — per-school staff.
 /// 3. Parse schools into canonical schools, staff into coaches (ADs + head/assistant coaches).
 /// 4. Journal progress per school so a re-run resumes without re-processing.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ihsa", "schools");
     report.unit = "schools".to_string();
 
@@ -54,7 +53,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = u64::try_from(run.processed).context("ihsa school count exceeds u64")?;
+    report.rows = u64::try_from(run.processed).map_err(|_| CrawlError::Arithmetic {
+        detail: "ihsa school count exceeds u64".to_string(),
+    })?;
     report.requests = delta_requests;
     report.note(format!(
         "fetched {} Illinois schools from IHSA; {} already done",
@@ -83,7 +84,7 @@ async fn fetch_school_records(
     ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     schools_url: &str,
-) -> Result<Option<Vec<SchoolRecord>>> {
+) -> CrawlResult<Option<Vec<SchoolRecord>>> {
     let outcome = match ctx.fetcher.get(schools_url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
@@ -109,7 +110,7 @@ async fn process_record(
     done_keys: &HashSet<String>,
     run: &mut IhsaRun<'_>,
     report: &mut AdapterReport,
-) -> Result<()> {
+) -> CrawlResult<()> {
     // Skip already-processed schools (resume support).
     let journal_key = format!("IL:{}", record.school_id);
     if done_keys.contains(&journal_key) {
@@ -215,10 +216,10 @@ fn journal_school(
     ctx: &AdapterContext<'_>,
     journal_key: &str,
     details: &serde_json::Value,
-) -> Result<()> {
-    ctx.store
-        .journal_done("ihsa_schools", journal_key, details)
-        .context("journaling ihsa school progress")
+) -> CrawlResult<()> {
+    Ok(ctx
+        .store
+        .journal_done("ihsa_schools", journal_key, details)?)
 }
 
 /// Fetch and parse one school's staff list; `None` when either step failed and was journalled.
@@ -229,7 +230,7 @@ async fn fetch_staff(
     journal_key: &str,
     run: &mut IhsaRun<'_>,
     report: &mut AdapterReport,
-) -> Result<Option<Vec<StaffPerson>>> {
+) -> CrawlResult<Option<Vec<StaffPerson>>> {
     let staff_outcome = match ctx.fetcher.get(staff_url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
@@ -281,16 +282,12 @@ async fn fetch_staff(
 }
 
 /// Append the run's schools and coaches, each table only when it has rows.
-fn append_all(ctx: &AdapterContext<'_>, run: &IhsaRun<'_>) -> Result<()> {
+fn append_all(ctx: &AdapterContext<'_>, run: &IhsaRun<'_>) -> CrawlResult<()> {
     if !run.schools.is_empty() {
-        ctx.store
-            .append_many(Table::Schools, &run.schools)
-            .context("writing ihsa schools")?;
+        ctx.store.append_many(Table::Schools, &run.schools)?;
     }
     if !run.coaches.is_empty() {
-        ctx.store
-            .append_many(Table::Coaches, &run.coaches)
-            .context("writing ihsa coaches")?;
+        ctx.store.append_many(Table::Coaches, &run.coaches)?;
     }
     Ok(())
 }

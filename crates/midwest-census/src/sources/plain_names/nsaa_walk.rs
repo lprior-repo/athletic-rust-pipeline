@@ -9,9 +9,8 @@ use super::nsaa_coaches::{nsaa_coaches, parse_nsaa_row, parse_nsaa_school};
 use super::parse::{email_regex, split_person_names};
 use super::{NSAA_COACHES_PHASE, NSAA_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole};
 
 /// The school block `name` names, or the page's only block.
@@ -41,7 +40,7 @@ fn journal_school(
     key: &str,
     published_rows: usize,
     coach_count: usize,
-) -> Result<()> {
+) -> CrawlResult<()> {
     ctx.store.journal_done(
         NSAA_SCHOOLS_PHASE,
         key,
@@ -51,7 +50,8 @@ fn journal_school(
         NSAA_COACHES_PHASE,
         key,
         &serde_json::json!({ "coach_rows": coach_count }),
-    )
+    )?;
+    Ok(())
 }
 
 /// One walk of the NSAA member directory: the entity rows it accumulates and its report counters.
@@ -117,7 +117,7 @@ impl NsaaWalk {
         fetch: &FetchOptions,
         report: &mut AdapterReport,
         name: &str,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let url = nsaa_school_url(name);
         let Some(html) = self.page(ctx, fetch, report, &url).await else {
             return Ok(());
@@ -136,7 +136,7 @@ impl NsaaWalk {
     }
 
     /// Count one page's published rows for the report lines.
-    fn tally(&mut self, entry: &NsaaSchool) -> Result<()> {
+    fn tally(&mut self, entry: &NsaaSchool) -> CrawlResult<()> {
         for role in &entry.roles {
             self.role_rows = self.role_rows.saturating_add(1);
             if email_regex()?.is_match(&role.name) {
@@ -166,7 +166,7 @@ impl NsaaWalk {
         school: CanonicalSchool,
         coaches: Vec<CanonicalCoach>,
         published_rows: usize,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         let (ad_rows, sport_rows) = coach_roles(&coaches);
         self.ad_rows = self.ad_rows.saturating_add(ad_rows);
         self.sport_rows = self.sport_rows.saturating_add(sport_rows);
@@ -185,17 +185,16 @@ impl NsaaWalk {
         ctx: &AdapterContext<'_>,
         report: &mut AdapterReport,
         members: usize,
-    ) -> Result<(u64, u64)> {
+    ) -> CrawlResult<(u64, u64)> {
         let school_rows =
-            u64::try_from(self.schools.len()).context("nsaa school count exceeds u64")?;
-        let coach_rows =
-            u64::try_from(self.coaches.len()).context("nsaa coach count exceeds u64")?;
-        ctx.store
-            .append_many(Table::Schools, &self.schools)
-            .context("writing nsaa schools")?;
-        ctx.store
-            .append_many(Table::Coaches, &self.coaches)
-            .context("writing nsaa coaches")?;
+            u64::try_from(self.schools.len()).map_err(|_| CrawlError::Arithmetic {
+                detail: "nsaa school count exceeds u64".to_string(),
+            })?;
+        let coach_rows = u64::try_from(self.coaches.len()).map_err(|_| CrawlError::Arithmetic {
+            detail: "nsaa coach count exceeds u64".to_string(),
+        })?;
+        ctx.store.append_many(Table::Schools, &self.schools)?;
+        ctx.store.append_many(Table::Coaches, &self.coaches)?;
 
         self.summary(report, members, coach_rows);
         Ok((school_rows, coach_rows))

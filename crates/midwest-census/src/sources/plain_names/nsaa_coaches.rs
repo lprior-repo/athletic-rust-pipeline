@@ -6,8 +6,7 @@ use super::nsaa_walk::NsaaWalk;
 use super::parse::{is_office_role, split_person_names};
 use super::{observed_on, Options, NSAA_ADAPTER_ID, NSAA_FORM_URL, NSAA_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
@@ -82,7 +81,7 @@ pub fn nsaa_coaches(
     school_id: &SchoolId,
     source_url: &str,
     observed_on: &str,
-) -> Result<Vec<CanonicalCoach>> {
+) -> CrawlResult<Vec<CanonicalCoach>> {
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
     let mut seen: HashSet<CoachId> = HashSet::new();
     for role in &school.roles {
@@ -120,7 +119,7 @@ pub(super) async fn collect_nebraska(
     options: &Options,
     fetch: &FetchOptions,
     report: &mut AdapterReport,
-) -> Result<(u64, u64)> {
+) -> CrawlResult<(u64, u64)> {
     let Some(members) = nsaa_members(ctx, fetch, report).await? else {
         return Ok((0, 0));
     };
@@ -147,7 +146,7 @@ async fn nsaa_members(
     ctx: &AdapterContext<'_>,
     fetch: &FetchOptions,
     report: &mut AdapterReport,
-) -> Result<Option<Vec<String>>> {
+) -> CrawlResult<Option<Vec<String>>> {
     let form = match ctx.fetcher.get(NSAA_FORM_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {

@@ -5,8 +5,7 @@
 //! is judged on. Both are predicates over a roster, never over a report.
 
 use crate::sources::milesplit::{Roster, TeamRef};
-use crate::store::Store;
-use anyhow::Result;
+use crate::store::{Store, StoreResult};
 use census_domain::model::{Gender, GradYear};
 
 use super::rosters_phase;
@@ -18,7 +17,7 @@ pub(super) fn pending_rosters(
     store: &Store,
     teams: &[TeamRef],
     state: &str,
-) -> Result<(Vec<TeamRef>, usize)> {
+) -> StoreResult<(Vec<TeamRef>, usize)> {
     let done = store.journal_keys(&rosters_phase(state))?;
     let pending: Vec<TeamRef> = teams
         .iter()

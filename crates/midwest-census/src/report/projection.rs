@@ -7,9 +7,8 @@ use super::rows::{
     CoachRollup, RowCounts,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{retain_core, Census, ProviderCoverage, Scope, StateCensus};
+use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
 use crate::store::{Store, Table};
-use anyhow::Result;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
 };
@@ -83,7 +82,7 @@ fn apply_coach_states(
 /// one entity per id, so the report never depends on a materialized `out/*.jsonl` export. A scan
 /// bounds a table at [`crate::store::MAX_ROWS_PER_TABLE`] observations, which is the bound every
 /// loop below runs under.
-pub fn build_census(store: &Store, scope: Scope) -> Result<Census> {
+pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     let out = store.out_dir();
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
     let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;

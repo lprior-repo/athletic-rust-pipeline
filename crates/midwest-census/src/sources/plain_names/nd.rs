@@ -5,15 +5,19 @@
 //! (Superintendent, Principal, Athletic/Activities Director …) and the
 //! `Sport/Activity Offering | Coaches` table parsed here.
 
+mod patterns;
+
+use self::patterns::{
+    nd_address_regex, nd_coop_regex, nd_enrollment_regex, nd_heading_regex, nd_link_regex,
+    nd_row_regex, nd_staff_regex, nd_website_regex,
+};
 use super::parse::{clean_text, nonempty, split_person_names, strip_coop_note, without_comments};
 use super::{ND_ADAPTER_ID, ND_SCHOOL_BASE};
-use anyhow::Result;
+use crate::sources::CrawlResult;
 use census_domain::model::{
     normalize_name, CanonicalSchool, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
 };
-use regex::Regex;
 use std::collections::HashSet;
-use std::sync::LazyLock;
 
 /// One member school as listed on the NDHSAA school index.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -51,79 +55,11 @@ pub struct NdOffering {
     pub co_op: Option<String>,
 }
 
-static ND_LINK_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"href="(?:https?://ndhsaa\.com)?/schools/(\d+)/([a-z0-9\-]+)""#));
-static ND_HEADING_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?s)<h1[^>]*>(.*?)</h1>"));
-static ND_STAFF_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?s)<p>\s*([A-Za-z][^:<]{1,48}?)\s*:\s*([^<]*)</p>"));
-static ND_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?s)<tr[^>]*>\s*<td class="p-2">\s*(.*?)\s*</td>\s*<td class="p-2">\s*(.*?)\s*</td>\s*</tr>"#,
-    )
-});
-static ND_COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?i)\(\s*coop:\s*([^)]+)\)"));
-static ND_ADDRESS_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?s)<p>\s*Address:\s*([^<]*)</p>"));
-static ND_ENROLLMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r"(?i)([\d,]+)\s+students enrolled"));
-static ND_WEBSITE_REGEX: LazyLock<Result<Regex, regex::Error>> =
-    LazyLock::new(|| Regex::new(r#"(?s)<p>\s*Website:\s*<a[^>]*href="([^"]+)""#));
-
-fn nd_link_regex() -> Result<&'static Regex> {
-    ND_LINK_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa school link regex: {e}"))
-}
-
-fn nd_heading_regex() -> Result<&'static Regex> {
-    ND_HEADING_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa heading regex: {e}"))
-}
-
-fn nd_staff_regex() -> Result<&'static Regex> {
-    ND_STAFF_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa staff regex: {e}"))
-}
-
-fn nd_row_regex() -> Result<&'static Regex> {
-    ND_ROW_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa coach-row regex: {e}"))
-}
-
-fn nd_coop_regex() -> Result<&'static Regex> {
-    ND_COOP_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa coop regex: {e}"))
-}
-
-fn nd_address_regex() -> Result<&'static Regex> {
-    ND_ADDRESS_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa address regex: {e}"))
-}
-
-fn nd_enrollment_regex() -> Result<&'static Regex> {
-    ND_ENROLLMENT_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa enrollment regex: {e}"))
-}
-
-fn nd_website_regex() -> Result<&'static Regex> {
-    ND_WEBSITE_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("ndhsaa website regex: {e}"))
-}
-
 /// Parse the member-school index, keeping the first link per numeric id.
 ///
 /// The index is server-rendered and paginates nothing: one GET yields all 169 schools. Both the
 /// absolute (`https://ndhsaa.com/schools/…`) and the relative (`/schools/…`) link forms are handled.
-pub fn parse_nd_school_refs(html: &str) -> Result<Vec<NdSchoolRef>> {
+pub fn parse_nd_school_refs(html: &str) -> CrawlResult<Vec<NdSchoolRef>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let mut members: Vec<NdSchoolRef> = Vec::new();
@@ -148,7 +84,7 @@ pub fn parse_nd_school_refs(html: &str) -> Result<Vec<NdSchoolRef>> {
 /// The line is read whole and cut at the trailing `, ND …`, then the last comma segment before the
 /// state is the city. Matching a bare `City, ND 12345` pattern against the raw HTML would instead
 /// swallow part of the street (`… th Ave E., West Fargo`), because the street itself contains commas.
-fn nd_city(html: &str) -> Result<Option<String>> {
+fn nd_city(html: &str) -> CrawlResult<Option<String>> {
     let captured = nd_address_regex()?
         .captures(html)
         .and_then(|capture| capture.get(1));
@@ -164,7 +100,7 @@ fn nd_city(html: &str) -> Result<Option<String>> {
 }
 
 /// Enrolment from `Grades 9-12, 1399 students enrolled in 2025`.
-fn nd_enrollment(html: &str) -> Result<Option<u32>> {
+fn nd_enrollment(html: &str) -> CrawlResult<Option<u32>> {
     let digits = nd_enrollment_regex()?
         .captures(html)
         .and_then(|capture| capture.get(1))
@@ -186,7 +122,7 @@ pub fn parse_nd_school_page(
     html: &str,
     member: &NdSchoolRef,
     observed_on: &str,
-) -> Result<Option<(CanonicalSchool, SchoolId)>> {
+) -> CrawlResult<Option<(CanonicalSchool, SchoolId)>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let heading = nd_heading_regex()?
@@ -226,7 +162,7 @@ pub fn parse_nd_school_page(
 }
 
 /// Staff lines (`Superintendent`, `Principal`, `Athletic Director`, `Business Manager`, …).
-pub fn parse_nd_staff(html: &str) -> Result<Vec<NdStaffRole>> {
+pub fn parse_nd_staff(html: &str) -> CrawlResult<Vec<NdStaffRole>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let mut roles: Vec<NdStaffRole> = Vec::new();
@@ -245,7 +181,7 @@ pub fn parse_nd_staff(html: &str) -> Result<Vec<NdStaffRole>> {
 }
 
 /// The coach table: one [`NdOffering`] per published row, blank coach cells included.
-pub fn parse_nd_offerings(html: &str) -> Result<Vec<NdOffering>> {
+pub fn parse_nd_offerings(html: &str) -> CrawlResult<Vec<NdOffering>> {
     let html = without_comments(html)?;
     let html: &str = &html;
     let mut offerings: Vec<NdOffering> = Vec::new();
@@ -268,7 +204,7 @@ pub fn parse_nd_offerings(html: &str) -> Result<Vec<NdOffering>> {
 }
 
 /// Co-op annotation published inside a row label: `(Co-op: West Fargo Sheyenne)` → `West Fargo Sheyenne`.
-fn nd_co_op(label: &str) -> Result<Option<String>> {
+fn nd_co_op(label: &str) -> CrawlResult<Option<String>> {
     let captured = nd_coop_regex()?
         .captures(label)
         .and_then(|coop| coop.get(1));

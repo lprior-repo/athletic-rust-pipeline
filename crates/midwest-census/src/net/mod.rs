@@ -25,7 +25,6 @@
 //!   bounded exponential backoff + jitter (max 3 attempts, 500 ms base delay).
 //! * Response bodies are capped at 32 MiB; oversized responses return [`FetchError::TooLarge`].
 
-use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -76,6 +75,11 @@ pub enum FetchError {
     Robots(String),
     #[error("http status {status} for {url}")]
     Http { status: u16, url: String },
+    #[error("http 429 for {url} (retry-after: {retry_after_secs:?}s)")]
+    RateLimited {
+        url: String,
+        retry_after_secs: Option<u64>,
+    },
     #[error("response body for {url} exceeds {MAX_BODY_BYTES} bytes")]
     TooLarge { url: String },
     #[error("transport error for {url}: {source}")]
@@ -92,6 +96,63 @@ pub enum FetchError {
     },
     #[error("request timed out for {url} after {timeout_secs}s")]
     Timeout { url: String, timeout_secs: u64 },
+    /// A request URL could not be parsed into its host, origin and path.
+    #[error("invalid url {url}: {source}")]
+    InvalidUrl {
+        url: String,
+        #[source]
+        source: url::ParseError,
+    },
+    /// JSON did not decode.
+    #[error("json decode failed for {target}: {source}")]
+    Decode {
+        /// The request URL for a response body, or the path of a cache artifact.
+        target: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// A JSON payload could not be encoded.
+    #[error("json encode failed for {target}: {source}")]
+    Encode {
+        /// The request URL for a request body, or the path of a cache artifact.
+        target: String,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// The HTTP client could not be constructed.
+    #[error("http client build failed: {source}")]
+    Client {
+        #[source]
+        source: reqwest::Error,
+    },
+    /// An internal invariant was violated (a bug, not external input).
+    ///
+    /// Display is the carried message verbatim: the taxonomy's convention is that a message a
+    /// test, golden or operator reads keeps its exact text.
+    #[error("{detail}")]
+    Invariant { detail: String },
+}
+
+impl FetchError {
+    /// Whether another attempt can plausibly succeed.
+    ///
+    /// This is the *intrinsic* classification: status-driven decisions that depend on
+    /// [`FetchOptions`] (`allow_not_found`, `refresh`) stay in the retry loop, which keeps its own
+    /// policy.
+    pub fn retryable(&self) -> bool {
+        match self {
+            Self::Transport { .. } | Self::Timeout { .. } | Self::RateLimited { .. } => true,
+            Self::Http { status, .. } => *status >= 500 || *status == 429,
+            Self::Robots(_)
+            | Self::TooLarge { .. }
+            | Self::Cache { .. }
+            | Self::InvalidUrl { .. }
+            | Self::Decode { .. }
+            | Self::Encode { .. }
+            | Self::Client { .. }
+            | Self::Invariant { .. } => false,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -129,9 +190,11 @@ impl FetchOutcome {
         String::from_utf8_lossy(&self.body).to_string()
     }
 
-    pub fn json<T: for<'de> Deserialize<'de>>(&self) -> Result<T> {
-        serde_json::from_slice(&self.body)
-            .with_context(|| format!("decoding JSON from {}", self.url))
+    pub fn json<T: for<'de> Deserialize<'de>>(&self) -> Result<T, FetchError> {
+        serde_json::from_slice(&self.body).map_err(|source| FetchError::Decode {
+            target: self.url.clone(),
+            source,
+        })
     }
 }
 

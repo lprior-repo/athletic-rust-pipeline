@@ -8,9 +8,8 @@ use super::map::{level_of, resolve_venue, VenueResolution};
 use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER, UNKNOWN_STATE};
 use crate::school_index::SchoolIndex;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -34,7 +33,7 @@ fn count(value: usize) -> u64 {
 }
 
 /// The schedule URLs this parser version has already journalled, so they need no second walk.
-pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> Result<HashSet<String>> {
+pub(super) fn completed_pages(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     Ok(ctx
         .store
         .journal_payloads(ADAPTER_ID)?
@@ -81,7 +80,7 @@ impl Walk {
         done: &HashSet<String>,
         years: &[i16],
         index: &SchoolIndex,
-    ) -> Result<()> {
+    ) -> CrawlResult<()> {
         'sport: for sport in [ScheduleSport::Track, ScheduleSport::CrossCountry] {
             for year in years {
                 let url = schedule_url(sport, *year);
@@ -91,11 +90,7 @@ impl Walk {
                 if options.limit.is_some_and(|limit| self.stats.rows >= limit) {
                     break 'sport;
                 }
-                let fetched = ctx
-                    .fetcher
-                    .get(&url, &ctx.fetch_options())
-                    .await
-                    .with_context(|| format!("fetching the Wayzata Results schedule {url}"))?;
+                let fetched = ctx.fetcher.get(&url, &ctx.fetch_options()).await?;
                 let rows = schedule_rows(&fetched.text(), *year)?;
                 self.stats.pages = self.stats.pages.saturating_add(1);
                 self.report
@@ -212,7 +207,7 @@ impl Walk {
         self,
         ctx: &AdapterContext<'_>,
         (requests_before, cache_before): (u64, u64),
-    ) -> Result<AdapterReport> {
+    ) -> CrawlResult<AdapterReport> {
         let Walk {
             stats,
             meets,

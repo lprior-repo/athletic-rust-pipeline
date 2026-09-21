@@ -1,7 +1,6 @@
 //! Client construction and the per-host pacing state.
 
-use super::{FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
-use anyhow::{Context, Result};
+use super::{FetchError, FetchStats, Fetcher, DEFAULT_USER_AGENT, REQUEST_TIMEOUT_SECS};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
@@ -24,10 +23,12 @@ impl Fetcher {
         default_delay: Duration,
         host_delays: HashMap<String, Duration>,
         authorized_hosts: Vec<String>,
-    ) -> Result<Self> {
+    ) -> Result<Self, FetchError> {
         let cache_dir = cache_dir.as_ref().to_path_buf();
-        std::fs::create_dir_all(&cache_dir)
-            .with_context(|| format!("creating cache dir {}", cache_dir.display()))?;
+        std::fs::create_dir_all(&cache_dir).map_err(|source| FetchError::Cache {
+            path: cache_dir.clone(),
+            source,
+        })?;
         let user_agent = user_agent.unwrap_or_else(|| DEFAULT_USER_AGENT.to_string());
         let client = reqwest::Client::builder()
             .user_agent(user_agent.clone())
@@ -35,7 +36,7 @@ impl Fetcher {
             .connect_timeout(Duration::from_secs(15))
             .redirect(reqwest::redirect::Policy::limited(5))
             .build()
-            .context("building HTTP client")?;
+            .map_err(|source| FetchError::Client { source })?;
         Ok(Self {
             client,
             cache_dir,

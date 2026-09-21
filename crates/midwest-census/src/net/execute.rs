@@ -4,7 +4,6 @@ use super::cache::{read_cache, CacheMeta};
 use super::client::HostState;
 use super::request::RequestBody;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELAY};
-use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -45,11 +44,8 @@ impl Fetcher {
     async fn wait_turn(&self, host: &str) {
         let wait = {
             let mut hosts = self.hosts.lock().await;
-            let state = hosts
-                .get_mut(host)
-                .ok_or_else(|| anyhow::anyhow!("host {host} not registered in host_gate"));
-            match state {
-                Ok(s) => {
+            match hosts.get_mut(host) {
+                Some(s) => {
                     let now = std::time::Instant::now();
                     // The reserved slot is a floor: resume from the later of "now" and the slot,
                     // then push the slot one delay further. `checked_add` keeps the instant
@@ -63,8 +59,8 @@ impl Fetcher {
                     s.next_allowed = from.checked_add(s.delay);
                     wait
                 }
-                Err(e) => {
-                    warn!("host not registered: {e}");
+                None => {
+                    warn!("host {host} not registered in host_gate");
                     Duration::ZERO
                 }
             }
@@ -81,7 +77,7 @@ impl Fetcher {
         body: Option<(String, RequestBody)>,
         options: &FetchOptions,
         timeout_secs: u64,
-    ) -> Result<FetchOutcome> {
+    ) -> Result<FetchOutcome, FetchError> {
         let extra = body
             .as_ref()
             .map(|(key, _)| key.clone())
@@ -125,7 +121,7 @@ impl Fetcher {
         body_path: &Path,
         meta: &CacheMeta,
         options: &FetchOptions,
-    ) -> Result<Option<FetchOutcome>> {
+    ) -> Result<Option<FetchOutcome>, FetchError> {
         if options.refresh {
             return Ok(None);
         }
@@ -159,7 +155,7 @@ impl Fetcher {
         host: &str,
         path_and_query: &str,
         origin: &str,
-    ) -> Result<Option<Duration>> {
+    ) -> Result<Option<Duration>, FetchError> {
         let rules = self.robots_for(origin).await;
         if rules.allows(path_and_query) {
             return Ok(rules.crawl_delay);
@@ -179,13 +175,16 @@ impl Fetcher {
         }
         let mut stats = self.stats.lock().await;
         stats.robots_blocked = stats.robots_blocked.saturating_add(1);
-        Err(FetchError::Robots(url.to_string()).into())
+        Err(FetchError::Robots(url.to_string()))
     }
 }
 
 /// Split a URL into its host, its origin and the path-and-query robots rules match.
-fn request_target(url: &str) -> Result<(String, String, String)> {
-    let parsed = url::Url::parse(url).with_context(|| format!("invalid url {url}"))?;
+fn request_target(url: &str) -> Result<(String, String, String), FetchError> {
+    let parsed = url::Url::parse(url).map_err(|source| FetchError::InvalidUrl {
+        url: url.to_string(),
+        source,
+    })?;
     let host = parsed.host_str().unwrap_or_default().to_string();
     let origin = format!(
         "{}://{}",

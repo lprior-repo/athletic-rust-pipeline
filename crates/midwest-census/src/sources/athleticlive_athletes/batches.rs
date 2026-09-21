@@ -5,9 +5,8 @@ use super::map::build_entities;
 use super::parse::AthleteHit;
 use super::targets::MeetTarget;
 use super::{batch_query, BatchStats, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use anyhow::{Context, Result};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 
@@ -19,7 +18,7 @@ pub(super) async fn run_batches<'t>(
     queue: &mut VecDeque<Vec<&'t MeetTarget>>,
     stats: &mut BatchStats,
     report: &mut AdapterReport,
-) -> Result<()> {
+) -> CrawlResult<()> {
     while let Some(batch) = queue.pop_front() {
         if let Some(limit) = options.limit {
             if stats.meets >= limit {
@@ -44,7 +43,7 @@ async fn page_hits(
     options: &Options,
     ids: &[u64],
     report: &mut AdapterReport,
-) -> Result<(Vec<AthleteHit>, usize)> {
+) -> CrawlResult<(Vec<AthleteHit>, usize)> {
     let fetch = crate::net::FetchOptions {
         refresh: options.refresh,
         allow_not_found: false,
@@ -55,11 +54,7 @@ async fn page_hits(
     let mut total = 0usize;
     loop {
         let body = batch_query(ids, from);
-        let outcome = ctx
-            .fetcher
-            .post_json(ENDPOINT, &body, &fetch)
-            .await
-            .context("querying athleticlive athlete_list")?;
+        let outcome = ctx.fetcher.post_json(ENDPOINT, &body, &fetch).await?;
         if outcome.status != 200 {
             report.errors += 1;
             report.note(format!(
@@ -69,7 +64,7 @@ async fn page_hits(
             ));
             break;
         }
-        let parsed: Value = outcome.json().context("parsing athlete_list response")?;
+        let parsed: Value = outcome.json()?;
         if from == 0 {
             total = parsed
                 .pointer("/hits/total/value")
@@ -77,7 +72,10 @@ async fn page_hits(
                 .unwrap_or(0) as usize;
         }
         let page: Vec<AthleteHit> = serde_json::from_value(Value::Array(page_sources(&parsed)))
-            .context("decoding athlete_list hits")?;
+            .map_err(|source| CrawlError::Decode {
+                url: ENDPOINT.to_string(),
+                source,
+            })?;
         let fetched = page.len();
         hits.extend(page);
         from += fetched;
@@ -144,7 +142,7 @@ fn emit_batch<'t>(
     hits: &[AthleteHit],
     by_id: &HashMap<u64, &'t MeetTarget>,
     stats: &mut BatchStats,
-) -> Result<()> {
+) -> CrawlResult<()> {
     if hits.is_empty() {
         for target in batch {
             ctx.store.journal_done(

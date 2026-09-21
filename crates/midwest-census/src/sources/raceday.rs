@@ -16,6 +16,7 @@
 
 use crate::sources::hytek::parse_time;
 use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
+use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 use regex::Regex;
 use std::sync::LazyLock;
@@ -36,37 +37,58 @@ static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new
 
 // Accessors for the literal patterns above: a failed compile is a programming error, so it comes
 // back as a typed error that the reader answers as "this file carries no meet" — never a panic.
-fn table_regex() -> anyhow::Result<&'static Regex> {
-    TABLE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn table_regex() -> CrawlResult<&'static Regex> {
+    TABLE.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TABLE",
+        source: source.clone(),
+    })
 }
 
-fn title_regex() -> anyhow::Result<&'static Regex> {
-    TITLE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn title_regex() -> CrawlResult<&'static Regex> {
+    TITLE.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TITLE",
+        source: source.clone(),
+    })
 }
 
-fn row_regex() -> anyhow::Result<&'static Regex> {
-    ROW.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn row_regex() -> CrawlResult<&'static Regex> {
+    ROW.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "ROW",
+        source: source.clone(),
+    })
 }
 
-fn cell_regex() -> anyhow::Result<&'static Regex> {
-    CELL.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn cell_regex() -> CrawlResult<&'static Regex> {
+    CELL.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "CELL",
+        source: source.clone(),
+    })
 }
 
-fn head_regex() -> anyhow::Result<&'static Regex> {
-    HEAD.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn head_regex() -> CrawlResult<&'static Regex> {
+    HEAD.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "HEAD",
+        source: source.clone(),
+    })
 }
 
-fn body_regex() -> anyhow::Result<&'static Regex> {
-    BODY.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn body_regex() -> CrawlResult<&'static Regex> {
+    BODY.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "BODY",
+        source: source.clone(),
+    })
 }
 
-fn tags_regex() -> anyhow::Result<&'static Regex> {
-    TAGS.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+fn tags_regex() -> CrawlResult<&'static Regex> {
+    TAGS.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "TAGS",
+        source: source.clone(),
+    })
 }
 
 /// Parse a RaceDay export. `year` is the season the file was archived under, used because the format
 /// publishes no date of its own.
-pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedMeet> {
+pub fn parse(body: &str, source: SourceRef, year: i16) -> CrawlResult<ParsedMeet> {
     let tags = tags_regex()?;
     let title = race_title(body, tags)?;
     let name = race_name(&title)?;
@@ -107,7 +129,12 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
         });
     }
     if events.is_empty() {
-        anyhow::bail!("no events parsed from RaceDay export ({source:?})");
+        // The archive page a body was read from is the only identity a body carries; the source id
+        // names the provider when the artifact URL is unknown.
+        return Err(CrawlError::Schema {
+            url: source.url.unwrap_or(source.id),
+            detail: "no events parsed from RaceDay export".to_string(),
+        });
     }
     Ok(ParsedMeet {
         name,
@@ -121,13 +148,15 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedM
 }
 
 /// The text of the export's `<h3>`, which is the race title.
-fn race_title(body: &str, tags: &Regex) -> anyhow::Result<String> {
+fn race_title(body: &str, tags: &Regex) -> CrawlResult<String> {
     title_regex()?
         .captures(body)
         .and_then(|captures| captures.get(1))
         .map(|m| text_of(tags, m.as_str()))
         .filter(|title| !title.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("no title found in RaceDay export"))
+        .ok_or_else(|| CrawlError::Invariant {
+            detail: "no title found in RaceDay export".to_string(),
+        })
 }
 
 /// The column labels of one table, in printing order.
@@ -232,7 +261,7 @@ fn table_cells(row_html: &str, tags: &Regex, cell_pattern: &Regex) -> Vec<String
 }
 
 /// `WIAA D2 XC Sectionals - Boys Race Team Finish List-XC` → `WIAA D2 XC Sectionals - Boys Race`.
-fn race_name(title: &str) -> anyhow::Result<String> {
+fn race_name(title: &str) -> CrawlResult<String> {
     let trimmed = title
         .trim_end_matches("-XC")
         .trim_end_matches("Team Finish List")
@@ -241,7 +270,9 @@ fn race_name(title: &str) -> anyhow::Result<String> {
         .trim()
         .to_string();
     if trimmed.is_empty() {
-        anyhow::bail!("no race name extracted from title");
+        return Err(CrawlError::Invariant {
+            detail: "no race name extracted from title".to_string(),
+        });
     }
     Ok(trimmed)
 }
@@ -293,66 +324,4 @@ fn text_of(tags: &Regex, html: &str) -> String {
         .join(" ")
 }
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Verbatim `<h3>` + finish-list table from
-    /// `https://www.wiaawi.org/Portals/0/PDF/Results/Cross_Country/2023/racinesectionalb.htm`
-    /// (WIAA Division 2 Racine sectional, boys race, 2023).
-    const FINISH_LIST: &str =
-        include_str!("../../tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
-
-    fn source() -> SourceRef {
-        SourceRef::new("wiaa_results", None)
-    }
-
-    #[test]
-    fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> anyhow::Result<()> {
-        let meet = parse(FINISH_LIST, source(), 2023)?;
-        assert_eq!(meet.name, "WIAA D2 XC Sectionals - Boys Race");
-        assert_eq!(
-            meet.date, "2023",
-            "RaceDay publishes no date; year precision is explicit"
-        );
-        let event = &meet.events[0];
-        assert_eq!(event.kind, EventKind::CrossCountry);
-        assert_eq!(event.gender, Gender::Boys);
-        assert_eq!(event.division.as_deref(), Some("Division 2"));
-        let winner = &event.rows[0];
-        assert_eq!(winner.name, "Jack Hefty");
-        assert_eq!(winner.grade.map(Grade::get), Some(11));
-        assert_eq!(winner.school, "Whitewater");
-        assert_eq!(
-            winner.mark,
-            Mark::TimeSeconds(1033.69),
-            "17:13.69 is the finish, not a mile split"
-        );
-        assert!(event.rows.len() > 20, "got {} rows", event.rows.len());
-        Ok(())
-    }
-
-    #[test]
-    fn the_team_summary_table_never_becomes_athlete_rows() -> anyhow::Result<()> {
-        let meet = parse(FINISH_LIST, source(), 2023)?;
-        for row in &meet.events[0].rows {
-            assert!(
-                row.grade.is_some(),
-                "a team summary row has no grade: {row:?}"
-            );
-        }
-        Ok(())
-    }
-
-    #[test]
-    fn divisions_parse_from_both_spellings() {
-        assert_eq!(
-            division_of("WIAA D1 XC Sectionals"),
-            Some("Division 1".to_string())
-        );
-        assert_eq!(
-            division_of("Division 3 Boys Results"),
-            Some("Division 3".to_string())
-        );
-        assert_eq!(division_of("Boys Race"), None);
-    }
-}
+mod tests;

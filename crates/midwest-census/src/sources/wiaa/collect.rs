@@ -1,8 +1,7 @@
 //! The WIAA directory walk (`collect`), moved verbatim from the flat adapter module.
 
-use crate::net::{FetchOutcome, FetchStats};
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::net::{FetchError, FetchOutcome, FetchStats};
+use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use futures::stream::{self, StreamExt};
 use std::collections::{BTreeMap, HashSet};
 
@@ -23,7 +22,7 @@ use collect_schools::{plan_schools, process_school, SchoolTally};
 ///
 /// Resumable: a school page is fetched only when `WI:<orgID>` is absent from the `wiaa_schools`
 /// journal, and both journals carry the same `WI:<orgID>` key.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("wiaa", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
         ctx.observed_on.clone()
@@ -95,12 +94,12 @@ async fn scan_index(
     options: &Options,
     report: &mut AdapterReport,
     before: &FetchStats,
-) -> Result<LetterScan> {
+) -> CrawlResult<LetterScan> {
     // -- index: bounded-concurrency fetch per directory letter (shared bound) --------------------
     const LETTER_CONCURRENCY: usize = crate::sources::CONCURRENCY_BOUND;
     let letters = letters_for(&options.school_names);
     // Collect (letter_index, result) pairs so we can process in submission order.
-    let letter_results: Vec<(usize, Result<FetchOutcome>)> =
+    let letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)> =
         stream::iter(letters.iter().enumerate())
             .map(|(i, letter)| {
                 let url = format!("{HOST}{INDEX_PATH}?LetterBtn={letter}");
@@ -116,11 +115,14 @@ async fn scan_index(
         let after = ctx.fetcher.stats().await;
         report.requests = after.requests.saturating_sub(before.requests);
         report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
-        anyhow::bail!(
-            "WIAA directory index {HOST}{INDEX_PATH} returned no usable letter fragment ({} request(s) attempted): {}",
-            letters.len(),
-            first_problem.unwrap_or_else(|| "no response".to_string())
-        );
+        return Err(CrawlError::Schema {
+            url: format!("{HOST}{INDEX_PATH}"),
+            detail: format!(
+                "returned no usable letter fragment ({} request(s) attempted): {}",
+                letters.len(),
+                first_problem.unwrap_or_else(|| "no response".to_string())
+            ),
+        });
     }
 
     Ok(LetterScan {
@@ -132,7 +134,7 @@ async fn scan_index(
 /// Read the letter fragments in submission order: parse rows, dedupe ids, track the first problem.
 fn absorb_letters(
     letters: &[char],
-    letter_results: Vec<(usize, Result<FetchOutcome>)>,
+    letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)>,
     report: &mut AdapterReport,
 ) -> (Vec<IndexEntry>, usize, Option<String>) {
     // Process results in submission order for deterministic error tracking.

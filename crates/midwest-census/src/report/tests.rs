@@ -1,7 +1,7 @@
 use super::*;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, Gender, GradYear, SourceIdentity,
-    SourceNamespace, Sport,
+    CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, GradYear,
+    SourceIdentity, SourceNamespace, Sport,
 };
 #[test]
 fn core_scope_keeps_only_non_athletic_net_evidence() {

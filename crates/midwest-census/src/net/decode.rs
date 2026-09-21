@@ -2,7 +2,6 @@
 
 use super::cache::{sha256_prefix16, write_cache, CacheMeta};
 use super::{now_iso8601, FetchError, FetchOptions, FetchOutcome, FetchStats, MAX_BODY_BYTES};
-use anyhow::{bail, Result};
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use tracing::warn;
@@ -21,7 +20,7 @@ pub(super) async fn process_response(
     meta_path: &Path,
     options: &FetchOptions,
     stats: &mut FetchStats,
-) -> Result<FetchOutcome> {
+) -> Result<FetchOutcome, FetchError> {
     let status = response.status().as_u16();
     let (etag, last_modified, content_type) = header_strings(response.headers());
 
@@ -31,7 +30,9 @@ pub(super) async fn process_response(
 
     if status == 304 {
         // This branch should not be reached here (304 is handled above), but guard defensively.
-        bail!("unexpected 304 in process_response");
+        return Err(FetchError::Invariant {
+            detail: "unexpected 304 in process_response".to_string(),
+        });
     }
 
     let (body_vec, sha256) = read_checked_body(response, url).await?;
@@ -85,7 +86,10 @@ fn header_strings(
 }
 
 /// Read the response body inside the size cap, and hash what was read.
-async fn read_checked_body(response: reqwest::Response, url: &str) -> Result<(Vec<u8>, String)> {
+async fn read_checked_body(
+    response: reqwest::Response,
+    url: &str,
+) -> Result<(Vec<u8>, String), FetchError> {
     let declared = response
         .headers()
         .get(reqwest::header::CONTENT_LENGTH)
@@ -94,8 +98,7 @@ async fn read_checked_body(response: reqwest::Response, url: &str) -> Result<(Ve
     if declared.map(|len| len > MAX_BODY_BYTES).unwrap_or(false) {
         return Err(FetchError::TooLarge {
             url: url.to_string(),
-        }
-        .into());
+        });
     }
     let bytes = response
         .bytes()
@@ -107,8 +110,7 @@ async fn read_checked_body(response: reqwest::Response, url: &str) -> Result<(Ve
     if bytes.len() > MAX_BODY_BYTES {
         return Err(FetchError::TooLarge {
             url: url.to_string(),
-        }
-        .into());
+        });
     }
     let body = bytes.to_vec();
     let mut hasher = Sha256::new();

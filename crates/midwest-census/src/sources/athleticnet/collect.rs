@@ -5,13 +5,12 @@ use super::absorb::absorb;
 use super::map::{Accumulator, Stats};
 use super::parse::Bio;
 use super::{
-    parse_targets, Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
+    read_registry, Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
 };
 use crate::net::FetchOptions;
 use crate::school_index::SchoolIndex;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
-use anyhow::{ensure, Context, Result};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceRef,
@@ -27,7 +26,7 @@ use std::collections::{HashMap, HashSet};
 ///
 /// Strategy: one request per (athlete, sport) pair, journaled per URL so a re-run resumes; both
 /// payloads are absorbed under one athlete so its teams and grades are minted once.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("athleticnet", "athletes");
     let (requests_before, cache_before) = stats_of(ctx).await;
 
@@ -86,19 +85,9 @@ struct EntityCounts {
     performances: usize,
 }
 
-/// Resolve the operator's registry into the run's targets, refusing an empty one.
-fn registry_targets(options: &Options, report: &mut AdapterReport) -> Result<Vec<Target>> {
-    let input = options.input.as_deref().context(
-        "the athletic.net adapter needs --input with an athlete registry; its search endpoint is \
-         disallowed by robots, so ids cannot be discovered by the tool",
-    )?;
-    let body = std::fs::read_to_string(input)
-        .with_context(|| format!("reading the athlete registry {input}"))?;
-    let targets = parse_targets(&body, &options.states)?;
-    ensure!(
-        !targets.is_empty(),
-        "the athlete registry {input} lists no athlete ids"
-    );
+/// Resolve the operator's registry into the run's targets, noting the ones that name no state.
+fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResult<Vec<Target>> {
+    let targets = read_registry(options)?;
     let without_state = targets.iter().filter(|t| t.state.is_none()).count();
     if without_state > 0 {
         report.note(format!(
@@ -111,7 +100,7 @@ fn registry_targets(options: &Options, report: &mut AdapterReport) -> Result<Vec
 }
 
 /// The URLs a previous run already journaled at the current parse version.
-fn journaled_urls(ctx: &AdapterContext<'_>) -> Result<HashSet<String>> {
+fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     let payloads = ctx.store.journal_payloads("athleticnet")?;
     let version = u64::from(PARSE_VERSION);
     let done = payloads
@@ -132,7 +121,7 @@ async fn absorb_targets(
     index: &SchoolIndex,
     done: &HashSet<String>,
     run: &mut RunState,
-) -> Result<()> {
+) -> CrawlResult<()> {
     for (processed, target) in targets.iter().enumerate() {
         if options.limit.is_some_and(|limit| processed >= limit) {
             break;
@@ -221,7 +210,10 @@ async fn fetch_bio(
 }
 
 /// Append every entity the run accumulated and count what was written.
-fn store_accumulated(ctx: &AdapterContext<'_>, accumulated: Accumulator) -> Result<EntityCounts> {
+fn store_accumulated(
+    ctx: &AdapterContext<'_>,
+    accumulated: Accumulator,
+) -> CrawlResult<EntityCounts> {
     let schools: Vec<CanonicalSchool> = accumulated.schools.into_values().collect();
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
     let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();
@@ -283,7 +275,7 @@ fn note_stats(report: &mut AdapterReport, stats: &Stats) {
 
 /// The consolidated school index, when one exists. Athletic.net spans the whole country while the
 /// index covers the platform's states, so a miss mints rather than skips.
-fn consolidated_index(ctx: &AdapterContext<'_>) -> Result<SchoolIndex> {
+fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
     let path = ctx.store.out_dir().join("schools.jsonl");
     if !path.exists() {
         return Ok(SchoolIndex::from_schools(&[]));

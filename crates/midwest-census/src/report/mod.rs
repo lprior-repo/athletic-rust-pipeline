@@ -5,20 +5,76 @@
 //! wire shape: a hand-written mirror silently drifts from the model and would report on fields that
 //! no longer exist.
 
-use anyhow::{Context, Result};
-use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,
-};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+
+// ---------------------------------------------------------------------------
+// Error types
+// ---------------------------------------------------------------------------
+
+/// Report, bests and workbook failures.
+#[derive(Debug, thiserror::Error)]
+pub enum ReportError {
+    /// The underlying store scan failed.
+    #[error(transparent)]
+    Store(#[from] crate::store::StoreError),
+    /// A report or workbook file operation failed.
+    #[error("i/o failed for {path}: {source}")]
+    Io {
+        path: std::path::PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    /// The workbook writer rejected a sheet or cell.
+    #[error("saving the workbook to {path}: {source}")]
+    Xlsx {
+        path: std::path::PathBuf,
+        #[source]
+        source: rust_xlsxwriter::XlsxError,
+    },
+    /// A JSONL row did not decode.
+    #[error("unparseable row {line} in {path}: {source}")]
+    Decode {
+        path: std::path::PathBuf,
+        line: usize,
+        #[source]
+        source: serde_json::Error,
+    },
+    /// An aggregation counter at the end of its range.
+    #[error("counter overflow")]
+    CounterOverflow,
+    /// An invariant the report relies on was violated: a bug, not external input.
+    #[error("{detail}")]
+    Invariant { detail: String },
+}
+
+/// Result alias for report code.
+pub type ReportResult<T> = std::result::Result<T, ReportError>;
+
+/// Attach the path an i/o failure came from, so a typed [`ReportError::Io`] can name it.
+pub(crate) fn io_error(path: &Path, source: std::io::Error) -> ReportError {
+    ReportError::Io {
+        path: path.to_path_buf(),
+        source,
+    }
+}
+
+/// Attach the workbook path a `rust_xlsxwriter` rejection belongs to.
+pub(crate) fn xlsx_error(path: &Path, source: rust_xlsxwriter::XlsxError) -> ReportError {
+    ReportError::Xlsx {
+        path: path.to_path_buf(),
+        source,
+    }
+}
 
 // The verbatim `tests` module resolves `Store` and `Table` through `use super::*`, exactly as the
 // net split feeds its tests module from `mod.rs`.
 #[cfg(test)]
 use crate::store::{Store, Table};
 
+mod core_scope;
 mod notes;
 mod projection;
 mod rows;
@@ -28,21 +84,26 @@ mod writer;
 pub use projection::build_census;
 pub use writer::write_census;
 
+pub use core_scope::{is_core_source, retain_core, CoreScoped, Scope, NON_CORE_SOURCE_IDS};
+
 /// Stream a JSONL entity log, tolerating a truncated tail from an interrupted run.
 ///
 /// This reads a *materialized snapshot*: the census itself reads the store through
 /// [`Store::scan`](crate::store::Store::scan), and this survives for callers that re-read an
 /// export they just wrote. Every iteration consumes one line of a finite file, so the loop
 /// terminates on the line count.
-pub fn read_rows<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Vec<T>> {
+///
+/// A single unparseable row is tolerated; a second one is a [`ReportError::Decode`], because a
+/// truncated tail can lose one trailing row and nothing else.
+pub fn read_rows<T: for<'de> Deserialize<'de>>(path: &Path) -> ReportResult<Vec<T>> {
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let file = std::fs::File::open(path).with_context(|| format!("open {}", path.display()))?;
+    let file = std::fs::File::open(path).map_err(|source| io_error(path, source))?;
     let mut rows = Vec::new();
     let mut unparseable = 0usize;
     for (index, line) in BufReader::new(file).lines().enumerate() {
-        let line = line?;
+        let line = line.map_err(|source| io_error(path, source))?;
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
@@ -51,12 +112,13 @@ pub fn read_rows<T: for<'de> Deserialize<'de>>(path: &Path) -> Result<Vec<T>> {
             Ok(row) => rows.push(row),
             Err(error) => {
                 unparseable = unparseable.saturating_add(1);
-                anyhow::ensure!(
-                    unparseable <= 1,
-                    "unparseable row {} in {}: {error}",
-                    index.saturating_add(1),
-                    path.display()
-                );
+                if unparseable > 1 {
+                    return Err(ReportError::Decode {
+                        path: path.to_path_buf(),
+                        line: index.saturating_add(1),
+                        source: error,
+                    });
+                }
             }
         }
     }
@@ -137,142 +199,6 @@ pub struct MeetCoverage {
     pub first_date: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_date: Option<String>,
-}
-
-/// Report scope.
-///
-/// The platform's **core** deliberately excludes Athletic.net and the AthleticLIVE derivative: the
-/// objective requires the core to work, and be measurable, with those adapters never registered.
-/// Every core number therefore has to be reachable from association, MileSplit, official-artifact,
-/// timer, or school-site evidence alone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Scope {
-    /// Every consolidated row, including AthleticLIVE enrichment.
-    AllSources,
-    /// Only entities with at least one evidence source that is not Athletic.net-derived.
-    Core,
-}
-
-impl Scope {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Scope::AllSources => "all_sources",
-            Scope::Core => "core",
-        }
-    }
-
-    /// `""` or `"-core"`, appended to `report.json` / `census-by-state.csv`.
-    const fn file_suffix(self) -> &'static str {
-        match self {
-            Scope::AllSources => "",
-            Scope::Core => "-core",
-        }
-    }
-}
-
-/// Adapter ids whose evidence does not count toward the core census.
-///
-/// `athleticlive_*` is the Athletic.net mirror (meet index, athlete rows) and `athleticnet` is the
-/// host itself, read through the owner-authorized athlete-bio adapter. A core entity must be
-/// reachable without any of them, so their evidence is ignored while the core filter runs.
-pub const NON_CORE_SOURCE_IDS: [&str; 3] = [
-    "athleticlive_athletes",
-    "athleticlive_meets_csv",
-    "athleticnet",
-];
-
-/// Entity tables a non-core adapter can populate.
-pub trait CoreScoped {
-    fn evidence(&self) -> &[Evidence];
-
-    fn evidence_mut(&mut self) -> &mut Vec<Evidence>;
-
-    /// Drop grade observations that came from a non-core source. No-op where a table has none.
-    fn drop_non_core_observations(&mut self) {}
-
-    /// Drop identities minted from a non-core namespace. No-op where a table has none.
-    fn drop_non_core_identities(&mut self) {}
-}
-
-/// True when `id` is an adapter that belongs to the platform's own core.
-pub fn is_core_source(id: &str) -> bool {
-    !NON_CORE_SOURCE_IDS.contains(&id)
-}
-
-impl CoreScoped for CanonicalAthlete {
-    fn evidence(&self) -> &[Evidence] {
-        &self.evidence
-    }
-
-    fn evidence_mut(&mut self) -> &mut Vec<Evidence> {
-        &mut self.evidence
-    }
-
-    fn drop_non_core_observations(&mut self) {
-        self.observed_grades
-            .retain(|observation| is_core_source(&observation.source.id));
-    }
-
-    fn drop_non_core_identities(&mut self) {
-        self.source_identities
-            .retain(|identity| identity.namespace.is_core());
-    }
-}
-
-impl CoreScoped for CanonicalMeet {
-    fn evidence(&self) -> &[Evidence] {
-        &self.evidence
-    }
-
-    fn evidence_mut(&mut self) -> &mut Vec<Evidence> {
-        &mut self.evidence
-    }
-
-    fn drop_non_core_identities(&mut self) {
-        self.source_identities
-            .retain(|identity| identity.namespace.is_core());
-    }
-}
-
-/// An event carries evidence and per-source labels, and no identities: the default no-ops cover
-/// everything but the evidence filter, which is the rule every other table follows.
-impl CoreScoped for CanonicalEvent {
-    fn evidence(&self) -> &[Evidence] {
-        &self.evidence
-    }
-
-    fn evidence_mut(&mut self) -> &mut Vec<Evidence> {
-        &mut self.evidence
-    }
-}
-
-/// A performance carries evidence, a bare grade, and a provider-local key; only the evidence can name
-/// the adapter that produced the row.
-impl CoreScoped for CanonicalPerformance {
-    fn evidence(&self) -> &[Evidence] {
-        &self.evidence
-    }
-
-    fn evidence_mut(&mut self) -> &mut Vec<Evidence> {
-        &mut self.evidence
-    }
-}
-
-/// Reduce rows to what the core could know on its own.
-///
-/// Non-core evidence, grade observations, and identities are removed first, exactly as they would be
-/// absent had the non-core adapters never been registered; a row left with no evidence at all is
-/// then dropped. Returns the number of dropped rows.
-pub fn retain_core<T: CoreScoped>(rows: &mut Vec<T>) -> usize {
-    let before = rows.len();
-    for row in rows.iter_mut() {
-        row.evidence_mut()
-            .retain(|evidence| is_core_source(&evidence.source.id));
-        row.drop_non_core_observations();
-        row.drop_non_core_identities();
-    }
-    rows.retain(|row| !row.evidence().is_empty());
-    before.saturating_sub(rows.len())
 }
 
 #[cfg(test)]

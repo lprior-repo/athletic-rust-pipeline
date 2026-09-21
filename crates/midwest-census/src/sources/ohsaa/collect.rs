@@ -7,9 +7,8 @@ use super::pages::parse_ad_page;
 use super::parse::resolve_school_name;
 use super::{Options, HOST, SEARCH_PATH};
 use crate::net::FetchOptions;
-use crate::sources::{AdapterContext, AdapterReport};
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
-use anyhow::Result;
 use census_domain::model::SourceNamespace;
 use std::collections::HashSet;
 
@@ -19,7 +18,7 @@ use std::collections::HashSet;
 ///
 /// Resumable: a school page is fetched only when `OH:<ohsaaId>` is absent from
 /// the `ohsaa_schools` journal. Both journals carry the same key.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ohsaa", "schools");
     let observed_on = if options.observed_on.trim().is_empty() {
         ctx.observed_on.clone()
@@ -77,7 +76,7 @@ async fn resolve_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
     report: &mut AdapterReport,
-) -> Result<Vec<SearchResult>> {
+) -> CrawlResult<Vec<SearchResult>> {
     let mut to_process = if !options.school_names.is_empty() {
         search_schools(ctx, options, report).await?
     } else {
@@ -119,7 +118,7 @@ async fn search_schools(
     ctx: &AdapterContext<'_>,
     options: &Options,
     report: &mut AdapterReport,
-) -> Result<Vec<SearchResult>> {
+) -> CrawlResult<Vec<SearchResult>> {
     let mut results = Vec::new();
     for name in &options.school_names {
         let url = format!("{HOST}{SEARCH_PATH}?Name={}", url_encode(name));
@@ -217,7 +216,7 @@ async fn process_school(
     observed_on: &str,
     report: &mut AdapterReport,
     tally: &mut Tally,
-) -> Result<()> {
+) -> CrawlResult<()> {
     let Some((sports_html, ad_html)) = fetch_pages(ctx, sr, report, tally).await else {
         return Ok(());
     };
@@ -241,7 +240,7 @@ fn emit_school(
     report: &mut AdapterReport,
     extract: &SchoolExtract,
     tally: &mut Tally,
-) -> Result<()> {
+) -> CrawlResult<()> {
     let school_key = format!("OH:{}", sr.ohsaa_id);
     ctx.store.append(Table::Schools, &extract.school)?;
     report.rows = report.rows.saturating_add(1);

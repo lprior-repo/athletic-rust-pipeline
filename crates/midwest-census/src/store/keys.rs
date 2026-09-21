@@ -4,10 +4,9 @@
 //! `<table>\0<entity-id>\0<sequence:u64 big-endian>` and `journal` by `<phase>\0<key>`. Both
 //! live here so a key can be built and parsed in one place.
 
-use anyhow::{bail, Context, Result};
 use serde::Deserialize;
 
-use super::{Store, Table, MAX_ID_BYTES};
+use super::{Store, StoreError, StoreResult, Table, MAX_ID_BYTES};
 
 /// The id field alone, borrowed out of a serialized observation so an append can key the row without
 /// deserializing the whole entity.
@@ -34,37 +33,54 @@ pub(super) fn observation_key(table: Table, id: &str, sequence: u64) -> Vec<u8> 
     out
 }
 
-/// Recover `(table, sequence)` from an observation key: `<table>\0<id>\0<sequence:u64 big-endian>`.
+/// Recover `(table, id, sequence)` from an observation key:
+/// `<table>\0<id>\0<sequence:u64 big-endian>`.
 ///
 /// The sequence is the fixed-width tail, so it is read positionally. Searching backwards for a NUL
 /// would misparse every key whose low sequence byte is zero and leave the store unable to reopen.
-pub(super) fn split_observation_key(key: &[u8]) -> Option<(&str, u64)> {
+pub(super) fn split_observation_key(key: &[u8]) -> Option<(&str, &str, u64)> {
     let sequence_start = key.len().checked_sub(8)?;
     let separator = sequence_start.checked_sub(1)?;
     if key.get(separator) != Some(&0) {
         return None;
     }
     let text = std::str::from_utf8(key.get(..separator)?).ok()?;
-    let (table, _id) = text.split_once('\0')?;
+    let (table, id) = text.split_once('\0')?;
     let sequence_bytes: [u8; 8] = key.get(sequence_start..)?.try_into().ok()?;
-    Some((table, u64::from_be_bytes(sequence_bytes)))
+    Some((table, id, u64::from_be_bytes(sequence_bytes)))
+}
+
+/// A store key as an operator reads it: an observation key becomes `<table>:<id>#<sequence>`, and
+/// any other key has its NUL separators shown as `:`. Used to name the row a failure came from.
+pub(super) fn key_label(key: &[u8]) -> String {
+    match split_observation_key(key) {
+        Some((table, id, sequence)) => format!("{table}:{id}#{sequence}"),
+        None => String::from_utf8_lossy(key).replace('\0', ":"),
+    }
 }
 
 /// The `id` field of a serialized observation, borrowed from the buffer that is about to be stored.
 ///
 /// The id is carried verbatim in the key, and Fjall asserts keys stay under 64 KiB. Rejecting an
 /// over-long id here keeps that assertion unreachable for any caller, including an HTTP ingest.
-pub(super) fn observation_id(bytes: &[u8]) -> Result<&str> {
+pub(super) fn observation_id(bytes: &[u8]) -> StoreResult<&str> {
     let parsed: ObservationId<'_> =
-        serde_json::from_slice(bytes).context("observation has no string id field")?;
+        serde_json::from_slice(bytes).map_err(|source| StoreError::Json {
+            detail: "observation has no string id field".to_string(),
+            source,
+        })?;
     if parsed.id.is_empty() {
-        bail!("observation id must not be empty");
+        return Err(StoreError::Invariant {
+            detail: "observation id must not be empty".to_string(),
+        });
     }
     if parsed.id.len() > MAX_ID_BYTES {
-        bail!(
-            "observation id of {} bytes exceeds the {MAX_ID_BYTES}-byte ceiling",
-            parsed.id.len()
-        );
+        return Err(StoreError::Invariant {
+            detail: format!(
+                "observation id of {} bytes exceeds the {MAX_ID_BYTES}-byte ceiling",
+                parsed.id.len()
+            ),
+        });
     }
     Ok(parsed.id)
 }

@@ -3,7 +3,7 @@
 //!
 //! No store access and no canonical mapping: entities are minted in [`super::map`].
 
-use anyhow::{Context, Result};
+use crate::sources::{CrawlError, CrawlResult};
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -96,14 +96,16 @@ pub struct StaffPerson {
 /// several titles ("Boys Athletic Director" and `"IHSA Official Representative"` are the same
 /// administrator here), so identity is `(PersonID, DefaultTitle)`: every role survives, exact
 /// repeats do not.
-pub fn parse_staff(body: &str) -> Result<Vec<StaffPerson>> {
+pub fn parse_staff(body: &str) -> CrawlResult<Vec<StaffPerson>> {
     #[derive(Deserialize)]
     struct Envelope {
         data: BTreeMap<String, Vec<StaffPerson>>,
     }
 
-    let envelope: Envelope =
-        serde_json::from_str(body).context("IHSA staff JSON is not a valid envelope")?;
+    let envelope: Envelope = serde_json::from_str(body).map_err(|source| CrawlError::Decode {
+        url: "IHSA staff JSON envelope".to_string(),
+        source,
+    })?;
     let mut seen = BTreeSet::new();
     let mut people = Vec::new();
     for (_, mut category) in envelope.data {
@@ -128,9 +130,12 @@ pub(super) fn nonempty(value: &str) -> Option<String> {
 }
 
 /// Parse the JSON envelope returned by `GET /v1/schools`.
-pub fn parse_schools(body: &str) -> Result<Vec<SchoolRecord>> {
+pub fn parse_schools(body: &str) -> CrawlResult<Vec<SchoolRecord>> {
     let envelope: SchoolsEnvelope =
-        serde_json::from_str(body).context("IHSA schools JSON is not a valid envelope")?;
+        serde_json::from_str(body).map_err(|source| CrawlError::Decode {
+            url: "IHSA schools JSON envelope".to_string(),
+            source,
+        })?;
     Ok(envelope.data)
 }
 

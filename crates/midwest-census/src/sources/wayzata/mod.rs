@@ -48,8 +48,7 @@
 //! ten-second floor to each request.
 
 use crate::school_index::SchoolIndex;
-use crate::sources::{AdapterContext, AdapterReport};
-use anyhow::Result;
+use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 
 mod map;
 mod parse;
@@ -93,7 +92,7 @@ pub struct Options {
 }
 
 /// Walk the provider's published schedules, minting one core meet per competition row.
-pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
+pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let observed_on = options
         .observed_on
         .clone()

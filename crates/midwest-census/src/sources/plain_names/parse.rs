@@ -1,6 +1,6 @@
 //! Shared string primitives: HTML cleanup, entity decoding and the name/role rules both halves use.
 
-use anyhow::Result;
+use crate::sources::{CrawlError, CrawlResult};
 use regex::Regex;
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -23,41 +23,55 @@ static NAME_SPLIT_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"\s*[,/&]\s*"));
 
 // Accessors for the literal patterns above: a bad pattern is a programming error, so it comes back
-// as the message the former `expect` carried — never a panic.
-fn tag_regex() -> Result<&'static Regex> {
-    TAG_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("tag regex: {e}"))
+// as a typed `RegexInit` naming the pattern — never a panic.
+fn tag_regex() -> CrawlResult<&'static Regex> {
+    TAG_REGEX.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "tag",
+        source: source.clone(),
+    })
 }
 
-fn comment_regex() -> Result<&'static Regex> {
+fn comment_regex() -> CrawlResult<&'static Regex> {
     COMMENT_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("comment regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "comment",
+            source: source.clone(),
+        })
 }
 
-fn whitespace_regex() -> Result<&'static Regex> {
+fn whitespace_regex() -> CrawlResult<&'static Regex> {
     WHITESPACE_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("whitespace regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "whitespace",
+            source: source.clone(),
+        })
 }
 
-pub(super) fn email_regex() -> Result<&'static Regex> {
+pub(super) fn email_regex() -> CrawlResult<&'static Regex> {
     EMAIL_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("email probe regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "email probe",
+            source: source.clone(),
+        })
 }
 
-fn coop_regex() -> Result<&'static Regex> {
-    COOP_REGEX
-        .as_ref()
-        .map_err(|e| anyhow::anyhow!("co-op regex: {e}"))
+fn coop_regex() -> CrawlResult<&'static Regex> {
+    COOP_REGEX.as_ref().map_err(|source| CrawlError::RegexInit {
+        pattern: "co-op",
+        source: source.clone(),
+    })
 }
 
-fn name_split_regex() -> Result<&'static Regex> {
+fn name_split_regex() -> CrawlResult<&'static Regex> {
     NAME_SPLIT_REGEX
         .as_ref()
-        .map_err(|e| anyhow::anyhow!("name split regex: {e}"))
+        .map_err(|source| CrawlError::RegexInit {
+            pattern: "name split",
+            source: source.clone(),
+        })
 }
 
 /// Office and building staff that must never become a coach or athletic director, even when the
@@ -78,12 +92,12 @@ const OFFICE_ROLE_TOKENS: [&str; 12] = [
 ];
 
 /// Remove HTML comments before matching; borrows (no copy) when the page has none.
-pub(super) fn without_comments(html: &str) -> Result<Cow<'_, str>> {
+pub(super) fn without_comments(html: &str) -> CrawlResult<Cow<'_, str>> {
     Ok(comment_regex()?.replace_all(html, " "))
 }
 
 /// Strip tags, decode the entities these two sources publish and collapse whitespace.
-pub(super) fn clean_text(raw: &str) -> Result<String> {
+pub(super) fn clean_text(raw: &str) -> CrawlResult<String> {
     let untagged = tag_regex()?.replace_all(raw, " ");
     // `&amp;` must be decoded last so `&amp;lt;` cannot become a tag.
     let decoded = untagged
@@ -129,13 +143,13 @@ pub(super) fn strip_honorific(value: &str) -> String {
 }
 
 /// Drop any co-op annotation and then the text that carried it.
-pub(super) fn strip_coop_note(value: &str) -> Result<String> {
+pub(super) fn strip_coop_note(value: &str) -> CrawlResult<String> {
     Ok(coop_regex()?.replace(value, " ").trim().to_string())
 }
 
 /// Split a published name cell into person names: `,`, `/` and `&` all appear as separators, and
 /// duplicates inside one cell (the source publishes `Jeff Tescher, Jeff Tescher`) collapse.
-pub(super) fn split_person_names(value: &str) -> Result<Vec<String>> {
+pub(super) fn split_person_names(value: &str) -> CrawlResult<Vec<String>> {
     let stripped = strip_coop_note(value)?;
     let splitter = name_split_regex()?;
     let mut names: Vec<String> = Vec::new();

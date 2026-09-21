@@ -4,7 +4,6 @@ use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::decode::process_response;
 use crate::net::request::{build_request, jittered_delay, RequestBody};
 use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher, MAX_RETRIES};
-use anyhow::Result;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -43,7 +42,7 @@ impl Fetcher {
         &self,
         gate: Arc<Mutex<()>>,
         plan: &FetchPlan<'_>,
-    ) -> Result<FetchOutcome> {
+    ) -> Result<FetchOutcome, FetchError> {
         let mut last_err: Option<FetchError> = None;
         for attempt in 1..=MAX_RETRIES {
             let _permit = gate.lock().await;
@@ -78,7 +77,7 @@ impl Fetcher {
                     last_err = Some(error);
                     break;
                 }
-                Step::Fail(error) => return Err(error.into()),
+                Step::Fail(error) => return Err(error),
             }
         }
         // All retries exhausted.
@@ -86,11 +85,11 @@ impl Fetcher {
             url: plan.url.to_string(),
             timeout_secs: plan.timeout_secs,
         });
-        Err(err.into())
+        Err(err)
     }
 
     /// Build the HTTP request and send it under the per-request timeout.
-    async fn dispatch(&self, plan: &FetchPlan<'_>) -> Result<reqwest::Response> {
+    async fn dispatch(&self, plan: &FetchPlan<'_>) -> Result<reqwest::Response, FetchError> {
         let request = build_request(
             &self.client,
             plan.method,
@@ -126,7 +125,7 @@ impl Fetcher {
     }
 
     /// Conditional GET: publish the cached body with refreshed timestamps, or re-fetch.
-    async fn replay_cached(&self, plan: &FetchPlan<'_>, attempt: u32) -> Result<Step> {
+    async fn replay_cached(&self, plan: &FetchPlan<'_>, attempt: u32) -> Result<Step, FetchError> {
         if let Some(meta) = plan.cached {
             if let Ok(bytes) = std::fs::read(plan.body_path) {
                 let mut refreshed = meta.clone();
@@ -181,8 +180,9 @@ impl Fetcher {
             status,
             url: plan.url.to_string(),
         };
-        // Retry on server errors (5xx) and client errors (429 rate-limit).
-        if status >= 500 || status == 429 {
+        // Retry the statuses [`FetchError::retryable`] classifies as transient: server errors
+        // (5xx) and client errors (429 rate-limit).
+        if error.retryable() {
             if attempt < MAX_RETRIES {
                 let delay = jittered_delay(attempt);
                 debug!(
