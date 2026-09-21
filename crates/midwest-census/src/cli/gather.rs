@@ -49,7 +49,7 @@ pub(super) async fn run_teams(
 ) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
     for state in states {
-        let teams = census::collect_state_teams(&fetcher, &store, state, refresh).await?;
+        let teams = census::collect_state_teams(&fetcher, store, state, refresh).await?;
         println!("{state}\tteams={}", teams.len());
         for team in teams.iter().take(3) {
             println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
@@ -113,7 +113,7 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
 pub(super) async fn run_collect(cli: &Cli, store: &Store, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
     let fetcher = build_fetcher(cli, store)?;
-    let report = census::collect_milesplit(&fetcher, &store, &options)
+    let report = census::collect_milesplit(&fetcher, store, &options)
         .await
         .context("milesplit collection")?;
     println!("{}", serde_json::to_string_pretty(&report)?);
