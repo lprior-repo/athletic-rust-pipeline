@@ -102,8 +102,20 @@ fn project_row(
     let team_id = row
         .get("AthleteID")
         .and_then(Value::as_u64)
-        .filter(|id| *id != 0)
-        .ok_or(PageParseError::WrongRelayTeamId)?;
+        .filter(|id| *id != 0);
+    // A blurred row keeps its roster entry in the payload but not its identity:
+    // this session receives `AthleteID: 0` for masked rows while `relayTeams`
+    // still carries their `IDResult` key, so the join cannot be verified. The
+    // row stays counted as an unresolved roster and the page still parses,
+    // mirroring the individual path's handling of anonymous rows.
+    let Some(team_id) = team_id else {
+        source.roster_present = Some(false);
+        observation.rows_missing_roster = observation
+            .rows_missing_roster
+            .checked_add(1)
+            .ok_or(PageParseError::CounterOverflow)?;
+        return Ok(());
+    };
     let members = members(roster, result_id, team_id)?;
     source.roster_present = Some(true);
     observation.rows_with_roster = observation

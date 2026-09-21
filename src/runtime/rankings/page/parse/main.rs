@@ -518,4 +518,56 @@ mod tests {
             }
         ));
     }
+
+    fn relay_expected(page: u32) -> ExpectedPageContext<'static> {
+        ExpectedPageContext {
+            division_id: DIVISION,
+            season_id: SEASON,
+            gender: "m",
+            event_short: "4x100m",
+            event_id: Some(20),
+            is_relay: true,
+            requested_grade: None,
+            page,
+        }
+    }
+
+    fn relay_body() -> serde_json::Value {
+        json!({
+            "division": {"ID": DIVISION, "SeasonID": SEASON, "BaseDiv": {"Country": "USA", "Level": 4}},
+            "gender": "m",
+            "eventShort": "4x100m",
+            "eventId": 20,
+            "settings": {"page": 1, "depth": 100, "grades": []},
+            "minCount": 1_288,
+            "groupedRankings": [[
+                // Masked row: the source still serves its roster entry, but the
+                // row arrives with `AthleteID: 0`, exactly as the live 4x100m
+                // list served it to this session.
+                {"rowNum": 1, "IDResult": 11, "AthleteID": 0, "GradeID": 99},
+                // Readable row: identity present and the roster joins by both keys.
+                {"rowNum": 2, "IDResult": 12, "AthleteID": 21, "GradeID": 99},
+            ]],
+            "relayTeams": {
+                "11": {"IDResult": 11, "RelayTeamID": 999, "Members": [
+                    {"SortID": 1, "GradeID": 11, "IDAthlete": 601, "AthleteName": "Masked Member", "Handle": "m"},
+                ]},
+                "12": {"IDResult": 12, "RelayTeamID": 21, "Members": [
+                    {"SortID": 1, "GradeID": 11, "IDAthlete": 501, "AthleteName": "Ada Relay", "Handle": "ada-r"},
+                ]},
+            },
+        })
+    }
+
+    #[test]
+    fn a_masked_relay_row_is_recorded_unresolved_instead_of_failing_the_page() {
+        let observation = parse_page_response(&relay_body(), &relay_expected(1))
+            .expect("masked relay rows do not fail the page");
+        assert_eq!(observation.rows_missing_roster, 1);
+        assert_eq!(observation.rows_with_roster, 1);
+        assert_eq!(observation.verified_relay_members.len(), 1);
+        assert_eq!(observation.verified_relay_members[0].athlete_id.get(), 501);
+        assert_eq!(observation.source_rows[0].roster_present, Some(false));
+        assert_eq!(observation.source_rows[1].roster_present, Some(true));
+    }
 }
