@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Midwest census incremental refresh weekly
+
+[Timer]
+# Sunday 03:17 local; the jitter keeps the twelve state walks from aligning with other cron work.
+OnCalendar=Sun *-*-* 03:17:00
+RandomizedDelaySec=900
+Persistent=true
+Unit=midwest-census-collect.service
+
+[Install]
+WantedBy=timers.target

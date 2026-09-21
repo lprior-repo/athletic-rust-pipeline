@@ -63,10 +63,11 @@ impl ArtifactStore {
 
     pub fn attempt_digests(&self, operation: &EvidenceDigest) -> Result<Vec<EvidenceDigest>> {
         let mut digests = Vec::new();
+        // One past the cap so the visitor rejects the overflow; the constant cannot saturate.
         self.inner
             .attempts
             .prefix(attempt_prefix(operation))
-            .take(MAX_ATTEMPT_EVIDENCE + 1)
+            .take(MAX_ATTEMPT_EVIDENCE.saturating_add(1))
             .try_for_each(|guard| {
                 if digests.len() == MAX_ATTEMPT_EVIDENCE {
                     return Err(StoreError::BatchTooLarge);

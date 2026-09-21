@@ -77,7 +77,7 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
 
 fn browser_failure(error: BrowserError) -> AttemptResult {
     let (code, retryable) = match error {
-        BrowserError::HumanRequired | BrowserError::Unavailable => {
+        BrowserError::HumanRequired | BrowserError::Unavailable | BrowserError::TaskPanicked => {
             (FailureCode::BrowserUnavailable, false)
         }
         BrowserError::PayloadLimit => (FailureCode::PayloadLimit, false),

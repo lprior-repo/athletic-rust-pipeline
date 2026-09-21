@@ -77,7 +77,7 @@ pub(super) fn name_ref_key(
     key.push(b'\0');
     key.extend_from_slice(checkpoint.as_str().as_bytes());
     key.push(b'\0');
-    // kind as u8: Individual=0, RelayMember=1
+    // kind byte: Individual=0, RelayMember=1
     let kind_byte: u8 = match kind {
         RankingCandidateKind::Individual => 0,
         RankingCandidateKind::RelayMember => 1,

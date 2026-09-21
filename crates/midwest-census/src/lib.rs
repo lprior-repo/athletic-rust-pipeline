@@ -22,6 +22,8 @@
 //! * [`bootstrap`] — the service supervisor: task region, cancel/drain/finalize shutdown, drain
 //!   report.
 
+#![forbid(unsafe_code)]
+
 pub mod bests;
 pub mod bootstrap;
 pub mod census;

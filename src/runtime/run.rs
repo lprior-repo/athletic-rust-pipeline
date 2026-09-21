@@ -174,9 +174,11 @@ impl RunCoordinator {
             return Ok(Json(None));
         };
         let progress = progress.0;
+        let page_ceiling = MAX_RUN_ROWS
+            .checked_div(u64::try_from(RESULT_PAGE_ROWS).map_err(terminal)?)
+            .ok_or_else(|| terminal("invalid export progress identity or page bound"))?;
         if progress.request.key().map_err(terminal)? != run.0.as_str()
-            || u64::from(progress.pages)
-                > MAX_RUN_ROWS / u64::try_from(RESULT_PAGE_ROWS).map_err(terminal)?
+            || u64::from(progress.pages) > page_ceiling
         {
             return Err(terminal("invalid export progress identity or page bound"));
         }

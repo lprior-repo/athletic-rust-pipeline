@@ -6,6 +6,8 @@
 //! [`Store::open`], so a run either holds the store for its whole life or fails with the reason
 //! instead of interleaving writes with another process.
 
+#![forbid(unsafe_code)]
+
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use midwest_census::bootstrap::ServeOptions;
@@ -33,6 +35,11 @@ struct Cli {
     /// Override the User-Agent sent with every request.
     #[arg(long, global = true)]
     user_agent: Option<String>,
+    /// Operator-authorized host (repeatable). Its robots.txt rules are recorded on the run and the
+    /// stats as `robots_authorized` instead of blocking requests, under the 2 rps per-host ceiling.
+    /// A bare domain authorizes its subdomains. Default: every host's robots rules are enforced.
+    #[arg(long = "authorized-host", global = true, value_name = "HOST")]
+    authorized_hosts: Vec<String>,
     #[command(subcommand)]
     command: Command,
 }
@@ -83,6 +90,9 @@ enum Command {
     Bests(BestsArgs),
     /// Build the census workbook (`.xlsx`) and its text sidecars.
     Workbook(WorkbookArgs),
+    /// Run the whole cycle in one command: gather the authorized registry, consolidate, publish both
+    /// census scopes, reduce best marks, and write the workbook.
+    Run(RunArgs),
     /// Print the Fjall store's per-table observation counts and on-disk footprint.
     FjallStats,
     /// Import pre-Fjall JSONL journals into the store (one-time), then print the store stats.
@@ -94,7 +104,7 @@ enum Command {
 #[derive(Args, Debug)]
 struct ProviderArgs {
     /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule,
-    /// athleticlive, athleticlive_athletes.
+    /// athleticlive, athleticlive_athletes, athleticnet.
     name: String,
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
@@ -158,6 +168,36 @@ struct BestsArgs {
 }
 
 #[derive(Args, Debug)]
+struct RunArgs {
+    /// Athletic.net athlete registry: one `athlete_id` or `athlete_id,ST` per line. Omitted, the
+    /// cycle publishes whatever the store already holds.
+    #[arg(long)]
+    input: Option<String>,
+    /// State codes for the registry, used only for lines that name no state (so exactly one).
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<String>,
+    /// Cap the athletes read from the registry, and the rows each later stage writes.
+    #[arg(long)]
+    limit: Option<usize>,
+    /// Graduation year the best-mark reduction and the workbook are built for (2027 = class of 2027).
+    #[arg(long, default_value_t = 2027)]
+    grad_year: u16,
+    /// Reduce best marks over every source rather than the core scope alone. The core scope excludes
+    /// the Athletic.net source by design, so a registry-only store reduces nothing without this.
+    #[arg(long)]
+    all_sources: bool,
+    /// Ignore cached HTTP bodies and re-fetch.
+    #[arg(long)]
+    refresh: bool,
+    /// ISO date stamped into evidence (defaults to today).
+    #[arg(long)]
+    observed_on: Option<String>,
+    /// Workbook path (defaults to the store's own `out/` path).
+    #[arg(long)]
+    out: Option<PathBuf>,
+}
+
+#[derive(Args, Debug)]
 struct WorkbookArgs {
     /// Where to write the `.xlsx` (defaults to `<store>/out/midwest-census-<generated-on>.xlsx`).
     #[arg(long)]
@@ -168,6 +208,9 @@ struct WorkbookArgs {
     /// Cap the per-athlete best-mark sheet at N rows.
     #[arg(long)]
     limit: Option<usize>,
+    /// Reduce the best-results sheet over every source rather than the core scope alone.
+    #[arg(long)]
+    all_sources: bool,
 }
 
 fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
@@ -176,6 +219,7 @@ fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
         cli.user_agent.clone(),
         Duration::from_millis(cli.delay_ms),
         default_host_delays(),
+        cli.authorized_hosts.clone(),
     )
 }
 
@@ -412,8 +456,21 @@ async fn main() -> Result<()> {
                     )
                     .await
                 }
+                "athleticnet" => {
+                    providers::athleticnet::collect(
+                        &context,
+                        &providers::athleticnet::Options {
+                            input: args.input.clone(),
+                            limit: args.limit,
+                            refresh: args.refresh,
+                            observed_on,
+                            states: args.states.clone(),
+                        },
+                    )
+                    .await
+                }
                 other => bail!(
-                    "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes"
+                    "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes, athleticnet"
                 ),
             }
             .with_context(|| format!("adapter {}", args.name))?;
@@ -453,10 +510,111 @@ async fn main() -> Result<()> {
         }
         Command::Bests(args) => run_bests(&store, args)?,
         Command::Workbook(args) => run_workbook(&store, args)?,
+        Command::Run(args) => run_cycle(&cli, &store, args).await?,
         Command::FjallStats => print_store_stats(&store)?,
         Command::ImportLegacy => run_legacy_import(&store)?,
         Command::Serve => print_serve_command(&cli),
     }
+    Ok(())
+}
+
+/// The whole cycle in one command: gather (when a registry is given), consolidate, publish both
+/// census scopes, reduce best marks, and write the workbook.
+///
+/// Each stage is the same code path its own subcommand uses, and every stage is resumable, so a run
+/// that fails half way is continued by re-running it rather than restarted.
+async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
+    let observed_on = args
+        .observed_on
+        .clone()
+        .unwrap_or_else(midwest_census::net::today_iso);
+    let grad_year = school_year(args.grad_year)?;
+    let scope = scope_of(args.all_sources);
+
+    match &args.input {
+        Some(input) => {
+            let fetcher = build_fetcher(cli, store)?;
+            let context = midwest_census::sources::AdapterContext {
+                fetcher: &fetcher,
+                store,
+                refresh: args.refresh,
+                school_year: SchoolYear(2026),
+                observed_on: observed_on.clone(),
+            };
+            let report = midwest_census::sources::athleticnet::collect(
+                &context,
+                &midwest_census::sources::athleticnet::Options {
+                    input: Some(input.clone()),
+                    limit: args.limit,
+                    refresh: args.refresh,
+                    observed_on,
+                    states: args.states.clone(),
+                },
+            )
+            .await
+            .with_context(|| format!("gathering the athletic.net registry {input}"))?;
+            println!(
+                "gather\tathleticnet\tathletes={} requests={} errors={}",
+                report.rows, report.requests, report.errors
+            );
+            for note in &report.notes {
+                println!("\t{note}");
+            }
+        }
+        None => {
+            println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
+        }
+    }
+
+    let counts = census::consolidate(store).context("consolidating the store")?;
+    println!(
+        "consolidate\t{}",
+        counts
+            .iter()
+            .map(|(table, count)| format!("{table}={count}"))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+
+    for scope in [report::Scope::AllSources, report::Scope::Core] {
+        let census = report::build_census(store, scope).context("building the census")?;
+        let (json_path, csv_path) = report::write_census(store, &census, scope)?;
+        println!(
+            "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
+            json_path.display(),
+            census.scope,
+            census.totals.schools,
+            census.totals.athletes,
+            census.totals.class_of_2027_with_profile_url,
+            census.totals.class_of_2027_multisource
+        );
+        println!("\t{}", csv_path.display());
+    }
+
+    let bests = bests::Options {
+        scope,
+        grad_year: Some(grad_year),
+        limit: args.limit,
+    };
+    let rows = bests::build(store, &bests).context("reducing the best marks")?;
+    let cohort = cohort_label(Some(grad_year));
+    let (jsonl, csv) = bests::write(store, &rows, &cohort).context("writing the best marks")?;
+    println!(
+        "bests\tcohort={cohort} rows={} scope={}\t{}",
+        rows.len(),
+        if args.all_sources { "all" } else { "core" },
+        jsonl.display()
+    );
+    println!("\t{}", csv.display());
+
+    let workbook = workbook::Options {
+        grad_year: Some(grad_year),
+        out: args.out.clone(),
+        limit: args.limit,
+        scope,
+    };
+    let path = workbook::build(store, &workbook).context("building the census workbook")?;
+    println!("workbook\t{}", path.display());
     Ok(())
 }
 
@@ -492,6 +650,7 @@ fn run_workbook(store: &Store, args: &WorkbookArgs) -> Result<()> {
         grad_year: Some(school_year(args.grad_year)?),
         out: args.out.clone(),
         limit: args.limit,
+        scope: scope_of(args.all_sources),
     };
     let path = workbook::build(store, &options).context("building the census workbook")?;
     println!("wrote {}", path.display());
@@ -543,6 +702,15 @@ fn legacy_journal_bytes(path: &Path) -> Result<Option<u64>> {
 }
 
 /// `bests::write` and `workbook` agree on this label: `co2027` for one class, `all` for every cohort.
+/// The scope a `--all-sources` flag selects.
+fn scope_of(all_sources: bool) -> report::Scope {
+    if all_sources {
+        report::Scope::AllSources
+    } else {
+        report::Scope::Core
+    }
+}
+
 fn cohort_label(grad_year: Option<i16>) -> String {
     grad_year.map_or_else(|| "all".to_string(), |year| format!("co{year}"))
 }

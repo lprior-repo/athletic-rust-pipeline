@@ -27,16 +27,74 @@ pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayL
 use regex::Regex;
 use std::sync::LazyLock;
 
-static EVENT_HEADER: LazyLock<Regex> = LazyLock::new(|| {
+static EVENT_HEADER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(r"^(?:Event\s+\d+\s+)?(Boys|Girls)\s+(.+?)(?:\s+(Division\s+[0-9A-Za-z]+))?\s*$")
-        .expect("valid regex")
 });
-static RELAY_LEG: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^0-9]+?)\s+(\d{1,2})\b").expect("valid regex"));
-static PLACE_PREFIX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\d+\)").expect("valid regex"));
-static MARK_TOKEN: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[0-9][0-9:.\-]*[A-Za-z]?$").expect("valid regex"));
+static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^0-9]+?)\s+(\d{1,2})\b"));
+static PLACE_PREFIX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^\d+\)"));
+static MARK_TOKEN: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^[0-9][0-9:.\-]*[A-Za-z]?$"));
+static DATED: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(
+        r"^(.*?)\s+-\s+(\d{1,2})/(\d{1,2})/(\d{4})(?:\s+to\s+(\d{1,2})/(\d{1,2})/(\d{4}))?\s*$",
+    )
+});
+static PRE: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<pre[^>]*>(.*?)(?:</pre>|\z)"));
+static PARA: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<p[^>]*>(.*?)</p>"));
+static BREAK: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<br\s*/?>"));
+static TAG: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
+
+// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
+// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
+fn event_header_regex() -> anyhow::Result<&'static Regex> {
+    EVENT_HEADER
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn relay_leg_regex() -> anyhow::Result<&'static Regex> {
+    RELAY_LEG
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn place_prefix_regex() -> anyhow::Result<&'static Regex> {
+    PLACE_PREFIX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn mark_token_regex() -> anyhow::Result<&'static Regex> {
+    MARK_TOKEN
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn dated_regex() -> anyhow::Result<&'static Regex> {
+    DATED.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn pre_regex() -> anyhow::Result<&'static Regex> {
+    PRE.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn para_regex() -> anyhow::Result<&'static Regex> {
+    PARA.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn break_regex() -> anyhow::Result<&'static Regex> {
+    BREAK.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn tag_regex() -> anyhow::Result<&'static Regex> {
+    TAG.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
 /// Names arrive as `First Last` (PrimeTime) and as `Last, First` (TrackSide); the guard exists to
 /// catch a mis-sliced field, which shows up as digits from a neighbouring mark, not to police
 /// punctuation.
@@ -134,7 +192,7 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
                 out.push(Token {
                     start: from,
                     end: index,
-                    text: &line[from..index],
+                    text: line.get(from..index).unwrap_or_default(),
                 });
             }
         } else if start.is_none() {
@@ -145,7 +203,7 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
         out.push(Token {
             start: from,
             end: line.len(),
-            text: &line[from..],
+            text: line.get(from..).unwrap_or_default(),
         });
     }
     out
@@ -156,16 +214,18 @@ pub(crate) fn tokens(line: &str) -> Vec<Token<'_>> {
 pub(crate) fn substring(line: &str, start: usize, end: usize) -> String {
     let mut from = start.min(line.len());
     let mut to = end.min(line.len());
+    // A header offset can land inside a multi-byte character; these walks step to the next
+    // boundary. Both saturate at the line end, which is where each walk terminates anyway.
     while from < line.len() && !line.is_char_boundary(from) {
-        from += 1;
+        from = from.saturating_add(1);
     }
     while to > from && !line.is_char_boundary(to) {
-        to -= 1;
+        to = to.saturating_sub(1);
     }
     if from >= to {
         return String::new();
     }
-    line[from..to].trim().to_string()
+    line.get(from..to).unwrap_or_default().trim().to_string()
 }
 
 /// Every labelled column anchor of a report header line, in the order it is printed.
@@ -176,19 +236,23 @@ pub(crate) fn substring(line: &str, start: usize, end: usize) -> String {
 pub(crate) fn columns_from_header(header: &str) -> Vec<Column> {
     let mut columns: Vec<Column> = Vec::new();
     for (offset, _) in header.char_indices() {
-        if offset > 0 && !header[..offset].ends_with(' ') {
+        if offset > 0
+            && !header
+                .get(..offset)
+                .is_some_and(|prefix| prefix.ends_with(' '))
+        {
             continue;
         }
-        let rest = &header[offset..];
+        let Some(rest) = header.get(offset..) else {
+            continue;
+        };
         let matched = TEXT_LABELS
             .iter()
             .chain(NUMERIC_LABELS.iter())
             .find(|label| {
-                rest.starts_with(**label)
-                    && rest[label.len()..]
-                        .chars()
-                        .next()
-                        .is_none_or(|ch| ch == ' ' || ch == '\t')
+                rest.strip_prefix(**label).is_some_and(|tail| {
+                    tail.chars().next().is_none_or(|ch| ch == ' ' || ch == '\t')
+                })
             });
         let Some(label) = matched else { continue };
         if columns.iter().any(|column| column.start == offset) {
@@ -197,7 +261,9 @@ pub(crate) fn columns_from_header(header: &str) -> Vec<Column> {
         columns.push(Column {
             label: (*label).to_string(),
             start: offset,
-            end: offset + label.len(),
+            // A label always ends inside the line it was matched in; saturating keeps the sum from
+            // wrapping rather than truncating the label.
+            end: offset.saturating_add(label.len()),
             numeric: !TEXT_LABELS.contains(label),
         });
     }
@@ -252,9 +318,12 @@ impl Section {
     /// The token printed under `column`: numeric columns are right-aligned to the label's edge, so
     /// the match is on the token that ends there.
     fn numeric_token_for<'a>(&self, tokens: &[Token<'a>], column: &Column) -> Option<Token<'a>> {
+        // The right-aligned token meets the label's edge, within the single space that separates
+        // the columns; the bound saturates instead of wrapping past the end of the line.
+        let edge = column.end.saturating_add(1);
         tokens
             .iter()
-            .filter(|token| token.end + 1 >= column.end && token.end <= column.end + 1)
+            .filter(|token| token.end.saturating_add(1) >= column.end && token.end <= edge)
             .min_by_key(|token| column.end.abs_diff(token.end))
             .copied()
     }
@@ -297,8 +366,11 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
 
     let mut events: Vec<ParsedEvent> = Vec::new();
     let mut section: Option<Section> = None;
+    // Report counters saturate: a file of more than `usize::MAX` lines cannot exist, so saturation
+    // never changes a published count and the increments cannot wrap.
     let mut row_lines = 0usize;
     let mut skipped_rows = 0usize;
+    let place_prefix = place_prefix_regex().ok();
 
     for line in lines {
         let trimmed = line.trim();
@@ -323,7 +395,7 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
             continue;
         }
         // Relay legs belong to the relay row above them.
-        if PLACE_PREFIX.is_match(trimmed) {
+        if place_prefix.is_some_and(|pattern| pattern.is_match(trimmed)) {
             if let Some(event) = events.last_mut() {
                 if event.kind.is_relay() {
                     if let Some(row) = event.rows.last_mut() {
@@ -345,11 +417,11 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
         };
         let Some(row) = parse_row(line, &event.kind, section) else {
             if starts_like_a_row(trimmed) {
-                skipped_rows += 1;
+                skipped_rows = skipped_rows.saturating_add(1);
             }
             continue;
         };
-        row_lines += 1;
+        row_lines = row_lines.saturating_add(1);
         event.rows.push(row);
     }
 
@@ -368,18 +440,13 @@ pub fn parse(lines: &[String], source: SourceRef) -> Option<ParsedMeet> {
 /// The meet name and dates are published on one header line, either as a single day
 /// (`Name - 6/6/2025`) or as a range (`Name - 6/6/2025 to 6/7/2025`).
 fn header_meet(lines: &[String]) -> Option<(String, String, Option<String>)> {
-    static DATED: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(
-            r"^(.*?)\s+-\s+(\d{1,2})/(\d{1,2})/(\d{4})(?:\s+to\s+(\d{1,2})/(\d{1,2})/(\d{4}))?\s*$",
-        )
-        .expect("regex")
-    });
+    let dated = dated_regex().ok()?;
     for line in lines.iter().take(40) {
         let trimmed = line.trim();
         if trimmed.is_empty() || trimmed.starts_with("Licensed to") {
             continue;
         }
-        let Some(captures) = DATED.captures(trimmed) else {
+        let Some(captures) = dated.captures(trimmed) else {
             continue;
         };
         let name = captures.get(1)?.as_str().trim().to_string();
@@ -411,7 +478,7 @@ fn header_meet(lines: &[String]) -> Option<(String, String, Option<String>)> {
 }
 
 fn event_header(trimmed: &str) -> Option<ParsedEvent> {
-    let captures = EVENT_HEADER.captures(trimmed)?;
+    let captures = event_header_regex().ok()?.captures(trimmed)?;
     let gender = match captures.get(1)?.as_str() {
         "Boys" => Gender::Boys,
         _ => Gender::Girls,
@@ -572,20 +639,23 @@ fn parse_row(line: &str, kind: &EventKind, section: &Section) -> Option<ParsedRo
 /// Hy-Tek's HTML export either wraps each report line in one `<p>` or hands the whole report over
 /// inside a single `<pre>`; both shapes occur in the WIAA archive and must yield the same lines.
 pub fn lines_from_html(body: &str) -> Vec<String> {
-    static PRE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?is)<pre[^>]*>(.*?)(?:</pre>|\z)").expect("regex"));
-    static PARA: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"(?is)<p[^>]*>(.*?)</p>").expect("regex"));
-    static BREAK: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<br\s*/?>").expect("regex"));
-
     // Older releases wrap the whole report in one `<PRE>` block (line breaks carry the layout, tags
     // arrive uppercase); newer releases emit one `<P>` per line.
-    if let Some(capture) = PRE.captures(body) {
+    let pre = pre_regex().ok();
+    let breaks = break_regex().ok();
+    if let Some(capture) = pre.and_then(|pattern| pattern.captures(body)) {
         let inner = capture.get(1).map(|m| m.as_str()).unwrap_or_default();
-        let spaced = BREAK.replace_all(inner, "\n");
+        let spaced = match breaks {
+            Some(pattern) => pattern.replace_all(inner, "\n"),
+            None => std::borrow::Cow::Borrowed(inner),
+        };
         return strip_tags(&spaced).lines().map(clean_line).collect();
     }
-    PARA.captures_iter(body)
+    let Ok(paragraph) = para_regex() else {
+        return Vec::new();
+    };
+    paragraph
+        .captures_iter(body)
         .map(|capture| {
             let inner = capture.get(1).map(|m| m.as_str()).unwrap_or_default();
             clean_line(&strip_tags(inner))
@@ -611,8 +681,10 @@ pub fn lines_from_pdf_text(text: &str) -> Vec<String> {
 }
 
 fn strip_tags(inner: &str) -> String {
-    static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").expect("regex"));
-    TAG.replace_all(inner, "").into_owned()
+    let Ok(tag) = tag_regex() else {
+        return inner.to_string();
+    };
+    tag.replace_all(inner, "").into_owned()
 }
 
 fn clean_line(raw: &str) -> String {
@@ -708,7 +780,10 @@ fn parse_marks(kind: &EventKind, mark_token: &str, tail: &str) -> Option<ParsedM
             .trim_end_matches(['Q', 'q', 'P', 'p'])
             .trim_start_matches(['J', 'j'])
             .to_string();
-        if !MARK_TOKEN.is_match(&numeric) {
+        let Ok(mark_pattern) = mark_token_regex() else {
+            return None;
+        };
+        if !mark_pattern.is_match(&numeric) {
             return None;
         }
         if kind.is_field() {
@@ -753,12 +828,19 @@ fn parse_marks(kind: &EventKind, mark_token: &str, tail: &str) -> Option<ParsedM
 }
 
 fn parse_legs(trimmed: &str, filled: usize) -> Vec<RelayLeg> {
+    let Ok(relay_leg) = relay_leg_regex() else {
+        return Vec::new();
+    };
     let mut legs = Vec::new();
-    for captures in RELAY_LEG.captures_iter(trimmed) {
+    for captures in relay_leg.captures_iter(trimmed) {
+        // The fallback counts the legs already on the row; it saturates rather than wrapping, so a
+        // leg is never renumbered to 0 the way a truncating cast would.
+        let fallback =
+            u8::try_from(filled.saturating_add(legs.len()).saturating_add(1)).unwrap_or(u8::MAX);
         let position: u8 = captures
             .get(1)
             .and_then(|m| m.as_str().parse().ok())
-            .unwrap_or((filled + legs.len() + 1) as u8);
+            .unwrap_or(fallback);
         let name = captures
             .get(2)
             .map(|m| m.as_str().trim().to_string())

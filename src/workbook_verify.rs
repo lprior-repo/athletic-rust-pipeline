@@ -319,11 +319,14 @@ fn parse_headers(row: &Row, retained_header_bytes: &mut usize) -> Result<Vec<Str
     .context("worksheet header width conversion overflow")?;
     let headers = (0..width)
         .map(|column| {
-            row.cells
-                .get(&(column as u32))
-                .map_or_else(String::new, Clone::clone)
+            let column =
+                u32::try_from(column).context("worksheet header column conversion overflow")?;
+            Ok(row
+                .cells
+                .get(&column)
+                .map_or_else(String::new, Clone::clone))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>>>()?;
     if headers.iter().any(String::is_empty) {
         bail!("worksheet header contains an empty field");
     }
@@ -384,15 +387,10 @@ fn compare_row(
         .matched_fields
         .checked_add(width)
         .context("matched field count overflow")?;
-    (0..source_width).try_for_each(|column| {
-        let expected = source
-            .cells
-            .get(&(column as u32))
-            .map_or("", String::as_str);
-        let actual = output
-            .cells
-            .get(&(column as u32))
-            .map_or("", String::as_str);
+    let columns = u32::try_from(source_width).context("source field column count overflow")?;
+    (0..columns).try_for_each(|column| {
+        let expected = source.cells.get(&column).map_or("", String::as_str);
+        let actual = output.cells.get(&column).map_or("", String::as_str);
         if expected == actual {
             Ok(())
         } else {

@@ -133,23 +133,18 @@ fn collapse_whitespace(value: &str) -> String {
 fn strip_tags(fragment: &str) -> String {
     let mut result = String::with_capacity(fragment.len());
     let mut in_tag = false;
-    let bytes = fragment.as_bytes();
-    let mut i = 0;
-    while i < bytes.len() {
-        if bytes[i] == b'<' {
-            in_tag = true;
-            i += 1;
-        } else if bytes[i] == b'>' {
-            in_tag = false;
-            i += 1;
-            if i < bytes.len() && bytes[i] != b' ' {
-                result.push(' ');
+    let mut bytes = fragment.as_bytes().iter().copied().peekable();
+    while let Some(byte) = bytes.next() {
+        match byte {
+            b'<' => in_tag = true,
+            b'>' => {
+                in_tag = false;
+                if bytes.peek().is_some_and(|next| *next != b' ') {
+                    result.push(' ');
+                }
             }
-        } else if !in_tag {
-            result.push(bytes[i] as char);
-            i += 1;
-        } else {
-            i += 1;
+            other if !in_tag => result.push(char::from(other)),
+            _ => {}
         }
     }
     collapse_whitespace(&result)
@@ -228,14 +223,9 @@ fn valid_email(value: &str) -> Option<String> {
     if v.is_empty() {
         return None;
     }
-    if let Some(at) = v.find('@') {
-        let local = &v[..at];
-        let domain = &v[at + 1..];
-        if !local.is_empty() && !domain.is_empty() && domain.contains('.') {
-            Some(v.to_string())
-        } else {
-            None
-        }
+    let (local, domain) = v.split_once('@')?;
+    if !local.is_empty() && !domain.is_empty() && domain.contains('.') {
+        Some(v.to_string())
     } else {
         None
     }
@@ -250,26 +240,29 @@ fn valid_email(value: &str) -> Option<String> {
 pub fn parse_search(html: &str) -> Vec<SearchResult> {
     let mut results = Vec::new();
     let mut seen_ids: HashSet<String> = HashSet::new();
-    let mut cursor = 0;
 
-    while let Some(row_start) = html[cursor..].find("<tr>") {
-        let abs = cursor + row_start;
-        if let Some(end) = html[abs..].find("</tr>") {
-            let row = &html[abs..abs + end];
-            cursor = abs + end + 5;
-
-            let id = extract_ohsaa_id(row);
-            if let Some(ref id) = id {
-                if seen_ids.insert(id.clone()) {
-                    results.push(SearchResult {
-                        name: extract_cell_text(row, 0),
-                        city: extract_cell_text(row, 1),
-                        ohsaa_id: id.clone(),
-                    });
-                }
-            }
-        } else {
+    // Rows are the `</tr>`-terminated segments in document order; a `<tr>` with no closing tag
+    // ends the scan, which is what the previous cursor walk did.
+    for chunk in html.split_inclusive("</tr>") {
+        let Some(body) = chunk.strip_suffix("</tr>") else {
             break;
+        };
+        let Some(open) = body.find("<tr>") else {
+            continue;
+        };
+        let Some(row) = body.get(open..) else {
+            continue;
+        };
+
+        let Some(id) = extract_ohsaa_id(row) else {
+            continue;
+        };
+        if seen_ids.insert(id.clone()) {
+            results.push(SearchResult {
+                name: extract_cell_text(row, 0),
+                city: extract_cell_text(row, 1),
+                ohsaa_id: id,
+            });
         }
     }
 
@@ -277,38 +270,28 @@ pub fn parse_search(html: &str) -> Vec<SearchResult> {
 }
 
 fn extract_ohsaa_id(row: &str) -> Option<String> {
-    if let Some(pos) = row.find("ohsaaId=") {
-        let after = &row[pos + 8..];
-        let end = after
-            .find(|c: char| !c.is_ascii_digit())
-            .unwrap_or(after.len());
-        let id = &after[..end];
-        if !id.is_empty() {
-            return Some(id.to_string());
-        }
+    let (_, after) = row.split_once("ohsaaId=")?;
+    let end = after
+        .find(|c: char| !c.is_ascii_digit())
+        .unwrap_or(after.len());
+    let id = after.get(..end)?;
+    if !id.is_empty() {
+        return Some(id.to_string());
     }
     None
 }
 
 fn extract_cell_text(row: &str, index: usize) -> String {
-    let mut count = 0;
-    let mut cursor = 0;
-    while count < index {
-        if let Some(pos) = row[cursor..].find("<td>") {
-            cursor += pos + 4;
-            count += 1;
-        } else {
-            return String::new();
-        }
+    let Some((start, _)) = row.match_indices("<td>").nth(index) else {
+        return String::new();
+    };
+    let Some(after_td) = row.get(start..).and_then(|tail| tail.strip_prefix("<td>")) else {
+        return String::new();
+    };
+    match after_td.split_once("</td>") {
+        Some((cell, _)) => decode_entities(&strip_tags(cell)),
+        None => String::new(),
     }
-    if let Some(td_start) = row[cursor..].find("<td>") {
-        let after_td = &row[cursor + td_start + 4..];
-        if let Some(td_end) = after_td.find("</td>") {
-            let cell = &after_td[..td_end];
-            return decode_entities(&strip_tags(cell));
-        }
-    }
-    String::new()
 }
 
 /// Resolve a school name to a unique OHSAA id using the search results.
@@ -338,20 +321,18 @@ pub fn resolve_school_name(
         }
     }
 
-    if exact_matches.len() == 1 {
-        return Some((*exact_matches[0]).clone());
-    }
-
-    if !exact_matches.is_empty() {
+    if exact_matches.len() > 1 {
         notes.push(format!(
             "ambiguous name \"{}\": {} distinct schools share the normalised name, using first match",
             query, exact_matches.len()
         ));
-        return Some((*exact_matches[0]).clone());
+    }
+    if let Some(first) = exact_matches.first() {
+        return Some((**first).clone());
     }
 
     if results.len() == 1 {
-        return Some(results.into_iter().next().unwrap());
+        return results.into_iter().next();
     }
 
     let unique_ids: HashSet<&str> = by_id.keys().map(|s| s.as_str()).collect();
@@ -385,9 +366,8 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
         return None;
     }
 
-    let name = if let Some(paren) = cleaned.find(" (Div-") {
-        let raw = cleaned[..paren].trim();
-        strip_honorific(raw.trim_end_matches(','))
+    let name = if let Some((before_div, _)) = cleaned.split_once(" (Div-") {
+        strip_honorific(before_div.trim().trim_end_matches(','))
     } else {
         strip_honorific(&cleaned)
     };
@@ -395,14 +375,12 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
         return None;
     }
 
-    let email = if let Some(pos) = cell_html.find("href=\"mailto:") {
-        let after = &cell_html[pos + 13..];
+    let email = if let Some((_, after)) = cell_html.split_once("href=\"mailto:") {
         let end = after.find('"').unwrap_or(after.len());
-        valid_email(&after[..end])
-    } else if let Some(pos) = cell_html.find("href='mailto:") {
-        let after = &cell_html[pos + 13..];
+        after.get(..end).and_then(valid_email)
+    } else if let Some((_, after)) = cell_html.split_once("href='mailto:") {
         let end = after.find('\'').unwrap_or(after.len());
-        valid_email(&after[..end])
+        after.get(..end).and_then(valid_email)
     } else {
         None
     };
@@ -414,45 +392,41 @@ pub fn parse_coach_cell(cell_html: &str) -> Option<CoachEntry> {
 ///
 /// Returns tuples of (sport_label, boys_coach, girls_coach).
 pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option<CoachEntry>)> {
-    let mut cursor = 0;
-    let table_start = loop {
-        if let Some(pos) = html[cursor..].find("informationSportHeaderRow") {
-            break cursor + pos;
-        }
-        if let Some(pos) = html[cursor..].find("<table") {
-            cursor += pos + 6;
-        } else {
-            return Vec::new();
-        }
+    let Some(table_start) = html.find("informationSportHeaderRow") else {
+        return Vec::new();
+    };
+    let Some(table) = html.get(table_start..) else {
+        return Vec::new();
     };
 
     let mut sections = Vec::new();
-    let mut row_cursor = table_start;
-
-    while let Some(tr_start) = html[row_cursor..].find("<tr") {
-        let tr_abs = row_cursor + tr_start;
-        if let Some(end_abs) = html[tr_abs..].find("</tr>").map(|e| tr_abs + e + 5) {
-            let row = &html[tr_abs..end_abs];
-            row_cursor = end_abs;
-
-            if row.contains("informationSportHeaderRow") {
-                continue;
-            }
-
-            let sport_raw = extract_td_text(row, 0);
-            let boys_raw = extract_td_text(row, 1);
-            let girls_raw = extract_td_text(row, 2);
-
-            let sport_label = strip_tags(&decode_entities(&sport_raw)).trim().to_string();
-            if let Some(_sport) = parse_sport_label(&sport_label) {
-                let boys = parse_coach_cell(&boys_raw);
-                let girls = parse_coach_cell(&girls_raw);
-                if boys.is_some() || girls.is_some() {
-                    sections.push((sport_label, boys, girls));
-                }
-            }
-        } else {
+    for chunk in table.split_inclusive("</tr>") {
+        // A `<tr` that never closes cannot yield a row; the previous cursor walk stopped there.
+        if chunk.strip_suffix("</tr>").is_none() {
             break;
+        }
+        let Some(open) = chunk.find("<tr") else {
+            continue;
+        };
+        let Some(row) = chunk.get(open..) else {
+            continue;
+        };
+
+        if row.contains("informationSportHeaderRow") {
+            continue;
+        }
+
+        let sport_raw = extract_td_text(row, 0);
+        let boys_raw = extract_td_text(row, 1);
+        let girls_raw = extract_td_text(row, 2);
+
+        let sport_label = strip_tags(&decode_entities(&sport_raw)).trim().to_string();
+        if parse_sport_label(&sport_label).is_some() {
+            let boys = parse_coach_cell(&boys_raw);
+            let girls = parse_coach_cell(&girls_raw);
+            if boys.is_some() || girls.is_some() {
+                sections.push((sport_label, boys, girls));
+            }
         }
     }
 
@@ -462,20 +436,20 @@ pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option
 /// Extract text from the Nth <td> in a row (no tag stripping yet).
 fn extract_td_text(row: &str, index: usize) -> String {
     let mut count = 0;
-    let mut cursor = 0;
-    while let Some(pos) = row[cursor..].find("<td") {
-        let td_start = cursor + pos;
-        if let Some(td_end) = row[td_start..].find("</td>") {
-            let text = &row[td_start..td_start + td_end];
-            if count == index {
-                return text.to_string();
-            }
-            // Advance past this TD
-            cursor = td_start + td_end + 5;
-            count += 1;
-        } else {
+    let mut rest = row;
+    while let Some(open) = rest.find("<td") {
+        let Some(from_td) = rest.get(open..) else {
             break;
+        };
+        let Some((text, after)) = from_td.split_once("</td>") else {
+            break;
+        };
+        if count == index {
+            return text.to_string();
         }
+        // The previous cursor moved past `</td>`, so a `<td` nested inside a cell is not a cell.
+        rest = after;
+        count = count.saturating_add(1);
     }
     String::new()
 }
@@ -486,27 +460,29 @@ fn extract_td_text(row: &str, index: usize) -> String {
 pub fn parse_ad_page(html: &str) -> AdPage {
     let mut ad = AdPage::default();
     // Collect the body rows; separator rows (`<br>`) carry no labels or values.
-    let mut rows: Vec<String> = Vec::new();
-    let mut cursor = 0;
-    while let Some(tr_start) = html[cursor..].find("<tr") {
-        let abs = cursor + tr_start;
-        let end_abs = match html[abs..].find("</tr>") {
-            Some(end) => abs + end + 5,
-            None => break,
+    let mut rows: Vec<&str> = Vec::new();
+    for chunk in html.split_inclusive("</tr>") {
+        // A `<tr` that never closes ends the walk, as the previous cursor loop did.
+        if chunk.strip_suffix("</tr>").is_none() {
+            break;
+        }
+        let Some(open) = chunk.find("<tr") else {
+            continue;
         };
-        cursor = end_abs;
-        let row = &html[abs..end_abs];
+        let Some(row) = chunk.get(open..) else {
+            continue;
+        };
         if row.contains("<br") {
             continue;
         }
-        rows.push(row.to_string());
+        rows.push(row);
     }
     // The association writes label rows followed by value rows: a row of
     // `athleticDepartmentSubheader` spans names the role (and repeats an `Email:` label), the next
     // row carries the person and their mailto link. Labels therefore stay pending until a row with
     // a name appears.
     let mut pending: Vec<String> = Vec::new();
-    for row in &rows {
+    for row in rows.iter().copied() {
         let labels: Vec<String> = extract_subheader_labels(row)
             .into_iter()
             .filter(|l| !is_value_label(l))
@@ -578,50 +554,47 @@ fn classify_role(label: &str) -> Option<&'static str> {
 /// Extract subheader labels (span with athleticDepartmentSubheader class) from a label row.
 fn extract_subheader_labels(row: &str) -> Vec<String> {
     let mut labels = Vec::new();
-    let mut cursor = 0;
-    let mut iter = 0;
-    while let Some(start) = row[cursor..].find("<span") {
-        iter += 1;
+    let mut iter = 0usize;
+    let mut rest = row;
+    while let Some(start) = rest.find("<span") {
+        iter = iter.saturating_add(1);
         if iter > 1000 {
             break;
         }
-        let abs = cursor + start;
-        if let Some(end) = row[abs..].find("</span>") {
-            let span = &row[abs..abs + end];
-            if span.contains("athleticDepartmentSubheader") {
-                let body = &span[span.find(">").unwrap_or(span.len()) + 1..];
-                labels.push(decode_entities(body.trim()));
-            }
-            cursor = abs + end + 7;
-        } else {
+        let Some(from_span) = rest.get(start..) else {
             break;
+        };
+        let Some((span, after)) = from_span.split_once("</span>") else {
+            break;
+        };
+        if span.contains("athleticDepartmentSubheader") {
+            let body = span.split_once('>').map_or("", |(_, body)| body);
+            labels.push(decode_entities(body.trim()));
         }
+        rest = after;
     }
     labels
 }
 
 /// Extract the name value (first <span class="fieldValue">) from a data row.
 fn extract_field_name(row: &str) -> String {
-    if let Some(pos) = row.find("<span class=\"fieldValue\">") {
-        let after = &row[pos + 25..]; // length of <span class="fieldValue">
-        if let Some(end) = after.find("</span>") {
-            let raw = &after[..end];
-            return decode_entities(&strip_tags(raw));
-        }
+    let Some((_, after)) = row.split_once("<span class=\"fieldValue\">") else {
+        return String::new();
+    };
+    match after.split_once("</span>") {
+        Some((raw, _)) => decode_entities(&strip_tags(raw)),
+        None => String::new(),
     }
-    String::new()
 }
 
 /// Extract the email from a mailto: href in the data row.
 fn extract_field_email(row: &str) -> Option<String> {
-    if let Some(pos) = row.find("href=\"mailto:") {
-        let after = &row[pos + 13..]; // length of href="mailto:
+    if let Some((_, after)) = row.split_once("href=\"mailto:") {
         let end = after.find('"').unwrap_or(after.len());
-        valid_email(&after[..end])
-    } else if let Some(pos) = row.find("href='mailto:") {
-        let after = &row[pos + 13..]; // length of href='mailto:
+        after.get(..end).and_then(valid_email)
+    } else if let Some((_, after)) = row.split_once("href='mailto:") {
         let end = after.find('\'').unwrap_or(after.len());
-        valid_email(&after[..end])
+        after.get(..end).and_then(valid_email)
     } else {
         None
     }
@@ -635,7 +608,7 @@ pub fn strip_honorific(value: &str) -> String {
     let lower = trimmed.to_lowercase();
     for prefix in &["coach ", "mr. ", "mrs. ", "ms. ", "dr. ", "prof. "] {
         if lower.starts_with(*prefix) {
-            let rest = trimmed[prefix.len()..].trim();
+            let rest = trimmed.get(prefix.len()..).unwrap_or(trimmed).trim();
             return if rest.is_empty() {
                 trimmed.to_string()
             } else {

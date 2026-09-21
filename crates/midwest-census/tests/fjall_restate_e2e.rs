@@ -363,6 +363,7 @@ fn report_bests_and_workbook_chain_over_synthetic_entities() {
             grad_year: Some(2027),
             out: Some(dir.path().join("e2e-census.xlsx")),
             limit: None,
+            scope: Scope::Core,
         },
     )
     .unwrap();

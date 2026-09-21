@@ -5,6 +5,9 @@ edition = "2021"
 description = "Streaming XLSX athlete matching pipeline with deterministic source evidence and local models"
 license = "MIT"
 
+[lints]
+workspace = true
+
 [workspace]
 members = ["crates/midwest-census"]
 
@@ -54,6 +57,20 @@ tokio = { version = "1", features = ["test-util"] }
 lto = "thin"
 codegen-units = 1
 strip = true
+
+# Workspace lints apply to every target, including tests, so they stay at the severity that is
+# safe repo-wide. The stricter production-only surface (no unwrap/expect/panic/indexing, no
+# unchecked arithmetic or casts, no `let _ =` on a must-use value) is enforced by
+# tools/gate.sh on --lib/--bins/--examples, which is where production reachability is measured.
+[workspace.lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[workspace.lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+unimplemented = "deny"
+panic_in_result_fn = "deny"
 
 # Chromium 151 replaced Network.ClientSecurityState.privateNetworkRequestPolicy with
 # localNetworkAccessRequestPolicy, so the pinned generated model rejects every

@@ -7,6 +7,8 @@
 //! midwest-serve --listen 127.0.0.1:9080 --data-dir var
 //! ```
 
+#![forbid(unsafe_code)]
+
 use std::process::ExitCode;
 
 use midwest_census::bootstrap::{serve, ServeOptions};

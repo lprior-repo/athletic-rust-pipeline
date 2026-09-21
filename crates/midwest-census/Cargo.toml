@@ -5,6 +5,9 @@ edition = "2021"
 description = "Independent Midwest HS TF/XC recruiting graph: official associations, MileSplit HTML, TFRRS/DirectAthletics, result artifacts. No Athletic.net dependency."
 license = "MIT"
 
+[lints]
+workspace = true
+
 [[bin]]
 name = "midwest-census"
 path = "src/main.rs"
@@ -36,5 +39,7 @@ url = { version = "2.5", features = ["serde"] }
 
 [dev-dependencies]
 calamine = "=0.36.1"
+loom = "0.7"
+proptest = "1"
 tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }
 tempfile = "3"

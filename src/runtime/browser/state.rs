@@ -6,9 +6,14 @@ impl Actor {
     pub(in crate::runtime::browser) fn set_cooldown(&mut self, delay: Duration) {
         match self.cooldown_until.lock() {
             Ok(mut value) => {
-                *value = (!delay.is_zero()).then(|| match Instant::now().checked_add(delay) {
-                    Some(v) => v,
-                    None => Instant::now() + Duration::from_secs(300), // overflow guard
+                *value = (!delay.is_zero()).then(|| {
+                    let now = Instant::now();
+                    match now.checked_add(delay) {
+                        Some(until) => until,
+                        // A deadline the platform clock cannot represent must not panic;
+                        // bound it to the longest representable fallback instead.
+                        None => now.checked_add(Duration::from_secs(300)).unwrap_or(now),
+                    }
                 })
             }
             Err(error) => *error.into_inner() = None,

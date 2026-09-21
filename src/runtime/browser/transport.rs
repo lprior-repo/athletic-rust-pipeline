@@ -187,7 +187,7 @@ pub(crate) async fn fetch(
                 // Correlate with confirmed request — redirect status only matters for it.
                 if let Some(current_id) = &request_id {
                     if current_id == &event.request_id && (300..400).contains(&event.status_code) {
-                        redirect_status = Some(event.status_code as u16);
+                        redirect_status = u16::try_from(event.status_code).ok();
                     }
                 }
             }

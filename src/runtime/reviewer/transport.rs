@@ -69,10 +69,9 @@ pub async fn request_once(
 }
 
 async fn bounded_body(response: reqwest::Response) -> Result<Vec<u8>> {
-    if response
-        .content_length()
-        .is_some_and(|size| size > MAX_REVIEW_RESPONSE_BYTES as u64)
-    {
+    // Widening the usize cap to the declared length's type stays total without a cast.
+    let cap = u64::try_from(MAX_REVIEW_RESPONSE_BYTES).unwrap_or(u64::MAX);
+    if response.content_length().is_some_and(|size| size > cap) {
         return Err(anyhow!("local model response exceeds 32 KiB"));
     }
     response

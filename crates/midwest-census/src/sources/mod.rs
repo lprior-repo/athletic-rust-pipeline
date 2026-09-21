@@ -11,6 +11,7 @@ pub const CONCURRENCY_BOUND: usize = 8;
 
 pub mod athleticlive;
 pub mod athleticlive_athletes;
+pub mod athleticnet;
 pub mod coach_contacts;
 pub mod compiled;
 pub mod hytek;

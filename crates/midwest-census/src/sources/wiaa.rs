@@ -161,7 +161,7 @@ fn find_from(haystack: &str, needle: &str, from: usize) -> Option<usize> {
     haystack
         .get(from..)?
         .find(needle)
-        .map(|offset| from + offset)
+        .and_then(|offset| from.checked_add(offset))
 }
 
 /// Text of the first `<tag …>…</tag>` at or after `from`, plus the offset just past it.
@@ -343,9 +343,9 @@ fn count(value: usize) -> u64 {
 
 fn hex_nibble(byte: u8) -> Option<u8> {
     match byte {
-        b'0'..=b'9' => Some(byte - b'0'),
-        b'a'..=b'f' => Some(byte - b'a' + 10),
-        b'A'..=b'F' => Some(byte - b'A' + 10),
+        b'0'..=b'9' => byte.checked_sub(b'0'),
+        b'a'..=b'f' => byte.checked_sub(b'a')?.checked_add(10),
+        b'A'..=b'F' => byte.checked_sub(b'A')?.checked_add(10),
         _ => None,
     }
 }
@@ -649,22 +649,19 @@ pub fn parse_admin_role(label: &str) -> Option<CoachRole> {
 
 /// Strip leading honorifics so "Coach Smith" and "Smith" mint the same coach identity.
 pub fn strip_honorific(value: &str) -> String {
-    let mut parts: Vec<&str> = value.split_whitespace().collect();
-    while let Some(first) = parts.first() {
-        let token = first.trim_end_matches('.').to_ascii_lowercase();
-        if matches!(
-            token.as_str(),
-            "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "sir" | "rev"
-        ) {
-            parts.remove(0);
-        } else {
-            break;
-        }
-    }
-    if parts.is_empty() {
-        clean(value)
-    } else {
-        parts.join(" ")
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    let stripped = parts
+        .iter()
+        .take_while(|part| {
+            matches!(
+                part.trim_end_matches('.').to_ascii_lowercase().as_str(),
+                "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "sir" | "rev"
+            )
+        })
+        .count();
+    match parts.get(stripped..) {
+        Some(kept) if !kept.is_empty() => kept.join(" "),
+        _ => clean(value),
     }
 }
 
@@ -839,7 +836,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let mut letters_ok = 0usize;
     let mut first_problem: Option<String> = None;
     for (i, result) in letter_results {
-        let letter = letters[i];
+        let Some(letter) = letters.get(i).copied() else {
+            continue;
+        };
         match result {
             Ok(outcome) if outcome.status == 200 => {
                 letters_ok = letters_ok.saturating_add(1);
@@ -953,7 +952,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
 
     // Phase 3: process results in submission order (deterministic).
     for (idx, result) in fetch_results {
-        let entry = &index[idx];
+        let Some(entry) = index.get(idx) else {
+            continue;
+        };
         let key = format!("WI:{}", entry.org_id);
 
         // Respect limit after collection.

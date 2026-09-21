@@ -160,7 +160,8 @@ fn start_row(shared: &Rc<RefCell<State>>, element: &mut Element<'_, '_>) -> Hand
         return Err(handler_error("search page exceeds row bound"));
     }
     let index = state.seen_rows;
-    state.seen_rows += 1;
+    // `MAX_ROWS` guards this counter above, so saturation is unreachable; saturating keeps it total.
+    state.seen_rows = index.saturating_add(1);
     state.row = Some(Row {
         index,
         identity: None,
@@ -391,15 +392,15 @@ fn flush_node(target: &mut String, saw_text: &mut bool, raw: &str, issue: &mut O
         return;
     }
     let separator = usize::from(*saw_text);
-    let Some(size) = target
-        .len()
-        .checked_add(separator)
-        .and_then(|size| size.checked_add(normalized.len()))
-    else {
+    let Some(growth) = separator.checked_add(normalized.len()) else {
         *issue = Some("search row text exceeds bound".into());
         return;
     };
-    if size > MAX_TEXT_BYTES || target.try_reserve(separator + normalized.len()).is_err() {
+    let Some(size) = target.len().checked_add(growth) else {
+        *issue = Some("search row text exceeds bound".into());
+        return;
+    };
+    if size > MAX_TEXT_BYTES || target.try_reserve(growth).is_err() {
         *issue = Some("search row text exceeds bound".into());
         return;
     }

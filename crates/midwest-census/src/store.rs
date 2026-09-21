@@ -408,7 +408,7 @@ impl Store {
     // -- resume journal ---------------------------------------------------------------------------
 
     fn journal_key(phase: &str, key: &str) -> Vec<u8> {
-        let mut out = Vec::with_capacity(phase.len() + key.len() + 2);
+        let mut out = Vec::with_capacity(phase.len().saturating_add(key.len()).saturating_add(2));
         out.extend_from_slice(phase.as_bytes());
         out.push(0);
         out.extend_from_slice(key.as_bytes());
@@ -505,22 +505,23 @@ impl Store {
             if trimmed.is_empty() {
                 continue;
             }
+            let line_number = line_no.saturating_add(1);
             if count >= MAX_ROWS_PER_TABLE {
                 bail!(
                     "{} line {} exceeds the {MAX_ROWS_PER_TABLE} observation cap",
                     path.display(),
-                    line_no + 1
+                    line_number
                 );
             }
             let bytes = trimmed.as_bytes();
             let id = observation_id(bytes)
-                .with_context(|| format!("{} line {}: no id field", path.display(), line_no + 1))?;
+                .with_context(|| format!("{} line {}: no id field", path.display(), line_number))?;
             let key = observation_key(table, id, base);
             batch.insert(&self.entities, key, bytes);
             base = base.saturating_add(1);
             count = count.saturating_add(1);
         }
-        let _ = self.reserve(table, count);
+        self.reserve(table, count)?;
         batch
             .durability(Some(PersistMode::SyncData))
             .commit()
@@ -582,7 +583,7 @@ impl Store {
 
 /// `<table>\0` — the prefix that isolates one table's observations.
 fn table_prefix(table: Table) -> Vec<u8> {
-    let mut out = Vec::with_capacity(table.file().len() + 1);
+    let mut out = Vec::with_capacity(table.file().len().saturating_add(1));
     out.extend_from_slice(table.file().as_bytes());
     out.push(0);
     out
@@ -607,9 +608,9 @@ fn split_observation_key(key: &[u8]) -> Option<(&str, u64)> {
     if key.get(separator) != Some(&0) {
         return None;
     }
-    let text = std::str::from_utf8(&key[..separator]).ok()?;
+    let text = std::str::from_utf8(key.get(..separator)?).ok()?;
     let (table, _id) = text.split_once('\0')?;
-    let sequence_bytes: [u8; 8] = key[sequence_start..].try_into().ok()?;
+    let sequence_bytes: [u8; 8] = key.get(sequence_start..)?.try_into().ok()?;
     Some((table, u64::from_be_bytes(sequence_bytes)))
 }
 
@@ -943,7 +944,7 @@ mod tests {
             store.append(Table::Schools, &second).unwrap();
             let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
             assert_eq!(rows.len(), 1);
-            assert_eq!(rows[0].evidence.len(), 2);
+            assert_eq!(rows.first().map(|row| row.evidence.len()), Some(2));
         }
     }
 
@@ -1056,5 +1057,75 @@ mod tests {
             Some("abender@ofsd.k12.wi.us")
         );
         assert!(!published_row.email_withheld);
+    }
+
+    // TEMPORARY evidence harness — deleted once the conversion evidence is captured.
+    fn split_observation_key_indexed(key: &[u8]) -> Option<(&str, u64)> {
+        let sequence_start = key.len().checked_sub(8)?;
+        let separator = sequence_start.checked_sub(1)?;
+        if key.get(separator) != Some(&0) {
+            return None;
+        }
+        let text = std::str::from_utf8(&key[..separator]).ok()?;
+        let (table, _id) = text.split_once('\0')?;
+        let sequence_bytes: [u8; 8] = key[sequence_start..].try_into().ok()?;
+        Some((table, u64::from_be_bytes(sequence_bytes)))
+    }
+
+    #[test]
+    fn tmp_converted_split_matches_the_indexed_original_on_a_corpus() {
+        let long_id = "x".repeat(600);
+        let ids = ["", "wi:1", "sp ace", "ünïcode", "a\0b", long_id.as_str()];
+        let sequences = [
+            0_u64,
+            1,
+            255,
+            256,
+            65_535,
+            65_536,
+            u64::from(u32::MAX),
+            u64::MAX,
+        ];
+        let mut corpus: Vec<Vec<u8>> = Vec::new();
+        for table in Table::ALL {
+            for id in ids {
+                for sequence in sequences {
+                    corpus.push(observation_key(table, id, sequence));
+                }
+            }
+        }
+        corpus.push(Vec::new());
+        corpus.push(vec![0; 8]);
+        corpus.push(b"schools\0wi:1\0".to_vec());
+        corpus.push(b"schools".to_vec());
+        corpus.push(vec![0xFF, 0xFE, 0x00, 0, 0, 0, 0, 0, 0, 0, 0]);
+        corpus.push(vec![0x00; 9]);
+        corpus.push(b"a\0b\0c\0d\0e\0f\0g\0h\0".to_vec());
+        for key in &corpus {
+            let key = key.as_slice();
+            assert_eq!(
+                split_observation_key(key),
+                split_observation_key_indexed(key),
+                "divergence for {key:?}"
+            );
+        }
+        let key = observation_key(Table::Schools, "wi:1", 42);
+        let mut expected = b"schools\0wi:1\0".to_vec();
+        expected.extend_from_slice(&42_u64.to_be_bytes());
+        assert_eq!(key, expected);
+
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        let rows: Vec<CanonicalSchool> = (0..600)
+            .map(|index| school(&format!("School {index}")))
+            .collect();
+        store.append_many(Table::Schools, &rows).unwrap();
+        drop(store);
+        let reopened = Store::open(dir.path()).unwrap();
+        assert_eq!(
+            reopened.scan::<CanonicalSchool>(Table::Schools).unwrap().len(),
+            600
+        );
+        assert_eq!(reopened.stats().unwrap().observations, 600);
     }
 }

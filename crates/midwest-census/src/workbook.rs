@@ -46,9 +46,17 @@ impl Cell {
         Cell::Text(value.into())
     }
 
-    fn number(value: usize) -> Self {
-        Cell::Number(value as f64)
+    /// A census count as the number an Excel cell holds.
+    fn number(value: usize) -> Result<Self> {
+        Ok(Cell::Number(count_as_number(value)?))
     }
+}
+
+/// Excel cells are `f64`, which holds every census count up to `u32::MAX` exactly; a larger count
+/// is an error rather than a silently rounded cell.
+fn count_as_number(value: usize) -> Result<f64> {
+    let value = u32::try_from(value).context("cell count does not fit u32")?;
+    Ok(f64::from(value))
 }
 
 impl From<&str> for Cell {
@@ -126,14 +134,14 @@ fn write_workbook(
     write_sheet(
         &mut book,
         "Summary",
-        summary_sheet(core, all_sources),
+        summary_sheet(core, all_sources)?,
         &[38, 22, 16, 14],
         false,
     )?;
     write_sheet(
         &mut book,
         "By state - core",
-        state_sheet(core),
+        state_sheet(core)?,
         &[
             10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
         ],
@@ -142,7 +150,7 @@ fn write_workbook(
     write_sheet(
         &mut book,
         "By state - all sources",
-        state_sheet(all_sources),
+        state_sheet(all_sources)?,
         &[
             10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
         ],
@@ -151,14 +159,14 @@ fn write_workbook(
     write_sheet(
         &mut book,
         "Athletic.net marginal",
-        marginal_sheet(core, all_sources),
+        marginal_sheet(core, all_sources)?,
         &[10, 16, 12, 30, 12, 16, 14],
         false,
     )?;
     write_sheet(
         &mut book,
         "Best results",
-        best_sheet(bests),
+        best_sheet(bests)?,
         &[
             26, 14, 10, 9, 12, 10, 14, 16, 12, 13, 14, 10, 12, 11, 14, 26,
         ],
@@ -167,14 +175,14 @@ fn write_workbook(
     write_sheet(
         &mut book,
         "Meets",
-        meets_sheet(core, all_sources),
+        meets_sheet(core, all_sources)?,
         &[34, 12, 34, 12],
         false,
     )?;
     write_sheet(
         &mut book,
         "Evidence mix",
-        evidence_sheet(all_sources),
+        evidence_sheet(all_sources)?,
         &[40, 12, 40, 12],
         false,
     )?;
@@ -234,11 +242,14 @@ fn write_sheet(
     Ok(())
 }
 
-fn share(part: usize, whole: usize) -> Cell {
+fn share(part: usize, whole: usize) -> Result<Cell> {
     if whole == 0 {
-        Cell::text("n/a")
+        Ok(Cell::text("n/a"))
     } else {
-        Cell::text(format!("{:.1}%", 100.0 * part as f64 / whole as f64))
+        Ok(Cell::text(format!(
+            "{:.1}%",
+            100.0 * count_as_number(part)? / count_as_number(whole)?
+        )))
     }
 }
 
@@ -311,7 +322,7 @@ const SUMMARY_ROWS: [StateCounter; 12] = [
     ("Schools", |row| row.schools),
 ];
 
-fn summary_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
+fn summary_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Metric",
         "Core (Athletic.net off)",
@@ -323,9 +334,9 @@ fn summary_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
         let all_value = pick(&all_sources.totals);
         rows.push(row!(
             Cell::text(label),
-            Cell::number(core_value),
-            Cell::number(all_value),
-            share(core_value, all_value),
+            Cell::number(core_value)?,
+            Cell::number(all_value)?,
+            share(core_value, all_value)?,
         ));
     }
     rows.push(row!());
@@ -340,10 +351,10 @@ fn summary_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
         let all_value = pick(all_sources);
         rows.push(row!(
             Cell::text(label),
-            Cell::number(core_value),
-            Cell::number(all_value),
+            Cell::number(core_value)?,
+            Cell::number(all_value)?,
             if label.starts_with("Core meets") {
-                share(core_value, all_value)
+                share(core_value, all_value)?
             } else {
                 Cell::text("enrichment key only, never dereferenced")
             },
@@ -355,9 +366,9 @@ fn summary_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
     ));
     rows.push(row!(
         "",
-        Cell::number(all_sources.providers.athletic_net_urls_known),
+        Cell::number(all_sources.providers.athletic_net_urls_known)?,
     ));
-    rows
+    Ok(rows)
 }
 
 const STATE_COLUMNS: [StateCounter; 12] = [
@@ -379,7 +390,7 @@ const STATE_COLUMNS: [StateCounter; 12] = [
     ("Coaches with email", |row| row.coaches_with_email),
 ];
 
-fn state_sheet(census: &Census) -> Vec<Vec<Cell>> {
+fn state_sheet(census: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut header = vec![Cell::text("State")];
     header.extend(STATE_COLUMNS.iter().map(|(label, _)| Cell::text(*label)));
     header.extend(
@@ -396,27 +407,45 @@ fn state_sheet(census: &Census) -> Vec<Vec<Cell>> {
     let mut ordered: Vec<(&String, &StateCensus)> = census.by_state.iter().collect();
     ordered.sort_by_key(|(_, row)| std::cmp::Reverse(row.class_of_2027));
     for (state, row) in ordered {
-        rows.push(state_row(state, row));
+        rows.push(state_row(state, row)?);
     }
-    let total = state_row("TOTAL", &census.totals);
+    let total = state_row("TOTAL", &census.totals)?;
     rows.push(total);
-    rows
+    Ok(rows)
 }
 
-fn state_row(state: &str, row: &StateCensus) -> Vec<Cell> {
+fn state_row(state: &str, row: &StateCensus) -> Result<Vec<Cell>> {
     let mut cells = vec![Cell::text(state)];
-    cells.extend(
-        STATE_COLUMNS
-            .iter()
-            .map(|(_, pick)| Cell::number(pick(row))),
-    );
-    cells.push(share(row.class_of_2027_with_profile_url, row.class_of_2027));
-    cells.push(share(row.class_of_2027_with_coach, row.class_of_2027));
-    cells.push(share(row.class_of_2027_with_coach_email, row.class_of_2027));
-    cells
+    for (_, pick) in STATE_COLUMNS {
+        cells.push(Cell::number(pick(row))?);
+    }
+    cells.push(share(
+        row.class_of_2027_with_profile_url,
+        row.class_of_2027,
+    )?);
+    cells.push(share(row.class_of_2027_with_coach, row.class_of_2027)?);
+    cells.push(share(
+        row.class_of_2027_with_coach_email,
+        row.class_of_2027,
+    )?);
+    Ok(cells)
 }
 
-fn marginal_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
+/// A running total for the marginal sheet: counts never wrap, they fail instead.
+fn add_count(total: usize, count: usize) -> Result<usize> {
+    total
+        .checked_add(count)
+        .context("the marginal totals do not fit usize")
+}
+
+/// What the all-sources scope reports but the core scope does not: `all_sources - core`.
+fn marginal(all_sources: usize, core: usize) -> Result<usize> {
+    all_sources
+        .checked_sub(core)
+        .context("the core scope reports more than the all-sources scope")
+}
+
+fn marginal_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut ordered: Vec<(&String, &StateCensus)> = all_sources.by_state.iter().collect();
     ordered.sort_by_key(|(_, row)| std::cmp::Reverse(row.class_of_2027));
     let mut rows = vec![row!(
@@ -447,33 +476,33 @@ fn marginal_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
     };
     for (state, row) in ordered {
         let core_row = core.by_state.get(state).unwrap_or(&empty);
-        all_total += row.class_of_2027;
-        core_total += core_row.class_of_2027;
-        athletes_all += row.athletes;
-        athletes_core += core_row.athletes;
+        all_total = add_count(all_total, row.class_of_2027)?;
+        core_total = add_count(core_total, core_row.class_of_2027)?;
+        athletes_all = add_count(athletes_all, row.athletes)?;
+        athletes_core = add_count(athletes_core, core_row.athletes)?;
         rows.push(row!(
             Cell::text(state.clone()),
-            Cell::number(row.class_of_2027),
-            Cell::number(core_row.class_of_2027),
-            Cell::number(row.class_of_2027 - core_row.class_of_2027),
-            share(core_row.class_of_2027, row.class_of_2027),
-            Cell::number(row.athletes),
-            Cell::number(core_row.athletes),
+            Cell::number(row.class_of_2027)?,
+            Cell::number(core_row.class_of_2027)?,
+            Cell::number(marginal(row.class_of_2027, core_row.class_of_2027)?)?,
+            share(core_row.class_of_2027, row.class_of_2027)?,
+            Cell::number(row.athletes)?,
+            Cell::number(core_row.athletes)?,
         ));
     }
     rows.push(row!(
         Cell::text("TOTAL"),
-        Cell::number(all_total),
-        Cell::number(core_total),
-        Cell::number(all_total - core_total),
-        share(core_total, all_total),
-        Cell::number(athletes_all),
-        Cell::number(athletes_core),
+        Cell::number(all_total)?,
+        Cell::number(core_total)?,
+        Cell::number(marginal(all_total, core_total)?)?,
+        share(core_total, all_total)?,
+        Cell::number(athletes_all)?,
+        Cell::number(athletes_core)?,
     ));
-    rows
+    Ok(rows)
 }
 
-fn best_sheet(bests: &[BestResult]) -> Vec<Vec<Cell>> {
+fn best_sheet(bests: &[BestResult]) -> Result<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Athlete",
         "School",
@@ -497,7 +526,7 @@ fn best_sheet(bests: &[BestResult]) -> Vec<Vec<Cell>> {
             Cell::text(best.name.clone()),
             Cell::text(best.school.clone()),
             Cell::text(best.state.clone()),
-            Cell::number(best.grad_year as usize),
+            Cell::Number(f64::from(best.grad_year)),
             Cell::text(best.gender.clone()),
             Cell::text(best.sport.clone()),
             Cell::text(best.event.clone()),
@@ -505,19 +534,19 @@ fn best_sheet(bests: &[BestResult]) -> Vec<Vec<Cell>> {
             Cell::text(best.date.clone()),
             Cell::text(best.meet.clone()),
             best.place
-                .map(|place| Cell::number(place as usize))
+                .map(|place| Cell::Number(f64::from(place)))
                 .unwrap_or(Cell::Empty),
             best.wind_mps.map(Cell::Number).unwrap_or(Cell::Empty),
             Cell::text(best.timing.clone().unwrap_or_default()),
-            Cell::number(best.marks_in_event),
+            Cell::number(best.marks_in_event)?,
             Cell::text(best.athlete_id.clone()),
             Cell::text(best.profile_url.clone().unwrap_or_default()),
         ));
     }
-    rows
+    Ok(rows)
 }
 
-fn meets_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
+fn meets_sheet(core: &Census, all_sources: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut rows = vec![row!(
         "Core meet inventory",
         "Meets",
@@ -526,15 +555,15 @@ fn meets_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
     )];
     rows.push(row!(
         "Total",
-        Cell::number(core.meets.total),
+        Cell::number(core.meets.total)?,
         "Total",
-        Cell::number(all_sources.meets.total),
+        Cell::number(all_sources.meets.total)?,
     ));
     rows.push(row!(
         "With an Athletic.net meet id",
-        Cell::number(core.meets.with_athletic_net_id),
+        Cell::number(core.meets.with_athletic_net_id)?,
         "With an Athletic.net meet id",
-        Cell::number(all_sources.meets.with_athletic_net_id),
+        Cell::number(all_sources.meets.with_athletic_net_id)?,
     ));
     if let (Some(first), Some(last)) = (&core.meets.first_date, &core.meets.last_date) {
         rows.push(row!(
@@ -569,12 +598,14 @@ fn meets_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
             left.map(|(state, _)| Cell::text((*state).clone()))
                 .unwrap_or(Cell::Empty),
             left.map(|(_, count)| Cell::number(**count))
+                .transpose()?
                 .unwrap_or(Cell::Empty),
             right
                 .map(|(state, _)| Cell::text((*state).clone()))
                 .unwrap_or(Cell::Empty),
             right
                 .map(|(_, count)| Cell::number(**count))
+                .transpose()?
                 .unwrap_or(Cell::Empty),
         ));
     }
@@ -585,43 +616,45 @@ fn meets_sheet(core: &Census, all_sources: &Census) -> Vec<Vec<Cell>> {
     for (provider, count) in providers {
         rows.push(row!(
             Cell::text(provider.clone()),
-            Cell::number(*count),
+            Cell::number(*count)?,
             Cell::Empty,
             Cell::Empty,
         ));
     }
-    rows
+    Ok(rows)
 }
 
-fn evidence_sheet(census: &Census) -> Vec<Vec<Cell>> {
+fn evidence_sheet(census: &Census) -> Result<Vec<Vec<Cell>>> {
     let mut rows = Vec::new();
     let section = |rows: &mut Vec<Vec<Cell>>,
                    title: &str,
-                   counts: &std::collections::BTreeMap<String, usize>| {
+                   counts: &std::collections::BTreeMap<String, usize>|
+     -> Result<()> {
         rows.push(row!(Cell::text(title), Cell::text("Count")));
         for (key, value) in sorted_counts(counts) {
-            rows.push(row!(Cell::text(key.clone()), Cell::number(*value),));
+            rows.push(row!(Cell::text(key.clone()), Cell::number(*value)?,));
         }
         rows.push(row!());
+        Ok(())
     };
-    section(&mut rows, "Coach sources", &census.coach_sources);
-    section(&mut rows, "Coach roles", &census.coach_roles);
-    section(&mut rows, "Coach sports", &census.coach_sports);
+    section(&mut rows, "Coach sources", &census.coach_sources)?;
+    section(&mut rows, "Coach roles", &census.coach_roles)?;
+    section(&mut rows, "Coach sports", &census.coach_sports)?;
     section(
         &mut rows,
         "Grade-evidence sources",
         &census.providers.grade_evidence_sources,
-    );
+    )?;
     section(
         &mut rows,
         "Source namespaces on class-of-2027 athletes",
         &census.providers.namespaces,
-    );
+    )?;
     section(
         &mut rows,
         "Athletes by graduating class",
         &census.athletes_by_grad_year,
-    );
+    )?;
     rows.push(row!("Class-of-2027 sport mix", "Athletes"));
     let sports = &census.class_of_2027_sports;
     for (label, value) in [
@@ -631,9 +664,9 @@ fn evidence_sheet(census: &Census) -> Vec<Vec<Cell>> {
         ("multi-sport", sports.multi_sport),
         ("no sport recorded", sports.none),
     ] {
-        rows.push(row!(Cell::text(label), Cell::number(value)));
+        rows.push(row!(Cell::text(label), Cell::number(value)?));
     }
-    rows
+    Ok(rows)
 }
 
 fn method_sheet() -> Vec<Vec<Cell>> {

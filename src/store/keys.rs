@@ -74,14 +74,16 @@ pub fn verify_digest(digest: &EvidenceDigest, bytes: &[u8]) -> Result<()> {
 
 fn hex_digit(value: u8) -> char {
     match value {
-        0..=9 => char::from(b'0' + value),
-        10..=15 => char::from(b'a' + value - 10),
+        // Each arm bounds the operand before the add, so neither add can overflow.
+        0..=9 => char::from(b'0'.wrapping_add(value)),
+        10..=15 => char::from(b'a'.wrapping_add(value.wrapping_sub(10))),
         _ => '0',
     }
 }
 
 fn prefixed_digest(prefix: &[u8], digest: &[u8]) -> Vec<u8> {
-    let mut key = Vec::with_capacity(prefix.len() + digest.len());
+    // Saturating capacity hint: both lengths are key-sized, so this cannot saturate.
+    let mut key = Vec::with_capacity(prefix.len().saturating_add(digest.len()));
     key.extend_from_slice(prefix);
     key.extend_from_slice(digest);
     key

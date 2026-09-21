@@ -140,6 +140,7 @@ impl Actor {
         nonce
     }
 
+    #[tracing::instrument(skip_all)]
     pub(super) async fn run(mut self) -> anyhow::Result<()> {
         loop {
             if self.panic_shutdown || (self.draining && self.jobs.is_empty()) {

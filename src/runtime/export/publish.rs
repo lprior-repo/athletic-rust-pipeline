@@ -68,7 +68,10 @@ pub(super) fn sha256_file(path: &Path) -> Result<String> {
         if count == 0 {
             break;
         }
-        hash.update(&buffer[..count]);
+        let chunk = buffer
+            .get(..count)
+            .context("read count exceeds hashing buffer")?;
+        hash.update(chunk);
     }
     Ok(format!("{:x}", hash.finalize()))
 }

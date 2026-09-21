@@ -107,23 +107,60 @@ pub struct Options {
 // Shared helpers
 // ---------------------------------------------------------------------------------------------------
 
-static TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]*>").expect("tag regex"));
+static TAG_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"<[^>]*>"));
 /// HTML comments can hide markup, including a commented-out `<h1>` ahead of the real heading.
-static COMMENT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->").expect("comment regex"));
-static WHITESPACE_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\s+").expect("whitespace regex"));
+static COMMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?s)<!--.*?-->"));
+static WHITESPACE_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"\s+"));
 /// Email probe: used only to *count* addresses for the honest-field note, never to store them.
-static EMAIL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}").expect("email probe regex")
-});
+static EMAIL_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"));
 /// A co-op annotation is published in several shapes: `(Co-op w/Litchfield)`, a bare
 /// `Co-op w/Wheeler Central`, and the source's own typo `(Co-oop w/ Loup County` without a closing
 /// parenthesis. All of them start at `co-?o+p` and run to the end of the cell's value.
-static COOP_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)\s*(?:\(\s*)?co-?o+p\b.*$").expect("co-op regex"));
-static NAME_SPLIT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\s*[,/&]\s*").expect("name split regex"));
+static COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)\s*(?:\(\s*)?co-?o+p\b.*$"));
+static NAME_SPLIT_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"\s*[,/&]\s*"));
+
+// Accessors for the literal patterns above: a bad pattern is a programming error, so it comes back
+// as the message the former `expect` carried — never a panic.
+fn tag_regex() -> Result<&'static Regex> {
+    TAG_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("tag regex: {e}"))
+}
+
+fn comment_regex() -> Result<&'static Regex> {
+    COMMENT_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("comment regex: {e}"))
+}
+
+fn whitespace_regex() -> Result<&'static Regex> {
+    WHITESPACE_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("whitespace regex: {e}"))
+}
+
+fn email_regex() -> Result<&'static Regex> {
+    EMAIL_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("email probe regex: {e}"))
+}
+
+fn coop_regex() -> Result<&'static Regex> {
+    COOP_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("co-op regex: {e}"))
+}
+
+fn name_split_regex() -> Result<&'static Regex> {
+    NAME_SPLIT_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("name split regex: {e}"))
+}
 
 /// Office and building staff that must never become a coach or athletic director, even when the
 /// label also contains "director". Matched case-insensitively against the published label.
@@ -143,13 +180,13 @@ const OFFICE_ROLE_TOKENS: [&str; 12] = [
 ];
 
 /// Remove HTML comments before matching; borrows (no copy) when the page has none.
-fn without_comments(html: &str) -> Cow<'_, str> {
-    COMMENT_REGEX.replace_all(html, " ")
+fn without_comments(html: &str) -> Result<Cow<'_, str>> {
+    Ok(comment_regex()?.replace_all(html, " "))
 }
 
 /// Strip tags, decode the entities these two sources publish and collapse whitespace.
-fn clean_text(raw: &str) -> String {
-    let untagged = TAG_REGEX.replace_all(raw, " ");
+fn clean_text(raw: &str) -> Result<String> {
+    let untagged = tag_regex()?.replace_all(raw, " ");
     // `&amp;` must be decoded last so `&amp;lt;` cannot become a tag.
     let decoded = untagged
         .replace("&#039;", "'")
@@ -160,10 +197,10 @@ fn clean_text(raw: &str) -> String {
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&amp;", "&");
-    WHITESPACE_REGEX
+    Ok(whitespace_regex()?
         .replace_all(&decoded, " ")
         .trim()
-        .to_string()
+        .to_string())
 }
 
 /// Convert a non-empty trimmed string into `Some`, or `None`.
@@ -194,16 +231,17 @@ fn strip_honorific(value: &str) -> String {
 }
 
 /// Drop any co-op annotation and then the text that carried it.
-fn strip_coop_note(value: &str) -> String {
-    COOP_REGEX.replace(value, " ").trim().to_string()
+fn strip_coop_note(value: &str) -> Result<String> {
+    Ok(coop_regex()?.replace(value, " ").trim().to_string())
 }
 
 /// Split a published name cell into person names: `,`, `/` and `&` all appear as separators, and
 /// duplicates inside one cell (the source publishes `Jeff Tescher, Jeff Tescher`) collapse.
-fn split_person_names(value: &str) -> Vec<String> {
-    let stripped = strip_coop_note(value);
+fn split_person_names(value: &str) -> Result<Vec<String>> {
+    let stripped = strip_coop_note(value)?;
+    let splitter = name_split_regex()?;
     let mut names: Vec<String> = Vec::new();
-    for part in NAME_SPLIT_REGEX.split(&stripped) {
+    for part in splitter.split(&stripped) {
         let name = strip_honorific(part);
         if name.is_empty() {
             continue;
@@ -216,7 +254,7 @@ fn split_person_names(value: &str) -> Vec<String> {
         }
         names.push(name);
     }
-    names
+    Ok(names)
 }
 
 /// True when a published role label is office/building staff rather than a coaching role.
@@ -281,43 +319,84 @@ pub struct NdOffering {
     pub co_op: Option<String>,
 }
 
-static ND_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"href="(?:https?://ndhsaa\.com)?/schools/(\d+)/([a-z0-9\-]+)""#)
-        .expect("ndhsaa school link regex")
-});
-static ND_HEADING_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)<h1[^>]*>(.*?)</h1>").expect("ndhsaa heading regex"));
-static ND_STAFF_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?s)<p>\s*([A-Za-z][^:<]{1,48}?)\s*:\s*([^<]*)</p>").expect("ndhsaa staff regex")
-});
-static ND_ROW_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static ND_LINK_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"href="(?:https?://ndhsaa\.com)?/schools/(\d+)/([a-z0-9\-]+)""#));
+static ND_HEADING_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?s)<h1[^>]*>(.*?)</h1>"));
+static ND_STAFF_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?s)<p>\s*([A-Za-z][^:<]{1,48}?)\s*:\s*([^<]*)</p>"));
+static ND_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r#"(?s)<tr[^>]*>\s*<td class="p-2">\s*(.*?)\s*</td>\s*<td class="p-2">\s*(.*?)\s*</td>\s*</tr>"#,
     )
-    .expect("ndhsaa coach-row regex")
 });
-static ND_COOP_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)\(\s*coop:\s*([^)]+)\)").expect("ndhsaa coop regex"));
-static ND_ADDRESS_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?s)<p>\s*Address:\s*([^<]*)</p>").expect("ndhsaa address regex")
-});
-static ND_ENROLLMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)([\d,]+)\s+students enrolled").expect("ndhsaa enrollment regex")
-});
-static ND_WEBSITE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?s)<p>\s*Website:\s*<a[^>]*href="([^"]+)""#).expect("ndhsaa website regex")
-});
+static ND_COOP_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)\(\s*coop:\s*([^)]+)\)"));
+static ND_ADDRESS_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?s)<p>\s*Address:\s*([^<]*)</p>"));
+static ND_ENROLLMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)([\d,]+)\s+students enrolled"));
+static ND_WEBSITE_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?s)<p>\s*Website:\s*<a[^>]*href="([^"]+)""#));
+
+fn nd_link_regex() -> Result<&'static Regex> {
+    ND_LINK_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa school link regex: {e}"))
+}
+
+fn nd_heading_regex() -> Result<&'static Regex> {
+    ND_HEADING_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa heading regex: {e}"))
+}
+
+fn nd_staff_regex() -> Result<&'static Regex> {
+    ND_STAFF_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa staff regex: {e}"))
+}
+
+fn nd_row_regex() -> Result<&'static Regex> {
+    ND_ROW_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa coach-row regex: {e}"))
+}
+
+fn nd_coop_regex() -> Result<&'static Regex> {
+    ND_COOP_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa coop regex: {e}"))
+}
+
+fn nd_address_regex() -> Result<&'static Regex> {
+    ND_ADDRESS_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa address regex: {e}"))
+}
+
+fn nd_enrollment_regex() -> Result<&'static Regex> {
+    ND_ENROLLMENT_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa enrollment regex: {e}"))
+}
+
+fn nd_website_regex() -> Result<&'static Regex> {
+    ND_WEBSITE_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("ndhsaa website regex: {e}"))
+}
 
 /// Parse the member-school index, keeping the first link per numeric id.
 ///
 /// The index is server-rendered and paginates nothing: one GET yields all 169 schools. Both the
 /// absolute (`https://ndhsaa.com/schools/…`) and the relative (`/schools/…`) link forms are handled.
-pub fn parse_nd_school_refs(html: &str) -> Vec<NdSchoolRef> {
-    let html = without_comments(html);
+pub fn parse_nd_school_refs(html: &str) -> Result<Vec<NdSchoolRef>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
     let mut members: Vec<NdSchoolRef> = Vec::new();
     let mut seen: HashSet<&str> = HashSet::new();
-    for capture in ND_LINK_REGEX.captures_iter(html) {
+    for capture in nd_link_regex()?.captures_iter(html) {
         let (Some(id), Some(slug)) = (capture.get(1), capture.get(2)) else {
             continue;
         };
@@ -329,7 +408,7 @@ pub fn parse_nd_school_refs(html: &str) -> Vec<NdSchoolRef> {
             slug: slug.as_str().to_string(),
         });
     }
-    members
+    Ok(members)
 }
 
 /// City from the `Address:` line: `800 40th Ave E., West Fargo, ND 58078` → `West Fargo`.
@@ -337,24 +416,34 @@ pub fn parse_nd_school_refs(html: &str) -> Vec<NdSchoolRef> {
 /// The line is read whole and cut at the trailing `, ND …`, then the last comma segment before the
 /// state is the city. Matching a bare `City, ND 12345` pattern against the raw HTML would instead
 /// swallow part of the street (`… th Ave E., West Fargo`), because the street itself contains commas.
-fn nd_city(html: &str) -> Option<String> {
-    let raw = ND_ADDRESS_REGEX.captures(html)?.get(1)?.as_str();
-    let address = clean_text(raw);
+fn nd_city(html: &str) -> Result<Option<String>> {
+    let captured = nd_address_regex()?
+        .captures(html)
+        .and_then(|capture| capture.get(1));
+    let Some(raw) = captured else {
+        return Ok(None);
+    };
+    let address = clean_text(raw.as_str())?;
     let cut = address.rfind(", ND").unwrap_or(address.len());
-    let city = address[..cut].rsplit(',').next()?;
-    nonempty(city)
+    let city = address
+        .get(..cut)
+        .and_then(|before| before.rsplit(',').next());
+    Ok(city.and_then(nonempty))
 }
 
 /// Enrolment from `Grades 9-12, 1399 students enrolled in 2025`.
-fn nd_enrollment(html: &str) -> Option<u32> {
-    let capture = ND_ENROLLMENT_REGEX.captures(html)?;
-    let digits: String = capture
-        .get(1)?
-        .as_str()
-        .chars()
-        .filter(char::is_ascii_digit)
-        .collect();
-    digits.parse().ok()
+fn nd_enrollment(html: &str) -> Result<Option<u32>> {
+    let digits = nd_enrollment_regex()?
+        .captures(html)
+        .and_then(|capture| capture.get(1))
+        .map(|digits| {
+            digits
+                .as_str()
+                .chars()
+                .filter(char::is_ascii_digit)
+                .collect::<String>()
+        });
+    Ok(digits.and_then(|digits| digits.parse().ok()))
 }
 
 /// Canonical school for one NDHSAA school page.
@@ -365,20 +454,25 @@ pub fn parse_nd_school_page(
     html: &str,
     member: &NdSchoolRef,
     observed_on: &str,
-) -> Option<(CanonicalSchool, SchoolId)> {
-    let html = without_comments(html);
+) -> Result<Option<(CanonicalSchool, SchoolId)>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
-    let name = ND_HEADING_REGEX
+    let heading = nd_heading_regex()?
         .captures(html)
-        .and_then(|capture| capture.get(1))
-        .map(|heading| clean_text(heading.as_str()))
-        .filter(|name| !name.is_empty())?;
+        .and_then(|capture| capture.get(1));
+    let Some(heading) = heading else {
+        return Ok(None);
+    };
+    let name = clean_text(heading.as_str())?;
+    if name.is_empty() {
+        return Ok(None);
+    }
 
     let url = member.url();
     let (mut school, school_id) = CanonicalSchool::new("ND", &name, normalize_name(&name));
-    school.city = nd_city(html);
-    school.enrollment = nd_enrollment(html);
-    school.school_website = ND_WEBSITE_REGEX
+    school.city = nd_city(html)?;
+    school.enrollment = nd_enrollment(html)?;
+    school.school_website = nd_website_regex()?
         .captures(html)
         .and_then(|capture| capture.get(1))
         .and_then(|href| nonempty(href.as_str()));
@@ -396,52 +490,55 @@ pub fn parse_nd_school_page(
         SourceRef::new(ND_ADAPTER_ID, Some(url)),
         observed_on,
     ));
-    Some((school, school_id))
+    Ok(Some((school, school_id)))
 }
 
 /// Staff lines (`Superintendent`, `Principal`, `Athletic Director`, `Business Manager`, …).
-pub fn parse_nd_staff(html: &str) -> Vec<NdStaffRole> {
-    let html = without_comments(html);
+pub fn parse_nd_staff(html: &str) -> Result<Vec<NdStaffRole>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
     let mut roles: Vec<NdStaffRole> = Vec::new();
-    for capture in ND_STAFF_REGEX.captures_iter(html) {
+    for capture in nd_staff_regex()?.captures_iter(html) {
         let (Some(label), Some(name)) = (capture.get(1), capture.get(2)) else {
             continue;
         };
-        let label = clean_text(label.as_str());
-        let name = clean_text(name.as_str());
+        let label = clean_text(label.as_str())?;
+        let name = clean_text(name.as_str())?;
         if label.is_empty() || name.is_empty() {
             continue;
         }
         roles.push(NdStaffRole { label, name });
     }
-    roles
+    Ok(roles)
 }
 
 /// The coach table: one [`NdOffering`] per published row, blank coach cells included.
-pub fn parse_nd_offerings(html: &str) -> Vec<NdOffering> {
-    let html = without_comments(html);
+pub fn parse_nd_offerings(html: &str) -> Result<Vec<NdOffering>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
     let mut offerings: Vec<NdOffering> = Vec::new();
-    for capture in ND_ROW_REGEX.captures_iter(html) {
+    for capture in nd_row_regex()?.captures_iter(html) {
         let (Some(label), Some(names)) = (capture.get(1), capture.get(2)) else {
             continue;
         };
-        let label = clean_text(label.as_str());
+        let label = clean_text(label.as_str())?;
         if label.is_empty() {
             continue;
         }
-        let co_op = ND_COOP_REGEX
+        let co_op = match nd_coop_regex()?
             .captures(&label)
             .and_then(|coop| coop.get(1))
-            .and_then(|value| nonempty(&clean_text(value.as_str())));
+        {
+            Some(value) => nonempty(&clean_text(value.as_str())?),
+            None => None,
+        };
         offerings.push(NdOffering {
-            label: strip_coop_note(&label),
-            coaches: split_person_names(&clean_text(names.as_str())),
+            label: strip_coop_note(&label)?,
+            coaches: split_person_names(&clean_text(names.as_str())?)?,
             co_op,
         });
     }
-    offerings
+    Ok(offerings)
 }
 
 /// Map an NDHSAA sport label onto our ontology plus the gender side it covers.
@@ -587,26 +684,53 @@ pub struct NsaaSchool {
 
 static NSAA_BLOCK_HEADING: &str = r#"<h1 class="mt-3">"#;
 
-static NSAA_ROW_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static NSAA_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r#"(?s)<tr([^>]*)>\s*<td scope='row'>(.*?)</td>\s*<td scope='row'>(.*?)</td>\s*</tr>"#,
     )
-    .expect("nsaa directory row regex")
 });
-static NSAA_CITY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)([A-Za-z][A-Za-z .'\-]*?)\s*,\s*NE\s+\d{5}").expect("nsaa city regex")
-});
-static NSAA_ENROLLMENT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)Enrollment:\s*([\d,]+)").expect("nsaa enrollment regex"));
-static NSAA_HOMEPAGE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)Homepage:\s*<a[^>]*href="([^"]+)""#).expect("nsaa url regex")
-});
+static NSAA_CITY_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)([A-Za-z][A-Za-z .'\-]*?)\s*,\s*NE\s+\d{5}"));
+static NSAA_ENROLLMENT_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)Enrollment:\s*([\d,]+)"));
+static NSAA_HOMEPAGE_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?i)Homepage:\s*<a[^>]*href="([^"]+)""#));
+
+fn nsaa_row_regex() -> Result<&'static Regex> {
+    NSAA_ROW_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("nsaa directory row regex: {e}"))
+}
+
+fn nsaa_city_regex() -> Result<&'static Regex> {
+    NSAA_CITY_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("nsaa city regex: {e}"))
+}
+
+fn nsaa_enrollment_regex() -> Result<&'static Regex> {
+    NSAA_ENROLLMENT_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("nsaa enrollment regex: {e}"))
+}
+
+fn nsaa_homepage_regex() -> Result<&'static Regex> {
+    NSAA_HOMEPAGE_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("nsaa url regex: {e}"))
+}
 
 /// The directory screen's bulk sentinel: renders every school, so it is never a school name.
 const NSAA_ALL_SCHOOLS: &str = "View all schools";
 
-static NSAA_OPTION_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?s)<option([^>]*)>(.*?)</option>").expect("nsaa option regex"));
+static NSAA_OPTION_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?s)<option([^>]*)>(.*?)</option>"));
+
+fn nsaa_option_regex() -> Result<&'static Regex> {
+    NSAA_OPTION_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("nsaa option regex: {e}"))
+}
 
 /// One-school request URL, e.g. `…/direxportscreen.php?session=&school=Adams+Central` (form-urlencoded
 /// by the `url` crate — `+` for space, hyphens literal; the server decodes both forms identically).
@@ -622,11 +746,11 @@ pub fn nsaa_school_url(name: &str) -> String {
 ///
 /// The list carries two non-school entries — a `disabled` placeholder and the `View all schools`
 /// bulk sentinel — and no `value` attributes, so the option text is the key space.
-pub fn parse_nsaa_school_names(html: &str) -> Vec<String> {
-    let html = without_comments(html);
+pub fn parse_nsaa_school_names(html: &str) -> Result<Vec<String>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
     let mut names: Vec<String> = Vec::new();
-    for capture in NSAA_OPTION_REGEX.captures_iter(html) {
+    for capture in nsaa_option_regex()?.captures_iter(html) {
         let (Some(attributes), Some(value)) = (capture.get(1), capture.get(2)) else {
             continue;
         };
@@ -637,54 +761,63 @@ pub fn parse_nsaa_school_names(html: &str) -> Vec<String> {
         {
             continue;
         }
-        let name = clean_text(value.as_str());
+        let name = clean_text(value.as_str())?;
         if name.is_empty() || name == NSAA_ALL_SCHOOLS || names.contains(&name) {
             continue;
         }
         names.push(name);
     }
-    names
+    Ok(names)
+}
+
+/// Every `<tr>` staff/coach row of one school block, in published order.
+fn nsaa_roles(block: &str) -> Result<Vec<NsaaRole>> {
+    let mut roles: Vec<NsaaRole> = Vec::new();
+    for capture in nsaa_row_regex()?.captures_iter(block) {
+        let (Some(attributes), Some(label), Some(value)) =
+            (capture.get(1), capture.get(2), capture.get(3))
+        else {
+            continue;
+        };
+        let label = clean_text(label.as_str())?;
+        let value = clean_text(value.as_str())?;
+        if label.is_empty() || value.is_empty() {
+            continue;
+        }
+        roles.push(NsaaRole {
+            label,
+            name: value,
+            co_op: attributes.as_str().contains("table-info"),
+        });
+    }
+    Ok(roles)
 }
 
 /// Parse a directory response into one [`NsaaSchool`] per `<h1 class="mt-3">` block.
 ///
 /// One school view carries a single block; the screen's bulk form carries all 312 in the same
 /// markup, so the same parser serves both.
-pub fn parse_nsaa_directory(html: &str) -> Vec<NsaaSchool> {
-    let html = without_comments(html);
+pub fn parse_nsaa_directory(html: &str) -> Result<Vec<NsaaSchool>> {
+    let html = without_comments(html)?;
     let html: &str = &html;
     let mut schools: Vec<NsaaSchool> = Vec::new();
     for block in html.split(NSAA_BLOCK_HEADING).skip(1) {
         let Some((raw_name, rest)) = block.split_once("</h1>") else {
             continue;
         };
-        let name = clean_text(raw_name);
+        let name = clean_text(raw_name)?;
         if name.is_empty() {
             continue;
         }
-        let mut roles: Vec<NsaaRole> = Vec::new();
-        for capture in NSAA_ROW_REGEX.captures_iter(rest) {
-            let (Some(attributes), Some(label), Some(value)) =
-                (capture.get(1), capture.get(2), capture.get(3))
-            else {
-                continue;
-            };
-            let label = clean_text(label.as_str());
-            let value = clean_text(value.as_str());
-            if label.is_empty() || value.is_empty() {
-                continue;
-            }
-            roles.push(NsaaRole {
-                label,
-                name: value,
-                co_op: attributes.as_str().contains("table-info"),
-            });
-        }
-        let city = NSAA_CITY_REGEX
+        let roles = nsaa_roles(rest)?;
+        let city = match nsaa_city_regex()?
             .captures(rest)
             .and_then(|capture| capture.get(1))
-            .and_then(|city| nonempty(&clean_text(city.as_str())));
-        let enrollment = NSAA_ENROLLMENT_REGEX
+        {
+            Some(city) => nonempty(&clean_text(city.as_str())?),
+            None => None,
+        };
+        let enrollment = nsaa_enrollment_regex()?
             .captures(rest)
             .and_then(|capture| capture.get(1))
             .map(|digits| {
@@ -695,7 +828,7 @@ pub fn parse_nsaa_directory(html: &str) -> Vec<NsaaSchool> {
                     .collect::<String>()
             })
             .and_then(|digits| digits.parse().ok());
-        let homepage = NSAA_HOMEPAGE_REGEX
+        let homepage = nsaa_homepage_regex()?
             .captures(rest)
             .and_then(|capture| capture.get(1))
             .and_then(|href| nonempty(href.as_str()));
@@ -707,7 +840,7 @@ pub fn parse_nsaa_directory(html: &str) -> Vec<NsaaSchool> {
             roles,
         });
     }
-    schools
+    Ok(schools)
 }
 
 /// Classify one NSAA directory row label.
@@ -778,14 +911,14 @@ pub fn nsaa_coaches(
     school_id: &SchoolId,
     source_url: &str,
     observed_on: &str,
-) -> Vec<CanonicalCoach> {
+) -> Result<Vec<CanonicalCoach>> {
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
     let mut seen: HashSet<CoachId> = HashSet::new();
     for role in &school.roles {
         let Some(kind) = parse_nsaa_row(&role.label) else {
             continue;
         };
-        for name in split_person_names(&role.name) {
+        for name in split_person_names(&role.name)? {
             let mut coach = match kind {
                 NsaaRow::SportCoach { sport, gender } => {
                     CanonicalCoach::new(school_id, name, Some(sport), gender, CoachRole::HeadCoach)
@@ -807,7 +940,7 @@ pub fn nsaa_coaches(
             }
         }
     }
-    coaches
+    Ok(coaches)
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -832,17 +965,18 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let run_nd = states.is_empty() || states.iter().any(|state| state == "ND");
     let run_ne = states.is_empty() || states.iter().any(|state| state == "NE");
 
+    // Counters saturate: they only feed the report, and no source carries 2^64 rows.
     let mut schools_written = 0u64;
     let mut coaches_written = 0u64;
     if run_nd {
         let (schools, coaches) = collect_north_dakota(ctx, options, &fetch, &mut report).await?;
-        schools_written += schools;
-        coaches_written += coaches;
+        schools_written = schools_written.saturating_add(schools);
+        coaches_written = coaches_written.saturating_add(coaches);
     }
     if run_ne {
         let (schools, coaches) = collect_nebraska(ctx, options, &fetch, &mut report).await?;
-        schools_written += schools;
-        coaches_written += coaches;
+        schools_written = schools_written.saturating_add(schools);
+        coaches_written = coaches_written.saturating_add(coaches);
     }
     if !run_nd && !run_ne {
         report.note(format!(
@@ -877,14 +1011,14 @@ async fn collect_north_dakota(
     let index = match ctx.fetcher.get(ND_SCHOOLS_URL, fetch).await {
         Ok(outcome) => outcome,
         Err(error) => {
-            report.errors += 1;
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("ndhsaa: {ND_SCHOOLS_URL} failed: {error}"));
             return Ok((0, 0));
         }
     };
-    let members = parse_nd_school_refs(&index.text());
+    let members = parse_nd_school_refs(&index.text())?;
     if members.is_empty() {
-        report.errors += 1;
+        report.errors = report.errors.saturating_add(1);
         report.note(format!(
             "ndhsaa: {ND_SCHOOLS_URL} carried no member-school links"
         ));
@@ -893,6 +1027,7 @@ async fn collect_north_dakota(
 
     let observed_on = observed_on(ctx, options);
     let journal = ctx.store.journal_keys(ND_SCHOOLS_PHASE)?;
+    // Counters saturate: they only feed the report, and no source carries 2^64 rows.
     let mut schools: Vec<CanonicalSchool> = Vec::new();
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
     let mut processed = 0usize;
@@ -909,43 +1044,43 @@ async fn collect_north_dakota(
         }
         let key = format!("ND:{}", member.id);
         if journal.contains(&key) {
-            resumed += 1;
+            resumed = resumed.saturating_add(1);
             continue;
         }
         let url = member.url();
         let page = match ctx.fetcher.get(&url, fetch).await {
             Ok(outcome) => outcome,
             Err(error) => {
-                failed += 1;
-                report.errors += 1;
+                failed = failed.saturating_add(1);
+                report.errors = report.errors.saturating_add(1);
                 report.note(format!("ndhsaa: {url} failed: {error}"));
                 continue;
             }
         };
         let html = page.text();
-        let Some((school, school_id)) = parse_nd_school_page(&html, member, &observed_on) else {
-            failed += 1;
-            report.errors += 1;
+        let Some((school, school_id)) = parse_nd_school_page(&html, member, &observed_on)? else {
+            failed = failed.saturating_add(1);
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("ndhsaa: {url} carried no school heading"));
             continue;
         };
 
-        if EMAIL_REGEX.is_match(&html) {
-            pages_with_email += 1;
+        if email_regex()?.is_match(&html) {
+            pages_with_email = pages_with_email.saturating_add(1);
         }
-        let staff = parse_nd_staff(&html);
-        let offerings = parse_nd_offerings(&html);
+        let staff = parse_nd_staff(&html)?;
+        let offerings = parse_nd_offerings(&html)?;
         let ads = nd_ad_coaches(&staff, &school_id, &url, &observed_on);
         let sport_coaches = nd_sport_coaches(&offerings, &school_id, &url, &observed_on);
         for offering in &offerings {
             if parse_nd_sport(&offering.label).is_some() {
-                slots += 1;
+                slots = slots.saturating_add(1);
                 if !offering.coaches.is_empty() {
-                    slots_named += 1;
+                    slots_named = slots_named.saturating_add(1);
                 }
             }
         }
-        ad_rows += ads.len();
+        ad_rows = ad_rows.saturating_add(ads.len());
         let ad_count = ads.len();
         let sport_count = sport_coaches.len();
         coaches.extend(ads);
@@ -960,13 +1095,16 @@ async fn collect_north_dakota(
         ctx.store.journal_done(
             ND_COACHES_PHASE,
             &key,
-            &serde_json::json!({ "coach_rows": sport_count + ad_count, "ad_rows": ad_count }),
+            &serde_json::json!({
+                "coach_rows": sport_count.saturating_add(ad_count),
+                "ad_rows": ad_count
+            }),
         )?;
-        processed += 1;
+        processed = processed.saturating_add(1);
     }
 
-    let school_rows = schools.len() as u64;
-    let coach_rows = coaches.len() as u64;
+    let school_rows = u64::try_from(schools.len()).context("ndhsaa school count exceeds u64")?;
+    let coach_rows = u64::try_from(coaches.len()).context("ndhsaa coach count exceeds u64")?;
     ctx.store
         .append_many(Table::Schools, &schools)
         .context("writing ndhsaa schools")?;
@@ -1003,9 +1141,9 @@ async fn collect_nebraska(
             return Ok((0, 0));
         }
     };
-    let members = parse_nsaa_school_names(&form.text());
+    let members = parse_nsaa_school_names(&form.text())?;
     if members.is_empty() {
-        report.errors += 1;
+        report.errors = report.errors.saturating_add(1);
         report.note(format!(
             "nsaa: {NSAA_FORM_URL} carried no member-school options"
         ));
@@ -1014,6 +1152,7 @@ async fn collect_nebraska(
 
     let observed_on = observed_on(ctx, options);
     let journal = ctx.store.journal_keys(NSAA_SCHOOLS_PHASE)?;
+    // Counters saturate: they only feed the report, and no source carries 2^64 rows.
     let mut schools: Vec<CanonicalSchool> = Vec::new();
     let mut coaches: Vec<CanonicalCoach> = Vec::new();
     let mut processed = 0usize;
@@ -1033,59 +1172,63 @@ async fn collect_nebraska(
         }
         let key = format!("NE:{name}");
         if journal.contains(&key) {
-            resumed += 1;
+            resumed = resumed.saturating_add(1);
             continue;
         }
         let url = nsaa_school_url(name);
         let page = match ctx.fetcher.get(&url, fetch).await {
             Ok(outcome) => outcome,
             Err(error) => {
-                failed += 1;
-                report.errors += 1;
+                failed = failed.saturating_add(1);
+                report.errors = report.errors.saturating_add(1);
                 report.note(format!("nsaa: {url} failed: {error}"));
                 continue;
             }
         };
-        let blocks = parse_nsaa_directory(&page.text());
+        let blocks = parse_nsaa_directory(&page.text())?;
         let Some(entry) = blocks
             .iter()
             .find(|entry| &entry.name == name)
             .or_else(|| blocks.first())
         else {
-            failed += 1;
-            report.errors += 1;
+            failed = failed.saturating_add(1);
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("nsaa: {url} carried no school block"));
             continue;
         };
 
         let (school, school_id) = parse_nsaa_school(entry, &url, &observed_on);
-        let school_coaches = nsaa_coaches(entry, &school_id, &url, &observed_on);
+        let school_coaches = nsaa_coaches(entry, &school_id, &url, &observed_on)?;
         for role in &entry.roles {
-            role_rows += 1;
-            if EMAIL_REGEX.is_match(&role.name) {
-                rows_with_email += 1;
+            role_rows = role_rows.saturating_add(1);
+            if email_regex()?.is_match(&role.name) {
+                rows_with_email = rows_with_email.saturating_add(1);
                 if parse_nsaa_row(&role.label).is_some() {
-                    coach_rows_with_email += 1;
+                    coach_rows_with_email = coach_rows_with_email.saturating_add(1);
                 }
             }
             if matches!(
                 parse_nsaa_row(&role.label),
                 Some(NsaaRow::SportCoach { .. })
             ) {
-                slots += 1;
-                if !split_person_names(&role.name).is_empty() {
-                    slots_named += 1;
+                slots = slots.saturating_add(1);
+                if !split_person_names(&role.name)?.is_empty() {
+                    slots_named = slots_named.saturating_add(1);
                 }
             }
         }
-        ad_rows += school_coaches
-            .iter()
-            .filter(|coach| coach.role == CoachRole::AthleticDirector)
-            .count();
-        sport_rows += school_coaches
-            .iter()
-            .filter(|coach| coach.role == CoachRole::HeadCoach)
-            .count();
+        ad_rows = ad_rows.saturating_add(
+            school_coaches
+                .iter()
+                .filter(|coach| coach.role == CoachRole::AthleticDirector)
+                .count(),
+        );
+        sport_rows = sport_rows.saturating_add(
+            school_coaches
+                .iter()
+                .filter(|coach| coach.role == CoachRole::HeadCoach)
+                .count(),
+        );
         let coach_count = school_coaches.len();
         coaches.extend(school_coaches);
         schools.push(school);
@@ -1100,11 +1243,11 @@ async fn collect_nebraska(
             &key,
             &serde_json::json!({ "coach_rows": coach_count }),
         )?;
-        processed += 1;
+        processed = processed.saturating_add(1);
     }
 
-    let school_rows = schools.len() as u64;
-    let coach_rows = coaches.len() as u64;
+    let school_rows = u64::try_from(schools.len()).context("nsaa school count exceeds u64")?;
+    let coach_rows = u64::try_from(coaches.len()).context("nsaa coach count exceeds u64")?;
     ctx.store
         .append_many(Table::Schools, &schools)
         .context("writing nsaa schools")?;
@@ -1197,7 +1340,7 @@ mod tests {
 
     #[test]
     fn nd_index_lists_every_member_school() {
-        let members = parse_nd_school_refs(ND_INDEX);
+        let members = parse_nd_school_refs(ND_INDEX).expect("the ndhsaa index parses");
         assert_eq!(
             members.len(),
             169,
@@ -1228,7 +1371,7 @@ mod tests {
             <a href="https://ndhsaa.com/athletics/track-boys">Track</a>
             <a href="/schools/92/alexander">Alexander</a>
         "#;
-        let members = parse_nd_school_refs(html);
+        let members = parse_nd_school_refs(html).expect("the ndhsaa index parses");
         assert_eq!(members.len(), 2);
         assert_eq!(members[0].slug, "bismarck", "first link per id wins");
         assert_eq!(members[1].id, "92");
@@ -1236,8 +1379,9 @@ mod tests {
 
     #[test]
     fn nd_school_page_parses_school_metadata() {
-        let (school, school_id) =
-            parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON).expect("fixture has a heading");
+        let (school, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
+            .expect("the ndhsaa page parses")
+            .expect("fixture has a heading");
 
         assert_eq!(school.name, "West Fargo Sheyenne High School");
         assert_eq!(
@@ -1291,7 +1435,9 @@ mod tests {
 
     #[test]
     fn nd_school_page_never_stores_phone_fax_or_address() {
-        let (school, _) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON).expect("school");
+        let (school, _) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
+            .expect("the ndhsaa page parses")
+            .expect("school");
         let json = serialized(&school);
         assert!(
             !json.contains("356-2160"),
@@ -1306,9 +1452,10 @@ mod tests {
 
     #[test]
     fn nd_ad_coaches_include_ad_and_activities_director_only() {
-        let (_, school_id) =
-            parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON).expect("school");
-        let staff = parse_nd_staff(ND_PAGE);
+        let (_, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
+            .expect("the ndhsaa page parses")
+            .expect("school");
+        let staff = parse_nd_staff(ND_PAGE).expect("the ndhsaa staff lines parse");
         let coaches = nd_ad_coaches(
             &staff,
             &school_id,
@@ -1371,12 +1518,13 @@ mod tests {
     fn nd_page_without_ad_yields_no_director_rows() {
         let (school, school_id) =
             parse_nd_school_page(ND_PAGE_NO_AD, &mandan_classical(), OBSERVED_ON)
+                .expect("the ndhsaa page parses")
                 .expect("the page still yields a school");
         assert_eq!(school.name, "Mandan Classical Academy");
         assert_eq!(school.city.as_deref(), Some("Mandan"));
         assert_eq!(school.association.as_deref(), Some("ndhsaa"));
 
-        let staff = parse_nd_staff(ND_PAGE_NO_AD);
+        let staff = parse_nd_staff(ND_PAGE_NO_AD).expect("the ndhsaa staff lines parse");
         assert!(
             !staff
                 .iter()
@@ -1404,7 +1552,7 @@ mod tests {
 
     #[test]
     fn nd_offering_rows_and_coop_annotations_parse() {
-        let offerings = parse_nd_offerings(ND_PAGE);
+        let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
         assert_eq!(offerings.len(), 28, "one row per published offering");
 
         let cross_country = offerings
@@ -1473,9 +1621,10 @@ mod tests {
 
     #[test]
     fn nd_sport_coaches_are_names_only() {
-        let (_, school_id) =
-            parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON).expect("school");
-        let offerings = parse_nd_offerings(ND_PAGE);
+        let (_, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
+            .expect("the ndhsaa page parses")
+            .expect("school");
+        let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
         let coaches = nd_sport_coaches(
             &offerings,
             &school_id,
@@ -1512,7 +1661,7 @@ mod tests {
 
     #[test]
     fn nd_fixture_reports_its_own_fill_rate() {
-        let offerings = parse_nd_offerings(ND_PAGE);
+        let offerings = parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse");
         let slots: Vec<&NdOffering> = offerings
             .iter()
             .filter(|offering| parse_nd_sport(&offering.label).is_some())
@@ -1534,22 +1683,34 @@ mod tests {
 
     #[test]
     fn nd_malformed_input_yields_no_rows() {
-        assert!(parse_nd_school_refs("<html>no links here</html>").is_empty());
-        assert!(parse_nd_school_refs("").is_empty());
+        assert!(parse_nd_school_refs("<html>no links here</html>")
+            .expect("the ndhsaa index parses")
+            .is_empty());
+        assert!(parse_nd_school_refs("")
+            .expect("the ndhsaa index parses")
+            .is_empty());
         assert!(parse_nd_school_page(
             "<html><body>Nothing</body></html>",
             &sheyenne(),
             OBSERVED_ON
         )
+        .expect("the ndhsaa page parses")
         .is_none());
-        assert!(parse_nd_staff("not html at all").is_empty());
-        assert!(parse_nd_offerings("<table><tr><td>only one cell</td></tr></table>").is_empty());
+        assert!(parse_nd_staff("not html at all")
+            .expect("the ndhsaa staff lines parse")
+            .is_empty());
+        assert!(
+            parse_nd_offerings("<table><tr><td>only one cell</td></tr></table>")
+                .expect("the ndhsaa offering rows parse")
+                .is_empty()
+        );
         // An empty heading is not a school name.
         assert!(parse_nd_school_page(
             "<h1>   </h1><p>Address: x, Fargo, ND 58102</p>",
             &sheyenne(),
             OBSERVED_ON
         )
+        .expect("the ndhsaa page parses")
         .is_none());
     }
 
@@ -1557,7 +1718,7 @@ mod tests {
 
     #[test]
     fn nsaa_form_option_list_yields_the_member_schools() {
-        let names = parse_nsaa_school_names(NSAA_FORM);
+        let names = parse_nsaa_school_names(NSAA_FORM).expect("the nsaa option list parses");
         assert_eq!(names.len(), 312, "the form lists every member school");
         assert_eq!(names[0], "Adams Central");
         assert_eq!(names[1], "Ainsworth");
@@ -1581,6 +1742,7 @@ mod tests {
 
         // The form's option names are exactly the names the bulk response uses for its blocks.
         let bulk: Vec<String> = parse_nsaa_directory(NSAA_PAGE)
+            .expect("the nsaa directory parses")
             .into_iter()
             .map(|school| school.name)
             .collect();
@@ -1592,11 +1754,18 @@ mod tests {
         }
 
         // Malformed and empty payloads yield no rows rather than panicking.
-        assert!(parse_nsaa_school_names("").is_empty());
-        assert!(parse_nsaa_school_names("<select></select>").is_empty());
-        assert!(parse_nsaa_school_names("<option></option>").is_empty());
+        assert!(parse_nsaa_school_names("")
+            .expect("the nsaa option list parses")
+            .is_empty());
+        assert!(parse_nsaa_school_names("<select></select>")
+            .expect("the nsaa option list parses")
+            .is_empty());
+        assert!(parse_nsaa_school_names("<option></option>")
+            .expect("the nsaa option list parses")
+            .is_empty());
         assert!(
             parse_nsaa_school_names("<option disabled>Select a school to view...</option>")
+                .expect("the nsaa option list parses")
                 .is_empty()
         );
     }
@@ -1616,7 +1785,7 @@ mod tests {
         );
 
         // Every published name must survive the encoding: parse the URL back and compare.
-        for name in parse_nsaa_school_names(NSAA_FORM) {
+        for name in parse_nsaa_school_names(NSAA_FORM).expect("the nsaa option list parses") {
             let url = url::Url::parse(&nsaa_school_url(&name)).expect("valid url");
             let decoded = url
                 .query_pairs()
@@ -1629,7 +1798,7 @@ mod tests {
 
     #[test]
     fn nsaa_single_school_page_matches_the_bulk_block() {
-        let single = parse_nsaa_directory(NSAA_SCHOOL_GET);
+        let single = parse_nsaa_directory(NSAA_SCHOOL_GET).expect("the nsaa directory parses");
         assert_eq!(single.len(), 1, "one school per single-school response");
         let entry = &single[0];
         assert_eq!(entry.name, "Adams Central");
@@ -1642,7 +1811,7 @@ mod tests {
         );
 
         // The same school from the bulk capture produces identical entities.
-        let bulk = parse_nsaa_directory(NSAA_PAGE);
+        let bulk = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let bulk_adams = bulk
             .iter()
             .find(|school| school.name == "Adams Central")
@@ -1651,7 +1820,8 @@ mod tests {
 
         let url = nsaa_school_url("Adams Central");
         let (school, school_id) = parse_nsaa_school(entry, &url, OBSERVED_ON);
-        let coaches = nsaa_coaches(entry, &school_id, &url, OBSERVED_ON);
+        let coaches =
+            nsaa_coaches(entry, &school_id, &url, OBSERVED_ON).expect("the nsaa coach rows parse");
         let (_, bulk_id) = parse_nsaa_school(bulk_adams, &url, OBSERVED_ON);
         assert_eq!(school_id, bulk_id, "one canonical id either way");
         assert_eq!(coaches.len(), 6);
@@ -1664,7 +1834,7 @@ mod tests {
 
     #[test]
     fn nsaa_directory_parses_every_school_block() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let names: Vec<&str> = schools.iter().map(|school| school.name.as_str()).collect();
         assert_eq!(
             names,
@@ -1721,7 +1891,7 @@ mod tests {
 
     #[test]
     fn nsaa_sport_rows_map_to_head_coach_sport_and_gender() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let adams = &schools[0];
         assert_eq!(
             parse_nsaa_row("Cross-Country (Boys)"),
@@ -1760,7 +1930,8 @@ mod tests {
         assert_eq!(parse_nsaa_row("Volleyball"), None);
 
         let (_, school_id) = parse_nsaa_school(adams, &url_of(adams), OBSERVED_ON);
-        let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON);
+        let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
         let track_boys = coaches
             .iter()
             .find(|coach| {
@@ -1781,13 +1952,14 @@ mod tests {
 
     #[test]
     fn nsaa_multi_name_cells_split_into_one_entity_per_person() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let ainsworth = schools
             .iter()
             .find(|school| school.name == "Ainsworth")
             .expect("Ainsworth in the fixture");
         let (_, school_id) = parse_nsaa_school(ainsworth, &url_of(ainsworth), OBSERVED_ON);
-        let coaches = nsaa_coaches(ainsworth, &school_id, &url_of(ainsworth), OBSERVED_ON);
+        let coaches = nsaa_coaches(ainsworth, &school_id, &url_of(ainsworth), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
 
         let xc: Vec<&str> = coaches
             .iter()
@@ -1809,7 +1981,7 @@ mod tests {
 
     #[test]
     fn nsaa_director_rows_map_to_athletic_director() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let adams = &schools[0];
         let (school, school_id) = parse_nsaa_school(adams, &url_of(adams), OBSERVED_ON);
         assert_eq!(school.state.as_deref(), Some("NE"));
@@ -1828,7 +2000,8 @@ mod tests {
             "NSAA publishes no numeric id, so the published name is the provider key"
         );
 
-        let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON);
+        let coaches = nsaa_coaches(adams, &school_id, &url_of(adams), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
         let directors: Vec<&str> = coaches
             .iter()
             .filter(|coach| coach.role == CoachRole::AthleticDirector)
@@ -1850,7 +2023,7 @@ mod tests {
 
     #[test]
     fn nsaa_office_roles_are_never_emitted() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         // Every one of these people is published in an office row in the fixture and appears in no
         // coach/AD row anywhere in it.
         let office_people = [
@@ -1891,6 +2064,7 @@ mod tests {
             let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
             produced.extend(
                 nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
+                    .expect("the nsaa coach rows parse")
                     .into_iter()
                     .map(|coach| coach.name),
             );
@@ -1932,7 +2106,7 @@ mod tests {
 
     #[test]
     fn nsaa_office_row_is_ignored_but_the_same_persons_coaching_row_is_kept() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
 
         // Alliance publishes Nate Lanik as Guidance Counselor *and* as both track coaches: the office
         // row contributes nothing, the sport rows contribute exactly two entities.
@@ -1945,7 +2119,8 @@ mod tests {
             .iter()
             .any(|role| role.label == "Guidance Counselor" && role.name == "Nate Lanik"));
         let (_, alliance_id) = parse_nsaa_school(alliance, &url_of(alliance), OBSERVED_ON);
-        let alliance_coaches = nsaa_coaches(alliance, &alliance_id, &url_of(alliance), OBSERVED_ON);
+        let alliance_coaches = nsaa_coaches(alliance, &alliance_id, &url_of(alliance), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
         assert_eq!(alliance_coaches.len(), 5, "Alliance: 1 AD + 2 XC + 2 track");
         let lanik: Vec<&CanonicalCoach> = alliance_coaches
             .iter()
@@ -1969,7 +2144,8 @@ mod tests {
             .find(|school| school.name == "Anselmo-Merna")
             .expect("Anselmo-Merna in the fixture");
         let (_, anselmo_id) = parse_nsaa_school(anselmo, &url_of(anselmo), OBSERVED_ON);
-        let anselmo_coaches = nsaa_coaches(anselmo, &anselmo_id, &url_of(anselmo), OBSERVED_ON);
+        let anselmo_coaches = nsaa_coaches(anselmo, &anselmo_id, &url_of(anselmo), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
         assert_eq!(anselmo_coaches.len(), 3, "1 AD + 2 track");
         assert_eq!(
             anselmo_coaches
@@ -1990,7 +2166,8 @@ mod tests {
             .iter()
             .any(|role| role.label == "Principal" && role.name == "Garrod Fernau"));
         let (_, ansley_id) = parse_nsaa_school(ansley, &url_of(ansley), OBSERVED_ON);
-        let ansley_coaches = nsaa_coaches(ansley, &ansley_id, &url_of(ansley), OBSERVED_ON);
+        let ansley_coaches = nsaa_coaches(ansley, &ansley_id, &url_of(ansley), OBSERVED_ON)
+            .expect("the nsaa coach rows parse");
         assert_eq!(ansley_coaches.len(), 6, "2 AD + 2 XC + 2 track");
         assert_eq!(
             ansley_coaches
@@ -2004,12 +2181,13 @@ mod tests {
 
     #[test]
     fn nsaa_fixture_yields_exactly_the_verified_entities() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let mut by_school: Vec<(String, Vec<String>)> = Vec::new();
         for entry in &schools {
             let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
             let mut rows: Vec<String> =
                 nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
+                    .expect("the nsaa coach rows parse")
                     .into_iter()
                     .map(|coach| {
                         format!(
@@ -2056,7 +2234,7 @@ mod tests {
 
     #[test]
     fn nsaa_coop_annotations_are_stripped_from_names() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let ansley = schools
             .iter()
             .find(|school| school.name == "Ansley")
@@ -2071,6 +2249,7 @@ mod tests {
 
         let (_, school_id) = parse_nsaa_school(ansley, &url_of(ansley), OBSERVED_ON);
         let names: Vec<String> = nsaa_coaches(ansley, &school_id, &url_of(ansley), OBSERVED_ON)
+            .expect("the nsaa coach rows parse")
             .into_iter()
             .map(|coach| coach.name)
             .collect();
@@ -2080,50 +2259,65 @@ mod tests {
 
         // The other shapes the source publishes, verbatim from the 2026-09-20 full capture.
         assert_eq!(
-            split_person_names("Cayley Bailey (Co-op w/Litchfield)"),
+            split_person_names("Cayley Bailey (Co-op w/Litchfield)").expect("the name cell parses"),
             vec!["Cayley Bailey"]
         );
         assert_eq!(
-            split_person_names("Derek Mahony Co-op w/Wheeler Central"),
+            split_person_names("Derek Mahony Co-op w/Wheeler Central")
+                .expect("the name cell parses"),
             vec!["Derek Mahony"]
         );
         assert_eq!(
-            split_person_names("Jenna Landgren Co-op w/Wheeler Central"),
+            split_person_names("Jenna Landgren Co-op w/Wheeler Central")
+                .expect("the name cell parses"),
             vec!["Jenna Landgren"]
         );
         assert_eq!(
-            split_person_names("Carrie Ourada (Co-oop w/ Loup County"),
+            split_person_names("Carrie Ourada (Co-oop w/ Loup County")
+                .expect("the name cell parses"),
             vec!["Carrie Ourada"]
         );
-        assert!(split_person_names("Co-op w/Loup CIty").is_empty());
-        assert!(split_person_names("   ").is_empty());
+        assert!(split_person_names("Co-op w/Loup CIty")
+            .expect("the name cell parses")
+            .is_empty());
+        assert!(split_person_names("   ")
+            .expect("the name cell parses")
+            .is_empty());
         assert_eq!(
-            split_person_names("Betsy Rall & Amy Sokol"),
+            split_person_names("Betsy Rall & Amy Sokol").expect("the name cell parses"),
             vec!["Betsy Rall", "Amy Sokol"]
         );
         assert_eq!(
-            split_person_names("Jeff Tescher, Jeff Tescher"),
+            split_person_names("Jeff Tescher, Jeff Tescher").expect("the name cell parses"),
             vec!["Jeff Tescher"]
         );
-        assert_eq!(split_person_names("Dr. Dan Schinzel"), vec!["Dan Schinzel"]);
+        assert_eq!(
+            split_person_names("Dr. Dan Schinzel").expect("the name cell parses"),
+            vec!["Dan Schinzel"]
+        );
     }
 
     #[test]
     fn nsaa_fixture_reports_its_own_fill_rate_and_entity_count() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         let mut slots = 0usize;
         let mut named = 0usize;
         let mut coaches = 0usize;
         for entry in &schools {
             let (_, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
-            coaches += nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON).len();
+            coaches += nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
+                .expect("the nsaa coach rows parse")
+                .len();
             for role in &entry.roles {
                 if matches!(
                     parse_nsaa_row(&role.label),
                     Some(NsaaRow::SportCoach { .. })
                 ) {
                     slots += 1;
-                    if !split_person_names(&role.name).is_empty() {
+                    if !split_person_names(&role.name)
+                        .expect("the name cell parses")
+                        .is_empty()
+                    {
                         named += 1;
                     }
                 }
@@ -2145,7 +2339,7 @@ mod tests {
 
     #[test]
     fn nsaa_entities_carry_no_emails_anywhere() {
-        let schools = parse_nsaa_directory(NSAA_PAGE);
+        let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
         for entry in &schools {
             let (school, school_id) = parse_nsaa_school(entry, &url_of(entry), OBSERVED_ON);
             assert!(
@@ -2153,7 +2347,9 @@ mod tests {
                 "no email in {}",
                 school.name
             );
-            for coach in nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON) {
+            for coach in nsaa_coaches(entry, &school_id, &url_of(entry), OBSERVED_ON)
+                .expect("the nsaa coach rows parse")
+            {
                 assert_eq!(coach.professional_email, None);
                 assert_eq!(coach.phone, None);
                 assert!(
@@ -2170,12 +2366,18 @@ mod tests {
 
     #[test]
     fn nd_entities_carry_no_emails_anywhere() {
-        let (school, school_id) =
-            parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON).expect("school");
+        let (school, school_id) = parse_nd_school_page(ND_PAGE, &sheyenne(), OBSERVED_ON)
+            .expect("the ndhsaa page parses")
+            .expect("school");
         assert!(!serialized(&school).contains('@'));
-        let mut produced = nd_ad_coaches(&parse_nd_staff(ND_PAGE), &school_id, "u", OBSERVED_ON);
+        let mut produced = nd_ad_coaches(
+            &parse_nd_staff(ND_PAGE).expect("the ndhsaa staff lines parse"),
+            &school_id,
+            "u",
+            OBSERVED_ON,
+        );
         produced.extend(nd_sport_coaches(
-            &parse_nd_offerings(ND_PAGE),
+            &parse_nd_offerings(ND_PAGE).expect("the ndhsaa offering rows parse"),
             &school_id,
             "u",
             OBSERVED_ON,
@@ -2191,16 +2393,28 @@ mod tests {
             );
         }
         // The fixture page itself has no email at all — the provider publishes no email layer.
-        assert!(!EMAIL_REGEX.is_match(ND_PAGE));
+        assert!(!email_regex()
+            .expect("the email probe regex compiles")
+            .is_match(ND_PAGE));
     }
 
     #[test]
     fn nsaa_malformed_input_yields_no_rows() {
-        assert!(parse_nsaa_directory("<!doctype html><html>nothing</html>").is_empty());
-        assert!(parse_nsaa_directory("").is_empty());
+        assert!(parse_nsaa_directory("<!doctype html><html>nothing</html>")
+            .expect("the nsaa directory parses")
+            .is_empty());
+        assert!(parse_nsaa_directory("")
+            .expect("the nsaa directory parses")
+            .is_empty());
         // A heading without a closing tag, and a heading with an empty name, are both skipped.
-        assert!(parse_nsaa_directory(r#"<h1 class="mt-3">Broken"#).is_empty());
-        assert!(parse_nsaa_directory(r#"<h1 class="mt-3">   </h1><table></table>"#).is_empty());
+        assert!(parse_nsaa_directory(r#"<h1 class="mt-3">Broken"#)
+            .expect("the nsaa directory parses")
+            .is_empty());
+        assert!(
+            parse_nsaa_directory(r#"<h1 class="mt-3">   </h1><table></table>"#)
+                .expect("the nsaa directory parses")
+                .is_empty()
+        );
         assert_eq!(parse_nsaa_row(""), None);
         let school = NsaaSchool {
             name: String::new(),
@@ -2210,7 +2424,11 @@ mod tests {
             roles: Vec::new(),
         };
         let (_, school_id) = parse_nsaa_school(&school, &url_of(&school), OBSERVED_ON);
-        assert!(nsaa_coaches(&school, &school_id, &url_of(&school), OBSERVED_ON).is_empty());
+        assert!(
+            nsaa_coaches(&school, &school_id, &url_of(&school), OBSERVED_ON)
+                .expect("the nsaa coach rows parse")
+                .is_empty()
+        );
     }
 
     #[tokio::test]

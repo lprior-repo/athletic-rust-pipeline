@@ -25,38 +25,96 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 /// An event block starts at the line's left edge or after a gap wide enough to separate columns.
-static BLOCK_START: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?:^|\s{3,})(#\s?\d+\s+)?(Boys|Girls|Men|Women)['\u{2019}]?s?\s+").expect("regex")
+static BLOCK_START: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(r"(?:^|\s{3,})(#\s?\d+\s+)?(Boys|Girls|Men|Women)['\u{2019}]?s?\s+")
 });
-static PAGE_STAMP: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*").expect("regex")
-});
-static DATE_NAMED: LazyLock<Regex> = LazyLock::new(|| {
+static PAGE_STAMP: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*"));
+static DATE_NAMED: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"(?i)\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s+([A-Z][a-z]{2,8})\s+(\d{1,2}),\s*(\d{4})",
     )
-    .expect("regex")
 });
-static DATE_SLASH: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b").expect("regex"));
+static DATE_SLASH: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b"));
 /// Event numbers that some exports print ahead of the event name (`#22 Girls' 4x800 Relay`).
-static EVENT_NUMBER: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\s*#\s?\d+\s+").expect("regex"));
-static ROUND_TAIL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\s+(finals|prelims|preliminaries|semi-?finals|semis)\s*$").expect("regex")
-});
-static EVENT_LABEL: LazyLock<Regex> = LazyLock::new(|| {
+static EVENT_NUMBER: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^\s*#\s?\d+\s+"));
+static ROUND_TAIL: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)\s+(finals|prelims|preliminaries|semi-?finals|semis)\s*$"));
+static EVENT_LABEL: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"^(Boys|Girls|Men|Women)['\u{2019}]?s?\s+(.+?)(?:\s+(Division\s+[0-9A-Za-z]+))?\s*$",
     )
-    .expect("regex")
 });
-static RELAY_LEG: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^\d]+?)\s+(\d{1,2}|Fr|So|Jr|Sr)\b").expect("regex"));
+static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(\d+)\)\s+([^\d]+?)\s+(\d{1,2}|Fr|So|Jr|Sr)\b"));
 /// The qualifier letter a preliminary row carries after its mark (`12.30 Q`).
-static QUALIFIER: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s+[Qq]$").expect("regex"));
-static VENUE_NOISE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)\b(high school|hs)\b|,\s*[A-Z]{2}\s*$").expect("regex"));
+static QUALIFIER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"\s+[Qq]$"));
+static VENUE_NOISE: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)\b(high school|hs)\b|,\s*[A-Z]{2}\s*$"));
+
+// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
+// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
+fn block_start() -> anyhow::Result<&'static Regex> {
+    BLOCK_START
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn page_stamp() -> anyhow::Result<&'static Regex> {
+    PAGE_STAMP
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn date_named() -> anyhow::Result<&'static Regex> {
+    DATE_NAMED
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn date_slash() -> anyhow::Result<&'static Regex> {
+    DATE_SLASH
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn event_number() -> anyhow::Result<&'static Regex> {
+    EVENT_NUMBER
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn round_tail() -> anyhow::Result<&'static Regex> {
+    ROUND_TAIL
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn event_label() -> anyhow::Result<&'static Regex> {
+    EVENT_LABEL
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn relay_leg() -> anyhow::Result<&'static Regex> {
+    RELAY_LEG
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn qualifier() -> anyhow::Result<&'static Regex> {
+    QUALIFIER
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn venue_noise() -> anyhow::Result<&'static Regex> {
+    VENUE_NOISE
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
 
 const MONTHS: [&str; 12] = [
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
@@ -92,7 +150,9 @@ impl Block {
         tokens
             .iter()
             .filter(|token| token.start >= self.start && token.end <= self.limit)
-            .filter(|token| token.start + 1 >= column.start && token.start <= column.end)
+            .filter(|token| {
+                token.start.saturating_add(1) >= column.start && token.start <= column.end
+            })
             .min_by_key(|token| {
                 column
                     .start
@@ -128,6 +188,7 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     let date = date.unwrap_or_else(|| archive_year.to_string());
     let mut blocks: Vec<Block> = Vec::new();
     let mut events: Vec<ParsedEvent> = Vec::new();
+    // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
     let mut rows_parsed = 0usize;
     let mut rows_skipped = 0usize;
 
@@ -144,27 +205,23 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
             // share it. A block owns the columns from its own header up to the next block's identity
             // column, because the score columns of the left event print left of where the right
             // event's athlete column begins.
-            let bounds: Vec<usize> = (0..blocks.len())
-                .map(|index| {
-                    blocks
-                        .get(index + 1)
-                        .and_then(|next| {
-                            columns
-                                .iter()
-                                .find(|column| {
-                                    column.start >= next.start && is_identity_column(&column.label)
-                                })
-                                .or_else(|| {
-                                    columns.iter().find(|column| column.start >= next.start)
-                                })
-                                .map(|column| column.start)
+            let bounds: Vec<usize> = blocks
+                .iter()
+                .skip(1)
+                .map(|next| {
+                    columns
+                        .iter()
+                        .find(|column| {
+                            column.start >= next.start && is_identity_column(&column.label)
                         })
+                        .or_else(|| columns.iter().find(|column| column.start >= next.start))
+                        .map(|column| column.start)
                         .unwrap_or(usize::MAX)
                 })
+                .chain(std::iter::once(usize::MAX))
                 .collect();
             let mut low = blocks.first().map(|block| block.start).unwrap_or(0);
-            for (index, block) in blocks.iter_mut().enumerate() {
-                let high = bounds[index];
+            for (block, high) in blocks.iter_mut().zip(bounds) {
                 block.columns = columns
                     .iter()
                     .filter(|column| column.start >= low && column.start < high)
@@ -181,17 +238,21 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
             if slice.is_empty() {
                 continue;
             }
+            // A block's `index` names the event it built, so this lookup always resolves; a file
+            // that somehow lost the pairing is left to the next layout instead of being read
+            // against the wrong event.
+            let event = events.get_mut(block.index)?;
             if let Some(row) = parse_row(line, &line_tokens, block) {
-                rows_parsed += 1;
-                events[block.index].rows.push(row);
+                rows_parsed = rows_parsed.saturating_add(1);
+                event.rows.push(row);
                 continue;
             }
-            if attach_legs(line, block, &mut events[block.index]) {
-                rows_parsed += 1;
+            if attach_legs(line, block, event)? {
+                rows_parsed = rows_parsed.saturating_add(1);
                 continue;
             }
             if starts_like_a_row(&slice) {
-                rows_skipped += 1;
+                rows_skipped = rows_skipped.saturating_add(1);
             }
         }
     }
@@ -234,13 +295,13 @@ fn header(lines: &[String]) -> Option<(String, Option<String>)> {
             date = parse_date(trimmed);
         }
         if name.is_none() {
-            let cleaned = PAGE_STAMP.replace(trimmed, "");
+            let cleaned = page_stamp().ok()?.replace(trimmed, "");
             let cleaned = cleaned.trim().trim_start_matches("Manage ").trim();
-            let candidate = DATE_NAMED.replace(cleaned, "");
-            let candidate = DATE_SLASH.replace(&candidate, "");
+            let candidate = date_named().ok()?.replace(cleaned, "");
+            let candidate = date_slash().ok()?.replace(&candidate, "");
             let candidate = candidate.trim().trim_end_matches('|').trim();
             if candidate.len() >= 6
-                && !VENUE_NOISE.is_match(candidate)
+                && !venue_noise().ok()?.is_match(candidate)
                 && !candidate.eq_ignore_ascii_case("results")
                 && candidate.chars().any(char::is_alphabetic)
             {
@@ -255,29 +316,31 @@ fn header(lines: &[String]) -> Option<(String, Option<String>)> {
 }
 
 fn parse_date(line: &str) -> Option<String> {
-    if let Some(captures) = DATE_NAMED.captures(line) {
+    if let Some(captures) = date_named().ok()?.captures(line) {
+        let month_token = captures.get(1)?.as_str().to_ascii_lowercase();
         let month = MONTHS
             .iter()
-            .position(|month| captures[1].to_ascii_lowercase().starts_with(month))?
-            + 1;
+            .position(|month| month_token.starts_with(month))?
+            .checked_add(1)?;
         return Some(format!(
             "{:04}-{:02}-{:02}",
-            captures[3].parse::<i32>().ok()?,
+            captures.get(3)?.as_str().parse::<i32>().ok()?,
             month,
-            captures[2].parse::<u32>().ok()?
+            captures.get(2)?.as_str().parse::<u32>().ok()?
         ));
     }
-    let captures = DATE_SLASH.captures(line)?;
+    let captures = date_slash().ok()?.captures(line)?;
     Some(format!(
         "{:04}-{:02}-{:02}",
-        captures[3].parse::<i32>().ok()?,
-        captures[1].parse::<u32>().ok()?,
-        captures[2].parse::<u32>().ok()?
+        captures.get(3)?.as_str().parse::<i32>().ok()?,
+        captures.get(1)?.as_str().parse::<u32>().ok()?,
+        captures.get(2)?.as_str().parse::<u32>().ok()?
     ))
 }
 
 fn block_starts(line: &str) -> Option<Vec<usize>> {
-    let starts: Vec<usize> = BLOCK_START
+    let starts: Vec<usize> = block_start()
+        .ok()?
         .captures_iter(line)
         .filter_map(|captures| captures.get(0).map(|m| m.start()))
         .collect();
@@ -297,10 +360,14 @@ fn column_anchors(line: &str) -> Option<Vec<Column>> {
 
 fn build_blocks(line: &str, starts: Vec<usize>, events: &mut Vec<ParsedEvent>) -> Vec<Block> {
     let mut blocks = Vec::new();
-    for (index, start) in starts.iter().enumerate() {
-        // The last block runs to the end of every line: its own header line is shorter than the
-        // column header that states where the page's fields sit.
-        let end = starts.get(index + 1).copied().unwrap_or(usize::MAX);
+    // The last block runs to the end of every line: its own header line is shorter than the
+    // column header that states where the page's fields sit.
+    let ends = starts
+        .iter()
+        .skip(1)
+        .copied()
+        .chain(std::iter::once(usize::MAX));
+    for (start, end) in starts.iter().zip(ends) {
         let slice = substring(line, *start, end);
         let Some((gender, label, division, round)) = event_of(&slice) else {
             continue;
@@ -330,9 +397,10 @@ fn build_blocks(line: &str, starts: Vec<usize>, events: &mut Vec<ParsedEvent>) -
 /// Gender, label, division and round of an event header block such as
 /// `Girls' 4x800 Relay Division 1          Finals`.
 fn event_of(slice: &str) -> Option<(Gender, String, Option<String>, Option<String>)> {
-    let trimmed = EVENT_NUMBER.replace(slice.trim(), "");
+    let trimmed = event_number().ok()?.replace(slice.trim(), "");
     let trimmed = trimmed.trim();
-    let round = ROUND_TAIL
+    let round_tail = round_tail().ok()?;
+    let round = round_tail
         .captures(trimmed)
         .and_then(|captures| {
             let label = captures.get(1)?.as_str().to_ascii_lowercase();
@@ -343,8 +411,8 @@ fn event_of(slice: &str) -> Option<(Gender, String, Option<String>, Option<Strin
             })
         })
         .map(str::to_string);
-    let head = ROUND_TAIL.replace(trimmed, "");
-    let captures = EVENT_LABEL.captures(head.trim())?;
+    let head = round_tail.replace(trimmed, "");
+    let captures = event_label().ok()?.captures(head.trim())?;
     let gender = match captures.get(1)?.as_str().to_ascii_lowercase().as_str() {
         "boys" | "men" => Gender::Boys,
         _ => Gender::Girls,
@@ -373,7 +441,7 @@ fn parse_row(line: &str, line_tokens: &[hytek::Token<'_>], block: &Block) -> Opt
     let first_column = block.columns.first()?.start;
     let place = line_tokens
         .iter()
-        .rfind(|token| token.start >= block.start && token.end <= first_column + 1)
+        .rfind(|token| token.start >= block.start && token.end <= first_column.saturating_add(1))
         .and_then(|token| token.text.trim().parse::<u16>().ok());
     let place = place?;
 
@@ -419,16 +487,19 @@ fn parse_row(line: &str, line_tokens: &[hytek::Token<'_>], block: &Block) -> Opt
         legs: Vec::new(),
     })
 }
-fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> bool {
+
+/// Attach the relay legs a relay row prints beneath it. `None` means the leg pattern is
+/// unavailable, which makes the file unreadable rather than legless.
+fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> Option<bool> {
     if !block.kind.is_relay() {
-        return false;
+        return Some(false);
     }
     let Some(row) = event.rows.last_mut() else {
-        return false;
+        return Some(false);
     };
     let slice = substring(line, block.start, block.limit);
     let mut found = false;
-    for captures in RELAY_LEG.captures_iter(&slice) {
+    for captures in relay_leg().ok()?.captures_iter(&slice) {
         let name = captures
             .get(2)
             .map(|m| m.as_str().trim().trim_end_matches(','))
@@ -451,7 +522,7 @@ fn attach_legs(line: &str, block: &Block, event: &mut ParsedEvent) -> bool {
         });
         found = true;
     }
-    found
+    Some(found)
 }
 
 /// Read the published mark: qualifier letters are not part of it, and jumps and throws publish feet
@@ -461,7 +532,7 @@ fn mark_for(kind: &EventKind, token: &str) -> Option<Mark> {
     if hytek::NO_MARK.contains(&token.to_ascii_uppercase().as_str()) {
         return Some(Mark::Raw(token.to_string()));
     }
-    let cleaned = QUALIFIER.replace(token, "");
+    let cleaned = qualifier().ok()?.replace(token, "");
     let cleaned = cleaned.trim();
     if kind.is_field() {
         return hytek::parse_field_mark(cleaned)

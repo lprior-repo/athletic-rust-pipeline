@@ -226,7 +226,9 @@ async fn execute(
                 return Err(TerminalError::new("deferred browser step escaped admission").into())
             }
         };
-        let should_retry = retryable && attempt_index + 1 < retry::MAX_ATTEMPTS;
+        // `attempt_index` stays below `MAX_ATTEMPTS` here; saturation keeps the
+        // increment checked without changing the comparison.
+        let should_retry = retryable && attempt_index.saturating_add(1) < retry::MAX_ATTEMPTS;
         last_finalized = Some(finalized);
         if !should_retry {
             break;
@@ -266,7 +268,9 @@ async fn run_step(
     let runtime = gateway.runtime.clone();
     let record_operation = operation.clone();
     let load_operation = operation.clone();
-    let last_attempt = attempt_index + 1 == retry::MAX_ATTEMPTS;
+    // `attempt_index` is a retry ordinal bounded by `retry::MAX_ATTEMPTS`, so a
+    // saturating increment is the exact attempt count and cannot overflow.
+    let last_attempt = attempt_index.saturating_add(1) == retry::MAX_ATTEMPTS;
     let is_rankings = matches!(
         request.action,
         crate::runtime::source::request::RequestAction::Rankings(_)

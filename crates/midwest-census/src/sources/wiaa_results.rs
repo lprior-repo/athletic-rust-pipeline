@@ -73,18 +73,37 @@ pub struct Options {
     pub school_names: Vec<String>,
 }
 
-static LINK: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>"#).expect("regex"));
+static LINK: LazyLock<std::result::Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>"#));
 /// Result files live under three URL shapes: `/Results/<sport>/<year>/…` (the archive's own
 /// releases), `/Portals/0/PDF/Results/…` (older mirrors, matched by the same `/Results/` marker) and
 /// `/sites/default/files/<year>-<month>/…` (the current-season files the state meet pages link).
-static RESULT_PATH: LazyLock<Regex> = LazyLock::new(|| {
+static RESULT_PATH: LazyLock<std::result::Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"(?i)/(?:Results/(?:Track|Cross_Country)/(\d{4})/|sites/default/files/(\d{4})-\d{2}/)",
     )
-    .expect("regex")
 });
-static TAGS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").expect("regex"));
+static TAGS: LazyLock<std::result::Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
+
+/// The archive-page link pattern, or the compile error of the literal it was built from.
+fn link() -> Result<&'static Regex> {
+    LINK.as_ref()
+        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+}
+
+/// The result-file URL pattern, or the compile error of the literal it was built from.
+fn result_path() -> Result<&'static Regex> {
+    RESULT_PATH
+        .as_ref()
+        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+}
+
+/// The tag-stripping pattern, or the compile error of the literal it was built from.
+fn tags() -> Result<&'static Regex> {
+    TAGS.as_ref()
+        .map_err(|error| anyhow::anyhow!("regex: {error}"))
+}
 
 /// One artifact link found on an archive page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -139,13 +158,16 @@ pub fn artifact_format(extension: &str, body: Option<&str>) -> ArtifactFormat {
 }
 
 /// Extract every result-file link from an archive page, with its year from the URL path.
-pub fn archive_artifacts(body: &str) -> Vec<ArchiveArtifact> {
+pub fn archive_artifacts(body: &str) -> Result<Vec<ArchiveArtifact>> {
+    let link = link()?;
+    let result_path = result_path()?;
+    let tags = tags()?;
     let mut artifacts = Vec::new();
-    for captures in LINK.captures_iter(body) {
+    for captures in link.captures_iter(body) {
         let Some(href) = captures.get(1).map(|m| m.as_str()) else {
             continue;
         };
-        let Some(year) = RESULT_PATH
+        let Some(year) = result_path
             .captures(href)
             .and_then(|captures| captures.get(1).or_else(|| captures.get(2)))
             .and_then(|m| m.as_str().parse::<i16>().ok())
@@ -161,7 +183,7 @@ pub fn archive_artifacts(body: &str) -> Vec<ArchiveArtifact> {
         let label = captures
             .get(2)
             .map(|m| {
-                TAGS.replace_all(m.as_str(), "")
+                tags.replace_all(m.as_str(), "")
                     .split_whitespace()
                     .collect::<Vec<_>>()
                     .join(" ")
@@ -185,7 +207,7 @@ pub fn archive_artifacts(body: &str) -> Vec<ArchiveArtifact> {
     }
     artifacts.sort_by(|a, b| a.url.cmp(&b.url));
     artifacts.dedup_by(|a, b| a.url == b.url);
-    artifacts
+    Ok(artifacts)
 }
 
 /// Read a PDF release with the vendor parsers, most specific first.
@@ -229,12 +251,14 @@ fn pdftotext(body: &[u8]) -> std::io::Result<String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
         .spawn()?;
-    let mut stdin = child.stdin.take().expect("stdin was piped");
+    let Some(mut stdin) = child.stdin.take() else {
+        return Err(std::io::Error::other("stdin was piped"));
+    };
     let payload = body.to_vec();
-    let writer = std::thread::spawn(move || {
-        let _ = stdin.write_all(&payload);
-        drop(stdin);
-    });
+    // The child's own exit status below is the failure the caller reports; a failed write only
+    // means `pdftotext` stopped reading, so the result is discarded rather than double-reported.
+    // Dropping the closure also drops the pipe, which is what tells the child its input is complete.
+    let writer = std::thread::spawn(move || drop(stdin.write_all(&payload)));
     let output = child.wait_with_output()?;
     writer.join().ok();
     if !output.status.success() {
@@ -289,6 +313,8 @@ struct Accumulator {
     performances: HashMap<String, CanonicalPerformance>,
 }
 
+/// Run counters. Every field saturates at `usize::MAX` instead of wrapping: the counts are published
+/// in the run notes, and a wrap would silently turn a large run into a small number there.
 #[derive(Debug, Default)]
 struct Stats {
     artifacts_seen: usize,
@@ -358,7 +384,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             .await
             .with_context(|| format!("fetching the WIAA archive page {archive_url}"))?;
         let body = archive.text();
-        let artifacts = archive_artifacts(&body);
+        let artifacts = archive_artifacts(&body)?;
         report.note(format!(
             "{archive_url}: {} result artifacts ({} in the requested seasons)",
             artifacts.len(),
@@ -378,14 +404,15 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             {
                 break 'artifact;
             }
-            stats.artifacts_seen += 1;
+            stats.artifacts_seen = stats.artifacts_seen.saturating_add(1);
             if done.contains(&artifact.url) {
                 continue;
             }
             let extension = artifact.extension.as_str();
             if artifact_format(extension, None) == ArtifactFormat::Unparsed {
-                stats.artifacts_unparsed += 1;
-                *stats.formats.entry(extension.to_string()).or_default() += 1;
+                stats.artifacts_unparsed = stats.artifacts_unparsed.saturating_add(1);
+                let formats = stats.formats.entry(extension.to_string()).or_default();
+                *formats = formats.saturating_add(1);
                 ctx.store.journal_done(
                     "wiaa_results",
                     &artifact.url,
@@ -402,7 +429,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             let fetched = match ctx.fetcher.get(&artifact.url, &ctx.fetch_options()).await {
                 Ok(meta) => meta,
                 Err(error) => {
-                    stats.artifacts_failed += 1;
+                    stats.artifacts_failed = stats.artifacts_failed.saturating_add(1);
                     report.note(format!("{}: {error}", artifact.url));
                     continue;
                 }
@@ -410,7 +437,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             let body = fetched.text();
             let format = artifact_format(extension, Some(&body));
             if format == ArtifactFormat::Unparsed {
-                stats.artifacts_unsupported += 1;
+                stats.artifacts_unsupported = stats.artifacts_unsupported.saturating_add(1);
                 report.note(format!("{}: unrecognised result format", artifact.url));
                 continue;
             }
@@ -430,10 +457,11 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     Ok(text) => {
                         let (parsed, layout) = parse_pdf(&text, source.clone(), artifact.year);
                         if let Some(layout) = layout {
-                            stats.pdf_parsed += 1;
-                            *stats.pdf_layouts.entry(layout.to_string()).or_default() += 1;
+                            stats.pdf_parsed = stats.pdf_parsed.saturating_add(1);
+                            let layouts = stats.pdf_layouts.entry(layout.to_string()).or_default();
+                            *layouts = layouts.saturating_add(1);
                         } else {
-                            stats.pdf_unparsed += 1;
+                            stats.pdf_unparsed = stats.pdf_unparsed.saturating_add(1);
                             report.note(format!(
                                 "{}: pdf text is not a report this parser knows",
                                 artifact.url
@@ -442,7 +470,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                         parsed
                     }
                     Err(error) => {
-                        stats.pdf_tool_failures += 1;
+                        stats.pdf_tool_failures = stats.pdf_tool_failures.saturating_add(1);
                         if !reported_missing_tool {
                             reported_missing_tool = true;
                             report.note(format!(
@@ -456,7 +484,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             };
             let Some(parsed) = parsed else {
                 if format != ArtifactFormat::Pdf {
-                    stats.artifacts_parse_failed += 1;
+                    stats.artifacts_parse_failed = stats.artifacts_parse_failed.saturating_add(1);
                 }
                 if format != ArtifactFormat::Pdf {
                     report.note(format!(
@@ -467,12 +495,14 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 }
                 continue;
             };
-            stats.artifacts_parsed += 1;
-            *stats
+            stats.artifacts_parsed = stats.artifacts_parsed.saturating_add(1);
+            let parsed_formats = stats
                 .formats
                 .entry(format.as_str().to_string())
-                .or_default() += 1;
-            *stats.seasons.entry(artifact.year).or_default() += 1;
+                .or_default();
+            *parsed_formats = parsed_formats.saturating_add(1);
+            let seasons = stats.seasons.entry(artifact.year).or_default();
+            *seasons = seasons.saturating_add(1);
             let rows = absorb(
                 &parsed,
                 &artifact,
@@ -513,7 +543,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     ctx.store.append_many(Table::Performances, &performances)?;
 
     let (requests_after, cache_after) = stats_of(ctx).await;
-    report.rows = stats.artifacts_parsed as u64;
+    report.rows = u64::try_from(stats.artifacts_parsed)
+        .context("parsed artifact count does not fit in u64")?;
     report.requests = requests_after.saturating_sub(requests_before);
     report.from_cache = cache_after.saturating_sub(cache_before);
     report.note(format!(
@@ -644,30 +675,32 @@ fn absorb(
             label: parsed_event.label.clone(),
         });
         event_entry.evidence.push(meet_evidence.clone());
-        stats.events += 1;
+        stats.events = stats.events.saturating_add(1);
         accumulator
             .events
             .entry(event_id.as_str().to_string())
             .or_insert(event_entry);
 
         for (row_index, row) in parsed_event.rows.iter().enumerate() {
-            stats.rows += 1;
+            stats.rows = stats.rows.saturating_add(1);
             if row.grade.is_some() {
-                stats.rows_with_grade += 1;
+                stats.rows_with_grade = stats.rows_with_grade.saturating_add(1);
             }
             if row.school.trim().is_empty() {
-                stats.rows_without_school += 1;
+                stats.rows_without_school = stats.rows_without_school.saturating_add(1);
                 continue;
             }
             let school_id = resolved
                 .entry(row.school.clone())
                 .or_insert_with(|| match index.resolve("WI", &row.school) {
                     Some((id, kind)) => {
-                        *stats.school_resolved.entry(kind.as_str()).or_default() += 1;
+                        let resolved_kind = stats.school_resolved.entry(kind.as_str()).or_default();
+                        *resolved_kind = resolved_kind.saturating_add(1);
                         Some(id)
                     }
                     None => {
-                        *stats.unresolved.entry(row.school.clone()).or_default() += 1;
+                        let unresolved = stats.unresolved.entry(row.school.clone()).or_default();
+                        *unresolved = unresolved.saturating_add(1);
                         None
                     }
                 })
@@ -686,7 +719,7 @@ fn absorb(
                     .collect()
             };
             if !row.legs.is_empty() {
-                stats.relay_legs += row.legs.len();
+                stats.relay_legs = stats.relay_legs.saturating_add(row.legs.len());
             }
             let team_id = team_for(
                 &mut accumulator.teams,
@@ -704,7 +737,7 @@ fn absorb(
                 if member_name.trim().is_empty() {
                     continue;
                 }
-                athlete_rows += 1;
+                athlete_rows = athlete_rows.saturating_add(1);
                 let grad_year = GradYear::of(grade, school_year);
                 let athlete_id = CanonicalAthlete::mint(
                     &school_id,
@@ -861,7 +894,7 @@ mod tests {
 
     #[test]
     fn archive_links_carry_year_stem_label_and_extension() {
-        let artifacts = archive_artifacts(ARCHIVE_HTML);
+        let artifacts = archive_artifacts(ARCHIVE_HTML).expect("the archive page parses");
         assert_eq!(
             artifacts.len(),
             3,
@@ -907,7 +940,7 @@ mod tests {
             <a href="/sites/default/files/2026-08/somethingelse.pdf">Unrelated upload</a>
             <a href="/sites/default/files/2025-11/xcstate.htm">XC state</a>
         "#;
-        let artifacts = archive_artifacts(body);
+        let artifacts = archive_artifacts(body).expect("the archive page parses");
         assert_eq!(
             artifacts.len(),
             5,

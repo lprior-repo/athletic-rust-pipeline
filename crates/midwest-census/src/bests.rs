@@ -222,7 +222,10 @@ pub fn build(store: &Store, options: &Options) -> Result<Vec<BestResult>> {
         };
         let event_label = format!("{kind:?}");
         let key = (athlete.id.as_str().to_string(), event_label.clone());
-        *counts.entry(key.clone()).or_insert(0) += 1;
+        // A count is bounded by the scanned performance rows, so saturation is unreachable; it is
+        // here so a change to that bound can never wrap the counter.
+        let counter = counts.entry(key.clone()).or_insert(0);
+        *counter = counter.saturating_add(1);
 
         let wins = bests
             .get(&key)
@@ -300,7 +303,9 @@ pub fn write(store: &Store, rows: &[BestResult], cohort: &str) -> Result<(PathBu
     }
     std::io::Write::flush(&mut json)?;
 
-    let mut writer = csv::Writer::from_path(&csv_path)?;
+    let mut writer = csv::WriterBuilder::new()
+        .has_headers(false)
+        .from_path(&csv_path)?;
     writer.write_record([
         "athlete_id",
         "name",
@@ -331,6 +336,45 @@ pub fn write(store: &Store, rows: &[BestResult], cohort: &str) -> Result<(PathBu
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The sidecar CSV declares its own header. `csv::Writer` defaults to `has_headers(true)`, which
+    /// makes the first `serialize` emit a second, derived header, so every consumer saw the header
+    /// twice. This fails if that default is restored.
+    #[test]
+    fn the_csv_carries_exactly_one_header_row() {
+        let dir = tempfile::tempdir().unwrap();
+        let store = Store::open(dir.path()).unwrap();
+        let rows = vec![BestResult {
+            athlete_id: "ath_0000000000000001".to_string(),
+            name: "Ada Fixture".to_string(),
+            school: "sch_0000000000000001".to_string(),
+            state: "AK".to_string(),
+            grad_year: 2027,
+            gender: "Girls".to_string(),
+            sport: "CrossCountry".to_string(),
+            event: "CrossCountry".to_string(),
+            best_mark: "15:40.12".to_string(),
+            best_value: 940.12,
+            measure: "Time".to_string(),
+            date: "2023-09-09".to_string(),
+            meet: "Fixture Invitational".to_string(),
+            place: Some(1),
+            wind_mps: None,
+            timing: Some("FAT".to_string()),
+            marks_in_event: 1,
+            profile_url: None,
+        }];
+        let (_, csv) = write(&store, &rows, "co2027").unwrap();
+        let text = std::fs::read_to_string(&csv).unwrap();
+        let lines: Vec<&str> = text.lines().collect();
+        assert_eq!(lines.len(), 2, "one header plus one row, saw:\n{text}");
+        assert!(lines[0].starts_with("athlete_id,name"), "{}", lines[0]);
+        assert!(
+            lines[1].starts_with("ath_0000000000000001,"),
+            "the row follows the header directly, saw: {}",
+            lines[1]
+        );
+    }
 
     #[test]
     fn times_run_down_and_field_marks_run_up() {

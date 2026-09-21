@@ -71,9 +71,12 @@ pub(crate) async fn bootstrap(
 
     let navigation = page.goto(NavigateParams::new(target.to_string()));
     tokio::pin!(navigation);
-    let deadline = match Instant::now().checked_add(timeout) {
+    let now = Instant::now();
+    let deadline = match now.checked_add(timeout) {
         Some(value) => value,
-        None => Instant::now() + Duration::from_secs(300), // overflow guard
+        // A deadline the platform clock cannot represent must not panic;
+        // bound it to the longest representable fallback instead.
+        None => now.checked_add(Duration::from_secs(300)).unwrap_or(now),
     };
     let mut navigation_done = false;
 

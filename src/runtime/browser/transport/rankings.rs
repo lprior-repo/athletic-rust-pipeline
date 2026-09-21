@@ -451,6 +451,7 @@ async fn process_binding_event(
         }
         Err(BrowserError::Redirect) => return Err(BrowserError::Redirect),
         Err(BrowserError::Shutdown) => return Err(BrowserError::Shutdown),
+        Err(BrowserError::TaskPanicked) => return Err(BrowserError::TaskPanicked),
         Err(BrowserError::HumanRequired) => return Err(BrowserError::HumanRequired),
         Err(BrowserError::Timeout | BrowserError::Transport | BrowserError::Protocol) => {
             return Ok(None);

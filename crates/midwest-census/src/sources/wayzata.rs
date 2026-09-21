@@ -135,25 +135,66 @@ pub struct MeetRow {
     pub aria_label: Option<String>,
 }
 
-static ROW: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<tr\b[^>]*>.*?</tr>").expect("valid regex"));
-static DATE_CELL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)<td[^>]*class="[^"]*date[^"]*"[^>]*>(.*?)</td>"#).expect("valid regex")
-});
-static NAME_CELL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)<td[^>]*class="[^"]*awayteam[^"]*"[^>]*>(.*?)</td>"#).expect("valid regex")
-});
-static VENUE_CELL: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)<td[^>]*class="[^"]*hometeam[^"]*"[^>]*>(.*?)</td>"#).expect("valid regex")
-});
-static TITLE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<span[^>]*title="([^"]*)""#).expect("valid regex"));
-static LINK: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*href="/links/([^"/?#]+)""#).expect("valid regex"));
-static ARIA: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*aria-label="([^"]*)""#).expect("valid regex"));
-static TAGS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").expect("valid regex"));
-static DAY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\d{1,2})").expect("valid regex"));
+static ROW: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tr\b[^>]*>.*?</tr>"));
+static DATE_CELL: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*date[^"]*"[^>]*>(.*?)</td>"#));
+static NAME_CELL: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*awayteam[^"]*"[^>]*>(.*?)</td>"#));
+static VENUE_CELL: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<td[^>]*class="[^"]*hometeam[^"]*"[^>]*>(.*?)</td>"#));
+static TITLE: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<span[^>]*title="([^"]*)""#));
+static LINK: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*href="/links/([^"/?#]+)""#));
+static ARIA: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?is)<a[^>]*aria-label="([^"]*)""#));
+static TAGS: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>"));
+static DAY: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(r"(\d{1,2})"));
+
+/// The compiled pattern in one slot above, or the compile error it carries.
+///
+/// Every pattern here is a literal, so a failure is a programming mistake rather than something a
+/// page can cause; it is reported as an error instead of panicking at first use.
+fn compiled(slot: &'static LazyLock<Result<Regex, regex::Error>>) -> Result<&'static Regex> {
+    slot.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn row() -> Result<&'static Regex> {
+    compiled(&ROW)
+}
+
+fn date_cell() -> Result<&'static Regex> {
+    compiled(&DATE_CELL)
+}
+
+fn name_cell() -> Result<&'static Regex> {
+    compiled(&NAME_CELL)
+}
+
+fn venue_cell() -> Result<&'static Regex> {
+    compiled(&VENUE_CELL)
+}
+
+fn title() -> Result<&'static Regex> {
+    compiled(&TITLE)
+}
+
+fn link() -> Result<&'static Regex> {
+    compiled(&LINK)
+}
+
+fn aria() -> Result<&'static Regex> {
+    compiled(&ARIA)
+}
+
+fn tags() -> Result<&'static Regex> {
+    compiled(&TAGS)
+}
+
+fn day() -> Result<&'static Regex> {
+    compiled(&DAY)
+}
 
 const MONTHS: [&str; 12] = [
     "January",
@@ -175,15 +216,16 @@ const MONTHS: [&str; 12] = [
 /// Rows are published under month headings; the heading is the only month a row carries, so it is
 /// tracked as the table is walked. A row without a date, a name or a venue is skipped: the platform
 /// cannot mint an identity for it.
-pub fn schedule_rows(body: &str, year: i16) -> Vec<MeetRow> {
+pub fn schedule_rows(body: &str, year: i16) -> Result<Vec<MeetRow>> {
     let mut rows = Vec::new();
     let mut month: Option<u8> = None;
-    for row in ROW.find_iter(body) {
-        let row = row.as_str();
+    let day_pattern = day()?;
+    for found in row()?.find_iter(body) {
+        let row = found.as_str();
         // The month heading is a row of its own (`<tr class="month-title …">`) whose text is the
         // month name; every competition row beneath it belongs to that month until the next heading.
         if row.contains("month-title") {
-            month = month_from_text(&TAGS.replace_all(row, " "));
+            month = month_from_text(&tags()?.replace_all(row, " "));
             continue;
         }
         if !row.contains("event-row") {
@@ -192,16 +234,17 @@ pub fn schedule_rows(body: &str, year: i16) -> Vec<MeetRow> {
         let Some(month) = month else {
             continue;
         };
-        let Some(day) = DATE_CELL
+        let Some(day) = date_cell()?
             .captures(row)
-            .and_then(|cell| cell.get(1).map(|cell| cell.as_str().to_string()))
-            .and_then(|cell| DAY.captures(&cell).map(|day| day[1].to_string()))
-            .and_then(|day| day.parse::<u8>().ok())
+            .and_then(|cell| cell.get(1))
+            .and_then(|cell| day_pattern.captures(cell.as_str()))
+            .and_then(|day| day.get(1))
+            .and_then(|day| day.as_str().parse::<u8>().ok())
         else {
             continue;
         };
-        let name = cell_text(&NAME_CELL, row);
-        let location = cell_text(&VENUE_CELL, row);
+        let name = cell_text(name_cell()?, row)?;
+        let location = cell_text(venue_cell()?, row)?;
         if name.is_empty() || location.is_empty() {
             continue;
         }
@@ -209,29 +252,34 @@ pub fn schedule_rows(body: &str, year: i16) -> Vec<MeetRow> {
             date: format!("{year:04}-{month:02}-{day:02}"),
             name,
             location,
-            slug: LINK
+            slug: link()?
                 .captures(row)
-                .map(|capture| capture[1].to_string())
+                .and_then(|capture| capture.get(1))
+                .map(|slug| slug.as_str().to_string())
                 .filter(|slug| !slug.is_empty()),
-            aria_label: ARIA
+            aria_label: aria()?
                 .captures(row)
-                .map(|capture| normalize_whitespace(&capture[1]))
+                .and_then(|capture| capture.get(1))
+                .map(|label| normalize_whitespace(label.as_str()))
                 .filter(|label| !label.is_empty()),
         });
     }
-    rows
+    Ok(rows)
 }
 
 /// A table cell's label: its `<span title="…">` when it has one, otherwise its stripped text.
-fn cell_text(cell: &LazyLock<Regex>, row: &str) -> String {
+fn cell_text(cell: &Regex, row: &str) -> Result<String> {
     let Some(captures) = cell.captures(row) else {
-        return String::new();
+        return Ok(String::new());
     };
-    let inner = &captures[1];
-    if let Some(title) = TITLE.captures(inner) {
-        return normalize_whitespace(&title[1]);
+    let inner = captures
+        .get(1)
+        .map(|cell| cell.as_str())
+        .unwrap_or_default();
+    if let Some(title) = title()?.captures(inner).and_then(|title| title.get(1)) {
+        return Ok(normalize_whitespace(title.as_str()));
     }
-    normalize_whitespace(&TAGS.replace_all(inner, " "))
+    Ok(normalize_whitespace(&tags()?.replace_all(inner, " ")))
 }
 
 fn month_from_text(text: &str) -> Option<u8> {
@@ -239,7 +287,9 @@ fn month_from_text(text: &str) -> Option<u8> {
     MONTHS
         .iter()
         .position(|month| text.starts_with(&month.to_ascii_lowercase()))
-        .map(|index| index as u8 + 1)
+        .and_then(|index| index.checked_add(1))
+        // `MONTHS` holds twelve names, so the 1-based month always fits a `u8`.
+        .and_then(|month| u8::try_from(month).ok())
 }
 
 fn normalize_whitespace(text: &str) -> String {
@@ -429,6 +479,11 @@ struct Stats {
     unresolved_venues: BTreeMap<String, usize>,
 }
 
+/// `usize` -> `u64` for the report counters, saturating where the value cannot fit.
+fn count(value: usize) -> u64 {
+    u64::try_from(value).unwrap_or(u64::MAX)
+}
+
 /// Walk the provider's published schedules, minting one core meet per competition row.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<AdapterReport> {
     let mut report = AdapterReport::new(ADAPTER_ID, "meet-schedule rows");
@@ -485,26 +540,31 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 .get(&url, &ctx.fetch_options())
                 .await
                 .with_context(|| format!("fetching the Wayzata Results schedule {url}"))?;
-            let rows = schedule_rows(&fetched.text(), *year);
-            stats.pages += 1;
+            let rows = schedule_rows(&fetched.text(), *year)?;
+            stats.pages = stats.pages.saturating_add(1);
             report.note(format!("{url}: {} competition rows", rows.len()));
 
             for row in &rows {
                 if options.limit.is_some_and(|limit| stats.rows >= limit) {
                     break 'sport;
                 }
-                stats.rows += 1;
+                stats.rows = stats.rows.saturating_add(1);
                 let resolution = resolve_venue(&index, &mut venue_cache, &row.location);
                 let state = resolution.state();
                 match resolution {
-                    VenueResolution::Site(_) => stats.states_resolved += 1,
-                    VenueResolution::School(_) => stats.states_from_school += 1,
+                    VenueResolution::Site(_) => {
+                        stats.states_resolved = stats.states_resolved.saturating_add(1);
+                    }
+                    VenueResolution::School(_) => {
+                        stats.states_from_school = stats.states_from_school.saturating_add(1);
+                    }
                     VenueResolution::Unknown => {
-                        stats.states_unknown += 1;
-                        *stats
+                        stats.states_unknown = stats.states_unknown.saturating_add(1);
+                        let slot = stats
                             .unresolved_venues
                             .entry(row.location.clone())
-                            .or_default() += 1;
+                            .or_default();
+                        *slot = slot.saturating_add(1);
                     }
                 }
                 let month = row
@@ -513,11 +573,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     .and_then(|month| month.parse::<u8>().ok())
                     .unwrap_or(0);
                 let level = level_of(&row.name);
-                *stats.levels.entry(format!("{level:?}")).or_default() += 1;
-                *stats
+                let slot = stats.levels.entry(format!("{level:?}")).or_default();
+                *slot = slot.saturating_add(1);
+                let slot = stats
                     .sports
                     .entry(format!("{:?}", sport.sport_for(month)))
-                    .or_default() += 1;
+                    .or_default();
+                *slot = slot.saturating_add(1);
 
                 let mut meet =
                     CanonicalMeet::new(state.unwrap_or(UNKNOWN_STATE), &row.name, &row.date, level);
@@ -563,7 +625,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     ctx.store.append_many(Table::Meets, &meets)?;
 
     let (requests_after, cache_after) = stats_of(ctx).await;
-    report.rows = stats.rows as u64;
+    report.rows = count(stats.rows);
     report.requests = requests_after.saturating_sub(requests_before);
     report.from_cache = cache_after.saturating_sub(cache_before);
     report.note(format!(
@@ -591,7 +653,8 @@ fn default_years(observed_on: &str) -> Vec<i16> {
         .next()
         .and_then(|year| year.parse::<i16>().ok())
         .unwrap_or(2026);
-    vec![year, year - 1]
+    // The season before it: a four-digit year never reaches the saturation bound.
+    vec![year, year.saturating_sub(1)]
 }
 
 async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
@@ -609,7 +672,7 @@ mod tests {
 
     #[test]
     fn schedule_rows_read_the_track_table_with_its_month_heading_and_provider_slug() {
-        let rows = schedule_rows(TRACK_2026, 2026);
+        let rows = schedule_rows(TRACK_2026, 2026).expect("the track schedule parses");
         assert_eq!(rows.len(), 13, "one row per competition day in the excerpt");
         let first = &rows[0];
         assert_eq!(first.date, "2026-01-04");
@@ -632,7 +695,7 @@ mod tests {
 
     #[test]
     fn schedule_rows_read_the_cross_country_table() {
-        let rows = schedule_rows(XC_2026, 2026);
+        let rows = schedule_rows(XC_2026, 2026).expect("the cross-country schedule parses");
         assert_eq!(rows.len(), 10, "one row per competition day in the excerpt");
         assert_eq!(rows[0].date, "2026-08-27");
         assert_eq!(rows[0].name, "River Falls Extreme Meet");

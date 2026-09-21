@@ -170,22 +170,20 @@ fn nonempty(value: &str) -> Option<String> {
 
 /// Strip leading honorifics so "Mr. Barry Mink" and "Barry Mink" mint the same coach identity.
 pub fn strip_honorific(value: &str) -> String {
-    let mut parts: Vec<&str> = value.split_whitespace().collect();
-    while let Some(first) = parts.first() {
-        let token = first.trim_end_matches('.').to_ascii_lowercase();
-        if matches!(
-            token.as_str(),
-            "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "coach." | "sir" | "rev"
-        ) {
-            parts.remove(0);
-        } else {
-            break;
-        }
-    }
-    if parts.is_empty() {
-        value.trim().to_string()
-    } else {
-        parts.join(" ")
+    let parts: Vec<&str> = value.split_whitespace().collect();
+    let stripped = parts
+        .iter()
+        .take_while(|part| {
+            matches!(
+                part.trim_end_matches('.').to_ascii_lowercase().as_str(),
+                "mr" | "mrs" | "ms" | "miss" | "dr" | "coach" | "coach." | "sir" | "rev"
+            )
+        })
+        .count();
+    match parts.get(stripped..) {
+        Some(kept) if !kept.is_empty() => kept.join(" "),
+        // The value held nothing but honorifics (or no tokens at all): keep the original text.
+        _ => value.trim().to_string(),
     }
 }
 
@@ -435,6 +433,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let done_keys: HashSet<String> = ctx.store.journal_keys("ihsa_schools")?;
 
     let limit = options.limit;
+    // Tally counters saturate: they feed diagnostics only, so an impossible overflow floors at
+    // `usize::MAX` instead of panicking or wrapping silently.
     let mut processed = 0usize;
     let mut skipped = 0usize;
     let mut schools: Vec<CanonicalSchool> = Vec::new();
@@ -447,16 +447,16 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     let outcome = match ctx.fetcher.get(&schools_url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
-            report.errors += 1;
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("failed to fetch IHSA schools: {e}"));
             return Ok(report);
         }
     };
 
     let records = parse_schools(&outcome.text())?;
-    report.requests += 1;
+    report.requests = report.requests.saturating_add(1);
     if outcome.from_cache {
-        report.from_cache += 1;
+        report.from_cache = report.from_cache.saturating_add(1);
     }
 
     // ── Step 2: For each school, fetch staff and parse ───────────────────
@@ -471,7 +471,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         // Skip already-processed schools (resume support).
         let journal_key = format!("IL:{}", record.school_id);
         if done_keys.contains(&journal_key) {
-            skipped += 1;
+            skipped = skipped.saturating_add(1);
             continue;
         }
         revealed_emails.clear();
@@ -488,7 +488,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         let staff_outcome = match ctx.fetcher.get(&staff_url, &ctx.fetch_options()).await {
             Ok(o) => o,
             Err(e) => {
-                report.errors += 1;
+                report.errors = report.errors.saturating_add(1);
                 report.note(format!(
                     "failed to fetch staff for school {}: {e}",
                     record.school_id
@@ -504,20 +504,20 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                         }),
                     )
                     .context("journaling ihsa school progress")?;
-                processed += 1;
+                processed = processed.saturating_add(1);
                 continue;
             }
         };
-        report.requests += 1;
+        report.requests = report.requests.saturating_add(1);
         if staff_outcome.from_cache {
-            report.from_cache += 1;
+            report.from_cache = report.from_cache.saturating_add(1);
         }
 
         // Parse staff and emit coaches.
         let staff = match parse_staff(&staff_outcome.text()) {
             Ok(env) => env,
             Err(e) => {
-                report.errors += 1;
+                report.errors = report.errors.saturating_add(1);
                 report.note(format!(
                     "failed to parse staff for school {}: {e}",
                     record.school_id
@@ -533,7 +533,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                         }),
                     )
                     .context("journaling ihsa school progress")?;
-                processed += 1;
+                processed = processed.saturating_add(1);
                 continue;
             }
         };
@@ -558,14 +558,14 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                             let value =
                                 match ctx.fetcher.get(&email_url, &ctx.fetch_options()).await {
                                     Ok(outcome) => {
-                                        report.requests += 1;
+                                        report.requests = report.requests.saturating_add(1);
                                         if outcome.from_cache {
-                                            report.from_cache += 1;
+                                            report.from_cache = report.from_cache.saturating_add(1);
                                         }
                                         parse_email(&outcome.text())
                                     }
                                     Err(e) => {
-                                        report.errors += 1;
+                                        report.errors = report.errors.saturating_add(1);
                                         report.note(format!(
                                             "email reveal failed for person {}: {e}",
                                             person.person_id
@@ -586,7 +586,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     }
                 }
                 if coach.professional_email.is_some() {
-                    report.with_email += 1;
+                    report.with_email = report.with_email.saturating_add(1);
                 }
                 coaches.push(coach);
             }
@@ -604,7 +604,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             )
             .context("journaling ihsa school progress")?;
 
-        processed += 1;
+        processed = processed.saturating_add(1);
     }
 
     // Append all schools and coaches to the store.
@@ -622,7 +622,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
     // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = processed as u64;
+    report.rows = u64::try_from(processed).context("ihsa school count exceeds u64")?;
     report.requests = delta_requests;
     report.note(format!(
         "fetched {} Illinois schools from IHSA; {} already done",

@@ -35,9 +35,9 @@ pub(super) fn read_central(
                     bail!("ZIP entry count exceeds {}", super::super::MAX_ZIP_ENTRIES);
                 }
                 let fixed = read_bytes(reader, position, 46, file_len)?;
-                let name_len = usize::from(read_u16_slice(&fixed, 28)?);
-                let extra_len = usize::from(read_u16_slice(&fixed, 30)?);
-                let comment_len = usize::from(read_u16_slice(&fixed, 32)?);
+                let name_len = usize::from(read_u16_from(&fixed, 28)?);
+                let extra_len = usize::from(read_u16_from(&fixed, 30)?);
+                let comment_len = usize::from(read_u16_from(&fixed, 32)?);
                 let variable_len = name_len
                     .checked_add(extra_len)
                     .and_then(|value| value.checked_add(comment_len))
@@ -63,9 +63,9 @@ pub(super) fn read_central(
                 let extra = record
                     .get(name_end..extra_end)
                     .context("ZIP central extra is truncated")?;
-                let compressed_32 = read_u32_slice(&record, 20)?;
-                let uncompressed_32 = read_u32_slice(&record, 24)?;
-                let local_32 = read_u32_slice(&record, 42)?;
+                let compressed_32 = read_u32_from(&record, 20)?;
+                let uncompressed_32 = read_u32_from(&record, 24)?;
+                let local_32 = read_u32_from(&record, 42)?;
                 let (zip64_uncompressed, zip64_compressed, zip64_local) = parse_zip64_extra(
                     extra,
                     uncompressed_32 == super::ZIP64_SENTINEL,
@@ -86,9 +86,9 @@ pub(super) fn read_central(
                 }
                 entries.push(CentralEntry {
                     name,
-                    flags: read_u16_slice(&record, 8)?,
-                    method: read_u16_slice(&record, 10)?,
-                    crc: read_u32_slice(&record, 16)?,
+                    flags: read_u16_from(&record, 8)?,
+                    method: read_u16_from(&record, 10)?,
+                    crc: read_u32_from(&record, 16)?,
                     compressed,
                     uncompressed,
                     local_header,
@@ -103,7 +103,7 @@ pub(super) fn read_central(
             }
             super::EOCD_SIGNATURE => {
                 let fixed = read_bytes(reader, position, 22, file_len)?;
-                let comment_len = u64::from(read_u16_slice(&fixed, 20)?);
+                let comment_len = u64::from(read_u16_from(&fixed, 20)?);
                 let end = position
                     .checked_add(22)
                     .and_then(|value| value.checked_add(comment_len))
@@ -140,7 +140,7 @@ pub(super) fn read_central(
             }
             super::DIGITAL_SIGNATURE => {
                 let fixed = read_bytes(reader, position, 6, file_len)?;
-                let size = u64::from(read_u16_slice(&fixed, 4)?);
+                let size = u64::from(read_u16_from(&fixed, 4)?);
                 position = position
                     .checked_add(6)
                     .and_then(|value| value.checked_add(size))
@@ -228,7 +228,7 @@ pub(super) fn read_bytes(
 
 fn read_u32(reader: &mut File, position: u64, limit: u64) -> Result<u32> {
     let bytes = read_bytes(reader, position, 4, limit)?;
-    read_u32_slice(&bytes, 0)
+    read_u32_from(&bytes, 0)
 }
 
 pub(super) fn read_u16_from(bytes: &[u8], offset: usize) -> Result<u16> {
@@ -239,20 +239,12 @@ pub(super) fn read_u16_from(bytes: &[u8], offset: usize) -> Result<u16> {
     Ok(u16::from_le_bytes(arr))
 }
 
-pub(super) fn read_u16_slice(bytes: &[u8], offset: usize) -> Result<u16> {
-    read_u16_from(bytes, offset)
-}
-
 pub(super) fn read_u32_from(bytes: &[u8], offset: usize) -> Result<u32> {
     let value = bytes
         .get(offset..offset.checked_add(4).context("ZIP field offset overflow")?)
         .context("ZIP field is truncated")?;
     let arr: [u8; 4] = value.try_into().context("ZIP field is truncated")?;
     Ok(u32::from_le_bytes(arr))
-}
-
-pub(super) fn read_u32_slice(bytes: &[u8], offset: usize) -> Result<u32> {
-    read_u32_from(bytes, offset)
 }
 
 pub(super) fn read_u64_slice(bytes: &[u8], offset: usize) -> Result<u64> {

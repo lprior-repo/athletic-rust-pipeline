@@ -82,10 +82,12 @@ pub(in crate::store) fn put_rankings_page(
     }
 
     let mut batch = store.database.batch();
+    // Saturating adds below: saturation always trips the MAX_RANKINGS_BATCH_BYTES check,
+    // while a wrapped count could slip past it.
     let mut total_batch_bytes: usize = serialized.len();
 
     batch.insert(&store.rankings, marker_key, index_hash.as_slice());
-    total_batch_bytes += serialized.len();
+    total_batch_bytes = total_batch_bytes.saturating_add(serialized.len());
 
     let mut source_results: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
     let mut max_row_position: u64 = 0;
@@ -99,7 +101,7 @@ pub(in crate::store) fn put_rankings_page(
 
     for result_id in &source_results {
         let key = presence_source_result(&index.collection, &index.event_short, *result_id)?;
-        total_batch_bytes += key.len();
+        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
 
@@ -110,7 +112,7 @@ pub(in crate::store) fn put_rankings_page(
             row.result_id,
             row.row_number,
         )?;
-        total_batch_bytes += key.len();
+        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
 
@@ -136,7 +138,8 @@ pub(in crate::store) fn put_rankings_page(
         let ref_bytes = ref_serialized.as_slice();
 
         let ref_key = athlete_ref_key(&index.collection, &ref_entry)?;
-        total_batch_bytes += ref_key.len() + ref_bytes.len();
+        total_batch_bytes =
+            total_batch_bytes.saturating_add(ref_key.len().saturating_add(ref_bytes.len()));
         batch.insert(&store.rankings, ref_key, ref_bytes);
 
         let name_key = name_ref_key(
@@ -147,7 +150,8 @@ pub(in crate::store) fn put_rankings_page(
             entry.kind,
             entry.record_index,
         )?;
-        total_batch_bytes += name_key.len() + ref_bytes.len();
+        total_batch_bytes =
+            total_batch_bytes.saturating_add(name_key.len().saturating_add(ref_bytes.len()));
         batch.insert(&store.rankings, name_key, ref_bytes);
 
         // Track event-level athlete for stats.
@@ -162,7 +166,7 @@ pub(in crate::store) fn put_rankings_page(
                     entry.result_id,
                     entry.athlete_id,
                 )?;
-                total_batch_bytes += key.len();
+                total_batch_bytes = total_batch_bytes.saturating_add(key.len());
                 batch.insert(&store.rankings, key, []);
             }
             RankingCandidateKind::RelayMember => {
@@ -173,7 +177,7 @@ pub(in crate::store) fn put_rankings_page(
                     entry.result_id,
                     entry.athlete_id,
                 )?;
-                total_batch_bytes += key.len();
+                total_batch_bytes = total_batch_bytes.saturating_add(key.len());
                 batch.insert(&store.rankings, key, []);
             }
         }
@@ -184,13 +188,13 @@ pub(in crate::store) fn put_rankings_page(
             let _ = roster_present.insert(roster.result_id);
             let key =
                 presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
-            total_batch_bytes += key.len();
+            total_batch_bytes = total_batch_bytes.saturating_add(key.len());
             batch.insert(&store.rankings, key, []);
         } else {
             let _ = roster_missing.insert(roster.result_id);
             let key =
                 presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
-            total_batch_bytes += key.len();
+            total_batch_bytes = total_batch_bytes.saturating_add(key.len());
             batch.insert(&store.rankings, key, []);
         }
     }
@@ -202,7 +206,7 @@ pub(in crate::store) fn put_rankings_page(
             &index.event_short,
             AthleteId::try_from(*athlete_id).map_err(|_| StoreError::InvalidRankingInput)?,
         )?;
-        total_batch_bytes += key.len();
+        total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
 
@@ -234,7 +238,7 @@ pub(in crate::store) fn ranking_name_refs(
     let snap = store.database.snapshot();
     let prefix = name_ref_prefix(collection, name.as_str());
     let mut records = Vec::new();
-    let need = limit + 1;
+    let need = limit.saturating_add(1); // limit is validated to 1..=4096 above
 
     for guard in snap.prefix(&store.rankings, prefix) {
         let (_, value) = guard.into_inner().map_err(|_| StoreError::CorruptData)?;
@@ -269,7 +273,7 @@ pub(in crate::store) fn ranking_athlete_refs(
     let snap = store.database.snapshot();
     let prefix = athlete_ref_prefix(collection, athlete);
     let mut records = Vec::new();
-    let need = limit + 1;
+    let need = limit.saturating_add(1); // limit is validated to 1..=4096 above
 
     for guard in snap.prefix(&store.rankings, prefix) {
         let (_, value) = guard.into_inner().map_err(|_| StoreError::CorruptData)?;

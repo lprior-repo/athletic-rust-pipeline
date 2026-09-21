@@ -20,24 +20,23 @@ use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
 use regex::Regex;
 use std::sync::LazyLock;
 
-static TABLE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<table[^>]*>.*?</table>").expect("regex"));
-static TITLE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<h3[^>]*>(.*?)</h3>").expect("regex"));
-static ROW: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>").expect("regex"));
-static CELL: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<t[hd][^>]*>(.*?)</t[hd]>").expect("regex"));
-static HEAD: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<thead.*?</thead>").expect("regex"));
-static BODY: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?is)<tbody[^>]*>.*?</tbody>").expect("regex"));
-static TAGS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").expect("regex"));
+static TABLE: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<table[^>]*>.*?</table>").ok());
+static TITLE: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<h3[^>]*>(.*?)</h3>").ok());
+static ROW: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tr[^>]*>(.*?)</tr>").ok());
+static CELL: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<t[hd][^>]*>(.*?)</t[hd]>").ok());
+static HEAD: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?is)<thead.*?</thead>").ok());
+static BODY: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::new(r"(?is)<tbody[^>]*>.*?</tbody>").ok());
+static TAGS: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"(?is)<[^>]*>").ok());
 
 /// Parse a RaceDay export. `year` is the season the file was archived under, used because the format
 /// publishes no date of its own.
-pub fn parse(body: &str, source: SourceRef, year: i16) -> Option<ParsedMeet> {
-    let title = TITLE
+pub fn parse(body: &str, source: SourceRef, year: i16) -> anyhow::Result<ParsedMeet> {
+    let title = get_regex(&TITLE)?
         .captures(body)
         .and_then(|captures| captures.get(1))
         .map(|m| text_of(m.as_str()))
@@ -51,15 +50,17 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> Option<ParsedMeet> {
     let division = division_of(&title);
 
     let mut events = Vec::new();
-    for table in TABLE.find_iter(body).map(|m| m.as_str()) {
-        let labels: Vec<String> = HEAD
+    for table in get_regex(&TABLE)?.find_iter(body).map(|m| m.as_str()) {
+        let labels: Vec<String> = get_regex(&HEAD)?
             .find(table)
             .map(|head| {
                 // The last header row carries one label per data column.
-                ROW.find_iter(head.as_str())
+                get_regex(&ROW)?
+                    .find_iter(head.as_str())
                     .last()
                     .map(|row| {
-                        CELL.captures_iter(row.as_str())
+                        get_regex(&CELL)?
+                            .captures_iter(row.as_str())
                             .map(|captures| {
                                 text_of(captures.get(1).map(|m| m.as_str()).unwrap_or_default())
                             })
@@ -78,11 +79,11 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> Option<ParsedMeet> {
         let heat_column = label_index(&labels, &["Team Member Place"]);
 
         let mut rows = Vec::new();
-        let Some(tbody) = BODY.find(table) else {
+        let Some(tbody) = get_regex(&BODY)?.find(table) else {
             continue;
         };
-        for row in ROW.find_iter(tbody.as_str()) {
-            let cells: Vec<String> = CELL
+        for row in get_regex(&ROW)?.find_iter(tbody.as_str()) {
+            let cells: Vec<String> = get_regex(&CELL)?
                 .captures_iter(row.as_str())
                 .map(|captures| text_of(captures.get(1).map(|m| m.as_str()).unwrap_or_default()))
                 .collect();
@@ -131,11 +132,9 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> Option<ParsedMeet> {
             rows,
         });
     }
-    if events.is_empty() {
-        return None;
-    }
+    bail!("no events parsed from RaceDay export");
     let _ = source;
-    Some(ParsedMeet {
+    Ok(ParsedMeet {
         name,
         date: format!("{year:04}"),
         end_date: None,
@@ -147,7 +146,7 @@ pub fn parse(body: &str, source: SourceRef, year: i16) -> Option<ParsedMeet> {
 }
 
 /// `WIAA D2 XC Sectionals - Boys Race Team Finish List-XC` → `WIAA D2 XC Sectionals - Boys Race`.
-fn race_name(title: &str) -> Option<String> {
+fn race_name(title: &str) -> anyhow::Result<String> {
     let trimmed = title
         .trim_end_matches("-XC")
         .trim_end_matches("Team Finish List")
@@ -156,10 +155,9 @@ fn race_name(title: &str) -> Option<String> {
         .trim()
         .to_string();
     if trimmed.is_empty() {
-        None
-    } else {
-        Some(trimmed)
+        anyhow::bail!("no race name extracted from title");
     }
+    Ok(trimmed)
 }
 
 /// `WIAA D2 XC Sectionals` → `Division 2`.
@@ -207,6 +205,11 @@ fn text_of(html: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ")
 }
+/// Unwrap a static `Option<Regex>`. These patterns are compile-time constants that never fail;
+/// the helper exists to convert the `Option` into a typed `anyhow::Result` at the first call site.
+fn get_regex(rx: &'static LazyLock<Option<Regex>>) -> anyhow::Result<&'static Regex> {
+    rx.get().context("static regex compilation failed")
+}
 
 #[cfg(test)]
 mod tests {
@@ -223,8 +226,8 @@ mod tests {
     }
 
     #[test]
-    fn finish_list_rows_carry_place_grade_school_and_the_final_time() {
-        let meet = parse(FINISH_LIST, source(), 2023).expect("fixture is a RaceDay export");
+    fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> anyhow::Result<()> {
+        let meet = parse(FINISH_LIST, source(), 2023)?;
         assert_eq!(meet.name, "WIAA D2 XC Sectionals - Boys Race");
         assert_eq!(
             meet.date, "2023",
@@ -247,8 +250,8 @@ mod tests {
     }
 
     #[test]
-    fn the_team_summary_table_never_becomes_athlete_rows() {
-        let meet = parse(FINISH_LIST, source(), 2023).expect("fixture is a RaceDay export");
+    fn the_team_summary_table_never_becomes_athlete_rows() -> anyhow::Result<()> {
+        let meet = parse(FINISH_LIST, source(), 2023)?;
         for row in &meet.events[0].rows {
             assert!(
                 row.grade.is_some(),

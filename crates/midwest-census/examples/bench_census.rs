@@ -438,6 +438,7 @@ fn workbook_phase(store: &Store, dir: &TempDir, entities: usize) -> Result<Phase
             grad_year: Some(2027),
             out: Some(out.clone()),
             limit: None,
+            scope: Scope::Core,
         },
     )
     .context("building the workbook")?;

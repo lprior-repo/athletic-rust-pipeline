@@ -93,6 +93,8 @@ pub(crate) enum BrowserError {
     Protocol,
     #[error("browser is shutting down")]
     Shutdown,
+    #[error("browser worker task panicked")]
+    TaskPanicked,
 }
 
 pub(crate) const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(15);

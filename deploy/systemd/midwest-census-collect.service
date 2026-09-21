@@ -1,0 +1,33 @@
+[Unit]
+Description=Midwest census weekly incremental refresh
+Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=midwest
+Group=midwest
+WorkingDirectory=/opt/athletic-rust-pipeline
+Environment=RUST_LOG=info
+# Incremental only: `teams --refresh` re-reads state association team indexes (cheap, changes rarely),
+# `collect` walks rosters and result pages, then the reducers rebuild the derived tables. No step
+# re-fetches the full historical corpus; every fetch honours per-host pacing and the on-disk cache.
+ExecStart=/bin/sh -c 'set -eu; \
+  bin=target/release/midwest-census; \
+  out=/var/lib/midwest-census; \
+  "$bin" --data-dir "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
+  "$bin" --data-dir "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --grad-year 2027; \
+  "$bin" --data-dir "$out" consolidate; \
+  "$bin" --data-dir "$out" report --print; \
+  "$bin" --data-dir "$out" bests; \
+  "$bin" --data-dir "$out" workbook; \
+  "$bin" --data-dir "$out" fjall-stats'
+Restart=on-failure
+RestartSec=300
+TimeoutStartSec=3600
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/midwest-census

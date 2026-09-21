@@ -118,39 +118,74 @@ pub struct Roster {
     pub athletes: Vec<RosterAthlete>,
 }
 
-static TEAM_ROW_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static TEAM_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-            r#"(?s)<tr>\s*<td>\s*<a href="(https?://[a-z]{2}\.milesplit\.com/teams/(\d+)-([^"]+))">\s*([^<]+?)\s*</a>\s*</td>\s*<td>\s*([^<]*?)\s*</td>"#,
-        )
-        .expect("valid team-row regex")
+        r#"(?s)<tr>\s*<td>\s*<a href="(https?://[a-z]{2}\.milesplit\.com/teams/(\d+)-([^"]+))">\s*([^<]+?)\s*</a>\s*</td>\s*<td>\s*([^<]*?)\s*</td>"#,
+    )
 });
 
-static ATHLETE_ROW_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?s)<li class="athlete-row data-row">(.*?)</li>"#).expect("row regex")
-});
+static ATHLETE_ROW_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?s)<li class="athlete-row data-row">(.*?)</li>"#));
 
-static ATHLETE_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static ATHLETE_LINK_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(r#"<a href="(https?://[a-z]{2}\.milesplit\.com/athletes/(\d+)-[^"]*)">([^<]+)</a>"#)
-        .expect("athlete link regex")
 });
 
-static GENDER_CELL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"column-gender[^>]*>([^<]*)<"#).expect("gender regex"));
+static GENDER_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"column-gender[^>]*>([^<]*)<"#));
 
-static GRAD_CELL_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"column-grad-year[^>]*>([^<]*)<"#).expect("grad regex"));
+static GRAD_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"column-grad-year[^>]*>([^<]*)<"#));
 
-static SEASON_CELL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+static SEASON_CELL_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
-            r#"(?s)<div class="data-point[^"]*"[^>]*data-season-id="(\d+)"[^>]*>\s*<svg[^>]*class="icon icon-(yes|no)""#,
-        )
-        .expect("season regex")
+        r#"(?s)<div class="data-point[^"]*"[^>]*data-season-id="(\d+)"[^>]*>\s*<svg[^>]*class="icon icon-(yes|no)""#,
+    )
 });
+
+// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
+// back as a typed error the parsers hand to the caller — never a panic.
+fn team_row_regex() -> anyhow::Result<&'static Regex> {
+    TEAM_ROW_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn athlete_row_regex() -> anyhow::Result<&'static Regex> {
+    ATHLETE_ROW_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn athlete_link_regex() -> anyhow::Result<&'static Regex> {
+    ATHLETE_LINK_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn gender_cell_regex() -> anyhow::Result<&'static Regex> {
+    GENDER_CELL_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn grad_cell_regex() -> anyhow::Result<&'static Regex> {
+    GRAD_CELL_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn season_cell_regex() -> anyhow::Result<&'static Regex> {
+    SEASON_CELL_REGEX
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
 
 /// Parse the per-state team index page.
 pub fn parse_team_index(html: &str) -> Result<Vec<TeamRef>> {
+    let row_regex = team_row_regex()?;
     let mut teams = Vec::new();
-    for capture in TEAM_ROW_REGEX.captures_iter(html) {
+    for capture in row_regex.captures_iter(html) {
         let Some(url_match) = capture.get(1) else {
             continue;
         };
@@ -187,13 +222,14 @@ pub fn parse_team_index(html: &str) -> Result<Vec<TeamRef>> {
 
 /// Parse a graded roster page.
 pub fn parse_roster(html: &str, team: TeamRef) -> Result<Roster> {
-    let link = &ATHLETE_LINK_REGEX;
-    let gender_cell = &GENDER_CELL_REGEX;
-    let grad_cell = &GRAD_CELL_REGEX;
-    let season_cell = &SEASON_CELL_REGEX;
+    let row_regex = athlete_row_regex()?;
+    let link = athlete_link_regex()?;
+    let gender_cell = gender_cell_regex()?;
+    let grad_cell = grad_cell_regex()?;
+    let season_cell = season_cell_regex()?;
 
     let mut athletes = Vec::new();
-    for row in ATHLETE_ROW_REGEX.captures_iter(html) {
+    for row in row_regex.captures_iter(html) {
         let Some(row_match) = row.get(1) else {
             continue;
         };
@@ -333,7 +369,10 @@ impl RosterAthlete {
         school_year: SchoolYear,
         source: SourceRef,
     ) -> Option<ObservedGrade> {
-        let grade_number = 13 - (self.grad_year.0 - school_year.start_year());
+        // 13 - (grad_year - school_year_start): both steps are checked so an out-of-range year
+        // pair can only yield `None`, never a wrapped or panicking grade.
+        let years_to_graduation = self.grad_year.get().checked_sub(school_year.start_year())?;
+        let grade_number = 13_i16.checked_sub(years_to_graduation)?;
         Grade::new(u8::try_from(grade_number).ok()?).map(|grade| ObservedGrade {
             grade,
             school_year,

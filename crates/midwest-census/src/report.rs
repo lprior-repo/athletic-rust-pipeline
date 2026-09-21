@@ -166,9 +166,14 @@ impl Scope {
 
 /// Adapter ids whose evidence does not count toward the core census.
 ///
-/// `athleticlive_*` is the Athletic.net mirror (meet index, athlete rows). A core entity must be
-/// reachable without them, so their evidence is ignored while the core filter runs.
-pub const NON_CORE_SOURCE_IDS: [&str; 2] = ["athleticlive_athletes", "athleticlive_meets_csv"];
+/// `athleticlive_*` is the Athletic.net mirror (meet index, athlete rows) and `athleticnet` is the
+/// host itself, read through the owner-authorized athlete-bio adapter. A core entity must be
+/// reachable without any of them, so their evidence is ignored while the core filter runs.
+pub const NON_CORE_SOURCE_IDS: [&str; 3] = [
+    "athleticlive_athletes",
+    "athleticlive_meets_csv",
+    "athleticnet",
+];
 
 /// Entity tables a non-core adapter can populate.
 pub trait CoreScoped {

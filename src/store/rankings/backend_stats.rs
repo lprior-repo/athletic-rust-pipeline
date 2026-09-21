@@ -32,7 +32,8 @@ fn decode_pair(key: &[u8], prefix_len: usize) -> Result<(u64, u64), StoreError> 
         return Err(StoreError::CorruptData);
     }
     let first = decode_be_u64(key, prefix_len)?;
-    let second = decode_be_u64(key, separator + 1)?;
+    let second_offset = separator.checked_add(1).ok_or(StoreError::CorruptData)?;
+    let second = decode_be_u64(key, second_offset)?;
     if first == 0 || second == 0 {
         return Err(StoreError::CorruptData);
     }
@@ -51,7 +52,8 @@ fn decode_event_athlete(key: &[u8], prefix_len: usize) -> Result<u64, StoreError
     let event = std::str::from_utf8(suffix.get(..separator).ok_or(StoreError::CorruptData)?)
         .map_err(|_| StoreError::CorruptData)?;
     validate_event_short(event).map_err(|_| StoreError::CorruptData)?;
-    let athlete = decode_be_u64(suffix, separator + 1)?;
+    let athlete_offset = separator.checked_add(1).ok_or(StoreError::CorruptData)?;
+    let athlete = decode_be_u64(suffix, athlete_offset)?;
     (athlete != 0)
         .then_some(athlete)
         .ok_or(StoreError::CorruptData)

@@ -3,8 +3,13 @@
 //! Properties the rest of the crate relies on:
 //!
 //! * **robots.txt is enforced**, not advisory: a disallowed path returns [`FetchError::Robots`] and
-//!   never leaves the process. The rule set is fetched once per host, cached on disk and honoured for
-//!   the remainder of the run.
+//!   is counted in [`FetchStats::robots_blocked`] — unless the operator named that host on
+//!   `--authorized-host`, in which case the rule is counted in [`FetchStats::robots_authorized`]
+//!   and the request proceeds under the 2 rps ceiling below. Default: no host is authorized.
+//! * **Hard pacing: 2 requests/second per host** — an authorized host never gets closer spacing than
+//!   `MIN_AUTHORIZED_DELAY`, whatever `--delay-ms` says.
+//! * Robots rules never leave the process. The rule set is fetched once per host, cached on disk and
+//!   honoured for the remainder of the run.
 //! * **Requests are cached on disk** by content hash, so a re-run is free and interrupted collections
 //!   resume without re-fetching. Conditional GETs (`If-None-Match` / `If-Modified-Since`) are used when
 //!   the origin supports them.
@@ -149,6 +154,9 @@ pub struct FetchStats {
     pub cache_hits: u64,
     pub conditional_304: u64,
     pub robots_blocked: u64,
+    /// Requests that a robots rule disallowed but an explicit host authorization permitted. Kept
+    /// separate from `robots_blocked` so the run record shows exactly what was overridden.
+    pub robots_authorized: u64,
     pub bytes_downloaded: u64,
     pub errors: u64,
     pub per_host: HashMap<String, u64>,
@@ -211,6 +219,9 @@ pub struct Fetcher {
     user_agent: String,
     default_delay: Duration,
     host_delays: HashMap<String, Duration>,
+    /// Hosts whose robots rules are recorded rather than enforced (operator authorization).
+    /// A bare domain authorizes its subdomains.
+    authorized_hosts: Vec<String>,
     hosts: Mutex<HashMap<String, HostState>>,
     robots: Mutex<HashMap<String, RobotsRules>>,
     stats: Mutex<FetchStats>,
@@ -222,6 +233,7 @@ impl Fetcher {
         user_agent: Option<String>,
         default_delay: Duration,
         host_delays: HashMap<String, Duration>,
+        authorized_hosts: Vec<String>,
     ) -> Result<Self> {
         let cache_dir = cache_dir.as_ref().to_path_buf();
         std::fs::create_dir_all(&cache_dir)
@@ -240,10 +252,28 @@ impl Fetcher {
             user_agent,
             default_delay,
             host_delays,
+            authorized_hosts: authorized_hosts
+                .into_iter()
+                .map(|host| host.trim().to_ascii_lowercase())
+                .filter(|host| !host.is_empty())
+                .collect(),
             hosts: Mutex::new(HashMap::new()),
             robots: Mutex::new(HashMap::new()),
             stats: Mutex::new(FetchStats::default()),
         })
+    }
+
+    /// Whether the operator explicitly authorized this host.
+    ///
+    /// An entry authorizes exactly the host it names plus anything below it: `athletic.net`
+    /// authorizes `www.athletic.net` and `api.athletic.net`, while `www.example.com` authorizes only
+    /// itself and its own subdomains — never the parent domain, so naming a narrow host can never
+    /// widen into a whole site.
+    pub fn is_authorized_host(&self, host: &str) -> bool {
+        let host = host.trim().to_ascii_lowercase();
+        self.authorized_hosts
+            .iter()
+            .any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
     }
 
     /// Borrow the user-agent string without taking ownership.
@@ -276,8 +306,7 @@ impl Fetcher {
         hasher.update(url.as_bytes());
         hasher.update([0x1f]);
         hasher.update(extra.as_bytes());
-        let digest = hasher.finalize();
-        digest[..16].iter().map(|b| format!("{b:02x}")).collect()
+        sha256_prefix16(hasher)
     }
 
     /// Serialize per host and enforce the configured (or robots-requested) spacing.
@@ -287,10 +316,15 @@ impl Fetcher {
             .get(host)
             .copied()
             .unwrap_or(self.default_delay);
-        let effective = match robots_delay {
+        let mut effective = match robots_delay {
             Some(robots) if robots > configured => robots,
             _ => configured,
         };
+        // Authorization permits a host whose robots rules would otherwise block the request; it
+        // never permits a faster rate than the collection policy's 2 rps ceiling.
+        if self.is_authorized_host(host) && effective < MIN_AUTHORIZED_DELAY {
+            effective = MIN_AUTHORIZED_DELAY;
+        }
         let mut hosts = self.hosts.lock().await;
         let state = hosts.entry(host.to_string()).or_insert_with(|| HostState {
             gate: Arc::new(Mutex::new(())),
@@ -310,11 +344,16 @@ impl Fetcher {
             match state {
                 Ok(s) => {
                     let now = std::time::Instant::now();
-                    let wait = match s.next_allowed {
-                        Some(at) if at > now => at - now,
-                        _ => Duration::ZERO,
+                    // The reserved slot is a floor: resume from the later of "now" and the slot,
+                    // then push the slot one delay further. `checked_add` keeps the instant
+                    // arithmetic panic-free, and a clock far enough out to overflow `Instant`
+                    // cannot occur in a run, so "no reservation" is the honest answer there.
+                    let from = match s.next_allowed {
+                        Some(at) if at > now => at,
+                        _ => now,
                     };
-                    s.next_allowed = Some(now + wait + s.delay);
+                    let wait = from.saturating_duration_since(now);
+                    s.next_allowed = from.checked_add(s.delay);
                     wait
                 }
                 Err(e) => {
@@ -483,8 +522,18 @@ impl Fetcher {
 
         let rules = self.robots_for(&origin).await;
         if !rules.allows(&path_and_query) {
-            self.stats.lock().await.robots_blocked += 1;
-            return Err(FetchError::Robots(url.to_string()).into());
+            if self.is_authorized_host(&host) {
+                // Operator-authorized host: the rule is recorded on the run, not enforced.
+                {
+                    let mut stats = self.stats.lock().await;
+                    stats.robots_authorized = stats.robots_authorized.saturating_add(1);
+                }
+                debug!(host = %host, path = %path_and_query, "robots rule overridden by host authorization");
+            } else {
+                let mut stats = self.stats.lock().await;
+                stats.robots_blocked = stats.robots_blocked.saturating_add(1);
+                return Err(FetchError::Robots(url.to_string()).into());
+            }
         }
         let gate = self.host_gate(&host, rules.crawl_delay).await;
 
@@ -751,10 +800,7 @@ async fn process_response(
     let sha256 = {
         let mut hasher = Sha256::new();
         hasher.update(&body_vec);
-        hasher.finalize()[..16]
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect::<String>()
+        sha256_prefix16(hasher)
     };
     let meta = CacheMeta {
         url: url.to_string(),
@@ -768,7 +814,9 @@ async fn process_response(
         content_type: content_type.clone(),
     };
     write_cache(body_path, meta_path, &body_vec, &meta)?;
-    stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(body_vec.len() as u64);
+    // `usize` -> `u64` for the byte counter, saturating where the value cannot fit.
+    let downloaded = u64::try_from(body_vec.len()).unwrap_or(u64::MAX);
+    stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(downloaded);
     if status >= 400 && !(status == 404 && options.allow_not_found) {
         stats.errors = stats.errors.saturating_add(1);
         warn!(status, url, "non-success response");
@@ -794,17 +842,27 @@ async fn process_response(
 fn jittered_delay(attempt: u32) -> Duration {
     let step = attempt.saturating_sub(1).min(4);
     let cap_ms: u64 = 10_000;
+    // Doubling per attempt, capped: `saturating_pow` cannot overflow and `step` is at most 4.
     let base_ms = RETRY_BASE_DELAY_MS
-        .saturating_mul(1_u64 << step)
+        .saturating_mul(2_u64.saturating_pow(step))
         .min(cap_ms);
     let spread = base_ms / 2;
     if spread == 0 {
         return Duration::from_millis(base_ms);
     }
-    // base_ms <= 10_000, so both casts to i64 are exact.
-    let offset = (mix_attempt(attempt) % spread) as i64 - (spread / 2) as i64;
-    let delay_ms = (base_ms as i64 + offset).clamp(0, cap_ms as i64);
-    Duration::from_millis(delay_ms as u64)
+    // The jitter is a value in `0..spread` pulled back by half a spread, so the delay lands
+    // within ±25% of `base` and never leaves `0..=cap`. Subtracting the shortfall and adding the
+    // excess of that shift keeps the whole calculation unsigned and saturating: nothing can
+    // overflow, and the shortfall saturates at zero exactly where the old clamp did.
+    let half = spread / 2;
+    // `spread` is non-zero here, so the remainder is always defined; the fallback keeps the
+    // calculation total without a panic path.
+    let jitter = mix_attempt(attempt).checked_rem(spread).unwrap_or(0);
+    let delay_ms = base_ms
+        .saturating_sub(half.saturating_sub(jitter))
+        .saturating_add(jitter.saturating_sub(half))
+        .min(cap_ms);
+    Duration::from_millis(delay_ms)
 }
 
 /// splitmix64 over one counter: cheap, deterministic, and dependency-free.
@@ -818,6 +876,20 @@ fn mix_attempt(attempt: u32) -> u64 {
 // ---------------------------------------------------------------------------
 // Cache helpers
 // ---------------------------------------------------------------------------
+
+/// Hex of the leading 16 bytes of a SHA-256 hash.
+///
+/// The crate keys cached bodies, cache metadata and content ids by that prefix. SHA-256 always
+/// digests to 32 bytes, so the prefix is present; `get` keeps the extraction total without a
+/// panic path.
+fn sha256_prefix16(hasher: Sha256) -> String {
+    let digest = hasher.finalize();
+    let head = match digest.get(..16) {
+        Some(head) => head,
+        None => digest.as_slice(),
+    };
+    head.iter().map(|b| format!("{b:02x}")).collect()
+}
 
 fn read_cache(body_path: &Path, meta_path: &Path) -> Result<Option<CacheMeta>> {
     if !meta_path.exists() || !body_path.exists() {
@@ -923,6 +995,58 @@ pub fn today_iso() -> String {
 mod tests {
     use super::*;
 
+    /// Build a fetcher whose cache lives in a throwaway directory. Authorization is the only
+    /// property under test here, so no request is ever issued.
+    fn fetcher_with(authorized: Vec<String>) -> (Fetcher, tempfile::TempDir) {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let fetcher = Fetcher::new(
+            dir.path().join("http"),
+            None,
+            Duration::from_millis(1),
+            HashMap::new(),
+            authorized,
+        )
+        .expect("fetcher");
+        (fetcher, dir)
+    }
+
+    #[test]
+    fn no_host_is_authorized_by_default() {
+        let (fetcher, _dir) = fetcher_with(Vec::new());
+        assert!(!fetcher.is_authorized_host("www.athletic.net"));
+        assert!(!fetcher.is_authorized_host("milesplit.com"));
+    }
+
+    #[test]
+    fn a_bare_domain_authorizes_its_subdomains_but_not_lookalikes() {
+        let (fetcher, _dir) = fetcher_with(vec!["athletic.net".to_string()]);
+        assert!(fetcher.is_authorized_host("athletic.net"));
+        assert!(fetcher.is_authorized_host("www.athletic.net"));
+        assert!(fetcher.is_authorized_host("WWW.Athletic.NET"));
+        // Suffix matching must not leak to a domain that merely ends with the same text.
+        assert!(!fetcher.is_authorized_host("notathletic.net"));
+        assert!(!fetcher.is_authorized_host("athletic.net.evil.com"));
+    }
+
+    #[test]
+    fn an_exact_host_never_widens_into_its_parent_domain() {
+        let (fetcher, _dir) = fetcher_with(vec!["www.example.com".to_string()]);
+        assert!(fetcher.is_authorized_host("www.example.com"));
+        assert!(fetcher.is_authorized_host("cdn.www.example.com"));
+        assert!(!fetcher.is_authorized_host("example.com"));
+        assert!(!fetcher.is_authorized_host("other.example.com"));
+    }
+
+    #[test]
+    fn authorization_never_relaxes_the_two_rps_ceiling() {
+        let (fetcher, _dir) = fetcher_with(vec!["athletic.net".to_string()]);
+        // The policy ceiling is a floor on spacing: even a 1 ms configured delay is raised.
+        assert!(MIN_AUTHORIZED_DELAY >= Duration::from_millis(500));
+        let (unauthorized, _dir2) = fetcher_with(Vec::new());
+        assert!(!unauthorized.is_authorized_host("athletic.net"));
+        assert!(fetcher.is_authorized_host("athletic.net"));
+    }
+
     #[test]
     fn robots_rules_honour_longest_match_and_allow_ties() {
         let rules = parse_robots(
@@ -972,5 +1096,25 @@ mod tests {
                 "delay for attempt {attempt} exceeds 10s cap"
             );
         }
+    }
+
+    #[test]
+    fn cache_key_pins_the_on_disk_cache_layout() {
+        // Cached bodies live at `{key}.body` / `{key}.meta.json`, so the key derivation is part
+        // of the on-disk layout: `GET`-with-no-body and `POST`-with-a-body must keep the same
+        // keys across refactors, or a re-run stops being free.
+        assert_eq!(
+            Fetcher::key_for("GET", "https://example.com/teams", ""),
+            "2ee9e0985d9a4ffc8864d9dfaae08524"
+        );
+        assert_eq!(
+            Fetcher::key_for("POST", "https://example.com/api", "q=1&page=2"),
+            "fd3996c5f6d99f4badb15fb729c483c8"
+        );
+        // Two queries against one endpoint are two documents.
+        assert_ne!(
+            Fetcher::key_for("POST", "https://example.com/api", "q=1&page=2"),
+            Fetcher::key_for("POST", "https://example.com/api", "q=1&page=3")
+        );
     }
 }

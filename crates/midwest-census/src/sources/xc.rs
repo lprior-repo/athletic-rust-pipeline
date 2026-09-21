@@ -28,46 +28,100 @@ pub use crate::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayL
 use regex::Regex;
 use std::sync::LazyLock;
 
-static PAGE_STAMP: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*").expect("regex")
-});
-static DATE_NAMED: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\b([A-Z][a-z]{2,8})\s+(\d{1,2}),\s*(\d{4})\b").expect("regex")
-});
-static DATE_SLASH: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b").expect("regex"));
-static SECTION_BANNER: LazyLock<Regex> = LazyLock::new(|| {
+static PAGE_STAMP: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}\s*(?:AM|PM)\s*"));
+static DATE_NAMED: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)\b([A-Z][a-z]{2,8})\s+(\d{1,2}),\s*(\d{4})\b"));
+static DATE_SLASH: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b"));
+static SECTION_BANNER: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     // The inner text must start with a letter or digit: a bare `====` run is a table rule, not a
     // banner, and the AccuRace layout is read through those rules.
-    Regex::new(r"^(?:=+|\*+)\s*([A-Za-z0-9].*?)\s*(?:=+|\*+)$").expect("regex")
+    Regex::new(r"^(?:=+|\*+)\s*([A-Za-z0-9].*?)\s*(?:=+|\*+)$")
 });
-static GENDER_HEADING: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?(?:\s+(.+?))?\s*$").expect("regex")
-});
-static DIVISION: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^Division\s+([0-9A-Za-z]+)\s*$").expect("regex"));
+static GENDER_HEADING: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?(?:\s+(.+?))?\s*$"));
+static DIVISION: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^Division\s+([0-9A-Za-z]+)\s*$"));
 /// Team block heading: place, team points, team name, then the scoring summary in brackets.
-static TEAM_BLOCK: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^\s*\d+\.\s+(\d+)\s+(\S.*?)\s*\(\s*\d").expect("regex"));
+static TEAM_BLOCK: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"^\s*\d+\.\s+(\d+)\s+(\S.*?)\s*\(\s*\d"));
 /// Block row: team position, overall place, name, grade, time — repeated per line, because the race
 /// blocks print two runners side by side and the team tables that follow print one.
-static BLOCK_ROW: LazyLock<Regex> = LazyLock::new(|| {
+static BLOCK_ROW: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"(\d{1,4})\s+(\(\s*\d+\s*\)|\d{1,4})\s+([A-Za-z][A-Za-z.'\- ]*?)\s+(\d{1,2})\s+(\d{1,3}:\d{2}\.\d)",
     )
-    .expect("regex")
 });
 /// Padded grade table row: place, points, bib, name, school, gender, grade, time, pace.
-static GRADE_TABLE_ROW: LazyLock<Regex> = LazyLock::new(|| {
+static GRADE_TABLE_ROW: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
     Regex::new(
         r"^\s*(\d+)\s+(\(\s*n/a\s*\)|\d+)\s+(\d+)\s+(.+?)\s{2,}(.+?)\s{2,}([MF])\s+(\d{1,2})\s+(\d{1,3}:\d{2}\.\d)\s+(\d+:\d{2})\s*$",
     )
-    .expect("regex")
 });
 /// Any heading that names a gender: `Boys Varsity`, `BOYS TEAM SCORE`, `Girls' 5000 Meter Run`.
-static RACE_BANNER: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?\s*(.*)$").expect("regex")
-});
+static RACE_BANNER: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r"(?i)^(boys|girls|men|women)['\u{2019}]?\s*(.*)$"));
+
+// Accessors for the literal patterns above: a failed compile is a programming error, so it comes
+// back as a typed error that the readers answer as "this file carries no meet" — never a panic.
+fn page_stamp() -> anyhow::Result<&'static Regex> {
+    PAGE_STAMP
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn date_named() -> anyhow::Result<&'static Regex> {
+    DATE_NAMED
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn date_slash() -> anyhow::Result<&'static Regex> {
+    DATE_SLASH
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn section_banner() -> anyhow::Result<&'static Regex> {
+    SECTION_BANNER
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn gender_heading() -> anyhow::Result<&'static Regex> {
+    GENDER_HEADING
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn division_regex() -> anyhow::Result<&'static Regex> {
+    DIVISION.as_ref().map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn team_block() -> anyhow::Result<&'static Regex> {
+    TEAM_BLOCK
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn block_row() -> anyhow::Result<&'static Regex> {
+    BLOCK_ROW
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn grade_table_row_regex() -> anyhow::Result<&'static Regex> {
+    GRADE_TABLE_ROW
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
+
+fn race_banner() -> anyhow::Result<&'static Regex> {
+    RACE_BANNER
+        .as_ref()
+        .map_err(|e| anyhow::anyhow!("regex: {e}"))
+}
 
 const MONTHS: [&str; 12] = [
     "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec",
@@ -82,6 +136,7 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
     let (name, date) = header(lines)?;
     let date = date.unwrap_or_else(|| archive_year.to_string());
     let mut events: Vec<ParsedEvent> = Vec::new();
+    // Row counters saturate: the counts feed the report, and no file carries 2^64 rows.
     let mut rows_parsed = 0usize;
     let mut rows_skipped = 0usize;
     // Current reading state.
@@ -96,8 +151,8 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
         if trimmed.is_empty() {
             continue;
         }
-        if let Some(banner) = SECTION_BANNER.captures(trimmed) {
-            let inner = banner[1].trim();
+        if let Some(banner) = section_banner().ok()?.captures(trimmed) {
+            let inner = banner.get(1)?.as_str().trim();
             if let Some((next_gender, next_label)) = race_heading(inner) {
                 gender = next_gender;
                 label = next_label;
@@ -106,8 +161,8 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
             }
             continue;
         }
-        if let Some(division_capture) = DIVISION.captures(trimmed) {
-            division = Some(format!("Division {}", &division_capture[1]));
+        if let Some(division_capture) = division_regex().ok()?.captures(trimmed) {
+            division = Some(format!("Division {}", division_capture.get(1)?.as_str()));
             continue;
         }
         if spans.is_none() {
@@ -119,30 +174,30 @@ pub fn parse(lines: &[String], source: SourceRef, archive_year: i16) -> Option<P
             team = None;
             continue;
         }
-        if let Some(captures) = TEAM_BLOCK.captures(line) {
-            team = Some(captures[2].trim().to_string());
+        if let Some(captures) = team_block().ok()?.captures(line) {
+            team = Some(captures.get(2)?.as_str().trim().to_string());
             continue;
         }
         let block = block_rows(line, team.as_deref());
         if !block.is_empty() {
             for row in block {
-                rows_parsed += 1;
+                rows_parsed = rows_parsed.saturating_add(1);
                 push_row(&mut events, &gender, &label, division.clone(), row);
             }
             continue;
         }
         if let Some(row) = grade_table_row(line) {
-            rows_parsed += 1;
+            rows_parsed = rows_parsed.saturating_add(1);
             push_row(&mut events, &gender, &label, division.clone(), row);
             continue;
         }
         if let Some(row) = accurace_row(line, spans.as_deref()) {
-            rows_parsed += 1;
+            rows_parsed = rows_parsed.saturating_add(1);
             push_row(&mut events, &gender, &label, division.clone(), row);
             continue;
         }
         if starts_like_a_row(trimmed) {
-            rows_skipped += 1;
+            rows_skipped = rows_skipped.saturating_add(1);
         }
     }
 
@@ -214,9 +269,9 @@ fn header(lines: &[String]) -> Option<(String, Option<String>)> {
             date = parse_date(trimmed);
         }
         if name.is_none() {
-            let cleaned = PAGE_STAMP.replace(trimmed, "");
-            let cleaned = DATE_NAMED.replace(&cleaned, "");
-            let cleaned = DATE_SLASH.replace(&cleaned, "");
+            let cleaned = page_stamp().ok()?.replace(trimmed, "");
+            let cleaned = date_named().ok()?.replace(&cleaned, "");
+            let cleaned = date_slash().ok()?.replace(&cleaned, "");
             let candidate = cleaned.trim();
             let lowered = candidate.to_ascii_lowercase();
             if candidate.len() >= 6
@@ -242,31 +297,32 @@ fn header(lines: &[String]) -> Option<(String, Option<String>)> {
 }
 
 fn parse_date(line: &str) -> Option<String> {
-    if let Some(captures) = DATE_NAMED.captures(line) {
+    if let Some(captures) = date_named().ok()?.captures(line) {
+        let month_token = captures.get(1)?.as_str().to_ascii_lowercase();
         let month = MONTHS
             .iter()
-            .position(|month| captures[1].to_ascii_lowercase().starts_with(month))?
-            + 1;
+            .position(|month| month_token.starts_with(month))?
+            .checked_add(1)?;
         return Some(format!(
             "{:04}-{:02}-{:02}",
-            captures[3].parse::<i32>().ok()?,
+            captures.get(3)?.as_str().parse::<i32>().ok()?,
             month,
-            captures[2].parse::<u32>().ok()?
+            captures.get(2)?.as_str().parse::<u32>().ok()?
         ));
     }
-    let captures = DATE_SLASH.captures(line)?;
+    let captures = date_slash().ok()?.captures(line)?;
     Some(format!(
         "{:04}-{:02}-{:02}",
-        captures[3].parse::<i32>().ok()?,
-        captures[1].parse::<u32>().ok()?,
-        captures[2].parse::<u32>().ok()?
+        captures.get(3)?.as_str().parse::<i32>().ok()?,
+        captures.get(1)?.as_str().parse::<u32>().ok()?,
+        captures.get(2)?.as_str().parse::<u32>().ok()?
     ))
 }
 
 /// `Boys Varsity` / `Boys' 5000 Meter Run` / `Division 1 Girls` as a section heading.
 fn section_heading(trimmed: &str) -> Option<(Gender, String)> {
-    let captures = GENDER_HEADING.captures(trimmed)?;
-    let gender = match captures[1].to_ascii_lowercase().as_str() {
+    let captures = gender_heading().ok()?.captures(trimmed)?;
+    let gender = match captures.get(1)?.as_str().to_ascii_lowercase().as_str() {
         "boys" | "men" => Gender::Boys,
         _ => Gender::Girls,
     };
@@ -279,12 +335,12 @@ fn section_heading(trimmed: &str) -> Option<(Gender, String)> {
 }
 
 fn race_heading(inner: &str) -> Option<(Gender, String)> {
-    let captures = RACE_BANNER.captures(inner)?;
-    let gender = match captures[1].to_ascii_lowercase().as_str() {
+    let captures = race_banner().ok()?.captures(inner)?;
+    let gender = match captures.get(1)?.as_str().to_ascii_lowercase().as_str() {
         "boys" | "men" => Gender::Boys,
         _ => Gender::Girls,
     };
-    let label = captures[2].trim().to_string();
+    let label = captures.get(2)?.as_str().trim().to_string();
     (!label.is_empty()).then_some((gender, label))
 }
 
@@ -317,24 +373,29 @@ fn block_rows(line: &str, team: Option<&str>) -> Vec<ParsedRow> {
     let Some(team) = team else {
         return Vec::new();
     };
-    BLOCK_ROW
+    let Ok(regex) = block_row() else {
+        return Vec::new();
+    };
+    regex
         .captures_iter(line)
         .filter_map(|captures| {
-            let name = captures[3].trim().to_string();
+            let name = captures.get(3)?.as_str().trim().to_string();
             if !looks_like_a_name(&name) {
                 return None;
             }
-            let seconds = hytek::parse_time(&captures[5])?;
+            let seconds = hytek::parse_time(captures.get(5)?.as_str())?;
             Some(ParsedRow {
                 // A bracketed place is a displacing score: the place is real, the bracket is not.
-                place: captures[2]
+                place: captures
+                    .get(2)?
+                    .as_str()
                     .trim()
                     .trim_matches(|ch| ch == '(' || ch == ')')
                     .trim()
                     .parse::<u16>()
                     .ok(),
                 name,
-                grade: grade_from_token(&captures[4]),
+                grade: grade_from_token(captures.get(4)?.as_str()),
                 school: team.to_string(),
                 mark: Mark::TimeSeconds(seconds),
                 wind_mps: None,
@@ -347,17 +408,17 @@ fn block_rows(line: &str, team: Option<&str>) -> Vec<ParsedRow> {
 }
 
 fn grade_table_row(line: &str) -> Option<ParsedRow> {
-    let captures = GRADE_TABLE_ROW.captures(line)?;
-    let name = captures[4].trim().to_string();
-    let school = captures[5].trim().to_string();
+    let captures = grade_table_row_regex().ok()?.captures(line)?;
+    let name = captures.get(4)?.as_str().trim().to_string();
+    let school = captures.get(5)?.as_str().trim().to_string();
     if !looks_like_a_name(&name) || school.is_empty() {
         return None;
     }
-    let seconds = hytek::parse_time(&captures[8])?;
+    let seconds = hytek::parse_time(captures.get(8)?.as_str())?;
     Some(ParsedRow {
-        place: captures[1].parse::<u16>().ok(),
+        place: captures.get(1)?.as_str().parse::<u16>().ok(),
         name,
-        grade: grade_from_token(&captures[7]),
+        grade: grade_from_token(captures.get(7)?.as_str()),
         school,
         mark: Mark::TimeSeconds(seconds),
         wind_mps: None,
@@ -375,18 +436,18 @@ fn accurace_row(line: &str, spans: Option<&[(usize, usize)]>) -> Option<ParsedRo
         return None;
     }
     let cell = |index: usize| {
-        let (start, end) = spans[index];
-        substring(line, start, end)
+        let (start, end) = spans.get(index).copied()?;
+        Some(substring(line, start, end))
     };
-    let name = cell(4);
-    let school = cell(6);
+    let name = cell(4)?;
+    let school = cell(6)?;
     if !looks_like_a_name(&name) || school.is_empty() {
         return None;
     }
-    let seconds = hytek::parse_time(&cell(7))?;
-    let grade = grade_from_token(&cell(5));
+    let seconds = hytek::parse_time(&cell(7)?)?;
+    let grade = grade_from_token(&cell(5)?);
     Some(ParsedRow {
-        place: cell(0).parse::<u16>().ok(),
+        place: cell(0)?.parse::<u16>().ok(),
         name,
         grade,
         school,
@@ -455,20 +516,26 @@ Place Pts Place Bib#    Name                  Gr   Team                         
 "#;
 
     #[test]
-    fn state_blocks_carry_place_grade_and_time() {
+    fn state_blocks_carry_place_grade_and_time() -> anyhow::Result<()> {
         let meet = parse(
             &crate::sources::hytek::lines_from_pdf_text(STATE),
             source(),
             2025,
         )
-        .expect("the state file has a meet header");
+        .ok_or_else(|| anyhow::anyhow!("the state file has a meet header"))?;
         assert_eq!(meet.name, "WIAA State Cross Country Championships");
         assert_eq!(meet.date, "2025-11-01");
-        let event = &meet.events[0];
+        let event = meet
+            .events
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("the state file publishes a race"))?;
         assert_eq!(event.kind, EventKind::CrossCountry);
         assert_eq!(event.gender, Gender::Boys);
         assert_eq!(event.division.as_deref(), Some("Division 1"));
-        let first = &event.rows[0];
+        let first = event
+            .rows
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("the state file publishes a scorer"))?;
         assert_eq!(first.name, "Cooper Erickson");
         assert_eq!(first.school, "SPASH", "the team block names the school");
         assert_eq!(first.grade, crate::model::Grade::new(12));
@@ -476,47 +543,62 @@ Place Pts Place Bib#    Name                  Gr   Team                         
         assert_eq!(first.mark, Mark::TimeSeconds(950.2));
         // A row that prints no school of its own must not be guessed into an athlete.
         assert!(event.rows.iter().all(|row| !row.school.is_empty()));
+        Ok(())
     }
 
     #[test]
-    fn padded_table_rows_parse_with_and_without_team_points() {
+    fn padded_table_rows_parse_with_and_without_team_points() -> anyhow::Result<()> {
         let meet = parse(
             &crate::sources::hytek::lines_from_pdf_text(TABLE),
             source(),
             2025,
         )
-        .expect("the sectional file has a meet header");
+        .ok_or_else(|| anyhow::anyhow!("the sectional file has a meet header"))?;
         assert_eq!(
             meet.date, "2025",
             "this sectional family publishes no date at all, so the archive year is used"
         );
         let rows: Vec<&ParsedRow> = meet.events.iter().flat_map(|event| &event.rows).collect();
         assert_eq!(rows.len(), 4, "every table row is read: {rows:?}");
-        assert_eq!(rows[0].name, "Wyatt See");
-        assert_eq!(rows[0].school, "Poynette");
-        assert_eq!(rows[0].grade, crate::model::Grade::new(12));
-        assert_eq!(rows[0].mark, Mark::TimeSeconds(1004.1));
-        assert_eq!(rows[1].grade, crate::model::Grade::new(11));
-        assert_eq!(rows[1].school, "Ozaukee");
+        let first = rows
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("the table publishes four rows"))?;
+        let second = rows
+            .get(1)
+            .ok_or_else(|| anyhow::anyhow!("the table publishes four rows"))?;
+        assert_eq!(first.name, "Wyatt See");
+        assert_eq!(first.school, "Poynette");
+        assert_eq!(first.grade, crate::model::Grade::new(12));
+        assert_eq!(first.mark, Mark::TimeSeconds(1004.1));
+        assert_eq!(second.grade, crate::model::Grade::new(11));
+        assert_eq!(second.school, "Ozaukee");
+        Ok(())
     }
 
     #[test]
-    fn accurace_rows_are_read_through_the_rule_line() {
+    fn accurace_rows_are_read_through_the_rule_line() -> anyhow::Result<()> {
         let meet = parse(
             &crate::sources::hytek::lines_from_pdf_text(ACCURACE),
             source(),
             2025,
         )
-        .expect("the AccuRace file has a meet header");
+        .ok_or_else(|| anyhow::anyhow!("the AccuRace file has a meet header"))?;
         assert_eq!(meet.date, "2025-10-25");
         assert_eq!(meet.name, "WIAA Division 3 Sectional Championship Meet");
-        let event = &meet.events[0];
+        let event = meet
+            .events
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("the AccuRace file publishes a race"))?;
         assert_eq!(event.label, "5000 Meter Run");
-        let first = &event.rows[0];
+        let first = event
+            .rows
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("the AccuRace file publishes a row"))?;
         assert_eq!(first.name, "Jonathan Simon");
         assert_eq!(first.school, "St. Ambrose/Abundant Life");
         assert_eq!(first.grade, crate::model::Grade::new(10));
         assert_eq!(first.place, Some(1));
         assert_eq!(first.mark, Mark::TimeSeconds(981.6));
+        Ok(())
     }
 }

@@ -6,6 +6,7 @@ use crate::runtime::browser::{
     transport, BrowserError, BrowserResponse,
 };
 use tokio::sync::oneshot;
+use tracing::Instrument;
 
 impl Actor {
     pub(in crate::runtime::browser) fn accept_fetch(
@@ -57,7 +58,9 @@ impl Actor {
             );
             let nonce = self.next_capture_nonce();
             let source_origin = self.settings.source_origin.clone();
-            self.jobs.spawn(async move {
+            let span = tracing::info_span!("browser.job", slot, nonce);
+            self.jobs.spawn(
+                async move {
                 let result = if is_rankings {
                     if let crate::runtime::source::request::RequestAction::Rankings(ref action) = request.action {
                         tokio::select! {
@@ -79,7 +82,9 @@ impl Actor {
                     reply: item.reply,
                     result,
                 }
-            });
+                }
+                .instrument(span),
+            );
         }
     }
 
@@ -104,15 +109,29 @@ impl Actor {
                     tracing::debug!("job reply dropped");
                 }
             }
+            Some(Err(error)) if error.is_panic() => {
+                tracing::error!("browser job panicked; requesting shutdown");
+                self.abort_jobs(BrowserError::TaskPanicked);
+            }
+            Some(Err(error)) if error.is_cancelled() => {
+                tracing::debug!("browser job cancelled; releasing slots");
+                self.abort_jobs(BrowserError::Unavailable);
+            }
             Some(Err(_)) => {
-                tracing::warn!("browser job panicked or was aborted; requesting shutdown");
-                self.jobs.abort_all();
-                self.pages.iter_mut().for_each(|p| p.busy = false);
-                self.gate.revoke();
-                self.panic_shutdown = true;
+                tracing::warn!("browser job aborted; requesting shutdown");
+                self.abort_jobs(BrowserError::Unavailable);
             }
             None => {}
         }
         self.update_active();
+    }
+
+    /// Release every page slot and latch a shutdown after a job ended outside its own result path.
+    fn abort_jobs(&mut self, cause: BrowserError) {
+        self.jobs.abort_all();
+        self.pages.iter_mut().for_each(|p| p.busy = false);
+        self.gate.revoke();
+        crate::runtime::browser::pool::reject_pending(&mut self.pending, cause);
+        self.panic_shutdown = true;
     }
 }

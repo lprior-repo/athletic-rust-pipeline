@@ -50,6 +50,7 @@ impl BrowserManager {
             .map_or(true, |status| usable_manager(status.state))
     }
 
+    #[tracing::instrument(skip_all, fields(tabs = settings.tabs, headed = settings.headed))]
     pub(crate) async fn launch(settings: BrowserSettings) -> anyhow::Result<Self> {
         settings.validate()?;
         pool::prepare_profile(&settings)?;
@@ -106,6 +107,7 @@ impl BrowserManager {
         Ok(manager)
     }
 
+    #[tracing::instrument(skip_all)]
     pub(crate) async fn connect(
         cdp_url: url::Url,
         settings: BrowserSettings,

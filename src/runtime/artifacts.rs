@@ -49,9 +49,10 @@ impl Write for LimitedJson {
             .checked_add(bytes.len())
             .filter(|size| *size <= MAX_DOCUMENT_BYTES)
             .ok_or_else(|| io::Error::other("JSON artifact exceeds document limit"))?;
-        self.0
-            .try_reserve(size - self.0.len())
-            .map_err(io::Error::other)?;
+        // `size` is `self.0.len() + bytes.len()` by construction, so the
+        // saturating subtraction is exactly the incoming byte count.
+        let additional = size.saturating_sub(self.0.len());
+        self.0.try_reserve(additional).map_err(io::Error::other)?;
         self.0.extend_from_slice(bytes);
         Ok(bytes.len())
     }

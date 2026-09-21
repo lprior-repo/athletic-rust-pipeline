@@ -1,4 +1,4 @@
-use super::records::{read_bytes, read_u16_slice, read_u32_slice, read_u64_slice};
+use super::records::{read_bytes, read_u16_from, read_u32_from, read_u64_slice};
 use anyhow::{bail, Context, Result};
 use std::fs::File;
 
@@ -10,28 +10,29 @@ pub(super) fn end(
     limit: u64,
     budget: &mut usize,
 ) -> Result<u64> {
+    let offsets = [28, 30, 32];
     loop {
-        *budget = budget
-            .checked_sub(1)
-            .context("retired ZIP metadata exceeds record bound")?;
-        let signature = read_u32_slice(&read_bytes(reader, position, 4, limit)?, 0)?;
+        let next = budget.checked_sub(1);
+        *budget = next.context("retired ZIP metadata exceeds record bound")?;
+        let signature = read_u32_from(&read_bytes(reader, position, 4, limit)?, 0)?;
         let (length, finished) = match signature {
             // Append writers may overwrite the tail of the obsolete directory.
             super::LOCAL_SIGNATURE => return Ok(position),
             super::CENTRAL_SIGNATURE => {
                 let fixed = read_bytes(reader, position, 46, limit)?;
-                let length = [28, 30, 32]
-                    .into_iter()
-                    .try_fold(46_u64, |length, offset| {
-                        length
-                            .checked_add(u64::from(read_u16_slice(&fixed, offset)?))
-                            .context("retired ZIP central record length overflow")
-                    })?;
+                let length = offsets.into_iter().try_fold(46_u64, |length, offset| {
+                    length
+                        .checked_add(u64::from(read_u16_from(&fixed, offset)?))
+                        .context("retired ZIP central record length overflow")
+                })?;
                 (length, false)
             }
             super::EOCD_SIGNATURE => {
-                let fixed = read_bytes(reader, position, 22, limit)?;
-                (22 + u64::from(read_u16_slice(&fixed, 20)?), true)
+                let comment_len = read_u16_from(&read_bytes(reader, position, 22, limit)?, 20)?;
+                let length = 22_u64
+                    .checked_add(u64::from(comment_len))
+                    .context("retired ZIP end record length overflow")?;
+                (length, true)
             }
             super::ZIP64_EOCD_SIGNATURE => {
                 let fixed = read_bytes(reader, position, 12, limit)?;
@@ -39,24 +40,23 @@ pub(super) fn end(
                 if size < 44 {
                     bail!("retired ZIP64 end record is too short");
                 }
-                (
-                    12_u64
-                        .checked_add(size)
-                        .context("retired ZIP64 record length overflow")?,
-                    false,
-                )
+                let length = 12_u64
+                    .checked_add(size)
+                    .context("retired ZIP64 record length overflow")?;
+                (length, false)
             }
             super::ZIP64_LOCATOR_SIGNATURE => (20, false),
             super::DIGITAL_SIGNATURE => {
-                let fixed = read_bytes(reader, position, 6, limit)?;
-                (6 + u64::from(read_u16_slice(&fixed, 4)?), false)
+                let size = read_u16_from(&read_bytes(reader, position, 6, limit)?, 4)?;
+                let length = 6_u64
+                    .checked_add(u64::from(size))
+                    .context("retired ZIP digital signature length overflow")?;
+                (length, false)
             }
             _ => bail!("retired ZIP directory contains record {signature:#x} at byte {position}"),
         };
-        position = position
-            .checked_add(length)
-            .filter(|end| *end <= limit)
-            .context("retired ZIP directory overlaps active central directory")?;
+        let bounded = position.checked_add(length).filter(|end| *end <= limit);
+        position = bounded.context("retired ZIP directory overlaps active central directory")?;
         if finished {
             return Ok(position);
         }

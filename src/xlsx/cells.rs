@@ -120,7 +120,10 @@ pub(crate) fn column_name(mut index: usize) -> String {
             Some(value) => value,
             None => return String::new(),
         };
-        let remainder = adjusted % 26;
+        let remainder = match adjusted.checked_rem(26) {
+            Some(value) => value,
+            None => return String::new(),
+        };
         let offset = match u8::try_from(remainder) {
             Ok(value) => value,
             Err(_) => return String::new(),
@@ -130,7 +133,10 @@ pub(crate) fn column_name(mut index: usize) -> String {
             None => return String::new(),
         };
         output.push(char::from(byte));
-        index = adjusted / 26;
+        index = match adjusted.checked_div(26) {
+            Some(value) => value,
+            None => return String::new(),
+        };
     }
     output.iter().rev().collect()
 }

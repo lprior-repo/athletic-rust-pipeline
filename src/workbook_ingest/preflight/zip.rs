@@ -4,7 +4,7 @@ mod retired;
 use ::zip::ZipArchive;
 use anyhow::{bail, Context, Result};
 use records::{
-    parse_zip64_extra, read_bytes, read_central, read_u16_slice, read_u32_slice, CentralEntry,
+    parse_zip64_extra, read_bytes, read_central, read_u16_from, read_u32_from, CentralEntry,
 };
 use std::{
     collections::BTreeSet,
@@ -91,17 +91,17 @@ fn validate_physical(
     while position < central_start {
         let fixed = read_bytes(reader, position, 30, central_start)?;
         if matches!(
-            read_u32_slice(&fixed, 0)?,
+            read_u32_from(&fixed, 0)?,
             CENTRAL_SIGNATURE | EOCD_SIGNATURE | ZIP64_EOCD_SIGNATURE
         ) {
             position = retired::end(reader, position, central_start, &mut retired_record_budget)?;
             continue;
         }
-        if read_u32_slice(&fixed, 0)? != LOCAL_SIGNATURE {
+        if read_u32_from(&fixed, 0)? != LOCAL_SIGNATURE {
             bail!("ZIP local entry sequence contains an unexpected record");
         }
-        let name_len = usize::from(read_u16_slice(&fixed, 26)?);
-        let extra_len = usize::from(read_u16_slice(&fixed, 28)?);
+        let name_len = usize::from(read_u16_from(&fixed, 26)?);
+        let extra_len = usize::from(read_u16_from(&fixed, 28)?);
         let header_len = 30usize
             .checked_add(name_len)
             .and_then(|value| value.checked_add(extra_len))
@@ -130,16 +130,16 @@ fn validate_physical(
             .get(central_index)
             .context("ZIP central entry index overflow")?;
         if name != entry.name.as_slice()
-            || read_u16_slice(&fixed, 6)? != entry.flags
-            || read_u16_slice(&fixed, 8)? != entry.method
+            || read_u16_from(&fixed, 6)? != entry.flags
+            || read_u16_from(&fixed, 8)? != entry.method
         {
             bail!("ZIP local header does not match its central directory record");
         }
         let data_start = position
             .checked_add(u64::try_from(header_len).context("ZIP local header length overflow")?)
             .context("ZIP data offset overflow")?;
-        let compressed_32 = read_u32_slice(&fixed, 18)?;
-        let uncompressed_32 = read_u32_slice(&fixed, 22)?;
+        let compressed_32 = read_u32_from(&fixed, 18)?;
+        let uncompressed_32 = read_u32_from(&fixed, 22)?;
         let descriptor = entry.flags & 0x0008 != 0;
         let (zip64_uncompressed, zip64_compressed, _) = parse_zip64_extra(
             extra,
@@ -152,7 +152,7 @@ fn validate_physical(
                 zip64_compressed.map_or(u64::from(compressed_32), std::convert::identity);
             let uncompressed =
                 zip64_uncompressed.map_or(u64::from(uncompressed_32), std::convert::identity);
-            if read_u32_slice(&fixed, 14)? != entry.crc
+            if read_u32_from(&fixed, 14)? != entry.crc
                 || compressed != entry.compressed
                 || uncompressed != entry.uncompressed
             {
@@ -162,7 +162,7 @@ fn validate_physical(
                 .checked_add(entry.compressed)
                 .context("ZIP data length overflow")?;
         } else {
-            let local_crc = read_u32_slice(&fixed, 14)?;
+            let local_crc = read_u32_from(&fixed, 14)?;
             if local_crc != 0 && local_crc != entry.crc {
                 bail!("ZIP local checksum does not match the central directory");
             }
@@ -206,7 +206,7 @@ fn descriptor_end(
             .checked_add(u64::try_from(plain_len).context("ZIP descriptor length overflow")?)
             .context("ZIP descriptor end overflow");
     }
-    if read_u32_slice(&plain, 0)? != DESCRIPTOR_SIGNATURE {
+    if read_u32_from(&plain, 0)? != DESCRIPTOR_SIGNATURE {
         bail!("ZIP data descriptor does not match the central directory");
     }
     let signed_len = if zip64 { 24 } else { 16 };
@@ -226,7 +226,7 @@ fn descriptor_matches(
     zip64: bool,
 ) -> Result<bool> {
     let start = if signed { 4 } else { 0 };
-    let crc = read_u32_slice(bytes, start)?;
+    let crc = read_u32_from(bytes, start)?;
     let compressed_offset = start
         .checked_add(4)
         .context("ZIP descriptor offset overflow")?;
@@ -242,12 +242,12 @@ fn descriptor_matches(
     let compressed = if zip64 {
         records::read_u64_slice(bytes, compressed_offset)?
     } else {
-        u64::from(read_u32_slice(bytes, compressed_offset)?)
+        u64::from(read_u32_from(bytes, compressed_offset)?)
     };
     let uncompressed = if zip64 {
         records::read_u64_slice(bytes, uncompressed_offset)?
     } else {
-        u64::from(read_u32_slice(bytes, uncompressed_offset)?)
+        u64::from(read_u32_from(bytes, uncompressed_offset)?)
     };
     Ok(crc == entry.crc && compressed == entry.compressed && uncompressed == entry.uncompressed)
 }

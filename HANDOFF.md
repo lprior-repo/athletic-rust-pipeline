@@ -6,6 +6,78 @@ The **outdoor boys live chain completed 2026-09-21** on run `7be7e9dd68cd5dc51c0
 
 The **outdoor girls live chain completed 2026-09-21** on run `3b7c07fa4e1f80d95f15f24564c4a18925220f3fa313bee5e779e12fd3ba3323` (workbook `0a1d53f1…`, `live-store`): collection terminalized 94/94 events over 134 pages; the row phase decided 8/8 rows (all 8 `review_required`, 0 pending) and published `lane-v14/out-live-outdoor-girls/result.xlsx` (`8656f9f0…`, 8,342 B), `result.jsonl` (`b64359d7…`, 6,545,309 B), and `result.commit.json` (`7ea80cd5…`); the stopped-writer `verify` exited 0 with the source digest `0a1d53f1…` matching before and after, 2/2 sheets and 8/8 rows; and re-submitting the identical request body returned `HTTP 202`, left the run's `updated_at` unchanged, added **zero** source fetches (6,103 before and after), and reproduced byte-identical artifacts. Two failures were repaired on the way: the row phase needed the frozen-coordinator kill + re-submit twice before the rows terminalized, and the first export attempt panicked in `rust_xlsxwriter` (`packager.rs:460`) on `Os { code: 122, kind: QuotaExceeded }` because the `/tmp` tmpfs was 81% full of oversized terminal logs. The export succeeded immediately after that space was freed and the identical request body was re-posted.
 
+## Authorized Athletic.net source and the one-command cycle (2026-09-21)
+
+The owner authorized Athletic.net, and `crates/midwest-census` now carries both the authorization
+mechanism and its own Athletic.net adapter. Neither existed before this session.
+
+**Fetch authorization (`src/net.rs`).** `Fetcher` records operator-authorized hosts
+(`--authorized-host`, repeatable, a bare domain covering its subdomains) and counts their
+robots-blocked requests as `robots_authorized` instead of blocking them, still under the 2 rps
+per-host ceiling. An entry authorizes exactly the host it names plus anything below it — never the
+parent domain — so naming a narrow host cannot widen into a whole site. Evidence:
+`cargo test -p midwest-census --lib net::` → 9 passed.
+
+**`src/sources/athleticnet.rs`** reads
+`GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=<id>&sport=<tf|xc>&level=4` into canonical
+schools, meets, teams, athletes, events and performances. Verified contract (live responses,
+2026-09-21): the two `sport` calls are **not** interchangeable — an athlete with 40 track results
+and 22 cross-country results returns only the first under `sport=tf` and only the second under
+`sport=xc` — and the indoor/outdoor split is published only in `allSeasons[].Display`. The adapter
+refuses to guess: rows whose season, school, meet or state the payload does not publish are skipped
+and **counted in the run report** rather than minted on an assumption. Access is honest: robots.txt
+(40 lines, whole file) allows `/api/` and disallows `/Search.aspx`, and the host answers the
+collector's own user agent with `200`, so no browser headers are spoofed and athlete ids come from an
+operator registry (`--input`, one `athlete_id[,ST]` per line).
+
+**`run`** chains the whole cycle in one command — gather → consolidate → report (both scopes) →
+bests → workbook — with each stage using the same code path as its own subcommand and every stage
+resumable. `--all-sources` selects the evidence scope for the best-mark reduction (core stays
+Athletic.net-free by design; see below).
+
+**Executed evidence** (`cargo run --bin midwest-census -- --store /tmp/an-run2 --delay-ms 700 run
+--input /tmp/an-registry.txt --all-sources`, two Alaska athletes):
+
+- gather: 2 athletes, 4 requests, 0 errors; 97 result rows seen, 89 absorbed, 8 no-mark tokens;
+  0 rows skipped for an unpublished season, school, meet or state.
+- consolidate: schools 2, teams 11, athletes 2, meets 62, events 89, performances 89.
+- report: `all_sources` → athletes 2 (profile_url 1); `core` → athletes 0, i.e. the core scope is
+  exactly as independent of Athletic.net as before.
+- bests `co2027`: 5 rows for the class-of-2027 athlete — cross country 15:40.12 (2023-09-09),
+  1600m 5:37.67, 3200m 12:20.30, 400m 1:09.90, 800m 2:35.79 — each with meet, date, place, timing,
+  marks-in-event count and the profile URL.
+- workbook: 9 sheets including `Best results` and `Athletic.net marginal`.
+
+**Defects this delivery fixed, with the evidence that found them:** the shared ontology mapper
+missed the relay spellings Athletic.net publishes (`"4x400 Relay"` normalizes to `4x400relay`), which
+had filed 4 live performances as `Unmapped`; after the fix the same run stores `relay4x400` 3 /
+`relay4x100` 1 and **0** unmapped rows. `workbook::build` hard-coded `Scope::Core` for the
+best-results reduction and overwrote `bests::write`'s sidecars, so an `--all-sources` reduction was
+silently replaced by an empty core-scoped one; `workbook::Options` now carries the scope and the
+`workbook`/`run` commands take `--all-sources`. Four `deny(unused_qualifications)` failures in
+`hytek.rs`, `ohsaa.rs`, `wayzata.rs` and `wiaa_results.rs` blocked a clean build and were repaired.
+Finally, `bests::write`'s CSV sidecar carried the header **twice** for any non-empty cohort:
+`csv::Writer`'s default `has_headers(true)` makes the first `serialize` emit a derived header *after*
+the explicit `write_record`, so a 5-row cohort shipped 7 lines (two identical headers). The writer
+is now built with `has_headers(false)`, and `bests::tests::the_csv_carries_exactly_one_header_row`
+fails on the old writer and passes on the new one.
+
+**Gate state after this delivery:** `cargo test -p midwest-census` → 219 passed;
+`cargo test --workspace` → all suites green, including `result_verify` 14/14 (the obsolete-enum
+fixture recorded as failing in the previous handoff now passes);
+`cargo clippy -p midwest-census --all-targets` → clean.
+
+**Remaining, not claimed as done:**
+
+- `cargo clippy --workspace --all-targets` still reports 74 pre-existing errors in the root crate
+  (`tests/result_verify.rs` 26, `src/profile/bio/events.rs` 14, `src/xlsx_stream_tests.rs` 12,
+  `src/xlsx_scope_tests.rs` 12, `tests/workbook_verify.rs` 10, …): assertions inside test functions
+  that return `Result`. They are untouched by this delivery and unrelated to the adapter.
+- `README.md`, `SCOPE.md` and `WORKFLOW_REVIEW.md` still describe the adapter list without
+  `athleticnet` and without the `run` command.
+- Broad qualification (a full multi-state registry, and matching the Athletic.net source against the
+  core scope on shared athletes) is not attempted; two athletes is a smoke run, not coverage.
+
 ## Row-phase failure modes and their supervision (2026-09-21)
 
 Three distinct defects stall a live row phase. They were separated on the outdoor boys and outdoor girls runs and are now handled without operator input by [row-supervisor.sh](../../.local/share/athletic-rust-pipeline/lane-v14/row-supervisor.sh), which every scope chain invokes:

@@ -40,7 +40,10 @@ fn receipt(outcome: &FetchOutcome) -> anyhow::Result<&DocumentReceipt> {
 }
 fn raw(store: &ArtifactStore, receipt: &DocumentReceipt) -> anyhow::Result<serde_json::Value> {
     let bytes = store.get_bytes(&receipt.digest)?;
-    if bytes.len() as u64 != receipt.bytes {
+    // A usize cannot exceed u64 on any supported target; the clamp keeps the
+    // comparison total without a lossy cast.
+    let observed = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    if observed != receipt.bytes {
         bail!("ranking receipt length mismatch");
     }
     Ok(serde_json::from_slice(&bytes)?)

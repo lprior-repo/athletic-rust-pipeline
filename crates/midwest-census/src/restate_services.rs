@@ -577,7 +577,13 @@ impl Ingest {
             .run(move || async move {
                 blocking(move || append_observations(&store, table, &rows))
                     .await
-                    .map(|count| u64::try_from(count).unwrap_or(u64::MAX))
+                    // The accepted count reaches the wire as `u64`. A host where it does not fit is
+                    // a hard failure: a clamped "appended" figure would be a fabricated total.
+                    .and_then(|count| {
+                        u64::try_from(count).map_err(|_| JobError::Terminal {
+                            message: format!("appended row count {count} does not fit u64"),
+                        })
+                    })
                     .map_err(job_error)
             })
             .await?;

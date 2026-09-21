@@ -94,13 +94,17 @@ fn normalize(raw: &str) -> Result<String> {
         .split_whitespace()
         .try_fold(String::new(), |mut text, word| {
             let separator = usize::from(!text.is_empty());
+            let growth = separator
+                .checked_add(word.len())
+                .context("search row text exceeds bound")?;
             let size = text
                 .len()
-                .checked_add(separator)
-                .and_then(|size| size.checked_add(word.len()))
-                .filter(|size| *size <= MAX_TEXT_BYTES)
+                .checked_add(growth)
                 .context("search row text exceeds bound")?;
-            text.try_reserve(size - text.len())
+            if size > MAX_TEXT_BYTES {
+                bail!("search row text exceeds bound");
+            }
+            text.try_reserve(growth)
                 .context("allocating bounded search row text")?;
             if separator != 0 {
                 text.push(' ');

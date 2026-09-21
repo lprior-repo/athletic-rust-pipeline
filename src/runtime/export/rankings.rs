@@ -80,9 +80,11 @@ pub(super) fn coverage(
                 .context("relay roster count overflow")
         })?;
     result.sealed_snapshot = Some(bound.snapshot.clone());
+    let event_head_count = u64::try_from(final_snapshot.event_heads.len())
+        .context("ranking event head count exceeds u64")?;
     result.observed_queries_complete = final_snapshot.coverage.total_requested > 0
         && final_snapshot.coverage.completed == final_snapshot.coverage.total_requested
-        && final_snapshot.event_heads.len() as u64 == final_snapshot.coverage.total_requested
+        && event_head_count == final_snapshot.coverage.total_requested
         && final_snapshot
             .event_heads
             .iter()

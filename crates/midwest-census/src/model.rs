@@ -64,7 +64,8 @@ impl<T> Id<T> {
         let mut hex = String::with_capacity(17 + 16);
         hex.push_str(prefix);
         hex.push('_');
-        for byte in &digest[..8] {
+        // SHA-256 always yields 32 bytes; `take(8)` keeps the 64-bit identity prefix.
+        for byte in digest.iter().take(8) {
             hex.push_str(&format!("{byte:02x}"));
         }
         Self {
@@ -108,7 +109,10 @@ impl SchoolYear {
 
     /// `"2025-26"`.
     pub fn short(self) -> String {
-        let end = (self.0 + 1) % 100;
+        // `%` is a truncating remainder, which `wrapping_rem` reproduces exactly (including for
+        // negative years) without the `MIN % -1` panic; `saturating_add` keeps the value
+        // well-defined at `i16::MAX` instead of panicking in debug builds.
+        let end = self.0.saturating_add(1).wrapping_rem(100);
         format!("{}-{end:02}", self.0)
     }
 
@@ -117,7 +121,8 @@ impl SchoolYear {
         if month >= 8 {
             SchoolYear(year)
         } else {
-            SchoolYear(year - 1)
+            // Saturating: a year at `i16::MIN` clamps instead of panicking in debug builds.
+            SchoolYear(year.saturating_sub(1))
         }
     }
 }
@@ -167,7 +172,14 @@ impl GradYear {
     ///
     /// Grade 11 in 2025-26 -> 2027. Grade 12 in 2026-27 -> 2027. Grade 9 in 2025-26 -> 2029.
     pub fn of(grade: Grade, school_year: SchoolYear) -> Self {
-        GradYear(school_year.start_year() + 13 - i16::from(grade.get()))
+        // In-domain inputs (4-digit years, grades 9..=12) stay far inside `i16`; saturating keeps
+        // out-of-domain inputs well-defined instead of panicking in debug builds.
+        GradYear(
+            school_year
+                .start_year()
+                .saturating_add(13)
+                .saturating_sub(i16::from(grade.get())),
+        )
     }
 }
 
@@ -1091,7 +1103,8 @@ pub fn normalize_name(raw: &str) -> String {
     ] {
         let tokens: Vec<&str> = suffix.split(' ').collect();
         if parts.len() > tokens.len() && parts.ends_with(&tokens) {
-            parts.truncate(parts.len() - tokens.len());
+            // Guarded above (`parts.len() > tokens.len()`), so saturating is exact here.
+            parts.truncate(parts.len().saturating_sub(tokens.len()));
         }
     }
     parts.join(" ")
@@ -1139,7 +1152,8 @@ pub fn content_fingerprint<T: Serialize>(value: &T) -> String {
     let mut hasher = Sha256::new();
     hasher.update(json.as_bytes());
     let digest = hasher.finalize();
-    digest[..12].iter().map(|b| format!("{b:02x}")).collect()
+    // `take(12)` is the 96-bit fingerprint prefix (SHA-256 always yields 32 bytes).
+    digest.iter().take(12).map(|b| format!("{b:02x}")).collect()
 }
 
 /// Convenience map for counters used by adapter reports.

@@ -234,7 +234,9 @@ pub fn decode_cfemail(encoded: &str) -> Option<String> {
     for pair in digits.chunks_exact(2) {
         let high = pair.first()?.to_digit(16)?;
         let low = pair.get(1)?.to_digit(16)?;
-        bytes.push((high * 16 + low) as u8);
+        // Each digit is ≤ 15, so the nibble pair is ≤ 255 and always fits in a byte.
+        let nibble = high.checked_mul(16)?.checked_add(low)?;
+        bytes.push(u8::try_from(nibble).ok()?);
     }
     let key = *bytes.first()?;
     let decoded: Vec<u8> = bytes.iter().skip(1).map(|byte| byte ^ key).collect();
@@ -343,11 +345,12 @@ pub fn parse_school_list(html: &str) -> Vec<SchoolListRow> {
         return Vec::new();
     };
     const ROW_MARKER: &str = "<div class=\"views-row\">";
-    let chunks: Vec<&str> = if html.contains(ROW_MARKER) {
-        html.split(ROW_MARKER).skip(1).collect()
-    } else {
-        vec![html]
-    };
+    // Without a row marker the split yields nothing after the first element: the whole page is one
+    // chunk, which is what a single-school fixture looks like.
+    let mut chunks: Vec<&str> = html.split(ROW_MARKER).skip(1).collect();
+    if chunks.is_empty() {
+        chunks.push(html);
+    }
     let mut school_rows: Vec<SchoolListRow> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for chunk in chunks {
@@ -875,6 +878,11 @@ fn fetch_options(ctx: &AdapterContext<'_>, options: &Options) -> FetchOptions {
     }
 }
 
+/// `u64` view of a `usize` count: lossless on every supported target, saturating otherwise.
+fn count(value: usize) -> u64 {
+    u64::try_from(value).unwrap_or(u64::MAX)
+}
+
 /// Collect this provider's schools and coach/AD contacts into the canonical store.
 ///
 /// Per school: one school page (facts + AD rows), one team-node list and up to
@@ -900,13 +908,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         .collect();
     let done = ctx.store.journal_keys("mshsl_schools")?;
     let fetch = fetch_options(ctx, options);
-    let mut processed: u64 = 0;
-    let mut skipped: u64 = 0;
-    let mut unparsed: u64 = 0;
-    let mut ad_rows: u64 = 0;
-    let mut coach_rows: u64 = 0;
-    let mut with_email: u64 = 0;
-    let mut office_roles: u64 = 0;
+    let mut processed = 0usize;
+    let mut skipped = 0usize;
+    let mut unparsed = 0usize;
+    let mut ad_rows = 0usize;
+    let mut coach_rows = 0usize;
+    let mut with_email = 0u64;
+    let mut office_roles = 0usize;
     let mut page = 0usize;
     'pages: while page < MAX_LISTING_PAGES {
         let url = listing_page_url(page);
@@ -927,7 +935,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             break;
         }
         for row in rows {
-            if options.limit.is_some_and(|limit| processed >= limit as u64) {
+            if options.limit.is_some_and(|limit| processed >= limit) {
                 break 'pages;
             }
             if !wanted.is_empty() && !wanted.contains(&normalize_name(&row.name)) {
@@ -935,7 +943,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             }
             let key = format!("MN:{}", row.slug);
             if done.contains(&key) {
-                skipped += 1;
+                skipped = skipped.saturating_add(1);
                 continue;
             }
             let page_url = school_page_url(&row.slug);
@@ -949,7 +957,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
             let Some((school, school_id)) =
                 school_entities(&row, &detail, &page_url, &options.observed_on)
             else {
-                unparsed += 1;
+                unparsed = unparsed.saturating_add(1);
                 report.note(format!(
                     "school page {page_url}: no school name in listing row or page"
                 ));
@@ -964,11 +972,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 &options.observed_on,
             );
             let domains = school_domains(&detail);
-            office_roles += detail
-                .admin
-                .iter()
-                .filter(|entry| ad_role(&entry.role).is_none())
-                .count() as u64;
+            office_roles = office_roles.saturating_add(
+                detail
+                    .admin
+                    .iter()
+                    .filter(|entry| ad_role(&entry.role).is_none())
+                    .count(),
+            );
             ctx.store.append(Table::Schools, &school)?;
             ctx.store.append_many(Table::Coaches, &ads)?;
             let (sport_coaches, notes) = match detail.school_id.as_deref() {
@@ -998,10 +1008,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                 .iter()
                 .chain(sport_coaches.iter())
                 .filter(|coach| coach.professional_email.is_some())
-                .count() as u64;
-            ad_rows += ads.len() as u64;
-            coach_rows += sport_coaches.len() as u64;
-            with_email += school_with_email;
+                .count();
+            ad_rows = ad_rows.saturating_add(ads.len());
+            coach_rows = coach_rows.saturating_add(sport_coaches.len());
+            with_email = with_email.saturating_add(count(school_with_email));
             ctx.store.journal_done(
                 "mshsl_schools",
                 &key,
@@ -1027,7 +1037,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
                     "observed_on": options.observed_on,
                 }),
             )?;
-            processed += 1;
+            processed = processed.saturating_add(1);
         }
         match parse_next_listing_page(&html, page) {
             Some(next) => page = next,
@@ -1035,12 +1045,15 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> Result<Adap
         }
     }
     let stats_after = ctx.fetcher.stats().await;
-    report.rows = processed;
+    report.rows = count(processed);
     report.requests = stats_after.requests.saturating_sub(stats_before.requests);
     report.from_cache = stats_after
         .cache_hits
         .saturating_sub(stats_before.cache_hits);
-    report.errors = stats_after.errors.saturating_sub(stats_before.errors) + unparsed;
+    report.errors = stats_after
+        .errors
+        .saturating_sub(stats_before.errors)
+        .saturating_add(count(unparsed));
     report.with_email = with_email;
     report.note(format!(
         "{processed} school(s) processed ({skipped} already journalled): {ad_rows} athletic-director row(s), {coach_rows} sport-coach row(s), {with_email} with a professional email"

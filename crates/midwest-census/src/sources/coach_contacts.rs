@@ -19,6 +19,7 @@ use crate::store::{Store, Table};
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::collections::BTreeMap;
+use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
 /// One row of the contact dataset. Field names are the published CSV header.
@@ -205,7 +206,7 @@ fn identity_key(url: &str) -> Option<String> {
     let segments: Vec<&str> = url.split('/').collect();
     for (index, segment) in segments.iter().enumerate() {
         if *segment == "schools" || *segment == "school" {
-            if let Some(candidate) = segments.get(index + 1) {
+            if let Some(candidate) = segments.get(index.saturating_add(1)) {
                 let candidate = candidate.trim();
                 if !candidate.is_empty() && candidate.chars().all(|ch| ch.is_ascii_digit()) {
                     return Some(candidate.to_string());
@@ -217,7 +218,7 @@ fn identity_key(url: &str) -> Option<String> {
 }
 
 /// Build the canonical entities for one CSV row.
-pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> RowEntities {
+pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> Result<RowEntities> {
     let state = clean(&row.state).to_ascii_uppercase();
     let school_name = clean(&row.school);
     let (mut school, school_id) =
@@ -264,7 +265,7 @@ pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> RowEnti
                     strip_honorific(&coach_name),
                     sport_gender.map(|_| sport),
                     gender,
-                    role.expect("coaching role"),
+                    role.ok_or_else(|| anyhow::anyhow!("coaching role"))?,
                 );
                 coach.professional_email = nonempty(&row.public_professional_email);
                 coach.source_identities.push(
@@ -330,7 +331,7 @@ pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> RowEnti
         }
     }
 
-    RowEntities { school, coaches }
+    Ok(RowEntities { school, coaches })
 }
 
 /// Import a contact CSV, writing canonical schools and coaches into the store.
@@ -352,13 +353,15 @@ pub fn import_csv(
     let mut skipped_roles = 0usize;
 
     for (index, record) in reader.deserialize::<CoachContactRow>().enumerate() {
-        let row = record.with_context(|| format!("row {} of {}", index + 2, csv_path.display()))?;
+        let row = record.with_context(|| {
+            format!("row {} of {}", index.saturating_add(2), csv_path.display())
+        })?;
         if row.school.trim().is_empty() || row.state.trim().is_empty() {
-            anyhow::bail!("row {} has no school/state", index + 2);
+            anyhow::bail!("row {} has no school/state", index.saturating_add(2));
         }
-        let entities = row_entities(&row, default_observed_on);
+        let entities = row_entities(&row, default_observed_on)?;
         if entities.coaches.is_empty() {
-            skipped_roles += 1;
+            skipped_roles = skipped_roles.saturating_add(1);
         }
         let school_id = entities.school.id.clone();
         schools
@@ -394,11 +397,13 @@ pub fn import_csv(
     store.append_many(Table::Schools, &school_records)?;
     store.append_many(Table::Coaches, &coach_records)?;
 
-    report.rows = coach_records.len() as u64;
+    report.rows = u64::try_from(coach_records.len()).unwrap_or(u64::MAX);
     report.with_email = coach_records
         .iter()
         .filter(|coach| coach.professional_email.is_some())
-        .count() as u64;
+        .count()
+        .try_into()
+        .unwrap_or(u64::MAX);
     report.note(format!("schools={}", school_records.len()));
     report.note(format!("rows_without_coach_role={skipped_roles}"));
     Ok(report)
@@ -463,7 +468,7 @@ mod tests {
             .iter()
             .find(|row| row.school == "Abbotsford")
             .expect("fixture row");
-        let entities = row_entities(wiaa, "2026-09-20");
+        let entities = row_entities(wiaa, "2026-09-20").unwrap();
         assert_eq!(entities.school.state.as_deref(), Some("WI"));
         assert_eq!(entities.school.city.as_deref(), Some("Abbotsford"));
         assert_eq!(entities.school.name, "Abbotsford");
