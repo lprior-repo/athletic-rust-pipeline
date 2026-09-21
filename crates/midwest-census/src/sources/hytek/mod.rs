@@ -23,10 +23,12 @@
 //! rather than only results.
 //!
 //! The module is split by responsibility: this file holds the entry point and the line front
-//! ends, `parse` holds the section and row readers, `columns` the fixed-column toolkit the other
-//! vendors share, and `map` the meet, event and mark mapping.
+//! ends, `parse` holds the section and row readers, `identity` the rows whose own header states no
+//! identity columns, `columns` the fixed-column toolkit the other vendors share, and `map` the
+//! meet, event and mark mapping.
 
 mod columns;
+mod identity;
 mod map;
 mod parse;
 

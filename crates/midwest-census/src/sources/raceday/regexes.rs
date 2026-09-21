@@ -69,3 +69,28 @@ pub(super) fn tags_regex() -> CrawlResult<&'static Regex> {
         source: source.clone(),
     })
 }
+
+/// The patterns one result body is read with, resolved together.
+///
+/// A body is walked with all five at once, so a parse resolves them once and hands the bundle down,
+/// instead of one accessor call per use site.
+pub(super) struct Patterns {
+    pub(super) table: &'static Regex,
+    pub(super) head: &'static Regex,
+    pub(super) row: &'static Regex,
+    pub(super) cell: &'static Regex,
+    pub(super) body: &'static Regex,
+}
+
+impl Patterns {
+    /// Resolve every pattern the reader needs, or the typed error naming the one that failed.
+    pub(super) fn compile() -> CrawlResult<Self> {
+        Ok(Self {
+            table: table_regex()?,
+            head: head_regex()?,
+            row: row_regex()?,
+            cell: cell_regex()?,
+            body: body_regex()?,
+        })
+    }
+}

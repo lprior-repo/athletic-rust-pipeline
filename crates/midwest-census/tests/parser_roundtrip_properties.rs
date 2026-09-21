@@ -232,11 +232,7 @@ fn every_fixture_dispatches_to_the_format_that_parses_it() {
         assert!(!meet.events.is_empty(), "{name} publishes events");
         let rows: usize = meet.events.iter().map(|event| event.rows.len()).sum();
         assert!(rows > 0, "{name} publishes result rows");
-        // The Hy-Tek layouts count every row they accepted. The RaceDay layout fills its events and
-        // leaves `rows_parsed` at zero, so only the layouts that count are held to the total here.
-        if format != ArtifactFormat::RaceDay {
-            assert_eq!(meet.rows_parsed, rows, "{name} counts the rows it parsed");
-        }
+        assert_eq!(meet.rows_parsed, rows, "{name} counts the rows it parsed");
         for event in &meet.events {
             for row in &event.rows {
                 assert!(

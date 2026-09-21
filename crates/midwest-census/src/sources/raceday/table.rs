@@ -28,10 +28,10 @@ pub(super) fn table_labels(
         .unwrap_or_default()
 }
 
-/// Every athlete row of one table.
+/// Every athlete row of one table, with the count of the table's data rows it declined.
 ///
-/// Columns are matched by header label, so a table whose header carries no `Name` column — a team
-/// summary, a split table — yields no rows at all.
+/// A table whose header carries no `Name` column — a team summary, a split table — is not an
+/// athlete grid at all, so it has no rows to decline either.
 pub(super) fn table_rows(
     table: &str,
     labels: &[String],
@@ -39,9 +39,9 @@ pub(super) fn table_rows(
     row_pattern: &Regex,
     cell_pattern: &Regex,
     body_pattern: &Regex,
-) -> Vec<ParsedRow> {
+) -> (Vec<ParsedRow>, usize) {
     let Some(name_column) = label_index(labels, &["Name"]) else {
-        return Vec::new();
+        return (Vec::new(), 0);
     };
     let grade_column = label_index(labels, &["Year", "Grade", "Yr"]);
     let school_column = label_index(labels, &["Team Name", "School", "Team"]);
@@ -50,9 +50,10 @@ pub(super) fn table_rows(
     let heat_column = label_index(labels, &["Team Member Place"]);
 
     let Some(tbody) = body_pattern.find(table) else {
-        return Vec::new();
+        return (Vec::new(), 0);
     };
     let mut rows = Vec::new();
+    let mut skipped = 0usize;
     for row in row_pattern.find_iter(tbody.as_str()) {
         let cells = table_cells(row.as_str(), tags, cell_pattern);
         let cell = |index: Option<usize>| -> Option<String> {
@@ -62,9 +63,11 @@ pub(super) fn table_rows(
                 .filter(|value| !value.is_empty())
         };
         let Some(athlete) = cell(Some(name_column)) else {
+            skipped = skipped.saturating_add(1);
             continue;
         };
         let Some(mark) = final_time(&cells) else {
+            skipped = skipped.saturating_add(1);
             continue;
         };
         rows.push(ParsedRow {
@@ -81,7 +84,7 @@ pub(super) fn table_rows(
             legs: Vec::new(),
         });
     }
-    rows
+    (rows, skipped)
 }
 
 /// The row's own time: the right-most cell that reads as a time, because the earlier columns are

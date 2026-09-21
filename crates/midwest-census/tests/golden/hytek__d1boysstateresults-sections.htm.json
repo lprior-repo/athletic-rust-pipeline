@@ -221,16 +221,16 @@
             "wind_mps": null
           },
           {
-            "grade": null,
+            "grade": 10,
             "heat": "2",
             "legs": [],
             "mark": {
               "Raw": "FOUL"
             },
-            "name": "",
+            "name": "Donavin Bond",
             "place": null,
             "points": null,
-            "school": "Donavin Bond              10 Nicolet",
+            "school": "Nicolet",
             "wind_mps": null
           }
         ]

@@ -5,13 +5,13 @@
   "totals": {
     "state": "TOTAL",
     "schools": 73,
-    "athletes": 304,
-    "class_of_2027": 86,
-    "class_of_2027_boys": 54,
+    "athletes": 305,
+    "class_of_2027": 87,
+    "class_of_2027_boys": 55,
     "class_of_2027_girls": 32,
     "class_of_2027_unknown_gender": 0,
     "class_of_2027_with_profile_url": 14,
-    "class_of_2027_with_grad_year_evidence": 86,
+    "class_of_2027_with_grad_year_evidence": 87,
     "class_of_2027_multisource": 0,
     "class_of_2027_with_coach": 14,
     "class_of_2027_with_coach_email": 14,
@@ -54,13 +54,13 @@
     "WI": {
       "state": "WI",
       "schools": 68,
-      "athletes": 298,
-      "class_of_2027": 86,
-      "class_of_2027_boys": 54,
+      "athletes": 299,
+      "class_of_2027": 87,
+      "class_of_2027_boys": 55,
       "class_of_2027_girls": 32,
       "class_of_2027_unknown_gender": 0,
       "class_of_2027_with_profile_url": 14,
-      "class_of_2027_with_grad_year_evidence": 86,
+      "class_of_2027_with_grad_year_evidence": 87,
       "class_of_2027_multisource": 0,
       "class_of_2027_with_coach": 14,
       "class_of_2027_with_coach_email": 14,
@@ -72,14 +72,14 @@
     "2024": 17,
     "2025": 76,
     "2026": 91,
-    "2027": 86,
+    "2027": 87,
     "2028": 30,
     "2029": 2,
     "2030": 2
   },
   "class_of_2027_sports": {
     "indoor_only": 1,
-    "outdoor_only": 46,
+    "outdoor_only": 47,
     "cross_country_only": 26,
     "multi_sport": 4,
     "none": 9
@@ -92,7 +92,7 @@
     "athletic_net_urls_known": 0,
     "grade_evidence_sources": {
       "milesplit_wi": 14,
-      "wiaa_results": 74
+      "wiaa_results": 75
     }
   },
   "coach_roles": {
@@ -126,6 +126,6 @@
   },
   "duplicate_school_names": 0,
   "notes": [
-    "scope=all_sources schools=73 athletes=304 coaches=20 from <store>/out"
+    "scope=all_sources schools=73 athletes=305 coaches=20 from <store>/out"
   ]
 }

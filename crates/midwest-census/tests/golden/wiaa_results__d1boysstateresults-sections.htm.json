@@ -226,9 +226,9 @@
           },
           {
             "place": null,
-            "name": "",
-            "grade": null,
-            "school": "Donavin Bond              10 Nicolet",
+            "name": "Donavin Bond",
+            "grade": 10,
+            "school": "Nicolet",
             "mark": {
               "Raw": "FOUL"
             },

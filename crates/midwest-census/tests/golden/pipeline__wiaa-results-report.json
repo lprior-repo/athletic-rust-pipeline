@@ -5,13 +5,13 @@
   "map_ordered_notes": 3,
   "notes": [
     "artifacts: 6 seen, 6 parsed, 0 skipped (unrecognised extension), 0 unsupported, 0 unparsed-body, 0 failed",
-    "canonical entities: meets 4 events 14 athletes 273 teams 85 performances 287",
+    "canonical entities: meets 4 events 14 athletes 274 teams 85 performances 288",
     "https://www.wiaawi.org/sports/boys-cross-country/boys-cross-country-state-archive: 1 result artifacts (1 in the requested seasons)",
     "https://www.wiaawi.org/sports/boys-track-field/boys-track-field-state-archive: 4 result artifacts (4 in the requested seasons)",
     "https://www.wiaawi.org/sports/girls-cross-country/girls-cross-country-state-archive: 0 result artifacts (0 in the requested seasons)",
     "https://www.wiaawi.org/sports/girls-track-field/girls-track-field-state-archive: 1 result artifacts (1 in the requested seasons)",
     "pdf artifacts: 0 parsed, 0 not a known report layout, 0 unreadable (pdftotext)",
-    "result rows: 299 (grade-bearing 293), relay legs 26, rows without a school label 0",
+    "result rows: 299 (grade-bearing 294), relay legs 26, rows without a school label 0",
     "school label resolution: exact=65"
   ],
   "requests": 0,

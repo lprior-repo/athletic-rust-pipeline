@@ -1,6 +1,6 @@
 {
   "cells": 1365,
-  "content_digest": "061837edf1c5830d11f239124353674b95bf6038c7a166f626f5d42504893a58",
+  "content_digest": "671604be191527ec4945d68b0d620c836522f7c37fb106f50c34d7f978a95364",
   "parts": [
     "[Content_Types].xml",
     "_rels/.rels",
@@ -23,27 +23,27 @@
   "sheets": [
     {
       "cells": 40,
-      "digest": "b39439d83bc90d37a565bbbc8ff7cf46ae8ef1f2fb7d74189d800b8e7aa46f34",
+      "digest": "72e7bffbdc79dd6bf2bdf6cdc336e66bb176e087cde82d0e69a1030ff03d5718",
       "name": "Goal & method"
     },
     {
       "cells": 62,
-      "digest": "dd8b4fd4aa8b8c93a1a7fdf83067d31471e02b9505fba3a80f27e1600be00712",
+      "digest": "d0d6e60317533eb09877023821966bdd4bfbd8a5608fba964a431abe001ef710",
       "name": "Summary"
     },
     {
       "cells": 64,
-      "digest": "d6e2bf3601424aa9ed47f23a26fdbc97b87b2ebfd6d1ead5d1797ec50ea57e6a",
+      "digest": "7cc2c73536045bb81e1bcdf71a7ebc5bfeafa941dcf6075c9bee9f5045f3f8a7",
       "name": "By state - core"
     },
     {
       "cells": 80,
-      "digest": "77b4458b2262b37bb97ac2a48fe42777614240b0dd2ac332fa7a4b00a60da4e0",
+      "digest": "b26923c299ed49a88358f5c97200f24461a383aeb732db9fabf2e3f488670c79",
       "name": "By state - all sources"
     },
     {
       "cells": 35,
-      "digest": "3f61cd25c52eb8cdda911f0d55611473f28fb9472a29b8d578481e05b449599e",
+      "digest": "faa5469b1eede5d9a868a41fe35539d9943f34746ae3632db0e590c7e6f11375",
       "name": "Athletic.net marginal"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "cells": 56,
-      "digest": "ea7746ff8ca386f6471148e736f46d48d560a414bb1fcd6ef95ad3a20b1f0c7a",
+      "digest": "9ecb25c3e89680221c9b346e1f7150057d11ed4484b106ce91248474897c0cbe",
       "name": "Evidence mix"
     },
     {

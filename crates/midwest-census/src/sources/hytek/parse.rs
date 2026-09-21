@@ -13,6 +13,7 @@ use std::sync::LazyLock;
 use super::columns::{
     columns_from_header, looks_like_a_name, substring, tokens, Column, Token, TEXT_LABELS,
 };
+use super::identity::individual_identity;
 use super::map::parse_marks;
 
 static RELAY_LEG: LazyLock<Result<Regex, regex::Error>> =
@@ -198,11 +199,11 @@ fn row_identity(
         .find_map(|label| section.column(label).map(|column| column.start))
         .or(name_start)?;
 
-    let school = match section.next_numeric_start(tokens, school_start) {
+    let mut school = match section.next_numeric_start(tokens, school_start) {
         Some(end) => substring(line, school_start, end),
         None => substring(line, school_start, line.len()),
     };
-    let name = match name_start {
+    let mut name = match name_start {
         Some(start) => {
             let end = section
                 .next_numeric_start(tokens, start)
@@ -211,16 +212,26 @@ fn row_identity(
         }
         None => String::new(),
     };
+    let mut grade = section
+        .numeric_token(tokens, "Year")
+        .and_then(|token| token.text.parse::<u8>().ok())
+        .and_then(Grade::new);
+    // A section that names no athlete column lists schools. A row beneath it that carries an
+    // athlete, a grade and a school is an individual row a capture left under that header; its own
+    // text holds the columns the header does not.
+    if name_start.is_none() {
+        if let Some((athlete, row_grade, school_label)) = individual_identity(&school) {
+            name = athlete;
+            grade = grade.or(Some(row_grade));
+            school = school_label;
+        }
+    }
     if school.is_empty() || school.contains(')') {
         return None;
     }
     if !name.is_empty() && !looks_like_a_name(&name) {
         return None;
     }
-    let grade = section
-        .numeric_token(tokens, "Year")
-        .and_then(|token| token.text.parse::<u8>().ok())
-        .and_then(Grade::new);
 
     Some((place, name, school, grade))
 }
