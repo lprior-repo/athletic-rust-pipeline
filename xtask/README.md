@@ -2,9 +2,9 @@
 
 One binary that runs the repository's real tools, and prints the exact child command before it runs
 it, so a terminal session and this harness cannot drift apart. The measurement subcommands — `scan`,
-`integrity`, `domain-purity`, `quality-baseline`, `ratchet` — are the exception: they are the gate's
-measurement layer, which used to be a set of Python scripts under `tools/`. Everything else shells
-out or writes files.
+`integrity`, `domain-purity`, `seams`, `quality-baseline`, `ratchet` — are the exception: they are
+the gate's measurement layer, which used to be a set of Python scripts under `tools/`. Everything
+else shells out or writes files.
 
 ## Running it
 
@@ -33,6 +33,7 @@ named in the message; there is no stack trace.
 | `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the debt baseline |
 | `ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the debt baseline |
 | `domain-purity` | proves the `census-domain` tree carries no async/I/O package |
+| `seams` | checks every `crate::…` edge between the census crate's top-level modules against the allowed table; JSON on stdout, non-zero exit on a violation |
 | `source-test <source>` | `cargo nextest run -p midwest-census -E 'test(<source>)'` |
 | `source-fixture <source>` | reads `crates/midwest-census/tests/fixtures/<source>/` and lists it |
 | `census-status --store <dir>` | `cargo run -q -p midwest-census --bin midwest-census -- --store <dir> report --core` |
@@ -52,12 +53,13 @@ The gate is the whole workspace: fmt, check `--all-targets`, doc, tests, strict 
 the debt ratchet, and every optional tool lane that is installed. This command does not weaken any
 of it — it forwards arguments, prints the command, and reports the child's status.
 
-### `scan`, `integrity`, `domain-purity`
+### `scan`, `integrity`, `domain-purity`, `seams`
 
 ```bash
 cargo xtask scan           # JSON: forbidden constructs + size budgets, per crate
 cargo xtask integrity      # JSON: type-integrity candidates per domain root
 cargo xtask domain-purity  # the census-domain normal tree; fails on a banned package
+cargo xtask seams          # the census crate's top-level module edges; fails outside the table
 ```
 
 `scan` and `integrity` write JSON to stdout and nothing else, which is how `tools/gate.sh` feeds them
@@ -69,6 +71,13 @@ module ends the region; test files are skipped throughout), and reports the size
 `domain-purity` runs `cargo tree -p census-domain --edges normal --prefix none` and fails when the
 tree carries an async runtime, store engine, HTTP client, service framework or browser engine: normal
 edges only, so dev-dependencies and build scripts cannot taint the verdict either way.
+
+`seams` walks every production `.rs` file under `crates/midwest-census/src`, resolves each `crate::…`
+reference to its top-level module, and fails when the `(from, to)` pair is outside the allowed-edge
+table in `xtask/src/seams.rs`. The table is the ratchet: adding an edge is a deliberate edit, and
+deleting a row makes that edge a violation again, because the check fails closed. Comment lines and
+test code are out of scope — `tests.rs`, files under a `tests/` directory, and the region after the
+`#[cfg(test)]` that opens a module — because none of them can reach production callers.
 
 ### `quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]`
 

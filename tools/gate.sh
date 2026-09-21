@@ -150,6 +150,16 @@ main() {
     FAILURES+=("domain purity")
   fi
 
+  printf '\n=== module seams (census top-level module edges) ===\n'
+  if cargo run -q -p xtask -- seams > "$tmp/seams.json"; then
+    jq -r '"  modules: \(.modules | length)  allowed edges observed: \(.edges | length)"' "$tmp/seams.json"
+    printf -- '--- module seams: PASS\n'
+  else
+    jq -r '.violations[]? | "  \(.from) -> \(.to) at \(.file):\(.line)"' "$tmp/seams.json" 2> /dev/null
+    printf -- '--- module seams: FAIL\n'
+    FAILURES+=("module seams")
+  fi
+
   if [ "$UPDATE" = 1 ]; then
     printf '\n=== baseline update ===\n'
     local extra=()

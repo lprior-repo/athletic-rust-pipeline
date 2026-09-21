@@ -6,6 +6,7 @@ use std::sync::atomic::Ordering;
 
 use super::keys::{observation_id, observation_key};
 use super::{Store, StoreError, StoreResult, Table};
+use crate::clock::{Clock, SystemClock};
 
 impl Store {
     /// Reserve `count` consecutive observation sequences for a table.
@@ -70,7 +71,7 @@ impl Store {
     ) -> StoreResult<()> {
         let entry = serde_json::json!({
             "key": key,
-            "at": crate::net::now_iso8601(),
+            "at": SystemClock.today_iso8601(),
             "payload": payload,
         });
         let value = serde_json::to_vec(&entry).map_err(|source| StoreError::Json {

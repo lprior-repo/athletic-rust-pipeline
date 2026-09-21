@@ -79,7 +79,8 @@ Cargo build-lock waits are normal when several agents run: cargo serializes on t
 ## 5. Coding standards
 
 Doctrine is NASA/JPL Power of Ten adapted for Rust (see `skill://holzman-rust`), enforced by the
-gate's strict clippy set plus two scans (`cargo xtask scan`, `cargo xtask integrity`).
+gate's strict clippy set plus the measurement scans (`cargo xtask scan`, `cargo xtask integrity`,
+`cargo xtask seams`, `cargo xtask domain-purity`).
 
 Forbidden in production code: `unsafe`, `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`,
 `unreachable!`, production `assert!`-family, unchecked indexing and string slicing, `as` casts,
@@ -163,6 +164,7 @@ command before running it. Full command reference: `xtask/README.md`.
 
 ```bash
 cargo xtask gate [-- --update-baseline]        # tools/gate.sh, arguments passed through
+cargo xtask scan|integrity|seams|domain-purity # the gate's measurements; non-zero exit on failure
 cargo xtask source-test <source>               # nextest -E 'test(<source>)'
 cargo xtask source-fixture <source>            # what is captured under tests/fixtures/<source>/
 cargo xtask census-status --store <dir>        # midwest-census report --core

@@ -3,11 +3,12 @@
 
 use super::notes::{bump, census_notes, state_entry};
 use super::rows::{
-    coach_sport, school_coach_index, school_state_index, state_of, tally_co2027, AthleteRollup,
-    CoachRollup, RowCounts,
+    AthleteRollup, CoachRollup, RowCounts, coach_sport, school_coach_index, school_state_index,
+    state_of, tally_co2027,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
+use super::{Census, ProviderCoverage, ReportResult, Scope, StateCensus, retain_core};
+use crate::clock::{Clock, SystemClock};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
@@ -109,7 +110,7 @@ pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     }
 
     Ok(Census {
-        generated_on: crate::net::today_iso(),
+        generated_on: SystemClock.today(),
         store_dir: store.root().display().to_string(),
         scope: scope.as_str().to_string(),
         totals: totals_of(&by_state, &counts),
