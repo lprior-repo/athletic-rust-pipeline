@@ -1,0 +1,17 @@
+import zipfile, re, sys
+p = sys.argv[1] if len(sys.argv) > 1 else '/home/lewis/Downloads/Athletic-2026-US-Boys-Grade11-All-Athletes-US-Only-PRs.xlsx'
+z = zipfile.ZipFile(p)
+print('bad crc       :', z.testzip())
+print('entries       :', len(z.namelist()))
+s = z.read('xl/worksheets/sheet1.xml').decode()
+print('sheet bytes   :', len(s))
+m = re.search(r'<dimension ref="[^"]*"/>', s)
+print('dimension     :', m.group(0) if m else None)
+m = re.search(r'<row r="1".*?</row>', s, re.S).group(0)
+hdr = re.findall(r'<v>(.*?)</v>', m)
+print('header cells  :', len(hdr))
+print('header head   :', hdr[:12])
+print('header tail   :', hdr[-4:])
+m = re.search(r'<row r="2".*?</row>', s, re.S).group(0)
+print('row2          :', m[:600])
+print('total rows    :', len(re.findall(r'<row ', s)))
