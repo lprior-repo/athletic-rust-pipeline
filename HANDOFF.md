@@ -1,6 +1,8 @@
 # Current design handoff
 
-**Status: the live end-to-end chain is executed for the indoor boys and indoor girls scopes; workbook-scale identity-matched delivery and the expanded roster are pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions, and against the **real source** for indoor boys: run `57f88b34…` acquired 95/95 events terminal / 1,065 pages / `final_snapshot 40792b83…`, decided 8/8 workbook rows, published `lane-v14/out-live-full-3/result.xlsx` (`a4eb1fe7…`), verified against the stopped writer (`exit 0`, source SHA-256 matching before and after), and replayed byte-identically with zero new source requests. It still does not claim identity-matched delivery at workbook scale or expanded-roster coverage: the 8-row sample decisions are all `review_required` by design, and the girls indoor half of the expanded roster has since completed its own live chain (run `fe726b41…`: 94/94 events, 8/8 rows decided, publication, stopped-writer verification exit 0, byte-identical cached replay) without delivering expanded-roster coverage.
+**Status: the live end-to-end chain is executed for the indoor boys and outdoor boys scopes; workbook-scale identity-matched delivery and the expanded roster are pending.** This handoff records the current source contracts and the exact boundary between available evidence and unexecuted work. Automated collection -> deterministic matching -> owner-online export -> stopped-writer verification -> cached replay has completed against the private fixture transport for the outdoor boys, indoor girls, and indoor boys divisions, and against the **real source** for indoor boys: run `57f88b34…` acquired 95/95 events terminal / 1,065 pages / `final_snapshot 40792b83…`, decided 8/8 workbook rows, published `lane-v14/out-live-full-3/result.xlsx` (`a4eb1fe7…`), verified against the stopped writer (`exit 0`, source SHA-256 matching before and after), and replayed byte-identically with zero new source requests. It still does not claim identity-matched delivery at workbook scale or expanded-roster coverage: the 8-row sample decisions are all `review_required` by design, and the girls indoor half of the expanded roster has since completed its own live chain (run `fe726b41…`: 94/94 events, 8/8 rows decided, publication, stopped-writer verification exit 0, byte-identical cached replay) without delivering expanded-roster coverage.
+
+The **outdoor boys live chain completed 2026-09-21** on run `7be7e9dd68cd5dc51c0c03edf05b5503297eec772756350870a04a1ebd95e0b3` (list `168416`, workbook `0a1d53f1…`, `live-store`), the run left pending in the previous section: collection `phase: Complete` at 95/95 events / 385 pages / `final_snapshot ee97f6f13f6317f705dffb703e19115dd7eb7b72dc728877b6e9ff060b7138ea`; row phase decided 8/8 rows (all 8 `review_required`, 0 pending) and `run_and_export` published `lane-v14/out-live-outdoor-boys/result.xlsx` (`3ee370e1…`, 8,342 B), `result.jsonl` (`9060e7c0…`, 6,548,556 B), and `result.commit.json` (`6b4011ac…`); the stopped-writer `verify` exited 0 with the source digest `0a1d53f1…` matching before and after, 2/2 sheets, 8/8 source rows, 120/120 fields and 60/60 output headers; and re-submitting the identical request body returned `HTTP 202`, left the run's `updated_at` unchanged, added **zero** source fetches (5,474 before and after), and reproduced byte-identical artifacts. Unlike the entitled indoor run above, this outdoor collection ran on a **signed-out** profile: every event closed below its declared `minCount` (101 ranked rows against `minCount` 300–1,288, five named rows and the rest masked), so the acquisition is live and complete as a *chain* but not complete as *per-event evidence*.
 
 ## Freeze and ownership
 
@@ -249,8 +251,8 @@ nevertheless continued at roughly one per two to four pages, and the rate decaye
 leaked browser pages accumulated; closing the extras mid-run restored ~6-10 s/page. See the tab
 accumulation finding above for the cause and the committed fix. The
 progress supervisor was restarted detached so the lane stays polled past this session. Completion,
-publication, stopped-writer verification, and replay remain pending: this run is not qualification
-evidence until they exist.
+publication, stopped-writer verification, and replay all executed 2026-09-21 and are recorded with
+their digests in the status section above; the run is qualification evidence for the live chain.
 
 **Unattended outdoor tail (2026-09-20, running).** `lane-v14/finish-live-outdoor.sh` (detached as
 `live-outdoor-tail`) waits for the boys publish, takes the stopped-writer verification, restarts the
@@ -261,6 +263,42 @@ phase, and takes the same tail. A publication appearing outside the expected out
 scope rather than being reported as a replay. The writer stop/restart inside the script mirrors the
 scale-v15 finisher (`pgrep` on `live-worker.toml`, SIGTERM, `nohup` restart of the same build), so the
 hub's `lane-live-worker` entry reads `exited` after the stop and the restarted worker is unmanaged.
+
+**Row-phase stalls and their repairs (2026-09-21).** The outdoor boys row phase sat at `0/8` for hours with
+`pages: 0` while its coordinator invocation read `paused`. Three distinct failures were separated:
+
+- **A retry-policy pause is permanent and `resume` is a no-op on the frozen invocation.** The
+  coordinator's journal had grown to 31,520 entries / 6,302 `snapshot_ref` calls before it stopped; after
+  that, `PATCH …/resume` returned 200 with an unchanged journal and an instantly re-paused invocation, and
+  `DELETE /invocations/{id}` (cancel) also answered 202 without effect. `PATCH /invocations/{id}/kill` is the
+  route that works — the handlers are `patch`-only, since `POST` answers 405 — and the paused
+  `PipelineControl/run_and_export` must be killed with it too, because an exclusive `RunCoordinator/global`
+  invocation holds that key and every later submission queues behind it.
+- **The stuck invocation holds the key; the run has to be re-submitted, not resumed.** After the kill, the
+  identical request body posted to
+  `POST {ingress}restate/send/PipelineControl/run_and_export` immediately produced a fresh coordinator that
+  read the already-sealed collection, passed the seal wait, and drove the rows.
+- **The worker's HTTP/2 link to its Restate node wedged.** The worker process kept its listen socket and
+  still answered Restate's deployment discovery, but `hub logs lane-live-worker` showed continuous
+  `hyper::Error(Http2, GoAway(… ENHANCE_YOUR_CALM/PROTOCOL_ERROR))` stream resets, and no invocation
+  advanced. Restarting the **Restate node** (not the worker) cleared it: the first `snapshot_ref` call after
+  the restart returned the sealed digest instead of `null`, and the coordinator's journal started advancing
+  again. `lane-live-restate` is the hub-managed process for that node; its readiness pattern must be one the
+  node actually prints (`Admin:`/`HTTP Ingress:`), because a port-only check reports ready against the
+  previous instance.
+- **The row fetches themselves still stall on the CDP client.** A `RowWorker` sat `running` for fifteen
+  minutes on a single row; killing and restarting the worker cleared it and the next row completed within
+  seconds. `row-supervisor.sh` now restarts the live worker every 8 stalled rounds (SIGTERM on
+  `live-worker.toml` plus a `nohup` restart of the same build) and, every 12, kills a paused invocation whose
+  journal does not move after a resume and re-submits the identical request body from the run's own
+  `status`; `scope-chain.sh` forwards the destination it needs. Both scripts are `bash -n` clean.
+
+**The outdoor collection ran signed out.** The lane profile lost its entitled session between the indoor
+run and this one, and the source answers a signed-out session with a capped list: every event closed at 101
+ranked rows against a declared `minCount` of 300–1,288, with five named rows and the remainder masked
+(`Xxxxx Xxxxx`). The chain therefore completed against live endpoints but not against complete per-event
+evidence, and all 8 workbook rows landed `review_required` rather than matched. Re-running after signing the
+lane profile back in is what closes the per-event gate; no code change addresses it.
 
 **Stall diagnosis and supervision hardening (2026-09-20).** The outdoor boys collection stopped advancing at
 217 pages for an hour while supervision kept failing: each `BrowserSession/recover` reported the cached manager
