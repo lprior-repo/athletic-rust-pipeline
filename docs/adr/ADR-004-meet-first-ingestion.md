@@ -4,7 +4,8 @@
 
 Accepted. Implemented where a source allows it: bulk result adapters under
 `crates/midwest-census/src/sources/**` (meet/result payloads) and the meet-oriented evidence
-model (`CanonicalMeet`, `CanonicalEvent`, `Performance` in `crates/midwest-census/src/model.rs`).
+model (`CanonicalMeet`, `CanonicalEvent`, `Performance` in
+`crates/census-domain/src/model.rs` since the Phase 3 crate split).
 
 ## Context
 

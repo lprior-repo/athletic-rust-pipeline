@@ -15,7 +15,7 @@ athletic-rust-pipeline/                  root crate `athletic-rust-pipeline`
                                          ranking collection, source dispatch, row/profile workers,
                                          search, store, xlsx, workbook ingest/verify/export
   tests/                                 root integration tests (+ tests/fixtures/<source>/)
-  tools/                                 gate.sh, ratchet.py, quality-baseline.json, scans
+  tools/                                 gate.sh, quality-baseline.json, scans (cargo xtask scan/integrity/ratchet)
   deploy/systemd/                        unit + timer definitions
   docs/                                  HARDENING-PROGRAM.md, OPERATIONS.md
   crates/midwest-census/                 census library + two binaries
@@ -79,7 +79,7 @@ Cargo build-lock waits are normal when several agents run: cargo serializes on t
 ## 5. Coding standards
 
 Doctrine is NASA/JPL Power of Ten adapted for Rust (see `skill://holzman-rust`), enforced by the
-gate's strict clippy set plus two scans (`tools/production_scan.py`, `tools/type_integrity_scan.py`).
+gate's strict clippy set plus two scans (`cargo xtask scan`, `cargo xtask integrity`).
 
 Forbidden in production code: `unsafe`, `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`,
 `unreachable!`, production `assert!`-family, unchecked indexing and string slicing, `as` casts,

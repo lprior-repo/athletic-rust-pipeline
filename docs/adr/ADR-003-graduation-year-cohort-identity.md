@@ -3,7 +3,8 @@
 ## Status
 
 Accepted. Implemented: `Grade`, `GradYear`, `ObservedGrade`, `SchoolYear` in
-`crates/midwest-census/src/model.rs`; grade observations carry evidence in the adapter layer.
+`crates/census-domain/src/model.rs` (since the Phase 3 crate split); grade observations carry
+evidence in the adapter layer.
 
 ## Context
 

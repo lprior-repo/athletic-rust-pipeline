@@ -51,7 +51,7 @@ Notes that follow from the code, not from convention:
   zero port, writes a workbook plus `worker.toml` into `--output-dir`, prints a JSON summary with
   the bind URL and `/__fixture/{counters,control,reset}` control paths, then serves.
 - `tools/gate.sh` resolves its own path and `cd`s to the repository root, so it can be invoked from
-  any working directory. It needs `bash`, `cargo`, `python3` and `jq` unconditionally: only the
+  any working directory. It needs `bash`, `cargo` and `jq` unconditionally: only the
   cargo-subcommand lanes have a missing-tool guard (they print `SKIP: …` and pass).
 
 ### gate.sh flags and refusals
@@ -65,7 +65,7 @@ Notes that follow from the code, not from convention:
 
 The gate refuses to:
 
-- raise a baseline number without `--allow-increase` (`tools/update_baseline.py` prints
+- raise a baseline number without `--allow-increase` (`cargo xtask quality-baseline` prints
   `refusing to raise the baseline without --allow-increase:` and exits 1);
 - run a single lane by name — there is no lane selector, so a single lane is run by running the
   lane's own command (table in §6);
@@ -310,9 +310,10 @@ runs even after one fails.
 | doc | docs build without warnings/broken links | `cargo doc --workspace --all-features --no-deps` |
 | tests | the whole suite | `cargo nextest run --workspace --all-features` (falls back to `cargo test --workspace --all-features --quiet` and prints `cargo-nextest absent: falling back to cargo test` when nextest is missing) |
 | strict clippy (source targets) | `-D warnings` plus the doctrine set on production targets; counted per crate and lint code | `cargo clippy --workspace --lib --bins --examples --all-features --message-format=json -- <LINT_SET>` |
-| production scan | forbidden constructs and size budgets in production-reachable lines | `python3 tools/production_scan.py` |
-| domain type integrity | review candidates only (boolean signatures, primitive id parameters, structs with ≥2 `Option` fields) in `src/domain/` and `crates/midwest-census/src/model.rs`; **printed, not ratcheted** | `python3 tools/type_integrity_scan.py` |
-| debt ratchet | baseline comparison; fails on any increase | `python3 tools/ratchet.py tools/quality-baseline.json <clippy.tsv> <scan.json>` |
+| production scan | forbidden constructs and size budgets in production-reachable lines | `cargo xtask scan` |
+| domain type integrity | review candidates only (boolean signatures, primitive id parameters, structs with ≥2 `Option` fields) in `src/domain/` and `crates/census-domain/src/model.rs`; **printed, not ratcheted** | `cargo xtask integrity` |
+| debt ratchet | baseline comparison; fails on any increase | `cargo xtask ratchet tools/quality-baseline.json <clippy.tsv> <scan.json>` |
+| domain purity | the census domain crate's *normal* dependency tree contains only `serde` + `sha2` | `cargo xtask domain-purity` |
 | deny | `cargo deny check` (licenses, advisories, bans) | `cargo deny check` |
 | audit | `cargo audit --quiet` | `cargo audit --quiet` |
 | machete | unused dependencies | `cargo machete` |
@@ -331,7 +332,7 @@ Mechanics worth knowing:
 - Only the three tool lanes (`audit`, `machete`, `geiger`) are guarded: when the binary is absent
   they print `SKIP: <tool> is not installed (cargo install <tool>)` and count as a pass. `deny` is a
   normal lane, so a missing `cargo-deny` fails it.
-- `production_scan.py` counts `unsafe`, `.unwrap()`, `.expect(`, `panic!`, `unreachable!`,
+- The production scan (`cargo xtask scan`) counts `unsafe`, `.unwrap()`, `.expect(`, `panic!`, `unreachable!`,
   `todo!`/`unimplemented!`, the `assert!`-family, `dbg!`, `as` casts to primitives, and real
   indexing (`expr[i]`, deliberately excluding slice/array types and attributes). It excludes files
   whose name or directory contains `tests` and cuts each file at the `#[cfg(test)]` that opens a
@@ -346,5 +347,5 @@ Mechanics worth knowing:
   without the `deny`/`audit`/`machete`/`geiger`/bench lanes. `--allow-increase` without
   `--update-baseline` is accepted but has no effect on a normal run.
 - Running a single gate means running that lane's command from the table above; the clippy lane's
-  output is TSV (`crate \t lint \t count`) so `tools/ratchet.py` and `tools/update_baseline.py` can
+  output is TSV (`crate \t lint \t count`) so `cargo xtask ratchet` and `cargo xtask quality-baseline` can
   consume it directly.

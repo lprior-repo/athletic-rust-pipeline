@@ -14,7 +14,7 @@ Two sources of record:
 
 | Source | Produced by | Contains |
 |---|---|---|
-| `tools/quality-baseline.json` | `tools/gate.sh` (`measure_clippy`) + `tools/production_scan.py` | per-crate strict-lint counts, forbidden-construct scan, size budgets |
+| `tools/quality-baseline.json` | `tools/gate.sh` (`measure_clippy`) + `cargo xtask scan` | per-crate strict-lint counts, forbidden-construct scan, size budgets |
 | `docs/HARDENING-PROGRAM.md` | program measurement at baseline commit `4e5b828`, 2026-09-21, pinned toolchain (nightly-2026-04-27, rustc 1.97.0-nightly) | same class of counts, plus acquisition/structure inventory and determinism evidence |
 
 The two were captured at different times and are not directly comparable: the program describes its
@@ -39,7 +39,7 @@ Strict clippy, measured on source targets (`--lib --bins --examples`), counted p
 | `clippy::unwrap_used` | 0 | 1 |
 | `clippy::explicit_counter_loop` | 0 | 1 |
 
-Production scan (`production_scan.py`; "production-reachable" = before the first `#[cfg(test)]` in a
+Production scan (`cargo xtask scan`; "production-reachable" = before the first `#[cfg(test)]` in a
 file, test files excluded):
 
 | Metric | root (`athletic-rust-pipeline`) | census (`midwest-census`) |
@@ -354,14 +354,14 @@ performance gate.
 
 - `clippy.tsv` — `measure_clippy` runs the strict lane with `--message-format=json`, keeps
   `level == "error"` diagnostics, and emits `crate\tlint\tcount` (one line per crate/lint pair).
-- `scan.json` — `tools/production_scan.py` emits `{ "crates": { <crate>: { …counts… } },
-  "structure": { … } }`; `tools/type_integrity_scan.py` prints review candidates but is **not**
+- `scan.json` — `cargo xtask scan` emits `{ "crates": { <crate>: { …counts… } },
+  "structure": { … } }`; `cargo xtask integrity` prints review candidates but is **not**
   ratcheted yet.
 
-**`tools/ratchet.py`**
+**`cargo xtask ratchet`**
 
 ```text
-ratchet.py <baseline> <clippy.tsv> <scan.json>
+cargo xtask ratchet <baseline> <clippy.tsv> <scan.json>
 ```
 
 Compares current measurements against the baseline and exits non-zero if any metric grew. It prints
@@ -370,10 +370,10 @@ one line per changed metric with `[DOWN]`/`[UP]`, then either `ratchet: no metri
 file over 300 lines is a failure even when another file shrank. Absent keys count as zero, so a new
 lint or metric at zero is fine and any nonzero value fails.
 
-**`tools/update_baseline.py`**
+**`cargo xtask quality-baseline`**
 
 ```text
-update_baseline.py <baseline> <clippy.tsv> <scan.json> [--allow-increase]
+cargo xtask quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]
 ```
 
 Rewrites the baseline from current measurements after a burndown. Without `--allow-increase` it
@@ -391,13 +391,13 @@ tools/gate.sh --update-baseline [--allow-increase]
 ```
 
 Lanes: `fmt`, `check --all-targets`, `doc`, tests (nextest when installed), strict clippy, production
-scan, type-integrity report, debt ratchet, deny, audit/machete/geiger (skipped when the tool is
+scan, domain purity, type-integrity report, debt ratchet, deny, audit/machete/geiger (skipped when the tool is
 absent), and bench presence. Exact invocations live in `tools/gate.sh`; it is the only supported way
-to refresh `tools/quality-baseline.json`, because `ratchet.py` and `update_baseline.py` only compare —
+to refresh `tools/quality-baseline.json`, because `cargo xtask ratchet` and `cargo xtask quality-baseline` only compare —
 they never measure.
 
 One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name
-(`athletic_rust_pipeline`, underscores) while `production_scan.py` keys them by directory
+(`athletic_rust_pipeline`, underscores) while `cargo xtask scan` keys them by directory
 (`athletic-rust-pipeline`, hyphens). Both appear in `tools/quality-baseline.json`.
 
 ## 6. Known unknowns and next measurement

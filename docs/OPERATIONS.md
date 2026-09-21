@@ -66,5 +66,5 @@ JSONL journals one time; keep the old journals until a `report` matches the pre-
 `tools/gate.sh` runs fmt, `check --all-targets`, the strict clippy set, tests, the panic-macro scan,
 the forbidden-construct scan and the ratchet, then the optional cargo subcommand lanes (`audit`,
 `deny`, `vet`, `geiger`, `machete`); absent tools print SKIP with the install command instead of
-failing. `tools/quality-baseline.json` records the remaining debt and `tools/ratchet.py` fails the
+failing. `tools/quality-baseline.json` records the remaining debt and `cargo xtask ratchet` fails the
 gate on any increase, so the numbers in `docs/HARDENING-PROGRAM.md` can only move down.

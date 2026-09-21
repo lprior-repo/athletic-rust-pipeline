@@ -117,9 +117,10 @@ budgets audit for the browser session pool.
 
 ### 2.4 DDD / Wlaschin
 
-- `crates/midwest-census/src/model.rs` is already newtype-first (`SchoolId`, `AthleteId`, `MeetId`,
+- `crates/census-domain/src/model.rs` is already newtype-first (`SchoolId`, `AthleteId`, `MeetId`,
   `GradYear::new -> Option`, `ObservedGrade` separate from `GradYear`, `SourceNamespace`,
-  deterministic id minting) — the spine exists.
+  deterministic id minting) — the spine exists. (Measured at the time of this program; Phase 3
+  moved it out of `crates/midwest-census` into the pure `census-domain` crate.)
 - Root already has an error taxonomy (`DomainError`, `StoreError`, `BrowserError`, `PageParseError`,
   `CatalogError`, `StepError`; 86 `thiserror` references).
 - **Census has no error taxonomy**: 38 `anyhow::` references, `thiserror` used in one place
@@ -268,7 +269,7 @@ Parallel ownership map (no two streams edit the same file):
 | Stream | Owns |
 |---|---|
 | A. Gates/burndown | `Cargo.toml`, `tools/`, `.github/`, then census `sources/*`, `net/`, `store/` |
-| B. Decomposition/DDD | `crates/midwest-census/src/model.rs`, `report/`, `workbook/`, `restate_services/`, new crates |
+| B. Decomposition/DDD | `crates/census-domain/**`, census `report/`, `workbook/`, `restate_services/`, new crates |
 | C. Async hardening | root `src/runtime/**`, `src/main.rs`, `src/cli*` |
 | D. Verification | `benches/`, `fuzz/`, `kani/`, `tests/`, `docs/` |
 | E. Operations | `deploy/`, `tools/ops-*.sh`, runbooks |
@@ -347,3 +348,19 @@ Notes for the next phase:
 - The census's remaining 68 arithmetic / 7 as-conversion / 4 indexing diagnostics are the tracked
   Phase 1 remainder (aggregation and adapter modules), not regressions: every one of them is
   `[DOWN]` or equal against the recorded baseline.
+
+## 9. Phase 3 as executed (partial, 2026-09-21)
+
+- **`crates/census-domain` extracted** (commit `beb6e01`): the canonical model moved out of
+  `midwest-census` into a new workspace crate whose *normal* dependency tree is `serde` + `sha2`
+  and nothing else. The proof is a new `domain purity` lane in `tools/gate.sh`
+  (`cargo tree -p census-domain --edges normal` against a banned-package list; cargo-deny's
+  `wrappers` bans express the inverse relation, so the tree scan is the enforceable form).
+- **Owner decision — one cohesive scraper:** the workspace does NOT fan out into
+  `census-store` / `census-crawl` / `census-report` / `census-service` crates. The census stays a
+  single crate with module seams; only the pure domain crate is split, because the ban proof needs
+  a boundary that `cargo tree` can see.
+- **Owner decision — zero Python in the repo:** every `tools/*.py` analysis tool is ported to
+  `xtask` subcommands and deleted; `tools/gate.sh` invokes the Rust tools. Bash and jq remain.
+- **Housekeeping:** three merged `feature/*` worktrees (87 GB of stale `target/`) removed and
+  their branches deleted; a verified-dead-code sweep (zero-reference `pub` items) is in flight.

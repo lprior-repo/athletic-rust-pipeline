@@ -36,8 +36,9 @@ Completed (each proven by its parity target, `tests/golden/` unchanged, and flat
 | root `runtime/source/request.rs` 467 | `request/{mod,action,body,build,tests}.rs` — 25–208 |
 | root `search/parser/stream.rs` 412 | `stream/{mod,capture,row,link,bounds}.rs` — 49–124 |
 
-Remaining targets are the 39 entries in `files_over_300_lines` from `tools/production_scan.py` (down
-from 62): the census core modules (`model.rs` 1327, `report.rs` 894, `restate_services.rs` 862,
+Remaining targets are the 39 entries in `files_over_300_lines` from `cargo xtask scan` (down
+from 62): the census core modules (`model.rs` 1327 — since moved to `crates/census-domain/src/`,
+`report.rs` 894, `restate_services.rs` 862,
 `workbook.rs` 844, `main.rs` 740, `census.rs` 467, `bests.rs` 414, `bootstrap.rs` 382), the remaining
 source adapters (`compiled.rs` 674 / `xc.rs` 604 / `milesplit.rs` 591 / `coach_contacts.rs` 586 /
 `ks.rs` 528 / `athleticlive.rs` 526 / `raceday.rs` 320), and the root `runtime/`, `store/`, `domain/`
@@ -84,7 +85,7 @@ cargo clippy -p midwest-census --lib --bins --all-features -- -D warnings \
   -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn \
   -D clippy::indexing_slicing -D clippy::string_slice -D clippy::as_conversions \
   -D clippy::arithmetic_side_effects -D clippy::let_underscore_must_use   # no new diagnostics
-python3 tools/production_scan.py | jq -c '.structure'                         # sizes: files >300 lines, functions >60 / >25 logical lines
+cargo xtask scan | jq -c '.structure'                         # sizes: files >300 lines, functions >60 / >25 logical lines
 bash tools/gate.sh                                                         # all lanes
 ```
 
