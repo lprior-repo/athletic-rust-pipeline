@@ -564,3 +564,23 @@ Read-only probes through the same headed transport, run to scope the requested e
 - **`level=4` scopes the bio to high school.** Five athletes from the live outdoor list: `resultsTF` 88 / 87 / 428 / 80 / 162 at `level=0` versus 73 / 74 / 148 / 71 / 68 at `level=4`. The in-tree builder asks for `level=0` and filters downstream.
 
 The pipeline already implements this surface — `SourceResource::Bio` / `SourceResource::ProfileHtml` in `src/runtime/source/request.rs`, driven per athlete by `initial_resources` in `src/runtime/profile_worker.rs` for both sports plus the `/all` profile page — so the expansion needs an accepted identity to run, not a new collector. No collection was driven by these probes; they navigated and read only.
+
+## Hardening wave 1 (2026-09-21, commit `cab6e5b`)
+
+Per-file burndown of every tracked forbidden construct across both crates, plus recovery of the
+work the 11:45 worktree reset had destroyed. Numbers, before/after tables and phase-2 notes live in
+[`docs/HARDENING-PROGRAM.md`](docs/HARDENING-PROGRAM.md) § 8; the short version:
+
+- **Gate PASS on all 11 lanes** on a clean target directory: fmt, check, doc, tests (465 run, 465
+  passed, 2 skipped), strict clippy on source targets, production scan, domain type integrity, debt
+  ratchet, deny, audit, machete, geiger, bench presence.
+- Root strict clippy is **0** on every tracked lint; the census retains 68 arithmetic / 7
+  as-conversion / 4 indexing diagnostics, all `[DOWN]` against the recorded baseline (Phase 1
+  remainder: aggregation and adapter modules).
+- Recovery verified by the scratch-store smoke run (`--store /tmp/census-smoke run --limit 3`)
+  which produced both reports, both by-state CSVs, the best-results pair and a 6-sheet workbook,
+  and by the census suite's 224 tests.
+- Two unused dependencies dropped (`census` `unicode-normalization`, vendored
+  `chromiumoxide_cdp` `chromiumoxide_pdl`). `cargo geiger` needs an unpolluted `target/`; stale
+  `.d` files for deleted bench/bin targets make that lane fail with `Io(NotFound)` rather than an
+  unsafe verdict — `cargo clean` before trusting it.
