@@ -5,6 +5,7 @@ use crate::domain::{
     facts::{AthleteName, CityName, GraduationYear, Location, RegionName, SchoolName},
     identity::{AthleteId, EvidenceDigest, ProfileUrl},
 };
+use crate::model::SourceRecord;
 use std::collections::BTreeMap;
 
 fn digest() -> EvidenceDigest {
