@@ -3,11 +3,11 @@
 
 use super::notes::{bump, census_notes, state_entry};
 use super::rows::{
-    AthleteRollup, CoachRollup, RowCounts, coach_sport, school_coach_index, school_state_index,
-    state_of, tally_co2027,
+    coach_sport, school_coach_index, school_state_index, state_of, tally_co2027, AthleteRollup,
+    CoachRollup, RowCounts,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{Census, ProviderCoverage, ReportResult, Scope, StateCensus, retain_core};
+use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
 use crate::clock::{Clock, SystemClock};
 use crate::store::{Store, Table};
 use census_domain::model::{

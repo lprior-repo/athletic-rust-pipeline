@@ -40,7 +40,7 @@ pub(super) async fn drain(
 
     while !tasks.is_empty() {
         match tokio::time::timeout_at(deadline, tasks.join_next()).await {
-            Ok(Some(result)) => match DrainState::from_join(Some(result)) {
+            Ok(Some(result)) => match DrainState::from_join(result) {
                 DrainState::Completed => {
                     bump(&mut report.completed, 1);
                 }
