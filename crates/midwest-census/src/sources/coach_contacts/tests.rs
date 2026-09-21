@@ -1,4 +1,6 @@
 use super::*;
+use crate::store::{Store, Table};
+use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport};
 
 const CSV: &str = include_str!("../../../tests/fixtures/coach_contacts_sample.csv");
 
