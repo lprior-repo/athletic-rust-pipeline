@@ -18,6 +18,7 @@ mod paths;
 mod purity;
 mod scaffold;
 mod scan;
+mod seams;
 mod source_fixture;
 mod templates;
 
@@ -48,6 +49,9 @@ enum Command {
     },
     /// Count forbidden constructs and size-budget overruns in production code; JSON on stdout.
     Scan,
+    /// Check every `crate::…` reference between the census crate's top-level modules against the
+    /// allowed-edge table; JSON on stdout, non-zero exit on a violation.
+    Seams,
     /// List the type-integrity review candidates of the domain modules; JSON on stdout.
     Integrity,
     /// Rewrite the debt baseline from current measurements.
@@ -118,6 +122,7 @@ fn run() -> Result<()> {
     match Cli::parse().command {
         Command::Gate { args } => Cmd::new("bash").arg("tools/gate.sh").args(args).run(),
         Command::Scan => scan::run(),
+        Command::Seams => seams::run(),
         Command::Integrity => integrity::run(),
         Command::QualityBaseline {
             baseline,
