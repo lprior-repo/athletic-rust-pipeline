@@ -142,6 +142,8 @@ budgets audit for the browser session pool.
 ### 2.5 Enforcement and evidence gaps
 
 - **No CI at all** (`.github/workflows` absent), no `[workspace.lints]`, no `cargo-deny.toml`.
+  *(Closed during this program — `[workspace.lints]` landed in `Cargo.toml`, `deny.toml` exists,
+  and `.github/workflows/gate.yml` (commit `02e4189`) runs `bash tools/gate.sh` on push/PR.)*
 - **No benches** (`benches/` absent, no criterion/divan) — the earlier 559–627k obs/s figures live
   outside the repo, therefore not reproducible and not a gate. Per doctrine: *no benchmark exists*
   is a blocker before any performance claim.
@@ -155,7 +157,7 @@ budgets audit for the browser session pool.
 |---|---|---|
 | `[workspace.lints]` | exists (`Cargo.toml:61-73`: `unsafe_code=forbid`, `unused_must_use=deny`, clippy deny set) | exists |
 | `deny.toml` | exists (30 lines: advisories, licenses, sources) — **no `[bans]` section**; the "bans incl. async runtimes" in the plan does not exist. The tree scan replaced `wrappers` bans (no package-level ban exists today). | exists |
-| `.github/` CI | **absent** — zero workflows. `tools/gate.sh` is referenced but never executed by CI. | absent |
+| `.github/` CI | **exists** — `.github/workflows/gate.yml` (commit `02e4189`, 2026-09-21 16:01): pinned toolchain from `rust-toolchain.toml`, best-effort installs of the optional gate tools, then `bash tools/gate.sh`; official `actions/checkout` only. | exists |
 
 ## 3. Program
 
