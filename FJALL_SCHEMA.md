@@ -1,9 +1,14 @@
 # Fjall store schema
 
+Operational companion: [`docs/FJALL_SCHEMA.md`](docs/FJALL_SCHEMA.md) — durability knobs and the
+sharp-edge list with current line citations. This file is the design-side schema.
+
 What `midwest-census` actually writes to its embedded store: directories, keyspaces, key bytes,
 values, the write and read paths, and the limits the code enforces. Derived from
-`crates/midwest-census/src/store.rs` (primary), `src/main.rs`, `src/bin/midwest-serve.rs`,
-`src/bootstrap.rs`, `src/restate_services.rs`, `src/model.rs`, and the pinned dependency
+`crates/midwest-census/src/store/` (primary), `crates/midwest-census/src/main.rs`,
+`crates/midwest-census/src/bin/midwest-serve.rs`, `crates/midwest-census/src/bootstrap.rs`,
+`crates/midwest-census/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
+dependency
 `fjall = "=3.1.10"` (`crates/midwest-census/Cargo.toml`). Dependency behaviour is cited from the
 registry source of that version.
 

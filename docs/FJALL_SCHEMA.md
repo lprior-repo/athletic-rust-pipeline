@@ -4,6 +4,8 @@ The census crate (`crates/midwest-census`) uses Fjall 3.1.10 as its embedded sto
 This document describes the keyspaces, key format, durability, knobs, and sharp edges
 observed in `crates/midwest-census/src/store/`.
 
+Design-side companion: [`FJALL_SCHEMA.md`](../FJALL_SCHEMA.md) — the full schema and lifecycle.
+
 ## 1. Keyspaces and tables
 
 Three Fjall keyspaces are created on open (`store/mod.rs:136-139`):
