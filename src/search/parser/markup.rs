@@ -7,7 +7,7 @@ use anyhow::{bail, Context, Result};
 use lol_html::{html_content::Element, ElementContentHandlers, Selector, Settings};
 use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
-#[path = "stream.rs"]
+#[path = "stream/mod.rs"]
 mod stream;
 
 const MAX_TEXT_BYTES: usize = 8_192;
