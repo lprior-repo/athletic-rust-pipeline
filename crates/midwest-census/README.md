@@ -92,6 +92,27 @@ instead of restarting, and later opens skip it. The JSONL files stay in place as
 the database was built from, and `import-legacy` runs that path and prints the import source next to
 the resulting store statistics.
 
+## Merge laws
+
+`tests/merge_properties.rs` pins the read model's contract: every read merges an entity's
+observations through `Entity::merge` and then applies `Entity::publish`.
+
+- **Idempotency** — merging an identical observation changes nothing.
+- **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`, `source_urls` and `source_labels` are sets: merge order cannot reach a row.
+- **First-writer-wins** — a scalar a row already carries is never replaced (`name`, `city`,
+  `enrollment`, `level`, `professional_email`, `wind_mps`, …); a hole is filled from the other side
+  (`None`, or the meet's `Unknown` level), which is why merge is idempotent on a row it produced.
+- **Identity preservation** — merge never rewrites the name a record was minted from
+  (`school.name`, `school.normalized_name`, `athlete.canonical_name`); other spellings land in
+  `aliases` / `known_names`.
+- **Cohort rule** — an `ObservedGrade` that disagrees with `grad_year` lowers `identity_confidence`
+  to `LOW`, agreement raises it to `HIGH`, and silence leaves it alone.
+- **Contact policy** — `publish` runs `professional_email` over a coach's address, so a consumer
+  mailbox never ships, and `withheld_mailboxes()` counts exactly the rows it dropped.
+
+Both suites are deterministic: every `proptest!` block pins 64 cases on ChaCha with the fixed seed
+`0x4D45_5247_5F_4944`, so a failure reproduces from the seed alone.
+
 ## Durable execution: Restate
 
 `midwest-serve` (same crate, `restate-sdk =0.12.0`) exposes the same store and the same reports as
@@ -223,6 +244,24 @@ is never dereferenced by a core run.
 (compiled 763, cross-country 380, Hy-Tek 597) and produces 834,254 result rows, 264,167 of which
 carry a grade - enough to add 4,323 class-of-2027 athletes to core without a single Athletic.net
 request.
+
+The public seam is `sources::wiaa_results::parse_result_body(&[u8], ArtifactFormat, SourceRef, i16)
+-> Option<ParsedMeet>`; `artifact_format(extension, body)` picks the `ArtifactFormat` for a release.
+It is pure — no network, file, clock or randomness — except the PDF arm, which shells out to
+`pdftotext -layout`:
+
+| `ArtifactFormat` | read as |
+|---|---|
+| `HytekHtml` | `hytek::lines_from_html` then `hytek::parse`; a body carrying a `<pre>` block is read from that block alone, otherwise from its paragraphs |
+| `HytekText` | `hytek::lines_from_text` then `hytek::parse` — the HTML and text releases of one report parse to the same `ParsedMeet` |
+| `RaceDay` | `raceday::parse`; the format publishes no date, so the archive `year` becomes the meet date |
+| `Pdf` | `pdftotext` text, then `hytek`, `compiled`, `xc` in that order |
+| `Unparsed` | `None`, whatever the bytes are |
+
+`None` means "not a meet that can be minted" — a missing header, an unreadable PDF, an unknown
+layout — never a half-parsed record. `tests/parser_roundtrip_properties.rs` pins the dispatch,
+front-end agreement, prefix stability under trailing garbage and truncation, and that arbitrary
+bytes give `None` or a meet but never a panic.
 
 ### Wayzata schedules
 

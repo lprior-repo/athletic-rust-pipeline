@@ -1,0 +1,223 @@
+//! Property tests for the read-time merge algebra (`Entity::merge` in `store/entities.rs`).
+//!
+//! Laws pinned here, each one read off the merge bodies they constrain:
+//!
+//! * **Idempotency** — absorbing a second identical observation changes nothing.
+//! * **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`,
+//!   `source_urls` and `source_labels` are sets, so merge order cannot leak into a row.
+//! * **First-writer-wins** — an option a row already carries is never replaced (`level`, `city`,
+//!   `professional_email`, `enrollment`, …). Every law is checked in both directions, so it is the
+//!   *first* writer that survives rather than one fixed side. The meet `level` is the documented
+//!   exception: `Unknown` is a hole the other side fills.
+//! * **Identity preservation** — merge never rewrites the name a canonical record was minted from
+//!   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); variants land in
+//!   `aliases` / `known_names` instead.
+//! * **Coach contact policy** — `publish` maps `professional_email` through
+//!   `census_domain::model::professional_email`, so a consumer mailbox never ships, and
+//!   `withheld_mailboxes()` counts exactly the rows it dropped.
+//! * **Athlete cohort rule** — an observation that disagrees with `grad_year` lowers
+//!   `identity_confidence` to `LOW`, agreement raises it to `HIGH`, and no observation leaves it
+//!   alone.
+//!
+//! Deterministic by construction: [`law_config`] pins 64 cases on ChaCha with the fixed seed
+//! `0x4D45_5247_5F_4944`, so a failing case is reproducible from the seed alone. The laws live in
+//! [`laws_unions`], [`laws_writers`] and [`contact_policy`].
+
+#![forbid(unsafe_code)]
+
+use census_domain::model::{
+    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalSchool, CanonicalTeam,
+    CoachRole, CompetitionLevel, Confidence, EventKind, Evidence, Grade, Gender, GradYear,
+    ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport,
+};
+use midwest_census::store::Entity;
+use proptest::prelude::*;
+use proptest::test_runner::{RngAlgorithm, RngSeed};
+
+#[path = "merge_properties/contact_policy.rs"]
+mod contact_policy;
+#[path = "merge_properties/laws_unions.rs"]
+mod laws_unions;
+#[path = "merge_properties/laws_writers.rs"]
+mod laws_writers;
+
+// ---------------------------------------------------------------------------
+// Deterministic runner configuration
+// ---------------------------------------------------------------------------
+
+fn law_config() -> ProptestConfig {
+    ProptestConfig {
+        cases: 64,
+        rng_algorithm: RngAlgorithm::ChaCha,
+        rng_seed: RngSeed::Fixed(0x4D45_5247_5F_4944),
+        ..ProptestConfig::default()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Strategies: scalars
+// ---------------------------------------------------------------------------
+
+/// A lowercase word. The values only need to be printable and distinct.
+fn word(max: usize) -> impl Strategy<Value = String> {
+    prop::collection::vec(b'a'..=b'z', 1..=max)
+        .prop_map(|bytes| bytes.into_iter().map(char::from).collect())
+}
+
+fn state() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("WI"), Just("OH"), Just("IL"), Just("KS"), Just("IA"), Just("MN")
+    ]
+    .prop_map(str::to_string)
+}
+
+fn sport() -> impl Strategy<Value = Sport> {
+    prop_oneof![
+        Just(Sport::OutdoorTrack),
+        Just(Sport::IndoorTrack),
+        Just(Sport::CrossCountry),
+    ]
+}
+
+fn gender() -> impl Strategy<Value = Gender> {
+    prop_oneof![
+        Just(Gender::Boys),
+        Just(Gender::Girls),
+        Just(Gender::Mixed),
+    ]
+}
+
+fn grade() -> impl Strategy<Value = Grade> {
+    (9u8..=12u8).prop_filter_map("a published grade is 9..=12", Grade::new)
+}
+
+fn school_year() -> impl Strategy<Value = SchoolYear> {
+    (2015i16..=2030).prop_map(SchoolYear)
+}
+
+fn grad_year() -> impl Strategy<Value = GradYear> {
+    (2020i16..=2040).prop_map(GradYear)
+}
+
+fn level() -> impl Strategy<Value = CompetitionLevel> {
+    prop_oneof![
+        Just(CompetitionLevel::Invitational),
+        Just(CompetitionLevel::State),
+        Just(CompetitionLevel::Unknown),
+    ]
+}
+
+/// An external id in `namespace`, distinct from the identities the base value already carries.
+fn peer_identity(namespace: SourceNamespace) -> impl Strategy<Value = SourceIdentity> {
+    word(8).prop_map(move |suffix| SourceIdentity::new(namespace.clone(), format!("peer-{suffix}")))
+}
+
+fn evidence() -> impl Strategy<Value = Evidence> {
+    word(8).prop_map(|id| Evidence::parsed(SourceRef::new(format!("src-{id}"), None), "2026-01-01"))
+}
+
+/// A published mailbox, sometimes padded, sometimes not a mailbox at all.
+fn mailbox() -> impl Strategy<Value = String> {
+    let domain = prop_oneof![
+        Just("school.wi.us"),
+        Just("district.k12.mn.us"),
+        Just("coach.example.org"),
+        Just("gmail.com"),
+        Just("yahoo.com"),
+    ];
+    prop_oneof![
+        (word(8), domain.clone()).prop_map(|(local, domain)| format!("{local}@{domain}")),
+        (word(8), domain).prop_map(|(local, domain)| format!("  {local}@{domain} ")),
+        Just("no-mailbox".to_string()),
+        Just("@school.wi.us".to_string()),
+    ]
+}
+
+// ---------------------------------------------------------------------------
+// Strategies: canonical entities, built through their own constructors
+// ---------------------------------------------------------------------------
+
+fn school() -> impl Strategy<Value = CanonicalSchool> {
+    (state(), word(20), word(20))
+        .prop_map(|(state, name, normalized)| CanonicalSchool::new(&state, name, normalized).0)
+}
+
+fn team() -> impl Strategy<Value = CanonicalTeam> {
+    (school(), sport(), gender(), school_year(), prop::option::of(word(10))).prop_map(
+        |(school, sport, gender, year, level)| CanonicalTeam {
+            id: CanonicalTeam::mint(&school.id, sport, gender, year),
+            school: school.id,
+            sport,
+            gender,
+            school_year: year,
+            level,
+            source_identities: Vec::new(),
+            evidence: Vec::new(),
+        },
+    )
+}
+
+fn coach() -> impl Strategy<Value = CanonicalCoach> {
+    (
+        school(),
+        word(20),
+        prop::option::of(sport()),
+        gender(),
+        prop_oneof![Just(CoachRole::HeadCoach), Just(CoachRole::AssistantCoach)],
+    )
+        .prop_map(|(school, name, sport, gender, role)| {
+            CanonicalCoach::new(&school.id, name, sport, gender, role)
+        })
+}
+
+/// The same coach, carrying a published address.
+fn coach_with_email(address: String) -> CanonicalCoach {
+    let (school, _) = CanonicalSchool::new("WI", "Madison", "madison");
+    let mut coach = CanonicalCoach::new(
+        &school.id,
+        "Coach Smith",
+        Some(Sport::OutdoorTrack),
+        Gender::Boys,
+        CoachRole::HeadCoach,
+    );
+    coach.professional_email = Some(address);
+    coach
+}
+
+fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
+    (school(), word(20), grad_year(), gender(), prop::collection::vec(sport(), 0..=2)).prop_map(
+        |(school, name, grad_year, gender, mut sports)| {
+            let mut athlete = CanonicalAthlete::new(&school.id, name, grad_year, gender);
+            // A row the store wrote carries set-shaped vectors: `Sport` is `Ord`, so sorting and
+            // de-duplicating is how a set is held here.
+            sports.sort();
+            sports.dedup();
+            athlete.sports = sports;
+            athlete
+        },
+    )
+}
+
+fn meet() -> impl Strategy<Value = CanonicalMeet> {
+    (state(), word(20), word(8), level())
+        .prop_map(|(state, name, date, level)| CanonicalMeet::new(&state, name, date, level))
+}
+
+fn event() -> impl Strategy<Value = CanonicalEvent> {
+    (
+        meet(),
+        prop_oneof![
+            Just(EventKind::Track100m),
+            Just(EventKind::Track200m),
+            Just(EventKind::CrossCountry),
+        ],
+        gender(),
+    )
+        .prop_map(|(meet, kind, gender)| CanonicalEvent::new(&meet.id, kind, gender, None, None))
+}
+
+/// Set equality for the de-duplicated vectors `union_vec` produces: equal length plus mutual
+/// containment is enough, because neither side can repeat an element.
+fn same_members<T: PartialEq + std::fmt::Debug>(left: &[T], right: &[T]) -> bool {
+    left.len() == right.len() && left.iter().all(|item| right.contains(item))
+}
