@@ -4,7 +4,7 @@
 /// `today()` returns an ISO-8601 date (`YYYY-MM-DD`). `today_iso8601()` returns full ISO-8601
 /// datetime. `now()` returns a monotonic instant for elapsed-time tracking — uses
 /// `tokio::time::Instant` so `tokio::time::pause` drives it in tests.
-
+///
 /// The clock the application is allowed to read.
 pub trait Clock: Send + Sync {
     /// ISO-8601 date, `YYYY-MM-DD`.

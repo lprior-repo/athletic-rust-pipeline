@@ -1,8 +1,9 @@
 //! Drain accounting for the owned task region: the report the shell returns and the bounded reap.
 //!
-//! The region itself — one [`Spawner`] over one `JoinSet` — lives in [`crate::spawn`]. This module
-//! is the shell's view of it: the report an operator reads and the integration test asserts on,
-//! plus — for tests that build a set by hand — the drain entry point that takes one.
+//! The region itself — one [`Spawner`](crate::spawn::Spawner) over one `JoinSet` — lives in
+//! [`crate::spawn`]. This module is the shell's view of it: the report an operator reads and the
+//! integration test asserts on, plus — for tests that build a set by hand — the drain entry point
+//! that takes one.
 
 use crate::spawn::{SpawnError, TaskReport};
 

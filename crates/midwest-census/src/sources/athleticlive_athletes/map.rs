@@ -39,7 +39,7 @@ pub fn build_entities(
     let mut minted = Minted::default();
 
     for hit in hits {
-        out.rows += 1;
+        out.rows = out.rows.saturating_add(1);
         absorb_hit(
             hit,
             targets,
@@ -93,7 +93,7 @@ fn decode_row<'a>(
     let target = targets.get(&meet_id)?;
     let name = hit.n.as_deref().map(str::trim).filter(|n| !n.is_empty())?;
     let Some(team) = hit.t.as_ref().filter(|t| t.school_name().is_some()) else {
-        out.rows_without_school += 1;
+        out.rows_without_school = out.rows_without_school.saturating_add(1);
         return None;
     };
     let source = SourceRef::new(
@@ -154,7 +154,7 @@ fn absorb_athlete(
 ) {
     // Grade is required: an athlete entity is minted from (school, name, grad year, gender).
     let Some(grade) = row.grade else { return };
-    out.rows_with_grade += 1;
+    out.rows_with_grade = out.rows_with_grade.saturating_add(1);
     let grad_year = GradYear::of(grade, row.school_year);
     let athlete_id = CanonicalAthlete::mint(school_id, row.name, grad_year, row.gender);
     let entry = minted
@@ -244,7 +244,7 @@ fn note_team_ids(
         }
     }
     if let Some(an_team_id) = team.athletic_net_team_id() {
-        *rows_with_team_id += 1;
+        *rows_with_team_id = (*rows_with_team_id).saturating_add(1);
         let identity = SourceIdentity::new(
             SourceNamespace::LegacyAthleticNet {
                 kind: "team".to_string(),
@@ -264,7 +264,7 @@ fn note_athlete_ids(
     rows_with_athlete_id: &mut usize,
 ) {
     if let Some(an_athlete_id) = hit.athletic_net_athlete_id() {
-        *rows_with_athlete_id += 1;
+        *rows_with_athlete_id = (*rows_with_athlete_id).saturating_add(1);
         let identity = SourceIdentity::new(
             SourceNamespace::LegacyAthleticNet {
                 kind: "athlete".to_string(),

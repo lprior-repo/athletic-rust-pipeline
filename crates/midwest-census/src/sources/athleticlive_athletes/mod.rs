@@ -154,7 +154,7 @@ async fn finish_run(
     cache_before: u64,
 ) {
     let (requests_after, cache_after) = stats_of(ctx).await;
-    report.rows = stats.athletes as u64;
+    report.rows = u64::try_from(stats.athletes).unwrap_or(u64::MAX);
     report.requests = requests_after.saturating_sub(requests_before);
     report.from_cache = cache_after.saturating_sub(cache_before);
     report.note(format!(

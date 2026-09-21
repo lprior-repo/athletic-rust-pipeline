@@ -27,18 +27,18 @@ pub(super) fn absorb(
 ) -> u64 {
     let name = bio.athlete.name();
     let Some(gender) = gender_of(&bio.athlete.gender) else {
-        stats.gender_unknown += 1;
+        stats.gender_unknown = stats.gender_unknown.saturating_add(1);
         return 0;
     };
     let observed_grades = grade_observations(bio, source);
     let Some(latest) = observed_grades.last().cloned() else {
-        stats.athletes_without_grade += 1;
+        stats.athletes_without_grade = stats.athletes_without_grade.saturating_add(1);
         return 0;
     };
     let grad_year = latest.grad_year();
 
     let Some(athlete_school) = bio.athlete.school_id else {
-        stats.athletes_without_school += 1;
+        stats.athletes_without_school = stats.athletes_without_school.saturating_add(1);
         return 0;
     };
     let mut ctx = Ctx {
@@ -92,7 +92,7 @@ impl<'a> Ctx<'a> {
             self.accumulated,
         );
         if school.is_none() {
-            self.stats.rows_without_state += 1;
+            self.stats.rows_without_state = self.stats.rows_without_state.saturating_add(1);
         }
         school
     }
@@ -134,7 +134,7 @@ impl<'a> Ctx<'a> {
     }
 }
 
-/// Grade observations: `grades` maps "<SchoolID>_<SeasonID>" to the grade that season, which is
+/// Grade observations: `grades` maps `"<SchoolID>_<SeasonID>"` to the grade that season, which is
 /// what makes a class year derived rather than assumed.
 fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
     let mut observed: Vec<ObservedGrade> = Vec::new();

@@ -56,7 +56,7 @@ async fn page_hits(
         let body = batch_query(ids, from);
         let outcome = ctx.fetcher.post_json(ENDPOINT, &body, &fetch).await?;
         if outcome.status != 200 {
-            report.errors += 1;
+            report.errors = report.errors.saturating_add(1);
             report.note(format!(
                 "batch of {} meets returned HTTP {} at offset {from}",
                 ids.len(),
@@ -69,7 +69,7 @@ async fn page_hits(
             total = parsed
                 .pointer("/hits/total/value")
                 .and_then(Value::as_u64)
-                .unwrap_or(0) as usize;
+                .map_or(0, |value| usize::try_from(value).unwrap_or(usize::MAX));
         }
         let page: Vec<AthleteHit> = serde_json::from_value(Value::Array(page_sources(&parsed)))
             .map_err(|source| CrawlError::Decode {
@@ -78,8 +78,8 @@ async fn page_hits(
             })?;
         let fetched = page.len();
         hits.extend(page);
-        from += fetched;
-        if fetched == 0 || from >= total || from + PAGE_SIZE > RESULT_WINDOW {
+        from = from.saturating_add(fetched);
+        if fetched == 0 || from >= total || from.saturating_add(PAGE_SIZE) > RESULT_WINDOW {
             break;
         }
     }
@@ -114,7 +114,7 @@ fn split_batch<'t>(
         let (left, right) = batch.split_at(batch.len() / 2);
         queue.push_front(right.to_vec());
         queue.push_front(left.to_vec());
-        stats.splits += 1;
+        stats.splits = stats.splits.saturating_add(1);
         report.note(format!(
             "split a {}-meet batch ({} rows exceeds the {}-row result window)",
             batch.len(),
@@ -151,7 +151,7 @@ fn emit_batch<'t>(
                 &json!({ "meet": target.name, "rows": 0 }),
             )?;
         }
-        stats.meets += batch.len();
+        stats.meets = stats.meets.saturating_add(batch.len());
         return Ok(());
     }
 
@@ -166,14 +166,14 @@ fn emit_batch<'t>(
             &json!({ "meet": target.name, "batch_rows": hits.len() }),
         )?;
     }
-    stats.meets += batch.len();
-    stats.rows += entities.rows;
-    stats.athletes += entities.athletes.len();
-    stats.schools += entities.schools.len();
-    stats.teams += entities.teams.len();
-    stats.rows_with_grade += entities.rows_with_grade;
-    stats.rows_with_athlete_id += entities.rows_with_athlete_id;
-    stats.rows_with_team_id += entities.rows_with_team_id;
-    stats.rows_without_school += entities.rows_without_school;
+    stats.meets = stats.meets.saturating_add(batch.len());
+    stats.rows = stats.rows.saturating_add(entities.rows);
+    stats.athletes = stats.athletes.saturating_add(entities.athletes.len());
+    stats.schools = stats.schools.saturating_add(entities.schools.len());
+    stats.teams = stats.teams.saturating_add(entities.teams.len());
+    stats.rows_with_grade = stats.rows_with_grade.saturating_add(entities.rows_with_grade);
+    stats.rows_with_athlete_id = stats.rows_with_athlete_id.saturating_add(entities.rows_with_athlete_id);
+    stats.rows_with_team_id = stats.rows_with_team_id.saturating_add(entities.rows_with_team_id);
+    stats.rows_without_school = stats.rows_without_school.saturating_add(entities.rows_without_school);
     Ok(())
 }

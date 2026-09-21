@@ -126,7 +126,7 @@ async fn absorb_targets(
         if options.limit.is_some_and(|limit| processed >= limit) {
             break;
         }
-        run.stats.athletes_seen += 1;
+        run.stats.athletes_seen = run.stats.athletes_seen.saturating_add(1);
         let mut absorbed_any = false;
         for scope in SCOPES {
             let url = format!(
@@ -166,7 +166,7 @@ async fn absorb_targets(
             )?;
         }
         if absorbed_any {
-            run.stats.athletes_absorbed += 1;
+            run.stats.athletes_absorbed = run.stats.athletes_absorbed.saturating_add(1);
         }
     }
     Ok(())
@@ -189,7 +189,7 @@ async fn fetch_bio(
     let fetched = match ctx.fetcher.get(url, &fetch_options).await {
         Ok(fetched) => fetched,
         Err(error) => {
-            run.stats.fetches_failed += 1;
+            run.stats.fetches_failed = run.stats.fetches_failed.saturating_add(1);
             run.report
                 .note(format!("athlete {}: {error}", target.athlete_id));
             return None;
@@ -198,7 +198,7 @@ async fn fetch_bio(
     match serde_json::from_str(&fetched.text()) {
         Ok(bio) => Some(bio),
         Err(error) => {
-            run.stats.fetches_failed += 1;
+            run.stats.fetches_failed = run.stats.fetches_failed.saturating_add(1);
             run.report.note(format!(
                 "athlete {} {}: body is not an athlete bio ({error})",
                 target.athlete_id,

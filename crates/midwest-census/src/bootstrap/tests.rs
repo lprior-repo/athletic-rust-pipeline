@@ -88,6 +88,7 @@ fn stop_reason_round_trips_through_its_wire_byte() {
         StopReason::ServerExit,
     ] {
         let raw = reason as u8;
+        assert_eq!(raw, reason.to_raw());
         assert_eq!(StopReason::from_raw(raw), reason);
     }
     assert_eq!(StopReason::from_raw(200), StopReason::ServerExit);

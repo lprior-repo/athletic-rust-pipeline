@@ -580,8 +580,8 @@ fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
         }
         .with_context(|| format!("{file} yielded no meet as {}", format.as_str()))?;
         // Per-file coverage: a fixture that parses into nothing is a hole, not a corpus entry.
-        // `rows_parsed` is not the test — RaceDay reports a team finish list with 82 rows in its
-        // events and a zero row count — so the events themselves are walked.
+        // The events are walked rather than the `rows_parsed` counter, so the claim is about where
+        // the rows live rather than how many were counted.
         ensure!(
             !meet.events.is_empty(),
             "{file}: the parsed meet carries no events"

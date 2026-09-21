@@ -47,7 +47,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let outcome = match ctx.fetcher.get(&url, &ctx.fetch_options()).await {
         Ok(o) => o,
         Err(e) => {
-            report.errors += 1;
+            report.errors = report.errors.saturating_add(1);
             report.note(format!("failed to fetch KSHSAA directory: {e}"));
             return Ok(report);
         }
@@ -55,9 +55,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     // Parse JSON.
     let records = parse_records(&outcome.text())?;
-    report.requests += 1;
+    report.requests = report.requests.saturating_add(1);
     if outcome.from_cache {
-        report.from_cache += 1;
+        report.from_cache = report.from_cache.saturating_add(1);
     }
 
     // Load the resume set (keys already journalled in this phase).
@@ -69,7 +69,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
     let delta_requests = after.requests.saturating_sub(before.requests);
-    report.rows = tally.processed as u64;
+    report.rows = u64::try_from(tally.processed).unwrap_or(u64::MAX);
     report.requests = delta_requests;
     report.note(format!(
         "fetched {} schools from KSHSAA; {} already done; {} skipped (no AD name)",
@@ -125,7 +125,7 @@ fn collect_records(
         // Skip already-processed schools (resume support).
         let journal_key = format!("KS:{}", record.identifier);
         if done_keys.contains(&journal_key) {
-            tally.skipped += 1;
+            tally.skipped = tally.skipped.saturating_add(1);
             continue;
         }
 
@@ -135,14 +135,14 @@ fn collect_records(
         };
         if let Some(coach) = read.coach {
             if coach.professional_email.is_some() {
-                report.with_email += 1;
+                report.with_email = report.with_email.saturating_add(1);
             }
             tally.coaches.push(coach);
         } else {
-            tally.skipped_no_ad += 1;
+            tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1);
         }
         tally.schools.push(read.school);
-        tally.processed += 1;
+        tally.processed = tally.processed.saturating_add(1);
     }
     Ok(tally)
 }

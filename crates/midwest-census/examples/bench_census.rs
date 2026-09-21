@@ -224,7 +224,7 @@ fn append_athlete(
     team_id: &TeamId,
     meet_id: &MeetId,
 ) -> Result<()> {
-    let gender = if (index + slot).is_multiple_of(2) {
+    let gender = if index.saturating_add(slot).is_multiple_of(2) {
         Gender::Boys
     } else {
         Gender::Girls

@@ -65,7 +65,7 @@ pub(super) async fn supervise(
         .local_addr()
         .map_err(|source| BootstrapError::BoundAddress { source })?;
 
-    let reason = Arc::new(AtomicU8::new(StopReason::ServerExit as u8));
+    let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let stop = stop_watch(Arc::clone(&reason), shutdown);
 
     let endpoint = restate_services::build_endpoint(

@@ -79,11 +79,11 @@ pub(super) fn school_for(
         return Some(id.clone());
     }
     let Some(name) = school_names.get(school_id).map(|name| name.to_string()) else {
-        stats.rows_unknown_school += 1;
+        stats.rows_unknown_school = stats.rows_unknown_school.saturating_add(1);
         return None;
     };
     if let Some((id, _)) = index.resolve(state, &name) {
-        stats.schools_resolved += 1;
+        stats.schools_resolved = stats.schools_resolved.saturating_add(1);
         resolved.insert(key, id.clone());
         return Some(id);
     }
@@ -98,7 +98,7 @@ pub(super) fn school_for(
     school
         .evidence
         .push(Evidence::parsed(source.clone(), observed_on));
-    stats.schools_minted += 1;
+    stats.schools_minted = stats.schools_minted.saturating_add(1);
     let id = accumulated
         .schools
         .entry(id.as_str().to_string())

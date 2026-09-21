@@ -37,7 +37,7 @@ impl<'a> Ctx<'a> {
         for row in bio.results_tf.iter().flatten() {
             if let Some(resolved) = self.resolve_tf_row(bio, row, &labels) {
                 self.store_tf_row(row, &resolved, athlete_id, gender);
-                rows += 1;
+                rows = rows.saturating_add(1);
             }
         }
         rows
@@ -49,7 +49,7 @@ impl<'a> Ctx<'a> {
         for row in bio.results_xc.iter().flatten() {
             if let Some(resolved) = self.resolve_xc_row(bio, row) {
                 self.store_xc_row(row, &resolved, athlete_id, gender);
-                rows += 1;
+                rows = rows.saturating_add(1);
             }
         }
         rows
@@ -62,15 +62,15 @@ impl<'a> Ctx<'a> {
         row: &'b TfRow,
         labels: &'b HashMap<i64, &'b str>,
     ) -> Option<ResolvedRow<'b>> {
-        self.stats.rows_seen += 1;
+        self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         let (season_id, sport) = self.row_season(row)?;
         let Some(label) = row.event_id.and_then(|id| labels.get(&id).copied()) else {
-            self.stats.rows_no_event += 1;
+            self.stats.rows_no_event = self.stats.rows_no_event.saturating_add(1);
             return None;
         };
         let kind = EventKind::from_source_label(label);
         let Some((mark, auto)) = parse_mark(&kind, &row.result) else {
-            self.stats.rows_no_mark += 1;
+            self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
             return None;
         };
         let Some(meet) = meet_for(
@@ -81,11 +81,11 @@ impl<'a> Ctx<'a> {
             self.observed_on,
             self.accumulated,
         ) else {
-            self.stats.rows_unknown_meet += 1;
+            self.stats.rows_unknown_meet = self.stats.rows_unknown_meet.saturating_add(1);
             return None;
         };
         let Some(date) = row.date().or_else(|| Some(meet.date.clone())) else {
-            self.stats.rows_unknown_meet += 1;
+            self.stats.rows_unknown_meet = self.stats.rows_unknown_meet.saturating_add(1);
             return None;
         };
         let school = self.canonical_school(&row.school_id.unwrap_or_default().to_string())?;
@@ -106,14 +106,14 @@ impl<'a> Ctx<'a> {
 
     /// Resolve one cross-country row, counting why a row is refused; `None` when it stores nothing.
     fn resolve_xc_row<'b>(&mut self, bio: &'b Bio, row: &'b XcRow) -> Option<ResolvedRow<'b>> {
-        self.stats.rows_seen += 1;
+        self.stats.rows_seen = self.stats.rows_seen.saturating_add(1);
         let Some(season_id) = row.season_id else {
-            self.stats.rows_no_season += 1;
+            self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
         };
         let kind = EventKind::CrossCountry;
         let Some((mark, auto)) = parse_mark(&kind, &row.result) else {
-            self.stats.rows_no_mark += 1;
+            self.stats.rows_no_mark = self.stats.rows_no_mark.saturating_add(1);
             return None;
         };
         let Some(meet) = meet_for(
@@ -124,7 +124,7 @@ impl<'a> Ctx<'a> {
             self.observed_on,
             self.accumulated,
         ) else {
-            self.stats.rows_unknown_meet += 1;
+            self.stats.rows_unknown_meet = self.stats.rows_unknown_meet.saturating_add(1);
             return None;
         };
         let date = meet.date.clone();
@@ -150,7 +150,7 @@ impl<'a> Ctx<'a> {
     /// payload omits.
     fn row_season(&mut self, row: &TfRow) -> Option<(i16, Sport)> {
         let Some(season_id) = row.season_id else {
-            self.stats.rows_no_season += 1;
+            self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
             return None;
         };
         let Some(sport) = self
@@ -159,11 +159,12 @@ impl<'a> Ctx<'a> {
             .copied()
             .flatten()
         else {
-            *self
+            let season = self
                 .stats
                 .rows_unknown_season
                 .entry(season_id.to_string())
-                .or_default() += 1;
+                .or_default();
+            *season = (*season).saturating_add(1);
             return None;
         };
         Some((season_id, sport))
@@ -202,7 +203,7 @@ impl<'a> Ctx<'a> {
                 label: resolved.label,
             },
         );
-        self.stats.rows_absorbed += 1;
+        self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
     }
 
     /// Store one resolved cross-country row's performance and count it absorbed.
@@ -241,6 +242,6 @@ impl<'a> Ctx<'a> {
                 label: None,
             },
         );
-        self.stats.rows_absorbed += 1;
+        self.stats.rows_absorbed = self.stats.rows_absorbed.saturating_add(1);
     }
 }

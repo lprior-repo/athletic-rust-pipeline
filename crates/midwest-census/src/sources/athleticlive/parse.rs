@@ -225,7 +225,7 @@ pub fn parse_meets_csv(body: &str) -> CrawlResult<Vec<MeetRow>> {
     let mut rows = Vec::new();
     for (n, line) in lines.enumerate() {
         let fields = split_csv_record(line);
-        if let Some(row) = meet_row(&columns, &fields, n + 2)? {
+        if let Some(row) = meet_row(&columns, &fields, n.saturating_add(2))? {
             rows.push(row);
         }
     }

@@ -54,7 +54,7 @@ pub fn meet_targets(meets: &[CanonicalMeet], states: &[String]) -> MeetSelection
             continue;
         }
         if !plausible_meet_year(&meet.date) {
-            skipped_implausible += 1;
+            skipped_implausible = skipped_implausible.saturating_add(1);
             continue;
         }
         for identity in &meet.source_identities {

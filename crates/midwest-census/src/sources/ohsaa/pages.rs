@@ -96,7 +96,7 @@ pub fn parse_sports_table(html: &str) -> Vec<(String, Option<CoachEntry>, Option
     sections
 }
 
-/// Extract text from the Nth <td> in a row (no tag stripping yet).
+/// Extract text from the Nth `<td>` in a row (no tag stripping yet).
 fn extract_td_text(row: &str, index: usize) -> String {
     let mut count = 0;
     let mut rest = row;
@@ -239,7 +239,7 @@ fn extract_subheader_labels(row: &str) -> Vec<String> {
     labels
 }
 
-/// Extract the name value (first <span class="fieldValue">) from a data row.
+/// Extract the name value (first `<span class="fieldValue">`) from a data row.
 fn extract_field_name(row: &str) -> String {
     let Some((_, after)) = row.split_once("<span class=\"fieldValue\">") else {
         return String::new();

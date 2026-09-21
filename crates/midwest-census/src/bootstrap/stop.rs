@@ -28,6 +28,15 @@ impl StopReason {
             _ => StopReason::ServerExit,
         }
     }
+
+    /// The byte the watchers publish this reason as; the inverse of [`from_raw`](Self::from_raw).
+    pub(super) const fn to_raw(self) -> u8 {
+        match self {
+            StopReason::Signal => 0,
+            StopReason::Requested => 1,
+            StopReason::ServerExit => 2,
+        }
+    }
 }
 
 /// Resolve when a shutdown signal arrives or the caller's `shutdown` future resolves, recording
@@ -41,10 +50,10 @@ pub(super) async fn stop_watch(
             if let Err(error) = outcome {
                 tracing::warn!(%error, "shutdown signal watcher failed");
             }
-            reason.store(StopReason::Signal as u8, Ordering::SeqCst);
+            reason.store(StopReason::Signal.to_raw(), Ordering::SeqCst);
         }
         () = shutdown => {
-            reason.store(StopReason::Requested as u8, Ordering::SeqCst);
+            reason.store(StopReason::Requested.to_raw(), Ordering::SeqCst);
         }
     }
 }

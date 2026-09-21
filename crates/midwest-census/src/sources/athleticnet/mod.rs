@@ -113,6 +113,7 @@ pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<T
     let mut targets = Vec::new();
     let mut seen = HashSet::new();
     for (number, line) in body.lines().enumerate() {
+        let line_number = number.saturating_add(1);
         let line = line.trim();
         if line.is_empty() || line.starts_with('#') {
             continue;
@@ -122,7 +123,7 @@ pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<T
         let athlete_id: u64 = id_text.parse().map_err(|_| {
             registry_refusal(format!(
                 "registry line {}: `{id_text}` is not an athlete id",
-                number + 1
+                line_number
             ))
         })?;
         let state = parts
@@ -132,14 +133,14 @@ pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<T
         if parts.next().is_some() {
             return Err(registry_refusal(format!(
                 "registry line {}: expected `athlete_id[,ST]`, got `{line}`",
-                number + 1
+                line_number
             )));
         }
         if let Some(state) = &state {
             if state.len() != 2 || !state.chars().all(|c| c.is_ascii_alphabetic()) {
                 return Err(registry_refusal(format!(
                     "registry line {}: `{state}` is not a two-letter state code",
-                    number + 1
+                    line_number
                 )));
             }
         }

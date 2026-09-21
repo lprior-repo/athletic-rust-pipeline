@@ -108,7 +108,7 @@ fn write_meets(
         // the anchor for the school year a grade is read against, so an impossible date would
         // mint an impossible graduating class downstream: refuse it here instead.
         if implausible_year(&meet.date) {
-            skipped_corrupt += 1;
+            skipped_corrupt = skipped_corrupt.saturating_add(1);
             continue;
         }
         ctx.store.append(crate::store::Table::Meets, &meet)?;
@@ -117,7 +117,7 @@ fn write_meets(
             meet.id.as_str(),
             &serde_json::json!({ "state": meet.state, "date": meet.date }),
         )?;
-        written += 1;
+        written = written.saturating_add(1);
     }
     Ok((written, skipped_corrupt))
 }
@@ -144,7 +144,7 @@ fn note_coverage(
     ));
     let min_date = filtered.iter().map(|r| r.start.as_str()).min();
     let max_date = filtered.iter().map(|r| r.start.as_str()).max();
-    report.rows = written as u64;
+    report.rows = u64::try_from(written).unwrap_or(u64::MAX);
     report.note(format!("distinct tenants: {}", tenants.len()));
     report.note(format!(
         "rows with an Athletic.net meet id: {with_an}/{}",

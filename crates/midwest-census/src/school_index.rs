@@ -118,29 +118,21 @@ impl SchoolIndex {
         }
         // Relay squads are published as `<school> A`, `<school> B`, …; the letter is not part of
         // the school name.
-        let mut tokens: Vec<&str> = normalized.split(' ').collect();
-        if tokens.len() > 1 && tokens[tokens.len() - 1].len() == 1 {
-            tokens.pop();
-            let without_squad = tokens.join(" ");
-            if let Some(id) = self.exact.get(&(state.clone(), without_squad.clone())) {
+        if let Some(without_squad) = without_squad_letter(&normalized) {
+            if let Some(id) = self.exact.get(&(state.clone(), without_squad.to_string())) {
                 return Some((id.clone(), SchoolMatch::Exact));
             }
             for (pattern, replacement) in ABBREVIATIONS {
                 if raw.to_ascii_lowercase().contains(pattern) {
                     let expanded =
                         normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
-                    let mut expanded_tokens: Vec<&str> = expanded.split(' ').collect();
-                    if expanded_tokens.len() > 1
-                        && expanded_tokens[expanded_tokens.len() - 1].len() == 1
-                    {
-                        expanded_tokens.pop();
-                    }
-                    if let Some(id) = self.exact.get(&(state.clone(), expanded_tokens.join(" "))) {
+                    let key = without_squad_letter(&expanded).unwrap_or(&expanded);
+                    if let Some(id) = self.exact.get(&(state.clone(), key.to_string())) {
                         return Some((id.clone(), SchoolMatch::Abbreviation));
                     }
                 }
             }
-            return self.partial(&state, &without_squad);
+            return self.partial(&state, without_squad);
         }
         self.partial(&state, &normalized)
     }
@@ -148,19 +140,16 @@ impl SchoolIndex {
     /// Token-aligned partial match; returns a candidate only when exactly one school matches.
     fn partial(&self, state: &str, normalized: &str) -> Option<(SchoolId, SchoolMatch)> {
         let entries = self.by_state.get(state)?;
-        let tokens: Vec<&str> = normalized.split(' ').collect();
-        if tokens.len() < 2 {
-            // A single-token label (`Memorial`, `Central`) is ambiguous by construction.
-            return None;
-        }
-        let head = format!("{} ", tokens[..tokens.len() - 1].join(" "));
-        let tail = format!(" {}", tokens.join(" "));
+        // A single-token label (`Memorial`, `Central`) is ambiguous by construction.
+        let (head, last) = normalized.rsplit_once(' ')?;
+        let head = format!("{head} ");
+        let tail = format!(" {normalized}");
         let mut matched: Option<SchoolId> = None;
         for entry in entries {
-            let candidate = entry.normalized.starts_with(&head) && {
-                let rest = &entry.normalized[head.len()..];
-                !rest.contains(' ') && rest.starts_with(tokens[tokens.len() - 1])
-            };
+            let candidate = entry
+                .normalized
+                .strip_prefix(head.as_str())
+                .is_some_and(|rest| !rest.contains(' ') && rest.starts_with(last));
             let suffix = entry.normalized.ends_with(&tail);
             if candidate || suffix {
                 match &matched {
@@ -172,6 +161,13 @@ impl SchoolIndex {
         }
         matched.map(|id| (id, SchoolMatch::Partial))
     }
+}
+
+/// The label without its relay squad token: `Homestead A` → `Homestead`, and `None` when the last
+/// token is not a one-letter squad (`Madison La Follette`) or there is no token to drop (`Franklin`).
+fn without_squad_letter(label: &str) -> Option<&str> {
+    let (head, last) = label.rsplit_once(' ')?;
+    (!head.is_empty() && last.len() == 1).then_some(head)
 }
 
 #[cfg(test)]
@@ -247,6 +243,13 @@ mod tests {
         assert_eq!(
             index.resolve("WI", "Homestead B").map(|(_, kind)| kind),
             Some(SchoolMatch::Exact)
+        );
+        // An abbreviated label carries the squad letter too: the letter drops after expansion.
+        assert_eq!(
+            index
+                .resolve("WI", "Milw. Bradley Tech A")
+                .map(|(_, kind)| kind),
+            Some(SchoolMatch::Abbreviation)
         );
     }
 
