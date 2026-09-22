@@ -430,8 +430,10 @@ fn roster_fixture(name: &str) -> Option<(String, String)> {
         .split('_')
         .filter(|part| !part.is_empty())
         .collect();
-    match (parts.first(), parts.get(1), parts.get(2)) {
-        (Some(site), Some(&"roster"), Some(team_id)) if parts.len() == 3 => {
+    match (parts.first(), parts.get(1), parts.get(2), parts.len()) {
+        // A three-part name is the bare form (`wi_roster_52649.html`); a fourth part is the slug the
+        // site publishes after the id (`oh_roster_10002_mason.html`).
+        (Some(site), Some(&"roster"), Some(team_id), 3 | 4) => {
             Some(((*site).to_string(), (*team_id).to_string()))
         }
         _ => None,
@@ -467,6 +469,12 @@ async fn milesplit_html_parity() -> Result<()> {
             indexes.insert(site.to_string(), (file, teams));
         } else if let Some((site, team_id)) = roster_fixture(&file) {
             rosters.push((file, stem, body, site, team_id));
+        } else if file.starts_with("oh_meet_") {
+            // The result-set captures: a formatted-results page and a `/raw` body. Their route is
+            // asserted end to end by the adapter's own tests (`milesplit::tests` parses the capture
+            // and maps its rows into canonical entities), so this harness — whose case set is the
+            // index and roster routes — names them instead of aborting the whole walk.
+            continue;
         } else {
             bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");
         }

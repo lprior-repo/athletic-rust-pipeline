@@ -1,13 +1,12 @@
-//! The run: the registry walk, the per-URL journal that lets a re-run resume, and the report
-//! the collector prints.
+//! The run's dispatch, the resume reads that both routes share, and the accumulator append they
+//! both write through.
+//!
+//! The bio walk itself lives in `walk`, split out when this file passed the repository's file
+//! budget: what stays here is what the registry route dispatches to and what the meet route
+//! imports.
 
-use super::absorb::absorb;
 use super::map::{Accumulator, Stats};
-use super::parse::Bio;
-use super::{
-    read_registry, Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
-};
-use crate::net::FetchOptions;
+use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
@@ -15,8 +14,12 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceRef,
 };
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::{HashMap, HashSet};
+
+mod walk;
+
+use walk::{absorb_targets, flush_batch};
 
 // -------------------------------------------------------------------------------------------------
 // Collection
@@ -26,7 +29,13 @@ use std::collections::{HashMap, HashSet};
 ///
 /// Strategy: one request per (athlete, sport) pair, journaled per URL so a re-run resumes; both
 /// payloads are absorbed under one athlete so its teams and grades are minted once.
+///
+/// A run whose options list meets (`--meets`) takes the whole-meet route instead: the `meet` module
+/// pulls each listed meet whole, two requests per meet, and the registry is not read.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
+    if !options.meets.is_empty() {
+        return super::meet::collect_meets(ctx, options).await;
+    }
     let mut report = AdapterReport::new("athleticnet", "athletes");
     let (requests_before, cache_before) = stats_of(ctx).await;
 
@@ -39,11 +48,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         resolved: HashMap::new(),
         stats: Stats::default(),
         accumulated: Accumulator::default(),
+        pending: Vec::new(),
+        batches: Vec::new(),
         report,
     };
     absorb_targets(ctx, options, &targets, &source, &index, &done, &mut run).await?;
+    flush_batch(ctx, &mut run)?;
 
-    let counts = store_accumulated(ctx, run.accumulated)?;
     let (requests_after, cache_after) = stats_of(ctx).await;
     run.report.rows = run.stats.athletes_absorbed;
     run.report.requests = requests_after.saturating_sub(requests_before);
@@ -51,13 +62,14 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     run.report.errors = run.stats.fetches_failed;
     note_stats(&mut run.report, &run.stats);
     run.report.note(format!(
-        "canonical entities: schools {} meets {} teams {} athletes {} events {} performances {}",
-        counts.schools,
-        counts.meets,
-        counts.teams,
-        counts.athletes,
-        counts.events,
-        counts.performances
+        "canonical rows appended: schools {} meets {} teams {} athletes {} events {} performances \
+         {}",
+        appended_total(&run.batches, |batch| batch.schools),
+        appended_total(&run.batches, |batch| batch.meets),
+        appended_total(&run.batches, |batch| batch.teams),
+        appended_total(&run.batches, |batch| batch.athletes),
+        appended_total(&run.batches, |batch| batch.events),
+        appended_total(&run.batches, |batch| batch.performances),
     ));
     run.report.note(
         "this source is outside the core scope (`report --core`): it is a reseller of results the \
@@ -72,17 +84,21 @@ struct RunState {
     resolved: HashMap<String, SchoolId>,
     stats: Stats,
     accumulated: Accumulator,
+    /// Units read since the last flush: the URL to journal and the payload to journal it with.
+    pending: Vec<(String, Value)>,
+    /// What each flush appended; the report's entity note sums them.
+    batches: Vec<EntityCounts>,
     report: AdapterReport,
 }
 
 /// Canonical entities written by one run, per table.
-struct EntityCounts {
-    schools: usize,
-    meets: usize,
-    teams: usize,
-    athletes: usize,
-    events: usize,
-    performances: usize,
+pub(super) struct EntityCounts {
+    pub(super) schools: usize,
+    pub(super) meets: usize,
+    pub(super) teams: usize,
+    pub(super) athletes: usize,
+    pub(super) events: usize,
+    pub(super) performances: usize,
 }
 
 /// Resolve the operator's registry into the run's targets, noting the ones that name no state.
@@ -99,8 +115,13 @@ fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResul
     Ok(targets)
 }
 
+/// Sum one table's counter over the run's flushes.
+fn appended_total(batches: &[EntityCounts], counter: fn(&EntityCounts) -> usize) -> usize {
+    batches.iter().map(counter).sum()
+}
+
 /// The URLs a previous run already journaled at the current parse version.
-fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
+pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     let payloads = ctx.store.journal_payloads("athleticnet")?;
     let version = u64::from(PARSE_VERSION);
     let done = payloads
@@ -112,105 +133,8 @@ fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<String>> {
     Ok(done)
 }
 
-/// Absorb every pending (athlete, sport) payload into the run's accumulation.
-async fn absorb_targets(
-    ctx: &AdapterContext<'_>,
-    options: &Options,
-    targets: &[Target],
-    source: &SourceRef,
-    index: &SchoolIndex,
-    done: &HashSet<String>,
-    run: &mut RunState,
-) -> CrawlResult<()> {
-    for (processed, target) in targets.iter().enumerate() {
-        if options.limit.is_some_and(|limit| processed >= limit) {
-            break;
-        }
-        run.stats.athletes_seen = run.stats.athletes_seen.saturating_add(1);
-        let mut absorbed_any = false;
-        for scope in SCOPES {
-            let url = format!(
-                "{BIO_ENDPOINT}?athleteId={}&sport={}&level={HIGH_SCHOOL_LEVEL}",
-                target.athlete_id,
-                scope.parameter()
-            );
-            if done.contains(&url) {
-                continue;
-            }
-            let Some(bio) = fetch_bio(ctx, target, scope, options, &url, run).await else {
-                continue;
-            };
-            let rows = absorb(
-                &bio,
-                scope,
-                target,
-                source,
-                &options.observed_on,
-                index,
-                &mut run.resolved,
-                &mut run.stats,
-                &mut run.accumulated,
-            );
-            absorbed_any |= rows > 0;
-            ctx.store.journal_done(
-                "athleticnet",
-                &url,
-                &json!({
-                    "url": url,
-                    "parser": PARSE_VERSION,
-                    "parsed": true,
-                    "athlete": target.athlete_id,
-                    "sport": scope.parameter(),
-                    "rows": rows,
-                }),
-            )?;
-        }
-        if absorbed_any {
-            run.stats.athletes_absorbed = run.stats.athletes_absorbed.saturating_add(1);
-        }
-    }
-    Ok(())
-}
-
-/// Fetch and decode one (athlete, sport) payload, or `None` when it could not be read.
-async fn fetch_bio(
-    ctx: &AdapterContext<'_>,
-    target: &Target,
-    scope: Scope,
-    options: &Options,
-    url: &str,
-    run: &mut RunState,
-) -> Option<Bio> {
-    let fetch_options = FetchOptions {
-        refresh: options.refresh,
-        allow_not_found: false,
-        headers: vec![("Accept".to_string(), "application/json".to_string())],
-    };
-    let fetched = match ctx.fetcher.get(url, &fetch_options).await {
-        Ok(fetched) => fetched,
-        Err(error) => {
-            run.stats.fetches_failed = run.stats.fetches_failed.saturating_add(1);
-            run.report
-                .note(format!("athlete {}: {error}", target.athlete_id));
-            return None;
-        }
-    };
-    match serde_json::from_str(&fetched.text()) {
-        Ok(bio) => Some(bio),
-        Err(error) => {
-            run.stats.fetches_failed = run.stats.fetches_failed.saturating_add(1);
-            run.report.note(format!(
-                "athlete {} {}: body is not an athlete bio ({error})",
-                target.athlete_id,
-                scope.parameter()
-            ));
-            None
-        }
-    }
-}
-
 /// Append every entity the run accumulated and count what was written.
-fn store_accumulated(
+pub(super) fn store_accumulated(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
 ) -> CrawlResult<EntityCounts> {
@@ -275,7 +199,7 @@ fn note_stats(report: &mut AdapterReport, stats: &Stats) {
 
 /// The consolidated school index, when one exists. Athletic.net spans the whole country while the
 /// index covers the platform's states, so a miss mints rather than skips.
-fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
+pub(super) fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
     let path = ctx.store.out_dir().join("schools.jsonl");
     if !path.exists() {
         return Ok(SchoolIndex::from_schools(&[]));
@@ -284,7 +208,7 @@ fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<SchoolIndex> {
     Ok(SchoolIndex::from_schools(&schools))
 }
 
-async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
+pub(super) async fn stats_of(ctx: &AdapterContext<'_>) -> (u64, u64) {
     let stats = ctx.fetcher.stats().await;
     (stats.requests, stats.cache_hits)
 }

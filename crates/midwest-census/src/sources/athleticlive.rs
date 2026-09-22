@@ -24,11 +24,18 @@ use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalMeet, EvidenceMethod};
 use census_domain::UsJurisdiction;
 
+mod docs;
+mod map;
+mod map_rows;
 mod meets;
 mod parse;
+mod results;
+mod standings;
+mod wire;
 
 pub use meets::build_meets;
 pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
+pub use results::{collect as collect_results, ResultOptions, StandingsCapture};
 
 /// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]

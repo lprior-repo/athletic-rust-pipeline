@@ -211,7 +211,10 @@ pub struct Consolidated {
 pub struct StoreStats {
     pub tables: Vec<(String, u64)>,
     pub observations: u64,
+    /// LSM-tree level sizes as fjall reports them: SST files only, no write-ahead journal.
     pub bytes_on_disk: u64,
+    /// Recursive size of the store root, journal, HTTP cache and outputs included.
+    pub store_bytes: u64,
 }
 
 pub struct Store {

@@ -196,6 +196,11 @@ fn stats_count_observations_per_table() {
         .unwrap();
     assert_eq!(schools, 3);
     assert_eq!(stats.observations, 3);
+    // The recursive store size carries what the LSM level sizes leave out: a freshly written store
+    // keeps its newest batch in the write-ahead journal, so the directory holds bytes even when
+    // `bytes_on_disk` reports few, and sizing a copy by that column alone under-counts.
+    assert!(stats.store_bytes > 0);
+    assert!(stats.store_bytes >= stats.bytes_on_disk);
 }
 
 #[test]

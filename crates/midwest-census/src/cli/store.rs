@@ -14,6 +14,7 @@ pub(super) fn print_store_stats(store: &Store) -> Result<()> {
     }
     println!("observations\t{}", stats.observations);
     println!("bytes_on_disk\t{}", stats.bytes_on_disk);
+    println!("store_bytes\t{}", stats.store_bytes);
     Ok(())
 }
 

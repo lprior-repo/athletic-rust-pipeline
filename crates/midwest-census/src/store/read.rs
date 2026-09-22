@@ -124,6 +124,7 @@ impl Store {
             tables,
             observations,
             bytes_on_disk: self.entities.disk_space(),
+            store_bytes: directory_bytes(self.root()),
         })
     }
 
@@ -238,4 +239,24 @@ pub fn read_rows<T: for<'de> serde::Deserialize<'de>>(
         }
     }
     Ok(rows)
+}
+
+/// Recursive byte total of a directory, ignoring entries that cannot be read.
+///
+/// This is the number to size a copy or a backup by. fjall's own `disk_space()` counts LSM-tree
+/// level sizes, so a store whose newest batch still lives in the write-ahead journal reports a
+/// figure far below what a copy has to carry — a drill measured `bytes_on_disk 0` on a store whose
+/// directory held 229 KB, 223 KB of it journal.
+fn directory_bytes(root: &Path) -> u64 {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return 0;
+    };
+    entries
+        .flatten()
+        .map(|entry| match entry.metadata() {
+            Ok(metadata) if metadata.is_dir() => directory_bytes(&entry.path()),
+            Ok(metadata) => metadata.len(),
+            Err(_) => 0,
+        })
+        .fold(0_u64, u64::saturating_add)
 }

@@ -63,8 +63,12 @@ pub(super) async fn run_teams(
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
     /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS code).
-    #[arg(long, value_delimiter = ',', default_value = "WI")]
+    /// Default: WI.
+    #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
+    /// Walk every jurisdiction (50 states + DC). Cannot be combined with `--states`.
+    #[arg(long)]
+    all_states: bool,
     /// Cap the number of rosters fetched per state (for smoke runs).
     #[arg(long)]
     limit_per_state: Option<usize>,
@@ -88,7 +92,7 @@ pub(super) struct CollectArgs {
 /// Build the census options: the codes are already validated by clap's parser.
 fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
     Ok(census::CollectOptions {
-        jurisdictions: args.states.clone(),
+        jurisdictions: super::resolve_states(args.all_states, &args.states)?,
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
         state_concurrency: args.state_concurrency,

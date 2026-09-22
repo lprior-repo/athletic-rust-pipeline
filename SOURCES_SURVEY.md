@@ -1,7 +1,15 @@
 # Data source survey — findings and collection design
 
 **Date:** 2026-09-20. **Scope:** alternative public data sources for the athlete-evidence pipeline (HS track & field + cross-country), required because the previous pipeline target (athletic.net) is avoided by owner instruction.
-**Status of this file:** reconnaissance findings + operating policy + design direction. Nothing here is a collection claim; no source below is integrated yet. Every status/byte count/quote is a live probe result from 2026-09-20.
+**Status of this file:** reconnaissance findings + operating policy + design direction. Every status,
+byte count and quote below is a live probe result from 2026-09-20 and is not a code claim. Since that
+date the census crate has landed adapters for MileSplit rosters and the association lanes
+(`milesplit`, `wiaa`, `wiaa_results`, `mshsl`, `ihsa`, `ohsaa`, `ks`, `plain_names`, `wayzata`,
+`coach_contacts`), the national lanes this survey ranked (`tfrrs`, `athleticlive`,
+`athleticlive_athletes`, `athleticnet`), and vendor result-file parsers for the HY-TEK / RunData /
+XC / RaceDay artifacts (`src/sources/{hytek,compiled,xc,raceday}`, dispatched by
+`src/sources/result_file.rs`) — the tree is the current state; this file is the reconnaissance input
+that chose them. `src/sources/registry/table.rs` is the authoritative slug list.
 **Method note:** `web_search` was unavailable at the provider level during this survey (provider errors), and the HTML search engines it fell back to were captcha-gated or empty (DuckDuckGo 202/no links, Mojeek captcha, Bing empty). All discovery therefore ran through platform APIs (GitHub, Kaggle, HuggingFace, Zenodo, Figshare, data.gov CKAN, archive.org) plus direct page fetches.
 
 ---
@@ -10,7 +18,15 @@
 
 > "Ignore all site restrictions here we will do like max 2 RPS here on all sites we will design this intelligently so we aren't hammering these sites."
 
-1. **robots.txt / ToS / crawl-delay are recorded for the ledger but not treated as blockers.** They appear below as `RESTRICTION (recorded)` to keep the record honest; they do not gate collection.
+*(Recorded 2026-09-20. The implemented rule is item 1 below: robots.txt is enforced by the fetcher
+and the only relaxation is an operator naming a host on `--authorized-host`.)*
+
+1. **robots.txt is enforced in code; this file only records it.** The fetcher
+   (`crates/midwest-census/src/net/mod.rs`) returns `FetchError::Robots` for a disallowed path and
+   counts it in `FetchStats::robots_blocked`. The one relaxation is an operator naming a host on
+   `--authorized-host`: the rule is then counted as `robots_authorized` and the request proceeds
+   under the 2 rps ceiling. ToS and crawl-delay entries below are survey observations for the
+   ledger, not an enforcement decision.
 2. **Hard pacing ceiling: 2 requests/second per host** — enforced by a per-host token bucket (500 ms minimum spacing). No host is ever contacted faster than that, regardless of what the host permits.
 3. **Intelligent-design requirements** (§17): bounded per-host concurrency, conditional GETs where the host provides `ETag`/`Last-Modified`, whole-document fetches over per-row fetches, exponential backoff on 429/5xx, host cool-downs, and a projected per-host request budget written to the run log.
 4. **Stated exception:** `athletic.net` and its subdomains remain **excluded** (earlier owner instruction). The surveys confirm several paths redirect *into* it (athletic.live, live.athletictiming.net, OHSAA/IHSAA delegations, RunnerSpace sign-ups); those targets were not followed. Flagged here only so the owner can reverse that single decision; **no other host is excluded**.

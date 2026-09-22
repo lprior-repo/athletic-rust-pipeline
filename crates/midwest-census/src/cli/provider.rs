@@ -7,22 +7,29 @@ use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use clap::Args;
-use midwest_census::sources::{self as providers, AdapterContext, AdapterReport};
 use midwest_census::store::Store;
 
 use super::{build_fetcher, Cli};
 
+mod arms;
+
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
-    /// Adapter name: ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule,
-    /// athleticlive, athleticlive_athletes, athleticnet.
+    /// Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament,
+    /// ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_athletes,
+    /// athleticlive_results, athleticnet, milesplit, coach_contacts.
     name: String,
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
     limit: Option<usize>,
-    /// Restrict to these jurisdictions (adapters that span several states).
+    /// Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm
+    /// walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own
+    /// coverage, and the list must include that state or the run reports the mismatch.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
+    /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
+    #[arg(long)]
+    all_states: bool,
     /// Restrict to these archive years (result-archive adapters only).
     #[arg(long, value_delimiter = ',')]
     seasons: Vec<i16>,
@@ -32,12 +39,30 @@ pub(super) struct ProviderArgs {
     /// Input artifact for import-style adapters.
     #[arg(long)]
     input: Option<String>,
+    /// Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the
+    /// whole-meet route (two requests per meet) instead of the per-athlete registry route.
+    #[arg(long, value_delimiter = ',')]
+    meets: Vec<i64>,
+    /// Spend the third request per meet for the per-event type and hurdle metadata.
+    #[arg(long)]
+    event_metadata: bool,
+    /// Cap the number of meets processed on the whole-meet route.
+    #[arg(long)]
+    meet_limit: Option<usize>,
     /// Ignore cached HTTP bodies and re-fetch.
     #[arg(long)]
     refresh: bool,
     /// ISO date stamped into evidence (defaults to today).
     #[arg(long)]
     observed_on: Option<String>,
+}
+
+/// The jurisdictions this run restricts to: `--all-states`, else `--states`, else the adapter's own
+/// coverage (an empty list). The `milesplit` arm is a roster walk and uses the Wisconsin default.
+impl ProviderArgs {
+    fn jurisdictions(&self) -> Result<Vec<UsJurisdiction>> {
+        super::resolve_restriction(self.all_states, &self.states)
+    }
 }
 
 /// Run one association contact adapter by name.
@@ -55,223 +80,27 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         observed_on: observed_on.clone(),
     };
     let report = match args.name.as_str() {
-        "ks" => ks_report(&context, args, observed_on).await,
-        "wiaa_results" => wiaa_results_report(&context, args, observed_on).await,
-        "wiaa" => wiaa_report(&context, args, observed_on).await,
-        "ihsa" => ihsa_report(&context, args, observed_on).await,
-        "ohsaa" => ohsaa_report(&context, args, observed_on).await,
-        "mshsl" => mshsl_report(&context, args, observed_on).await,
-        "wayzata_schedule" => wayzata_report(&context, args, observed_on).await,
-        "plain_names" => plain_names_report(&context, args, observed_on).await,
-        "athleticlive" => athleticlive_report(&context, args, observed_on).await,
+        "ks" => arms::ks_report(&context, args, observed_on).await,
+        "wiaa_results" => arms::wiaa_results_report(&context, args, observed_on).await,
+        "wiaa" => arms::wiaa_report(&context, args, observed_on).await,
+        "ihsa" => arms::ihsa_report(&context, args, observed_on).await,
+        "ihsa_tournament" => arms::ihsa_tournament_report(&context, args, observed_on).await,
+        "ohsaa" => arms::ohsaa_report(&context, args, observed_on).await,
+        "mshsl" => arms::mshsl_report(&context, args, observed_on).await,
+        "wayzata" | "wayzata_schedule" => arms::wayzata_report(&context, args, observed_on).await,
+        "plain_names" => arms::plain_names_report(&context, args, observed_on).await,
+        "athleticlive" => arms::athleticlive_report(&context, args, observed_on).await,
         "athleticlive_athletes" => {
-            athleticlive_athletes_report(&context, args, observed_on).await
+            arms::athleticlive_athletes_report(&context, args, observed_on).await
         }
-        "athleticnet" => athleticnet_report(&context, args, observed_on).await,
+        "athleticnet" => arms::athleticnet_report(&context, args, observed_on).await,
+        "milesplit" => arms::milesplit_report(&context, args, observed_on).await,
+        "coach_contacts" => arms::coach_contacts_report(store, args, observed_on),
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ohsaa, mshsl, plain_names, wayzata_schedule, athleticlive, athleticlive_athletes, athleticnet"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_athletes, athleticnet, milesplit, coach_contacts"
         ),
     }
     .with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
-}
-
-async fn ks_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::ks::collect(
-        context,
-        &providers::ks::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn wiaa_results_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::wiaa_results::collect(
-        context,
-        &providers::wiaa_results::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            seasons: args.seasons.clone(),
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn wiaa_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::wiaa::collect(
-        context,
-        &providers::wiaa::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn ihsa_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::ihsa::collect(
-        context,
-        &providers::ihsa::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn ohsaa_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::ohsaa::collect(
-        context,
-        &providers::ohsaa::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn mshsl_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::mshsl::collect(
-        context,
-        &providers::mshsl::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn wayzata_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::wayzata::collect(
-        context,
-        &providers::wayzata::Options {
-            years: args.seasons.clone(),
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on: Some(observed_on),
-        },
-    )
-    .await?)
-}
-
-async fn plain_names_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::plain_names::collect(
-        context,
-        &providers::plain_names::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn athleticlive_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::athleticlive::collect(
-        context,
-        &providers::athleticlive::Options {
-            input: args.input.clone(),
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn athleticlive_athletes_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::athleticlive_athletes::collect(
-        context,
-        &providers::athleticlive_athletes::Options {
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-            school_names: args.school_names.clone(),
-        },
-    )
-    .await?)
-}
-
-async fn athleticnet_report(
-    context: &AdapterContext<'_>,
-    args: &ProviderArgs,
-    observed_on: String,
-) -> Result<AdapterReport> {
-    Ok(providers::athleticnet::collect(
-        context,
-        &providers::athleticnet::Options {
-            input: args.input.clone(),
-            limit: args.limit,
-            refresh: args.refresh,
-            observed_on,
-            states: args.states.clone(),
-        },
-    )
-    .await?)
 }

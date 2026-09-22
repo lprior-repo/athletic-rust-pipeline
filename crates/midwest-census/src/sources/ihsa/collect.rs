@@ -1,12 +1,12 @@
-//! Collect orchestration: fetch the schools list once, then walk one `staff2` request per
-//! school, journalling progress so a re-run resumes without re-processing.
+//! Collect orchestration: fetch the schools list once, then walk one `staff2` request per school,
+//! appending each school's rows before journalling it so a re-run resumes past it.
 
 use super::map::{parse_coach, parse_school, reveal_address_for};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, IHSA_API};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
-use census_domain::model::{CanonicalCoach, CanonicalSchool, Evidence, SchoolId, SourceRef};
+use census_domain::model::{CanonicalCoach, Evidence, SchoolId, SourceRef};
 use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------
@@ -19,7 +19,8 @@ use std::collections::{HashMap, HashSet};
 /// 1. Fetch `https://api.ihsa.org/v1/schools` — one request returns all 828 Illinois member schools.
 /// 2. For each school, fetch `https://api.ihsa.org/v1/schools/{SchoolID}/staff2` — per-school staff.
 /// 3. Parse schools into canonical schools, staff into coaches (ADs + head/assistant coaches).
-/// 4. Journal progress per school so a re-run resumes without re-processing.
+/// 4. Append each school and its coach rows, then journal that school, so a re-run resumes past
+///    every school whose rows are already in the store.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ihsa", "schools");
     report.unit = "schools".to_string();
@@ -34,8 +35,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     let mut run = IhsaRun {
         options,
-        schools: Vec::new(),
-        coaches: Vec::new(),
         revealed_emails: HashMap::new(),
         processed: 0,
         skipped: 0,
@@ -47,8 +46,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         }
         process_record(ctx, record, &schools_url, &done_keys, &mut run, &mut report).await?;
     }
-
-    append_all(ctx, &run)?;
 
     // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
@@ -65,14 +62,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// Mutable state for one `collect` run: what is being built, the run's options and the tallies.
+/// Mutable state for one `collect` run: the run's options, the per-school reveal cache and the
+/// tallies.
 ///
 /// Tally counters saturate: they feed diagnostics only, so an impossible overflow floors at
 /// `usize::MAX` instead of panicking or wrapping silently.
 struct IhsaRun<'a> {
     options: &'a Options,
-    schools: Vec<CanonicalSchool>,
-    coaches: Vec<CanonicalCoach>,
     /// PersonID → revealed address within the current school (a person can hold several titles).
     revealed_emails: HashMap<i64, Option<String>>,
     processed: usize,
@@ -102,7 +98,8 @@ async fn fetch_school_records(
     Ok(Some(records))
 }
 
-/// Process one school record: parse the school, fetch its staff, emit coaches and journal it.
+/// Process one school record: parse the school, fetch its staff, emit coaches and journal the
+/// school once its rows are appended.
 async fn process_record(
     ctx: &AdapterContext<'_>,
     record: &SchoolRecord,
@@ -124,16 +121,19 @@ async fn process_record(
     else {
         return Ok(());
     };
-    run.schools.push(school);
+    ctx.store.append(Table::Schools, &school)?;
 
     let staff_url = format!("{IHSA_API}/v1/schools/{}/staff2", record.school_id);
     let Some(staff) = fetch_staff(ctx, &staff_url, record, &journal_key, run, report).await? else {
         return Ok(());
     };
 
-    emit_coaches(ctx, record, &staff, &school_id, &staff_url, run, report).await;
+    let coaches = emit_coaches(ctx, record, &staff, &school_id, &staff_url, run, report).await;
 
-    // Journal this school as done.
+    // Append this school's coach rows, then journal it: the append commits at `SyncData` and the
+    // journal write commits separately, so a journaled school never claims rows the store does not
+    // hold.
+    ctx.store.append_many(Table::Coaches, &coaches)?;
     journal_school(
         ctx,
         &journal_key,
@@ -161,7 +161,8 @@ async fn emit_coaches(
     staff_url: &str,
     run: &mut IhsaRun<'_>,
     report: &mut AdapterReport,
-) {
+) -> Vec<CanonicalCoach> {
+    let mut coaches = Vec::new();
     for person in staff {
         let Some(mut coach) = parse_coach(person, school_id, staff_url, &run.options.observed_on)
         else {
@@ -207,8 +208,9 @@ async fn emit_coaches(
         if coach.professional_email.is_some() {
             report.with_email = report.with_email.saturating_add(1);
         }
-        run.coaches.push(coach);
+        coaches.push(coach);
     }
+    coaches
 }
 
 /// Journal one school's progress on `ihsa_schools`.
@@ -279,15 +281,4 @@ async fn fetch_staff(
         }
     };
     Ok(Some(staff))
-}
-
-/// Append the run's schools and coaches, each table only when it has rows.
-fn append_all(ctx: &AdapterContext<'_>, run: &IhsaRun<'_>) -> CrawlResult<()> {
-    if !run.schools.is_empty() {
-        ctx.store.append_many(Table::Schools, &run.schools)?;
-    }
-    if !run.coaches.is_empty() {
-        ctx.store.append_many(Table::Coaches, &run.coaches)?;
-    }
-    Ok(())
 }

@@ -1,0 +1,4547 @@
+{
+  "file": "oh_roster_10002_mason.html",
+  "roster": {
+    "athletes": [
+      {
+        "athlete_id": "16846610",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Inioluwa Adesanya",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846610-inioluwa-adesanya",
+        "roster_name": "Adesanya, Inioluwa",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913695",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Aasritha Adidamu",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913695-aasritha-adidamu",
+        "roster_name": "Adidamu, Aasritha",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15065841",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Cara Adinolfi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15065841-cara-adinolfi",
+        "roster_name": "Adinolfi, Cara",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18651524",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Azaan Ahmed",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651524-azaan-ahmed",
+        "roster_name": "Ahmed, Azaan",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696812",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Jumana Ahmed",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696812-jumana-ahmed",
+        "roster_name": "Ahmed, Jumana",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677825",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Mazin Alsabbagh",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677825-mazin-alsabbagh",
+        "roster_name": "Alsabbagh, Mazin",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677829",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Zane Alsabbagh",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677829-zane-alsabbagh",
+        "roster_name": "Alsabbagh, Zane",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828404",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Adel Amel",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828404-adel-amel",
+        "roster_name": "Amel, Adel",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677832",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Eligh Amshoff",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677832-eligh-amshoff",
+        "roster_name": "Amshoff, Eligh",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14114020",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Bella Anderson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14114020-bella-anderson",
+        "roster_name": "Anderson, Bella",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846653",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Clara Anderson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846653-clara-anderson",
+        "roster_name": "Anderson, Clara",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422913",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Matthew Anderson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422913-matthew-anderson",
+        "roster_name": "Anderson, Matthew",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16609998",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Marcus Arengo",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609998-marcus-arengo",
+        "roster_name": "Arengo, Marcus",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677835",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Nishanth Arjala",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677835-nishanth-arjala",
+        "roster_name": "Arjala, Nishanth",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057775",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Darsh Arora",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057775-darsh-arora",
+        "roster_name": "Arora, Darsh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677839",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Thomas Avery",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677839-thomas-avery",
+        "roster_name": "Avery, Thomas",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13699134",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Xavier Bajunid",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13699134-xavier-bajunid",
+        "roster_name": "Bajunid, Xavier",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14709622",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "harper beach",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14709622-harper-beach",
+        "roster_name": "beach, harper",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15065867",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ella Beese",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15065867-ella-beese",
+        "roster_name": "Beese, Ella",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16239446",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Kylee Bello",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16239446-kylee-bello",
+        "roster_name": "Bello, Kylee",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13688797",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Lindsey Berkebile",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13688797-lindsey-berkebile",
+        "roster_name": "Berkebile, Lindsey",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14520347",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Sophie Bevan",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14520347-sophie-bevan",
+        "roster_name": "Bevan, Sophie",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16610027",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Drew Bhatt",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16610027-drew-bhatt",
+        "roster_name": "Bhatt, Drew",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677843",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Srinivas Bhavaraju",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677843-srinivas-bhavaraju",
+        "roster_name": "Bhavaraju, Srinivas",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14087941",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Brandon Birdsong",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14087941-brandon-birdsong",
+        "roster_name": "Birdsong, Brandon",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15091494",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Taylor Birdsong",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15091494-taylor-birdsong",
+        "roster_name": "Birdsong, Taylor",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651501",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Tanishq-Bala Bommala",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651501-tanishq-bala-bommala",
+        "roster_name": "Bommala, Tanishq-Bala",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16239427",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Jahnaya Bosunga",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16239427-jahnaya-bosunga",
+        "roster_name": "Bosunga, Jahnaya",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16609991",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Jennissy Bosunga",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609991-jennissy-bosunga",
+        "roster_name": "Bosunga, Jennissy",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846657",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Ella Boynton",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846657-ella-boynton",
+        "roster_name": "Boynton, Ella",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422877",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Ella Boyton",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/17422877-ella-boyton",
+        "roster_name": "Boyton, Ella",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16584017",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Avery Brannon",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16584017-avery-brannon",
+        "roster_name": "Brannon, Avery",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15587755",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Skyler Brazelton",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15587755-skyler-brazelton",
+        "roster_name": "Brazelton, Skyler",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17377281",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Cameron Brock",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377281-cameron-brock",
+        "roster_name": "Brock, Cameron",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16850027",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Isolde Brooks",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850027-isolde-brooks",
+        "roster_name": "Brooks, Isolde",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696819",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Kaitlyn Brown",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696819-kaitlyn-brown",
+        "roster_name": "Brown, Kaitlyn",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846663",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Charlotte Bruning",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846663-charlotte-bruning",
+        "roster_name": "Bruning, Charlotte",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17349029",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Kate Buckley",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349029-kate-buckley",
+        "roster_name": "Buckley, Kate",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17349030",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Macie Bunch",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349030-macie-bunch",
+        "roster_name": "Bunch, Macie",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17377258",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Maycie Bunch",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377258-maycie-bunch",
+        "roster_name": "Bunch, Maycie",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828383",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "John Bunn",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828383-john-bunn",
+        "roster_name": "Bunn, John",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696827",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Erin Caplinger",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696827-erin-caplinger",
+        "roster_name": "Caplinger, Erin",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057781",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ian Casper",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057781-ian-casper",
+        "roster_name": "Casper, Ian",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913754",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Jaxon Castner",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913754-jaxon-castner",
+        "roster_name": "Castner, Jaxon",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16468475",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Molly Cates",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16468475-molly-cates",
+        "roster_name": "Cates, Molly",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13696829",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Grace Chamberlain",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696829-grace-chamberlain",
+        "roster_name": "Chamberlain, Grace",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913762",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Vance Chaney",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913762-vance-chaney",
+        "roster_name": "Chaney, Vance",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828405",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Lucian Chang",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828405-lucian-chang",
+        "roster_name": "Chang, Lucian",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913721",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "J Chen",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14913721-j-chen",
+        "roster_name": "Chen, J",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17422928",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Jerry Chen",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422928-jerry-chen",
+        "roster_name": "Chen, Jerry",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828406",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Mingsheng Chen",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828406-mingsheng-chen",
+        "roster_name": "Chen, Mingsheng",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18298923",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Nainika Chetty",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18298923-nainika-chetty",
+        "roster_name": "Chetty, Nainika",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15071464",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Laghna Chintakayala",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071464-laghna-chintakayala",
+        "roster_name": "Chintakayala, Laghna",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060328",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Riley Chiu",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060328-riley-chiu",
+        "roster_name": "Chiu, Riley",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15587749",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Abby Christensen",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15587749-abby-christensen",
+        "roster_name": "Christensen, Abby",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16229813",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Abigail Christensen",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16229813-abigail-christensen",
+        "roster_name": "Christensen, Abigail",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14165849",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Natalie Clabbers",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14165849-natalie-clabbers",
+        "roster_name": "Clabbers, Natalie",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060334",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Lucas Clay",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060334-lucas-clay",
+        "roster_name": "Clay, Lucas",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16609947",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Sarai Coleman",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609947-sarai-coleman",
+        "roster_name": "Coleman, Sarai",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15057784",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "George Conley",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057784-george-conley",
+        "roster_name": "Conley, George",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071428",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Fiona Connors",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071428-fiona-connors",
+        "roster_name": "Connors, Fiona",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14740661",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Joey Corcoran",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14740661-joey-corcoran",
+        "roster_name": "Corcoran, Joey",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677858",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Brady Cornish",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677858-brady-cornish",
+        "roster_name": "Cornish, Brady",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057786",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Robert Crim",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057786-robert-crim",
+        "roster_name": "Crim, Robert",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071462",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Nadia Dandrea",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071462-nadia-dandrea",
+        "roster_name": "Dandrea, Nadia",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060343",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "David Darcy",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060343-david-darcy",
+        "roster_name": "Darcy, David",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422914",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Beckham David",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422914-beckham-david",
+        "roster_name": "David, Beckham",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16850069",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Sarah Davis",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850069-sarah-davis",
+        "roster_name": "Davis, Sarah",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16609986",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Olivia Dean",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609986-olivia-dean",
+        "roster_name": "Dean, Olivia",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17422853",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Mallory Dekyi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/17422853-mallory-dekyi",
+        "roster_name": "Dekyi, Mallory",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13689157",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Anna Dente",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13689157-anna-dente",
+        "roster_name": "Dente, Anna",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13696831",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Nicole Diaz Silva",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696831-nicole-diaz-silva",
+        "roster_name": "Diaz Silva, Nicole",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17377323",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "William Doenecke",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377323-william-doenecke",
+        "roster_name": "Doenecke, William",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16250141",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Aldo Dokouzov",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16250141-aldo-dokouzov",
+        "roster_name": "Dokouzov, Aldo",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17955532",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Cody Doner",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955532-cody-doner",
+        "roster_name": "Doner, Cody",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677861",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Daniel Dong",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677861-daniel-dong",
+        "roster_name": "Dong, Daniel",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15074616",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Marley Doran",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15074616-marley-doran",
+        "roster_name": "Doran, Marley",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17349063",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Evelynn Dotson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349063-evelynn-dotson",
+        "roster_name": "Dotson, Evelynn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677863",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Jackson Duma",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677863-jackson-duma",
+        "roster_name": "Duma, Jackson",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060349",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Yousef Eikilani",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060349-yousef-eikilani",
+        "roster_name": "Eikilani, Yousef",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17955415",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Sophia Elias",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955415-sophia-elias",
+        "roster_name": "Elias, Sophia",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17353857",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Sophie Elias",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17353857-sophie-elias",
+        "roster_name": "Elias, Sophie",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13151837",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Stella Elias",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13151837-stella-elias",
+        "roster_name": "Elias, Stella",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13151853",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Ava Engen",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13151853-ava-engen",
+        "roster_name": "Engen, Ava",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14734127",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Parker Evans",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14734127-parker-evans",
+        "roster_name": "Evans, Parker",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16584049",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Preslie Evans",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16584049-preslie-evans",
+        "roster_name": "Evans, Preslie",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16230355",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Grace Faulk",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16230355-grace-faulk",
+        "roster_name": "Faulk, Grace",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846666",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Stella Fay",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846666-stella-fay",
+        "roster_name": "Fay, Stella",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14640155",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Tony Ferguson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14640155-tony-ferguson",
+        "roster_name": "Ferguson, Tony",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846669",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Addison Fitzgerald",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846669-addison-fitzgerald",
+        "roster_name": "Fitzgerald, Addison",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17353854",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Avery Flowerdew",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17353854-avery-flowerdew",
+        "roster_name": "Flowerdew, Avery",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16850081",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Claire Frazier",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850081-claire-frazier",
+        "roster_name": "Frazier, Claire",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18651491",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Reyansh Gadi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651491-reyansh-gadi",
+        "roster_name": "Gadi, Reyansh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17377278",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Aashrith Gadthula",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377278-aashrith-gadthula",
+        "roster_name": "Gadthula, Aashrith",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17430523",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Vanessa Galeano",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17430523-vanessa-galeano",
+        "roster_name": "Galeano, Vanessa",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17430489",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Vanessa Galeano",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/17430489-vanessa-galeano",
+        "roster_name": "Galeano, Vanessa",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16610025",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Ethan Gandham",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16610025-ethan-gandham",
+        "roster_name": "Gandham, Ethan",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846675",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Sanjana Ganga",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846675-sanjana-ganga",
+        "roster_name": "Ganga, Sanjana",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828384",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Sanjeev Ganga",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828384-sanjeev-ganga",
+        "roster_name": "Ganga, Sanjeev",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060355",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Colin Garlock",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060355-colin-garlock",
+        "roster_name": "Garlock, Colin",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16229791",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Emma Garrett",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16229791-emma-garrett",
+        "roster_name": "Garrett, Emma",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677869",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Ram Girish",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677869-ram-girish",
+        "roster_name": "Girish, Ram",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913696",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Jaiyah Glover",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913696-jaiyah-glover",
+        "roster_name": "Glover, Jaiyah",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16609995",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Rylee Glover",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609995-rylee-glover",
+        "roster_name": "Glover, Rylee",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060358",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Anuj Godbole",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060358-anuj-godbole",
+        "roster_name": "Godbole, Anuj",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696836",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Mitalee Godbole",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13696836-mitalee-godbole",
+        "roster_name": "Godbole, Mitalee",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057792",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Benjamin Goebel",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057792-ben-goebel",
+        "roster_name": "Goebel, Benjamin",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696840",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Brooklyn Goldschmidt",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696840-brooklyn-goldschmidt",
+        "roster_name": "Goldschmidt, Brooklyn",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913670",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Aranna Gomes",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913670-aranna-gomes",
+        "roster_name": "Gomes, Aranna",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "13696841",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Arianna Gomes",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13696841-arianna-gomes",
+        "roster_name": "Gomes, Arianna",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17377271",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Gabe Gomez",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/17377271-gabe-gomez",
+        "roster_name": "Gomez, Gabe",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060361",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Gabriel Gomez",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060361-gabriel-gomez",
+        "roster_name": "Gomez, Gabriel",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15668689",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Alexis Graham",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15668689-alexis-graham",
+        "roster_name": "Graham, Alexis",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846671",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Harper Gregory",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846671-harper-gregory",
+        "roster_name": "Gregory, Harper",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14520326",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Paige Griffith",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14520326-paige-griffith",
+        "roster_name": "Griffith, Paige",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "14165846",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Paige Griffiths",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14165846-paige-griffiths",
+        "roster_name": "Griffiths, Paige",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15127627",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Vibha Gulda",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15127627-vibha-gulda",
+        "roster_name": "Gulda, Vibha",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17955529",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Garrett Gundler",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955529-garrett-gundler",
+        "roster_name": "Gundler, Garrett",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14756678",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Riya Gupta",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14756678-riya-gupta",
+        "roster_name": "Gupta, Riya",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16841735",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "James Gustin",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16841735-james-gustin",
+        "roster_name": "Gustin, James",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846685",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Jenna Haberstroh",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846685-jenna-haberstroh",
+        "roster_name": "Haberstroh, Jenna",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828407",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Rayane Habli",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828407-rayane-habli",
+        "roster_name": "Habli, Rayane",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17955531",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Kashtian Harris",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955531-kashtian-harris",
+        "roster_name": "Harris, Kashtian",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15065942",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Emma Hauck",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15065942-emma-hauck",
+        "roster_name": "Hauck, Emma",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13668036",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Atalia Hawkins",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13668036-atalia-hawkins",
+        "roster_name": "Hawkins, Atalia",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16858721",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Nathan Hayden",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16858721-nathan-hayden",
+        "roster_name": "Hayden, Nathan",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "10949522",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Zachary Hayden",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/10949522-zachary-hayden",
+        "roster_name": "Hayden, Zachary",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16229820",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Sarvina Heher",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16229820-sarvina-heher",
+        "roster_name": "Heher, Sarvina",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913698",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Jaiyah Hendrix",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14913698-jaiyah-hendrix",
+        "roster_name": "Hendrix, Jaiyah",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846689",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Kamola Hikmatulloeva",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846689-kamola-hikmatulloeva",
+        "roster_name": "Hikmatulloeva, Kamola",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16307741",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Madeline Hotchkiss",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16307741-madeline-hotchkiss",
+        "roster_name": "Hotchkiss, Madeline",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060364",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Samuel Houpt",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060364-samuel-houpt",
+        "roster_name": "Houpt, Samuel",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15617888",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Lily Huang",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15617888-lily-huang",
+        "roster_name": "Huang, Lily",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18263746",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Shichen Huang",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18263746-shichen-huang",
+        "roster_name": "Huang, Shichen",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18263747",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Yuchen Huang",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18263747-yuchen-huang",
+        "roster_name": "Huang, Yuchen",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14520550",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Chris Hubbard",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14520550-chris-hubbard",
+        "roster_name": "Hubbard, Chris",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14671399",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Andy Hutton",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14671399-andy-hutton",
+        "roster_name": "Hutton, Andy",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14740654",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Dave Hutton",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14740654-dave-hutton",
+        "roster_name": "Hutton, Dave",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16558993",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Kellan Jackson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16558993-kellan-jackson",
+        "roster_name": "Jackson, Kellan",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651514",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Aditya Jadhav",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651514-aditya-jadhav",
+        "roster_name": "Jadhav, Aditya",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828385",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Atharva Jadhav",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828385-atharva-jadhav",
+        "roster_name": "Jadhav, Atharva",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057798",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Grayson Janzen",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057798-grayson-janzen",
+        "roster_name": "Janzen, Grayson",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15324949",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Amisha Jha",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15324949-amisha-jha",
+        "roster_name": "Jha, Amisha",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14773410",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Carson Johnson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14773410-carson-johnson",
+        "roster_name": "Johnson, Carson",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16610015",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Deon Johnson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16610015-deon-johnson",
+        "roster_name": "Johnson, Deon",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17422854",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Olivia Johnson",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/17422854-olivia-johnson",
+        "roster_name": "Johnson, Olivia",
+        "sports": [
+          "indoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18230738",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Rachel Johnson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18230738-rachel-johnson",
+        "roster_name": "Johnson, Rachel",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677872",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Lucas Joseph",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677872-lucas-joseph",
+        "roster_name": "Joseph, Lucas",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828386",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Dharmik Joshi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828386-dharmik-joshi",
+        "roster_name": "Joshi, Dharmik",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15066283",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ira Joshi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066283-ira-joshi",
+        "roster_name": "Joshi, Ira",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677874",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Krishna Juturu",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677874-krishna-juturu",
+        "roster_name": "Juturu, Krishna",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057802",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ismet Kachar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057802-ismet-kachar",
+        "roster_name": "Kachar, Ismet",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846699",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Shravani Kadam",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846699-shravani-kadam",
+        "roster_name": "Kadam, Shravani",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696852",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Anvitha Kakarlapudi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696852-anvitha-kakarlapudi",
+        "roster_name": "Kakarlapudi, Anvitha",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15668690",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Rakshan Kamalesh",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15668690-rakshan-kamalesh",
+        "roster_name": "Kamalesh, Rakshan",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14520297",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Rakshana Kamalesh",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14520297-rakshana-kamalesh",
+        "roster_name": "Kamalesh, Rakshana",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15066295",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Emma Kamel",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066295-emma-kamel",
+        "roster_name": "Kamel, Emma",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16229747",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Kara Kamel",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16229747-kara-kamel",
+        "roster_name": "Kamel, Kara",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15066300",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Kiara Kanade",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066300-kiara-kanade",
+        "roster_name": "Kanade, Kiara",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17377256",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Madelyn Kanski",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377256-madelyn-kanski",
+        "roster_name": "Kanski, Madelyn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677876",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Ethan Kappen",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677876-ethan-kappen",
+        "roster_name": "Kappen, Ethan",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828387",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Ankur Karajagi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828387-ankur-karajagi",
+        "roster_name": "Karajagi, Ankur",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060372",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Aaditya Karande",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060372-aaditya-karande",
+        "roster_name": "Karande, Aaditya",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18298928",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "AJ Kaylor",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18298928-aj-kaylor",
+        "roster_name": "Kaylor, AJ",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828388",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Arnav Keskar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828388-arnav-keskar",
+        "roster_name": "Keskar, Arnav",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16307814",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Jeciah Killens",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16307814-jeciah-killens",
+        "roster_name": "Killens, Jeciah",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17377257",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Liana Kim",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377257-liana-kim",
+        "roster_name": "Kim, Liana",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060392",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Surya Komatineni",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060392-surya-komatineni",
+        "roster_name": "Komatineni, Surya",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13668040",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Auna Korostyshevsky",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13668040-auna-korostyshevsky",
+        "roster_name": "Korostyshevsky, Auna",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060378",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Casey Kowalski",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060378-casey-kowalski",
+        "roster_name": "Kowalski, Casey",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057809",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Reagor Kowalski",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057809-reagor-kowalski",
+        "roster_name": "Kowalski, Reagor",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16841741",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Bharath Krishna",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16841741-bharath-krishna",
+        "roster_name": "Krishna, Bharath",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14124470",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Lauren Krueckeberg",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14124470-lauren-krueckeberg",
+        "roster_name": "Krueckeberg, Lauren",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15066334",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Swasti Kulkarni",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066334-swasti-kulkarni",
+        "roster_name": "Kulkarni, Swasti",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18645857",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Surakshaa Kumar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18645857-surakshaa-kumar",
+        "roster_name": "Kumar, Surakshaa",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18298889",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Charlie Layton",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18298889-charlie-layton",
+        "roster_name": "Layton, Charlie",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17955533",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Leah Leaven",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955533-leah-leaven",
+        "roster_name": "Leaven, Leah",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14520442",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Jason Lewis",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14520442-jason-lewis",
+        "roster_name": "Lewis, Jason",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651488",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Kenny Li",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651488-kenny-li",
+        "roster_name": "Li, Kenny",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16584019",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Sarah Li",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16584019-sarah-li",
+        "roster_name": "Li, Sarah",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15071916",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Claire Little",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071916-claire-little",
+        "roster_name": "Little, Claire",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14165862",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Hyksus Liu",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14165862-hyksus-liu",
+        "roster_name": "Liu, Hyksus",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15066338",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ruby Lovas",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066338-ruby-lovas",
+        "roster_name": "Lovas, Ruby",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16610014",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Vihaan Maladkar",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16610014-vihaan-maladkar",
+        "roster_name": "Maladkar, Vihaan",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15074617",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Elakshi Mandke",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15074617-elakshi-mandke",
+        "roster_name": "Mandke, Elakshi",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16850119",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Emma Mandzukic",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850119-emma-mandzukic",
+        "roster_name": "Mandzukic, Emma",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13689227",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Diya Manglore",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13689227-diya-manglore",
+        "roster_name": "Manglore, Diya",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846705",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Isa Marcano",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846705-isa-marcano",
+        "roster_name": "Marcano, Isa",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14087938",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Jamien Martin",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14087938-jamien-martin",
+        "roster_name": "Martin, Jamien",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17349065",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Evelyn Marvich",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349065-evelyn-marvich",
+        "roster_name": "Marvich, Evelyn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846706",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Evie Marvich",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16846706-evie-marvich",
+        "roster_name": "Marvich, Evie",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071411",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Eva Mathur",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15071411-eva-mathur",
+        "roster_name": "Mathur, Eva",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15587747",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Norah McDonald",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15587747-norah-mcdonald",
+        "roster_name": "McDonald, Norah",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15071911",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Brooklyn McKay",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15071911-brooklyn-mckay",
+        "roster_name": "McKay, Brooklyn",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696859",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Clare McKay",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696859-clare-mckay",
+        "roster_name": "McKay, Clare",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846711",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Lily McKay",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846711-lily-mckay",
+        "roster_name": "McKay, Lily",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060572",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Isaac Mecum",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060572-isaac-mecum",
+        "roster_name": "Mecum, Isaac",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13668056",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Isabella Meyer",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13668056-isabella-meyer",
+        "roster_name": "Meyer, Isabella",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14663055",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Chloe Miller",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14663055-chloe-miller",
+        "roster_name": "Miller, Chloe",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677881",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Collin Minogue",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677881-collin-minogue",
+        "roster_name": "Minogue, Collin",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18100532",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "McKade Minson",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18100532-mckade-minson",
+        "roster_name": "Minson, McKade",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060578",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Logan Mix",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060578-logan-mix",
+        "roster_name": "Mix, Logan",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18651504",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Hrithik Modalavasa",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651504-hrithik-modalavasa",
+        "roster_name": "Modalavasa, Hrithik",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696866",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Avery Moellers",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13696866-avery-moellers",
+        "roster_name": "Moellers, Avery",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15668691",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Dillon Monahan",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15668691-dillon-monahan",
+        "roster_name": "Monahan, Dillon",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057823",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Muhammed Moodadi",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057823-muhammed-moodadi",
+        "roster_name": "Moodadi, Muhammed",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060583",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Akshaj Sai Moola",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060583-akshaj-moola",
+        "roster_name": "Moola, Akshaj Sai",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696867",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Alexandra Moran",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696867-alexandra-moran",
+        "roster_name": "Moran, Alexandra",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15066393",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Allison Moran",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066393-allison-moran",
+        "roster_name": "Moran, Allison",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13668055",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Emily Moran",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13668055-emily-moran",
+        "roster_name": "Moran, Emily",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828389",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Thomas Moran",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16828389-thomas-moran",
+        "roster_name": "Moran, Thomas",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13516870",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Emma Musheno",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13516870-emma-musheno",
+        "roster_name": "Musheno, Emma",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15071456",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Thanuvu Nagaraj",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071456-thanuvu-nagaraj",
+        "roster_name": "Nagaraj, Thanuvu",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060586",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Naman Namilikonda",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15060586-naman-namilikonda",
+        "roster_name": "Namilikonda, Naman",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828390",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Preetham Nekkanti",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828390-preetham-nekkanti",
+        "roster_name": "Nekkanti, Preetham",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18646173",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Susannah Neppes",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18646173-susannah-neppes",
+        "roster_name": "Neppes, Susannah",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17955527",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Yuri Nobuhiro Iatalesi Is",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955527-yuri-nobuhiro-iatalesi-is",
+        "roster_name": "Nobuhiro Iatalesi Is, Yuri",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677887",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Zachary Nurre",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677887-zachary-nurre",
+        "roster_name": "Nurre, Zachary",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15587746",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Taylor Nutly",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15587746-taylor-nutly",
+        "roster_name": "Nutly, Taylor",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17349056",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Kenzie O&#039;Connell",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349056-kenzie-oconnell",
+        "roster_name": "O&#039;Connell, Kenzie",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18263744",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Makenzie O&#039;Connell",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18263744-makenzie-oconnell",
+        "roster_name": "O&#039;Connell, Makenzie",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18100529",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Feyi Ogunfayo",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/18100529-feyi-ogunfayo",
+        "roster_name": "Ogunfayo, Feyi",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16850144",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ire Olaoye",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850144-ire-olaoye",
+        "roster_name": "Olaoye, Ire",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422925",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Marvelous Olaoye",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422925-marvelous-olaoye",
+        "roster_name": "Olaoye, Marvelous",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14165873",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Justin Paciolla",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14165873-justin-paciolla",
+        "roster_name": "Paciolla, Justin",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16230452",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Megann Palmer",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16230452-megann-palmer",
+        "roster_name": "Palmer, Megann",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14549452",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Meghan Palmer",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14549452-meghan-palmer",
+        "roster_name": "Palmer, Meghan",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677889",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Ojas Parekh",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677889-ojas-parekh",
+        "roster_name": "Parekh, Ojas",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677890",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Saiprakyath Paritala",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677890-saiprakyath-paritala",
+        "roster_name": "Paritala, Saiprakyath",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828391",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Anthony Parker",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16828391-anthony-parker",
+        "roster_name": "Parker, Anthony",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16609987",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Raquelle Parry",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609987-raquelle-parry",
+        "roster_name": "Parry, Raquelle",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828392",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Hrushikesh Patil",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828392-hrushikesh-patil",
+        "roster_name": "Patil, Hrushikesh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828393",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Gabriel Patrick",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16828393-gabriel-patrick",
+        "roster_name": "Patrick, Gabriel",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15074615",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Tanvi Pauddar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15074615-tanvi-pauddar",
+        "roster_name": "Pauddar, Tanvi",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422937",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Jacob Petty",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422937-jacob-petty",
+        "roster_name": "Petty, Jacob",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14165852",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Thea Phimister",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14165852-thea-phimister",
+        "roster_name": "Phimister, Thea",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14520311",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Thea Phimster",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14520311-thea-phimster",
+        "roster_name": "Phimster, Thea",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060590",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Jacob Polak",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060590-jacob-polak",
+        "roster_name": "Polak, Jacob",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846716",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Liz Polak",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846716-liz-polak",
+        "roster_name": "Polak, Liz",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060593",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Samuel Polak",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060593-samuel-polak",
+        "roster_name": "Polak, Samuel",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060594",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Karthik Prabhakar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060594-karthik-prabhakar",
+        "roster_name": "Prabhakar, Karthik",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16841750",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Noah Priem",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16841750-noah-priem",
+        "roster_name": "Priem, Noah",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057833",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Saihan Rai",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057833-saihan-rai",
+        "roster_name": "Rai, Saihan",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828394",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Saket Raman",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828394-saket-raman",
+        "roster_name": "Raman, Saket",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828395",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Sarvesh Raman",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828395-sarvesh-raman",
+        "roster_name": "Raman, Sarvesh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677894",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Rajveer Rana",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677894-rajveer-rana",
+        "roster_name": "Rana, Rajveer",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057836",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Heath Rankin",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057836-heath-rankin",
+        "roster_name": "Rankin, Heath",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696871",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Mallory Re",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13696871-mallory-re",
+        "roster_name": "Re, Mallory",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16307653",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Camryn Renske",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16307653-camryn-renske",
+        "roster_name": "Renske, Camryn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "14709686",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Kendall Renske",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14709686-kendall-renske",
+        "roster_name": "Renske, Kendall",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15587753",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Thomas Resig",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15587753-thomas-resig",
+        "roster_name": "Resig, Thomas",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17422870",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Natalie Ritter",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422870-natalie-ritter",
+        "roster_name": "Ritter, Natalie",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16609984",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "AAkriti Roka",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16609984-aakriti-roka",
+        "roster_name": "Roka, AAkriti",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16850178",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Yara Sabah",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16850178-yara-sabah",
+        "roster_name": "Sabah, Yara",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17422911",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Adeshwar Sandhu",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422911-adeshwar-sandhu",
+        "roster_name": "Sandhu, Adeshwar",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15066446",
+        "gender": "girls",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Mila Sanker",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066446-mila-sanker",
+        "roster_name": "Sanker, Mila",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15057842",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "William Santoro",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15057842-william-santoro",
+        "roster_name": "Santoro, William",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913759",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Jackson Sapp",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14913759-jackson-sapp",
+        "roster_name": "Sapp, Jackson",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828396",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Adhawan Saraswat",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828396-adhawan-saraswat",
+        "roster_name": "Saraswat, Adhawan",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060598",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Ashvin Saravanan",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060598-ashvin-saravanan",
+        "roster_name": "Saravanan, Ashvin",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18651506",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Anish Sathyanarayanam",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651506-anish-sathyanarayanam",
+        "roster_name": "Sathyanarayanam, Anish",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828397",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Jack Saylor",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828397-jack-saylor",
+        "roster_name": "Saylor, Jack",
+        "sports": [
+          "indoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17955538",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Ella Schatteman",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955538-ella-schatteman",
+        "roster_name": "Schatteman, Ella",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16843499",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Aspen Schenk",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16843499-aspen-schenk",
+        "roster_name": "Schenk, Aspen",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677896",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Richard Schmaltz",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677896-richard-schmaltz",
+        "roster_name": "Schmaltz, Richard",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913749",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Takashi Schmaltz",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913749-takashi-schmaltz",
+        "roster_name": "Schmaltz, Takashi",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846722",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Lillian Schnabel",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846722-lillian-schnabel",
+        "roster_name": "Schnabel, Lillian",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14709690",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Navya Shanbhag",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14709690-navya-shanbhag",
+        "roster_name": "Shanbhag, Navya",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17422873",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Serene Sherman",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17422873-serene-sherman",
+        "roster_name": "Sherman, Serene",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16841765",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Ayan Shrimali",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16841765-ayan-shrimali",
+        "roster_name": "Shrimali, Ayan",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15066461",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Shradhdha Shyam Kumar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15066461-shradhdha-shyam-kumar",
+        "roster_name": "Shyam Kumar, Shradhdha",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846727",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Stradhdha Shyam Kumar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846727-stradhdha-shyam-kumar",
+        "roster_name": "Shyam Kumar, Stradhdha",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913723",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Ben Smith",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14913723-ben-smith",
+        "roster_name": "Smith, Ben",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17955534",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Caira Smith",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17955534-caira-smith",
+        "roster_name": "Smith, Caira",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15057844",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Gabriel Smith",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15057844-gabriel-smith",
+        "roster_name": "Smith, Gabriel",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14165848",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Peyton Smith",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14165848-peyton-smith",
+        "roster_name": "Smith, Peyton",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15071922",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Navneet Sohal",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071922-navneet-sohal",
+        "roster_name": "Sohal, Navneet",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17349021",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Amelia Speas",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349021-amelia-speas",
+        "roster_name": "Speas, Amelia",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651517",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Sai Srivatsaav Santhanakr",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651517-sai-srivatsaav-santhanakr",
+        "roster_name": "Srivatsaav Santhanakr, Sai",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828398",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Andrew Stanley",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828398-andrew-stanley",
+        "roster_name": "Stanley, Andrew",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14640529",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Gunnar Steiner",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/14640529-gunnar-steiner",
+        "roster_name": "Steiner, Gunnar",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15613439",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Madison Stowall",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15613439-madison-stowall",
+        "roster_name": "Stowall, Madison",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "13696875",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Alexis Strain",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696875-alexis-strain",
+        "roster_name": "Strain, Alexis",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071468",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Elena Swedinovich",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15071468-elena-swedinovich",
+        "roster_name": "Swedinovich, Elena",
+        "sports": [
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828408",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Kai Tatano",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828408-kai-tatano",
+        "roster_name": "Tatano, Kai",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16610026",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Graham Theime",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16610026-graham-theime",
+        "roster_name": "Theime, Graham",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "17430605",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Graham Thieme",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17430605-graham-thieme",
+        "roster_name": "Thieme, Graham",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16846728",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Nora Todd",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846728-nora-todd",
+        "roster_name": "Todd, Nora",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677900",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "James Topich",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677900-james-topich",
+        "roster_name": "Topich, James",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913686",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Rhea Tsujii",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913686-rhea-tsujii",
+        "roster_name": "Tsujii, Rhea",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "16235838",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Patrick Upchurch",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/16235838-patrick-upchurch",
+        "roster_name": "Upchurch, Patrick",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "16828399",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Vibhav Vadakapurapu",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828399-vibhav-vadakapurapu",
+        "roster_name": "Vadakapurapu, Vibhav",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846741",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Usha Vakkalagedda",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846741-usha-vakkalagedda",
+        "roster_name": "Vakkalagedda, Usha",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828400",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Venkata Vakkalagedda",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828400-venkata-vakkalagedda",
+        "roster_name": "Vakkalagedda, Venkata",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13192144",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Rishiraj Vangani",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13192144-rishiraj-vangani",
+        "roster_name": "Vangani, Rishiraj",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651492",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Nimesh Varun Rajesh",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651492-nimesh-varun-rajesh",
+        "roster_name": "Varun Rajesh, Nimesh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16843514",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Sophia Vasquez",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16843514-sophia-vasquez",
+        "roster_name": "Vasquez, Sophia",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071424",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Clara Vaz",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15071424-clara-vaz",
+        "roster_name": "Vaz, Clara",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "14913757",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Max Vazquez",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/14913757-max-vazquez",
+        "roster_name": "Vazquez, Max",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "17349069",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Sophia Vazquez",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349069-sophia-vazquez",
+        "roster_name": "Vazquez, Sophia",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828401",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Hareesh Venkatapuram",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828401-hareesh-venkatapuram",
+        "roster_name": "Venkatapuram, Hareesh",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828402",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Vishwa Vijayakumar",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828402-vishwa-vijayakumar",
+        "roster_name": "Vijayakumar, Vishwa",
+        "sports": [
+          "indoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "18651499",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Vibhu Vinodhan Murasumani",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651499-vibhu-vinodhan-murasumani",
+        "roster_name": "Vinodhan Murasumani, Vibhu",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16846747",
+        "gender": "girls",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Lillian Waechter",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16846747-lillian-waechter",
+        "roster_name": "Waechter, Lillian",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13677908",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Justin Walker",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13677908-justin-walker",
+        "roster_name": "Walker, Justin",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13192151",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Louis Walker",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13192151-louis-walker",
+        "roster_name": "Walker, Louis",
+        "sports": [
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060602",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Liheng Wang",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060602-liheng-wang",
+        "roster_name": "Wang, Liheng",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "13696876",
+        "gender": "girls",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Adeline Weber",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/13696876-adeline-weber",
+        "roster_name": "Weber, Adeline",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17349033",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Je&#039;mira Whitehead",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17349033-jemira-whitehead",
+        "roster_name": "Whitehead, Je&#039;mira",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15170841",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": false,
+        "name": "Kayleb Willis",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15170841-kayleb-willis",
+        "roster_name": "Willis, Kayleb",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "15613443",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": true,
+        "name": "Jordyn Wilson",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/15613443-jordyn-wilson",
+        "roster_name": "Wilson, Jordyn",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "18651490",
+        "gender": "boys",
+        "grad_year": 2030,
+        "indoor": false,
+        "name": "Finley Winship",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/18651490-finley-winship",
+        "roster_name": "Winship, Finley",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "17377283",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": true,
+        "name": "Rueger Woodward",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/17377283-rueger-woodward",
+        "roster_name": "Woodward, Rueger",
+        "sports": [
+          "indoor_track",
+          "outdoor_track"
+        ],
+        "xc": false
+      },
+      {
+        "athlete_id": "15060606",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Jake Xu",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060606-jake-xu",
+        "roster_name": "Xu, Jake",
+        "sports": [],
+        "xc": false
+      },
+      {
+        "athlete_id": "13677913",
+        "gender": "boys",
+        "grad_year": 2027,
+        "indoor": true,
+        "name": "Paras Yadav",
+        "outdoor": true,
+        "profile_url": "https://oh.milesplit.com/athletes/13677913-paras-yadav",
+        "roster_name": "Yadav, Paras",
+        "sports": [
+          "indoor_track",
+          "outdoor_track",
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "16828403",
+        "gender": "boys",
+        "grad_year": 2029,
+        "indoor": false,
+        "name": "Clark Yang",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/16828403-clark-yang",
+        "roster_name": "Yang, Clark",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15060611",
+        "gender": "boys",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "John Zhan",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15060611-john-zhan",
+        "roster_name": "Zhan, John",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      },
+      {
+        "athlete_id": "15071446",
+        "gender": "girls",
+        "grad_year": 2028,
+        "indoor": false,
+        "name": "Olivia Zhou",
+        "outdoor": false,
+        "profile_url": "https://oh.milesplit.com/athletes/15071446-olivia-zhou",
+        "roster_name": "Zhou, Olivia",
+        "sports": [
+          "cross_country"
+        ],
+        "xc": true
+      }
+    ],
+    "team": {
+      "city_state": "Mason, OH, USA",
+      "id": "10002",
+      "name": "Mason",
+      "slug": "mason",
+      "url": "https://oh.milesplit.com/teams/10002-mason"
+    }
+  }
+}

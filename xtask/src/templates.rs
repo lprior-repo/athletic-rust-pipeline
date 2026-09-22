@@ -12,8 +12,7 @@ pub(crate) fn adapter_module(name: &str) -> String {
 //! Fixtures: `crates/midwest-census/tests/fixtures/{name}/`.
 //! This adapter's tests: `cargo xtask source-test {name}` (see `xtask/README.md`).
 
-use crate::sources::{{AdapterContext, AdapterReport}};
-use anyhow::{{bail, Result}};
+use crate::sources::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
 
 pub mod map;
 pub mod parse;
@@ -32,9 +31,12 @@ pub struct Options {{
 ///
 /// Scaffold: nothing is implemented yet. Keep the signature — the adapter registry and `census.rs`
 /// call adapters in this shape — hand parsing to [`parse`], canonical mapping to [`map`], and
-/// append rows with `sources::append_all`, never by writing keys directly.
-pub async fn collect(_ctx: &AdapterContext<'_>, _options: &Options) -> Result<AdapterReport> {{
-    bail!("{name} adapter not implemented")
+/// append rows with `sources::append_all`, never by writing keys directly. Adapters never panic:
+/// every failure returns a [`CrawlError`] variant, which is what the durable retry policy reads.
+pub async fn collect(_ctx: &AdapterContext<'_>, _options: &Options) -> CrawlResult<AdapterReport> {{
+    Err(CrawlError::Invariant {{
+        detail: "{name} adapter not implemented".to_string(),
+    }})
 }}
 "#
     )
@@ -193,4 +195,46 @@ request path, the capture date, and the robots status. `.md` files are documenta
 input, and the fixture test skips them.
 "#
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{adapter_module, parse_module};
+
+    /// The generated adapter presents the shape the registry and `census.rs` call adapters in.
+    ///
+    /// The template once emitted `anyhow::Result<AdapterReport>`, so a scaffolded source compiled
+    /// only after its author rewrote the signature the scaffold exists to settle. The assertion is
+    /// on the rendered text because xtask cannot compile a generated adapter (its `crate::sources`
+    /// imports need the census crate); the text is therefore the contract of record.
+    #[test]
+    fn the_adapter_template_declares_the_canonical_collect_shape() {
+        let module = adapter_module("example_source");
+        assert!(module.contains("pub async fn collect("));
+        assert!(module.contains("-> CrawlResult<AdapterReport>"));
+        assert!(module.contains("AdapterContext, AdapterReport, CrawlError, CrawlResult"));
+        assert!(module.contains("CrawlError::Invariant"));
+        assert!(!module.contains("anyhow::"));
+    }
+
+    /// Parsing is pure and testable: the generated parse module carries no store, no fetcher and no
+    /// `async`, which is what lets its fixture test run without network.
+    #[test]
+    fn the_parse_template_stays_pure() {
+        let module = parse_module("example_source");
+        assert!(!module.contains("async fn"));
+        assert!(!module.contains("Store"));
+        assert!(!module.contains("Fetcher"));
+    }
+
+    /// The name substitution reaches every template that takes a name.
+    #[test]
+    fn every_named_template_carries_the_source_name() {
+        for body in [
+            adapter_module("example_source"),
+            parse_module("example_source"),
+        ] {
+            assert!(body.contains("example_source"));
+        }
+    }
 }

@@ -22,7 +22,7 @@ mod seams;
 mod source_fixture;
 mod templates;
 
-use anyhow::{bail, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use cmd::Cmd;
 use std::path::{Path, PathBuf};
@@ -78,6 +78,7 @@ enum Command {
     /// Prove the `census-domain` dependency tree carries no async or I/O package.
     DomainPurity,
     /// Run the midwest-census tests that cover one source (`cargo nextest -E 'test(<source>)'`).
+    #[command(visible_alias = "source-check")]
     SourceTest {
         /// Source name as it appears in test names, e.g. `wiaa`, `mshsl`, `wiaa_results`.
         source: String,
@@ -99,8 +100,31 @@ enum Command {
         #[arg(long, value_name = "DIR")]
         store: PathBuf,
     },
-    /// Run the pipeline benchmark, once Phase 6 lands `benches/pipeline.rs`.
-    Bench,
+    /// Run the pipeline benchmark (`cargo bench -p midwest-census`), with filters after `--`:
+    /// `cargo xtask bench -- parser` runs only the parser benchmarks.
+    Bench {
+        /// Filter arguments forwarded to `cargo bench`, given after `--`.
+        #[arg(last = true, value_name = "BENCH_ARG")]
+        args: Vec<String>,
+    },
+    /// Build the census workbook (`.xlsx`) and its text sidecars from an existing store.
+    Export {
+        /// Store root (HTTP cache, journals, entity logs, output snapshots).
+        #[arg(long, value_name = "DIR")]
+        store: PathBuf,
+        /// Where to write the `.xlsx` (defaults to `<store>/out/midwest-census-<generated-on>.xlsx`).
+        #[arg(long, value_name = "FILE")]
+        out: Option<PathBuf>,
+        /// Graduation year used for the cohort sheets (2027 = the class of 2027).
+        #[arg(long, default_value_t = 2027)]
+        grad_year: i32,
+        /// Reduce the best-results sheet over every source rather than the core scope alone.
+        #[arg(long)]
+        all_sources: bool,
+        /// Cap the per-athlete best-mark sheet at N rows.
+        #[arg(long, value_name = "N")]
+        limit: Option<usize>,
+    },
     /// Scaffold a new source adapter in the directory-module layout.
     NewSource {
         /// Adapter name: lowercase letters, digits and underscores; hyphens become underscores.
@@ -140,7 +164,14 @@ fn run() -> Result<()> {
         Command::SourceFixture { source } => source_fixture::list(&source),
         Command::CensusStatus { store } => census_report(&store, Scope::Core),
         Command::Coverage { store } => census_report(&store, Scope::AllSources),
-        Command::Bench => bench(),
+        Command::Bench { args } => bench(&args),
+        Command::Export {
+            store,
+            out,
+            grad_year,
+            all_sources,
+            limit,
+        } => export(&store, out.as_deref(), grad_year, all_sources, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
     }
 }
@@ -186,11 +217,46 @@ fn census_report(store: &Path, scope: Scope) -> Result<()> {
     cmd.run()
 }
 
-/// Phase 6 owns the benchmark; until `benches/pipeline.rs` exists every number would be invented.
-fn bench() -> Result<()> {
-    bail!(
-        "no benchmark target exists yet: Phase 6 adds `benches/pipeline.rs`, which is also when \
-         tools/gate.sh starts running `cargo bench --workspace --no-run`. Until then any latency or \
-         throughput figure reported here would be fabricated, so this command refuses to run."
-    )
+/// Run the criterion pipeline benchmark, filtered by whatever follows `--`.
+fn bench(args: &[String]) -> Result<()> {
+    Cmd::new("cargo")
+        .args(["bench", "-p", "midwest-census"])
+        .args(args)
+        .run()
+}
+
+/// `midwest-census workbook`: the recruiting workbook built from an existing store.
+///
+/// The census binary owns the workbook; this is the short stable name the objective asks for, and
+/// it is also what an agent that already has a store needs — no gather, no network.
+fn export(
+    store: &Path,
+    out: Option<&Path>,
+    grad_year: i32,
+    all_sources: bool,
+    limit: Option<usize>,
+) -> Result<()> {
+    let mut cmd = Cmd::new("cargo")
+        .args([
+            "run",
+            "-q",
+            "-p",
+            "midwest-census",
+            "--bin",
+            "midwest-census",
+            "--",
+            "--store",
+        ])
+        .arg(store.display().to_string())
+        .args(["workbook", "--grad-year", &grad_year.to_string()]);
+    if let Some(out) = out {
+        cmd = cmd.arg("--out").arg(out.display().to_string());
+    }
+    if all_sources {
+        cmd = cmd.arg("--all-sources");
+    }
+    if let Some(limit) = limit {
+        cmd = cmd.args(["--limit", &limit.to_string()]);
+    }
+    cmd.run()
 }

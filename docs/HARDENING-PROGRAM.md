@@ -482,3 +482,117 @@ Open items, recorded honestly rather than rounded up:
   (`crates/midwest-census/tests/zz_scratch_repro.rs`) left a `target/debug` dep-info artifact that
   the lane could not match. Deleting the artifact fixed it; a `cargo clean` is not required, and
   the lane now passes on the tree as it stands.
+
+## 11. Wave 3 outcome (2026-09-21)
+
+One commit, five lanes: `3af713b` — "Type jurisdictions through the domain and record the national
+research base", **286 files, +66,070 / −1,184**. The commit message is the lane-by-lane record; the
+numbers below were re-measured on the *frozen* commit after the fact, in a separate git worktree, so
+they describe that tree rather than whatever the next wave happened to leave in the working copy.
+
+What landed:
+
+- **Type spine.** `census-domain::jurisdiction` adds `UsJurisdiction` (50 states + DC, `ALL`,
+  `code()`, `parse()`), the canonical model's `state` fields become `Option<UsJurisdiction>`, and
+  every adapter, reader, report, workbook, best-mark and index site follows in the same change. An
+  unparseable source string yields `None` plus a counted observation — never a coerced state, never
+  a dropped row.
+- **Workflow identity and registry.** `census/identity.rs` (bounded, digesting identity),
+  `sources/registry.rs` + `registry/table.rs` (what each adapter can be asked for, and what a
+  request costs its origin, with the capability comments naming the symbol each `true` rests on),
+  and the durable `restate_services/national.rs` + `restate_services/jurisdiction/`.
+- **Quality policy.** The gate's `-Zallow-features` allowlist carries the two dependency-probed
+  nightly features beside our own two, and the scan gained an `unstable_features` metric that
+  enforces the same allowlist per crate — so source is pinned where the compiler flag cannot reach.
+  Benches are typed and abort through `or_fatal`.
+- **Documentation.** AGENTS.md, ARCHITECTURE.md, DOMAIN.md, FJALL_SCHEMA.md, PERFORMANCE.md,
+  RESTATE_WORKFLOWS.md, SOURCE_ADAPTER_GUIDE.md and TESTING.md rewritten against the tree they
+  describe.
+- **Research base.** `research/sources/` carries twelve national lane reports (`SOURCE_REPORT.md`,
+  `coverage.json`, `CAPTURES.md` per lane) whose ranked build order drives wave 4; raw captured
+  payloads stay on disk and gitignored, and the 26 Python probe scripts that produced them were
+  moved out of the repository to satisfy the zero-Python rule (they live in the owner's Downloads
+  research folder, alongside the 30-agent Midwest report set).
+
+Frozen-tree verification (`git worktree` at `3af713b`, run 2026-09-21 while wave 4 was editing the
+working copy):
+
+| Lane | Result |
+| --- | --- |
+| `cargo fmt --all -- --check` | clean |
+| `cargo xtask scan` root | files 305, production lines 36,656, every forbidden counter 0 |
+| `cargo xtask scan` census | files 167, production lines 25,582, every forbidden counter 0 |
+| structure | 0 files > 300 lines, 0 functions > 60 logical lines, 557 functions > 25 logical lines |
+
+Movement against §10 (wave 2): census scanned files 160 → 167 and production lines 24,039 →
+25,582 (+1,543) — capability and evidence again, not tolerated debt. The root crate's production
+line count is unchanged at 36,656 across the wave.
+
+Honest note on the gate: the first `tools/gate.sh` pass over that tree failed its **fmt** lane.
+The drift was fixed, and the commit — which is what the table above measures — is fmt-clean; the
+commit message records the full pass (fmt, check, doc, tests **618 passed / 2 skipped**, strict
+clippy, scan, domain purity, module seams, debt ratchet, deny, audit, vet, machete, geiger). The
+gate's verdict in the message therefore describes the tree that landed, and this section's table is
+the independent re-check of exactly that tree.
+
+## 12. Wave 4/5 outcome (2026-09-22)
+
+Wave 4 took the four surfaces wave 3's research ranked highest, and wave 5 paid for them with
+adversarial verification rather than more code. Both landed against the same rule as §10 and §11:
+every lane edits its own files, the integrator owns `mod.rs`/registry/CLI and runs the gate.
+
+**Surfaces.**
+
+| Lane | What landed | Acceptance evidence |
+| --- | --- | --- |
+| MileSplit Ohio roster walk | `sources/milesplit` Ohio team index + roster walk (`fixtures/milesplit/oh_*`) | 13 Milesplit tests, roster walk e2e against the captured index |
+| IHSA tournament decode | `sources/ihsa/tournament/**` — state-final index, event documents, summaries, XC qualifier lists, grade parsing | 20 tests; 1,571 qualifier rows with 1,569 grades; 240 schools, 145 teams, 1,636 athlete rows, 20 performances in one walk; resume run spends 4 cached requests and re-mints nothing |
+| TFRRS adapter | `sources/tfrrs/**` — per-state performance lists and team rosters, parse/`map` split | 9 tests over 3 captures; list page 1.88 MB read for 1 request |
+| AthleticLIVE result plane | `sources/athleticlive/results.rs` + `map_rows/`, `absorb.rs` — the three wire documents folded into canonical rows | 22 tests; 136 performances and 41 teams from two captures, second run merges to the same 136 |
+| Athletic.net whole-meet acquisition | `sources/athleticnet/meet.rs` — meet → results → optional event metadata, 2 requests per meet | 10 module tests + 3 offline end-to-end parity tests; registry row now `bulk_results: true` |
+
+**Defects the wave found, and what fixed them.** These are the point of the wave; the surfaces are
+what made them reachable.
+
+| Id | Defect | Fix and evidence |
+| --- | --- | --- |
+| D1 | Five walk sites journaled a unit as done *before* its rows were in the store, so a kill between the two left the journal claiming rows that never landed (`ks`, `plain_names` ND/NSAA, IHSA top-level, Athletic.net; TFRRS had the same shape) | append-then-journal at each site; TFRRS defers every claim until `collect` has appended. `tests/recovery.rs` ladder: `claimed_without_rows_at_kill=0 missing_from_the_final_store=0` (was 4/4), restart equals the control store, and `cargo xtask source-check ks` — 31/31 — green |
+| D2 | `bootstrap/serve.rs` armed the drain deadline before waiting for a stop request, so an endpoint that was never asked to stop was killed at the deadline and reported `ServerExit` | stop-watch → cancel → drain ordering. `recovery drain-deadline`: `still_answering=true`, drain report `accepted=2 completed=2 timed_out=0`, operator stop `stop_reason: Signal` |
+| D3 | The Coverage sheet's `Note` row embedded the store root, and the workbook parity normaliser blanked the store path only for the `Store`/`Core note` labels, so `pipeline_publishes_the_same_bytes_from_a_rebuilt_store` failed on a digest that changed every run | `volatile_cell` normalises `Note` too; the Coverage sheet digest is now identical across three consecutive rebuilds |
+
+Lane-local bugs the same tests caught: `athleticlive::results` counted refusals inside a memo
+(`or_insert_with`), so 8 of 16 refused rows were uncounted and the row-count invariant silently
+broke; `Run::new` minted a meet but never placed it in the accumulator, leaving 136 performances
+pointing at an absent meet; IHSA's `limit` counted *walked* meets so a resumed run re-walked 97
+live pages; `plain_names` passed a `Vec` to single-record `append`; TFRRS read every section's
+gender as `None`.
+
+**Verification on the frozen tree.**
+
+| Check | Result |
+| --- | --- |
+| `tools/gate.sh` | PASS every lane: fmt, check, doc, tests (**726 passed, 2 skipped**), strict clippy on source targets (**0 diagnostics**), production scan, domain purity, module seams, debt ratchet, deny, audit, vet, machete, geiger, feature powerset |
+| `cargo xtask scan` | root 305 files / 36,656 production lines, census 251 / 39,340, every forbidden counter 0; **0 files > 300 lines, 0 functions > 60 logical lines** |
+| `cargo xtask source-check ks` | 31 passed, 0 failed — including `recovery ks_directory_walk_claims_units_the_kill_can_lose` |
+| `tests/recovery.rs` | 8 scenarios green (kill ladder, worker/service SIGKILL, drain deadline, resume, flush) |
+| Legacy parity, same store | `census-by-state-all-sources.csv` byte-identical to the pre-Rust (JS) output; `census-by-state{,-core}.csv` differ only in one label (`ALL` → `TOTAL`), every figure identical |
+| Workbook | 20 sheets: the legacy vocabulary (`Athletes`, `PRs`, `Performances_001`, `Coaches`, `Schools`, `Meets`, `Sources`, `Coverage`, `Conflicts`, `Review`, `Run Metrics`) plus the nine summary pages; five summary sheets byte-identical to the pre-wave export, four grew with the new sources' states |
+
+**Honest notes.**
+
+* Goldens were reseeded for the pipeline corpus (`report-core`, `report-all_sources`,
+  `census-by-state-*`, `workbook-shape`) and for the new Ohio Milesplit captures. The churn is
+  additive, checked per sheet: `Goal & method`, `Summary`, `Best results`, `Evidence mix` and
+  `Method notes` are byte-identical, and the report's growth is new states (AK…WY appear under the
+  new sources), not changed rows.
+* Fixtures were split per adapter — `tests/fixtures/ihsa_tournament/` and
+  `tests/fixtures/athleticlive_results/` — because both parity corpora require every file in a
+  source's directory to be a payload kind that corpus can parse; the new payload families now have
+  their own directories, and the IHSA corpus test is green again on three files.
+* The `ihsa_tournament` adapter gained a `provider` CLI arm. The AthleticLIVE result plane did
+  **not**: its route needs operator-supplied captures *and* the meet they belong to, so its entry
+  point stays `athleticlive::collect_results` (the registry row documents that), rather than a CLI
+  arm that could only fail for want of a target.
+* Two of the wave's lanes (athleticlive results, TFRRS) had to be given explicit exit criteria
+  mid-flight: both were at risk of landing a compiling adapter with failing tests. One exit — fix
+  or delete with a reason — is what kept the tree's red set empty at freeze.

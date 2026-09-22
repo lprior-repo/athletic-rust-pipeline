@@ -139,7 +139,7 @@ pub(super) async fn collect_north_dakota(
         walk.visit(ctx, fetch, report, member).await?;
     }
 
-    walk.publish(ctx, report, members.len())
+    walk.publish(report, members.len())
 }
 
 /// The NDHSAA school index's member links; `None` means the failure is on the report.

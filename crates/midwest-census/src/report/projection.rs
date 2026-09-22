@@ -7,12 +7,15 @@ use super::rows::{
     CoachRollup, RowCounts,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
+use super::{
+    retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus, UNKNOWN_JURISDICTION,
+};
 use crate::clock::{Clock, SystemClock};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
 };
+use census_domain::UsJurisdiction;
 use std::collections::{BTreeMap, HashMap};
 
 /// One pass over the merged athlete rows.
@@ -77,6 +80,24 @@ fn apply_coach_states(
     }
 }
 
+/// Give every configured jurisdiction a row before any rollup touches the map.
+///
+/// A state that holds schools but no athletes — or nothing at all — must publish zeros rather than
+/// disappear from `by_state`, the per-state CSV and the "By state" sheets: §49 reads an omitted state
+/// as one nobody looked at, when the measured answer is "covered, empty". The seeded rows are the
+/// same labels the rollups already mint, so a state with data overwrites its own zero row instead of
+/// gaining a second one.
+fn seed_states(by_state: &mut BTreeMap<String, StateCensus>) {
+    for code in UsJurisdiction::ALL
+        .iter()
+        .copied()
+        .map(UsJurisdiction::code)
+    {
+        state_entry(by_state, code);
+    }
+    state_entry(by_state, UNKNOWN_JURISDICTION);
+}
+
 /// Build the census from the store's merged entity tables.
 ///
 /// Every row comes from [`Store::scan`], which merges the append-only observations of a table into
@@ -100,6 +121,9 @@ pub fn build_census(store: &Store, scope: Scope) -> ReportResult<Census> {
     let coach_rollup = rollup_coaches(&coaches, &school_state);
     let coach_sources_empty = coach_rollup.sources.is_empty();
     let mut by_state = athlete_rollup.by_state;
+    // Seed before the rollups land: after this line every configured jurisdiction has a row, and
+    // `totals_of` still sums exactly the values the rows ended up carrying.
+    seed_states(&mut by_state);
     apply_coach_states(&mut by_state, &coach_rollup.by_state);
 
     // Both the workbook and the CSV read a state's school count off its `by_state` row, so it is

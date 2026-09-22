@@ -288,8 +288,9 @@ Minnesota one. Unresolved venues are filed under `??` rather than guessed: on th
 
 ## Isolation contract
 
-- `report::NON_CORE_SOURCE_IDS` names the two AthleticLIVE modules; `core` scope drops any evidence
-  they produced. Test: `report::tests::core_scope_keeps_only_non_athletic_net_evidence`.
+- `report::NON_CORE_SOURCE_IDS` names the AthleticLIVE mirror modules (meet index, athlete rows,
+  result plane) and Athletic.net itself; `core` scope drops any evidence they produced. Test:
+  `report::tests::core_scope_keeps_only_non_athletic_net_evidence`.
 - Core adapters mention Athletic.net only in prose, never as a request target or a parser input.
 - Cross-source agreement (`multisource`) is an all-source metric; it is 0 in core scope by
   construction, because core scope holds one independent view of each athlete.

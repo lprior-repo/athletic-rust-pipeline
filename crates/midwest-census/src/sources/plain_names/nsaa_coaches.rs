@@ -142,7 +142,7 @@ pub(super) async fn collect_nebraska(
         walk.visit(ctx, fetch, report, name).await?;
     }
 
-    walk.publish(ctx, report, members.len())
+    walk.publish(report, members.len())
 }
 
 /// The NSAA directory form's member-school names; `None` means the failure is on the report.

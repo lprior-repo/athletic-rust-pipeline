@@ -1,0 +1,166 @@
+== lane-v14 live pages (three live runs: out-live-full-3, out-live-outdoor-boys, out-live-outdoor-girls) ==
+raw bodies: 104  evidence records: 210  parsed records: 191
+evidence: complete={'True': 156, 'False': 54}
+evidence failures (54 total):
+     42  malformed_response: search page contains malformed or unrelated result rows  [http=200]
+     12  malformed_response: search page ended before the advertised result count  [http=200]
+link inventory:
+      708  rows_total
+      708  rows_with_athlete_href
+        0  rows_without_athlete_href
+      960  athlete_hrefs_total
+      596  athlete_hrefs_sported_tf
+      325  athlete_hrefs_sported_xc
+       39  athlete_hrefs_noncanonical
+      252  rows_multi_athlete_href
+      588  rows_candidate_predicted
+count vs rows: {'count_gt_rows': 65, 'count_eq_rows': 39}
+page verdicts:
+  recount (bytes only):
+    pages=104 row_issue_pages=49 short_page=0 count_lt_rows=0 clean_full=29
+    pages_carrying_candidate_rows=86 of_which_row_issue_pages=39 candidate_rows_lost_on_those_pages=282
+  parser (its own records for these same bytes):
+    pages=104 row_issue_pages=45 short_page=0 clean_full=33 no_parsed_record=0
+    pages_with_candidates=90 of_which_row_issue_pages=39 candidate_rows_on_those_pages=282
+  issue classes on row-issue pages:
+    only_non_canonical_url=21
+    only_other_or_unspecified_sport=12
+    both_or_other=12
+  pages carrying rows of both sports in one response (tf hrefs and xc hrefs):
+    co_mingled_pages=71 with_row_issues=43 same_sport_candidate_rows_on_them=544
+  if other-sport rows became skips instead of issues:
+    row_issue_pages_that_are_mid_pagination(next present)=39 row_issue_pages_that_are_last_page_and_short=6
+  record outcomes (the pipeline's own complete/failures) vs page verdicts:
+      156    complete:own_parse_has_row_issues=False
+       54    failed:own_parse_has_row_issues=True
+       12    failed:row_issue_failure=False
+       42    failed:row_issue_failure=True
+       42    failed:short_failure=False
+       12    failed:short_failure=True
+      156  complete
+       54  failed
+  rejected-record classes (which guard killed the query):
+       42  row_issues
+       12  short_page
+verdict totals:
+        1  ambiguous_parser_verdict
+       34  parser_page:clean_full
+       26  parser_page:paginated
+       45  parser_page:row_issues
+       39  row_issue:athlete URL is not canonical
+       81  row_issue:result row belongs to another or unspecified sport
+page filter (sport the page was fetched for): {'tf': 64, 'xc': 32, 'unknown/ambiguous': 8}
+interstitial markers: none
+raw-body sha256 mismatches: 0  evidence-bytes mismatches: 0
+samples:
+  [noncanonical] ('024247e4e0d4', '/athlete//track-and-field')
+  [noncanonical] ('024247e4e0d4', '/athlete//track-and-field')
+  [noncanonical] ('0a6d93d03f3b', '/athlete//cross-country')
+  [count_gt_rows] ('024247e4e0d4', 'tf', 301, 10, "<div class='text-center'><ul class='pagination'><li class='active'><a href='#'>1</a></li> <li data-start='10'><a href='/Search.aspx#?q=A Example&fq=t:a a:tf&start=10'>2</a></li> <li data-start='20'><a")
+  [count_gt_rows] ('0a6d93d03f3b', 'xc', 149, 10, "<div class='text-center'><ul class='pagination'><li class='active'><a href='#'>1</a></li> <li data-start='10'><a href='/Search.aspx#?q=E Example&fq=t:a a:xc&start=10'>2</a></li> <li data-start='20'><a")
+  [count_gt_rows] ('1a50494a530e', 'tf', 153, 10, "<div class='text-center'><ul class='pagination'><li class='active'><a href='#'>1</a></li> <li data-start='10'><a href='/Search.aspx#?q=O Example&fq=t:a a:tf&start=10'>2</a></li> <li data-start='20'><a")
+per-page (digest, filter, count, rows, tf, xc, noncanon, predicted issues, candidates, parser candidates/issues):
+  024247e4e0d4 tf  count=  301 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=A Example
+  03cb914ccfd4 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Example Evan
+  0a6d93d03f3b xc  count=  149 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] cand=2 parser_cand=2 parser_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] q=E Example
+  0ec156e0ae3c tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Outside Example
+  11991ee07525 None count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=1 parser_issues=[] q=Casey Example,Example Casey
+  1a50494a530e tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  1b8044611a81 None count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=1 parser_issues=[] q=Casey Example Exampleville CA,Example Casey
+  21e6a74902a3 tf  count=  104 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=F Example
+  29919d23cb50 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Blair Example,Example Blair
+  2a9523c497ff tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Drew Example,Example Drew
+  2b9fc4223487 xc  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Avery Example North Example High School,Finley Example Examp
+  2f13a308d3d0 None count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=1 parser_issues=[] q=Casey Example Exampleville CA,Example Casey
+  2fe5d820250d tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  33be06c40825 tf  count=  144 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  33e7cd38e55f tf  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Drew Example Exampleville CA
+  38e8ee90b3a4 xc  count=  149 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] cand=2 parser_cand=2 parser_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] q=E Example
+  3a299ee31878 xc  count=  134 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] cand=4 parser_cand=4 parser_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] q=A Example
+  3bf4263358d5 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Evan Example
+  3dffa4ea85f8 xc  count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Casey Example
+  42d683705eff xc  count=  134 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] cand=4 parser_cand=4 parser_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] q=A Example
+  44112059f2e9 tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  46b3979bc260 xc  count=   53 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] cand=5 parser_cand=5 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] q=D Example
+  47b7ac37e016 xc  count=   46 rows= 10 tf=  4 xc=  8 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=F Example
+  4b13fbbe40f9 tf  count=  335 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Example
+  4d8e9066fc91 tf  count=  144 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  4eb0421d4b38 xc  count=  134 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] cand=4 parser_cand=4 parser_issues=[result row belongs to another or unspecified sport:5,athlete URL is not canonical:1] q=A Example
+  50e51b2f49fa tf  count=  153 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  50faf0b74b48 tf  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Avery Example
+  5122f0631ad6 tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  519fdd04ab2c tf  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Finley Example
+  5593c1a85190 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Example Evan
+  56145a38ebd4 tf  count=  144 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  574db080ce8f tf  count=  104 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=F Example
+  5833f9220673 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Evan Example,Example Evan
+  5c7b987aaab1 xc  count=   46 rows= 10 tf=  4 xc=  8 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=F Example
+  5ef3da171cfd xc  count=  172 rows= 10 tf=  8 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=C Example
+  60d7d6906b56 tf  count=  144 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=B Example
+  64f29d9a3584 tf  count=  103 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=D Example
+  676e347b2ff3 None count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=1 parser_issues=[] q=Casey Example,Casey Example Exampleville CA,Example Casey
+  6a1e080cc943 None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Avery Example Exampleville CA,Avery Example North Example Hi
+  6a9770d7d21e tf  count=  153 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  74e62e8df79f xc  count=   53 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] cand=5 parser_cand=5 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] q=D Example
+  7a7fcdbd44e7 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Example Blair
+  7d73d6d9f605 tf  count=  153 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  838fdf06527a tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  85798a59afde None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Avery Example Exampleville CA,Avery Example North Example Hi
+  8f89554def1e tf  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Drew Example Exampleville CA
+  9002c557be29 tf  count=  104 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=F Example
+  91575808eef4 tf  count=  144 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  92a28e0063b5 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Example Drew
+  96927775d1b4 xc  count=  172 rows= 10 tf=  8 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=C Example
+  9968bf5b7dd8 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Example Drew
+  9a7734ad6d16 tf  count=  153 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  9eacbea84222 tf  count=  104 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=F Example
+  a136c4c3f5a6 tf  count=  144 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  a2bc121fd53a xc  count=  172 rows= 10 tf=  8 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=C Example
+  a2e39659aed1 tf  count=  104 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=F Example
+  a46f39fc1979 xc  count=   87 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  a7c384f15bbb xc  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:2] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:2] q=Avery Example
+  a819ca707d97 tf  count=  144 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=B Example
+  aa34de1d6031 tf  count=  104 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=F Example
+  abb0f2527e74 xc  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Finley Example
+  ac6bcd0ffb17 tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Outside Example
+  addcae251e33 tf  count=  153 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  adeb72acce2a tf  count=  335 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Example
+  af6adab4e152 tf  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Avery Example
+  b44a88bb0666 xc  count=   87 rows= 10 tf=  1 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  b705121127f1 tf  count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Casey Example
+  b779f553aae7 tf  count=  301 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=A Example
+  bdb59bca8c51 tf  count=  103 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=D Example
+  bf2eaad6969d xc  count=   84 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:4] cand=6 parser_cand=6 parser_issues=[result row belongs to another or unspecified sport:4] q=B Example
+  c08be0ec3cee tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Example Blair
+  c0b772cf96ba tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Drew Example
+  c2178e119e7d tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Evan Example
+  c609d27a9540 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Blair Example
+  c6c16b4f7926 xc  count=   87 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  c7704ae5a30e xc  count=   53 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] cand=5 parser_cand=5 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:4] q=D Example
+  c922c4a78732 tf  count=  103 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=D Example
+  cafe617790af tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Example Outside
+  cc820ee94103 tf  count=  144 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  ce3830b942b5 xc  count=   87 rows= 10 tf=  1 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  d02c5fa72cd2 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Drew Example
+  d1324eebb75b xc  count=   87 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  d3f4a9a2214f xc  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Blair Example,Example Evan,Outside Example
+  d5dc0497013c xc  count=   46 rows= 10 tf=  4 xc=  8 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=F Example
+  dbe7a7261222 tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:2] q=Example Outside,Outside Example
+  ddf920497c85 None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Avery Example Exampleville CA,Avery Example North Example Hi
+  e57c61147a94 tf  count=  153 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  e7a991488c53 xc  count=   87 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  ec6b6f704dc4 tf  count=  144 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  ec78886b3184 None count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:2] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:4] q=Avery Example,Example Avery
+  ec9b6cce2948 xc  count=   87 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  ed590c70ddb0 xc  count=   84 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:4] cand=6 parser_cand=6 parser_issues=[result row belongs to another or unspecified sport:4] q=B Example
+  eff78cb78276 xc  count=  149 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] cand=2 parser_cand=2 parser_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:6] q=E Example
+  f1830a9cb728 tf  count=  328 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=C Example
+  f1b179fdcd26 xc  count=   84 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:4] cand=6 parser_cand=6 parser_issues=[result row belongs to another or unspecified sport:4] q=B Example
+  f40ca7c9ef0d xc  count=   87 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example
+  f5fcf4152ee0 xc  count=   87 rows= 10 tf=  1 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=O Example
+  f672702a6b5a tf  count=  301 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=A Example
+  f8a03e63f054 tf  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Outside Example Exampleville CA
+  f9b738a85703 tf  count=  144 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=B Example
+  fb43656666aa tf  count=  328 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=C Example
+  fd2afae9faac tf  count=    2 rows=  2 tf=  2 xc=  0 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Drew Example Exampleville CA
+  fdac6c236b14 tf  count=  153 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=O Example

@@ -10,56 +10,11 @@
 //! on, in the adapter's own file, so a reviewer can check the claim without reading the adapter end
 //! to end. A capability that cannot be pointed at is not claimed.
 
+use super::policy::{
+    artifact, fetched, CRAWL_DELAY_TEN_RPS, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
+};
 use super::SourceCapabilities as Caps;
-use super::{SourceAdmission, SourceDescriptor, TransportKind};
-use std::num::NonZeroUsize;
-
-/// The spacing a source fetched through the shared fetcher is held to: `--delay-ms` defaults to
-/// 1000 ms, which is half the collection's 2 rps ceiling.
-const FETCHER_RPS: f64 = 1.0;
-
-/// `www.wayzataresults.com` publishes `Crawl-delay: 10` for `User-agent: *`, and the fetcher applies
-/// a robots crawl-delay as a floor on the configured spacing — so the host is declared at 0.1 rps
-/// rather than at the default.
-const CRAWL_DELAY_TEN_RPS: f64 = 0.1;
-
-/// Origin recorded for an adapter that reads a checked-in research artifact: it issues no request, so
-/// there is no host to pace and the declared ceiling is the one a live fetch of the same material
-/// would inherit.
-const ARTIFACT_ORIGIN: &str = "local-artifact";
-
-/// The association-directory shape: a member-school universe, a coach and athletic-director
-/// directory, and the professional address the directory publishes for those roles.
-const SCHOOL_COACH_CONTACT: Caps = Caps {
-    school_evidence: true,
-    coach_directory: true,
-    public_professional_contact: true,
-    ..Caps::NONE
-};
-
-/// The name-only shape: a member-school universe plus coach and director names, with no address
-/// layer at all, so no contact claim can leak out of a directory that publishes none.
-const SCHOOL_COACH_NAMES: Caps = Caps {
-    school_evidence: true,
-    coach_directory: true,
-    ..Caps::NONE
-};
-
-/// Admission of one origin fetched through the shared fetcher: `rps` spacing, one request in flight,
-/// robots crawl-delay raised over the configured spacing and never lowered under it.
-const fn fetched(origin: &'static str, rps: f64) -> SourceAdmission {
-    SourceAdmission {
-        origin,
-        target_requests_per_second: rps,
-        maximum_in_flight: NonZeroUsize::MIN,
-        robots_crawl_delay_respected: true,
-    }
-}
-
-/// Admission of an adapter that reads an artifact instead of contacting a host.
-const fn artifact() -> SourceAdmission {
-    fetched(ARTIFACT_ORIGIN, FETCHER_RPS)
-}
+use super::{SourceDescriptor, TransportKind};
 
 /// Every adapter that fetches or parses external source material, in slug order.
 ///
@@ -69,16 +24,32 @@ const fn artifact() -> SourceAdmission {
 pub const REGISTRY: &[SourceDescriptor] = &[
     SourceDescriptor {
         slug: "athleticlive",
-        provider: "AthleticLIVE meet harvest (research artifact)",
+        provider: "AthleticLIVE meet harvest and result-plane captures (research artifacts)",
         transport: TransportKind::Csv,
         // meet_discovery: `meets::build_meets` mints one `CanonicalMeet` per harvested row, keyed on
-        // the meet the row names. No bulk_results: the harvest carries a `has_results` flag, not the
-        // result rows themselves. Nothing is requested by this adapter, so the admission states the
-        // ceiling a live fetch of the same harvest would inherit. The evidence it writes carries the
-        // caller's `source_label`, not this slug; the report's non-core list names the harvest
-        // `athleticlive_meets_csv` (`report::NON_CORE_SOURCE_IDS`).
+        // the meet the row names. bulk_results: the result-plane entry point `results::collect`
+        // (re-exported as `collect_results`) folds operator-supplied captures of the three wire
+        // routes and issues no request of its own; `results::absorb::absorb_document` mints the
+        // event a document publishes and writes one `CanonicalPerformance` per row through
+        // `map_rows::record_row`, while `results::absorb::absorb_standings` folds the live-standings
+        // payload of a run whose document is missing through `map_rows::record_standing`.
+        // grade_evidence:
+        // `map_rows::read_grade` reads the row's `y` token and dates it to the meet's school year,
+        // recording an `ObservedGrade` on the performance. No athlete_discovery: the harvest carries
+        // no roster and the result rows only name athletes the document lists, which the vocabulary
+        // counts as a by-product. No school_evidence: `map_rows::resolve_school` resolves a published
+        // label against the consolidated school index and counts a miss, so this adapter publishes no
+        // school identity of its own — the boundary `wiaa_results` holds too. Nothing is requested by
+        // this adapter, so the admission states the ceiling a live fetch of the same harvest would
+        // inherit. The evidence it writes carries the caller's `source_label`, not this slug, and the
+        // result plane stamps `athleticlive_results`; the report's non-core list names both
+        // (`report::NON_CORE_SOURCE_IDS`). `transport` names the harvest the slug's own `collect`
+        // reads: the result-plane captures are JSON documents read from operator-supplied paths, so
+        // the artifact admission covers both and no route is ever fetched.
         capabilities: Caps {
             meet_discovery: true,
+            bulk_results: true,
+            grade_evidence: true,
             ..Caps::NONE
         },
         admission: artifact(),
@@ -102,16 +73,24 @@ pub const REGISTRY: &[SourceDescriptor] = &[
     },
     SourceDescriptor {
         slug: "athleticnet",
-        provider: "Athletic.net athlete bio API",
+        provider: "Athletic.net athlete bio API and whole-meet pull",
         transport: TransportKind::StructuredApi,
         // athlete_profile: `BIO_ENDPOINT` (GetAthleteBioData) answers one athlete per call, and
         // `collect` spends two calls per athlete because `sport=tf` and `sport=xc` return disjoint
-        // results. No athlete_discovery: ids arrive from the operator's registry file, because the
-        // endpoint that would discover them is robots-disallowed (`parse_targets`, `read_registry`).
-        // grade_evidence: the bio's `grades` map, absorbed as `ObservedGrade`. school_evidence:
-        // `map::school_for` mints the school each `allTeams` entry names.
+        // results. bulk_results: one meet is a 2-request pull (`meet::meet_requests`), and
+        // `meet::map::absorb_meet` (called from `meet::collect`) stores one `CanonicalPerformance`
+        // per published row and relay leg through `meet::store::store`; the route is chosen when
+        // `Options::meets` names ids, and nothing here enumerates meets. No athlete_discovery: ids
+        // arrive from the operator's registry file or the harvest's meet links, because the endpoint
+        // that would discover them is robots-disallowed (`parse_targets`, `read_registry`), and the
+        // athletes a meet pull mints are a by-product of result rows. grade_evidence: the bio's
+        // `grades` map and the meet rows' published grade, both absorbed as `ObservedGrade`
+        // (`meet::read::grade_of` reads `9`..=`12` and refuses anything else). school_evidence:
+        // `map::school_for` mints the school each `allTeams` entry names, and
+        // `meet::map::absorb_meet` resolves each row's school the same way.
         capabilities: Caps {
             athlete_profile: true,
+            bulk_results: true,
             grade_evidence: true,
             school_evidence: true,
             ..Caps::NONE
@@ -162,11 +141,20 @@ pub const REGISTRY: &[SourceDescriptor] = &[
         // athlete_discovery: `parse::parse_team_index` enumerates teams and `parse::parse_roster`
         // the graded athletes in each (`wire::RosterAthlete::athlete_id`). graduation_evidence: the
         // roster's `column-grad-year` cell is parsed straight into `GradYear`. school_evidence:
-        // `normalize::roster_entities` mints the school that owns the roster. No athlete_profile:
-        // only the profile *URL* is retained; that page is never fetched. Evidence is stamped
-        // `milesplit_<state>` (`wire::Site::source_id`), not this slug.
+        // `normalize::roster_entities` mints the school that owns the roster. bulk_results: one
+        // `/raw` request returns a whole result set (`results::collect` ->
+        // `fetch::fetch_result_set` -> `raw::parse_raw`), and `map_rows::record_row` mints one
+        // `CanonicalPerformance` per published row. grade_evidence also arrives on that route:
+        // `raw_rows::columns::grade_of` reads the row's `Yr` cell and `map_rows::record_athlete`
+        // records it as an `ObservedGrade` dated by the meet's school year. No meet_discovery: the
+        // index that would enumerate meets sits behind the robots-disallowed `/api/`, so the `/raw`
+        // URL is supplied by the operator. No athlete_profile: only the profile *URL* is retained;
+        // that page is never fetched. Evidence is stamped `milesplit_<state>`
+        // (`wire::Site::source_id`), not this slug.
         capabilities: Caps {
             athlete_discovery: true,
+            bulk_results: true,
+            grade_evidence: true,
             graduation_evidence: true,
             school_evidence: true,
             ..Caps::NONE
@@ -216,6 +204,44 @@ pub const REGISTRY: &[SourceDescriptor] = &[
         // `secure.nsaahome.org` under the same 1 rps policy; a single-origin admission cannot name
         // both, and the second host is listed here so the declaration stays reviewable.
         admission: fetched("ndhsaa.com", FETCHER_RPS),
+    },
+    SourceDescriptor {
+        slug: "tfrrs",
+        provider: "TFRRS high-school performance lists (state instances)",
+        transport: TransportKind::Html,
+        // One request returns one performance list (1.9 MB, 1,671 distinct athletes in the Indiana
+        // sampler) and one more returns a team's roster; both URLs are supplied by the operator and
+        // read through `ctx.fetcher.get` under the crate's default per-host spacing. The host is an
+        // instance of the `<state>.tfrrs.org` family, so the policy is stated once for the family:
+        // the adapter derives the jurisdiction from the host (`parse::jurisdiction_of_url`) and
+        // refuses a page whose host names no state, rather than filing schools under a guessed one.
+        // The host's `robots.txt` is comment-only, so the fetcher's default spacing applies
+        // unchanged. Only the high-school instances serve this surface — `indiana` is the wired one;
+        // `florida` and `nh` are the others. Evidence is stamped per state, `tfrrs_in`/`tfrrs_nh`
+        // (`source_id` in the adapter root), the same per-instance naming `milesplit` uses.
+        //
+        // athlete_discovery: `parse::parse_list_page` returns one row per listed competitor
+        // (`ParsedRow.athlete`) and `parse::parse_team_page` a team's roster
+        // (`ParsedRoster.athletes`), and `map::Absorb::athlete_for` mints one `CanonicalAthlete` per
+        // listed athlete. bulk_results: `map::Absorb::absorb_list` absorbs every section of one list
+        // page, and each published mark becomes a `CanonicalPerformance`. grade_evidence: the row's
+        // `Year` column is decoded by `map::row::grade_for` (`parse::YearToken::grade`; a token below
+        // high school is refused, and a row that prints none falls back to the `?year=` the page was
+        // requested with), then dated by the row's own meet date through
+        // `parse::PublishedDate::school_year` and recorded as an `ObservedGrade`. school_evidence:
+        // every row names the team route `/teams/tf/<School>_<gender>.html`, which
+        // `map::Absorb::school_for` resolves against the consolidated index and mints when the index
+        // has never seen the name. No meet_discovery: meets arrive inside result rows, not as an
+        // index. No athlete_profile: lists and rosters only, never `/athletes/<id>`. No
+        // graduation_evidence: the published token is a grade, not a cohort.
+        capabilities: Caps {
+            athlete_discovery: true,
+            bulk_results: true,
+            grade_evidence: true,
+            school_evidence: true,
+            ..Caps::NONE
+        },
+        admission: fetched("tfrrs.org", FETCHER_RPS),
     },
     SourceDescriptor {
         slug: "wiaa",

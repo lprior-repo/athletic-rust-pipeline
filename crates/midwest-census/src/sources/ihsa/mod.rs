@@ -24,6 +24,7 @@ mod collect;
 mod map;
 mod parse;
 mod staff;
+pub mod tournament;
 
 pub use collect::collect;
 pub use map::{parse_coach, parse_school, reveal_address_for};

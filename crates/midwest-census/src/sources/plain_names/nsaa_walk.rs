@@ -1,5 +1,5 @@
-//! The Nebraska half's per-school walk: fetch one member page, tally its published rows, journal
-//! the school, and keep the entity rows the run writes once the directory form is exhausted.
+//! The Nebraska half's per-school walk: fetch one member page, tally its published rows, append
+//! the school's entity rows and journal it.
 //!
 //! Split out of `nsaa_coaches` when that file's walk outgrew the repository's file budget; the
 //! collection entry point and the row/school parsers stay there.
@@ -54,15 +54,15 @@ fn journal_school(
     Ok(())
 }
 
-/// One walk of the NSAA member directory: the entity rows it accumulates and its report counters.
+/// One walk of the NSAA member directory: the rows each visit appended and its report counters.
 #[derive(Default)]
 pub(super) struct NsaaWalk {
-    schools: Vec<CanonicalSchool>,
-    coaches: Vec<CanonicalCoach>,
     observed_on: String,
     processed: usize,
     resumed: usize,
     failed: usize,
+    school_rows: usize,
+    coach_rows: usize,
     ad_rows: usize,
     sport_rows: usize,
     slots: usize,
@@ -171,31 +171,31 @@ impl NsaaWalk {
         self.ad_rows = self.ad_rows.saturating_add(ad_rows);
         self.sport_rows = self.sport_rows.saturating_add(sport_rows);
         let coach_count = coaches.len();
-        self.coaches.extend(coaches);
-        self.schools.push(school);
+
+        // Append this school's rows, then journal it: both append batches commit at `SyncData` and
+        // the journal write commits separately, so the journal entry goes last.
+        ctx.store.append(Table::Schools, &school)?;
+        ctx.store.append_many(Table::Coaches, &coaches)?;
+        self.school_rows = self.school_rows.saturating_add(1);
+        self.coach_rows = self.coach_rows.saturating_add(coach_count);
 
         journal_school(ctx, &format!("NE:{name}"), published_rows, coach_count)?;
         self.processed = self.processed.saturating_add(1);
         Ok(())
     }
 
-    /// Write the walked entities and emit the two summary lines.
+    /// Report the counts of the rows each visit appended and emit the two summary lines.
     pub(super) fn publish(
         &self,
-        ctx: &AdapterContext<'_>,
         report: &mut AdapterReport,
         members: usize,
     ) -> CrawlResult<(u64, u64)> {
-        let school_rows =
-            u64::try_from(self.schools.len()).map_err(|_| CrawlError::Arithmetic {
-                detail: "nsaa school count exceeds u64".to_string(),
-            })?;
-        let coach_rows = u64::try_from(self.coaches.len()).map_err(|_| CrawlError::Arithmetic {
+        let school_rows = u64::try_from(self.school_rows).map_err(|_| CrawlError::Arithmetic {
+            detail: "nsaa school count exceeds u64".to_string(),
+        })?;
+        let coach_rows = u64::try_from(self.coach_rows).map_err(|_| CrawlError::Arithmetic {
             detail: "nsaa coach count exceeds u64".to_string(),
         })?;
-        ctx.store.append_many(Table::Schools, &self.schools)?;
-        ctx.store.append_many(Table::Coaches, &self.coaches)?;
-
         self.summary(report, members, coach_rows);
         Ok((school_rows, coach_rows))
     }

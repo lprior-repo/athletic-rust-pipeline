@@ -28,6 +28,24 @@
 //! `sport=xc`. Nothing in either payload carries the indoor/outdoor split except
 //! `allSeasons[].Display` (`"2026 Indoor"`, `"2026 Outdoor"`).
 //!
+//! # The whole-meet route (a pull beyond this registry)
+//!
+//! Athletic.net also serves whole meets, and that is the route the national census wants: per
+//! **request** a meet yields 2–3 orders of magnitude more rows than the bio route, and it publishes
+//! per-row grade evidence the bio route has to derive. Measured on meet 634313
+//! (`samples/anon-meet-probe-report.json`, re-measured anonymously):
+//!
+//! | route | requests | yield |
+//! |---|---|---|
+//! | whole meet, 2 requests (`Meet/GetMeetData` → `Meet/GetAllResultsData`) | **2** | 758 rows + 288 relay legs (1,046) |
+//! | whole meet, + `Meet/GetEventDivisionData` (`--event-metadata`) | 3 | the same, plus the per-event type/hurdle metadata |
+//! | this registry, per athlete (`AthleteBio/GetAthleteBioData`) | 586 | 53 career rows for one captured athlete |
+//!
+//! The third request is not needed for results — every one of the probe's 49 block labels maps to a
+//! platform kind — but it is the only way to read the marks of an event whose label does not
+//! (see [`meet`]). Whole meets are pulled when the operator lists them (`--meets`); the registry
+//! route is untouched by that.
+//!
 //! # What this adapter refuses to guess
 //!
 //! A row is skipped — and counted, and named in the run report — when its season has no
@@ -35,13 +53,18 @@
 //! `allTeams` entry, when its meet has no `meets` entry, when the target carries no state (school
 //! identity keys on state + name, and `"Springfield"` in two states is two schools), or when the
 //! mark is a no-mark token. The refusal is the point: a mislabelled indoor/outdoor row is worse
-//! than a counted gap.
+//! than a counted gap. The whole-meet route refuses the same way: a meet the payload does not place
+//! in a jurisdiction, a squad row with no legs, or an event whose label maps to no kind and whose
+//! type was not read.
 //!
 //! # Layout
 //!
 //! `parse` decodes published payloads, `map` mints canonical entities, `absorb` walks one
 //! payload's rows into them, and `collect` drives the run and journals it. The registry contract
 //! lives here too: `parse_targets` reads the operator's file and `read_registry` is the run's way in.
+//! The whole-meet route is the `meet` module, one file per concern: `wire` the published shapes,
+//! `read` the token readers, `store` the entity mints, `map` the walk, `count` the run report, and
+//! `collect` the request pairs and the journal.
 
 use crate::sources::{CrawlError, CrawlResult};
 use census_domain::UsJurisdiction;
@@ -50,9 +73,15 @@ use std::collections::HashSet;
 mod absorb;
 mod collect;
 mod map;
+mod meet;
 mod parse;
 
 pub use collect::collect;
+pub use meet::{
+    grade_of, jurisdiction_of, meet_requests, metadata_request, AllResults, EventDivisions,
+    EventMetadata, FlatEvent, FlatRow, MeetData, PublishedEvent, PublishedLeg, PublishedMeet,
+    PublishedTeam,
+};
 pub use parse::{parse_mark, Bio, BioAthlete, BioEvent, BioMeet, BioSeason, BioTeam, TfRow, XcRow};
 
 /// Athlete bio endpoint; `sport` (`tf`/`xc`), `athleteId` and `level` are its parameters.
@@ -78,6 +107,15 @@ pub struct Options {
     pub observed_on: String,
     /// Jurisdiction applied to targets that carry none. Only unambiguous for a single-state batch.
     pub states: Vec<UsJurisdiction>,
+    /// Meet ids to pull whole (`--meets`), in the order given. When this is non-empty the run
+    /// takes the whole-meet route instead of the registry: two requests per meet
+    /// (`Meet/GetMeetData` then `Meet/GetAllResultsData`), never the per-athlete bio route.
+    pub meets: Vec<i64>,
+    /// Spend the third request (`Meet/GetEventDivisionData`) for the per-event type and hurdle
+    /// metadata that settles the marks of events whose own label maps to no platform kind.
+    pub event_metadata: bool,
+    /// Cap the number of meets processed (smoke runs).
+    pub meet_limit: Option<usize>,
 }
 
 /// One athlete to read, with the jurisdiction that disambiguates its school.

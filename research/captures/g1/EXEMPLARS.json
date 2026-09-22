@@ -1,0 +1,119 @@
+{
+  "note": "Retained live search-response bodies (verbatim store documents) with per-page provenance; sha256 of each file equals its store digest.",
+  "corpora": {
+    "lane": {
+      "store_copy_of": "/home/lewis/.local/share/athletic-rust-pipeline/lane-v14/live-store",
+      "runs": [
+        "out-live-full-3",
+        "out-live-outdoor-boys",
+        "out-live-outdoor-girls"
+      ],
+      "bodies": 104,
+      "evidence_records": 210,
+      "parsed_records": 191
+    },
+    "pilot": {
+      "store_copy_of": "/home/lewis/.local/share/athletic-rust-pipeline/native-artifacts-v2",
+      "run_export_files": [
+        "golden-pilot-100-v1-partial-c.jsonl"
+      ],
+      "bodies": 456,
+      "evidence_records": 316,
+      "parsed_records": 563
+    }
+  },
+  "exemplars": [
+    {
+      "file": "lane-out-live-outdoor-boys-024247e4e0d4.body",
+      "digest_sha256": "024247e4e0d4bc4ca4cbd03c6d8ece71e270357bd2c7712fb85540038e544db0",
+      "bytes": 23424,
+      "corpus": "lane",
+      "lane_run": "out-live-outdoor-boys",
+      "provenance": [
+        {
+          "query": "A Example",
+          "sport": "track_field",
+          "stage": 2,
+          "page_index": 0,
+          "fetched_at_utc": "2026-09-21T01:28:54Z",
+          "http_status": 200,
+          "bytes": 23424,
+          "source_url": "https://www.athletic.net/Search.aspx/runSearch",
+          "record_complete": false,
+          "record_failures": [
+            "search page contains malformed or unrelated result rows"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "lane-out-live-outdoor-boys-0ec156e0ae3c.body",
+      "digest_sha256": "0ec156e0ae3c7d9d84c17111e13ea2a9a67ecbab8228d32ec557192491912ede",
+      "bytes": 725,
+      "corpus": "lane",
+      "lane_run": "out-live-outdoor-boys",
+      "provenance": [
+        {
+          "query": "Outside Example",
+          "sport": "track_field",
+          "stage": 0,
+          "page_index": 0,
+          "fetched_at_utc": "2026-09-21T01:36:43Z",
+          "http_status": 200,
+          "bytes": 725,
+          "source_url": "https://www.athletic.net/Search.aspx/runSearch",
+          "record_complete": false,
+          "record_failures": [
+            "search page ended before the advertised result count"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "pilot-01db901cda4e.body",
+      "digest_sha256": "01db901cda4eb5dd586d0a9bc1806a2b2457f77d2491713e1c7b83dd6d2f1a96",
+      "bytes": 16239,
+      "corpus": "pilot",
+      "lane_run": null,
+      "provenance": [
+        {
+          "query": "Robert Wallace",
+          "sport": "cross_country",
+          "stage": 0,
+          "page_index": 0,
+          "fetched_at_utc": "2026-09-16T22:21:47Z",
+          "http_status": 200,
+          "bytes": 16239,
+          "source_url": "https://www.athletic.net/Search.aspx/runSearch",
+          "record_complete": false,
+          "record_failures": [
+            "search page contains malformed or unrelated result rows"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "pilot-007b7e533499.body",
+      "digest_sha256": "007b7e533499f85ce74016e89d84f76050d5b25073f8f5d6d9dbb5bbfd6cc151",
+      "bytes": 14643,
+      "corpus": "pilot",
+      "lane_run": null,
+      "provenance": [
+        {
+          "query": "Emma Easter",
+          "sport": "cross_country",
+          "stage": 0,
+          "page_index": 0,
+          "fetched_at_utc": "2026-09-16T22:26:03Z",
+          "http_status": 200,
+          "bytes": 14643,
+          "source_url": "https://www.athletic.net/Search.aspx/runSearch",
+          "record_complete": false,
+          "record_failures": [
+            "search page contains malformed or unrelated result rows"
+          ]
+        }
+      ]
+    }
+  ]
+}

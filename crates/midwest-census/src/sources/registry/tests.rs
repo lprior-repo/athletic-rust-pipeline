@@ -7,10 +7,12 @@
 
 use super::{bulk_first, descriptor, TransportKind, REGISTRY};
 
-/// The provider modules this registry exists for: one per adapter that fetches or parses external
-/// source material. Spelled out deliberately, so deleting an entry fails here instead of quietly
-/// shrinking what a plan can see, and adding one requires saying so in both places.
-const PROVIDER_SLUGS: [&str; 13] = [
+/// The vocabulary a plan can choose from: one slug per adapter that fetches or parses external
+/// source material, which is also the name the provider dispatch accepts (§11). Spelled out
+/// deliberately, so deleting an entry fails here instead of quietly shrinking what a plan can see,
+/// and adding one requires saying so in both places. An adapter's stamped evidence id is not a plan
+/// name (`wayzata_schedule` for `wayzata`, `ohsaa_portal` for `ohsaa`), so only slugs appear here.
+const PLAN_SLUGS: [&str; 14] = [
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
@@ -21,6 +23,7 @@ const PROVIDER_SLUGS: [&str; 13] = [
     "mshsl",
     "ohsaa",
     "plain_names",
+    "tfrrs",
     "wiaa",
     "wiaa_results",
     "wayzata",
@@ -42,10 +45,10 @@ fn every_provider_module_is_registered_exactly_once() {
     );
     assert_eq!(
         unique.len(),
-        PROVIDER_SLUGS.len(),
+        PLAN_SLUGS.len(),
         "the table and its list of provider modules disagree"
     );
-    for declared in PROVIDER_SLUGS {
+    for declared in PLAN_SLUGS {
         assert!(
             unique.binary_search(&declared).is_ok(),
             "{declared} is not registered"
@@ -108,6 +111,28 @@ fn every_admission_stays_inside_the_collection_ceiling() {
     }
 }
 
+/// The transport grants one in-flight request per host, and every entry repeats that bound so a
+/// widened one has to be a visible edit in the table rather than a silent one in a caller. The same
+/// holds for the crawl-delay floor: the fetcher raises spacing to a published `Crawl-delay` and
+/// never lowers it, so an entry claiming otherwise would describe a run the transport refuses.
+#[test]
+fn every_admission_repeats_the_transport_bound() {
+    for entry in REGISTRY {
+        assert_eq!(
+            entry.admission.maximum_in_flight.get(),
+            1,
+            "{} declares more than one in-flight request for {}",
+            entry.slug,
+            entry.admission.origin
+        );
+        assert!(
+            entry.admission.robots_crawl_delay_respected,
+            "{} declares that a published crawl-delay is ignored",
+            entry.slug
+        );
+    }
+}
+
 /// The configured spacing is one second by default, and a host whose `robots.txt` asks for ten is
 /// held to ten: a declaration that kept the default there would contradict the floor the fetcher
 /// applies, which is exactly the mismatch this field exists to make reviewable.
@@ -143,24 +168,40 @@ fn artifact_adapters_declare_no_fetchable_host() {
 }
 
 /// ADR-004's preference in one assertion: a payload that carries many performances comes before a
-/// per-athlete profile, whatever order the caller listed the two in.
+/// source that only names athletes, whatever order the caller listed the two in.
+///
+/// `athleticnet` answers both shapes now (bio per athlete, whole meet per pull), so it can no
+/// longer serve as the weaker side: it sorts by its bulk route, which the last assertion holds to.
 #[test]
-fn bulk_first_puts_a_bulk_source_before_a_profile_only_one() {
-    let plan = bulk_first(&["athleticnet", "wiaa_results"]);
+fn bulk_first_puts_a_bulk_source_before_an_athlete_index() {
+    let plan = bulk_first(&["athleticlive_athletes", "wiaa_results"]);
     assert_eq!(plan.first().map(|entry| entry.slug), Some("wiaa_results"));
-    assert_eq!(plan.last().map(|entry| entry.slug), Some("athleticnet"));
-    assert_eq!(bulk_first(&["wiaa_results", "athleticnet"]), plan);
+    assert_eq!(
+        plan.last().map(|entry| entry.slug),
+        Some("athleticlive_athletes")
+    );
+    assert_eq!(bulk_first(&["wiaa_results", "athleticlive_athletes"]), plan);
+    assert_eq!(
+        bulk_first(&["athleticnet", "wiaa_results"])
+            .first()
+            .map(|entry| entry.slug),
+        Some("athleticnet"),
+        "a source with a bulk route sorts by that route, not by its weaker one"
+    );
 }
 
 /// The bands run bulk results, then meet discovery, then athlete-shaped sources, then everything
 /// else — one source from each band, so a band that swallowed its neighbour shows up here.
+///
+/// `milesplit` is deliberately not the athlete-shaped probe: the `/raw` route makes it a
+/// `bulk_results` source, which the runner below would otherwise be testing for the wrong band.
 #[test]
 fn bands_run_bulk_meet_athlete_then_directories() {
-    let plan = bulk_first(&["mshsl", "milesplit", "wayzata", "wiaa_results"]);
+    let plan = bulk_first(&["mshsl", "athleticlive_athletes", "wayzata", "wiaa_results"]);
     let slugs: Vec<&str> = plan.iter().map(|entry| entry.slug).collect();
     assert_eq!(
         slugs,
-        ["wiaa_results", "wayzata", "milesplit", "mshsl"],
+        ["wiaa_results", "wayzata", "athleticlive_athletes", "mshsl"],
         "one source per band, in band order"
     );
 }
@@ -177,4 +218,56 @@ fn equal_bands_order_by_slug_and_ignore_repeats() {
     assert_eq!(slugs, ["ihsa", "ks", "ohsaa", "plain_names", "wiaa"]);
     assert_eq!(bulk_first(&["ihsa", "ihsa"]).len(), 1);
     assert!(bulk_first(&["no_such_source"]).is_empty());
+}
+
+/// Every name a plan can choose has to survive both queries the planner calls: `descriptor` answers
+/// it with its own entry, and `bulk_first` keeps it in the plan instead of filtering it out. A slug
+/// that is registered but dropped from the ordering would be a source an operator can select and
+/// the plan then silently ignores.
+#[test]
+fn every_plan_slug_resolves_and_stays_in_the_plan() {
+    for slug in PLAN_SLUGS {
+        assert_eq!(
+            descriptor(slug).map(|entry| entry.slug),
+            Some(slug),
+            "{slug} is a plan name with no descriptor"
+        );
+        let plan = bulk_first(&[slug]);
+        assert_eq!(
+            plan.iter().map(|entry| entry.slug).collect::<Vec<&str>>(),
+            vec![slug],
+            "{slug} dropped out of its own plan"
+        );
+    }
+}
+
+/// Multiple entries behind one origin each repeat that origin's policy, so a rate that drifted on
+/// one of them shows up here as a disagreement instead of as traffic the host never permitted, and
+/// a widened in-flight bound has to be an edit every entry agrees on.
+#[test]
+fn one_origin_has_one_declared_policy() {
+    let mut seen: Vec<(&str, f64, usize)> = Vec::new();
+    for entry in REGISTRY {
+        let admission = entry.admission;
+        let in_flight = admission.maximum_in_flight.get();
+        let Some((_, rate, bound)) = seen.iter().find(|(origin, ..)| *origin == admission.origin)
+        else {
+            seen.push((
+                admission.origin,
+                admission.target_requests_per_second,
+                in_flight,
+            ));
+            continue;
+        };
+        assert_eq!(
+            *rate, admission.target_requests_per_second,
+            "{} declares a different rate than another entry for {}",
+            entry.slug, admission.origin
+        );
+        assert_eq!(
+            *bound, in_flight,
+            "{} declares a different in-flight bound than another entry for {}",
+            entry.slug, admission.origin
+        );
+    }
 }

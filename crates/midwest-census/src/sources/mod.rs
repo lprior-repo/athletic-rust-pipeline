@@ -78,6 +78,7 @@ pub mod plain_names;
 pub mod raceday;
 pub mod registry;
 pub mod result_file;
+pub mod tfrrs;
 pub mod wayzata;
 pub mod wiaa;
 pub mod wiaa_results;

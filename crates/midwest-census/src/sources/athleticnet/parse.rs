@@ -106,9 +106,17 @@ pub struct BioMeet {
 
 impl BioMeet {
     pub(super) fn date(&self) -> Option<&str> {
-        let date = self.end_date.split('T').next().unwrap_or_default().trim();
-        (date.len() == 10 && date.as_bytes().get(4) == Some(&b'-')).then_some(date)
+        published_date(&self.end_date)
     }
+}
+
+/// The `YYYY-MM-DD` date a published timestamp carries (`"2026-05-15T00:00:00"`), or `None` when
+/// the column is not a plain date.
+///
+/// Shared with the whole-meet path, whose `MeetDate`/`EndDate` are published in the same shape.
+pub(super) fn published_date(raw: &str) -> Option<&str> {
+    let date = raw.split('T').next().unwrap_or_default().trim();
+    (date.len() == 10 && date.as_bytes().get(4) == Some(&b'-')).then_some(date)
 }
 
 /// One track & field result.
@@ -179,7 +187,7 @@ pub struct XcRow {
 }
 
 /// `Place` is a string on the track payload and a number on the cross-country one.
-fn optional_text<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+pub(super) fn optional_text<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -207,17 +215,7 @@ where
 /// qualifier suffixes (`q`/`Q`/`p`/`P`) beside the mark, and no-mark words (`DNS`, `ND`, `FOUL`) in
 /// the same column. A no-mark row yields no performance.
 pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
-    let trimmed = published.trim();
-    if trimmed.is_empty() || NO_MARK.contains(&trimmed.to_ascii_uppercase().as_str()) {
-        return None;
-    }
-    let auto = trimmed.ends_with('a') || trimmed.ends_with('A');
-    let token = trimmed
-        .trim_end_matches(['a', 'A', 'q', 'Q', 'p', 'P'])
-        .trim();
-    if !token.chars().any(|c| c.is_ascii_digit()) {
-        return None;
-    }
+    let (token, auto) = published_token(published)?;
     let mark = match kind {
         EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
             Mark::Points(token.replace(',', "").parse().ok()?)
@@ -228,9 +226,30 @@ pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
     Some((mark, auto))
 }
 
+/// The token a published mark column carries, and whether it was automatic, or `None` when the
+/// column holds a no-mark word or nothing numeric.
+///
+/// Split out of [`parse_mark`] because the whole-meet path reads the same column for events whose
+/// own label maps to no kind: there the published event type decides whether the token is a time or
+/// a field mark.
+pub(super) fn published_token(published: &str) -> Option<(&str, bool)> {
+    let trimmed = published.trim();
+    if trimmed.is_empty() || NO_MARK.contains(&trimmed.to_ascii_uppercase().as_str()) {
+        return None;
+    }
+    let auto = trimmed.ends_with('a') || trimmed.ends_with('A');
+    let token = trimmed
+        .trim_end_matches(['a', 'A', 'q', 'Q', 'p', 'P'])
+        .trim();
+    token
+        .chars()
+        .any(|c| c.is_ascii_digit())
+        .then_some((token, auto))
+}
+
 /// Drop the `m` Athletic.net prints on metric field marks (`12.34m`), so the shared field parser
 /// sees the bare figure it expects. Only a token that is otherwise a plain number is shortened.
-fn metric_bare(token: &str) -> &str {
+pub(super) fn metric_bare(token: &str) -> &str {
     match token.strip_suffix(['m', 'M']) {
         Some(head) if head.trim().parse::<f64>().is_ok() => head.trim(),
         _ => token,

@@ -29,6 +29,7 @@
 //! The table itself is in `table`; this file holds the vocabulary and the two queries a planner
 //! calls.
 
+mod policy;
 mod table;
 
 use std::num::NonZeroUsize;

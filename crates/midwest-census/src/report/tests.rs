@@ -120,3 +120,39 @@ fn census_reads_merged_observations_without_consolidating() {
     assert_eq!(census.by_state["WI"].schools, 1);
     assert!(!store.out_dir().join("athletes.jsonl").exists());
 }
+
+#[test]
+fn every_jurisdiction_publishes_a_by_state_row() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+
+    // An empty store still names every configured jurisdiction, plus the bucket for rows no school
+    // placed: an omitted state reads as one nobody looked at.
+    let empty = build_census(&store, Scope::AllSources).unwrap();
+    let expected = UsJurisdiction::ALL.len().saturating_add(1);
+    assert_eq!(empty.by_state.len(), expected);
+    assert!(empty.by_state.contains_key(UNKNOWN_JURISDICTION));
+    assert!(empty
+        .by_state
+        .values()
+        .all(|row| row.schools == 0 && row.athletes == 0));
+
+    // A state with a school and no athlete is "covered, empty": its row carries the school count and
+    // zero athletes rather than dropping out of `by_state`.
+    let (school, _school_id) = CanonicalSchool::new(UsJurisdiction::Wyoming, "Laramie", "laramie");
+    store.append(Table::Schools, &school).unwrap();
+    let census = build_census(&store, Scope::AllSources).unwrap();
+    assert_eq!(census.by_state.len(), expected);
+    let wyoming = census.by_state.get("WY").unwrap();
+    assert_eq!(wyoming.schools, 1);
+    assert_eq!(wyoming.athletes, 0);
+    assert_eq!(census.totals.schools, 1);
+
+    // The published artifacts carry the same rows: the header, one line per jurisdiction whatever it
+    // holds, and the totals line — a state cannot vanish from `report.json` or the CSV either.
+    let (_json_path, csv_path) = write_census(&store, &census, Scope::AllSources).unwrap();
+    let csv = std::fs::read_to_string(&csv_path).unwrap();
+    assert_eq!(csv.lines().count(), expected.saturating_add(2));
+    assert!(csv.contains("WY,1,0,"), "{csv}");
+    assert!(csv.contains("UNKNOWN,"), "{csv}");
+}

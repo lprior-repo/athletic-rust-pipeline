@@ -74,12 +74,17 @@ pub(crate) fn xlsx_error(path: &Path, source: rust_xlsxwriter::XlsxError) -> Rep
 use crate::store::{Store, Table};
 
 mod core_scope;
+mod coverage;
 mod notes;
 mod projection;
 mod rows;
 mod tables;
 mod writer;
 
+pub use coverage::{
+    coverage_report, CoverageGap, CoverageReport, CoverageTotals, GapClass, JurisdictionCoverage,
+    UNKNOWN_JURISDICTION,
+};
 pub use projection::build_census;
 pub use writer::write_census;
 
@@ -135,6 +140,9 @@ pub struct Census {
     /// `all_sources` or `core` — see [`Scope`].
     pub scope: String,
     pub totals: StateCensus,
+    /// One row per configured jurisdiction, plus [`UNKNOWN_JURISDICTION`] for rows no school
+    /// placed. Every key is present whatever the store holds, so a state with no observations
+    /// publishes zeros instead of vanishing from the sheet and the per-state CSV.
     pub by_state: BTreeMap<String, StateCensus>,
     pub athletes_by_grad_year: BTreeMap<String, usize>,
     pub class_of_2027_sports: SportsBreakdown,

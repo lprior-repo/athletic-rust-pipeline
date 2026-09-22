@@ -1,7 +1,7 @@
-//! The KSHSAA directory pass: fetch the directory, journal it and append what it carries.
+//! The KSHSAA directory pass: fetch the directory, then append and journal each member school.
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
-use census_domain::model::{CanonicalCoach, CanonicalSchool};
+use census_domain::model::CanonicalCoach;
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
@@ -32,7 +32,8 @@ pub struct Options {
 /// 1. Fetch `https://kshsaa-api.kshsaa.org/directory/search/name/a/` — the single request returns
 ///    all ~526 Kansas member schools.
 /// 2. Parse the JSON array; each record becomes one canonical school and one AD coach.
-/// 3. Journal progress per school so a re-run resumes without re-processing.
+/// 3. Append each school and its AD coach, then journal that school, so a re-run resumes past
+///    every school whose rows are already in the store.
 pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport> {
     let mut report = AdapterReport::new("ks", "schools");
     report.unit = "schools".to_string();
@@ -64,7 +65,6 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let done_keys: HashSet<String> = ctx.store.journal_keys("kshsaa_schools")?;
 
     let tally = collect_records(&records, ctx, options, &url, &done_keys, &mut report)?;
-    append_ks_entities(ctx, &tally.schools, &tally.coaches)?;
 
     // Finalize stats and counts.
     let after = ctx.fetcher.stats().await;
@@ -79,23 +79,23 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     Ok(report)
 }
 
-/// What one journaled directory record contributed.
-struct KsRecord {
-    school: CanonicalSchool,
-    coach: Option<CanonicalCoach>,
+/// What one directory record contributed to the pass.
+enum KsRead {
+    /// The record carried no canonical school; nothing was appended and nothing journaled.
+    Unreadable,
+    /// The record was appended and journaled as done; `None` means it published no AD coach.
+    Read(Option<CanonicalCoach>),
 }
 
-/// What one directory pass accumulated, besides the email count, which is recorded on the report as
-/// each record is read.
+/// What one directory pass counted; the email count is recorded on the report as each record is
+/// read.
 struct KsTally {
     processed: usize,
     skipped: usize,
     skipped_no_ad: usize,
-    schools: Vec<CanonicalSchool>,
-    coaches: Vec<CanonicalCoach>,
 }
 
-/// Walk the directory once: journalled schools are counted as skipped, the rest are read and
+/// Walk the directory once: journalled schools are counted as skipped, the rest are appended and
 /// journalled as done so a re-run resumes past them.
 fn collect_records(
     records: &[KshsaaRecord],
@@ -110,8 +110,6 @@ fn collect_records(
         processed: 0,
         skipped: 0,
         skipped_no_ad: 0,
-        schools: Vec::new(),
-        coaches: Vec::new(),
     };
 
     for record in records {
@@ -129,42 +127,44 @@ fn collect_records(
             continue;
         }
 
-        let Some(read) = collect_record(record, ctx, url, &options.observed_on, &journal_key)?
-        else {
-            continue;
-        };
-        if let Some(coach) = read.coach {
-            if coach.professional_email.is_some() {
-                report.with_email = report.with_email.saturating_add(1);
+        match collect_record(record, ctx, url, &options.observed_on, &journal_key)? {
+            KsRead::Unreadable => continue,
+            KsRead::Read(None) => tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1),
+            KsRead::Read(Some(coach)) => {
+                if coach.professional_email.is_some() {
+                    report.with_email = report.with_email.saturating_add(1);
+                }
             }
-            tally.coaches.push(coach);
-        } else {
-            tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1);
         }
-        tally.schools.push(read.school);
         tally.processed = tally.processed.saturating_add(1);
     }
     Ok(tally)
 }
 
-/// One directory record: its school, the AD coach it publishes (absent when the AD name is empty),
-/// and the journal entry that marks the school done.
+/// One directory record: append its rows, then journal the school as done.
+///
+/// The append commits at `SyncData` and the journal write commits separately, so the journal entry
+/// goes last: a journaled school never claims rows the store does not hold.
 fn collect_record(
     record: &KshsaaRecord,
     ctx: &AdapterContext<'_>,
     url: &str,
     observed_on: &str,
     journal_key: &str,
-) -> CrawlResult<Option<KsRecord>> {
+) -> CrawlResult<KsRead> {
     // Parse school.
     let Some((school, school_id)) = parse_school(record, url, observed_on) else {
-        return Ok(None);
+        return Ok(KsRead::Unreadable);
     };
 
     // Parse AD coach.
     let coach = parse_ad_coach(record, &school_id, url, observed_on);
 
-    // Journal this school as done.
+    // Append this record's rows, then journal it done.
+    ctx.store.append(Table::Schools, &school)?;
+    if let Some(row) = coach.as_ref() {
+        ctx.store.append(Table::Coaches, row)?;
+    }
     ctx.store.journal_done(
         "kshsaa_schools",
         journal_key,
@@ -173,20 +173,5 @@ fn collect_record(
             "school_name": record.school_name,
         }),
     )?;
-    Ok(Some(KsRecord { school, coach }))
-}
-
-/// Append all schools and coaches of one pass to the store.
-fn append_ks_entities(
-    ctx: &AdapterContext<'_>,
-    schools: &[CanonicalSchool],
-    coaches: &[CanonicalCoach],
-) -> CrawlResult<()> {
-    if !schools.is_empty() {
-        ctx.store.append_many(Table::Schools, schools)?;
-    }
-    if !coaches.is_empty() {
-        ctx.store.append_many(Table::Coaches, coaches)?;
-    }
-    Ok(())
+    Ok(KsRead::Read(coach))
 }

@@ -466,6 +466,16 @@ async fn discover_service_names(client: &reqwest::Client, url: &str) -> Vec<Stri
         .collect()
 }
 
+/// The client the endpoint's discovery surface speaks: HTTP/2 with prior knowledge, because the
+/// SDK's endpoint serves h2 only (hyper's `http2::Builder`) and the client cannot upgrade into it.
+fn discovery_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .http2_prior_knowledge()
+        .build()
+        .unwrap()
+}
+
 /// Request shutdown, then reap the supervisor and return its drain report. A supervisor that
 /// outlives the deadline has its region aborted before the test fails.
 async fn drain_after_shutdown(
@@ -513,13 +523,7 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
     });
 
     let url = format!("http://{listen}/discover");
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        // The SDK's endpoint serves HTTP/2 only (hyper's `http2::Builder`), so the client has to
-        // speak h2 without an upgrade dance.
-        .http2_prior_knowledge()
-        .build()
-        .unwrap();
+    let client = discovery_client();
     let names = discover_service_names(&client, &url).await;
     for expected in EXPECTED_SERVICES {
         assert!(
@@ -542,4 +546,61 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
     // Finalization dropped the Fjall database, so the directory can be opened again.
     let reopened = Store::open(&data_dir).unwrap();
     assert_eq!(reopened.stats().unwrap().tables.len(), Table::ALL.len());
+}
+
+/// The drain deadline bounds the reap after a stop request, never the wait for one: an endpoint
+/// that has been given no signal and no shutdown keeps serving past `drain_timeout`, and a stop
+/// that does arrive still drains inside the deadline instead of timing out.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() {
+    let dir = tempfile::tempdir().unwrap();
+    let listen = free_local_address();
+    let options = ServeOptions {
+        listen,
+        data_dir: dir.path().join("data"),
+        max_concurrent: 4,
+        drain_timeout: Duration::from_millis(250),
+    };
+
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+    let mut tasks: JoinSet<anyhow::Result<DrainReport>> = JoinSet::new();
+    tasks.spawn(async move {
+        serve_until(options, async move {
+            let _ = shutdown_rx.await;
+        })
+        .await
+    });
+
+    let url = format!("http://{listen}/discover");
+    let client = discovery_client();
+    let names = discover_service_names(&client, &url).await;
+    assert!(
+        names.iter().any(|name| name == EXPECTED_SERVICES[0]),
+        "the discovery manifest {names:?} does not advertise {}",
+        EXPECTED_SERVICES[0]
+    );
+
+    // Outlive three drain deadlines with the stop still unrequested: draining before the watch
+    // resolves would have ended the supervisor here and reported `ServerExit`.
+    let deadlines = 3;
+    tokio::time::sleep(Duration::from_millis(250) * deadlines).await;
+    let still_serving = discover_service_names(&client, &url).await;
+    assert!(
+        still_serving
+            .iter()
+            .any(|name| name == EXPECTED_SERVICES[0]),
+        "the endpoint stopped answering after {} drain deadlines: {still_serving:?}",
+        deadlines
+    );
+    assert!(
+        tasks.try_join_next().is_none(),
+        "the supervisor returned on its own, without a stop request"
+    );
+
+    let report = drain_after_shutdown(&mut tasks, shutdown_tx).await;
+    assert_eq!(report.stop_reason, StopReason::Requested);
+    assert_eq!(
+        report.timed_out, 0,
+        "a stop request must drain inside the deadline: {report:?}"
+    );
 }

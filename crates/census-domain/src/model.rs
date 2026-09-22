@@ -300,6 +300,7 @@ pub enum SourceNamespace {
     MilesplitMeet,
     TfrrsTeam,
     TfrrsAthlete,
+    TfrrsMeet,
     DirectAthleticsTeam,
     DirectAthleticsAthlete,
     /// `association` is the state association slug (`wiaa`, `ihsa`, `kshsaa`, …).
@@ -355,6 +356,7 @@ impl fmt::Display for SourceNamespace {
             SourceNamespace::MilesplitMeet => f.write_str("milesplit_meet"),
             SourceNamespace::TfrrsTeam => f.write_str("tfrrs_team"),
             SourceNamespace::TfrrsAthlete => f.write_str("tfrrs_athlete"),
+            SourceNamespace::TfrrsMeet => f.write_str("tfrrs_meet"),
             SourceNamespace::DirectAthleticsTeam => f.write_str("direct_athletics_team"),
             SourceNamespace::DirectAthleticsAthlete => f.write_str("direct_athletics_athlete"),
             SourceNamespace::AssociationSchool { association } => {

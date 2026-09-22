@@ -1182,6 +1182,13 @@ fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
             .and_then(|rest| rest.strip_suffix(".html"))
         {
             roster = Some((team_id.to_string(), body));
+        } else if name.starts_with("oh_") {
+            // The rank-4 route captures — the OH team index, the graded OH roster and the two
+            // result-set bodies. The corpus this walk builds models the WI school, its athletes and
+            // its teams; the OH captures are asserted by the adapter's own tests, and folding them
+            // in here would move the goldens without adding a case the WI pair does not already
+            // cover. They are named, not unknown.
+            continue;
         } else {
             bail!("{name} is not a known milesplit fixture");
         }
@@ -1609,7 +1616,9 @@ fn volatile_cell(label: &str, column: usize, text: String, root: &Path) -> Strin
     }
     match label {
         "Core report generated" => "<date>".to_string(),
-        "Store" | "Core note" => text.replace(&root.display().to_string(), "<store>"),
+        // The store root is the run's own temp path; the coverage notes quote it the way the
+        // `Store` row does, so the same substitution applies to every row that can carry it.
+        "Store" | "Core note" | "Note" => text.replace(&root.display().to_string(), "<store>"),
         _ => text,
     }
 }

@@ -77,3 +77,60 @@ pub struct Roster {
     pub team: TeamRef,
     pub athletes: Vec<RosterAthlete>,
 }
+
+/// One `/raw` result set: the site that published it and the two provider ids that name it.
+///
+/// A result set is addressed by its URL because nothing cheaper names it. MileSplit's meet pages
+/// publish the *first* result set of a meet in the page shell (`meetResultParams.resultsId` in
+/// `samples/meet-oh-770621-results.html`) and the formatted view carries zero result rows, so the
+/// list of result sets lives behind the robots-disallowed `/api/` (see the module docs): the
+/// operator supplies the `/raw` URL, and this type checks it into a jurisdiction, a `MeetID` and an
+/// `RSID`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResultSetRef {
+    pub site: Site,
+    pub meet_id: String,
+    pub rsid: String,
+    pub url: String,
+}
+
+impl ResultSetRef {
+    /// Read a published `/meets/<id>-<slug>/results/<rsid>/raw` URL.
+    ///
+    /// `None` for anything else — including a `/formatted` URL, which serves an empty JS shell
+    /// rather than rows — so a mistyped or unserved entry is reported instead of requested. The
+    /// jurisdiction comes from the host and is validated with [`UsJurisdiction::from_code`], so a
+    /// URL can only ever address a host that serves the jurisdiction it names.
+    pub fn parse(url: &str) -> Option<ResultSetRef> {
+        let trimmed = url.trim();
+        let (host, path) = trimmed
+            .strip_prefix("https://")
+            .or_else(|| trimmed.strip_prefix("http://"))?
+            .split_once('/')?;
+        let jurisdiction = UsJurisdiction::from_code(host.strip_suffix(".milesplit.com")?)?;
+        let segments: Vec<&str> = path.split('/').collect();
+        if !segments.last()?.eq_ignore_ascii_case("raw") {
+            return None;
+        }
+        let meet_id = after(&segments, "meets")?;
+        let rsid = after(&segments, "results")?;
+        Some(ResultSetRef {
+            site: Site::for_jurisdiction(jurisdiction),
+            meet_id,
+            rsid,
+            url: format!("https://{host}/{}", segments.join("/")),
+        })
+    }
+}
+
+/// The digits that open the segment following `label`, e.g. `770621` after `meets` in
+/// `/meets/770621-beaver-eastern-invite-2026/results/1321880/raw`.
+fn after(segments: &[&str], label: &str) -> Option<String> {
+    let position = segments.iter().position(|segment| *segment == label)?;
+    let segment = segments.get(position.checked_add(1)?)?;
+    let digits: String = segment
+        .chars()
+        .take_while(|ch: &char| ch.is_ascii_digit())
+        .collect::<String>();
+    (!digits.is_empty()).then_some(digits)
+}

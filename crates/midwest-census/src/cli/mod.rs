@@ -63,8 +63,13 @@ enum Command {
     Sites,
     /// Fetch (and cache) team indexes for the given states.
     Teams {
-        #[arg(long, value_delimiter = ',', default_value = "WI")]
+        /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
+        /// code). Default: WI.
+        #[arg(long, value_delimiter = ',')]
         states: Vec<UsJurisdiction>,
+        /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
+        #[arg(long)]
+        all_states: bool,
         #[arg(long)]
         refresh: bool,
     },
@@ -143,8 +148,13 @@ async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
     match &cli.command {
         Command::Sites => gather::run_sites()?,
         Command::Fetch { url, refresh } => gather::run_fetch(cli, store, url, *refresh).await?,
-        Command::Teams { states, refresh } => {
-            gather::run_teams(cli, store, states, *refresh).await?
+        Command::Teams {
+            states,
+            all_states,
+            refresh,
+        } => {
+            let states = resolve_states(*all_states, states)?;
+            gather::run_teams(cli, store, &states, *refresh).await?
         }
         Command::Collect(args) => gather::run_collect(cli, store, args).await?,
         Command::ImportCoaches { csv, observed_on } => {
@@ -182,4 +192,82 @@ pub(super) fn cohort_label(grad_year: Option<i16>) -> String {
 pub(super) fn school_year(grad_year: u16) -> Result<i16> {
     i16::try_from(grad_year)
         .with_context(|| format!("--grad-year {grad_year} is not a representable year"))
+}
+
+/// The jurisdictions a gather command covers.
+///
+/// `--all-states` is the one-token spelling of the national run, so an operator does not have to
+/// paste fifty-one codes. Giving both flags is refused rather than silently preferred, because a
+/// run that quietly ignored an explicit `--states` list would collect the wrong corpus. With
+/// neither flag the default is Wisconsin, which is what every documented smoke command states.
+pub(super) fn resolve_states(
+    all_states: bool,
+    states: &[UsJurisdiction],
+) -> Result<Vec<UsJurisdiction>> {
+    match (all_states, states.is_empty()) {
+        (true, false) => anyhow::bail!("--all-states cannot be combined with --states"),
+        (true, true) => Ok(UsJurisdiction::ALL.to_vec()),
+        (false, true) => Ok(vec![UsJurisdiction::Wisconsin]),
+        (false, false) => Ok(states.to_vec()),
+    }
+}
+
+/// The jurisdictions a *restriction* flag covers, for adapters that have their own home coverage.
+///
+/// With neither flag the list is empty, which every restriction-shaped adapter reads as "no
+/// restriction" and answers from its own jurisdiction — `ohsaa` with an empty list still covers
+/// Ohio. Defaulting this to Wisconsin the way a roster walk does would silently turn a bare
+/// `provider ohsaa` into a no-op that reports Wisconsin as the mismatch.
+pub(super) fn resolve_restriction(
+    all_states: bool,
+    states: &[UsJurisdiction],
+) -> Result<Vec<UsJurisdiction>> {
+    match (all_states, states.is_empty()) {
+        (true, false) => anyhow::bail!("--all-states cannot be combined with --states"),
+        (true, true) => Ok(UsJurisdiction::ALL.to_vec()),
+        (false, _) => Ok(states.to_vec()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{resolve_restriction, resolve_states};
+    use census_domain::UsJurisdiction;
+
+    #[test]
+    fn all_states_selects_every_jurisdiction() {
+        let states = resolve_states(true, &[]).expect("--all-states resolves");
+        assert_eq!(states, UsJurisdiction::ALL);
+    }
+
+    #[test]
+    fn no_flag_defaults_to_wisconsin() {
+        let states = resolve_states(false, &[]).expect("the default resolves");
+        assert_eq!(states, vec![UsJurisdiction::Wisconsin]);
+    }
+
+    #[test]
+    fn an_explicit_list_is_kept_in_caller_order() {
+        let asked = vec![UsJurisdiction::Ohio, UsJurisdiction::Iowa];
+        let states = resolve_states(false, &asked).expect("the list resolves");
+        assert_eq!(states, asked);
+    }
+
+    #[test]
+    fn combining_the_two_flags_is_refused() {
+        let error = resolve_states(true, &[UsJurisdiction::Ohio]).expect_err("both flags refused");
+        assert!(error.to_string().contains("--all-states"));
+    }
+
+    /// The restriction form stays empty without a flag, so an adapter keeps its own coverage.
+    #[test]
+    fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
+        let states = resolve_restriction(false, &[]).expect("no restriction");
+        assert!(states.is_empty());
+        let all = resolve_restriction(true, &[]).expect("--all-states resolves");
+        assert_eq!(all, UsJurisdiction::ALL);
+        let explicit = resolve_restriction(false, &[UsJurisdiction::Ohio]).expect("explicit");
+        assert_eq!(explicit, vec![UsJurisdiction::Ohio]);
+        assert!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());
+    }
 }

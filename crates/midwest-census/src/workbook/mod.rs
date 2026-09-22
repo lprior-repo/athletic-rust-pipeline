@@ -1,9 +1,30 @@
-//! The census as one spreadsheet.
+//! The census as one spreadsheet: the objective's recruiting workbook, then the census provenance
+//! sheets the platform has always published.
 //!
-//! Nine sheets, every cell copied from the typed census the crate already computes: the two scope
-//! reports, the marginal view of what Athletic.net alone still contributes, the per-athlete best
-//! marks, the meet inventory, the evidence mix, and the method notes. Nothing is recomputed here, so
-//! the workbook can never disagree with `report`.
+//! # What the workbook contains, in the order it is written
+//!
+//! Objective §50-§54 sheets first, in the objective's own order:
+//!
+//! ```text
+//! Athletes          §50   workbook::recruiting   one row per canonical athlete in the cohort
+//! PRs               §51   workbook::recruiting   one row per athlete/event
+//! Performances_00N  §52   workbook::performances every stored mark, partitioned to Excel's cap
+//! Coaches           §53   workbook::recruiting   one row per canonical coach
+//! Schools, Meets, Sources, Coverage, Conflicts, Review, Run Metrics  §54  workbook::meta
+//! ```
+//!
+//! Then the retained legacy census sheets, unchanged and in their original order: `Goal & method`,
+//! `Summary`, `By state - core`, `By state - all sources`, `Athletic.net marginal`, `Best results`,
+//! `Meets summary`, `Evidence mix`, `Method notes`. `workbook::recruiting`'s module documentation holds
+//! the disposition table for these — which the objective supersedes, which it merely renames
+//! (`Meets` → `Meets summary`, because §54's row-level `Meets` sheet now owns that name), and which are
+//! retained as provenance.
+//!
+//! Every cell is copied from the typed store the crate already computes or from a documented rule over
+//! it: the recruiting sheets read the store's merged entity tables through one scoped pass
+//! (`workbook::recruiting::dataset`), the census sheets read `report`, and `bests` supplies the
+//! best-mark reduction both the `Best results` and `PRs` sheets rest on. Nothing is recomputed from raw
+//! source text, so the workbook can never disagree with `report`.
 //!
 //! The workbook is written with the same `rust_xlsxwriter` dependency the rest of the workspace uses;
 //! there is no external script in the loop. `bests::write` sidecars are emitted alongside it, so the
@@ -17,6 +38,9 @@ use std::path::{Path, PathBuf};
 
 mod cells;
 mod inventory;
+mod meta;
+mod performances;
+mod recruiting;
 mod sheets;
 
 use cells::write_sheet;
@@ -68,24 +92,96 @@ pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
             .out_dir()
             .join(format!("midwest-census-{}.xlsx", core.generated_on))
     });
-    write_workbook(&path, &core, &all_sources, &bests, options.grad_year)?;
+    write_workbook(
+        &path,
+        store,
+        &core,
+        &all_sources,
+        &bests,
+        options.grad_year,
+        options.scope,
+    )?;
     Ok(path)
 }
 
+/// The three census outputs the sheet blocks read: the two evidence scopes and the best-mark
+/// reduction the `Best results` and `PRs` sheets rest on.
+#[derive(Debug, Clone, Copy)]
+struct Views<'a> {
+    core: &'a Census,
+    all_sources: &'a Census,
+    bests: &'a [BestResult],
+}
+
+/// Write every sheet, objective sheets first and the legacy census sheets after them.
 fn write_workbook(
     path: &Path,
+    store: &Store,
     core: &Census,
     all_sources: &Census,
     bests: &[BestResult],
     grad_year: Option<i16>,
+    scope: Scope,
 ) -> ReportResult<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|source| io_error(parent, source))?;
     }
     let mut book = Workbook::new();
+    let views = Views {
+        core,
+        all_sources,
+        bests,
+    };
 
+    write_objective_sheets(&mut book, path, store, views, scope, grad_year)?;
+    write_census_sheets(&mut book, path, views, grad_year)?;
+
+    book.save(path).map_err(|source| xlsx_error(path, source))?;
+    Ok(())
+}
+
+/// The objective's §50-§54 sheets, in the objective's order.
+///
+/// The recruiting sheets are one dataset read three times around the §52 performance sheets: `Athletes`
+/// and `PRs` first, `Coaches` after them, which is the order §50-§53 publishes, and §54's operational
+/// sheets close the objective block. The §51 `PRs` sheet and the `PRs`-scope best-mark reduction are
+/// reconciled against each other after every sheet is written, so the run's log carries the row counts
+/// rather than an assumption about them.
+fn write_objective_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    store: &Store,
+    views: Views<'_>,
+    scope: Scope,
+    grad_year: Option<i16>,
+) -> ReportResult<()> {
+    let recruiting = recruiting::Recruiting::load(store, scope, grad_year)?;
+    recruiting.write_athletes(book, path)?;
+    recruiting.write_prs(book, path)?;
+    performances::write_performance_sheets(book, path, store, scope)?;
+    recruiting.write_coaches(book, path)?;
+    recruiting.reconcile(store)?;
+    meta::write_meta_sheets(
+        book,
+        path,
+        store,
+        views.core,
+        views.all_sources,
+        views.bests,
+    )
+}
+
+/// The retained legacy census sheets, in the order the workbook has always written them.
+fn write_census_sheets(
+    book: &mut Workbook,
+    path: &Path,
+    views: Views<'_>,
+    grad_year: Option<i16>,
+) -> ReportResult<()> {
+    let core = views.core;
+    let all_sources = views.all_sources;
     write_sheet(
-        &mut book,
+        book,
         path,
         "Goal & method",
         goal_sheet(core, grad_year),
@@ -93,18 +189,15 @@ fn write_workbook(
         false,
     )?;
     write_sheet(
-        &mut book,
+        book,
         path,
         "Summary",
         summary_sheet(core, all_sources)?,
         &[38, 22, 16, 14],
         false,
     )?;
-    write_state_sheets(&mut book, path, core, all_sources)?;
-    write_artifact_sheets(&mut book, path, core, all_sources, bests)?;
-
-    book.save(path).map_err(|source| xlsx_error(path, source))?;
-    Ok(())
+    write_state_sheets(book, path, core, all_sources)?;
+    write_artifact_sheets(book, path, core, all_sources, views.bests)
 }
 
 /// Both per-state views, in published sheet order: core first, then every source.
@@ -155,7 +248,7 @@ fn write_artifact_sheets(
     write_sheet(
         book,
         path,
-        "Meets",
+        "Meets summary",
         meets_sheet(core, all_sources)?,
         &[34, 12, 34, 12],
         false,

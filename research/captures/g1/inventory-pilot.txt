@@ -1,0 +1,524 @@
+== golden-pilot-100-v1-partial-c live pages (real identities, 33 rows) ==
+raw bodies: 456  evidence records: 316  parsed records: 563
+evidence: complete={'False': 169, 'True': 147}
+evidence failures (169 total):
+    145  malformed_response: search page contains malformed or unrelated result rows  [http=200]
+     20  malformed_response: search page ended before the advertised result count  [http=200]
+      4  malformed_response: search advertised result count exceeds 100000  [http=200]
+link inventory:
+     4203  rows_total
+     4203  rows_with_athlete_href
+        0  rows_without_athlete_href
+     5622  athlete_hrefs_total
+     3365  athlete_hrefs_sported_tf
+     2127  athlete_hrefs_sported_xc
+      130  athlete_hrefs_noncanonical
+     1419  rows_multi_athlete_href
+     3951  rows_candidate_predicted
+count vs rows: {'count_gt_rows': 410, 'count_eq_rows': 46}
+page verdicts:
+  recount (bytes only):
+    pages=456 row_issue_pages=168 short_page=0 count_lt_rows=0 clean_full=28
+    pages_carrying_candidate_rows=444 of_which_row_issue_pages=160 candidate_rows_lost_on_those_pages=1327
+  parser (its own records for these same bytes):
+    pages=456 row_issue_pages=167 short_page=11 clean_full=29 no_parsed_record=0
+    pages_with_candidates=445 of_which_row_issue_pages=160 candidate_rows_on_those_pages=1327
+  issue classes on row-issue pages:
+    only_non_canonical_url=68
+    only_other_or_unspecified_sport=68
+    both_or_other=31
+  pages carrying rows of both sports in one response (tf hrefs and xc hrefs):
+    co_mingled_pages=413 with_row_issues=157 same_sport_candidate_rows_on_them=3745
+  if other-sport rows became skips instead of issues:
+    row_issue_pages_that_are_mid_pagination(next present)=147 row_issue_pages_that_are_last_page_and_short=20
+  record outcomes (the pipeline's own complete/failures) vs page verdicts:
+        2    FAILED_WITHOUT_ROW_ISSUES
+      147    complete:own_parse_has_row_issues=False
+        2    failed:own_parse_has_row_issues=False
+      167    failed:own_parse_has_row_issues=True
+       24    failed:row_issue_failure=False
+      145    failed:row_issue_failure=True
+      149    failed:short_failure=False
+       20    failed:short_failure=True
+      147  complete
+      169  failed
+  rejected-record classes (which guard killed the query):
+      145  row_issues
+       20  short_page
+        4  advertised_count_exceeds
+    unexplained 0e646f1c0db8 failed=True page_issues=False page_short=False ['search advertised result count exceeds 100000']
+    unexplained 7162ad1eeadc failed=True page_issues=False page_short=False ['search advertised result count exceeds 100000']
+verdict totals:
+       29  parser_page:clean_full
+      249  parser_page:paginated
+      167  parser_page:row_issues
+       11  parser_page:short_page
+      122  row_issue:athlete URL is not canonical
+      130  row_issue:result row belongs to another or unspecified sport
+page filter (sport the page was fetched for): {'tf': 286, 'xc': 166, 'unknown/ambiguous': 4}
+interstitial markers: none
+raw-body sha256 mismatches: 0  evidence-bytes mismatches: 0
+samples:
+  [count_gt_rows] ('006b27ceb11c', 'tf', 167, 10, "<div class='text-center'><ul class='pagination'><li data-start='0'><a href='/Search.aspx#?q=Layla Harrison&fq=t:a a:tf&start=0'>&laquo;</a></li> <li data-start='0'><a href='/Search.aspx#?q=Layla Harri")
+  [count_gt_rows] ('007b7e533499', 'xc', 271, 10, "<div class='text-center'><ul class='pagination'><li class='active'><a href='#'>1</a></li> <li data-start='10'><a href='/Search.aspx#?q=Emma Easter&fq=t:a a:xc&start=10'>2</a></li> <li data-start='20'>")
+  [count_gt_rows] ('0159a2467773', 'tf', 167, 10, "<div class='text-center'><ul class='pagination'><li data-start='40'><a href='/Search.aspx#?q=Layla Harrison&fq=t:a a:tf&start=40'>&laquo;</a></li> <li data-start='0'><a href='/Search.aspx#?q=Layla Har")
+  [noncanonical] ('01db901cda4e', '/athlete//cross-country')
+  [noncanonical] ('04f766f9e2bf', '/athlete//cross-country')
+  [noncanonical] ('04f9689dbfbd', '/athlete//track-and-field')
+per-page (digest, filter, count, rows, tf, xc, noncanon, predicted issues, candidates, parser candidates/issues):
+  006b27ceb11c tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  007b7e533499 xc  count=  271 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Emma Easter
+  0159a2467773 tf  count=  167 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  01db901cda4e xc  count=  256 rows= 10 tf=  5 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Robert Wallace
+  0222f730a972 tf  count=  519 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Amelia Kari
+  02a50c2820d8 xc  count=   13 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Miller Anchorage AK
+  02e3c5b1a0d8 tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Emma Easter Fort Worth TX
+  035343c4058c tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  03ad81a11446 tf  count=  213 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Eva Lopez
+  048051b4daad tf  count=   70 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  04f766f9e2bf xc  count=  124 rows= 10 tf=  3 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Eva Lopez
+  04f9689dbfbd tf  count=12126 rows= 10 tf=  9 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Malachi C
+  05dbace700c9 tf  count=  280 rows= 10 tf=  6 xc=  0 noncanon= 4 next=y pred_issues=[athlete URL is not canonical:4] cand=6 parser_cand=6 parser_issues=[athlete URL is not canonical:4] q=Anderson Andy
+  066b6c29031a xc  count=  118 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Hanson Grace
+  06f2009edc93 tf  count=   25 rows=  5 tf=  5 xc=  1 noncanon= 0 next=y pred_issues=[] cand=5 parser_cand=5 parser_issues=[] q=Ela Oktar
+  076033cd91b4 tf  count= 7359 rows= 10 tf=  9 xc=  6 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=L Harrison
+  07b3685d4cc8 tf  count=  402 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  09fc8f7c644a xc  count=   68 rows= 10 tf=  3 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Layla Harrison
+  0b3a02bb3ec8 tf  count= 3081 rows= 10 tf=  8 xc=  4 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=J Brower
+  0bf94451e8a1 tf  count= 4525 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kline Jillian
+  0c357863f461 xc  count= 6407 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  0c6647b3e155 tf  count=   15 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Adeline Lansaw
+  0c6657049d93 tf  count=  402 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  0ca4940106b3 xc  count=    7 rows=  7 tf=  6 xc=  7 noncanon= 0 next=n pred_issues=[] cand=7 parser_cand=7 parser_issues=[] q=Malachi C Anchorage AK
+  0cd81839ffdf tf  count=  389 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Brower Janie
+  0d58839db4a2 tf  count=  678 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Couey Lia
+  0dd8828ecec1 tf  count=  542 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  0eed887e1e74 xc  count=  118 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Grace Hanson
+  0ef85f2bb4a3 tf  count=  326 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Groh Caleb
+  0f354a6b9b9b xc  count=18483 rows= 10 tf=  9 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=A Kari
+  0f83a17fb976 xc  count=   68 rows= 10 tf=  3 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Harrison Layla
+  0fa0915f411e tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Lilly
+  1139d82f2127 tf  count=   32 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Natalie Stohr
+  1191565f56ad tf  count=   25 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Oktar Ela
+  12a1364e941c tf  count=75197 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J White
+  13050b53a476 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Farmer Quinlyn
+  158389208f21 xc  count=   68 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  1583bec50dce xc  count= 3926 rows= 10 tf=  4 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=E Riley
+  15a03b744753 tf  count=  481 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  172588418920 xc  count=   64 rows= 10 tf=  2 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Riley Lilly
+  1758bbb85a8e tf  count=  389 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Janie Brower
+  183baf5300e6 xc  count=  124 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Eva Lopez
+  1919cebe472a tf  count=  402 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  1a7d19bd722c tf  count=  326 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Caleb Groh
+  1b004b9a9c72 xc  count=1395785 rows= 10 tf=  3 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=M C
+  1c072805fb4a tf  count=    9 rows=  9 tf=  8 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1] q=Regan Manley
+  1c230e2859dc xc  count=    5 rows=  5 tf=  3 xc=  3 noncanon= 1 next=n pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=3 parser_cand=3 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Ebel Annabell
+  1c622f6fb2b1 tf  count=42289 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Easter
+  1ca2e3167fba tf  count=   25 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Ela Oktar
+  1d5a7c5033cb tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  1fddad00fb2b tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lilly Riley
+  1fe0c8080327 tf  count= 6578 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  2022cf48eefe tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  207787631b59 tf  count=  542 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  2083114b7544 xc  count=20338 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Easter
+  21a3ac6e87ed tf  count=  389 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Janie Brower
+  223611b3b180 tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  223c12426813 tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  2375d21b6d74 tf  count= 4525 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Jillian Kline
+  2378dab6f01e tf  count=  167 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  242cccca571c tf  count=2609209 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=M C
+  2494710a8724 xc  count=    8 rows=  8 tf=  2 xc=  7 noncanon= 1 next=n pred_issues=[athlete URL is not canonical:1] cand=7 parser_cand=7 parser_issues=[athlete URL is not canonical:1] q=T Rzeszut
+  24aec350cd6d tf  count=  326 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Groh Caleb
+  24feb5571758 tf  count=   70 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  2538eb537181 xc  count=  860 rows= 10 tf=  4 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=R Manley
+  25d5ad905b81 xc  count=   64 rows= 10 tf=  2 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Lilly Riley
+  26002dc18f37 xc  count= 1324 rows= 10 tf=  9 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=L Cebrian
+  262973e46843 xc  count= 2079 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  262ea8447e6b tf  count=  228 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Grace Hanson
+  26df36f72021 tf  count=  397 rows= 10 tf=  9 xc=  1 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Jadyn Montgomery
+  27314785ff71 tf  count=   22 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Miller Anchorage AK
+  2747b8a92324 tf  count= 2490 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=N Stohr
+  27af4be13789 tf  count=12394 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  27e045eb577a xc  count= 1324 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Cebrian
+  29a048deee2c tf  count=179600 rows= 10 tf=  9 xc=  1 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=A Anderson
+  2b475fde528a tf  count=  519 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Amelia Kari
+  2b9b0e3a3ff4 tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  2bdbbf0d2a9b xc  count= 6092 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Noll
+  2cd5c3d448d2 tf  count=  481 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  2d34e1ba5b78 tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  2d3debb5f74e xc  count=   68 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  2dd581db158b tf  count=75197 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J White
+  2ecd4668cfc1 xc  count=101642 rows= 10 tf=  1 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Anderson
+  2ed3f669c494 xc  count=   28 rows= 10 tf=  3 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=J Knoedler
+  2fe0b31b5101 xc  count= 3847 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Malachi
+  3003e5287c3e xc  count=  268 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Amelia Kari
+  314c5962bdef xc  count= 1229 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=N Stohr
+  3155ffa51c87 tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Lilly
+  32890e246987 tf  count=    8 rows=  8 tf=  7 xc=  2 noncanon= 1 next=n pred_issues=[athlete URL is not canonical:1] cand=7 parser_cand=7 parser_issues=[athlete URL is not canonical:1] q=Annabell Ebel
+  33e6b5b4752e tf  count= 7890 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Riley
+  34812d249a77 xc  count=  227 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  34b5e03d8d1c tf  count=   17 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Gabrielle Sinkler
+  34f930a451ca tf  count=  542 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  351a95fcd350 xc  count=  217 rows= 10 tf=  6 xc=  7 noncanon= 2 next=y pred_issues=[result row belongs to another or unspecified sport:2,athlete URL is not canonical:1] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:2,athlete URL is not canonical:1] q=Jadyn Montgomery
+  355e372bf686 xc  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Manley Regan
+  356ad439fa6f xc  count= 4020 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Harrison
+  3587e58f0d7e tf  count=  228 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Grace Hanson
+  35bc8b26cf31 xc  count=   64 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lilly Riley
+  35d1ce6ca159 xc  count=  268 rows= 10 tf=  4 xc=  7 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:2] cand=7 parser_cand=7 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:2] q=Kari Amelia
+  3702a9da3d28 tf  count=   36 rows= 10 tf=  9 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Cebrian Lana
+  3713b04d06a8 xc  count=  227 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  3723e820e4d5 tf  count=  213 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Lopez Eva
+  378c716b4d0f tf  count=   70 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  389803a067db xc  count= 3111 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  391f9921e026 tf  count=   70 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  3955461f2605 tf  count=   15 rows=  5 tf=  5 xc=  1 noncanon= 0 next=y pred_issues=[] cand=5 parser_cand=5 parser_issues=[] q=Lansaw Adeline
+  3a2d600f1d19 xc  count=  555 rows= 10 tf=  6 xc=  6 noncanon= 3 next=y pred_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:2] cand=6 parser_cand=6 parser_issues=[athlete URL is not canonical:2,result row belongs to another or unspecified sport:2] q=J Hooper
+  3a3b68072256 xc  count=  124 rows= 10 tf=  2 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Lopez Eva
+  3a5189aaf066 xc  count=    2 rows=  2 tf=  2 xc=  2 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Natalie Stohr Anchorage AK
+  3a8ccdcb2a18 xc  count= 2079 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  3a91ac2cc6b1 tf  count=   32 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Stohr Natalie
+  3b1fade49675 xc  count=   64 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lilly Riley
+  3d264dff6853 xc  count=  118 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Hanson Grace
+  3e8714de5d8e tf  count=   25 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Oktar Ela
+  3f2840d43f45 tf  count=12126 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Malachi C
+  404445a70284 tf  count=   70 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  404f3afdcdd8 tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  40c739411de3 xc  count= 4020 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Harrison
+  40dd25b5120f tf  count= 1052 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=G Sinkler
+  40ec0365a2ac tf  count=  389 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Brower Janie
+  410e09f1fc42 tf  count= 4525 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kline Jillian
+  4190dcc3035e tf  count=  542 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  41b1b2a83046 tf  count= 7052 rows= 10 tf=  9 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=E Lopez
+  41fc360dc09e tf  count=25560 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Miller
+  4234615c9153 tf  count= 4525 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Jillian Kline
+  424ada496f12 tf  count= 2381 rows= 10 tf=  8 xc=  3 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=L Cebrian
+  4319a3d2c78c tf  count=   17 rows=  7 tf=  7 xc=  0 noncanon= 0 next=y pred_issues=[] cand=7 parser_cand=7 parser_issues=[] q=Gabrielle Sinkler
+  43a007c797ca tf  count=   39 rows= 10 tf=  9 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=White Juniper
+  43a44c36fafa xc  count=  182 rows= 10 tf=  6 xc=  8 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Enzie Riley
+  4404f26442d2 xc  count=  271 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Easter Emma
+  4420284206a7 xc  count= 6407 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  44a05121d727 tf  count=   25 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Ela Oktar
+  44e025764dd1 tf  count=   36 rows= 10 tf=  9 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Lana Cebrian
+  4633298fba8c xc  count= 6381 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=J Kline
+  4697ee254b4f tf  count=  389 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Brower Janie
+  470047c5e0b9 xc  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Jadyn Montgomery Fairmont MN
+  47066e301d01 tf  count=  542 rows= 10 tf=  8 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Emma Easter
+  47221e98f327 xc  count= 2079 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  48447ae648b2 tf  count=  678 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  48876f60c559 tf  count=    3 rows=  3 tf=  3 xc=  0 noncanon= 0 next=n pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=Quinlyn Farmer
+  48a849908d74 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Gabrielle Sinkler Denmark WI
+  4904e81f4b23 tf  count= 6578 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  49ea073c3812 tf  count=    4 rows=  4 tf=  4 xc=  0 noncanon= 0 next=n pred_issues=[] cand=4 parser_cand=4 parser_issues=[] q=Knoedler Juliana
+  4a8a2764a451 xc  count=   34 rows= 10 tf=  3 xc=  8 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Jackson Hooper
+  4bdbda42bb96 xc  count=  118 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Grace Hanson
+  4c4e2f3a3ffb tf  count=  474 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Robert Wallace
+  4d7c3615062f xc  count=  185 rows= 10 tf=  3 xc=  7 noncanon= 2 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:2] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:2] q=Andy Anderson
+  4d85c7b3acb8 tf  count=12126 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Malachi
+  4f6b372a87e2 xc  count=   29 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Aldrich Gabriel
+  4fb19ab4fd28 tf  count=12126 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Malachi C
+  50a48bbda86d tf  count= 7890 rows= 10 tf= 10 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Riley
+  511f80e95090 xc  count=  115 rows= 10 tf=  2 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Nika Lawrence
+  51d22333e9e6 xc  count= 5855 rows= 10 tf=  7 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=N Lawrence
+  52ad6800c4d7 tf  count=  678 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  53660db0cced tf  count= 2381 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Cebrian
+  5378619a65cf xc  count=   13 rows=  3 tf=  3 xc=  3 noncanon= 0 next=y pred_issues=[] cand=3 parser_cand=3 parser_issues=[] q=S Miller Anchorage AK
+  539f378bd21f tf  count=  402 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Enzie Riley
+  54114afc75e5 tf  count= 6244 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=T Aguirre
+  54246653ea74 tf  count=  542 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  54583d546967 tf  count=  678 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  54b80207d806 xc  count=  192 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Caleb Groh
+  54c161037cc3 xc  count=  118 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Hanson Grace
+  561a712b7651 tf  count= 1052 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=G Sinkler
+  569516ca5b41 xc  count= 4020 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Harrison
+  57eee1794693 tf  count=12087 rows= 10 tf=  9 xc=  4 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=S Noll
+  58cc82c11210 xc  count= 2616 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Kline Jillian
+  58ce379fd5e5 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Adeline Lansaw Greenfield IL
+  58cedb878501 tf  count=   55 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Hooper Jackson
+  58e9c2c7039e tf  count=  326 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Groh Caleb
+  5955da2cb6ea tf  count=  389 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Janie Brower
+  5a7e3eed8359 tf  count=  542 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  5b9d629c9dfd xc  count= 4004 rows= 10 tf=  4 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=E Lopez
+  5bcdab9c590b tf  count=  402 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  5cf62961ef9b tf  count=  542 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  5d495d22cd1c tf  count=12087 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Noll
+  5e05aa6ecfde xc  count=49188 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Groh
+  5e163a967d15 tf  count=   22 rows=  2 tf=  2 xc=  1 noncanon= 0 next=y pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=S Miller Anchorage AK
+  5f0bc840f27c tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  5f68e85a3d8d xc  count=   23 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Q Farmer
+  5f96cb429661 tf  count=42289 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Easter
+  5fc5ea790474 tf  count=  402 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  5ff3c53cb187 xc  count=  369 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  60462ff37ac6 xc  count=   29 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Gabriel Aldrich
+  60b0efea4e99 xc  count=  369 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  61a217ade9d1 xc  count=   17 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Natalie Stohr
+  62302f588d8c tf  count=  481 rows= 10 tf=  9 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Oktar
+  62f0d9d960bd xc  count= 6407 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  631796c189f6 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Robert Wallace Fairbanks AK
+  641734e4f188 xc  count= 3847 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Malachi C
+  65e683d636f7 tf  count=  519 rows= 10 tf=  8 xc=  3 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Amelia Kari
+  66199eabffd6 tf  count=75197 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=J White
+  666d4432815e xc  count=    5 rows=  5 tf=  3 xc=  3 noncanon= 1 next=n pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=3 parser_cand=3 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Annabell Ebel
+  66b713149533 xc  count=    8 rows=  8 tf=  4 xc=  6 noncanon= 1 next=n pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=6 parser_cand=6 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Noll Saibree
+  66d6f5e7f8c1 tf  count=  389 rows= 10 tf=  8 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Brower Janie
+  685f9c20fab2 xc  count=  115 rows= 10 tf=  2 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Lawrence Nika
+  6925e2db1a56 xc  count= 6092 rows= 10 tf=  1 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=S Noll
+  698737adde94 xc  count=  467 rows= 10 tf=  8 xc=  8 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=G Sinkler
+  6a1e080cc943 None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Adeline Lansaw Greenfield Community High School,Amelia Kari 
+  6a83c23ab963 tf  count=   39 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=White Juniper
+  6b15affaebc4 tf  count=  402 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  6be730ebc85b tf  count=   39 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=White Juniper
+  6c014ad33f5b tf  count= 4525 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kline Jillian
+  6d8a00210483 tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Jadyn Montgomery Fairmont MN
+  6f28d527b61b tf  count= 6578 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  6f6e21b7a6ec xc  count=   15 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Juniper White
+  70073fc1e1f7 tf  count=  402 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Riley Enzie
+  72b761110150 tf  count=  542 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  73121a363795 tf  count=  481 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  73de5bfd7535 xc  count=  217 rows= 10 tf=  6 xc=  7 noncanon= 2 next=y pred_issues=[result row belongs to another or unspecified sport:2,athlete URL is not canonical:1] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:2,athlete URL is not canonical:1] q=Montgomery Jadyn
+  7400c35cfbf1 xc  count=13539 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=S Miller
+  754bd837f675 xc  count= 5127 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=L Couey
+  759a5404f9ac tf  count= 6578 rows= 10 tf=  9 xc=  1 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=J Montgomery
+  75acba126d4d xc  count=   15 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Gabrielle Sinkler
+  75b12e2b4c58 tf  count=12492 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=J Kline
+  7651fc320316 xc  count= 4020 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Harrison
+  76cf582422aa tf  count=  678 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  76e859896d55 tf  count=25560 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Miller S
+  77215a2c33f8 tf  count=  389 rows= 10 tf=  8 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Janie Brower
+  77ddcfc7c199 tf  count= 3855 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=A Lansaw
+  77f6f26eb917 tf  count= 4525 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kline Jillian
+  78bed1758456 tf  count= 4525 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Jillian Kline
+  78f82b41289b tf  count=    8 rows=  8 tf=  8 xc=  3 noncanon= 0 next=n pred_issues=[] cand=8 parser_cand=8 parser_issues=[] q=Saibree Noll
+  79435fedf18f xc  count= 6092 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Noll
+  7a6b98ff7172 xc  count= 1324 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Cebrian
+  7ac2b71eb43b tf  count=   17 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Sinkler Gabrielle
+  7cbaa965c1b2 xc  count=  247 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Brower Janie
+  7e9e502586c4 xc  count= 1229 rows= 10 tf= 10 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=N Stohr
+  7ea5028625b1 tf  count=  402 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  7fa9dc8d2a0d tf  count=   54 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Aldrich Gabriel
+  813179a48882 tf  count=  999 rows= 10 tf=  8 xc=  3 noncanon= 3 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=J Hooper
+  815a28333215 tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  82681df866fd None count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=1 parser_issues=[] q=Janie Brower Gilbert AZ
+  82c101bb5023 xc  count=  467 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=G Sinkler
+  8333bce3396c xc  count=  227 rows= 10 tf=  2 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Oktar
+  8367ce2e9b6e xc  count= 2079 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  83cd412f1301 xc  count=20338 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=E Easter
+  84c8ddef0e2b tf  count=  402 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  85798a59afde None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Amelia Kari West High School,Andy Anderson Mt. Edgecumbe Hig
+  85979f047b2e tf  count=11602 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=N Lawrence
+  859f65a9c03b tf  count= 3855 rows= 10 tf= 10 xc=  9 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  860b76bfda7d tf  count=25560 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=S Miller
+  862dc5def7c2 tf  count=   39 rows= 10 tf=  9 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Juniper White
+  873e4743fb26 xc  count=    9 rows=  9 tf=  4 xc=  9 noncanon= 0 next=n pred_issues=[] cand=9 parser_cand=9 parser_issues=[] q=Ela Oktar
+  87b286063156 tf  count=   10 rows= 10 tf=  9 xc=  2 noncanon= 1 next=n pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=T Rzeszut
+  891e36371d4f xc  count=    2 rows=  2 tf=  1 xc=  2 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Jillian Kline Anchorage AK
+  891f3d6bd240 tf  count= 4525 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kline Jillian
+  894f8a6be952 xc  count=   23 rows=  3 tf=  1 xc=  2 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=2 parser_cand=2 parser_issues=[result row belongs to another or unspecified sport:1] q=Q Farmer
+  898968e768fc tf  count=    2 rows=  2 tf=  2 xc=  2 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Natalie Stohr Anchorage AK
+  8ae6b73f5279 tf  count= 6578 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  8bc62b112b6a tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=I Mendoza Guzman
+  8c6507725772 xc  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Juliana Knoedler
+  8cb776ed1b5b tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  8eb9a576325a tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  8fdd55b53c38 tf  count=   22 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Miller Anchorage AK
+  910b11594d4e tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  924ef0ba5162 xc  count= 3847 rows= 10 tf=  9 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=C Malachi
+  92566f7fcbfb tf  count=  326 rows= 10 tf= 10 xc=  8 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Groh Caleb
+  92dec4d63585 tf  count=   70 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  9380e6f7b56f tf  count=   55 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Jackson Hooper
+  93b98afa7810 xc  count=   15 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Sinkler Gabrielle
+  9526a2060305 tf  count=    8 rows=  8 tf=  7 xc=  2 noncanon= 1 next=n pred_issues=[athlete URL is not canonical:1] cand=7 parser_cand=7 parser_issues=[athlete URL is not canonical:1] q=Ebel Annabell
+  95e7f428553e tf  count=  402 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  96636f257eb9 tf  count=  197 rows= 10 tf=  8 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Lawrence Nika
+  96fce431a438 xc  count= 6407 rows= 10 tf=  8 xc=  5 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] cand=5 parser_cand=5 parser_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] q=L Riley
+  9701fde09927 xc  count=49188 rows= 10 tf=  6 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=C Groh
+  9954ff963082 tf  count=    9 rows=  9 tf=  8 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1] q=Manley Regan
+  99624fa22f5f tf  count=  213 rows= 10 tf=  9 xc=  5 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Eva Lopez
+  9ad55556fc38 xc  count=   34 rows= 10 tf=  3 xc=  8 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Hooper Jackson
+  9b720fb1cdf7 tf  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Regan Manley Anchorage AK
+  9bf8e8839606 xc  count=  268 rows= 10 tf=  4 xc=  7 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:2] cand=7 parser_cand=7 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:2] q=Amelia Kari
+  9c9fa6abcfdb xc  count=  182 rows= 10 tf=  6 xc=  8 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Riley Enzie
+  9e5657abfd8f tf  count=12126 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=C Malachi
+  9e5b9b572352 xc  count=    9 rows=  9 tf=  4 xc=  9 noncanon= 0 next=n pred_issues=[] cand=9 parser_cand=9 parser_issues=[] q=Oktar Ela
+  9f9ac32306bd tf  count= 1572 rows= 10 tf=  9 xc=  1 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=R Manley
+  a06d2d214d92 tf  count= 4525 rows= 10 tf=  8 xc=  5 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Kline Jillian
+  a0daebd8d196 xc  count= 3847 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] cand=5 parser_cand=5 parser_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] q=Malachi C
+  a1db617b1809 tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lilly Riley
+  a20edc57412f xc  count=  247 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Janie Brower
+  a2e307132e8a tf  count= 3855 rows= 10 tf= 10 xc=  8 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  a2e44810a464 tf  count=  228 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Hanson Grace
+  a3fa5f82ccde tf  count=   54 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Gabriel Aldrich
+  a40039ef2a71 xc  count=  192 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Groh Caleb
+  a44530bf34ec xc  count=  369 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  a492d889db72 tf  count=  280 rows= 10 tf=  6 xc=  0 noncanon= 4 next=y pred_issues=[athlete URL is not canonical:4] cand=6 parser_cand=6 parser_issues=[athlete URL is not canonical:4] q=Andy Anderson
+  a4b439cebc65 xc  count= 1324 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Cebrian
+  a5a68f6b0537 xc  count=   14 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Lana Cebrian
+  a60b4b12ccae xc  count=   17 rows=  7 tf=  5 xc=  7 noncanon= 0 next=y pred_issues=[] cand=7 parser_cand=7 parser_issues=[] q=Natalie Stohr
+  a73f9dd0f1e7 tf  count=   70 rows= 10 tf=  8 xc=  1 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Tiahna Aguirre
+  a77683a34b2c tf  count=   32 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Stohr Natalie
+  a7e8e13952ad tf  count=  197 rows= 10 tf=  8 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Nika Lawrence
+  a7f3d818389e xc  count=    8 rows=  8 tf=  4 xc=  6 noncanon= 1 next=n pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=6 parser_cand=6 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Saibree Noll
+  a7f9bfce9125 tf  count=  481 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  a88088e1cec4 tf  count=  481 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  a8c217dcd9a8 tf  count= 6578 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  a941374a0d2a tf  count=   25 rows= 10 tf=  8 xc=  2 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=J Knoedler
+  aa1662180e40 tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  aa3f32a0676d tf  count=12394 rows= 10 tf= 10 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  acc229dd28ad xc  count=   68 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  ace43efcd773 xc  count=   29 rows= 10 tf=  9 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=Tiahna Aguirre
+  acf9f99b4f67 xc  count=  247 rows= 10 tf=  2 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Janie Brower
+  acfa6010bcf9 xc  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Regan Manley
+  ad03aa2ddc3e tf  count=  167 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  ad41a14c0db3 xc  count=   68 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  ad5cd3d3cad8 tf  count=   70 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  ad918163c74f tf  count=  402 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Enzie Riley
+  ad9dfea6637b xc  count= 4020 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Harrison
+  aeed1cda74ab xc  count= 3111 rows= 10 tf=  5 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=J Montgomery
+  af45f1e6faee tf  count=  481 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Oktar
+  af62ae31ac9a tf  count=   17 rows=  7 tf=  7 xc=  0 noncanon= 0 next=y pred_issues=[] cand=7 parser_cand=7 parser_issues=[] q=Sinkler Gabrielle
+  af6d7456bec9 tf  count=  402 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  b0173cdabe52 xc  count= 1367 rows= 10 tf=  6 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=G Hanson
+  b021dd4efee0 tf  count=  542 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  b0f1c0769a35 xc  count=49188 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Groh
+  b162534752bd tf  count=12126 rows= 10 tf= 10 xc=  8 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Malachi
+  b179a96d12ff xc  count=   29 rows= 10 tf=  9 xc=  7 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:3] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:3] q=Aguirre Tiahna
+  b1cbe7097736 xc  count=   64 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Lilly
+  b211b96c0267 tf  count=  678 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  b2142dd422fb tf  count=   32 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Natalie Stohr
+  b2756aead4de tf  count= 3081 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Brower
+  b280c4aee030 tf  count= 1572 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=R Manley
+  b3375c6f1909 xc  count=  124 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lopez Eva
+  b399d6d54b16 xc  count= 2923 rows= 10 tf=  6 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=T Aguirre
+  b3b64574010d xc  count= 1524 rows= 10 tf=  7 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=J Brower
+  b442b6c5bdb0 xc  count= 2079 rows= 10 tf=  9 xc=  5 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] cand=5 parser_cand=5 parser_issues=[result row belongs to another or unspecified sport:4,athlete URL is not canonical:1] q=A Lansaw
+  b4831fed6634 tf  count=12394 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  b53a29ee35c8 tf  count=99058 rows= 10 tf=  9 xc=  0 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=C Groh
+  b5f49c597029 tf  count=  167 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  b652779430bb xc  count=  192 rows= 10 tf=  4 xc=  8 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Caleb Groh
+  b6d06cf2d9fd tf  count=  519 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kari Amelia
+  b6deab651f6f tf  count=  519 rows= 10 tf=  8 xc=  3 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Kari Amelia
+  b6e4c8fd7e58 tf  count=  326 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Caleb Groh
+  b76982f18d4b tf  count= 7105 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=A Ebel
+  b890da826ea2 tf  count= 7890 rows= 10 tf=  9 xc=  7 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=E Riley
+  b8e9bfa71ab5 tf  count=  678 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Couey Lia
+  bae152e8d545 tf  count=12087 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=S Noll
+  bb1f7efdca25 xc  count=   15 rows= 10 tf=  7 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=White Juniper
+  bb44d8bc2db6 tf  count=99058 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Groh
+  bc2e46ac39c9 tf  count=   64 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Q Farmer
+  bcd5154a09b8 tf  count=   15 rows=  5 tf=  5 xc=  1 noncanon= 0 next=y pred_issues=[] cand=5 parser_cand=5 parser_issues=[] q=Adeline Lansaw
+  bd05eb322008 xc  count=    4 rows=  4 tf=  4 xc=  4 noncanon= 0 next=n pred_issues=[] cand=4 parser_cand=4 parser_issues=[] q=Adeline Lansaw
+  bd2b1c3bd335 xc  count=   64 rows= 10 tf=  4 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Lilly
+  bd7c955c706e tf  count= 4525 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Jillian Kline
+  be97d380b32c tf  count=  228 rows= 10 tf=  9 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Hanson Grace
+  bfdd40cffe0d tf  count=    2 rows=  2 tf=  2 xc=  1 noncanon= 0 next=n pred_issues=[] cand=2 parser_cand=2 parser_issues=[] q=Jillian Kline Anchorage AK
+  c067df8e4604 tf  count=  213 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Eva Lopez
+  c094fbb077a9 tf  count= 4525 rows= 10 tf=  8 xc=  5 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Jillian Kline
+  c0bfbadec10d tf  count=   39 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Juniper White
+  c0dc6c195af3 xc  count=13539 rows= 10 tf=  6 xc=  8 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Miller S
+  c1d633eb8a43 tf  count=  118 rows= 10 tf=  8 xc=  4 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Riley Lilly
+  c21bb9140801 tf  count= 7890 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Riley
+  c21d11baae45 tf  count=    4 rows=  4 tf=  4 xc=  0 noncanon= 0 next=n pred_issues=[] cand=4 parser_cand=4 parser_issues=[] q=Juliana Knoedler
+  c4a00b6a02fc tf  count=  167 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  c4a1077fc9c4 xc  count=   14 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Cebrian Lana
+  c4aa7a36f897 xc  count=  247 rows= 10 tf=  7 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Janie Brower
+  c4b606a1c26d xc  count=  369 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Couey Lia
+  c4e94618f529 tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  c5443efae7a3 tf  count=24886 rows= 10 tf=  9 xc=  3 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=R Wallace
+  c5bba3fcb0cc tf  count=  118 rows= 10 tf=  8 xc=  4 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Lilly Riley
+  c7f2f39d1157 tf  count=  474 rows= 10 tf=  9 xc=  4 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Wallace Robert
+  c84aaf291dd6 xc  count=    1 rows=  1 tf=  0 xc=  1 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Emma Easter Fort Worth TX
+  c8f7388f968d tf  count=  402 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Enzie
+  c9b5a33539a9 tf  count=  542 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  ca4748c9e750 tf  count=  167 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Harrison Layla
+  cb30b32603ca tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  cba102179cfb tf  count=   39 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Juniper White
+  cc966e7f35f2 xc  count=  369 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Lia Couey
+  cd0f484acde3 tf  count=   32 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Natalie Stohr
+  ce14d12def3f xc  count= 1229 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=N Stohr
+  ce6f77489e89 tf  count= 1052 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=G Sinkler
+  d03846a30193 tf  count= 6578 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  d0a568c1a0aa tf  count=   70 rows= 10 tf=  8 xc=  1 noncanon= 1 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:1] q=Aguirre Tiahna
+  d1f179a72e15 tf  count=  213 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lopez Eva
+  d1f90e2d5b2f xc  count=   17 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Stohr Natalie
+  d25edbf020cf tf  count=   11 rows=  1 tf=  1 xc=  0 noncanon= 0 next=y pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Malachi C Anchorage AK
+  d35200bd30f3 tf  count=   70 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  d45433533d0c tf  count=37475 rows= 10 tf=  9 xc=  1 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=A Kari
+  d58a3c1d742a tf  count= 2333 rows= 10 tf=  9 xc=  6 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=G Hanson
+  d5d97b417218 tf  count= 7890 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=E Riley
+  d5e23b27c78a xc  count=  185 rows= 10 tf=  3 xc=  7 noncanon= 2 next=y pred_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:2] cand=7 parser_cand=7 parser_issues=[result row belongs to another or unspecified sport:1,athlete URL is not canonical:2] q=Anderson Andy
+  d5f8f9a4bc4b xc  count=12599 rows= 10 tf=  0 xc=  9 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=R Wallace
+  d6ac90df2f41 tf  count= 3427 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=G Aldrich
+  d7098f945a67 xc  count=33829 rows= 10 tf=  2 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=J White
+  d756e7e3c2bf tf  count=   25 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Knoedler
+  d7ca26864b41 tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lilly Riley
+  d7d36cd4e243 xc  count=  247 rows= 10 tf=  2 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Brower Janie
+  d874347fe0ee tf  count=  118 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Riley Lilly
+  d87d4e3ae6d5 tf  count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Amelia Kari Anchorage AK
+  d90c90d8df39 tf  count= 6578 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  db297c494c62 tf  count=   70 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Tiahna Aguirre
+  db61fe106cfb tf  count=  678 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  dbfe623cf4f5 xc  count=  256 rows= 10 tf=  5 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Wallace Robert
+  ddf920497c85 None count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Adeline Lansaw Greenfield IL,Andy Anderson Sitka AK,Annabell
+  de83935c9732 xc  count= 2079 rows= 10 tf=  2 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  df0c1ffe279f tf  count=  326 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Caleb Groh
+  df1c303960dd xc  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[result row belongs to another or unspecified sport:1] cand=0 parser_cand=0 parser_issues=[result row belongs to another or unspecified sport:1] q=Knoedler Juliana
+  df3fe2063539 tf  count=75197 rows= 10 tf= 10 xc=  1 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J White
+  e080f25640cb tf  count=  397 rows= 10 tf=  9 xc=  1 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Montgomery Jadyn
+  e0aae0bf19f9 tf  count= 6244 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=T Aguirre
+  e0ca147fb2cb xc  count= 4020 rows= 10 tf=  6 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=L Harrison
+  e2d02b50ff5b tf  count=  167 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Layla Harrison
+  e35a1341efc5 xc  count=   23 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Q Farmer
+  e3bc7b0cbc2f tf  count=11250 rows= 10 tf=  9 xc=  4 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=L Couey
+  e48d76ec3248 xc  count= 6407 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  e4a1c2719550 tf  count=99058 rows= 10 tf= 10 xc=  7 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=C Groh
+  e5e5e741a10d tf  count=    1 rows=  1 tf=  1 xc=  0 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Juniper White Chicago IL
+  e6ce574429ae tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  e70663cc9363 tf  count=  678 rows= 10 tf=  9 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Lia Couey
+  e70e0772dd7d tf  count= 2490 rows= 10 tf=  9 xc=  3 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=N Stohr
+  e764d46f2427 tf  count=   70 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  e7a0559ff320 tf  count= 2381 rows= 10 tf= 10 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Cebrian
+  e7a74c7a0c28 xc  count= 6407 rows= 10 tf=  1 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  e80ec690c07c xc  count=   17 rows=  7 tf=  5 xc=  7 noncanon= 0 next=y pred_issues=[] cand=7 parser_cand=7 parser_issues=[] q=Stohr Natalie
+  ea79c29da5cc xc  count=  118 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Grace Hanson
+  eae756f9ff1d tf  count=    8 rows=  8 tf=  8 xc=  3 noncanon= 0 next=n pred_issues=[] cand=8 parser_cand=8 parser_issues=[] q=Noll Saibree
+  ebbc43c3b5b6 tf  count=  326 rows= 10 tf= 10 xc=  8 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Caleb Groh
+  ebe35247c0e4 tf  count=37475 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Kari
+  ec14ca96b15c tf  count=  678 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  ec39a61aca1f xc  count= 6407 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  ed9f89113bb9 tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  ee98a306992b xc  count= 1962 rows= 10 tf=  6 xc=  9 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=G Aldrich
+  ef6ecdde8503 tf  count=12394 rows= 10 tf= 10 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  ef797234b337 tf  count=12394 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  f03b2a45c098 xc  count=  369 rows= 10 tf=  3 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lia Couey
+  f0817ddcde92 tf  count=  167 rows= 10 tf=  8 xc=  2 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Harrison Layla
+  f08b19335296 tf  count=  542 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Emma Easter
+  f15141a8a7e1 tf  count=  519 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kari Amelia
+  f1541027f9b2 tf  count=   11 rows= 10 tf= 10 xc=  6 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Malachi C Anchorage AK
+  f1b6416a9ae4 xc  count=    1 rows=  1 tf=  1 xc=  1 noncanon= 0 next=n pred_issues=[] cand=1 parser_cand=1 parser_issues=[] q=Amelia Kari Anchorage AK
+  f1dcc376296b tf  count=   64 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Q Farmer
+  f1e6d534fef9 tf  count= 2490 rows= 10 tf= 10 xc=  5 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=N Stohr
+  f4816ee077cd tf  count=  213 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lopez Eva
+  f4f762a39f7b xc  count=  247 rows= 10 tf=  7 xc=  8 noncanon= 2 next=y pred_issues=[athlete URL is not canonical:2] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:2] q=Brower Janie
+  f5e4b62a0043 tf  count=25560 rows= 10 tf=  9 xc=  1 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Miller S
+  f5e735fefe3e xc  count=  268 rows= 10 tf=  8 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Kari Amelia
+  f787a8926984 tf  count= 3855 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=A Lansaw
+  f87c48dd8ca1 xc  count=    0 rows=  0 tf=  0 xc=  0 noncanon= 0 next=n pred_issues=[] cand=0 parser_cand=0 parser_issues=[] q=Gabriel Aldrich Raven Homeschool
+  f8d2617e7fe5 xc  count= 3928 rows= 10 tf=  3 xc=  8 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=A Ebel
+  f8dea5bbbe95 tf  count=   70 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  f934751b3f93 tf  count=  167 rows= 10 tf= 10 xc=  4 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Layla Harrison
+  f939565eb26f tf  count=  542 rows= 10 tf=  8 xc=  3 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:2] cand=8 parser_cand=8 parser_issues=[result row belongs to another or unspecified sport:2] q=Easter Emma
+  f958c62ef4f1 xc  count= 2616 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=Jillian Kline
+  fade057064b6 tf  count=   32 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=Stohr Natalie
+  faf567f50458 tf  count=  542 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Easter Emma
+  fbbda9a187c3 xc  count= 6407 rows= 10 tf=  5 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=L Riley
+  fc5b648752fc xc  count=  192 rows= 10 tf=  4 xc=  8 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] cand=8 parser_cand=8 parser_issues=[athlete URL is not canonical:1,result row belongs to another or unspecified sport:1] q=Groh Caleb
+  fc6c956520f1 tf  count= 6578 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Montgomery
+  fc6d74c28543 tf  count=   25 rows=  5 tf=  5 xc=  1 noncanon= 0 next=y pred_issues=[] cand=5 parser_cand=5 parser_issues=[] q=Oktar Ela
+  fc941c79b09e xc  count=    4 rows=  4 tf=  4 xc=  4 noncanon= 0 next=n pred_issues=[] cand=4 parser_cand=4 parser_issues=[] q=Lansaw Adeline
+  fcc46022b8e9 xc  count=  192 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Caleb Groh
+  fdbc1a15f0d1 xc  count= 2923 rows= 10 tf=  5 xc=  9 noncanon= 0 next=y pred_issues=[result row belongs to another or unspecified sport:1] cand=9 parser_cand=9 parser_issues=[result row belongs to another or unspecified sport:1] q=T Aguirre
+  fe0318069675 tf  count= 4525 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Jillian Kline
+  fe0bcdf7baac tf  count=   70 rows= 10 tf= 10 xc=  0 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Aguirre Tiahna
+  fe22dd4dec45 tf  count= 3081 rows= 10 tf= 10 xc=  2 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=J Brower
+  fe328f87e024 tf  count=12394 rows= 10 tf=  9 xc=  2 noncanon= 1 next=y pred_issues=[athlete URL is not canonical:1] cand=9 parser_cand=9 parser_issues=[athlete URL is not canonical:1] q=L Riley
+  fe804f3ce5ae xc  count=  192 rows= 10 tf=  7 xc= 10 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Groh Caleb
+  ffab909bf429 tf  count=   15 rows= 10 tf= 10 xc=  3 noncanon= 0 next=y pred_issues=[] cand=10 parser_cand=10 parser_issues=[] q=Lansaw Adeline

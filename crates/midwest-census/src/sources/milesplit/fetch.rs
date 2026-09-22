@@ -1,9 +1,11 @@
-//! The two fetches: a state team index and one roster page, status-checked before parsing.
+//! The three fetches: a state team index, one roster page, and one `/raw` result set — each
+//! status-checked before parsing.
 use crate::net::{FetchError, FetchOptions, Fetcher};
 use crate::sources::{CrawlError, CrawlResult};
 
 use super::parse::{parse_roster, parse_team_index};
-use super::wire::{Roster, Site, TeamRef};
+use super::raw::{parse_raw, RawPage};
+use super::wire::{ResultSetRef, Roster, Site, TeamRef};
 
 /// Fetch and parse the team index for a state site.
 pub async fn fetch_team_index(
@@ -52,4 +54,20 @@ pub async fn fetch_roster(
         }));
     }
     parse_roster(&outcome.text(), team.clone())
+}
+
+/// Fetch and parse one `/raw` result set: one request, the whole result set, no pagination.
+pub async fn fetch_result_set(
+    fetcher: &Fetcher,
+    reference: &ResultSetRef,
+    options: &FetchOptions,
+) -> CrawlResult<RawPage> {
+    let outcome = fetcher.get(&reference.url, options).await?;
+    if outcome.status != 200 {
+        return Err(CrawlError::Fetch(FetchError::Http {
+            status: outcome.status,
+            url: reference.url.clone(),
+        }));
+    }
+    parse_raw(&outcome.text(), &reference.url)
 }

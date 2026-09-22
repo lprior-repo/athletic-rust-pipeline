@@ -209,7 +209,7 @@ pub(super) fn store_performance(
 }
 
 /// The team a performance belongs to, minted on first sight.
-fn ensure_team(
+pub(super) fn ensure_team(
     accumulated: &mut Accumulator,
     source: &SourceRef,
     observed_on: &str,

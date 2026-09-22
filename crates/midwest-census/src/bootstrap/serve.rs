@@ -66,20 +66,15 @@ pub(super) async fn supervise(
         .map_err(|source| BootstrapError::BoundAddress { source })?;
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
-    let stop = stop_watch(Arc::clone(&reason), shutdown);
-
-    let endpoint = restate_services::build_endpoint(
-        store.clone(),
-        options.max_concurrent,
-        Arc::clone(&region),
-    );
-    region.spawn(async move {
-        HttpServer::new(endpoint)
-            .serve_with_cancel(listener, stop)
-            .await;
-    });
+    let cancel = spawn_endpoint(&region, &store, &options, listener);
     tracing::info!(%bound, max_concurrent = options.max_concurrent, "census service listening");
 
+    // The deadline bounds the reap *after* a stop request, never the wait for one. Draining before
+    // the watch resolves would abort a healthy endpoint at the deadline and report `ServerExit`,
+    // which is exactly the fault this ordering exists to keep visible.
+    stop_watch(Arc::clone(&reason), shutdown).await;
+    // A failed send means the endpoint's own watch is already gone; the drain below is what matters.
+    cancel.send(()).ok();
     let counted = region
         .drain(options.drain_timeout)
         .await
@@ -94,6 +89,32 @@ pub(super) async fn supervise(
     finalized.map_err(|source| BootstrapError::StoreFlush { source })?;
     tracing::info!(?report, "census service stopped");
     Ok(report)
+}
+
+/// Spawn the region-owned endpoint task and return the sender that cancels it.
+///
+/// The cancel signal is the supervisor's, not the stop watch: the supervisor has to observe the stop
+/// request itself to know when the region may be drained, so the watch and the endpoint's cancel are
+/// deliberately two observers of one event.
+fn spawn_endpoint(
+    region: &Arc<Spawner>,
+    store: &Arc<Store>,
+    options: &ServeOptions,
+    listener: tokio::net::TcpListener,
+) -> tokio::sync::oneshot::Sender<()> {
+    let (cancel, cancelled) = tokio::sync::oneshot::channel::<()>();
+    let stop = async move {
+        // The stop future only has to observe the cancel; a dropped sender ends it too.
+        cancelled.await.ok();
+    };
+    let endpoint =
+        restate_services::build_endpoint(store.clone(), options.max_concurrent, Arc::clone(region));
+    region.spawn(async move {
+        HttpServer::new(endpoint)
+            .serve_with_cancel(listener, stop)
+            .await;
+    });
+    cancel
 }
 
 /// Open (creating if needed) the store as a region task on the blocking pool.

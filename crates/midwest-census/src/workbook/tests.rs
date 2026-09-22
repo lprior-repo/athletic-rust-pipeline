@@ -94,22 +94,48 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
 
     let mut book: Xlsx<_> = open_workbook(&path).unwrap();
     let names = book.sheet_names().to_vec();
-    for expected in [
+
+    // The objective's sheets come first, in its own order (§50 Athletes, §51 PRs, §52 Performances_001,
+    // §53 Coaches, §54 Schools/Meets/Sources/Coverage/Conflicts/Review/Run Metrics), then every legacy
+    // census sheet the objective does not supersede, ending with the renamed `Meets summary`.
+    let objective = [
+        "Athletes",
+        "PRs",
+        "Performances_001",
+        "Coaches",
+        "Schools",
+        "Meets",
+        "Sources",
+        "Coverage",
+        "Conflicts",
+        "Review",
+        "Run Metrics",
+    ];
+    let legacy = [
         "Goal & method",
         "Summary",
         "By state - core",
         "By state - all sources",
         "Athletic.net marginal",
         "Best results",
-        "Meets",
+        "Meets summary",
         "Evidence mix",
         "Method notes",
-    ] {
-        assert!(
-            names.contains(&expected.to_string()),
-            "missing sheet {expected}"
-        );
-    }
+    ];
+    let expected: Vec<String> = objective
+        .iter()
+        .chain(legacy.iter())
+        .map(|name| (*name).to_string())
+        .collect();
+    assert_eq!(names, expected, "the published sheet list, in order");
+    assert_eq!(
+        names.len(),
+        names
+            .iter()
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        "no sheet name is written twice"
+    );
 
     // The best-mark reduction picked the fastest 400 and the longest jump.
     let bests = bests::build(

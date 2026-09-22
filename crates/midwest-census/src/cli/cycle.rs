@@ -35,6 +35,17 @@ pub(super) struct RunArgs {
     /// ISO date stamped into evidence (defaults to today).
     #[arg(long)]
     observed_on: Option<String>,
+    /// Athletic.net meet ids to pull whole (`--meets`), comma-separated. Non-empty selects the
+    /// whole-meet route (two requests per meet) instead of the per-athlete registry route, and
+    /// needs no `--input`.
+    #[arg(long, value_delimiter = ',')]
+    meets: Vec<i64>,
+    /// Spend the third request per meet for the per-event type and hurdle metadata.
+    #[arg(long)]
+    event_metadata: bool,
+    /// Cap the number of meets processed on the whole-meet route.
+    #[arg(long)]
+    meet_limit: Option<usize>,
     /// Workbook path (defaults to the store's own `out/` path).
     #[arg(long)]
     out: Option<PathBuf>,
@@ -53,9 +64,9 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     let grad_year = school_year(args.grad_year)?;
     let scope = scope_of(args.all_sources);
 
-    match &args.input {
-        Some(input) => gather_registry(cli, store, args, input, observed_on).await?,
-        None => {
+    match (&args.input, args.meets.is_empty()) {
+        (Some(_), _) | (None, false) => gather_athleticnet(cli, store, args, observed_on).await?,
+        (None, true) => {
             println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
         }
     }
@@ -77,12 +88,12 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     publish_bests_and_workbook(store, args, scope, grad_year)
 }
 
-/// Gather the Athletic.net registry `--input` names, and print the stage's line.
-async fn gather_registry(
+/// Gather the Athletic.net rows the args name - the registry `--input`, whole meets `--meets`, or
+/// both - and print the stage's line.
+async fn gather_athleticnet(
     cli: &Cli,
     store: &Store,
     args: &RunArgs,
-    input: &str,
     observed_on: String,
 ) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
@@ -96,17 +107,25 @@ async fn gather_registry(
     let report = midwest_census::sources::athleticnet::collect(
         &context,
         &midwest_census::sources::athleticnet::Options {
-            input: Some(input.to_string()),
+            input: args.input.clone(),
             limit: args.limit,
             refresh: args.refresh,
             observed_on,
             states: args.states.clone(),
+            meets: args.meets.clone(),
+            event_metadata: args.event_metadata,
+            meet_limit: args.meet_limit,
         },
     )
     .await
-    .with_context(|| format!("gathering the athletic.net registry {input}"))?;
+    .with_context(|| {
+        format!(
+            "gathering athletic.net rows: input={:?} meets={:?}",
+            args.input, args.meets
+        )
+    })?;
     println!(
-        "gather\tathleticnet\tathletes={} requests={} errors={}",
+        "gather\tathleticnet\trows={} requests={} errors={}",
         report.rows, report.requests, report.errors
     );
     for note in &report.notes {

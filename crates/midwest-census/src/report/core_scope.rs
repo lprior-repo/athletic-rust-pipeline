@@ -41,12 +41,15 @@ impl Scope {
 
 /// Adapter ids whose evidence does not count toward the core census.
 ///
-/// `athleticlive_*` is the Athletic.net mirror (meet index, athlete rows) and `athleticnet` is the
-/// host itself, read through the owner-authorized athlete-bio adapter. A core entity must be
-/// reachable without any of them, so their evidence is ignored while the core filter runs.
-pub const NON_CORE_SOURCE_IDS: [&str; 3] = [
+/// `athleticlive_*` is the Athletic.net mirror — its meet index, its athlete rows and its result
+/// plane — and `athleticnet` is the host itself, read through the owner-authorized athlete-bio
+/// adapter. A core entity must be reachable without any of them, so their evidence is ignored while
+/// the core filter runs. Deleting one of these ids silently promotes a mirror's evidence into the
+/// core census, which is why the registry comment and this list name the same slugs.
+pub const NON_CORE_SOURCE_IDS: [&str; 4] = [
     "athleticlive_athletes",
     "athleticlive_meets_csv",
+    "athleticlive_results",
     "athleticnet",
 ];
 

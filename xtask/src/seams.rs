@@ -83,6 +83,10 @@ const ALLOWED: &[(&str, &str)] = &[
     ("store", "clock"),
     ("workbook", "bests"),
     ("workbook", "report"),
+    // The meta sheets render the adapter surface itself — slug, transport, declared capabilities
+    // and the per-origin request cost — so the workbook reads the registry table as data. It never
+    // calls an adapter and never fetches.
+    ("workbook", "sources"),
     ("workbook", "store"),
 ];
 

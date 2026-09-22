@@ -230,7 +230,7 @@ fn active_seasons(season_cell: &Regex, row_html: &str) -> (bool, bool, bool) {
     (indoor, outdoor, xc)
 }
 
-fn html_unescape(value: &str) -> String {
+pub(super) fn html_unescape(value: &str) -> String {
     value
         .replace("&amp;", "&")
         .replace("&#39;", "'")
