@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc c25b5c3e524f018a310f8517a63e6eef2071bcd1f9c843ebd82e01045f77b3e1 # shrinks to days = [Day { day: "Sun. 4", name: "USATF Minnesota All-Comers Meet #3", venue: "University of Minnesota", slug: "15nug0" }], style = 1

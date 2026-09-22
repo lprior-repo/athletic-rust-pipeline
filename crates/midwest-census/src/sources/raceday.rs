@@ -29,8 +29,6 @@ use title::division_of;
 // The test file reads the model and result types through `use super::*`; the parser imports them
 // for its own use, so they are bound for tests only instead of widening the parser's imports.
 #[cfg(test)]
-use crate::sources::CrawlResult;
-#[cfg(test)]
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 
 #[cfg(test)]

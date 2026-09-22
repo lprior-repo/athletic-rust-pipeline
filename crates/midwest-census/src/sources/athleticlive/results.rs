@@ -16,9 +16,12 @@ use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
 
 mod absorb;
+mod manifest;
 mod run;
 #[cfg(test)]
 mod tests;
+
+pub use manifest::{collect_manifest, ManifestOptions};
 
 use run::Run;
 

@@ -1,0 +1,244 @@
+# architecture.md — the census as it exists today
+
+Current-state reference: what each crate is, which phase each subcommand advances, what the store
+holds and how it survives a crash, what a seal certifies and refuses, and which module edges are
+allowed. Every claim below names the file it comes from.
+
+For the narrative view — execution model, the browser session supervisor, the census data model and
+the planned workspace split — read `ARCHITECTURE.md` at the repository root. For planned work read
+`docs/HARDENING-PROGRAM.md`; for the adapter contract read `SOURCE_ADAPTER_GUIDE.md`.
+
+## 1. Crate map
+
+Workspace members come from the root `Cargo.toml` (`members = ["crates/census-domain",
+"crates/midwest-census", "xtask"]`).
+
+| Crate / package | Path | What it is | Bins |
+|---|---|---|---|
+| `athletic-rust-pipeline` | `src/` (root package) | the Athletic.net-facing acquisition pipeline and operator CLI: Restate worker, browser session supervisor, rankings collection, workbook export/verify | `athletic-rust-pipeline` |
+| `census-domain` | `crates/census-domain/` | pure domain model: canonical entities, deterministic ids, cohort identity; normal dependency tree carries no async runtime, store engine, HTTP client, service framework or browser engine | — |
+| `midwest-census` | `crates/midwest-census/` | the census: polite fetcher (`src/net/`), Fjall store (`src/store/`), one module per source adapter (`src/sources/`), orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/school_index.rs`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`) | `midwest-census`, `midwest-serve` |
+| `xtask` | `xtask/` | developer commands: the gate wrapper, the gate's measurement layer, source fixtures/tests, census reports, adapter scaffolding | `xtask` |
+
+Not cargo members of this workspace:
+
+| Path | What it is |
+|---|---|
+| `fuzz/` | standalone cargo-fuzz workspace (`fuzz/Cargo.toml`), targets under `fuzz/fuzz_targets/` |
+| `benches/` | root-package measurement targets: `artifact_store`, `blocking_fanout`, `workbook_export` |
+| `tools/` | `tools/gate.sh` (the one quality gate) and `tools/quality-baseline.json` (the debt ratchet) |
+| `vendor/chromiumoxide_cdp/` | the one locally patched crate, wired through `[patch.crates-io]` in the root `Cargo.toml` |
+| `deploy/systemd/` | the census service units: `midwest-serve.service`, `restate-server.service`, `midwest-census-collect.{service,timer}` |
+| `research/` | source reconnaissance lanes, append-only captures |
+
+Census measurement targets are `crates/midwest-census/benches/{core,pipeline}.rs`; the standalone
+harness binaries live in `crates/midwest-census/examples/bench_store.rs` and `bench_census.rs`.
+
+## 2. Acquisition phases
+
+The phase ladder is `Phase` in `crates/midwest-census/src/census/state.rs` — `Discovering`,
+`Acquiring`, `Reconciling`, `Reviewing`, `ResolvingGaps`, `Exporting`, `Complete` — entered one step
+at a time (`CensusState::advance` refuses anything but the immediate next phase), with `Complete`
+reachable only through `CensusState::seal`.
+
+`crates/midwest-census/src/cli/seal.rs` (`reached_phase`) reads the phase back out of the store's own
+artifacts, so the ladder is recorded progress rather than a caller's claim. The conditions are
+monotone: a later artifact cannot exist without the earlier ones.
+
+| Phase | Advanced by | Subcommands that produce it |
+|---|---|---|
+| Discovering | (an empty store; every census starts here) | `teams`, `meets`, `provider <name>`, `collect`, `run --input/--meets` |
+| Acquiring | `StoreStats::observations > 0` | the same adapter commands, appending observations through `sources::append_all` |
+| Reconciling | `snapshots` holds ≥ 1 row | `index` writes that row; `consolidate` merges observations into `out/*.jsonl` |
+| Reviewing | `review_cases` **or** `identity_verdicts` holds ≥ 1 row | `index` (derives the cases), `review` (records verdicts and closes the cases it decided) |
+| ResolvingGaps | `coverage` holds ≥ 1 row | `index` (writes the per-jurisdiction coverage rows and their §47 gap classes) |
+| Exporting | a `*.xlsx` exists in `<store>/out/` | `workbook`, `export`, `run` |
+| Complete | `seal` returns `Ok` | `seal`, `seal --write` |
+
+The commands themselves are the clap surface in `crates/midwest-census/src/cli/mod.rs`; `run`
+parses, opens the store and dispatches. Three commands (`national`, `jurisdiction`,
+`national-report`) are dispatched *before* the store opens, because they drive Restate and never read
+it — and because opening the store takes the exclusive Fjall lock a live `midwest-serve` holds.
+
+`index` is what advances three phases in one pass: it writes `source_identities`, `conflicts`,
+`review_cases`, `coverage` (all through `Store::replace_many`) and the `snapshots` row
+(`src/index.rs`). The gap classes the ResolvingGaps phase publishes are `GapClass` in
+`crates/midwest-census/src/report/coverage/gaps.rs`, one row per class per jurisdiction, derived
+from the counts the coverage row measured.
+
+## 3. Store
+
+Root default `var/midwest-census` (`--store`, global, in `cli/mod.rs`). `Store::open` creates `http/`
+and `out/` if absent, opens the Fjall database under `fjall/`, and sweeps temporary files a dead
+writer left behind (`read::sweep_stale_temporaries`).
+
+```text
+<store>/
+  fjall/        the Fjall database (LSM tree): keyspaces entities, journal, meta
+  http/         the fetch cache: <key>.body + <key>.meta.json, keyed by sha256(method, url, extra)
+  out/          read-model outputs: report JSON/CSV, workbook .xlsx, seal.json
+  entities/     pre-Fjall JSONL journals — one-time import source, never rewritten
+  journal/      pre-Fjall resume ledger — one-time import source
+```
+
+Keys (`crates/midwest-census/src/store/keys.rs`):
+
+```text
+entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON
+journal:  <phase>\0<key>                                    -> {key, at, payload}
+meta:     <name>                                            -> small JSON/scalar
+```
+
+The sequence is a fixed-width big-endian tail, so byte order is numerical order and a prefix scan
+reads one entity's history in write order. `observation_id` rejects an empty id and one over
+`MAX_ID_BYTES` (512) before it can reach the key; `MAX_ROWS_PER_TABLE` is 20,000,000 observations
+per table.
+
+### 3.1 Tables
+
+`Table` (`src/store/table.rs`) is the store's naming for the fifteen collections; the names ride in
+keys and sidecar file names.
+
+| Table | Meaning | Written by |
+|---|---|---|
+| `schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances` | the canonical entities | adapters, appended (`append`/`append_many`) |
+| `source_identities` | the §31 join from a provider's own id to a canonical row | `index`, replaced |
+| `conflicts` | conflicts the merge retained: two rows one stored key says are the same subject | `index`, replaced |
+| `review_cases` | findings the review lane owns, keyed so a repeated finding reuses its case | `index`, replaced; `review` closes the decided ones |
+| `coverage` | coverage measurements per jurisdiction and per source namespace | `index`, replaced |
+| `snapshots` | one row per finished pass over the store | `index`, replaced |
+| `source_access` | access conditions a source imposed: one row per blocked `(kind, host)` | the sweep's access pass, replaced |
+| `identity_verdicts` | adjudications the review lane recorded, one row per case | `review`, replaced |
+| `source_meets` | meets a source enumerated, before their results were read | the `meets` command, appended |
+
+Two write disciplines, not one:
+
+* **Canonical entities are append-only.** An observation is never overwritten — appending the same
+  entity twice writes two rows, and readers merge through `Entity::merge` (`Store::consolidate`,
+  `src/store/read.rs`). A transfer does not rewrite a prior school attribution.
+* **The derived tables are not evidence.** Their rows are a function of the store as it stands, so
+  they are written through `replace_many`/`replace`: one row per key, overwritten in place, so a
+  re-derivation cannot grow them.
+
+`Entity::publish` is the collection contract applied to the merged value, so the rule holds for the
+report, the workbook, the snapshot and the Restate handlers at once; `withheld_mailboxes` counts what
+that contract withheld, summed in the same pass as the snapshot.
+
+### 3.2 Durability
+
+Fjall is an embedded LSM-tree store: writes land in a write-ahead journal and a memtable and are
+compacted into immutable sorted tables, so an interrupted run costs at most the observations never
+flushed — never a rewritten snapshot.
+
+| Property | Value | Source |
+|---|---|---|
+| commit mode | `PersistMode::SyncData` (`fdatasync`) per batch | `src/store/mod.rs` |
+| upgrade | `Store::flush()` → `PersistMode::SyncAll`, called at consolidation and shutdown | `src/store/mod.rs` |
+| block cache | 256 MiB (`CACHE_BYTES`) | `src/store/mod.rs` |
+| sequence seeding | from the last key present at open, so a reopened database never reuses a sequence or overwrites an observation | `src/store/mod.rs`, `src/store/sequences.rs` |
+| resume journal | durable per completed unit of work; the journal keyspace holds `<phase>\0<key>` | `src/store/keys.rs` |
+| legacy import | `Store::open` imports the pre-Fjall `entities/` and `journal/` JSONL exactly once, recorded under `meta` | `src/store/legacy.rs` |
+
+The store API also owns `Store::backup`, `Store::restore` and `Store::integrity`
+(`src/store/backup.rs`): `backup` copies the durable material and writes a `backup.json` manifest of
+file digests, byte lengths and per-table counts taken from the same sequence counters `Store::stats`
+reads; `restore` validates that manifest and re-opens through the normal `Store::open` path;
+`integrity` checks each table's row count against its sequence counter plus journal/entity-log
+pairings. `Store::stats` (`src/store/mod.rs`) is what a status command prints: per-table counts from
+those counters, LSM bytes on disk, and the recursive store size.
+
+## 4. Seal
+
+`midwest-census seal` is the one place the pipeline is allowed to call a census finished
+(`crates/midwest-census/src/cli/seal.rs`). It assembles its evidence from what the store, the
+classifier and the exported workbook already hold — nothing is passed in as a claim.
+
+Scope is the core scope unless `--all-sources` is given; the cohort defaults to `--grad-year 2027`.
+
+### 4.1 What it certifies
+
+`SealCounts` (`census/state/evidence.rs`): `jurisdictions`, `schools`, `meets`, `athletes`,
+`class_of_2027`, `performances`, `coaches`. With `--write` the sealed state is persisted to
+`<store>/out/seal.json`; a seal recorded by an earlier run is printed and then *checked against this
+run's evidence*, never trusted — a difference is reported, not resolved in either direction.
+
+### 4.2 What it retains
+
+Findings are not blockers. `RetainedFindings` carries `gaps` (one `GapTally` of `class`, `unit`,
+`count` per §47 class), `conflicts`, `retry_exhausted` (the `source_access` rows),
+`source_failures`, `observations` and `calculations`. A non-zero gap tally seals fine and stays
+visible inside the seal.
+
+### 4.3 What it refuses
+
+`SealEvidence::open_items` returns the §70 acceptance items that are unmet, and `CensusState::seal`
+refuses with `SealError::ItemUnmet` naming the first one plus the number behind it. A refusal prints
+the item and its detail, then exits non-zero.
+
+| Refusing item | Unmet when |
+|---|---|
+| `JurisdictionSweepsTerminal` | `open.jurisdiction_sweeps > 0` |
+| `SourceObjectsTerminal` | `open.source_objects > 0` |
+| `CohortDecisionsTerminal` | `open.cohort_decisions > 0` |
+| `IdentityCandidatesTerminal` | `open.identity_candidates > 0` (open cases = `review_cases` − `identity_verdicts`) |
+| `EvidenceDurable` | `observations == 0` while `athletes > 0` |
+| `CalculationsReproducible` | `calculations == 0` while `performances > 0` |
+| `WorkbookMapped` | `mapped_athletes < class_of_2027` |
+| `WorkbookCountsReconcile` | the workbook's counts do not reconcile with the store |
+| `CoverageReportReconciles` | the coverage sheet does not carry every jurisdiction the classifier produced |
+| `RunMetricsReconcile` | the run-metrics sheet does not name the cohort the store counted |
+| `ExportVerified` | the export check failed, or any discrepancy was recorded |
+
+`AcceptanceItem::ConflictsRetained` and `AcceptanceItem::RetriesRepresented` are in the §70 list but
+never appear in `open_items`: they demand that a finding be *kept*, and a seal refused over a kept
+finding would push an operator to hide one. They are satisfied by the seal recording the count.
+
+The workbook check (`cli/seal/workbook.rs`) requires the sheets `Athletes`, `Coverage` and
+`Run Metrics`; it hashes the file's bytes, and materialises only the two meta sheets — a census
+workbook holds a million rows per sheet, so cell-level counting is deliberately not attempted.
+Renaming a required sheet, a jurisdiction missing from `Coverage`, or a cohort number the
+`Run Metrics` row does not match all come back as a named discrepancy.
+
+One honest limit: the CLI seal carries the store-visible decisions only. `assemble` sets
+`jurisdiction_sweeps`, `source_objects` and `cohort_decisions` to zero and derives
+`identity_candidates` from the store's own review tables, because owed sweeps and un-terminal source
+objects live in the workflow journal, which this command does not read.
+
+## 5. Module seams
+
+The census stays a single crate with module seams (`docs/HARDENING-PROGRAM.md` §9), so the compiler
+seals items but cannot forbid an edge between top-level modules. `cargo xtask seams`
+(`xtask/src/seams.rs`) reads every production `.rs` file under `crates/midwest-census/src`, resolves
+each `crate::…` reference to its top-level module, and compares the `(from, to)` pair against the
+table in that file. The gate runs it as the "module seams" lane.
+
+* **Direction rule.** Adapters and workflows depend on domain types and on the store, never the
+  reverse. `net` and `school_index` are leaves; `store` and `report` may not reach into `net` (the
+  clock lives in `clock`).
+* **The table is the ratchet.** Adding an edge is a deliberate edit to `ALLOWED` in
+  `xtask/src/seams.rs`; deleting a row makes that edge a violation again, because the check fails
+  closed. A violation names the file and line and exits non-zero.
+* **Known exception, listed on purpose.** `(sources, store)` is allowed although `ARCHITECTURE.md`
+  calls it a direction violation: `AdapterContext` carries `&Store` today. When adapters return
+  entity batches instead, delete the row and the walker enforces the narrower graph.
+* **Test code is out of scope.** Files named `tests.rs`, files under a `tests/` directory, and the
+  region after the `#[cfg(test)]` that opens a module cannot reach production callers.
+
+Domain purity is the matching check inside the domain crate: `cargo xtask domain-purity`
+(`xtask/src/purity.rs`) resolves `cargo tree -p census-domain --edges normal` and fails if any of the
+banned packages appear — `tokio`, `fjall`, `reqwest`, `serde_json`, `restate-sdk`, `chromiumoxide`,
+`hyper`, `axum`, `tower`, `mio`, `h2`, `rustls`, `openssl`, `socket2`, `tungstenite`, `tokio-util`
+and their relatives. Normal edges only, so a dev-dependency cannot taint the verdict.
+
+## 6. Where the numbers come from
+
+| Question | Command | Reads |
+|---|---|---|
+| what does the store hold? | `midwest-census fjall-stats` | `Store::stats` |
+| what is the census? | `midwest-census report [--core] [--print]` | `report::build_census` |
+| what is missing, per jurisdiction? | coverage rows + §47 gaps written by `index` | `report::coverage_report` |
+| is the export consistent with the store? | `midwest-census seal` | `cli/seal/workbook.rs` |
+| is the tree inside its budgets? | `cargo xtask scan`, `cargo xtask ratchet` | `xtask/src/scan.rs`, `xtask/src/baseline.rs` |
+| are the module edges allowed? | `cargo xtask seams` | `xtask/src/seams.rs` |
+
+A performance claim may cite only a committed benchmark target; see `PERFORMANCE.md`.

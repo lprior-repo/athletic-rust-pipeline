@@ -39,7 +39,12 @@ fn captured_fetch_requests_survive_durable_serialization() -> anyhow::Result<()>
         let request = build(&origin, &resource)?;
         let bytes = serde_json::to_vec(&request)?;
         let restored: RequestSpec = serde_json::from_slice(&bytes)?;
-        assert_eq!(restored, request);
+        anyhow::ensure!(
+            restored == request,
+            "left={:?} right={:?}",
+            &restored,
+            &request
+        );
     }
     Ok(())
 }

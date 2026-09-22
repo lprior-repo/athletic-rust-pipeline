@@ -18,6 +18,18 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::marker::PhantomData;
 
+mod records;
+mod review;
+
+pub use records::{
+    AccessBlockKind, CollectionSnapshot, CoverageRow, CoverageScope, RetainedConflict, ReviewCase,
+    ReviewState, SourceAccessCondition, SourceEntityKind, SourceMeetRef, SourceObjectIdentity,
+};
+pub use review::{
+    ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
+    ReviewVerdictRecord, VerdictBatch,
+};
+
 // -------------------------------------------------------------------------------------------------
 // Identifiers
 // -------------------------------------------------------------------------------------------------

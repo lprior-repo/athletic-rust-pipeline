@@ -15,6 +15,7 @@
 //! | [`sigkill_of_the_service_keeps_durable_work_and_the_restart_drains_cleanly`] | **SIGKILL** of `midwest-serve` once `/discover` answers, then restart and a SIGTERM drain | real process kill |
 //! | [`service_with_no_stop_request_survives_its_drain_deadline`] | a real `midwest-serve` that is never told to stop, probed past its own `--drain-timeout` | real process |
 //! | [`ks_directory_walk_claims_units_the_kill_can_lose`] | **SIGKILL** of a running `midwest-census provider ks`; measures the journal/effect gap | real process kill |
+//! | [`jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters`] | a roster pass capped at one roster, then a restart on the same store | in-process `census::collect_state_teams` + `collect_state_rosters` |
 //!
 //! Every scenario prints the values it asserts on with a `[recovery:…]` prefix, so the proof is
 //! visible in the test output and not only in the assertions.
@@ -22,7 +23,8 @@
 //! # No network
 //!
 //! Adapters run from committed captures seeded into the fetcher's on-disk cache
-//! (`tests/fixtures/ks/kshsaa_directory_a.json`, `tests/fixtures/athleticlive/meets-sample.csv`),
+//! (`tests/fixtures/ks/kshsaa_directory_a.json`, `tests/fixtures/athleticlive/meets-sample.csv`,
+//! `tests/fixtures/milesplit/wi_teams_index.html` with `wi_roster_52649.html`),
 //! exactly as the crate's adapter tests do; `provider athleticlive` performs no HTTP at all. Child
 //! processes additionally run with `HTTPS_PROXY=http://127.0.0.1:9`, so a cache-key drift fails as
 //! a connection refusal instead of reaching the source host.
@@ -51,11 +53,13 @@ use std::process::{Child, Command, Output, Stdio};
 use std::time::{Duration, Instant};
 
 use census_domain::model::{
-    normalize_name, CanonicalCoach, CanonicalMeet, CanonicalSchool, Evidence, SourceRef,
+    normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, Evidence,
+    GradYear, SourceRef,
 };
 use census_domain::UsJurisdiction;
+use midwest_census::census::CollectOptions;
 use midwest_census::net::Fetcher;
-use midwest_census::sources::{ks, AdapterContext, AdapterReport};
+use midwest_census::sources::{ks, milesplit, AdapterContext, AdapterReport};
 use midwest_census::store::{Store, Table};
 use midwest_census::{census, report};
 use sha2::{Digest, Sha256};
@@ -76,6 +80,14 @@ const OBSERVED_ON: &str = "2026-09-20";
 
 const KS_DIRECTORY_FIXTURE: &str = include_str!("fixtures/ks/kshsaa_directory_a.json");
 const ATHLETICLIVE_FIXTURE: &str = include_str!("fixtures/athleticlive/meets-sample.csv");
+/// The MileSplit pair captured together: the WI team index and the roster of the team that index
+/// lists first (`Site::teams_url()`, and `<that team's url>/roster` off the parsed index).
+const WI_TEAMS_FIXTURE: &str = include_str!("fixtures/milesplit/wi_teams_index.html");
+const WI_ROSTER_FIXTURE: &str = include_str!("fixtures/milesplit/wi_roster_52649.html");
+/// The two resume-journal phases the jurisdiction walk writes (`census::teams_phase` /
+/// `census::rosters_phase`): a state's team index, and `<state>:<team id>` per finished roster.
+const WI_TEAMS_PHASE: &str = "milesplit_teams_wi";
+const WI_ROSTERS_PHASE: &str = "milesplit_rosters_wi";
 
 /// The crate's own binaries, built by cargo for this test target.
 const CENSUS_BIN: &str = env!("CARGO_BIN_EXE_midwest-census");
@@ -89,8 +101,15 @@ const DISCOVER_ATTEMPTS: usize = 200;
 const DISCOVER_RETRY_DELAY: Duration = Duration::from_millis(25);
 /// The discovery accept header, the same one `tests/fjall_restate_e2e.rs` asks with.
 const DISCOVERY_ACCEPT: &str = "application/vnd.restate.endpointmanifest.v4+json";
-/// The services the endpoint has to advertise (wire names, from `restate_services`).
-const EXPECTED_SERVICES: [&str; 3] = ["Census", "Ingest", "Sweep"];
+/// The services the endpoint advertises (wire names, from `restate_services`): the three sweep
+/// surfaces plus the two objects the durable workflow is built from.
+const EXPECTED_SERVICES: [&str; 5] = [
+    "Census",
+    "Ingest",
+    "Sweep",
+    "JurisdictionCensus",
+    "NationalCensus",
+];
 
 // -------------------------------------------------------------------------------------------------
 // Evidence helpers
@@ -241,6 +260,45 @@ async fn ks_pass(store: &Store, limit: Option<usize>) -> AdapterReport {
         school_names: Vec::new(),
     };
     ks::collect(&ctx, &options).await.expect("ks collect")
+}
+
+/// A fresh store whose cache answers the WI team index and one roster per indexed team.
+///
+/// The index and the roster fixtures are the captured pair: the index lists team `52649` first and
+/// the roster fixture is that team's page. The same captured roster body stands in for the remaining
+/// teams, so the scenarios that use this seed compare a restarted walk against a clean walk over the
+/// same cache rather than against athlete names on the page.
+fn store_seeded_with_wisconsin(root: &Path, site: &milesplit::Site) -> Store {
+    let store = open_store(root);
+    seed_cache(&store.http_cache_dir(), &site.teams_url(), WI_TEAMS_FIXTURE);
+    let teams = milesplit::parse_team_index(WI_TEAMS_FIXTURE).expect("the index fixture parses");
+    let first = teams.first().expect("the index fixture lists teams");
+    assert_eq!(
+        first.id, "52649",
+        "the index fixture and the roster fixture are a captured pair: \
+         fixtures/milesplit/wi_teams_index.html must list teams/52649 first"
+    );
+    for team in &teams {
+        seed_cache(
+            &store.http_cache_dir(),
+            &format!("{}/roster", team.url),
+            WI_ROSTER_FIXTURE,
+        );
+    }
+    store
+}
+
+/// The collection options a jurisdiction walk here runs with; `limit_per_state` is the caller's.
+fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
+    CollectOptions {
+        jurisdictions: vec![UsJurisdiction::Wisconsin],
+        limit_per_state,
+        concurrency: 2,
+        state_concurrency: 1,
+        refresh: false,
+        school_year: census_domain::model::SchoolYear(2026),
+        observed_on: OBSERVED_ON.to_string(),
+    }
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -442,14 +500,19 @@ const LADDER_FRACTIONS: [(u64, u64); 27] = [
 ];
 
 /// Kill ladder for a workload whose clean runtime is `clean_runtime`, stopping as soon as a partial
+/// What a ladder attempt kills: the phase to interrupt and the rows that prove the units landed.
+struct Subject<'a> {
+    phase: &'a str,
+    table: Table,
+    ids_of: fn(&Store) -> BTreeSet<String>,
+}
+
 /// kill (some units durable, some still owed) lands or the workload turns out to have completed.
 fn kill_ladder(
     scenario: &str,
     root: &Path,
     args: &[&str],
-    phase: &str,
-    table: Table,
-    ids_of: fn(&Store) -> BTreeSet<String>,
+    subject: Subject<'_>,
     total_units: usize,
     clean_runtime: Duration,
 ) -> Vec<KillAttempt> {
@@ -457,7 +520,14 @@ fn kill_ladder(
     let mut attempts: Vec<KillAttempt> = Vec::new();
     for (numerator, denominator) in LADDER_FRACTIONS {
         let delay = Duration::from_micros(runtime_us.saturating_mul(numerator) / denominator);
-        let attempt = attempt_kill(root, args, delay, phase, table, ids_of);
+        let attempt = attempt_kill(
+            root,
+            args,
+            delay,
+            subject.phase,
+            subject.table,
+            subject.ids_of,
+        );
         note(
             scenario,
             format!(
@@ -622,6 +692,11 @@ fn assert_manifest_advertises(scenario: &str, manifest: &serde_json::Value) {
             "the discovery manifest {services:?} does not advertise {expected}"
         );
     }
+    assert_eq!(
+        services.len(),
+        EXPECTED_SERVICES.len(),
+        "the endpoint advertises exactly the services the workflow needs, nothing more: {services:?}"
+    );
 }
 
 /// Wait for `child` to exit, at most `bound`; `Some(elapsed)` once it is gone, `None` if it is still
@@ -1167,9 +1242,11 @@ fn sigkill_mid_batch_worker_restart_completes_the_remaining_units() {
         SCENARIO,
         &root,
         &args,
-        ATHLETICLIVE_PHASE,
-        Table::Meets,
-        meet_ids,
+        Subject {
+            phase: ATHLETICLIVE_PHASE,
+            table: Table::Meets,
+            ids_of: meet_ids,
+        },
         total_units,
         clean_runtime,
     );
@@ -1574,9 +1651,11 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
         SCENARIO,
         &root,
         &["provider", "ks"],
-        KS_PHASE,
-        Table::Schools,
-        school_ids,
+        Subject {
+            phase: KS_PHASE,
+            table: Table::Schools,
+            ids_of: school_ids,
+        },
         control_total,
         clean_runtime,
     );
@@ -1642,4 +1721,264 @@ async fn ks_directory_walk_claims_units_the_kill_can_lose() {
              for both)"
         ),
     );
+}
+
+// -------------------------------------------------------------------------------------------------
+// 9. Jurisdiction walk (team index + rosters) resume
+// -------------------------------------------------------------------------------------------------
+
+/// The jurisdiction object's two collection stage bodies are `census::collect_state_teams` and
+/// `census::collect_state_rosters` (`restate_services/jobs.rs`), so the durable claims those stages
+/// make to the workflow are asserted here on the library calls themselves:
+///
+/// * the team index is journaled per state, and a later stage re-reads it from the cache instead of
+///   rebuilding it — which is what makes the roster stage's "read the index back" cheap; and
+/// * a roster pass on a store where an earlier pass stopped completes exactly the rosters that pass
+///   did not journal, and lands on the control pass's counters, journal and merged athlete rows.
+///
+/// The walk is driven in-process; the Restate replay of a stage handler is the SDK's own durable
+/// execution, which needs a live `restate-server` and so is out of reach of this offline suite.
+#[tokio::test]
+async fn jurisdiction_walk_resumes_from_the_journaled_index_and_the_unclaimed_rosters() {
+    const SCENARIO: &str = "jurisdiction-walk";
+    let dir = tempfile::tempdir().expect("temp dir");
+    let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
+
+    // Control: one clean walk over the seeded cache, in its own store.
+    let control_root = dir.path().join("control");
+    let control = {
+        let store = store_seeded_with_wisconsin(&control_root, &site);
+        let fetcher = fetcher_for(&store);
+        let teams = census::collect_state_teams(&fetcher, &store, UsJurisdiction::Wisconsin, false)
+            .await
+            .expect("WI team index");
+        let index_stats = fetcher.stats().await;
+        assert_eq!(
+            index_stats.requests, 0,
+            "the team index must come from the seeded cache"
+        );
+        assert!(index_stats.cache_hits >= 1);
+        let progress = census::collect_state_rosters(
+            &fetcher,
+            &store,
+            &teams,
+            &wi_options(None),
+            UsJurisdiction::Wisconsin,
+        )
+        .await
+        .expect("WI rosters");
+        let athletes = store
+            .scan::<CanonicalAthlete>(Table::Athletes)
+            .expect("scan athletes");
+        // The class-of-2027 count is the roster page's own: `roster_entities` files every athlete and
+        // the sweep counts the graded ones, once per roster walked.
+        let parsed = milesplit::parse_roster(WI_ROSTER_FIXTURE, teams[0].clone())
+            .expect("the roster fixture parses");
+        let per_roster = parsed
+            .athletes
+            .iter()
+            .filter(|athlete| athlete.grad_year == GradYear::CO2027)
+            .count();
+        assert!(per_roster > 0, "the roster fixture carries Co2027 athletes");
+        let walk = Walk {
+            teams,
+            progress,
+            athletes,
+            index_journal: journal_keys(&store, WI_TEAMS_PHASE),
+            roster_journal: journal_keys(&store, WI_ROSTERS_PHASE),
+            counts: table_counts(&store),
+            stats: fetcher.stats().await,
+            per_roster,
+        };
+        note(
+            SCENARIO,
+            format!(
+                "control: teams={} rosters_done={} co2027={} athletes={} requests={} cache_hits={} \
+                 tables={:?}",
+                walk.teams.len(),
+                walk.progress.rosters_done,
+                walk.progress.class_of_2027,
+                walk.athletes.len(),
+                walk.stats.requests,
+                walk.stats.cache_hits,
+                walk.counts
+            ),
+        );
+        assert_eq!(
+            walk.index_journal,
+            BTreeSet::from(["WI".to_string()]),
+            "the team index is journaled once per state"
+        );
+        assert_eq!(
+            walk.progress.rosters_done,
+            walk.teams.len(),
+            "a clean pass walks every roster the index lists"
+        );
+        assert_eq!(walk.progress.rosters_skipped, 0);
+        assert!(
+            walk.progress.errors.is_empty(),
+            "the seeded cache leaves no roster unfetched: {:?}",
+            walk.progress.errors
+        );
+        assert_eq!(walk.stats.requests, 0, "no walk step needs the network");
+        assert_eq!(
+            walk.roster_journal.len(),
+            walk.teams.len(),
+            "one journal entry per finished roster"
+        );
+        assert_eq!(
+            walk.progress.class_of_2027,
+            per_roster * walk.teams.len(),
+            "every walked roster reports its own Co2027 count"
+        );
+        walk
+    };
+
+    // A pass that stops after one roster. The store handle is dropped mid-walk, the way a process
+    // that ends without finishing its set leaves the disk.
+    let restart_root = dir.path().join("restart");
+    let stopped_after = {
+        let store = store_seeded_with_wisconsin(&restart_root, &site);
+        let fetcher = fetcher_for(&store);
+        let teams = census::collect_state_teams(&fetcher, &store, UsJurisdiction::Wisconsin, false)
+            .await
+            .expect("WI team index");
+        let first = census::collect_state_rosters(
+            &fetcher,
+            &store,
+            &teams,
+            &wi_options(Some(1)),
+            UsJurisdiction::Wisconsin,
+        )
+        .await
+        .expect("WI rosters, capped at one");
+        let journal = journal_keys(&store, WI_ROSTERS_PHASE);
+        note(
+            SCENARIO,
+            format!(
+                "first pass (limit 1): rosters_done={} skipped={} journal={journal:?}",
+                first.rosters_done, first.rosters_skipped
+            ),
+        );
+        assert_eq!(first.rosters_done, 1);
+        assert_eq!(
+            first.rosters_skipped, 0,
+            "skipped counts rosters an earlier pass journaled, and this pass is the first: the \
+             limit defers the rest instead"
+        );
+        assert_eq!(journal.len(), 1);
+        journal
+    };
+
+    // Restart on the same store: the index stage re-reads its journaled copy, and the roster stage
+    // claims only the rosters the first pass left unjournaled.
+    let store = open_store(&restart_root);
+    let fetcher = fetcher_for(&store);
+    let teams = census::collect_state_teams(&fetcher, &store, UsJurisdiction::Wisconsin, false)
+        .await
+        .expect("WI team index replay");
+    let index_stats = fetcher.stats().await;
+    note(
+        SCENARIO,
+        format!(
+            "replay: teams={} requests={} cache_hits={}",
+            teams.len(),
+            index_stats.requests,
+            index_stats.cache_hits
+        ),
+    );
+    assert_eq!(
+        teams, control.teams,
+        "the second stage re-reads the journaled index rather than rebuilding it"
+    );
+    assert_eq!(
+        index_stats.requests, 0,
+        "the index replay is answered from the cache"
+    );
+
+    let resumed = census::collect_state_rosters(
+        &fetcher,
+        &store,
+        &teams,
+        &wi_options(None),
+        UsJurisdiction::Wisconsin,
+    )
+    .await
+    .expect("WI rosters, resumed");
+    let athletes = store
+        .scan::<CanonicalAthlete>(Table::Athletes)
+        .expect("scan athletes");
+    let counts = table_counts(&store);
+    let stats = fetcher.stats().await;
+    note(
+        SCENARIO,
+        format!(
+            "restart: rosters_done={} skipped={} co2027={} athletes={} requests={} cache_hits={} \
+             tables={counts:?}",
+            resumed.rosters_done,
+            resumed.rosters_skipped,
+            resumed.class_of_2027,
+            athletes.len(),
+            stats.requests,
+            stats.cache_hits
+        ),
+    );
+    assert_eq!(
+        resumed.rosters_done,
+        teams.len() - stopped_after.len(),
+        "the restart walked only the rosters the first pass did not journal"
+    );
+    assert_eq!(
+        resumed.rosters_skipped,
+        stopped_after.len(),
+        "every roster the first pass journaled is skipped unread"
+    );
+    assert!(
+        resumed.errors.is_empty(),
+        "the resumed pass leaves no roster unfetched: {:?}",
+        resumed.errors
+    );
+    assert_eq!(
+        journal_keys(&store, WI_ROSTERS_PHASE),
+        control.roster_journal,
+        "the restarted store completes exactly the roster set the control pass covered"
+    );
+    assert_eq!(
+        journal_keys(&store, WI_TEAMS_PHASE),
+        control.index_journal,
+        "the team-index journal is untouched by the roster stage"
+    );
+    assert_eq!(
+        resumed.class_of_2027,
+        control.per_roster * (teams.len() - stopped_after.len()),
+        "the resumed pass reports the cohort of exactly the rosters it walked"
+    );
+    assert_eq!(
+        athletes, control.athletes,
+        "the restarted store merges to exactly the control's athletes"
+    );
+    assert_eq!(
+        counts, control.counts,
+        "observation counters match the control: no roster was written twice"
+    );
+    assert_eq!(
+        count_of(&counts, Table::Athletes),
+        count_of(&control.counts, Table::Athletes),
+        "athlete observations match the control one for one"
+    );
+}
+
+/// What one jurisdiction walk produced: the index it read, the stage's own counters, the merged
+/// athlete rows, and the journals and store counters a restart has to land on.
+struct Walk {
+    teams: Vec<milesplit::TeamRef>,
+    progress: census::StateProgress,
+    athletes: Vec<CanonicalAthlete>,
+    index_journal: BTreeSet<String>,
+    roster_journal: BTreeSet<String>,
+    counts: BTreeMap<String, u64>,
+    stats: midwest_census::net::FetchStats,
+    /// Class-of-2027 athletes on one roster page: the per-pass cohort counters are this times the
+    /// rosters the pass walked.
+    per_roster: usize,
 }

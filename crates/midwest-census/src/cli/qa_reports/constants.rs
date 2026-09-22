@@ -1,0 +1,71 @@
+//! The 46 expected assignment reports, required sections, and evidence range.
+
+/// The 46 expected assignment reports, keyed by their sequence number.
+pub const EXPECTED: [(usize, &str); 46] = [
+    (1, "01-athletic-net-team-universe.md"),
+    (2, "02-athletic-net-profile-acquisition.md"),
+    (3, "03-athletic-net-meet-acquisition.md"),
+    (4, "04-athletic-net-rankings-discovery.md"),
+    (5, "05-athletic-net-identifier-graph.md"),
+    (6, "06-wisconsin-wiaa.md"),
+    (7, "07-wisconsin-milesplit.md"),
+    (8, "08-wisconsin-timing-providers.md"),
+    (9, "09-minnesota-mshsl.md"),
+    (10, "10-minnesota-results-timers.md"),
+    (11, "11-iowa-ihsaa-ighsau.md"),
+    (12, "12-iowa-wayzata-results.md"),
+    (13, "13-illinois-ihsa.md"),
+    (14, "14-illinois-directathletics.md"),
+    (15, "15-michigan-mhsaa.md"),
+    (16, "16-michigan-alternatives.md"),
+    (17, "17-indiana-ihsaa.md"),
+    (18, "18-indiana-directathletics-milesplit.md"),
+    (19, "19-ohio-ohsaa.md"),
+    (20, "20-ohio-independent-sources.md"),
+    (21, "21-missouri-mshsaa.md"),
+    (22, "22-missouri-primetime.md"),
+    (23, "23-kansas-kshsaa-directathletics.md"),
+    (24, "24-nebraska-nsaa.md"),
+    (25, "25-north-dakota-ndhsaa.md"),
+    (26, "26-south-dakota-sdhsaa.md"),
+    (27, "27-milesplit-super-index.md"),
+    (28, "28-directathletics-super-index.md"),
+    (29, "29-coach-contact-graph.md"),
+    (30, "30-cross-source-pareto.md"),
+    (31, "31-milesplit-entries-timing.md"),
+    (32, "32-milesplit-paywall-boundary.md"),
+    (33, "33-milesplit-sitemap-recency.md"),
+    (34, "34-milesplit-discovery-vs-validation.md"),
+    (35, "35-wisconsin-gap-followups.md"),
+    (36, "36-minnesota-gap-followups.md"),
+    (37, "37-north-dakota-gap-followups.md"),
+    (38, "38-illinois-gap-followups.md"),
+    (39, "39-michigan-gap-followups.md"),
+    (40, "40-missouri-trxctiming.md"),
+    (41, "41-kansas-gap-followups.md"),
+    (42, "42-nebraska-gap-followups.md"),
+    (43, "43-south-dakota-gap-followups.md"),
+    (44, "44-iowa-gap-followups.md"),
+    (45, "45-ohio-gap-followups.md"),
+    (46, "46-event-token-mapping.md"),
+];
+
+/// Reports 31–46 are gap-phase follow-ups; each must carry a non-empty evidence directory.
+pub const EVIDENCE_START: usize = 31;
+pub const EVIDENCE_END: usize = 46;
+
+/// Required section headings for every report.
+pub const REQUIRED_SECTIONS: &[&str] = &[
+    "Source",
+    "Coverage",
+    "Enumeration",
+    "Stable identifiers",
+    "Athletic.net leverage",
+    "Athlete evidence",
+    "Recruiting information",
+    "Result evidence",
+    "Incremental use",
+    "Access characteristics",
+    "Recommendation",
+    "Evidence appendix",
+];

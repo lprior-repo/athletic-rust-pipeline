@@ -218,7 +218,8 @@ pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
     let (token, auto) = published_token(published)?;
     let mark = match kind {
         EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
-            Mark::Points(token.replace(',', "").parse().ok()?)
+            let points: f64 = token.replace(',', "").parse().ok()?;
+            (points.is_finite() && points >= 0.0).then_some(Mark::Points(points))?
         }
         kind if kind.is_field() => parse_field_mark(metric_bare(token))?,
         _ => Mark::TimeSeconds(parse_time(token)?),

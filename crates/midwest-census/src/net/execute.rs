@@ -5,6 +5,7 @@ use super::client::HostState;
 use super::request::RequestBody;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELAY};
 use crate::clock::{Clock, SystemClock};
+use census_domain::model::AccessBlockKind;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -15,14 +16,63 @@ mod attempt;
 
 use attempt::FetchPlan;
 
+/// Which budget map a request is charged to.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScopeKind {
+    Family,
+    Host,
+}
+
+/// The budget a request is charged to: one shared budget for a whole source family (§10), or the
+/// host's own when the run configured no family for it.
+#[derive(Clone, PartialEq, Eq)]
+enum PaceScope {
+    Family(String),
+    Host(String),
+}
+
+impl PaceScope {
+    fn kind(&self) -> ScopeKind {
+        match self {
+            PaceScope::Family(_) => ScopeKind::Family,
+            PaceScope::Host(_) => ScopeKind::Host,
+        }
+    }
+
+    fn into_key(self) -> String {
+        match self {
+            PaceScope::Family(key) | PaceScope::Host(key) => key,
+        }
+    }
+}
+
 impl Fetcher {
-    /// Serialize per host and enforce the configured (or robots-requested) spacing.
+    /// The budget one request is charged to: a shared source family when the run configured one for
+    /// this host (§10), otherwise the host's own.
+    fn pace_scope(&self, host: &str) -> PaceScope {
+        match self.family_of(host) {
+            Some(family) => PaceScope::Family(family),
+            None => PaceScope::Host(host.trim().to_ascii_lowercase()),
+        }
+    }
+
+    /// The spacing this request must observe: the family's when it is charged to one, else the
+    /// host's own entry, else the run's default.
+    fn configured_delay(&self, scope: &PaceScope) -> Duration {
+        match scope {
+            PaceScope::Family(family) => self.family_delay(family).unwrap_or(self.default_delay),
+            PaceScope::Host(host) => self
+                .host_delays
+                .get(host)
+                .copied()
+                .unwrap_or(self.default_delay),
+        }
+    }
+
+    /// Serialize per budget and enforce the configured (or robots-requested) spacing.
     async fn host_gate(&self, host: &str, robots_delay: Option<Duration>) -> Arc<Mutex<()>> {
-        let configured = self
-            .host_delays
-            .get(host)
-            .copied()
-            .unwrap_or(self.default_delay);
+        let scope = self.pace_scope(host);
+        let configured = self.configured_delay(&scope);
         let mut effective = match robots_delay {
             Some(robots) if robots > configured => robots,
             _ => configured,
@@ -32,8 +82,13 @@ impl Fetcher {
         if self.is_authorized_host(host) && effective < MIN_AUTHORIZED_DELAY {
             effective = MIN_AUTHORIZED_DELAY;
         }
-        let mut hosts = self.hosts.lock().await;
-        let state = hosts.entry(host.to_string()).or_insert_with(|| HostState {
+        let kind = scope.kind();
+        let key = scope.into_key();
+        let mut buckets = match kind {
+            ScopeKind::Family => self.families.lock().await,
+            ScopeKind::Host => self.hosts.lock().await,
+        };
+        let state = buckets.entry(key).or_insert_with(|| HostState {
             gate: Arc::new(Mutex::new(())),
             next_allowed: None,
             delay: effective,
@@ -43,9 +98,15 @@ impl Fetcher {
     }
 
     async fn wait_turn(&self, host: &str) {
+        let scope = self.pace_scope(host);
+        let kind = scope.kind();
+        let key = scope.into_key();
         let wait = {
-            let mut hosts = self.hosts.lock().await;
-            match hosts.get_mut(host) {
+            let mut buckets = match kind {
+                ScopeKind::Family => self.families.lock().await,
+                ScopeKind::Host => self.hosts.lock().await,
+            };
+            match buckets.get_mut(&key) {
                 Some(s) => {
                     let now = SystemClock.now();
                     // The reserved slot is a floor: resume from the later of "now" and the slot,
@@ -174,8 +235,18 @@ impl Fetcher {
             );
             return Ok(rules.crawl_delay);
         }
-        let mut stats = self.stats.lock().await;
-        stats.robots_blocked = stats.robots_blocked.saturating_add(1);
+        {
+            let mut stats = self.stats.lock().await;
+            stats.robots_blocked = stats.robots_blocked.saturating_add(1);
+        }
+        self.record_access_condition(
+            host,
+            AccessBlockKind::RobotsDisallowed,
+            0,
+            None,
+            path_and_query.to_string(),
+        )
+        .await;
         Err(FetchError::Robots(url.to_string()))
     }
 }

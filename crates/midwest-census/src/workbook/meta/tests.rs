@@ -229,7 +229,7 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(carries(&meets, 4, "??"), "{meets:?}");
 
     let sources = sheet(&path, "Sources");
-    for descriptor in crate::sources::REGISTRY {
+    for descriptor in crate::sources::descriptors() {
         assert!(
             carries(&sources, 0, descriptor.slug),
             "missing registry row for {}",

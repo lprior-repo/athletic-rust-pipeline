@@ -15,6 +15,8 @@
 //! * [`sources`] — one module per provider (MileSplit first, then associations/timers).
 //! * [`census`] — resumable orchestration.
 //! * [`report`] — measured census output (`report.json`, per-state CSV).
+//! * [`index`] — the durable derived indexes: source-object identities, retained conflicts and
+//!   review cases, coverage, and one snapshot per pass.
 //! * [`bests`] — per-athlete best marks reduced from the consolidated performance table.
 //! * [`workbook`] — the census as one spreadsheet.
 //! * [`restate_services`] — durable Restate services over the same adapters (survive crashes, retry
@@ -30,6 +32,9 @@ pub mod bests;
 pub mod bootstrap;
 pub mod census;
 pub mod clock;
+pub mod coachverify;
+pub mod identity;
+pub mod index;
 pub mod net;
 pub mod outcome;
 pub mod report;

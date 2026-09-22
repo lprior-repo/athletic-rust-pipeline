@@ -25,14 +25,12 @@
 //!   bounded exponential backoff + jitter (max 3 attempts, 500 ms base delay).
 //! * Response bodies are capped at 32 MiB; oversized responses return [`FetchError::TooLarge`].
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use thiserror::Error;
 use tokio::sync::Mutex;
 
-use crate::clock::{Clock, SystemClock};
+use census_domain::model::{AccessBlockKind, SourceAccessCondition};
 
 mod cache;
 mod client;
@@ -40,6 +38,12 @@ mod decode;
 mod execute;
 mod request;
 mod robots;
+mod types;
+
+pub use types::{
+    cooldown_until_iso8601, now_iso8601, today_iso, FetchError, FetchOptions, FetchOutcome,
+    FetchStats,
+};
 
 use client::HostState;
 use robots::RobotsRules;
@@ -66,154 +70,16 @@ const RETRY_BASE_DELAY_MS: u64 = 500;
 /// `--delay-ms` never lets an authorized host be hit faster than the policy allows.
 const MIN_AUTHORIZED_DELAY: Duration = Duration::from_millis(500);
 
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
+/// How long a hard access block stays in force when the source published no `Retry-After`.
+///
+/// §69 of the mission brief: a lane stops on a hard access block, persists the condition and leaves
+/// the source alone. Six hours is the default the operator can re-derive sooner by running the lane
+/// again after deleting the row; the row is what stops the next run paying for the same refusal
+/// request by request.
+pub const BLOCK_COOLDOWN_SECONDS: u64 = 6 * 60 * 60;
 
-/// Errors that can occur during fetch operations.
-#[derive(Debug, Error)]
-pub enum FetchError {
-    #[error("robots.txt disallows {0}")]
-    Robots(String),
-    #[error("http status {status} for {url}")]
-    Http { status: u16, url: String },
-    #[error("http 429 for {url} (retry-after: {retry_after_secs:?}s)")]
-    RateLimited {
-        url: String,
-        retry_after_secs: Option<u64>,
-    },
-    #[error("response body for {url} exceeds {MAX_BODY_BYTES} bytes")]
-    TooLarge { url: String },
-    #[error("transport error for {url}: {source}")]
-    Transport {
-        url: String,
-        #[source]
-        source: reqwest::Error,
-    },
-    #[error("cache i/o for {path}: {source}")]
-    Cache {
-        path: PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-    #[error("request timed out for {url} after {timeout_secs}s")]
-    Timeout { url: String, timeout_secs: u64 },
-    /// A request URL could not be parsed into its host, origin and path.
-    #[error("invalid url {url}: {source}")]
-    InvalidUrl {
-        url: String,
-        #[source]
-        source: url::ParseError,
-    },
-    /// JSON did not decode.
-    #[error("json decode failed for {target}: {source}")]
-    Decode {
-        /// The request URL for a response body, or the path of a cache artifact.
-        target: String,
-        #[source]
-        source: serde_json::Error,
-    },
-    /// A JSON payload could not be encoded.
-    #[error("json encode failed for {target}: {source}")]
-    Encode {
-        /// The request URL for a request body, or the path of a cache artifact.
-        target: String,
-        #[source]
-        source: serde_json::Error,
-    },
-    /// The HTTP client could not be constructed.
-    #[error("http client build failed: {source}")]
-    Client {
-        #[source]
-        source: reqwest::Error,
-    },
-    /// An internal invariant was violated (a bug, not external input).
-    ///
-    /// Display is the carried message verbatim: the taxonomy's convention is that a message a
-    /// test, golden or operator reads keeps its exact text.
-    #[error("{detail}")]
-    Invariant { detail: String },
-}
-
-impl FetchError {
-    /// Whether another attempt can plausibly succeed.
-    ///
-    /// This is the *intrinsic* classification: status-driven decisions that depend on
-    /// [`FetchOptions`] (`allow_not_found`, `refresh`) stay in the retry loop, which keeps its own
-    /// policy.
-    pub fn retryable(&self) -> bool {
-        match self {
-            Self::Transport { .. } | Self::Timeout { .. } | Self::RateLimited { .. } => true,
-            Self::Http { status, .. } => *status >= 500 || *status == 429,
-            Self::Robots(_)
-            | Self::TooLarge { .. }
-            | Self::Cache { .. }
-            | Self::InvalidUrl { .. }
-            | Self::Decode { .. }
-            | Self::Encode { .. }
-            | Self::Client { .. }
-            | Self::Invariant { .. } => false,
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Internal types
-// ---------------------------------------------------------------------------
-
-/// Options controlling fetch behaviour.
-#[derive(Debug, Clone, Default)]
-pub struct FetchOptions {
-    /// Ignore any cached body and hit the network (still robots-checked).
-    pub refresh: bool,
-    /// Treat a 404 as a normal (cached) outcome instead of an error.
-    pub allow_not_found: bool,
-    /// Extra request headers (e.g. `Accept: application/json`).
-    pub headers: Vec<(String, String)>,
-}
-
-/// Outcome of a single fetch. The `body` field carries the raw bytes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FetchOutcome {
-    pub url: String,
-    pub method: String,
-    pub status: u16,
-    pub sha256: String,
-    pub bytes: usize,
-    pub fetched_at: String,
-    pub from_cache: bool,
-    pub content_type: Option<String>,
-    #[serde(skip)]
-    pub body: Vec<u8>,
-}
-
-impl FetchOutcome {
-    pub fn text(&self) -> String {
-        String::from_utf8_lossy(&self.body).to_string()
-    }
-
-    pub fn json<T: for<'de> Deserialize<'de>>(&self) -> Result<T, FetchError> {
-        serde_json::from_slice(&self.body).map_err(|source| FetchError::Decode {
-            target: self.url.clone(),
-            source,
-        })
-    }
-}
-
-/// Aggregated fetch statistics.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct FetchStats {
-    pub requests: u64,
-    pub cache_hits: u64,
-    pub conditional_304: u64,
-    pub robots_blocked: u64,
-    /// Requests that a robots rule disallowed but an explicit host authorization permitted. Kept
-    /// separate from `robots_blocked` so the run record shows exactly what was overridden.
-    pub robots_authorized: u64,
-    pub bytes_downloaded: u64,
-    pub errors: u64,
-    pub per_host: HashMap<String, u64>,
-}
+/// The source slug a fetcher carries until a lane stamps its own.
+const DEFAULT_SOURCE: &str = "unknown";
 
 // ---------------------------------------------------------------------------
 // Fetcher
@@ -226,12 +92,21 @@ pub struct Fetcher {
     user_agent: String,
     default_delay: Duration,
     host_delays: HashMap<String, Duration>,
+    /// Source families charged to one shared budget across every host below them. A family key
+    /// matches its own host and anything under it, the way an authorized host does.
+    family_delays: HashMap<String, Duration>,
+    families: Mutex<HashMap<String, HostState>>,
     /// Hosts whose robots rules are recorded rather than enforced (operator authorization).
     /// A bare domain authorizes its subdomains.
     authorized_hosts: Vec<String>,
     hosts: Mutex<HashMap<String, HostState>>,
     robots: Mutex<HashMap<String, RobotsRules>>,
     stats: Mutex<FetchStats>,
+    /// The adapter slug stamped into every access condition this fetcher records.
+    source: String,
+    /// Access conditions observed in this run, keyed by row id, so a repeated block refreshes one
+    /// row instead of minting a second.
+    blocks: Mutex<HashMap<String, SourceAccessCondition>>,
 }
 
 impl Fetcher {
@@ -246,6 +121,42 @@ impl Fetcher {
         self.authorized_hosts
             .iter()
             .any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
+    }
+
+    /// Charge every host below each key to one shared budget instead of its own (§10).
+    ///
+    /// A source that enforces its ceiling per *client* cannot be paced by a per-host gate. MileSplit
+    /// refuses every `*.milesplit.com` host at once, while the walk's per-host model holds one
+    /// budget per state subdomain: the 2026-09-22 national fan-out therefore spent fifty-one
+    /// independent budgets against one enforced one and was refused after ~127 rosters per state,
+    /// which is the observation recorded in `var/midwest-census/out/run-evidence/source-refusal.txt`.
+    /// A family entry replaces the per-host budget for its hosts, so the family shares one gate and
+    /// one spacing no matter how many subdomains the run spreads across.
+    pub fn with_family_budgets(mut self, families: HashMap<String, Duration>) -> Self {
+        self.family_delays = families
+            .into_iter()
+            .map(|(family, delay)| (family.trim().to_ascii_lowercase(), delay))
+            .filter(|(family, _)| !family.is_empty())
+            .collect();
+        self
+    }
+
+    /// The shared-budget family `host` belongs to, when the run configured one.
+    ///
+    /// The longest matching key wins, so a run can pace `example.com` as a family and still give
+    /// `slow.example.com` its own narrower entry without the family silently overriding it.
+    pub(super) fn family_of(&self, host: &str) -> Option<String> {
+        let host = host.trim().to_ascii_lowercase();
+        self.family_delays
+            .keys()
+            .filter(|family| host == family.as_str() || host.ends_with(&format!(".{family}")))
+            .max_by_key(|family| family.len())
+            .cloned()
+    }
+
+    /// The spacing configured for a family key, if the run named one.
+    pub(super) fn family_delay(&self, family: &str) -> Option<Duration> {
+        self.family_delays.get(family).copied()
     }
 
     /// Borrow the user-agent string without taking ownership.
@@ -263,24 +174,73 @@ impl Fetcher {
     pub async fn stats(&self) -> FetchStats {
         self.stats.lock().await.clone()
     }
-}
 
-// ---------------------------------------------------------------------------
-// Time helpers
-// ---------------------------------------------------------------------------
+    /// Stamp the adapter slug into every access condition this fetcher records.
+    pub fn with_source(mut self, source: impl Into<String>) -> Self {
+        self.source = source.into();
+        self
+    }
 
-/// Wall-clock timestamp for request evidence and cache metadata.
-///
-/// Delegates to the [`Clock`] capability so the crate has one source of wall-clock time: the
-/// signatures stay as they are, because their callers — cache writes, decode, the collection
-/// default — carry no clock of their own to inject.
-pub fn now_iso8601() -> String {
-    SystemClock.today_iso8601()
-}
+    /// Record (or refresh) the access condition one host imposed, and return the row.
+    ///
+    /// Called from the fetch path the moment a blocking status is seen, so the whole run shares one
+    /// answer to "is this host refusing us?" instead of re-discovering it request by request. §69:
+    /// the observation is what a lane stops on and what a later run reads before spending anything.
+    pub async fn record_access_condition(
+        &self,
+        host: &str,
+        kind: AccessBlockKind,
+        status: u16,
+        retry_after_seconds: Option<u64>,
+        detail: impl Into<String>,
+    ) -> SourceAccessCondition {
+        let host = host.trim().to_ascii_lowercase();
+        let condition = SourceAccessCondition::new(
+            self.source.clone(),
+            host,
+            kind,
+            status,
+            now_iso8601(),
+            detail,
+        )
+        .with_retry_after(retry_after_seconds)
+        .with_cooldown_until(Some(cooldown_until_iso8601(
+            retry_after_seconds.unwrap_or(BLOCK_COOLDOWN_SECONDS),
+        )));
+        let mut blocks = self.blocks.lock().await;
+        blocks.insert(condition.id.clone(), condition.clone());
+        condition
+    }
 
-/// Today's date (`YYYY-MM-DD`), the default `observed_on` for a collection.
-pub fn today_iso() -> String {
-    SystemClock.today()
+    /// Every access condition observed in this run, sorted by row id.
+    pub async fn access_conditions(&self) -> Vec<SourceAccessCondition> {
+        let blocks = self.blocks.lock().await;
+        let mut rows: Vec<SourceAccessCondition> = blocks.values().cloned().collect();
+        rows.sort_by(|left, right| left.id.cmp(&right.id));
+        rows
+    }
+
+    /// Hosts whose condition still blocks work at `now_iso8601`, sorted and deduplicated.
+    pub async fn blocked_hosts(&self, now_iso8601: &str) -> Vec<String> {
+        let blocks = self.blocks.lock().await;
+        let mut hosts: Vec<String> = blocks
+            .values()
+            .filter(|condition| condition.is_blocking(now_iso8601))
+            .map(|condition| condition.host.clone())
+            .collect();
+        hosts.sort();
+        hosts.dedup();
+        hosts
+    }
+
+    /// Whether one host still blocks work at `now_iso8601`.
+    pub async fn host_blocked(&self, host: &str, now_iso8601: &str) -> bool {
+        let host = host.trim().to_ascii_lowercase();
+        let blocks = self.blocks.lock().await;
+        blocks
+            .values()
+            .any(|condition| condition.host == host && condition.is_blocking(now_iso8601))
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -8,16 +8,34 @@ Design-side companion: [`FJALL_SCHEMA.md`](../FJALL_SCHEMA.md) — the full sche
 
 ## 1. Keyspaces and tables
 
-Three Fjall keyspaces are created on open (`store/mod.rs:136-139`):
+Three Fjall keyspaces are created on open (`store/mod.rs:174-187`):
 
 | Keyspace | Purpose | Tables (logical) |
 |---|---|---|
-| `entities` | All canonical entities | schools, teams, coaches, athletes, meets, events, performances (7) |
+| `entities` | All canonical entities | schools, teams, coaches, athletes, meets, events, performances, source_identities, conflicts, review_cases, coverage, snapshots, source_access, identity_verdicts, source_meets (15) |
 | `journal` | Per-phase append logs | phases keyed by phase name |
 | `meta` | Markers (import state, sequence metadata) | import markers, sequence tracking |
 
 All three are created with `KeyspaceCreateOptions::default` — KV separation, custom compaction,
 and bloom filters are **not configured**.
+
+**2026-09-22 — the meet census table.** `source_meets` holds one row per meet a source enumerated
+before its results were read (`census_domain::model::SourceMeetRef`, keyed `{source}:{meet_id}`),
+written by the meet census stage through `append_many`: a row is an observation of a published
+index, so a later crawl of the same meet merges into the row it wrote before — the earliest sighting
+keeps the identity, and a field the later page publishes and the earlier one does not is filled in
+rather than left blank. `milesplit_meet_index_<state>_<season>_<year>_v1` journals one entry per
+index page the crawl read, so a re-run resumes at the first page this season has not recorded.
+
+**2026-09-22 — the table set grew to twelve.** The §29-§31 derivation layer (`index::derive`) keeps
+four derived indexes and one snapshot row in the same `entities` keyspace as the evidence:
+`source_identities` (provider id → canonical row), `conflicts` (merge findings retained),
+`review_cases` (one row per review finding, keyed so a repeated finding reuses its case),
+`coverage` (per-jurisdiction and per-source measurements), and `snapshots` (one row per finished
+pass, keyed `<phase>:<date>`, overwritten so a re-run keeps the latest counts). Their ids are
+functions of the finding they name, and the derivation writes them through `replace_many` rather
+than `append_many`, so a repeated pass replaces the row it wrote before instead of adding another
+observation: a store re-derived three times holds one row per key, not three.
 
 ## 2. Key format
 
@@ -27,7 +45,7 @@ and bloom filters are **not configured**.
 <table>\0<id>\0<seq:u64 big-endian>
 ```
 
-- `<table>`: one of the 7 table names (e.g. `schools`)
+- `<table>`: one of the 12 table names (e.g. `schools`)
 - `<id>`: the entity's stable identifier (≤ 512 bytes, non-empty)
 - `<seq>`: monotonically increasing sequence number, big-endian encoded for prefix ordering
 
@@ -80,6 +98,13 @@ doc comment at `store/mod.rs:208` claiming "approximate_len" is stale (confirmed
 
 `append` is `append_many` of a single record. `journal_done` is one-row SyncData batch.
 
+`replace_many` (`store/write.rs`) is the second write path, added 2026-09-22 for derived state:
+one row per entity id, keyed with a fixed sequence of zero and no sequence reserved, in the same
+one-`SyncData`-batch shape. A derivation is a function of the store rather than evidence about a
+moment in it, so re-running it overwrites its rows in place — the table cannot grow with the pass
+count, the 20M cap cannot be exhausted by re-deriving, and `stats()` keeps counting what was
+*appended*: a table written only through `replace_many` reports zero there.
+
 **No `try_reserve` calls exist in the census crate.** The root crate has ~10 sites; census
 has zero. This is a P7 gap named in PERFORMANCE.md §6.
 
@@ -101,7 +126,7 @@ this window; the module doc comment at `store/mod.rs:33-36` overstates idempoten
 
 | Knob | Census | Root (acquisition) | Fjall default |
 |---|---|---|---|
-| Cache size | 256 MiB (`CACHE_BYTES: u64 = 256 * 1024 * 1024`, store/mod.rs:134) | 32 MiB (`src/store.rs:25`) | 32 MiB (`db_config.rs:90`) |
+| Cache size | 256 MiB (`CACHE_BYTES: u64 = 256 * 1024 * 1024`, store/mod.rs:114) | 32 MiB (`src/store.rs:25`) | 32 MiB (`db_config.rs:90`) |
 | Journal persist | default (auto) | `manual_journal_persist(true)` (`backend.rs:33-35`) | auto |
 | Worker threads | default | default | `min(cores, 4)` (`db_config.rs:70`) |
 | Journal compression | LZ4 > 4096 bytes | same | LZ4 > 4096 (`db_config.rs:86-88`) |
@@ -137,8 +162,9 @@ this window; the module doc comment at `store/mod.rs:33-36` overstates idempoten
    anyhow throughout", census has a dedicated `StoreError` enum (`store/mod.rs:53-113`)
    with `thiserror` derives. Zero `anyhow` matches under `store/`.
 9. **StoreStats counts are exact, not approximate**: `stats()` reads `AtomicU64` sequence
-   counters, not Fjall's `approximate_len`. The doc comment at `store/mod.rs:208-210`
-   claiming "approximate_len" is stale.
+   counters, not Fjall's `approximate_len`. The `StoreStats` doc comment claimed
+   "approximate_len" when this was measured; it now states the counters are exact
+   (corrected 2026-09-22, `store/mod.rs` near `pub struct StoreStats`).
 10. **Journal payloads clone per row**: `journal_payloads` (`store/read.rs:151-169`)
     allocates a fresh `Vec` and clones each payload — no `try_reserve`.
 11. **Poison row aborts scan**: a single malformed JSON row in `scan` aborts the entire

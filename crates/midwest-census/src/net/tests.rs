@@ -73,6 +73,37 @@ fn robots_absent_or_empty_allows_everything() {
 }
 
 #[test]
+fn a_hostile_crawl_delay_cannot_panic_or_park_the_walk() {
+    // `Duration::from_secs_f64` panics on these, and a fetched robots.txt is untrusted input: two
+    // lines served by a crawled host must not be able to kill the walk that fetched them.
+    for hostile in ["inf", "-inf", "nan", "1e30", "1e300", "-5"] {
+        let body = format!("User-agent: *\nDisallow: /private\nCrawl-delay: {hostile}\n");
+        let rules = parse_robots(&body);
+        assert!(!rules.allows("/private/x"), "{hostile} must still disallow");
+        assert!(
+            rules
+                .crawl_delay
+                .is_none_or(|delay| delay <= std::time::Duration::from_secs(3600)),
+            "{hostile} must be refused or clamped, got {:?}",
+            rules.crawl_delay
+        );
+    }
+    // A finite but absurd delay is clamped rather than honoured: the host is asking not to be
+    // walked, and the run's own budget stays intact.
+    let clamped = parse_robots("User-agent: *\nCrawl-delay: 1e9\n");
+    assert_eq!(
+        clamped.crawl_delay,
+        Some(std::time::Duration::from_secs(3600))
+    );
+    // An ordinary delay is honoured unchanged.
+    let honoured = parse_robots("User-agent: *\nCrawl-delay: 2\n");
+    assert_eq!(
+        honoured.crawl_delay,
+        Some(std::time::Duration::from_secs(2))
+    );
+}
+
+#[test]
 fn robots_named_agent_groups_are_ignored() {
     let rules =
         parse_robots("User-agent: GPTBot\nDisallow: /\n\nUser-agent: *\nDisallow: /private\n");

@@ -43,16 +43,20 @@ drained: accepted=<n> completed=<n> cancelled=<n> timed_out=<n> aborted=<n> pani
 Fjall is the system of record. No PostgreSQL: the downstream interface is Excel, not interactive SQL.
 
 Three Fjall keyspaces exist — `entities`, `journal` and `meta` — all under the `fjall/` directory
-inside `--data-dir`. The census **tables** (`Table` in `crates/midwest-census/src/store/mod.rs`:
-`schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances`) are logical partitions
+inside `--data-dir`. The census **tables** (`Table` in `crates/midwest-census/src/store/table.rs`:
+`schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances`, and the five derived
+tables `source_identities`, `conflicts`, `review_cases`, `coverage`, `snapshots`) are logical partitions
 *inside* the `entities` keyspace, selected by the table-name byte prefix; `journal` holds the
 write-journal/resume entries and `meta` the import markers. Keys are deterministic and sortable:
 `table-file prefix | entity id | big-endian
 sequence`, so a prefix scan reads one entity's observation history in write order. Readers merge
 observations at read time; materialized JSONL snapshots (`out/*.jsonl`) are the read model.
 
-Invariants: observations are append-only; merges are idempotent, commutative and associative;
-nothing overwrites a prior observation, including school attribution after a transfer.
+Invariants: evidence is append-only; merges are idempotent, commutative and associative; nothing
+overwrites a prior observation, including school attribution after a transfer. The five derived
+tables are the one exception, and they are not evidence: their rows are a function of the store as
+it stands, so `index::derive` writes them through `replace_many` — one row per key, overwritten in
+place — and a re-derivation cannot grow them.
 
 ## 3. Source layer
 

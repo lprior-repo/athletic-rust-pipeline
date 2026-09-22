@@ -728,11 +728,21 @@ fn verifies_deterministic_positive_from_retained_evidence() -> TestResult {
     let path = directory.path().join("detail.jsonl");
     write(&path, &[accepted_row("deterministic")?])?;
     let report = verify(&path)?;
-    assert_eq!(report.total_rows, 1);
-    assert_eq!(report.accepted_rows, 1);
-    assert_eq!(report.review_rows, 0);
-    assert_eq!(report.no_match_rows, 0);
-    assert_eq!(report.pending_rows, 0);
+    if !(report.total_rows == 1) {
+        return Err(format!("left={:?} right={:?}", &report.total_rows, &1).into());
+    };
+    if !(report.accepted_rows == 1) {
+        return Err(format!("left={:?} right={:?}", &report.accepted_rows, &1).into());
+    };
+    if !(report.review_rows == 0) {
+        return Err(format!("left={:?} right={:?}", &report.review_rows, &0).into());
+    };
+    if !(report.no_match_rows == 0) {
+        return Err(format!("left={:?} right={:?}", &report.no_match_rows, &0).into());
+    };
+    if !(report.pending_rows == 0) {
+        return Err(format!("left={:?} right={:?}", &report.pending_rows, &0).into());
+    };
     Ok(())
 }
 
@@ -747,7 +757,13 @@ fn rejects_forged_selection_and_duplicate_source_keys() -> TestResult {
     let mut forged = trusted;
     forged["report"]["resolution"]["athlete_id"] = json!(99);
     write_value(&forged_path, forged)?;
-    assert!(verify(&forged_path).is_err());
+    if !(verify(&forged_path).is_err()) {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify(&forged_path).is_err())
+        )
+        .into());
+    };
     let duplicate_path = directory.path().join("duplicate.jsonl");
     write(
         &duplicate_path,
@@ -756,7 +772,13 @@ fn rejects_forged_selection_and_duplicate_source_keys() -> TestResult {
             accepted_row("deterministic")?,
         ],
     )?;
-    assert!(verify(&duplicate_path).is_err());
+    if !(verify(&duplicate_path).is_err()) {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify(&duplicate_path).is_err())
+        )
+        .into());
+    };
     Ok(())
 }
 
@@ -771,7 +793,9 @@ fn rejects_local_acceptance_without_review_artifact() -> TestResult {
     let mut row = trusted;
     row["assessment"] = Value::Null;
     write_value(&path, row)?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -792,8 +816,12 @@ fn preserves_source_validation_review_without_assessment() -> TestResult {
     row["assessment"] = Value::Null;
     write(&path, &[row])?;
     let report = verify(&path)?;
-    assert_eq!(report.review_rows, 1);
-    assert_eq!(report.accepted_rows, 0);
+    if !(report.review_rows == 1) {
+        return Err(format!("left={:?} right={:?}", &report.review_rows, &1).into());
+    };
+    if !(report.accepted_rows == 0) {
+        return Err(format!("left={:?} right={:?}", &report.accepted_rows, &0).into());
+    };
     Ok(())
 }
 
@@ -804,8 +832,12 @@ fn preserves_review_with_contradictory_profile_without_promotion() -> TestResult
     let row = contradictory_row()?;
     write(&path, &[row])?;
     let report = verify(&path)?;
-    assert_eq!(report.review_rows, 1);
-    assert_eq!(report.accepted_rows, 0);
+    if !(report.review_rows == 1) {
+        return Err(format!("left={:?} right={:?}", &report.review_rows, &1).into());
+    };
+    if !(report.accepted_rows == 0) {
+        return Err(format!("left={:?} right={:?}", &report.accepted_rows, &0).into());
+    };
     Ok(())
 }
 
@@ -829,10 +861,9 @@ fn rejects_changed_artifacts_with_stale_declared_digests() -> TestResult {
         let mut row = trusted;
         *row.pointer_mut(pointer).context("fixture artifact field")? = replacement;
         write_value(&path, row)?;
-        assert!(
-            verify(&path).is_err(),
-            "accepted stale digest for {pointer}"
-        );
+        if !(verify(&path).is_err()) {
+            return Err(format!("accepted stale digest for {pointer}").into());
+        };
     }
     Ok(())
 }
@@ -848,7 +879,9 @@ fn rejects_rehashed_canonical_assessment_flag_tampering() -> TestResult {
     let mut row = trusted;
     row["assessment"]["candidates"][0]["hard_eligible"] = json!(false);
     write(&path, &[row])?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -863,7 +896,9 @@ fn rejects_performance_projection_that_differs_from_retained_results() -> TestRe
     let mut row = trusted;
     row["performance_evidence"][0]["mark"] = json!("9.99");
     write_value(&path, row)?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -878,7 +913,9 @@ fn rejects_duplicate_report_fields_with_ambiguous_meaning() -> TestResult {
     let encoded = serde_json::to_string(&trusted)?;
     let remainder = encoded.strip_prefix('{').context("fixture JSON object")?;
     fs::write(&path, format!("{{\"report\":null,{remainder}\n"))?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -894,13 +931,21 @@ fn rejects_indistinguishable_local_selection_with_rehashed_evidence() -> TestRes
         .next()
         .context("trusted row")?;
     write_value(&path, trusted.clone())?;
-    assert_eq!(verify(&path)?.review_rows, 1);
+    {
+        let left_value = &(verify(&path)?.review_rows);
+        let right_value = &1;
+        if !(left_value == right_value) {
+            return Err(format!("left={left_value:?} right={right_value:?}").into());
+        }
+    }
     let mut row = trusted;
     row["report"]["resolution"]["method"] = json!("local_review");
     row["assessment"]["decision"] = json!(decision::Decision::DeterministicAccepted);
     row["assessment"]["verified"] = json!({"athlete_id":1001});
     write(&path, &[local_selection(row)])?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -913,7 +958,9 @@ fn rejects_local_review_claim_for_deterministic_assessment() -> TestResult {
         .next()
         .context("trusted row")?;
     write_value(&path, local_selection(trusted))?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }
 
@@ -972,7 +1019,13 @@ fn accepts_reused_query_with_case_and_stage_variant() -> TestResult {
     trusted["report_digest"] = json!(report_digest.as_str());
     drop(store);
     write_value(&path, trusted)?;
-    assert_eq!(verify(&path)?.accepted_rows, 1);
+    {
+        let left_value = &(verify(&path)?.accepted_rows);
+        let right_value = &1;
+        if !(left_value == right_value) {
+            return Err(format!("left={left_value:?} right={right_value:?}").into());
+        }
+    }
     Ok(())
 }
 
@@ -983,7 +1036,13 @@ fn verifies_relay_identity_distinct_from_confirmed_member() -> TestResult {
     let mut row = accepted_row("deterministic")?;
     row["_fixture_relay"] = json!(true);
     write(&path, &[row])?;
-    assert_eq!(verify(&path)?.accepted_rows, 1);
+    {
+        let left_value = &(verify(&path)?.accepted_rows);
+        let right_value = &1;
+        if !(left_value == right_value) {
+            return Err(format!("left={left_value:?} right={right_value:?}").into());
+        }
+    }
     Ok(())
 }
 
@@ -1000,6 +1059,8 @@ fn rejects_profile_identity_swap_with_matching_inner_url() -> TestResult {
     row["profile_artifacts"][0]["profile"]["profile_url"] =
         json!("https://www.athletic.net/athlete/8/track-and-field");
     write_value(&path, row)?;
-    assert!(verify(&path).is_err());
+    if !(verify(&path).is_err()) {
+        return Err(format!("assertion failed: {}", stringify!(verify(&path).is_err())).into());
+    };
     Ok(())
 }

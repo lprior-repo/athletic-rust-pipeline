@@ -63,15 +63,37 @@ fn xc_join_uses_canonical_meters_and_preserves_integer_display_units() -> anyhow
         json!([{"Meters":4828,"Distance":3,"Units":"Miles"}]),
         4828,
     ))?;
-    assert_eq!(profile.results[0].event_name, "3 Miles");
-    assert_eq!(profile.results[0].units.as_deref(), Some("Miles"));
+    anyhow::ensure!(
+        profile.results[0].event_name == "3 Miles",
+        "left={:?} right={:?}",
+        &profile.results[0].event_name,
+        &"3 Miles"
+    );
+    {
+        let left_value = &profile.results[0].units.as_deref();
+        let right_value = &(Some("Miles"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     let summary = summarize_performances(&profile.results)?;
-    assert_eq!(summary.observations[0].context.event.as_str(), "xc3mile");
-    assert_eq!(summary.observations[0].source.event_name, "3 Miles");
+    anyhow::ensure!(
+        summary.observations[0].context.event.as_str() == "xc3mile",
+        "left={:?} right={:?}",
+        &summary.observations[0].context.event.as_str(),
+        &"xc3mile"
+    );
+    anyhow::ensure!(
+        summary.observations[0].source.event_name == "3 Miles",
+        "left={:?} right={:?}",
+        &summary.observations[0].source.event_name,
+        &"3 Miles"
+    );
     let encoded = serde_json::to_string(&summary)?;
-    assert!(encoded.contains("\"event\":\"xc3mile\""));
-    assert!(encoded.contains("\"event_name\":\"3 Miles\""));
-    assert!(!encoded.contains("4828 Miles"));
+    anyhow::ensure!(encoded.contains("\"event\":\"xc3mile\""));
+    anyhow::ensure!(encoded.contains("\"event_name\":\"3 Miles\""));
+    anyhow::ensure!(!encoded.contains("4828 Miles"));
     Ok(())
 }
 
@@ -81,14 +103,31 @@ fn xc_join_preserves_fractional_display_units_without_conversion() -> anyhow::Re
         json!([{"Meters":3106,"Distance":1.93,"Units":"Miles"}]),
         3106,
     ))?;
-    assert_eq!(profile.results[0].event_name, "1.93 Miles");
-    assert_eq!(profile.results[0].units.as_deref(), Some("Miles"));
+    anyhow::ensure!(
+        profile.results[0].event_name == "1.93 Miles",
+        "left={:?} right={:?}",
+        &profile.results[0].event_name,
+        &"1.93 Miles"
+    );
+    {
+        let left_value = &profile.results[0].units.as_deref();
+        let right_value = &(Some("Miles"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     let summary = summarize_performances(&profile.results)?;
-    assert!(matches!(
+    anyhow::ensure!(matches!(
         &summary.observations[0].context.event,
         crate::domain::marks::EventName::Unsupported(_)
     ));
-    assert_eq!(summary.observations[0].source.event_name, "1.93 Miles");
+    anyhow::ensure!(
+        summary.observations[0].source.event_name == "1.93 Miles",
+        "left={:?} right={:?}",
+        &summary.observations[0].source.event_name,
+        &"1.93 Miles"
+    );
     Ok(())
 }
 
@@ -98,27 +137,49 @@ fn xc_metric_display_remains_source_declared() -> anyhow::Result<()> {
         json!([{"Meters":5000,"Distance":5000,"Units":"Meters"}]),
         5000,
     ))?;
-    assert_eq!(profile.results[0].event_name, "5000 Meters");
-    assert_eq!(profile.results[0].units.as_deref(), Some("Meters"));
+    anyhow::ensure!(
+        profile.results[0].event_name == "5000 Meters",
+        "left={:?} right={:?}",
+        &profile.results[0].event_name,
+        &"5000 Meters"
+    );
+    {
+        let left_value = &profile.results[0].units.as_deref();
+        let right_value = &(Some("Meters"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
 #[test]
 fn invalid_missing_and_conflicting_metadata_never_manufacture_distance() -> anyhow::Result<()> {
     let invalid = parse_xc(&xc_body(json!([{"Distance":3,"Units":"Miles"}]), 4828))?;
-    assert_eq!(invalid.results[0].event_name, "Unknown distance");
-    assert!(invalid
+    anyhow::ensure!(
+        invalid.results[0].event_name == "Unknown distance",
+        "left={:?} right={:?}",
+        &invalid.results[0].event_name,
+        &"Unknown distance"
+    );
+    anyhow::ensure!(invalid
         .issues
         .iter()
         .any(|issue| { issue.code == "invalid_distance_metadata" }));
-    assert!(invalid
+    anyhow::ensure!(invalid
         .issues
         .iter()
         .any(|issue| { issue.code == "missing_distance_join" }));
 
     let missing = parse_xc(&xc_body(json!([]), 4828))?;
-    assert_eq!(missing.results[0].event_name, "Unknown distance");
-    assert!(missing
+    anyhow::ensure!(
+        missing.results[0].event_name == "Unknown distance",
+        "left={:?} right={:?}",
+        &missing.results[0].event_name,
+        &"Unknown distance"
+    );
+    anyhow::ensure!(missing
         .issues
         .iter()
         .any(|issue| { issue.code == "missing_distance_join" }));
@@ -130,12 +191,17 @@ fn invalid_missing_and_conflicting_metadata_never_manufacture_distance() -> anyh
         ]),
         5000,
     ))?;
-    assert_eq!(conflicting.results[0].event_name, "Unknown distance");
-    assert!(conflicting
+    anyhow::ensure!(
+        conflicting.results[0].event_name == "Unknown distance",
+        "left={:?} right={:?}",
+        &conflicting.results[0].event_name,
+        &"Unknown distance"
+    );
+    anyhow::ensure!(conflicting
         .issues
         .iter()
         .any(|issue| { issue.code == "conflicting_distance_metadata" }));
-    assert!(conflicting
+    anyhow::ensure!(conflicting
         .issues
         .iter()
         .any(|issue| { issue.code == "ambiguous_distance_join" }));
@@ -145,18 +211,41 @@ fn invalid_missing_and_conflicting_metadata_never_manufacture_distance() -> anyh
 #[test]
 fn equipment_variants_join_exactly_and_display_measure_type_is_not_seconds() -> anyhow::Result<()> {
     let profile = parse(&source())?;
-    assert_eq!(profile.results[0].event_description.as_deref(), Some("8lb"));
-    assert_eq!(
-        profile.results[1].event_description.as_deref(),
-        Some("16lb")
-    );
-    assert_eq!(profile.results[0].units, None);
+    {
+        let left_value = &profile.results[0].event_description.as_deref();
+        let right_value = &(Some("8lb"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &profile.results[1].event_description.as_deref();
+        let right_value = &(Some("16lb"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &profile.results[0].units;
+        let right_value = &None;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     let summary = summarize_performances(&profile.results)?;
-    assert!(
+    anyhow::ensure!(
         matches!(&summary.observations[0].mark, MarkObservation::Parsed(mark)
         if matches!(mark.comparable(), Some(crate::domain::marks::MarkValue::Distance(value)) if value.get() == 16_814_800_000))
     );
-    assert_eq!(summary.observed_best_groups.len(), 2);
+    anyhow::ensure!(
+        summary.observed_best_groups.len() == 2,
+        "left={:?} right={:?}",
+        &summary.observed_best_groups.len(),
+        &2
+    );
     Ok(())
 }
 
@@ -168,11 +257,18 @@ fn missing_or_conflicting_event_variant_cannot_choose_an_implement() -> anyhow::
         .context("synthetic result must be an object")?
         .remove("EventTypeID");
     let profile = parse(&missing)?;
-    assert!(profile
+    anyhow::ensure!(profile
         .issues
         .iter()
         .any(|issue| issue.code == "missing_event_join"));
-    assert_eq!(profile.results[0].event_description, None);
+    {
+        let left_value = &profile.results[0].event_description;
+        let right_value = &None;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
 
     let mut conflicting = source();
     let mut duplicate = conflicting["eventsTF"][0].clone();
@@ -182,11 +278,18 @@ fn missing_or_conflicting_event_variant_cannot_choose_an_implement() -> anyhow::
         .context("synthetic events must be an array")?
         .push(duplicate);
     let profile = parse(&conflicting)?;
-    assert!(profile
+    anyhow::ensure!(profile
         .issues
         .iter()
         .any(|issue| issue.code == "conflicting_event_metadata"));
-    assert_eq!(profile.results[0].event_description, None);
+    {
+        let left_value = &profile.results[0].event_description;
+        let right_value = &None;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -195,10 +298,17 @@ fn oversized_shared_metadata_is_rejected_before_result_fanout() -> anyhow::Resul
     let mut body = source();
     body["eventsTF"][0]["Description"] = json!("x".repeat(MAX_EVENT_TEXT_BYTES + 1));
     let profile = parse(&body)?;
-    assert!(profile
+    anyhow::ensure!(profile
         .issues
         .iter()
         .any(|issue| issue.code == "invalid_event_metadata"));
-    assert_eq!(profile.results[0].event_description, None);
+    {
+        let left_value = &profile.results[0].event_description;
+        let right_value = &None;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }

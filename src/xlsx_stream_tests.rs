@@ -107,20 +107,58 @@ fn visitor_streams_both_source_sheets_and_preserves_fields() -> Result<()> {
         records.push(record);
         Ok(())
     })?;
-    assert_eq!(stats.sheets.len(), 2);
-    assert_eq!(stats.actual_data_rows, 2);
-    assert_eq!(records.len(), 2);
-    assert_eq!(records[0].source_key, "Export:5");
-    assert_eq!(records[1].source_key, "Sheet1:9");
-    assert_eq!(records[0].fields.len(), SOURCE_HEADERS.len());
-    assert_eq!(
-        records[0].fields.get("Person Email").map(String::as_str),
-        Some("preserved-value")
+    anyhow::ensure!(
+        stats.sheets.len() == 2,
+        "left={:?} right={:?}",
+        &stats.sheets.len(),
+        &2
     );
-    assert_eq!(
-        records[1].fields.get("Person First").map(String::as_str),
-        Some("")
+    anyhow::ensure!(
+        stats.actual_data_rows == 2,
+        "left={:?} right={:?}",
+        &stats.actual_data_rows,
+        &2
     );
+    anyhow::ensure!(
+        records.len() == 2,
+        "left={:?} right={:?}",
+        &records.len(),
+        &2
+    );
+    anyhow::ensure!(
+        records[0].source_key == "Export:5",
+        "left={:?} right={:?}",
+        &records[0].source_key,
+        &"Export:5"
+    );
+    anyhow::ensure!(
+        records[1].source_key == "Sheet1:9",
+        "left={:?} right={:?}",
+        &records[1].source_key,
+        &"Sheet1:9"
+    );
+    anyhow::ensure!(
+        records[0].fields.len() == SOURCE_HEADERS.len(),
+        "left={:?} right={:?}",
+        &records[0].fields.len(),
+        &SOURCE_HEADERS.len()
+    );
+    {
+        let left_value = &(records[0].fields.get("Person Email").map(String::as_str));
+        let right_value = &(Some("preserved-value"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &(records[1].fields.get("Person First").map(String::as_str));
+        let right_value = &(Some(""));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -132,8 +170,8 @@ fn visitor_propagates_callback_error_without_reading_remaining_rows() -> Result<
         seen = seen.saturating_add(1);
         anyhow::bail!("stop at callback")
     });
-    assert!(result.is_err());
-    assert_eq!(seen, 1);
+    anyhow::ensure!(result.is_err());
+    anyhow::ensure!(seen == 1, "left={:?} right={:?}", &seen, &1);
     Ok(())
 }
 
@@ -164,7 +202,7 @@ fn visitor_rejects_duplicate_row_positions() -> Result<()> {
     )?;
     zip.finish()?;
     let result = visit_records(&path, |_record| Ok(()));
-    assert!(result.is_err());
+    anyhow::ensure!(result.is_err());
     Ok(())
 }
 
@@ -195,7 +233,7 @@ fn visitor_rejects_truncated_worksheet_xml() -> Result<()> {
     )?;
     zip.finish()?;
     let result = visit_records(&path, |_record| Ok(()));
-    assert!(result.is_err());
+    anyhow::ensure!(result.is_err());
     Ok(())
 }
 
@@ -204,8 +242,15 @@ fn bounded_reader_rejects_actual_decompressed_overflow() -> Result<()> {
     let mut reader = BoundedReader::new(std::io::Cursor::new(b"12345"), 4);
     let mut bytes = Vec::new();
     let result = std::io::Read::read_to_end(&mut reader, &mut bytes);
-    assert!(result.is_err());
-    assert_eq!(bytes, b"1234");
+    anyhow::ensure!(result.is_err());
+    {
+        let left_value = &bytes;
+        let right_value = &(b"1234");
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 #[test]
@@ -230,8 +275,8 @@ fn writer_preserves_source_fields_and_profile_link() -> Result<()> {
     append_matches_sheet(&input, &output, std::slice::from_ref(&record))?;
     let mut archive = zip::ZipArchive::new(std::fs::File::open(&output)?)?;
     let sheet = read_zip_string(&mut archive, "xl/worksheets/sheet3.xml")?;
-    assert!(sheet.contains("preserved@example.test"));
-    assert!(sheet.contains("HYPERLINK"));
-    assert!(sheet.contains("profile/7"));
+    anyhow::ensure!(sheet.contains("preserved@example.test"));
+    anyhow::ensure!(sheet.contains("HYPERLINK"));
+    anyhow::ensure!(sheet.contains("profile/7"));
     Ok(())
 }

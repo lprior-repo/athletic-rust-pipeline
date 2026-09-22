@@ -16,9 +16,9 @@ use restate_sdk::prelude::*;
 
 use census_domain::UsJurisdiction;
 
-use crate::census::{CollectOptions, StateProgress};
+use crate::census::{CollectOptions, MeetCensus, StateProgress};
 use crate::net::Fetcher;
-use crate::sources::default_host_delays;
+use crate::sources::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
 use crate::restate_services::wire::{
@@ -51,7 +51,8 @@ impl JurisdictionCensus {
             HandlerError::from(TerminalError::new(format!(
                 "the fetcher could not be built: {error}"
             )))
-        })?;
+        })?
+        .with_family_budgets(default_family_delays());
         let shared = Arc::new(built);
         *slot = Some(Arc::clone(&shared));
         Ok(shared)
@@ -143,6 +144,26 @@ impl JurisdictionCensus {
             .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(progress)
+    }
+
+    /// Enumerate the jurisdiction's meets for one season year. The count and per-page journal are
+    /// durable, so a re-invocation that reaches this stage again resumes at the first page this
+    /// season has not already recorded.
+    pub(super) async fn meets_stage(
+        &self,
+        ctx: &ObjectContext<'_>,
+        fetcher: Arc<Fetcher>,
+        jurisdiction: UsJurisdiction,
+        year: u16,
+        refresh: bool,
+    ) -> Result<MeetCensus, HandlerError> {
+        let store = Arc::clone(&self.store);
+        let at = self.clock.today();
+        let Json(census) = ctx
+            .run(move || jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at))
+            .retry_policy(jobs::no_run_retry())
+            .await?;
+        Ok(census)
     }
 
     /// Merge this jurisdiction's append observations into the snapshots the reports read.

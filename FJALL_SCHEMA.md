@@ -98,20 +98,21 @@ Three Fjall keyspaces exist, named by constants in `store/mod.rs`:
 
 | Keyspace | Constant | Contents | Key shape |
 | --- | --- | --- | --- |
-| `entities` | `ENTITIES` | every observation row of all seven tables | `<table>\0<id>\0<seq:u64 BE>` |
+| `entities` | `ENTITIES` | every observation row of all fifteen tables | `<table>\0<id>\0<seq:u64 BE>` |
 | `journal` | `JOURNAL` | completed-unit resume entries | `<phase>\0<key>` |
 | `meta` | `META` | import markers only | `imported:<table>`, `imported:resume-journals` |
 
-There is no fourth keyspace and no per-table keyspace. The seven **tables** are logical partitions
-inside `entities`, selected by the table-name byte prefix. `Table` (`store/mod.rs`, `enum Table`) is
-`Schools, Teams, Coaches, Athletes, Meets, Events, Performances`, with `Table::file()` giving the
-wire/prefix name (`schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances`),
-`Table::ALL` the ordered list, and `Table::from_wire` the ingest-side parser (unknown names are
-rejected so a typo cannot create a table nobody scans).
+There is no fourth keyspace and no per-table keyspace. The **tables** are logical partitions
+inside `entities`, selected by the table-name byte prefix. `Table` (`store/table.rs`, `enum Table`)
+is `Schools, Teams, Coaches, Athletes, Meets, Events, Performances, SourceIdentities, Conflicts,
+ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets` (fifteen as of
+2026-09-22; `Table::ALL` is the authority), with `Table::file()` giving the wire/prefix name
+(`schools`, `teams`, … `source_meets`), `Table::ALL` the ordered list, and `Table::from_wire` the
+ingest-side parser (unknown names are rejected so a typo cannot create a table nobody scans).
 
 Correction to `ARCHITECTURE.md`: that file lists `schools … performances` as "census keyspaces"
-alongside `entities`, `journal`, `meta`. The seven names are tables inside the `entities` keyspace;
-only `entities`, `journal`, `meta` are Fjall keyspaces.
+alongside `entities`, `journal`, `meta`. Those names are tables inside the `entities` keyspace; only
+`entities`, `journal`, `meta` are Fjall keyspaces.
 
 | Table | Entity type | Observation body |
 | --- | --- | --- |

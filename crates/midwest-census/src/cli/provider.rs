@@ -17,7 +17,7 @@ mod arms;
 pub(super) struct ProviderArgs {
     /// Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament,
     /// ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_athletes,
-    /// athleticlive_results, athleticnet, milesplit, coach_contacts.
+    /// athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts.
     name: String,
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
@@ -58,7 +58,8 @@ pub(super) struct ProviderArgs {
 }
 
 /// The jurisdictions this run restricts to: `--all-states`, else `--states`, else the adapter's own
-/// coverage (an empty list). The `milesplit` arm is a roster walk and uses the Wisconsin default.
+/// coverage (an empty list). The `milesplit` arm is a roster walk and uses the Wisconsin default;
+/// the `milesplit_results` arm reads the meets the `meets` subcommand discovered.
 impl ProviderArgs {
     fn jurisdictions(&self) -> Result<Vec<UsJurisdiction>> {
         super::resolve_restriction(self.all_states, &self.states)
@@ -67,7 +68,9 @@ impl ProviderArgs {
 
 /// Run one association contact adapter by name.
 pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) -> Result<()> {
-    let fetcher = build_fetcher(cli, store)?;
+    // The adapter's own registry slug, so every access condition this fetcher records is attributed
+    // to the source that hit it (§69).
+    let fetcher = build_fetcher(cli, store)?.with_source(args.name.clone());
     let observed_on = args
         .observed_on
         .clone()
@@ -79,7 +82,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         school_year: SchoolYear(2026),
         observed_on: observed_on.clone(),
     };
-    let report = match args.name.as_str() {
+    let outcome = match args.name.as_str() {
         "ks" => arms::ks_report(&context, args, observed_on).await,
         "wiaa_results" => arms::wiaa_results_report(&context, args, observed_on).await,
         "wiaa" => arms::wiaa_report(&context, args, observed_on).await,
@@ -90,17 +93,24 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         "wayzata" | "wayzata_schedule" => arms::wayzata_report(&context, args, observed_on).await,
         "plain_names" => arms::plain_names_report(&context, args, observed_on).await,
         "athleticlive" => arms::athleticlive_report(&context, args, observed_on).await,
+        "athleticlive_results" => {
+            arms::athleticlive_results_report(&context, args, observed_on).await
+        }
         "athleticlive_athletes" => {
             arms::athleticlive_athletes_report(&context, args, observed_on).await
         }
         "athleticnet" => arms::athleticnet_report(&context, args, observed_on).await,
         "milesplit" => arms::milesplit_report(&context, args, observed_on).await,
+        "milesplit_results" => arms::milesplit_results_report(&context, args).await,
         "coach_contacts" => arms::coach_contacts_report(store, args, observed_on),
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_athletes, athleticnet, milesplit, coach_contacts"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts"
         ),
-    }
-    .with_context(|| format!("adapter {}", args.name))?;
+    };
+    // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads
+    // like a clean one — including when the adapter fails after the block.
+    super::gather::print_blocked_hosts(&fetcher).await;
+    let report = outcome.with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }

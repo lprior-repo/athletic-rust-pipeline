@@ -1,13 +1,16 @@
 use super::*;
 use crate::school_index::SchoolIndex;
+use crate::sources::CrawlError;
 use census_domain::model::{normalize_name, CanonicalSchool, EventKind, Grade, Mark};
 use census_domain::UsJurisdiction;
 
 use super::map::absorb_result_set;
+use super::parse::parse_meet_result_files;
 use super::results::{Accumulator, Stats};
 
 const TEAMS: &str = include_str!("../../../tests/fixtures/milesplit/wi_teams_index.html");
 const ROSTER: &str = include_str!("../../../tests/fixtures/milesplit/wi_roster_52649.html");
+const RESULTS_INDEX: &str = include_str!("../../../tests/fixtures/milesplit/oh_results_index.html");
 
 #[test]
 fn parses_team_index_rows() {
@@ -102,6 +105,10 @@ const OH_RAW: &str =
     include_str!("../../../tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
 const OH_RAW_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw";
+const OH_MEET_RESULTS: &str =
+    include_str!("../../../tests/fixtures/milesplit/oh_meet_770621_results.html");
+const OH_MEET_RESULTS_URL: &str =
+    "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results";
 
 /// One state's whole team index: 977 teams for OH in one body, measured as 977 team links by the
 /// wave-2 sweep (`samples/teams-count-sweep.tsv`: `oh 200 32962 977`), whose 51 rows sum to the
@@ -403,4 +410,126 @@ fn schools_of(page: &RawPage) -> Vec<CanonicalSchool> {
             .0
         })
         .collect()
+}
+
+#[test]
+fn parses_a_state_results_index_into_requestable_meets() {
+    // The census's meet enumeration: one page of a state results index, captured 2026-09-22.
+    let meets = parse_meet_index(RESULTS_INDEX).unwrap();
+    assert_eq!(
+        meets.len(),
+        50,
+        "the captured page publishes fifty meet rows"
+    );
+    let first = &meets[0];
+    assert_eq!(first.meet_id, "770621");
+    assert_eq!(first.name, "Beaver Eastern Invite");
+    assert_eq!(first.venue, "Beaver, OH");
+    assert_eq!(
+        first.results_url,
+        "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results"
+    );
+    assert_eq!(
+        first.meet_url(),
+        "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026"
+    );
+    // The row publishes `Sep 19` and its section publishes `2026-09`; the date is both.
+    assert_eq!(first.date.as_deref(), Some("2026-09-19"));
+    assert!(meets.iter().all(|meet| !meet.meet_id.is_empty()));
+    assert!(
+        meets.iter().all(|meet| meet.date.is_some()),
+        "every row of the capture sits under a month bucket"
+    );
+    assert!(
+        has_next_page(RESULTS_INDEX),
+        "page one publishes a next page"
+    );
+}
+
+#[test]
+fn a_meet_row_without_an_id_is_not_a_meet() {
+    // The reader's contract is a requestable meet: a row it cannot address is dropped rather than
+    // published with an empty id, and a row whose day is not a day of its month keeps no date.
+    let html = r#"
+<section class="meet-month" data-month="2026-09">
+<li class="meet-row"
+data-meet-id="770621"
+data-filter-text="x"><span class="meet-row__day">Sep 19</span>
+<a class="meet-row__name" href="https://oh.milesplit.com/meets/770621-x/results">X Invite</a></li>
+<li class="meet-row"
+data-filter-text="y"><span class="meet-row__day">Sep 20</span>
+<a class="meet-row__name" href="https://oh.milesplit.com/meets/2-y/results">Y Invite</a></li>
+<li class="meet-row"
+data-meet-id="770622"
+data-filter-text="z"><span class="meet-row__day">Sep 31</span>
+<a class="meet-row__name" href="https://oh.milesplit.com/meets/770622-z/results">Z Invite</a></li>
+</section>
+"#;
+    let meets = parse_meet_index(html).unwrap();
+    assert_eq!(meets.len(), 2, "the row with no meet id is dropped");
+    assert_eq!(meets[0].meet_id, "770621");
+    assert_eq!(meets[0].date.as_deref(), Some("2026-09-19"));
+    assert_eq!(
+        meets[0].venue, "",
+        "an absent venue is empty, never invented"
+    );
+    assert_eq!(meets[1].meet_id, "770622");
+    assert_eq!(meets[1].date, None, "September has no 31st day");
+    assert!(!has_next_page(html));
+}
+
+#[test]
+fn the_results_index_url_is_the_published_query_shape() {
+    let site = Site::for_jurisdiction(UsJurisdiction::Ohio);
+    assert_eq!(
+        site.results_url(Season::CrossCountry, 2026, 2),
+        "https://oh.milesplit.com/results?season=cc&level=hs&year=2026&page=2"
+    );
+    assert_eq!(Season::ALL.map(Season::code), ["cc", "indoor", "outdoor"]);
+}
+
+// ---------------------------------------------------------------------------
+// The results page's own file list. Fixture:
+// `tests/fixtures/milesplit/oh_meet_770621_results.html`, the same capture the fetch log records
+// (`samples/fetch-log-wave2.tsv`: 200, 45,308 B, 2026-09-22T03:55:44Z), copied byte-for-byte.
+// ---------------------------------------------------------------------------
+
+/// The page lists its result files, and the id it lists is the id the `/raw` route serves: the
+/// capture's own file list (`meetResultFiles = [{"id":1321880,"name":"Results","isMeetPro":0}]`)
+/// names the same `RSID` the result-set sample was fetched under.
+#[test]
+fn a_results_page_lists_the_result_files_the_raw_route_serves() {
+    let files = parse_meet_result_files(OH_MEET_RESULTS).unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0].id, 1321880);
+    assert_eq!(files[0].name, "Results");
+    assert_eq!(files[0].is_meet_pro, 0);
+}
+
+/// A listed file's URL is the URL the site serves, and it checks back into the same meet and
+/// result set: discovery and the `/raw` reader agree on the address without a second convention.
+#[test]
+fn a_listed_result_file_addresses_the_raw_url_the_reader_accepts() {
+    let files = parse_meet_result_files(OH_MEET_RESULTS).unwrap();
+    let url = files[0].raw_url(OH_MEET_RESULTS_URL);
+    assert_eq!(url, OH_RAW_URL);
+    let reference = ResultSetRef::parse(&url).expect("the derived URL is a /raw URL");
+    assert_eq!(reference.meet_id, "770621");
+    assert_eq!(reference.rsid, "1321880");
+}
+
+/// A page that publishes no file list at all is a schema mismatch, not an empty meet: the list is
+/// the only cheap record of what result sets exist, so its absence is reported.
+#[test]
+fn a_page_without_a_file_list_is_a_schema_mismatch() {
+    let error = parse_meet_result_files("<html><body>no result files here</body></html>")
+        .expect_err("no file list is a mismatch");
+    assert!(matches!(error, CrawlError::Schema { .. }), "{error:?}");
+}
+
+/// A meet with no results yet publishes an empty list, which is a state rather than a failure.
+#[test]
+fn an_empty_file_list_is_a_state_not_a_failure() {
+    let files = parse_meet_result_files("let meetResultFiles = [];").unwrap();
+    assert!(files.is_empty());
 }

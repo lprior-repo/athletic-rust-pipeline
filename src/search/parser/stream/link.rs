@@ -1,8 +1,9 @@
 //! Athlete-link capture: link start, bounded link text, and link finalization.
 
-use super::super::{athlete_link, link_profile, profile_matches_sport};
+use super::super::{athlete_link, link_profile, placeholder_link, profile_matches_sport};
 use super::bounds::{append_raw, flush_node};
 use super::{handler_error, HandlerResult, Link, State, MAX_LINKS};
+use crate::domain::{evidence::Sport, identity::ProfileUrl};
 use lol_html::html_content::{Element, EndTag, TextChunk};
 use std::{cell::RefCell, rc::Rc};
 
@@ -14,28 +15,47 @@ pub(super) fn start_link(
     let Some(href) = href else {
         return Ok(());
     };
-    let mut state = shared.borrow_mut();
-    if state.row.is_none() {
-        if athlete_link(&href) {
-            state.outside_athlete_link = true;
-        }
-        return Ok(());
-    }
-    if state.link.is_some() {
-        state.row_issue("athlete link ended implicitly before the next link");
-        finish_link(&mut state).map_err(handler_error)?;
-    }
-    if !athlete_link(&href) {
-        return Ok(());
-    }
-    let profile = match link_profile(&href) {
-        Ok(profile) => profile,
-        Err(error) => {
-            state.row_issue(error.to_string());
+    {
+        let mut state = shared.borrow_mut();
+        if state.row.is_none() {
+            if athlete_link(&href) {
+                state.outside_athlete_link = true;
+            }
             return Ok(());
         }
-    };
-    let sport = state.sport;
+        if state.link.is_some() {
+            state.row_issue("athlete link ended implicitly before the next link");
+            finish_link(&mut state).map_err(handler_error)?;
+        }
+        if !athlete_link(&href) {
+            return Ok(());
+        }
+        if placeholder_link(&href) {
+            return Ok(());
+        }
+        let profile = match link_profile(&href) {
+            Ok(profile) => profile,
+            Err(error) => {
+                state.row_issue(error.to_string());
+                return Ok(());
+            }
+        };
+        let sport = state.sport;
+        drop(state);
+        let end_state = Rc::clone(shared);
+        resolve_link(shared, &profile, sport, element, end_state)
+    }
+}
+
+/// Validate the link profile against the current row and set up link capture.
+fn resolve_link(
+    shared: &Rc<RefCell<State>>,
+    profile: &ProfileUrl,
+    sport: Sport,
+    element: &mut Element<'_, '_>,
+    end_state: Rc<RefCell<State>>,
+) -> HandlerResult {
+    let mut state = shared.borrow_mut();
     let row = state
         .row
         .as_mut()
@@ -49,10 +69,9 @@ pub(super) fn start_link(
         row.issue = Some("result row has conflicting athlete identity links".into());
     }
     row.identity = Some(profile.athlete_id());
-    if profile_matches_sport(&profile, sport) {
-        row.selected = Some(profile);
+    if profile_matches_sport(profile, sport) {
+        row.selected = Some(profile.clone());
     }
-    let end_state = Rc::clone(shared);
     state.link = Some(Link {
         pending: String::new(),
         display_name: String::new(),

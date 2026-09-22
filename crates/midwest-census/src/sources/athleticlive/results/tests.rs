@@ -9,7 +9,7 @@
 //! budget, so the standings tests write a payload to the shape `standings.rs` documents. What they
 //! prove is the pairing and the mark rules, not the capture.
 
-use super::{collect, ResultOptions, StandingsCapture};
+use super::{collect, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture};
 use crate::net::Fetcher;
 use crate::sources::athleticlive::docs::{parse_event_document, parse_event_summary, EventDoc};
 use crate::sources::athleticlive::map::SOURCE_ID;
@@ -579,11 +579,9 @@ async fn a_second_run_resumes_the_capture_the_first_journaled() {
 async fn the_event_summary_lists_individual_events_and_excludes_relays() {
     // Written to the shape `docs/events.rs` documents, because the summary capture (19,932 B) is
     // outside this lane's fixture budget.
-    let summary = format!(
-        r#"{{"a":{{"i":2254280,"ec":"Individual","rui":"19-1","ab":"HJ","un":"High Jump","gl":"Girls"}},
-            "b":{{"i":999001,"ec":"Relay","rui":"7-1","peb":"Relay","ab":"4x400m"}},
-            "c":{{"i":999002,"ec":"Individual","ab":"Underwater Basket Weaving"}}}}"#
-    );
+    let summary = r#"{"a":{"i":2254280,"ec":"Individual","rui":"19-1","ab":"HJ","un":"High Jump","gl":"Girls"},
+            "b":{"i":999001,"ec":"Relay","rui":"7-1","peb":"Relay","ab":"4x400m"},
+            "c":{"i":999002,"ec":"Individual","ab":"Underwater Basket Weaving"}}"#.to_string();
     let events =
         parse_event_summary(&event_summary_url(MITS_MEET), &summary).expect("the summary parses");
     assert_eq!(events.len(), 3);
@@ -617,5 +615,134 @@ async fn the_event_summary_lists_individual_events_and_excludes_relays() {
     assert!(
         notes.contains("events listed 3 (relay 1, unmapped 1, unfetched 1)"),
         "the relay is counted and never fetched, and the event with no document is reported: {notes}"
+    );
+}
+
+#[tokio::test]
+async fn a_manifest_imports_every_meet_it_names_and_lands_on_the_harvest_ids() {
+    let (dir, store, fetcher) = scratch();
+    let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE).expect("parses");
+    write_schools(
+        &store,
+        &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
+    );
+    let xc_path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE);
+    let hj_path = stage_capture(&dir, "event-doc-2254280.json", HJ_MITS);
+    let manifest = serde_json::json!({
+        "meets": [
+            {
+                "athleticlive_meet_id": STATE_MEET,
+                "tenant": "live_results",
+                "name": "Iowa High School State Championships",
+                "state": "IA",
+                "date": "2025-10-31",
+                "documents": [xc_path],
+            },
+            {
+                "athleticlive_meet_id": MITS_MEET,
+                "tenant": "live_results",
+                "name": "MITS 4",
+                "state": "Michigan",
+                "date": "2026-02-14",
+                "documents": [hj_path],
+            },
+            {
+                "athleticlive_meet_id": STATE_MEET,
+                "tenant": "live_results",
+                "name": "Iowa High School State Championships",
+                "state": "IA",
+                "date": "2025-10-31",
+                "documents": [xc_path],
+            }
+        ]
+    });
+    let manifest_path = stage_capture(&dir, "manifest.json", &manifest.to_string());
+    let options = ManifestOptions {
+        input: Some(manifest_path),
+        limit: None,
+        observed_on: OBSERVED_ON.to_string(),
+        states: Vec::new(),
+    };
+
+    let report = collect_manifest(&context(&store, &fetcher), &options)
+        .await
+        .expect("the import completes");
+    assert_eq!(report.adapter, SOURCE_ID);
+    assert_eq!(report.requests, 0, "the adapter fetches nothing");
+    let notes = joined(&report);
+    assert!(
+        notes.contains("3 meets read, 1 repeated ids dropped, 2 in scope, 2 read"),
+        "the manifest accounting is reported: {notes}"
+    );
+    for id in [STATE_MEET, MITS_MEET] {
+        assert!(
+            notes.contains(&format!("meet {id}:")),
+            "meet {id} reports its own walk: {notes}"
+        );
+    }
+
+    // The meet the results route minted is the one the harvest route already minted: same id, so
+    // importing results never forks a second canonical meet for one published meet.
+    let meets: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("meets read");
+    assert_eq!(meets.len(), 2, "one canonical meet per manifest entry");
+    for expected in [state_meet().meet_id, mits_meet().meet_id] {
+        assert!(
+            meets.iter().any(|meet| meet.id.as_str() == expected),
+            "the harvest id {expected} is the one results landed on"
+        );
+    }
+
+    assert_eq!(
+        report.rows, 136,
+        "the state final maps 136 rows; the field event's club-labelled rows map none"
+    );
+
+    let performances: Vec<CanonicalPerformance> =
+        store.scan(Table::Performances).expect("performances read");
+    assert!(
+        performances
+            .iter()
+            .any(|row| row.source_key.starts_with("athleticlive:2150205:")),
+        "the state final's rows are keyed by its event"
+    );
+    assert!(
+        notes.contains("rows read: 17 (mapped 0, skipped 17)"),
+        "the field event's capture is read and its unlabelled rows are refused, not dropped: {notes}"
+    );
+    assert!(
+        performances.len() >= 136,
+        "the state final alone contributes 136 rows, saw {}",
+        performances.len()
+    );
+}
+
+#[tokio::test]
+async fn a_manifest_that_places_no_jurisdiction_fails_by_name() {
+    let body = r#"{"meets":[{"athleticlive_meet_id":1,"tenant":"t","name":"n","state":"Atlantis","date":"2026-01-01"}]}"#;
+    let error = super::manifest::parse_manifest(body, OBSERVED_ON).expect_err("no jurisdiction");
+    let text = error.to_string();
+    assert!(
+        text.contains("Atlantis") && text.contains("meet 1"),
+        "the refusal names the entry: {text}"
+    );
+}
+
+#[tokio::test]
+async fn the_results_route_requires_a_manifest() {
+    let (_dir, store, fetcher) = scratch();
+    let error = collect_manifest(
+        &context(&store, &fetcher),
+        &ManifestOptions {
+            input: None,
+            limit: None,
+            observed_on: OBSERVED_ON.to_string(),
+            states: Vec::new(),
+        },
+    )
+    .await
+    .expect_err("a manifest is required");
+    assert!(
+        error.to_string().contains("requires --input"),
+        "the refusal names the flag: {error}"
     );
 }

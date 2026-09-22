@@ -386,16 +386,23 @@ async fn ohsaa_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
 
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
     let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-    assert_eq!(report.requests, 0, "the seeded cache answers every request");
-    assert_eq!(
-        report.from_cache, 3,
-        "search, sports and AD pages are cached"
+    anyhow::ensure!(
+        report.requests == 0,
+        "the seeded cache answers every request — left={:?} right={:?}",
+        &report.requests,
+        &0
     );
-    assert_eq!(
-        (schools.len(), coaches.len()),
-        (1, 5),
-        "Dublin Coffman mints one school and its coach rows: {report:?}"
+    anyhow::ensure!(
+        report.from_cache == 3,
+        "search, sports and AD pages are cached — left={:?} right={:?}",
+        &report.from_cache,
+        &3
     );
+    {
+        let left_value = &(schools.len(), coaches.len());
+        let right_value = &(1, 5);
+        anyhow::ensure!(left_value == right_value, "Dublin Coffman mints one school and its coach rows: {report:?} — left={left_value:?} right={right_value:?}");
+    }
     common::assert_golden(
         "ohsaa__collect_coffman",
         &SchoolsRun {
@@ -714,16 +721,23 @@ async fn ks_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
 
     let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
     let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-    assert_eq!(
-        report.requests, 0,
-        "the seeded cache answers the one request"
+    anyhow::ensure!(
+        report.requests == 0,
+        "the seeded cache answers the one request — left={:?} right={:?}",
+        &report.requests,
+        &0
     );
-    assert_eq!(report.from_cache, 1, "the directory response is cached");
-    assert_eq!(
-        (report.rows, schools.len(), coaches.len()),
-        (5, 5, 5),
-        "five records mint five schools and five athletic directors: {report:?}"
+    anyhow::ensure!(
+        report.from_cache == 1,
+        "the directory response is cached — left={:?} right={:?}",
+        &report.from_cache,
+        &1
     );
+    {
+        let left_value = &(report.rows, schools.len(), coaches.len());
+        let right_value = &(5, 5, 5);
+        anyhow::ensure!(left_value == right_value, "five records mint five schools and five athletic directors: {report:?} — left={left_value:?} right={right_value:?}");
+    }
     common::assert_golden(
         "ks__collect_directory_a",
         &SchoolsRun {
@@ -812,13 +826,25 @@ async fn wayzata_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
     let report = wayzata::collect(&context(&fetcher, &store), &options).await?;
 
     let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
-    assert_eq!(report.requests, 0, "both schedules are answered from cache");
-    assert_eq!(report.from_cache, 2, "one cached page per sport");
-    assert_eq!(
-        report.rows, 23,
-        "13 track rows plus 10 cross-country rows: {report:?}"
+    anyhow::ensure!(
+        report.requests == 0,
+        "both schedules are answered from cache — left={:?} right={:?}",
+        &report.requests,
+        &0
     );
-    assert!(
+    anyhow::ensure!(
+        report.from_cache == 2,
+        "one cached page per sport — left={:?} right={:?}",
+        &report.from_cache,
+        &2
+    );
+    anyhow::ensure!(
+        report.rows == 23,
+        "13 track rows plus 10 cross-country rows: {report:?} — left={:?} right={:?}",
+        &report.rows,
+        &23
+    );
+    anyhow::ensure!(
         meets.len() >= 20,
         "most schedule rows mint a distinct meet; the store holds {}",
         meets.len()
@@ -1015,9 +1041,24 @@ fn compiled_documented_exports_match_golden() -> Result<()> {
         SEASON,
     );
     let regional = regional.context("the regional export has a meet header")?;
-    assert_eq!(regional.name, "D1 Regional 8B - Appleton North");
-    assert_eq!(regional.date, "2026-05-26");
-    assert_eq!(regional.events.len(), 2, "one event per block");
+    anyhow::ensure!(
+        regional.name == "D1 Regional 8B - Appleton North",
+        "left={:?} right={:?}",
+        &regional.name,
+        &"D1 Regional 8B - Appleton North"
+    );
+    anyhow::ensure!(
+        regional.date == "2026-05-26",
+        "left={:?} right={:?}",
+        &regional.date,
+        &"2026-05-26"
+    );
+    anyhow::ensure!(
+        regional.events.len() == 2,
+        "one event per block — left={:?} right={:?}",
+        &regional.events.len(),
+        &2
+    );
     let (name, digest) = golden_case("compiled__regional_export", &MeetFacts::of(&regional))?;
     cases.insert(name, digest);
 

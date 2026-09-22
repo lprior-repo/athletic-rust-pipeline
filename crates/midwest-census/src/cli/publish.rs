@@ -119,3 +119,19 @@ pub(super) fn run_workbook(store: &Store, args: &WorkbookArgs) -> Result<()> {
     println!("wrote {}", path.display());
     Ok(())
 }
+
+/// Derive the durable indexes and report what the pass appended.
+pub(super) fn run_index(store: &Store) -> Result<()> {
+    let finished_on = midwest_census::net::today_iso();
+    let report = midwest_census::index::derive(store, "index", &finished_on)
+        .context("deriving the durable indexes")?;
+    println!(
+        "index\tsource_identities={} conflicts={} reviews={} coverage={} snapshots={}",
+        report.source_identities,
+        report.conflicts,
+        report.reviews,
+        report.coverage,
+        report.snapshots
+    );
+    Ok(())
+}

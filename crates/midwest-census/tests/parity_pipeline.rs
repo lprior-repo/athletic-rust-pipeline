@@ -169,9 +169,11 @@ async fn pipeline_publishes_the_same_bytes_from_a_rebuilt_store() -> Result<()> 
     // wall clock, so the deflated size of an unchanged workbook drifts by a few bytes across runs
     // (observed 21293..21297). The per-part CRC map below is the stronger claim: it is identical
     // only if every part's uncompressed bytes are.
-    assert_eq!(
-        first.workbook.parts, second.workbook.parts,
-        "an xlsx part changed when the store was rebuilt"
+    anyhow::ensure!(
+        first.workbook.parts == second.workbook.parts,
+        "an xlsx part changed when the store was rebuilt — left={:?} right={:?}",
+        &first.workbook.parts,
+        &second.workbook.parts
     );
     ensure!(
         part_bytes(&first.workbook.bytes, CORE_PART)?

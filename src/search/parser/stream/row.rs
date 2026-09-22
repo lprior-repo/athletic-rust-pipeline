@@ -88,17 +88,18 @@ pub(super) fn finish_row(state: &mut State) -> std::result::Result<(), String> {
         return Ok(());
     }
     let Some(athlete_id) = row.identity else {
+        // The site's placeholder row: an `/athlete//<sport>` link with no id and no display name
+        // names no athlete, so it is not evidence about this query.
+        state.skip_row();
+        return Ok(());
+    };
+    let Some(profile_url) = row.selected else {
+        // `fq` is advisory: the endpoint answers a filtered search with sibling-sport rows, so a
+        // row whose only profile URL carries the other sport is skipped, never page-fatal.
+        state.skip_row();
         return Ok(());
     };
     let evidence = state.evidence(row.index);
-    let Some(profile_url) = row.selected else {
-        state.issues.push(SearchIssue {
-            code: "invalid_athlete_row".into(),
-            message: "result row belongs to another or unspecified sport".into(),
-            evidence,
-        });
-        return Ok(());
-    };
     if row.display_name.is_empty() || row.display_name.len() > MAX_NAME_BYTES {
         state.issues.push(SearchIssue {
             code: "invalid_athlete_row".into(),

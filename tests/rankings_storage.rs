@@ -67,21 +67,32 @@ fn exact_page_replay_preserves_counts_before_and_after_sealing() -> Result<()> {
     store.put_rankings_page(&index)?;
     // Then publication is idempotent, while conflicting/new pages remain forbidden.
     let stats = store.ranking_event_stats(&collection, "100m")?;
-    assert_eq!(
-        (stats.pages, stats.source_results, stats.unique_athletes),
-        (1, 2, 2)
-    );
+    {
+        let left_value = &(stats.pages, stats.source_results, stats.unique_athletes);
+        let right_value = &(1, 2, 2);
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     index.checkpoint = store.put_bytes(b"different checkpoint")?;
-    assert!(matches!(
+    anyhow::ensure!(matches!(
         store.put_rankings_page(&index),
         Err(StoreError::RankingConflict)
     ));
     index.page = 2;
-    assert!(matches!(
+    anyhow::ensure!(matches!(
         store.put_rankings_page(&index),
         Err(StoreError::RankingConflict)
     ));
-    assert_eq!(store.ranking_snapshot(&collection)?, Some(snapshot));
+    {
+        let left_value = &(store.ranking_snapshot(&collection)?);
+        let right_value = &(Some(snapshot));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -96,19 +107,32 @@ fn collection_counts_real_athletes_across_variable_length_event_keys() -> Result
     // When collection statistics scan variable-length event prefixes.
     let stats = store.ranking_collection_stats(&collection)?;
     // Then they count athlete IDs, not bytes from the event name or duplicate appearances.
-    assert_eq!(stats.unique_athletes, 3);
-    assert_eq!(
-        store
+    anyhow::ensure!(
+        stats.unique_athletes == 3,
+        "left={:?} right={:?}",
+        &stats.unique_athletes,
+        &3
+    );
+    {
+        let left_value = &(store
             .ranking_event_stats(&collection, "100m")?
-            .unique_athletes,
-        2
-    );
-    assert_eq!(
-        store
+            .unique_athletes);
+        let right_value = &2;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &(store
             .ranking_event_stats(&collection, "110mh")?
-            .unique_athletes,
-        2
-    );
+            .unique_athletes);
+        let right_value = &2;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -131,14 +155,18 @@ fn athlete_lookup_preserves_every_record_in_one_checkpoint() -> Result<()> {
         .iter()
         .map(|record| (record.kind, record.record_index))
         .collect::<Vec<_>>();
-    assert_eq!(
-        records,
-        [
+    {
+        let left_value = &records;
+        let right_value = &([
             (RankingCandidateKind::Individual, 0),
             (RankingCandidateKind::Individual, 1),
             (RankingCandidateKind::RelayMember, 0),
-        ]
-    );
-    assert!(!lookup.truncated);
+        ]);
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    anyhow::ensure!(!lookup.truncated);
     Ok(())
 }

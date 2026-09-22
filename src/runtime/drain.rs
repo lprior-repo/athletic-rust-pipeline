@@ -229,14 +229,8 @@ mod tests {
         set.abort_all();
         let cancelled = set.join_next().await.expect("a task");
 
-        assert_eq!(
-            DrainState::from_join(panicked.map(|()| ())),
-            DrainState::Panicked
-        );
-        assert_eq!(
-            DrainState::from_join(cancelled.map(|()| ())),
-            DrainState::Cancelled
-        );
+        assert_eq!(DrainState::from_join(panicked), DrainState::Panicked);
+        assert_eq!(DrainState::from_join(cancelled), DrainState::Cancelled);
         assert_eq!(DrainState::from_join(Ok(())), DrainState::Completed);
         assert_eq!(Outcome::from_join(Ok(Ok::<u8, u8>(7))), Outcome::Ok(7));
         assert_eq!(Outcome::from_join(Ok(Err::<u8, u8>(9))), Outcome::Err(9));

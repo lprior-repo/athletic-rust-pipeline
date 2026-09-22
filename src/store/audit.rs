@@ -130,31 +130,49 @@ mod tests {
         let store = ArtifactStore::open(&root)?;
         let first = store.record_attempt(&operation, &receipt)?;
         let second = store.record_attempt(&operation, &receipt)?;
-        assert_ne!(first, second);
+        anyhow::ensure!(
+            first != second,
+            "left={:?} right={:?} must differ",
+            &first,
+            &second
+        );
         drop(store);
         let reopened = ArtifactStore::open(&root)?;
         let mut retained = reopened.attempt_digests(&operation)?;
         retained.sort_by(|left, right| left.as_str().cmp(right.as_str()));
         let mut expected = vec![first.clone(), second.clone()];
         expected.sort_by(|left, right| left.as_str().cmp(right.as_str()));
-        assert_eq!(retained, expected);
-        assert_eq!(
-            reopened
+        anyhow::ensure!(
+            retained == expected,
+            "left={:?} right={:?}",
+            &retained,
+            &expected
+        );
+        {
+            let left_value = &(reopened
                 .read_attempt::<serde_json::Value>(&operation, &first)?
-                .value,
-            receipt
-        );
-        assert_eq!(
-            reopened
+                .value);
+            let right_value = &receipt;
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        {
+            let left_value = &(reopened
                 .read_attempt::<serde_json::Value>(&operation, &second)?
-                .value,
-            receipt
-        );
-        assert!(matches!(
+                .value);
+            let right_value = &receipt;
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        anyhow::ensure!(matches!(
             reopened.read_attempt::<serde_json::Value>(&other, &first),
             Err(StoreError::CorruptData)
         ));
-        assert!(reopened.attempt_digests(&other)?.is_empty());
+        anyhow::ensure!(reopened.attempt_digests(&other)?.is_empty());
         Ok(())
     }
 }

@@ -1,4 +1,5 @@
 use super::*;
+use crate::store::read::{sweep_stale_temporaries, write_snapshot};
 use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
@@ -244,4 +245,209 @@ fn a_consumer_mailbox_never_survives_a_read_but_a_school_address_does() {
         Some("abender@ofsd.k12.wi.us")
     );
     assert!(!published_row.email_withheld);
+}
+
+#[test]
+fn derived_rows_replace_in_place_and_never_move_the_append_counter() {
+    // A derivation is a function of the store, not evidence about it: re-running it must leave one
+    // row per key. Appending would instead add an observation per pass until the table's 20M cap
+    // aborted every scan of it.
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let mut first = school("Abbotsford");
+    first.city = Some("Abbotsford".into());
+    store
+        .replace_many(Table::Schools, &[first.clone()])
+        .unwrap();
+    store
+        .replace_many(Table::Schools, &[first.clone()])
+        .unwrap();
+
+    let mut second = first.clone();
+    second.city = Some("Colby".into());
+    store.replace_many(Table::Schools, &[second]).unwrap();
+
+    let scanned: Vec<CanonicalSchool> = store.scan(Table::Schools).unwrap();
+    assert_eq!(scanned.len(), 1, "one row per key whatever the pass count");
+    assert_eq!(
+        scanned[0].city.as_deref(),
+        Some("Colby"),
+        "the later derivation replaces the row"
+    );
+    let stats = store.stats().unwrap();
+    let schools = stats
+        .tables
+        .iter()
+        .find(|(table, _)| table == "schools")
+        .map(|(_, count)| *count)
+        .unwrap();
+    assert_eq!(schools, 0, "a replaced row is not an appended observation");
+}
+
+#[test]
+fn a_rejected_derived_record_leaves_the_table_untouched() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let good = school("Abbotsford");
+    store
+        .replace_many(Table::Schools, std::slice::from_ref(&good))
+        .unwrap();
+
+    // An id the store's key contract refuses (empty) must fail the whole batch, and the row that was
+    // already there must survive: a rejected derivation may not leave a half-written table behind.
+    let mut broken = school("Colby");
+    broken.id = serde_json::from_str::<SchoolId>("\"\"").unwrap();
+    assert!(broken.id.as_str().is_empty());
+    match store.replace_many(Table::Schools, &[broken]) {
+        Err(StoreError::Invariant { detail }) => assert!(detail.contains("must not be empty")),
+        other => panic!("expected an invariant rejection, got {other:?}"),
+    }
+
+    let scanned: Vec<CanonicalSchool> = store.scan(Table::Schools).unwrap();
+    assert_eq!(scanned.len(), 1);
+    assert_eq!(scanned[0].id, good.id);
+}
+
+#[test]
+fn a_published_snapshot_leaves_no_temporary_behind() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("schools.jsonl");
+    let rows: Vec<CanonicalSchool> = (0..3)
+        .map(|index| school(&format!("Row {index}")))
+        .collect();
+
+    write_snapshot(&path, &rows).unwrap();
+
+    let entries: Vec<String> = std::fs::read_dir(dir.path())
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(
+        entries,
+        vec!["schools.jsonl".to_string()],
+        "the temporary a snapshot is written through must not survive its publication"
+    );
+    let raw = std::fs::read_to_string(&path).unwrap();
+    let parsed: Vec<CanonicalSchool> = raw
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert_eq!(parsed.len(), rows.len());
+    assert_eq!(parsed[0].id, rows[0].id);
+}
+
+#[test]
+fn concurrent_snapshot_writers_only_publish_whole_files() {
+    // Two consolidations can hold one snapshot path at once: the durable national run consolidates
+    // one jurisdiction per object and the service runs several of those concurrently, while a reader
+    // (the report, the workbook, an operator with `less`) may be reading the same path. Publication
+    // is a rename, so every observation is one whole snapshot; writing in place let a reader catch a
+    // half-file and let two writers interleave into one.
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("schools.jsonl");
+    let wide: Vec<CanonicalSchool> = (0..400)
+        .map(|index| school(&format!("Wide School {index}")))
+        .collect();
+    let narrow: Vec<CanonicalSchool> = (0..3)
+        .map(|index| school(&format!("Narrow School {index}")))
+        .collect();
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let reader_path = path.clone();
+    let reader_stop = Arc::clone(&stop);
+    let reader = std::thread::spawn(move || {
+        let mut observations = 0_usize;
+        while !reader_stop.load(Ordering::Relaxed) {
+            let raw = match std::fs::read_to_string(&reader_path) {
+                Ok(raw) => raw,
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+                Err(error) => panic!("snapshot read failed: {error}"),
+            };
+            assert!(
+                !raw.is_empty(),
+                "a reader observed a truncated snapshot: neither writer publishes an empty file"
+            );
+            for line in raw.lines() {
+                let _: CanonicalSchool = serde_json::from_str(line)
+                    .expect("a reader must never observe a partial snapshot line");
+            }
+            observations += 1;
+        }
+        observations
+    });
+
+    for _ in 0..32 {
+        write_snapshot(&path, &wide).unwrap();
+        write_snapshot(&path, &narrow).unwrap();
+    }
+    stop.store(true, Ordering::Relaxed);
+    let observations = reader.join().unwrap();
+    assert!(observations > 0, "the reader never observed the snapshot");
+}
+
+#[test]
+fn opening_a_store_reclaims_what_a_dead_writer_left_behind() {
+    // A consolidation publishes by rename, so a temporary exists only while its writer is alive and
+    // holding the store lock. A crash mid-write (the crash drill in this repository's run evidence)
+    // left a 377 MB and an 863 MB `.part` behind; they are partial copies of tables that are still
+    // in the store, and nothing else would ever remove them.
+    let dir = tempfile::tempdir().unwrap();
+    let entities = dir.path().join("entities");
+    {
+        let store = Store::open(dir.path()).unwrap();
+        store
+            .replace_many(Table::Schools, &[school("Abbotsford")])
+            .unwrap();
+        // The published snapshot, written the way the consolidation writes it.
+        store
+            .consolidate_table(Table::Schools, &entities.join("schools.jsonl"))
+            .unwrap();
+    }
+    let abandoned = entities.join(".schools.jsonl.999999.7.part");
+    std::fs::write(&abandoned, b"{\"partial\"\n").unwrap();
+    let published = entities.join("schools.jsonl");
+    let before = std::fs::read_to_string(&published).unwrap();
+
+    {
+        let store = Store::open(dir.path()).unwrap();
+        assert_eq!(
+            store.scan::<CanonicalSchool>(Table::Schools).unwrap().len(),
+            1
+        );
+    }
+
+    assert!(
+        !abandoned.exists(),
+        "a dead writer's temporary must not survive a reopen"
+    );
+    assert_eq!(
+        std::fs::read_to_string(&published).unwrap(),
+        before,
+        "sweeping temporaries may not touch the published snapshot"
+    );
+}
+
+#[test]
+fn the_sweep_only_removes_snapshot_temporaries() {
+    // The rule is `.<name>.part`, not "anything dot-prefixed": a store root also holds `.` entries
+    // the filesystem owns, and an unrelated file must not be deleted by a store open.
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir_all(dir.path().join("entities")).unwrap();
+    let keep = dir.path().join("entities").join("notes.txt");
+    std::fs::write(&keep, b"keep me").unwrap();
+    let part = dir.path().join("entities").join(".schools.jsonl.1.0.part");
+    std::fs::write(&part, b"partial").unwrap();
+
+    assert_eq!(sweep_stale_temporaries(dir.path()).unwrap(), 1);
+    assert!(!part.exists());
+    assert!(keep.exists());
+}
+
+#[test]
+fn a_store_without_an_entities_directory_sweeps_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    assert_eq!(sweep_stale_temporaries(dir.path()).unwrap(), 0);
 }

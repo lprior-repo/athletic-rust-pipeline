@@ -39,6 +39,8 @@ use std::path::{Path, PathBuf};
 mod cells;
 mod inventory;
 mod meta;
+
+pub(crate) use meta::retained_records;
 mod performances;
 mod recruiting;
 mod sheets;

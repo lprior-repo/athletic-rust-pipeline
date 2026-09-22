@@ -35,12 +35,18 @@ mod raw_rows;
 mod results;
 mod wire;
 
-pub use fetch::{fetch_result_set, fetch_roster, fetch_team_index};
+pub use fetch::{
+    fetch_meet_index, fetch_meet_result_files, fetch_result_set, fetch_roster, fetch_team_index,
+};
 pub use normalize::roster_entities;
-pub use parse::{parse_roster, parse_team_index};
+pub use parse::{
+    has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
+};
 pub use raw::{parse_raw, RawPage};
 pub use results::{collect as collect_result_sets, ResultSetOptions};
-pub use wire::{ResultSetRef, Roster, RosterAthlete, Site, TeamRef};
+pub use wire::{
+    MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,
+};
 
 // The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]

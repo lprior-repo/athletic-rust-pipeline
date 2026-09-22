@@ -7,6 +7,7 @@ that do **not** exist yet.
 | Document | Read it for |
 |---|---|
 | `ARCHITECTURE.md` | system shape: the census crates, the root acquisition pipeline, module seams |
+| `docs/architecture.md` | the census as it exists today: crate map, phase ladder and the artifact that advances each phase, store tables and durability, what a seal certifies and refuses, the module-edge table |
 | `DOMAIN.md` | canonical types, identity, evidence and cohort rules |
 | `SOURCE_ADAPTER_GUIDE.md` | the adapter contract in full |
 | `FJALL_SCHEMA.md`, `docs/FJALL_SCHEMA.md` | store schema and keys; durability and sharp edges |
@@ -32,12 +33,12 @@ Workspace root `Cargo.toml` (package `athletic-rust-pipeline`) with members `cra
 | `crates/census-domain/kani/` | Kani harnesses for the domain | `kani/{gradyear,id_mint,publish,census_domain_wiring}.rs` | the harnesses |
 | `crates/midwest-census/` | the census: polite fetcher, Fjall store, source adapters, orchestration, report/bests/workbook, Restate services; bins `midwest-census` and `midwest-serve` | `src/lib.rs`, `src/cli/mod.rs`, `src/bin/midwest-serve.rs` | `tests/*.rs` (`parity_*`, `merge_properties`, `parser_roundtrip_properties`, `fjall_restate_e2e`, `backup_restore`, `recovery`), per-module `tests.rs` |
 | `crates/midwest-census/src/net/` | fetcher: robots enforcement, per-host pacing, disk cache, conditional GET, bounded retries | `src/net/mod.rs`, `src/net/{execute,request,cache,robots,decode,client}.rs` | `src/net/tests.rs`, `src/net/execute/tests.rs` |
-| `crates/midwest-census/src/store/` | Fjall observation store: append-only writes, read-time merge, journal, legacy import | `src/store/mod.rs`, `src/store/{read,write,keys,entities,sequences,legacy}.rs` | `src/store/tests.rs`, `src/store/loom_tests.rs` |
+| `crates/midwest-census/src/store/` | Fjall observation store: append-only writes, read-time merge, journal, legacy import | `src/store/mod.rs`, `src/store/{read,write,keys,entities,sequences,legacy,table}.rs` | `src/store/tests.rs`, `src/store/loom_tests.rs` |
 | `crates/midwest-census/src/sources/` | one module per provider adapter, plus `src/sources/registry/` (capability declarations) and `result_file` (vendor-artifact dispatch) | `src/sources/mod.rs`, `src/sources/<name>.rs`, `src/sources/<name>/` | per-adapter `tests.rs` |
 | `crates/midwest-census/src/{census,report,bests,workbook,spawn.rs,bootstrap}/` | orchestration and reductions: roster walk, measured census, best marks, workbook, region-owned task spawning, service supervisor | `src/census/mod.rs`, `src/report/mod.rs`, `src/bests/mod.rs`, `src/workbook/mod.rs`, `src/bootstrap.rs` | module `tests.rs` files |
 | `crates/midwest-census/src/restate_services/` | durable services (`Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus`) | `src/restate_services/mod.rs`, `src/restate_services/{jurisdiction,national,wire}.rs` | `src/restate_services/tests.rs` |
 | root package `athletic-rust-pipeline` | the older Athletic.net-facing acquisition pipeline and operator CLI (Restate worker, browser session, rankings collection, workbook export/verify) | `src/main.rs`, `src/cli.rs`, `src/runtime/**` | `tests/*.rs` |
-| `xtask/` | developer commands; the gate's measurement layer (`scan`, `seams`, `integrity`, `domain-purity`, `quality-baseline`, `ratchet`) | `xtask/src/main.rs` | 9 inline `#[cfg(test)]` tests in `xtask/src/{templates,seams,scan}.rs` |
+| `xtask/` | developer commands; the gate's measurement layer (`scan`, `seams`, `integrity`, `domain-purity`, `quality-baseline`, `ratchet`) | `xtask/src/main.rs` | 7 inline `#[cfg(test)]` tests in `xtask/src/{seams,templates}.rs` |
 | `tools/` | `tools/gate.sh` — the one quality gate — and `tools/quality-baseline.json`, the debt ratchet | `tools/README.md` | the gate itself |
 | `benches/`, `crates/midwest-census/benches/`, `crates/midwest-census/examples/bench_*` | committed measurements; a performance claim may cite only these | `benches/*.rs`, `crates/midwest-census/benches/core.rs` | self-asserting datasets inside each target |
 | `fuzz/` | standalone cargo-fuzz workspace | `fuzz/fuzz_targets/{hytek,compiled,xc,raceday}.rs` | the fuzz targets; seeds in `fuzz/corpus/` |
@@ -154,7 +155,10 @@ cargo xtask export        --store <dir> [--out FILE] [--grad-year YYYY] [--all-s
 
 All three run the shipped `midwest-census` binary and write into `<store>/out/`; the binary takes an
 exclusive Fjall lock, so stop `midwest-serve` first or use a different store. The store default is
-`var/midwest-census`. The census CLI itself:
+`var/midwest-census`. `var/` holds live stores (`var/midwest-census`, `var/midwest-athletes`): while a
+sweep is running, do not read, write, back up, restore or integrity-check anything under it — the
+run holds the lock, and a second writer or a copied database is how a census is corrupted. Tests and
+drills build their own store in a `tempfile::tempdir()`. The census CLI itself:
 
 ```bash
 cargo run --release -p midwest-census --bin midwest-census -- teams   --states WI,MN --refresh
@@ -164,11 +168,40 @@ cargo run --release -p midwest-census --bin midwest-census -- collect --all-stat
 cargo run --release -p midwest-census --bin midwest-census -- provider wiaa
 cargo run --release -p midwest-census --bin midwest-census -- provider milesplit --states WI
 cargo run --release -p midwest-census --bin midwest-census -- consolidate
+cargo run --release -p midwest-census --bin midwest-census -- index
 cargo run --release -p midwest-census --bin midwest-census -- report --print
 cargo run --release -p midwest-census --bin midwest-census -- bests
 cargo run --release -p midwest-census --bin midwest-census -- workbook
+cargo run --release -p midwest-census --bin midwest-census -- seal --write
 cargo run --release -p midwest-census --bin midwest-census -- run
 ```
+
+The phase ladder is `census/state.rs` (`Discovering → Acquiring → Reconciling → Reviewing →
+ResolvingGaps → Exporting → Complete`) and `seal` reads it back out of the store's own artifacts
+rather than trusting a caller. `index` is what advances three of those steps in one pass, a workbook
+in `<store>/out/` is Exporting, and `seal` is the only path to Complete: it assembles the §70
+evidence and otherwise refuses, naming the item and the number that blocked it.
+`docs/architecture.md` §2 and §4 carry the phase table and the acceptance items.
+
+The durable national census runs through the workflow, not through `collect`:
+
+```bash
+cargo run --release -p midwest-census --bin midwest-census -- national --revision 3 \
+    --concurrency 6 --ingress http://127.0.0.1:18095/          # submits, then observes
+cargo run --release -p midwest-census --bin midwest-census -- national --revision 3 --detach
+cargo run --release -p midwest-census --bin midwest-census -- national-report --revision 3
+cargo run --release -p midwest-census --bin midwest-census -- jurisdiction --state WI --revision 3
+```
+
+`national` fans out one `JurisdictionCensus` per state (51 by default, `--states` restricts),
+prints a per-jurisdiction table plus a progress line every minute, and exits non-zero when the fold
+carries `failed` rows; `national-report` prints the last report without starting anything. None of
+these opens the Fjall store — `midwest-serve` owns it — so they are safe to run beside the service,
+unlike the batch subcommands above, whose store open needs the lock the service holds. The
+walk is owned by the workflow: use `national` for the national corpus and `collect` for a single
+lane's slice. `--revision` is the parameter set's identity (`national:<season>:<revision>`): Restate
+deduplicates a repeat submission, and the CLI says so instead of pretending a changed parameter took
+effect, so a new limit or state list needs a new revision.
 
 Global flags: `--store <dir>`, `--delay-ms <n>`, `--user-agent <ua>`, `--authorized-host <host>`
 (repeatable). `cargo run --release -p midwest-census --bin midwest-census -- --help` prints the full
@@ -208,6 +241,21 @@ cargo test -p midwest-census --features loom --lib     # loom models, opt-in fea
 
 A performance claim may only cite a committed benchmark or a harness run on the machine in hand, with
 the dataset assertion it printed (`PERFORMANCE.md`).
+
+### 3.7 Colocated source tests, without the integration binaries
+
+```bash
+cargo xtask source-tests   # cargo nextest run --workspace --lib --bins --examples --all-features
+```
+
+The gate's tests lane is `cargo nextest run --workspace --all-features`, falling back to
+`cargo test --workspace --all-features --quiet` when nextest is absent, and its "source targets"
+selector is `--lib --bins --examples`. `source-tests` composes those two facts — the same lane, the
+same fallback, over the targets that carry a colocated `#[cfg(test)]` module or a `tests.rs` — so the
+`tests/` integration binaries (the ones that build their own temp store) stay with the gate. It
+prints the child command (`+ …`) before running it, and exits non-zero if the child does. It still
+*compiles* the whole workspace, so it is not a mid-flight lane on a tree siblings are editing; that is
+why §2 does not list it.
 
 ## 4. Source policy (non-negotiable)
 
@@ -304,6 +352,16 @@ Adapted NASA/JPL Power of Ten, enforced by the gate's clippy set plus `scan`, `i
   stringly typed. A jurisdiction is `census_domain::UsJurisdiction`, never a `String`.
 - Log with `tracing`, never `println!`/`eprintln!` in library code; async entry points carry
   `#[tracing::instrument(skip_all, fields(…))]`.
+- **Module seams.** The census is one crate with a declared module graph: `cargo xtask seams` reads
+  every production `crate::…` edge between top-level modules and compares it against the `ALLOWED`
+  table in `xtask/src/seams.rs`. Adding an edge is a deliberate edit to that table with its reason;
+  the check fails closed, so deleting a row makes that edge a violation again. Direction rule:
+  adapters and workflows depend on domain types and on the store, never the reverse; `net` and
+  `school_index` are leaves. `docs/architecture.md` §5 has the table's shape.
+- **Domain purity.** `cargo xtask domain-purity` resolves `cargo tree -p census-domain --edges normal`
+  and fails on any async runtime, store engine, HTTP client, service framework or browser engine in
+  the tree. Nothing in the domain crate may gain one, and a value that crosses a boundary is carried
+  in a domain type rather than re-checked.
 - Debt is ratcheted, never blessed: `tools/quality-baseline.json` may only shrink, and a burndown is
   the only legitimate reason to move it (`cargo xtask gate -- --update-baseline`).
 
@@ -317,8 +375,13 @@ Adapted NASA/JPL Power of Ten, enforced by the gate's clippy set plus `scan`, `i
 - The target workspace split (`census-store`, `census-crawl`, `census-reconcile`, `census-review`,
   `census-report`, `census-service`, the `acq-*` crates) is planned, not present: of that list only
   `crates/census-domain` exists.
-- `JurisdictionCensus` and `NationalCensus` exist in `src/restate_services/` but have no CLI command
-  and no live-server qualification yet.
+- `JurisdictionCensus` and `NationalCensus` are reachable and live-qualified through the census CLI
+  (`national`, `national-report`, `jurisdiction` — AGENTS.md §3.4, RESTATE_WORKFLOWS.md §2.2). What
+  is still missing is *stage* coverage, not a command: a jurisdiction object owns exactly three
+  durable stages (`teams`, `rosters`, `consolidate`), so meet discovery, result acquisition, coach
+  collection and the §47 gap/sweep classes are batch commands or the separate acquisition pipeline,
+  and a `NationalReport` says nothing about them. Do not describe a durable run as covering meets,
+  results or coaches.
 
 ## 9. Evidence discipline
 

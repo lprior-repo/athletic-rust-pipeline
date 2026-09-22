@@ -4,6 +4,7 @@ use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::decode::process_response;
 use crate::net::request::{build_request, wait_backoff, RequestBody};
 use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher, MAX_RETRIES};
+use census_domain::model::AccessBlockKind;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -47,30 +48,7 @@ impl Fetcher {
         for attempt in 1..=MAX_RETRIES {
             let _permit = gate.lock().await;
             self.wait_turn(plan.host).await;
-            let response = self.dispatch(plan).await?;
-            let status = response.status().as_u16();
-            self.count_request(plan.host, status).await;
-            let step = match status {
-                200 | 404 => {
-                    // Process body.
-                    Step::Publish(
-                        process_response(
-                            response,
-                            plan.url,
-                            plan.method,
-                            plan.host,
-                            plan.body_path,
-                            plan.meta_path,
-                            plan.options,
-                            &mut *self.stats.lock().await,
-                        )
-                        .await?,
-                    )
-                }
-                304 => self.replay_cached(plan, attempt).await?,
-                _ => self.status_verdict(status, plan, attempt).await,
-            };
-            match step {
+            match self.attempt_once(plan, attempt).await? {
                 Step::Publish(outcome) => return Ok(outcome),
                 Step::Retry(error) => last_err = Some(error),
                 Step::Stop(error) => {
@@ -86,6 +64,45 @@ impl Fetcher {
             timeout_secs: plan.timeout_secs,
         });
         Err(err)
+    }
+
+    /// One attempt: send the request, count it, record what the host said about access, and read the
+    /// response's verdict.
+    async fn attempt_once(&self, plan: &FetchPlan<'_>, attempt: u32) -> Result<Step, FetchError> {
+        let response = self.dispatch(plan).await?;
+        let status = response.status().as_u16();
+        self.count_request(plan.host, status).await;
+        // A 403 or 429 is an observation about the *host*, not about this URL: it is recorded once
+        // per run so a lane can stop on it instead of re-discovering it request by request.
+        if let Some(kind) = blocking_kind(status) {
+            self.record_access_condition(
+                plan.host,
+                kind,
+                status,
+                retry_after_secs(&response),
+                plan.url.to_string(),
+            )
+            .await;
+        }
+        match status {
+            200 | 404 => {
+                // Process body.
+                let outcome = process_response(
+                    response,
+                    plan.url,
+                    plan.method,
+                    plan.host,
+                    plan.body_path,
+                    plan.meta_path,
+                    plan.options,
+                    &mut *self.stats.lock().await,
+                )
+                .await?;
+                Ok(Step::Publish(outcome))
+            }
+            304 => self.replay_cached(plan, attempt).await,
+            _ => Ok(self.status_verdict(status, plan, attempt).await),
+        }
     }
 
     /// Build the HTTP request and send it under the per-request timeout.
@@ -199,4 +216,30 @@ impl Fetcher {
         // Other errors (4xx except 429/404) are not retried.
         Step::Stop(error)
     }
+}
+
+/// The access condition one HTTP status states, when it states one.
+///
+/// `403` is the source refusing a path its own robots rules allow, and `429` is the source asking for
+/// less traffic. Both are observations about the host, which is why they are recorded against it
+/// rather than against the URL that happened to be in flight.
+fn blocking_kind(status: u16) -> Option<AccessBlockKind> {
+    match status {
+        403 => Some(AccessBlockKind::Forbidden),
+        429 => Some(AccessBlockKind::RateLimited),
+        _ => None,
+    }
+}
+
+/// The `Retry-After` one response published, when it published one in the delta-seconds form.
+///
+/// The HTTP-date form is deliberately not parsed: no source in this corpus has used it, and a wrong
+/// guess at an instant is worse than no instant, so an unparsed value stays `None` and the policy
+/// default applies.
+fn retry_after_secs(response: &reqwest::Response) -> Option<u64> {
+    response
+        .headers()
+        .get(reqwest::header::RETRY_AFTER)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.trim().parse::<u64>().ok())
 }

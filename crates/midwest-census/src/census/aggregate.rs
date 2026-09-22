@@ -8,7 +8,8 @@ use crate::sources::CrawlResult;
 use crate::store::{Entity, Store, StoreError, StoreResult, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam,
+    CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
+    ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_domain::UsJurisdiction;
 use std::path::Path;
@@ -37,6 +38,8 @@ pub(super) fn summarize_states(
         cache_hits: 0,
         errors: 0,
         elapsed_seconds: 0.0,
+        access_conditions: Vec::new(),
+        blocked_hosts: Vec::new(),
     };
     let mut failures = Vec::new();
     for (jurisdiction, outcome) in results {
@@ -73,42 +76,94 @@ pub fn consolidate(store: &Store) -> StoreResult<Vec<(String, usize)>> {
         path: out.clone(),
         source,
     })?;
-    let mut counts = Vec::new();
-    counts.push((
-        "schools".to_string(),
-        table_rows::<CanonicalSchool>(store, Table::Schools, &out.join("schools.jsonl"))?,
-    ));
-    counts.push((
-        "teams".to_string(),
-        table_rows::<CanonicalTeam>(store, Table::Teams, &out.join("teams.jsonl"))?,
-    ));
+    let mut counts = bulk_counts(store, &out)?;
+    counts.extend(finding_counts(store, &out)?);
+    Ok(counts)
+}
+
+/// The canonical tables: one snapshot per entity table, plus the coach mailboxes the merge withheld.
+fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     let coaches_path = out.join("coaches.jsonl");
     let coaches = store.consolidate::<CanonicalCoach>(Table::Coaches, &coaches_path)?;
-    counts.push(("coaches".to_string(), coaches.rows));
-    // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
-    // same rule the report and the workbook already went through.
-    counts.push(("coaches_email_withheld".to_string(), coaches.withheld));
-    counts.push((
-        "athletes".to_string(),
-        table_rows::<CanonicalAthlete>(store, Table::Athletes, &out.join("athletes.jsonl"))?,
-    ));
-    counts.push((
-        "meets".to_string(),
-        table_rows::<CanonicalMeet>(store, Table::Meets, &out.join("meets.jsonl"))?,
-    ));
-    counts.push((
-        "events".to_string(),
-        table_rows::<CanonicalEvent>(store, Table::Events, &out.join("events.jsonl"))?,
-    ));
-    counts.push((
-        "performances".to_string(),
-        table_rows::<CanonicalPerformance>(
-            store,
-            Table::Performances,
-            &out.join("performances.jsonl"),
-        )?,
-    ));
-    Ok(counts)
+    Ok(vec![
+        (
+            "schools".to_string(),
+            table_rows::<CanonicalSchool>(store, Table::Schools, &out.join("schools.jsonl"))?,
+        ),
+        (
+            "teams".to_string(),
+            table_rows::<CanonicalTeam>(store, Table::Teams, &out.join("teams.jsonl"))?,
+        ),
+        ("coaches".to_string(), coaches.rows),
+        // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
+        // same rule the report and the workbook already went through.
+        ("coaches_email_withheld".to_string(), coaches.withheld),
+        (
+            "athletes".to_string(),
+            table_rows::<CanonicalAthlete>(store, Table::Athletes, &out.join("athletes.jsonl"))?,
+        ),
+        (
+            "meets".to_string(),
+            table_rows::<CanonicalMeet>(store, Table::Meets, &out.join("meets.jsonl"))?,
+        ),
+        (
+            "events".to_string(),
+            table_rows::<CanonicalEvent>(store, Table::Events, &out.join("events.jsonl"))?,
+        ),
+        (
+            "performances".to_string(),
+            table_rows::<CanonicalPerformance>(
+                store,
+                Table::Performances,
+                &out.join("performances.jsonl"),
+            )?,
+        ),
+    ])
+}
+
+/// The derived planes are findings, not bulk: an operator reads the retained conflicts, the review
+/// queue, the per-jurisdiction coverage, the snapshot history and the access conditions. The
+/// source-identity table is deliberately absent — it is the join table behind those rows, one row
+/// per canonical id per source, and dumping it would dwarf everything else here.
+fn finding_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
+    Ok(vec![
+        (
+            "conflicts".to_string(),
+            table_rows::<RetainedConflict>(store, Table::Conflicts, &out.join("conflicts.jsonl"))?,
+        ),
+        (
+            "review_cases".to_string(),
+            table_rows::<ReviewCase>(store, Table::ReviewCases, &out.join("review_cases.jsonl"))?,
+        ),
+        (
+            "coverage".to_string(),
+            table_rows::<CoverageRow>(store, Table::Coverage, &out.join("coverage.jsonl"))?,
+        ),
+        (
+            "snapshots".to_string(),
+            table_rows::<CollectionSnapshot>(
+                store,
+                Table::Snapshots,
+                &out.join("snapshots.jsonl"),
+            )?,
+        ),
+        (
+            "identity_verdicts".to_string(),
+            table_rows::<ReviewVerdictRecord>(
+                store,
+                Table::IdentityVerdicts,
+                &out.join("identity_verdicts.jsonl"),
+            )?,
+        ),
+        (
+            "source_access".to_string(),
+            table_rows::<SourceAccessCondition>(
+                store,
+                Table::SourceAccess,
+                &out.join("source_access.jsonl"),
+            )?,
+        ),
+    ])
 }
 
 /// The row count of one consolidated table, materialized as `path`.

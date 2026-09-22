@@ -49,7 +49,7 @@ Place Pts Place Bib#    Name                  Gr   Team                         
 "#;
 
 #[test]
-fn state_blocks_carry_place_grade_and_time() -> CrawlResult<()> {
+fn state_blocks_carry_place_grade_and_time() -> anyhow::Result<()> {
     let meet = parse(
         &crate::sources::hytek::lines_from_pdf_text(STATE),
         source(),
@@ -58,29 +58,87 @@ fn state_blocks_carry_place_grade_and_time() -> CrawlResult<()> {
     .ok_or_else(|| CrawlError::Invariant {
         detail: "the state file has a meet header".to_string(),
     })?;
-    assert_eq!(meet.name, "WIAA State Cross Country Championships");
-    assert_eq!(meet.date, "2025-11-01");
+    anyhow::ensure!(
+        meet.name == "WIAA State Cross Country Championships",
+        "left={:?} right={:?}",
+        &meet.name,
+        &"WIAA State Cross Country Championships"
+    );
+    anyhow::ensure!(
+        meet.date == "2025-11-01",
+        "left={:?} right={:?}",
+        &meet.date,
+        &"2025-11-01"
+    );
     let event = meet.events.first().ok_or_else(|| CrawlError::Invariant {
         detail: "the state file publishes a race".to_string(),
     })?;
-    assert_eq!(event.kind, EventKind::CrossCountry);
-    assert_eq!(event.gender, Gender::Boys);
-    assert_eq!(event.division.as_deref(), Some("Division 1"));
+    anyhow::ensure!(
+        event.kind == EventKind::CrossCountry,
+        "left={:?} right={:?}",
+        &event.kind,
+        &EventKind::CrossCountry
+    );
+    anyhow::ensure!(
+        event.gender == Gender::Boys,
+        "left={:?} right={:?}",
+        &event.gender,
+        &Gender::Boys
+    );
+    {
+        let left_value = &event.division.as_deref();
+        let right_value = &(Some("Division 1"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     let first = event.rows.first().ok_or_else(|| CrawlError::Invariant {
         detail: "the state file publishes a scorer".to_string(),
     })?;
-    assert_eq!(first.name, "Cooper Erickson");
-    assert_eq!(first.school, "SPASH", "the team block names the school");
-    assert_eq!(first.grade, census_domain::model::Grade::new(12));
-    assert_eq!(first.place, Some(6), "the place is the overall place");
-    assert_eq!(first.mark, Mark::TimeSeconds(950.2));
+    anyhow::ensure!(
+        first.name == "Cooper Erickson",
+        "left={:?} right={:?}",
+        &first.name,
+        &"Cooper Erickson"
+    );
+    anyhow::ensure!(
+        first.school == "SPASH",
+        "the team block names the school — left={:?} right={:?}",
+        &first.school,
+        &"SPASH"
+    );
+    {
+        let left_value = &first.grade;
+        let right_value = &(census_domain::model::Grade::new(12));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &first.place;
+        let right_value = &(Some(6));
+        anyhow::ensure!(
+            left_value == right_value,
+            "the place is the overall place — left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &first.mark;
+        let right_value = &(Mark::TimeSeconds(950.2));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     // A row that prints no school of its own must not be guessed into an athlete.
-    assert!(event.rows.iter().all(|row| !row.school.is_empty()));
+    anyhow::ensure!(event.rows.iter().all(|row| !row.school.is_empty()));
     Ok(())
 }
 
 #[test]
-fn padded_table_rows_parse_with_and_without_team_points() -> CrawlResult<()> {
+fn padded_table_rows_parse_with_and_without_team_points() -> anyhow::Result<()> {
     let meet = parse(
         &crate::sources::hytek::lines_from_pdf_text(TABLE),
         source(),
@@ -89,29 +147,67 @@ fn padded_table_rows_parse_with_and_without_team_points() -> CrawlResult<()> {
     .ok_or_else(|| CrawlError::Invariant {
         detail: "the sectional file has a meet header".to_string(),
     })?;
-    assert_eq!(
-        meet.date, "2025",
-        "this sectional family publishes no date at all, so the archive year is used"
-    );
+    anyhow::ensure!(meet.date == "2025", "this sectional family publishes no date at all, so the archive year is used — left={:?} right={:?}", &meet.date, &"2025");
     let rows: Vec<&ParsedRow> = meet.events.iter().flat_map(|event| &event.rows).collect();
-    assert_eq!(rows.len(), 4, "every table row is read: {rows:?}");
+    anyhow::ensure!(
+        rows.len() == 4,
+        "every table row is read: {rows:?} — left={:?} right={:?}",
+        &rows.len(),
+        &4
+    );
     let first = rows.first().ok_or_else(|| CrawlError::Invariant {
         detail: "the table publishes four rows".to_string(),
     })?;
     let second = rows.get(1).ok_or_else(|| CrawlError::Invariant {
         detail: "the table publishes four rows".to_string(),
     })?;
-    assert_eq!(first.name, "Wyatt See");
-    assert_eq!(first.school, "Poynette");
-    assert_eq!(first.grade, census_domain::model::Grade::new(12));
-    assert_eq!(first.mark, Mark::TimeSeconds(1004.1));
-    assert_eq!(second.grade, census_domain::model::Grade::new(11));
-    assert_eq!(second.school, "Ozaukee");
+    anyhow::ensure!(
+        first.name == "Wyatt See",
+        "left={:?} right={:?}",
+        &first.name,
+        &"Wyatt See"
+    );
+    anyhow::ensure!(
+        first.school == "Poynette",
+        "left={:?} right={:?}",
+        &first.school,
+        &"Poynette"
+    );
+    {
+        let left_value = &first.grade;
+        let right_value = &(census_domain::model::Grade::new(12));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &first.mark;
+        let right_value = &(Mark::TimeSeconds(1004.1));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &second.grade;
+        let right_value = &(census_domain::model::Grade::new(11));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    anyhow::ensure!(
+        second.school == "Ozaukee",
+        "left={:?} right={:?}",
+        &second.school,
+        &"Ozaukee"
+    );
     Ok(())
 }
 
 #[test]
-fn accurace_rows_are_read_through_the_rule_line() -> CrawlResult<()> {
+fn accurace_rows_are_read_through_the_rule_line() -> anyhow::Result<()> {
     let meet = parse(
         &crate::sources::hytek::lines_from_pdf_text(ACCURACE),
         source(),
@@ -120,19 +216,65 @@ fn accurace_rows_are_read_through_the_rule_line() -> CrawlResult<()> {
     .ok_or_else(|| CrawlError::Invariant {
         detail: "the AccuRace file has a meet header".to_string(),
     })?;
-    assert_eq!(meet.date, "2025-10-25");
-    assert_eq!(meet.name, "WIAA Division 3 Sectional Championship Meet");
+    anyhow::ensure!(
+        meet.date == "2025-10-25",
+        "left={:?} right={:?}",
+        &meet.date,
+        &"2025-10-25"
+    );
+    anyhow::ensure!(
+        meet.name == "WIAA Division 3 Sectional Championship Meet",
+        "left={:?} right={:?}",
+        &meet.name,
+        &"WIAA Division 3 Sectional Championship Meet"
+    );
     let event = meet.events.first().ok_or_else(|| CrawlError::Invariant {
         detail: "the AccuRace file publishes a race".to_string(),
     })?;
-    assert_eq!(event.label, "5000 Meter Run");
+    anyhow::ensure!(
+        event.label == "5000 Meter Run",
+        "left={:?} right={:?}",
+        &event.label,
+        &"5000 Meter Run"
+    );
     let first = event.rows.first().ok_or_else(|| CrawlError::Invariant {
         detail: "the AccuRace file publishes a row".to_string(),
     })?;
-    assert_eq!(first.name, "Jonathan Simon");
-    assert_eq!(first.school, "St. Ambrose/Abundant Life");
-    assert_eq!(first.grade, census_domain::model::Grade::new(10));
-    assert_eq!(first.place, Some(1));
-    assert_eq!(first.mark, Mark::TimeSeconds(981.6));
+    anyhow::ensure!(
+        first.name == "Jonathan Simon",
+        "left={:?} right={:?}",
+        &first.name,
+        &"Jonathan Simon"
+    );
+    anyhow::ensure!(
+        first.school == "St. Ambrose/Abundant Life",
+        "left={:?} right={:?}",
+        &first.school,
+        &"St. Ambrose/Abundant Life"
+    );
+    {
+        let left_value = &first.grade;
+        let right_value = &(census_domain::model::Grade::new(10));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &first.place;
+        let right_value = &(Some(1));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    {
+        let left_value = &first.mark;
+        let right_value = &(Mark::TimeSeconds(981.6));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }

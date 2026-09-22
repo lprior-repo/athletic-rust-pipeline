@@ -1,6 +1,7 @@
 //! The site registry and the HTML shapes a team index and a roster are read into.
 use census_domain::model::{Gender, GradYear};
 use census_domain::UsJurisdiction;
+use serde::Deserialize;
 
 /// One MileSplit state site: the jurisdiction it serves.
 ///
@@ -45,8 +46,69 @@ impl Site {
         format!("https://{}/teams", self.host())
     }
 
+    /// The state site's results index: `GET /results?season=&level=&year=&page=N`.
+    ///
+    /// One request serves 50 meet rows (`samples/results-oh.html`, captured 2026-09-22: exactly 50
+    /// `data-meet-id` attributes in one 187 KB body), which is why the meet census enumerates here
+    /// rather than by walking meet pages: a state's whole season costs one request per fifty meets.
+    pub fn results_url(&self, season: Season, year: u16, page: u32) -> String {
+        format!(
+            "https://{}/results?season={}&level=hs&year={year}&page={page}",
+            self.host(),
+            season.code()
+        )
+    }
+
     pub fn source_id(&self) -> String {
         format!("milesplit_{}", self.code().to_ascii_lowercase())
+    }
+}
+
+/// The season selector the results index publishes (`ddSeason`): cross country, indoor, or outdoor
+/// track. `road` exists on the site and is deliberately absent here — a road race is not a
+/// high-school track or cross-country meet.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Season {
+    CrossCountry,
+    Indoor,
+    Outdoor,
+}
+
+impl Season {
+    /// The `ddSeason` value this season selects.
+    pub const fn code(self) -> &'static str {
+        match self {
+            Season::CrossCountry => "cc",
+            Season::Indoor => "indoor",
+            Season::Outdoor => "outdoor",
+        }
+    }
+
+    /// Both track seasons, which is what a whole-season meet census asks for by default.
+    pub const ALL: [Season; 3] = [Season::CrossCountry, Season::Indoor, Season::Outdoor];
+}
+
+/// One meet row of a state's results index.
+///
+/// The id is kept as text because it is a source object's own identifier, never a number this
+/// program computes with; the date is optional because the row's day and its month bucket are read
+/// separately and a row whose month bucket was not published has no date to claim.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MeetRef {
+    pub meet_id: String,
+    pub name: String,
+    pub date: Option<String>,
+    pub venue: String,
+    pub results_url: String,
+}
+
+impl MeetRef {
+    /// The meet's own page: the published results link without its `/results` suffix.
+    pub fn meet_url(&self) -> String {
+        self.results_url
+            .strip_suffix("/results")
+            .unwrap_or(&self.results_url)
+            .to_string()
     }
 }
 
@@ -80,18 +142,44 @@ pub struct Roster {
 
 /// One `/raw` result set: the site that published it and the two provider ids that name it.
 ///
-/// A result set is addressed by its URL because nothing cheaper names it. MileSplit's meet pages
-/// publish the *first* result set of a meet in the page shell (`meetResultParams.resultsId` in
-/// `samples/meet-oh-770621-results.html`) and the formatted view carries zero result rows, so the
-/// list of result sets lives behind the robots-disallowed `/api/` (see the module docs): the
-/// operator supplies the `/raw` URL, and this type checks it into a jurisdiction, a `MeetID` and an
-/// `RSID`.
+/// A result set is addressed by its URL because nothing cheaper names it. The meet's results page
+/// is where the list comes from: it embeds `meetResultFiles` — every result file the meet has, with
+/// each file's own id — and that is what [`MeetResultFile::raw_url`] turns into the `/raw` URL this
+/// type reads. (An earlier reading of this file held that only the *first* result set was published
+/// and that the list lived behind the robots-disallowed `/api/`; the capture in
+/// `tests/fixtures/milesplit/oh_meet_770621_results.html:356` shows the whole list on the page
+/// itself, which is what the discovery arm now uses.) This type checks a URL into a jurisdiction, a
+/// `MeetID` and an `RSID`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ResultSetRef {
     pub site: Site,
     pub meet_id: String,
     pub rsid: String,
     pub url: String,
+}
+
+/// One result file a meet's results page lists, as `meetResultFiles[]` publishes it.
+///
+/// `is_meet_pro` is carried exactly as the page publishes it, without a reading of its own: a file
+/// the platform marks as Pro is still attempted, and the fetch layer reports whatever status the
+/// host answers with rather than this layer guessing that the file is gated.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+pub struct MeetResultFile {
+    /// The provider's own result-set id, the `RSID` of the `/raw` route.
+    pub id: i64,
+    /// The name the page gives the file (`Results`, `Section 2`, …).
+    #[serde(default)]
+    pub name: String,
+    /// The page's own Pro marker, uninterpreted.
+    #[serde(rename = "isMeetPro", default)]
+    pub is_meet_pro: i64,
+}
+
+impl MeetResultFile {
+    /// The `/raw` URL of this file under the results page that listed it.
+    pub fn raw_url(&self, results_url: &str) -> String {
+        format!("{}/{}/raw", results_url.trim_end_matches('/'), self.id)
+    }
 }
 
 impl ResultSetRef {

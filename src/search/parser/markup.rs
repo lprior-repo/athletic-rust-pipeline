@@ -12,12 +12,23 @@ mod stream;
 
 const MAX_TEXT_BYTES: usize = 8_192;
 
+/// What one page's result markup yielded: the candidates the queried sport can use, the row-level
+/// issues that invalidate the page, and the rows the site delivered with the ones it could not use.
+pub(super) struct Rows {
+    pub(super) candidates: Vec<SearchCandidate>,
+    pub(super) issues: Vec<SearchIssue>,
+    /// Result rows the page delivered (`tr` anchors), candidate or not.
+    pub(super) seen: u32,
+    /// Delivered rows the queried sport could not use.
+    pub(super) skipped: u32,
+}
+
 pub(super) fn rows(
     query: &SearchQuery,
     start: u32,
     digest: &EvidenceDigest,
     html: &str,
-) -> Result<(Vec<SearchCandidate>, Vec<SearchIssue>)> {
+) -> Result<Rows> {
     stream::rows(query, start, digest, html)
 }
 
@@ -83,6 +94,16 @@ fn athlete_link(href: &str) -> bool {
     href.as_bytes()
         .windows(9)
         .any(|part| part.eq_ignore_ascii_case(b"/athlete/"))
+}
+
+/// Whether `href` is the site's placeholder athlete link, `/athlete//<sport>`.
+///
+/// The endpoint renders one of these instead of an athlete it will not identify: an empty id, no
+/// display name, and a team link that does survive. Every non-canonical athlete URL in the retained
+/// live corpora is exactly this shape (39 lane + 130 pilot hrefs), so the placeholder is recognised
+/// by its own path instead of by a general parse failure.
+fn placeholder_link(href: &str) -> bool {
+    href.contains("/athlete//")
 }
 
 fn normalize(raw: &str) -> Result<String> {

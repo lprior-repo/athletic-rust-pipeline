@@ -87,8 +87,8 @@ pub mod xc;
 // The source capability registry (§10/§11): what each adapter can be asked for, what a request to it
 // costs its origin, and the bulk-meet-first ordering a plan starts from.
 pub use registry::{
-    bulk_first, descriptor, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
-    REGISTRY,
+    bulk_first, descriptor, descriptors, SourceAdmission, SourceCapabilities, SourceDescriptor,
+    TransportKind,
 };
 
 use crate::net::{FetchOptions, Fetcher};
@@ -158,6 +158,29 @@ pub fn default_host_delays() -> std::collections::HashMap<String, Duration> {
     ]
     .into_iter()
     .map(|(host, delay)| (host.to_string(), delay))
+    .collect()
+}
+
+/// Sources that enforce one ceiling for the whole client, so every host below them shares one
+/// budget (§10) instead of one budget per subdomain.
+///
+/// MileSplit is here because the measured refusal is client-wide: the 2026-09-22 national walk was
+/// refused on `tx.milesplit.com` *and* on `wi.milesplit.com` at the same moment, while still being
+/// allowed to continue with pages it had already fetched — a per-host model cannot see that, and a
+/// fifty-one-state fan-out against it spends fifty-one budgets. Athletic.net is here on the same
+/// reasoning: its ranking, profile, meet and result endpoints are one site's traffic and one
+/// origin's policy, which is what §10 requires the run to treat them as.
+///
+/// One second of spacing per family is a deliberate cut below the per-host ceiling: a family is
+/// many hosts' worth of demand, and the point of the shared gate is that the *source* sees the rate
+/// the policy promises, not the rate any one subdomain could otherwise justify.
+pub fn default_family_delays() -> std::collections::HashMap<String, Duration> {
+    [
+        ("milesplit.com", Duration::from_secs(1)),
+        ("athletic.net", Duration::from_secs(1)),
+    ]
+    .into_iter()
+    .map(|(family, delay)| (family.to_string(), delay))
     .collect()
 }
 

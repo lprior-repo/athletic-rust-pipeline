@@ -36,7 +36,6 @@
 //! database finishes importing on the next open without duplicating observations.
 
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 
@@ -112,22 +111,6 @@ pub enum StoreError {
 /// Result alias for store code.
 pub type StoreResult<T> = std::result::Result<T, StoreError>;
 
-mod entities;
-mod keys;
-mod legacy;
-pub mod read;
-mod sequences;
-mod write;
-
-/// Hard ceiling on the observations one table may hold. A table larger than this aborts the scan
-/// with a typed error instead of exhausting memory: the bound is what keeps Rule 2 (bounded control
-/// flow) honest for a store whose input size is not known in advance.
-pub const MAX_ROWS_PER_TABLE: u64 = 20_000_000;
-
-/// Longest entity id the store accepts. Ids ride verbatim inside observation keys, and Fjall
-/// asserts keys stay under 64 KiB; this ceiling keeps that assertion unreachable for callers.
-pub const MAX_ID_BYTES: usize = 512;
-
 /// Unified cache for the LSM tree. Bounded on purpose: the default is sized to the machine, and this
 /// process is expected to share the machine with a browser and a text editor.
 const CACHE_BYTES: u64 = 256 * 1024 * 1024;
@@ -137,64 +120,17 @@ const ENTITIES: &str = "entities";
 const JOURNAL: &str = "journal";
 const META: &str = "meta";
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Table {
-    Schools,
-    Teams,
-    Coaches,
-    Athletes,
-    Meets,
-    Events,
-    Performances,
-}
+mod backup;
+mod entities;
+mod keys;
+mod legacy;
+pub mod read;
+mod sequences;
+mod table;
+mod write;
 
-impl Table {
-    pub fn file(self) -> &'static str {
-        match self {
-            Table::Schools => "schools",
-            Table::Teams => "teams",
-            Table::Coaches => "coaches",
-            Table::Athletes => "athletes",
-            Table::Meets => "meets",
-            Table::Events => "events",
-            Table::Performances => "performances",
-        }
-    }
-
-    pub const ALL: [Table; 7] = [
-        Table::Schools,
-        Table::Teams,
-        Table::Coaches,
-        Table::Athletes,
-        Table::Meets,
-        Table::Events,
-        Table::Performances,
-    ];
-
-    /// Parse a wire name (`"schools"`) back into a table. Unknown names are rejected so a typo in an
-    /// ingest request cannot silently create a table nobody scans.
-    pub fn from_wire(name: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|table| table.file() == name)
-    }
-}
-
-/// An entity that knows its own canonical id and how to absorb a duplicate observation.
-pub trait Entity: Serialize + DeserializeOwned + Clone {
-    fn entity_id(&self) -> &str;
-    fn merge(&mut self, other: Self);
-
-    /// Apply the collection contract to a merged entity. Every read of the store goes through
-    /// [`Store::scan`], so a rule that lives here holds for the report, the workbook, the snapshot
-    /// and the Restate handlers at once.
-    fn publish(&mut self) {}
-
-    /// How many of this entity's rows carry something the contract withheld. [`Store::consolidate`]
-    /// sums this in the same pass that writes the snapshot, so reporting the count never re-scans
-    /// the table.
-    fn withheld_mailboxes(&self) -> usize {
-        0
-    }
-}
+pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
+pub use table::{Entity, Table, MAX_ID_BYTES, MAX_ROWS_PER_TABLE};
 
 /// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
 /// collection contract withheld a consumer mailbox from.
@@ -204,9 +140,12 @@ pub struct Consolidated {
     pub withheld: usize,
 }
 
-/// Per-table row counts and the database's on-disk footprint. Counts are the LSM tree's own
-/// estimates (`approximate_len`), which is what a status command needs without scanning millions of
-/// rows.
+/// Per-table row counts and the database's on-disk footprint. The counts are the store's own
+/// per-table sequence counters — exact figures rather than LSM `approximate_len` estimates — so a
+/// status command reports what the store holds without scanning millions of rows. For an appended
+/// table the counter is the number of observations ever appended; for a derived table written
+/// through [`Store::replace_many`] it is the number of rows, since a replaced row reserves no
+/// sequence.
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreStats {
     pub tables: Vec<(String, u64)>,
@@ -253,6 +192,10 @@ impl Store {
 
         let sequences = sequences::Counters::seeded(&entities)?;
 
+        // Reclaim what a dead writer left behind. The lock above is exclusive, so any temporary
+        // still on disk belongs to a process that is no longer running.
+        read::sweep_stale_temporaries(&root)?;
+
         let store = Self {
             root,
             db,
@@ -291,6 +234,9 @@ impl Store {
             .map_err(|source| StoreError::Flush { source })
     }
 }
+#[cfg(test)]
+#[path = "backup_tests.rs"]
+mod backup_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
 #[cfg(test)]

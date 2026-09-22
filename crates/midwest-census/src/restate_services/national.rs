@@ -111,6 +111,13 @@ async fn collect_outcomes(
                 teams: report.teams,
                 rosters_done: report.rosters.rosters_done,
                 rosters_skipped: report.rosters.rosters_skipped,
+                rosters_owed: Some(
+                    report
+                        .teams
+                        .saturating_sub(report.rosters.rosters_done)
+                        .saturating_sub(report.rosters.rosters_skipped),
+                ),
+                blocked: Some(report.rosters.blocked),
                 athletes: report.rosters.athletes,
                 class_of_2027: report.rosters.class_of_2027,
             }),

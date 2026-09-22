@@ -18,9 +18,10 @@ use census_domain::model::{CanonicalAthlete, GradYear};
 use std::collections::HashMap;
 
 use crate::report::ReportResult;
+use crate::store::Store;
 use crate::workbook::cells::{cell, row, Cell};
 
-use super::{Family, StoreRows};
+use super::{school_name_index, Family, QueueRow, StoreRows};
 
 mod conflicts;
 mod review;
@@ -75,7 +76,14 @@ pub(super) fn queue_sheet(families: &[Family], counts_label: &str) -> ReportResu
     cells.push(row!());
     cells.push(row!("Reason", "Subject id", "Subject", "Detail"));
     for family in families {
-        cells.extend_from_slice(&family.rows);
+        for retained in &family.rows {
+            cells.push(row!(
+                Cell::text(family.label),
+                Cell::text(&retained.subject_id),
+                Cell::text(&retained.subject),
+                Cell::text(&retained.detail),
+            ));
+        }
     }
     Ok(cells)
 }
@@ -87,12 +95,41 @@ fn class_of_2027(athletes: &[CanonicalAthlete]) -> impl Iterator<Item = &Canonic
         .filter(|athlete| athlete.grad_year == GradYear::CO2027)
 }
 
-/// One queue row: the family label, the subject's id and name, and why the row is unresolved.
-fn queue_row(label: &str, id: &str, subject: String, detail: String) -> Vec<Cell> {
-    row!(
-        Cell::text(label),
-        Cell::text(id),
-        Cell::text(subject),
-        Cell::text(detail)
-    )
+/// One retained row: the subject's id and name, and why the row is unresolved.
+fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
+    QueueRow {
+        subject_id: id.to_string(),
+        subject,
+        detail,
+    }
+}
+
+/// The retained rows of both queues as `(family label, row)` pairs: the durable record the store's
+/// `conflicts` and `review_cases` tables hold, read through the same families the sheets render, so
+/// the store and the workbook can never name different findings.
+pub(crate) fn retained_records(store: &Store) -> ReportResult<RetainedRecords> {
+    let rows = StoreRows::read(store)?;
+    let names = school_name_index(&rows.schools);
+    Ok(RetainedRecords {
+        conflicts: labelled(conflict_families(&rows, &names)),
+        reviews: labelled(review_families(&rows, &names)),
+    })
+}
+
+/// The retained conflicts and reviews, each row paired with the family that produced it.
+#[derive(Debug, Default)]
+pub(crate) struct RetainedRecords {
+    pub(crate) conflicts: Vec<(&'static str, QueueRow)>,
+    pub(crate) reviews: Vec<(&'static str, QueueRow)>,
+}
+
+/// Flatten families into `(label, row)` pairs, keeping the family order the sheets use.
+fn labelled(families: Vec<Family>) -> Vec<(&'static str, QueueRow)> {
+    let mut out = Vec::new();
+    for family in families {
+        for row in family.rows {
+            out.push((family.label, row));
+        }
+    }
+    out
 }

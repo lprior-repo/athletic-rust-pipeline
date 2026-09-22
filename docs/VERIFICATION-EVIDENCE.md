@@ -531,3 +531,57 @@ boundary, `SourceNamespace::is_core`, `EventKind::from_source_label`, `Gender::p
 - **Deeper fuzzing than 1000 runs per target** — the runs are bounded smoke runs, not soak runs.
 - **cargo-mutants** — carried from the earlier pack, not re-run here.
 - **Traceability matrix** — separate work item, not part of this pack.
+
+## Census seal (2026-09-22)
+
+The terminal state is now a value, not a label (§17, §70, ADR-007): `CensusState` advances one phase
+at a time, `Complete` is unconstructible without `SealEvidence`, and `midwest-census seal` assembles
+that evidence from the store and the exported workbook — then either completes the census with a
+digest or refuses and names the acceptance item.
+
+Commands and results:
+
+    cargo test -p midwest-census --lib census::state      # 11 passed
+    cargo test -p midwest-census --bins                   # 22 passed (9 of them cli::seal)
+    cargo clippy -p midwest-census --all-targets --all-features -- -D warnings   # clean
+    cargo fmt -p midwest-census -- --check                # clean
+    cargo run --bin midwest-census -- --store /tmp/mc-seal-proof seal --grad-year 2027
+      # exit 1: "no workbook in /tmp/mc-seal-proof/out: run `midwest-census workbook …` before sealing"
+
+**Defect found and fixed while reviewing this work:** the seal digest rendered `workbook_rows` but
+not the workbook's own sha256, so two different exports with the same row count would have shared one
+seal. The digest now covers `workbook_rows`, `workbook_sheets` and the sorted set of workbook
+digests, and `census::state::tests::the_seal_binds_the_workbook_it_certifies` pins it.
+
+**Review claim rejected, with evidence:** an independent review reported that `school_coach_index`
+(`crates/midwest-census/src/report/rows.rs:74-89`) is non-deterministic because "HashMap iteration
+order" decides which coach wins at a school. The map is only read by key, the stored coach is the
+first in deterministic `scan` order, and the email flag is accumulated across every coach at the
+school (`entry.1 = true`), so no published number depends on map iteration. The same review's claim
+that coaches with `sport = None` are wrongly excluded is the documented intent of that index
+(`/// School id -> (a track/XC coach, whether any track/XC coach brings a professional email)`): the
+published metric is athletes with an identified *track/XC* coach, and a school-wide coach row carries
+no evidence that they coach track or cross country. Residual, unresolved: a school whose only track
+coach is recorded as school-wide counts its athletes as coachless — a coach-sourcing gap, not a
+miscomputed metric.
+
+**Not verified here:** the seal's success path against the live store. The store is locked by the
+running national sweep, so the seal is proved at the unit level (ladder, workbook reconciliation,
+digest) and at the CLI level for the refusal path; the completed seal over the real corpus remains to
+be run once that sweep releases the store.
+
+**Second review, also local, also rejected with evidence** (`cli/seal.rs`, `census/state/**`):
+
+- *"`open_items()` never checks `ConflictsRetained`/`RetriesRepresented`"* — correct, and intended:
+  those two §70 items are satisfied by retention, which ADR-007 states. Both variants now carry that
+  in their own doc comments so a reader of the enum does not have to infer it.
+- *"`SealEvidence.open` is not in the digest"* — cannot matter: `seal()` refuses unless
+  `open_items()` is empty, which requires every open-work count to be zero, so the field is always
+  zero wherever a digest is minted. `observed_on` is likewise outside the digest on purpose.
+- *"`metrics_reconciled` passes vacuously on a header-only sheet"* — it does not: the flag requires
+  `mapped_athletes > 0`, which requires the cohort row to have been found and parsed, so a sheet with
+  no cohort row fails both `RunMetricsReconcile` and `WorkbookMapped`.
+- *"`labelled_count` truncates a count split across cells"* — accepted as a real limit of the parse,
+  not a path to a wrong seal: the first cell after the label is the value cell the workbook writer
+  fills, and a truncated read disagrees with the store's cohort count and is refused rather than
+  sealed.

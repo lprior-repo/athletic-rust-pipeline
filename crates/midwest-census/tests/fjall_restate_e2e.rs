@@ -7,7 +7,8 @@
 //! 3. [`report_bests_and_workbook_chain_over_synthetic_entities`] — consolidate → census (both
 //!    scopes) → best marks → workbook over a synthetic corpus, with counts asserted at every step.
 //! 4. [`restate_endpoint_advertises_services_and_drains_on_request`] — the supervisor's endpoint
-//!    answers `/discover` with the three advertised services and returns a drain report on request.
+//!    answers `/discover` with the five services the workflow is built from and returns a drain
+//!    report on request.
 //!
 //! `/discover` is answered by the SDK's own endpoint (see `restate-sdk`'s `endpoint::mod`, which
 //! routes any path whose last segment is `discover`), so discovery is driven directly here: no
@@ -37,8 +38,15 @@ const MEET_DATE: &str = "2026-05-02";
 const DISCOVERY_ACCEPT: &str = "application/vnd.restate.endpointmanifest.v4+json";
 const DISCOVERY_ATTEMPTS: usize = 50;
 const DISCOVERY_RETRY_DELAY: Duration = Duration::from_millis(100);
-/// Wire names come from Restate struct names, so they are PascalCase (see `restate_services` docs).
-const EXPECTED_SERVICES: [&str; 3] = ["Census", "Ingest", "Sweep"];
+/// Wire names come from Restate struct names, so they are PascalCase (see `restate_services` docs):
+/// the three sweep surfaces plus the jurisdiction object and the national workflow that drive them.
+const EXPECTED_SERVICES: [&str; 5] = [
+    "Census",
+    "Ingest",
+    "Sweep",
+    "JurisdictionCensus",
+    "NationalCensus",
+];
 
 fn evidence() -> Evidence {
     Evidence::parsed(SourceRef::id(SOURCE_ID), MEET_DATE)
@@ -535,6 +543,11 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
             "the discovery manifest {names:?} does not advertise {expected}"
         );
     }
+    assert_eq!(
+        names.len(),
+        EXPECTED_SERVICES.len(),
+        "the endpoint advertises exactly its services, nothing more: {names:?}"
+    );
 
     let report = drain_after_shutdown(&mut tasks, shutdown_tx).await;
     assert_eq!(report.stop_reason, StopReason::Requested);

@@ -107,7 +107,7 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
     // When an annotation claims acceptance but the retained evidence is pending,
     // then original-cell preservation alone must not allow the bundle to pass.
     workbook(&output, true, "ACCEPTED", "")?;
-    assert!(verify(&original, &output, &digest, &headers).is_err());
+    anyhow::ensure!(verify(&original, &output, &digest, &headers).is_err());
 
     // When an unprocessed row claims performance unsupported by its sidecar,
     // then preserving identity and terminal status must not validate that claim.
@@ -117,7 +117,7 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
         "PENDING",
         r#"{"fabricated_personal_best":"0.01 seconds"}"#,
     )?;
-    assert!(verify(&original, &output, &digest, &headers).is_err());
+    anyhow::ensure!(verify(&original, &output, &digest, &headers).is_err());
 
     // When an original field is replaced by a declared annotation with the
     // same output value, exact source-column binding must still reject it.
@@ -126,11 +126,11 @@ fn rejects_annotation_and_sidecar_tampering_despite_preserved_original_cells() -
         &output.with_extension("jsonl"),
         json!({"Person Last":"Runner", "native.source_key":"Golden:2"}),
     )?;
-    assert!(verify(&original, &output, &digest, &headers).is_err());
+    anyhow::ensure!(verify(&original, &output, &digest, &headers).is_err());
 
     // When the sidecar is swapped to another identity, then binding also fails.
     workbook(&output, true, "PENDING", "")?;
     detail(&output.with_extension("jsonl"), "Other")?;
-    assert!(verify(&original, &output, &digest, &headers).is_err());
+    anyhow::ensure!(verify(&original, &output, &digest, &headers).is_err());
     Ok(())
 }

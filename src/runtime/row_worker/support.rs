@@ -153,30 +153,6 @@ fn terminal(error: impl std::fmt::Display) -> HandlerError {
     TerminalError::new(error.to_string()).into()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::source_validation;
-    use crate::model::SourceRecord;
-    use std::collections::BTreeMap;
-
-    fn source(fields: &[(&str, &str)]) -> SourceRecord {
-        SourceRecord {
-            fields: fields
-                .iter()
-                .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
-                .collect::<BTreeMap<_, _>>(),
-            ..SourceRecord::default()
-        }
-    }
-
-    #[test]
-    fn missing_name_is_terminal_review_input() {
-        let issue =
-            source_validation(&source(&[("Schools Name", "Central")])).expect("missing name issue");
-        assert!(issue.contains("complete athlete name"));
-    }
-}
-
 /// Fold one row's discovery summary into a published artifact.
 pub(crate) async fn publish_discovery_summary(
     ctx: &ObjectContext<'_>,
@@ -250,4 +226,28 @@ pub(crate) async fn assess_and_publish(
         .map_err(|error| TerminalError::new(error.to_string()))?;
     let digest = publish(ctx, runtime, "row-assessment", assessment.clone()).await?;
     Ok((profiles, (digest, assessment)))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::source_validation;
+    use crate::model::SourceRecord;
+    use std::collections::BTreeMap;
+
+    fn source(fields: &[(&str, &str)]) -> SourceRecord {
+        SourceRecord {
+            fields: fields
+                .iter()
+                .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
+                .collect::<BTreeMap<_, _>>(),
+            ..SourceRecord::default()
+        }
+    }
+
+    #[test]
+    fn missing_name_is_terminal_review_input() {
+        let issue =
+            source_validation(&source(&[("Schools Name", "Central")])).expect("missing name issue");
+        assert!(issue.contains("complete athlete name"));
+    }
 }

@@ -55,11 +55,20 @@ fn rust_xlsxwriter_descriptor_workbook_is_accepted() -> Result<()> {
         records.push(record);
         Ok(())
     })?;
-    assert_eq!(stats.actual_data_rows, 1);
-    assert_eq!(
-        records.first().map(|record| record.source_key.as_str()),
-        Some("Synthetic:2")
+    anyhow::ensure!(
+        stats.actual_data_rows == 1,
+        "left={:?} right={:?}",
+        &stats.actual_data_rows,
+        &1
     );
+    {
+        let left_value = &(records.first().map(|record| record.source_key.as_str()));
+        let right_value = &(Some("Synthetic:2"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -86,13 +95,17 @@ fn zip64_streaming_descriptors_preserve_workbook_fields() -> Result<()> {
         records.push(record);
         Ok(())
     })?;
-    assert_eq!(
-        records
+    {
+        let left_value = &(records
             .first()
             .and_then(|record| record.fields.get("Person Email"))
-            .map(String::as_str),
-        Some("synthetic@example.invalid")
-    );
+            .map(String::as_str));
+        let right_value = &(Some("synthetic@example.invalid"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -109,20 +122,25 @@ fn duplicate_central_names_are_rejected_by_visit_records() -> Result<()> {
     archive.start_file("fixture-b.txt", options)?;
     archive.write_all(b"synthetic evidence")?;
     archive.finish()?;
-    assert_eq!(
-        workbook_ingest::visit_records(&path, |_| Ok(()))?.actual_data_rows,
-        1
-    );
+    {
+        let left_value = &(workbook_ingest::visit_records(&path, |_| Ok(()))?.actual_data_rows);
+        let right_value = &1;
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     let mut bytes = fs::read(&path)?;
     let positions = bytes
         .windows(b"fixture-b.txt".len())
         .enumerate()
         .filter_map(|(offset, value)| (value == b"fixture-b.txt").then_some(offset))
         .collect::<Vec<_>>();
-    assert_eq!(
-        positions.len(),
-        2,
-        "synthetic local and central names must both be present"
+    anyhow::ensure!(
+        positions.len() == 2,
+        "synthetic local and central names must both be present — left={:?} right={:?}",
+        &positions.len(),
+        &2
     );
     positions.into_iter().try_for_each(|offset| -> Result<()> {
         bytes
@@ -132,7 +150,7 @@ fn duplicate_central_names_are_rejected_by_visit_records() -> Result<()> {
         Ok(())
     })?;
     fs::write(&path, bytes)?;
-    assert!(workbook_ingest::visit_records(&path, |_| Ok(())).is_err());
+    anyhow::ensure!(workbook_ingest::visit_records(&path, |_| Ok(())).is_err());
     Ok(())
 }
 
@@ -155,6 +173,6 @@ fn local_header_name_mismatch_is_rejected_by_visit_records() -> Result<()> {
     }
     bytes[name] ^= 1;
     fs::write(&path, bytes)?;
-    assert!(workbook_ingest::visit_records(&path, |_| Ok(())).is_err());
+    anyhow::ensure!(workbook_ingest::visit_records(&path, |_| Ok(())).is_err());
     Ok(())
 }

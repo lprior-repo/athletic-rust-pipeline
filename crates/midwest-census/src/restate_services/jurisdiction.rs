@@ -103,6 +103,24 @@ impl JurisdictionCensus {
             stages_run.push("rosters".to_string());
         }
 
+        if state.meets.is_none() {
+            // The season year reaches the results index as a query parameter, so a year the URL
+            // cannot carry is a request fault rather than a source condition.
+            let year = u16::try_from(request.season.start_year()).map_err(|_| {
+                TerminalError::new(format!(
+                    "season year {} is not a results-index year",
+                    request.season.start_year()
+                ))
+            })?;
+            let fetcher = self.fetcher().await?;
+            let census = self
+                .meets_stage(ctx, fetcher, request.jurisdiction, year, request.refresh)
+                .await?;
+            state.meets = Some(census);
+            self.save(ctx, state);
+            stages_run.push("meets".to_string());
+        }
+
         if state.consolidated.is_none() {
             let tables = self.consolidate_stage(ctx).await?;
             state.consolidated = Some(tables);
@@ -117,7 +135,7 @@ impl JurisdictionCensus {
 /// The report one completed run produces.
 ///
 /// A stage with no recorded outcome is a bug in the stage sequence, not a source condition: the
-/// stages above fill all three before this runs, so a gap is terminal rather than a partial report.
+/// stages above fill all four before this runs, so a gap is terminal rather than a partial report.
 fn report(
     request: &JurisdictionRequest,
     identity: &WorkflowIdentity,
@@ -137,6 +155,10 @@ fn report(
         .consolidated
         .clone()
         .ok_or_else(|| jobs::invariant("no table counts recorded after the consolidate stage"))?;
+    let meets = state
+        .meets
+        .clone()
+        .ok_or_else(|| jobs::invariant("no meet census recorded after the meets stage"))?;
     Ok(JurisdictionReport {
         identity: identity.as_str().to_string(),
         jurisdiction: request.jurisdiction,
@@ -144,6 +166,7 @@ fn report(
         teams: teams.records,
         rosters,
         consolidated,
+        meets,
         completed_at,
     })
 }

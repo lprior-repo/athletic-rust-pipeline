@@ -6,7 +6,7 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::census;
-use midwest_census::net::FetchOptions;
+use midwest_census::net::{FetchOptions, Fetcher};
 use midwest_census::sources::milesplit::Site;
 use midwest_census::store::Store;
 use std::path::Path;
@@ -60,6 +60,41 @@ pub(super) async fn run_teams(
     Ok(())
 }
 
+/// Enumerate every published meet in each state's results index and store the rows.
+pub(super) async fn run_meets(
+    cli: &Cli,
+    store: &Store,
+    states: &[UsJurisdiction],
+    year: u16,
+    refresh: bool,
+) -> Result<()> {
+    let fetcher = build_fetcher(cli, store)?;
+    let observed_on = midwest_census::net::today_iso();
+    for jurisdiction in states {
+        let census = census::collect_state_meets(
+            &fetcher,
+            store,
+            *jurisdiction,
+            year,
+            &observed_on,
+            refresh,
+        )
+        .await?;
+        println!(
+            "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
+            jurisdiction.code(),
+            census.pages,
+            census.fetched,
+            census.seen,
+            census.rows,
+            census.seasons,
+            census.repeated,
+            census.truncated
+        );
+    }
+    Ok(())
+}
+
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
     /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS code).
@@ -108,12 +143,31 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
 /// Walk rosters and emit canonical entities for the given states.
 pub(super) async fn run_collect(cli: &Cli, store: &Store, args: &CollectArgs) -> Result<()> {
     let options = collect_options(args)?;
-    let fetcher = build_fetcher(cli, store)?;
-    let report = census::collect_milesplit(&fetcher, store, &options)
-        .await
-        .context("milesplit collection")?;
+    let fetcher = build_fetcher(cli, store)?.with_source("milesplit");
+    let outcome = census::collect_milesplit(&fetcher, store, &options).await;
+    // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads
+    // like a complete one — whatever the walk itself returned.
+    print_blocked_hosts(&fetcher).await;
+    let report = outcome.context("milesplit collection")?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
+}
+
+/// Print one `\t`-separated line per blocked host, named with the kind of condition that stopped the
+/// walk (§69).
+///
+/// Plain text on purpose — the machine-readable copy is the report's own `access_conditions` — and
+/// read off the fetcher rather than the report so a walk that failed *after* the block still names
+/// the host that refused it. A blocked host is printed even when no kind is attached to it.
+pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) {
+    let conditions = fetcher.access_conditions().await;
+    let now = midwest_census::net::now_iso8601();
+    for host in fetcher.blocked_hosts(now.as_str()).await {
+        match conditions.iter().find(|condition| condition.host == host) {
+            Some(condition) => println!("blocked\t{host}\t{}", condition.kind.slug()),
+            None => println!("blocked\t{host}"),
+        }
+    }
 }
 
 /// Import the researched official coach-contact CSV into canonical entities.

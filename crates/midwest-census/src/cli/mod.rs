@@ -4,27 +4,34 @@
 //! store and dispatches to the module that owns each subcommand. The global flags stay here
 //! because every subcommand reads them.
 
-use anyhow::{Context, Result};
-use census_domain::UsJurisdiction;
-use clap::{Parser, Subcommand};
-use midwest_census::net::Fetcher;
-use midwest_census::report;
-use midwest_census::sources::default_host_delays;
-use midwest_census::store::Store;
-use std::path::PathBuf;
-use std::time::Duration;
-
+mod census_doc;
+mod command;
 mod cycle;
+mod dispatch;
+mod export_data;
 mod gather;
+mod ingress;
+mod merge_coaches;
+mod national;
 mod provider;
 mod publish;
+mod qa_reports;
+mod review;
+mod school_names;
+mod seal;
 mod serve;
 mod store;
+mod verify;
+mod verify_coaches;
+use anyhow::{Context, Result};
+use census_domain::UsJurisdiction;
+use clap::Parser;
+use midwest_census::net::Fetcher;
+use midwest_census::report;
+use midwest_census::store::Store;
+use std::path::PathBuf;
 
-use cycle::RunArgs;
-use gather::CollectArgs;
-use provider::ProviderArgs;
-use publish::{BestsArgs, WorkbookArgs};
+use command::Command;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -50,86 +57,46 @@ pub(super) struct Cli {
     command: Command,
 }
 
-#[derive(Subcommand, Debug)]
-enum Command {
-    /// Fetch a single URL through the polite fetcher (robots-enforced, cached).
-    Fetch {
-        url: String,
-        /// Ignore the cache and hit the network.
-        #[arg(long)]
-        refresh: bool,
-    },
-    /// List the registered MileSplit state sites.
-    Sites,
-    /// Fetch (and cache) team indexes for the given states.
-    Teams {
-        /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
-        /// code). Default: WI.
-        #[arg(long, value_delimiter = ',')]
-        states: Vec<UsJurisdiction>,
-        /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
-        #[arg(long)]
-        all_states: bool,
-        #[arg(long)]
-        refresh: bool,
-    },
-    /// Walk rosters and emit canonical entities for the given states.
-    Collect(CollectArgs),
-    /// Import the researched official coach-contact CSV into canonical entities.
-    ImportCoaches {
-        /// Path to `data/coach-contacts.csv` (research workspace artifact).
-        csv: PathBuf,
-        /// ISO date used when a row carries no `last_observed`.
-        #[arg(long)]
-        observed_on: Option<String>,
-    },
-    /// Run one association contact adapter by name.
-    Provider(ProviderArgs),
-    /// Merge append observations into `out/*.jsonl` snapshots.
-    Consolidate,
-    /// Compute the measured census from the store.
-    Report {
-        /// Print the census JSON to stdout as well as writing files.
-        #[arg(long)]
-        print: bool,
-        /// Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are
-        /// excluded, exactly as they are when those adapters are never registered.
-        #[arg(long)]
-        core: bool,
-    },
-    /// Reduce the consolidated tables to one best mark per athlete and event.
-    Bests(BestsArgs),
-    /// Build the census workbook (`.xlsx`) and its text sidecars.
-    Workbook(WorkbookArgs),
-    /// Run the whole cycle in one command: gather the authorized registry, consolidate, publish both
-    /// census scopes, reduce best marks, and write the workbook.
-    Run(RunArgs),
-    /// Print the Fjall store's per-table observation counts and on-disk footprint.
-    FjallStats,
-    /// Import pre-Fjall JSONL journals into the store (one-time), then print the store stats.
-    ImportLegacy,
-    /// Print the command that runs the `midwest-serve` Restate endpoint.
-    Serve,
+pub(super) fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
+    build_fetcher_authorizing(cli, store, Vec::new())
 }
 
-pub(super) fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
+/// The same fetcher with additional hosts named as authorized: the caller has stated that the
+/// collection was commissioned for those hosts, so robots refusals there are counted as
+/// `robots_authorized` and the requests proceed under the fetcher's per-host ceiling instead.
+pub(super) fn build_fetcher_authorizing(
+    cli: &Cli,
+    store: &Store,
+    mut hosts: Vec<String>,
+) -> Result<Fetcher> {
+    hosts.extend(cli.authorized_hosts.iter().cloned());
+    hosts.retain(|host| !host.trim().is_empty());
+    hosts.sort();
+    hosts.dedup();
     Ok(Fetcher::new(
         store.http_cache_dir(),
         cli.user_agent.clone(),
-        Duration::from_millis(cli.delay_ms),
-        default_host_delays(),
-        cli.authorized_hosts.clone(),
-    )?)
+        std::time::Duration::from_millis(cli.delay_ms),
+        midwest_census::sources::default_host_delays(),
+        hosts,
+    )?
+    .with_family_budgets(midwest_census::sources::default_family_delays()))
 }
 
 /// Parse the arguments, open the store and dispatch the subcommand.
 pub(super) async fn run() -> Result<()> {
     init_tracing();
-
     let cli = Cli::parse();
+    match &cli.command {
+        Command::National(args) => return national::run_national(args).await,
+        Command::Jurisdiction(args) => return national::run_jurisdiction(args).await,
+        Command::MergeCoaches(args) => return merge_coaches::run_merge_coaches(args),
+        Command::VerifyCoaches(args) => return verify_coaches::run_verify_coaches(args).await,
+        Command::CensusDoc(args) => return census_doc::run_census_doc(args),
+        _ => {}
+    }
     let store = Store::open(&cli.store)?;
-
-    dispatch(&cli, &store).await
+    dispatch::dispatch(&cli, &store).await
 }
 
 /// Install the tracing subscriber: `RUST_LOG` when it is set, `info` otherwise.
@@ -141,36 +108,6 @@ fn init_tracing() {
         )
         .with_target(false)
         .init();
-}
-
-/// Run the subcommand `cli` selected.
-async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
-    match &cli.command {
-        Command::Sites => gather::run_sites()?,
-        Command::Fetch { url, refresh } => gather::run_fetch(cli, store, url, *refresh).await?,
-        Command::Teams {
-            states,
-            all_states,
-            refresh,
-        } => {
-            let states = resolve_states(*all_states, states)?;
-            gather::run_teams(cli, store, &states, *refresh).await?
-        }
-        Command::Collect(args) => gather::run_collect(cli, store, args).await?,
-        Command::ImportCoaches { csv, observed_on } => {
-            gather::run_import_coaches(store, csv, observed_on)?
-        }
-        Command::Provider(args) => provider::run_provider(cli, store, args).await?,
-        Command::Consolidate => publish::run_consolidate(store)?,
-        Command::Report { print, core } => publish::run_report(store, *print, *core)?,
-        Command::Bests(args) => publish::run_bests(store, args)?,
-        Command::Workbook(args) => publish::run_workbook(store, args)?,
-        Command::Run(args) => cycle::run_cycle(cli, store, args).await?,
-        Command::FjallStats => store::print_store_stats(store)?,
-        Command::ImportLegacy => store::run_legacy_import(store)?,
-        Command::Serve => serve::run_serve(cli)?,
-    }
-    Ok(())
 }
 
 /// `bests::write` and `workbook` agree on this label: `co2027` for one class, `all` for every cohort.
@@ -195,11 +132,6 @@ pub(super) fn school_year(grad_year: u16) -> Result<i16> {
 }
 
 /// The jurisdictions a gather command covers.
-///
-/// `--all-states` is the one-token spelling of the national run, so an operator does not have to
-/// paste fifty-one codes. Giving both flags is refused rather than silently preferred, because a
-/// run that quietly ignored an explicit `--states` list would collect the wrong corpus. With
-/// neither flag the default is Wisconsin, which is what every documented smoke command states.
 pub(super) fn resolve_states(
     all_states: bool,
     states: &[UsJurisdiction],
@@ -213,11 +145,6 @@ pub(super) fn resolve_states(
 }
 
 /// The jurisdictions a *restriction* flag covers, for adapters that have their own home coverage.
-///
-/// With neither flag the list is empty, which every restriction-shaped adapter reads as "no
-/// restriction" and answers from its own jurisdiction — `ohsaa` with an empty list still covers
-/// Ohio. Defaulting this to Wisconsin the way a roster walk does would silently turn a bare
-/// `provider ohsaa` into a no-op that reports Wisconsin as the mismatch.
 pub(super) fn resolve_restriction(
     all_states: bool,
     states: &[UsJurisdiction],
@@ -230,44 +157,9 @@ pub(super) fn resolve_restriction(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{resolve_restriction, resolve_states};
-    use census_domain::UsJurisdiction;
+#[path = "tests.rs"]
+mod tests;
 
-    #[test]
-    fn all_states_selects_every_jurisdiction() {
-        let states = resolve_states(true, &[]).expect("--all-states resolves");
-        assert_eq!(states, UsJurisdiction::ALL);
-    }
-
-    #[test]
-    fn no_flag_defaults_to_wisconsin() {
-        let states = resolve_states(false, &[]).expect("the default resolves");
-        assert_eq!(states, vec![UsJurisdiction::Wisconsin]);
-    }
-
-    #[test]
-    fn an_explicit_list_is_kept_in_caller_order() {
-        let asked = vec![UsJurisdiction::Ohio, UsJurisdiction::Iowa];
-        let states = resolve_states(false, &asked).expect("the list resolves");
-        assert_eq!(states, asked);
-    }
-
-    #[test]
-    fn combining_the_two_flags_is_refused() {
-        let error = resolve_states(true, &[UsJurisdiction::Ohio]).expect_err("both flags refused");
-        assert!(error.to_string().contains("--all-states"));
-    }
-
-    /// The restriction form stays empty without a flag, so an adapter keeps its own coverage.
-    #[test]
-    fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
-        let states = resolve_restriction(false, &[]).expect("no restriction");
-        assert!(states.is_empty());
-        let all = resolve_restriction(true, &[]).expect("--all-states resolves");
-        assert_eq!(all, UsJurisdiction::ALL);
-        let explicit = resolve_restriction(false, &[UsJurisdiction::Ohio]).expect("explicit");
-        assert_eq!(explicit, vec![UsJurisdiction::Ohio]);
-        assert!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());
-    }
-}
+#[cfg(test)]
+#[path = "review_tests.rs"]
+mod review_tests;

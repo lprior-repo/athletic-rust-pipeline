@@ -402,6 +402,16 @@ fn team_json(team: &milesplit::TeamRef) -> Value {
     })
 }
 
+fn meet_json(meet: &milesplit::MeetRef) -> Value {
+    json!({
+        "meet_id": meet.meet_id,
+        "name": meet.name,
+        "date": meet.date,
+        "venue": meet.venue,
+        "results_url": meet.results_url,
+    })
+}
+
 fn roster_json(roster: &milesplit::Roster) -> Value {
     json!({
         "team": team_json(&roster.team),
@@ -469,11 +479,26 @@ async fn milesplit_html_parity() -> Result<()> {
             indexes.insert(site.to_string(), (file, teams));
         } else if let Some((site, team_id)) = roster_fixture(&file) {
             rosters.push((file, stem, body, site, team_id));
+        } else if file.contains("_results_index") {
+            let meets = milesplit::parse_meet_index(&body)
+                .with_context(|| format!("parsing {SOURCE}/{file}"))?;
+            if meets.is_empty() {
+                bail!("{SOURCE}/{file} carries no meets to assert");
+            }
+            case(
+                &mut cases,
+                &format!("{SOURCE}__{stem}"),
+                &json!({
+                    "file": file,
+                    "meets": meets.iter().map(meet_json).collect::<Vec<Value>>(),
+                }),
+            )?;
         } else if file.starts_with("oh_meet_") {
-            // The result-set captures: a formatted-results page and a `/raw` body. Their route is
-            // asserted end to end by the adapter's own tests (`milesplit::tests` parses the capture
-            // and maps its rows into canonical entities), so this harness — whose case set is the
-            // index and roster routes — names them instead of aborting the whole walk.
+            // The per-meet captures: a meet's results page, its file-list page and a `/raw` body.
+            // Their routes are asserted end to end by the adapter's own tests (`milesplit::tests`
+            // parses the captures and maps their rows into canonical entities), so this harness —
+            // whose case set is the index, roster and results-index routes — names them instead of
+            // aborting the whole walk.
             continue;
         } else {
             bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");

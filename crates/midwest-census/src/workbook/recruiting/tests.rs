@@ -368,7 +368,7 @@ fn row_where(range: &Range<Data>, matches: impl Fn(usize) -> bool) -> usize {
         .expect("the sheet publishes the row")
 }
 
-fn sheet<'a>(book: &'a mut Xlsx<std::io::BufReader<std::fs::File>>, name: &str) -> Range<Data> {
+fn sheet(book: &mut Xlsx<std::io::BufReader<std::fs::File>>, name: &str) -> Range<Data> {
     book.worksheet_range(name).unwrap()
 }
 

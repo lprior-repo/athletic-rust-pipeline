@@ -203,12 +203,8 @@ Raw inventory outputs are retained: `research/captures/g1/inventory-lane.txt`,
 Command that produced both outputs:
 
 ```
-python3 research/captures/g1/inventory-search-pages.py \
-  --raw /tmp/g1-pages --evidence /tmp/g1-bodies --parsed /tmp/g1-parsed \
-  --label "lane-v14 live pages" --samples 3 > research/captures/g1/inventory-lane.txt
-python3 research/captures/g1/inventory-search-pages.py \
-  --raw /tmp/g1-pilot/raw --evidence /tmp/g1-pilot/out --parsed /tmp/g1-pilot/parsed \
-  --label "golden-pilot live pages" --samples 3 > research/captures/g1/inventory-pilot.txt
+g1-audit --raw /tmp/g1-pages --evidence /tmp/g1-bodies --parsed /tmp/g1-parsed --label "lane-v14 live pages (three live runs: out-live-full-3, out-live-outdoor-boys, out-live-outdoor-girls)" --samples 3 > research/captures/g1/inventory-lane.txt
+g1-audit --raw /tmp/g1-pilot/raw --evidence /tmp/g1-pilot/out --parsed /tmp/g1-pilot/parsed --label "golden-pilot-100-v1-partial-c live pages (real identities, 33 rows)" --samples 3 > research/captures/g1/inventory-pilot.txt
 ```
 
 Every body's sha256 equals its store key, and no evidence record misstates a page's byte count
@@ -528,10 +524,8 @@ node research/captures/g1/capture-search-body.mjs --port 42235 --query "Ryan Mas
      --fq "t:a a:tf" --start 0 --out research/captures/g1
 
 # inventory of the retained live corpora (digest lists in this directory)
-python3 research/captures/g1/inventory-search-pages.py --raw <lane bodies> --evidence <lane evidence> \
-     --parsed <lane parsed> --label lane --samples 3
-python3 research/captures/g1/inventory-search-pages.py --raw <pilot bodies> --evidence <pilot evidence> \
-     --parsed <pilot parsed> --label pilot --samples 3
+g1-audit --raw <lane bodies> --evidence <lane evidence> --parsed <lane parsed> --label lane --samples 3
+g1-audit --raw <pilot bodies> --evidence <pilot evidence> --parsed <pilot parsed> --label pilot --samples 3
 ```
 
 Corpus sources: bodies/evidence/parsed documents were dumped read-only from **copies** of

@@ -89,11 +89,46 @@ mod tests {
 
     #[test]
     fn converts_column_references() -> Result<()> {
-        assert_eq!(column_index("A2")?, 0);
-        assert_eq!(column_index("Z2")?, 25);
-        assert_eq!(column_index("AA2")?, 26);
-        assert_eq!(column_name(0), "A");
-        assert_eq!(column_name(28), "AC");
+        {
+            let left_value = &(column_index("A2")?);
+            let right_value = &0;
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        {
+            let left_value = &(column_index("Z2")?);
+            let right_value = &25;
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        {
+            let left_value = &(column_index("AA2")?);
+            let right_value = &26;
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        {
+            let left_value = &(column_name(0));
+            let right_value = &"A";
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        {
+            let left_value = &(column_name(28));
+            let right_value = &"AC";
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
         Ok(())
     }
 
@@ -140,11 +175,36 @@ mod tests {
             ScanMode::Sports(vec!["Women's Track & Field".to_owned()]),
             Some(2027),
         )?;
-        assert_eq!(result.stats.actual_data_rows, 1);
-        assert_eq!(result.stats.sheets[0].xml_rows, 3);
-        assert_eq!(result.stats.sheets[0].last_actual_row, 2);
-        assert_eq!(result.prospects.len(), 1);
-        assert_eq!(result.prospects[0].source_key, "Export:2");
+        anyhow::ensure!(
+            result.stats.actual_data_rows == 1,
+            "left={:?} right={:?}",
+            &result.stats.actual_data_rows,
+            &1
+        );
+        anyhow::ensure!(
+            result.stats.sheets[0].xml_rows == 3,
+            "left={:?} right={:?}",
+            &result.stats.sheets[0].xml_rows,
+            &3
+        );
+        anyhow::ensure!(
+            result.stats.sheets[0].last_actual_row == 2,
+            "left={:?} right={:?}",
+            &result.stats.sheets[0].last_actual_row,
+            &2
+        );
+        anyhow::ensure!(
+            result.prospects.len() == 1,
+            "left={:?} right={:?}",
+            &result.prospects.len(),
+            &1
+        );
+        anyhow::ensure!(
+            result.prospects[0].source_key == "Export:2",
+            "left={:?} right={:?}",
+            &result.prospects[0].source_key,
+            &"Export:2"
+        );
         Ok(())
     }
 

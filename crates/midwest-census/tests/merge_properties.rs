@@ -20,7 +20,7 @@
 //!   alone.
 //!
 //! Deterministic by construction: [`law_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x4D45_5247_5F_4944`, so a failing case is reproducible from the seed alone. The laws live in
+//! `0x004D_4552_475F_4944`, so a failing case is reproducible from the seed alone. The laws live in
 //! [`laws_unions`], [`laws_writers`] and [`contact_policy`].
 
 #![forbid(unsafe_code)]
@@ -51,7 +51,7 @@ fn law_config() -> ProptestConfig {
     ProptestConfig {
         cases: 64,
         rng_algorithm: RngAlgorithm::ChaCha,
-        rng_seed: RngSeed::Fixed(0x4D45_5247_5F_4944),
+        rng_seed: RngSeed::Fixed(0x004D_4552_475F_4944),
         ..ProptestConfig::default()
     }
 }

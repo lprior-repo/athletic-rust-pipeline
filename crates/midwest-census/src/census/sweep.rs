@@ -4,20 +4,30 @@
 //! `collect_state_rosters` walks the rosters still owed for that state with at most
 //! `options.concurrency` in flight, folding each outcome into one shared progress row, and
 //! `collect_milesplit` walks the requested states concurrently — one host's pacing discipline per
-//! state — failing only after reporting what completed first.
+//! state — failing only after reporting what completed first, and stopping a state's walk on the
+//! first hard access block (§69) instead of spending its remaining rosters on a host that has
+//! already refused this client.
+//!
+//! One roster unit's work — the skip a blocked state earns, and the fetch-and-store step every other
+//! unit runs — lives in `units`, so this file stays inside the one-page budget.
 
 use crate::clock::{Clock, SystemClock};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::sources::{CrawlError, CrawlResult};
-use crate::store::{Store, Table};
-use census_domain::model::{Gender, SchoolYear};
+use crate::store::Store;
+use census_domain::model::Gender;
 use census_domain::UsJurisdiction;
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::info;
 
+mod access;
+mod roster;
+mod units;
+
+use self::units::{roster_unit, RosterRun};
 use super::aggregate::summarize_states;
 use super::scope::{count_co2027, count_cohort, pending_rosters};
 use super::{rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress};
@@ -62,12 +72,17 @@ struct Shared {
     empty: usize,
     rosters: usize,
     errors: Vec<String>,
+    /// §69: set by the first roster outcome that is a hard access block (HTTP 403/429).
+    blocked: bool,
+    /// Units the walk dropped unfetched because the block was already known.
+    blocked_skipped: usize,
 }
 
 /// Fold one roster outcome into the shared progress state and journal the completed unit of work.
 ///
-/// A failed fetch is recorded instead of ending the walk, and a failed journal write is recorded
-/// instead of dropped: either way the unit stays unfinished and the next run repeats it.
+/// A failed fetch is recorded instead of ending the walk — unless it is a hard access block, which
+/// ends this state's walk (§69) — and a failed journal write is recorded instead of dropped: either
+/// way the unit stays unfinished and the next run repeats it.
 async fn record_roster(
     shared: &Mutex<Shared>,
     store: &Store,
@@ -79,6 +94,9 @@ async fn record_roster(
         Ok(roster) => roster,
         Err(error) => {
             let mut guard = shared.lock().await;
+            if access::refused(&error) {
+                guard.blocked = true;
+            }
             guard.errors.push(format!("{}: {error}", team.url));
             return;
         }
@@ -130,12 +148,18 @@ fn progress_of(
         class_of_2027_girls: shared.co2027_girls,
         empty_rosters: shared.empty,
         errors: shared.errors.iter().take(5).cloned().collect(),
+        blocked: shared.blocked,
+        blocked_skipped: shared.blocked_skipped,
     }
 }
 
+/// The walk's loop-invariant inputs: the site it reads, the state it is walking, and the observation
+/// every roster row carries.
 /// Walk every team roster for one jurisdiction (resumable), emitting canonical entities.
 ///
 /// Bounded by the jurisdiction's team index, with at most `options.concurrency` rosters in flight.
+/// A hard access block (§69) ends the state's requests: what is already in flight drains, every
+/// later roster is counted as skipped instead of issued, and both stay owed for a later run.
 #[tracing::instrument(skip(fetcher, store, teams, options))]
 pub async fn collect_state_rosters(
     fetcher: &Fetcher,
@@ -144,7 +168,6 @@ pub async fn collect_state_rosters(
     options: &CollectOptions,
     jurisdiction: UsJurisdiction,
 ) -> CrawlResult<StateProgress> {
-    let site: Site = Site::for_jurisdiction(jurisdiction);
     let (pending, skipped) = pending_rosters(store, teams, jurisdiction)?;
     let shared = Arc::new(Mutex::new(Shared {
         athletes: 0,
@@ -154,68 +177,30 @@ pub async fn collect_state_rosters(
         empty: 0,
         rosters: 0,
         errors: Vec::new(),
+        blocked: false,
+        blocked_skipped: 0,
     }));
-
     let working: Vec<TeamRef> = match options.limit_per_state {
         Some(limit) => pending.into_iter().take(limit).collect(),
         None => pending,
     };
-
-    let observed_on = options.observed_on.clone();
-    let school_year = options.school_year;
-    let refresh = options.refresh;
-    let concurrency = options.concurrency.max(1);
-
+    let run = RosterRun {
+        site: Site::for_jurisdiction(jurisdiction),
+        jurisdiction,
+        observed_on: &options.observed_on,
+        school_year: options.school_year,
+        refresh: options.refresh,
+    };
     stream::iter(working.into_iter().map(|team| {
         let shared = Arc::clone(&shared);
-        let observed_on = observed_on.clone();
-        async move {
-            let outcome = fetch_and_store_roster(
-                fetcher,
-                store,
-                &site,
-                &team,
-                school_year,
-                &observed_on,
-                refresh,
-            )
-            .await;
-            record_roster(&shared, store, jurisdiction, &team, outcome).await;
-        }
+        let run = run.clone();
+        async move { roster_unit(fetcher, store, &shared, &team, &run).await }
     }))
-    .buffer_unordered(concurrency)
+    .buffer_unordered(options.concurrency.max(1))
     .collect::<Vec<()>>()
     .await;
-
     let guard = shared.lock().await;
     Ok(progress_of(jurisdiction, teams.len(), skipped, &guard))
-}
-
-async fn fetch_and_store_roster(
-    fetcher: &Fetcher,
-    store: &Store,
-    site: &Site,
-    team: &TeamRef,
-    school_year: SchoolYear,
-    observed_on: &str,
-    refresh: bool,
-) -> CrawlResult<Roster> {
-    let options = FetchOptions {
-        refresh,
-        allow_not_found: true,
-        headers: Vec::new(),
-    };
-    let roster = milesplit::fetch_roster(fetcher, team, &options).await?;
-    let (school, athletes, teams) =
-        milesplit::roster_entities(&roster, school_year, observed_on, site);
-    store.append(Table::Schools, &school)?;
-    if !teams.is_empty() {
-        store.append_many(Table::Teams, &teams)?;
-    }
-    if !athletes.is_empty() {
-        store.append_many(Table::Athletes, &athletes)?;
-    }
-    Ok(roster)
 }
 
 /// Walk one jurisdiction: its team index, then every roster in it.
@@ -272,6 +257,14 @@ pub async fn collect_milesplit(
     report.requests = stats.requests;
     report.cache_hits = stats.cache_hits;
     report.elapsed_seconds = started.elapsed().as_secs_f64();
+
+    // §69: what the sources said about this client is recorded before the report goes back, so a
+    // block the walk paid for is a row the next run reads instead of re-discovering.
+    let observed = access::observed(fetcher, store).await;
+    report.errors = report.errors.saturating_add(observed.failures);
+    report.access_conditions = observed.conditions;
+    report.blocked_hosts = observed.blocked_hosts;
+
     if !failures.is_empty() {
         // Report what completed before failing: the caller keeps its journal and can re-run.
         return Err(CrawlError::Invariant {

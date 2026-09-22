@@ -131,6 +131,12 @@ impl XcScan {
     }
 }
 
+/// A row's event: the one the current section opened, created on its first row.
+///
+/// The event is looked up by the section's own `(gender, label)` rather than taken as the last one
+/// opened, because a page may return to a race after another race — a boys race resumed after the
+/// girls race keeps printing into its own event instead of the girls'. The property lane
+/// `tests/xc_parser_properties/accounting.rs` pins that.
 fn push_row(
     events: &mut Vec<ParsedEvent>,
     gender: &Gender,
@@ -138,24 +144,25 @@ fn push_row(
     division: Option<String>,
     row: ParsedRow,
 ) {
-    if events
+    let index = match events
         .iter()
-        .find(|e| &e.gender == gender && e.label == label)
-        .is_none()
+        .position(|event| &event.gender == gender && event.label == label)
     {
-        events.push(ParsedEvent {
-            label: label.to_string(),
-            kind: EventKind::CrossCountry,
-            gender: *gender,
-            division,
-            round: Some("finals".to_string()),
-            rows: Vec::new(),
-        });
-    }
-    let event = if let Some(e) = events.last_mut() {
-        e
-    } else {
-        return;
+        Some(index) => index,
+        None => {
+            let index = events.len();
+            events.push(ParsedEvent {
+                label: label.to_string(),
+                kind: EventKind::CrossCountry,
+                gender: *gender,
+                division,
+                round: Some("finals".to_string()),
+                rows: Vec::new(),
+            });
+            index
+        }
     };
-    event.rows.push(row);
+    if let Some(event) = events.get_mut(index) {
+        event.rows.push(row);
+    }
 }

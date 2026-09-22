@@ -215,8 +215,8 @@ mod tests {
             false,
         )
         .map_err(|error| anyhow::anyhow!("{error:?}"))?;
-        assert!(result.blocked);
-        assert!(matches!(
+        anyhow::ensure!(result.blocked);
+        anyhow::ensure!(matches!(
             result.outcome,
             FetchOutcome::Failed {
                 failure: OperationFailure {

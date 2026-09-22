@@ -90,11 +90,53 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, consolidate — recorded in durable state as each completes |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction` and folds the reports into one `NationalReport`, listing failed states as `failures` rows instead of failing the run |
 
-**In flight.** `JurisdictionCensus` and `NationalCensus` are the newest definitions: both are bound
-in `build_endpoint` (`restate_services/mod.rs`) and their wire types are exported from
-`restate_services/wire.rs`, but the modules carry no inline tests yet and the national fan-out has
-not been exercised against a live Restate server in this tree. Treat the two rows as the current
-code shape, not as qualified behaviour.
+**Qualified.** Both definitions are exercised by the census CLI (`crates/midwest-census/src/cli/national.rs`):
+
+```bash
+midwest-census national --revision 2 [--states WI,...] [--limit-per-state N] [--concurrency N] [--detach]
+midwest-census national-report --revision 2          # the last report, without starting a run
+midwest-census jurisdiction --state WI --revision 2  # one state, when only one is owed
+```
+
+`national` submits `NationalCensus/run` through the ingress, then observes it: every poll prints a
+per-jurisdiction table (`teams · rosters · skipped · athletes · co2027`) and the fold totals, and the
+command exits non-zero when any jurisdiction lands in `failures`. It opens no store of its own — the
+service owns the store — so it is safe to run beside `midwest-serve`. `national-report` reads
+`NationalCensus/report` (the shared handler) and never starts work; before the first fan-out drains
+it answers `has not completed a fan-out yet`, which is the difference between "in flight" and "failed"
+for an operator who was not watching.
+
+**Live qualification (2026-09-22).** Revision 2 (all 51 jurisdictions, `--limit-per-state 25`,
+`--concurrency 4`, live MileSplit traffic) completed with `jurisdictions done 51 · failed 0`
+(`var/midwest-census/out/run-evidence/national-revision-2-qualification.txt`). Mid-run,
+`midwest-serve` was `SIGKILL`ed while jurisdictions were consolidating; the supervisor logged
+`exited with code 137; restarting in 1000ms`, Restate redelivered the interrupted invocations, and
+the same revision then reached terminal state for every jurisdiction. The re-invocation replayed
+each journaled stage from the store's journal, so the rosters already walked were reported as
+`skipped` rather than re-fetched — the property the two-layer design exists to provide (Restate's
+journal for the stage, the store's journal for the phase's rows).
+
+**Identity and revisions.** A run's identity is `<season>:<revision>` alone, so Restate deduplicates
+a repeat submission: a second `national --revision 2` with different parameters attaches to the run
+that exists and changes nothing. The CLI detects this (`SendStatus::PreviouslyAccepted`) and prints
+it — *"a changed parameter was not applied; bump `--revision` to start a different run"* — because
+the alternative, silently reporting the old run's numbers for new parameters, is how an operator
+ends up believing a limit was applied when it was not. One revision per parameter set is the
+contract: a qualification run with a small limit and the exhaustive run that follows it must not
+share a revision.
+
+**Stage boundary.** A jurisdiction object owns exactly three durable stages — `teams`, `rosters`,
+`consolidate` (`restate_services/jurisdiction.rs:69-121`). Meet discovery, result acquisition, coach
+collection and §47 gap classification are batch commands (`collect`, `provider`, `import-coaches`) or
+the separate acquisition pipeline; they are not yet stages of a durable jurisdiction run, so a
+`NationalReport` says what the walk covered and deliberately says nothing about meets or coaches.
+
+**Concurrency and snapshot publication.** Up to `--max-concurrent` jurisdictions consolidate at once,
+and consolidation writes the shared `out/*.jsonl` snapshots. `Store`'s snapshot writer therefore
+publishes by `rename` from a private temporary (`.name.pid.seq.part`), never by truncating in place:
+every reader — the report, the workbook, an operator with `less` — sees one complete snapshot or the
+other, and two concurrent consolidations cannot interleave into one file
+(`store::read::write_snapshot`, pinned by `store::tests::concurrent_snapshot_writers_only_publish_whole_files`).
 
 ## 3. The work-snapshot objects
 

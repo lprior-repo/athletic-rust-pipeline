@@ -6,10 +6,11 @@ use super::{
 };
 use std::time::Duration;
 
-/// Request payload for POSTs: a pre-serialized JSON body.
+/// Request payload for POSTs: a pre-serialized body, plus the content type it must be sent with.
 #[derive(Debug, Clone)]
 pub(super) enum RequestBody {
     Json(String),
+    Form(String),
 }
 
 impl Fetcher {
@@ -46,6 +47,36 @@ impl Fetcher {
         )
         .await
     }
+
+    /// POST a form body (`application/x-www-form-urlencoded`); cached by body content so repeated
+    /// runs are free.
+    ///
+    /// Some association directories answer only to a form POST of a query field (the NSAA export
+    /// screen is one), so the same content-addressed caching the JSON POST uses applies here: two
+    /// different queries against one endpoint are two different documents.
+    #[tracing::instrument(skip(self, options, form), fields(url, method = "POST"))]
+    pub async fn post_form(
+        &self,
+        url: &str,
+        form: &[(String, String)],
+        options: &FetchOptions,
+    ) -> Result<FetchOutcome, FetchError> {
+        tracing::Span::current().record("url", url);
+        let encoded = url::form_urlencoded::Serializer::new(String::new())
+            .extend_pairs(
+                form.iter()
+                    .map(|(name, value)| (name.as_str(), value.as_str())),
+            )
+            .finish();
+        self.fetch(
+            "POST",
+            url,
+            Some((encoded.clone(), RequestBody::Form(encoded))),
+            options,
+            REQUEST_TIMEOUT_SECS,
+        )
+        .await
+    }
 }
 
 /// Build an HTTP request with headers, body, and conditional GET support.
@@ -71,6 +102,11 @@ pub(super) fn build_request<'a>(
                 RequestBody::Json(encoded) => {
                     request = request
                         .header("content-type", "application/json")
+                        .body(encoded.clone());
+                }
+                RequestBody::Form(encoded) => {
+                    request = request
+                        .header("content-type", "application/x-www-form-urlencoded")
                         .body(encoded.clone());
                 }
             }

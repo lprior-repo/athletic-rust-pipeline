@@ -31,7 +31,6 @@ pub(super) fn cohort_unverified(rows: &StoreRows, names: &HashMap<&str, &str>) -
             school_of(names, athlete.school.as_str()),
         );
         family.push(queue_row(
-            COHORT_UNVERIFIED,
             athlete.id.as_str(),
             subject,
             format!(
@@ -57,7 +56,6 @@ pub(super) fn low_confidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> F
             school_of(names, athlete.school.as_str()),
         );
         family.push(queue_row(
-            LOW_CONFIDENCE,
             athlete.id.as_str(),
             subject,
             format!(
@@ -80,7 +78,6 @@ pub(super) fn withheld_mailboxes(rows: &StoreRows, names: &HashMap<&str, &str>) 
         }
         let subject = subject_of(&coach.name, school_of(names, coach.school.as_str()));
         family.push(queue_row(
-            WITHHELD_MAILBOX,
             coach.id.as_str(),
             subject,
             format!(
@@ -101,7 +98,6 @@ pub(super) fn unresolved_venues(meets: &[CanonicalMeet]) -> Family {
             continue;
         }
         family.push(queue_row(
-            UNRESOLVED_VENUE,
             meet.id.as_str(),
             format!("{} ({})", meet.name, meet.date),
             format!(
@@ -121,7 +117,6 @@ pub(super) fn unresolved_schools(schools: &[CanonicalSchool]) -> Family {
             continue;
         }
         family.push(queue_row(
-            UNRESOLVED_SCHOOL,
             school.id.as_str(),
             school.name.clone(),
             "no association or adapter placed the school in a jurisdiction".to_string(),

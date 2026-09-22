@@ -12,14 +12,29 @@ cache with its content hashes, the consolidated `out/*.jsonl` snapshots and the 
 
 ## Weekly incremental refresh
 
+`meets` enumerates each state's published meets into `source_meets` (about one index request per
+fifty meets, journaled per page, and the walk ends on the index's own repeat signal rather than a
+page bound). `provider milesplit_results` then reads those meets whole: one results-page request per
+meet, which lists every result file the meet has, plus one `/raw` request per file — result sets are
+journaled by id, so a weekly run reads only what it has not read before. `--limit` bounds the meets
+taken per state; the census does not filter meets by level, so a middle-school meet listed under `hs`
+costs its requests and yields no canonical athlete.
+
 ```
 midwest-census --store <dir> teams --states WI,MN,... --refresh
+midwest-census --store <dir> meets --states WI,MN,... --year 2026
+midwest-census --store <dir> provider milesplit_results --states WI,MN,... --limit 200
 midwest-census --store <dir> collect --states WI,MN,... --school-year 2027
 midwest-census --store <dir> consolidate
+midwest-census --store <dir> index
 midwest-census --store <dir> report --print
 midwest-census --store <dir> bests
 midwest-census --store <dir> workbook
 ```
+
+`index` rewrites the derived index tables — source-object identities, retained conflicts and review
+cases, coverage, and one snapshot of the pass — replacing their rows rather than appending, so the
+chain can run daily without growing them. `run` chains every step above in one command.
 
 `teams --refresh` is the only step that re-reads association indexes; `collect` walks rosters and the
 current season's result pages. No step re-reads the full historical corpus: every fetch is
@@ -71,6 +86,29 @@ immediately. Plan concurrent consumers so they do not exceed `tabs × 4` in stea
   instead of clearing the flag.
 - `fjall-stats` prints per-table observation counts and on-disk footprint; it is the cheapest
   "is the store growing the way the reports say" check.
+
+## Sealing a census
+
+A run is not finished when the workbook exists; it is finished when the census is sealed. The seal
+assembles §70's evidence from the store (cohort counts, coverage gaps, conflicts, exhausted
+retries), reads the exported workbook back, and either completes the census with a digest or refuses
+and names the acceptance item that blocked it (§17, ADR-007).
+
+    midwest-census workbook --grad-year 2027                    # build the export first
+    midwest-census seal --grad-year 2027 --write                # certify the newest out/*.xlsx
+    midwest-census seal --grad-year 2027 --workbook out/midwest-census-2026-09-21.xlsx
+
+Exit code 0 prints the seal digest and what it covers; exit code 1 prints the unmet item and the
+numbers behind it, for example `Run Metrics cohort 307652 != store 307653`. Sealing a census whose
+phase ladder has not reached `exporting` is refused rather than granted: a store with no workbook,
+no coverage classification or no consolidated snapshots cannot be sealed at all.
+
+`--write` records the sealed state in `out/seal.json`. What the seal checks: the phase ladder
+against the store's own artifacts, the cohort the workbook's `Run Metrics` sheet names against the
+store's count, the `Coverage` sheet's jurisdiction rows against the classifier, and the workbook's
+bytes (sha256). What it does not check: the cell contents of the multi-million-row performance
+sheets — that reconciliation belongs to the workbook verifier, and the seal records
+`workbook_rows: 0` rather than a count it did not take.
 
 ## Backups
 

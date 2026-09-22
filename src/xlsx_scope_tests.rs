@@ -119,31 +119,101 @@ fn first_worksheet_scan_retains_all_rows_and_fields() -> Result<()> {
 
     let result = scan(&path, ScanMode::FirstWorksheet, None)?;
 
-    assert_eq!(result.stats.sheets.len(), 1);
-    assert_eq!(result.stats.sheets[0].name, "Export");
-    assert_eq!(result.stats.actual_data_rows, 3);
-    assert_eq!(result.stats.selected_prospects, 3);
-    assert_eq!(result.prospects.len(), 3);
+    anyhow::ensure!(
+        result.stats.sheets.len() == 1,
+        "left={:?} right={:?}",
+        &result.stats.sheets.len(),
+        &1
+    );
+    anyhow::ensure!(
+        result.stats.sheets[0].name == "Export",
+        "left={:?} right={:?}",
+        &result.stats.sheets[0].name,
+        &"Export"
+    );
+    anyhow::ensure!(
+        result.stats.actual_data_rows == 3,
+        "left={:?} right={:?}",
+        &result.stats.actual_data_rows,
+        &3
+    );
+    anyhow::ensure!(
+        result.stats.selected_prospects == 3,
+        "left={:?} right={:?}",
+        &result.stats.selected_prospects,
+        &3
+    );
+    anyhow::ensure!(
+        result.prospects.len() == 3,
+        "left={:?} right={:?}",
+        &result.prospects.len(),
+        &3
+    );
 
     let headers = &result.stats.sheets[0].headers;
-    assert!(headers.contains(&"Person First".to_owned()));
-    assert!(headers.contains(&"Person Last".to_owned()));
-    assert!(headers.contains(&"Sports Sport".to_owned()));
+    anyhow::ensure!(headers.contains(&"Person First".to_owned()));
+    anyhow::ensure!(headers.contains(&"Person Last".to_owned()));
+    anyhow::ensure!(headers.contains(&"Sports Sport".to_owned()));
 
     let first = &result.prospects[0];
-    assert_eq!(first.first_name, "Alice");
-    assert_eq!(first.last_name, "Smith");
-    assert_eq!(first.sport, "Track");
+    anyhow::ensure!(
+        first.first_name == "Alice",
+        "left={:?} right={:?}",
+        &first.first_name,
+        &"Alice"
+    );
+    anyhow::ensure!(
+        first.last_name == "Smith",
+        "left={:?} right={:?}",
+        &first.last_name,
+        &"Smith"
+    );
+    anyhow::ensure!(
+        first.sport == "Track",
+        "left={:?} right={:?}",
+        &first.sport,
+        &"Track"
+    );
 
     let second = &result.prospects[1];
-    assert_eq!(second.first_name, "");
-    assert_eq!(second.last_name, "Blank");
-    assert_eq!(second.sport, "Swim");
+    anyhow::ensure!(
+        second.first_name.is_empty(),
+        "left={:?} right={:?}",
+        &second.first_name,
+        &""
+    );
+    anyhow::ensure!(
+        second.last_name == "Blank",
+        "left={:?} right={:?}",
+        &second.last_name,
+        &"Blank"
+    );
+    anyhow::ensure!(
+        second.sport == "Swim",
+        "left={:?} right={:?}",
+        &second.sport,
+        &"Swim"
+    );
 
     let third = &result.prospects[2];
-    assert_eq!(third.first_name, "Bob");
-    assert_eq!(third.last_name, "");
-    assert_eq!(third.sport, "Swim");
+    anyhow::ensure!(
+        third.first_name == "Bob",
+        "left={:?} right={:?}",
+        &third.first_name,
+        &"Bob"
+    );
+    anyhow::ensure!(
+        third.last_name.is_empty(),
+        "left={:?} right={:?}",
+        &third.last_name,
+        &""
+    );
+    anyhow::ensure!(
+        third.sport == "Swim",
+        "left={:?} right={:?}",
+        &third.sport,
+        &"Swim"
+    );
 
     Ok(())
 }
@@ -169,17 +239,27 @@ fn exhaustive_mode_excludes_generated_sheets() -> Result<()> {
 
     let result = scan(&path, ScanMode::Exhaustive, None)?;
 
-    assert_eq!(result.stats.actual_data_rows, 2);
-    assert_eq!(result.prospects.len(), 2);
+    anyhow::ensure!(
+        result.stats.actual_data_rows == 2,
+        "left={:?} right={:?}",
+        &result.stats.actual_data_rows,
+        &2
+    );
+    anyhow::ensure!(
+        result.prospects.len() == 2,
+        "left={:?} right={:?}",
+        &result.prospects.len(),
+        &2
+    );
 
     let names: Vec<&str> = result
         .prospects
         .iter()
         .map(|p| p.first_name.as_str())
         .collect();
-    assert!(names.contains(&"Alice"));
-    assert!(names.contains(&"Charlie"));
-    assert!(!names.contains(&"Bob"));
+    anyhow::ensure!(names.contains(&"Alice"));
+    anyhow::ensure!(names.contains(&"Charlie"));
+    anyhow::ensure!(!names.contains(&"Bob"));
 
     Ok(())
 }
@@ -193,7 +273,7 @@ fn first_worksheet_generated_sheet_returns_error() -> Result<()> {
     )];
     let path = build_minimal_xlsx(&dir, "fixture.xlsx", &sheets)?;
 
-    assert!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
+    anyhow::ensure!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
 
     Ok(())
 }
@@ -207,7 +287,7 @@ fn first_worksheet_missing_required_headers_returns_error() -> Result<()> {
     let sheets = vec![("Export", sheet1_content)];
     let path = build_minimal_xlsx(&dir, "fixture.xlsx", &sheets)?;
 
-    assert!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
+    anyhow::ensure!(scan(&path, ScanMode::FirstWorksheet, None).is_err());
 
     Ok(())
 }
@@ -229,21 +309,60 @@ fn first_worksheet_preserves_sparse_rich_shared_and_inline_source_rows() -> Resu
 
     let result = scan(&path, ScanMode::FirstWorksheet, None)?;
 
-    assert_eq!(result.stats.actual_data_rows, 1);
-    assert_eq!(result.prospects.len(), 1);
+    anyhow::ensure!(
+        result.stats.actual_data_rows == 1,
+        "left={:?} right={:?}",
+        &result.stats.actual_data_rows,
+        &1
+    );
+    anyhow::ensure!(
+        result.prospects.len() == 1,
+        "left={:?} right={:?}",
+        &result.prospects.len(),
+        &1
+    );
     let prospect = &result.prospects[0];
-    assert_eq!(prospect.excel_row, 7);
-    assert_eq!(prospect.first_name, " Alice Runner");
-    assert_eq!(prospect.last_name, "Shared Family");
-    assert_eq!(prospect.sport, " Basketball ");
-    assert_eq!(prospect.school, "Sparse School");
-    assert_eq!(
-        prospect
+    anyhow::ensure!(
+        prospect.excel_row == 7,
+        "left={:?} right={:?}",
+        &prospect.excel_row,
+        &7
+    );
+    anyhow::ensure!(
+        prospect.first_name == " Alice Runner",
+        "left={:?} right={:?}",
+        &prospect.first_name,
+        &" Alice Runner"
+    );
+    anyhow::ensure!(
+        prospect.last_name == "Shared Family",
+        "left={:?} right={:?}",
+        &prospect.last_name,
+        &"Shared Family"
+    );
+    anyhow::ensure!(
+        prospect.sport == " Basketball ",
+        "left={:?} right={:?}",
+        &prospect.sport,
+        &" Basketball "
+    );
+    anyhow::ensure!(
+        prospect.school == "Sparse School",
+        "left={:?} right={:?}",
+        &prospect.school,
+        &"Sparse School"
+    );
+    {
+        let left_value = &(prospect
             .source_fields
             .get("Person Email")
-            .map(String::as_str),
-        Some("")
-    );
+            .map(String::as_str));
+        let right_value = &(Some(""));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 
@@ -268,10 +387,35 @@ fn styled_and_explicitly_empty_rows_are_not_real_data() -> Result<()> {
 
     let result = scan(&path, ScanMode::FirstWorksheet, None)?;
 
-    assert_eq!(result.stats.sheets[0].xml_rows, 4);
-    assert_eq!(result.stats.sheets[0].actual_data_rows, 1);
-    assert_eq!(result.prospects.len(), 1);
-    assert_eq!(result.prospects[0].excel_row, 4);
-    assert_eq!(result.prospects[0].first_name, "Alice");
+    anyhow::ensure!(
+        result.stats.sheets[0].xml_rows == 4,
+        "left={:?} right={:?}",
+        &result.stats.sheets[0].xml_rows,
+        &4
+    );
+    anyhow::ensure!(
+        result.stats.sheets[0].actual_data_rows == 1,
+        "left={:?} right={:?}",
+        &result.stats.sheets[0].actual_data_rows,
+        &1
+    );
+    anyhow::ensure!(
+        result.prospects.len() == 1,
+        "left={:?} right={:?}",
+        &result.prospects.len(),
+        &1
+    );
+    anyhow::ensure!(
+        result.prospects[0].excel_row == 4,
+        "left={:?} right={:?}",
+        &result.prospects[0].excel_row,
+        &4
+    );
+    anyhow::ensure!(
+        result.prospects[0].first_name == "Alice",
+        "left={:?} right={:?}",
+        &result.prospects[0].first_name,
+        &"Alice"
+    );
     Ok(())
 }

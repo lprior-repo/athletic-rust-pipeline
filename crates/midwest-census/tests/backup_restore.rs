@@ -202,7 +202,7 @@ fn add_athlete(
     team_id: &TeamId,
     meet_id: &census_domain::model::MeetId,
 ) {
-    let gender = if (index + slot) % 2 == 0 {
+    let gender = if (index + slot).is_multiple_of(2) {
         Gender::Boys
     } else {
         Gender::Girls
@@ -221,7 +221,7 @@ fn add_athlete(
     });
     athlete.evidence.push(observation(SOURCE, MEET_DATE));
 
-    let kind = if slot % 2 == 0 {
+    let kind = if slot.is_multiple_of(2) {
         EventKind::Track800m
     } else {
         EventKind::Track1600m
@@ -505,7 +505,12 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         let rows = u64::try_from(rows).expect("a corpus table holds fewer than 2^64 rows");
         (table.file().to_string(), rows)
     };
-    vec![
+    // `stats()` reports every table in `Table::ALL` order, so both groups below are listed in that
+    // order: the seven evidence tables the corpus writes, then the five derived index tables. The
+    // drill's chain never runs the derivation, so the index tables must be empty here — they are
+    // listed at zero rather than omitted, because a store that suddenly held derived rows would be a
+    // different store and this assertion is what says so.
+    let evidence = [
         row(
             Table::Schools,
             corpus.schools.len() + HISTORY_EXTRA_OBSERVATIONS,
@@ -516,7 +521,23 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         row(Table::Meets, corpus.meets.len()),
         row(Table::Events, corpus.distinct_events.len()),
         row(Table::Performances, corpus.performances.len()),
+    ];
+    let derived = [
+        Table::SourceIdentities,
+        Table::Conflicts,
+        Table::ReviewCases,
+        Table::Coverage,
+        Table::Snapshots,
+        Table::SourceAccess,
+        Table::IdentityVerdicts,
+        // No meet census runs in this fixture, so the table that stage writes is empty here.
+        Table::SourceMeets,
     ]
+    .into_iter()
+    .map(|table| row(table, 0));
+    let mut expected: Vec<(String, u64)> = evidence.to_vec();
+    expected.extend(derived);
+    expected
 }
 
 /// The live store must hold exactly the corpus, merged where the corpus observes an entity twice.
@@ -663,7 +684,7 @@ fn tree_digest(root: &Path) -> String {
         hasher.update(path.as_bytes());
         hasher.update([0_u8]);
         hasher.update(digest.as_bytes());
-        hasher.update([b'\n']);
+        hasher.update(*b"\n");
     }
     format!("{:x}", hasher.finalize())
 }

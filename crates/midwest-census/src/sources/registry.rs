@@ -34,7 +34,7 @@ mod table;
 
 use std::num::NonZeroUsize;
 
-pub use table::REGISTRY;
+pub use table::descriptors;
 
 /// How a source's bytes arrive. The planner uses this to decide what a request buys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,9 +146,9 @@ pub struct SourceDescriptor {
 /// The registered descriptor for one adapter module, or `None` when the slug names no source.
 ///
 /// A linear scan of the static table: no allocation, and no second index to keep in step with
-/// [`REGISTRY`].
+/// [`descriptors`].
 pub fn descriptor(slug: &str) -> Option<&'static SourceDescriptor> {
-    REGISTRY.iter().find(|entry| entry.slug == slug)
+    descriptors().find(|entry| entry.slug == slug)
 }
 
 /// The planning order for a candidate list (§11, ADR-004): payloads that carry whole meets first,

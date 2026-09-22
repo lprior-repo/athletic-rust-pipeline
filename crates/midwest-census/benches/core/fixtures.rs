@@ -27,13 +27,16 @@ const ROSTER_TEAM_ID: &str = "52649";
 /// The directory the classification corpus walks.
 const ARCHIVE_DIR: &str = "wiaa_results";
 
+/// The parse a bench case replays: fixture body in, rows published out.
+type CaseParse = Box<dyn Fn(&str) -> Result<usize>>;
+
 /// One fixture and the parse the bench replays for it.
 pub struct Case {
     id: &'static str,
     file: &'static str,
     body: String,
     rows: usize,
-    parse: Box<dyn Fn(&str) -> Result<usize>>,
+    parse: CaseParse,
 }
 
 impl Case {

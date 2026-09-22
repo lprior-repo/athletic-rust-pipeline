@@ -7,6 +7,10 @@ use super::keys::{observation_id, observation_key};
 use super::{Store, StoreError, StoreResult, Table};
 use crate::clock::{Clock, SystemClock};
 
+/// The sequence a derived row is keyed under. Derived state keeps exactly one row per entity id, so
+/// the sequence is a constant rather than a reserved observation number.
+const DERIVED_SEQUENCE: u64 = 0;
+
 impl Store {
     /// Reserve `count` consecutive observation sequences for a table.
     pub(super) fn reserve(&self, table: Table, count: u64) -> StoreResult<u64> {
@@ -52,6 +56,41 @@ impl Store {
 
     pub fn append<T: Serialize>(&self, table: Table, record: &T) -> StoreResult<()> {
         self.append_many(table, std::slice::from_ref(record))
+    }
+
+    /// Write derived state: one row per entity id, replacing whatever stood in that key.
+    ///
+    /// Derived rows are a function of the store as it is now, not evidence about a moment in it, so
+    /// re-deriving must leave one row per key rather than one observation per pass. The row is keyed
+    /// with a fixed sequence of zero and no sequence is reserved, so a later pass overwrites it in
+    /// place: the table cannot grow with the number of passes, `MAX_ROWS_PER_TABLE` cannot be
+    /// exhausted by re-running a derivation, and [`Store::stats`] keeps counting what was *appended*
+    /// — evidence — rather than what was merely re-derived.
+    ///
+    /// Like [`Store::append_many`], every record is validated before the batch is built, so a
+    /// rejected record leaves the keyspace untouched.
+    pub fn replace_many<T: Serialize>(&self, table: Table, records: &[T]) -> StoreResult<()> {
+        if records.is_empty() {
+            return Ok(());
+        }
+        let mut batch = self.db.batch();
+        for record in records {
+            let value = serde_json::to_vec(record).map_err(|source| StoreError::Json {
+                detail: "serializing derived state".to_string(),
+                source,
+            })?;
+            let id = observation_id(&value)?.to_string();
+            let key = observation_key(table, &id, DERIVED_SEQUENCE);
+            batch.insert(&self.entities, key, value);
+        }
+        batch
+            .durability(Some(PersistMode::SyncData))
+            .commit()
+            .map_err(|source| StoreError::Write { source })
+    }
+
+    pub fn replace<T: Serialize>(&self, table: Table, record: &T) -> StoreResult<()> {
+        self.replace_many(table, std::slice::from_ref(record))
     }
 
     /// Record that a unit of work completed. Doubles as the resume ledger.

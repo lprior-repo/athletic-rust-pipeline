@@ -1,0 +1,27 @@
+//! Build the "Coach coverage" table rows.
+
+use std::collections::{BTreeMap, HashMap};
+
+pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {
+    let mut coach_by_state: BTreeMap<String, usize> = BTreeMap::new();
+    let mut coach_email_by_state: BTreeMap<String, usize> = BTreeMap::new();
+
+    for coach in coaches {
+        let st = coach.get("school_state").cloned().unwrap_or_default();
+        *coach_by_state.entry(st.clone()).or_default() += 1;
+        if coach
+            .get("professional_email")
+            .is_some_and(|e| !e.is_empty())
+        {
+            *coach_email_by_state.entry(st).or_default() += 1;
+        }
+    }
+
+    coach_by_state
+        .iter()
+        .map(|(st, count)| {
+            let email = coach_email_by_state.get(st).copied().unwrap_or(0);
+            vec![st.clone(), count.to_string(), email.to_string()]
+        })
+        .collect()
+}

@@ -38,6 +38,9 @@ use coverage::{coverage_sheet, COVERAGE_WIDTHS};
 use inventory::{meets_sheet, schools_sheet, MEET_WIDTHS, SCHOOL_WIDTHS};
 use metrics::{metrics_sheet, METRIC_WIDTHS};
 use queues::{conflict_families, queue_sheet, review_families, QUEUE_WIDTHS};
+
+/// The retained queue rows, as the store's `conflicts` and `review_cases` tables hold them.
+pub(crate) use queues::retained_records;
 use sources::{sources_sheet, SOURCE_WIDTHS};
 
 /// One sheet of the workbook: the sheet name, its rows, its column widths and whether the header
@@ -112,10 +115,21 @@ fn bump(counter: &mut usize) {
 
 /// One family of retained rows: the label the counts block prints, how many findings it holds (a
 /// group-style family renders several rows per finding), and the rows themselves.
+/// One retained row: the subject it names and why the row is unresolved.
+///
+/// The family that owns the row carries the label, so the same value renders in a sheet and lands in
+/// the store's `conflicts`/`review_cases` tables without a second copy of the text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct QueueRow {
+    pub(crate) subject_id: String,
+    pub(crate) subject: String,
+    pub(crate) detail: String,
+}
+
 struct Family {
     label: &'static str,
     findings: usize,
-    rows: Vec<Vec<Cell>>,
+    rows: Vec<QueueRow>,
 }
 
 impl Family {
@@ -128,13 +142,13 @@ impl Family {
     }
 
     /// Record one finding that renders as exactly one row.
-    fn push(&mut self, cells: Vec<Cell>) {
+    fn push(&mut self, row: QueueRow) {
         self.findings = self.findings.saturating_add(1);
-        self.rows.push(cells);
+        self.rows.push(row);
     }
 
     /// Record one finding that renders as several rows.
-    fn group(&mut self, rows: Vec<Vec<Cell>>) {
+    fn group(&mut self, rows: Vec<QueueRow>) {
         self.findings = self.findings.saturating_add(1);
         self.rows.extend(rows);
     }

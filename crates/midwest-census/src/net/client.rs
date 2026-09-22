@@ -45,6 +45,8 @@ impl Fetcher {
             user_agent,
             default_delay,
             host_delays,
+            family_delays: HashMap::new(),
+            families: Mutex::new(HashMap::new()),
             authorized_hosts: authorized_hosts
                 .into_iter()
                 .map(|host| host.trim().to_ascii_lowercase())
@@ -53,6 +55,8 @@ impl Fetcher {
             hosts: Mutex::new(HashMap::new()),
             robots: Mutex::new(HashMap::new()),
             stats: Mutex::new(FetchStats::default()),
+            source: super::DEFAULT_SOURCE.to_string(),
+            blocks: Mutex::new(HashMap::new()),
         })
     }
 }

@@ -13,7 +13,7 @@
 //!   never a panic, and the same bytes always give the same answer — see [`edges`].
 //!
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
-//! `0x4D45_5247_5F_4944`. Every fixture below is a verbatim slice of a published WIAA release.
+//! `0x004D_4552_475F_4944`. Every fixture below is a verbatim slice of a published WIAA release.
 //!
 //! `ArtifactFormat::Pdf` shells out to `pdftotext`; the properties that touch it assert only what
 //! holds with and without that tool installed (a body the tool cannot read is not a meet).
@@ -107,7 +107,7 @@ fn seam_config() -> ProptestConfig {
     ProptestConfig {
         cases: 64,
         rng_algorithm: RngAlgorithm::ChaCha,
-        rng_seed: RngSeed::Fixed(0x4D45_5247_5F_4944),
+        rng_seed: RngSeed::Fixed(0x004D_4552_475F_4944),
         ..ProptestConfig::default()
     }
 }

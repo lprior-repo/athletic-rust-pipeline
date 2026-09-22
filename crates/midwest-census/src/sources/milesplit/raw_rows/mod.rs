@@ -13,7 +13,7 @@ use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{EventKind, Gender, Sport};
 use regex::Regex;
 
-use super::parse::html_unescape;
+use super::parse::meet_index::html_unescape;
 
 #[path = "columns.rs"]
 mod columns;

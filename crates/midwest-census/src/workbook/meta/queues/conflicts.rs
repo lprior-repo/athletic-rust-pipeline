@@ -12,9 +12,7 @@ use census_domain::model::{
 };
 use std::collections::{BTreeMap, HashMap};
 
-use crate::workbook::cells::Cell;
-
-use super::super::{school_of, subject_of, Family, StoreRows};
+use super::super::{school_of, subject_of, Family, QueueRow, StoreRows};
 use super::{class_of_2027, queue_row, ATHLETE_IDENTITY, COHORT_EVIDENCE, SCHOOL_IDENTITY};
 
 /// Athletes whose own grade observations disagree about the graduating class.
@@ -28,12 +26,7 @@ pub(super) fn cohort_evidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> 
             &athlete.canonical_name,
             school_of(names, athlete.school.as_str()),
         );
-        family.push(queue_row(
-            COHORT_EVIDENCE,
-            athlete.id.as_str(),
-            subject,
-            detail,
-        ));
+        family.push(queue_row(athlete.id.as_str(), subject, detail));
     }
     family
 }
@@ -87,7 +80,7 @@ pub(super) fn athlete_identity(rows: &StoreRows, names: &HashMap<&str, &str>) ->
             .map(|athlete| athlete.id.as_str())
             .collect::<Vec<&str>>()
             .join(", ");
-        let rows: Vec<Vec<Cell>> = group
+        let rows: Vec<QueueRow> = group
             .iter()
             .map(|athlete| {
                 let subject = subject_of(
@@ -95,7 +88,6 @@ pub(super) fn athlete_identity(rows: &StoreRows, names: &HashMap<&str, &str>) ->
                     school_of(names, athlete.school.as_str()),
                 );
                 queue_row(
-                    ATHLETE_IDENTITY,
                     athlete.id.as_str(),
                     subject,
                     format!("same school, name and cohort as every id here: {ids}"),
@@ -143,12 +135,11 @@ fn school_identity_rows(
     normalized: &str,
     ids: &str,
     group: &[&CanonicalSchool],
-) -> Vec<Vec<Cell>> {
+) -> Vec<QueueRow> {
     group
         .iter()
         .map(|school| {
             queue_row(
-                SCHOOL_IDENTITY,
                 school.id.as_str(),
                 format!("{} ({state})", school.name),
                 format!("normalized name '{normalized}' is shared by ids {ids}"),

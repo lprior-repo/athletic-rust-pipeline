@@ -11,35 +11,79 @@ fn source() -> SourceRef {
 }
 
 #[test]
-fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> CrawlResult<()> {
+fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> anyhow::Result<()> {
     let meet = parse(FINISH_LIST, source(), 2023)?;
-    assert_eq!(meet.name, "WIAA D2 XC Sectionals - Boys Race");
-    assert_eq!(
-        meet.date, "2023",
-        "RaceDay publishes no date; year precision is explicit"
+    anyhow::ensure!(
+        meet.name == "WIAA D2 XC Sectionals - Boys Race",
+        "left={:?} right={:?}",
+        &meet.name,
+        &"WIAA D2 XC Sectionals - Boys Race"
+    );
+    anyhow::ensure!(
+        meet.date == "2023",
+        "RaceDay publishes no date; year precision is explicit — left={:?} right={:?}",
+        &meet.date,
+        &"2023"
     );
     let event = &meet.events[0];
-    assert_eq!(event.kind, EventKind::CrossCountry);
-    assert_eq!(event.gender, Gender::Boys);
-    assert_eq!(event.division.as_deref(), Some("Division 2"));
-    let winner = &event.rows[0];
-    assert_eq!(winner.name, "Jack Hefty");
-    assert_eq!(winner.grade.map(Grade::get), Some(11));
-    assert_eq!(winner.school, "Whitewater");
-    assert_eq!(
-        winner.mark,
-        Mark::TimeSeconds(1033.69),
-        "17:13.69 is the finish, not a mile split"
+    anyhow::ensure!(
+        event.kind == EventKind::CrossCountry,
+        "left={:?} right={:?}",
+        &event.kind,
+        &EventKind::CrossCountry
     );
-    assert!(event.rows.len() > 20, "got {} rows", event.rows.len());
+    anyhow::ensure!(
+        event.gender == Gender::Boys,
+        "left={:?} right={:?}",
+        &event.gender,
+        &Gender::Boys
+    );
+    {
+        let left_value = &event.division.as_deref();
+        let right_value = &(Some("Division 2"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    let winner = &event.rows[0];
+    anyhow::ensure!(
+        winner.name == "Jack Hefty",
+        "left={:?} right={:?}",
+        &winner.name,
+        &"Jack Hefty"
+    );
+    {
+        let left_value = &(winner.grade.map(Grade::get));
+        let right_value = &(Some(11));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
+    anyhow::ensure!(
+        winner.school == "Whitewater",
+        "left={:?} right={:?}",
+        &winner.school,
+        &"Whitewater"
+    );
+    {
+        let left_value = &winner.mark;
+        let right_value = &(Mark::TimeSeconds(1033.69));
+        anyhow::ensure!(
+            left_value == right_value,
+            "17:13.69 is the finish, not a mile split — left={left_value:?} right={right_value:?}"
+        );
+    }
+    anyhow::ensure!(event.rows.len() > 20, "got {} rows", event.rows.len());
     Ok(())
 }
 
 #[test]
-fn the_team_summary_table_never_becomes_athlete_rows() -> CrawlResult<()> {
+fn the_team_summary_table_never_becomes_athlete_rows() -> anyhow::Result<()> {
     let meet = parse(FINISH_LIST, source(), 2023)?;
     for row in &meet.events[0].rows {
-        assert!(
+        anyhow::ensure!(
             row.grade.is_some(),
             "a team summary row has no grade: {row:?}"
         );
@@ -48,17 +92,26 @@ fn the_team_summary_table_never_becomes_athlete_rows() -> CrawlResult<()> {
 }
 
 #[test]
-fn the_published_row_counters_are_the_rows_the_reader_took() -> CrawlResult<()> {
+fn the_published_row_counters_are_the_rows_the_reader_took() -> anyhow::Result<()> {
     let meet = parse(FINISH_LIST, source(), 2023)?;
     let rows: usize = meet.events.iter().map(|event| event.rows.len()).sum();
-    assert_eq!(
-        meet.rows_parsed, rows,
-        "the counter agrees with the rows the meet carries"
+    anyhow::ensure!(
+        meet.rows_parsed == rows,
+        "the counter agrees with the rows the meet carries — left={:?} right={:?}",
+        &meet.rows_parsed,
+        &rows
     );
-    assert_eq!(rows, 82, "the finish list publishes 82 athletes");
-    assert_eq!(
-        meet.rows_skipped, 0,
-        "every data row of the grid carries an athlete and a finish"
+    anyhow::ensure!(
+        rows == 82,
+        "the finish list publishes 82 athletes — left={:?} right={:?}",
+        &rows,
+        &82
+    );
+    anyhow::ensure!(
+        meet.rows_skipped == 0,
+        "every data row of the grid carries an athlete and a finish — left={:?} right={:?}",
+        &meet.rows_skipped,
+        &0
     );
     Ok(())
 }
@@ -77,14 +130,26 @@ const DECLINED_ROW: &str = r#"
 "#;
 
 #[test]
-fn a_declined_grid_row_is_reported_as_skipped_not_counted_as_parsed() -> CrawlResult<()> {
+fn a_declined_grid_row_is_reported_as_skipped_not_counted_as_parsed() -> anyhow::Result<()> {
     let meet = parse(DECLINED_ROW, source(), 2023)?;
-    assert_eq!(meet.rows_parsed, 1, "only the row with an athlete is a row");
-    assert_eq!(
-        meet.rows_skipped, 1,
-        "the row without an athlete is reported, never guessed"
+    anyhow::ensure!(
+        meet.rows_parsed == 1,
+        "only the row with an athlete is a row — left={:?} right={:?}",
+        &meet.rows_parsed,
+        &1
     );
-    assert_eq!(meet.events[0].rows[0].name, "Ada Bell");
+    anyhow::ensure!(
+        meet.rows_skipped == 1,
+        "the row without an athlete is reported, never guessed — left={:?} right={:?}",
+        &meet.rows_skipped,
+        &1
+    );
+    anyhow::ensure!(
+        meet.events[0].rows[0].name == "Ada Bell",
+        "left={:?} right={:?}",
+        &meet.events[0].rows[0].name,
+        &"Ada Bell"
+    );
     Ok(())
 }
 

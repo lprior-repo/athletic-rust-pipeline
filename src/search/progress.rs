@@ -12,6 +12,8 @@ pub struct SearchProgress {
     next_start: u32,
     pages: u32,
     complete: bool,
+    /// Result rows the endpoint delivered that this query could not use, summed over the walk.
+    skipped: u32,
     seen_starts: HashSet<u32>,
     seen_ids: HashSet<u64>,
     candidates: Vec<SearchCandidate>,
@@ -27,6 +29,7 @@ impl SearchProgress {
             next_start: 0,
             pages: 0,
             complete: false,
+            skipped: 0,
             seen_starts: HashSet::new(),
             seen_ids: HashSet::new(),
             candidates: Vec::new(),
@@ -111,42 +114,48 @@ impl SearchProgress {
         self.seen_starts.insert(start);
         self.pages = self.pages.saturating_add(1);
         let has_issues = !page.issues.is_empty();
-        let page_count = page.candidates.len();
         self.issues.extend(page.issues);
         self.add_candidates(page.candidates)?;
-        let total = u32::try_from(self.candidates.len())
-            .map_err(|_| anyhow::anyhow!("search candidate count overflowed"))?;
-        self.reconcile_page(count, start, next, total, page_count, has_issues)
+        // The endpoint advertises rows, not candidates of the queried sport: a sport-filtered
+        // search still answers with sibling-sport rows, which the parser counts in
+        // `SearchPage::skipped` (measured over the retained live corpora, one row per `<tr>` for
+        // any sport: a `tf` query at `count: 1` whose single row is cross-country). The walk is
+        // therefore reconciled over delivered rows, so a search whose matches all belong to the
+        // sibling sport completes as a search with no match instead of failing as a short page.
+        self.skipped = self.skipped.saturating_add(page.skipped);
+        let rows = u32::try_from(self.candidates.len())
+            .map_err(|_| anyhow::anyhow!("search candidate count overflowed"))?
+            .saturating_add(self.skipped);
+        self.reconcile_page(count, start, next, rows, has_issues)
     }
 
+    /// Reconciles one page against the query-wide advertised row count.
+    ///
+    /// `rows` counts everything the endpoint delivered and this walk accounted for: the candidates
+    /// of the queried sport plus the rows it could not use. A page that carries rows the query
+    /// cannot use, and whose pager points forward, is progress: it never rejects the page.
     fn reconcile_page(
         &mut self,
         count: u32,
         start: u32,
         next: Option<u32>,
-        total: u32,
-        page_count: usize,
+        rows: u32,
         has_issues: bool,
     ) -> Result<()> {
         if count == 0 {
-            return self.finish_empty(next, page_count, has_issues);
+            return self.finish_empty(next, rows, has_issues);
         }
-        if total > count {
-            bail!("search returned more candidates than advertised")
+        if rows > count {
+            bail!("search returned more delivered rows than advertised")
         }
-        if total == count {
+        if rows == count {
             return self.finish_full(next, has_issues);
         }
-        self.continue_page(start, next, page_count, has_issues)
+        self.continue_page(count, start, next, rows, has_issues)
     }
 
-    fn finish_empty(
-        &mut self,
-        next: Option<u32>,
-        page_count: usize,
-        has_issues: bool,
-    ) -> Result<()> {
-        if page_count != 0 || next.is_some() || has_issues {
+    fn finish_empty(&mut self, next: Option<u32>, rows: u32, has_issues: bool) -> Result<()> {
+        if rows != 0 || next.is_some() || has_issues {
             bail!("zero-result search response was not valid and reconciled")
         }
         self.complete = true;
@@ -166,18 +175,19 @@ impl SearchProgress {
 
     fn continue_page(
         &mut self,
+        count: u32,
         start: u32,
         next: Option<u32>,
-        page_count: usize,
+        rows: u32,
         has_issues: bool,
     ) -> Result<()> {
         if self.pages >= MAX_PAGES {
             bail!("search requires more than {MAX_PAGES} pages")
         }
         if next.is_none() {
-            bail!("search page ended before the advertised result count")
+            bail!("search page ended before the advertised result count: {rows} of {count} rows")
         }
-        if next == Some(start) || page_count == 0 {
+        if next == Some(start) {
             bail!("search pagination made no progress")
         }
         self.next_start = next.map_or(start, std::convert::identity);

@@ -9,7 +9,7 @@
 //! that declares capabilities and left no evidence behind is therefore visible as exactly that.
 
 use crate::report::{Census, ReportResult};
-use crate::sources::{SourceCapabilities, SourceDescriptor, TransportKind, REGISTRY};
+use crate::sources::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
 use std::collections::BTreeMap;
 
 use crate::workbook::cells::{cell, row, Cell};
@@ -31,7 +31,7 @@ pub(super) fn sources_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
         "In flight",
         "Crawl delay",
     )];
-    for descriptor in REGISTRY {
+    for descriptor in descriptors() {
         cells.push(descriptor_row(descriptor)?);
     }
     cells.push(row!());

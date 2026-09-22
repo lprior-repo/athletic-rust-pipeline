@@ -217,8 +217,8 @@ fn malformed_and_sparse_ooxml_are_rejected_by_both_ingestion_boundaries() -> Res
     .try_for_each(|(name, bytes)| {
         let path = directory.path().join(name);
         File::create(&path)?.write_all(bytes)?;
-        assert!(xlsx::visit_records(&path, |_record| Ok::<(), anyhow::Error>(())).is_err());
-        assert!(
+        anyhow::ensure!(xlsx::visit_records(&path, |_record| Ok::<(), anyhow::Error>(())).is_err());
+        anyhow::ensure!(
             workbook_ingest::visit_records(&path, |_record| Ok::<(), anyhow::Error>(())).is_err()
         );
         Ok::<(), anyhow::Error>(())
@@ -236,34 +236,82 @@ fn synthetic_workbook_ingestion_preserves_source_row_identity_and_fields() -> Re
         xlsx_records.push(record);
         Ok::<(), anyhow::Error>(())
     })?;
-    assert_eq!(xlsx_stats.actual_data_rows, 1);
-    assert_eq!(xlsx_records.len(), 1);
-    assert_eq!(xlsx_records[0].source_key, "Synthetic:2");
-    assert_eq!(xlsx_records[0].sheet, "Synthetic");
-    assert_eq!(xlsx_records[0].excel_row, 2);
-    assert_eq!(
-        xlsx_records[0]
+    anyhow::ensure!(
+        xlsx_stats.actual_data_rows == 1,
+        "left={:?} right={:?}",
+        &xlsx_stats.actual_data_rows,
+        &1
+    );
+    anyhow::ensure!(
+        xlsx_records.len() == 1,
+        "left={:?} right={:?}",
+        &xlsx_records.len(),
+        &1
+    );
+    anyhow::ensure!(
+        xlsx_records[0].source_key == "Synthetic:2",
+        "left={:?} right={:?}",
+        &xlsx_records[0].source_key,
+        &"Synthetic:2"
+    );
+    anyhow::ensure!(
+        xlsx_records[0].sheet == "Synthetic",
+        "left={:?} right={:?}",
+        &xlsx_records[0].sheet,
+        &"Synthetic"
+    );
+    anyhow::ensure!(
+        xlsx_records[0].excel_row == 2,
+        "left={:?} right={:?}",
+        &xlsx_records[0].excel_row,
+        &2
+    );
+    {
+        let left_value = &(xlsx_records[0]
             .fields
             .get("Person First")
-            .map(String::as_str),
-        Some("Generated Runner")
-    );
+            .map(String::as_str));
+        let right_value = &(Some("Generated Runner"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
 
     let mut stream_records = Vec::new();
     let stream_stats = workbook_ingest::visit_records(&path, |record| {
         stream_records.push(record);
         Ok::<(), anyhow::Error>(())
     })?;
-    assert_eq!(stream_stats.actual_data_rows, 1);
-    assert_eq!(stream_records.len(), 1);
-    assert_eq!(stream_records[0].source_key, "Synthetic:2");
-    assert_eq!(
-        stream_records[0]
+    anyhow::ensure!(
+        stream_stats.actual_data_rows == 1,
+        "left={:?} right={:?}",
+        &stream_stats.actual_data_rows,
+        &1
+    );
+    anyhow::ensure!(
+        stream_records.len() == 1,
+        "left={:?} right={:?}",
+        &stream_records.len(),
+        &1
+    );
+    anyhow::ensure!(
+        stream_records[0].source_key == "Synthetic:2",
+        "left={:?} right={:?}",
+        &stream_records[0].source_key,
+        &"Synthetic:2"
+    );
+    {
+        let left_value = &(stream_records[0]
             .fields
             .get("Person Email")
-            .map(String::as_str),
-        Some("synthetic@example.invalid")
-    );
+            .map(String::as_str));
+        let right_value = &(Some("synthetic@example.invalid"));
+        anyhow::ensure!(
+            left_value == right_value,
+            "left={left_value:?} right={right_value:?}"
+        );
+    }
     Ok(())
 }
 

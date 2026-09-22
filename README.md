@@ -7,12 +7,13 @@ door; it says only what is in the tree today and points at the document that own
 ## Workspace
 
 Workspace root `Cargo.toml` (package `athletic-rust-pipeline`) plus members `crates/census-domain`,
-`crates/midwest-census`, `xtask`. `fuzz/` is a cargo-fuzz workspace of its own.
+`crates/midwest-census`, `crates/g1-audit`, `xtask`. `fuzz/` is a cargo-fuzz workspace of its own.
 
 | Path | What it is | Entry point |
 |---|---|---|
 | `crates/midwest-census/` | the census: polite fetcher (robots, per-host pacing, disk cache), Fjall observation store, one module per source adapter, orchestration, census report, best marks, workbook, Restate services | `crates/midwest-census/README.md`, `src/cli/mod.rs`; bins `midwest-census`, `midwest-serve` |
 | `crates/census-domain/` | pure domain types: canonical entities, `Id<T>`, `GradYear`/`ObservedGrade`, `Evidence`, `SourceNamespace`, `UsJurisdiction`; no async, no I/O | `src/lib.rs` |
+| `crates/g1-audit/` | read-only counted inventory of the retained athletic.net `/Search.aspx/runSearch` response bodies (G1 slice): digests, interstitial markers, id/href classes — the Rust port of the deleted `research/captures/g1/inventory-search-pages.py`, byte-identical on both retained corpora | `crates/g1-audit/src/main.rs`; bin `g1-audit`
 | root package `athletic-rust-pipeline` | the Athletic.net-faced acquisition pipeline and operator CLI: Restate worker, persistent Chromium transport, rankings collection, workbook export and verification | `src/main.rs`, `src/cli.rs`, `src/runtime/**` |
 | `xtask/` | developer commands and the gate's measurement layer (`scan`, `seams`, `integrity`, `domain-purity`, `quality-baseline`, `ratchet`) | `xtask/README.md`, `xtask/src/main.rs` |
 | `tools/` | `tools/gate.sh` — the one quality gate — and `tools/quality-baseline.json`, the debt ratchet | `tools/README.md` |

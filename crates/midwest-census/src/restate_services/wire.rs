@@ -3,7 +3,7 @@ use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::census::{Revision, StateProgress};
+use crate::census::{MeetCensus, Revision, StateProgress};
 
 pub(super) mod ingest;
 
@@ -164,6 +164,10 @@ pub struct JurisdictionState {
     pub rosters: Option<StateProgress>,
     #[serde(default)]
     pub consolidated: Option<Vec<ConsolidatedTable>>,
+    /// The meet census's measured outcome. Absent on a state journaled before the stage existed,
+    /// which is why the stage keys on this field rather than on the invocation's stage list.
+    #[serde(default)]
+    pub meets: Option<MeetCensus>,
     #[serde(default)]
     pub updated_at: Option<String>,
 }
@@ -178,6 +182,7 @@ pub struct JurisdictionReport {
     pub teams: usize,
     pub rosters: StateProgress,
     pub consolidated: Vec<ConsolidatedTable>,
+    pub meets: MeetCensus,
     pub completed_at: String,
 }
 
@@ -200,6 +205,14 @@ pub struct NationalRequest {
 }
 
 /// One jurisdiction's row in the national report.
+///
+/// The walk's three outcomes are separate on purpose. `rosters_done` is what this traversal
+/// fetched, `rosters_skipped` is what the journal already held, and `rosters_owed` is what the run
+/// left unfinished — a state whose host refused requests (§69) stops the walk with most of its
+/// index still owed. Without the last two an operator reading a blocked state sees a small state.
+///
+/// Both are `Option` because a report written by an earlier revision does not carry them: a missing
+/// denominator must read as unknown, never as zero.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JurisdictionSummary {
     pub jurisdiction: UsJurisdiction,
@@ -207,6 +220,12 @@ pub struct JurisdictionSummary {
     pub teams: usize,
     pub rosters_done: usize,
     pub rosters_skipped: usize,
+    /// Rosters this run left unfinished: no journal entry, no fetched page.
+    #[serde(default)]
+    pub rosters_owed: Option<usize>,
+    /// The host refused at least one roster with HTTP 403/429, which ends the state's requests.
+    #[serde(default)]
+    pub blocked: Option<bool>,
     pub athletes: usize,
     pub class_of_2027: usize,
 }

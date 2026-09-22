@@ -56,6 +56,24 @@ const ALLOWED: &[(&str, &str)] = &[
     ("census", "school_index"),
     ("census", "sources"),
     ("census", "store"),
+    // The provenance gate is a fetching adapter over the fragment CSVs: it re-derives every shipped
+    // coach row from the page that row cites, through the same polite fetcher the sources use (three
+    // passes, one shared on-disk cache) and stamps its manifest with that fetcher's clock. `net` is
+    // the one module it needs beyond the standard library and the CSV reader.
+    ("coachverify", "net"),
+    ("index", "report"),
+    ("index", "store"),
+    // §29-§31: the derived indexes are the workbook's other reader. The queues, coverage and
+    // snapshot rows the store keeps are the same findings the sheets print, so the index module
+    // composes the workbook's retained-record families rather than re-deriving them, and a store
+    // reader and a workbook reader cannot be shown different findings.
+    ("index", "workbook"),
+    // The review lane is a reader of retained findings and a writer of verdicts: it asks about the
+    // cases the store kept (`ReviewCases`) and the canonical rows behind them, and writes back only
+    // `IdentityVerdicts` and the cases' own state. It never edits a canonical row, and `store` never
+    // names `identity`, so the edge runs the direction ARCHITECTURE.md sets — a lane over the store,
+    // not the store over a lane.
+    ("identity", "store"),
     ("net", "clock"),
     ("outcome", "restate_services"),
     ("report", "clock"),

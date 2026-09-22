@@ -91,7 +91,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
     let (mut school, school_id) = CanonicalSchool::new(
         UsJurisdiction::Wisconsin,
         fixture.school,
-        &census_domain::model::normalize_name(fixture.school),
+        census_domain::model::normalize_name(fixture.school),
     );
     school.evidence.push(observation());
     store.append(Table::Schools, &school).unwrap();

@@ -49,9 +49,28 @@ fn challenges_retain_evidence_for_browser_recovery_before_retry() -> anyhow::Res
             rankings: None,
         };
         let result = outcome(status, receipt.clone(), Ok(Duration::ZERO), true);
-        assert_eq!(result.code, Some(code));
-        assert_eq!(result.retryable, retryable);
-        assert_eq!(result.receipt, Some(receipt));
+        {
+            let left_value = &result.code;
+            let right_value = &(Some(code));
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
+        anyhow::ensure!(
+            result.retryable == retryable,
+            "left={:?} right={:?}",
+            &result.retryable,
+            &retryable
+        );
+        {
+            let left_value = &result.receipt;
+            let right_value = &(Some(receipt));
+            anyhow::ensure!(
+                left_value == right_value,
+                "left={left_value:?} right={right_value:?}"
+            );
+        }
     }
     Ok(())
 }

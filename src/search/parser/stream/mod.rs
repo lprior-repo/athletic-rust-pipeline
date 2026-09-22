@@ -6,13 +6,13 @@ mod capture;
 mod link;
 mod row;
 
-use super::{SearchCandidate, SearchIssue, SearchQuery};
+use super::{Rows, SearchCandidate, SearchIssue, SearchQuery};
 use crate::domain::{
     evidence::{EvidenceRef, Sport},
     identity::{AthleteId, EvidenceDigest, ProfileUrl},
 };
 use crate::html_bounds::rewrite_bounded;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use capture::{add_link_handlers, add_row_handlers, finish_unclosed};
 use lol_html::{html_content::DocumentEnd, DocumentContentHandlers, Settings};
 use std::{cell::RefCell, rc::Rc};
@@ -45,6 +45,7 @@ struct State {
     start: u32,
     digest: EvidenceDigest,
     seen_rows: usize,
+    skipped: u32,
     row: Option<Row>,
     link: Option<Link>,
     candidates: Vec<SearchCandidate>,
@@ -68,6 +69,18 @@ impl State {
         }
     }
 
+    /// One result row that cannot become a candidate of the queried sport.
+    ///
+    /// The live endpoint answers a filtered search with rows for the sibling sport and with
+    /// placeholder rows that name no athlete at all (measured 2026-09-16/21 over the retained live
+    /// corpora: 130 pilot + 39 lane sport-mismatched rows, 130 + 39 empty-id placeholder hrefs).
+    /// Such a row is not evidence about this query, so it is counted rather than dropped, and it
+    /// never invalidates the page: `MAX_ROWS` bounds the counter above, so saturation keeps it
+    /// total without being reachable.
+    fn skip_row(&mut self) {
+        self.skipped = self.skipped.saturating_add(1);
+    }
+
     fn row_matches(&self, index: usize) -> bool {
         self.row.as_ref().is_some_and(|row| row.index == index)
     }
@@ -85,12 +98,13 @@ pub(super) fn rows(
     start: u32,
     digest: &EvidenceDigest,
     html: &str,
-) -> Result<(Vec<SearchCandidate>, Vec<SearchIssue>)> {
+) -> Result<Rows> {
     let shared = Rc::new(RefCell::new(State {
         sport: query.sport,
         start,
         digest: digest.clone(),
         seen_rows: 0,
+        skipped: 0,
         row: None,
         link: None,
         candidates: Vec::with_capacity(32),
@@ -120,5 +134,10 @@ pub(super) fn rows(
             },
         });
     }
-    Ok((state.candidates, issues))
+    Ok(Rows {
+        candidates: state.candidates,
+        issues,
+        seen: u32::try_from(state.seen_rows).context("search page row count overflowed")?,
+        skipped: state.skipped,
+    })
 }

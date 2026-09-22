@@ -596,3 +596,95 @@ gender as `None`.
 * Two of the wave's lanes (athleticlive results, TFRRS) had to be given explicit exit criteria
   mid-flight: both were at risk of landing a compiling adapter with failing tests. One exit — fix
   or delete with a reason — is what kept the tree's red set empty at freeze.
+
+## 13. Wave 6 outcome (2026-09-22)
+
+The objective's §29-§31 requirement: the store must hold the *derived* state a reader needs — the
+join from a provider's own ids to canonical rows, the conflict and review queues, coverage, and one
+collection snapshot per pass — so that answering those questions is a scan of one table rather than
+a re-derivation of the whole store. What landed, all inside the census crate:
+
+- **`index::derive` (`crates/midwest-census/src/index.rs`).** One pass writes five things:
+  `source_identities` (one row per provider identity per canonical table, carrying the provider id
+  verbatim, the table it belongs to, the canonical id it joins to and the observed URL),
+  `conflicts` and `review_cases` (the retained queues), `coverage` (one row per jurisdiction and one
+  per source namespace), and `snapshots` (one row per pass). The queues and coverage are *composed*
+  from the same code the workbook's sheets print — `workbook::retained_records` and
+  `report::coverage_report` — so a store reader and a workbook reader cannot be shown different
+  findings; they are the same computation written twice.
+- **A derived-state write path (`store/write.rs::replace_many`).** Derived rows are a function of
+  the store, not evidence about a moment in it, so they are keyed with a fixed sequence of zero and
+  reserve no observation number: re-deriving replaces the row it wrote before. Appending instead
+  would add a full copy of every identity per pass — on a twelve-million-row identity table that
+  reaches `MAX_ROWS_PER_TABLE` in days and then aborts every scan of the table. Measured on a real
+  store: three consecutive `index` passes leave `source_identities`, `coverage` and `snapshots` at
+  one row per key.
+- **CLI and cycle.** `midwest-census index` derives and prints the per-table counts;
+  `midwest-census run` derives between `consolidate` and the published scopes, so one command keeps
+  the indexes current.
+- **`store/table.rs`.** The twelve-table vocabulary moved out of `store/mod.rs`, which had crossed
+  the 300-line budget (319 → 225 lines); the module re-exports `Entity`, `Table` and both ceilings,
+  so no caller changed.
+- **Documentation corrections found while wiring it.** `StoreStats`' doc comment claimed the counts
+  were LSM `approximate_len` estimates (they are the store's exact sequence counters — the claim was
+  flagged in `FJALL_SCHEMA.md` §8.9 and is now fixed at the source); `docs/FJALL_SCHEMA.md` §1, §2.1
+  and §5 now carry twelve tables and both write paths, and the root `FJALL_SCHEMA.md` no longer says
+  "seven tables".
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `cargo nextest run --workspace --all-features` | **745 tests run: 745 passed, 2 skipped** — `cargo test -p midwest-census --lib` alone is **356 passed** (21 `index::tests`, 2 new `store::tests` for the replace path) and `cargo test -p census-domain` is **39 passed** |
+| Real-store smoke | `provider coach_contacts` → `index` → `fjall-stats`: 6 schools / 13 coaches imported; `source_identities=19 conflicts=0 reviews=0 coverage=58 snapshots=1`; three passes leave one row per key |
+| `midwest-census run` (offline) | `gather … skipped (no --input)` → `consolidate` → `index` → both report scopes → `bests` → `recruiting` → `workbook`; 0.23 s over the six-school store |
+| `cargo xtask seams` | 15 modules, `violations: []` — the three new `index` edges are declared with their reasons in the table |
+| `cargo xtask scan` | census 253 files / 39,909 production lines, every forbidden counter 0, **0 files > 300 lines**, 0 functions > 60 logical lines; root unchanged at 305 / 36,656 |
+| `tools/gate.sh` | **PASS** (debt ratchet holds) — after one **FAIL** that was worth having: `check`, `tests` and `bench presence` all broke on one stale call, `SourceObjectIdentity::row_id()` in `census-domain`'s test target, which `cargo test -p midwest-census --lib` never builds. Fixed, plus two test updates for the new table set, both inspected: the `Run Metrics` sheet golden (13872 → 13882 cells, all twelve tables, every other sheet byte-identical) and the backup drill's expected table vector (the five derived tables asserted empty there, because that chain never derives) |
+
+### 13.1 Deferred items (numbered)
+
+Each item is a measured gap, with the file or check that carries the evidence. None of them is
+required for the objective's §29-§31 deliverable; all of them are real.
+
+30. **`(sources, store)` is a direction violation.** `AdapterContext` carries `&Store`, so every
+    adapter can read and write the store directly. `xtask/src/seams.rs` lists the edge with that
+    comment; when adapters return entity batches instead, delete the row and the walker enforces the
+    narrower graph.
+31. **`scan` materializes the whole merged table.** `store/read.rs::scan` builds one
+    `BTreeMap<String, T>` in the heap, so a performance table at the 20M ceiling is a memory
+    incident waiting for its trigger. A streaming/merge iterator would remove both this and item 32.
+32. **`MAX_ROWS_PER_TABLE` fails whole-table reads.** Crossing 20M aborts `report`, `bests`,
+    `workbook`, `consolidate` and the index pass together (`docs/FJALL_SCHEMA.md` §8.1). The bound
+    should be per-batch with a partial-progress error, not per-table.
+33. **Legacy import has a commit/marker crash window** (`store/legacy.rs`): a kill between the
+    WriteBatch commit and the marker write re-imports the file on the next open. The import should
+    be digest-keyed so re-running it is a no-op.
+34. **`index::derive` is O(store).** Every pass re-derives all identities from the merged entity
+    tables; nobody consumes the change set the snapshot counters already make visible. Incremental
+    derivation keyed off `snapshots` is the fix when the identity table's pass cost matters.
+35. **Snapshots publish appended-observation counters, not merged row counts.** `stats()` gives
+    exact appended counts per table (and row counts for derived tables), but "how many schools does
+    the store hold" still requires `consolidate`. A second counter map, recorded by the pass that
+    already scans the tables, would answer it directly.
+36. **No `try_reserve` anywhere in census.** Every externally-sized growth point — JSONL ingest,
+    parser buffers, journal payloads, observation batches — grows through `Vec::with_capacity` or
+    `Vec::new()`.
+37. **`journal_payloads` clones every payload** (`store/read.rs`) instead of borrowing the stored
+    bytes.
+38. **One malformed row aborts a whole table scan** (`StoreError::Decode`, `store/read.rs`): no
+    quarantine path and no tolerance precedent, unlike `report::read_rows`, which tolerates one bad
+    line.
+39. **No `#[instrument]` on the three production spawn sites** (`bootstrap.rs` ×2,
+    `restate_services/mod.rs`), so a stuck task in a live run has no span to point at.
+40. **Neither the pipeline golden nor the backup drill exercises the derived index tables.**
+    `tests/parity_pipeline.rs` pins every published file byte-for-byte and rebuilds the store, but it
+    drives `consolidate → report → bests → workbook` and never derives, so the five tables are only
+    visible through the `Run Metrics` sheet's per-table counters (the wave 6 golden grew by exactly
+    those rows: 13872 → 13882 cells, all twelve in `Run Metrics`, every other sheet untouched).
+    `tests/backup_restore.rs` likewise asserts the index tables are *empty* in its corpus, because
+    its chain never derives — so "a cold copy carries the derived rows" is unproven. Adding the
+    derivation to both chains closes it.
+41. **Coverage is derived for one cohort.** `index::coverage_rows` asks `coverage_report` for
+    CO2027 because that is the sheet's cohort; the other grad years have no coverage row in the
+    store.

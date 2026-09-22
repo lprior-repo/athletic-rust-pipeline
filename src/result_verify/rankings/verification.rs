@@ -199,7 +199,7 @@ mod tests {
             r#""qParams":{"grades":[11],"page":1}"#,
             r#""qParams":{"qParams":{"grades":[11],"page":1}}"#,
         );
-        assert!(capture(
+        anyhow::ensure!(capture(
             &receipt(observation("POST", API_URL, Some(&nested))),
             &resource(RankingsCapture::Results),
             &origin(),
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn rejects_a_body_that_does_not_match_the_requested_scope() -> Result<()> {
         let other_page = LANE_BODY.replace(r#""page":1"#, r#""page":4"#);
-        assert!(capture(
+        anyhow::ensure!(capture(
             &receipt(observation("POST", API_URL, Some(&other_page))),
             &resource(RankingsCapture::Results),
             &origin(),
@@ -223,13 +223,13 @@ mod tests {
     #[test]
     fn rejects_a_results_capture_without_its_physical_request() -> Result<()> {
         let resource = resource(RankingsCapture::Results);
-        assert!(capture(
+        anyhow::ensure!(capture(
             &receipt(observation("GET", API_URL, None)),
             &resource,
             &origin()
         )
         .is_err());
-        assert!(capture(
+        anyhow::ensure!(capture(
             &receipt(observation(
                 "POST",
                 "http://127.0.0.1:21045/api/v1/tfRankings/GetNavInfo",

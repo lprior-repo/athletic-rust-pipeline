@@ -5,7 +5,7 @@
 //! properties fails here. Each test names the property it holds, because the point is to catch a
 //! broken table, not to restate its contents.
 
-use super::{bulk_first, descriptor, TransportKind, REGISTRY};
+use super::{bulk_first, descriptor, descriptors, TransportKind};
 
 /// The vocabulary a plan can choose from: one slug per adapter that fetches or parses external
 /// source material, which is also the name the provider dispatch accepts (§11). Spelled out
@@ -33,7 +33,7 @@ const PLAN_SLUGS: [&str; 14] = [
 /// first, and a declared-but-missing module would be a provider no plan can select.
 #[test]
 fn every_provider_module_is_registered_exactly_once() {
-    let mut slugs: Vec<&str> = REGISTRY.iter().map(|entry| entry.slug).collect();
+    let mut slugs: Vec<&str> = descriptors().map(|entry| entry.slug).collect();
     let listed = slugs.len();
     slugs.sort_unstable();
     let mut unique = slugs.clone();
@@ -60,7 +60,7 @@ fn every_provider_module_is_registered_exactly_once() {
 /// and a slug naming no source has to answer with nothing rather than with a neighbour.
 #[test]
 fn descriptor_answers_every_registered_slug_and_nothing_else() {
-    for entry in REGISTRY {
+    for entry in descriptors() {
         let found = descriptor(entry.slug);
         assert!(found.is_some(), "{} has no lookup answer", entry.slug);
         assert_eq!(found.map(|found| found.slug), Some(entry.slug));
@@ -91,7 +91,7 @@ fn descriptor_answers_every_registered_slug_and_nothing_else() {
 /// source no request may ever be made against.
 #[test]
 fn every_admission_stays_inside_the_collection_ceiling() {
-    for entry in REGISTRY {
+    for entry in descriptors() {
         let declared = entry.admission.target_requests_per_second;
         assert!(
             declared > 0.0,
@@ -117,7 +117,7 @@ fn every_admission_stays_inside_the_collection_ceiling() {
 /// never lowers it, so an entry claiming otherwise would describe a run the transport refuses.
 #[test]
 fn every_admission_repeats_the_transport_bound() {
-    for entry in REGISTRY {
+    for entry in descriptors() {
         assert_eq!(
             entry.admission.maximum_in_flight.get(),
             1,
@@ -247,7 +247,7 @@ fn every_plan_slug_resolves_and_stays_in_the_plan() {
 #[test]
 fn one_origin_has_one_declared_policy() {
     let mut seen: Vec<(&str, f64, usize)> = Vec::new();
-    for entry in REGISTRY {
+    for entry in descriptors() {
         let admission = entry.admission;
         let in_flight = admission.maximum_in_flight.get();
         let Some((_, rate, bound)) = seen.iter().find(|(origin, ..)| *origin == admission.origin)

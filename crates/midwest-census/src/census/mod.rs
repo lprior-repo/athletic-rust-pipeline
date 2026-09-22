@@ -14,17 +14,30 @@
 //! types, and the journal phase keys the three share.
 
 use census_domain::model::SchoolYear;
+use census_domain::model::SourceAccessCondition;
 use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 
 mod aggregate;
 mod identity;
+mod meets;
 mod scope;
+mod state;
 mod sweep;
+pub mod verify;
 
 pub use aggregate::consolidate;
 pub use identity::{Revision, WorkflowIdentity};
+pub use meets::{collect_state_meets, select_meets, MeetCensus};
+pub use state::{
+    AcceptanceItem, CensusState, GapTally, OpenWork, Phase, RetainedFindings, SealCounts,
+    SealError, SealEvidence, SealedCensus, WorkbookCheck,
+};
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
+pub use verify::{
+    missing_columns, sample_indices, sheets_matching_prefix, verify_athletes, verify_performances,
+    ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
+};
 
 #[derive(Debug, Clone)]
 pub struct CollectOptions {
@@ -69,6 +82,13 @@ pub struct StateProgress {
     pub class_of_2027_girls: usize,
     pub empty_rosters: usize,
     pub errors: Vec<String>,
+    /// §69: whether a hard access block (HTTP 403/429) ended this state's walk before its rosters
+    /// were done. Defaulted on read so a report stored before the stop existed still decodes.
+    #[serde(default)]
+    pub blocked: bool,
+    /// Rosters the walk dropped unfetched after that block: they stay owed, so a re-run resumes.
+    #[serde(default)]
+    pub blocked_skipped: usize,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -82,6 +102,12 @@ pub struct CollectReport {
     pub cache_hits: u64,
     pub errors: u64,
     pub elapsed_seconds: f64,
+    /// The access conditions the sources imposed on this run, sorted by row id (§69). Empty means
+    /// no source refused this client.
+    pub access_conditions: Vec<SourceAccessCondition>,
+    /// Hosts whose condition still blocks work: a non-empty list is what tells a blocked run from a
+    /// complete one.
+    pub blocked_hosts: Vec<String>,
 }
 
 /// Team index phase key: `milesplit_teams_wi`.
@@ -99,3 +125,5 @@ fn rosters_phase(jurisdiction: UsJurisdiction) -> String {
         jurisdiction.code().to_ascii_lowercase()
     )
 }
+#[cfg(test)]
+mod verify_tests;

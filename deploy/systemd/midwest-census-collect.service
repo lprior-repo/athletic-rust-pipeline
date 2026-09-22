@@ -11,7 +11,8 @@ Group=midwest
 WorkingDirectory=/opt/athletic-rust-pipeline
 Environment=RUST_LOG=info
 # Incremental only: `teams --refresh` re-reads state association team indexes (cheap, changes rarely),
-# `collect` walks rosters and result pages, then the reducers rebuild the derived tables. No step
+# `collect` walks rosters and result pages, `index` rebuilds the derived index tables (source
+# identities, conflicts, review cases, coverage, snapshot), then the reducers republish. No step
 # re-fetches the full historical corpus; every fetch honours per-host pacing and the on-disk cache.
 ExecStart=/bin/sh -c 'set -eu; \
   bin=target/release/midwest-census; \
@@ -19,6 +20,7 @@ ExecStart=/bin/sh -c 'set -eu; \
   "$bin" --store "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
   "$bin" --store "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --school-year 2027; \
   "$bin" --store "$out" consolidate; \
+  "$bin" --store "$out" index; \
   "$bin" --store "$out" report --print; \
   "$bin" --store "$out" bests; \
   "$bin" --store "$out" workbook; \

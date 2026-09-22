@@ -201,10 +201,11 @@ fn frozen(kind: SeasonKind, gender: &str) -> anyhow::Result<Frozen> {
         catalog
             .clone()
             .into_plan(collection.clone(), scope.projection_grade, &scope.gender)?;
-    assert_eq!(
-        plan.events.len(),
-        1,
-        "fixture nav must map exactly one event"
+    anyhow::ensure!(
+        plan.events.len() == 1,
+        "fixture nav must map exactly one event — left={:?} right={:?}",
+        &plan.events.len(),
+        &1
     );
     let event = plan.events.first().context("plan event")?.clone();
 
@@ -373,11 +374,13 @@ fn frozen(kind: SeasonKind, gender: &str) -> anyhow::Result<Frozen> {
 #[test]
 fn accepts_a_frozen_indoor_girls_collection() -> anyhow::Result<()> {
     let frozen = frozen(SeasonKind::Indoor, "f")?;
-    assert_eq!(
-        frozen.records, 1,
-        "the frozen index must hold exactly the retained candidate"
+    anyhow::ensure!(
+        frozen.records == 1,
+        "the frozen index must hold exactly the retained candidate — left={:?} right={:?}",
+        &frozen.records,
+        &1
     );
-    assert!(super::verify(
+    anyhow::ensure!(super::verify(
         &frozen.source,
         &frozen.discovery,
         &frozen.store
@@ -394,7 +397,7 @@ fn rejects_a_scope_whose_season_kind_differs_from_the_frozen_page() -> anyhow::R
         Ok(_) => bail!("an outdoor scope must not accept an indoor page"),
         Err(error) => error,
     };
-    assert!(
+    anyhow::ensure!(
         error.to_string().contains("division ID mismatch"),
         "the rejection must name the division mismatch, got: {error}"
     );
@@ -410,7 +413,7 @@ fn rejects_a_scope_whose_gender_differs_from_the_frozen_page() -> anyhow::Result
         Ok(_) => bail!("a boys scope must not accept a girls page"),
         Err(error) => error,
     };
-    assert!(
+    anyhow::ensure!(
         error.to_string().contains("gender mismatch"),
         "the rejection must name the gender mismatch, got: {error}"
     );

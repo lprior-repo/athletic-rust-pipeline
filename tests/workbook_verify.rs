@@ -284,12 +284,32 @@ fn verifies_sparse_rows_and_scalar_cell_semantics() -> TestResult {
         &expected_digest(&original)?,
         &["Status".to_owned()],
     )?;
-    assert_eq!(report.source_sheet_count, 2);
-    assert_eq!(report.matched_row_count, 3);
-    assert_eq!(report.matched_field_count, 12);
-    assert_eq!(report.appended_header_count, 1);
-    assert!(report.source_hash_before_matches);
-    assert!(report.source_hash_after_matches);
+    if !(report.source_sheet_count == 2) {
+        return Err(format!("left={:?} right={:?}", &report.source_sheet_count, &2).into());
+    };
+    if !(report.matched_row_count == 3) {
+        return Err(format!("left={:?} right={:?}", &report.matched_row_count, &3).into());
+    };
+    if !(report.matched_field_count == 12) {
+        return Err(format!("left={:?} right={:?}", &report.matched_field_count, &12).into());
+    };
+    if !(report.appended_header_count == 1) {
+        return Err(format!("left={:?} right={:?}", &report.appended_header_count, &1).into());
+    };
+    if !(report.source_hash_before_matches) {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(report.source_hash_before_matches)
+        )
+        .into());
+    };
+    if !(report.source_hash_after_matches) {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(report.source_hash_after_matches)
+        )
+        .into());
+    };
     Ok(())
 }
 
@@ -302,37 +322,76 @@ fn rejects_missing_duplicated_or_moved_rows() -> TestResult {
     alpha.retain(|(row, _)| *row != 3);
     let missing = directory.path().join("missing.xlsx");
     write_fixture(&missing, &output_sheets(alpha, beta.clone()))?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &missing,
         &expected_digest(&original)?,
-        &["Status".to_owned()]
+        &["Status".to_owned()],
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &missing,
+                &expected_digest(&original)?,
+                &["Status".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
 
     let (mut alpha, _) = output_rows();
     alpha.push((4, alpha[2].1.clone()));
     let duplicated = directory.path().join("duplicated.xlsx");
     write_fixture(&duplicated, &output_sheets(alpha, beta.clone()))?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &duplicated,
         &expected_digest(&original)?,
-        &["Status".to_owned()]
+        &["Status".to_owned()],
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &duplicated,
+                &expected_digest(&original)?,
+                &["Status".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
 
     let (mut alpha, _) = output_rows();
     alpha[2].0 = 2;
     let moved = directory.path().join("moved.xlsx");
     write_fixture(&moved, &output_sheets(alpha, beta))?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &moved,
         &expected_digest(&original)?,
-        &["Status".to_owned()]
+        &["Status".to_owned()],
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &moved,
+                &expected_digest(&original)?,
+                &["Status".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
     Ok(())
 }
 
@@ -345,20 +404,46 @@ fn rejects_altered_cells_and_extra_header_collisions() -> TestResult {
     alpha[1].1[1] = Cell::Text("43.5");
     let altered = directory.path().join("altered.xlsx");
     write_fixture(&altered, &output_sheets(alpha, beta.clone()))?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &altered,
         &expected_digest(&original)?,
-        &["Status".to_owned()]
+        &["Status".to_owned()],
     )
-    .is_err());
-    assert!(verify_fields(
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &altered,
+                &expected_digest(&original)?,
+                &["Status".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
+    if !(verify_fields(
         &original,
         &altered,
         &expected_digest(&original)?,
-        &["Score".to_owned()]
+        &["Score".to_owned()],
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &altered,
+                &expected_digest(&original)?,
+                &["Score".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
     Ok(())
 }
 
@@ -372,13 +457,26 @@ fn rejects_malformed_output_workbook() -> TestResult {
         &malformed,
         &[("Alpha", vec![(0, vec![Cell::Text("Name")])])],
     )?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &malformed,
         &expected_digest(&original)?,
-        &["Status".to_owned()]
+        &["Status".to_owned()],
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &malformed,
+                &expected_digest(&original)?,
+                &["Status".to_owned()]
+            )
+            .is_err())
+        )
+        .into());
+    };
     Ok(())
 }
 
@@ -404,37 +502,78 @@ fn rejects_shared_string_row_amplification_and_bad_dimensions() -> TestResult {
         &expected_digest(&original)?,
         &extra_headers,
     )?;
-    assert_eq!(report.matched_row_count, 1);
+    if !(report.matched_row_count == 1) {
+        return Err(format!("left={:?} right={:?}", &report.matched_row_count, &1).into());
+    };
 
     let expanded = directory.path().join("expanded.xlsx");
     write_minimal_shared_workbook(&expanded, "A1:H2", true)?;
 
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &expanded,
         &expected_digest(&original)?,
-        &extra_headers
+        &extra_headers,
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &expanded,
+                &expected_digest(&original)?,
+                &extra_headers
+            )
+            .is_err())
+        )
+        .into());
+    };
 
     let malformed = directory.path().join("malformed-dimension.xlsx");
     write_minimal_shared_workbook(&malformed, "A1:B", false)?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &malformed,
         &expected_digest(&original)?,
-        &extra_headers
+        &extra_headers,
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &malformed,
+                &expected_digest(&original)?,
+                &extra_headers
+            )
+            .is_err())
+        )
+        .into());
+    };
 
     let out_of_bounds = directory.path().join("out-of-bounds-dimension.xlsx");
     write_minimal_shared_workbook(&out_of_bounds, "XFE1:XFE2", false)?;
-    assert!(verify_fields(
+    if !(verify_fields(
         &original,
         &out_of_bounds,
         &expected_digest(&original)?,
-        &extra_headers
+        &extra_headers,
     )
-    .is_err());
+    .is_err())
+    {
+        return Err(format!(
+            "assertion failed: {}",
+            stringify!(verify_fields(
+                &original,
+                &out_of_bounds,
+                &expected_digest(&original)?,
+                &extra_headers
+            )
+            .is_err())
+        )
+        .into());
+    };
     Ok(())
 }

@@ -254,8 +254,8 @@ fn bench_put_source_batch(criterion: &mut Criterion, dataset: &Dataset) {
             || {
                 let batch = published.get();
                 published.set(batch.saturating_add(1));
-                let records = checked(batch_records(batch * BATCH_RECORDS, BATCH_RECORDS));
-                records
+
+                checked(batch_records(batch * BATCH_RECORDS, BATCH_RECORDS))
             },
             |records| {
                 checked(dataset.store.put_source_batch(&dataset.workbook, &records));

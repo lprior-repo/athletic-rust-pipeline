@@ -3,10 +3,10 @@
 //! Measured request cost: **1 request per result set** — `samples/raw-oh-770621-rs1321880.txt` is the
 //! whole result set of `RSID 1321880` in one 47,564 B body (80 rows, two sections, HTTP 200,
 //! 2026-09-22T03:55:59Z), and the lane report records the same one-body shape for the other sampled
-//! result sets. Nothing here walks a meet, a calendar or an index to find result sets: a meet's
-//! result-set list is published only through `v1/meets/<MeetID>/performances` on
-//! `api.prod.milesplit.com`, behind the robots-disallowed `/api/`, so the operator supplies each
-//! `/raw` URL and this route reads exactly those.
+//! result sets. This route reads the `/raw` URLs it is given and walks nothing itself; the URLs come
+//! from the meet's own results page, which lists every result file the meet has
+//! (`MeetResultFile::raw_url`, `milesplit_results` provider arm) — so a whole meet is one page
+//! request plus one request per result file, all of them ordinary HTML paths.
 //!
 //! Result sets are read sequentially, in the order supplied. The fetcher's per-host gate already
 //! limits a host to one request at a time, so concurrency would only reorder the run — and the order

@@ -110,9 +110,10 @@ const SCOPE_COUNTERS: [ScopeCounter; 7] = [
     ("Coaches with a professional email", |census| {
         census.totals.coaches_with_email
     }),
-    ("Class-of-2027 athletes", |census| {
-        census.totals.class_of_2027
-    }),
+    // The seal's reader matches this label exactly (case-insensitively) and takes the first
+    // numeric cell after it, so the core scope's count is the one it reads: keep the label
+    // identical to `seal::workbook::COHORT_LABEL`.
+    ("Class of 2027", |census| census.totals.class_of_2027),
     ("Meets", |census| census.meets.total),
     ("Meets naming an Athletic.net id", |census| {
         census.meets.with_athletic_net_id

@@ -5,7 +5,7 @@ use census_domain::UsJurisdiction;
 use restate_sdk::prelude::{HandlerError, Json, RunRetryPolicy, TerminalError};
 use serde_json::Value;
 
-use crate::census::{self, CollectOptions, StateProgress};
+use crate::census::{self, CollectOptions, MeetCensus, StateProgress};
 use crate::net::Fetcher;
 use crate::report::{self, ReportError, ReportResult, Scope};
 use crate::sources::CrawlError;
@@ -140,6 +140,23 @@ pub(super) async fn teams_stage(
         records: teams.len(),
         at,
     }))
+}
+
+/// The meet census stage: enumerate the jurisdiction's published meets for one season year and
+/// write them as `source_meets` rows. Nothing here walks meet pages — the results index publishes
+/// fifty meets per response — so the stage costs a bounded number of index reads, journaled per page.
+pub(super) async fn meets_stage(
+    store: Arc<Store>,
+    fetcher: Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    year: u16,
+    refresh: bool,
+    at: String,
+) -> Result<Json<MeetCensus>, HandlerError> {
+    let census = census::collect_state_meets(&fetcher, &store, jurisdiction, year, &at, refresh)
+        .await
+        .map_err(collect_error)?;
+    Ok(Json(census))
 }
 
 /// The roster stage: walk every roster the jurisdiction's index lists, under one set of collection

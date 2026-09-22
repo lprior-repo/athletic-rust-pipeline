@@ -35,7 +35,9 @@ mod wire;
 
 pub use meets::build_meets;
 pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
-pub use results::{collect as collect_results, ResultOptions, StandingsCapture};
+pub use results::{
+    collect as collect_results, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture,
+};
 
 /// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]

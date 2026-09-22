@@ -65,7 +65,9 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     let scope = scope_of(args.all_sources);
 
     match (&args.input, args.meets.is_empty()) {
-        (Some(_), _) | (None, false) => gather_athleticnet(cli, store, args, observed_on).await?,
+        (Some(_), _) | (None, false) => {
+            gather_athleticnet(cli, store, args, observed_on.clone()).await?
+        }
         (None, true) => {
             println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds")
         }
@@ -79,6 +81,13 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
             .map(|(table, count)| format!("{table}={count}"))
             .collect::<Vec<_>>()
             .join(" ")
+    );
+
+    let index = midwest_census::index::derive(store, "run", &observed_on)
+        .context("deriving the durable indexes")?;
+    println!(
+        "index\tsource_identities={} conflicts={} reviews={} coverage={}",
+        index.source_identities, index.conflicts, index.reviews, index.coverage
     );
 
     for scope in [report::Scope::AllSources, report::Scope::Core] {

@@ -1,40 +1,78 @@
-//! robots.txt: the once-per-host rule fetch and the `*`-group parser.
+//! robots.txt: the once-per-host rule fetch and the `*`-group parser (RFC 9309 patterns).
 
 use super::{FetchError, Fetcher};
+use regex::Regex;
 use std::time::Duration;
 use tracing::debug;
 
 /// robots.txt rule set for one host origin.
 #[derive(Debug, Default, Clone)]
 pub(super) struct RobotsRules {
-    /// (allow?, path prefix)
-    rules: Vec<(bool, String)>,
+    /// The parsed rules, in file order.
+    rules: Vec<Rule>,
     pub(super) crawl_delay: Option<Duration>,
     fetched: bool,
 }
 
+/// One `Allow`/`Disallow` rule: the pattern as published, and its compiled matcher.
+///
+/// RFC 9309 patterns are not prefixes: `*` matches any run of characters and a trailing `$` anchors
+/// the path's end, so `Disallow: /*directory` (Bound publishes exactly that) refuses
+/// `/ia/schools/albia/directory/new`. Matching on `starts_with` alone would walk straight through it.
+#[derive(Debug, Clone)]
+struct Rule {
+    allow: bool,
+    /// The pattern exactly as published, used for specificity.
+    pattern: String,
+    /// The compiled pattern: anchored at the start, `*` widened to `.*`, `$` honoured at the end.
+    matcher: Regex,
+}
+
+impl Rule {
+    /// Compile one published pattern. An unparsable pattern yields `None` and the rule is dropped:
+    /// a rule set this process cannot represent must not silently become an allow or a deny.
+    fn compile(allow: bool, pattern: &str) -> Option<Self> {
+        let (core, anchored) = match pattern.strip_suffix('$') {
+            Some(core) => (core, true),
+            None => (pattern, false),
+        };
+        // Escape the literal pattern first, then widen the one metacharacter robots.txt defines.
+        let mut source = String::with_capacity(core.len() + 4);
+        source.push('^');
+        source.push_str(&regex::escape(core).replace(r"\*", ".*"));
+        if anchored {
+            source.push('$');
+        }
+        Regex::new(&source).ok().map(|matcher| Self {
+            allow,
+            pattern: pattern.to_string(),
+            matcher,
+        })
+    }
+}
+
 impl RobotsRules {
+    /// Whether `path` may be requested: the longest matching pattern decides, and `Allow` wins
+    /// ties. A path no pattern matches is allowed.
     pub(super) fn allows(&self, path: &str) -> bool {
         if !self.fetched {
             return true; // absent robots.txt == allow
         }
         let mut best: Option<(usize, bool)> = None;
-        for (allow, prefix) in &self.rules {
-            if prefix.is_empty() {
+        for rule in &self.rules {
+            if !rule.matcher.is_match(path) {
                 continue;
             }
-            if path.starts_with(prefix.as_str()) {
-                let len = prefix.len();
-                match best {
-                    Some((best_len, _)) if best_len > len => {}
-                    Some((best_len, best_allow)) if best_len == len => {
-                        // Allow wins ties.
-                        if *allow && !best_allow {
-                            best = Some((len, true));
-                        }
+            let len = rule.pattern.len();
+            match best {
+                Some((best_len, _)) if best_len > len => {}
+                Some((best_len, best_allow)) if best_len == len => {
+                    // Allow wins ties.
+                    if rule.allow && !best_allow {
+                        best = Some((len, true));
                     }
-                    _ => best = Some((len, *allow)),
                 }
+                _ => best = Some((len, rule.allow)),
             }
         }
         best.map(|(_, allow)| allow).unwrap_or(true)
@@ -52,6 +90,11 @@ impl Fetcher {
         let url = format!("{scheme_host}/robots.txt");
         let rules = match self.fetch_text_uncached(&url).await {
             Ok((200, body)) => parse_robots(&body),
+            // A server that answers 401/403 for its own robots.txt is refusing this client outright.
+            // Walking it anyway is the 403 storm this branch exists to prevent, and it makes a run's
+            // verdicts depend on whether that fetch happened to be refused - which an audit gate
+            // cannot be. An absent file (404) stays "walk anything", per RFC 9309.
+            Ok((401 | 403, _)) => parse_robots(REFUSAL_RULES),
             _ => RobotsRules {
                 fetched: false,
                 ..Default::default()
@@ -85,7 +128,7 @@ impl Fetcher {
     }
 }
 
-/// Minimal, correct robots.txt parsing for the `*` and named user-agent groups.
+/// robots.txt parsing for the `*` and named user-agent groups, with RFC 9309 patterns.
 pub(super) fn parse_robots(body: &str) -> RobotsRules {
     let mut rules = Vec::new();
     let mut crawl_delay = None;
@@ -110,11 +153,13 @@ pub(super) fn parse_robots(body: &str) -> RobotsRules {
                 applies = value == "*";
             }
             "disallow" | "allow" if applies && !value.is_empty() => {
-                rules.push((field == "allow", value.to_string()));
+                if let Some(rule) = Rule::compile(field == "allow", value) {
+                    rules.push(rule);
+                }
             }
             "crawl-delay" if applies => {
                 if let Ok(seconds) = value.parse::<f64>() {
-                    crawl_delay = Some(Duration::from_secs_f64(seconds.max(0.0)));
+                    crawl_delay = bounded_crawl_delay(seconds);
                 }
             }
             _ => {}
@@ -127,5 +172,98 @@ pub(super) fn parse_robots(body: &str) -> RobotsRules {
         rules,
         crawl_delay,
         fetched: true,
+    }
+}
+
+/// What a host that refuses to state its rules is read as: closed to this client.
+const REFUSAL_RULES: &str = "User-agent: *\nDisallow: /\n";
+
+/// The longest crawl delay honoured from a fetched `robots.txt`, whatever the file claims.
+///
+/// A delay past this is a host asking not to be walked at all; expressing that as a ceiling keeps
+/// the run's own budget intact instead of parking one host's lane for the rest of the run.
+const MAX_CRAWL_DELAY: Duration = Duration::from_secs(3600);
+
+/// A crawl delay a fetched body is allowed to ask for, or `None` when the value is unusable.
+///
+/// The value arrives in a body this process did not write, and `Duration::from_secs_f64` panics on a
+/// non-finite or overflowing one — `inf` and `1e30` are two lines of a hostile `robots.txt` away,
+/// and a panic here would kill the walk that fetched it.
+fn bounded_crawl_delay(seconds: f64) -> Option<Duration> {
+    Some(
+        Duration::try_from_secs_f64(seconds)
+            .ok()?
+            .min(MAX_CRAWL_DELAY),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The rule Bound publishes: `Disallow: /*directory` has to refuse a directory path that does
+    /// not begin with one, which a prefix matcher would walk straight through.
+    #[test]
+    fn a_mid_path_wildcard_disallow_refuses_the_match() {
+        let rules = parse_robots("User-agent: *\nDisallow: /*directory\n");
+        assert!(!rules.allows("/ia/schools/albia/directory/new"));
+        assert!(!rules.allows("/directory"));
+        assert!(rules.allows("/ia/schools/albia/roster"));
+    }
+
+    #[test]
+    fn a_trailing_anchor_limits_a_rule_to_one_path() {
+        let rules = parse_robots("User-agent: *\nDisallow: /staff$\n");
+        assert!(!rules.allows("/staff"));
+        assert!(rules.allows("/staff/dana-reid"));
+    }
+
+    #[test]
+    fn a_wildcard_allow_outranks_an_equally_long_deny() {
+        let rules = parse_robots("User-agent: *\nDisallow: /api/*\nAllow: /api/public/\n");
+        assert!(!rules.allows("/api/private"));
+        assert!(rules.allows("/api/public/teams"));
+    }
+
+    #[test]
+    fn the_longest_pattern_decides() {
+        let rules = parse_robots(
+            "User-agent: *\nDisallow: /*calendar*\nAllow: /meets/calendar/2026\nDisallow: /meets/*\n",
+        );
+        // `/meets/calendar/2026` is matched by the 21-character allow and the 8-character deny.
+        assert!(rules.allows("/meets/calendar/2026"));
+        // A plain meet path is matched by the deny only.
+        assert!(!rules.allows("/meets/regionals"));
+    }
+
+    #[test]
+    fn a_host_that_refuses_its_robots_file_is_closed_to_us() {
+        let rules = parse_robots(REFUSAL_RULES);
+        assert!(
+            rules.fetched,
+            "a refusal is a fetched rule set, not an absent one"
+        );
+        assert!(!rules.allows("/"));
+        assert!(!rules.allows("/ia/schools/adm/directory/new"));
+    }
+
+    #[test]
+    fn every_pattern_bound_publishes_is_parsed() {
+        let rules = parse_robots(
+            "User-agent: *\nCrawl-Delay: 10\nDisallow: /api/\nDisallow: /*directory\n\
+             Disallow: /profile/*\nDisallow: */athletes/*\nDisallow: /*/leaderlist*\n\
+             Disallow: /*/calendar*\n",
+        );
+        for path in [
+            "/api/teams",
+            "/ia/schools/albia/directory/new",
+            "/profile/123",
+            "/ia/athletes/456",
+            "/ia/leaderlist/100m",
+            "/ia/meets/calendar",
+        ] {
+            assert!(!rules.allows(path), "{path} should be disallowed");
+        }
+        assert!(rules.allows("/ia/schools/albia"));
     }
 }

@@ -33,7 +33,7 @@ pub use parse::parse;
 
 // The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]
-use crate::sources::{CrawlError, CrawlResult};
+use crate::sources::CrawlError;
 #[cfg(test)]
 use census_domain::model::{EventKind, Gender, Mark, SourceRef};
 

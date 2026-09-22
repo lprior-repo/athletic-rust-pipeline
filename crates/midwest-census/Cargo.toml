@@ -44,9 +44,10 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = { version = "2.5", features = ["serde"] }
+# The seal command reads the exported workbook back, so the reader is a runtime dependency.
+calamine = "=0.36.1"
 
 [dev-dependencies]
-calamine = "=0.36.1"
 criterion = "0.8"
 loom = "0.7"
 proptest = "1"
