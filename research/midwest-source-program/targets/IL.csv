@@ -1,0 +1,1890 @@
+school_id,name,co2027,athletes_all
+sch_c749d763f72022ec,Unattached,418,877
+sch_60c0b1c7ea8977a9,Winnetka (New Trier),211,640
+sch_7a794a5a2fdc676b,Chicago (Lane),192,769
+sch_35da1e013ca02d1a,Naperville (North),146,439
+sch_2283856e62208a27,Oak Park (O.P.-River Forest),138,481
+sch_507798836f4365d6,LaGrange (Lyons),137,564
+sch_f12fe47b92eaacd4,Park Ridge (Maine South),129,384
+sch_22f18e1164dacd4c,Wilmette (Loyola Academy),126,380
+sch_2c1cafe7d376fa64,Berwyn-Cicero (Morton),121,389
+sch_7267300f5965ea68,Elmhurst (York),119,452
+sch_60cbabf87aaf68e8,Glenview (Glenbrook South),118,356
+sch_d2fcabd57db696bb,Lincolnshire (Stevenson),110,408
+sch_1628c917c3e6ba96,Hinsdale (Central),110,392
+sch_f737dead6bd70265,Naperville (Central),109,385
+sch_cde1f46c81aedb46,Flossmoor (Homewood-F.),109,363
+sch_cf1b8c983b97c384,Minooka,107,580
+sch_da042b169e1e0f4d,Skokie (Niles West),105,363
+sch_b4a89c260a7b6e78,Barrington High School,105,327
+sch_488caf92936be5fd,Mt. Prospect (Prospect),104,388
+sch_1d162cf1474912ec,Aurora (Metea Valley),102,319
+sch_c8d91bbc67e8a9e0,Downers Grove (South),100,335
+sch_a0fdd04e3bc83697,Bolingbrook High School,100,270
+sch_0d8a3800be2e17ba,Roselle (Lake Park),99,322
+sch_c3c51cc2b5d63cd5,Chicago (Marist),99,252
+sch_0597fb73be6b80e8,Chicago (Taft),98,348
+sch_400fc482ab5a4bc8,Frankfort (Lincoln-Way East),98,307
+sch_129159ff8aefd979,Aurora (West Aurora),98,301
+sch_b595149ca9f85bf8,Downers Grove North High School,97,351
+sch_ea0d3ff67ff4a9b8,Orland Park (Sandburg),96,314
+sch_1ea6fb358d812073,Oak Lawn (Community),96,294
+sch_080e588c54a17b73,Plainfield (South),96,262
+sch_308d958e307aa2b0,Franklin Park-Northlake (Leyden),95,268
+sch_977d5567251e430a,Hoffman Estates (Conant),93,322
+sch_9aa785fc8a5eab77,Arlington Heights (Hersey),93,308
+sch_5e4268e4fe6f2f06,Palatine Pack TFCC,93,223
+sch_9b75be31a32396ef,Wheaton (North),92,495
+sch_55fbffede3f91bfa,Northbrook (Glenbrook North),92,309
+sch_a0af2ed4e74375d0,Huntley High School,92,293
+sch_434130d0077c254d,South Elgin High School,92,228
+sch_db5f141997f26dc0,Naperville (Neuqua Valley),90,355
+sch_bf738a70c344bb44,Glen Ellyn (Glenbard West),89,338
+sch_b7f25c10a7fd0a12,Dunlap High School,89,317
+sch_c8349586bd46427d,Lockport (Twp.),88,262
+sch_14e8823d4f22e1a9,Batavia High School,87,322
+sch_5b827955c011083a,Vernon Hills High School,87,255
+sch_2b76aeec2f71a00e,Lake Zurich High School,85,276
+sch_7700b04119a22337,Palatine (Fremd),84,300
+sch_d53fb2e6a6a0ec7e,Oswego (East),84,296
+sch_4006630c40ce6f56,Richton Park (Rich Township),84,258
+sch_bd61b8c27e77f104,Rockton (Hononegah),83,259
+sch_0937776d15e58737,Libertyville High School,83,237
+sch_6c58c69ca873a2e9,Gurnee (Warren),82,285
+sch_e6a09dd624b56158,Oswego High School,82,257
+sch_998fdf8aecb66943,Evanston (Twp.),79,263
+sch_7c31d7cea006caba,Aurora (Waubonsie Valley),78,284
+sch_aa188d1e5a18f274,Tinley Park (Andrew),78,280
+sch_8592f95d38264ab2,Wheaton-Warrenville South,77,239
+sch_9a1be7c4ea31de73,Chicago (Jones),77,201
+sch_50a3c1e6e0971ca0,Burlington (Central),76,383
+sch_6bbde1fec080ab0e,Chicago (St. Ignatius College Prep),76,294
+sch_50abdd95832912e1,Hampshire High School,75,437
+sch_f538b0007a359eae,Metamora,75,305
+sch_75c34150490a7c2f,Lake Forest (H.S.),73,180
+sch_cb0d303f48f0cc58,St. Charles (North),72,251
+sch_4a1787b48ba81e8c,Machesney Park (Harlem),72,207
+sch_fafb2be6029297c0,Grayslake (Central),70,249
+sch_db77bf9e5bff089f,Schaumburg High School,70,237
+sch_c217b740bdfa9ac9,Palos Heights (Stagg),70,227
+sch_bf7fae129bc26059,Windy City Hammers,70,192
+sch_911e3f08b2186bd3,Plainfield (North),69,234
+sch_6a80ec55ccefed9b,Hoffman Estates (H.S.),68,243
+sch_7cf8cf4e338e2d43,Highland Park High School,68,237
+sch_0b66cfadc4cfbe4a,Lombard (Glenbard East),68,229
+sch_dbf11ccd9015007b,Yorkville (H.S),67,246
+sch_4bf96649c460a5c8,Aurora (East),67,233
+sch_c50f435d4e22a90c,Joliet (Central),67,212
+sch_f0651581518400ca,Wheeling High School,67,186
+sch_a1010328b48b03d7,Lansing (Thornton Fractional South),67,179
+sch_726d4d5254c8ded9,O'Fallon (H.S.),66,208
+sch_474b0ef6c6d00419,Joliet (West),64,239
+sch_0a38b48ba739202d,Riverside (R.-Brookfield),63,227
+sch_e0d3b9326d78aa7e,Des Plaines (Maine West),63,216
+sch_9ea7290164f6f61a,Villa Park (Willowbrook),62,322
+sch_9c46f5741bc2bca3,Buffalo Grove High School,62,253
+sch_45aadb553600f535,Chicago (DePaul College Prep),62,231
+sch_0eb70ffb7e25f790,Maple Park (Kaneland),62,183
+sch_1b96868e0d066580,Pleasant Valley,62,126
+sch_06e17ab51cec4692,Bartlett High School,61,252
+sch_089e880b08224fa6,Harvey (Thornton),61,149
+sch_5956f8beb9949c57,St. Louis University High,61,117
+sch_21691e7563282793,St. Louis University,61,108
+sch_eddca9a03f543921,Washington,60,313
+sch_b712410731246b8f,Chicago (Whitney Young),60,233
+sch_2995125571d33643,Eureka High School,60,205
+sch_1173e728b8a4789e,Normal (Community),59,377
+sch_c46c84dddddbf700,Carpentersville (Dundee-Crown),59,347
+sch_4e105b2081a3c99f,Lisle (Benet Academy),59,221
+sch_fd4f702d5e2d14e1,Skokie (Niles North),59,215
+sch_e65f7f22f7b3ca59,Crystal Lake (Central),59,202
+sch_26ef1d08ed796a2e,Chicago (Von Steuben),59,195
+sch_8b960ee5d4863be1,Plainfield (East),59,188
+sch_59147b5f75a7dc1d,Blue Island (Eisenhower),59,185
+sch_580fd7497f7088d2,Chicago (Payton),59,185
+sch_3c7ad958acfb737d,Galesburg High School,59,185
+sch_5a05ec60650979e3,Lake Villa (Lakes),59,172
+sch_942aa4e8ceef9b99,Plainfield (Central),58,221
+sch_8a665632297ec212,Wauconda High School,58,210
+sch_3be1493b908e8c91,Elk Grove Village (E.G.),58,196
+sch_011954a2d8bb2b0d,Glen Ellyn (Glenbard South),58,166
+sch_bbe0823155653ce1,Pekin High School,57,287
+sch_7adb1d98ecfb73e9,East Moline (United),57,241
+sch_350c69b6192fd7c5,Chatham (Glenwood),57,203
+sch_05f388cc7d2c2673,Rockford (Guilford),57,194
+sch_8d4e5369e535e117,Chicago (Kenwood),57,186
+sch_a6cf688272b7b4ed,Geneva High School,56,399
+sch_5677c8b6b3574b41,Carol Stream (Glenbard North),56,252
+sch_d8915f421d16be88,Palatine High School,56,217
+sch_ab74e563a14873c4,Zion (Z.-Benton),56,195
+sch_b34a7cf952ff2162,Arlington Heights (St. Viator),56,166
+sch_ca8f90e6251ad8d7,East St. Louis (Sr.),56,164
+sch_db34a7818086c0cf,Crete (C.-Monee),56,141
+sch_33a05582c1198c73,Lake Forest High School,56,114
+sch_1ef0c34c557949ff,Franklin Park-Northlake (Ley,56,98
+sch_495eab7d3b1c0d15,Algonquin (Jacobs),55,259
+sch_2b0b25cd1772a77d,Cary (C.-Grove),55,245
+sch_36b06edd14cf0493,Champaign (Central),55,213
+sch_702df141892c3aab,Belvidere (North),55,189
+sch_b47072163be887f7,McHenry,55,185
+sch_d7eb212683565f20,Mason,55,137
+sch_7494d8b3a75c118a,Yorkville High School,55,111
+sch_de44f7c1bc397261,New Lenox (Lincoln-Way West),54,229
+sch_0692f8dfb50b334e,Burbank (Reavis),54,205
+sch_580fcb32819ca755,Rockford (Auburn),54,144
+sch_44b31bd457055318,Antioch,53,225
+sch_2305e2f2ff422ae8,New Lenox (Lincoln-Way Central),53,199
+sch_0029be008fb8304e,Normal (Community West),53,173
+sch_cd27988178a08bd0,Oak Park (Fenwick),53,161
+sch_4ae7db5b0687da88,Park Ridge (Maine East),52,184
+sch_b398c15fd3351045,Morton (IL),52,181
+sch_ee8d9dd6b61d17d6,Champaign (Centennial),52,163
+sch_8777accd1d98338d,Chicago (Lindblom),52,149
+sch_8d8e95ad4757ba4c,Mundelein (H.S.),52,146
+sch_e215e6b3bc72f938,Chicago (Amundsen),52,134
+sch_30078d2dea917c4c,O'Fallon,52,120
+sch_f49c7c0b5d4a5f42,St. Charles (East),51,229
+sch_b9b050e316d8bcb1,Chicago (Lincoln Park),51,179
+sch_e7e6560168e1bf79,Moline (H.S.),51,179
+sch_b7495b00397c4c94,Palos Heights (Shepard),51,177
+sch_aa44b2e343864f0f,Crystal Lake (Prairie Ridge),51,169
+sch_aac628bc515b3171,Midlothian (Bremen),51,168
+sch_7ade2b4ae1c2a800,Chicago Heights (Bloom Twp.),51,128
+sch_7aa1e4224ec482e6,Mascoutah High School,50,248
+sch_20b7f15414cdbb0d,Fox Lake (Grant),50,234
+sch_b610dc3b944c1ce5,Rolling Meadows High School,50,213
+sch_332aeaa3c3264e66,Summit (Argo),50,209
+sch_2f018fa8a190146b,Geneseo High School,50,174
+sch_91766322f1bc579d,Rockford (Jefferson),50,162
+sch_bf8ff78977f4cf90,Belleville (East),50,156
+sch_bf58fc32ce636243,Hillside (Proviso West),50,139
+sch_ed55643f15efb134,Milwaukee Speed Academy,50,115
+sch_69e45d28bcafa5bb,Wheaton (W. Warrenville Sout,50,94
+sch_74fccdd3cf1a124c,Rochelle High School,49,278
+sch_39bcd336615c6aa0,Evergreen Park,49,209
+sch_0d0bd58233fcd168,Darien (Hinsdale South),49,152
+sch_c763384a4ad29a3f,Chicago (Mother McAuley),49,147
+sch_f6ba3349f094d73e,Normal (University),49,135
+sch_30d6786420df0f0f,Chillicothe (Illinois Valley Central),49,125
+sch_43fb571382a4a46f,Chicago (Morgan Park),49,111
+sch_e1a2a266e623fd03,Hoffman Estates High School,49,107
+sch_3ac5407350673a0d,Chicago (St. Ignatius Colleg,49,94
+sch_5936625e9c843bb3,Bloomington (H.S.),47,234
+sch_3c5055f620b475df,Addison (A. Trail),47,168
+sch_eb4bba04567d2c4e,Elgin High School,46,151
+sch_b2fcb6887e5f6a78,Troy (Triad),46,150
+sch_cb5e61fb6c676b62,Romeoville High School,46,144
+sch_63b031dd6931d725,West Chicago (Wheaton Academy),46,137
+sch_d3f3907bb9fed339,Harvard High School,46,133
+sch_1c74f00b2665964d,Chicago (Prosser),46,125
+sch_8f51dd10b0a26c47,Deerfield High School,45,213
+sch_e633cd05d086fcdc,Chicago (Noble/Bulls),45,192
+sch_b9da83bb5dd5bcd0,Oak Lawn (Richards),45,188
+sch_a7008447a09ec23f,DeKalb High School,45,180
+sch_aeba2d8dd6b99519,Sterling (H.S),45,146
+sch_d28ee938fbbf87ff,Springfield (H.S),45,122
+sch_86fce7214bfc991b,Chicago (King),45,120
+sch_2b22c7f0eebdb1f1,Palos Hills (Stagg),45,96
+sch_7caf61dbb9fc3b45,TEST Grant,45,83
+sch_f05c92db521a62ca,Sycamore (H.S),44,257
+sch_a904bfe46212587b,Mahomet (M.-Seymour),44,174
+sch_b48d3dd9f68a202f,South Holland (Thornwood),44,170
+sch_bfda05be4a30bda2,LaGrange Park (Nazareth Academy),44,148
+sch_a3b42557beef0bc8,Chicago (C. Hope Academy),44,109
+sch_5376d91bd2b8fff3,Belleville (West),43,222
+sch_977c1bd780decc6b,Grayslake (North),43,155
+sch_4715fddceb085f9e,Oak Forest High School,43,152
+sch_4195f2d1246ff5ab,Calumet City (Thornton Fractional North),43,137
+sch_0e9de76ba048a085,Streamwood High School,43,121
+sch_3f2aa832d7843344,Beavercreek,43,101
+sch_e8c04654687ec0e8,Mundelein High School,43,95
+sch_3b74bc5ee3a7afd9,Chicago (Lake View),42,222
+sch_4bdfea6fe96625a9,Elmwood Park High School,42,138
+sch_1deb06bfa1a15e67,Tinley Park (H.S),42,117
+sch_901d644f77850b32,Urbana (H.S),42,101
+sch_dc689a45708538b9,Morton High School,42,98
+sch_0722f1133c8e8285,Bradley (B.-Bourbonnais),41,188
+sch_5b3a3e1bda7bc3c0,Rochester High School,41,184
+sch_42b165c7615f9a1b,Chicago (Hancock),41,153
+sch_8d04c649a695d07f,Pontiac High School,40,187
+sch_45699153bd16f357,Rock Island High School,40,179
+sch_ecf1740593d7c6a4,Lake Forest (Academy),40,177
+sch_0f2c04676a237f42,Lemont High School,40,166
+sch_cae4df75247e870b,Bensenville (Fenton),40,131
+sch_ee5b1586a709587f,New Lenox (Providence Catholic),40,123
+sch_caefe2c6804abc0c,Chicago (De La Salle),40,109
+sch_70bba4c63e52c878,Norridge (Ridgewood),40,95
+sch_e958023c36c2ab60,Springfield High School,40,58
+sch_57b12740bae52832,Peoria (Richwoods),39,171
+sch_fe55a3c23df147a6,Round Lake High School,39,165
+sch_02d414ca26124f96,Burbank (St. Laurence),39,158
+sch_1393dc77020a9a4c,Danville (H.S.),39,115
+sch_51f43f51be0e45c8,Chicago (Mather),39,99
+sch_34ad4111bd2c16be,Chicago (Hyde Park),39,88
+sch_3c795000e5292e1c,Peoria (Notre Dame),38,252
+sch_0f7e9008b7e3fa7b,Crystal Lake (South),38,156
+sch_c625d122eb566a79,Bloomington (Central Catholic),38,111
+sch_f1f9dc669048b1eb,Chicago (Schurz),38,92
+sch_3bfc10044ffcb375,Country Club Hills (Hillcrest),38,87
+sch_ff962220c0fa6e4a,Marion High School,38,86
+sch_510a06f2f0569743,Carpentersville (Dundee-Crow,38,62
+sch_086396d1c4176996,Bloomington High School,38,57
+sch_36d6c0fdd033ff59,Marengo High School,37,152
+sch_274f420325e2553c,Niles (Notre Dame),37,122
+sch_cb02a68658ccc360,Granite City High School,37,102
+sch_108c97097221ca28,Centralia (H.S.),37,97
+sch_cc8b717d9bc205de,Parkway West,37,88
+sch_639b15af071f8ece,Chicago (Phillips),37,80
+sch_489304718c4d08c6,East St. Louis,37,67
+sch_e1cd0235610fd206,Edwardsville High School,36,190
+sch_2df4b427eb8e8322,Collinsville High School,36,142
+sch_5285a83aec7cfc09,Freeport High School,36,124
+sch_588bb14354a5c498,Ft. Zumwalt West,36,124
+sch_2a9be9e718a1a128,Chicago (Sullivan),36,85
+sch_dacd2c9625f295ba,Marion (H.S.),35,173
+sch_c4e45cca6bf38b56,Belvidere High School,35,137
+sch_086c6985df5a7540,LaSalle (L.-Peru),35,135
+sch_0b6e4f751d96a994,Mt. Vernon (H.S.),35,111
+sch_e75582cfbed038e8,Williamsville High School,35,104
+sch_25ba955e43cde5e8,Shelbyville High School,35,95
+sch_7cc26be595a1151b,Cahokia (H.S.),35,83
+sch_220454bb828dc254,Moline High School,35,75
+sch_094734074f16de9c,Ames,35,67
+sch_a75a49c9d042dc24,Pleasant Plains High School,34,171
+sch_89f0d0b1b5cabd01,Mundelein (Carmel),34,136
+sch_6cdfa8c1d569066c,Lombard (Montini),34,105
+sch_38a8299ac5b1dae1,Alton (Sr.),34,85
+sch_6f7dbd7f8682c2a7,Sycamore High School,34,70
+sch_daa7e558e795990e,TEST West Salem,34,58
+sch_afc32e4112b26873,Clinton (IL),33,207
+sch_ff3b6c5ee90c7892,Murphysboro High School,33,167
+sch_3e0be2c506593779,Carbondale (H.S.),33,157
+sch_8ee38cb6f2424f92,Dolton (Thornridge),33,138
+sch_1ae9618c9a17c465,Elmhurst (Timothy Christian),33,131
+sch_05f451fb18738ddd,Chicago (Westinghouse College Prep),33,107
+sch_19012eab24e7cf26,Rockford (East),33,107
+sch_57ec09ab7c563376,Chicago (Latin),33,105
+sch_a17a542d18e42517,Chicago (Simeon),33,95
+sch_0ab926440817686f,Chicago (Christ the King),33,84
+sch_ac49183aa3f824af,Woodstock (Marian),33,83
+sch_49744f228703fdc7,New Lenox (Lincoln-Way Centr,33,72
+sch_5b235fd10f1e69bf,Woodstock (H.S),32,143
+sch_40c31df230515835,Mt. Zion High School,32,139
+sch_5fde76dd421b6f68,Charleston High School,32,127
+sch_c033874560a4375b,Chicago (South Shore International),32,103
+sch_b3e682a96f1239bb,Aurora (Central Catholic),32,97
+sch_cc2e1d19b7319c21,Palatine Pack TFCC C,32,90
+sch_ab1ba3de398037ed,Johnsburg High School,32,89
+sch_e5ed8277abe4b75d,Sandwich High School,32,86
+sch_9f70e0e5660fc4a8,Valparaiso,32,78
+sch_02e2ab618cf709d6,Clifton (Central),32,76
+sch_443fc94fc0e9187d,Lansing (Thornton Fractional,32,65
+sch_08d4e048680686f8,Tinley Park High School,32,64
+sch_b20049e19800f3c0,Ottawa (Twp.),31,145
+sch_ab9c98713000d4e9,Rockford (Lutheran),31,129
+sch_80160496454fd3a7,Anna (A.-Jonesboro),31,107
+sch_efcc5622b05b9224,West Chicago (H.S),31,90
+sch_7b7ee7560b999522,Richmond (R.-Burton),31,88
+sch_f0762b840f5c929e,Maywood (Proviso East),31,83
+sch_f5659e819288016a,Woodstock High School,31,70
+sch_9fa3b4b8e6e11087,Sterling High School,31,68
+sch_8a9822b0a7b9a38c,Chicago (Juarez),31,60
+sch_a641b1531492220c,Port Byron (Riverdale),30,122
+sch_ff7c0567c7c798e8,Chicago Heights (Marian),30,118
+sch_c5ecb770fac71b51,Waukegan (H.S),30,95
+sch_9ebc158c59f5b576,Paris High School,30,72
+sch_999ba5d124ed40ec,Chicago (Noble/Rauner),30,63
+sch_6f5f8ce147cfce73,Plainfield Pack TFCC,30,38
+sch_456457a66bb283d3,Downs (Tri-Valley),29,277
+sch_dbfec9a3bdd7be99,Carterville High School,29,219
+sch_643d98f711274ea9,Lincoln High School,29,219
+sch_e232ce39a7ee503b,Chicago (Northside Prep),29,148
+sch_abd0c48ae7b482f6,Springfield (Sacred Heart-Griffin),29,101
+sch_e99e5059502068b4,Mendota High School,29,95
+sch_e6896c5799ae7c51,Chicago (University),29,93
+sch_68fbd945b95db33e,Chicago (Agricultural Sciences),29,91
+sch_69749582a7418dcb,Wheaton (W. Warrenville South),29,83
+sch_145efc78816ca5b9,Chicago (Curie),29,78
+sch_8b3417939cdae022,DuQuoin (H.S.),29,75
+sch_bf561799225fb167,West Chicago,29,61
+sch_ea28387a9ac96bb4,Zephyrs Track,29,55
+sch_288505b0538fe42f,Chicago (Carver Military Academy),29,50
+sch_b2242eb8f7c7eceb,Dixon High School,28,111
+sch_d87216d8fcefa63f,Bethalto (Civic Memorial),28,110
+sch_49fd919304154e1d,Herrin (H.S),28,108
+sch_861958fdc65fedf0,Coal City High School,28,106
+sch_5ce33525588c8874,Rockford (Boylan Catholic),28,97
+sch_997f4418af6b0383,Peoria (H.S.),28,91
+sch_7e1b0c570d744673,Richton Park (Southland College Prep Charter),28,84
+sch_5cb1f8f4fe94c126,Petersburg (PORTA),28,76
+sch_6e0aaf0fbeb17117,Mackinaw (Deer Creek-M.),28,73
+sch_56d4930d066f7588,Metro Academy & Classical,28,66
+sch_8e572b774a4db300,Chicago (Noble/Mansueto),28,65
+sch_e601071a91a640ec,Chicago (North Lawndale Charter),28,53
+sch_d600cf8f184b2d85,Plano High School,27,138
+sch_b5eddecccc3a25e9,Roxana High School,27,124
+sch_b450c72d53e516ac,Forreston High School,27,116
+sch_6c2143a81be569de,Freeburg,27,105
+sch_44ea0720f640f8e4,Knoxville High School,27,89
+sch_c59719472fd606c8,Chicago (CICS/Northtown),27,73
+sch_0fabbbba1ab104d2,Piasa (Southwestern),27,56
+sch_b0a9c1c7ed76aa62,Pana High School,27,51
+sch_3417fb8376d41084,Webster Groves,27,45
+sch_1f3d666382d3436a,St Xavier (KY),27,37
+sch_a79407f7a9923fd4,Winnebago High School,26,113
+sch_6ca82217e268bedb,Tolono (Unity),26,103
+sch_82f8b3c7145e034e,Macomb High School,26,101
+sch_08a8baf146ee6f6b,Elgin (Larkin),26,100
+sch_eabe83c2377c2352,North Chicago High School,26,99
+sch_43294f17b94c9c38,Heyworth High School,26,92
+sch_ebc286f925215d3e,Tuscola High School,26,88
+sch_c639e87f2fc1e830,Farmington High School,26,87
+sch_fb0986ffa4b7c9d1,Salem High School,26,79
+sch_1d449f57fb3ae66a,Ankeny,26,74
+sch_a6803314b5f60cdd,Chicago (C. Academy),26,62
+sch_bb6cf42f3ebae481,Fairfield,26,54
+sch_7592a3d095c94775,Central Illinois Track Club,26,44
+sch_3853a6bd9164cc3e,Arlington Heights (St. Viato,26,39
+sch_cb27be8ff3b739a0,TEST Tigard,26,27
+sch_8c41574ee3ec195e,El Paso-Gridley High School,25,205
+sch_e8f8589c6e4d8b44,Harrisburg High School,25,149
+sch_249837fbf75e0b8d,Joliet (Catholic Academy),25,98
+sch_f2747e65dc941c9b,Springfield (Lanphier),25,93
+sch_f9782bd23495838f,East Peoria High School,25,91
+sch_5ebedf90a58a97d1,Kewanee (Wethersfield),25,80
+sch_35e792347fdea77b,Princeton High School,25,80
+sch_bfb3ffb5688edc99,Aurora (Illinois Math and Science Academy),25,76
+sch_d6e8c45b6f9a6e3e,Chicago (Goode STEM Academy),25,74
+sch_8250dd5e5603ab16,Cahokia High School,25,69
+sch_014ff145678e3ab2,Chicago (Washington),25,66
+sch_31ff229ca76f3e94,Urbana High School,25,60
+sch_339381c9eba46a62,Sterling (Newman Central Catholic),25,53
+sch_a5859eeed647a075,Chicago (Perspectives/Leadership),25,51
+sch_93f7a5560a916042,Calumet City (Thornton Fract,25,43
+sch_52b0cfc29d1ccaf2,Stanford (Olympia),24,249
+sch_d557b70bb1525c8e,Stockton High School,24,218
+sch_85c80612e3712370,Quincy (Sr.),24,198
+sch_5a33992f0cd25ae6,Highland (IL),24,118
+sch_722dd5e20944b06f,Chester High School,24,116
+sch_5b20ef76100a4823,Lewistown High School,24,112
+sch_b17db3bc17ad18cd,Chicago (Brother Rice),24,103
+sch_18b20376661a8130,St. Joseph (S.J.-Ogden),24,99
+sch_87e1b15617bb269c,Rantoul High School,24,95
+sch_5694a1bfc5fbbcd9,Dwight High School,24,88
+sch_37e0c1ae17f01098,St. Josephs Academy,24,82
+sch_104c1f84b49d7762,Villa Grove High School,24,82
+sch_fb656f1cd33f892c,Manlius (Bureau Valley),24,80
+sch_03bd3115bb26a323,Chicago (Horizon/McKinley),24,74
+sch_15c7c77c1f8cad46,Glen Carbon (Father McGivney),24,69
+sch_4a7313922bdf3753,21-Unattached,24,52
+sch_1f133bdba4e4921d,Danville High School,24,49
+sch_0967e6b7f6ac2ea5,Legacy Runners Athletic Club,24,49
+sch_0b056a471bae6ac4,TEST Southridge,24,45
+sch_b990899accfe5555,Waukegan High School,24,37
+sch_9c1f919ec3b3648e,West Chicago (Wheaton Academ,24,36
+sch_19259dff4b213c59,Elmwood High School,23,135
+sch_30da4e4875ea6eef,Lisle (Sr.),23,130
+sch_fa81bdd6a9f4d44d,Benton High School,23,125
+sch_83e0e6304ada449d,Springfield (Southeast),23,116
+sch_3b2d01dec90ff365,Seneca,23,103
+sch_856dcb039ed0b6f6,Byron High School,23,102
+sch_b53ee31bca08ab7a,Genoa (G.-Kingston),23,91
+sch_2bc151a5023779a3,Chicago (Noble/Pritzker),23,78
+sch_9e117fb393fbaa64,Champaign (St. Thomas More),23,77
+sch_58236be773a12613,Kankakee (Sr.),23,73
+sch_92188cf8b813191f,Decatur (Eisenhower),23,65
+sch_fb0d01faaad007ec,Palos Heights (Chicago Christian),23,60
+sch_3dedd7d39929fca7,Clinton High School,23,59
+sch_56a975546aece499,Kewanee (H.S.),23,59
+sch_48896ad1404ad624,Virden (North Mac),23,48
+sch_e1f209dcd8faa587,Chicago (Perspectives/Leader,23,47
+sch_a6bf97b00e872666,Lena (L.-Winslow),23,38
+sch_9c99da2b3171a761,Jerseyville (Jersey),22,164
+sch_3f133e5336744d7f,Westmont High School,22,149
+sch_4d5fe82dc64e8e9b,Manteno High School,22,118
+sch_1b9cb0af1f9f10e0,Monticello High School,22,100
+sch_fa14a2c6c4e5af04,Newton High School,22,91
+sch_61af5de5f80daaf9,Poplar Grove (North Boone),22,85
+sch_2641528937f6cb7d,Chicago (Northside),22,78
+sch_99d0dc240c40730c,Robinson High School,22,77
+sch_66912fc455a35944,Milledgeville High School,22,76
+sch_82d7899a7437e8ce,Lena-Winslow High School,22,71
+sch_c039dd8c929c7cbb,Mercer County High School,22,70
+sch_88bae614f582ddb7,McCluer North,22,63
+sch_536d1c2224f9a59c,Mount Carmel High School,22,59
+sch_9fb89732d16f3ccb,DuQuoin High School,22,34
+sch_dfc92c6203853be0,Pinckneyville High School,21,185
+sch_032345c167813ba1,Waterloo (H.S),21,164
+sch_a073c7dca44f49da,Urbana (University),21,133
+sch_bcfb172a9633bbfc,Morris High School,21,108
+sch_027c21dbda5e76b2,Nashville,21,108
+sch_19183664b8052aef,Sherrard High School,21,106
+sch_85865adeb95a72a7,Cambridge High School,21,80
+sch_899bc167c04b13dd,Mattoon High School,21,80
+sch_c1b098ec6cca5399,Carlinville High School,21,79
+sch_ad1c1274527883fc,Jacksonville (H.S.),21,69
+sch_56bce36d0d85b5dd,Paxton (P.-Buckley-Loda),21,66
+sch_a48a244066c52e48,Greenville High School,21,65
+sch_6654636e4a428e62,Metropolis (Massac County),21,64
+sch_200f999078437651,Chicago (Leo),21,63
+sch_e48e715479a6ff1a,Chicago (Noble/Comer),21,53
+sch_d822d580645f0f98,Chicago (Resurrection),21,52
+sch_a3de084fa395c75e,Mt. Vernon High School,21,51
+sch_e171fa7482471ce8,Herrin High School,21,49
+sch_2b42f4ebf9962fdb,TEST Lake Oswego,21,46
+sch_376f1188381c6cef,East Kentwood,21,45
+sch_7369e1ae1174c037,Mount Carroll (West Carroll),21,45
+sch_2201956017091516,Neenah,21,44
+sch_99bfeeb1a0012f76,Chicago (Bogan),21,40
+sch_a7d86eba5e772849,Daviess County,21,36
+sch_414e2790a1f15c59,Lift for Life Academy,21,27
+sch_157444c28e30698e,Olney (Richland County),20,186
+sch_52638d40ce4b1306,Trenton (Wesclin),20,117
+sch_e5e1dd6e86246c3f,Havana High School,20,91
+sch_c8de8ac2f8f14838,Herscher High School,20,91
+sch_ca31e60d575be840,Wheaton (St. Francis),20,87
+sch_1f8aa4e464c57751,Athens High School,20,77
+sch_05fb6eda0c26ca01,Galena High School,20,75
+sch_d46aa05ce6c0a770,Glasford (Illini Bluffs),20,71
+sch_000cc2907f377d17,Erie [Coop],20,70
+sch_af516521c1d427ad,Amboy High School,20,68
+sch_263b88612edf431d,Gillespie High School,20,67
+sch_4bcc21d8f029e74e,Peotone High School,20,66
+sch_244fa2f8751a5351,Chicago (Rickover Naval Academy),20,59
+sch_dee30a21631d5529,Fithian (Oakwood),20,58
+sch_889f900fcd2a2661,North Point,20,57
+sch_c3351873919fa7a2,El Paso (E.P.-Gridley),20,55
+sch_3444cd88ab96bece,Vandalia High School,20,53
+sch_09fee78b2d2936bd,Chicago (Solorio Academy),20,52
+sch_8be07106276f6beb,Gibson City (G.C.-Melvin-Sibley),20,52
+sch_9e65fc29e3d4f3ac,Aurora Flyers Track,20,49
+sch_3a142ad0bf066dc7,Chicago (Kennedy),20,48
+sch_9973c5a5ed377337,Waterloo High School,20,46
+sch_f2e094acf2cfe5b5,Virginia High School,20,43
+sch_1924cbf808d499e3,Shabonna (Indian Creek),20,35
+sch_2e8377912186cf6a,Centralia High School,20,34
+sch_fdf0d0f5b9dafa38,Chicago (North Lawndale Char,20,31
+sch_347c16989641d06e,Stillman Valley High School,19,107
+sch_68725f8a701533ff,Red Bud High School,19,95
+sch_ca658ea74e467b0c,Washburn (Lowpoint-W.),19,89
+sch_589fd5d5781ad9e9,Rock Island (Alleman),19,82
+sch_6ce0773f702494fc,Fairbury (Prairie Central),19,68
+sch_777715499e909e24,Alton (Marquette),19,66
+sch_e6489e8c132e5c16,Rushville (R.-Industry),19,66
+sch_161ab960ed90785a,Camp Point (Central),19,63
+sch_6959f92c9b7531a5,Chicago (Dyett),19,59
+sch_dbf767c0de9793c7,Maroa (M.-Forsyth),19,58
+sch_cbe4e2ebbdb927f1,Chicago (Steinmetz),19,55
+sch_dd04f0bffffdc74a,Chicago (Kelly),19,49
+sch_82c9edb01745f23c,Chicago (Orr),19,46
+sch_45e904f9ec36699a,Alton,19,45
+sch_0d63031730aa3b13,Chicago (Julian),19,44
+sch_230d835f328892f7,Peoria High School,19,44
+sch_c9be399cc0df1dda,Lisle,19,37
+sch_b659a866f4fd24b5,New Lenox (Providence Cathol,19,34
+sch_600912a371819e36,Greenfield High School,18,159
+sch_6187a67a8d1dd928,Oregon High School,18,107
+sch_d093b7bd615de31b,McLeansboro (Hamilton County),18,101
+sch_3d9030eb2f3546f0,Bloomington (Cornerstone Christian Academy),18,98
+sch_5ba3c5d5bacfccb9,Bartonville (Limestone),18,88
+sch_43c2c3cdb1433d30,Chicago (Noble/UIC),18,88
+sch_be0b9ca68886f9ee,Canton High School,18,87
+sch_0f53856263900ad9,Aurora (Marmion Academy),18,79
+sch_347ce7981e9a178f,West Frankfort (Frankfort),18,71
+sch_636877ea099be847,Pecatonica High School,18,65
+sch_ebc41c84a66935a4,Beardstown High School,18,64
+sch_94385e499a66f4f4,Georgetown (G.-Ridge Farm),18,52
+sch_62a576b62392eb7a,Brighton,18,51
+sch_ab16f3fef2197153,Chicago (Providence St. Mel),18,51
+sch_2a8cec0026df5dcd,Chicago (C. Vocational),18,49
+sch_ec8361c984d9d40d,Chicago (Little Village),18,47
+sch_d964e97f6a02abb9,Abingdon (A.-Avon),18,41
+sch_f4edbcc2f09acca7,Quincy,18,41
+sch_8541afa9d6b804dd,Festus,18,40
+sch_1995a6d5781e8c21,Chicago (Marshall),18,34
+sch_69c70f52460e1215,Chicago Trailblazers,18,33
+sch_0bcbe39851cc409f,Jacksonville High School,18,30
+sch_eed5126755a7d984,Mason City (Illini Central),17,147
+sch_26dbd7c54c6af466,Tremont High School,17,128
+sch_9edc05ab717537c2,Dupo High School,17,107
+sch_26106b8294b7c122,Carmi (C.-White County),17,94
+sch_8df37a6880e37cdf,Sesser (S.-Valier),17,90
+sch_fae1436636592445,Rock Falls High School,17,87
+sch_e24d11d6a73103a9,Sullivan High School,17,81
+sch_4af1ab6b6979849f,Chicago (Senn),17,80
+sch_43803d0c4a8e353e,Teutopolis High School,17,79
+sch_ce54ec95764eeb6f,Milford High School,17,71
+sch_57e59da756d374b6,Streator (Twp.),17,70
+sch_687b9fe38532a691,Taylorville High School,17,67
+sch_17dcee353f618454,Momence High School,17,54
+sch_25d86fd22355c1a4,Chicago (F.W. Parker),17,53
+sch_bd8d69292fe5c5fc,Yorkville (Y. Christian),17,53
+sch_50d4132053c01ffe,Belleville (Althoff Catholic),17,50
+sch_ab4eae204132dc0e,Catlin (Salt Fork),17,46
+sch_f65d1131aa63dcd1,Chicago (Crane Medical Prep),17,43
+sch_c4b3b3db9724ec26,Earlville High School,17,40
+sch_a065aa151c49a762,Skokie (Ida Crown),17,40
+sch_f1eb87b0b6201f63,ROWVA Williamsfield,17,36
+sch_6195e449a8cafd90,Chicago (Noble Street Charte,17,33
+sch_118e249cadc01f55,Springfield (Sacred Heart-Gr,17,27
+sch_4747c527e74ca07f,Chillicothe (Illinois Valley,17,23
+sch_42f66def9b9a6393,Orion High School,16,114
+sch_b29f2f971b1be9f7,Effingham (St. Anthony),16,92
+sch_9f48b6d75c3729fe,Ida Crown High School,16,91
+sch_a64a766691f782fc,Bismarck (B.-Henning-Rossville-Alvin),16,88
+sch_c8778a337bb56237,Woodstock (North),16,82
+sch_920d0aa2785e724f,Taylor Ridge (Rockridge),16,81
+sch_20e93cedc9e443aa,St. Anne,16,73
+sch_0bf0ea5130e0fabe,Kankakee (McNamara),16,70
+sch_f76fda0a763febe9,Peru (St. Bede),16,64
+sch_4f9eb6424d64a211,Monmouth (M.-Roseville),16,55
+sch_1ffc6679d6a7d850,Morrison High School,16,53
+sch_f72f703686dbbb88,Staunton High School,16,53
+sch_c4998192c0557a05,Princeville High School,16,51
+sch_772374fc61287b6d,Cerro Gordo High School,16,47
+sch_9d543625b721d6df,Sauganash Striders,16,39
+sch_8be6e233aad9c5cd,Cullom (Tri-Point),16,37
+sch_401881028e73ab91,Kankakee High School,16,35
+sch_3e63c2817e5e180a,Highland High School,16,34
+sch_6c2287f766b9347a,Chicago (C. Math and Science,16,32
+sch_2c2e664e3b2eddfc,Chicago (Hubbard),16,32
+sch_c89280eac1f9b762,Chicago (Chicago Tech Academy Charter),16,25
+sch_47ab9ec27a63cf69,Chicago (Westinghouse Colleg,16,25
+sch_861f6f4f2ddbe8d3,Prophetstown High School,16,16
+sch_cf9544c17fe4aabd,Macon (Meridian),15,89
+sch_5b85a61d7b9d8648,Chicago (Noble/ITW Speer),15,85
+sch_bd15d39eaea4f614,Chicago (Disney II),15,81
+sch_8a388ddb1f49f41b,Chicago (Mt. Carmel),15,76
+sch_dd69d4a8376213ae,Westville (IL),15,71
+sch_5feaad71f988c3c9,Litchfield High School,15,68
+sch_5b4568017c686972,Peoria (Manual),15,65
+sch_3372a8bb51cd504c,Decatur (MacArthur),15,57
+sch_28fea6550d7652e2,Dakota High School,15,56
+sch_b534af084e60ea23,Carbondale High School,15,37
+sch_42db3f615b19fced,Lowell,15,37
+sch_cd60dca830940b0a,Palos Heights (Chicago Chris,15,36
+sch_115a63fcbf565b6d,Aledo (Mercer County),15,34
+sch_73137afa454fa550,Top Self Training,15,34
+sch_7a3d7f3a22a4d5d3,Elgin Sharks Track,15,33
+sch_f5b4059ba13ce339,Erie-Prophetstown,15,33
+sch_b8a4b52e27d574e1,John Burroughs,15,30
+sch_178ed71174171e25,Normal West High School,15,29
+sch_a4e9a0cee920bbdb,Chicago (Agricultural Scienc,15,27
+sch_533ad3d0264b0dfe,Sacred Heart,15,25
+sch_3d019f3f69b81e8c,LaGrange Park (Nazareth Acad,15,20
+sch_8fd512acb08e0a57,Mt. Carmel High School,15,19
+sch_348564cb4ec0240a,Cowden (C.-Herrick),14,93
+sch_6e535112df6fe942,Pleasant Hill High School,14,92
+sch_8930a82ddee86931,Oneida (ROWVA),14,90
+sch_ba75a004ff5a86ee,Niles (Northridge Prep),14,77
+sch_aefed2baf090496a,Henry (H.-Senachwine),14,64
+sch_8ec993e45182e5db,Rockford (R. Christian),14,60
+sch_7dc8559343a0f666,Braidwood (Reed-Custer),14,52
+sch_8d0811a7829ae8cf,Colfax (Ridgeview),14,50
+sch_51da4bbfd9cc8102,Chicago (Intrinsic Charter-Downtown Campus),14,48
+sch_f714c59acd528812,Hoopeston (H. Area),14,47
+sch_29ea508fdd764cf9,Chicago (Noble/Hansberry),14,44
+sch_b065c8b961129c4a,Chicago (St. Rita),14,44
+sch_a496b85b2fad6a7e,Decatur (St. Teresa),14,44
+sch_7866d4d8eb5aa10b,Chicago (DuSable),14,39
+sch_206514418207409d,Chicago (Back of the Yards),14,38
+sch_a6a22763430e2b1f,Kewanee High School,14,38
+sch_670ec4fee1dae157,Chicago (Alcott),14,36
+sch_8550d3a087aa9b7f,Chicago (Noble Street Charter),14,33
+sch_4ca71d1c19ff9ab7,Country Club Hills (Hillcres,14,33
+sch_9a377c0ed04714a6,Chicago (Farragut),14,29
+sch_9b7337970c43cf3a,Durand High School,14,29
+sch_8b5aa0c13f78c9a9,Chicago Flyers Track,14,27
+sch_c0e9724293eb57df,Manito (Midwest Central),14,27
+sch_90db308ef2281bfb,Bloomington (Central Catholi,14,26
+sch_c89b76d2696216ba,Chicago (Marine Leadership A,14,25
+sch_323762df304faf74,Chicago Blazers,14,24
+sch_bda75d40ab531c38,Prestige Athletic,14,21
+sch_a22e41fd465a0520,Chicago (Noble/Baker),14,19
+sch_de81bb02240de600,Fulton (H.S.),13,137
+sch_3a94690ff39eca39,Breese (Mater Dei),13,86
+sch_0e076e2ae6083f7d,Toledo (Cumberland),13,81
+sch_4d945bd80b367718,Marshall High School,13,71
+sch_c9687dabcf198e46,Elmhurst (IC Catholic),13,62
+sch_87c01dd6bf5f9fcf,Sparta High School,13,61
+sch_92ad51e19a449a4f,Christopher High School,13,59
+sch_5f335c64261067e5,Arthur (A.-Lovington-Atwood-Hammond),13,58
+sch_1780a91b5523bf20,Flora High School,13,57
+sch_98ff7e879bb4ab3a,River Forest (Trinity),13,57
+sch_86aba9d4b385e04a,Ottawa (Marquette),13,54
+sch_f2fb3024c0e0a2e9,Christian Brothers College,13,51
+sch_9d51cf20cb28b5c0,Arcola High School,13,49
+sch_75c655a23ceb3c1c,Spring Valley (Hall),13,49
+sch_e8ecacb0974d2e01,Mt. Sterling (Brown County),13,48
+sch_490edcef38ac7ac3,Auburn (IL),13,47
+sch_b09e506b3f2a82bb,Hinckley (H.-Big Rock),13,45
+sch_54f668d8bb338df9,Chicago (Ogden International),13,43
+sch_a35666300be07a26,Chicago (Uplift),13,33
+sch_995f6b01521c4e71,Waterloo (Gibault Catholic),13,33
+sch_7da7dfaadc4e6ad1,Effingham High School,13,28
+sch_69444a95da18911e,Chicago (C. Military Academy-Bronzeville),13,26
+sch_32d40afac639ff09,Motor City Track,13,24
+sch_35aa822f6d814fff,Desoto,13,23
+sch_9c37d311c69d7ce7,Normal (University)High,13,21
+sch_6af31a3632ebfcc6,TNT Track & Field Academy,13,18
+sch_f2a0c0579ca5475c,Columbia High School,12,166
+sch_e87d76e5d24fe8f4,Vienna High School,12,100
+sch_46ab19f75e0e4adf,Somonauk High School,12,77
+sch_2fa6365a8a64552e,Des Plaines (Willows Academy),12,71
+sch_e705bc5d165211c1,Edwardsville (Metro-East Lutheran),12,57
+sch_4883ffeb72bb226f,Beecher High School,12,53
+sch_a5ae886ff3cf44c5,Cairo High School,12,53
+sch_5955d562a0f8f490,Neoga High School,12,49
+sch_9f6723ba79b9420a,Chicago (Clark),12,44
+sch_ae506668a8cfc3f3,Chicago (Cristo Rey Jesuit),12,43
+sch_ee5e3298b8265969,Flanagan (F.-Cornell),12,38
+sch_9de5d9cae9d89bfd,Schaumburg (S. Christian),12,32
+sch_766f22d156eb623f,Arthur (A.-Lovington-Atwood-,12,29
+sch_c3fa55249e739747,Chicago (Englewood STEM),12,28
+sch_4f697da6add4e1a9,Bushnell (B.-Prairie City),12,24
+sch_c12b07f560f94f6f,Chicago (Rickover Naval Acad,12,23
+sch_dba2ede8d8183cc1,Gately Park Athletic Club,12,22
+sch_8aa90e077d9452f4,Chicago (C. Military Academy,12,19
+sch_8424b6d80ab0cfdc,Central Lee Donnellson,12,18
+sch_fac26c294241440f,Shabbona (Indian Creek),12,13
+sch_149722879f09f237,Breese (Central),11,96
+sch_1b92d93d193998a6,East Dubuque High School,11,91
+sch_5a99988fc805a6f6,Delavan High School,11,71
+sch_ae4642fea90c8e1e,Liberty High School,11,64
+sch_50ef7e3934637312,Chicago (St. Patrick),11,60
+sch_a46730f1e0033f34,Pittsfield High School,11,57
+sch_074a4649369077e4,Lebanon High School,11,52
+sch_ce12c44af23a9a22,Niantic (Sangamon Valley),11,51
+sch_3ddc7a37d6388fc3,Chicago (Wolcott),11,50
+sch_b26aa592c460ecf4,Chicago (Noble/Muchin),11,48
+sch_4a5fc191823702bd,Monmouth (United),11,48
+sch_75913bd8234056b0,Chicago (Lycee Français de Chicago),11,43
+sch_cdbe0ff29b8bb140,Elgin (St. Edward),11,43
+sch_4bb5a7dd0593a198,Astoria High School,11,42
+sch_e5c78ec332790ca0,Chicago (C. Math and Science Charter),11,38
+sch_2077d9f5f59c7e58,Chicago (Holy Trinity),11,37
+sch_fe63370b7df9a4e9,Minonk (Fieldcrest),11,37
+sch_33707a70db3e1d15,Warsaw (Hamilton-West Hancock),11,37
+sch_672bb4682959952e,Watseka High School,11,36
+sch_8ec8f5c0c3cd7eb8,Mt. Pulaski High School,11,35
+sch_ada1f721052862c3,South Holland (Unity Christian Academy),11,32
+sch_b38d9f85dfe33076,Whiting,11,30
+sch_9fdb9c4bf19a12cb,Richton Park (Southland Coll,11,26
+sch_b499b3132d9479a6,Chicago (Carver Military Aca,11,25
+sch_96090137f094bff5,Hopedale (Christian Life Academy),11,25
+sch_8f2bfb18161bf9c1,Chicago (ASPIRA/Business and Finance),11,24
+sch_004e9353b5d8990c,Vipers Track Club,11,23
+sch_9ccbf5831a31a452,Casey-Westfield High School,11,22
+sch_cbae5299df50b556,Merrillville,11,22
+sch_c188f1895e9c4732,North Shore Pack TFCC,11,21
+sch_49aebb741d7ddab9,Riverview Gardens,11,21
+sch_f02a86fba84945ac,Gibson City (G.C.-Melvin-Sib,11,20
+sch_1e9325ba2dc487e8,Minnesota Flyers,11,20
+sch_fb31fea64a1d0743,Portage,11,20
+sch_3c373e222d2fd997,East Chicago Central,11,15
+sch_0a14ca2e8df813a1,Chicago (C. Tech Academy Cha,11,12
+sch_79031cc06cdad18e,Melrose Park (Walther Christian),10,87
+sch_569992ace093939e,Georgetown (Notre Dame de La Salette),10,86
+sch_e553ebaf48524d69,Effingham (H.S.),10,58
+sch_2017229f0ae39e26,Aurora (A. Christian),10,57
+sch_8be64b3e04ecad9d,Casey (C.-Westfield),10,50
+sch_2ade1774a8f2c2c4,Wood River (East Alton-W.R.),10,45
+sch_3bc996441633a264,Chicago (Marine Leadership Academy),10,44
+sch_26bd19b2bb746718,Patoka High School,10,43
+sch_f96c1fdfadd4faea,Peoria Heights High School,10,36
+sch_39e421e1304a4962,Hammond Morton,10,34
+sch_57aae237636cd943,Mt. Olive High School,10,34
+sch_05f8605901012463,Chicago (Noble/Johnson),10,28
+sch_3dba30f5a41781b3,Centralia (Christ Our Rock Lutheran),10,26
+sch_118a749b583b88f2,Oakville,10,26
+sch_3aadedda72c0e434,Elmhurst Track and Field Clu,10,21
+sch_28f164b91607f8d9,Seneca East,10,18
+sch_6c2c2155d0594ccc,Sterling (Newman Central Cat,10,18
+sch_31da1d7e5d588607,Aurora Flyers,10,17
+sch_154711959843081e,Chicago (Morgan Park Academy HS),10,17
+sch_8966368a917320da,Confluence Prep Academy Charter,10,15
+sch_d63e070698298798,St. Charles West,10,15
+sch_a40d3b84f58e93c9,Central Catholic High School,10,12
+sch_f97eefede515f063,Winnetka (North Shore Country Day),9,122
+sch_ae42b026b3a70abd,Eldorado High School,9,105
+sch_b0e6f0572758044a,Woodlawn High School,9,99
+sch_d2262f8e23908a34,Peoria (P. Christian),9,64
+sch_f5c2bcccf4a99466,Okawville High School,9,61
+sch_f656bd6e1c936073,Granville (Putnam County),9,53
+sch_f18dc060cb302f33,Carthage (Illini West),9,48
+sch_81cb2915ea3be346,New Berlin High School,9,45
+sch_becfdb7f2833e471,Chicago (UCCS/Woodlawn),9,41
+sch_2eebe562c24bf42e,Springfield (Lutheran),9,40
+sch_3204c29a275c8e37,Fisher High School,9,39
+sch_bf9c02410f56ad2a,Lawrenceville High School,9,39
+sch_8de796f25cf66b9f,Warrensburg (W.-Latham),9,38
+sch_99c4982d70f8e2ae,Farmer City (Blue Ridge),9,36
+sch_7b169cbcd30c3137,Chicago (Richards),9,31
+sch_2b9f2557fa97bd8c,Bridgeport (Red Hill),9,30
+sch_c73447cd1eba4c14,Pawnee High School,9,30
+sch_d1faf4135ed01547,Nokomis High School,9,27
+sch_74e4a606cc04fe6b,Armstrong High School,9,25
+sch_c38e2a67fd2e9995,Galva High School,9,24
+sch_70e08d7e3550f16b,Chicago (Acero/Soto),9,23
+sch_2beca53362de2f51,Chicago (Agricultural Science),9,21
+sch_9b68fd1d8203c0a1,Chicago (Hirsch),9,20
+sch_40a9ffadc9408ed5,Galatia High School,9,19
+sch_3833f78be2cb20aa,Johnson College Prep High School,9,19
+sch_c179ad6ddd484147,St. Louis Blue Knights Homeschool,9,19
+sch_fbcf7f1864680f59,Cerro Gordo-Bement,9,18
+sch_74870ca7f31387c1,Hazelwood West,9,18
+sch_acf9018f8cc33d09,St Thomas Aquinas,9,18
+sch_6810d0664d86e34d,Westville High School,9,18
+sch_06f5a82dba92e7df,Assumption,9,16
+sch_72ec4ed9c1ad853f,Chicago (Gage Park),9,16
+sch_d6802f217fc98f1d,South Holland (Unity Christi,9,15
+sch_8d438c528f2e052d,Warrior Athletic Track Club,9,13
+sch_2001da55ae32759d,Edwardsville (Metro-East Lut,9,12
+sch_f90ead9139a5c664,Thunder Elite Athletic Club,9,10
+sch_7cd9622f1f73ab36,Niles North Track Club,9,9
+sch_eea5be757e1b70ba,Altamont High School,8,109
+sch_f370bc6b46ad5b80,Carlyle High School,8,88
+sch_272899e34ac19565,Hume (Shiloh),8,78
+sch_df23fb1192fd90a5,Marissa High School,8,75
+sch_5c88c26112fd926f,Steeleville High School,8,71
+sch_8dd9bd64900138ad,Danville (Schlarman),8,70
+sch_d5365462989e210c,Arlington Heights (Christian Liberty Academy),8,51
+sch_56b6905e376ff6e9,Elgin (Harvest Christian Academy),8,51
+sch_0abef7a16ad3ef0e,Jacksonville (Illinois School for the Deaf),8,45
+sch_1a099f0c2f8e5508,Mendon (Unity),8,43
+sch_0d1d6268fcc30811,Wilmette (Regina Dominican),8,40
+sch_aceee3bc5f56c8d7,LeRoy High School,8,39
+sch_81d1a1c874549c00,Chicago (Noble/Butler),8,37
+sch_ab972ea43c42a72a,Gilman (Iroquois West),8,35
+sch_d78ffe2a21c5e719,Biggsville (West Central),8,27
+sch_87c80d31182caa42,Chicago (Acero/Garcia),8,27
+sch_50e541ff385696e6,Waverly High School,8,27
+sch_3f42e8a2477bfad7,Newark High School,8,25
+sch_aa2ee6c2ba992da7,Chicago (South Shore Interna,8,21
+sch_f01ca67010f9e0fb,Bethany (Okaw Valley),8,19
+sch_b5212c476c220145,Caldwell County,8,19
+sch_3184f3a9c91fdfc0,Chicago (Austin),8,19
+sch_353ae8a8ce1b8849,Chicago (Collins Academy),8,19
+sch_b581225b6e1a54dd,Hero Sprint Club,8,18
+sch_6c172c53958962fc,Saints Track Club,8,18
+sch_28d7e4221f2fe8e8,Chicago (Noble/Golder),8,17
+sch_cef83f78879452e4,Victory Track and Field Club,8,16
+sch_82d1a4eb543ecb99,Beloit Memorial,8,14
+sch_ca8b35593c8541e9,Evanston (Beacon Academy),8,14
+sch_37ed4b035928a78c,Chicago (Horizon/Belmont),8,12
+sch_4235ba9bd3459bb3,Ritenour,8,12
+sch_f8ecf2698391e017,Bowman Academy,8,10
+sch_d132686f48e7b3bf,Madison High School,7,87
+sch_270d71c8d20db4dc,New Athens High School,7,74
+sch_56fe30590490557c,Golconda (Pope County),7,47
+sch_9436d40b598cb783,Moweaqua (Central A & M),7,34
+sch_9f88adba0364469b,Carrollton High School,7,31
+sch_a7de8be22b4acadc,Mooseheart High School,7,28
+sch_e05c9c7a69364c06,South Beloit High School,7,27
+sch_883b33cd8414defa,Bismarck (B.-Henning-Rossvil,7,25
+sch_bc356fb92302ad21,Chicago (Fenger),7,25
+sch_cd9f10aeeddff91b,Midwest Central High School,7,25
+sch_d4aed5532d8fc92a,White Hall (North Greene),7,25
+sch_b80e8f3a6f2328b6,Aurora (Rosary),7,24
+sch_da04eaa2fcc52125,Chicago (Wells),7,21
+sch_73c320d36018296b,Carrier Mills (C.M.-Stonefort),7,18
+sch_dd8f72f27073d910,Hamilton West Hancock,7,16
+sch_946efe8cc9e9df4b,Warsaw West Hancock,7,15
+sch_9ec91580aa09e42e,Dashers Track,7,12
+sch_7e0cfd4f86308b3c,Normandy,7,12
+sch_c2d718f45559a2ea,McCluer,7,10
+sch_c7c450fbded9a5ea,Norris City (N.C.-Omaha-Enfield),6,98
+sch_94d5a97a809c04f4,Winchester High School,6,70
+sch_9886b0a72aab46f1,Brownstown High School,6,59
+sch_1d67538ceff0e67d,Depue,6,58
+sch_df2d4fbb92fe091a,Wilmington High School,6,53
+sch_e9a218399302cc10,Chicago (Brooks),6,47
+sch_365a1cd34e493bc1,Hillsboro High School,6,42
+sch_be581270a91a9e81,Dieterich High School,6,39
+sch_3109b3f9bcfdac7a,Valmeyer High School,6,24
+sch_a313591045fad84c,Chrisman High School,6,23
+sch_25cee060867aec32,Ashton (A.-Franklin Center),6,20
+sch_d7760d7a4ab0a26e,Chicago (Bowen),6,20
+sch_47466ecabd1a8603,Granite City (Rivers of Life Christian School),6,20
+sch_49efe3929bda7043,Deerfield (Rochelle Zell),6,19
+sch_c87485b81653698d,Hazelwood Central,6,19
+sch_23e23a9bb6acf7b2,Davenport West,6,16
+sch_bf7fed429c9f61f6,Lake Forest Vikings,6,16
+sch_34fb3f65cfb849db,West Suburban Harriers,6,16
+sch_227414703d2b7764,Gary Steelers Track,6,15
+sch_09cd73508a503219,NFRONT TC,6,15
+sch_6508ab7827547b97,Cary (Trinity Oaks Christian Academy),6,14
+sch_c57ffca60a8cefda,Chicago (Nobel/Johnson Colle,6,13
+sch_59aabef957324f4e,Dixon Distance,6,12
+sch_d57edade6dc6b9b9,Marshall County,6,12
+sch_55f818ea263dd83d,My best Track Club,6,12
+sch_b7757f86acb7498e,Mounds (Meridian),6,11
+sch_76ef7432d79260c3,Steelville,6,9
+sch_9db256311ee193f5,Norris City (N.C.-Omaha-Enfi,6,7
+sch_1cb49ed8748bbff7,Cary (Trinity Oaks Christian,6,6
+sch_c30ae9a5d56ee871,Holy Taxiarhai and Saint Har,6,6
+sch_bc7e4c36b9c2ec1a,Saints Peter & Paul Glenview,6,6
+sch_9c7a95cb151873e7,Maryville (M. Christian),5,96
+sch_1ce5491049d09f40,Pearl City High School,5,90
+sch_99a5234b56639eb4,Cisne High School,5,62
+sch_c113f265d9f7e065,Goreville High School,5,61
+sch_a674e52407817f2f,Riverton High School,5,51
+sch_81f1cda19b881ea1,Toulon (Stark County),5,46
+sch_72400c6747ad9073,Lanark (Eastland),5,35
+sch_2dbe33daea4aade8,Crete (Illinois Lutheran),5,30
+sch_01bebafb9d84482a,Johnston City High School,5,30
+sch_7d598801f4fd0e44,DeLand (D.-Weldon),5,29
+sch_a247822b69981550,Chicago (CICS/Longwood),5,28
+sch_97a2894df6690a86,Stratsburg (Stewardson-S.),5,26
+sch_c10d4f5956d3d016,Serena High School,5,25
+sch_73e2ce0d9b68b63a,Chicago (Urban Prep/Bronzeville),5,20
+sch_a0198f221f83421b,Thompsonville High School,5,20
+sch_b86a6d4f2ad9c692,ATA Ignite,5,18
+sch_1d9d483dce870fa1,Stallions,5,18
+sch_467ea0c82acc6a52,Racine Case,5,17
+sch_0975f03795d5ffd3,Chicago (Manley),5,16
+sch_f97cd27bbd58ee97,Fulton High School,5,16
+sch_1f75a64be7db3400,Wings of Glory TC,5,16
+sch_38ffb189d02fe537,Chicago (EPIC Academy Charter),5,12
+sch_75c513b5cd81bd17,Chicago (Horizon/Southwest Chicago),5,12
+sch_2133c501036969a0,Columbus Grove,5,12
+sch_681dce5e1e3c52a4,Georgetown (La Salette Academy),5,12
+sch_cbfde947bc0a1fcb,Code Black Elite,5,10
+sch_e6bf169f9ffc41bc,Winnetka (North Shore Countr,5,10
+sch_23156cfe8f995f55,The Rockets Track Club (IL),5,9
+sch_60f4af1d258882bb,Cardinal Ritter College Prep,5,8
+sch_22e7f947ab2dd6bf,Jumper Athletics,5,8
+sch_de74d771f3b3266a,Strasburg (Stewardson-S.),5,8
+sch_081d8071a022bc58,Chillicothe (Illinois Valley C,5,6
+sch_bd42d67b4458e6fb,Chesterton Academy,5,5
+sch_0abb0499740f1e4e,Marion (Agape Christian),4,62
+sch_2ed926e17eac4891,Grayville High School,4,47
+sch_7b84880568a6aae5,Champaign (Judah Christian),4,46
+sch_b579af67b10f64bd,Crossroads Christian High School,4,45
+sch_54db2a74e7234264,Fulton (Unity Christian),4,43
+sch_2eb53b5c3c5a7fe9,Quincy (Notre Dame),4,38
+sch_73011c57f7f09de1,Argenta (A.-Oreana),4,35
+sch_b9f06450998f427b,Rockford (Our Lady Of The Sacred Heart),4,35
+sch_d3b17320981daf16,Chicago (British International High School),4,25
+sch_8140012f616e93ef,Broadlands (Heritage),4,22
+sch_adb68e02afd0abd9,Jacksonville (Routt),4,20
+sch_4adcd8fdbcb07b52,Marion (Crab Orchard),4,20
+sch_486b0e2fcb8b212f,Aurora (Illinois Math and Sc,4,17
+sch_55ced7290e177f3d,Chicago (Corliss),4,17
+sch_0c1dc3ee0a2be32f,Chicago (Harlan),4,16
+sch_f507af994e640d2f,Auburn High School,4,14
+sch_d838597170c97c25,Barry (Western),4,13
+sch_4b5f4d33cf760728,Home School Eagles,4,13
+sch_cb843f58b8715e61,STEAM Academy at McCluer Sou,4,13
+sch_b1014b86fe50a287,Chicago (British International School of Chicago),4,12
+sch_9955c2eee88ea952,Chicago (Legal Prep Charter),4,12
+sch_552af6f0fdc29278,GYTC,4,10
+sch_5a26af497be9c06f,HP Distance,4,10
+sch_5adf105545683640,St. Demetrios Elmhurst,4,10
+sch_dd5411ca72ad2490,Bloomington (Cornerstone Chr,4,9
+sch_85536c0853a9a680,Chicago (Urban Prep/Bronzevi,4,9
+sch_e7d505287c8af3d8,Courageous Track Club,4,9
+sch_2bf703bef3aa5bf4,Rivermont Collegiate Bettendorf,4,9
+sch_183fc6caffd88feb,Springfield (Sacred Heart-Grif,4,9
+sch_8674d95b5aedd05b,Normal (Calvary Christian Academy),4,8
+sch_3f228f66c08ca3fc,Savanna (West Carroll),4,8
+sch_f17a83096154905e,Sts. Constantine And Helen,4,8
+sch_8b7cb62f1a51b6c1,Border City Athletics Club,4,7
+sch_dd993cf93def62b0,Madison Elite Track Club Inc,4,7
+sch_a96ec9dbfea334d4,TruSpeed Athletics,4,7
+sch_755064ced9091ff9,Centralia (Christ Our Rock L,4,6
+sch_c7ada020d67b35bd,Madison Elite Track Club,4,6
+sch_6683bc31ff46845a,Max Velocity Track Club,4,6
+sch_552d6e33b5c91e09,Next Level Athletics,4,6
+sch_754ef12dadad8e1b,Crossroads Christian CRU,4,5
+sch_9b668e4f83d60f84,Grayslake (Westlake Christian Academy),4,5
+sch_ea26ed2b8948468c,Melrose Park (Walther Christ,4,5
+sch_4e7f519064ecda37,Miller Career Academy,4,5
+sch_060ad62bb4339bd4,Lutheran (St. Charles),4,4
+sch_8f55d5ff8f6ea8bf,Bement High School,3,87
+sch_18176199e207bc9b,Chesterton Academy Of The Holy Family,3,68
+sch_6b75e97d0bb671d3,O'Fallon (First Baptist Academy),3,68
+sch_809e113e3ae2f558,Hebron (Alden-H.),3,48
+sch_c4b861a4ff81eb43,Bluford (Webber),3,46
+sch_5fd18cf78f5aad1e,Rockford (Christian Life),3,40
+sch_5adea128e35a1ffb,Meredosia (M.-Chambersburg),3,34
+sch_35cd4bbefe4d64c5,Edinburg (IL),3,32
+sch_be493fc960018a98,Franklin High School,3,32
+sch_ed48392ff64a180e,Odin High School,3,32
+sch_06eab5676e5828c0,Sciota (West Prairie),3,32
+sch_53b31cb8101d38d5,Evanston (Roycemore),3,29
+sch_48f9e48869fe8bb7,Louisville (North Clay) Co-Op,3,24
+sch_7516291f16697345,Chicago (Noble/Noble Academy),3,17
+sch_2c4f16fb7f7d64bc,Wolf Lake (Shawnee),3,17
+sch_2197e4b153bc7fc6,Fort Madison,3,16
+sch_68ac3be11f386784,TakeOff,3,11
+sch_6f57406d44e0556d,Vashon,3,10
+sch_b1c9aaa5d4f92117,Golder College Prep High School,3,9
+sch_b6f44eb1dca6400a,Chicago (Intrinsic Charter-D,3,8
+sch_97faa844777b77cc,Hazelwood East,3,8
+sch_c126cf6dfecda60f,Plainfield Pumas,3,8
+sch_6d4e384b3443bc8e,Ravenswood Christian School,3,8
+sch_e91c768d876ea5e5,Timeless Track Club,3,7
+sch_81b3b9aef36db0a7,Elgin Sharks Track Club,3,6
+sch_55a94fc2f7dae85c,Oblong-Palestine-Hutsonville,3,6
+sch_d89a137cadecb8d1,Pinon Track Club Elite,3,6
+sch_d312845e00d83206,Rochelle Track,3,6
+sch_4da07fefbef6e582,West Prairie High School,3,6
+sch_f5f684b306622b6f,Bennett Day School,3,5
+sch_1a3d6404700fb397,Chicago (Phoenix Military Ac,3,5
+sch_28bb4fc4580c4054,Columbus Thorn Running Club,3,5
+sch_70ef2ad629372812,High South Track Club,3,5
+sch_632571102898b610,St. Mary'S Greek Orthodox Ch,3,5
+sch_ca79233c05fed462,TRIBE,3,5
+sch_182dbc140c1ce08d,Chicago (EPIC Academy Charte,3,4
+sch_7a5da506a0a4c881,Chicago (Lycée Français de C,3,4
+sch_2403377e68dca09f,Chicago (Noble/DRW Trading),3,4
+sch_eb28ddef1c012f96,Pontoon Beach (Building Brilliant Knowledgeable Scholars),3,4
+sch_11e0889a375f6807,St John The Baptist Des Plai,3,4
+sch_0c1cb7819fdbacb3,St. Nectarios Greek Orthodox,3,4
+sch_b72cd6a933a1c479,Tallawah Track and Field,3,4
+sch_e0c60cc92aa7a736,Victory Runners Club,3,4
+sch_dd850298cece4c6f,ViQueens Running Club,3,4
+sch_8398640aa99cce13,Chicago (Raby),3,3
+sch_a0d1a4f61bbe7920,CST - Critical Speed Trainin,3,3
+sch_4c321f4ff248b36e,Fox Valley Pack TFCC,3,3
+sch_9aa6776e3407c197,McHenry Pack TFCC,3,3
+sch_9eba88e0086306a1,Rosati-Kain,3,3
+sch_97a9ed579f732b15,Palestine (Co-Op),2,71
+sch_b7c5a39cdf221fed,Greenview High School,2,54
+sch_920a27084e23f8e7,Donovan High School,2,42
+sch_1828e8e2097d04a7,Cobden High School,2,37
+sch_fe1600c9536233c4,Albion (Edwards County),2,27
+sch_5a3c2bbf5c17804d,Home Run Kids Homeschool (HRK),2,26
+sch_3e9bbaa0c99b15de,Junction (Gallatin County),2,20
+sch_ceba77c7621ac7d0,Naperville (Calvary Christian),2,20
+sch_389ad02715fb3c56,Oblong High School,2,19
+sch_409e1251bc055630,Hammond Bishop Noll,2,15
+sch_d5d1ed8d5331abe0,Chicago (Catalyst/Maria),2,12
+sch_0011f276a8eb09e0,Paducah Tilghman,2,11
+sch_8244a805b15d36dd,Elgin (Harvest Christian Aca,2,10
+sch_cc6d18834132e0a7,The Lincoln Academy,2,10
+sch_35c168e3b60b247f,Chesterton Academy-St. Louis,2,9
+sch_3094cdd3c8d281a3,Lisle (Chesterton Academy of The Holy Family),2,9
+sch_0dff82f5a3c87311,Richland County High School,2,9
+sch_300039ec8a9811c6,Decatur (Eisenhower/MacArthur,2,8
+sch_7f0ba5c146a42b5d,Vipers Track,2,8
+sch_f181199b3f5870c6,East St. Louis (SIUE Charter),2,7
+sch_82910bc4875537eb,Oakland High School,2,7
+sch_fc1f43abf856b399,Payson (Seymour),2,7
+sch_543a991e13afacdb,Black Hawk,2,6
+sch_88db2e44ed4e0084,Chicago (Noble/Rowe-Clark),2,6
+sch_dad17eb3d31b5255,Kenosha Shockwave Track and XC Club,2,6
+sch_e57a934a50273c48,Mascoutah MS,2,6
+sch_a304ed081cd23d91,Midwest Milers Club,2,6
+sch_f279c65f5f3ec39b,Chicago (Daystar Academy),2,5
+sch_107e185aa6bf1c6b,Decatur (Eisenhower/MacArthur Co-Op),2,5
+sch_cfe1aa1058a49ccf,Elgin Road Warriors,2,5
+sch_f26372b14786ada0,Elmhurst ICCP,2,5
+sch_ac0b25ff658027f5,Elmhurst Track and Field Club,2,5
+sch_9b0303ab18e478fe,Golden Warrior Track Club,2,5
+sch_4f8ad01890374ed4,Iggy Pack,2,5
+sch_85b23b50dd6da48e,Kersh Strong Elite Sports Ac,2,5
+sch_efd62cd36e06483a,Louisville (North Clay),2,5
+sch_30102ffda65d3b10,Michigan Mustangs,2,5
+sch_1046f5b55dbed1d2,Providence Christian Academy,2,5
+sch_db89c4b8d9eb2e17,Chicago (Dunbar),2,4
+sch_157f0f11a7be8228,Delavan MS,2,4
+sch_0a3929c8fcf56c0a,J.L.H. Military Academy HS,2,4
+sch_78246ad8a0760bca,Lions Pride Running Club,2,4
+sch_e20f64dae1f202f9,O'Fallon (First Baptist Acad,2,4
+sch_1c256224cd5a478f,Proviso Elite Track Club,2,4
+sch_1002587ce3a0198e,Roanoke Benson Recreation As,2,4
+sch_225d7625a13e9bdf,Rush Athletics USA,2,4
+sch_50f8b16e72b15502,St. Demetrios - Chicago,2,4
+sch_52778e7d4d20944a,University of Chicago Track,2,4
+sch_1d1fa06006accba5,Kohler,2,3
+sch_bde83af07b0fb0d3,Naperville Christian Academy,2,3
+sch_c98538f1ad1bed23,One For All Athletics,2,3
+sch_9344a30bd602e55d,Providence Academy,2,3
+sch_2f13dc28f118f105,Team B.O.N.D,2,3
+sch_4c05b7c9925dfaba,Velocity Raptors Track,2,3
+sch_45c9a13fa5698c78,Arlington Heights (Christian,2,2
+sch_1aa4bb65d11ee610,Chicago (Horizon/Southwest C,2,2
+sch_6503d237f0588506,Chicago (Roosevelt),2,2
+sch_fbe2041f8e1280c2,Clay City High School,2,2
+sch_891cfc5adc77c403,Faith Christian (Williams Ba,2,2
+sch_d815fcc6489be285,Hammerman USA,2,2
+sch_e17b5c6cb882fb64,Hopedale (Christian Life Aca,2,2
+sch_3b7d143464e0a233,House of Champions,2,2
+sch_858084472b4bb2ab,Trico High School,1,55
+sch_8b327e65ec77c9ac,Buckley (Christ Lutheran),1,45
+sch_a7dc15b5bba66a6b,Waltonville High School,1,36
+sch_2376ef65a94645bb,Dongola High School,1,33
+sch_007d43f8da7ed460,Century High School,1,25
+sch_2298db58521f20bd,Bunker Hill High School,1,17
+sch_6a0475c91ec411be,Hutsonville High School,1,16
+sch_19ab2f22cfcb149a,Chicago (Phoenix Military Academy),1,13
+sch_c6ef7cba330e60ba,Chicago (Urban Prep/Englewood),1,7
+sch_6063f4b320f2578d,Cornfield Project,1,7
+sch_20a7eb0b5d022e54,Minnesota Sprint Factory,1,7
+sch_021bf51be3b29369,Elevate Academy Track Club,1,6
+sch_82210fd461ebb725,Roscoe Elite,1,6
+sch_75ddbfd02aa4578e,1ne Motion Athletic Corp. (N,1,5
+sch_d6a6852c238bed17,Chicago Lakeside Rabbits,1,4
+sch_8b7d023224b4f89f,HOLY CROSS GREEK ORTHODOX CH,1,4
+sch_f16730f39fef042d,Iola-Scandinavia Velocity,1,4
+sch_5034e2d07c54c4a6,Milwaukee Mustangs Track Clu,1,4
+sch_84e45b154888965f,Southern Illinois Striders,1,4
+sch_1dbb62ff68aa5c6e,The Solo Elite Track Club,1,4
+sch_6ea57614934a1c2b,Accelerator Running Club,1,3
+sch_e40e6c6590f37e5d,Ascension Of Our Lord Greek,1,3
+sch_54336fc7d8800ef3,Chicago,1,3
+sch_ca38b08a15ec4915,Chicago (Urban Prep/Englewoo,1,3
+sch_68d96bad997992ed,Elite Speed University,1,3
+sch_8a16483ef186a871,Homestead,1,3
+sch_19c7360e13fe8bf1,Palos Track Club,1,3
+sch_c2732b60ea4dcd6d,Shorewood,1,3
+sch_2289cf5162f37327,St. George,1,3
+sch_70bdb52ee31716e8,WRSquared,1,3
+sch_669673d9f0bb27ef,All Saints Church,1,2
+sch_8e18c61a371078c0,Ankeny Track & Field Club,1,2
+sch_bcfb4b8fdf44629c,Carthage,1,2
+sch_b968fba6ad581552,Columbus Running,1,2
+sch_e4b7cc1526ed8d53,Eau Claire Memorial,1,2
+sch_9cb4971fc2df2e86,FASST Track,1,2
+sch_588d43e7efa17431,Olivet Nazarene (Ill.),1,2
+sch_dd41473ffa63cb29,South Bend Washington,1,2
+sch_a2e8b7e0afcd561d,Thorn,1,2
+sch_d7f71f7ee3825226,University School of Milwauk,1,2
+sch_81eeb27ec282a528,20-Unattached,1,1
+sch_70f8ddc3f193c892,All About Speed,1,1
+sch_a3561e06008502cf,Bennett Day Middle School,1,1
+sch_6fe0d91f3003fb59,Bennett Day Middle School MS,1,1
+sch_cf5461d87085c28f,Betty Shabazz,1,1
+sch_34f84f576454fcc3,Blue Bullets XC,1,1
+sch_bfae0e5d68c11464,Bulletproof Athletics,1,1
+sch_79a8ae72a3bb9278,Calvary Christian School,1,1
+sch_f0ff07d476a1fe34,Crossroads Christian CRU MS,1,1
+sch_56fad3a3cab611c4,Davenport (Mich.),1,1
+sch_a70207a437e97fa4,Elgin (E. Academy),1,1
+sch_1ac774acfd98b708,Elgin Prairie Knolls,1,1
+sch_ec6736fd451143b0,Fort Wayne Fire TC,1,1
+sch_7ca6dae99f459b28,Frog Leg Track Club,1,1
+sch_c97123f628ff9ab9,Harper College,1,1
+sch_5f2a121d5c2a2da9,Indiana BLAST Track Club,1,1
+sch_7f0b0ceac188deaf,Magnify13,1,1
+sch_0a9a15e988052151,Marian (Ind.),1,1
+sch_9e0984291787cd8d,Milwaukee Mustangs,1,1
+sch_8ef8a8d28ebf9ed8,MiniCRR,1,1
+sch_2db1f9a4a0b13817,Monmouth United Boys,1,1
+sch_e88812f79f814fae,Nicolet,1,1
+sch_59523e8f3b4b347e,Nook Track Club,1,1
+sch_0148e23fe9d6f2d0,Normal (Calvary Christian Acad,1,1
+sch_392926b17253ae93,Peoria Inner City Track Club,1,1
+sch_2a8edbcaf23b5de1,Rambler Track Club,1,1
+sch_35175f666e641fa0,Remington Flyers Track,1,1
+sch_cb681671482b3ce6,Rock River Runners,1,1
+sch_2a9ccb3fee738ae8,St. Louis Swift Track Club,1,1
+sch_7f24825faec8228c,St. Nicholas STL,1,1
+sch_b6c38bf3d3f5ff03,St. Pius X (Festus),1,1
+sch_b1475a29f40c21ce,Team Zaire,1,1
+sch_f0fdd549cdf3ba9e,The Runners Flat,1,1
+sch_a212f054c80848db,ThrowBigThrowFar Chicago,1,1
+sch_3931becde9819918,Thunder Elite,1,1
+sch_489315b1a8d830f2,Tiger Track,1,1
+sch_c5102a89dacdf679,Tri State Homeschool,1,1
+sch_eeff329c9acb2527,University School,1,1
+sch_86d20db31d5e45a2,Volt Elite Track Club,1,1
+sch_bf6d1a2a15254829,Waukegan Invaders,1,1
+sch_1eb8be670b044a7e,Bloomington (Corpus Cristi),0,142
+sch_6081b0acc2f6191c,Minooka Junior High,0,108
+sch_ad28ba456f85ad1f,Cissna Park High School,0,76
+sch_6568e27018a2bf64,St. Scholastica High School,0,67
+sch_1267b06766f6229f,Springfield (Calvary),0,49
+sch_a535062a1889b92d,Gardner (G.-South Wilmington),0,39
+sch_cb8eb83ba9864c9c,Hanover (River Ridge),0,37
+sch_226287560ce2c53d,Christian Heritage Academy,0,35
+sch_c0d63906923efa59,Ariel Community Academy,0,31
+sch_14751c1b11825c1d,Elgin (Westminster Christian),0,30
+sch_ed17f9aecc6d73ea,Woodhull (AlWood),0,28
+sch_56af68ffc0f4a9bf,Dore Elementary,0,24
+sch_02a7681bcc0360b9,Lincoln Zion Lutheran,0,22
+sch_6897af8b47edf22a,Knights,0,21
+sch_211ed142a495d46d,Cornerstone Christian MS,0,17
+sch_05084991831f047e,Tamms (Egyptian),0,15
+sch_0b8eabde9f2ef638,Leland High School,0,14
+sch_2d695032a835b728,River Valley Christian,0,12
+sch_70ae0d13b0413869,Champaign (Academy High),0,10
+sch_1f6ec792e2424a2f,St. Joseph High School,0,10
+sch_b85adc5884250c6e,Rockford (Keith Country Day),0,9
+sch_a2394cd1ba8cbaf7,Harrisburg (New Hope Christian Academy),0,8
+sch_202d2b16bb9dbb73,Chicago (St. Francis de Sales),0,7
+sch_7d146984d33b0bd1,Chicago (Waldorf),0,5
+sch_6740e991e6d5887f,JW Bolt,0,5
+sch_a5b21645cff482bb,Slinger,0,5
+sch_bff8e39281c5a13e,Sts. Constantine & Helen Wau,0,5
+sch_3e5b3e318f78d094,Waukegan (Cristo Rey St. Martin),0,5
+sch_8d1c7e0319b388ce,Bloomington (Cornerstone Chris,0,4
+sch_def682f74c450f47,Future Olympians Of Tomorrow,0,4
+sch_80551296b29d81f7,ComEd Rec Center,0,3
+sch_b5338030bfd63b17,Evansville (Christ Our Savior Lutheran),0,3
+sch_deef54f23fd327a0,Faith Christian School,0,3
+sch_cb9ce7bc2dafda99,Fast 4ward Athletics,0,3
+sch_6eb4901e13447e7b,Synergy Chicago,0,3
+sch_33c55248d61d2196,AC Training,0,2
+sch_ddea17eadfa2a0a2,Amundsen High School Athleti,0,2
+sch_0f81d77fae2178c4,Andrean,0,2
+sch_8f05b363167cb91f,atk,0,2
+sch_08159665b9a43173,Cornerstone,0,2
+sch_d74a62f4509ca5e1,Holy Trinity Schiller Park,0,2
+sch_f5d925815b971a7b,Ira Jones,0,2
+sch_c9e45d3e2bef6b7c,Jackal T&F,0,2
+sch_e9da6cc5b8070bc1,Rogue Elite TC,0,2
+sch_34a4068e8d415e13,Sangamo Distance Project,0,2
+sch_0a973f0888f1c20b,SS Constantine & Helen Cathe,0,2
+sch_95f24722583ccc13,Truth Complete TC,0,2
+sch_15664a189f405955,26-Unattached,0,1
+sch_449d3cf503665c95,Base Athletics,0,1
+sch_1f08a86feeba075e,Berlin,0,1
+sch_03593e47ab2d7173,Butler Run Club,0,1
+sch_83f685cb63c355e6,Campbell Hill (Trico),0,1
+sch_197810c7d3556068,Cedarburg T/F,0,1
+sch_263009d04d338d49,Danville Windrunners,0,1
+sch_0f8fdb4ed77fd6a3,Drive Phase Track Club,0,1
+sch_da02c38ad7a04257,Fort Atkinson,0,1
+sch_06a5d00fa551b0b6,Franklin Fine Arts Center (Chicago),0,1
+sch_f6fb4a98232f3119,Gibson City (G.C.-Melvin-Sible,0,1
+sch_9b30626a4f838612,Grayslake,0,1
+sch_3af966a53d4b0db6,Grayslake MS,0,1
+sch_8531be570e390559,Herculaneum High School,0,1
+sch_f63963e41f4db0b6,Illini Bluffs High School,0,1
+sch_5f800340a67a09ae,Indy Blades Track Club,0,1
+sch_505680284f42b868,JENKINS RUNNING CREW,0,1
+sch_ca3476a2034bf686,Josephinum Academy of the Sacred Heart,0,1
+sch_31509e959212d460,Kingdom Track Club,0,1
+sch_e73bae0bc5a501ed,Kyle McMahon Distance Club,0,1
+sch_b67833a23e530428,Left Coast Track & Field,0,1
+sch_2df6eecf584465e4,Lost Boys,0,1
+sch_f6fa647898152df5,Marquette University,0,1
+sch_294ad9fb169de09f,Martian Elite,0,1
+sch_59a3ed22f9865b70,McCallie,0,1
+sch_61d40acebc95c8ce,McFarland,0,1
+sch_18c569dc7d64e101,Normal (Calvary Christian Ac,0,1
+sch_e256f18885bf62b2,Northfield (Christian Heritage Academy),0,1
+sch_a45cfa196b375596,Northwestern University Club,0,1
+sch_2fe139fcc2e5c45e,Norwood Negotiators,0,1
+sch_c093c2c724c2691e,Ohio High School,0,1
+sch_5d5f08af18bdc104,Optimal Performance,0,1
+sch_df44686ff416d290,Petersen Track Club,0,1
+sch_0d42f79c42c20319,Plainfield Pack,0,1
+sch_5b5a5d93bc6e40df,Project Arigo,0,1
+sch_06fe24351f4a969b,Purdue University Club,0,1
+sch_8c2caabed506368a,Racine Horlick,0,1
+sch_3b1cc7df027fc901,Rockford FIRE Track,0,1
+sch_fe46bbdbc67ad220,Saint Andrew Greek Orthodox,0,1
+sch_286df8d879f760e4,Sauk Valley CC,0,1
+sch_9d2ad40a10ce3d56,Shelby County Pacers,0,1
+sch_106f97eff16d3db0,South side track Hawks,0,1
+sch_5d1e8992b904c7e2,Speed U Track Club,0,1
+sch_efb336a4d7d47934,Spirit of Cranberry Running,0,1
+sch_3665ba6f492e7c24,St. John's Lutheran School,0,1
+sch_60edda1fd148b241,Tinley Track Club,0,1
+sch_06be5b6dd40566a6,Track Minnesota Elite,0,1
+sch_e572e801dbae747e,Turbo City SC,0,1
+sch_1412a5316d15d290,Western Springs,0,1
+sch_33786aadc36383ee,Wisconsin Track,0,1
+sch_672fb1b26e470136,A-C Central High School,0,0
+sch_aae2f1a63267d711,Abingdon-Avon High School,0,0
+sch_7a9e7697d61ba75c,Academy High,0,0
+sch_1772de91eded8de6,Académie Lafayette,0,0
+sch_d8aee921b7ff7ea7,ACE Amandla Charter School,0,0
+sch_3ce085c745d41878,Acero -- Garcia Charter High School,0,0
+sch_b2784609032d52fc,Acero -- Victoria Soto Charter,0,0
+sch_91d9788688248efb,Addison Trail High School,0,0
+sch_1adb13b2b5c78a7f,Agape Christian High School,0,0
+sch_f9f9f44ff093004a,Agricultural Science High School,0,0
+sch_a024b310cebcc452,Air Force Academy,0,0
+sch_de0d723b2752aae5,Akin Grade School CCSD #91,0,0
+sch_d841c1273b9333d9,Al Raby School for Community and Environment,0,0
+sch_7081e3f088a68f8f,Alcott High School,0,0
+sch_53caa7443bd7de52,Alden-Hebron High School,0,0
+sch_1a7d163bb9de4e2e,Alleman High School,0,0
+sch_ea6b2402401dbdef,Althoff Catholic High School,0,0
+sch_87bc2da6c01a0700,Alton Senior High School,0,0
+sch_537fc429fb868568,AlWood High School,0,0
+sch_3678f2fd66aa3e15,Amundsen High School,0,0
+sch_739346bc5f925fe6,Andrew High School,0,0
+sch_28ad54dd7462b513,Anna-Jonesboro High School,0,0
+sch_0cbdbab2f2efb925,Annawan High School,0,0
+sch_cfaecd753068f0ca,Antioch Community High School,0,0
+sch_f427e19e00285e37,Aqsa School,0,0
+sch_cdc2fa3342c3037a,Argenta-Oreana High School,0,0
+sch_273037fc7b28af10,Argo Community High School,0,0
+sch_497417d0153723d9,Art in Motion,0,0
+sch_8593f1c0442b4a36,Arthur Christian School,0,0
+sch_7ae29037fac28c7d,Arthur Okaw Christian,0,0
+sch_11b25bee7ff57b36,Arthur-Lovington-Atwood-Hammond High School,0,0
+sch_aaccb389fa2ed661,Ashton-Franklin Center High School,0,0
+sch_e88b446faa6284d0,ASPIRA Business and Finance High School,0,0
+sch_1fdd4b9bd8994240,ASPIRA Early College High School,0,0
+sch_ad0828708673dafa,Aurora Christian High School,0,0
+sch_51a89aac96455b38,Austin College & Career Academy,0,0
+sch_cca2da4d907e5d78,Austin Polytechnic High School,0,0
+sch_abac0511e50ab515,Avon Senior High School,0,0
+sch_a43927ab48c7e28e,Back of the Yards College Prep,0,0
+sch_fe56c87195b5f576,Beacon Academy,0,0
+sch_4efc116fedb68a78,Beardsown Christian Academy,0,0
+sch_979bd8d04e3ddac6,Beecher City High School,0,0
+sch_2b869eec3e85906d,Belleville (Governor French Academy),0,0
+sch_1cdafd46e6f8f4be,Belvidere Tornados,0,0
+sch_ab26f9de9f21b55a,Benet Academy,0,0
+sch_01e46250a2b79c0a,Bennett,0,0
+sch_added2564b05bc0e,Bergan High School,0,0
+sch_526f1886657c959c,Berthoud,0,0
+sch_de9b493102a8bb73,Best Practice High School,0,0
+sch_0ab5a6981c5905e2,Bethel Lutheran High School,0,0
+sch_619f35dfcbbfb312,Bishop McNamara Catholic High School,0,0
+sch_2c57919805fcdd6d,Bismarck-Henning Rossville-Alvin Cooperative High School,0,0
+sch_6bba8c445a4c6191,Bladensburg,0,0
+sch_7611388e71b5e8bf,Bloom Twp. High School,0,0
+sch_0243f5a9727760ec,Blue Ridge High School,0,0
+sch_26d301fb75c244bf,Bluffs High School,0,0
+sch_74975c2b07aa5c09,Bogan Computer Technical High School,0,0
+sch_ecf6c228317e3c9f,Bowen High School,0,0
+sch_f2bb24996fc4d338,Bowie,0,0
+sch_e7612f5f72b7400e,Boylan Catholic High School,0,0
+sch_e5914c666c39712c,Bradley Bourbonnais High School,0,0
+sch_a2e71e3997d3f2b0,Bremen High School,0,0
+sch_5d10f5eefb639a5f,Bridgeview (Aqsa),0,0
+sch_7ad0eee24db556cd,Briggsdale,0,0
+sch_2d6b194500b2ecc3,Brimfield High School,0,0
+sch_d3be99508687a03d,British International School of Chicago,0,0
+sch_47270c56caa638e2,Broken But Not Shattered Academy,0,0
+sch_49ce384d39d8b229,Brother Rice High School,0,0
+sch_b5ac374b488b00ce,Brown County High School,0,0
+sch_deeca6d177b0faca,Brussels High School,0,0
+sch_7c1d1a57fbc889a6,Bureau Valley High School,0,0
+sch_757d6f1fd9fcdcfb,Burr XC Club,0,0
+sch_8ff5c97f0e4b1a6a,Bushnell-Prairie City High School,0,0
+sch_5cecf43c1be59c80,Butler College Prep High School,0,0
+sch_0b658cc72c46dfcd,C.H. Flowers,0,0
+sch_28fc1639bb88765e,Calhoun High School,0,0
+sch_6f6fdc9c33c5d5f9,Calvary Academy,0,0
+sch_5b1f3104386ce86a,Calvary Chapel Rockford School,0,0
+sch_c019769376cb4490,Calvary Christian Academy,0,0
+sch_f3fb18b12adb3213,Carl Sandburg High School,0,0
+sch_b0d91fb8e51e0ae1,Carmel Catholic High School,0,0
+sch_868c7ce897ec97f3,Carmi-White County High School,0,0
+sch_ebc06c3204554b0c,Carrier Mills-Stonefort High School,0,0
+sch_942c73524d95542b,Carver Military Academy,0,0
+sch_a85d300e4583e2d6,Cary-Grove High School,0,0
+sch_74321e81e0115b64,Catalyst Maria High School,0,0
+sch_3da45ea0ad32f17b,Centennial High School,0,0
+sch_b38044c14cdd6873,Central A & M High School,0,0
+sch_e35fc5b4b9aca2c3,Central High School,0,0
+sch_69aa86288cf24083,Central-PG,0,0
+sch_a7508f762bdc5b46,Chesterton Academy of the Immaculate Heart,0,0
+sch_2498b40cd3fb3fc6,Cheyenne Central,0,0
+sch_a30b401afeb7d31c,Cheyenne Mountain,0,0
+sch_514c81b67a11f22a,Chi-Town Huskies,0,0
+sch_8a96e13ca2c89176,Chicago (ACE Amandla Charter),0,0
+sch_30ee5f319f300ae3,Chicago (Acero/Cruz),0,0
+sch_458b99aeb547d19e,Chicago (CICS/Ellison),0,0
+sch_cfa65c0019ee689a,Chicago (Clemente),0,0
+sch_e1cbddc311f008f5,Chicago (Douglass),0,0
+sch_59b7913b78f560a0,Chicago (Excel Academy/Englewood),0,0
+sch_732c83b7c8fdeb02,Chicago (Excel Academy/Southwest),0,0
+sch_21ed8a244fd1657e,Chicago (Foreman),0,0
+sch_b4330be006910f3a,Chicago (Instituto Health Science Charter),0,0
+sch_4da569dcc17ed8e8,Chicago (Kelvyn Park),0,0
+sch_ed5b62fe7a358f6c,Chicago (Little Black Pearl Arts Academy),0,0
+sch_5c4c0ee996db3abf,Chicago (North Grand),0,0
+sch_f3e0433427d35606,Chicago (Tilden),0,0
+sch_68b0a586eb6f0c89,Chicago (Urban Prep/West),0,0
+sch_353614c7ee470e7a,Chicago Academy High School,0,0
+sch_ecba6e28044706ab,Chicago Bulls College Prep High School,0,0
+sch_bbc8335ba10deca1,Chicago Christian High School,0,0
+sch_ce1198b10783f402,Chicago Collegiate Charter High School,0,0
+sch_711ee86b2ef7932e,Chicago High School for the Arts,0,0
+sch_4cb9996d97acc047,Chicago Hope Academy,0,0
+sch_f8ffb284543a654a,Chicago International Charter School--Ellison,0,0
+sch_643971e8778b27ab,Chicago International Charter School--Longwood,0,0
+sch_cad3489234692e25,Chicago International Charter School--Northtown Academy,0,0
+sch_379ee49d2f8225a9,Chicago Math and Science Academy,0,0
+sch_849d004ba6e8945f,Chicago Military Academy -- Bronzeville,0,0
+sch_612068eaaa60314a,Chicago Notre Dame High School,0,0
+sch_02a6d08b60a3bcba,Chicago Public Schools,0,0
+sch_545317c35c3d04a2,Chicago Tech Academy,0,0
+sch_b1310277b9690d9a,Chicago Vocational Career Academy,0,0
+sch_1c220aeac7249f9b,Christ Lutheran High School,0,0
+sch_641cbf7d6f7d5267,Christ Our Rock Lutheran High School,0,0
+sch_323233a0c98991e2,Christ the King Jesuit College Preparatory School,0,0
+sch_0c6476218e4414b5,Christian Academy,0,0
+sch_8ac21f6909706c31,Christian Liberty Academy,0,0
+sch_546467494d1a3daa,Christian Life Academy,0,0
+sch_8a02b4114778a07f,Christian Life High School,0,0
+sch_18b84981762bc2d5,CICS Hawkins,0,0
+sch_525e619b4a9be2db,Civic Memorial High School,0,0
+sch_9d5c6cd07244ce2c,Clemente High School,0,0
+sch_5012f5fec12e6cd7,CMIT North,0,0
+sch_2e6d37fbdc961955,CMIT South,0,0
+sch_09aae3132189a005,College Preparatory School of America,0,0
+sch_8ecf09a971c24c2e,Collins Academy High School,0,0
+sch_78a793464df44a2b,Conant High School,0,0
+sch_34b7dde531d1c48b,Concord (Triopia),0,0
+sch_52f1128a31fc7dc5,Coonley Cougar XC Club,0,0
+sch_f45e401b1a652b06,Corliss High School,0,0
+sch_479a2007b828a3fa,Cornerstone Christian Academy,0,0
+sch_1338e83bc595c8b5,Coulterville High School,0,0
+sch_10967e0f4cb52037,Cowden-Herrick High School,0,0
+sch_05666ef02524071e,Crab Orchard High School,0,0
+sch_8b9160b14e2bb547,Crane Medical Prep High School,0,0
+sch_f7bcd94cc2377b15,Crete-Monee High School,0,0
+sch_d9cc0d1d077bc51a,Cristo Rey Jesuit High School,0,0
+sch_8312aaeed7261364,Cristo Rey St. Martin High School,0,0
+sch_bc852a7071b0a19d,Crossland,0,0
+sch_f46eb7e2a0dc5133,Crossroads Christian Academy,0,0
+sch_297ff56867feb838,Cuba High School,0,0
+sch_41b5e6eae187cb2c,Cumberland High School,0,0
+sch_c823013a742f6d97,Curie Metropolitan High School,0,0
+sch_550b99af5c00a50a,Dayspring Christian,0,0
+sch_32e9e05573d6163b,Daystar Academy,0,0
+sch_54f0b632604c5db0,De La Salle Institute,0,0
+sch_8f2d316967ace005,Decatur (D. Lutheran),0,0
+sch_ae31b5bc7d125a40,Decatur Christian School,0,0
+sch_a627ec92c5a12b4e,Deer Creek - Mackinaw High School,0,0
+sch_7d7552831b75fac7,DeLand-Weldon High School,0,0
+sch_b063b2ccfcf94089,DePaul College Prep,0,0
+sch_1b6e97c306b7b6e7,DeVry Advantage Academy,0,0
+sch_df8b3419b6bc9943,Disney II High School,0,0
+sch_75479f987d2c32ea,Dixon Distance A,0,0
+sch_a1ab1f7743c37346,Dixon Distance B,0,0
+sch_c3b4accb32f66c03,Dolphin CC Team,0,0
+sch_380b9a9a37b040e2,Driscoll High School,0,0
+sch_f7016db5a4deb658,DRW Trading College Prep High School,0,0
+sch_b3bfee89fe3bec1c,Dunbar High School,0,0
+sch_40e2ded31d8579aa,Dundee-Crown High School,0,0
+sch_7e8d90b735f9bc4a,DuSable Campus,0,0
+sch_bbc4f2e4ddae9b23,DuVal,0,0
+sch_22a8f3f531211717,Dyett High School for the Arts,0,0
+sch_09301605dc5609d7,East Alton-Wood River High School,0,0
+sch_0a83f36f20cd112b,East Aurora High School,0,0
+sch_31b6172a415d5b61,East Moline Christian School,0,0
+sch_a39bd9860f2a78b0,East St. Louis Senior High School,0,0
+sch_1137b5b47ab16fa9,Eastland High School,0,0
+sch_72cdaf6e827a3fb8,Eaton,0,0
+sch_34c29c5b1fc0115f,Edinburg High School,0,0
+sch_7f98e150148fe7e3,Edwards County High School,0,0
+sch_6146dcdbb0ee9ded,Egyptian High School,0,0
+sch_ecaa19b40ecc57b6,Eisenhower High School,0,0
+sch_d4d8a7868e205535,El Paso-Gridley Junior High,0,0
+sch_93c611757c588574,Eldorado Community Unit School,0,0
+sch_240ce7cf9a388d96,Eleanor Roosevelt (MD),0,0
+sch_c2010cc788f81eb9,Elizabethtown (Hardin County),0,0
+sch_ac4aceb0d6da06f2,Elk Grove High School,0,0
+sch_3c37ab61e0cf620a,Ella Baker College Prep High School,0,0
+sch_5142a107714ae5bb,Elverado High School,0,0
+sch_16c4296885a88206,Englewood High School,0,0
+sch_013702ce60bdff49,Englewood STEM High School,0,0
+sch_500a686a2297972b,EPIC Academy,0,0
+sch_1efbae4d9c6d97e5,Eric Solorio Academy,0,0
+sch_e438310cdab48fcf,Erie High School,0,0
+sch_3062430cc2e157a9,Evanston Township High School,0,0
+sch_b24648f60cc06f81,Evergreen Park Community High School,0,0
+sch_d976f071eb9ada6b,Excel Academy of Englewood High School,0,0
+sch_0999693c40ed67f0,Excel Academy-Woodlawn,0,0
+sch_8872825641d00820,Excel Academy/Roseland High School,0,0
+sch_4f2fe8a66231c807,Excel Academy/South Shore High School,0,0
+sch_30730d3ef7eee6a5,Fairfield Community High School,0,0
+sch_9d86b3cfa5816cbb,Fairmont Heights,0,0
+sch_ca94cea8c4f89e63,Faith Bible Christian Academy,0,0
+sch_d20178ed599b71ac,Faith Lutheran High,0,0
+sch_0d22bbc8ced06a52,Fake team One to be removed,0,0
+sch_92645b742fb21042,FakeTeam 2 To be removed,0,0
+sch_e1fc62cd23000517,Families of Faith Christian Academy,0,0
+sch_b281529bae21486b,Farragut High School,0,0
+sch_d6474ecd400c9c3e,Father McGivney Catholic High School,0,0
+sch_1bd17530f95e9ab0,Fenger High School,0,0
+sch_c48b137a87305240,Fenton High School,0,0
+sch_4bcd0f117e436407,Fenwick High School,0,0
+sch_fbe3755c61ac4f53,Fieldcrest High School,0,0
+sch_fa6b8406b8128fe1,First Baptist Academy,0,0
+sch_d7eb31358710b6a8,First Baptist Christian School,0,0
+sch_ed5e2ccb0c771562,Flanagan-Cornell High School,0,0
+sch_ace13e2c4a1975ab,Foreman High School,0,0
+sch_bc0d338b717ad5c3,Forest View High School,0,0
+sch_02f4a9ec70fc3058,Fort Collins,0,0
+sch_021ef1149e91d18e,Fort Lupton,0,0
+sch_643296a41ed86bc1,Fossil Ridge,0,0
+sch_7f2a65be98953787,Francis W. Parker School,0,0
+sch_8bd31c9dba50cc8c,Frankfort (Lincoln-Way North) *closed*,0,0
+sch_251c0e26dd8a66ee,Frankfort Community High School,0,0
+sch_5e9a265f0d3472bc,Frederick,0,0
+sch_365fd369a217176d,Frederick Douglass-PG,0,0
+sch_cfd8926673b7fd66,Freeburg Community High School,0,0
+sch_195efcc95b64a1f3,Freeport (Aquin),0,0
+sch_e09c84eb7c140614,Fremd High School,0,0
+sch_ddaf0229165dc8b5,Friendly Senior,0,0
+sch_b81f79d8459248f5,Frontier Academy,0,0
+sch_f8f10f9d87cfb9e8,Gage Park High School,0,0
+sch_b5379b98dc0e26aa,Gallatin County High School,0,0
+sch_33faba55e3d017f9,Garcia High School,0,0
+sch_1a71549337e0656e,Gardner-South Wilmington High School,0,0
+sch_0b15ad0f7cb82dfc,Gary Comer College Prep High School,0,0
+sch_fa1c8a5e278d44b1,Gateway Legacy Christian Academy HS,0,0
+sch_f7a1b05a1b8e3924,Gators,0,0
+sch_33383674060206da,Genoa-Kingston High School,0,0
+sch_9352b41d3da04809,George Washington High School,0,0
+sch_d57e9b804b376a59,Georgetown-Ridge Farm High School,0,0
+sch_d1a0923f7106c956,Gibault Catholic High School,0,0
+sch_6f2da2f49ee0403f,Gibson City-Melvin-Sibley High School,0,0
+sch_a7706271ee940f6e,Glenbard East High School,0,0
+sch_c7dbb730ba0a5de0,Glenbard North High School,0,0
+sch_7d151269d1308929,Glenbard South High School,0,0
+sch_c8862cecf61bd42c,Glenbard West High School,0,0
+sch_0211b94492e30581,Glenbrook North High School,0,0
+sch_1c125d34d63bea27,Glenbrook South High School,0,0
+sch_d0be3c2b0746e70c,Glenwood High School,0,0
+sch_e6940f1237945d15,Gordon Tech,0,0
+sch_1b356da254f8ef6d,Goreville Community Unit School,0,0
+sch_025674f40b1efcb8,Grace Christian Academy,0,0
+sch_17406803c70ae2c0,Grant High School,0,0
+sch_d594dbf07130b691,Grant Park High School,0,0
+sch_483186a80054ece4,Greeley Central,0,0
+sch_2e8a080ec6b97dcf,Griggsville-Perry High School,0,0
+sch_8ac4d61b5e7fe42f,Guerin High School,0,0
+sch_ebbf048eb2555807,Guilford High School,0,0
+sch_d5a09a228fc1b4f1,Gwendolyn Brooks College Prep Academy,0,0
+sch_8d673e54b1cb47b8,Gwynn Park,0,0
+sch_e3b0c1ef664644f2,H.D. Jacobs High School,0,0
+sch_dbc6d7dfc58a435e,Hales Franciscan High School,0,0
+sch_062caedb681e7245,Hall High School,0,0
+sch_cca7e6908fcb5bc0,Hamilton County High School,0,0
+sch_1c33197904797ac6,Hamilton High School,0,0
+sch_3b1c9a9ba0d04630,Hancock College Prep High School,0,0
+sch_9d349084f058721f,Hansberry Prep High School,0,0
+sch_c57a97aca7d9c72b,Hardin County High School,0,0
+sch_6c06a8d36d6cd856,Harlan Community Academy,0,0
+sch_87303ccb4882e533,Harlem High School,0,0
+sch_02b0ae7a20fb9c74,Harper High School,0,0
+sch_14f406bfc80c2284,Hartsburg-Emden High School,0,0
+sch_ae8c7ce37093b29a,Henry A Wise,0,0
+sch_80594989bcaa4e4a,Henry Ford Power House High School,0,0
+sch_efa9266b508d6815,Henry-Senachwine High School,0,0
+sch_c22a2fb5b105fc33,Heritage Christian,0,0
+sch_7cb22fdbcf571736,Heritage High School,0,0
+sch_04d0b423932d941a,Hermitage,0,0
+sch_b10ab78562304e67,Hersey High School,0,0
+sch_8e3c18ef7bf2dcfb,Hiawatha High School,0,0
+sch_119f40085c82d09b,High Point,0,0
+sch_92aa995d7bcc7bc3,Hillcrest High School,0,0
+sch_09896f0d33047a9c,Hinckley-Big Rock High School,0,0
+sch_d2266e5a926d8abb,Hinsdale Adventist Academy,0,0
+sch_115aa7c7baed626a,Hinsdale South High School,0,0
+sch_27e4d4f3f856e17b,Hirsch High School,0,0
+sch_fd17bd9a7ffd025d,Hoffman Estates (Valeo Academy),0,0
+sch_7ff836eb031500d4,Hogan Prep,0,0
+sch_de7c28cd9a00756e,Holy Trinity High School,0,0
+sch_140363062de9c246,Homewood-Flossmoor High School,0,0
+sch_9235d432eb3a24cc,Hononegah High School,0,0
+sch_709a4637d3d95b5c,Hoopeston Area High School,0,0
+sch_df1a513156be1860,Horizon Science Academy-McKinley,0,0
+sch_65a247e4ec2089d8,Horizon Science Academy-Southwest Chicago,0,0
+sch_0b74252512f178aa,Horizon Science-Belmont,0,0
+sch_3a86614114ac6fc1,Hubbard High School,0,0
+sch_90d0da1247316585,Hyde Park Academy High School,0,0
+sch_048b81ca65c056b9,IC Catholic Prep,0,0
+sch_3f255ba9d02d7854,Illini Central High School,0,0
+sch_6833263c227c04fe,Illini West High School,0,0
+sch_592d28a740abe6a9,Illinois High School Association,0,0
+sch_b01627281937800a,Illinois Lutheran High School,0,0
+sch_5b595ea5896e049f,Illinois Math and Science Academy,0,0
+sch_c401c65f32dc8d2e,Illinois School for the Deaf,0,0
+sch_ab450612d7714694,Illinois School for the Visually Impaired,0,0
+sch_a4124aece898ec24,Illinois Valley Central High School,0,0
+sch_82bc3d5810dd55be,Indian Creek High School,0,0
+sch_4194545e07d2233e,Institute of Health Sciences,0,0
+sch_05a3947b8e3cbfae,Instituto Health Science Career Academy,0,0
+sch_87d8feff070537f7,Intrinsic Charter-Downtown Campus High School,0,0
+sch_cd9835b2be8bd0f0,Intrinsic Schools,0,0
+sch_8f5f4b6c6ea50d1a,Iroquois West High School,0,0
+sch_9e71de1ca461d221,Islamic Foundation School,0,0
+sch_7ee68337e923046e,ITW David Speer Academy,0,0
+sch_ea45b300ca2cbfd7,J. Sterling Morton High School,0,0
+sch_cf7d620252bce30e,Jacksonville (Westfair Christian Academy),0,0
+sch_01edcbe53ce44bd3,Jamaica High School,0,0
+sch_da1c9f0269e02594,James Madison Charter Academy,0,0
+sch_6f29d4eba2ff2be5,Jefferson High School,0,0
+sch_1f6d996df4fd1134,Jersey Community High School,0,0
+sch_4815e96ab0969b5e,John Hope College Prep,0,0
+sch_77e8c6e43d0c85ae,Jones College Prep,0,0
+sch_4c3a617d6c5a3fba,Joppa-Maple Grove High School,0,0
+sch_dce71a726be86d22,Josephinum High School,0,0
+sch_adcf6270cf7273b3,Juarez High School,0,0
+sch_1730405661b7a56f,Judah Christian High School,0,0
+sch_e47d6eb7b064af13,Julian High School,0,0
+sch_5d78532a165f0dee,Kaneland High School,0,0
+sch_b12cb09558689362,Kankakee Hope Christian Academy,0,0
+sch_650de79b81718cc3,Kansas High School,0,0
+sch_5c2c8cd04486cada,Kauffman,0,0
+sch_dada93dd447d0aca,Keith Country Day School,0,0
+sch_e89a3ef6634d7a73,Kelly High School,0,0
+sch_4324c50ddd8726fe,Kelvyn Park High School,0,0
+sch_13cb166482310b24,Kennedy High School,0,0
+sch_10dece6d8076ae9b,Kenwood High School,0,0
+sch_78ccbec8403e4276,KIKIFER'S Entrepreneurial Academy,0,0
+sch_11c6cdc730b8119c,Kindi Academy,0,0
+sch_a3b79967006bf7e9,King College Prep High School,0,0
+sch_d79c39af5d6a76da,KIPP Northeast (Regis Groff),0,0
+sch_a851fe9a6379ad55,Kun San High School,0,0
+sch_f6b187d5bacf2ca4,La Salette Academy,0,0
+sch_90aaf838032e95ea,Lake Forest (Woodlands Academy),0,0
+sch_ed95c7d1287f74bf,Lake Park High School,0,0
+sch_e6bf68fe2a8ee872,Lakes Community High School,0,0
+sch_59624bbed8a55692,Lakeview High School,0,0
+sch_c9247ae6fdf2c617,LaMoille High School,0,0
+sch_db505850963b6bfc,Lane Tech College Prep,0,0
+sch_a12d7002e870d5e7,Lanphier High School,0,0
+sch_51ab53fd63c21038,Largo,0,0
+sch_aa34f0976fba971e,Larkin High School,0,0
+sch_9203d291d681c135,LaSalle-Peru High School,0,0
+sch_4bbc5b8aba026db1,Latin School of Chicago,0,0
+sch_b7038557b880e27c,Laurel,0,0
+sch_9043f117bf3d5640,Legal Prep Charter Academy,0,0
+sch_e27dc10f1395e4b5,Leo High School,0,0
+sch_eb78d1570b0e1f16,Lexington High School,0,0
+sch_e8c69483f8a596b8,Leyden High School,0,0
+sch_d353d128785eefc6,Liberty Common,0,0
+sch_a53ccd06d70fb62c,Limestone Community High School,0,0
+sch_e7e7cfd412300e1d,Lincoln College Prep,0,0
+sch_e9ffc220f5c98fe1,Lincoln Park High School,0,0
+sch_e75450d55acf9630,Lincoln-Way Central High School,0,0
+sch_cddece5836f6297a,Lincoln-Way East High School,0,0
+sch_8b34b9cde2a6122e,Lincoln-Way West High School,0,0
+sch_d373f67b530b7705,Lincolnwood High School,0,0
+sch_5b22c06795392193,Lindblom Math and Science Academy,0,0
+sch_3e3533b452c07ff4,Lisle Senior High School,0,0
+sch_ab8957c1af0237a9,Little Elm,0,0
+sch_06ec3f3b6c1f158f,Little Village High School,0,0
+sch_2544165da435a205,Lockport Township High School,0,0
+sch_240aecc1cee8f383,London Mills (Spoon River Valley),0,0
+sch_be73dacbf01c765f,Longmont,0,0
+sch_54fb6ae9f6917469,Lovejoy High School,0,0
+sch_07965984d5000553,Loveland,0,0
+sch_9cbab5edaadc2806,Lowpoint-Washburn High School,0,0
+sch_82920774d6f5a8fd,Loyola Academy,0,0
+sch_88ddba10404382c8,Luther North High School,0,0
+sch_86204728b4108c48,Luther South,0,0
+sch_d213142b30b90a20,Lutheran High School,0,0
+sch_a9c9ea776ea14ab0,Lycée Français de Chicago,0,0
+sch_a5c1e98ff03a8384,Lyons Township High School,0,0
+sch_496a508967544b8f,MacArthur High School,0,0
+sch_28c8dbbb5cc552cd,Mahomet-Seymour High School,0,0
+sch_cc3b07db3b815557,Maine East High School,0,0
+sch_62029d611f26dad9,Maine South High School,0,0
+sch_5b1c98d54b41bc9e,Maine West High School,0,0
+sch_5c728136a1215304,Manley Career Academy High School,0,0
+sch_e9fb8d964e87e56e,Mansueto High School,0,0
+sch_6ae3129258fcd268,Manual High School,0,0
+sch_aecfc86c54a2a886,Marian Catholic High School,0,0
+sch_e75f74dd802e1ae0,Marian Central Catholic High School,0,0
+sch_14efadbdd0c06bbc,Marine Leadership Academy,0,0
+sch_ccbc0df93ba68230,Marist High School,0,0
+sch_5307ba93d6cea63c,Marmion Academy,0,0
+sch_5396edeb2b71b16a,Maroa-Forsyth High School,0,0
+sch_b7e9e01c41b69018,Marquette Catholic High School,0,0
+sch_bcb02e14a7cc3b3d,Marquette High School,0,0
+sch_e7d99938050c3fa2,Marquette Manor Baptist Academy,0,0
+sch_36b5df4e674e0f13,Martinsville High School,0,0
+sch_7decdb4c64741af7,Maryville Christian School,0,0
+sch_77c1872894d63d86,Massac County High School,0,0
+sch_1282141144d8ecf8,Mater Dei High School,0,0
+sch_ec44a1278e0d87e7,Mather High School,0,0
+sch_feb82298c2c8167c,MCC Academy,0,0
+sch_18a8f608cb71b12a,McHenry Community High School,0,0
+sch_4940391b5f80261a,Mead,0,0
+sch_1525a0e607f02a83,Meredosia-Chambersburg High School,0,0
+sch_5202b6f3f3234c25,Meridian High School,0,0
+sch_f56f12557772db70,Metamora Township High School,0,0
+sch_167287337cc4d3cf,Metea Valley High School,0,0
+sch_6a3402ef1435c585,Metro-East Lutheran High School,0,0
+sch_9aeb7e04a489a93b,Michele Clark Academic Preparatory High School,0,0
+sch_4ed40f0a08c6f790,Mid County High School,0,0
+sch_bde44b9d09b84cc8,Mid-America Preparatory,0,0
+sch_678f1a61f736d377,Midland High School,0,0
+sch_9008e0a785bf677f,Minooka Community High School,0,0
+sch_1aaa2bcaa564ad8f,Monarch,0,0
+sch_f539dddd1c435ea3,Monmouth-Roseville High School,0,0
+sch_9b56115940f12a0d,Montessori Academy of North Hoffman,0,0
+sch_9414ae82ca7e4ae4,Montini Catholic High School,0,0
+sch_dc959cce1f876e86,Morgan Park Academy,0,0
+sch_e6a2bd632dc49dcb,Morgan Park High School,0,0
+sch_4848ba42bb61e762,Morrisonville High School,0,0
+sch_9793d2756863922a,Mother McAuley High School,0,0
+sch_a5620ce4bd8782a2,Mountain View,0,0
+sch_6f12f2e696ce8a5b,Mt Assisi Academy,0,0
+sch_ff9ac94d43fcea0f,Muchin College Prep High School,0,0
+sch_98822c4f6f6242e4,Mulberry Grove High School,0,0
+sch_a0a8c6f155db7475,Murphy High School,0,0
+sch_4dba52697b2f2ffb,Nashville Community High School,0,0
+sch_bc35ea2572641b67,Nazareth Academy,0,0
+sch_c574ff32345ecb34,Nederland,0,0
+sch_5a04d969dd2d5a5c,Neuqua Valley High School,0,0
+sch_e7492b445333309b,New Hope Christian Academy,0,0
+sch_55d29b19f9504ffa,New Trier High School,0,0
+sch_401db2fc6d4b07d9,Newman Central Catholic High School,0,0
+sch_a04aa2e79c915796,Niles North High School,0,0
+sch_b99f29a7ab935332,Niles West High School,0,0
+sch_5a2aa6b7c321871c,Noble Academy,0,0
+sch_a8477e632f1d6c9c,Noble Street Charter High School,0,0
+sch_fb7d76899e4d1f5b,Norris City High School,0,0
+sch_d293c5aac867d1e4,Norris City-Omaha-Enfield High School,0,0
+sch_1536dbeb1d14a280,North Boone High School,0,0
+sch_f314c6edace63aa1,North Clay High School,0,0
+sch_f145704bf99c43c4,North Grand High School,0,0
+sch_e2f832e830156260,North Greene High School,0,0
+sch_5624e5002afbac9a,North Lawndale College Prep High School,0,0
+sch_762d5133ea02f157,North Mac High School,0,0
+sch_ed54b608e233164c,North Shore Country Day School,0,0
+sch_adb81c290d480adb,North Shore Pack TFCC A,0,0
+sch_f53fb9b5fe98a908,North Shore Pack TFCC B,0,0
+sch_93b43edc8cd0533a,Northfield High School,0,0
+sch_cf3792ecacdb37b1,Northridge,0,0
+sch_a305c142e16f2a87,Northridge Prep High School,0,0
+sch_e180eeeb0c90f61b,Northside College Preparatory High School,0,0
+sch_1907a2b26e808057,Northwestern High School,0,0
+sch_78f9b06a8d5b77e4,Northwestern-PG,0,0
+sch_9d16b584e1ac1d37,Notre Dame College Prep,0,0
+sch_c3a0e4d3a33ea095,Notre Dame de Sion,0,0
+sch_79a5c07b3ce59be5,Notre Dame High School For,0,0
+sch_7847b1d4b7a08ada,Nova Athletics Track Club,0,0
+sch_60939abc66050dfc,O'Fallon Township High School,0,0
+sch_25c87004bfcd31bd,Oak Park and River Forest High School,0,0
+sch_5aa6694d527b6000,Oakwood High School,0,0
+sch_f565135ab5f6e47b,Ogden International School of Chicago,0,0
+sch_68bb1490e23f0eb2,Okaw Valley High School,0,0
+sch_ec4a2801c9b15c7d,Olympia High School,0,0
+sch_0c004df0fc5409e0,Orangeville High School,0,0
+sch_80699dd05108fd20,Orr Academy High School,0,0
+sch_a41668fd1a416510,Ottawa Township High School,0,0
+sch_28779de74f18bec9,Our Lady o Rockford,0,0
+sch_f3cd7b6e0df4f89a,Our Lady of Tepeyac High School,0,0
+sch_4b475d560b597acf,Our Lady of the Sacred Heart Academy,0,0
+sch_b7ec76ffd5adf7d8,Oxon Hill,0,0
+sch_8ea4036b827dc5af,Palatine Pack TFCC A,0,0
+sch_8510e7c1d51c8e4f,Palatine Pack TFCC B,0,0
+sch_9f704b8a60949c9b,Palatine Pack TFCC D,0,0
+sch_e8852827db641307,Palatine Pack TFCC E,0,0
+sch_567962cb88805ecc,Palatine Pack TFCC F,0,0
+sch_63dde43a24ec3455,Palestine High School,0,0
+sch_9856403f7bdbad29,Palmer Ridge,0,0
+sch_502e622aeb205871,Parkdale,0,0
+sch_13989c5563cce0a2,Parkview Christian Academy,0,0
+sch_bd0d5d436819b103,Paxton-Buckley-Loda High School,0,0
+sch_ffdef4e48637e9ab,Payson-Seymour MS,0,0
+sch_e19dff9894e98802,Peak To Peak,0,0
+sch_7786cf8cffe04dd8,Peoria (Quest Charter Academy),0,0
+sch_6e58d43deea6cf07,Peoria Christian High School,0,0
+sch_4bd766350a4a124d,Peoria Woodruff High School,0,0
+sch_b38706265a1956bf,Perspectives High School of Technology,0,0
+sch_e4dab26999d11829,Perspectives Leadership Academy,0,0
+sch_12974a7adc71f740,Perspectives-IIT Math and Science Academy,0,0
+sch_51907b54b4401c27,Perspectives-Joslin Campus,0,0
+sch_b45cea23e7909981,Phoenex,0,0
+sch_aa45f0a5f2d2e647,Phoenix STEM Military Academy,0,0
+sch_868cd4e338fb1c1c,Plainfield Pack TFCC A,0,0
+sch_71dba3fd744b26b7,Plainfield Pack TFCC B,0,0
+sch_caa718a5534cf7f2,Polo High School,0,0
+sch_06d6b0ff39b0bd90,Pomona,0,0
+sch_5e068954d4e61240,Pope County High School,0,0
+sch_9bfdf4d0b0b1f9b6,PORTA High School,0,0
+sch_abf1ba90373edc11,Potomac (Oxon Hill MD),0,0
+sch_7096e634a1be880b,Poudre,0,0
+sch_8b53d34492a0afd9,Prairie Central High School,0,0
+sch_52c86b243abd4e8a,Prairie Ridge High School,0,0
+sch_23efa811c9dd8e0f,Prairie View,0,0
+sch_3bcc1befdb5c3f6a,Pritzker College Prep High School,0,0
+sch_b7f230487177e177,Prospect High School,0,0
+sch_5fc386c4f47fe144,Prospect Ridge Academy,0,0
+sch_17b9a0a075471437,Prosser High School,0,0
+sch_203cdbaaec69cfa6,Providence Catholic High School,0,0
+sch_651f7f6098882326,Providence St. Mel High School,0,0
+sch_d894ddac5f508f2d,Proviso East High School,0,0
+sch_99256c8168185372,Proviso West High School,0,0
+sch_3c8aaec8da1417e6,Putnam County High School,0,0
+sch_a094fec1d5fade8d,Quad Cities Christian School,0,0
+sch_4a9db33539460594,Queen of Peace HIgh School,0,0
+sch_258f64785afeeedc,Quincy Senior High School,0,0
+sch_89b6b7a54c7797a9,Ramsey High School,0,0
+sch_77e050eecc8dbfc0,Rauner College Prep High School,0,0
+sch_d66fd56023a1172e,Reavis High School,0,0
+sch_14734fd62f679887,Red Hill High School,0,0
+sch_0ebbe41336421cca,Reed-Custer High School,0,0
+sch_39307baea4c1d318,Regina Dominican High School,0,0
+sch_76a0d376b9a90613,Resurrection Christian,0,0
+sch_f9edc21ab386d255,Resurrection College Prep High School,0,0
+sch_f72f22cad935fa36,Rich Central High School,0,0
+sch_194eae181b717485,Rich East High School,0,0
+sch_895fae7afdeb3e34,Rich South High School,0,0
+sch_036c123a1fc59c28,Rich Township High School,0,0
+sch_37309036141c2605,Richards Career Academy,0,0
+sch_fbd11be984b54aea,Richards High School,0,0
+sch_b04c77b21d100d44,Richmond-Burton High School,0,0
+sch_a106c2e1f3877bc1,Richwoods High School,0,0
+sch_a1a2724ae7810576,Rickover Naval Academy,0,0
+sch_74ae737e2d9c805b,Ridgeview High School,0,0
+sch_b3e08d954feb11c4,Ridgewood High School,0,0
+sch_46dbe397dbbf689a,RISE Athletic Club,0,0
+sch_bc4bc1346dc90210,River Ridge High School,0,0
+sch_77f76412b2ef49e5,Riverdale High School,0,0
+sch_7ead45de9b1d9d3d,Riverdale Ridge,0,0
+sch_f5b05b93a7646ca0,Riverside-Brookfield High School,0,0
+sch_c0c26bff72f65d42,Roanoke-Benson High School,0,0
+sch_5f0cc9ad14619854,Robeson High School,0,0
+sch_8e8b228ad9f6f67e,Rochelle Zell Jewish High School,0,0
+sch_c982149f82b719e7,Rockford Christian High School,0,0
+sch_ca5a3003290562b5,Rockridge High School,0,0
+sch_61668251877e08e6,Roosevelt High School,0,0
+sch_59fc93e5a4198350,Rosary College Prep,0,0
+sch_abc62b3c9fe6d539,Routt Catholic High School,0,0
+sch_5e68fade41adffe4,Rowe-Clark Math & Science Academy,0,0
+sch_e13096fb3d509b3f,ROWVA High School,0,0
+sch_a6d6a294e02c139b,Rushville-Industry High School,0,0
+sch_3a8a631f984214e7,Sacred Heart-Griffin High School,0,0
+sch_9194d0f1bc767b15,Salt Fork High School,0,0
+sch_5b568641c2520936,Sandoval High School,0,0
+sch_f733f319ae92dce9,Sangamon Valley High School,0,0
+sch_892c436fc71ff7bd,Sarah E. Goode STEM Academy,0,0
+sch_73066dc9fd6bf625,Sauk Valley Community College,0,0
+sch_bc7e6c25ee34f6e8,Scales Mound High School,0,0
+sch_6a526da81f4d50b3,Schaumburg Christian School,0,0
+sch_04c88cba54590d40,Schiller Park (Holy Trinity),0,0
+sch_1850916e65d850b8,Schlarman Academy,0,0
+sch_b0e98edb4e7685ef,Schurz High School,0,0
+sch_cd95586447a558c3,Second Wind Running Club,0,0
+sch_0b4de350de325532,Seneca Township High School,0,0
+sch_e87ac02b5d3f8a1f,Senn High School,0,0
+sch_00fb95ae1a7808af,Sesser-Valier High School,0,0
+sch_afda5526f9c8782f,Severance,0,0
+sch_bce3218480258e1f,Shawnee High School,0,0
+sch_c3d4dce53566b0f0,Shawnee Junior-Senior High School,0,0
+sch_24d2edfed0106db3,Shepard High School,0,0
+sch_f77813e9ec4cea57,Shiloh High School,0,0
+sch_deebff8de5ca5508,Silver Creek,0,0
+sch_1b8422c703346949,Simeon High School,0,0
+sch_a78f4ef34c74a3f7,SIUE Charter,0,0
+sch_7fccf4419969fe6a,SIUE East St. Louis Charter School,0,0
+sch_5b4bad4bdaa84f57,Skokie (Yeshiva),0,0
+sch_6def17b37260e097,Skyline,0,0
+sch_944860d334282bb6,Skyview,0,0
+sch_f670577777624564,South Central High School,0,0
+sch_674d628857c9a63d,South Fork High School,0,0
+sch_e30f7621fdffdf04,South Loop Storm,0,0
+sch_716683d8b0d31761,South Shore International College Prep,0,0
+sch_f9b99f3bf26a3675,Southeastern High School,0,0
+sch_ba0ccb4cf6347f86,Southland College Prep Charter High School,0,0
+sch_c4b848663e391071,Southwestern High School,0,0
+sch_8054f8f922c7ec20,Spoon River Valley High School,0,0
+sch_da699b9d0aae7168,Spry Community Links High School,0,0
+sch_bad3ceeaea2d4317,St. Anne Community High School,0,0
+sch_edd68d4004c7263e,St. Anthony High School,0,0
+sch_53052aca10cbbb28,St. Bede Academy,0,0
+sch_10fc8699403f2f79,St. Benedict High School,0,0
+sch_ef96fe2b902c9c37,St. Charles High School (Closed),0,0
+sch_f9b23d48ffbcf746,St. Edward High School,0,0
+sch_fc060668e9ba083d,St. Elmo High School,0,0
+sch_7a4036af8e34c304,St. Francis de Sales High School,0,0
+sch_fc2fb78ee4d8ff04,St. Francis High School,0,0
+sch_6af8bdd7159f8da0,St. Gregory High School,0,0
+sch_c568dda55c28cb58,St. Ignatius College Prep,0,0
+sch_00f5534db237d382,St. Joseph-Ogden High School,0,0
+sch_3d9ea81c6edfafc8,St. Laurence High School,0,0
+sch_40fa744ade452719,St. Michael the Archangel,0,0
+sch_053c2caf1b336273,St. Patrick High School,0,0
+sch_3a073c30f88594f8,St. Pius X (Kansas City),0,0
+sch_515e793842e321fb,St. Rita of Cascia High School,0,0
+sch_2b9a8cf213fa3ad1,St. Teresa High School,0,0
+sch_5bd3753899511908,St. Teresa's Academy,0,0
+sch_c7f7d8bac833795f,St. Viator High School,0,0
+sch_5ac591b89a8f562a,Stagg High School,0,0
+sch_51d50560341fe55c,Stark County High School,0,0
+sch_72aaa88bdd3dfe5e,Steinmetz High School,0,0
+sch_b19d22f677103c7f,Stevenson High School,0,0
+sch_91d821bb7f9dccad,Stewardson-Strasburg High School,0,0
+sch_7bad53633ae731a2,Stonefort High School (Carrier Mills),0,0
+sch_62867cf8965d0b2b,Streator Township High School,0,0
+sch_33bcef35a1a45875,Stronghurst Southern,0,0
+sch_fbf079c222c22d3b,Suitland,0,0
+sch_ff7cdbf5ff68992b,Summit,0,0
+sch_ae13a13778ce09fc,Surrattsville,0,0
+sch_ea5d282b155a236c,Taft High School,0,0
+sch_7cf249cc8697f83c,Texas,0,0
+sch_f34adc826bc45c7a,The High School of Saint Thomas More,0,0
+sch_e1334ed4cf8cfe85,The Willows Academy,0,0
+sch_8164fe2a9b5d9b6d,Thompson Valley,0,0
+sch_f9629f71dd695260,Thornridge High School,0,0
+sch_894605ecba47d311,Thornton Fractional North High School,0,0
+sch_ace23fd4fda35515,Thornton Fractional South High School,0,0
+sch_fa89dc64b888a28c,Thornton Township High School,0,0
+sch_035a8186a1832528,Thornwood High School,0,0
+sch_8d30132ee88dd878,Tilden High School,0,0
+sch_90f9112605f180c5,Timnath,0,0
+sch_dc1013d1e6e64da1,Timothy Christian High School,0,0
+sch_f2d00dfbd8cc39a5,Tri-City High School,0,0
+sch_5bc7e0a67c3a7c83,Tri-Point High School,0,0
+sch_a3bf9b469898ed4c,Tri-Valley High School,0,0
+sch_255582a6a817aab4,Triad High School,0,0
+sch_7269d599fce96129,Trinity High School,0,0
+sch_a40569517909c5db,Trinity Oaks Christian Academy,0,0
+sch_074a109a34fdb98e,Triopia High School,0,0
+sch_e2a643d13333b9a2,UIC College Prep High School,0,0
+sch_5351db3d44ae2f21,United High School,0,0
+sch_cb2eefc881db9934,United Township High School,0,0
+sch_55ee0b4348e58502,Unity Christian Academy,0,0
+sch_d69587cd0fd33293,Unity Christian High School,0,0
+sch_fa0df6afb4312be5,Unity High School,0,0
+sch_272ed49c736ed1d3,Universal High School,0,0
+sch_5955581512db99ea,University Academy Charter,0,0
+sch_dd3db1efa6847940,University of Chicago Charter School-Woodlawn,0,0
+sch_50c4b899b0cb7ced,Uplift Community High School,0,0
+sch_733286d47d120740,Urban Prep Academy -- Bronzeville Campus,0,0
+sch_3ac9e205e08d5fe3,Valeo Academy,0,0
+sch_f07b41b351d5462f,Valor Christian,0,0
+sch_bb3a9c72a7428889,Virden High School,0,0
+sch_2de98ad11e3635df,VIT High School,0,0
+sch_ec10585b5b8a8054,Von Steuben High School,0,0
+sch_3fd047cbdcec4c2a,Waldorf High School,0,0
+sch_b7635bc7ddc0013e,Walter Payton College Prep High School,0,0
+sch_2023f139b0e847e1,Walther Christian Academy,0,0
+sch_de84d92bc8bdfe7f,Warren High School,0,0
+sch_183778417e655f31,Warren Township High School,0,0
+sch_17b30e3be90d7011,Warrensburg-Latham High School,0,0
+sch_350adf054f7e6976,Warsaw High School,0,0
+sch_a6a77840b7c8cdba,Washington Community High School,0,0
+sch_d4f0c0223065065e,Waubonsie Valley High School,0,0
+sch_5d63d4cdeb8a8830,Wayne City High School,0,0
+sch_d6f0e5490e3d47e5,Webber High School,0,0
+sch_9f7dcd75c699e349,Wells Community Academy High School,0,0
+sch_db5692e9ee728f41,Wendell Phillips Academy High School,0,0
+sch_693d330d86bdfc0c,Wesclin High School,0,0
+sch_2ecf2263e582bf66,West Aurora High School,0,0
+sch_e703130f0e0bc52f,West Carroll High School,0,0
+sch_e601f76b2718f78e,West Central High School,0,0
+sch_01ef0c5b1cbd2342,West Chicago Community High School,0,0
+sch_db05d1fa05b58da9,Western High School,0,0
+sch_17cef70353c2f3d0,Westfair Christian Academy,0,0
+sch_8bbf72ab1ca5b474,Westinghouse College Prep,0,0
+sch_7061d46f11cecee2,Westlake Christian Academy,0,0
+sch_d3e9e73e63a67157,Westmer,0,0
+sch_d592dd2361d02d01,Wethersfield High School,0,0
+sch_cf1ac85366f69564,Wheaton Academy,0,0
+sch_17ff4884b587643a,Whitney Young Magnet High School,0,0
+sch_635d3f8a6b572867,Wiggins,0,0
+sch_9e2ea3fac28464a4,Williamsfield High School,0,0
+sch_4dee1f67cec5d961,Willowbrook High School,0,0
+sch_de73748238703441,Windsor High School,0,0
+sch_e7cbea424d66de7c,Wolcott College Prep,0,0
+sch_1871ca1e84b54cad,Woodland High School,0,0
+sch_c9c92861ba2421cc,Woodlands Academy,0,0
+sch_f15316fab391e074,Yeshiva High School,0,0
+sch_3354c9298291fdcd,York High School,0,0
+sch_316300b370a9b285,Yorkville (Parkview Christian Academy),0,0
+sch_30bb0bccb9b15008,Yorkville Christian High School,0,0
+sch_c47f3112cc9a3633,Zeigler-Royalton High School,0,0
+sch_cf8a6f9bdedfa140,Zion-Benton High School,0,0

@@ -1,0 +1,402 @@
+school_id,name,co2027,athletes_all
+sch_2125a14707601dc6,Reservoir High School,90,214
+sch_846370b0945e7f3f,Towson High School,86,180
+sch_f7cc05fa95c3f1e0,Winston Churchill High School,85,228
+sch_22055d0cdd33cd82,Crofton High School,84,243
+sch_f3e84ba085c78da4,Walt Whitman High School,83,253
+sch_b0d5fdee6f37ec33,North Point High School,83,206
+sch_8fe48fe783770068,Urbana High School,81,242
+sch_4a715a19414f5963,River Hill High School,81,236
+sch_87041fa585cd157b,Severna Park High School,79,242
+sch_4151f9f041cb648d,Marriotts Ridge High School,78,202
+sch_efd58499d8033f1b,Broadneck Senior High School,75,222
+sch_f54fb1bafe268d68,Richard Montgomery High School,74,223
+sch_c8a86d72f67088b5,Randallstown High School,74,155
+sch_7f653adf9881eda5,Severn Run High School,74,154
+sch_9f260c97d2fd8166,Oakdale High School,73,198
+sch_5cc0184f59197a96,Great Mills High School,72,145
+sch_b45bb1c4104381cd,Walter Johnson High School,71,226
+sch_41426e1d25e49ea9,Tuscarora High School (MD),70,216
+sch_84492eaf433825e8,Sherwood High School,69,166
+sch_f9575b38541cd7ea,Montgomery Blair High School,67,200
+sch_95c1504eb36c6111,St. Paul's School,65,138
+sch_6ada0375dedf735a,Damascus High School,64,214
+sch_3eec2ada465a90f5,Clarksburg High School,64,212
+sch_d3864cd933b30d1f,Howard High School,62,195
+sch_a270e54d4fc26db8,Wheaton High School,62,178
+sch_e1d921155c0c5dda,Westminster High School,62,170
+sch_e95b802748b27e5a,Quince Orchard High School,61,184
+sch_761aa0761ada0fcb,Old Mill High School,61,136
+sch_05642c24bd355e84,Bel Air High School,60,124
+sch_8980a7d8a00c5468,St. Mary's Ryken High School,59,156
+sch_3022eeb5b6e0e878,Guilford Park,58,142
+sch_93ac0f43245f55a4,Bethesda-Chevy Chase High School,57,213
+sch_68da2ed51962be0b,DeMatha Catholic High School,57,162
+sch_1dd0a9ac278bfcda,Leonardtown High School,56,160
+sch_85aa8978ff2d0452,Arundel High School,56,157
+sch_845754f49609557a,St. Charles High School,56,136
+sch_2a5241a238d2671c,Seneca Valley High School,55,139
+sch_106ca47ddb80fa5d,Gov. Thomas Johnson High School,54,167
+sch_d5cdec5476620d08,Oakland Mills High School,54,167
+sch_e918faa9a74216e7,Linganore High School,54,150
+sch_a862c3fe90e9da07,Middletown High School,54,144
+sch_6cac8bc3c68ab25f,Springbrook High School,54,143
+sch_f8b6f0f7422df506,Glenelg High School,54,121
+sch_6e05430c4328db95,Baltimore City College,53,151
+sch_085a8fe0c5392dab,Chopticon High School,53,127
+sch_8cbadba3ec7f9810,South River High School,52,208
+sch_703af52e3ce3a19e,Bishop McNamara High School,52,155
+sch_fd07c6364d47e215,Northwest High School,52,154
+sch_cf05f96f428da92c,Henry E. Lackey High School,52,92
+sch_34f71aa8084e7f03,Kent Island High School,51,104
+sch_23e24babe7fdd3cb,New Town High School,51,94
+sch_9848ff99c702d080,St. Mary's High School,50,138
+sch_9997f89a6cfa1a93,Maurice J. McDonough High School,50,110
+sch_aabd27a4151f75ad,Chesapeake High School-AA,49,149
+sch_14c8393ac550bc6f,Laurel High School,49,114
+sch_a5b43e8dbe0aaab5,Largo High School,48,126
+sch_7a2cc8087406a670,Glen Burnie High School,48,123
+sch_8aad54acfdca063c,James Hubert Blake High School,48,123
+sch_fc95e59ab8692157,Thomas S. Wootton High School,47,176
+sch_03eef208c223dacc,Albert Einstein High School,47,154
+sch_480b585a623fb92d,Dulaney High School,47,148
+sch_495cc027fbe33b12,Northeast Senior High School,47,132
+sch_4354e7f9cac34c84,Westlake High School,47,107
+sch_74e6898144882507,C.H. Flowers High School,47,103
+sch_e03183dc3cf821c4,Easton High School,47,88
+sch_ff9bbf719960fbb5,Poolesville High School,46,173
+sch_d64245e1e7b13c50,Archbishop Spalding High School,46,138
+sch_d173fb608363fa6b,McDonogh School,46,134
+sch_c070e97bb004e3b3,John Carroll School,46,132
+sch_8c059ef10e398b98,Liberty High School,46,126
+sch_5dee50a61bb80c93,Northern-Calvert High School,46,126
+sch_de7b384b64721b23,Western Tech,45,112
+sch_75df4e7198cd1931,Paul Laurence Dunbar High School,45,102
+sch_65554bdb2ee50fc7,Forest Park High School,45,94
+sch_6fd943c11355aad7,C. Milton Wright High School,44,171
+sch_4f88624ab853a07b,North Hagerstown High School,44,137
+sch_c807a394f5d97752,Gaithersburg High School,44,111
+sch_deaf77bd4e408892,Havre de Grace High School,43,100
+sch_284f295c524c2098,Perryville High School,43,94
+sch_5b473d163ffaa8f6,Atholton High School,42,182
+sch_adfc13fe51ec104d,Baltimore Poly High School,42,136
+sch_21df56108d13b8d6,Parkville High School,42,132
+sch_bae5b1613ba0868a,Long Reach High School,42,121
+sch_5643c5c94c3cab76,Oxon Hill High School,42,97
+sch_fcc48d2d24ffed19,Landon School,41,223
+sch_aecaeb6674a39feb,Perry Hall High School,41,213
+sch_f71249ead3f7ee5d,Hereford High School,41,190
+sch_96cc6dc2a9331202,Frederick High School,41,125
+sch_e4929fe5865d9ead,Our Lady Of Good Counsel,40,153
+sch_06e471e82d7f4236,Mt. Hebron High School,40,138
+sch_72595ab62862f285,Gilman School,40,123
+sch_aa7e23d0f760c099,Manchester Valley High School,40,118
+sch_662a6015cfbc7ad3,Walkersville High School,40,109
+sch_b0565fe5751bf8c5,Rockville High School,39,185
+sch_9042a4f7451de2ff,Smithsburg High School,39,107
+sch_d3f5c15d0459a83f,Overlea High School,39,97
+sch_be254c097b3cdd94,Hammond High School,38,134
+sch_d19cab1fcd691830,Gwynn Park High School,38,80
+sch_e393ed3042908b18,Kenwood High School,38,77
+sch_663717f9f5ffd761,Franklin High School,37,138
+sch_f4765987b88a2f30,Centennial High School,37,118
+sch_54a579d1713ed02a,Stephen Decatur High School,37,117
+sch_3a3249489b59919b,Pikesville High School,37,86
+sch_babad111a04d260f,Parkside High School,36,91
+sch_f745d18c268c6f14,Mercy High School,36,76
+sch_24c0504e346235c7,Parkdale High School,36,73
+sch_7fd9bf2dfc3391d3,Mount St. Joseph School,35,119
+sch_62c659b9e8ac3caa,La Plata High School,35,116
+sch_d451a5077ab1e2dd,Eastern Tech High School,35,109
+sch_7cc9e901a3197e47,North Harford High School,35,106
+sch_997c3eddca7a8891,Paint Branch High School,35,98
+sch_b55eebb7adaddea6,Watkins Mill High School,35,93
+sch_26df2be71a86a90c,John F. Kennedy High School,34,89
+sch_75cfdc835efb9408,Severn School,34,71
+sch_b4375f8c746bc422,Concordia Preparatory School,34,64
+sch_83b444a8dea01c68,Maryvale Prep School,33,124
+sch_794d96f40ffc4968,Wilde Lake High School,33,118
+sch_9102c49305c6e4c5,Annapolis Area Christian,33,86
+sch_a638e6a14ddf57b8,Suitland High School,33,85
+sch_a31dec0910b89984,Fort Hill High School,33,84
+sch_7ee0bf457306377c,Fallston High School,32,95
+sch_f41753a2b64becb5,Annapolis Senior High School,32,91
+sch_e5ef4a6f6d73b363,Woodlawn High School,32,91
+sch_f9ef1a3f9b453a25,Henry A. Wise High School,32,65
+sch_9289e8151afcb9d1,North County High School,31,121
+sch_b436e9aa2de0497b,Loyola-Blakefield High School,31,114
+sch_996d7ed65287d5f5,Huntingtown High School,31,101
+sch_dea5b0947ae637a8,North Caroline High School,31,87
+sch_f46932ea1d5c26c5,Notre Dame Prep School,31,84
+sch_12b99401b59b8b0a,Bowie High School,31,70
+sch_4604d499a13dd693,Loch Raven High School,31,69
+sch_96a2bac7f44b149a,Patapsco High School,31,64
+sch_56eefd9141d5465f,Southern (AA) High School,31,64
+sch_460390a401021763,DuVal High School,31,58
+sch_145a1259a48a7440,Calvert High School,30,162
+sch_b1a0edb032862486,Rising Sun High School,30,94
+sch_8a51f39f092c5934,Edgewood High School,30,86
+sch_ef505902b080c22e,James M. Bennett High School,30,75
+sch_39319d89b91d0ecd,Dundalk High School,30,74
+sch_8ecd4b59503aba94,Elizabeth Seton High School,30,72
+sch_155bdfaaa7147986,Owings Mills High School,30,71
+sch_04896a3761633d77,Col. Zadok Magruder High School,29,98
+sch_d29360e1f5d09e8a,Winters Mill High School,29,92
+sch_8628dc065d17df5d,Thomas Stone High School,29,83
+sch_aea0ed91449a99d7,Archbishop Curley High School,29,79
+sch_b4b47e892737d854,Northwood High School,29,73
+sch_95f567cbdc312af8,Fairmont Heights High School,29,67
+sch_abfbafebc33b99ec,Potomac High School,29,64
+sch_3a7f6a291450ad14,Williamsport High School,29,57
+sch_c7b140cee55b55be,Central High School,29,45
+sch_31ae9a9dd07f756a,Riverdale Baptist School,28,104
+sch_2cb119d243f0d357,Harford Technical High School,28,95
+sch_904c4774be8ae8f9,Brunswick High School,28,91
+sch_47cd82cacf50b42d,Col. Richardson High School,28,71
+sch_6cecc772d7e36331,Patterson High School,28,60
+sch_cfd08355c2e2f9ac,Frederick Douglass-PG High School,28,49
+sch_1f20886e2677b4a7,Calvert Hall College High School,27,106
+sch_4395f6ab2070faa0,Meade High School,27,101
+sch_7be76b63d8867e3e,Georgetown Preparatory School,27,91
+sch_155d1a07adbbb3e5,Patterson Mill High School,27,89
+sch_c578283fbeb80eab,Queen Anne's County High School,27,72
+sch_dc9da08777c5e862,Digital Harbor High School,27,70
+sch_8aa66c58bbf4df33,Patuxent High School,27,66
+sch_699132c841db4585,Bullis School,26,205
+sch_de803b6b3bdab851,Mergenthaler Vocational-Technical High School,26,71
+sch_4a6baf53a77dba4c,Lansdowne High School,26,62
+sch_cabafcb3151d344c,Catoctin High School,26,60
+sch_765a7f6f174cea61,CMIT High School South,26,57
+sch_58c965e8ffe48ff1,Eleanor Roosevelt High School,25,100
+sch_14be21b729e8291a,St. Vincent Pallotti High School,25,91
+sch_06fdb33342b71d0b,Catonsville High School,24,106
+sch_139573daa5de0d0a,CMIT Academy,24,70
+sch_2754cfab6877173d,Clear Spring High School,24,67
+sch_f9cb181694b83a68,Carver A&T High School,24,66
+sch_5df5b963df54f4c7,Academy of the Holy Cross,24,62
+sch_868d27aca36d795e,Bladensburg High School,24,53
+sch_89d5b76fb60f4f07,Lake Clifton High School,24,49
+sch_9d0ddc0ed5266355,International High School at Largo,24,36
+sch_c9850b31a9ceb031,Allegany High School,23,101
+sch_13e1f23c821244f2,Milford Mill,23,74
+sch_1a1f48f8828fb556,Mount De Sales Academy,23,67
+sch_06d5dc9f048846ad,Edmondson-Westside High School,23,40
+sch_ac922e2bf7d0ec73,Mountain Ridge High School,22,87
+sch_1f9f576f28e3fa88,South Hagerstown High School,22,67
+sch_b5f7186eeaffcd66,Elkton High School,22,65
+sch_7b4820876acab1ed,Wicomico High School,22,54
+sch_d8667874f56969af,Chesapeake Science Point High School,21,70
+sch_d0e464b7e848983c,Snow Hill High School,21,64
+sch_3b18ac628c16ae94,Francis Scott Key High School,21,58
+sch_eb0a4b519e72f30c,North Dorchester High School,21,52
+sch_926032769cbd1e86,Stone Ridge School of the Sacred Heart,20,123
+sch_f9268bb6b902068f,Charles E. Smith Jewish Day School,20,107
+sch_9b7eec4b2ff4b53e,Sparrows Point High School,20,84
+sch_de6142543ce66ad9,Boonsboro High School,20,71
+sch_3846b23a7f2cb8e4,Pocomoke Senior High School,20,68
+sch_5032794504344381,Aberdeen High School,20,61
+sch_797ad1f7889fcd7f,Chesapeake High School-BC,20,59
+sch_9e6cb6e344cfdcfe,Bohemia Manor High School,20,56
+sch_f2afff1406eb663f,North East High,20,55
+sch_bb0be1826794e65c,Kent County High School,20,52
+sch_4d3385952ca0cd9d,Mardela Middle & High School,20,51
+sch_beb37216e0e7935d,Melvin J. Berman Hebrew Academy,19,125
+sch_e44e56f4f2d6f906,The Heights School,19,122
+sch_7bc6dc2d01d0e723,South Carroll High School,19,73
+sch_6261946dafa58e16,Carver Vo-Tech,19,44
+sch_7f0c4d0ccc9a8f17,Northern Garrett High School,19,44
+sch_f12af60302dd0a59,Roland Park Country School,18,192
+sch_0974c490fad20423,Glenelg Country School,18,68
+sch_bea2e860bbab7296,Washington High School,18,57
+sch_10e4e122a0cbb955,St. Andrew's Episcopal School,17,170
+sch_b15b1f1a98c5f708,McLean School,17,88
+sch_2e9beacfe5c1e2b1,Joppatowne High School,17,61
+sch_709628de8b30ca70,Catholic High School,17,42
+sch_9468cc1a9f1a7abd,St Frances Academy,17,30
+sch_42521cbc6fa0c377,Holton-Arms School,16,146
+sch_3bd3306f28a49510,Century High School,16,106
+sch_7bd98e1ba2da10d5,Sandy Spring Friends School,16,105
+sch_ab972ef3e279b903,Park School,15,37
+sch_cb497594fe05342c,Frederick Douglass-BC High School,15,34
+sch_23ab4c4c5f529d09,Southwestern High School,15,22
+sch_0e5fd2ccde55494b,Spencerville Adventist Academy,14,84
+sch_a6203a9a66cbd8dc,Cambridge-South Dorchester High School,14,76
+sch_a68cedee9fe5cd0a,Green Street Academy,14,75
+sch_aed07f7812a85c90,Mount Airy Christian Academy,14,72
+sch_b100a65a6030b1a4,Crossland High School,14,46
+sch_8d7ad2671449f729,Friendly High School,14,45
+sch_552cb023cc24cc2c,St. John's Catholic Prep,14,45
+sch_607afd77c3413137,High Point High School,14,22
+sch_4c5211edbcee41f7,Takoma Academy,13,43
+sch_f7cc496f4e13bebe,Chapelgate Christian Academy,13,39
+sch_4f7d35bacf268cae,Western High School,13,34
+sch_5193f15f11f9ae92,Maryland School for the Deaf,12,111
+sch_b6561e8930bacbc3,Southern Garrett High School,12,48
+sch_e582da0a21ecb730,Bryn Mawr School,12,44
+sch_193069bf3cf0e176,Mt Carmel,12,29
+sch_df28390248d01a07,Indian Creek,12,28
+sch_2f3b7a542b46e8a0,Connelly School of the Holy Child,11,81
+sch_cccf6e7b631db85a,Coppin Academy,11,41
+sch_ba7c340bb704ff80,MD Jaguars,10,77
+sch_b459eb1bb61d7f7d,Northern MD FCA,10,67
+sch_d58b562e9a53c406,Jemicy Upper School,10,61
+sch_0b2d37dc60e1c9b7,Don Bosco Cristo Rey High School,10,41
+sch_f29e20c849bd983a,The SEED School Of Maryland,10,26
+sch_993109b46ffdc27c,St. James School,9,64
+sch_6a9a13b467de9c9d,Academy for College and Career Exploration,9,35
+sch_9b3ede232be970cd,Garrison Forest,9,28
+sch_aa72d31fbc518bc1,Northwestern High School (PG),9,24
+sch_8bc0fe212974db3e,Reginald Lewis High School,9,20
+sch_ac3e049a1652051f,Benjamin Franklin/Masonville Cove,8,25
+sch_92b19a58c141651c,Surrattsville High School,8,24
+sch_90e14bd9fa5c46aa,Beth Tfiloh,8,18
+sch_a967df04cb589cc6,Viking Throws Club,8,13
+sch_f529fae223ec0b27,Rockbridge Academy,7,82
+sch_805640256b01d28b,Crisfield High School,7,34
+sch_67ee32d4189fb8e6,Friends,7,26
+sch_60f80a8cc020c436,St Timothy's School,7,22
+sch_4233928632673b12,The Gunston School,7,19
+sch_3f5f826509d3cac5,City Neighbors High School,6,70
+sch_49adede9e4e03684,National Academy Foundation,6,40
+sch_dba32058095d653f,Holly Grove Christian,6,31
+sch_96315f2948b0fd2e,The Key School,6,17
+sch_088b3cfab2879bbd,Hancock Middle Senior High School,6,14
+sch_4903d0c09c22c521,The International High School at Langley Park,6,12
+sch_b08d071dcb36590b,St. Maria Goretti High School,6,6
+sch_343edf83d5a71189,Southern Maryland Christian Academy,5,49
+sch_1f9183b2a119f81e,Salisbury Christian School,5,15
+sch_b9953e38df083ab1,Chesterton Academy of Annapolis,5,14
+sch_647ab694e3696e01,Colonial Elite,5,12
+sch_894167794e091098,Episcopal High School,5,11
+sch_e89d7c82e6535f33,Viking TC,5,8
+sch_5b88cd305c383b53,Wye River Upper School,5,6
+sch_a4fbe7ae68e73a84,Covenant Life School,4,85
+sch_f6c0f06ea23bfc29,Lycée Rochambeau French Institute,4,52
+sch_499456991b402efa,Washington Christian Academy,4,28
+sch_0b9e4b6ff6824ba7,Bishop Walsh School,4,17
+sch_5c2ea0593186b135,College Park Academy,4,16
+sch_20c2966e2e3fd8b5,Worcester Prep,4,15
+sch_ef882a578b81c28b,Gerstell Academy,4,12
+sch_6e29e779188477d6,Springdale Preparatory School,4,11
+sch_bc51caf45e7c5839,Monocacy Valley Montessori,4,6
+sch_1a8cafc923a8b89c,Saints Peter and Paul,3,38
+sch_8afb8b80dc4059ce,The Salisbury School,3,23
+sch_47b08636ca212b9d,Calvary Christian,3,20
+sch_5c56a0c652896542,Boys Latin School of Maryland,3,13
+sch_eb34ffefa24164f0,New Life Christian,3,13
+sch_cdaab24e081ebb76,Lighthouse Christian Academy,3,12
+sch_734a3d3a06f42dc1,Friendship Academy of Engineering and Technology,3,7
+sch_ace9bd5c71454151,Seven Locks Running,2,46
+sch_8098901b2c982381,Grace Christian Academy,2,38
+sch_e92cc9d8c51a01e2,HARFORD CHRISTIAN,2,23
+sch_e81df65327eb087c,Calverton School,2,14
+sch_fe39c3311b02de9b,St. Andrew by the Bay,2,13
+sch_67bc6e31f1ef5cc9,FCA Blue Jays,2,7
+sch_37f5c06003fab2ea,New Hope Academy,2,7
+sch_3a91a6dffe6b0d92,Brookewood,2,6
+sch_b9e06fbf658cfc96,Velocity Xpress Track Club,1,8
+sch_70711617ed01fc27,Franklin Elite,1,3
+sch_03d564d986102167,Aether Track Team,1,2
+sch_cce20f796b7ffa51,Wildkat Institute,1,2
+sch_e89a6e8984f72f2a,Lightnin Tc-Dc,1,1
+sch_f86cc355ef0e8edd,Cardinal Gibbons School,0,20
+sch_2b90bb721ae879a5,Woodstream Christian Academy,0,11
+sch_04746d813552094a,St. Johns Literary Institution,0,9
+sch_61c89d8dd86e0180,Maryland Titans-MD,0,6
+sch_7bc3fbfd63cc9c8a,Holy Child School,0,5
+sch_9fe58003e6a846eb,Salisbury,0,5
+sch_3ab2f486e895b78d,Avalon School,0,4
+sch_d7c6d1081cf6391a,Catholic Youth Organization of DC,0,4
+sch_22d894e9465dee2f,Kings Christian Academy,0,4
+sch_6e3f56d795ee72c9,Saint Peter the Rock Homeschool Tutorial,0,4
+sch_b9fe6d9e256c770e,DC Legends Track Club,0,1
+sch_8fb0609ff08f4d8b,GVAA,0,1
+sch_ac5302d4df2b6409,Oldfields,0,1
+sch_93082898ec9c8792,Washington Waldorf,0,1
+sch_cab7239a931a7419,Andover High School (Closed),0,0
+sch_ba3b0d7bc5966250,Annapolis Friends Meeting Home School Association,0,0
+sch_c33bbc0713debd5a,Armor Academy,0,0
+sch_b070ca9be2f97cab,Baltimore Freedom Academy,0,0
+sch_0d9ccbcf1340f9f5,Baltimore Leadership School for Young Women,0,0
+sch_c54793d660b5123a,Barrie School,0,0
+sch_b7ba8ee49a41ffd2,Bayside High School,0,0
+sch_aa85dd8d5cc3ee6d,Beall High School (Closed),0,0
+sch_270a6dc6f38a4310,Bethel Christian Academy,0,0
+sch_2b62783daa837aa7,Bluford Drew Jemison West/ Baltimore Civitas,0,0
+sch_77add72b1be7a908,Bolling Area Home Educators,0,0
+sch_311c8f76b193bea1,Bowling Brook Prep School,0,0
+sch_c31005f02f479f6c,Broadfording Christian Academy,0,0
+sch_5073df22972d4d04,Brooklyn Park High School (Closed),0,0
+sch_c7bcc65db50118e3,Bruce High School (Closed),0,0
+sch_56ae7461cfa1d538,Cambridge High School (Closed),0,0
+sch_7431eb9161e5376c,Camp Springs Boys and Girls Club,0,0
+sch_9352c0b9e02cd0af,Charger Track Club,0,0
+sch_208687db76a33140,Charles Hickey Reformation (Closed),0,0
+sch_3c25fa01f2c2f73e,Charles W. Woodward High School (Closed),0,0
+sch_0f049f89e0eeb403,Chesapeake Christian School,0,0
+sch_f12e1f1ca6b055e9,Chestertown Christian Academy,0,0
+sch_700fbe42dd848b89,Cristo Rey Jesuit High School,0,0
+sch_3be7bfeb85010545,Croom Vocational High School,0,0
+sch_8b179bbe6dbba5b6,Dr Samuel L. Banks High School,0,0
+sch_ac8cab814ebd9c3c,Eastern High School (Closed),0,0
+sch_e2aaa9e17ed9d970,Excel Academy @ Francis M. Wood High School,0,0
+sch_0f010687c3171d73,Fellowship of Christian Athletes Vanguard HS,0,0
+sch_408e61a3c96b94c1,Flintstone High School (Closed),0,0
+sch_64007c77684f71e9,Forestville Academy,0,0
+sch_a0508ccbe784ef75,Frederick Christian Academy,0,0
+sch_6484826a9821e8fd,Friends Meeting School,0,0
+sch_9376a02735eabf68,Friendship Academy of Science and Technology,0,0
+sch_2b2558783261d104,From the Heart Christian School,0,0
+sch_6be1233295adbea7,Grace Academy​,0,0
+sch_db170dc18338b671,GWO,0,0
+sch_7b8aec38cff5bfe8,Harbor City High School,0,0
+sch_19e3fc2d6cce2f9a,Heritage Christian Academy,0,0
+sch_01ec01dc6f63e56a,Holy Child Tiger Club,0,0
+sch_9cce487a036a5132,Holy Redeemer School,0,0
+sch_977d7c3678ec7455,Homeschooled-MD,0,0
+sch_b8d2232aeb8be0b7,Immaculate Conception School,0,0
+sch_ec18609256ca94c6,Institute of Notre Dame HS,0,0
+sch_68400dc8509cdc30,Knowledge and Success Academy,0,0
+sch_df7a7b0ec0cd5c83,Lake Land MS,0,0
+sch_f6db001a1f660cab,Landover High School (Closed),0,0
+sch_ef5e41f647f3d7a0,Lions Upper School,0,0
+sch_86cfdaff6298d44e,Luther,0,0
+sch_25281fd6d0761fb6,Maritime Industry Academy,0,0
+sch_492157b626d764e4,Mark Twain High School,0,0
+sch_08aa4dcff20521e3,MCI,0,0
+sch_161a513dfe92d351,Montgomery College - Rockville,0,0
+sch_3f1d5d9fcce41c2e,Montrose Christian,0,0
+sch_3ffe87c2b1a304cd,Morrel Park MS,0,0
+sch_e95ea09f9cfe0a4e,Mother of God School,0,0
+sch_ceb8fc6b7a61975b,Mt. Airy High School (Closed),0,0
+sch_fdd78773492ee631,Mt. Savage High School (closed),0,0
+sch_59c4abc6a5040625,National Christian Academy,0,0
+sch_2e6f6324de96edec,New Era Academy,0,0
+sch_d82fd88d9ec32f6c,North Carroll High School,0,0
+sch_3efd5900c3343a5a,Northern High School (Closed),0,0
+sch_39583aed172b9381,Northwestern-BC High School,0,0
+sch_e482eb9882ab8d6f,Parkview High School (Closed),0,0
+sch_7bea90cb3dffe944,Parkville Track Club,0,0
+sch_e95f1643a5257d0b,Pioneer AC,0,0
+sch_8b3b4af39b1fe6a6,Robert E. Peary High School (Closed),0,0
+sch_2659cd1756fe81cc,Robert Frost Middle School,0,0
+sch_f96b0084522b4d35,Seton Keough High School,0,0
+sch_691c6d5935a0bfd7,Siena School,0,0
+sch_0270e6ccbf9a4a9e,Silver Oak Academy,0,0
+sch_532906ce1faaca22,Southern Senior High School,0,0
+sch_64963e1b8bd06c9f,Southside Academy (Closed),0,0
+sch_1315471a813d4357,St. Elizabeth School,0,0
+sch_153ac3e6b9db421d,St. Michael's,0,0
+sch_d22e284ef46c6520,Susquehanock High School,0,0
+sch_5806a5a159c35750,Sykesville High School (Closed),0,0
+sch_4895f80cb947fd41,Tbf Spartans,0,0
+sch_c1db7ad7b1c324c7,Thomas Jefferson,0,0
+sch_9b27d723e3535f7c,Thurgood Marshall High,0,0
+sch_bbadc13df76532da,Tome School,0,0
+sch_d47fef3e30e5d538,Towson Catholic High,0,0
+sch_35ba61508624df09,Tri-State Christian,0,0
+sch_3c4a2635bf8d1788,Victor Cullen Reformation (Closed),0,0
+sch_025cdafbdaf3e9ba,W.E.B. DuBois High School,0,0
+sch_c09cd064ec79bbdd,Walbrook,0,0
+sch_9a4d04ccca126b3f,West Nottingham Academy,0,0
+sch_fd180edb6f014c80,Westmar High (Closed),0,0

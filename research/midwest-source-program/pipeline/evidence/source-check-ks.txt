@@ -1,0 +1,45 @@
+    Blocking waiting for file lock on build directory
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.15s
+     Running `target/debug/xtask source-check ks`
++ cargo nextest run -p midwest-census -E 'test(ks)'
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling midwest-census v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/midwest-census)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.35s
+────────────
+ Nextest run ID d757d80d-4aec-4a34-b4c1-d2e96334c471 with nextest profile: default
+    Starting 31 tests across 14 binaries (407 tests skipped)
+        PASS [   0.005s] ( 1/31) midwest-census bests::tests::times_run_down_and_field_marks_run_up
+        PASS [   0.005s] ( 2/31) midwest-census sources::ks::tests::empty_ad_name_yields_none
+        PASS [   0.005s] ( 3/31) midwest-census sources::hytek::tests::pdf_page_breaks_do_not_glue_pages_together
+        PASS [   0.005s] ( 4/31) midwest-census sources::ks::tests::parses_fixture_records
+        PASS [   0.005s] ( 5/31) midwest-census sources::athleticnet::tests::marks_are_read_in_the_form_athleticnet_publishes
+        PASS [   0.005s] ( 6/31) midwest-census sources::ks::tests::malformed_json_errors_out
+        PASS [   0.005s] ( 7/31) midwest-census sources::ihsa::tournament::tests::mark_forms_seen_in_the_corpus_parse_to_canonical_marks
+        PASS [   0.006s] ( 8/31) midwest-census sources::ks::tests::empty_json_array_returns_zero_rows
+        PASS [   0.006s] ( 9/31) midwest-census sources::ks::tests::school_with_no_website_parses
+        PASS [   0.006s] (10/31) midwest-census sources::ks::tests::honorific_stripped_from_ad_name
+        PASS [   0.006s] (11/31) midwest-census sources::ks::tests::school_with_no_class_or_enrollment_parses
+        PASS [   0.006s] (12/31) midwest-census sources::hytek::tests::marks_parse_from_published_notation
+        PASS [   0.007s] (13/31) midwest-census bootstrap::tests::drain_completes_tasks_that_finish_before_the_deadline
+        PASS [   0.010s] (14/31) midwest-census sources::hytek::tests::uppercase_pre_blocks_parse_like_plain_text
+        PASS [   0.010s] (15/31) midwest-census sources::plain_names::tests::nd_index_dedupes_and_ignores_other_links
+        PASS [   0.012s] (16/31) midwest-census bests::tests::marks_print_in_the_notation_a_reader_expects
+        PASS [   0.012s] (17/31) midwest-census sources::ks::tests::fixture_ad_email_fill_rate
+        PASS [   0.014s] (18/31) midwest-census sources::wiaa_results::tests::archive_links_carry_year_stem_label_and_extension
+        PASS [   0.014s] (19/31) midwest-census sources::hytek::tests::the_trackside_template_parses_place_grade_school_and_field_marks
+        PASS [   0.015s] (20/31) midwest-census sources::ks::tests::parses_school_from_record
+        PASS [   0.016s] (21/31) midwest-census sources::ks::tests::no_cell_phones_or_principal_data_in_entities
+        PASS [   0.016s] (22/31) midwest-census bootstrap::tests::drain_counts_aborted_tasks_after_the_deadline
+        PASS [   0.017s] (23/31) midwest-census sources::ks::tests::parses_ad_coach_from_record
+        PASS [   0.017s] (24/31) midwest-census::parity_mideast ks_fixtures_match_the_golden_corpus
+        PASS [   0.022s] (25/31) midwest-census sources::compiled::tests::regional_export_parses_both_blocks_of_a_page
+        PASS [   0.031s] (26/31) midwest-census sources::xc::tests::state_blocks_carry_place_grade_and_time
+        PASS [   0.037s] (27/31) midwest-census::parity_mideast ks_collect_from_a_seeded_cache_matches_golden
+        PASS [   0.048s] (28/31) midwest-census::parser_roundtrip_properties shapes::known_identities_and_marks_survive_the_seam
+        PASS [   0.058s] (29/31) midwest-census sources::wayzata::tests::collect_mints_core_meets_from_the_provider_schedule_without_touching_the_links
+        PASS [   0.063s] (30/31) midwest-census sources::athleticnet::meet::tests::the_third_request_settles_the_marks_the_labels_already_settle
+        PASS [   0.226s] (31/31) midwest-census::recovery ks_directory_walk_claims_units_the_kill_can_lose
+────────────
+     Summary [   0.226s] 31 tests run: 31 passed, 407 skipped

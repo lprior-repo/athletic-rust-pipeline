@@ -1,0 +1,574 @@
+school_id,name,co2027,athletes_all
+sch_5e7c9b8a1ab9f526,Asheville High School,145,333
+sch_5066e9dad9a8c485,Cuthbertson High School,110,315
+sch_09c57e9b213eee5d,Green Hope,105,323
+sch_9a41c2f8848cb2db,Charlotte Catholic,104,254
+sch_8bc588f3a36b7c9f,Leesville Road,100,233
+sch_c0b8e17885b88388,Apex,91,251
+sch_ef4ebc934d34170c,Enloe,87,234
+sch_9b6dad43fdcfd93f,Hoggard,85,227
+sch_c8e66d9f05aa4c1f,Ardrey Kell,85,207
+sch_7fa22b4bc229e214,Page,84,186
+sch_6fe1b0057f1ffac8,Middle Creek,84,146
+sch_2f7fd5be31279d81,Corinth Holders,82,203
+sch_3eb512327544adc4,North Pitt,79,152
+sch_92bfa369c618c449,Holly Springs,78,206
+sch_c1b21f68318c01ed,"Hough, William A",76,181
+sch_17ec976ead6729e1,NC School of Science & Math,76,113
+sch_9abe5adb38c04216,Athens Drive,74,172
+sch_eeaf99c3154dfce1,Dixon,74,169
+sch_8553eebd77ec1c63,Hopewell,73,170
+sch_8e03d3810b05b757,Myers Park,72,194
+sch_bf68d1bc7864183d,Clayton,72,141
+sch_7ac6da2c3bff370b,Millbrook,71,180
+sch_2e5feb3ef81df56f,Apex Friendship,70,196
+sch_93cc6442c9d9270b,Chapel Hill,68,240
+sch_e044d08fe994189f,Lake Norman,67,197
+sch_8867a6c53ed9309d,Mount Tabor,66,190
+sch_2db7219f52083652,Eastern Wayne,66,122
+sch_b6a2465e9c682583,Jordan,65,237
+sch_e90a35462f24e903,Fred T. Foard,65,167
+sch_7ad49ac069ba7eae,Northern Durham,65,135
+sch_9e537b488b6cf21e,Cary,64,160
+sch_77d44c5a1a4c5836,Mooresville,64,157
+sch_118d62dddb035344,Lake Norman Charter School,64,144
+sch_df3e33731326fb79,A.L. Brown,63,145
+sch_fbaeefcb36a2ffd5,East Chapel Hill,62,186
+sch_1918a2c183187b45,Hickory,62,173
+sch_c900bada897a2c89,Ashley High School,62,156
+sch_dcf3472c88697261,Cedar Ridge,61,178
+sch_e0126ef1f3319a64,Oak Grove High School,61,165
+sch_a0ddf64343f6fb40,Bandys,61,158
+sch_096bbccbc16d324d,J. H. Rose,60,235
+sch_f4a61b375ec0d484,Marvin Ridge,59,257
+sch_b348b80160f92eba,Cardinal Gibbons,59,221
+sch_60f2b52d0c6ad71b,D.H. Conley High School,59,167
+sch_709a98a61021060e,Harnett Central,59,156
+sch_3bd8f47ae3641669,Grimsley,59,145
+sch_66b573416f053ed3,Hoke County,59,145
+sch_d3a72f228714652d,Metrolina Christian Academy,58,284
+sch_e8ed4c1b3d7ca2ef,Northside (5A),58,141
+sch_a9ac084d6be0c3c5,Julius Chambers High School,58,134
+sch_cdda133f4ab87639,Durham School of the Arts,58,130
+sch_cc8a0e21e3bf6216,East Rowan,57,139
+sch_5f6f5617975b06f5,Hendersonville,57,136
+sch_10e024ccd60b8b94,Freedom,57,135
+sch_23dc3980259b91c6,Charlotte Country Day School,56,270
+sch_25f2d2ef44a4d267,Hillside,56,155
+sch_2c85419ba90022d7,East Wake,56,148
+sch_45787d70c71938e0,North Lincoln,55,120
+sch_bf5732d1d0572317,Jesse Carson,54,140
+sch_b9eaed960143d1cb,Northwood,54,135
+sch_ffb04495aec90a97,Mountain Island Charter School,54,133
+sch_24d024a14854ffe9,Palisades High School,54,121
+sch_09f7aaba6b747d34,Concord,53,159
+sch_fb1121a796731488,Heritage,53,138
+sch_22c917c06ff92b25,McDowell,53,134
+sch_684efdbcdfde9af5,Lejeune,53,129
+sch_a444b3e4d31e46b8,Midway High School,53,123
+sch_8a107c1d110492b5,Alexander Central,52,161
+sch_919cfa0aeff39a8b,Cleveland High School,52,140
+sch_1e1ed0be40fa4517,Carver,52,95
+sch_f4cdf7681aa10864,Green Level,51,177
+sch_60943399be34716b,Franklin,51,132
+sch_d9f30111e79ea0de,Jack Britt,51,127
+sch_40c23dfa14f3fd9b,Enka,51,126
+sch_33070c177e4539de,Cherokee,51,113
+sch_1c3a677cb06edf93,East Wilkes,51,80
+sch_63a52ca084392fbd,Cape Fear,50,113
+sch_289bd432bde34eaf,Knightdale,50,91
+sch_afd3c57ad052fd0c,Fuquay-Varina,49,153
+sch_3b55679f7c0d4e72,Garner,49,123
+sch_87b7e8261f33542b,Coastal Christian HS,49,111
+sch_54afb14f23522316,Kings Mountain,49,107
+sch_0f121f26812320c1,Hunter Huss,49,95
+sch_811a599e26ceb524,East Duplin,49,89
+sch_b6846e8af4ea7b4b,Broughton,48,195
+sch_e2fa2a94b5159d6f,Anson,48,168
+sch_0cbf3e830becad61,Cox Mill,48,165
+sch_9b6c88e90197f1b6,Laney,48,160
+sch_3ef7a8b0adc98230,Mount Pleasant,48,121
+sch_6112df816f11e439,Lumberton Senior,48,119
+sch_9b36374f5d3750f6,Maiden High,48,86
+sch_7405d0ec37080b4c,Overhills,47,124
+sch_c5651a627299140a,Central Davidson,47,120
+sch_84dd0cd4545a0576,East Burke,47,111
+sch_9baa494b8e4b67e0,A.C. Reynolds,46,184
+sch_3493a4d6bdd61175,Clinton High School,46,139
+sch_e910633fda4e0741,Hibriten,46,128
+sch_1359bd768d2305de,E.E. Smith,46,95
+sch_fe57e32e0e8b109b,Hertford County,46,81
+sch_0987553761af5386,Mallard Creek,45,183
+sch_18a6d18b90066908,Hickory Ridge,45,142
+sch_79d1bb1e42261ff4,Atkins,45,124
+sch_56e06f9a4fe30476,North Henderson,45,124
+sch_c9304c79d413c146,Ledford,45,122
+sch_ed2ae71365024892,Croatan,45,115
+sch_07d2665e9663bfdd,Independence,45,100
+sch_3a193b5b83182c97,Garinger,45,99
+sch_d429973dcce8b52f,Heide Trask,45,97
+sch_b09202fe102b64ed,Monroe,45,97
+sch_74f65e99e2a3dc55,Christ School,45,87
+sch_bee917d4470548e3,Cary Academy,44,251
+sch_a3651dbe613d5855,Ashbrook,44,174
+sch_e732c6ed0833aa3d,Northern Nash,44,135
+sch_a42f734d4ce09c3a,East Gaston,43,95
+sch_60513826aad1885a,Eastern Alamance,43,83
+sch_87e1c08af8d0efb6,Charlotte Latin,42,211
+sch_2814d84c718e0991,Davie County,42,133
+sch_9860fe6dde339e59,Northeast Guilford,42,115
+sch_7e6c689e2f1eeed3,New Bern,42,105
+sch_ed6b9427d4e9ca6f,Fayetteville Christian School,41,242
+sch_25c2c952af3be1d7,Lincoln Charter,41,117
+sch_7df71240fbb36687,East Lincoln,41,101
+sch_2e83db98da627967,Eastern Guilford High School,40,129
+sch_a48e9d67f6c9df4f,Northern Guilford,40,122
+sch_371868b17383f5e6,North Brunswick,40,120
+sch_d9f71a7f80c43448,Gray's Creek,40,116
+sch_3c4cf4f96b4ece15,Northwest Cabarrus,40,109
+sch_ce893507902877c0,Albemarle School,40,104
+sch_5a6c0913e82dd45b,Montgomery Central,40,103
+sch_e8fd74509f7d3661,Kinston,40,84
+sch_b012d56d14622628,Covenant Day School,39,297
+sch_da59a366971915b7,Northwest Guilford,39,125
+sch_f7f324e2ceba4ea1,East Davidson,39,107
+sch_11980c8e0bc19a74,Martin County High School,39,106
+sch_0b93197890c62a41,Bunker Hill,39,97
+sch_c856dafe27879896,East Forsyth,39,97
+sch_986ad3d9d3de241a,Christ the King Catholic School,39,90
+sch_392e4ad27d8c1fcc,Hobbton High School,39,88
+sch_2481b9418ef7af6e,Bonnie Cone Leadership Academy,38,186
+sch_5dc661169b548193,Clyde A Erwin High School,38,114
+sch_46a37afabd24d171,Franklinton,38,84
+sch_638c96205f5f7cdf,NCSSM - Morganton,38,63
+sch_fbf06982c7c8a370,Corvian Community School,37,126
+sch_c07f4433ea5f8220,Northside (1A),37,104
+sch_dfd4a75133bf984d,Central Academy of Technology,37,102
+sch_0b0aac80287eefc6,Forest Hills,37,77
+sch_1e62281d165160a3,Durham Academy,36,176
+sch_7909d337e11df9ae,Havelock,36,120
+sch_9649c1988558aaa5,North Mecklenburg,36,95
+sch_e8988e38abf4d088,Cherryville,36,82
+sch_92e19066c111bf07,Fike High School,36,79
+sch_3034e25212a4295b,Charlotte Christian,35,191
+sch_6ca9229b6d5e3e23,Charles B. Aycock,35,128
+sch_f8809bb3a6de1861,Butler,35,105
+sch_b08f6cdef2046b42,East Henderson,35,103
+sch_e0df4a372eaa7101,Fairmont,35,99
+sch_381363e74aeaa524,Madison,35,95
+sch_7ca9f6027d6ed91c,Highland Tech,35,92
+sch_a91aa78ad534daac,Mountain Heritage,35,77
+sch_5ae373e95212fc9a,Ayden-Grifton,35,74
+sch_0fd1847ed3e9cb3c,Lexington,35,72
+sch_754108ecc0d70445,Hunt High School,34,135
+sch_65cd682670982cfa,Jordan-Matthews,34,132
+sch_604ea3537ac31471,Orange,34,112
+sch_d3a55ef4ef74e87b,East Mecklenburg,34,95
+sch_6946651be8e5bf4b,Jacksonville,34,92
+sch_8b85e62bb86bc3ec,J.F. Webb,34,90
+sch_2efd4dd00ba88bb3,North Buncombe,34,88
+sch_c95e22d9c83ae3a6,Newton-Conover,34,87
+sch_b446a5cf1d823a59,North Lenoir,34,84
+sch_d9c30dd29b7f6209,East Surry,34,75
+sch_38732390384cb36f,Cannon School,33,174
+sch_1b45a333a6837191,Bishop McGuinness,33,105
+sch_9cf0967fac5bc21f,Central Cabarrus,33,91
+sch_14fbfa49395367d6,North Davidson,33,89
+sch_dcaf326b2edb5775,New Hanover,33,83
+sch_213b40d7b3589b13,Burns,33,72
+sch_19b3b474cf0b1eb1,North Raleigh Christian Academy,32,233
+sch_2c66588946b6d66b,Bradford Prep Charter School,32,185
+sch_52967d076f70a8aa,Morehead,32,120
+sch_7aeca74ed79a1dec,Ashe County,32,112
+sch_d4fa2ab7b65cdb1b,Community School of Davidson,32,82
+sch_488f5529096cfc45,Crest,32,73
+sch_7f46f14c8fe3c1a3,Carrboro,31,106
+sch_e3dc43f63985e12e,"Owen, Charles D.",31,105
+sch_442ec6018a90a920,Murphy,31,93
+sch_902b4aac0dc0f36a,Forbush,31,92
+sch_834451153e342296,Farmville Central,31,89
+sch_3a989aa2ff35ca18,Lee County,31,88
+sch_7b28f5969cde5a53,Dudley,31,74
+sch_921801a8f44ac5fa,Elkin,31,62
+sch_296f0faf3d62af66,Nash Central,30,109
+sch_4872e7d76d1ae7cc,Asheboro,30,93
+sch_8bdf41698adf5b6d,Lincolnton,30,92
+sch_934b1c9bb8a99632,Douglas Byrd,30,81
+sch_c9f7decacd68d110,North Gaston,30,70
+sch_f9dacfc8940ce8d8,Avery County,30,61
+sch_c53c21707af0870b,Forestview,29,184
+sch_112fe73eb1ed428c,Brevard,29,87
+sch_e6843208323f4c4d,Greene Central,29,85
+sch_f930e4e06951fd95,Olympic,29,83
+sch_7dddc1aa0f54f11e,North Wilkes,29,81
+sch_1a956b9cb97351be,College Prep Leadership Academy,28,164
+sch_486f80fd81e5c32f,NC Leadership Academy,28,158
+sch_602f9a17d7285126,Cape Fear Academy,28,142
+sch_2dc82617412de570,North Johnston,28,112
+sch_b23e66cdc120d0c5,Jay M Robinson,28,85
+sch_5c43581ee899b12a,North Duplin,28,85
+sch_dbd97c089a3354ce,High Point Central,28,67
+sch_e492b21c21e7bee5,Ben L. Smith,28,56
+sch_7b5e7e9edf7bb760,Forsyth Country Day School,27,148
+sch_7c9a7f8a6e6d3166,Calvary Day School,27,134
+sch_b282450891b24cec,Currituck County,27,122
+sch_748068a864999692,Alleghany,27,84
+sch_cdbefffcc672f5d9,North Forsyth,27,61
+sch_efee082a6c4753d3,Bartlett Yancey,27,39
+sch_c4f4a0c8e1c62f73,Ballantyne Ridge,26,157
+sch_7b1d078b7ed2d18b,Grace Christian (Raleigh),26,152
+sch_534481504f4455a0,Carolina Day School,26,94
+sch_6456f9e4341c2bdc,North Moore,26,77
+sch_0b6d4a20ccfe1b1a,East Carteret,26,73
+sch_46ea90d874094f63,Louisburg,26,53
+sch_e4c6abdafa9fef11,North Stanly,26,48
+sch_3bc630119fd17399,Asheville Christian Academy,25,126
+sch_e6fe1f338d12946b,Gray Stone Day School,25,111
+sch_ec439af497c86838,Hickory Grove Baptist Christian School,25,101
+sch_ae40222d44f1ee40,High Point Christian Academy,25,89
+sch_d8b02ccc1f9de5dd,North Rowan,25,71
+sch_85a8b3109667e41e,East Rutherford,25,70
+sch_fbc053d1cec1aa8f,Hayesville,24,81
+sch_4c2d7cfa6a2e9e36,Cornerstone Charter Academy,23,148
+sch_bcb5cccab1441c18,American Leadership Academy - Johnston,23,109
+sch_b74b4a5bcd3fe0d9,North Iredell,23,108
+sch_a4d1f3dedff2ee68,Bunn,23,79
+sch_26ac040a2e9cd5a8,Neuse Charter School,23,40
+sch_76e7f008786a45c0,Gaston Christian School,22,189
+sch_34710c0889c2e1c5,Bertie,22,116
+sch_7fe7143c4ecacc55,North East Carolina Preparatory,22,87
+sch_5f6722762bc52f28,Gates County,22,74
+sch_12939ee18df08a84,Manteo,22,52
+sch_c1dfae463e677336,McMichael,22,47
+sch_1d01c7152b33f81e,First Flight,21,100
+sch_337ba028c8eb2bc8,New Life Homeschool,21,80
+sch_c8b1469763d5b7d3,Chase,21,75
+sch_06c1635d4292454c,Draughn,21,73
+sch_551037f9397253b3,Lakewood,21,72
+sch_c37be2c4295f992d,Eastern Randolph High School,21,62
+sch_c23dd18eaf032cf9,E.E. Smith Unified Track & Field,21,61
+sch_6c712a330d52e074,Mitchell,21,60
+sch_b68e20cca2bf4ef7,Glenn,21,49
+sch_aed175c80502e0d2,Harding University,21,41
+sch_29c578be933e39e0,Franklin Academy,20,79
+sch_d960ee2e20313b22,North Surry,20,61
+sch_eb7877c0368517c0,Goldsboro,20,52
+sch_2ed8bcfbf4d2b6bb,Northampton County,20,48
+sch_78b31a6c7f6461b4,"Beddingfield, E.T.",20,41
+sch_d506d87b7b21bc97,"Cummings, Hugh M.",20,37
+sch_7dd1a89496d7c414,Forsyth Home Educators,19,149
+sch_559f403ce62a4c39,Andrews,19,133
+sch_1e567b5aae5449a2,Mount Airy,19,62
+sch_7c448d6769ca6a38,Northwest Halifax,19,45
+sch_2404dfea909c9585,Chatham Central,19,37
+sch_edf653d79dba2891,Greensboro Home School,18,102
+sch_3c9a46fc4be39f0c,Jackson Day School,18,74
+sch_4560f44ea9c0641e,John Paul II Catholic High School,18,64
+sch_4f625ee232101406,John A. Holmes,18,60
+sch_81dffb2a5e8c1b47,Fayetteville  Academy,17,94
+sch_2fe3182f5d39d145,East Bladen,17,65
+sch_0a772819caf04d31,Bessemer City,17,56
+sch_84833d38c211dd8f,Camden County,17,47
+sch_2a4d267a85b4cfe4,Granville Central,16,75
+sch_33c7143b01ae3714,James Kenan,16,46
+sch_4424cbb6f287e5a3,Northeastern,16,44
+sch_cd0c391eef55dfd6,IC Imagine,15,164
+sch_1b210f3db5e7d922,Ascend Leadership Academy HS,15,92
+sch_96860de570145d17,Cary Christian,15,87
+sch_6f4283ba244c11e1,Ambassador Christian,15,49
+sch_e155459bbb1c71c9,KIPP Pride HS,15,39
+sch_dd3f593602841424,Chatham Charter HS,15,37
+sch_22aaf44066fce370,New Garden Friends,15,27
+sch_ff906bd5857bac99,Hickory Christian Academy,14,99
+sch_deb3720cc4100619,Fr. Vincent Capodanno High School,14,61
+sch_f212e0afeb014a9b,Davidson Day School,14,56
+sch_eade0a690730f6e9,Fayetteville Homeschool Crusaders,13,147
+sch_587235c18afcaeba,Cary Fire Homeschool,13,110
+sch_f85c96e6c9635c01,Langtree Charter Academy,13,106
+sch_012ba68fe4e6ebd4,East Wake Academy,13,51
+sch_cc6f85ca9ef4cea6,Carmel Christian School,12,148
+sch_1640f95a05ad24ac,Carolina International School,12,128
+sch_fb5dfa9ae929b085,Henderson Collegiate,12,104
+sch_b9f2b86a6f2d2ba7,Heritage Leadership Academy,12,65
+sch_a0d68e10cdf24a11,Graham,12,55
+sch_25a8b0a86393aa30,Onslow Early College High School,12,33
+sch_86a94bf0646d9c0a,East Columbus,12,31
+sch_ee3477be5c65b9a4,Hoggard Unified Track & Field,12,28
+sch_edf454934e033c28,Greensboro Day School,11,178
+sch_1a50036e64ed18c3,Grace Christian School (Sanford),11,89
+sch_6be163ba884d4340,Asheville Trailblazers,11,81
+sch_2385c5aa0dac28da,Gaston Day School,11,57
+sch_37faff29b054475e,Jones,11,31
+sch_be8d3f13149aa1ec,Apex Unified Track & Field,11,29
+sch_90f41cd6990aff45,Liberty Prep Christian Academy,10,102
+sch_06e6a861ce3ef842,Millennium Charter Academy,10,67
+sch_7698127814aa14d0,Grace Christian Academy HS (Haw River),10,51
+sch_c21acf4808c387fd,Carolina Friends School,10,43
+sch_2b140a8a09e1da6c,DashUnited XC High,10,43
+sch_c1f94dd4e4e5c3cd,Arendell Parrott Academy,10,37
+sch_ebe86439e057bd9f,Green Hope Unified Track & Field,10,31
+sch_7ccb1e8c9175a5ab,Chapel Hill Cheetahs,9,119
+sch_116a403e13c29373,Eno River Academy,9,89
+sch_bc5b390d97a4dee3,Excelsior Classical Academy HS,9,67
+sch_aabb4daad3a52350,Caldwell Academy,9,58
+sch_81fd8dcf5ea6df72,Greenville Christian Academy,9,46
+sch_70ef93597f2243c9,North Edgecombe,9,28
+sch_6bf89cd87cbd5e74,Bear Grass Charter School,9,25
+sch_3b9febea79164f4f,Drexel High School,9,9
+sch_844999a5dde1993d,Faith Christian School,8,42
+sch_ca8f2aa7d6d05a23,Elite Xpress,8,38
+sch_0852a740d4e6c3b2,Crossroads Christian School,8,24
+sch_de07b974eea93ede,New Hanover Unified Track & Field,8,15
+sch_000640ea68462143,Apex Thales Academy,7,67
+sch_342726a8316bd2c8,Hawbridge School,7,63
+sch_9c9a404663fe6a35,Oxford Preparatory High School,7,39
+sch_4c13ef0f59ac3c34,Community Christian Academy of Gaston County,7,35
+sch_a000f6e3f77eb57e,North Hills Christian School,7,30
+sch_c39d5949026ed601,North Stokes,7,28
+sch_75a62cdf997d624d,Covenant Classical School,7,27
+sch_58ccd0212ba055d1,Greenfield School,7,23
+sch_2b846f8cf9c1094a,Freedom Christian Academy,7,20
+sch_e9adf45cbb0c24f3,Laney Unified Track & Field,7,15
+sch_a88c2e0f5aa2707b,North Brunswick Unified Track & Field,7,10
+sch_fbe397b83c09d879,Greater Cabarrus Athletic Association,6,83
+sch_1b311dc828df185e,Asheboro Hybrid Academy,6,49
+sch_b897d4ce1c6b33dd,Imago Dei Classical Academy,6,39
+sch_092ad242f0310ea8,Eastern NC Homeschool (HS),6,28
+sch_befa2e5c82549244,Franklin School of Innovation,6,24
+sch_cdac96368d5e91ad,Nantahala,6,21
+sch_167bb06fe8e4bf60,Mount Pisgah Academy,6,14
+sch_4255acb393f12e19,Highlands,6,11
+sch_7fe0e0225f173c3c,Burlington Christian Academy,5,117
+sch_532cf7fa3fb644d7,Living Water Christian School,5,97
+sch_96d8e26f97ebc93d,Clover Garden School,5,75
+sch_837710e5aabc0aae,Lee Park Prep,5,49
+sch_756bf689b16c573b,Macon Early College,5,22
+sch_5a4427fc90e5ae5b,Christ the Cornerstone Academy - HS,5,15
+sch_ad87758854c3918e,Mt Zion Christian Academy,5,10
+sch_a3dde17ef0e5f01b,Ardrey Kell Unified Track & Field,5,5
+sch_f8d2232a743fa36c,Columbia High School,5,5
+sch_3ac7eb38ca154361,Commission Leadership Academy,4,81
+sch_2c8a174b4ef80a4c,Bethany Community School,4,53
+sch_7876ab68a13cda7e,Durham Charter,4,47
+sch_ca2fbcd1b21495ce,Cape Fear Christian,4,45
+sch_a9fcaa7fb7809e1c,Hiwassee Dam,4,39
+sch_3d3a916b7edf426f,Faith Academy Charter School,4,34
+sch_e324f87255e60670,Lighthouse Eagles,4,33
+sch_b4b29b07acfa2715,Calvary Christian Academy High School,4,32
+sch_a115bbcc78477ef4,Gospel Light Christian School HS,4,30
+sch_d5839ff5f13b256d,Lee Christian School,4,29
+sch_79f4f83c7c930241,Cape Hatteras,4,16
+sch_17aa3eed57eba62f,Jack Britt Unified Track & Field,4,13
+sch_8e5a6cd3b64b8b3c,Eastern NC School for the Deaf,4,8
+sch_6e154419a96ccfda,Ashley Unified Track & Field,4,7
+sch_0f10ec2374e2ebe8,Alpha Academy,3,53
+sch_3dd0a70b6725c2c0,Arborbrook Christian,3,39
+sch_de0edac07954afeb,Christ Covenant School,3,28
+sch_e12da40c4ae3a119,John Yowell Academy,3,28
+sch_af69bd9c65d3eefa,Epiphany School,3,27
+sch_ccc3cb1cd64af55e,Hilltop Christian School,3,25
+sch_3bc587d5fe1d3e03,Falls Lake Academy,3,24
+sch_5b95f62877abdf3a,Iron Academy of Raleigh,3,23
+sch_fd205efd4abd5f59,Faith Christian School - Ramseur,3,22
+sch_d526359ef35a9116,Lake Norman Christian School,3,22
+sch_ef3d09c765994719,Northwood Temple Academy,3,21
+sch_18be602c9c67e403,NorthPoint Christian Academy,3,20
+sch_a7fe29cc6e59c331,Ocracoke High School,3,19
+sch_bed81c4b1cdcfa28,Berean Baptist Academy,3,18
+sch_1a2a42c552fb2559,Cristo Rey Research Triangle HS,3,14
+sch_edb8a87f0f7d92b9,Haywood Christian Academy,3,14
+sch_34a21417a25004cd,Hayworth Christian School,3,14
+sch_041226fa1b9e05c8,Bethel Christian Academy,3,7
+sch_f4ac7b17456e94b9,Clayton Unified Track & Field,3,5
+sch_dbfe97d2b3bfcd6d,Northside Christian Academy,3,5
+sch_c6e36d807e77f5b3,Garinger Unified Track & Field,3,4
+sch_e608b4516dbe5a46,Athens Drive Unified Track & Field,3,3
+sch_af4781a47ba50dfa,Northern Guilford Unified Track & Field,3,3
+sch_ec36cbeb9e12dca7,Carolina Day MS,2,59
+sch_be62f5f70e2fc066,Alamance Christian School,2,50
+sch_543feccffe3d856c,Lake Lure Classical Academy,2,36
+sch_4166b26b9982df6d,Cathedral Oak Academy HS,2,35
+sch_d2dc6a31f7bb2f1d,Denver Christian Academy,2,35
+sch_e2ab3d6ff08c2755,Haw River Christian,2,30
+sch_b95f9ea8fb7d6d39,Nebo Crossing Academy,2,22
+sch_c93e5babc3af5e88,Faith Christian Academy,2,14
+sch_2d47142fa78ee758,Garner Homeschool,2,13
+sch_9d8b182e0a5088bf,Long Shoals Wesleyan Academy,2,13
+sch_a25a4163d20b5768,Community Christian School,2,11
+sch_dbaf8cfcfa0147c0,Broughton Unified Track & Field,2,10
+sch_e585e82c1ca2ef98,Friendship Christian School,2,10
+sch_84e1594652f55697,Hobgood Charter School,2,9
+sch_58b2cf9c63eac13b,Liberty Christian Academy,2,9
+sch_26fce2c13b507c47,Charles B. Aycock Unified Track & Field,2,8
+sch_9b20a6afe96bcf64,Carter G Woodson Charter School,2,7
+sch_9f7441b2321e1877,Garner Unified Track & Field,2,7
+sch_5a9aebdd18a0027d,Grace Christian School (Newport),2,7
+sch_0319b0532b0595a8,Gramercy Christian,2,5
+sch_c8dd11c2d1170482,Jacksonville Christian,2,5
+sch_ab2ed3472a9339a6,Cresset Christian Academy,2,4
+sch_16216f412f987c8f,Knightdale Unified Track & Field,2,3
+sch_a4eb0a708ecc154a,Laramie Prep,2,2
+sch_10ae1bdc23664451,Central Carolina Academy,1,58
+sch_2eac4187c648e96a,American Leadership Academy Coastal,1,56
+sch_dc87dd080e3d7a36,Chatham Thunder Homeschool,1,50
+sch_04cf9c5545d8c4e4,Legacy Homeschool Athletics,1,47
+sch_295e637ca0a8c458,Carolina Mountain XC,1,35
+sch_6686c2608fee9b92,Pamlico Christian Academy,1,27
+sch_203c80076c5fa9a4,Bradford Academy,1,17
+sch_415fcffa2d668c16,New Bern Christian,1,16
+sch_6eb477b3ed655fe0,Oak Level Baptist Academy,1,15
+sch_05fc54f3376c94bc,Cornerstone Christian Academy (HS),1,12
+sch_04682593165181b0,North Carolina School for the Deaf,1,12
+sch_d898b48301045b91,Halifax Academy,1,9
+sch_481179323113a7b4,Lawrence Academy,1,9
+sch_5706187f070b57ca,North Johnston Unified Track & Field,1,9
+sch_9151bbb384363ad2,Bunker Hill Unified Track & Field,1,7
+sch_83f40fd580538a78,Mattamuskeet School,1,7
+sch_44dca105c4f28b22,Neuse Christian Academy,1,7
+sch_40657053efdd8982,Cary Unified Track & Field,1,6
+sch_d86ac64cd9195905,Fuquay-Varina Unified Track & Field,1,5
+sch_4c4798e3973b9e9d,Cary NC Homeschool,1,4
+sch_0a7d1a84baf251f9,Cleveland Unified Track & Field,1,4
+sch_fbf19be583ecc9ca,Noble Academy,1,3
+sch_d4a81677288bf567,Early College HS,1,2
+sch_ac6ef181544acf92,Overhills Unified Track & Field,1,2
+sch_afd6cdfd1276e069,East Mecklenburg Unified Track & Field,1,1
+sch_c2e2ba98431f6bf1,Enloe Unified Track & Field,1,1
+sch_48818f925cdb3360,Harding Unified Track & Field,1,1
+sch_8263631fa13cc890,Haywood Early College High School,1,1
+sch_2834689cbeac3ee0,Kmr Athletics,1,1
+sch_93cd72a10fad3c38,Felton Grove High School,0,190
+sch_a5b75e7031719ee0,Community Charter School,0,39
+sch_bce3cc4de694354c,Cramerton Christian Academy,0,25
+sch_45237278bb0e6958,Exploris,0,22
+sch_52d698b03a457b15,Brevard Academy Charter,0,21
+sch_39cbd526d9aaa2b1,Freedom Academy,0,20
+sch_1e533a08e52e4857,Grace Academy,0,19
+sch_06f732fd604b369a,Millersville Christian Academy,0,17
+sch_90e6932f6575f3b7,Carolina Collegiate High School,0,14
+sch_4b3947b1423fbcc3,HOPE Academy HS,0,11
+sch_6df78187cec17f2c,British International School of Charlotte,0,8
+sch_09948da891d17344,Cornerstone Christian School,0,8
+sch_f8474a48f59f539e,Arapahoe Charter School,0,7
+sch_b98874d525b56323,Concord First Assembly Academy,0,6
+sch_ed7ad5a89d0fc239,Emerson Waldorf,0,6
+sch_dd36a19548878737,Iredell Charter Academy,0,6
+sch_8e077540e37dfdc4,Grace Covenant Academy HS,0,4
+sch_2c9d104f56b1dd1d,Northwood 'B',0,4
+sch_6d7fef5360ee93a1,Falcons Elite Track Club,0,3
+sch_b26e1077f6abb5d1,Kerr-Vance Academy,0,3
+sch_6d256f905300215b,Keen Christian Academy,0,2
+sch_4ac80dcfee0518b2,Leaf Foundation Elite,0,2
+sch_768c926eff9d3e51,Coastal NC Homeschool Athletic Association,0,1
+sch_7e19bf9b2b5e0844,Combine Acadmey,0,1
+sch_44ec3c7b511f2ebf,Gloria Dei Prep,0,1
+sch_37e90baa4ab595e5,Lowcountry Prep,0,1
+sch_40d2809a9eea7c74,Normandy Ridge School,0,1
+sch_880a95c8d8502b17,A.L. Brown Unified Track & Field,0,0
+sch_a42135a7da9215e3,Academy of Coastal Carolina,0,0
+sch_83f09cd89b786867,Alamance County Home Educators,0,0
+sch_842c40cafb997639,Amandla Academy,0,0
+sch_268bcf0b6c88cca1,American Hebrew Academy,0,0
+sch_95bf4324a7ac3643,Apex Friendship Unified Track & Field,0,0
+sch_9dc6f4a9817dcf69,Apex Home School,0,0
+sch_a4c1bf50799e2fa9,Apprentice Academy High School,0,0
+sch_d91a07f9d66fb1a5,Ashe Schools of Home Education High School,0,0
+sch_c302c764948388b5,Bass Academy,0,0
+sch_decb68d4e115b504,Ben L. Smith Unified Track & Field,0,0
+sch_6e1ad22c142557ba,Berry Unified Track & Field,0,0
+sch_f5a566181c1f17a3,Blue Ridge,0,0
+sch_199e2ed8a73bc354,Blue Ridge Christian Acad,0,0
+sch_b9f0a11c8708305b,Bounding Xpress,0,0
+sch_784b72955c39fb25,Butler Unified Track & Field,0,0
+sch_26832c3a86b83872,Cabarrus Home Educators,0,0
+sch_5cc1a8730c9a428e,Camel City Distance Project,0,0
+sch_b8f6fba075fdfe61,Camelot Academy,0,0
+sch_68f447d5eca84333,Canongate High School,0,0
+sch_3758bdd318aafde6,CAP 7,0,0
+sch_091f74076fb9adf8,Cape Fear Unified Track & Field,0,0
+sch_dcf7d33179b75a7a,Capitol Encore Academy HS,0,0
+sch_c4516672a3e1809b,Carolina Christian,0,0
+sch_a362d554b97c3d6a,CAROLINA UNIVERSITY,0,0
+sch_845c0dee9af53ece,Catawba Valley CC,0,0
+sch_b82ecb91f85b4397,Central Academy at Lake Park,0,0
+sch_b355ae93878b4eff,Challenger High School,0,0
+sch_0f7de98b99eae632,Chapel Hill High Tigers,0,0
+sch_1370bbba65a6e569,Chapel Hill Unified Track & Field,0,0
+sch_f1568b755b24373d,Charlotte United Christian Academy,0,0
+sch_c3e6f5c4f3c6f214,Chatham Home Educators,0,0
+sch_84d53958c6be5060,Christian Family Academy,0,0
+sch_16301447f6ae18a9,Cleveland County Home School,0,0
+sch_69cbd167e661ba3e,Comenius School,0,0
+sch_3b1bd9d99feae93b,Community Baptist School,0,0
+sch_43f63673693e3e16,Conswella Bridges,0,0
+sch_ec6c5865e7376b21,Corinth Holders Unified Track,0,0
+sch_17d7127586c66736,Covenant Preparatory,0,0
+sch_789f081ec4e8d9f2,Creswell High School,0,0
+sch_32a350b9236f9ac7,Douglas Byrd Unified Track & Field,0,0
+sch_ade66cb5adc4e064,Dudley Unified Track & Field,0,0
+sch_b7ee415e2a36133d,Durham High School (Closed),0,0
+sch_87abfaf066e5ebb5,East Chapel Hill Unified Track & Field,0,0
+sch_11b74d1c20f7f630,East Montgomery,0,0
+sch_17a6158256c33cb9,East Rowan Unified Track & Field,0,0
+sch_241b367bd2d6662e,Edneyville High School (Closed),0,0
+sch_1a22d304474a8946,"Elon School, The",0,0
+sch_cccc99b23decd286,Evelyn Mack Academy,0,0
+sch_e31da807f9d22493,Explorer’s Quest for Knowledge,0,0
+sch_a9411ca7bdf11648,Fast Friends,0,0
+sch_c82a5902515eee9c,Fayetteville Street Christian Academy,0,0
+sch_49430be2697f0b49,Felton Grove Unified Track & Field,0,0
+sch_e32a2370b3141fd9,Flora MacDonald Academy,0,0
+sch_5bd3796213777f4c,Forsyth Academy,0,0
+sch_cbc0706505c07c1b,Francine Delany New School,0,0
+sch_634c7b364c370948,Gray's Creek Unified Track & Field,0,0
+sch_93186507f2596240,Greater Vision Academy,0,0
+sch_c6f49c86ef105657,Green Level Unified Track & Field,0,0
+sch_ae020a04b539508e,Greensboro HS,0,0
+sch_eb259df012657ebe,Greyfriars Classical Academy,0,0
+sch_e615412428052ae1,Griffith,0,0
+sch_35431406ad8d1950,Grimsley Unified Track & Field,0,0
+sch_b70a2cfefe8e0e1f,Guilford Day,0,0
+sch_c68ebace0cabf055,Harnett Central Unified Track & Field,0,0
+sch_426fa242547ae840,Harrells Christian Academy,0,0
+sch_3c58ef3d0e41f1b1,High Point Home Educators,0,0
+sch_f878b2780aa164a9,Holding 1,0,0
+sch_a9d9085606cb861d,Holly Springs Unified Track & Field,0,0
+sch_bc2b5fe2e40fb9e1,Hopewell Unified Track & Field,0,0
+sch_ede99815495886d7,Hough Unified Track & Field,0,0
+sch_e413ce42dc1bc13c,Independence Unified Track & Field,0,0
+sch_e6700c0baddecf79,Invest Collegiate Imagine,0,0
+sch_805e15a63d22f8e7,Jacksonville Unified Track & Field,0,0
+sch_0e21d137b961d529,Jamesville High School (Closed 2010),0,0
+sch_d8ab5906eecd5ffc,JDL Fast Track,0,0
+sch_6e6b15524bb33628,Julius Chambers Unified Track & Field,0,0
+sch_f752f5c3b72ef326,Kestrel Heights Charter School,0,0
+sch_b874cef4d291d66e,ldon High,0,0
+sch_1e1a691500be25e5,LifeSpring Academy,0,0
+sch_eec945d538c068d4,Mallard Creek Unified Track & Field,0,0
+sch_8007b886468ec8eb,Millbrook Unified Track & Field,0,0
+sch_57a260aee754361d,Millennium Academy,0,0
+sch_ad53eabad5ec8fb0,Millers Creek Christian,0,0
+sch_da10020368a9b289,Mintz Christian Academy,0,0
+sch_0dcc2b08be6eb687,Montessori of Raleigh,0,0
+sch_30889ada5e43ae60,Moore Home Educators,0,0
+sch_dcee7146730eb8ff,NC School of the Arts,0,0
+sch_25c391648ee02423,NCCSA,0,0
+sch_58b73882b1c0b433,NCHSAA,0,0
+sch_2479f00b5b213733,NCRunners,0,0
+sch_6b973fe892b0c0c7,Neuse Charter Unified Track & Field,0,0
+sch_8499fc6ba3042962,New Life Academy,0,0
+sch_bef97575acf84b36,New Life Christian Academy,0,0
+sch_4f4a31cc6ed3851b,Norlina Christian School,0,0
+sch_53d6535fc3686ab1,North Charlotte Running Club,0,0
+sch_a3189c9f68e07ab7,Northeast Academy,0,0
+sch_3056feffba1e3151,Northern Vance,0,0
+sch_d8db6573cc9f52b8,Northwest Forsyth (Closed),0,0
+sch_cee08d2c25d80aba,Northwest Guilford Unified Track & Field,0,0
+sch_96242b170030a936,Northwood Unified Track & Field,0,0
+sch_6a9d17ef03c05742,Oak Ridge Military Academy,0,0
+sch_30c106cd8eb8c885,Oakes Academy,0,0
+sch_0172e5e11015aeed,Olympic Unified Track & Field,0,0
+sch_c4417a69cd4fa368,Orange Charter School,0,0
+sch_b9f22768fe802e40,Paddyfote Learning Center HS,0,0
+sch_0969f7e4b56d75fe,Page Unified Track & Field,0,0
+sch_a1f5c59f645035e8,Palisades Unified Track & Field,0,0

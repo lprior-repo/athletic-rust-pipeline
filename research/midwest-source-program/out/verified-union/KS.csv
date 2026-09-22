@@ -1,0 +1,557 @@
+school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed
+Abilene HS,Abilene,KS,,Athletic Director,,,Derek Berns,dberns@abileneschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wabaunsee HS,Alma,KS,,Athletic Director,,,Jeron Weisshaar,jweisshaar@usd329.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Northern Valley HS,Almena,KS,,Athletic Director,,,Jessie Thalheim,jthalheim@nvhuskies.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andale HS,Andale,KS,,Athletic Director,,,Jeff Buchanan,jeff.buchanan@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andover HS,Andover,KS,,Athletic Director,,,John Heise,heisej@usd385.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chaparral HS,Anthony,KS,,Athletic Director,,,JC Zahradnik,jcz@usd361.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Argonia HS,Argonia,KS,,Athletic Director,,,Cole Griffin,cgriffin@argonia359.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Arkansas City HS,Arkansas City,KS,,Athletic Director,,,Aaron Bucher,aaron.bucher@usd470.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Arma-Northeast HS,Arma,KS,,Athletic Director,,,Piper Richardson,prichardson@usd246.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ashland HS,Ashland,KS,,Athletic Director,,,Jesse R Stebens,jstebens@usd220.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Atchison HS,Atchison,KS,,Athletic Director,,,Tyler Lueckenhoff,tyler.lueckenhoff@usd409.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maur Hill-Mount Academy,Atchison,KS,,Athletic Director,,,Addrianne Raplinger,araplinger@mh-ma.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Attica HS,Attica,KS,,Athletic Director,,,Scotty McCartney,scottym@usd511.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Rawlins County HS,Atwood,KS,,Athletic Director,,,Deone Horinek,dhorinek@usd105.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Augusta HS,Augusta,KS,,Athletic Director,,,Brandon Terry,bterry@usd402.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Axtell HS,Axtell,KS,,Athletic Director,,,Jayson Tynon,tynonj@usd113.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Baldwin HS,Baldwin,KS,,Athletic Director,,,Dayton Valentine,dvalentine@usd348.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Basehor-Linwood HS,Basehor,KS,,Athletic Director,,,Shawn Phillips,sphillips@usd458.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Baxter Springs HS,Baxter Springs,KS,,Athletic Director,,,Cord Baldwin,baldwic@usd508.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Belle Plaine HS,Belle Plaine,KS,,Athletic Director,,,Mike Wilmott,mwilmott@usd357.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Heights HS,Blue Rapids,KS,,Athletic Director,,,Thomas Tryon,ttryon@valleyheights.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ell-Saline HS,Brookville,KS,,Athletic Director,,,Brian Rowley,browley@ellsaline.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Buffalo-Altoona Midway HS,Buffalo,KS,,Athletic Director,,,Sean Price,sprice@usd387.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Burden-Central HS,Burden,KS,,Athletic Director,,,Missy Atkins,matkins@usd462.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Burlingame HS,Burlingame,KS,,Athletic Director,,,Eric West,ewest@usd454.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Caldwell HS,Caldwell,KS,,Athletic Director,,,Sean Blosser,sblosser@usd360.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Caney Valley HS,Caney,KS,,Athletic Director,,,Tom Nelson,tnelson@caney.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Canton-Galva HS,Canton,KS,,Athletic Director,,,Jason Fawcett,fawcettj@usd419.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Santa Fe Trail HS,Carbondale,KS,,Athletic Director,,,Austin Hershberger,ahershberger@usd434.us,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cedar Vale HS,Cedar Vale,KS,,Athletic Director,,,Gloria McCall,mccallgl@cvs285.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Centralia HS,Centralia,KS,,Athletic Director,,,Roger Holthaus,holthausr@usd380.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chanute HS,Chanute,KS,,Athletic Director,,,Nick T Nothern,nothernn@usd413.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chapman HS,Chapman,KS,,Athletic Director,,,Clint Merritt,cmerritt@usd473.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chase HS,Chase,KS,,Athletic Director,,,Jacob Bauman,baumanj@usd401.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cherokee-Southeast HS,Cherokee,KS,,Athletic Director,,,Jeff Renn,jrenn@usd247.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cherryvale HS,Cherryvale,KS,,Athletic Director,,,Tonya Cluck,tcluck@usd447.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chetopa HS,Chetopa,KS,,Athletic Director,,,Jessica Midgett,jmidgett@usd505.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cimarron HS,Cimarron,KS,,Athletic Director,,,Jeff Blattner,jblattner@cimarronschools.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Central Plains HS,Claflin,KS,,Athletic Director,,,Pat Stiles,pstiles@usd112.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Clay Center Community HS,Clay Center,KS,,Athletic Director,,,Dr. KaCee James,kaceejames@usd379.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Clearwater HS,Clearwater,KS,,Athletic Director,,,Dustin Clevenger,dclevenger@usd264.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Coldwater-South Central HS,Coldwater,KS,,Athletic Director,,,Tim Erickson,ericksontim@usd300ks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Concordia HS,Concordia,KS,,Athletic Director,,,Thomas Flax,thomas.flax@usd333.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Conway Springs HS,Conway Springs,KS,,Athletic Director,,,Chase Boyd,boyd@usd356.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chase County HS,Cottonwood Falls,KS,,Athletic Director,,,Andrew Birchmeier,birchmeiera@usd284.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cunningham HS,Cunningham,KS,,Athletic Director,,,Bart Ricke,bart.ricke@usd332.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lakeside HS,Downs,KS,,Athletic Director,,,Drew Duskie,drew.duskie@usd272.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pleasant Ridge HS,Easton,KS,,Athletic Director,,,Greg  List,glist@easton449.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Atchison Co Community HS,Effingham,KS,,Athletic Director,,,Sabrina Handke,handke.sabrina@usd377.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Berean Academy,Elbing,KS,,Athletic Director,,,Hans Nickel,ad@bawarriors.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+El Dorado HS,El Dorado,KS,,Athletic Director,,,Lance Barkley,ltbarkley@usd490.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Elkhart HS,Elkhart,KS,,Athletic Director,,,Cole Parks,cparks@usd218.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Emporia HS,Emporia,KS,,Athletic Director,,,Beau Welch,beau.welch@usd253.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mission Valley HS,Eskridge,KS,,Athletic Director,,,Ben Packard,bpackard@mv330.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Eudora HS,Eudora,KS,,Athletic Director,,,Cara Kimberlin,carakimberlin@eudoraschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Eureka HS,Eureka,KS,,Athletic Director,,,Joe Thornburg,jthornburg@eurekausd389.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Frankfort HS,Frankfort,KS,,Athletic Director,,,Brian Ebert,ebertb@usd380.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Fredonia HS,Fredonia,KS,,Athletic Director,,,Aaron Chard,achard@fredoniaks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Frontenac HS,Frontenac,KS,,Athletic Director,,,Jesse Wall,jwall@frontenac249.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Galena HS,Galena,KS,,Athletic Director,,,Cory Perry,cory.perry@galena499.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garden City HS,Garden City,KS,,Athletic Director,,,Matt Bayer,mbayer@gckschools.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garden Plain HS,Garden Plain,KS,,Athletic Director,,,Zane Ehling,zane.ehling@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Gardner Edgerton HS,Gardner,KS,,Athletic Director,,,Jason Radel,radelj@usd231.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Anderson County HS,Garnett,KS,,Athletic Director,,,Vestal Teeter,vteeter@usd365.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Girard HS,Girard,KS,,Athletic Director,,,Chris Swartz,cswartz@girard248.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Goddard HS,Goddard,KS,,Athletic Director,,,Brian Buchanan,bbuchanan@goddardusd.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Goodland HS,Goodland,KS,,Athletic Director,,,Marty Lehman,marty.lehman@usd352.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Grainfield-Wheatland/Grinnell HS,Grainfield,KS,,Athletic Director,,,Will Bixenman,wbixenman@thawks.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Great Bend HS,Great Bend,KS,,Athletic Director,,,Matt Westerhaus,matt.westerhaus@usd428.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kiowa County HS,Greensburg,KS,,Athletic Director,,,Peter Blanton,pblanton@usd422.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Southeast of Saline HS,Gypsum,KS,,Athletic Director,,,Doug Minneman,dminneman@usd306.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Halstead HS,Halstead,KS,,Athletic Director,,,Nick Barnes,nbarnes@usd440.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hamilton HS,Hamilton,KS,,Athletic Director,,,Stephanie Nelson,snelson@hamilton390.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hanover HS,Hanover,KS,,Athletic Director,,,Cory Jensen,cjensen@usd223.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hartford HS,Hartford,KS,,Athletic Director,,,Megan Orear,morear@usd252.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Haven HS,Haven,KS,,Athletic Director,,,Mace Krol,mkrol@havenschools.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hays HS,Hays,KS,,Athletic Director,,,Chris Drees,c.drees@usd489.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Thomas More Prep-Marian HS,Hays,KS,,Athletic Director,,,Drew Labertew,labertewd@tmpmarian.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hiawatha HS,Hiawatha,KS,,Athletic Director,,,Ben Kettler,bekettler@usd415.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Doniphan West HS,Highland,KS,,Athletic Director,,,Derek Shelton,dshelton@usd111.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Jackson Heights HS,Holton,KS,,Athletic Director,,,Brad Alley,brad.alley@jhcobras.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Royal Valley HS,Hoyt,KS,,Athletic Director,,,Cale  Green,greenc@rv337.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Central Christian HS,Hutchinson,KS,,Athletic Director,,,Tony Urwiller,turwiller@cougarsccs.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Trinity Catholic HS,Hutchinson,KS,,Athletic Director,,,Greg Strecker,gstrecker@trinity-hutch.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ingalls HS,Ingalls,KS,,Athletic Director,,,Logan Hernandez,Lhernandez@ingallsusd477.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Inman HS,Inman,KS,,Athletic Director,,,Lance Sawyer,lsawyer@usd448.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Iola HS,Iola,KS,,Athletic Director,,,Tristan Carson,tristan.carson@usd257.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hodgeman County HS,Jetmore,KS,,Athletic Director,,,Trent Bright,tbright@usd227.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Stanton County HS,Johnson,KS,,Athletic Director,,,Leighton Grover,leighton.grover@usd452.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Xavier HS,Junction City,KS,,Athletic Director,,,AD Matthew E Dalke,dalkem@saintxrams.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+JC Harmon HS,Kansas City,KS,,Athletic Director,,,Dwayne Lindsey JR,dwayne.lindsey@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+FL Schlagle HS,Kansas City,KS,,Athletic Director,,,Ovie Oghenejobo,ovie.oghenejobo@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sumner Academy,Kansas City,KS,,Athletic Director,,,Andrew Wright,andrew.wright@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bishop Ward HS,Kansas City,KS,,Athletic Director,,,Mike Beaven,mbeaven@wardhigh.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Washington HS,Kansas City,KS,,Athletic Director,,,Andrew Monrean,andrew.monrean@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wyandotte HS,Kansas City,KS,,Athletic Director,,,Rufus Black,rufus.black@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kingman HS,Kingman,KS,,Athletic Director,,,Roland Van Wyhe (CMAA),rvanwyhe@knusd331.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+South Barber HS,Kiowa,KS,,Athletic Director,,,Michael Shklar,michaelsh@southbarber.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+La Crosse HS,La Crosse,KS,,Athletic Director,,,Rob Holopirek,rholopirek@usd395.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Prairie View HS,LaCygne,KS,,Athletic Director,,,Mark Hough,markh@pv362.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lakin HS,Lakin,KS,,Athletic Director,,,Jacy Holloway,jacy.holloway@usd215.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Fairfield HS,Langdon,KS,,Athletic Director,,,Chris Hewitt,chewitt@usd310.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lansing HS,Lansing,KS,,Athletic Director,,,Gary Mattingly,gary.mattingly@usd469.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Larned HS,Larned,KS,,Athletic Director,,,Brian Deterding,brian.deterding@usd495.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lawrence HS,Lawrence,KS,,Athletic Director,,,Nick Wood,nwood@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Leavenworth HS,Leavenworth,KS,,Athletic Director,,,Michael Koontz,michael.koontz@lvpioneers.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita County HS,Leoti,KS,,Athletic Director,,,Janee Porter,porterjanee@leoti.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Liberal HS,Liberal,KS,,Athletic Director,,,Chad Friess,chad.friess@usd480.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Smoky Valley HS,Lindsborg,KS,,Athletic Director,,,Ky Swisher,kswisher@smokyvalley.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Logan HS,Logan,KS,,Athletic Director,,,Bill Lowry,blowry@logan326.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Elk Valley HS,Longton,KS,,Athletic Director,,,Samuel J Wyrick,swyrick@usd283.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Macksville HS,Macksville,KS,,Athletic Director,,,Mr Nick Anderson,andersonn@usd351.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Madison HS,Madison,KS,,Athletic Director,,,Justin Redeker,jredeker@usd386.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maize HS,Maize,KS,,Athletic Director,,,Dan Loving,dloving@usd266.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Manhattan HS,Manhattan,KS,,Athletic Director,,,Shadwin Spilski,shadwinspi@usd383.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marion HS,Marion,KS,,Athletic Director,,,Jackson Schneider,schnejac@usd408.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marysville HS,Marysville,KS,,Athletic Director,,,Mr Derek Pretre,dpretre@usd364.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Meade HS,Meade,KS,,Athletic Director,,,Derrick Dizmang,dizmangd@usd226.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marais Des Cygnes Valley HS,Melvern,KS,,Athletic Director,,,Jason G Graf,Jgraf@usd456.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Minneapolis HS,Minneapolis,KS,,Athletic Director,,,Jill Graff,jgraff@usd239.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Minneola HS,Minneola,KS,,Athletic Director,,,James Temaat,jtemaat@usd219.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+South Gray HS,Montezuma,KS,,Athletic Director,,,Mark Applegate,mark@usd371.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marmaton Valley HS,Moran,KS,,Athletic Director,,,Brian Campbell,bcampbell@usd256.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Jayhawk Linn HS,Mound City,KS,,Athletic Director,,,Kirk Holt,kholt@usd346.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mulvane HS,Mulvane,KS,,Athletic Director,,,Dave Fennewald,dfennewald@usd263.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Natoma HS,Natoma,KS,,Athletic Director,,,Kurt Grafel,kgrafel@natoma-usd399.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Neodesha HS,Neodesha,KS,,Athletic Director,,,Nathan  West,nwest@usd461.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Oakley HS,Oakley,KS,,Athletic Director,,,Craig Wamsley,cwamsley@oakleyschoolsks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Decatur Community HS,Oberlin,KS,,Athletic Director,,,Brandon Gehring,bgehring@usd294.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe North HS,Olathe,KS,,Athletic Director,,,Joshua J Price,jpriceon@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe South HS,Olathe,KS,,Athletic Director,,,Andrew Miller,armiller@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Onaga HS,Onaga,KS,,Athletic Director,,,Adam Kufahl,onagaathletics@usd322.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Osage City HS,Osage City,KS,,Athletic Director,,,Andrew  Gantenbein,agantenbein@usd420.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Osawatomie HS,Osawatomie,KS,,Athletic Director,,,Dylan Schneider,dylanschneider@usd367.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Oskaloosa HS,Oskaloosa,KS,,Athletic Director,,,Triston Hopkins,thopkins1@usd341.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ottawa HS,Ottawa,KS,,Athletic Director,,,Nick Schmidt,schmidtn@usd290.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Palco HS,Palco,KS,,Athletic Director,,,Caden Mohr,cmohr@usd269.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Paola HS,Paola,KS,,Athletic Director,,,Ryan Oshel,ryan_oshel@usd368.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Parsons HS,Parsons,KS,,Athletic Director,,,Chris Ball,chrisball@vikingnet.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Peabody-Burns HS,Peabody,KS,,Athletic Director,,,M5. Austin Weaver,aweaver@usd398.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Mary's Colgan HS,Pittsburg,KS,,Athletic Director,,,Jeff  DeLaTorre,delatorreje@ollsmc.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Plainville HS,Plainville,KS,,Athletic Director,,,Reisa Rudman,rrudman@plainville270.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pleasanton HS,Pleasanton,KS,,Athletic Director,,,Tara Carpenter,tara.carpenter@usd344.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+West Franklin HS,Pomona,KS,,Athletic Director,,,Kris Hassler,hasslerk@usd287.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pratt HS,Pratt,KS,,Athletic Director,,,Chris Battin,chris.battin@usd382.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pretty Prairie HS,Pretty Prairie,KS,,Athletic Director,,,Ryan Anderson,andersonr@usd311.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Randolph-Blue Valley HS,Randolph,KS,,Athletic Director,,,Quinton  Cravens,qcravens@usd384.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Western Plains HS,Ransom,KS,,Athletic Director,,,Joe Spangler,jspangler@usd106.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Golden Plains HS,Rexford,KS,,Athletic Director,,,Travis Smith,travis@usd316.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Central Heights HS,Richmond,KS,,Athletic Director,,,Jason Brown,jbrown@usd288.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Rolla HS,Rolla,KS,,Athletic Director,,,Cassie Thrall,cthrall@usd217.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pawnee Heights HS,Rozel,KS,,Athletic Director,,,Rick Carlson,rickcarlson@phtigers.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Francis HS,St. Francis,KS,,Athletic Director,,,Holly Hingst,hhingst@usd297.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Marys HS,St. Marys,KS,,Athletic Director,,,Kyler Stein,steink@usd321.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Paul HS,St. Paul,KS,,Athletic Director,,,Jaunc Bradshaw,jbradshaw@usd505.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sabetha HS,Sabetha,KS,,Athletic Director,,,Kaleb Moeller,moellerk@usd113.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Salina-Central HS,Salina,KS,,Athletic Director,,,Greg Maring,greg.maring@usd305.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sacred Heart HS,Salina,KS,,Athletic Director,,,Kegan Knight,kegan.knight@salinacatholic.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Salina-South HS,Salina,KS,,Athletic Director,,,Ryan Stuart,Ryan.Stuart@usd305.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Satanta HS,Satanta,KS,,Athletic Director,,,Joyce Apsley,japsley@usd507.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pike Valley HS,Scandia,KS,,Athletic Director,,,Jody Callaway,jody.callaway@pikevalley.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sedan HS,Sedan,KS,,Athletic Director,,,Chelsea  Dickens,chelsea.dickens@usd286.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Nemaha Central HS,Seneca,KS,,Athletic Director,,,Mr Kelly  Williams,kwilliams@usd115.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wallace County HS,Sharon Springs,KS,,Athletic Director,,,Chance Rains,crains@usd241.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Thomas Aquinas HS,Overland Park,KS,,Athletic Director,,,Ken Fox,kfox@stasaints.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission East HS,Prairie Village,KS,,Athletic Director,,,Ryan Johnson,ryanjohnson@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission North HS,Overland Park,KS,,Athletic Director,,,Mr Denton Hays,Dentonhays@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission Northwest HS,Shawnee,KS,,Athletic Director,,,Dr Heath L Wilson,heathwilson@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission South HS,Shawnee Mission,KS,,Athletic Director,,,Dr. Mark A Mahoney,markmahoney@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission West HS,Shawnee Mission,KS,,Athletic Director,,,Bryce McElroy,brycemcelroy156@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Silver Lake HS,Silver Lake,KS,,Athletic Director,,,David Schooler,dschooler@silverlakeschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+South Haven HS,South Haven,KS,,Athletic Director,,,Zach Norris,zachnorris@usd509.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Spearville HS,Spearville,KS,,Athletic Director,,,Taylor James,taylorj@usd381.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Stafford HS,Stafford,KS,,Athletic Director,,,Isaac Burnett,iburnett@stafford349.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Blue Valley HS,Overland Park,KS,,Athletic Director,,,Jonathan D Jost,jdjost@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sylvan-Lucas Unified HS,Sylvan Grove,KS,,Athletic Director,,,Tyler Gier,tgier@usd299.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Syracuse HS,Syracuse,KS,,Athletic Director,,,Travis Allen,tallen@usd494.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Heights HS,Tecumseh,KS,,Athletic Director,,,John Oshel,oshelj@usd450.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Tipton Catholic HS,Tipton,KS,,Athletic Director,,,Parker Gates,parkergates@tiptoncatholichs.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Tonganoxie HS,Tonganoxie,KS,,Athletic Director,,,Josey Eastes,jeastes@tong464.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka HS,Topeka,KS,,Athletic Director,,,Cody Miller,cmiller1@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hayden HS,Topeka,KS,,Athletic Director,,,Bobby Taul,taulb@haydencatholic.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Highland Park HS,Topeka,KS,,Athletic Director,,,Paul Muzzy,pmuzzy@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Seaman HS,Topeka,KS,,Athletic Director,,,Travis Brown,tbrown@usd345.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Washburn Rural HS,Topeka,KS,,Athletic Director,,,Charlie Nimz,nimzcha@usd437.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka West HS,Topeka,KS,,Athletic Director,,,Alyx Nash,anash@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Udall HS,Udall,KS,,Athletic Director,,,Taylor Becker,taylorbecker@usd463.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Center HS,Valley Center,KS,,Athletic Director,,,Chad Wilmott,chad.wilmott@usd262.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Falls HS,Valley Falls,KS,,Athletic Director,,,Stacy  Cervantez,Stacy.Cervantez@vfalls338.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Victoria HS,Victoria,KS,,Athletic Director,,,Devin Ryan,devinryan@usd432.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wakefield HS,Wakefield,KS,,Athletic Director,,,Angie Adams,angieadams@usd379.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wamego HS,Wamego,KS,,Athletic Director,,,Travis  Graber,grabert@usd320.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Washington County HS,Washington,KS,,Athletic Director,,,Ryan Sanneman,rsanneman@usd108.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Waverly HS,Waverly,KS,,Athletic Director,,,Mike Hevel,mhevel@usd243ks.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Weskan HS,Weskan,KS,,Athletic Director,,,Brett Clow,bclow@weskanschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bishop Carroll HS,Wichita,KS,,Athletic Director,,,Tyler R Fraizer,fraizertyler@bcchs.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-East HS,Wichita,KS,,Athletic Director,,,Kerri Miles,kmiles@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Campus HS,Wichita,KS,,Athletic Director,,,Ron Allan,rallan@usd261.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Heights HS,Wichita,KS,,Athletic Director,,,Matthew  Kelly,mkelly@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kapaun Mt. Carmel HS,Wichita,KS,,Athletic Director,,,Quinton Burgess,qburgess@kapaun.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-North HS,Wichita,KS,,Athletic Director,,,Michael Ghram,mghram@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-South HS,Wichita,KS,,Athletic Director,,,Johnny Martin,jmartin2@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Southeast HS,Wichita,KS,,Athletic Director,,,Malik Jaradat,mjaradat@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-West HS,Wichita,KS,,Athletic Director,,,Cory Brack,cbrack@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Triplains HS,Winona,KS,,Athletic Director,,,Rose Smith,rose.smith@triplains.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Yates Center HS,Yates Center,KS,,Athletic Director,,,Lane Huffman,lhuffman@usd366.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Blue Valley North HS,Overland Park,KS,,Athletic Director,,,Todd McAtee,TBMcAtee@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Abilene MS,Abilene,KS,,Athletic Director,,,Derek Berns,dberns@abileneschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Buffalo-Altoona Midway MS,Buffalo,KS,,Athletic Director,,,Sean Price,sprice@usd387.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andover MS,Andover,KS,,Athletic Director,,,Doug  Jefferson,jeffersd@usd385.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Anthony/Harper-Chaparral JH,Anthony,KS,,Athletic Director,,,JC Zahradnik,jcz@usd361.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Argonia JH,Argonia,KS,,Athletic Director,,,Cole Griffin,cgriffin@argonia359.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Arkansas City MS,Arkansas City,KS,,Athletic Director,,,Zach Wiederstein,zach.wiederstein@usd470.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Arma-Northeast Elementary School,Arma,KS,,Athletic Director,,,Shane Wade,swade@usd246.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ashland JH,Ashland,KS,,Athletic Director,,,Jon Schnable,jschnable@usd220.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Atchison MS,Atchison,KS,,Athletic Director,,,Tyler J Lueckenhoff,tyler.lueckenhoff@usd409.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Rawlins County JH,Atwood,KS,,Athletic Director,,,Deone Horinek,dhorinek@usd105.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Augusta MS,Augusta,KS,,Athletic Director,,,Brandon Terry,bterry@usd402.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bazine-Western Plains JH,Bazine,KS,,Athletic Director,,,Joe Spangler,jspangler@usd106.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Heights JH,Blue Rapids,KS,,Athletic Director,,,Tommy Tryon,ttryon@valleyheights.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bonner Springs-Robert E Clark MS,Bonner Springs,KS,,Athletic Director,,,Doug Hitchcock,hitchcockd@usd204.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ell-Saline MS,Brookville,KS,,Athletic Director,,,Brian Rowley,browley@ellsaline.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bucklin Elementary School,Bucklin,KS,,Athletic Director,,,AD Brooke Thompson Mr,thompsonb@usd459.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Burlingame JH,Burlingame,KS,,Athletic Director,,,Eric A West,ewest@usd454.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Americus-North Lyon County MS,Americus,KS,,Athletic Director,,,Ms. Katie K Adams,adamsk@usd251.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Caldwell MS,Caldwell,KS,,Athletic Director,,,Sean Blosser,sblosser@usd360.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Caney Valley JH,Caney,KS,,Athletic Director,,,Tom  Nelson,tnelson@caney.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Carbondale-Santa Fe Trail JH,Carbondale,KS,,Athletic Director,,,Brian Murakami,bmurakami@usd434.us,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cedar Vale MS,Cedar Vale,KS,,Athletic Director,,,Gloria McCall,mccallgl@cvs285.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Centralia JH,Centralia,KS,,Athletic Director,,,Roger Holthaus,holthausr@usd380.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chanute-Royster MS,Chanute,KS,,Athletic Director,,,Nick Nothern,Nothernn@usd413.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chapman MS,Chapman,KS,,Athletic Director,,,Clint Merritt,cmerritt@usd473.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cherryvale MS,Cherryvale,KS,,Athletic Director,,,Tonya Cluck,tcluck@usd447.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chetopa JH,Chetopa,KS,,Athletic Director,,,Jessica Midgett,jmidgett@usd505.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Clay Center Community MS,Clay Center,KS,,Athletic Director,,,Travis Smith,travissmith@usd379.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Clearwater MS,Clearwater,KS,,Athletic Director,,,Mary Mellen,mmellen@usd264.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Concordia JH,Concordia,KS,,Athletic Director,,,Thomas Flax,thomas.flax@usd333.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Conway Springs MS,Conway Springs,KS,,Athletic Director,,,Ryan Rusco,rusco@usd356.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Copeland-South Gray JH,Copeland,KS,,Athletic Director,,,Mark Applegate,mark@usd371.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pike Valley JH,Scandia,KS,,Athletic Director,,,Cade Huncovsky,cade.huncovsky@pikevalley.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Minneapolis JH,Minneapolis,KS,,Athletic Director,,,Jill Graff,jgraff@usd239.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Doniphan West JH,Highland,KS,,Athletic Director,,,Derek Shelton,dshelton@usd111.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+De Soto-Lexington Trails MS,De Soto,KS,,Athletic Director,,,Jeremy Todd,jeremy.todd@usd232.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Easton-Pleasant Ridge MS,Easton,KS,,Athletic Director,,,Greg List,glist@easton449.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Atchison Co Community MS,Effingham,KS,,Athletic Director,,,Sabrina Handke,handke.sabrina@usd377.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+El Dorado MS,El Dorado,KS,,Athletic Director,,,Nathan Sherwood,nasherwood@usd490.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Elkhart MS,Elkhart,KS,,Athletic Director,,,Craig Maynard,cmaynard@usd218.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Emporia MS,Emporia,KS,,Athletic Director,,,Matt Baumwart,Matt.baumwart@usd253.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Eureka JH,Eureka,KS,,Athletic Director,,,Joe Thornburg,jthornburg@eurekausd389.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marion MS,Marion,KS,,Athletic Director,,,Jack  Schneider,schnejac@usd408.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Fort Leavenworth-Patton JH,Fort Leavenworth,KS,,Athletic Director,,,Darren Shupe,dshupe@usd207.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Frankfort JH,Frankfort,KS,,Athletic Director,,,Brian Ebert,ebertb@usd380.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Fredonia JH,Fredonia,KS,,Athletic Director,,,Aaron Chard,achard@fredoniaks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Frontenac JH,Frontenac,KS,,Athletic Director,,,Andrew W Albright,aalbright@frontenac249.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Galena MS,Galena,KS,,Athletic Director,,,Cory Perry,cory.perry@galena499.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garden City-Kenneth Henderson MS,Garden City,KS,,Athletic Director,,,Macy  Tomlin,mtomlin@gckschools.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garden City-Horace J. Good MS,Garden City,KS,,Athletic Director,,,Cheston Skinner,cskinner@gckschools.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Gardner-Wheatridge MS,Gardner,KS,,Athletic Director,,,John Duncanson,duncansonj@usd231.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Anderson County JH,Garnett,KS,,Athletic Director,,,Vestal Teeter,vteeter@usd365.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Girard MS,Girard,KS,,Athletic Director,,,Brad Herlocker,bherlocker@girard248.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Goddard MS,Goddard,KS,,Athletic Director,,,Matt Busby,mbusby@goddardusd.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Goodland JH,Goodland,KS,,Athletic Director,,,Marty Lehman,marty.lehman@usd352.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Great Bend MS,Great Bend,KS,,Athletic Director,,,Matt Westerhaus,matt.westerhaus@usd428.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Southeast of Saline JH,Gypsum,KS,,Athletic Director,,,Doug Minneman,dminneman@usd306.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+South Barber MS,Kiowa,KS,,Athletic Director,,,Michael Shklar,michaelsh@southbarber.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hays MS,Hays,KS,,Athletic Director,,,Jay Sanders,jsanders@usd489.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Haysville MS,Haysville,KS,,Athletic Director,,,Kimberly Hansen,khansen@usd261.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Central Plains MS,Claflin,KS,,Athletic Director,,,Pat Stiles,pstiles@usd112.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Prairie Hills MS,Hutchinson,KS,,Athletic Director,,,Justin Seuser,jseuser@usd313.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Iola MS,Iola,KS,,Athletic Director,,,Scott Brady,scott.brady@usd257.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Stanton County MS,Johnson,KS,,Athletic Director,,,Leighton Grover,leighton.grover@usd452.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Argentine MS,Kansas City,KS,,Athletic Director,,,Sage  Eaton,sage.eaton@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Arrowhead MS,Kansas City,KS,,Athletic Director,,,Kendra Parris,kendra.parris@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Central MS,Kansas City,KS,,Athletic Director,,,Cassy Kincaid,cassy.kincaid@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Gloria Willis MS,Kansas City,KS,,Athletic Director,,,Ashley Gann,ashley.gann@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Dwight D. Eisenhower MS,Kansas City,KS,,Athletic Director,,,Mr William J Keegan,william.keegan@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Carl B. Bruce MS,Kansas City,KS,,Athletic Director,,,Tad Kersting,tad.kersting@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Turner MS,Kansas City,KS,,Athletic Director,,,Dr. Alex Supple,supplea@turnerusd202.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Piper MS,Kansas City,KS,,Athletic Director,,,Dr. Taylor Mapp,taylor.mapp@piperschools.us,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Rosedale MS,Kansas City,KS,,Athletic Director,,,AP/AD William Brewer,william.brewer@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City-Sumner Academy of Arts & Science,Kansas City,KS,,Athletic Director,,,Andrew Wright,andrew.wright@kckps.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kingman MS,Kingman,KS,,Athletic Director,,,Rollie Van Wyhe CMAA,rvanwyhe@knusd331.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+LaCygne-Prairie View MS,LaCygne,KS,,Athletic Director,,,Mark Hough,markh@pv362.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lakin MS,Lakin,KS,,Athletic Director,,,Jacy  Holloway,jacy.holloway@usd215.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lansing MS,Lansing,KS,,Athletic Director,,,Erica  Lussier,erica.lussier@usd469.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Larned MS,Larned,KS,,Athletic Director,,,Brian Deterding,brian.deterding@usd495.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lawrence-Liberty Memorial Central MS,Lawrence,KS,,Athletic Director,,,Kate Sjursen,kathleen.sjursen@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lawrence-Billy Mills MS,Lawrence,KS,,Athletic Director,,,Kelly Gerber,kelly.gerber@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lawrence-West MS,Lawrence,KS,,Athletic Director,,,Michael Lewis,mlewis@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Leavenworth-Warren MS,Leavenworth,KS,,Athletic Director,,,Kate Cervantes,kate.cervantes@lvpioneers.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Leawood MS,Leawood,KS,,Athletic Director,,,Reese Sperfslage,rsperfslage@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Liberal-Seymour Rogers MS,Liberal,KS,,Athletic Director,,,Jordan Beeson,jordan.beeson@usd480.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Liberal-Eisenhower MS,Liberal,KS,,Athletic Director,,,Andrew Potter,andrew.potter@usd480.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Smoky Valley MS,Lindsborg,KS,,Athletic Director,,,Garrett Scritchfield,gscritchfield@smokyvalley.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Basehor-Linwood MS,Basehor,KS,,Athletic Director,,,Scott Hornbaker,shornbaker@usd458.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Elk Valley MS,Longton,KS,,Athletic Director,,,Samuel J Wyrick,swyrick@usd283.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+La Crosse MS,La Crosse,KS,,Athletic Director,,,Rob Holopirek,rholopirek@usd395.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Macksville JH,Macksville,KS,,Athletic Director,,,Mr Nick Anderson,andersonn@usd351.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Manhattan-Susan B. Anthony MS,Manhattan,KS,,Athletic Director,,,Brad Kelly,bradk@usd383.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Manhattan-Luckey Elementary School,Manhattan,KS,,Athletic Director,,,Tyson Vrbas,tvrbas@manhattancatholicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marysville JH,Marysville,KS,,Athletic Director,,,Derek Pretre,dpretre@usd364.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mayetta-Royal Valley MS,Mayetta,KS,,Athletic Director,,,Cale Green,greenc@rv337.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marmaton Valley JH,Moran,KS,,Athletic Director,,,Mr Brian Campbell,bcampbell@usd256.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Jayhawk Linn JH,Mound City,KS,,Athletic Director,,,Kirk Holt,kholt@usd346.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mulvane MS,Mulvane,KS,,Athletic Director,,,Dave Fennewald,dfennewald@usd263.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Neodesha JH,Neodesha,KS,,Athletic Director,,,Nathan  West,nwest@usd461.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Oakley MS,Oakley,KS,,Athletic Director,,,Craig Wamsley,cwamsley@oakleyschoolsks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Decatur Community JH,Oberlin,KS,,Athletic Director,,,Brandon Gehring,bgehring@usd294.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Indian Trail MS,Olathe,KS,,Athletic Director,,,Doug R Hay,drhay@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Oregon Trail MS,Olathe,KS,,Athletic Director,,,Jennifer Rippee,jjrippee@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Santa Fe Trail MS,Olathe,KS,,Athletic Director,,,Thomas J Ulmer,tjulmer@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Onaga MS,Onaga,KS,,Athletic Director,,,Adam Kufahl,onagaathletics@usd322.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Osage City MS,Osage City,KS,,Athletic Director,,,Tim Riemann,triemann@usd420.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Osawatomie MS,Osawatomie,KS,,Athletic Director,,,Dylan Schneider,dylanschneider@usd367.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Oskaloosa JH,Oskaloosa,KS,,Athletic Director,,,Triston Hopkins,thopkins1@usd341.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ottawa MS,Ottawa,KS,,Athletic Director,,,Brandie Irby,irbyb@usd290.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Paola MS,Paola,KS,,Athletic Director,,,Ben Melick,ben_melick@usd368.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Parsons MS,Parsons,KS,,Athletic Director,,,Wes Krull,wkrull@vikingnet.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Peabody-Burns JH,Peabody,KS,,Athletic Director,,,Austin Weaver,aweaver@usd398.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Plainville JH,Plainville,KS,,Athletic Director,,,Alex McMillian,amcmillian@plainville270.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pleasanton JH,Pleasanton,KS,,Athletic Director,,,Joey Ewalt,joey.ewalt@usd344.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+West Franklin MS,Pomona,KS,,Athletic Director,,,Kris Hassler,hasslerk@usd287.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pratt-Liberty MS,Pratt,KS,,Athletic Director,,,Ron Hill,ron.hill@usd382.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marais Des Cygnes Valley MS,Melvern,KS,,Athletic Director,,,Jason G Graf,Jgraf@usd456.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Randolph-Blue Valley MS,Randolph,KS,,Athletic Director,,,Blake  Fronce,bfronce@usd384.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hiawatha MS,Hiawatha,KS,,Athletic Director,,,Becky Shamburg,bshamburg@usd415.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Rolla JH,Rolla,KS,,Athletic Director,,,Cassie Thrall,cthrall@usd217.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Francis JH,St. Francis,KS,,Athletic Director,,,Holly Hingst,hhingst@usd297.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Marys JH,St. Marys,KS,,Athletic Director,,,Kyler Stein,steink@kawvalley.k12.ks.us,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sabetha MS,Sabetha,KS,,Athletic Director,,,Dave Remmers,remmersd@usd113.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Salina-Lakewood MS,Salina,KS,,Athletic Director,,,Jayson Emig,jayson.emig@usd305.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Salina-South MS,Salina,KS,,Athletic Director,,,Stacy Garnett,stacy.garnett@usd305.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Satanta JH,Satanta,KS,,Athletic Director,,,Joyce Apsley,japsley@usd507.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Sedan JH,Sedan,KS,,Athletic Director,,,Chelsea  Dickens,chelsea.dickens@usd286.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Nemaha Central MS,Seneca,KS,,Athletic Director,,,Carissa Williams,cwilliams@usd115.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Seneca-Sts. Peter and Paul Elementary School,Seneca,KS,,Athletic Director,,,Ashley Carlson,acarlson@stspeterandpaulschool.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Silver Lake JH,Silver Lake,KS,,Athletic Director,,,David Schooler,dschooler@silverlakeschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+South Haven JH,South Haven,KS,,Athletic Director,,,Zach  Norris,zachnorris@usd509.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Stafford MS,Stafford,KS,,Athletic Director,,,Isaac Burnett,iburnett@stafford349.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Blue Valley MS,Overland Park,KS,,Athletic Director,,,Bryan Brutto,BBrutto@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chase County JH,Cottonwood Falls,KS,,Athletic Director,,,Andrew Birchmeier,birchmeiera@usd284.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Syracuse JH,Syracuse,KS,,Athletic Director,,,Travis Allen,tallen@usd494.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Heights MS,Tecumseh,KS,,Athletic Director,,,Erin Unruh,unruhe@usd450.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Tescott Elementary School,Tescott,KS,,Athletic Director,,,Daymon Walker,dwalker@usd240.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Thayer MS,Thayer,KS,,Athletic Director,,,Aaron W Rehmert,arehmert@usd447.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Tonganoxie MS,Tonganoxie,KS,,Athletic Director,,,Ally Waddle,awaddle@tong464.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Chase MS,Topeka,KS,,Athletic Director,,,Courtney Halverson,chalverson@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Eisenhower MS,Topeka,KS,,Athletic Director,,,Ryan Reed,rreed@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Marjorie French MS,Topeka,KS,,Athletic Director,,,Tim Wilson,twilson@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Jardine MS,Topeka,KS,,Athletic Director,,,Robert Daniels,rdaniels@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Landon MS,Topeka,KS,,Athletic Director,,,Katie Davids,kdavids@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Topeka-Robinson MS,Topeka,KS,,Athletic Director,,,Kevin Hopp,khopp@tps501.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Washburn Rural MS,Topeka,KS,,Athletic Director,,,Brandon Dial,dialbra@usd437.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Udall MS,Udall,KS,,Athletic Director,,,Taylor Becker,taylorbecker@usd463.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Center MS,Valley Center,KS,,Athletic Director,,,Ty Unrau,ty.unrau@usd262.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Valley Falls MS,Valley Falls,KS,,Athletic Director,,,Wyatt Hofstra,wyatt.hofstra@vfalls338.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Victoria Elementary School,Victoria,KS,,Athletic Director,,,Devin Ryan,devinryan@usd432.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Washington County JH,Washington,KS,,Athletic Director,,,Ryan Sanneman,rsanneman@usd108.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Waverly JH,Waverly,KS,,Athletic Director,,,Ty Piper,tpiper@usd243ks.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Allison Traditional Magnet MS,Wichita,KS,,Athletic Director,,,Joe Sechrist,jsechrist@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Brooks Magnet MS,Wichita,KS,,Athletic Director,,,Melody Turley,mturley@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Altamont Elementary School,Altamont,KS,,Athletic Director,,,Tim Traxson,ttraxson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Eudora MS,Eudora,KS,,Athletic Director,,,Ty M Pattison,typattison@eudoraschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Coleman MS,Wichita,KS,,Athletic Director,,,Jon Belsan,jbelsan@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Curtis MS,Wichita,KS,,Athletic Director,,,Cameron  Jackson,cjackson11@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Hamilton MS,Wichita,KS,,Athletic Director,,,Curtis Carter,ccarter3@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Marshall MS,Wichita,KS,,Athletic Director,,,Robert C Bedore Jr,rbedore@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Mayberry Cul. & Fine Arts Mag.,Wichita,KS,,Athletic Director,,,Ramon Wiseman,rwiseman@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Mead MS,Wichita,KS,,Athletic Director,,,Kathleen Bastin,kbastin@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Pleasant Valley MS,Wichita,KS,,Athletic Director,,,Meagan Flynn,mflynn@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Robinson MS,Wichita,KS,,Athletic Director,,,Edie Howk,ehowk@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Truesdell MS,Wichita,KS,,Athletic Director,,,Laycie Davis,ldavis5@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Wilbur MS,Wichita,KS,,Athletic Director,,,Ms Laykyn Lindsay,llindsay@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Yates Center MS,Yates Center,KS,,Athletic Director,,,Mr Lane Huffman,lhuffman@usd366.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Belle Plaine MS,Belle Plaine,KS,,Athletic Director,,,Ryker Percival,rpercival@usd357.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Jackson Heights JH,Holton,KS,,Athletic Director,,,Brad Alley,brad.alley@jhcobras.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Halstead MS,Halstead,KS,,Athletic Director,,,Nick Barnes,nbarnes@usd440.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wamego MS,Wamego,KS,,Athletic Director,,,Brian McIntosh,mcintoshb@usd320.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maranatha Christian Academy,Shawnee,KS,,Athletic Director,,,Kris Henry,henryk@ma-kc.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kansas City Christian HS,Prairie Village,KS,,Athletic Director,,,Josh Poteet,jpoteet@mykccs.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita Collegiate HS,Wichita,KS,,Athletic Director,,,TJ Meyer,tmeyer@wcsks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Downs-Lakeside JH,Downs,KS,,Athletic Director,,,Jeremy Long,jeremy.long@usd272.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Baldwin JH,Baldwin,KS,,Athletic Director,,,Bench Currie,bcurrie@usd348.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Galesburg MS,Galesburg,KS,,Athletic Director,,,Eddie Kearns,ekearns@usd101.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Seaman MS,Topeka,KS,,Athletic Director,,,Chad Uhler,cuhler@usd345.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita County JH,Leoti,KS,,Athletic Director,,,AD Janee Porter,porterjanee@leoti.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Canton-Galva MS,Canton,KS,,Athletic Director,,,Jason Fawcett,fawcettj@usd419.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Palco JH,Palco,KS,,Athletic Director,,,Caden Mohr,cmohr@usd269.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hanover Elementary School,Hanover,KS,,Athletic Director,,,Cory Jensen,cjensen@usd223.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. Paul MS,St. Paul,KS,,Athletic Director,,,Tami Hennigh,thennigh@usd505.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Logan JH,Logan,KS,,Athletic Director,,,Bill Lowry,blowry@logan326.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Stockton Elementary School,Stockton,KS,,Athletic Director,,,Corinne Cole,ccole@usd271.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Linn Elementary School,Linn,KS,,Athletic Director,,,Bennett Bargdill,bbargdill@usd223.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Brewster Elementary School,Brewster,KS,,Athletic Director,,,Brenda Paintin,brenda.paintin@usd314.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Greeley County Elementary,Tribune,KS,,Athletic Director,,,Greg Cook,gregcook@tribuneschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Agra-Thunder Ridge MS,Agra,KS,,Athletic Director,,,Don Wiens,dwiens@usd110.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bartlett Elementary School,Bartlett,KS,,Athletic Director,,,Tim Traxson,ttraxson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Edna Elementary School,Edna,KS,,Athletic Director,,,Tim Traxson,ttraxson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Parsons-Meadowview Elementary School,Parsons,KS,,Athletic Director,,,Tim Traxson,ttraxson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mound Valley Grade School,Mound Valley,KS,,Athletic Director,,,Tim L Traxson,ttraxson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ingalls JH,Ingalls,KS,,Athletic Director,,,Logan Hernandez,Lhernandez@ingallsusd477.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Junction City-St. Xavier Elementary School,Junction City,KS,,Athletic Director,,,AD Matthew E Dalke,dalkem@saintxrams.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cimarron JH,Cimarron,KS,,Athletic Director,,,Jeff Blattner,jblattner@cimarronschools.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Haviland JH,Haviland,KS,,Athletic Director,,,Tayla Ellis,tellis@usd474.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Inman JH,Inman,KS,,Athletic Director,,,Mr Lance Sawyer,lsawyer@usd448.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Triplains JH,Winona,KS,,Athletic Director,,,Rose Smith,rose.smith@triplains.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Leavenworth-Xavier Catholic School,Leavenworth,KS,,Athletic Director,,,Mike J Connelly,mconnelly@archkckcs.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hartford JH,Hartford,KS,,Athletic Director,,,Megan Orear,morear@usd252.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Ellinwood-St. Joseph Catholic Elementary School,Ellinwood,KS,,Athletic Director,,,Principal Laurie Kolling,lkolling@stjosephellinwood.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Burden-Central JH,Burden,KS,,Athletic Director,,,Melissa Atkins,matkins@usd462.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wakefield Elementary School,Wakefield,KS,,Athletic Director,,,Angie Adams,angieadams@usd379.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cherokee-Southeast MS,Cherokee,KS,,Athletic Director,,,Thomas Sharbutt,tsharbutt@usd247.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Paola-Holy Trinity Catholic School,Paola,KS,,Athletic Director,,,Michelle Gavin,mgavin@holytrinitypaola.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Reno Valley MS,Hutchinson,KS,,Athletic Director,,,Brad Hollinger,brad.hollinger@usd309ks.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Minneola Elementary School,Minneola,KS,,Athletic Director,,,Donna Roetzer,droetzer@usd219.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Richmond-Central Heights MS,Richmond,KS,,Athletic Director,,,Jason Brown,jbrown@usd288.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mission Valley JH,Eskridge,KS,,Athletic Director,,,Ben Packard,bpackard@mv330.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Pioneer Trail MS,Olathe,KS,,Athletic Director,,,Aaron Miller,ammiller@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Colwich-St. Mark's School,Colwich,KS,,Athletic Director,,,Mr Ian Flax,ian.flax@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Colwich Elementary School,Colwich,KS,,Athletic Director,,,Mrs Allyson Mendenhall,allyson.mendenhall@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andale Elementary School,Andale,KS,,Athletic Director,,,Mike Rowland,mike.rowland@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garden Plain Elementary School,Garden Plain,KS,,Athletic Director,,,Zane Ehling,zane.ehling@usd267.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maize MS,Maize,KS,,Athletic Director,,,Hayden Hudson,hhudson@usd266.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hodgeman County MS,Jetmore,KS,,Athletic Director,,,Trent  Bright,tbright@usd227.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Salina-Sacred Heart MS,Salina,KS,,Athletic Director,,,Kegan Knight,kegan.knight@salinacatholic.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pittsburg-St. Mary's Elementary School,Pittsburg,KS,,Athletic Director,,,Kent O'Neal,onealk@ollsmc.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cunningham Elementary School,Cunningham,KS,,Athletic Director,,,Bart Ricke,bart.ricke@usd332.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hanover-St. John's Catholic School,Hanover,KS,,Athletic Director,,,Amanda  Cook,acook@stjohnshanover.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pretty Prairie MS,Pretty Prairie,KS,,Athletic Director,,,Mr Ryan Anderson,andersonr@usd311.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Long Island-Northern Valley JH,Long Island,KS,,Athletic Director,,,Marvin Gebhard,mgebhard@nvhuskies.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Cair Paravel Latin School,Topeka,KS,,Athletic Director,,,Danielle Maxon,dmaxon@cpls.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wallace County JH,Sharon Springs,KS,,Athletic Director,,,Chance Rains,crains@usd241.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Beloit-St. John's Elementary School,Beloit,KS,,Athletic Director,,,Joe Holdren,jholdren@gostj.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Oxford MS,Overland Park,KS,,Athletic Director,,,Dr. David J Mitchell,djmitchell@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Chase-Raymond JH,Chase,KS,,Athletic Director,,,Jacob Bauman,baumanj@usd401.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Horace Mann Dual Language Magnet,Wichita,KS,,Athletic Director,,,Bill Schrant,wschrant@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Attica JH,Attica,KS,,Athletic Director,,,Scotty McCartney,scottym@usd511.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Axtell JH,Axtell,KS,,Athletic Director,,,Jayson Tynon,tynonj@usd113.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Frontier Trail MS,Olathe,KS,,Athletic Director,,,Dr. Drew Thomas,dathomas@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kingman-St. Patrick Catholic Elementary School,Kingman,KS,,Athletic Director,,,Liz Meyer,elizabeth.meyer14@gmail.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Madison JH,Madison,KS,,Athletic Director,,,Justin Redeker,jredeker@usd386.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Parsons-Service Valley Charter Academy,Parsons,KS,,Athletic Director,,,Jeff Schreppel,jschreppel@usd504.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Independence-St. Andrew's Catholic School,Independence,KS,,Athletic Director,,,Donna Hardy,dhardy@standrewindependence.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Overland Trail MS,Overland Park,KS,,Athletic Director,,,Meaghan  Graber,MAGraber@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Linn Lutheran School,Linn,KS,,Athletic Director,,,Principal Kelsey Hatesohl,kelseyhatesohl@linnlutheran.eduk12.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Baxter Springs MS,Baxter Springs,KS,,Athletic Director,,,Jason Walker,walkerj@usd508.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Fairfield MS,Langdon,KS,,Athletic Director,,,Chris Hewitt,chewitt@usd310.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Elyria Christian HS,McPherson,KS,,Athletic Director,,,Devin  Rust,athletic.director@ecseagles.us,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Protection-South Central MS,Protection,KS,,Athletic Director,,,Patsy Jellison,jellisonp@usd300ks.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Garnett-St. Rose Elementary School,Garnett,KS,,Athletic Director,,,Kelli Wolken,kwolken@archkckcs.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe East HS,Olathe,KS,,Athletic Director,,,Dr. Michael Wolgast,mswolgast@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Harmony MS,Overland Park,KS,,Athletic Director,,,Emily Wilson,eswilson@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Blue Valley Northwest HS,Overland Park,KS,,Athletic Director,,,Michael Richards,mrichards02@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Paxico-Wabaunsee JH,Paxico,KS,,Athletic Director,,,Jeron Weisshaar,jweisshaar@usd329.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Alma-St. John's Lutheran Elementary School,Alma,KS,,Athletic Director,,,Mindy Miller,schoolofficestjohnalma@gmail.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Northeast Magnet HS,Bel Aire,KS,,Athletic Director,,,Mr Steve Parks,SParks@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Trinity Academy,Wichita,KS,,Athletic Director,,,Dan Beckler,dbeckler@trinityacademy.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Independence-Zion Lutheran Elementary School,Independence,KS,,Athletic Director,,,Stacie Lupardus,slupardus@zionindy.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-The Independent MS,Wichita,KS,,Athletic Director,,,Janelle Swenson,janelle.swenson@theindependentschool.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee-Monticello Trails MS,Shawnee,KS,,Athletic Director,,,Dr. Michael Burton,michael.burton@usd232.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lawrence-Southwest MS,Lawrence,KS,,Athletic Director,,,Ms Monica Dutcher,mdutcher@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Spearville JH,Spearville,KS,,Athletic Director,,,Taylor James,taylorj@usd381.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Heritage Christian Academy,Olathe,KS,,Athletic Director,,,Bart Briley,bart.briley@hcakc.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Manhattan-Dwight D. Eisenhower MS,Manhattan,KS,,Athletic Director,,,Craig Ackerman,craiga@usd383.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Leawood-Prairie Star MS,Leawood,KS,,Athletic Director,,,Kyle Braden,kbraden@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-California Trail MS,Olathe,KS,,Athletic Director,,,Ms. Rebecca Reyes,rlreyes@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Free State HS,Lawrence,KS,,Athletic Director,,,Jason Schroeder,Jason.Schroeder@usd497.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Bishop Seabury Academy,Lawrence,KS,,Athletic Director,,,Brian Rios,brianrios@seaburyacademy.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Pleasant Ridge MS,Overland Park,KS,,Athletic Director,,,Derek Adams,dadams@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Haven MS,Haven,KS,,Athletic Director,,,Mace Krol,mkrol@havenschools.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hamilton JH,Hamilton,KS,,Athletic Director,,,Stephanie Nelson,snelson@hamilton390.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Meade JH,Meade,KS,,Athletic Director,,,Derrick Dizmang,dizmangd@usd226.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Westphalia Elementary School,Westphalia,KS,,Athletic Director,,,Vestal Teeter,vteeter@usd365.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Trinity Catholic JH,Hutchinson,KS,,Athletic Director,,,Greg Strecker,gstrecker@trinity-hutch.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Blue Valley West HS,Overland Park,KS,,Athletic Director,,,Kristopher  Didion,KJDidion@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Mill Valley HS,Shawnee,KS,,Athletic Director,,,Chase  Shumsky,chase.shumsky@usd232.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Parsons-St. Patrick Catholic Elementary School,Parsons,KS,,Athletic Director,,,Lori Nash,lnash@stpatricksparsons.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Chisholm Trail MS,Olathe,KS,,Athletic Director,,,Krista Dueringer,kdueringercst@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andover Central HS,Andover,KS,,Athletic Director,,,Chad Gerwick,gerwickc@usd385.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kiowa County JH,Greensburg,KS,,Athletic Director,,,Peter Blanton,pblanton@usd422.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Andover Central MS,Andover,KS,,Athletic Director,,,Nolan K McDonald,mcdonaln@usd385.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Goddard-Dwight D. Eisenhower MS,Goddard,KS,,Athletic Director,,,Kyle Haught,khaught@goddardusd.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Lakewood MS,Overland Park,KS,,Athletic Director,,,Dylan Owings,dowings@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maize South MS,Wichita,KS,,Athletic Director,,,Ty Hamilton,tdhamilton@usd266.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Stucky MS,Wichita,KS,,Athletic Director,,,Sabrina Gallo,sgallo@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe Northwest HS,Olathe,KS,,Athletic Director,,,Kayla Barnes,knbarnes@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Dodge City-Sacred Heart MS,Dodge City,KS,,Athletic Director,,,Athletic D Mike Schartz,mike.schartz@dcshcs.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Prairie Trail MS,Olathe,KS,,Athletic Director,,,Brandon Mellen,bpmellen@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+St. James Academy,Lenexa,KS,,Athletic Director,,,Rick Byers,rbyers@sjakeepingfaith.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Classical School Of Wichita,Wichita,KS,,Athletic Director,,,Tyler Busenitz,ad@cswsaints.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Gardner-Pioneer Ridge MS,Gardner,KS,,Athletic Director,,,Dalton Maples,maplesd@usd231.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Lenexa-Mill Creek MS,Lenexa,KS,,Athletic Director,,,Kerry Wixon,kerry.wixon@usd232.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Labette County HS,Altamont,KS,,Athletic Director,,,Trey Thompson,tthompson@usd506.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Marysville-Good Shepherd Lutheran MS,Marysville,KS,,Athletic Director,,,Kyle Erickson,gsls206@outlook.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Gordon Parks Academy,Wichita,KS,,Athletic Director,,,Daniel Flores,dflores@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Hutchinson-Central Christian MS,Hutchinson,KS,,Athletic Director,,,Tony Urwiller,turwiller@cougarsccs.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Haysville-West MS,Haysville,KS,,Athletic Director,,,Robbie Wright,rwright@usd261.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Maize South HS,Wichita,KS,,Athletic Director,,,Tom Perkins,tperkins@usd266.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Atchison-St. Benedict Catholic School,Atchison,KS,,Athletic Director,,,Abby Bartlett,Abartlett@benedictine.edu,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Blue Valley Southwest HS,Overland Park,KS,,Athletic Director,,,Mike Rasmussen,mrasmussen@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Mission Trail MS,Olathe,KS,,Athletic Director,,,Eric Griffin,egriffinmt@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wellington Christian Academy,Wellington,KS,,Athletic Director,,,John Showman,jshowman@wcacademy.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Pawnee Heights JH,Rozel,KS,,Athletic Director,,,Rick Carlson,rickcarlson@phtigers.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Kshsaa MS,Topeka,KS,,Athletic Director,,,Brent Unruh,bunruh@kshsaa.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Aubry Bend MS,Overland Park,KS,,Athletic Director,,,Nicole Orrick,norrick@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Thomas More Prep-Marian JH,Hays,KS,,Athletic Director,,,Drew Labertew,labertewd@tmpmarian.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Christa McAuliffe Academy,Wichita,KS,,Athletic Director,,,Katherine Skinner,kskinner@usd259.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Dodge City-Comanche MS,Dodge City,KS,,Athletic Director,,,Ty Thomas,thomas.ty@usd443.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Gardner-Trail Ridge MS,Gardner,KS,,Athletic Director,,,Brian Essex,essexb@usd231.com,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Central Christian Academy,Wichita,KS,,Athletic Director,,,Austin McBeth,amcbeth@ccalions.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission-Hocker Grove MS,Shawnee Mission,KS,,Athletic Director,,,Seth Turner,sethturner@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission-Indian Hills MS,Shawnee Mission,KS,,Athletic Director,,,Caitlin Thompson,CaitlinNThompson@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission-Indian Woods MS,Shawnee Mission,KS,,Athletic Director,,,Brandon  Claypool,brandonclaypool@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission-Trailridge MS,Shawnee Mission,KS,,Athletic Director,,,Ericka Corrado,erickacorrado@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission-Westridge MS,Shawnee Mission,KS,,Athletic Director,,,Linda Long,lindalong@smsd.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Trinity Academy MS,Wichita,KS,,Athletic Director,,,Junior Joseph,jjoseph@trinityacademy.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe West HS,Olathe,KS,,Athletic Director,,,Pat Butler,prbutler@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Summit Trail MS,Olathe,KS,,Athletic Director,,,Mark  Munson,mdmunson@olatheschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Olathe-Woodland Spring MS,Olathe,KS,,Athletic Director,,,Angela Tauer,tauera@usd230.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Natoma JH,Natoma,KS,,Athletic Director,,,Kurt Grafel,kgrafel@natoma-usd399.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Washburn Rural North MS,Topeka,KS,,Athletic Director,,,Charlie Chesmore,chesmphi@usd437.net,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Overland Park-Wolf Springs MS,Overland Park,KS,,Athletic Director,,,Chris Huggard,mchuggard@bluevalleyk12.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Wichita-Isely MS,Bel Aire,KS,,Athletic Director,,,Coleman Hedden,chedden1@wichitapublicschools.org,https://kshsaa-api.kshsaa.org/directory/search/name/a/,2026-09-19
+Shawnee Mission South HS,Shawnee Mission,KS,Boys Cross Country,Head Coach,JJ Wannamaker,jameswannamaker@smsd.org,Dr. Mark A Mahoney,markmahoney@smsd.org,https://smsouth.smsd.org/athletics/sports-teams/cross-country,2026-09-22
+Shawnee Mission South HS,Shawnee Mission,KS,Girls Cross Country,Head Coach,JJ Wannamaker,jameswannamaker@smsd.org,Dr. Mark A Mahoney,markmahoney@smsd.org,https://smsouth.smsd.org/athletics/sports-teams/cross-country,2026-09-22
+Shawnee Mission South HS,Shawnee Mission,KS,Boys Track and Field,Head Coach,J. J. Wannamaker,jameswannamaker@smsd.org,Dr. Mark A Mahoney,markmahoney@smsd.org,https://smsouth.smsd.org/athletics/sports-teams/track-and-field,2026-09-22
+Shawnee Mission South HS,Shawnee Mission,KS,Girls Track and Field,Head Coach,J. J. Wannamaker,jameswannamaker@smsd.org,Dr. Mark A Mahoney,markmahoney@smsd.org,https://smsouth.smsd.org/athletics/sports-teams/track-and-field,2026-09-22
+Manhattan HS,Manhattan,KS,Boys Cross Country,Head Coach,Susan Melgares,susanm@usd383.org,Shadwin Spilski,shadwinspi@usd383.org,https://files.smartsites.parentsquare.com/4597/manhattan_high_school_handbook_cross_country.pdf,2026-09-22
+Manhattan HS,Manhattan,KS,Girls Cross Country,Head Coach,Susan Melgares,susanm@usd383.org,Shadwin Spilski,shadwinspi@usd383.org,https://files.smartsites.parentsquare.com/4597/manhattan_high_school_handbook_cross_country.pdf,2026-09-22
+Manhattan HS,Manhattan,KS,Boys Track and Field,Head Coach,Kory Cool,koryc@usd383.org,Shadwin Spilski,shadwinspi@usd383.org,https://files.smartsites.parentsquare.com/4597/athletics_and_activities_handbook_1.pdf,2026-09-22
+Manhattan HS,Manhattan,KS,Girls Track and Field,Head Coach,Kory Cool,koryc@usd383.org,Shadwin Spilski,shadwinspi@usd383.org,https://files.smartsites.parentsquare.com/4597/athletics_and_activities_handbook_1.pdf,2026-09-22
+Junction City High School,Junction City,KS,Boys Cross Country,Head Coach,Tim Testa,,Chris Bogenhagen,christopherbogenhagen@usd475.org,https://www.bluejayathletics.org/fall/cross-country-boysgirls,2026-09-22
+Junction City High School,Junction City,KS,Girls Cross Country,Head Coach,Tim Testa,,Chris Bogenhagen,christopherbogenhagen@usd475.org,https://www.bluejayathletics.org/fall/cross-country-boysgirls,2026-09-22
+Junction City High School,Junction City,KS,Boys Track and Field,Head Coach,Randall Zimmerman,,Chris Bogenhagen,christopherbogenhagen@usd475.org,https://www.bluejayathletics.org/spring/track-and-field-boysgirls,2026-09-22
+Junction City High School,Junction City,KS,Girls Track and Field,Head Coach,Randall Zimmerman,,Chris Bogenhagen,christopherbogenhagen@usd475.org,https://www.bluejayathletics.org/spring/track-and-field-boysgirls,2026-09-22
+Liberal HS,Liberal,KS,Boys Cross Country,Head Coach,Joe Denoyer,joe.denoyer@usd480.net,Chad Friess,chad.friess@usd480.net,https://lhs.usd480.net/athletics/lhs-athletic-department-coaches,2026-09-22
+Liberal HS,Liberal,KS,Girls Cross Country,Head Coach,Joe Denoyer,joe.denoyer@usd480.net,Chad Friess,chad.friess@usd480.net,https://lhs.usd480.net/athletics/lhs-athletic-department-coaches,2026-09-22
+Liberal HS,Liberal,KS,Boys Track and Field,Head Coach,Marc Svaty,marc.svaty@usd480.net,Chad Friess,chad.friess@usd480.net,https://lhs.usd480.net/athletics/lhs-athletic-department-coaches,2026-09-22
+Liberal HS,Liberal,KS,Girls Track and Field,Head Coach,Joe Denoyer,joe.denoyer@usd480.net,Chad Friess,chad.friess@usd480.net,https://lhs.usd480.net/athletics/lhs-athletic-department-coaches,2026-09-22
+Shawnee Mission West HS,Shawnee Mission,KS,Boys Cross Country,Head Coach,Mark Porter,markporter@smsd.org,Bryce McElroy,brycemcelroy156@smsd.org,https://smwest.smsd.org/athletics,2026-09-22
+Shawnee Mission West HS,Shawnee Mission,KS,Girls Cross Country,Head Coach,Mark Porter,markporter@smsd.org,Bryce McElroy,brycemcelroy156@smsd.org,https://smwest.smsd.org/athletics,2026-09-22
+Shawnee Mission West HS,Shawnee Mission,KS,Boys Track and Field,Head Coach,Emily Brier,,Bryce McElroy,brycemcelroy156@smsd.org,https://smwest.smsd.org/athletics,2026-09-22
+Shawnee Mission West HS,Shawnee Mission,KS,Girls Track and Field,Head Coach,Emily Brier,,Bryce McElroy,brycemcelroy156@smsd.org,https://smwest.smsd.org/athletics,2026-09-22
+Wichita-Southeast HS,Wichita,KS,Boys Cross Country,Head Coach,Aaron Wilson,awilson7@usd259.net,Malik Jaradat,mjaradat@wichitapublicschools.org,https://southeast.usd259.org/athletics,2026-09-22
+Wichita-Southeast HS,Wichita,KS,Girls Cross Country,Head Coach,Aaron Wilson,awilson7@usd259.net,Malik Jaradat,mjaradat@wichitapublicschools.org,https://southeast.usd259.org/athletics,2026-09-22
+Wichita-Southeast HS,Wichita,KS,Boys Track and Field,Head Coach,John Wright,jwright6@usd259.net,Malik Jaradat,mjaradat@wichitapublicschools.org,https://southeast.usd259.org/athletics,2026-09-22
+Wichita-Southeast HS,Wichita,KS,Girls Track and Field,Head Coach,John Wright,jwright6@usd259.net,Malik Jaradat,mjaradat@wichitapublicschools.org,https://southeast.usd259.org/athletics,2026-09-22
+Andover Central HS,Andover,KS,Boys Track and Field,Head Coach,Aren Coppoc,,Chad Gerwick,gerwickc@usd385.org,https://achs.usd385.org/athletics,2026-09-22
+Andover Central HS,Andover,KS,Girls Track and Field,Head Coach,Aren Coppoc,,Chad Gerwick,gerwickc@usd385.org,https://achs.usd385.org/athletics,2026-09-22
+Andover HS,Andover,KS,Boys Cross Country,Head Coach,Jonathan Jeffcoat,,John Heise,heisej@usd385.org,https://ahs.usd385.org/athletics,2026-09-22
+Andover HS,Andover,KS,Girls Cross Country,Head Coach,Jonathan Jeffcoat,,John Heise,heisej@usd385.org,https://ahs.usd385.org/athletics,2026-09-22
+Andover HS,Andover,KS,Boys Track and Field,Head Coach,Jordon Regehr,,John Heise,heisej@usd385.org,https://ahs.usd385.org/athletics,2026-09-22
+Andover HS,Andover,KS,Girls Track and Field,Head Coach,Jordon Regehr,,John Heise,heisej@usd385.org,https://ahs.usd385.org/athletics,2026-09-22
+Derby High School,Derby,KS,Boys Track and Field,Assistant Coach,Eric Hendrick,,"Russell Baldwin, CAA",rbaldwin@usd260.com,https://dhs.derbyschools.com/directory,2026-09-22
+Derby High School,Derby,KS,Girls Track and Field,Assistant Coach,Eric Hendrick,,"Russell Baldwin, CAA",rbaldwin@usd260.com,https://dhs.derbyschools.com/directory,2026-09-22
+Shawnee Mission East HS,Prairie Village,KS,Boys Track and Field,Assistant Coach,Mark Simoneau,marksimoneau@smsd.org,Ryan Johnson,ryanjohnson@smsd.org,https://smeast.smsd.org/about/staff-dir,2026-09-22

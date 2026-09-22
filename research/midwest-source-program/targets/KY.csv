@@ -1,0 +1,439 @@
+school_id,name,co2027,athletes_all
+sch_9ce4e9e84423d9ce,Male,94,202
+sch_63a7a698200ce0cf,Ryle,91,327
+sch_2f8b7056f371972c,South Warren,73,286
+sch_2de44f5766eb0f4a,Oldham County,70,199
+sch_85e370a05b0d3de3,Campbell County,70,165
+sch_0abe8a1ef54d9686,Henderson County,66,138
+sch_05cbb1e34e062948,St. Xavier,64,184
+sch_4ca014511443569b,Frederick Douglass,63,182
+sch_72bf4195107a1e8f,Ballard (Louisville),61,157
+sch_ea80715c18217ae1,Pleasure Ridge Park,57,97
+sch_b45b9276971e118b,Fairdale,56,118
+sch_620a15a2f72ba325,Simon Kenton,55,135
+sch_91fd50cec2ab65d0,Dupont Manual,54,182
+sch_1419d4d83b1b9b25,Madison Southern,54,149
+sch_454759037ef3655d,Great Crossing,53,172
+sch_51ae3954d14bd0cb,South Oldham,52,221
+sch_f195e3519b362f8e,Warren Central,52,183
+sch_7ddf51ab64fe0bb4,Lafayette,52,154
+sch_b0b96434b60c2fb2,North Bullitt,52,138
+sch_f98ea3b349c423b9,Madison Central,51,158
+sch_414caacb8c0d5cff,Greenwood,49,180
+sch_64c5404f0044ad50,Anderson County,48,127
+sch_6649ce6f43d25399,West Jessamine,48,109
+sch_25646ec7da2e8a23,Eastern,47,175
+sch_fede1a18bab2206a,Trinity (Louisville),47,138
+sch_bb54e69f24a77d61,North Oldham,47,137
+sch_d0313838444ea93e,Covington Catholic,47,124
+sch_dfd67244f6d93489,Bowling Green,46,304
+sch_3fb75373c4d93ede,North Hardin,46,211
+sch_0ad1c4827ce2726d,Meade County,46,206
+sch_a1619635729fe192,Henry Clay,46,112
+sch_de545f9003b2455b,Sacred Heart,45,157
+sch_8cc878cab74a0f0d,Bryan Station,45,154
+sch_760415996bee5eda,Assumption,45,116
+sch_38a702f6c4435634,Highlands,44,298
+sch_cd53b291fa3a6367,Scott County,44,149
+sch_3b5783314bb2d6cf,Central,44,131
+sch_f96117d88c07afe6,Mercer County,44,125
+sch_6059ad103987cb61,Rowan County,43,221
+sch_355a77686c686dbb,Conner,43,155
+sch_d70fb44be3273a29,Madisonville-North Hopkins,43,150
+sch_c67267ce190c20c3,Paul Laurence Dunbar,42,114
+sch_49f8625c0ac7fecf,Lexington Catholic,42,111
+sch_4a0d3cc166d953ed,Cooper,41,197
+sch_80b9fa708a841b49,McCracken County,41,188
+sch_29a6f662d3d66b43,Calloway County,41,144
+sch_ee0ccdf8152842b5,Greenup County,41,122
+sch_732f819da312c85d,Bourbon County,40,233
+sch_a1238840766af907,Notre Dame,40,127
+sch_63b46b9bfbc2783a,Christian Academy-Louisville,40,97
+sch_55a5f16b5d134872,John Hardin,38,133
+sch_b22e88e6caf6b172,Daviess County,38,124
+sch_4cb1730b24ca0098,Atherton,38,117
+sch_0a1d4d72c916013b,George Rogers Clark,38,99
+sch_97d3376fab7477e7,Russell,37,318
+sch_aedbd383f56793dd,Owensboro Catholic,37,196
+sch_09c503a3e24b851c,Christian County,36,200
+sch_5899f4b9724f194a,Larue County,36,145
+sch_9151561cad23ee06,South Laurel,36,117
+sch_0a4e959f4814d582,Mason County,36,115
+sch_1321ae3128c292fe,Owensboro,36,96
+sch_ed046936627c7a15,Ashland Blazer,35,131
+sch_64a788ac6eb54cbd,Raceland,35,127
+sch_1573eca39cad600a,Tates Creek,35,127
+sch_dfe3205c0f9110a6,Fort Campbell,34,119
+sch_fc0308e7dd4a6f42,Bishop Brossart,34,97
+sch_a48ba4ee7c884f84,Scott,34,84
+sch_7ec2ed127a917127,Whitley County HS,33,190
+sch_add9615ddf146852,Boone County,33,186
+sch_c43e572b532244d9,Beechwood,33,163
+sch_f79f72065e1614be,St. Henry District,33,133
+sch_0a75a7e8a6f6af0b,Iroquois,33,57
+sch_b979a30c388b075d,Shelby County,32,187
+sch_968b4c0ffbe9942d,Woodford County,32,112
+sch_9d389e258cd4ee3b,Dixie Heights,32,111
+sch_3dd67e54df4d3c82,Valley,32,56
+sch_330f116b39c579b8,Walton-Verona,31,158
+sch_cfab61424122caec,Butler,31,98
+sch_f3c25590c56619fa,East Jessamine,31,93
+sch_6183534c4c951eb7,Garrard County,30,56
+sch_90e8051216d7fb9c,Central Hardin,29,258
+sch_12fafa5ac8e31d82,Murray,29,183
+sch_8358e1e66287acdb,Holy Cross (Covington),29,82
+sch_eb7fb49cb6e95e8d,Mercy,29,76
+sch_fb0ba33228e2eabd,Seneca,29,58
+sch_c3185bfd934ab6e8,Holy Cross (Louisville),29,50
+sch_04dfafa592ca9978,Pulaski County,28,188
+sch_694d7e3b70af9f1c,Elizabethtown,28,159
+sch_9322a754463e6443,Franklin-Simpson,28,105
+sch_8e122c43a1e015f1,Bullitt East,28,97
+sch_7d6591d5599b6e58,Bath County,28,88
+sch_c02757e988a7ec01,Breckinridge County,27,164
+sch_cab949275ce5432a,Rockcastle County,27,130
+sch_2a7bb0aa2e7963c1,Boyle County,27,94
+sch_09c3911ae1f38056,Nelson County,27,86
+sch_479e99527f1982ea,Southwestern,26,263
+sch_cda8d7b05d0bc36c,Montgomery County,26,174
+sch_4189244c2b220749,Johnson Central,26,97
+sch_89adf38bdf76fd6b,Waggener,26,54
+sch_6e4d639234a7baff,Fleming County,25,179
+sch_a155e5e7962527bc,Barren County,25,141
+sch_a5b55383b5601f86,Caldwell County,25,110
+sch_9c6486fdc22abd86,CKY Homeschool,24,291
+sch_a1cc1df0331ffee4,Grayson County,24,192
+sch_ec02ab0040ebb83a,Taylor County,24,155
+sch_05e81134bb2136f9,Danville,24,140
+sch_0a4d983496434e25,Corbin,24,129
+sch_adb4dad53f6ca98f,Paducah Tilghman,24,120
+sch_78759d6298d3236f,Knott County Central,24,119
+sch_2e46927de35fa2a4,Williamsburg,23,145
+sch_af19e1b97526948e,Ohio County,23,113
+sch_7585e376cc205120,Marion C. Moore,23,106
+sch_cc5acbf7e2ab9785,Green County,23,99
+sch_301f7e991eb61686,Frankfort,23,79
+sch_c9c6a80ce1380b50,Holmes,22,287
+sch_208eb9e05b11d06c,Harlan County,22,234
+sch_7db1b95ea15616d6,Fort Knox,22,163
+sch_8b825359c87263d9,North Laurel,22,126
+sch_05943cf1817f2560,W.E.B Dubois Academy,22,115
+sch_ade5b1f0fbed5508,Graves County,22,114
+sch_4529f475cdeedcb8,Apollo,22,105
+sch_9130b04c304818dc,Carroll County,22,91
+sch_a86846c213a3d367,Trigg County,22,91
+sch_dac7155e60a3d6a4,Jeffersontown,22,57
+sch_cc2dfd30916ae4f8,Thomas Nelson,22,56
+sch_92e6a6e9cd1c958e,Lincoln County,22,50
+sch_955d535d5285b10a,Glasgow,21,187
+sch_8504157a9c4c9ba9,Marshall County,21,141
+sch_0a35fb4830bdba17,Marion County,21,116
+sch_ecec576a2d9724a4,Powell County,21,113
+sch_57b391540959d069,Hopkins County Central,21,104
+sch_2e6b49f23672d1cb,Todd County Central,21,104
+sch_a0b35a74f0c926dc,Bardstown,21,93
+sch_8b82c64621c0743e,Livingston Central,21,78
+sch_2757352600f15ffd,Prestonsburg,21,55
+sch_0d396d1edea2849f,Pikeville,20,208
+sch_38cb02e27236761e,Spencer County,20,188
+sch_36d48933e88e1bb0,Lexington Christian,20,146
+sch_6473ede57a3c3532,Louisville Collegiate,20,96
+sch_9fcb6cda3343aea0,Henry County,20,63
+sch_4ebaf6e62fd4ae32,Francis Parker School,20,60
+sch_127544f6a9b35944,Warren East,19,110
+sch_a480d558464d8c69,Edmonson County,19,107
+sch_e482c07bcc6338e3,Bethlehem,19,106
+sch_a3fc3772123e416a,Pineville,19,92
+sch_f7f2b56a0b553f0f,Estill County,19,75
+sch_f0b603d3fec0dd92,Grace M. James Academy High School,19,73
+sch_2fcb68a763f344e2,Kentucky Country Day,18,138
+sch_e69d716a1f362544,Owen County HS,18,135
+sch_456ee9a5db861cfe,Leslie County,18,124
+sch_24cc229ff1ce2474,Newport,18,121
+sch_5a721e4de1577edc,Oneida Baptist Institute,18,101
+sch_8eb2955693c2d0d5,Lloyd Memorial,18,93
+sch_0e32304d86311cbf,West Carter,18,72
+sch_f28d2da36f9b39b3,Fairview,18,32
+sch_0cf0a70b61f928e8,Hancock County,17,126
+sch_62a5fbdc28e59af5,Hart County,17,125
+sch_13322d06b30abbe1,Shawnee,17,101
+sch_cb4d21d584c55d13,Ludlow,17,92
+sch_bb715ab45f51443a,Campbellsville,17,88
+sch_6d1037217f95bf39,Lawrence County,17,61
+sch_315f83a56531c827,Monroe County,17,59
+sch_19ca558670873426,Southern,17,41
+sch_50a044366ea9d3e0,Mayfield,17,39
+sch_533c80b29c7e01fb,Harrison County,16,171
+sch_675049244fdf661a,Paris,16,130
+sch_92fb749b8f229d38,Middlesboro,16,120
+sch_2dddb46b6f91a0d5,Metcalfe County,16,112
+sch_33d7733965869e1c,Dayton,16,95
+sch_5fb93a782bad92da,Knox Central,16,68
+sch_39e2e9244feb69f5,Fern Creek,16,64
+sch_c094ea641ed19823,Trimble County,16,35
+sch_bd8adf8b4a9f66f6,Pike County Central,16,26
+sch_8435d79d2da31302,Harlan,15,163
+sch_15d6735e1dc7e371,Butler County,15,110
+sch_239077c938de5131,Ballard Memorial,15,64
+sch_d507a7eeb9f8db21,Bell County,15,62
+sch_6be823ef3a4d4cc9,Newport Central Catholic,15,61
+sch_c99a26d0fe51ce00,Western Hills,15,45
+sch_8b163d85231d654a,Muhlenberg County,14,166
+sch_2bd840c462293da7,Walden,14,121
+sch_2bedf29532ac4f4b,Logan County,14,111
+sch_e9e2042472498133,Crittenden County,14,68
+sch_72ffc1285789040e,Pendleton County,14,65
+sch_04997f4cf2fcbce7,University Heights,14,62
+sch_b05c5d1255271e2b,North Hardin Christian School,14,41
+sch_98a4ea04c23f80cb,Betsy Layne,14,35
+sch_8fc70dcbe7ffd77b,Presentation,14,33
+sch_896bfdfa58826836,Somerset,13,171
+sch_e46f66255f124597,East Carter,13,153
+sch_8371148412eed6c8,Casey County,13,115
+sch_c9af98026f404e87,Model,13,89
+sch_51f52a400b7886d6,Washington County,13,66
+sch_3d46bed70ccdc4d6,Jenkins High School,13,56
+sch_ba94fe9c6f30f311,Bullitt Central,13,53
+sch_6f834a18cefddc83,Berea,13,38
+sch_e8f094d44cfc176f,Wolfe County,13,19
+sch_0e8c63dede419e8a,Highlands Latin HS,12,173
+sch_c5e7356dcd7ab066,Bellevue,12,118
+sch_fca5defa4be5a816,Boyd County,12,93
+sch_2643ba1a13f59e40,Morgan County,12,87
+sch_84c771c017bfc624,Clay County,12,79
+sch_0a9f03eaf7053d06,McCreary Central,12,69
+sch_8d2f302a1966ef2c,Russell County,12,68
+sch_041c280d107808da,Bracken County,12,61
+sch_c6e545f7f55eb6ee,Gallatin County,12,59
+sch_933fb3e8777692a0,Floyd Central High School,12,56
+sch_bd3105dd5e63e798,Perry County Central,12,56
+sch_720ab812dfcc5805,Belfry High School,12,54
+sch_fca36e7764f2946b,Lewis County,12,49
+sch_4efffbf0934715cb,Russellville,12,37
+sch_4b325f96a2caf4aa,DeSales,12,28
+sch_8902d1216422ad65,Covington Latin,12,27
+sch_408b9b5396f4a81a,East Ridge,12,23
+sch_e2d4005feac6a173,Danville Christian,11,160
+sch_68a890e15c7dac04,Jackson County,11,83
+sch_85d56fd2f5153ebc,Lee County,11,83
+sch_fc0d3e890c62873c,Adair County,11,82
+sch_3c8b474a49ccbc67,Sayre,11,65
+sch_303677a3863f4691,Collins,11,37
+sch_92525305cbe25c5e,Martin County,11,34
+sch_fd2a9f6881784027,Light Homeschool HS,11,23
+sch_0d5f4a2257e59596,Doss,11,22
+sch_69026260ce578863,Nicholas County,10,103
+sch_3ca65d5cea04ce44,Magoffin County,10,92
+sch_39f2a79a8ebe1b2b,McLean County,10,74
+sch_5768dba893a1212f,Brown,10,73
+sch_99cba018f5b0c2d5,Webster County,10,54
+sch_3c273c937701d1de,Franklin County,10,53
+sch_e3443e1a74fbdba4,Bluegrass United Home School Team,10,41
+sch_a7e501679145373b,Letcher County Central,10,33
+sch_4ff9f646f0fe09c7,Villa Madonna,9,136
+sch_0b2a5e6a11c7165f,Menifee County,9,95
+sch_647439c30a9eabe7,Dawson Springs,9,67
+sch_2b8918f092a721ff,Red House Home School High School,9,64
+sch_af41d18983869492,Fulton County,9,56
+sch_56c1e1f1f3050fbc,Shelby Valley,9,53
+sch_864a9dd21970d635,Allen County Scottsville,9,47
+sch_d9d622669d641594,Whitefield Academy,8,86
+sch_4a7aff10e1c78795,Breathitt County,8,50
+sch_e66a308194abfc93,Paintsville,8,45
+sch_61514ddf45adc75a,Frankfort Christian Academy High School,8,28
+sch_d825ee4da6243f01,Wayne County,7,151
+sch_a28df2b9a651492e,Burgin,7,94
+sch_20ddff3e1ef76623,Christian Educational Consortium,7,68
+sch_85b6d38ae88c2604,Union County,7,63
+sch_fc82e53c206a1cec,Fulton City,7,40
+sch_ad989dc887725c58,Buckhorn,7,34
+sch_fe9340f6f6c679a4,Red Bird,7,33
+sch_51501fa1a5531761,Assumption Academy High School,7,32
+sch_1080af5e8e94ed1b,Cumberland County,6,182
+sch_c8cfcff3a2ccd319,Portland Christian,6,169
+sch_870bfbe76ba3e4fa,Barbourville,6,53
+sch_410e81bb74bb364b,Elliott County High School,6,44
+sch_42bd8cb5c6a277ea,Grant County,6,36
+sch_86d7cbeb3973cbc1,Richmond Guardians HS,6,17
+sch_ce6211a0b48490b3,Williamstown,5,163
+sch_68cc2a993e2e769d,Faith Defenders,5,107
+sch_590c8b31a45b7b2b,Lynn Camp,5,56
+sch_1eedc61edba98423,Hickman County,5,48
+sch_c5952f74bbd7789a,Owsley County,5,44
+sch_d2cceeaf72b14fd3,Grace Christian Academy of Owensboro,5,26
+sch_593ea5ce6aeb29bf,St. Andrew's Academy HS,5,21
+sch_cde9b1d388b6a203,Phelps School,5,8
+sch_0805269a1e926466,Somerset Christian,4,116
+sch_757f33183a93903d,June Buchanan,4,43
+sch_a96af503fd4118b3,Trinity (Whitesville),4,40
+sch_b4d7ee66fc8321b1,Micah Christian School,4,39
+sch_52b8fef4452fe768,Pif Performance Elite,4,39
+sch_92efcadaf8def491,Northside Baptist Christian School,4,29
+sch_5cbc533751520884,Moore HS,4,19
+sch_e88e66ebd3031ebf,Bluegrass Blazers Homeschool,3,99
+sch_9de025717fdf8890,Community Christian (Paducah),3,98
+sch_96260a3878dd14b9,Calvary Christian,3,96
+sch_3f323759af731bd8,St. Mary,3,86
+sch_ef49d78853595105,Veritas Christian Academy High Home School,3,42
+sch_c8bede10e2ca4a65,Riverside Christian School,3,32
+sch_18179ab466a1b2a7,Augusta,3,31
+sch_d336d614ede18fd8,Kentucky School f/t Deaf,3,23
+sch_7e223d434791fde1,Caverna,3,7
+sch_832e0daa329b6375,Heritage Christian Academy (Hopkinsville),2,53
+sch_1873c242ebb2f817,Eminence,2,32
+sch_e4f148344647dd32,Christian Academy of Lawrenceburg,2,28
+sch_85ad7d8ace80aadc,Summit Christian Academy,2,28
+sch_2bbc37aa93fcba89,Christian Fellowship,2,26
+sch_107835f50f8e05df,Jackson City,2,14
+sch_bae493419e45105e,Academy of Individual Excellence (Louisville) High School,2,8
+sch_d158e09571382786,Western,1,133
+sch_c6722d8eb7b873b0,Community Christian Academy - Independence,1,89
+sch_e6b07eae4388f60d,Cornerstone Christian Academy,1,76
+sch_5ba45758cdc54a18,Clinton County,1,73
+sch_4f1ccf60ab232ffe,Lexington Latin High School,1,62
+sch_21124ae27ad45d78,Answers Academy HS,1,41
+sch_ecd289d074993442,Grayson County Homeschool,1,39
+sch_3d19b2813f49545b,Hazard,1,37
+sch_c490f543a52fe53c,Cloverport Independent School,1,32
+sch_ce1c7441798e4882,Faith Christian Academy High School,1,27
+sch_363f04b2cef604ee,St. Patrick,1,22
+sch_56d8b4de74d1d1ac,Rose Hill Christian School,1,19
+sch_7d9aa2bcd6ca418c,Foundation Christian Academy High School,1,15
+sch_a87b6ed646cfbb39,Annville Christian Academy HS,1,12
+sch_4f583dc2f94dfef0,Velocity Track Club HS,1,12
+sch_0bbb9d5e2a558e57,Lyon County,1,11
+sch_217d1fcbca4897b7,The Well of 979,1,6
+sch_df9f3b084f111fda,Robertson County High School,1,3
+sch_d5cd414a9c55adf0,Kentucky School f/t Blind,1,2
+sch_6186e3a190861ac0,Knights Track Club,0,96
+sch_a5ae847c26907e55,Smyrna Elementary,0,91
+sch_c136f71b09eb5127,Douglass,0,56
+sch_da0735df482d1607,Kentucky Christian Academy,0,56
+sch_52b78640a523c083,Yellow Jackets Homeschool Sports,0,51
+sch_a83ad7d0b5e3ac02,JCPS Louisville Lightning (Adapted Sports),0,48
+sch_eb6739f64e99f2f1,Valor Christian Academy HS,0,44
+sch_302566137af002f8,Christian Academy of Carrollton,0,39
+sch_3e12711e8e03c407,Hart County Middle School,0,38
+sch_02084b65afb8e4da,Louisville Classical Academy,0,27
+sch_781d3474ffc4c56f,Lakeside Christian Academy,0,13
+sch_554490099d8ff057,Piarist,0,13
+sch_4e062cedbb7e96f1,The Millard School,0,12
+sch_673f53c1d790faca,New Covenant Christian Academy (HS),0,7
+sch_00493c79aaa51134,Kentucky Christian Knights Athletics,0,3
+sch_968052c173d5670a,Evangel Christian,0,2
+sch_38f18de80c057287,Cordia,0,1
+sch_f81311912fbdb8e0,Great Faith Christian Academy,0,1
+sch_fcdf0954cb237fc7,Knight School for Girls Home School,0,1
+sch_4f191ae942b06be3,Lake Cumberland Runners,0,1
+sch_be623013e1588b74,West Kentucky Home School,0,1
+sch_69fb78c451121f8d,Alexander Home School,0,0
+sch_166260c4b202b43d,Allen Central,0,0
+sch_0bfcc3c784ed8d30,Angela Merici,0,0
+sch_63f419f84d637b07,Ashland High School,0,0
+sch_22804393f29c1fc4,Bagdad High School (CLOSED),0,0
+sch_1405bf0cb179d524,Bald Knob High School (CLOSED),0,0
+sch_030e7f6c667c5625,Barret Manual Training High School,0,0
+sch_c7530e3fbe1f16b1,Bell Homeschool Academy,0,0
+sch_1c4d0d2e544dd9e3,Berea Foundation High School,0,0
+sch_e05e09be58194fa8,Bernadette Dugan High School,0,0
+sch_62b15a770b244957,Beth Haven,0,0
+sch_04fecfd0e6f92668,Bishop David High School (CLOSED),0,0
+sch_daff9f3d1a036a7c,Bluegrass Christian School,0,0
+sch_43068e1b74b4af7f,Bourbon Christian Academy,0,0
+sch_99971ffc86a210c8,Bremen High School,0,0
+sch_d7766b5632c1c742,Camargo High School (CLOSED),0,0
+sch_85ff0097666d1d5f,Carlisle County,0,0
+sch_ebcfd2e2b9509178,Catlettsburg High School (CLOSED),0,0
+sch_a85ade7838e02a15,Caudill Home School Academy,0,0
+sch_36885a23b3d82854,Cawood (CLOSED),0,0
+sch_1467415b50c1367f,Cornerstone Christian School,0,0
+sch_d7856d7183020542,Cornerstone Prep,0,0
+sch_159013746d9c6382,Cumberland (CLOSED),0,0
+sch_023fd7dee6c102d9,Dewey Homeschool,0,0
+sch_42a4865bde0cf00c,Dilce Combs Memorial High School,0,0
+sch_86a9fe31cf1b1fb3,Do not use,0,0
+sch_a310ec7016c0b125,Durrett High School (CLOSED),0,0
+sch_8acffb0ca3cae473,East Hardin High School,0,0
+sch_f847e2f44d50e555,Evarts (CLOSED),0,0
+sch_2c1231981ceef6e4,FAKE,0,0
+sch_aeeac3424befa251,Falmouth High School (CLOSED),0,0
+sch_1c7497c7a55ee9d1,Flaget (CLOSED),0,0
+sch_69013a014f85ac7d,Flat Gap,0,0
+sch_03a78dd80a6776cc,Fleming Neon (Closed),0,0
+sch_acc286a16dfcab33,Four Pillars Homeschool,0,0
+sch_0ad23d788959ad00,Gablewood Christian Academy Home School,0,0
+sch_bcac83a91a7bbfab,Gethsemane Educational Institute (GEI),0,0
+sch_a5631950d99c184f,Glasgow Christian Academy,0,0
+sch_1111e42fa8f5c300,Glendale High School (CLOSED),0,0
+sch_01dc2eaab631dba4,Greensburg High School (CLOSED),0,0
+sch_58c2086d895fce17,Hanssen Homeschool,0,0
+sch_52888e532c02dfd8,Harrodsburg,0,0
+sch_d027c96c1675b204,Hazel Green,0,0
+sch_8ff8df3eeaf1b8fd,Heath (CLOSED),0,0
+sch_eaab7ad91c0fea01,Henderson City (CLOSED),0,0
+sch_2b61c89569de6e7c,Henderson Settlement (CLOSED),0,0
+sch_4ebf5fccd51391c0,Heritage High School (Florence),0,0
+sch_cc20c1b0e20e6138,Highview Baptist,0,0
+sch_2ad2171a7b2b0b8d,Holy Family,0,0
+sch_b9b24f18274da249,Holy Rosary (CLOSED),0,0
+sch_6f5fe526b4c48437,Jessamine County (CLOSED),0,0
+sch_4a396a5855a8408c,Johns Creek High School (CLOSED),0,0
+sch_9ae3f42bd582ea23,Jubilee Academy High School,0,0
+sch_dfe4981d786d431c,Kentucky Express,0,0
+sch_99ea28ecc664b139,Kentucky Military Institute (CLOSED),0,0
+sch_ca463c2f897230cc,Klepac Home School,0,0
+sch_a25bbebf0343a1cf,KTCCCA,0,0
+sch_b56d92e1715594bb,L.I.G.H.T. Runners High School,0,0
+sch_b792d5ec8082fd2b,Landmark Christian Academy,0,0
+sch_9444a7ddc4b89b97,Laurel County High School (CLOSED),0,0
+sch_569387d63128f288,Leitchfield High School (CLOSED),0,0
+sch_e7e8760787a880b6,Lincoln Institute (CLOSED),0,0
+sch_3d25e0cff8421e20,Lone Oak (CLOSED),0,0
+sch_f0606a81b5244b53,Louisville Homeschool High School,0,0
+sch_0e9601dcf24858fa,Madison Independent (CLOSED),0,0
+sch_d062fc4ec4f39fab,Meade Memorial High School (CLOSED),0,0
+sch_ae4d87b1873747fe,Millersburg Military Institute,0,0
+sch_26474cf348b4421b,Monticello,0,0
+sch_b55aa43553401b3a,Mount Sterling High School (CLOSED),0,0
+sch_a7a301ac854e573b,Muhlenberg North (CLOSED),0,0
+sch_6caf1e9112fa9aec,Muhlenberg South (CLOSED),0,0
+sch_df234d1e7a199514,Nur Islamic school of Louisville High School,0,0
+sch_d6b1dbaa84972570,Olmstead School,0,0
+sch_3becdcf7e5a74acb,Paducah Track Club,0,0
+sch_bac2f4fc9ffb5120,Parlor Grove Christian Academy Home School,0,0
+sch_cc3774cf3a81dcec,Pleasant View Christian School,0,0
+sch_091f32eb51df3cf3,Providence (CLOSED),0,0
+sch_2c03bd5813cee1cd,Reidland (CLOSED),0,0
+sch_fefe5588a98fd34f,Ruddles Mill School (CLOSED),0,0
+sch_19af555e802e0e01,Saint Camillus Academy,0,0
+sch_b4af5febb76bf6d1,Scott County Track Club,0,0
+sch_5183b11bab00451f,Sheldon Clark (CLOSED),0,0
+sch_e27ab56fd5f13389,Silver Grove School (CLOSED),0,0
+sch_80293dbd760b6a18,SIMMONS COLLEGE OF KENTUCKY,0,0
+sch_8d5a5fd6a8bc9521,South Floyd,0,0
+sch_e486f9e990d59a58,South Hopkins High School (CLOSED),0,0
+sch_916f74270d682072,Southwest Christian (CLOSED),0,0
+sch_34e4c4797876ad6a,St. Joseph Preparatory High School (closed),0,0
+sch_bc2dd73780d52227,St. Joseph School (CLOSED),0,0
+sch_5a105c77d1ba2ad3,Stuart High School (CLOSED),0,0
+sch_e25b5c78940aa7a2,Tennessee Athletic Project,0,0
+sch_8eabc5c1a1538080,Thomas Jefferson High School (Closed 1981),0,0
+sch_e4354ac292052a66,Tompkinsville (CLOSED),0,0
+sch_b1a7436030367792,Trimble Home School,0,0
+sch_73a834e2300fc194,University Breckinridge School (CLOSED),0,0
+sch_7e824c3ee07f8471,University High School (CLOSED),0,0
+sch_5cfa6848d78966dd,Valor Traditional Academy,0,0
+sch_ce576c4ca6e943c1,Victory Christian Academy,0,0
+sch_aa4db801cfee794e,Vine Grove High School (CLOSED),0,0
+sch_d8655aaa0ddc1224,Virgie High School (CLOSED),0,0
+sch_e468f3318a3feaa1,Waller High School,0,0
+sch_613deb1b0ffe5f00,Warren County High School (CLOSED),0,0
+sch_ddb8419217bb8746,Wesley Christian School HS,0,0
+sch_e3afafc1eef240c0,West Hardin (CLOSED),0,0
+sch_9684142f0cff60d4,West Hopkins High School (CLOSED),0,0
+sch_aceb5ccc681adba1,Westport High School (CLOSED),0,0
+sch_c30277a2eaa9500c,Wheelwright,0,0
+sch_a2f9b33aad98a171,Whitesburg,0,0
+sch_9812dd3716ea3c69,Winchester High School,0,0
+sch_403e3c277bfe8409,Woodland Hills Homeschool High School,0,0
+sch_2c2c7e99a2b3efba,Wurtland High School (CLOSED),0,0

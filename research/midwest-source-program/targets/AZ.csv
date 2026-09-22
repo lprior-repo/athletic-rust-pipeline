@@ -1,0 +1,412 @@
+school_id,name,co2027,athletes_all
+sch_176c1fe530c3475c,Flagstaff High School,132,338
+sch_03db41effb1cc034,Millennium High School,126,357
+sch_9cb0f2a216ae3465,Red Mountain High School,109,305
+sch_f015ef412622f137,Corona del Sol High School,105,313
+sch_5977066f4e1be14d,Basha High School,105,283
+sch_3939c61701d6c924,Coconino High School,98,243
+sch_8351568a8168b735,Mesa Mountain View High School,94,288
+sch_d7083a841207f954,Cibola High School,89,227
+sch_0a5758b5ecc7fbf3,Shadow Ridge High School,88,218
+sch_8004c478526c6f61,Mountain Ridge High School,85,293
+sch_412af44e75515149,Verrado High School,85,271
+sch_db3085d3a000c031,Mesa High School,80,120
+sch_ac9ad50633d2887d,Arizona College Prep,78,321
+sch_8d71200875c45689,Williams Field High School,78,230
+sch_f2b1386d64a4b060,Crismon High School,75,250
+sch_bffc7657e3505255,Salpointe Catholic High School,71,201
+sch_1163e89a098f09b0,Boulder Creek High School,70,270
+sch_0b53dbf5956fffd7,Highland High,67,294
+sch_abbb8a9d5e5f1c15,Gilbert High School,66,243
+sch_5bd9e9866ab3f95e,Catalina Foothills High School,65,273
+sch_f0d9984c0fe34998,Campo Verde High School,65,196
+sch_4dbec07d8dbc8e7a,Notre Dame Preparatory,64,151
+sch_5d7c1f45f41b661c,Nogales High School,64,119
+sch_ec40cce0e59ff72b,Gila Ridge High School,62,129
+sch_733e3d8bdeb928d8,Pinnacle High School,60,196
+sch_2e2b48cc8fbfd17e,ALA Queen Creek,59,276
+sch_54ce5d96a24fa9cd,Cesar Chavez High School,59,130
+sch_9973281eeb8f0b2d,Brophy College Preparatory,58,249
+sch_603a888ce084df13,Tolleson Union High School,57,137
+sch_23691b7329586d1f,Marana High School,56,207
+sch_a631a6bf70ff6253,Liberty High School,56,206
+sch_fa7349cfe9b02d35,Deer Valley High School,56,188
+sch_ddf5d221593fed68,Willow Canyon High School,56,146
+sch_c7f4d9a93d2978e8,Rincon University High School,56,129
+sch_071cccbaf0c45d0c,Sandra Day O Connor High School,55,288
+sch_bd87c7908c24e780,Desert Vista High School,55,208
+sch_2ced4b52ab556294,Centennial High School,55,133
+sch_54a853c55e8b5b2c,Mica Mountain High School,52,178
+sch_e276882c00c985be,Ironwood Ridge High School,52,130
+sch_48418bcea4dfdb49,Mountain Pointe High School,52,113
+sch_71ab57ebdefdaa9d,Buckeye Union High School,51,141
+sch_885b1b20e7e272ba,Glendale High School,51,111
+sch_c0541f72cc765530,Westwood High School,50,140
+sch_b0d8bbdffa58d03b,Snowflake High School,49,223
+sch_ef56badc23f2b088,Higley High School,48,151
+sch_190c17f52ab1d774,Bradshaw Mountain High School,48,137
+sch_e90c4706b84a1823,Chaparral High School,47,155
+sch_21d9774a4e050ff3,La Joya Community High School,47,110
+sch_62dd158067e5d3c8,Valley Vista High School,47,110
+sch_ebb37d96742fdf09,Queen Creek High School,46,206
+sch_d2150bdcb62e4f9f,Sunnyslope High School,46,160
+sch_8e1cbb0ef660a452,Sunrise Mountain High School,46,137
+sch_0f3ca3090acc32aa,Tucson Magnet High School,46,104
+sch_01e6291a9fd08ec4,Winslow High School,45,244
+sch_0cb161ccc8c2e7df,Estrella Foothills High School,45,132
+sch_1b75b7c9b2ddfada,Alchesay High School,45,106
+sch_661fb3d2c918572c,McClintock High School,45,106
+sch_ff6ab4e52fe2eb58,Marana Mountain View High School,44,129
+sch_a3c573f6daad3731,Casteel,43,191
+sch_24acd18b64fdf35e,Pusch Ridge Christian Academy,43,176
+sch_9472783c386cf1bd,Alhambra High School,43,72
+sch_29c5a6884e234f5a,Sahuarita High School,42,105
+sch_bc25b7d8e8d751f6,Copper Canyon High School,42,78
+sch_e57568f94912a948,ALA West Foothills High School,41,237
+sch_bf50de94d8089afb,Cienega High School,41,163
+sch_d5aec35c442b8a3c,Perry High School,41,115
+sch_784eab328b91796a,Chandler High School,41,112
+sch_5d3f16d722eb3f1e,Cortez High School,40,79
+sch_e9cf7b25e31ef9fd,ALA Ironwood,39,214
+sch_737bcdcdd50379b9,Chinle High School,38,225
+sch_1f2119695efbaace,Greenway High School,38,172
+sch_48c59238651ada85,Blue Ridge High School,38,147
+sch_2aa1e14128df1695,St. Johns High School,38,142
+sch_7f83cca3e91f5b00,West Point High School,38,142
+sch_0b28f2839c196893,Desert Mountain High School,38,127
+sch_426edc2da1a23983,Hamilton High School,38,124
+sch_79a1763709ab2cd1,Ironwood High School,38,106
+sch_fa66fe8891787f9f,Lee Williams High School,38,92
+sch_78a63ecd2b4ecb33,Thatcher High School,37,194
+sch_07b4268c280f59f5,Arcadia High School,37,127
+sch_89764f1ae8f5516b,North High School,37,112
+sch_d297e670ec520333,Walden Grove,37,94
+sch_3f5824a9e985c376,Saguaro High School,36,111
+sch_fb108c0a93748930,Lake Havasu High School,36,110
+sch_e23fcdcb7e068209,Independence High School,36,98
+sch_365426800b835320,Trevor G. Browne High School,36,76
+sch_319f11fa04884e6a,Chino Valley High School,36,73
+sch_4ebc5e189340a44a,Paradise Valley High School,35,141
+sch_a784b149adc183a5,Xavier College Preparatory,35,111
+sch_d3537b6bced73d5c,Youngker High School,35,111
+sch_5d1515b21382048e,Somerton High School,35,92
+sch_58c5c7d47d14bf49,Canyon Del Oro High School,34,155
+sch_e3ae2ba63ce01cd3,Valley Christian High School,34,131
+sch_d8d0ea4e1ec4ea9f,Monument Valley High School,34,95
+sch_7b1bfce8e38a2d9c,St. Mary's Catholic High School,34,90
+sch_d14d40324c6269f7,Carl Hayden Community High School,34,66
+sch_98351e23c5dba571,Benjamin Franklin,33,205
+sch_8afcbf5c3930e044,North Phoenix Prep,33,163
+sch_39ac98875ade3be0,Glendale Prep Academy,33,151
+sch_09be90a1cd987c59,Poston Butte,33,125
+sch_5939a1efa9f81b10,Prescott High School,33,106
+sch_9c91f7fb09fad241,Florence High School,33,96
+sch_26deccbedc1eecdf,Buena High School,33,84
+sch_d67522ec20ffeaf0,Payson High School,33,77
+sch_b1b660ec6135c82d,Sunnyside High School,33,64
+sch_f609638202036d5b,Paradise Honors,32,156
+sch_2b1a83c5473875e7,Horizon High School,32,115
+sch_1fe84df472f17cf2,Betty H. Fairfax High School,32,63
+sch_f97d558e8d17306f,Douglas High,31,150
+sch_73b8aeab870ad802,Maricopa High School,31,117
+sch_fe739e791a6e3198,Dysart High School,31,110
+sch_e20f6cdae2209692,Tanque Verde High School,31,104
+sch_f2b91ef779c9ab54,Desert View High School,31,91
+sch_7363d57ca5194b93,Seton Catholic High School,31,73
+sch_dacb4db2ac6bb18c,Show Low High School,30,200
+sch_2d7ba3bd653b3a1c,Sierra Linda High,30,136
+sch_f31dca565ed35bc8,Desert Sunrise High School,30,87
+sch_8a1066dd095b11c4,Sabino High School,30,78
+sch_742f745fb4a3c14d,Madison Highland,30,75
+sch_5ba843b7d6ee48ca,Yuma Catholic,30,74
+sch_ecf7b1bb64de001d,Page High School,29,170
+sch_641b649b70063524,Pima High School,29,129
+sch_f202276a7e42f773,Round Valley High School,29,129
+sch_93f130319c62f159,Cactus Shadows High School,29,113
+sch_c88559c669e3383c,Camp Verde High School,28,172
+sch_f8051b93ccefbdbc,Eastmark High School,28,165
+sch_d27e49c51da0b448,Hopi High School,28,143
+sch_89f9f4abf44d3512,Canyon View High School,28,129
+sch_3ea4aaec6664a429,Tempe High School,28,87
+sch_d18a308e494a67fe,Rio Rico High School,28,75
+sch_8a3d691b973496f0,Shadow Mountain High School,28,69
+sch_e8e82ccb37dc3057,Moon Valley High School,28,61
+sch_4dc4136b34412e33,Flowing Wells High School,27,161
+sch_8c4ddeae60790bb9,Trivium Preparatory Academy,27,106
+sch_53effdfea674f1de,Window Rock High School,27,98
+sch_57b274ddee911e5c,Skyline High School,27,88
+sch_166933115df7f569,Mesquite High School,27,82
+sch_17b1bb0ae134c118,Tuba City High School,26,113
+sch_6f7398cbb289918a,Empire High,26,86
+sch_a21bfb40edc75e3f,Arizona Lutheran Academy,26,85
+sch_1800754d3a0aaa38,Westview High School,26,74
+sch_911d5216fbdbaa2a,Kofa High School,26,56
+sch_dec710d82bfec35f,North Canyon High School,26,44
+sch_cb585a9015c53e0f,Ganado High School,25,129
+sch_11fb2cc5625ae1f1,Casa Grande Union High School,25,128
+sch_7fd1f457b39ba07d,Desert Ridge High School,25,103
+sch_90417c7a2273deae,Peoria High School,25,77
+sch_f893c8f0982206a0,Vista Grande High School,25,72
+sch_05dd106c2c2078ed,ALA Gilbert North,24,141
+sch_8860b05b2d428adc,Coolidge High School,24,127
+sch_fc15971be50cb34e,Safford High School,24,124
+sch_9459f28156dc8cd9,St. John Paul II Catholic High School,24,88
+sch_25c0e26e2945b4a9,Thunderbird High School,24,87
+sch_c96d72a601d9fb6a,Mingus Union High School,24,85
+sch_a0076e918e4e2ecb,Gilbert Christian High School,24,74
+sch_9d065ac948c32a8a,Marcos de Niza High School,24,66
+sch_d90f6f17b9908432,Highland Prep,24,56
+sch_a355c845fe77a029,Phoenix Central High School,24,48
+sch_9db3641eb55f4fdc,Miami High School,24,38
+sch_736694cfe9745094,Chandler Preparatory Academy,23,133
+sch_76a8376554304311,Heritage Academy Mesa,23,117
+sch_1c4b90c106a80662,Maryvale Preparatory Academy,23,112
+sch_34cd67cacb9f221b,Holbrook High School,23,101
+sch_8cc99c1c2af9125f,Heritage Academy Gateway,23,100
+sch_2af9e212bba3d585,Sahuaro High School,23,60
+sch_d60822a569659c9f,Barry Goldwater High School,23,52
+sch_cdc678f2bd2a877e,South Mountain High School,22,129
+sch_6d348419b3609fd5,Northland Preparatory Academy,22,72
+sch_167eb734c58d2184,St. Augustine Catholic High School,22,49
+sch_2ac0cb745ae7a850,Horizon Honors High School,22,47
+sch_7a89d268c7c337a2,Gilbert Classical Academy,21,77
+sch_17c823778244671e,St. David,21,63
+sch_a76298a1e537a1dd,Santa Cruz Valley Union High School,21,54
+sch_01ed6ae8751b6023,Palo Verde High Magnet School,21,42
+sch_c137ac5d64150b34,Camelback High School,21,34
+sch_89ee78b5cc6efe90,Desert Edge High School,20,95
+sch_b42d94e33f2594b0,Amphitheater High School,20,87
+sch_665fe22474e7a459,Northwest Christian High,20,81
+sch_1b5317f135e4e0e1,Baboquivari Middle/Senior High School,20,66
+sch_718e2cbbda233999,Cholla High Magnet School,20,30
+sch_721ba43776e0fa77,Scottsdale Christian Academy,19,126
+sch_41b6ebef66fe719c,Arete Prep Academy,19,99
+sch_1cb473831b1d769a,Maryvale High School,19,74
+sch_8889eb90f146d43c,Heritage Academy Laveen,19,73
+sch_b649e65bd587bb4f,Apollo High School,19,61
+sch_06a3fcbe58746bf2,Cactus High School,19,56
+sch_0458206c883f6672,Tonopah Valley High School,19,53
+sch_f26bf7b4b8108a05,Willcox High School,18,118
+sch_5dec72f298a7673a,Agua Fria High School,18,72
+sch_534d8cce85355476,Phoenix Christian Junior/Senior High School,18,68
+sch_3e19704ba000370b,Raymond S. Kellis High School,18,68
+sch_a1f03efee49f2557,Mohave High School,18,52
+sch_29cb60b90553d2e3,Tombstone High School,18,47
+sch_e2320f47f5f72f0d,Benson High School,17,186
+sch_7e3770c96b997469,Sedona Red Rock,17,82
+sch_1e3b452df88e81bb,EAST VALLEY ATHLETES FOR CHRIST,17,79
+sch_834590255ae2cc24,Washington High School,17,76
+sch_ae0a342b0f00623d,Combs High School,17,69
+sch_ac1848be2e60020f,Globe High School,17,53
+sch_118ea3f98ef390bb,River Valley High School,17,51
+sch_6962253032162514,Catalina Magnet High School,17,38
+sch_505ebd4081895442,Mission Heights,16,57
+sch_c1b48c248578178b,San Tan Foothills High School,16,51
+sch_5e46f904a1af5ec0,Kingman High School,16,50
+sch_77d2aaa73b7b8625,Many Farms High School,16,49
+sch_92efda50a8cf97bf,Desert Christian High School,16,41
+sch_ef3f20b1341e7849,Veritas Preparatory Academy,15,114
+sch_4e8c03000312dc11,Scottsdale Prep Academy,15,94
+sch_6d1f520dd6cef6ba,Dobson High School,15,59
+sch_4f3841388956a153,Canyon State Academy,15,31
+sch_de3bc6f31295cdd2,Grand Canyon,15,25
+sch_687e62b75383a6dd,Coronado High School,14,121
+sch_c775d4203b742e95,Pinon High School,14,57
+sch_68057c19b074e56f,Morenci Jr./Sr. High School,14,40
+sch_f54fadb3d3f6a97a,Odyssey Institute,13,174
+sch_6667cb346346f7c1,Yuma High School,13,29
+sch_a99200ef29376092,ALA Anthem South High School,13,24
+sch_9acca9fa2f78591f,Valley Lutheran High School,13,19
+sch_7638b94b21645dfd,Anthem Preparatory Academy,12,131
+sch_39523c17a550dd08,Lincoln Preparatory Academy,12,100
+sch_ceebc510f77d5055,Kingman Academy of Learning,12,61
+sch_8f7b48d8bbe5051a,Fountain Hills High School,12,42
+sch_450ba3346345c9fa,Pueblo Magnet High School,12,41
+sch_599d9941d642c6fb,Joseph City High School,11,75
+sch_0dacd860c79a0672,Cactus Canyon,11,58
+sch_8d16a8215cc0102e,Parker High School,11,47
+sch_dac091459c656fdf,North Valley Christian Academy,11,39
+sch_e36f0c90a4072a7f,Wickenburg High School,11,26
+sch_a8c928bb67348843,Ray  High School,11,20
+sch_35c7709bc57fe508,East Valley Tack Club,10,50
+sch_de00cfded6ea7368,Santa Rita High School,10,34
+sch_1ef00f0ba0402ef2,BASIS Flagstaff,10,21
+sch_9e760d9aa6954bad,San Luis High School,10,16
+sch_00262c4902d495e3,Jones-Gordon,9,68
+sch_fd25452ef9dcc1af,St. Michael Indian School,9,65
+sch_a7b9f755f748ef4e,Trinity Christian School,9,56
+sch_16495d1c3a8d9dad,Phoenix Country Day School,9,55
+sch_a42fe2b87a30dd5f,Rancho Solano,9,53
+sch_0fe8a222420b0060,Apache Junction High School,9,48
+sch_884a5c53732cc0dd,Heritage Academy Maricopa,9,47
+sch_3d7f0c06f74ef668,Bisbee High School,9,38
+sch_0ad3b098bc945a78,San Carlos High School,9,33
+sch_f3286a29a428ed9e,Andrada High School,9,26
+sch_ad4b3305c53d39e5,Salome High School,9,16
+sch_249daa0f7addd205,Mirror Image Track Club,9,13
+sch_e7a710ec8ab9afe8,Theodore Roosevelt School,8,83
+sch_1a8f590382d31af5,BASIS Scottsdale,8,78
+sch_5198a0194c104949,ALA Mesa North,8,71
+sch_61c9199f8f084f17,ASU Prep Academy Polytechnic,8,57
+sch_e7e8750889dc07a9,Basis Chandler,8,52
+sch_fb7cd4e2b352d788,Paradise Valley Christian,8,52
+sch_9c1ef4df712c3aae,Highland Prep West,8,32
+sch_5b56b87fb4a50998,Verde Valley School,8,23
+sch_860d209874d5a523,South Pointe High School,8,20
+sch_f3054cf9d4582147,Leading Edge Academy-Gilbert,7,92
+sch_d487bb9b4de10a67,Tempe Preparatory Academy,7,53
+sch_ba2c09bf8f2fbf84,Cicero Preparatory Academy,7,40
+sch_20ca6dd552cb1d3c,Bourgade Catholic High School,7,34
+sch_ec900652ef6dc6ca,Red Mesa High School,7,19
+sch_658c1482ec4dfc35,Phoenix Day School for the Deaf,7,17
+sch_67731a895022d85d,Ridgeline Academy,6,55
+sch_6a270922c8a8c0f6,Dishchii Bikoh High School,6,40
+sch_25bd386edf30ccf0,Desert Star,6,21
+sch_857604501bcd4347,Metro Tech,6,21
+sch_8dd470602a4f92b4,Imagine Prep Superstition,6,11
+sch_3d8c651963d4d10b,San Tan Charter,5,87
+sch_dcef7dff3052fc68,The Gregory School,5,35
+sch_a714c1536c2d80a4,Ville de Marie,5,35
+sch_a901f0174fce36dd,Shonto Prep High School,5,31
+sch_eeb6d3f566f6ea1e,Valley High School (Sanders),5,30
+sch_18f0c1783269ac50,Dream City Christian School,5,26
+sch_57854b1383981440,Fort Thomas High School,5,25
+sch_9e3eec6510c8fa32,Alta Vista High School,5,24
+sch_9948ea607946a8ea,Mayer High School,5,15
+sch_354bd56b350e5036,San Pasqual High School (California School),5,13
+sch_a4f52dbba497a307,ALA - Vistancia,4,81
+sch_eed879e27b2f517d,Mogollon High School,4,80
+sch_3557ba516c3685e6,BASIS Phoenix,4,10
+sch_66eace5570e6323d,Valley Union High School,4,5
+sch_0ae7bae32f69f392,Arizona School for the Arts,3,28
+sch_b29bb221989a4632,Arizona State Schools for the Deaf and the Blind,3,11
+sch_d12d5d7dc35585f3,New Way Academy,3,11
+sch_812aed390b7a11fc,Music Mountain Jr. / Sr. High School,3,10
+sch_a0e999bbec28f69b,Arizona pole vault Academy,3,5
+sch_6708554c2e8e701b,BASIS Goodyear,2,75
+sch_428d3fac9f3c46da,Rock Point High School,2,25
+sch_f9a9888a0ccae945,American Heritage Academy,2,18
+sch_070f40b00b0748e6,Antelope Union High School,2,13
+sch_b46e9e502c686a1e,Arizona Cultural Academy,2,10
+sch_f0a6389c84bc24b4,Fredonia High School,2,8
+sch_6f233464be897be4,Greyhills Academy High School,2,8
+sch_4d8ba59f852ad472,Sequoia School for the Deaf and Hard of Hearing,2,4
+sch_e16bbe041722ff94,Tohono O'Odham High School,2,3
+sch_a1a032aeea92ee28,San Simon High School,1,23
+sch_6e1cea1da8bbb0cc,The Orme School of Arizona,1,23
+sch_103800491da5418e,Skyline Prep,1,20
+sch_fdd11b1de6526776,Basis Mesa,1,9
+sch_fbb64a647cca4b16,Sequoia Pathway Academy,1,8
+sch_af5f039b9731abbe,South Ridge High School,1,8
+sch_fd78614606d66e9b,Brighton Charter,1,4
+sch_d0b52b445d5451df,Duncan High School,1,2
+sch_b21d4c98ec24ec16,Phoenix College Prep,1,1
+sch_7b6e908e135a3a10,Pueblo Middle School,0,104
+sch_905435ecbb9d0e5e,Eduprize Gilbert,0,69
+sch_a988bf4183657733,Destiny School,0,62
+sch_e7d07e9725ca8e36,Winslow Junior High School,0,57
+sch_e41f2e6c508aa155,Tonalea K-8,0,53
+sch_392d0408eb517463,Glen Canyon Outdoor Academy,0,34
+sch_61e7338b781edaf7,BASIS Prescott,0,32
+sch_66ce58a68e79d155,St John XXIII Catholic School,0,29
+sch_16d94e50d23d2869,Fremont Junior High School,0,28
+sch_dc988def63de7ada,Tri City Christian,0,19
+sch_3fbca769749a12ee,ASU Preparatory Academy Phoenix,0,18
+sch_8c0018e620c3b2a1,James Madison Prep,0,16
+sch_16ebeee73d9a6bfd,Peridot - Our Savior's Lutheran School,0,16
+sch_34147e3568d79733,Academy of Tucson,0,15
+sch_538feb20c90cde4d,Montessori Academy,0,15
+sch_4b9d9d099f024416,Shepherd,0,14
+sch_33be40ce4a4fc0c7,Calibre Academy,0,13
+sch_f31af43eb64f782e,Wickenburg Christ Legacy,0,9
+sch_83cf81d689773d19,Arcadia Christian Academy,0,8
+sch_90a719e8fe8adba7,East Fork Lutheran High School,0,8
+sch_3430d1c861f5f891,Herberger Young Scholars Academy,0,8
+sch_a6acc169a3412592,Sonoran Science Academy,0,8
+sch_5e883c95cdb90744,Dishchii' Bikoh Jr High,0,6
+sch_f258b0802bf8af37,Thunderbird Adventist Academy,0,6
+sch_5fc26bd278c68c1d,Imagine Prep Surprise,0,3
+sch_e9dc75ffc49c12c3,Gila Bend High School,0,1
+sch_1f3d1ee13e6f35cf,Velocity SUNS Athletics,0,1
+sch_edf3a8cb26006429,ACCLAIM Academy,0,0
+sch_fae31479bfc2c966,Ajo Unified School District,0,0
+sch_2b06e8e7ccf4ab61,ALA Sierra Vista,0,0
+sch_5fb5223cdc102307,Arizoana USA Track  & Field,0,0
+sch_e559486aa974a64d,Arizona Athletics,0,0
+sch_bc069c405fcc6983,Arizona Interscholastic Association (AIA),0,0
+sch_fc361cfbf5466678,Ash Fork JUSD #31,0,0
+sch_97203cbf0880a7c6,ASU Prep Digital,0,0
+sch_91ebec4f133933ad,Bagdad High School,0,0
+sch_0c8968e24d316460,BASIS Ahwatukee,0,0
+sch_3fc347064af80502,BASIS Peoria,0,0
+sch_819cd10b6a67dcdc,Beaver Dam High School,0,0
+sch_776dba2e14f9e98d,Benson Middle School,0,0
+sch_d745518e83999cf7,Berean Academy,0,0
+sch_a4f8f6b884a1dbee,Bowie High School,0,0
+sch_1dda75c674366349,Brimhall Junior High School,0,0
+sch_64ad6d8166b40c21,Carden of Tucson,0,0
+sch_b0bdf9ad0aa115a0,Carson Junior High School,0,0
+sch_19ec592740f00839,Caurus Academy,0,0
+sch_be565267932a57c2,Cibecue,0,0
+sch_29ff2cf9d7378ab0,Clifton High School,0,0
+sch_a6eaa2d30d99e7f4,Coconino CC,0,0
+sch_edede0b1832f9772,DadBod,0,0
+sch_d737a126bd5831bc,Dove Mountain CSTEM K-8,0,0
+sch_139c065ec4871124,Echo Canyon,0,0
+sch_ae8c03dbceab9691,El Capitan High School,0,0
+sch_8d1ae1b8efc84898,Empower College Prep,0,0
+sch_6b698d537f0f7909,Faith Lutheran,0,0
+sch_75a57d426f30ea08,Foothills Academy College,0,0
+sch_4370b0e559919a80,Green Fields Country Day School,0,0
+sch_8deac295868fbb92,Hayden High School,0,0
+sch_57880231cabec23e,Heritage Gateway,0,0
+sch_77ce06c0ecc7477a,Imagine Prep Coolidge,0,0
+sch_779cc917113ae658,Immaculate Heart High School,0,0
+sch_977085064d1150b9,Israel Home School,0,0
+sch_5b12a9a3dddc277e,Jefferson Prep,0,0
+sch_e4a2b1438bde736c,Joy Christian School,0,0
+sch_4bec5cc85c688b6e,Kino Junior High School,0,0
+sch_3e1572fad911f639,Leading Edge ST,0,0
+sch_d96ded687ed78267,Lourdes Catholic School,0,0
+sch_fd0206099ef9bd67,Mesa Junior High School,0,0
+sch_9a5db5183bb699c1,Mingus Mountain Academy,0,0
+sch_9ad977e10e97c940,Mohave Accelerated,0,0
+sch_377c3c220ab4832c,Mountainside,0,0
+sch_97f4c6e754137188,NFL Yet Academy,0,0
+sch_99cf52b9f153f710,North Pointe Preparatory,0,0
+sch_045e1fb695ee87a7,Our Lady of the Sun,0,0
+sch_f27b065e1e583718,Patagonia Union High School,0,0
+sch_661e5f962f8ede1a,Peoria Accelerated High School,0,0
+sch_85a18e79b31770d2,Poston Junior High School,0,0
+sch_5519b2e00b66ef49,Powell Junior High School,0,0
+sch_2d2e04dd33ab29ce,Precision High School,0,0
+sch_b07ae172e0c99c8f,Red Valley-Cove High School,0,0
+sch_4a4503ea2d9aa0e2,Redline Athleticus,0,0
+sch_1696ea43316beaa0,Rhodes Junior High School,0,0
+sch_733c717ef47ac36f,Ridgeview College Prep,0,0
+sch_9d3b8689fa48c9e0,Rose,0,0
+sch_293f3ea6a14c5e0a,Rough Rock Community Schools,0,0
+sch_3623da0a1b0094cd,Salt River High School,0,0
+sch_5a13ec25e43f4a66,San Manuel Jr. Sr. High School,0,0
+sch_c3abca8e2661bc94,San Miguel High School,0,0
+sch_92b213cab211168c,Scottsdale Middle School,0,0
+sch_7dfc481fa4c78b92,Seligman High School,0,0
+sch_e5cd2f712ae214e4,Sequoia Secondary,0,0
+sch_696222d331cab3f7,Sinagua High School,0,0
+sch_ec4a18270bff139e,Smith Junior High School,0,0
+sch_d9f8e07414c1b68a,Sonoran Trails Middle School,0,0
+sch_bb3031c3d8b36fc2,ST MARYS (CS,0,0
+sch_4a2e1192d1cfb57e,St. Paul's Preparatory Academy,0,0
+sch_67d7440cbdf435bf,Stapley Junior High School,0,0
+sch_65c3b87e24bd0a26,Sun Valley High School,0,0
+sch_a2d0be813b256efa,Superior Jr/Sr High School,0,0
+sch_bb11fd9354cdb291,Taylor Junior High School,0,0
+sch_4f210a1e15547ad8,Thunderbolt Middle School,0,0
+sch_2347f66759316d6e,Tohono O'odham Community College,0,0
+sch_71f7c233ff914da4,Tri-City  College Prep High School,0,0
+sch_591a854813da3f1b,USATF Arizona,0,0
+sch_b26b0ebd2bec7a10,Western School,0,0
+sch_cde203ec92281924,Westwind Preparatory Academy,0,0
+sch_f22c44687d4e0bc9,White Cone High School,0,0
+sch_eeddeb4d2f0f1a56,White Mountain Christian,0,0
+sch_bb1e819a6537d613,Williams High School,0,0

@@ -1,0 +1,463 @@
+school_id,name,co2027,athletes_all
+sch_2c3cf5db7a947162,Attleboro High School,104,290
+sch_297485427ee43f28,Natick High School,103,281
+sch_b50582cd01e5ad95,Newton South High School,100,229
+sch_90c79236271fb5f9,Arlington High School,99,304
+sch_ec9c6aa3c7ecd3ea,Needham High School,97,284
+sch_caddd4fc01d7f60d,Lexington High School,96,276
+sch_0f8a145e0bfb7e39,Wellesley High School,95,267
+sch_7fa3acb61b1b82be,Brookline High School,92,272
+sch_d0a655e2c4775a63,Winchester High School,88,336
+sch_141a7dae59db8beb,Newton North High School,87,299
+sch_5b40fb6f2014153f,Melrose High School,87,247
+sch_dd83953acbc1fb90,Boston College High School,85,252
+sch_a1a4557fd393a576,Woburn High School,85,225
+sch_164df9fe38cdf4b0,Shrewsbury Senior High School,85,199
+sch_f894f66259af3635,Hopkinton High School,84,285
+sch_e26f6181854411d5,Oliver Ames High School,84,191
+sch_43b2cc694e03efc5,Central Catholic High School,80,306
+sch_334a0e4519d98cd1,Westford Academy,80,227
+sch_d28a8c6eb24e47c4,Westborough High School,80,179
+sch_bbebdd9729de68a5,Greater Lowell Technical High School,78,227
+sch_cc5030abc86d81d1,Belmont High School,77,280
+sch_b959b9b2786db2c0,Bishop Feehan High School,77,251
+sch_db714e35108033cc,St. John's Prep,77,239
+sch_6959118def52eae1,Mansfield High School,77,193
+sch_bad1caa5f05b02d7,Reading Memorial High School,76,265
+sch_983792f5db03a170,Phillips Academy Andover,76,234
+sch_63eeccb47c6b8bab,Brockton High School,75,167
+sch_70832181b3bb5396,North Andover High School,74,298
+sch_f14757c8efef4d93,Cambridge Rindge and Latin High School,74,202
+sch_6cbf34e42c5dae04,Essex Agricultural & Technical High School,74,174
+sch_56b97646ed13c3cf,Lowell High School,71,203
+sch_456432719321eaf3,Canton High School,71,200
+sch_833665a443f24cae,Dover Sherborn Regional High School,70,180
+sch_071083ec198ab6a3,Northeast Metropolitan Regional High School,70,147
+sch_d56406dd86f91d76,Masconomet Regional High School,69,166
+sch_37db3153de4e4e7f,Acton-Boxborough High School,68,207
+sch_68632acc2332cf0e,Burlington High School,68,200
+sch_c83f2b6aa991f802,Chelmsford High School,66,287
+sch_37549f2e51231dde,Andover High School,66,269
+sch_6d0e429c44928fde,Algonquin Regional High School,66,188
+sch_a7695337e825333b,Swampscott High School,66,180
+sch_1d3139758d10c8cd,Peabody Veterans Memorial High School,66,147
+sch_c7905a1272d2b285,Pittsfield High School,65,131
+sch_67a658433dbb7cd3,Longmeadow High School,64,384
+sch_9e694236eb1406ff,Plymouth North High School,64,151
+sch_c07c759a1640cefa,North Reading High School,63,156
+sch_da588938f335b063,Franklin High School,62,213
+sch_a810672636d38301,Tantasqua Regional Vocational High School,61,103
+sch_b00c885a6d726d0f,Xaverian Brothers,60,268
+sch_2876aa12e8e7866e,Newburyport High School,60,140
+sch_cd5ccfecb716e708,Springfield Central High School,59,150
+sch_9f504dbcf772e72a,Lincoln-Sudbury Regional High School,58,202
+sch_3f29e300a564e250,Framingham High School,58,195
+sch_fc1d3302b7e15257,North Quincy High School,58,150
+sch_e01ac7562e81ea85,Blackstone Valley Regional Vocational Technical High School,58,149
+sch_8c8f5a5474871733,Milton High School,57,185
+sch_3bac6c362eb97dc0,Greater Lawrence Tech,57,178
+sch_0272f8bb942f3c7e,Durfee High School,57,148
+sch_0b507528559554da,Greater New Bedford Regional Voc Tech High School,57,131
+sch_b1e3920cb8afe30f,Marshfield High School,56,147
+sch_4925f0c54eee8f76,Southeastern Regional Vocational Technical High School,54,197
+sch_53bd1acd73bb31ee,Wakefield Memorial High School,54,152
+sch_6b62e2dfd81dbe42,Worcester Vocational Technical High School,54,148
+sch_200644f20c5c2cc4,Boston Latin School,53,262
+sch_03c421e80a91c457,Bridgewater Raynham Regional High School,53,148
+sch_1bcdd926abae2a96,Wachusett Regional High School,53,128
+sch_7f07f750757d2f4e,Taunton High School,52,200
+sch_4d3ba9bfa776489b,Wilmington High School,52,183
+sch_aed4f40b60a4d713,Austin Prep School,52,176
+sch_e504a45d7d2d8c9e,Westwood High School,52,146
+sch_b258a726c303f3ee,Norwood High School,52,123
+sch_53378ab352b96a68,Hingham High School,51,216
+sch_c1f4c271e3a91920,Sharon High School,51,178
+sch_0508dc915af83f91,Chicopee Comprehensive,50,123
+sch_9f421fc0303b6419,Pembroke High School,49,140
+sch_68bd088fd7142d2c,New Bedford High School,49,108
+sch_bc37705ef0f73a57,Beverly High School,48,196
+sch_aed45cf85c9a5ce4,Ashland High School,48,185
+sch_107b3e505abaf276,St. Mary's Lynn,48,155
+sch_14ca7e8ce84d83f4,Marblehead High School,48,140
+sch_750702c13cbcda37,Lynnfield High School,48,128
+sch_3c9c2298cf30352c,Ludlow High School,48,126
+sch_a7b0061abee15667,Stoughton High School,48,122
+sch_0fa389f9fbc94c18,Holliston High School,47,217
+sch_c860eb938aff72bb,Diman Regional Vocational Tech High School,47,170
+sch_495894d21847392e,Braintree High School,47,168
+sch_300bde33221a0c49,Minnechaug Regional High School,47,161
+sch_5eee118d66c076cc,Noble & Greenough,47,134
+sch_52c30dd49073b55c,Walpole High School,46,183
+sch_25e409ddf5f32ccd,Malden Catholic High School,46,153
+sch_e6a074e26d4b384a,Deerfield Academy,46,124
+sch_031c79f1be13f848,Catholic Memorial High School,46,121
+sch_2f58945ea05f087a,Northfield Mount Hermon,46,106
+sch_76618ee0e907ae6f,Lawrence High School,46,96
+sch_8fdee02a0be41052,Duxbury High School,45,185
+sch_f4a2cbbe9a9f574c,Concord Carlisle High School,45,166
+sch_90a0bb4c24e98261,Montachusett RVT High School,45,109
+sch_ec4916f78a56ac23,Grafton High School,45,95
+sch_b387e563ede21ec3,Whitman Hanson Regional High School,44,230
+sch_b4f3708b2dfb9301,West Springfield High School,44,144
+sch_decab065d8753f23,Scituate High School,44,135
+sch_616550a6c5627b4e,Medfield High School,44,133
+sch_77bba7f66d3554c5,Milton Academy,44,127
+sch_e83ddaec37625ece,Billerica Memorial High School,43,211
+sch_628d688daaa48244,Plymouth South High School,43,185
+sch_68aee5a1bf837702,King Philip Regional High School,43,137
+sch_2df957c4ffc45bb3,Governor's Academy,43,118
+sch_f288263efc05bd34,Boston Latin Academy,42,141
+sch_82e8622a128a7099,Weymouth High School,42,136
+sch_a82ea88f7865ed4f,Doherty Memorial High School,42,134
+sch_000bfe8fc5ea3028,South High Community,42,103
+sch_42a349d4a20e9b0f,Tabor,42,76
+sch_bf258d5833592b78,Amherst-Pelham  Regional High School,41,184
+sch_57433344fd5f315b,Archbishop Williams,41,115
+sch_8896af8b14c98de9,Thayer Academy,41,103
+sch_14161baab11c8d57,Stoneham High School,40,155
+sch_8753b734d47c84d5,Pentucket Regional Senior High School,40,123
+sch_c5f918d9da45bedf,Dedham High School,40,113
+sch_93216201483de1bf,Norton High School,40,102
+sch_c774751a482f69dc,Mount Greylock Regional High School,39,207
+sch_da76733489ec1673,Northampton High School,39,127
+sch_ded411994f0f4863,Concord Academy,39,92
+sch_beafafca0dec3860,East Bridgewater High School,38,209
+sch_b2c88ed3599d4104,Waltham High School,38,173
+sch_df641c88a4509a92,Tri County Regional Vocational Tech High School,38,129
+sch_0bbd0b5284bd202c,Bellingham High School,38,128
+sch_5e51c6675452cbe4,Middleboro High School,38,104
+sch_b872e144b6a1b8ff,Millbury High School,37,130
+sch_31e2a94eed5e90bd,Tewksbury Memorial High School,37,117
+sch_5cb7c5907171ff3b,Chicopee High School,37,95
+sch_7d67ba067fea727a,Shepherd Hill Regional High School,37,94
+sch_9f23a10c400d3762,Danvers High School,36,117
+sch_7f2ed95dc2295cab,Oakmont Regional High School,36,94
+sch_89b3e02c7351a363,Putnam Vocational High School,36,84
+sch_1688a1aad28ac93b,Lynn Vocational Technical School,35,145
+sch_b881d6cf6b87c175,North Attleboro High School,35,141
+sch_e8ac1fd000138a48,Bedford High School,35,137
+sch_322c46b6975e0c86,Abington High School,35,120
+sch_1215fdbdfbfeb30f,Haverhill High School,35,120
+sch_5d245b7407bfcedc,Fitchburg High School,35,109
+sch_cd4308c836083b8a,Nauset Regional High School,35,92
+sch_41702975bbd37295,Lawrence Academy,35,58
+sch_7ea048d672552004,Groton Dunstable Regional High School,34,132
+sch_84884076e237d2ca,Abby Kelley Foster Regional Charter School,34,114
+sch_c594419092959ee5,Methuen High School,34,101
+sch_b95ceeab292db5ea,Auburn High School,34,100
+sch_e01ae6f01bb4cff5,Williston Northhampton School,34,97
+sch_f04905fe247bd46b,Milford High School,34,96
+sch_b1cd2c6918221546,Cardinal Spellman,34,87
+sch_72367c08221e2933,Chelsea High School,34,60
+sch_d1a469bcb0fa394b,Silver Lake Regional High School,33,181
+sch_fa1b92ff35533568,West Bridgewater High School,33,116
+sch_463be84d922fe7b4,Foxboro High School,33,106
+sch_dfaa5f170f6995de,East Longmeadow High School,33,104
+sch_0fea2df097d0d689,Somerville High School,33,101
+sch_08d1a96ef86655c9,Wahconah Regional High School,33,101
+sch_ac5db2e0b722d31e,Taconic High School,33,82
+sch_615fda2c5a98639e,Whittier Regional Vocation Tech High School,32,126
+sch_abb87dfebe00cb66,Gloucester High School,32,111
+sch_6c23597681b1b41e,Leominster Senior High School,32,111
+sch_838dd48fb1f1aa5a,Westfield High School,32,102
+sch_979c2b443f60dff5,Worcester Academy,32,78
+sch_582ec058f25a48b3,Norwell High School,31,163
+sch_3d8eb2ecece88d3a,Quabbin Regional High School,31,144
+sch_0914afee97664577,Dartmouth High School,31,141
+sch_483a2be77e11d5f4,Blue Hills Regional Voc Tech School,31,123
+sch_23919b936a333451,Millis High School,31,120
+sch_9f126ac568881665,Bristol Plymouth Regional Voc Tech,31,97
+sch_bed7937fda45901a,Malden High School,31,75
+sch_360e47e0ebfe5d9d,Notre Dame Academy-Hingham,30,115
+sch_fda685d0c962721f,Amesbury High School,30,90
+sch_ce165dd8d64b14ef,Ipswich High School,30,88
+sch_2791a10690894c50,Holyoke High School,30,77
+sch_c0e6ec3f46a5fba5,Middlesex School,30,64
+sch_f57a3ab5a351738c,Nashoba Regional High School,29,119
+sch_6a094c08ff05c5fb,Shawsheen Valley Technical High School,29,98
+sch_5553f8ca8fef74cc,Wilbraham and Monson Academy,29,94
+sch_e8d2a0cc09f640a0,Belmont Hill School,29,73
+sch_4a687bea6f7eada8,Marthas Vineyard Regional High School,29,69
+sch_c99b8b3ac4b33f79,Weston High School,28,233
+sch_e4bf29ae40c8de17,Parker Charter Essential School,28,130
+sch_68e7c79a25609e94,Douglas High School,28,107
+sch_8790d6ff312cbce8,Everett High School,28,87
+sch_d39f0e982ce65bae,Watertown High School,28,79
+sch_18347ee5768f253b,Rivers School,28,67
+sch_6e0d12a68f3bfcb6,Hanover High School,27,242
+sch_f7352ad97e84b06a,Wayland High School,27,120
+sch_ad5eefc17ccd4483,Ayer-Shirley High School,27,104
+sch_fd6aaa6bc4aa6ec7,Hamilton-Wenham Regional High School,27,88
+sch_d3666913866acf62,Burncoat High School,27,76
+sch_cae07cd5f70e1416,Clinton High School,27,73
+sch_d5024290773caa22,Monument Mountain Regional High School,26,103
+sch_2b444bd4922b14ba,Case High School,26,67
+sch_99cc15b23649a361,Dracut High School,26,63
+sch_a9cbd0e52f61a583,Marlborough High School,26,57
+sch_d3ae6350029e46a2,Medford High School,26,57
+sch_486a9eb721960e46,South Shore Vocational Technical High School,25,102
+sch_a88e154414f71646,Lunenburg High School,25,93
+sch_18c57908f1702c12,Seekonk High School,25,85
+sch_6dd4d3fd942faff8,St. Paul Diocesan Junior/Senior High School,25,69
+sch_f786b9f4d45f5935,Fenwick,25,66
+sch_548d0472a6f09271,Hoosac Valley High School,25,64
+sch_73f2be6f8bde49d4,Salem High School,25,52
+sch_1fa576cac1db73bb,Saint John's High School,24,152
+sch_7cc9944fd953c467,Medway High School,24,118
+sch_f29b7990182cef0d,Hopedale High School,24,111
+sch_ce64579d0cb28a93,Hudson High School,24,100
+sch_24b1bec360948c71,Agawam High School,24,97
+sch_263793d786488f4e,Randolph High School,24,86
+sch_7650c222de1feb7e,Saugus High School,24,80
+sch_38e605cc77868175,Groton School,24,73
+sch_18d0214393954640,Buckingham Browne & Nichols,23,94
+sch_22f9869ac755dd67,Falmouth High School,23,80
+sch_00787c75d133079d,Somerset Berkley Regional High School,23,75
+sch_078eb842ee96a5ba,Bishop Stang High School,23,72
+sch_d4079d1392b34eef,Pope Francis,23,69
+sch_f9edc5a534c83470,Sturgis Charter West,23,66
+sch_2f9c5ecf7bb18b94,Quincy High School,23,65
+sch_4ce578ef6bc8806b,Lynn English High School,23,47
+sch_1b5bd88ef55889b1,Gardner High School,22,115
+sch_ba15512fbe7f0934,Whitinsville Christian,22,113
+sch_72e5e762a9fcf91e,Old Rochester Regional High School,22,101
+sch_7c705722f08e3905,Rockland High School,22,101
+sch_be24f8b4909b6502,Fontbonne Academy,22,75
+sch_871b5d680e1b09f3,Littleton High School,21,128
+sch_5eb4b8e461bbede3,Carver High School,21,127
+sch_b0dac558877da5ab,Keefe Tech High School,21,117
+sch_5c532ac2c9b86732,Dighton Rehoboth Regional High School,21,106
+sch_7fb3d5eb858dcb4a,Dennis-Yarmouth Regional High School,21,105
+sch_68f63240b68a2d63,Revere High School,21,85
+sch_7d608067d3c7be56,Bay Path Regional Vocational Tech High School,21,84
+sch_aa6a1fcfe78c846c,Tahanto Regional High School,21,83
+sch_1ff64df0aa1bd93d,North Middlesex Regional High School,21,55
+sch_ce2dc788a46e2ad2,Hampshire Regional High School,20,134
+sch_45c54f5e280ec300,Springfield International Charter School (FNA Sabis),20,92
+sch_ae8ba7e6be3dd619,Southbridge High School,20,87
+sch_17da2ef63cb4e514,South Hadley High School,20,78
+sch_a1adf089afc3d8f9,Innovation Academy Charter School,20,69
+sch_67eeff11352f6c48,O'Bryant High School,20,63
+sch_97977501657e5693,Cushing Academy,20,50
+sch_b0c87825e6d65ea2,Ursuline Academy,19,101
+sch_011694fb357cd80a,Bromfield  School,19,95
+sch_d18d53008e98ba72,Pioneer Charter School of Science,19,88
+sch_5ee8aebe2c1f03be,Narragansett Regional High School,19,86
+sch_59cd7c6b3f1f303d,Lowell Catholic,19,67
+sch_e31a3ad20e8db30d,Lynn Tech/KIPP Academy Coop,19,54
+sch_cb66ed32c5f31c8c,Wareham High School,19,46
+sch_5a5f81b492401b18,Quaboag Regional High School,18,67
+sch_e4a66b90bb57ac4c,Mashpee High School,18,62
+sch_53d44a91c2d49a73,Greenfield High School,18,57
+sch_f4c3b90ee8a77432,Lenox Memorial High School,17,108
+sch_262414d4ba5159ae,Barnstable High School,17,93
+sch_036439e00c29870d,Adv. Math and Science Academy,17,76
+sch_77d1eec58f11f125,Uxbridge High School,17,74
+sch_02155ef57d7b69b4,Roxbury Latin,17,58
+sch_6dc2fa0e88c7ab20,Cathedral High School-Springfield,17,46
+sch_2c1c4ec04aa9e211,Berkshire High School,17,44
+sch_40d3e008bb5f66c1,Easthampton High School,16,83
+sch_153e7cb7f483718f,Belchertown High School,16,80
+sch_80ad7bdce79b42d0,Fairhaven High School,16,76
+sch_5315c56afe7025ad,Bartlett High School,16,75
+sch_695ea8e6b0cac23d,Nipmuc Regional High School,16,65
+sch_57b6ba72a62214e2,Apponequet Regional High School,16,58
+sch_580031fb6a59e061,Mahar Regional High School,16,57
+sch_e2d77db1c0ef6c3f,Landmark,16,54
+sch_c128c6b4323ca056,Neighborhood House Charter,16,26
+sch_c1a80a98a7c7c784,Triton Regional High School,15,123
+sch_afc711594ae1e5a6,Manchester Essex Reg. High School,15,72
+sch_4f2be4ba0f5d278c,Newton Country Day,15,60
+sch_f7aa0f2eea0de541,Winthrop High School,15,44
+sch_2da0f8bd39bb2758,Boston Arts Academy,15,33
+sch_9772d3dc25a2ae18,Sutton High School,14,94
+sch_82ade49409aca0e8,Montrose School,14,87
+sch_c7015a9e825c8f05,Sandwich High School,14,83
+sch_f326407e8851c378,Winsor School,14,77
+sch_01058f1795b50989,Monomoy Regional High School,14,71
+sch_b3c6a1376ec97502,Pioneer Valley Regional High School,14,51
+sch_d7b2c21bb26775d2,Nashoba Valley Tech High School,14,45
+sch_ba655f6bed246672,Prospect Hill Academy,14,25
+sch_81ebcd1b3a298030,Dearborn STEM Academy,14,20
+sch_b767bd964d99d0f5,Arlington Catholic High School,13,87
+sch_0681570fbf3ff292,Cohasset High School,13,86
+sch_25ccc6ba5272a628,Mohawk Trail Regional High School,13,75
+sch_cb745d4db6ad8428,Dexter-Southfield,13,60
+sch_0699ba1e93df988a,Southwick-Tolland Regional High School,13,56
+sch_4e76b63bb72d2a15,Northbridge High School,13,52
+sch_319774be0476d2bc,East Boston High School,13,43
+sch_68f48ae8f125c5e2,Academy of Notre Dame,13,42
+sch_ab2fe99b4e742d63,Oxford High School,13,42
+sch_0135e9f4ef53e304,Franklin County Tech School,13,40
+sch_60b983ad1e7d1f42,New Heights Charter School,13,33
+sch_f499a72a8d2dff6a,Frontier Regional High School,12,129
+sch_266ee769fbb23c5a,Brighton High School,12,46
+sch_b2debac28506f9dd,Bancroft School,12,44
+sch_0e48cca7bba3a3c8,Dana Hall,12,42
+sch_5b22cf27bc53bc86,Lynn Classical High School,12,38
+sch_6195097ed8523510,Springfield High School of Science and Technology,12,37
+sch_ce7b063a82e5063b,Pingree,12,35
+sch_184ed8b2cb8d20be,High School of Commerce,12,30
+sch_73d59c7b0ccfd309,Atlantis Charter,12,28
+sch_f7a6db14676b5ebc,Blackstone Millville Regional High School,11,78
+sch_b4984b3214c40c43,Murdock High School,11,62
+sch_c66675cfde6bfe17,Notre Dame Academy-Worcester,11,58
+sch_c71dd3c8c8008206,Covenant Christian Academy,11,57
+sch_a67b478471a6c711,Mount Everett Reg.,11,45
+sch_6284439feb895d48,Assabet Valley Regional Vocational School,11,25
+sch_c6b5a8bcca9343c3,City Wide Boston,11,21
+sch_a18a131e2336b611,Boston Collegiate Charter,10,82
+sch_abaf82afa5ae0828,Hampden Charter School of Science,10,50
+sch_cc5e5b1b3d7c01ce,Nantucket High School,10,46
+sch_2439e498ba7f5d74,Brooks School,10,24
+sch_517a14598974947b,Tech Boston Academy,10,20
+sch_5d9c69cc1e704894,Miss Hall's School,10,18
+sch_3f8ee3b2bde08e56,Snowden International School,10,15
+sch_85deeb55a5be6395,Tyngsborough High School,9,85
+sch_2e7c5e160e99fb68,Leicester High School,9,72
+sch_9c8d3309f68f2687,David Prouty High School,9,62
+sch_66b1cdc2077dafbe,Pioneer Valley Chinese Immersion Charter School,9,53
+sch_25987ede5ac3b7ea,Salem Academy,9,53
+sch_5c86640f8db53a62,Duggan Academy,9,46
+sch_2705427339cd922b,Bourne High School,9,45
+sch_cb0cdaeef25b000c,Mystic Valley,9,38
+sch_9c4195ae2aa735e8,Cristo Rey,9,24
+sch_9ddcc00b68548d55,Pope John Paul II High School,9,18
+sch_a3401c74aa2d7f0f,Eaglebrook School,8,80
+sch_b5b6e97c73db090b,Maynard High School,8,75
+sch_aaed571901de2c3d,Bristol County Ag,8,29
+sch_95f93e6277657440,New Leadership Charter School,8,14
+sch_55e2de0332f466f6,Charlestown High School,8,13
+sch_720e7a4e97727abf,Holbrook,7,46
+sch_e32718585fb1defd,Athol High School,7,37
+sch_3afe47cec6a72b43,Lee High School,7,33
+sch_4b061479ad0f48cd,St. Sebastian's,7,25
+sch_b436b9db9288bf51,Bay State Academy,7,21
+sch_4f4dfc6b66eb5dc5,Sturgis Charter East,7,21
+sch_6a4334cfa216b12e,The MacDuffie School,7,20
+sch_dc3aaad5afc517ac,Monson Jr. Sr. High School,6,39
+sch_9033cfaf7aec27c2,Hull High School,6,36
+sch_e58d022b4ad2545e,Brooke High School,6,30
+sch_31633b228d80f7aa,Rising Tide Charter School,6,29
+sch_e3711e2c142a9e98,Upper Cape Cod RTV School,6,28
+sch_ac118df95264a72f,Lexington Christian,6,18
+sch_fcc08201c42070f8,Match Charter High School,6,16
+sch_be1631e39aa5193c,Palmer High School,5,47
+sch_98dab85107dfa038,Bradford Christian Academy,5,24
+sch_3d4fb1e4a3740a0d,New Mission High School,5,20
+sch_a6efa394ae8ab614,Community Charter School of Cambridge,5,16
+sch_9dc6ccc4a97f7e02,Cape Cod Region Vocational Tech High School,5,14
+sch_998f8724ffdc19c8,Community Academy of Science and Health,5,10
+sch_22de796834399e85,Academy at Penguin Hall,5,5
+sch_8198acc16aacdaae,Turners Falls High School,4,39
+sch_ddd12365eaacb663,Gateway Regional High School,4,28
+sch_2bf19f12f8e8dde9,Four Rivers Charter,4,26
+sch_20be1187281f1787,ROXBURY PREPARATORY CHARTER HIGH SCHOOL,4,18
+sch_986c0a3c5b5064bd,St. Mark's,4,18
+sch_145d130f8b6df6e0,KIPP Academy,4,17
+sch_483f13009dc205d2,Learning Center for the Deaf,4,17
+sch_79d0dcad59d84c1d,Beaver Country Day,4,12
+sch_bbb7ac5105559f17,Norfolk County Agricultural High School,4,12
+sch_7a038c9c2c1d1c4b,Claremont Academy,4,11
+sch_b96800c421d6bcb4,McCann Tech,4,10
+sch_b37c3075fd5613df,Riverview School,4,9
+sch_d507506570873a26,The Winchendon School,3,15
+sch_25b2bcc6704f46c4,Minuteman Regional High School,3,13
+sch_226b760a6954b8df,Falmouth Academy,3,11
+sch_4ca82c492f3ba15d,Unattached Massachusetts,3,11
+sch_f169d580d097042e,University Park Campus School,3,7
+sch_76e8fa242cf963cb,Old Colony Regional Vocational High School,2,19
+sch_cf4c5742c8a89a57,Granby High School,2,18
+sch_129cc065bb079be5,Georgetown High School,2,17
+sch_ad3a967f2acfe270,Cape Cod Academy,2,9
+sch_d23f42087d179ad6,Brimmer & May School,2,3
+sch_d526273f599fa0cc,Libertas Academy Charter School,2,2
+sch_fc54bb9f7c9bb3ae,Presentation Of Mary,1,14
+sch_565b1f262e36e484,Excel South High School,1,13
+sch_c2c8ed4251cdbed2,Madison Park High School,1,13
+sch_e94eb2d5a87d2634,Codman Academy Charter School,1,8
+sch_af6dfea177726d7a,Smith Vocational High School,1,8
+sch_251c0bfb9b19d22c,Academy of the Pacific Rim Charter Public School,1,4
+sch_41edc1fc91632af9,Cambridge School of Weston,1,3
+sch_c589b2647f0b67c3,Lawrence HS of Math Sci & Tech,1,1
+sch_812f798866d3cbe9,Oak Meadow Montessori,1,1
+sch_18080f631d190718,The Pike School,0,25
+sch_b00242aee1ec19b1,BART Charter,0,21
+sch_717466d75aba8bac,Massachusetts Academy of Math & Science,0,18
+sch_0c567b728fb8ed01,Melican Middle School,0,14
+sch_8329a9f732d464d2,Pathfinder Regional Vocational Tech High School,0,10
+sch_51abd71450aff971,Saint Bernard Central High School,0,7
+sch_ac549bafe091acf3,Hopkins Academy,0,5
+sch_4b46797e8f28a1fa,Boston High School,0,1
+sch_6856a1cf8c9c9ead,Calvary Chapel Academy,0,1
+sch_61574ea3616f5c80,Chapel Hill,0,1
+sch_19b8696e099bc2f3,North Shore Technical High School,0,1
+sch_f0b2ca15e1621af6,Renaissance High School,0,1
+sch_4a537dc22f61c194,Another Course to College,0,0
+sch_c07c62ff42956bb5,Avon High School,0,0
+sch_97184902281ee97e,Barrington Christian Academy,0,0
+sch_17fdd6baa1dcd8ac,Berkshire Art,0,0
+sch_d2c918c532a57bcc,Bishop Connolly High School,0,0
+sch_5c6801bad3947aa0,Boston University Academy,0,0
+sch_ac52e7f6aabb8d61,Brookline Unified,0,0
+sch_f4d908feb6e138c0,Burke High School,0,0
+sch_02aa44e248c19222,Buxton High School,0,0
+sch_b4a66a1b67b44f6c,Carter High School,0,0
+sch_999b1220ed7ab6ac,Cathedral-Boston,0,0
+sch_c3731b09d986efd3,CATS Academy Boston,0,0
+sch_4f8719608482f527,Chatham High School,0,0
+sch_9d3f93d8143b75c9,Coyle & Cassidy High School,0,0
+sch_e57879480c828195,Dean Technical High School,0,0
+sch_8eb0615cf613f55a,Dorchester High School,0,0
+sch_f01c8b091381531c,Drury High School,0,0
+sch_1d6b7ee9100573b9,English High School,0,0
+sch_948cc7593fd97e93,Fellowship Christian Academy,0,0
+sch_2abd1ede75569240,Fenway High School,0,0
+sch_e2cc291db4176c62,Full Circle High School,0,0
+sch_04cf2bfa830c7686,Gann Academy,0,0
+sch_a7f76c54d6fa630c,Hartsbrook Waldorf School,0,0
+sch_e867349d9d19ae42,Holy Name High School,0,0
+sch_2bc71ace07c25d47,Holyoke Catholic High School,0,0
+sch_f38c728f6932b31e,Horace Mann High School,0,0
+sch_6e71a55fdf49467d,Hudson Catholic High School,0,0
+sch_b2b17cf313d9037a,Hyde Park,0,0
+sch_da993a9ba50d2902,Hyde School,0,0
+sch_82cba653b65d5d28,Lawrence HS of Bus Mgmt & Finance,0,0
+sch_8ec2c4eae3ff7801,Lawrence HS of Health of Human Serv,0,0
+sch_78a9d2c168e855db,Lawrence HS of Humanities& Ldshp Dev,0,0
+sch_b1f06465266c2d91,Lawrence HS of Performing & Fine Arts,0,0
+sch_4a9d6c1634b07c9f,Lawrence International High School,0,0
+sch_1d386b7ae2e950da,Marian High School,0,0
+sch_48da8456fe93fbb3,Matignon High School,0,0
+sch_f39d95044662b3a8,Miles River Middle School,0,0
+sch_3b0a7ba8f0b9b748,Monument High School,0,0
+sch_ae95d2f64d187d05,Monument Mountain Unified,0,0
+sch_76b99b1f31415456,Mount Alvernia,0,0
+sch_8abe7025cc20bb11,Mullen Hall School,0,0
+sch_efe1960c34b985af,Nazareth,0,0
+sch_479b3cef17334111,North Brookfield High School,0,0
+sch_d4ca97e347076d81,North Central Charter Essent. School,0,0
+sch_dcb758e6e65ebcee,Notre Dame (Lawrence),0,0
+sch_e6cd3939b53a6964,Perkins School For The Blind,0,0
+sch_497af1fa9aa02c61,Rockport High School,0,0
+sch_e3b19e38d8b9beb9,Sacred Heart High School,0,0
+sch_fba60c4e5246705f,Saint Joseph Central High School,0,0
+sch_5892ed8e2d480ecd,Saint Joseph Preparatory,0,0
+sch_80327e9afc33d088,Saint Peter Marian High School,0,0
+sch_8693b093a66a33aa,Sgt Wm H Carney Academy,0,0
+sch_cb313761185d047e,Sizer School,0,0
+sch_76ec06db4521bca5,South Boston Education Complex (South Boston High School),0,0
+sch_857ef73f4e3c8314,South Lancaster Academy,0,0
+sch_87402918014f552f,St. Mary's Academy,0,0
+sch_4ddd4bc64422111c,Trinity Catholic,0,0
+sch_bc09d4b62dd6e506,Veritas Prep Charter School,0,0
+sch_f6d7212f38a25f68,Virtual High School,0,0
+sch_909164f2b07ef656,Ware High School,0,0
+sch_238c8071fec48191,Waring School,0,0
+sch_7a191bb52ecc5dce,West Boylston High School,0,0
+sch_df8a46a3200cd6cd,West Roxbury High School,0,0
+sch_784e9372e67a426d,West Side High School,0,0
+sch_dbcae1d98b3d8b03,Westfield Vocational,0,0
+sch_e4b399131aac82a6,Westport High School,0,0
+sch_ae9710c740cd0577,White Oak School,0,0
+sch_59c041172826b95f,Worcester North High School,0,0

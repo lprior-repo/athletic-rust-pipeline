@@ -1,0 +1,57 @@
+
+running 8 tests
+[recovery:drain-deadline] before the service: journal={"unit-1", "unit-2"} tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 2, "teams": 0}
+[recovery:sigkill-service] before the kill: journal={"unit-1", "unit-2", "unit-3"} tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 3, "teams": 0}
+[recovery:store-resume] before restart: journal={"unit-1", "unit-2"} tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 2, "teams": 0} merged_entities=2 snapshot_rows=2 withheld=0
+[recovery:store-resume] after restart: journal={"unit-1", "unit-2"} tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 2, "teams": 0}
+[recovery:store-resume] resume set: pending=["unit-3", "unit-4"]
+[recovery:store-resume] after the resumed units: journal=4 schools=4 observations=4
+[recovery:store-resume] duplicate observation: observations=5 merged_entities=4 evidence_on_unit_1=["2026-09-20", "2026-09-21"]
+.[recovery:ks-window] control units=5 tables={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "performances": 0, "schools": 5, "teams": 0}
+[recovery:sigkill-service] discovery manifest services=["Census", "Ingest", "Sweep", "JurisdictionCensus", "NationalCensus"]
+[recovery:adapter-resume] control: journal=5 schools=5 coaches=5 requests=0 from_cache=1 tables={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "performances": 0, "schools": 5, "teams": 0}
+[recovery:sigkill-service] service killed: status=ExitStatus(unix_wait_status(9)) signal=Some(9)
+[recovery:sigkill-service] after the kill: journal=3 tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 3, "teams": 0}
+[recovery:exporter-restart] first export: consolidate=[("schools", 5), ("coaches", 5)] snapshots={"athletes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "coaches": "d056770730737861b08bdcf46fcee7ea6fa3484e574139cdfd895518d1fc824d", "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "meets": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "performances": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "schools": "10bed24ddd77a09befe04f9906031835dfe41909d3eb0d154f2e7b5e65259fc7", "teams": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"} census_digest=3bd4caa7270f8d46ed5f2c120a84dae32afd1848c0c8b2d23ccdeb98aab45d81 totals=athletes=0 schools=5 meets=Number(0)
+[recovery:exporter-restart] second export (after reopen): consolidate=[("schools", 5), ("coaches", 5)] snapshots={"athletes": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "coaches": "d056770730737861b08bdcf46fcee7ea6fa3484e574139cdfd895518d1fc824d", "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "meets": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "performances": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "schools": "10bed24ddd77a09befe04f9906031835dfe41909d3eb0d154f2e7b5e65259fc7", "teams": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"} census_digest=3bd4caa7270f8d46ed5f2c120a84dae32afd1848c0c8b2d23ccdeb98aab45d81 totals=athletes=0 schools=5 meets=Number(0)
+.[recovery:sigkill-worker] control: runtime=30.921052ms units=3 stats={"athletes": 0, "coaches": 0, "events": 0, "meets": 3, "observations": 3, "performances": 0, "schools": 0, "teams": 0}
+[recovery:cli-restart] control process: rows=5 units=5 stats={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "observations": 10, "performances": 0, "schools": 5, "teams": 0}
+[recovery:sigkill-worker] kill delay=0ns exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:adapter-resume] first pass (limit 2): journal={"KS:KSS0001", "KS:KSS0004"} rows=2 requests=0 from_cache=1
+[recovery:sigkill-worker] kill delay=7.73ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:sigkill-service] discovery manifest services=["Census", "Ingest", "Sweep", "JurisdictionCensus", "NationalCensus"]
+[recovery:sigkill-service] restart 1 is up
+[recovery:sigkill-service] restart 1 drain report: drained: accepted=2 completed=2 cancelled=0 timed_out=0 aborted=0 panicked=0 (2026-09-22T05:39:59.314701Z  INFO census service stopped report=DrainReport { accepted: 2, completed: 2, cancelled: 0, timed_out: 0, remaining: 0, aborted: 0, panicked: 0, stop_reason: Signal })
+[recovery:sigkill-service] restart 1 tables after the drain: {"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 3, "teams": 0}
+[recovery:ks-window] clean process runtime=28.791118ms
+[recovery:ks-window] kill delay=0ns exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:sigkill-worker] kill delay=15.46ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:drain-deadline] discovery manifest services=["Census", "Ingest", "Sweep", "JurisdictionCensus", "NationalCensus"]
+[recovery:cli-restart] first process: rows=2 requests=0 from_cache=1 journal={"KS:KSS0001", "KS:KSS0004"}
+[recovery:ks-window] kill delay=7.197ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:adapter-resume] restart: journal=5 rows_this_pass=3 notes=["fetched 3 schools from KSHSAA; 2 already done; 0 skipped (no AD name)"]
+[recovery:adapter-resume] merged: schools_digest=e0b8970d125d97e0659a7affe886daf06532b14781f895da23aa391d2a2ac315 coaches_digest=5c88a144b2663c68465d962b673d6e47c928abd8325cf94aaa96787ae595e961 schools=5 coaches=5 observations=10 tables={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "performances": 0, "schools": 5, "teams": 0}
+.[recovery:ks-window] kill delay=14.395ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:sigkill-worker] kill delay=23.19ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:cli-restart] restart process: rows=3 journal=5 notes=Array [String("fetched 3 schools from KSHSAA; 2 already done; 0 skipped (no AD name)")] stats={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "observations": 10, "performances": 0, "schools": 5, "teams": 0}
+[recovery:cli-restart] exporter process: consolidate={"athletes": 0, "coaches": 5, "coaches_email_withheld": 0, "events": 0, "meets": 0, "performances": 0, "schools": 5, "teams": 0} stats_after={"athletes": 0, "coaches": 5, "events": 0, "meets": 0, "observations": 10, "performances": 0, "schools": 5, "teams": 0}
+.[recovery:ks-window] kill delay=21.593ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:sigkill-worker] kill delay=24.736ms exited_before_kill=false signal=Some(9) journal=3 entities=3 observations=3
+[recovery:sigkill-worker] the workload completed before this attempt; no later attempt can land mid-batch
+[recovery:sigkill-service] discovery manifest services=["Census", "Ingest", "Sweep", "JurisdictionCensus", "NationalCensus"]
+[recovery:sigkill-service] restart 2 is up
+[recovery:sigkill-service] restart 2 drain report: drained: accepted=2 completed=2 cancelled=0 timed_out=0 aborted=0 panicked=0 (2026-09-22T05:39:59.382047Z  INFO census service stopped report=DrainReport { accepted: 2, completed: 2, cancelled: 0, timed_out: 0, remaining: 0, aborted: 0, panicked: 0, stop_reason: Signal })
+[recovery:sigkill-service] restart 2 tables after the drain: {"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 3, "teams": 0}
+.[recovery:ks-window] kill delay=23.032ms exited_before_kill=false signal=Some(9) journal=0 entities=0 observations=0
+[recovery:sigkill-worker] restart: rows=0 journal=3 meets=3 meet_observations=3 stats={"athletes": 0, "coaches": 0, "events": 0, "meets": 3, "observations": 3, "performances": 0, "schools": 0, "teams": 0} consolidate={"athletes": 0, "coaches": 0, "coaches_email_withheld": 0, "events": 0, "meets": 3, "performances": 0, "schools": 0, "teams": 0}
+[recovery:sigkill-worker] partial_kill_landed=false attempts=5 observations_delta=0
+.[recovery:ks-window] kill delay=24.472ms exited_before_kill=false signal=Some(9) journal=5 entities=5 observations=5
+[recovery:ks-window] the workload completed before this attempt; no later attempt can land mid-batch
+[recovery:ks-window] restart: rows=0 journal=5 schools=5 (control schools=5)
+[recovery:ks-window] measured: claimed_without_rows_at_kill=0 missing_from_the_final_store=0 (an append-before-journal ordering reports 0 for both)
+.[recovery:drain-deadline] still serving after the drain deadline with no stop request, still_answering=true
+[recovery:drain-deadline] stopped by the operator: status=ExitStatus(unix_wait_status(0)) 2026-09-22T05:40:09.376850Z  INFO census service stopped report=DrainReport { accepted: 2, completed: 2, cancelled: 0, timed_out: 0, remaining: 0, aborted: 0, panicked: 0, stop_reason: Signal }
+[recovery:drain-deadline] after the service: journal=2 tables={"athletes": 0, "coaches": 0, "events": 0, "meets": 0, "performances": 0, "schools": 2, "teams": 0}
+.
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 10.12s
+

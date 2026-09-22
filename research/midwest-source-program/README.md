@@ -14,10 +14,19 @@ the reasoning the adapters implement is reviewable next to the code that impleme
 | `data/` | 18 | the products under the 25 MB cap: adapter ranking, source-coverage matrix, school alias map, canonical schools/coaches/meets, DirectAthletics indexes, MileSplit coverage, coach contacts, the AthleticLIVE meet inventory and seeds |
 | `reports/` | 16 | the measured scopes, by-state CSVs, best results for the class of 2027, and the run reports |
 | `scripts/` | 1 | the fragment merge script the coach lane calls |
+| `out/` | — | the coach lane's outputs: per-state fragments, their verified re-derivations, the verified union, the merged contacts CSV, the freeze manifests and gate tables, and the acceptance-by-state note |
+| `pipeline/` | — | the last full run's evidence: `report.json`, `report-core.json`, the derived coverage/conflicts/review-case streams, the gate log and `best-results-co2027.csv` |
+| `repo-probes/`, `targets/` | — | the probe scripts and the target lists the lanes consumed |
 
 The `data/` and `reports/` artifacts are force-added: the repository's `.gitignore` skips CSV and
 JSONL by default, and these eighteen data products and sixteen reports are the products the program
 exists to publish, not regenerable scratch.
+
+One false alarm worth recording, because it will look like data loss on a re-read: merging the
+verified union reports 6,237 rows "missing" against `data/coach-contacts.csv`, and they are not
+missing. `merge-coaches` keeps one row per school/sport/role and reports the rest as duplicates —
+WI 10,363 → 3,166 kept with 7,197 duplicates, MN 1,180 → 389 with 791, ND 15, MI 7, NJ 17 — plus 31
+rows rejected for carrying no role label (DC 16, ND 15). The frozen CSV already is that merge.
 
 ## What is deliberately not mirrored
 
@@ -28,6 +37,7 @@ Four products exceed the 25 MB cap and stay in the working corpus:
 | 188.1 MB | `data/canonical-athletes-co2027.csv` |
 | 114.2 MB | `data/recruiting-co2027.csv` |
 | 72.8 MB | `reports/midwest-census-2026-09-22.xlsx` |
+| 37.0 MB | `pipeline/midwest-census-2026-09-22.xlsx` (same run's workbook, committed instead as `report.json` + `report-core.json`) |
 | 35.2 MB | `data/athleticnet-athlete-seeds.csv` |
 
 The raw asset trees are outside the repository for the same reason: `research/` assets (413 MB —

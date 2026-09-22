@@ -1,0 +1,561 @@
+school_id,name,co2027,athletes_all
+sch_77ba643121285d6c,Hoover,136,349
+sch_a3d18f129d5b47cb,Auburn HS,109,410
+sch_e61d3ad5264fafb4,Vestavia Hills HS,109,323
+sch_31fa68215574c82d,Hewitt-Trussville HS,103,333
+sch_a550e66f26a6bc9d,Bob Jones,76,361
+sch_a28391805710072d,Clay-Chalkville High School,76,156
+sch_2fe674d48620829e,Sparkman High School,75,220
+sch_c5f6684ade5dd50c,Dothan High School,73,211
+sch_6a0601bb42340b22,Mountain Brook HS,70,400
+sch_01aca875d1e08541,Enterprise High,69,347
+sch_2dd08cc4d8c1ce41,Saraland High School,68,304
+sch_86e4fcdb277cff76,Smiths Station,64,236
+sch_1ebba274a0914f24,James Clemens,63,325
+sch_a8fb22bf932d6cba,Homewood HS,62,238
+sch_25af599dc56c9a35,Thompson,62,228
+sch_bb6a8ba6277e6159,Gulf Shores HS,58,175
+sch_0a376ec2e1946eb9,Baker,58,150
+sch_66888c1800a8e72b,Oxford (AL),56,179
+sch_76d25865895dbcb3,Pelham,56,166
+sch_233f50a1f6e890c1,McAdory High School,56,136
+sch_97df33ebe8330f58,John Carroll Catholic High School,55,166
+sch_4632a2e7b9319b64,Opelika High School,55,155
+sch_e65724d4fff715e9,Hazel Green,54,262
+sch_e22b23144efc343b,Minor,54,109
+sch_0408071eade5661a,Athens High School,53,180
+sch_3126386589b5dc01,Northridge High School,52,200
+sch_eecdec47e1910ded,Grissom HS,50,169
+sch_9b590bdd99a93617,Huntsville HS,49,394
+sch_3944a7f207351be0,Fairhope,49,171
+sch_baa1444074e816af,Ramsay,49,98
+sch_406906acc26a0f18,Lincoln High School (AL),48,168
+sch_caae7d5c41220df2,Davidson,47,160
+sch_2ba850f7191fea84,Pell City High School,45,197
+sch_6c8c9dc1c986ef73,Tuscaloosa County,45,119
+sch_b79fc76a66e3d38e,Albertville,44,181
+sch_1ed2aadfb509f9bd,Oak Mountain HS,44,148
+sch_3d4446a4c6f8c8c3,Gardendale,44,123
+sch_feb67d182eeb8585,Cullman,43,181
+sch_72bcd2d9f8f4eb10,Center Point High School,43,112
+sch_4077149b388dc6d7,Lee-Huntsville,43,69
+sch_008747dbb33f7932,Scottsboro HS,42,224
+sch_ac015523bf1086e9,Chelsea High School,42,148
+sch_473be5a08fa073de,McGill-Toolen Catholic,42,125
+sch_8565fe960d2cda13,Helena High School,40,136
+sch_88282e9d62446def,Central - Tuscaloosa,40,98
+sch_091a5e10997c4574,Fort Payne,39,178
+sch_de289a42b52468ac,Spain Park,39,151
+sch_54efcc0290df937e,UMS-Wright,39,124
+sch_241c1eff80451b13,Good Hope,39,123
+sch_8d2032dfee7d1073,Jackson-Olin,39,76
+sch_c0e000bac40a1912,Pike Road School,38,182
+sch_3555b6995188f5bc,Alabama School of Cyber Technology and Engineering,38,134
+sch_66023163ca5fc290,Boaz,38,133
+sch_8687c089ea528314,Fayette County High School,38,91
+sch_b81584b57f8a58ac,Mary G Montgomery,37,142
+sch_a68b0329ba641439,Gadsden City,37,116
+sch_3c2eaad6768baa18,Foley,37,79
+sch_f14cda03d70a243d,Austin,36,197
+sch_2ffd83529168e7a8,Moody,36,135
+sch_8d620f859382d561,Stanhope Elmore,36,119
+sch_164dfd4bb6d5c875,W. S. Neal High School,36,69
+sch_d5df71bb4c1f9860,Russellville,35,195
+sch_a4a6356b925fb613,Brewer,35,70
+sch_8896b96e1868e348,Briarwood Christian School,34,217
+sch_b583b2d29aa82ef7,Charles Henderson,34,136
+sch_c6e60bef662691ce,Jacksonville,34,126
+sch_12f9c7e3009140f9,Spanish Fort,34,114
+sch_653145a375a6b16d,Sylacauga,34,103
+sch_3c1b6ffbda991859,Carroll High School,34,89
+sch_278125a9b997cf62,Hartselle,33,168
+sch_26b568abe81f12ed,Montgomery Academy,33,107
+sch_38d1394766116f39,G. W. Carver High School - Birmingham,33,68
+sch_8ed64d5607bb0dd2,Florence High School,32,215
+sch_2a0f8c9ab7875119,Southeastern High School,32,116
+sch_37eddcae6aaaf568,Fultondale,32,114
+sch_39b5a99e7dcbe412,Russell County,32,112
+sch_8bb45bedfd62bfd4,Corner,32,76
+sch_037f61c819c3d0d0,Muscle Shoals High,31,144
+sch_01860abf7436104b,Benjamin Russell,31,109
+sch_a522b99fbab1b5f6,Piedmont,31,79
+sch_a98e6c7b1ef13988,Central - Phenix City,30,165
+sch_a866baf908cd3858,Prattville High School,30,94
+sch_f12af7708935af93,DAR,30,92
+sch_6188ecdcf104984c,Parker,29,223
+sch_ef8c232b9d333018,Arab Knights,29,215
+sch_c96658c4b75ee53b,Guntersville,29,144
+sch_568af1d86909d7ec,Decatur High School,29,133
+sch_05d7d7fd8c6b4df2,Brookwood,29,114
+sch_e9b9e853b1a3bd57,Mae Jemison High School,29,79
+sch_83debb39bb979244,Shades Valley High School,29,76
+sch_268586aa45a186a2,Pleasant Grove,29,74
+sch_81094b39ca6259db,Fairfield,29,47
+sch_e1d6a650d01c97ce,Deshler High School,28,132
+sch_676d75fd8a5f4b6d,East Limestone High School,28,102
+sch_cbb67f0b8a55a092,Brewbaker Tech,28,90
+sch_e2a2a8cb3bc1fc44,LeFlore,28,86
+sch_37396ecc155955cf,J.A.G. High School,28,83
+sch_2e4e595ce678fdc7,Pike County HS,28,80
+sch_a130bb6d0e6c581f,Paul W. Bryant High School,28,72
+sch_00d31a873f8066cb,Anniston,28,67
+sch_13e9b98fb1a14801,Alma Bryant,27,102
+sch_b956f4883eb86045,Elkmont High School,27,79
+sch_635ebb09cd49ac97,Wenonah,27,57
+sch_0529b7aec1cd1bf9,Wetumpka,26,149
+sch_225878d0b97f2f18,Brooks,26,128
+sch_53730df4b2ce84e7,Handley,26,111
+sch_7ed0a931aabc2418,TR Miller,26,108
+sch_00816acbc2f53262,Robertsdale,26,102
+sch_dbc32ba947e7012f,Douglas High School,26,100
+sch_6b3041eedf99d64a,Fairview,26,82
+sch_4bfeaed5c58a75d4,Calera,26,80
+sch_25a51aaf41909940,St. Clair County,26,70
+sch_3da7ee18d22aa7e9,Theodore,26,62
+sch_652a1ed3f56cfd93,Etowah,26,55
+sch_961b1e00b0cdc8fb,Winfield City High School,25,107
+sch_2e21e6624397d015,Jasper High School,25,100
+sch_5190761aa4b29010,Springville HS,25,99
+sch_ae7c9b9547a7ef46,Opp HS,25,75
+sch_e341ef25e4732d9f,Talladega High School,25,50
+sch_1838a8e2166f527d,Buckhorn,24,222
+sch_142dc62dc2cd7cff,Westminster Christian Academy HS,24,191
+sch_cea6a7407b9faed8,Catholic - Montgomery,24,103
+sch_917afd6a53ec14a0,Valley High School,24,86
+sch_fef3faf025f05172,LAMP (Loveless),24,85
+sch_1dc3a30a9a6744cc,Slocomb High School,24,84
+sch_02e96ea85d8c5da9,Demopolis,24,73
+sch_d7fa3f5f2788d12c,Thorsby,24,64
+sch_aa489672712c197e,Carver Montgomery,24,55
+sch_15b4a100d3a28cb9,Endurance XC- High School,23,188
+sch_8f3b99667a424cdf,Restoration Academy,23,143
+sch_1210d1e60ed7dfcb,Eufaula HS,23,93
+sch_f8b424d7d7b4750b,Chilton County,23,92
+sch_241c238db8c6b350,Pinson Valley High School,23,85
+sch_f16fe802588c1944,Prattville Christian Academy,23,79
+sch_42085661549fb553,Saint John Paul II Catholic High School,23,75
+sch_af645a664514f6a2,Murphy HS,23,69
+sch_f30f324302b2801e,Cherokee County,23,65
+sch_0c898fc370a9c356,Tanner,23,64
+sch_238a4fdbb7bd92ef,West Morgan,23,62
+sch_ca786be38ec42d54,Hueytown High School,23,59
+sch_0e1d34ed4173f6c8,Southside-Gadsden,22,139
+sch_adfc7352f2d2f35a,Straughn High School,22,103
+sch_76bc00e20895316e,Sheffield,22,92
+sch_bf6ad547ea6f7ff3,Ashville,22,89
+sch_8f0d1ac2dcefe77a,Central - Florence,22,85
+sch_0b6939b6f2ea1e1b,Columbia,22,72
+sch_b299fd993e2f1c54,St. Luke's Episcopal School,22,63
+sch_59e3d35ed047a89a,Park Crossing High School,22,53
+sch_2f7860dd8844eaf2,Westminster School at Oak Mountain,21,144
+sch_6befe3c9b3e20918,Central - Clay County,21,123
+sch_785a1f53f179dc8e,Huffman High School,21,99
+sch_04f39f2114153ece,Houston Academy,21,98
+sch_60c5d19688c67bbd,Bibb County High School,21,75
+sch_dba439e3239772bf,Hayden,21,75
+sch_d8c73112968919a1,Winterboro,21,74
+sch_f867024a76678cb8,Saks,21,67
+sch_367586642fec50d4,Cordova,21,60
+sch_d2f6d64a720cf510,Francis Marion,21,57
+sch_384102c845d02556,Rehobeth High School,21,43
+sch_76eae14dcac43a44,Vigor High School,21,37
+sch_c42507c09847972a,Evangel Christian Academy,20,120
+sch_e15ed1e912c66607,Evangel Christian School,20,93
+sch_8f8f030093a269f0,Providence Christian School,20,89
+sch_7c8854968764d897,Colbert Heights,20,86
+sch_ceabc813308a6421,Alexandria High School,20,82
+sch_66c1a54e935cd3f9,Loachapoka HS,20,76
+sch_49d4d41fda897587,Dadeville,20,74
+sch_6072c1d12d51d866,Saint James,20,69
+sch_8571f16002470ed0,North Jackson,20,62
+sch_6f53f4d21e2eea0a,Oak Grove,20,60
+sch_407a68d264525c10,Alabama School of Math and Science (ASMS),20,59
+sch_53ebfe5e2fc456da,Glenwood,20,59
+sch_599030002e0471c3,Locust Fork,20,56
+sch_cda83a267ac2ea4a,Indian Springs,20,48
+sch_7f3c2714c056f76f,Randolph School,19,100
+sch_4097bcf50126542b,Leeds,19,99
+sch_797fb653cbf7c934,Lee-Scott Academy,19,96
+sch_b792e5004a45c95d,Baldwin County,19,60
+sch_dcfde75aedb170a3,J.U. Blacksher,19,60
+sch_c795d2d9ff52a728,LaFayette,19,56
+sch_40a4db502a44f4a0,Beauregard High School,19,54
+sch_76d6262e4e551dfc,Elmore County,19,53
+sch_64fbe08091af80e3,East Lawrence High School,19,50
+sch_ea5299382a2fe1e5,St. Paul's Episcopal,18,228
+sch_f6ad70c44fea2ae9,Mobile Christian,18,133
+sch_542183baad858eb5,Lawrence County HS,18,91
+sch_8c8a5d74848bc64c,Lexington,18,85
+sch_aef9a9f849e2e51f,Abbeville High School,18,81
+sch_b9d0a7790da6e243,Holy Spirit Catholic High School,18,71
+sch_6e401b48fd3c52ed,Addison,18,69
+sch_b7b2436712c80a20,Vinemont High School,18,67
+sch_9a2cea6e707200dc,Glencoe High School,18,63
+sch_0a93a374df45dde2,Susan Moore,18,60
+sch_225b547d3a2d8d10,Booker T Washington High School,18,59
+sch_2b2bcf8e923eb9b4,Vincent,18,55
+sch_f56c93d15489b6d8,Goshen,18,49
+sch_7e163544244dbecd,Jackson HS,18,43
+sch_745e0595478581b5,Appalachian,18,28
+sch_411ea4e758c1786a,Altamont,17,109
+sch_cdf26355a04d8033,Luverne,17,89
+sch_3c6c193768f68340,Providence Classical School,17,89
+sch_6152ec8da9cf27b8,Hatton,17,79
+sch_8dd9e859f5ed7684,West Point High School,17,79
+sch_0e1cefe7c28a8256,Colbert County,17,73
+sch_29f00f5f5b4af2ed,Brindlee Mountain,17,72
+sch_50b2df5e870983b5,JB Pennington,17,71
+sch_1a89e7e64887ee28,Banks Academy,17,65
+sch_956d34db18134691,Childersburg,17,62
+sch_9c25dbb97496be44,Citronelle HS,17,58
+sch_0fae7bacceab6dd5,Flomaton,17,57
+sch_7a1211ee20435322,Mortimer Jordan,17,54
+sch_13a49ca67e80df5c,Lanett,17,52
+sch_295d4be8521781ee,Randolph County,17,49
+sch_e5678c8f8876d3c2,Belgreen,17,48
+sch_d73b88954523e15a,Blount High School,17,48
+sch_6e5b7a8cfff3e179,Hillcrest HS-Tuscaloosa,17,48
+sch_2f5724a58c673d64,Section High School,17,44
+sch_a759ae218dc6845b,Headland,17,35
+sch_5407e589b53b0e3e,Bessemer Academy,16,96
+sch_b37d60d376d37261,Pleasant Valley HS,16,94
+sch_67d05b28fc56a831,Oneonta,16,83
+sch_95a721594ded2a1a,Hale County,16,81
+sch_a7c05f5b1ac3de3f,Satsuma,16,80
+sch_ea0d183a38f925c2,Holtville,16,75
+sch_fa902ba015f44ca1,Sand Rock,16,64
+sch_51a034c9e97dd25f,Lamar County,16,58
+sch_7d8256597d893ae3,Curry High School,16,56
+sch_8b2411c78f82f020,Hokes Bluff,16,54
+sch_27548102f7baf899,Hooper Academy,16,53
+sch_223f0b23b1b92d4d,Southern Preparatory Academy,16,48
+sch_a19038f47c6e27ac,Excel High School,16,45
+sch_0df036dd5e53b0da,Alabama School for the Deaf,16,41
+sch_562cfab50f57762e,B C Rain High School,16,33
+sch_9f4b6331e4dbe6f4,Ragland High School,16,32
+sch_4e9e67bbd5b0cfd1,Beulah High School,15,103
+sch_0c15c28167e118ea,Geneva,15,90
+sch_8c5981fdd4e2b937,Daphne,15,89
+sch_d03e7530530e126c,Cleburne County,15,82
+sch_6d97e14216da73a5,Lauderdale County,15,78
+sch_66fa62d17b381a87,Reeltown,15,77
+sch_386ed2f306ec40ba,Jemison High School,15,72
+sch_fd41bc7ff670d82a,Tuscaloosa Christian School,15,69
+sch_ac9e4f448e2e2a04,Marbury High School,15,65
+sch_d7f82c6f4a772372,Tallassee HS,15,63
+sch_4507449ccf29326b,Escambia County High School,15,57
+sch_e0969bfb665a3f2e,Clements,15,52
+sch_13130a2a93ab6122,Pisgah High School,15,52
+sch_c2b77a5b6dcc43f7,Greenville,15,45
+sch_0cf67d3c080747d5,Alabama School for the Blind,15,43
+sch_cc1849eb94b26c8b,St Bernard,15,36
+sch_0a909492da28fe64,Mountain Brook Jr. HS,14,613
+sch_4025163a7a545163,Faith Academy,14,141
+sch_dc5854e1d1574eef,Breakthrough Charter School,14,93
+sch_ae57bc676a6645ec,Cornerstone Schools of Alabama,14,88
+sch_a0fdd04dae561532,Wilson High School,14,85
+sch_4eacaee6c79d3feb,Whitesburg Christian Academy,14,83
+sch_6754a7ad05c3b3b7,Mars Hill Bible,14,82
+sch_aef9d044f4d76611,White Plains,14,82
+sch_a372bf8b288104e1,Pleasant Home School,14,68
+sch_c4ac224277341658,Munford,14,65
+sch_badcb0131b77ce27,American Christian Academy,14,63
+sch_5a81f5000a93349d,Northside,14,62
+sch_2cf5983175c2c394,Falkville,14,60
+sch_0070b2c3d77e95bf,Athens Bible School,14,59
+sch_333afa09cf8534a0,Walter Wellborn,14,59
+sch_51afb10ed874ff14,Rogers,14,55
+sch_c0b2d31f7c9cd2ce,Hamilton,14,54
+sch_2fb884303224e156,Geraldine HS,14,44
+sch_1144ce1717295c92,Westbrook Christian School,14,38
+sch_c683edcc4dbefbe1,Florala,13,87
+sch_3cbea0f9ef2e540d,Alabama Christian,13,79
+sch_a7d465af0abc87a6,Skyline High School,13,76
+sch_f1aa037723550222,Hanceville,13,73
+sch_a68681e318ba3987,Weaver,13,53
+sch_6da2af62a3609889,Percy Julian High School,13,49
+sch_22417bd0445f262e,Holt,13,41
+sch_f4d57435125258f7,McIntosh High School,13,41
+sch_ee46e63a8be9dc11,Aliceville,13,39
+sch_c3bcba80a02e34c1,Autauga Academy HS,13,28
+sch_daa72be3c0239ca5,Priceville,12,137
+sch_6f414f1c641ca55c,Cottage Hill Christian Academy,12,121
+sch_cd940a0a4e6fd80c,New Brockton,12,99
+sch_fb4321288a1afce2,Sardis,12,59
+sch_9554ee1ee1b54712,Dora,12,55
+sch_705a2459e94b75bb,Tabernacle Christian High School,12,52
+sch_37549c843c4e083a,Marshall Christian Academy,12,46
+sch_01a2f81e213e23bb,Ashford HS,12,43
+sch_9c3ad68f55f690fa,Dale County High School,12,43
+sch_821fdbe8ba31bc6e,Sylvania High School,12,43
+sch_1affc100c45ca0c9,Jackson Academy,12,42
+sch_87777f4e780d0e08,Woodlawn High School,12,39
+sch_2b4dec2238d9bbba,Billingsley,12,37
+sch_61c4c92d907ef4d4,Meek,12,36
+sch_d8cdfeeca3a6ad2f,Bessemer City High School,12,31
+sch_8d0771f5d90117f2,Lynn,11,86
+sch_0dc0de75ace95778,Northside Methodist Academy,11,66
+sch_86d4b4770d7b7e6a,Madison Academy,11,63
+sch_50a9dc4c1c12badf,Holly Pond,11,60
+sch_600b38db870e744f,Tharptown,11,60
+sch_a984deb14f024884,John T. Morgan Academy,11,55
+sch_77ded0f6c84b573a,Hackleburg High School,11,52
+sch_68f8561e9faa7fd9,Oakman High School,11,49
+sch_6bebb57a2d076632,Red Level,11,49
+sch_8cb7c2b13f97fd6c,Vina High School,11,46
+sch_ddcdbfe42c6938c4,Phil Campbell,11,45
+sch_ccbd1b97a3eae9a2,Woodland High School,11,39
+sch_bd9a4b2c315b79af,Danville High School,11,36
+sch_ebbb11273022b3f0,Coosa Christian High School,11,34
+sch_aed8dc99fda9140b,Valiant Cross Academy,11,29
+sch_d4bcb9eecfade4f4,Calhoun,11,26
+sch_b60b64dbceddfdf0,Notasulga,11,25
+sch_0b70d6d137c7af85,Bayside Academy,10,207
+sch_9c494b41d6741bd6,Orange Beach HS,10,78
+sch_0213767485e7acc0,Cedar Bluff,10,59
+sch_fe02ddaec1c42b83,Decatur Heritage Christian Academy,10,53
+sch_ba35dbe64c7b2cd7,Trinity Presbyterian School,10,50
+sch_1f899e2a7c2652bc,Cold Springs,10,46
+sch_2246dd473f961bf1,St. Michael Catholic High School,10,45
+sch_e77a43ad1a22f21d,Phillips,10,42
+sch_cc9616030a3a92af,Wilcox Academy,10,42
+sch_9286be7054ab8955,Springwood School,10,41
+sch_373ec057ea6c8ca8,Escambia Academy,10,39
+sch_4e45ef7c7e6ff5b5,Elba High School,10,35
+sch_6890c3fa48f7b6f2,Linden,10,34
+sch_c5d83059d2cdee74,Carbon Hill,10,29
+sch_72006da119ed3306,Houston County High Shool,10,29
+sch_4b1ce7aa964c521f,Fayetteville School,10,25
+sch_8c5b583186059986,Trinity Christian Academy (Oxford),10,25
+sch_4a3de93b99043f01,Greensboro High School,9,72
+sch_8c9c50adf3d67c36,Marion County,9,66
+sch_c1253e290a355f66,West Limestone,9,65
+sch_8cee88ccd2b3ba86,The Lakeside School,9,62
+sch_4dd7e449b99a4998,Samson High School,9,56
+sch_1f8c328fbc254fa2,AL Johnson,9,44
+sch_40953f6c09c12d02,Winston County High School,9,44
+sch_994a152e8c4b3442,Barbour County High School,9,43
+sch_acc93f6eff547920,Gaylesville,9,38
+sch_7741929ae0660f74,Tuscaloosa Academy,9,35
+sch_0ed23b3f795d03b9,Lowndes Academy,9,31
+sch_4c87a6aa84407d1f,Sipsey Valley High School,9,30
+sch_4a372e0e994a9a8a,Jefferson Christian Academy,9,28
+sch_4d2f4b48b30e1d5c,B B Comer,9,26
+sch_2b72b12a1de4e276,Monroe County HS,9,23
+sch_6c75a21a986eee9a,Wilcox Central High School,9,19
+sch_e66f47a01e7d844a,Elberta High School,8,71
+sch_aeee812ae4aa3673,Lindsay Lane Christian Academy,8,62
+sch_762b8c162269f1dc,Haleyville High School,8,57
+sch_4a8cb22e25a6874d,Wiregrass Kings,8,53
+sch_0ad6deb047c239c7,East Central Patriots,8,48
+sch_c4951e2aa17bfde2,Asbury,8,42
+sch_071e1925e40e1399,Cullman Christian School,8,42
+sch_b603aac41b85223e,Ardmore High School,8,35
+sch_e31ea6d95dcd66da,Faith Christian,8,34
+sch_5d1d8c8c43d82a7e,Pineview Christian Academy,8,33
+sch_1879b4a72e2224f2,Dallas County,8,31
+sch_01f7ab722e30fc79,Greene County High School,8,29
+sch_54cbf2b33be98917,Highland Home School,8,28
+sch_6203b55f75476e6c,Alabama Blazers,8,26
+sch_ba4cc30812fdecba,Marengo,8,25
+sch_9b2c747ebbd86b83,Keith,8,24
+sch_8f8a71f5f2e68a7e,Hillcrest - Evergreen,8,23
+sch_884171302b41abd1,Brantley High School,8,22
+sch_b6d306830c2f5db4,RC Hatch,8,17
+sch_f675da1906400fcb,Booker T Washington Magnet,8,16
+sch_1e1926e74541e1ce,Andalusia,7,119
+sch_e2e66888a3a3e35d,Cleveland High School,7,59
+sch_d13b01c9cf700243,Covenant Christian,7,49
+sch_f5b4e1760e84bd52,Chickasaw High School,7,46
+sch_5bb20a26fb011c05,North Sand Mountain High School,7,46
+sch_0ae42d452f2f394c,Plainview High School,7,42
+sch_c7d421b984ed4b43,Ohatchee High School,7,41
+sch_9c223809566a2bcd,Zion Chapel High School,7,41
+sch_3fb1e4a06b1313f8,McKenzie,7,39
+sch_67d8ca51a27f0a91,Collinsville High School,7,35
+sch_d00f3578b4d5bfe1,Spring Valley School,7,34
+sch_f43969fff860323f,Montevallo High School,7,32
+sch_a37c2a11ded87920,West End High School,7,32
+sch_d14b33329a0406b6,Cornerstone Christian Academy,7,31
+sch_3d2bbf287c6bd7b9,Crossville High School,7,30
+sch_7858365a7b41e0ec,Sumter Central High School,7,30
+sch_5599059e9cd3563d,Thomasville High School,7,19
+sch_f90fa379602cba40,Southside High School - Selma,7,16
+sch_3c79d8664e71cd92,Eastwood Christian School,6,133
+sch_7dab07115931e61d,Tuscaloosa Home Educators,6,54
+sch_aa683c1bd42c89c6,Maplesville,6,40
+sch_71721405c132091f,New Hope High School,6,36
+sch_f5d1feab6912ab71,Isabella,6,35
+sch_d4c58cc9aa815835,Woodville,6,34
+sch_3b0bde9ec0671d15,Clay County Christian Academy,6,29
+sch_c78f1cdebdae0ba5,Geneva County,6,29
+sch_c44f0270e59bccb7,J.F. Shields High School,6,25
+sch_fa3f9d915979c226,Fort Dale Academy,6,21
+sch_126c11f67d0b9c7d,Midfield,6,20
+sch_c017bfdd71db0424,Autaugaville,6,19
+sch_aed5f1f1c2337d1c,Daleville,6,14
+sch_b7900e1bb7505e9a,Tarrant,6,14
+sch_bc726e51a8ff00fd,Endurance XC - Middle School,5,102
+sch_9fb3482ca7da14fa,Red Bay High School,5,67
+sch_3c28d2a74d4b6d4a,Trinity Christian School,5,60
+sch_409bc49c69d8e69d,Horseshoe Bend High School,5,47
+sch_da77503e7e60fa8e,Shelby County,5,47
+sch_97f7da232b955dc0,Sulligent,5,35
+sch_846d7a378f0bbb97,Central Coosa,5,31
+sch_696d0d5990caf545,Donoho,5,31
+sch_6e9c3d4e5cf267fc,Victory Christian School,5,30
+sch_4605fa06032d6dee,Selma,5,29
+sch_4a9ebf8d57edb9ac,Williamson,5,29
+sch_0ebfa0db306407c5,"ACCEL, Day and Evening Academy",5,28
+sch_a3f508042aded833,Patrician Academy,5,28
+sch_c40af26d0738f2ba,The Rock Academy,5,28
+sch_e2eeb72a3161b722,Victory Christian Academy (Millbrook),5,26
+sch_0d876f6f507fdffd,Brilliant,5,22
+sch_263e5e302daebe75,Jacksonville Christian Academy,5,19
+sch_5bed72ddd9e5068c,Victory Christian Academy (Columbus),5,16
+sch_a03250550fd2a5e4,Meadowview Christian School,5,10
+sch_3afa4562beffc518,Mt. Pleasant Christian School,4,51
+sch_0bf1bd19403f9fb2,JCIB (Jefferson County International Baccalaureate School),4,38
+sch_b7b93c36f5721b9e,Clarke Prep School,4,33
+sch_3c646f4f645fe3a6,First Assembly Christian School,4,23
+sch_8972b0fb7f5f78fa,Ezekiel Academy,4,20
+sch_907e8013c09a8edb,Gaston,4,20
+sch_ed2ccc2a55de5e74,Chilton Christian Academy,4,14
+sch_ad0a99257755a241,Master's Hand Christian School,4,14
+sch_57508b9ba62c8901,Millry High School,4,8
+sch_34fbcec2c80df13a,J.H. Phillips Academy,3,268
+sch_b9524fd61e996e36,Bayshore Christian School,3,189
+sch_628d9ca9ff624a84,Huntsville Junior High School,3,103
+sch_134ecaa025e766b3,Snook Christian Academy,3,64
+sch_913aaa71224ba6e1,University Charter School,3,50
+sch_19e364c644a68eb2,The Capitol School,3,36
+sch_869c3ac846373f24,Wadley,3,34
+sch_8a1f326213ac84b7,Georgiana,3,33
+sch_13f08152426212a0,Wicksburg High School,3,32
+sch_1c71e37e86e34c39,Heritage Christian Academy (AL),3,31
+sch_734ae36196786012,Shoals Christian,3,29
+sch_c0beb50cb37bbb1d,Crenshaw Christian Academy HS,3,28
+sch_ca93d435d70788a0,Madison County,3,28
+sch_c75642dbd238bcf4,Edgewood Academy,3,22
+sch_88e9f672c597c801,Huntsville Christian Academy HS,3,21
+sch_9a628b41862a20eb,Success Unlimited Academy,3,15
+sch_883cd7d37137cfe9,Pickens Academy HS,3,14
+sch_eb0ea4f994c1fc21,Conecuh Springs Christian School,3,8
+sch_657921dbd997e935,Sparta Academy,3,8
+sch_4653727ce3c73757,Cherokee,2,42
+sch_494a71fc9ef4e5db,Kinston High School,2,37
+sch_5f79702ecbe6864f,South Lamar,2,27
+sch_48d10cfe4b7a5c1c,Fyffe High School,2,25
+sch_9ef2db71f569dea5,Cahawba Christian Academy,2,24
+sch_1f5e76e90fd0d53a,Cornerstone Christian School,2,21
+sch_2de0950bc99ea8f4,Pickens County High School,2,20
+sch_ee86d5ffefbff5c3,New Life Christian Academy,2,19
+sch_726e9ca1250f8810,Southern Christian Athletics,2,19
+sch_664628f0ecbf5807,Oakwood Adventist Academy HS,2,18
+sch_ae12f09ca57fc102,New Life Christian Academy - Millbrook (CLOSED),2,13
+sch_904cd43f2fcd8809,Mountain View Baptist,2,12
+sch_e165cacd853472bc,Talladega County Central,2,9
+sch_a5ec883fdfda9228,Bama Surge,2,6
+sch_d11e24ae1a60dc75,Brooklane Baptist Academy,2,4
+sch_5935c6ac4f6444b6,South Girard Junior High,1,124
+sch_fc7b6dff4408834b,Hope Christian Academy,1,19
+sch_5281721de725bd21,St. Joseph Regional Catholic School,1,13
+sch_668a7ec0620985b2,Kingdom Heights Preparatory School,1,12
+sch_a351457a32398cfe,Valley Head High School,1,9
+sch_817a5e9c9ca6415f,Grace Classical Christian Academy HS,1,8
+sch_3abc1dc5606646f8,Central Christian High School,1,7
+sch_f58016fe193790fd,Tri-City Striders,1,7
+sch_8c6afc1c945efc66,Sumiton Christian,1,4
+sch_665e7446092b5701,Guardian Christian Athletics,1,3
+sch_8c3ddd14f9ee2c15,Birmingham E Track Club,1,1
+sch_b89c6af3dbebbd9a,West Blocton High School,1,1
+sch_355a11fdce8ccc92,Parrish,0,141
+sch_4ed59214e03054df,Loxley Elementary School,0,98
+sch_0bac8ab6ccac799f,South Baldwin Christian Academy,0,47
+sch_929869ff7795edfb,i3 Academy High School,0,37
+sch_bc5efc40c9381126,North Mobile Christian,0,31
+sch_a8ebb59c8ee147c6,Barrett Elementary,0,24
+sch_d6e6feac94c771c5,Ordo Amoris Classical Academy,0,24
+sch_8068f8bec219555d,The Oaks School,0,24
+sch_ac64a0a6a8cead45,Sweet Water,0,23
+sch_62076d4c151dfcfc,Waterloo High School,0,20
+sch_9bebabbcd5509acb,Abbeville Christian Academy,0,16
+sch_adc61c27c6299da7,St Benedict Catholic School,0,14
+sch_df557577a9cbccd3,North River Christian Academy HS,0,13
+sch_da80f9ed63646247,Shelton State Community College,0,13
+sch_d691050b97b73515,Pike Liberal Arts School,0,8
+sch_bf83d7d308e7f6bb,St Jude,0,7
+sch_69e545fb6db57c86,Sunshine Saints Homeschool Association,0,7
+sch_bcc182c4cb40c405,Enterprise Christian Academy,0,5
+sch_199244c59785e9bf,Lighthouse Warriors,0,3
+sch_a915a6d99b31c239,Warrior Homeschool,0,3
+sch_ef17ae2dadfdef30,Central Alabama Christian High School,0,2
+sch_796d6af2146c10cc,Pike Road Junior High,0,2
+sch_d5544074dd6b687a,RunningLane,0,2
+sch_357810d3d23715e3,St. Mary Catholic School,0,1
+sch_d80464157bdddf54,Adullam House Christian Academy,0,0
+sch_e80406d77eb7013b,AHSAA,0,0
+sch_7cdbed6249edf037,Akron Community School,0,0
+sch_14dbef9542a243e2,Alabama Aerospace and Aviation High School,0,0
+sch_b3256aa95b9f6a6d,Alabama Express,0,0
+sch_ecc19c4795cdacc2,Berry High School,0,0
+sch_355329013cbec807,Bradshaw,0,0
+sch_e816c02ad10584f4,Bullock County High School,0,0
+sch_f1dbde55e9f50c99,Butler County Magnet,0,0
+sch_59968faa4e301684,Calhoun Community College,0,0
+sch_f172b1b34020e150,Chambers Academy,0,0
+sch_e21ee1e88fd699cb,Chariots High School,0,0
+sch_d33dc5fd80578565,Chattachoochee,0,0
+sch_f50fcb3ef78fa6a5,Churchill Academy,0,0
+sch_82f231e7a93b93e3,Clay County - CLOSED,0,0
+sch_c4bbf0592627d554,Coffee,0,0
+sch_90b3d8b41530745c,Coosa Elite,0,0
+sch_d0ccbe9ff1c66435,Cornerstone Christian School (Decatur),0,0
+sch_b159aff317f24b50,Cottonwood High School,0,0
+sch_d3a6fb643f444940,East Memorial Christian Academy,0,0
+sch_266b127c9c18b9bc,ED. White Middle School,0,0
+sch_e28050384b598c3d,Ellwood Christian Academy,0,0
+sch_9a2cf7872626fe16,Emmanuel Christian School,0,0
+sch_4646df7d1a28cf3f,Ensley,0,0
+sch_7beee189508587ba,Glad Tidings Christian School,0,0
+sch_5f7725a4e6c32ffa,Glen Iris Baptist School,0,0
+sch_0dd292c2d28071e7,Gordo,0,0
+sch_131c462798fbfc12,Gospel Light Baptist Academy,0,0
+sch_67866b6047e3fb3f,Government Street Christian School,0,0
+sch_bc3c5e5a07a45e7b,Gunn Christian Academy,0,0
+sch_fb5783e82231deb2,GW Long,0,0
+sch_bc9a69f23fea62fc,Harvest Christian School,0,0
+sch_e639a9475effe655,Hazlewood,0,0
+sch_980331cf346c9181,Hemphill Elemenetary,0,0
+sch_506d885a3db12577,Holy Family,0,0
+sch_ee870a5566d21ed6,Ider High School,0,0
+sch_6c979fec40476689,JO Johnson - CLOSED,0,0
+sch_9fcd7a57d6c9bbde,John Essex,0,0
+sch_ae636fd2eff7247a,Kingwood Christian School,0,0
+sch_ef39d83b07702d90,Lawrence County Christian Academy,0,0
+sch_1fb28d8b9ff292c8,Lindsay Lane Christian Elementary,0,0
+sch_0b6ba04f1f7cf455,Lineville - CLOSED,0,0
+sch_75abd83b9bed451a,Livingston,0,0
+sch_cb8c59b4492e9adc,Lyman Ward Military Academy (CLOSED),0,0
+sch_ec34789950b19acc,Marengo Academy,0,0
+sch_d19695a5ef432fb6,Monroe Academy,0,0
+sch_e72a9c123e718ca4,New Century,0,0
+sch_a036bf13dafefb3f,Pace Athletics,0,0
+sch_14805be69f2dc56f,Paint Rock Valley,0,0
+sch_2317a7083d99d5dc,Post-Season Competition,0,0
+sch_1501b457c03d6112,RA Hubbard,0,0
+sch_90daad6d630e9307,S.R. Butler - CLOSED (2015),0,0
+sch_bc81efba3b44ccfe,Sacred Heart of Jesus Catholic School,0,0
+sch_f30c12358f62c35a,Shaw,0,0
+sch_8d24c1b5eec7a285,Sidney Lanier,0,0
+sch_67e5f00bc9efd3d6,SMIC Academy,0,0
+sch_642d81ea5e1efb59,Speake HS,0,0
+sch_e51a610967fb34a4,Spring Garden,0,0
+sch_700ae910305f6cb6,Sumter County,0,0
+sch_7e2f738ac2c06af1,Sunshine High School,0,0
+sch_433549ec5a57d338,test team,0,0
+sch_990ec0040b0ead64,Union Chapel,0,0
+sch_9d793b28ad87d5ad,Verbena High School,0,0
+sch_fcf6c096690c554c,Washington County High School,0,0
+sch_d0a70320d7bbbf88,West End - CLOSED,0,0
+sch_a5377b24a99d69c6,Westminster - Florence,0,0

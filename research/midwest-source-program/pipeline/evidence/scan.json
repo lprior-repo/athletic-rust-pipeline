@@ -1,0 +1,41 @@
+{
+  "crates": {
+    "athletic-rust-pipeline": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 305,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 36656,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "midwest-census": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 251,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 39340,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    }
+  },
+  "structure": {
+    "files_over_300_lines": [],
+    "functions_over_25_logical_lines": 659,
+    "functions_over_60_lines": 0,
+    "functions_over_60_sites": [],
+    "unstable_feature_sites": []
+  }
+}

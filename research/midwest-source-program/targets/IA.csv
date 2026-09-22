@@ -1,0 +1,914 @@
+school_id,name,co2027,athletes_all
+sch_761f08bb2b1d90c9,Johnston High School,145,775
+sch_55f72350be1214b1,Waukee Northwest,123,746
+sch_a0b2aef3aa1eebeb,Ankeny Centennial HS,115,446
+sch_15fe8aaf4034bc7e,Iowa City,110,461
+sch_efdcb331b5ccf3db,Unattached,104,185
+sch_6420a953f93e7524,Cedar Falls,95,323
+sch_02d4136820e40062,Linn-Mar,93,501
+sch_38ce79c64a29d75a,Waukee,92,653
+sch_b00806b65cc6f2bf,Pleasant Valley,87,585
+sch_b48c026b07036545,Marshalltown High School,87,282
+sch_53e9999e074103bb,Dubuque Senior,86,237
+sch_680b06c4389f1be1,Prairie,81,377
+sch_323ea43732497f25,Valley High School,80,294
+sch_bf6e992501b23cbd,Ames High School,77,532
+sch_7f9a5cd5b41252cd,Southeast Polk High School,76,608
+sch_8a6b4ec08062ac64,Clear Creek-Amana,73,431
+sch_a039976400451aa7,Cedar Rapids Kennedy,72,279
+sch_80957c11ea3562a5,Cedar Rapids Jefferson,70,210
+sch_44732ee44e0488b4,Ankeny High School,69,443
+sch_b27a69670a08df09,Indianola High School,68,424
+sch_e7949ffa51f048f4,Live Healthy Iowa Kids Track,68,157
+sch_1fdbc087f039b9a5,Bettendorf,67,267
+sch_6c514a1ffdda68bc,Davenport Central,67,255
+sch_bf56c91432670414,North Scott,67,213
+sch_f18b7d6d94cc9574,Decorah,66,289
+sch_58d19eaad9f00f4e,North Polk High School,64,415
+sch_44c951fc5c79235d,Dowling Catholic High School,64,322
+sch_2f12514c6ea53e00,Clinton,64,289
+sch_dcf4afa1dfc11c43,Iowa City West,64,213
+sch_349ae66493973e5e,Western Dubuque,63,226
+sch_2b43e45c66be18c2,Dubuque Hempstead,63,181
+sch_92bc070e20757211,Waukee NW,63,93
+sch_e7ed8d17b07848e1,Bondurant-Farrar High School,62,365
+sch_fdbb81a9a1d294f1,Solon,61,371
+sch_257ab10f9bf90b89,"Valley, Wdm",61,96
+sch_2679a6523380b7ac,Urbandale,60,420
+sch_a1db6edde21358d7,Waterloo West High School,60,155
+sch_884eb28023775d1d,Cedar Rapids Washington,59,126
+sch_d477c3943fd6f060,Norwalk High School,55,397
+sch_8e0c2af889918779,Pella High School,55,365
+sch_0ce9b6ff1a8d0ba3,"Epworth, WD",55,85
+sch_9aa864734884f527,Glenwood High School,54,320
+sch_55f60c648e6bddfb,Clarinda High School,53,218
+sch_b54508122923e566,Unity Christian High School,52,195
+sch_31cfc2651e0223a1,Clear Lake,51,250
+sch_6ed46e94ee6a789c,Davenport North,51,99
+sch_05220a1d0b474388,Dowling Cath,51,84
+sch_c7722381db860f47,Lewis Central High School,50,390
+sch_833f265541cc3ef0,Des Moines Roosevelt High School,50,236
+sch_6c98a53b015393cf,Sioux Center High School,50,207
+sch_593c7e8298850682,Ankeny Cent,50,93
+sch_57523c976e4b6010,SE Polk,50,79
+sch_7eaf63b3d8403c1c,Dowling Catholic West Des Mo,49,81
+sch_77dcfdd63f357155,Benton Community,48,310
+sch_b7aa50650d230019,Center Point-Urbana,48,261
+sch_08d3e45c8fdc6b7e,CR Kennedy,48,88
+sch_b0bcd5a9962d3065,Dallas Center-Grimes High School,47,278
+sch_e8f7b53fa08cf650,Mount Vernon,46,506
+sch_af45803f23103ec4,Des Moines Christian School,46,356
+sch_321d3c8a3b70b710,Des Moines North High School,45,112
+sch_0964d17089a53973,adm,44,316
+sch_daaa6e896f7367fe,Monticello (IA),44,173
+sch_ac84902101044e46,"Prairie, CR",44,77
+sch_6e78317bb8a02c54,Ballard High School,43,334
+sch_2e183a486cc5e6ff,MOC-Floyd Valley High School,43,229
+sch_7f0d004294a49155,Marion,43,198
+sch_5b58b4d2dde7672c,Davenport West,43,107
+sch_6dbbd69fd1edb3d0,Xavier,42,139
+sch_c63f230affe42314,Dubuque Wahlert,42,135
+sch_c74081f153558f0a,Assumption,42,122
+sch_d3868ce02c2017f6,Central DeWitt,41,355
+sch_ceace3ff83f5d790,Gilbert High School,41,336
+sch_3070dcb70d4230e2,Winterset High School,41,262
+sch_f96f664df75002d1,West Delaware,41,228
+sch_7ac0289d34331cec,Lawton-Bronson High School,41,146
+sch_50245a026f6a184f,Martensdale-St. Marys High School,40,213
+sch_d96643ce80d000cf,Newton High School,40,168
+sch_6361f13eb8e479a6,Mason City,39,163
+sch_bfadfb139cdc1cf4,Abraham Lincoln High School,39,114
+sch_35fb134399445252,North Polk Alleman,39,64
+sch_4c03e71bc35b69ed,Bond-Farrar,39,57
+sch_61eb1979d14af289,Le Mars High School,38,231
+sch_593fe3682e318ac3,Northwest HS,38,85
+sch_6a119f64ede69556,Liberty,37,299
+sch_dbb5631cd65692c2,Roland-Story High School,37,259
+sch_7d0624d521192eaa,Forest City High School,37,182
+sch_ecc62598db51fa12,Valley West Des Moines,37,72
+sch_79055d082117557b,Vinton-Shellsburg,36,262
+sch_d63a9afcc4a0fe31,Boone High School,36,253
+sch_6dd353354bac66be,Mid-Prairie,36,185
+sch_8292a360316e910a,Crestwood,36,117
+sch_7b21a81c555078e5,Waverly-Shell Rock,35,226
+sch_52ce383cb4110957,Nevada High School,35,225
+sch_f2c3297bb233dca7,Ottumwa,35,139
+sch_0e0be61289a365ea,Des Moines East High School,35,114
+sch_d93c1e997902583e,Wat West,35,58
+sch_5e357a94480457ee,Carlisle High School,34,309
+sch_9df834206ca34fc0,Okoboji High School,34,222
+sch_dbf0a631ce50bc1b,Harlan High School,34,199
+sch_271bfc50119da4a5,West Liberty,34,184
+sch_ce993de272ddb8de,Earlham High School,34,137
+sch_87d2310882acf64b,"Adm, Adel",34,78
+sch_2f38dd5ab885559d,Prairie Cedar Rapids,34,58
+sch_7e47ca25c66fa9c0,Atlantic High School,33,213
+sch_24af5f3c65b0f0e2,Van Meter High School,33,201
+sch_d710c0d09aa1ddd8,Webster City High School,33,185
+sch_0be80be1782e1ef9,Muscatine,33,173
+sch_dd5a4fd594c37afd,Waukon,33,146
+sch_c4027377205219c6,Maquoketa Valley,33,131
+sch_53c85fd64981da32,Burlington,33,126
+sch_ede94dd356c0eeba,Algona High School,33,116
+sch_290ba3f94ea8610b,Thomas Jefferson High School,33,83
+sch_d385989ceb063dba,"Ic, City High",33,65
+sch_51ad70ca5b6ea1cc,Dsm Christian,33,55
+sch_77b2d913585966ae,Fort Dodge High School,32,226
+sch_a79ba506ccfb40c4,Sergeant Bluff-Luton Gigh School,32,162
+sch_d99b2f6b81da1961,Jesup High School,32,149
+sch_814560a054128ed4,Southwest Valley High School,31,251
+sch_3a2e6ab2f0708433,Cherokee Washington High School,31,211
+sch_3ce7cdee86d8222e,Johnston Running Club,31,63
+sch_a261e0d4db4aeaf2,Grinnell High School,30,239
+sch_7bb69dbca4f5e5d5,Williamsburg,30,159
+sch_b2c5a106e3ce8b32,St. Albert High School,30,134
+sch_27b90662a0a9ba17,Sioux City North High School,29,268
+sch_859edb52c495d203,Pella Christian High School,29,206
+sch_b8fc65ea33c2cae6,Lake Mills High School,29,146
+sch_f8481e86d641c7be,Hinton High School,29,77
+sch_4400459ba214c371,South Sioux City,29,60
+sch_e593289c64c81e79,Iowa City City High,29,57
+sch_27f69e999dd80657,CR Washington,29,46
+sch_ed006aaf2f366e17,"Dsm, North",29,45
+sch_28d2675fa3f04df2,Spirit Lake High School,28,214
+sch_e8985b700bb62f1f,Denver,28,195
+sch_844cb708404cb373,Osage High School,28,177
+sch_76199daaa3c577f8,Beckman Catholic,28,142
+sch_c9ddc12abed80ef5,Sioux City West High School,28,115
+sch_6ed13046c93ac70b,Woodward Academy,28,74
+sch_8f9f656384b58df4,Humboldt High School,27,241
+sch_4a0a43f4220d7027,Knoxville High School,27,197
+sch_c3e5112b04f491e7,Perry High School,27,193
+sch_6f95fa209cd1ef0a,Anamosa,27,184
+sch_76112872e7558c11,Mediapolis High School,27,163
+sch_18ac847c3b507475,Lisbon,27,139
+sch_6acc380e7fdff345,Creston High School,27,128
+sch_f25e7d21fec558de,Davis County High School,27,119
+sch_775c0b909600e6a8,Ames Orange,27,56
+sch_2afa1d4be08deab5,"Ic, West",27,52
+sch_1efebe6f18535298,Sioux City East High School,26,258
+sch_45f24a52ebd32beb,Dike-New Hartford,26,203
+sch_404441e667077c5f,Clarke High School,26,200
+sch_6b9e49c9e0fc9cc2,Iowa Falls - Alden High School,26,176
+sch_e72be03fa762567a,Shenandoah High School,26,149
+sch_b6d36a0b1c498a77,South Central Calhoun High School,26,140
+sch_dcb559a80c300750,West Hancock High School,26,83
+sch_dab48ba19be36988,Central City,26,78
+sch_57fc8428214b9ea6,WACO,26,52
+sch_557ef7d46bda79b8,Sergeant Bluff-Luton,26,46
+sch_24b8786674cd709e,Spencer Community High School,25,233
+sch_a376a967eb71a918,Union,25,133
+sch_7f2f6ae1060b1b1d,New Hampton,25,110
+sch_823e0b5debb87202,Pekin High School,25,109
+sch_bcff57af338bd2ad,Springville,25,85
+sch_6c698d6c8ba7f074,MFL MarMac,25,73
+sch_456de57cd74b93d6,Spencer,25,55
+sch_6a85e20de6a4cab4,"Columbus, CJ",25,38
+sch_169785160cfcc9a2,Central Clinton High School,25,34
+sch_58a1922d7e0298c8,Maquoketa,24,219
+sch_222e8535756fd42e,Wayne High School,24,120
+sch_e6f19f51ca724e18,Riverside High School,24,89
+sch_eb485bedd08f8ca3,Keokuk High School,24,83
+sch_df3934befdcc2bd3,East Marshall High School,24,67
+sch_27b0a02a470ca823,Columbus Community High School,24,64
+sch_6e8462abf5c15e64,Epworth Western Dubuque,24,54
+sch_f09627232062ae4b,"Dsm, Roosevelt",24,50
+sch_678300afe9303e0b,"CB, A Lincoln",24,42
+sch_2e4e7c3110d7a951,Tipton,23,188
+sch_d9b84957dbcb6b29,Charles City,23,173
+sch_aa6675625bd05349,Grundy Center High School,23,137
+sch_698dda2d3dbc28a9,Central Lyon High School,23,136
+sch_6373b622ec2e9eeb,Alburnett,23,127
+sch_aa3b96b0d8584626,Emmetsburg High School,23,117
+sch_72b94f3f1aa38de7,North Cedar,23,102
+sch_bea0e0148c4c2ca6,North Linn,23,102
+sch_e66a62411eaa006b,Mount Ayr High School,23,96
+sch_fbd5c38037773e99,Eagle Grove High School,23,75
+sch_d829f39e83bf37c4,Davis County Bloomfield,23,57
+sch_f6a66fd05be5b6a0,Dc-Grimes,23,48
+sch_6809f734d2409cb7,Bishop Heelan Catholic High School,22,194
+sch_20c889748a8c692c,Washington High School,22,151
+sch_be20716df137d11c,Greene County High School,22,150
+sch_2cf64cc08b407a69,Madrid High School,22,143
+sch_7d7462d4d9db445b,Oelwein High School,22,138
+sch_d9cd78904adb527a,Oskaloosa High School,22,138
+sch_aba7d53052821c16,Mount Pleasant High School,22,130
+sch_25d07452f1b12986,Sioux Central High School,22,128
+sch_af2d765e530cc950,West Central,22,118
+sch_8b35daf15b1c37bf,Hartley-Melvin-Sanborn High School,22,108
+sch_7cbac3b77ecb4d32,Woodbine High School,22,107
+sch_1f405b557b31bb3c,Tri-Center High School,22,92
+sch_ee1c6352aaadd6ca,Starmont,22,50
+sch_947be9d02b2e82f6,Okoboji Milford,22,38
+sch_b645cc7d4afd2d32,Roland-Story Story City,22,38
+sch_fd92a8d62d3a455f,Johnston Varsity,22,36
+sch_bb1b9c029943fafe,Monticello,22,34
+sch_fcbc2ea45cdc0ba6,Crestwood Cresco,22,31
+sch_fc93b985022d7b5a,Storm Lake High School,21,252
+sch_9bacfb4edbcdf88d,Regina,21,207
+sch_893edaf4bc274cd6,Independence,21,188
+sch_288900ac353f4c5d,Northeast,21,140
+sch_b950b202763f5bae,Grand View Christian School,21,139
+sch_57a6fb7c0feac3e8,Hudson High School,21,127
+sch_d2f47bfc2d75875e,Eddyville-Blakesburg-Fremont Senior High School,21,120
+sch_dd7f7d472393a59a,albia,21,119
+sch_6de4e4b5653e3600,IKM-Manning High School,21,112
+sch_9241ddb235a08085,George-Little Rock High School,21,108
+sch_aee039da0868aaa2,Red Oak High School,21,88
+sch_231a29139a48ce88,PCM High School,21,85
+sch_e439796e2445a222,South Hamilton High School,21,70
+sch_25f1edc1e6fb579a,"Dsm, East",21,42
+sch_0e074f4a198d8275,MOC-FV,21,36
+sch_71358a542bf41db3,Treynor High School,20,154
+sch_b7a5ebe1c694a596,Garner-Hayfield,20,131
+sch_2fab59a8c08d2356,Clarion-Goldfield High School,20,128
+sch_7b7b6e109500ea3d,Central Springs High School,20,112
+sch_65f1f89586a1b009,Iowa Valley,20,106
+sch_c4f0957a18803963,Nashua-Plainfield High School,20,106
+sch_2b2f36f9be0ee354,Camanche,20,95
+sch_513c294519e28ae9,Easton Valley,20,93
+sch_a2dce83f3097b7d7,Des Moines Lincoln High School,20,85
+sch_baa060b939b9c6c2,CAM High School,20,71
+sch_385cf22db5692bdf,Boyden-Hull High School,20,66
+sch_872220ead29815ee,Clear Crk-Amana,20,44
+sch_6b657e5c12b532b4,CR Jefferson,20,37
+sch_178120265273f8ee,Indianola JV,20,29
+sch_0239cd93a41d4b52,Eddyville-Blakesburg-Fremont,20,27
+sch_58269518e2c48efe,West Branch,19,172
+sch_171ee85a19b84789,Denison-Schleswig High School,19,164
+sch_ab2f338c54135ce3,Ridge View High School,19,147
+sch_84ea0a9d490a6e13,West Marshall High School,19,138
+sch_dad9e0e4bce516f3,Aplington Parkersburg High School,19,136
+sch_8b9a90602b3b7557,West Lyon High School,19,132
+sch_bebabdc68de0886e,Fairfield,19,127
+sch_fd2f618c37f280f7,Lynnville-Sully High School,19,125
+sch_b6b3bbb8d3daec3b,Hampton-Dumont High School,19,113
+sch_0c0b4c24d111d37f,OA-BCIG High School,19,108
+sch_5d5fce2b9591c058,Underwood High School,19,102
+sch_05fe7fbfd465194d,Adair-Casey/Guthrie Center,19,100
+sch_6c8c291e220662bd,Boyer Valley High School,19,89
+sch_6bdbc13aa3675ddb,Missouri Valley High School,19,63
+sch_73df90137f5f00bd,Linn-Mar Marion,19,40
+sch_97c3bdfa527a86be,"Ic, Liberty",19,36
+sch_f371dd3d620a51cb,Eddyvl-Blakes/F,19,27
+sch_e1443ac46aba6d55,Estherville-Lincoln Central High School,18,153
+sch_43d31fa82124d11e,Colfax-Mingo High School,18,150
+sch_e23f2c6f0eeb9fc3,South Tama County High School,18,119
+sch_cafb3a6951eb1ccb,Durant,18,117
+sch_7855554a36e974d2,West Fork High School,18,106
+sch_fb7856bf04258141,Fort Madison High School,18,99
+sch_735712da46ef8a5d,Janesville High School,18,94
+sch_b6a8cbca67f09f24,Westwood High School,18,92
+sch_592e391b9e39defc,St. Edmond Catholic High School,18,85
+sch_b975b6839cf98dc0,East Buchanan,18,81
+sch_280c15458250b702,Turkey Valley,18,76
+sch_26f85e0d09279dc4,Fremont-Mills High School,18,73
+sch_bbacc3841761e1f8,Bishop Heelan High School,18,48
+sch_c38e956300190f02,Riverside Oakland,18,42
+sch_14de52fd9a5a8fa7,"Riverside, Oak",18,42
+sch_8159993d4f5d8665,Sioux Central-Sioux Rapids,18,38
+sch_8db6ee69f6081374,acgc,18,37
+sch_3f3287c9ccad85b9,Ames Black,18,34
+sch_12ebf3dadebc399b,Wat East,18,29
+sch_aac505dd50657a9f,West Hancock Britt,18,27
+sch_822825dbc6e6601c,West Lyon Inwood,18,27
+sch_fcde505af50aa343,Beckman Catholic Dyersville,18,25
+sch_586c8816d6b7c77f,Alta-Aurelia High School,17,156
+sch_b1b48667ac45904c,Carroll High School,17,156
+sch_3f2b9adac4689187,Interstate 35 High School,17,119
+sch_9738327ce01dff62,Clayton Ridge,17,114
+sch_7e5076a7ccb93d46,Sheldon High School,17,110
+sch_c9ecf76a890d5513,Nodaway Valley High School,17,108
+sch_19eec68319008cd8,Des Moines Hoover High School,17,101
+sch_8068b939ebdc2200,Northwest Elite TC,17,43
+sch_180c363d8581094e,Valley Youth Running Club,17,40
+sch_bff245be20ad7d93,"Davis County, B",17,37
+sch_9d510f86834178c5,Pcm Monroe,17,35
+sch_69d5a963c0f568c5,Iowa City Liberty,17,32
+sch_ee4bbd194d89c6a0,South Cent Cal,17,32
+sch_4d8a9e697d0e68a6,Southeast Valley Gowrie,17,29
+sch_776cd410abe6d235,Iowa Valley Marengo,17,26
+sch_3802e147a532bab5,"W Lyon, Inwood",17,26
+sch_3355060135cca15d,Cross County,17,24
+sch_53f9acfc1ce67eca,Chariton High School,16,186
+sch_3cee7fe4da575087,Kuemper Catholic High School,16,184
+sch_d7f59b86f41532af,Bellevue,16,169
+sch_9822c5b14cafc0d8,Woodward-Granger High School,16,162
+sch_a08908f40c646533,West Burlington/Notre Dame,16,132
+sch_e90a4bc95758faa8,Central Lee High School,16,122
+sch_6f730b2e6b199f76,South Hardin High School,16,111
+sch_6adfca9a1efab4b8,North Union High School,16,102
+sch_ad37dfdac134a7c3,Marcus-Meriden-Cleghorn High School,16,98
+sch_67f55ecb623a7888,North Iowa High School,16,94
+sch_df9691c8a246a263,Louisa-Muscatine,16,92
+sch_eaa830ae0f22d3e4,Saydel High School,16,84
+sch_290a323c8cc544a3,Southeast Warren High School,16,77
+sch_c901ab7875f684a0,English Valleys High School,16,73
+sch_501cc06c0fe305c8,Collins-Maxwell High School,16,71
+sch_4336db356847f514,Clarke Osceola,16,39
+sch_82190c98b0dbaad6,Interstate 35 Truro,16,36
+sch_550b172f666e80f1,Council Bluffs AL,16,35
+sch_2068dc835c237734,South Hamilton Jewell,16,35
+sch_113edd988b18e0cf,Dub Hempstead,16,29
+sch_405c08cec46653d6,"I-35, Truro",16,29
+sch_e41e4d41d735f2b4,Columbus Community Columbus,16,24
+sch_68c7d5ad44ec4a66,Clarion-Goldfield-Dows,16,23
+sch_a0c66b4fec31ff4a,Cam Anita,16,19
+sch_dd7f7a6e5e2077d8,North Fayette Valley,15,159
+sch_f1ee4cbaad837e1c,Pleasantville High School,15,136
+sch_635a402f84f2362f,Western Christian High School,15,130
+sch_d4d21b2db751ae94,Bedford High School,15,116
+sch_b2827d303e2cdb4f,North Mahaska High School,15,107
+sch_f477ce4620f10a50,Manson-Northwest Webster High School,15,104
+sch_58363e9827782f3c,Kingsley-Pierson High School,15,99
+sch_1d56160eed99be4d,Lenox High School,15,99
+sch_21fbed09c02bc84e,Ankeny Christian Academy,15,98
+sch_22a6352fae3a7fa9,Cedar Ridge Christian School,15,86
+sch_fe96b19654b31c48,Montezuma High School,15,82
+sch_da4aeced75e44a92,Belmond-Klemme High School,15,72
+sch_5d72821b97554a66,West Burlington,15,64
+sch_a4f38dab630c5b5d,Colo-Nesco High School,15,60
+sch_f09ca21516c5896c,Hampton-Dumont-CAL,15,40
+sch_40ad8039e1710c10,Southeast Valley,15,30
+sch_0beac1cbdd70661c,"CB, T Jefferson",15,25
+sch_f8d72fbbcc473464,HM-Sanborn,15,25
+sch_ee8ba4c0b9af4e97,Mt Pleasant,15,25
+sch_50ba9b36b45124a5,"SC, East",15,25
+sch_09bdf3db3aad4ab7,SB-Luton,15,24
+sch_fe02aae23870dabc,"Unity Chrst, OC",15,23
+sch_63b0aacba05c2c77,Cedar Rapids,15,22
+sch_a3f43d4ce7b49590,La Crosse Logan,15,21
+sch_73f5e6eb17556202,Onalaska,15,18
+sch_528c4bfba76bb282,Ogden High School,14,139
+sch_f671889193a33c63,South O'Brien High School,14,115
+sch_ead73ab145bdbcaf,Pocahontas Area High School,14,109
+sch_3848f6ad63256eac,Wilton,14,108
+sch_3637c32a532183aa,Central Decatur High School,14,106
+sch_ef689df86406152e,Gehlen Catholic High School,14,106
+sch_545e94022ccdeca1,Logan-Magnolia High School,14,103
+sch_8cec9f297be0cccf,Newman Catholic High School,14,91
+sch_dc9e07f279690d2d,New London High School,14,87
+sch_5aa4585e3e3b3ff3,East Union High School,14,82
+sch_7359272c38c6b8c4,Griswold High School,14,70
+sch_2c91226c0eb33e18,Murray High School,14,69
+sch_41f372f6f44aeb00,Sigourney High School,14,62
+sch_a419d8477ae78442,Omaha South,14,34
+sch_946c3d8d65e23df9,Cedar Rapids Track Club,14,33
+sch_78bac5d747776c6e,Des Moines Abraham Lincoln,14,33
+sch_453a2e6e7caa8271,Waverly-SR,14,31
+sch_f0657e826e25a3d9,Carroll Community,14,28
+sch_cca726d938bebf6d,GMLOKS,14,28
+sch_4cf5b1571a0127d2,S Hamilton,14,28
+sch_1edc119f1fae20b4,"Xavier, CR",14,27
+sch_a7ffa56fcade8c78,MO Valley,14,26
+sch_97332ee94dcc1004,MMC-RU HS,14,25
+sch_06f3fcb71e062d4b,"SC, West",14,25
+sch_035acdc786a9b37d,Bond-Farrar JV,14,21
+sch_a8dcdf9d54c802a7,Cent Lyon,14,21
+sch_c1fb485641e3b814,Newman Catholic Mason City,14,21
+sch_54c976c026ba931e,West Sioux High School,13,116
+sch_17a30341e00c9156,Sumner-Fredericksburg High School,13,114
+sch_4a51f691f47848bc,Danville,13,105
+sch_6fcc29449a48da02,Baxter High School,13,91
+sch_d2301fe98553a2d6,North Butler High School,13,86
+sch_dd85c2dc5f3e737c,agwsr,13,75
+sch_7870f04b4b0c1e2d,Belle Plaine High School,13,75
+sch_da124514fdf39f98,A-H-S-T High School,13,74
+sch_53b6033a277676d5,Waterloo East High School,13,70
+sch_1ebe586668a7f4a7,BCLUW High School,13,62
+sch_5572efe9e4063167,Exira/Elk Horn-Kimballton High School,13,46
+sch_d8cf30a945656827,Kuemper Cath,13,37
+sch_6b16325be85de788,SGT Bluff High School,13,32
+sch_a99963eb3cb2197b,Fremont-Mills Tabor,13,31
+sch_906884188b307064,Dike-NH,13,28
+sch_512710c906f2db1f,"Cherokee, Wash",13,27
+sch_5f8400dc5c7de7b7,Dsm Lincoln,13,26
+sch_8c23df98d5867420,"Sioux Ctrl, SR",13,26
+sch_478e0e7a7340c84e,Waukee TC,13,26
+sch_f40fe36a7708df3a,Indianola A,13,23
+sch_de57a56bab99b716,Nebraska Christ,13,23
+sch_ce45842f6b2648fe,Central Lee Donnellson,13,22
+sch_7ab91a7d73f0aa84,Kp-Wc-Rv,13,21
+sch_16105e4ebd604b33,SE Warren,13,21
+sch_f187b2051469b94a,North Iowa Buffalo Center,13,20
+sch_58a04c570dac8dc1,Unity Christian Orange City,13,20
+sch_0f9e5a5497f3313d,Garner-Hayfield-Ventura,13,17
+sch_e4b715c136efadb5,Ankeny 2,13,16
+sch_834da25fef35b4b9,Norwalk JV,13,16
+sch_f6303e549339f731,Sheldon Community,13,15
+sch_639a32cb3b9eca85,Saint Ansgar High School,12,120
+sch_d4b5e2a6ba59a99e,Northwood-Kensett High School,12,92
+sch_623b7e76cb7e6914,Riceville High School,12,92
+sch_2ff57f4bcd3f0436,East Sac County High School,12,86
+sch_4f0ace3c912aeeb9,Midland,12,70
+sch_0e344f9094648281,H-L-V High School,12,67
+sch_76a051c48eb0e8d5,Gladbrook-Reinbeck High School,12,53
+sch_3c25bfa96df444c5,Hillcrest Academy,12,48
+sch_30299d051107f77a,Melcher-Dallas High School,12,48
+sch_0980d4929fbe1370,Highland High School,12,40
+sch_1098447704de6bc5,SGT Bluff-Luton,12,31
+sch_2622551835dede00,Estherville-LC,12,29
+sch_bfaebe4f39dd3fa4,Kuemper Catholic Carroll,12,27
+sch_f3850478893c627b,"SC, North",12,23
+sch_6c32ec6d49616dfc,"Wahlert, Dub",12,22
+sch_3a5a9a9ffa91bde7,George-LR-CL,12,21
+sch_c71c1342965a2682,"St. Albert, CB",12,20
+sch_9f0edb626f52b91e,Woodbine Community,12,20
+sch_5d556ffde8ae3bb8,East Marshall LeGrand,12,18
+sch_e55fb254de67f633,Turkey Valley Jackson Juncti,12,18
+sch_075ed1f1fba9eef9,Valley Orange,12,17
+sch_2cc12f62e4188b36,St. Charles,12,14
+sch_f7b182b2b15d0c1a,Centerville High School,11,144
+sch_44714772c9552e37,Wapsie Valley High School,11,110
+sch_2a6ddb9155d92647,West Monona High School,11,105
+sch_89b618eb97b64edc,Sibley-Ocheyedan High School,11,94
+sch_e362222b550f6b82,Akron-Westfield High School,11,86
+sch_3e039b2587073ad2,Edgewood-Colesburg,11,71
+sch_bf4b7b20aa429857,Tripoli High School,11,69
+sch_339a63c0bd8e0da2,Siouxland Community Christian High School,11,65
+sch_533ae594fb015079,Heartland Christian School,11,58
+sch_597ff1ddda005d5b,Kee,11,41
+sch_80cd8627dad05f69,West Marshall State Center,11,41
+sch_7923c6402f84bb90,Cherokee,11,33
+sch_9007378eec30930b,Denison-Schlswg,11,27
+sch_d29bce56cc08b4c0,Central Iowa Excaliburs Trac,11,26
+sch_d0c118824fc1e784,St. Edmond Fort Dodge,11,24
+sch_285e31eaf9908127,JV-Cherokee,11,23
+sch_7265aef905237378,Kirksville,11,23
+sch_9b2562b64d53d200,East Union Afton,11,20
+sch_051669b502983fe9,Mid-Prairie Wellman,11,20
+sch_79b7fca5b739909b,Mid-Prairie W,11,19
+sch_96fadc668b5a2e41,Tri-Center Neola,11,19
+sch_f01667519a2bdef5,Siouxland Christian,11,17
+sch_7ab71bbe5a2ff694,West Fork Sheffield,11,17
+sch_96ee2524d5fd0524,Southeast Warren Liberty Cen,11,16
+sch_2ec999c5be992c50,Woodward Acad,11,16
+sch_23fe3d960cfb54dd,West Central Valley High School,10,120
+sch_2604baae20f97858,Cascade,10,116
+sch_615069b0309ec2a3,South Winneshiek,10,110
+sch_ec5b058fdf3a950a,Maple Valley-Anthon-Oto High School,10,108
+sch_d0dc29340639c373,Calamus-Wheatland,10,91
+sch_768134d6f2390fa0,Bishop Garrigan High School,10,80
+sch_a3e83e488c5373e7,Lamoni High School,10,67
+sch_c9f082f755fc883c,Don Bosco High School,10,59
+sch_3e472a390b2df909,Sidney High School,10,47
+sch_47ef08fbc29eb797,W Marshall,10,44
+sch_f6f882e48fef8ed5,Audubon High School,10,42
+sch_98403ddba0fe6a2a,Mississippi Valley Track,10,26
+sch_58e2842b296e2845,G-M-G High School,10,25
+sch_9e40f3adee214797,W Burlington,10,24
+sch_18cdeb888142d5c3,Ankeny Track & Field Club,10,23
+sch_651b33c3068c5f61,Regina Iowa City,10,22
+sch_4fd173f6c0b0e8ce,CB Abraham Lincoln,10,21
+sch_d719780452bdc43f,Union La Porte City,10,21
+sch_9b46fa4c3ddfb62f,"Cherokee, Wash V",10,20
+sch_6d2019dfc03f04d1,North Butler Greene,10,20
+sch_88d5ce49837c345e,Central Decatur Leon,10,19
+sch_2b5267ef1c9039dc,English Valleys North Englis,10,19
+sch_3948556e990c1cc7,Gilbert JV,10,19
+sch_9f8832c3b495bde1,Maquoketa Valley Delhi,10,19
+sch_6157351189fa9bf1,Ms_van Meter,10,19
+sch_53a7f59714d3dc13,Carlisle JV,10,18
+sch_83e5eea67012ddd0,Kee High,10,18
+sch_e15a845ed0e4a755,North Cedar Stanwood,10,17
+sch_a5129027f6a3f66e,Siouxland Chr,10,17
+sch_7251713aca0a621c,Gilbert Black,10,16
+sch_961235596ce34148,Northeast GL,10,16
+sch_1d9d266379c38be9,West Sioux Hawarden,10,15
+sch_707ad01c0d4eb60a,E Marshall,10,14
+sch_27ed6ecd2d9f4928,EHK-Exira,10,14
+sch_29718f80c7df05ec,Ia Falls-Alden,10,11
+sch_057a4a665b0b01e2,Van Buren High School,9,66
+sch_228b38abe7aa34aa,Central,9,58
+sch_59247cc02f4ba7b9,Moravia High School,9,58
+sch_28fb6b8c3668b746,Dunkerton,9,54
+sch_1d6b11546739ad1f,Postville,9,51
+sch_01cc7f5deb50e235,Paton-Churdan High School,9,48
+sch_dff45202c3d7b7c0,Wapello High School,9,47
+sch_aa31b6a8f5c1a0a5,Seymour High School,9,33
+sch_22c4ce8a394458ea,MVAOCOU,9,27
+sch_b468616d1a984acd,"Dsm, Hoover",9,26
+sch_6cb4bc5e3d4e9599,Cent Decatur,9,25
+sch_cfddaff801702297,Waukee Purple,9,23
+sch_cc3625bba73d1f74,Wayne Corydon,9,23
+sch_746ecf3862b1b38f,West Delaware Manchester,9,23
+sch_8b01537e237eee7d,Grand View Christ,9,21
+sch_e50d919c6f59bc53,N Mahaska,9,21
+sch_3804949ab3e49457,W Monona,9,20
+sch_011ee057ab85d437,ahstw,9,19
+sch_8c12b0e2ae07e765,Nodaway Vall,9,19
+sch_36f62ea5cd374152,Om Roncalli Cath,9,18
+sch_42a4f0eb6dc2ee2e,Putnam County,9,18
+sch_bc696d246ede4a80,Waco Wayland,9,17
+sch_48a9441dfa325dca,Northeast Goose Lake,9,16
+sch_9d5f390eab591dcb,Wood River,9,16
+sch_6cb546814d4cd442,Martndsl-StMarys,9,15
+sch_8224027255cfb01a,V-Hinton High School,9,15
+sch_4abe7aaff997d365,Waterloo United,9,14
+sch_8959d46d51955857,Boyden-Hull/Rock Valley,9,13
+sch_eeeb2dd420be7ca9,Elba,9,13
+sch_dc9a324a4b176a55,North Linn Troy Mills,9,13
+sch_e360697ce6065f25,Norwalk - Gold,9,10
+sch_b150620bbf84148c,Panorama High School,8,89
+sch_54bc972954a14e8b,Woodbury Central High School,8,76
+sch_dae1a5917168d3d8,East Mills High School,8,62
+sch_2c4a1bb44326de58,Lone Tree High School,8,60
+sch_611b643448e3219f,Prince of Peace Prep,8,58
+sch_2c37c206d0316529,Waterloo Columbus Catholic,8,56
+sch_9ea6afa55d21d08f,Meskwaki Settlement School,8,49
+sch_7eee9a94fe97fc87,West Bend-Mallard High School,8,31
+sch_6ffb4d4551e696a0,Hamburg,8,30
+sch_0a0a0f82dad9cc0e,Cardinal Eldon,8,25
+sch_8441242f46d5e30d,North Tama High School,8,23
+sch_1aad3b2e3d71e10c,Wapsie Valley Fairbank,8,23
+sch_dc8a15526da68b14,DUB Senior,8,19
+sch_79f613479008e3e2,VanBuren County,8,19
+sch_a1a31731dd47b31d,Louisa-Musc,8,18
+sch_f5e44869d0c9f139,Adrian/Ellsworth,8,17
+sch_e8dfeb7adcaf277c,Midland Wyoming,8,16
+sch_18c3b2c901b37fa6,High Plains Comm,8,15
+sch_29c14cdee28a3429,V-WC-KP-RV,8,15
+sch_edb7c80e90c0c866,North Scott Eldridge,8,14
+sch_2292d25f8d63797f,Valley JV,8,14
+sch_351a6c9f3e5ce56e,Council Bluffs TJ,8,13
+sch_ff11141e1ffb755c,"Hlv, Victor",8,13
+sch_e9d1cab563c51a65,"Iowa Valley, M",8,13
+sch_ba4c67380e0dd511,Boyden-Hull-RV,8,11
+sch_c4b7f82681fee33f,St. Albert Council Bluffs,8,11
+sch_dc7017667ae67971,V-Lawton Bronson,8,11
+sch_45443f04d7775627,W Central Valley,8,11
+sch_87bf8e3256a7b4c9,Bondurant-Farrar Varsity,8,10
+sch_80958c17e0ebd08f,Ponca,8,10
+sch_bfa087b9a2f7032b,Saint Edmond Fort Dodge,8,10
+sch_333e10598a413cde,B-G-M High School,7,116
+sch_8ef08965173976e1,Cardinal High School,7,110
+sch_8459d56cac624d65,Newell-Fonda High School,7,109
+sch_1510806011688067,Harris-Lake Park High School,7,61
+sch_47a83fedf728d562,Winfield-Mount Union High School,7,36
+sch_7e784b5bf6a421b9,Westwood Sloan High School,7,26
+sch_eed978839db5db5b,Kuemper/Carroll Public,7,21
+sch_fe7b32e7aa7e1d1e,Segeant Bluff-Luton,7,20
+sch_cff9fe0b46718dca,Bcluw Conrad,7,19
+sch_a4b3d72625baa09b,Bishop Garrigan Algona,7,19
+sch_41322882bf566441,Bishop Heelan Catholic Sioux,7,18
+sch_dead18414e1a6990,Des Moines Christian JV,7,17
+sch_7c937c48b32b2b1e,Waukee B,7,16
+sch_593f887d4fd41baf,Winfield-Mt. U,7,16
+sch_0d0d1d8f93dafa02,Gilbert Red,7,15
+sch_8ce677074d4ba846,Central Sprngs,7,14
+sch_0001329e8e3bca84,"Gehlen Cath, L",7,14
+sch_041269098fece0e6,Palmer,7,14
+sch_93132b9d0ec1bed5,"St. Edmond, FD",7,14
+sch_c05282ab6b58a8bd,WC-KP-RV,7,14
+sch_770663b76396da51,Western Christian Hull,7,14
+sch_16826425f47896f8,"DVPT, Central",7,13
+sch_f8ee16924e65c894,Manson NW Web,7,13
+sch_3687c12062822bee,Spirit Lake JV,7,13
+sch_addd35cbf3439c5b,V-Sioux Center,7,13
+sch_8e94090c4ab03189,Gehlen Catholic LeMars,7,12
+sch_a7ad23bbbb85912c,Xavier Cedar Rapids,7,12
+sch_e877aadc7b147b0e,Boy-Hul/Rock Val,7,11
+sch_2b52fb22807d570f,Pocahon Area,7,11
+sch_fbf5b2a0068a7660,Woodbine Boys,7,11
+sch_3a039bc0615e5285,A-Interstate 3,7,10
+sch_7ec23b0e783a83a4,Glenwood JV,7,10
+sch_2bd88c38e26e2c41,Columbus Community Columbus Ju,7,9
+sch_15bee37d1e0e955a,E Buchanan,7,9
+sch_eab837db4ee44cf2,V-Siouxland Christian,7,9
+sch_eab37a86ecb5b4ea,V-Spirit Lake,7,9
+sch_28e26ade98f2674f,V-Wayne,7,9
+sch_160c853f4ba6dbd9,Coon Rapids-Bayard High School,6,29
+sch_9e408f9c7bef372f,Twin Cedars High School,6,27
+sch_f652a4200ad5edae,Woodward-Grangr,6,24
+sch_c37dfef1e6651e43,South Tama County Tama,6,20
+sch_f8179b362be437d9,Gilbert A,6,18
+sch_80fb3b915fe42239,Mt Vernon,6,16
+sch_54eff77bc7231e8f,Nebraska City,6,16
+sch_daf45b80e32c863b,"Regina, IC",6,16
+sch_6d23f6a950b523c1,Crofton,6,15
+sch_9925182cf16f5c99,Ridge View JV,6,15
+sch_11ccf74a60cd9410,Gmg Garwin,6,14
+sch_3969739830016256,Kee Lansing,6,14
+sch_20934e4918560aa0,Ankeny Christ,6,13
+sch_b9f36dca60d5db3a,Cherokee JV,6,12
+sch_e444a3298ef0d5b8,CPU,6,12
+sch_80e3b2fb53bd753f,V-Spencer,6,12
+sch_57c3535dddba16b4,Western Christ,6,12
+sch_2760ff8147e744c9,Cedar Bluffs,6,11
+sch_67b807dce4e32816,I-Run,6,11
+sch_f6aaac4f71ce77d8,Twin River,6,11
+sch_39d51a0c224849b9,South O'Brien Paullina,6,10
+sch_5d36dbc85890db71,WB-Mallard,6,10
+sch_ff5c9a8d39fe1e8f,Boone Varsity,6,9
+sch_18e0c244b10a7155,George-Little Rk,6,9
+sch_80726f6bf484e199,KP-WC-RV V,6,9
+sch_5aa25d7d7d8e9815,Newton JV,6,9
+sch_daeda2b498d8fa32,Norwalk - Purple,6,9
+sch_b6cbc3f04d13769c,V-George-LR-CL,6,9
+sch_29e271112609f4e5,V-Ridge View,6,9
+sch_37f4bd4eb0cc76bd,Clarion-Goldfd-Dows,6,8
+sch_2f9e443fa7e5f614,V-Woodbine,6,8
+sch_1e5f34080580700c,West Central Valley Stuart,6,8
+sch_2039c68775e134ec,40-Unattached,6,7
+sch_48b1f9cc04396f3a,North Polk Red,6,7
+sch_7b9658ae83801254,"Turkey Val, JJ",6,7
+sch_ba5e426982300cda,Trinity Christian,5,81
+sch_bf28910fd1c65c1f,Graettinger-Terril High School,5,56
+sch_432051d9c2b7672c,Ar-We-Va High School,5,44
+sch_d3348269e5278002,Keota High School,5,42
+sch_dbd81f78d89e3e5f,Essex High School,5,36
+sch_a1e0babdbc30d9c5,Mormon Trail High School,5,31
+sch_58234d225a26f6d4,Clarksville High School,5,30
+sch_99f74dce3e22b7c2,St. Mary's Remsen,5,30
+sch_50d2e1673beb37b0,Waukee Gold,5,21
+sch_a208189a39a7aada,South Tama,5,15
+sch_1c360701328860b0,C-Wheatland,5,14
+sch_579c7251835bc03a,Hlv-Tc,5,13
+sch_e8f9743cdf9fe1e3,Indianola B,5,13
+sch_bb29e0836b87a63f,Orient-Macksburg High School,5,13
+sch_90e8ae3cf024ff6e,Cascade Western Dubuque,5,12
+sch_7420aab85310ec47,Central Elkader,5,12
+sch_ffa299609e8ec39a,Highland Riverside,5,12
+sch_0011145abbb4fd8b,V-Sioux City East,5,11
+sch_c797dd42ea1c2ebc,Woodbine Girls,5,11
+sch_68ed2bf57efced64,FASST Track,5,10
+sch_7c87fc89841bc733,North Polk Varsity,5,10
+sch_8de6659d421f64f2,W Sioux Hwardn,5,10
+sch_34561a13f8f404ab,Wahlert Dubuque,5,10
+sch_907ba36867ac7546,Hillcrest,5,9
+sch_ec1a6d1d0c0bccc2,V-Okoboji,5,9
+sch_1ec0dfbf2c56a19e,V-Sioux City West,5,9
+sch_a630a5fe4f58c619,Assumption Davenport,5,8
+sch_c4d189c6509e5137,Canton,5,8
+sch_a8d2b1bce555475e,Clipper Track Club,5,8
+sch_3dd4839ed7b90099,LC,5,8
+sch_0805dd1f6ed172e7,D & A Trakk Elite,5,7
+sch_3ec2d82dcd9b3a7a,Des Moines Youth Development,5,7
+sch_26ff5431b35af260,LBJV,5,7
+sch_e85ee9995b987f19,V-Lemars,5,7
+sch_9c5dd25d79010460,V-West Sioux,5,7
+sch_522b0c3d5448bb60,A-Southeast Wa,5,6
+sch_b7e03e73c12e1341,Beckman,5,6
+sch_0413af635109e11e,Columbus Catholic Waterloo,5,6
+sch_af42c01b947451e3,Maroons Track & Field Club,5,6
+sch_41c92cd9eec47520,Meskwaki Settle,5,6
+sch_66acfec32cf27575,Postville Community,5,6
+sch_4c334d74aef6603f,Remsen St. Mary's,5,6
+sch_86cf17bef1e5fdc4,"St. Mary's, R",5,6
+sch_1fc69a5fedb11271,V-Ponca,5,6
+sch_13388b5a9e73535a,Marquette Catholic,4,69
+sch_56642c850137c093,Stanton High School,4,57
+sch_69daf4cdfe7cdbcd,Rockford High School,4,47
+sch_4f2873aea1c1d227,Glidden-Ralston High School,4,40
+sch_aeb796aca817c1cc,Rivermont Collegiate High School,4,27
+sch_984d47b0c4398b4e,Moulton-Udell High School,4,26
+sch_f7393c96e32a2f2c,GTRA,4,15
+sch_bb23853ff976ec5e,Iowa School for the Deaf,4,14
+sch_ff51ca3e60b5d236,Benton Comm,4,13
+sch_7f38b6e8538a6e2d,"Union, LaPorte C",4,13
+sch_a1357e88e0e5d91e,V-Westwood,4,12
+sch_91902c8e2d6cef9d,"St. Mary's, SL",4,11
+sch_d9c68563e05fc913,Tarkio,4,11
+sch_f957581468b6b8ad,DCG Track Club,4,10
+sch_15b8406e13bb1878,English Valleys North English,4,10
+sch_7249f31c799f77a5,Heartland Christ,4,10
+sch_cccd3f4e295bbd4a,St Marys,4,10
+sch_80804d7c6fb2bc32,W Delaware,4,10
+sch_bcb86b78359df86a,Boyer Valley Dunlap,4,9
+sch_b3bf86667a06087e,Cr-Bayard,4,9
+sch_aaf85b0021bdd089,Gilbert B,4,9
+sch_3230b80897b940ce,Indianola JV A,4,9
+sch_ccb5910133b06d51,V-Cherokee,4,9
+sch_472c985f4a869196,Van Meter Varsity,4,9
+sch_f479bc7173ff7c8a,V-MOC-Floyd Valley,4,8
+sch_ce8c2b7be42b7abe,V-Sergeant Bluff-Luton,4,8
+sch_a9b0b4df1f6248f7,V-South Central Calhoun,4,8
+sch_81ca1e3dd6c1baad,V-Unity Christian,4,8
+sch_1bc60062c22c7d49,A-Wayne Corydo,4,7
+sch_ee8d359f781448e2,Bobcat Running Club,4,7
+sch_71f88b4404a41a07,Maryville,4,7
+sch_830fe648e9f71bf7,North Liberty Track Club,4,7
+sch_3a9807f2d5be4bbc,V-Sioux City North,4,7
+sch_2ae3c221b40be805,V-Western Christian,4,7
+sch_86a57c2878503b62,B-Lamoni,4,6
+sch_16b79e0ae2da6024,Champions Track Club,4,6
+sch_1e63331d35bde1dd,Southeast Valley JV,4,6
+sch_0616654ec10cf3f8,V-Lewis Central,4,6
+sch_5c689d061bfc8775,V-Sheldon,4,6
+sch_375e38d2c545ced8,A-East Union A,4,5
+sch_4b68794d8fd184bd,Atlantic MS,4,5
+sch_759ac4d2585b3fd4,B-Melcher-Dall,4,5
+sch_4c5d2f4170aef64a,Johnston JV Purple,4,5
+sch_02da6368be98a876,JV/JH Denison-Schleswig,4,5
+sch_fc7d8757cbcfd9a7,Pella Christian JV,4,5
+sch_d324c9efb399bfff,Trinity Christ,4,5
+sch_bc50405316425cec,Jumper Athletics,4,4
+sch_e8a6d4840b5d8b1a,Southeast Warren Liberty Cente,4,4
+sch_704022a1bf31d976,West Harrison High School,4,4
+sch_9eddb78eb7a6b9b4,Valley Lutheran High School,3,35
+sch_6bb7245e52ea46fb,Diagonal High School,3,26
+sch_f899e5809e0c65e8,Hartley-Melvin-Sandborn,3,14
+sch_80d64c3b609356cd,Nashua-Plainfld,3,12
+sch_d13441057a8ed223,Graet-T/Ruth-Ayr,3,11
+sch_0e69d7dac285d4f0,"Wapsie Val, F",3,11
+sch_f8112d8bfd295953,Aplntn-Parksbg,3,10
+sch_581e33a0d478271e,Collins-Maxwell 1,3,9
+sch_7cc039b3c9631265,North Tama Traer,3,8
+sch_b30403663b75343e,Panorama Panora,3,8
+sch_c247fd91bd61dc43,Schuyler County,3,8
+sch_fd377969ddcf4d12,Seymour Community,3,8
+sch_95a747f2feba6963,V-SGT Bluff High School,3,8
+sch_9174f0cf00c52bf7,Colfax-Mingo Varsity,3,7
+sch_4a1c26c989d86a96,Grand View Christian Varsity,3,7
+sch_00b3bdf137601d8a,Nevada JV,3,7
+sch_1c03bea99a2b7cd0,Newtown-Harris,3,7
+sch_7ad1a44236f4ce12,Sioux Falls Lutheran,3,7
+sch_bbd1a01957ff4803,Ankeny Christian Varsity,3,6
+sch_6656f713915db574,Collins-Maxwell Varsity,3,6
+sch_222a781a5fe2e688,Fullerton,3,6
+sch_007bcf42ef007a6e,Saint Albert,3,6
+sch_e6a661a4c559d328,Saydel Varsity,3,6
+sch_f9940b18d0007307,V-Alta-Aurelia,3,6
+sch_cf4d102f38fdc836,V-Estherville-LC,3,6
+sch_10222f174d813462,V-MMC-RU HS,3,6
+sch_b7e8d64d9d217cf2,Garner-Hay/Vent,3,5
+sch_1439fe52b0d640af,IA Elite Track Club,3,5
+sch_e02849ffd63405ee,JV/JH MVAOCOU,3,5
+sch_9b2d70c1ca2cc42b,KP-WC-RV-JV,3,5
+sch_b3529b44e23b42fa,Lennox,3,5
+sch_4f62cf4268f4aac8,NL,3,5
+sch_a80a6ac2432ffcc5,Boone Running Club,3,4
+sch_bf9c0829cb80ef28,Clear Lake Classical,3,4
+sch_4d192ec22c5d2f0a,Harris-LP,3,4
+sch_6a60b5578e1a85cc,JV/JH Estherville-LC,3,4
+sch_1eddf95cb71125ab,JV/JH Hinton,3,4
+sch_9c1fe58bd17705fc,"N Tama, Traer",3,4
+sch_0af7065dfa0e7460,O'Gorman,3,4
+sch_36f7c69fb46869da,JV-MVAOCOU,3,3
+sch_a56ee371f74bc1b3,Prince of Peace,3,3
+sch_037e6b3af2c418e9,Whiting High School,2,15
+sch_5af9c3f2458a241a,Joshua Christian Academy,2,12
+sch_feea177c6824840d,Gilbert Varsity,2,10
+sch_4a1e64a5e201c32b,"B-G-M, Brook",2,9
+sch_6d9de73e874f0341,V-Storm Lake,2,9
+sch_e021963841609883,Edgewd-Colesburg,2,8
+sch_a05ead957fc00085,Elk Point Jefferson,2,8
+sch_a1cb71a921ee5d40,Ahstw Avoca,2,7
+sch_495e1406fc3e32b7,B-Murray,2,6
+sch_6856ba720e915209,Iowa Flyers,2,6
+sch_d95dcdcc4ca52d7a,"S Winn, Calmar",2,6
+sch_03ec16c293a0248b,V-Pocahontas Area,2,6
+sch_8cabc6e6f63947d8,B-Bedford,2,5
+sch_d6e5e7fd69a618f0,Johnston JV Gold,2,5
+sch_06d218fb740c8d6b,Prairie Valley High School,2,5
+sch_a58de53b270802e5,V-Hartley-Melvin-Sanborn,2,5
+sch_8bc6086874e1b614,V-Logan-Magnolia,2,5
+sch_499221f392b2de9a,V-South O'Brien,2,5
+sch_d2563541ae111cbc,V-Hartley-Melvin-Sandborn,2,4
+sch_6673252dada8fa33,V-Missouri Valley,2,4
+sch_04aab54a37e05c49,V-OA-BCIG,2,4
+sch_29d8a4d6bcc29e23,V-Trinity Christian,2,4
+sch_97708483234f5492,V-Vermillion,2,4
+sch_7504901c8f43d8e2,V-Winnebago,2,4
+sch_c7564cffea235b52,Don Bosco Gilbertville,2,3
+sch_27eea1223d20390d,JV-Alta-Aurelia,2,3
+sch_6916c62d3a6fa2d9,JV/JH Lawton Bronson,2,3
+sch_1e6a296a70081cc8,Scotland County,2,3
+sch_f30bbef5d2c732b6,Trinity Christian High Schoo,2,3
+sch_95fa2b64cbdcbc87,V-Boyden-Hull-RV,2,3
+sch_eeb26cc84c63a4e5,Van Meter Blue,2,3
+sch_a0f64ceb565426c2,A-Clarke Osceo,2,2
+sch_5d357e709bc761c1,Bond-Farrar Jv2,2,2
+sch_b5f1430100c726a9,Clarinda MS,2,2
+sch_8ddc1868e27eeb28,"DVPT, North",2,2
+sch_3e52d2194706db84,Meskwaki Settlement Varsity,2,2
+sch_17eb1556ee5c7464,Red Earth Athletics,2,2
+sch_15cb71c69edc5ccc,Dakota Valley,1,9
+sch_3c229b2ac9c87e23,V-Maple Valley - Anthon-Oto,1,9
+sch_de2a5c4894cac7d7,MVAOCOU JV,1,7
+sch_730ff34c174c855c,V-Denison-Schleswig,1,7
+sch_562d81a4bfe33a6c,Vinton-Shellbrg,1,7
+sch_66be685ce50fd64f,Homer,1,5
+sch_c0ed0017bc6ed4c1,Nevada Varsiity,1,5
+sch_dee0116a71d1ac57,Nevada Varsity,1,5
+sch_90d517b2a7e4a8bd,Rock Port,1,5
+sch_655d6ebcdcb60ce3,V-Gehlen Catholic,1,5
+sch_1c8eddcb90e29fb2,E. Atchison Boys,1,4
+sch_d7c1c558a9f10bb0,V-Sibley-Ocheyedan,1,4
+sch_932cb43bceadf16c,V-West Lyon,1,4
+sch_3f4dc5cb81680cdd,Xlr8 Iowa Track Club,1,4
+sch_d6518b7f97d7d007,A-Indianola,1,3
+sch_a2b25d870adcf717,Hinton JV,1,3
+sch_88b0e144ecb40509,Ia School Deaf,1,3
+sch_5679cda15c44d6e9,Sumner-Fredrksbg,1,3
+sch_2002ad18efb7f335,Winfield-Mt. Union,1,3
+sch_ded866ac93aa84bd,East Buchanan Winthrop,1,2
+sch_62af8a25d8995a7e,JV/JH East Sac County,1,2
+sch_afd63b481c9b200c,Marquette Cath,1,2
+sch_65159290dbae2b96,Rock Port Girls,1,2
+sch_55df77b51f1add34,South Central Iowa Track & F,1,2
+sch_8b380a592f75f7f8,Turbo Track Club,1,2
+sch_f9b656d159daaed6,V-Harris-Lake Park,1,2
+sch_c9d28a7d7b4f8c25,B-Diagonal,1,1
+sch_f884975fb15d9d22,Colfax-Mingo JV,1,1
+sch_8d866761d8b1cfd6,Columbus Cath,1,1
+sch_9be26abf54b33644,E. Atchison Girl,1,1
+sch_b7e23041fa6a4d08,Gilbert MS,1,1
+sch_6a34c7383806ddd3,IMPACTT Athletics,1,1
+sch_838f740cde4260cc,Indianola JV B,1,1
+sch_650454570cc1b905,Johnston JV White,1,1
+sch_8eb958744ed0da8b,JV/JH Siouxland Christian,1,1
+sch_ce34f73d10db592f,JV/JH WC-KP-RV,1,1
+sch_662bfe7e91c5ae86,Marquette Catholic Bellevue,1,1
+sch_38ff95debdfea537,Ms_hillcrest Academy,1,1
+sch_2d39c25ce7fff4e0,Newell-Fonda JV,1,1
+sch_ad028c8ca7ca15c9,Rock Port Boys,1,1
+sch_906192e8fc8bdf53,Unity Christian Clinton,1,1
+sch_07a3decbd7d182fb,Peet Junior High,0,306
+sch_4e20b377bdffcab7,Indian Hills Community College,0,84
+sch_92d3b3b5e9a2ee8e,Rock Valley High School,0,54
+sch_73c25eecdc293963,Theodore Roosevelt High School,0,45
+sch_39c2ead35c6cc0ae,Holy Trinity Catholic Schools,0,33
+sch_b3c394fcf604a83d,Charter Oak-Ute High School,0,32
+sch_edeabde92afe98d7,Isaac Newton Christian Academy,0,17
+sch_f208533feca85f43,Bgm Brooklyn,0,12
+sch_a456e7045babe32e,Pleasantville Middle School,0,6
+sch_c82dbbf7179dcb64,Mead,0,5
+sch_faa4e7adba1c6949,V-Akron-Westfield HS,0,5
+sch_78a65d8f7f1f20f4,North Andrew,0,4
+sch_08287dd2428845e1,Track Addicts Iowa,0,4
+sch_8c81ffe1b16c1d40,V-East Sac County,0,4
+sch_3f1c3ff93c5fad9b,V-MVAOCOU,0,4
+sch_589fff8422334472,V-West Monona,0,4
+sch_a54b4007ecffb1a0,B-Seymour Comm,0,3
+sch_9a8379ec9b3174ca,Graettinger-Terril-Ruthven-Ayr,0,3
+sch_8b2a4e2fa0900e5b,JV/JH Winnebago,0,3
+sch_252fa66c47352756,Craig,0,2
+sch_248d83f42744be4c,Glad-Reinbeck,0,2
+sch_4b7c4f1e1f1dc531,Iowa Christian Academy,0,2
+sch_be791ce387381214,JV/JH West Sioux,0,2
+sch_2964d9ff54f3df5a,JV/JH Westwood,0,2
+sch_8d27e4e9abaf2b2d,Tiffin,0,2
+sch_598bf79e9b0e7cbd,West Monona Onawa,0,2
+sch_b0c2583692a83ae6,Worth County,0,2
+sch_aebe216024b9c701,20-Unattached,0,1
+sch_4e0a546743164c97,Des Moines Area Youth TC,0,1
+sch_02a2e0dedd228b4c,GTRA2,0,1
+sch_868b91c3eae291f8,JV-Hartley-Melvin-Sanborn,0,1
+sch_930b0f9aff6f3a8d,JV-Ridge View,0,1
+sch_ffa746009328d2a6,JV/JH Hartley-Melvin-Sanborn,0,1
+sch_a6056869e35946dd,Ms_nevada,0,1
+sch_dccf437a5dd7e012,N Fayette Val,0,1
+sch_f2c600bd81c157b0,N. Nodaway Girls,0,1
+sch_07b2a9b3f0749423,North Andrew Boy,0,1
+sch_d1c9a6996a847e91,North Nodaway,0,1
+sch_1e218478a288c059,Peak Performance T.C.,0,1
+sch_a079aade2c0c83dd,Project Arigo,0,1
+sch_7319c403a96fa87a,UW-Platteville,0,1
+sch_5be87bbe14f5a697,V-Walthill,0,1
+sch_000dd0f16c7b726e,V-Whiting,0,1
+sch_b5912969d1b87da2,Vermillion,0,1
+sch_956d44f3912b46e8,AAU Iowa,0,0
+sch_e6d69712e47f07e6,Andrew High School,0,0
+sch_b916f2588fdac1b5,Armstrong-Ringsted High School,0,0
+sch_22e01cce0d839351,C-W-L High School,0,0
+sch_3aa1e1d574f978fb,CAL High School,0,0
+sch_af11fefc8be817b1,Clarinda Academy,0,0
+sch_1acdce789b1c1c45,Clay Central-Everly High School,0,0
+sch_214be86e8296c906,Cono Christian High School,0,0
+sch_1c4bf06b06cc1445,East Central High School,0,0
+sch_83e6ae8cecc6ab29,East Greene High School,0,0
+sch_d681c8b6d381c3a1,Empigo Academy,0,0
+sch_9fbad8db13ef160c,Forest Ridge School,0,0
+sch_b70d8171da18cfff,Grandview Park Baptist School,0,0
+sch_63be17d397331866,Harmony High School,0,0
+sch_293a7659569ab52a,IGHSAA,0,0
+sch_a7ae1499c98fb503,IGHSAU/IAHSAA,0,0
+sch_b3d7e8d5a0471f17,Iowa Association of Track Coaches,0,0
+sch_5e490c4119db4447,Iowa Braille & Sight Saving School,0,0
+sch_d0d90ef696442897,Iowa High School Activities Association,0,0
+sch_572aff06a310b610,Laurens-Marathon High School,0,0
+sch_ce90198a007db00f,Maharishi High School,0,0
+sch_dfba952eec6e510d,Morningstar Academy,0,0
+sch_a1bcdc9bffa40d68,Nishnabotna,0,0
+sch_2372447c32b68791,North Sentral Kossuth High School,0,0
+sch_7d311359c97dd129,Northeast Hamilton High School,0,0
+sch_01963c8eb76bb736,Northern University High School,0,0
+sch_0e1e63b54a6c5e76,Olin High School,0,0
+sch_3593d197bbc24e0e,Remsen-Union High School,0,0
+sch_9281329e9102b2ca,River Valley High School,0,0
+sch_fca00f7b270f81a1,Rockwell City-Lytton High School,0,0
+sch_21e45017f1b49151,Ruthven-Ayrshire High School,0,0
+sch_9d2cb6ab9eccbe68,Scattergood Friends School,0,0
+sch_cffca063d38a8a75,South Page High School,0,0
+sch_45846a9c31037481,Southeast Webster-Grand High School,0,0
+sch_3e7ba3852e25d66e,Southern Cal High School,0,0
+sch_ea8acfafc30fb563,Southwest Iowa High School,0,0
+sch_a86f591f0f3fc921,Spalding Catholic High School,0,0
+sch_7d0915098e0d67ba,St. Mary's Storm Lake,0,0
+sch_68d429432ff6a1c4,Tri-County High School,0,0
+sch_a699d684a610fbae,Twin River Valley High School,0,0
+sch_9a628c46c4be1ea7,Valley Community High School,0,0
+sch_bf97255741e93a6b,Ventura High School,0,0
+sch_d328a012d7a6209d,Walnut High School,0,0
+sch_0b52c74c27062f49,Woden-Crystal Lake High School,0,0

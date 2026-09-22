@@ -1,0 +1,161 @@
+school_id,name,co2027,athletes_all
+sch_321003628252e622,Bangor High School,88,167
+sch_e5babd13ad4cd13b,South Portland High School,87,188
+sch_6aa34e97b2531f07,Thornton Academy,76,194
+sch_fe7579877c99c06a,Lewiston High School,76,186
+sch_d3b6e19f063976e9,Portland High School,71,187
+sch_3990e77797c0c610,Scarborough High School,68,174
+sch_f0cc55bde5ec34bc,Yarmouth High School,68,149
+sch_750657cf98d7fbd7,Edward Little High School,64,172
+sch_13e25937b4175772,Gorham High School,63,164
+sch_44b07bc2d32a142b,Hampden Academy,57,146
+sch_cbd53e6fc4b037ef,Westbrook High School,57,100
+sch_c9c692335aa0bdbe,Sanford High School,52,148
+sch_1924c9b290b0e787,Leavitt Area High School,52,129
+sch_998084f23d957669,Deering High School,51,141
+sch_0c0e75a2a15b5e68,Brunswick High School,49,143
+sch_eb582d09d77cd01a,Falmouth High School,49,130
+sch_4faf5598130cd1b5,Lisbon,49,90
+sch_8ce73b06eff60185,Cony High School,48,97
+sch_6791eb7ca3d7b0bd,Greely High School,47,132
+sch_669fa8436bec9b8f,Windham High School,47,126
+sch_8207310c89585bb7,Old Town High School,47,95
+sch_2943fccc81e79748,Fryeburg Academy,46,119
+sch_1f32944c25bb89d3,Lincoln Academy,46,118
+sch_ad7073274582ee54,Mt. Ararat High School,46,111
+sch_0a2fda15b28ed50f,Bonny Eagle High School,43,115
+sch_92d78a68e7bff4be,Mt. Desert Island High School,43,114
+sch_2e429dd695dce861,Cape Elizabeth High School,43,105
+sch_b8855826d65ca376,Skowhegan Area High School,40,125
+sch_61eb48c1715f2edc,John Bapst Memorial High School,40,92
+sch_2359cc394b3a4b55,Brewer High School,39,92
+sch_74ff78706e063e90,Lawrence High School,38,106
+sch_bae269402c8ad289,Gardiner High School,37,112
+sch_36c85d3b6aca55e4,Camden Hills Regional High School,37,98
+sch_ffbd811ce827b62b,Cheverus High School,37,75
+sch_77e70e4f824d0450,York High School,36,123
+sch_452402c73734853e,Wells High School,36,93
+sch_3717c7838adc8739,Freeport High School,35,82
+sch_5be35ae3bcabb4bc,Lake Region High School,35,76
+sch_4230a01802c2a650,Orono High School,34,77
+sch_9889cf70248ee973,Kennebunk High School,33,120
+sch_89700a0e52c565c9,Morse High School,33,112
+sch_82d6c39a13a9f455,Biddeford High School,33,102
+sch_c6e2bb30c5649e17,Presque Isle High School,33,77
+sch_bc796047fa847f33,Marshwood High School,32,106
+sch_489f7d7b463e22db,Erskine Academy,32,79
+sch_00209dac4fe40ec0,Oxford Hills Comprehensive High School,31,104
+sch_923d67d3e5151a2c,Hyde,30,144
+sch_532f3ab28466e621,Hermon High School,30,100
+sch_ecb832002f6124e2,Poland Regional High School,29,96
+sch_7d77cad0ff65118f,Belfast Area High School,29,85
+sch_ad1081d374f551ec,Medomak Valley High School,29,62
+sch_a6a5085e2b58275f,Cheverus/Waynflete,28,80
+sch_cac4476f96bce356,Bangor Christian,28,65
+sch_71b0e80217a6fc96,Winthrop High School,27,80
+sch_e7c32d56f4bd6d0b,Messalonskee High School,26,104
+sch_9521d21cdb6034fa,Kents Hill School,26,56
+sch_91325615844384f6,Nokomis High School,25,60
+sch_a4c48c6c78d17379,Waterville High School,24,88
+sch_3df6c35f6deb1ee1,Noble High School,24,87
+sch_3910720e6d855f7a,Massabesic High School,24,84
+sch_2edb2611a3cb134b,Caribou High School,24,64
+sch_dd8c8fc279e9db84,George Stevens Academy,24,53
+sch_002bbd7dac4cfe8f,Oceanside High School,24,46
+sch_717f274faf998449,Gray New Gloucester High School,23,92
+sch_3ccbb6c361058c14,Bucksport High School,23,64
+sch_7e229474d0ad2a53,Foxcroft Academy,22,61
+sch_4fb1f8b0bf5a0caa,Old Orchard Beach,22,52
+sch_a14f34f86662af03,Winslow High School,22,51
+sch_a24845b7ee24395c,Hebron Academy,22,50
+sch_5c80a0682c41e1a6,Central High School,22,49
+sch_1f615802cdc5e278,Maranacook Community High School,20,84
+sch_e2e684530d9d4725,Mt. Blue High School,20,81
+sch_9d8f564b3a8e4992,Boothbay/Wiscasset,20,78
+sch_d0b2a0ed96545bf2,Dirigo High School,20,45
+sch_dceab2bc8c8b5814,Spruce Mountain,19,54
+sch_5cbaa2c2faa1dfdf,Sacopee Valley High School,19,36
+sch_053cd1ef5d0de5fe,Maine Central Institute,17,55
+sch_74c0a11fe17ef654,Hall-Dale High School,17,49
+sch_53f953efdfa8b828,Dexter Regional High School,16,46
+sch_bb739ecad8c67d94,St. Dominic Regional High School,16,30
+sch_ddc03fa518dc707e,Ellsworth High School,15,63
+sch_eccee89160b930b4,Mountain Valley,15,42
+sch_026fd38451b97c8f,Piscataquis Community High School,15,32
+sch_56c008ed9f48e40c,Mt. View,14,46
+sch_ade04846e62ec01c,Mt. Abram,14,39
+sch_240126d590ae61fd,Maine School of Science and Mathematics,13,45
+sch_46148d1742eee1ef,Madison Area Memorial High School,12,34
+sch_3b81cc279635490a,Washington Academy,12,31
+sch_8ebf5c699fc43eac,Fort Kent Community High School,12,28
+sch_6fdc0c6d6cd0859b,Carrabec High School,12,22
+sch_8d91bdd70e2d0a7c,Traip Academy,11,36
+sch_c4f6b9693d5a3074,Monmouth Academy,11,28
+sch_ab21634cdb8a8331,Narraguagus High School,10,47
+sch_ed9f548acd114a8e,North Yarmouth Academy,10,40
+sch_7336895055021635,Richmond High School,10,22
+sch_03d0d2ca4d312361,Sumner Memorial High School,9,35
+sch_0232ff3047e81876,Houlton/GHCA,9,30
+sch_27c0c87ee628c40f,Washburn,9,26
+sch_5fc4b45b960113cc,Waynflete School,9,24
+sch_3771587b0ddcfab1,Boothbay Region High School,9,23
+sch_12fc20b8904af27f,Mattanawcook Academy,9,18
+sch_6dcb5a54aadec5bb,Penobscot Christian High School,9,9
+sch_22a4093fa204c74e,Buckfield,8,37
+sch_9e6ffa4a23904f1e,Fort Fairfield,8,21
+sch_1cb5d592261bfdde,Penquis Valley High School,8,17
+sch_3a17a5f91e4ea7b7,Forest Hills,8,15
+sch_b4300f960900d320,Berwick Academy,7,41
+sch_13d98175850c28ce,Gould Academy,7,18
+sch_95342e97139d8a87,Telstar Regional High School,7,15
+sch_def089a67b7f8de3,Oak Hill,6,15
+sch_2ef035cb8e16bb98,Schenck High School,5,16
+sch_972d247ceed62c43,Maine Coast Waldorf,4,33
+sch_a3b566b8c4a6d08f,Islesboro Central School,4,30
+sch_31c479ea2204570f,Searsport District High School,4,14
+sch_e674ed71922c72a8,Seacoast Christian,2,25
+sch_3c1696038965e75f,Machias High School,2,6
+sch_3d4ed07cd30a08b3,Calais High School,1,21
+sch_c5f22e545175a6da,Upper Kennebec Valley Senior High School,1,16
+sch_db8663dc75485304,Woodland High School,1,8
+sch_e270eec05086e464,Jonesport Beals,1,7
+sch_c9128ff6303e2e56,Deer Isle Stonington,1,6
+sch_06cd33644d62e7f3,Shead High School,1,5
+sch_21edc6d8c01e9d0d,Stearns High School,1,1
+sch_3e0e760744893f82,Scarborough Rec Track Club,0,8
+sch_4bb8e1b80efcb6ae,North Haven,0,2
+sch_dd97680396a00dda,Central Aroostook,0,1
+sch_24b4f221620ca5ea,Penobscot Valley High School,0,1
+sch_5cb4f4d9db943b47,Wiscasset High School,0,1
+sch_66a31f73b14e336c,AR Gould,0,0
+sch_92e3a801ae82d7b4,Averill,0,0
+sch_9227fc3626474854,Calvary Chapel Christian School,0,0
+sch_d59583f94a8c771f,Chop Point,0,0
+sch_68a48786f1383785,East Grand,0,0
+sch_bcdce4fc1bdf6d26,Eastgate Christian,0,0
+sch_b6a3cdb3ba29db17,Elan School,0,0
+sch_18c03affc1d7b551,Fox Island,0,0
+sch_221641b9894871dc,Gardiner/Hall-Dale,0,0
+sch_40939bff107e51f1,Georges Valley,0,0
+sch_1415424460ab24d2,Greater Portland Christian,0,0
+sch_cb25a15fbf7e9766,Greenville High School,0,0
+sch_8eb76c1a4096e766,Highview Christian,0,0
+sch_34bfa417c83155e7,Hodgdon,0,0
+sch_12961488696b0e12,Jay,0,0
+sch_9a3f019762912fb8,Katahdin HS,0,0
+sch_0280370a53c60b1f,Lee Academy,0,0
+sch_b872fbc47baf7f6b,Liberty,0,0
+sch_a31d51a6b3f7b804,Lisbon Christian,0,0
+sch_62f64f464d4e22c7,Livermore Falls,0,0
+sch_93e77149fc44b274,Lubec High School,0,0
+sch_a5af1c9cb636ff34,Madawaska,0,0
+sch_5c27941ac87e1a83,Maine Girls Academy,0,0
+sch_59b24a4a3db0d757,Medway MS,0,0
+sch_ad6c452f601a05e9,Pittsfield TC,0,0
+sch_f6b16b0d5216e0e1,Southern Aroostook Community,0,0
+sch_57ac4863f3e4b84b,Temple Academy,0,0
+sch_da1852001a78646e,Van Buren,0,0
+sch_fb53c8c2d430581c,Vinalhaven High School,0,0
+sch_b3f2795901307a7a,Vineyard Christian,0,0
+sch_6f1566d4e9a4b3da,Watershed,0,0
+sch_4efca6af11137431,Wisdom HS,0,0

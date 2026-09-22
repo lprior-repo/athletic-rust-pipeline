@@ -1,0 +1,571 @@
+school_id,name,co2027,athletes_all
+sch_2572a7fcbc5cf649,Issaquah High School,97,466
+sch_197a96234c80b2c5,Camas High School,96,335
+sch_11a92419b743b2d1,Richland High School,92,326
+sch_7b906f766864b10d,Lincoln High School,91,296
+sch_bdbf1dc02b3c724e,Newport (Bellevue),90,310
+sch_91ca33f1b4bf844b,Curtis Senior High School,89,222
+sch_f3641a326cd4691b,Eastlake,88,330
+sch_c16b935650530440,Lake Stevens High School,86,649
+sch_5cd57756bc120369,Mill Creek (Jackson High School),83,284
+sch_4422b261b42080a3,East Valley High School,82,445
+sch_8450a7a0c02115cd,Bishop Blanchet High School,81,268
+sch_2fd72b2e22d3f2a1,Olympia High School,80,278
+sch_4baffa2220b9d475,Cheney Senior High School,78,343
+sch_1983d2b254ff7045,Kamiak High School,76,283
+sch_8856b78a434cbff0,Tahoma Senior High School,76,260
+sch_4a048b8196d53e35,South Kitsap High School,76,246
+sch_8aa38c9b6ba5610b,Shorewood High School,76,209
+sch_c6d5d9629002ed94,Cascade High School,75,187
+sch_df95361195541de3,Seattle Preparatory School,74,245
+sch_690936272cb355dc,Oak Harbor High School,74,193
+sch_07b52342a8abbce7,Eastmont Senior High School,73,377
+sch_ad8db0f8100c843f,Redmond Senior High School,73,289
+sch_89785db786d0924a,Puyallup Senior High School,73,239
+sch_77b091501b5bfb03,Shorecrest High School,72,230
+sch_524e7ceec026ee03,Skyline High School,71,271
+sch_4ab68d7437f6a562,Moses Lake Senior High School,71,227
+sch_a662a9b3bb0753ef,Emerald Ridge High School,71,193
+sch_fae4ceb49690cb1e,Chiawana,70,218
+sch_b3396dd56b480e55,Ellensburg High School,70,189
+sch_a5bf914f511c4592,Kamiakin High School,68,321
+sch_6050c561e28acb4a,Arlington High School,68,204
+sch_0201fc371bd0a696,Hazen High School,68,201
+sch_95e9f22ba9f71e38,Lakeside High School,67,264
+sch_68cb7fc119fd1d48,Hanford High School,66,206
+sch_0a9551b055a938a2,Mercer Island High School,65,201
+sch_ecda7271848984ed,Edmonds Woodway High School,65,188
+sch_a9362da2f1aebb39,Graham-Kapowsin,64,185
+sch_d03e282a6eef50a6,Mount Si High School,63,226
+sch_57bf7f82da7f64e4,Southridge High School,63,178
+sch_3545dc4d97bf0067,Mountlake Terrace High School,63,176
+sch_ae3ee8bbf166822c,Stadium High School,63,169
+sch_fb9329d2b2f95d31,John F Kennedy Memorial High School,62,164
+sch_08c2d70c5b004fed,Shadle Park High School,61,135
+sch_bb9230552b167320,Lewis And Clark High School,60,262
+sch_f64ffca0786a80d3,Ferris High School,60,209
+sch_cf193ab000c40eaf,Lakes High School,60,200
+sch_da729621aaf70755,Sedro Woolley High School,59,187
+sch_bb8510555a9b6ab6,Liberty-Issaquah,59,180
+sch_59a7202322151610,North Kitsap High School,59,157
+sch_5a8cf23db6ba0136,Kentridge,58,187
+sch_70550acacc37f7ae,Selah High School,57,313
+sch_327e9a7b051b5430,Seattle (Ballard High School),57,217
+sch_66689d9b4ba07b02,Peninsula High School,57,172
+sch_f21e1bc8022100ce,Sehome High School,57,158
+sch_c5d91a661ffbe0f0,A.C. Davis High School,57,137
+sch_1f0070e1ea1cd5be,Ingraham High School,57,124
+sch_54179b1e9e42b0a0,Auburn High School,57,108
+sch_387417bd3989eeb3,Ridgefield High School,56,198
+sch_5c7bc988bdc26c5b,North Creek,56,180
+sch_7d2a6667caf18fed,Mount Rainier High School,56,167
+sch_2b53c67cbe4ab97b,Renton High School,56,135
+sch_24fff7b1cfdfbd83,Mead Senior High School,55,198
+sch_c6983d3c21aa801d,Gig Harbor High School,55,185
+sch_b77fd82eadb3a5c3,Bonney Lake,55,163
+sch_c79f19bf2f1aeeeb,Olympic High School,55,148
+sch_d88dde6e7676db3c,Ephrata High School,54,227
+sch_a98f47680880204b,Mount Spokane High School,54,156
+sch_c95c110452045554,Thomas Jefferson,53,331
+sch_870234af8be089bf,Kelso Senior High School,53,234
+sch_775460eb929f9cdf,Spanaway (Bethel Senior High School),53,160
+sch_018fc8706e33fb49,Stanwood High School,52,268
+sch_c6ebe919a64ef1e2,Snohomish Senior High School,52,181
+sch_155cfaa46973c9b5,Battle Ground High School,52,153
+sch_29357da441c8d827,Sumner High School,51,316
+sch_d8f1b3122d3f3223,Ferndale High School,51,144
+sch_2e9541c6d87e23d7,Lake Washington High School,50,231
+sch_e2c90821b9795574,Bellevue High School,50,227
+sch_9fcc45f060bf09e5,Interlake High School,50,172
+sch_da0f4e6bae67a557,Garfield High School,50,165
+sch_4d315cbc12b95b8c,Inglemoor Senior High School,49,185
+sch_44462d10d09d7368,Highline High School,49,154
+sch_59b24bd4af0c3c42,North Central High School,48,159
+sch_edf628abef7c74ee,O'Dea High School,48,130
+sch_889cf70b7b2ea7d2,Sunnyside High School,48,127
+sch_7fab39e3efb738a8,Rogers High School,48,122
+sch_feec1006a6824fe1,Clover Park High School,48,110
+sch_bc4c4d33c617acaf,Evergreen High School,47,152
+sch_c47e5cc4708c168f,Glacier Peak High School,46,195
+sch_f69810fa9de08730,Juanita High School,46,167
+sch_78591cf3b9b35c3a,Puyallup (Rogers Senior High School),46,165
+sch_a565de903da09f02,Squalicum High School,46,148
+sch_2eea9ca5f503c099,Columbia River High School,46,141
+sch_790d2255f69bfb06,Fife High School,46,134
+sch_1b2ecb613ffc942b,Pasco Senior High School,46,115
+sch_f0211ae81fda1e2e,Cashmere High School,45,263
+sch_c181c952b6229575,Spanaway Lake High School,45,167
+sch_96cb88a773a9bed1,North Thurston High School,45,119
+sch_162998ca7f0b9d5d,Prosser High School,45,119
+sch_605c928c302d320f,Mariner High School,45,109
+sch_95c79fe345b68ed0,Cedarcrest High School,44,257
+sch_2f6eb71a0a179def,Central Kitsap High School,44,213
+sch_86e36d9c9b6b49c9,Kennewick High School,44,172
+sch_896c10be4d355290,Federal Way High School,44,147
+sch_ebab325db828fbde,Gonzaga Preparatory School,44,143
+sch_890bf6b3fd458c7e,Auburn Riverside High School,44,124
+sch_16b2f780c75056f2,Lynnwood High School,44,113
+sch_ce77bfc812fbcfe2,Meadowdale High School,43,323
+sch_5bf65db1fbfd93df,Central Valley Senior High School,43,165
+sch_e204ea2c15a2f9a0,Mount Tahoma High School,43,122
+sch_32248213a69809b4,Roosevelt High School,42,169
+sch_0b37b4f43be41c71,Bothell,42,160
+sch_786f596131c37b0c,Steilacoom High School,42,160
+sch_f9f7c767d92f3113,Lynden High School,42,142
+sch_6b606ed66430bc22,Othello High School,42,128
+sch_09c4f622d4c92b22,Kentwood High School,42,126
+sch_8d703e158db8363a,Sammamish High School,42,113
+sch_279da36a88a86e62,Auburn Mountainview High School,42,105
+sch_4eb0fe1f80883738,Skyview High School,41,391
+sch_b5c2b6c566a4666c,Mount Vernon High School,41,142
+sch_b500aa79893125d7,Grandview High School,41,122
+sch_89846e7d63976e43,R A Long High School,41,103
+sch_70020c1840f30bda,Capital High School,40,138
+sch_275039e16f98418e,Bothell (Cedar Park Christian School),39,207
+sch_681a0001212c6847,Medical Lake High School,38,217
+sch_2f1b1ec02031cc9e,Deer Park High School,38,111
+sch_2943db395891d79e,Aberdeen (WA) High School,38,106
+sch_8ef0b2cd25956b0a,Anacortes High School,37,188
+sch_4938ddf1ed9df32e,Eisenhower Senior High School,37,93
+sch_353235631aea74cb,Decatur Senior High School,36,84
+sch_7e0c6da52c77e8b9,Lynden Christian High School,35,164
+sch_3c0051d89cc9b630,Eatonville High School,35,162
+sch_0224c4e8fdd62749,King's Way Christian,35,126
+sch_093f62ab061f43ea,Marysville Getchell,35,120
+sch_8a2cd5e92d98252d,Kentlake High School,35,117
+sch_285f999fa8a62b7e,Franklin High School,35,113
+sch_7d5ea11492ce5421,Shelton High School,35,113
+sch_ae1b58d3da7bffae,Nathan Hale High School,35,105
+sch_5f65498ff31b9496,Lakewood High School,34,261
+sch_66054e622b88b0d7,Colville Senior High School,34,169
+sch_744790170d47517a,Lindbergh High School,33,97
+sch_ada4dacb8fd5b6f1,King's  Schools,32,189
+sch_076f35d8c50c5950,Brewster Junior Senior High School,32,167
+sch_23a364fbfbd45829,Tacoma (Bellarmine Preparatory School),32,140
+sch_d5421913b94d3079,River Ridge High School,32,120
+sch_fa4e626cf7a91ddb,Pullman High School,32,118
+sch_0533497bb8555fe8,Eastside Catholic High School,32,111
+sch_b602e12e1690c556,Royal High School,31,163
+sch_95e06ebe7aff636b,Elma High School,31,159
+sch_6d53baaa875572fe,Bellingham (Meridian High School),31,122
+sch_e6195aeabc3581c5,Everett High School,31,121
+sch_92a9d7986bdd7512,Kent Meridian High School,31,115
+sch_4509f2e11d84fb6a,Mark Morris High School,31,111
+sch_8543fc64f8158fe4,Bainbridge High School,30,137
+sch_714d6ad3ac3859fd,Bellevue Christian High School,30,120
+sch_c3d14d9aa2dad265,Monroe High School,29,238
+sch_7975beb3a7927a47,Enumclaw High School,29,163
+sch_6f3ac3f5c749229b,Bellingham High School,29,141
+sch_590d8650977f1206,Naches Valley High School,29,115
+sch_3fde020c2a3abe8a,North Mason High School,29,69
+sch_7bd35b12f3b382ed,Orting High School,28,137
+sch_633de65743de2f09,Bremerton HS,28,107
+sch_8a2b962202f54a30,Burlington-Edison High School,28,105
+sch_4783c88e44f7ddf9,Kingston Senior High School,28,78
+sch_c1baf7b039101c35,Hockinson,27,255
+sch_ce8780bea1145d5b,South Whidbey High School,27,195
+sch_a2fae23f83d667ed,Cascade Christian School,27,89
+sch_a3204236ade0774a,Seton Catholic,27,86
+sch_8a13a4ed105758a0,Kiona-Benton City High School,27,75
+sch_33ba11766079d11a,La Center High School,26,216
+sch_e5f7fffcb575ee5a,Franklin Pierce Senior High School,26,77
+sch_bb9360b231c99ef1,Port Townsend Senior High School,26,68
+sch_00bb9049300fec64,Quincy High School,25,225
+sch_c785d15d4f75bbc6,Port Angeles High School,25,112
+sch_b47f8045aee6cd18,LaSalle High School,25,50
+sch_52faeb02cc454755,Centralia High School,24,179
+sch_ea84e65e19d7818e,Heritage,24,147
+sch_088a5f4a7b2741c7,North Beach Middle High School,24,132
+sch_d6164ea8cc22a247,Cleveland High School,24,83
+sch_f1cd345ae4c3ae68,Marysville Pilchuck High School,24,76
+sch_9f7872d308d48c36,Lincoln (Tacoma) Senior High School,24,72
+sch_e68880603ff600e0,Northwest Christian School,24,70
+sch_3ba008133cbc6593,Pope John Paul II,24,53
+sch_2e0a17bf0478d5aa,Seattle Academy,23,192
+sch_97d655975454af7d,Riverside High School,23,169
+sch_e62212984515fbf6,Sultan High School,23,154
+sch_f5441c6669d70c6c,Tenino High School,23,113
+sch_b88b0a3c899113a9,Onalaska (WA) High School,23,106
+sch_3887c5fcfa7e30f6,Sageview High School,23,98
+sch_712b78f45848b034,Foster High School,23,79
+sch_5b11b45561177f9f,Freeman High School,23,78
+sch_1b15bf4655e01173,Annie Wright School,23,64
+sch_0ac8706234fec47a,Fort Vancouver High School,23,50
+sch_079b0ffe73164236,Rainier High School,21,138
+sch_51dea2e7725d28c3,Ridgeline High School,21,75
+sch_83c99a6e1f6ae5db,Mount Baker High School,21,73
+sch_3f00cd25ae127f6c,Sealth High School,21,71
+sch_516d040d623619bf,Chelan High School,21,63
+sch_4fc0ff15f08c6437,Archbishop Murphy High School,21,55
+sch_71d41726dad04268,Clarkston High School,21,53
+sch_3ac6981e589e3884,Prairie High School,20,134
+sch_91d6a89bdcedd6b0,Bear Creek School,20,120
+sch_60f954dae6cd000c,Bridgeport Senior High School,20,83
+sch_c83e00fa25f66646,Holy Names Academy,20,78
+sch_1e81332c5bd994fc,Hudson's Bay High School,20,55
+sch_e7068adb0690e93d,Seattle Christian,19,121
+sch_e06382073e5807ce,Connell High School,19,76
+sch_ffb0f621d0bf8b2c,Grace Academy,19,72
+sch_c4aef7324f302632,Stevenson High School,19,61
+sch_6e11936284dd2bd7,Granger High School,19,58
+sch_2e83fb779ea83683,Chewelah,19,53
+sch_d0deb8f4a628f435,Sequim High School,18,195
+sch_364c8aa0e9e1ee60,College Place,18,194
+sch_5cd4c92b77bee49d,Granite Falls High School,18,153
+sch_e26eeea72e68c3b8,South Bend High School,18,109
+sch_b52a94b0526350e6,Charles Wright Academy,18,101
+sch_1cce5380dcf57b9f,Highland High School,18,40
+sch_b439510368a31adb,Klahowya Secondary School,17,216
+sch_32024a5bb3b744e3,Friday Harbor Middle & High School,17,113
+sch_9142702ca6f71b63,Castle Rock High School,17,105
+sch_c563cf7a37d105f0,Blaine High School,17,104
+sch_f5fdfac59f707dd5,Ocosta Junior Senior High School,17,71
+sch_67a94f522135eb04,Cle Elum High School,17,43
+sch_aa2cdc97d89c603c,Henry Foss High School,17,38
+sch_bb4a3012830833eb,Coupeville Middle High School,16,162
+sch_b6bc082c8684d8e4,Asotin High School,16,97
+sch_3dd90b0ad81d06ff,Newport High School,16,68
+sch_9470ca718527c0ae,Montesano Junior Senior High School,15,142
+sch_17a5ea7dadcf638f,Napavine Christian School,15,85
+sch_318d1fc7ea3b9f93,Adna High School,15,81
+sch_de240abc1a082259,Kalama Middle High School,14,175
+sch_64f7c77ca7a1530f,Liberty Bell Junior Senior High School,14,154
+sch_3a4c56cfb670984b,Okanogan Senior High School,14,115
+sch_05c8dfbf26a86334,Orcas Island Middle/High School,14,73
+sch_507bcf065dc8332d,Raymond Junior Senior High School,14,68
+sch_454a2046f43b2f4e,Black Hills,14,63
+sch_448aa8891241c412,Nooksack Valley High School,14,63
+sch_6a2e64e32eb4cbe0,Evergreen Lutheran High School,14,36
+sch_eb52ffde67428bdd,Reardan High School,13,108
+sch_68749d2c2402d4da,Saint George's School,13,108
+sch_f85c8b57a6511044,Colfax High School,13,79
+sch_768975697a7aa448,Lind Junior Senior High School,13,74
+sch_aa6d24968b6f4051,Ilwaco Junior Senior High School,12,110
+sch_041049d61a82251d,Naselle Grays River Valley High School,12,68
+sch_6fce59f5c2f46d7f,River View High School,12,45
+sch_9e90dcca8f5573f8,Goldendale High School,11,92
+sch_187e5f674a77e9a4,Forks High School,11,85
+sch_798ac6648f87c3cc,Mossyrock Junior Senior High School,11,77
+sch_25b5439bd4774b7a,The Northwest School,11,32
+sch_ec8aa7cf934f12cb,Covenant High School,11,29
+sch_31040fe5b1a12746,Odessa School,11,28
+sch_8ad4e368670b74ce,Cascade Christian Academy,11,27
+sch_96d630051b4a68a3,Chesterton Academy Of Notre Dame,11,25
+sch_bf0335932fb3eefb,Muckleshoot Tribal School,11,17
+sch_deddf40ebd53f5c2,Liberty High School,10,506
+sch_2a9c57269b3d23ed,Omak Senior High School,10,115
+sch_e1780a5d4265d003,Pomeroy Junior Senior High School,10,47
+sch_426e08bc0994c6ea,The Overlake School,10,39
+sch_925273bb731185bb,Summit Classical Christian,10,34
+sch_3d952ef94b0be2b1,Moses Lake Christian School,10,27
+sch_6fb9390bb18f7d35,Rochester High School,9,150
+sch_a3c6e03722d2e6c1,Hoquiam High School,9,111
+sch_bb00ae84a4bd8117,Life Christian School,9,85
+sch_0f8148ebb67b1dbc,Mabton Junior Senior High School,9,57
+sch_1e42084666b28f45,Manson Secondary School,9,54
+sch_cac0590174ed2db1,Rainier Beach High School,9,39
+sch_06f25b30a62af280,Mary Walker High School,9,22
+sch_7bd9555be363ccbf,Kettle Falls High School,8,49
+sch_745c7e09da6bf6ce,Spokane Junior Academy,8,49
+sch_e648fbba50982722,Lopez School,8,42
+sch_7d4babd7103d1bbd,Eastside Academy School Of Transiton,8,41
+sch_b9d9c9395e1e0acb,The Bush School,8,36
+sch_1822497655768568,Lummi,8,28
+sch_643792bd33fbfc9b,Puget Sound Adventist Academy,8,18
+sch_35004fbae6e652c0,Mount Vernon Christian School,7,92
+sch_336094c2d7d667e3,Lake Roosevelt High School,7,61
+sch_e27a57d9defb00d2,Oroville High School,7,51
+sch_283a6c574badfa07,Oakville Middle High School,7,48
+sch_5e1bf8f69fc05432,Garfield-Palouse-Oak,7,45
+sch_cdd0b89ed9e1ad58,Taholah School,7,41
+sch_487a65c64203565b,Clallam Bay School,7,20
+sch_38af472716d74d76,Soap Lake High School,7,19
+sch_7f2080d2d4ffbae7,Shoreline Christian School,6,250
+sch_51bd6a86a7320d8e,Neah Bay,6,77
+sch_64d448d315aa4620,Davenport High School,6,76
+sch_dffe41d08fea6af5,Pe Ell School,6,38
+sch_679a84a3a1f443e1,Rosalia School,6,26
+sch_fb5424daa8d3b025,Saint John-Endicott High School,6,23
+sch_f7b01249333eb85d,Summit K-12 School,6,21
+sch_6c1d2649a132cc98,Glenwood School,6,17
+sch_f8a60e552fd8f023,Northwest Pole Vault Club,6,16
+sch_f0680f5f2f85f4eb,La Conner High School,5,74
+sch_72a05a65c97ed4ca,Kittitas High School,5,70
+sch_7134e823e501a160,Entiat School,5,57
+sch_7975a8a17047e92b,DeSales Catholic School,5,55
+sch_208dd38c6b25ff3c,Columbia High School,5,38
+sch_7376879e8f80616e,Crescent School,5,37
+sch_56df4d2527f0d023,Three Rivers Christian,5,30
+sch_dc108559b8a1b102,Concrete High School,5,28
+sch_5c908d327b09351a,Northport High School,5,28
+sch_9e470c2f94071596,Selkirk High School,5,22
+sch_26328893a8de7974,Crosspoint Academy,5,19
+sch_b335c6d96c108f4f,Republic School,4,56
+sch_0fc093ed758fe5b3,Riverside Christian School,4,36
+sch_3578447df120ebdb,Oakesdale School District,4,33
+sch_583c9c9bb8f87a19,Lyle H.S.,4,21
+sch_96692d23a571426e,Sound Christian Academy,4,10
+sch_b0877895bfb3354e,Auburn Adventist Academy,4,8
+sch_73c08278a6ea2e67,Fellowship Christian School,4,5
+sch_ddbe1bb6d2cdc389,Heritage Christian School,3,57
+sch_67fa0b18d3a0314a,Chief Leschi Junior Senior High School,3,50
+sch_8d8f5f2ea1b9a2c7,Mary M Knight School,3,29
+sch_0c12a61f82d6b87c,Inchelium School District 70,3,20
+sch_820d90136362a5d6,Logos High School,3,13
+sch_b976af150385b1bf,Central Washington University,3,10
+sch_b3a98a80494a75a9,Northwest Yeshiva High School,3,10
+sch_d9b8b25e0b4b4f90,Lacrosse High School,3,4
+sch_909522343b56694c,Seattle Academy Of Arts And Science,3,4
+sch_fdc4fd1e794373b8,Prescott School,3,3
+sch_00f5dcfdfbe9ef8a,Cusick,2,30
+sch_fb5622462819405b,Dayton High School,2,27
+sch_aa2f9e900a349798,Cedar Tree Classical Christian High School,2,17
+sch_6647f661c5ddd253,Easton School,2,17
+sch_1a6532059991364c,Moses Lake SDA School,2,9
+sch_ace238f2f827ea86,Bickleton School,2,6
+sch_a1da7cfc78cd1365,Rainier Christian,2,6
+sch_12c801cdd9104e30,Redmond Sprint Club,2,3
+sch_477d850e127a47a1,Klickitat School,2,2
+sch_fe0b848c511820cf,Inglewood Junior High School,1,362
+sch_5a72ac2f52ac62bd,Poulsbo Junior High School,1,269
+sch_01c91e4a0ffde6e2,Fairview Junior High School,1,143
+sch_6cf5eec6fad34778,Pateros School,1,38
+sch_57434300c59619cb,Curlew School,1,35
+sch_2ec374abda3ea3d9,northwest christian-lacey,1,21
+sch_d71ec0f231f0ebe5,Evangel Christian,1,20
+sch_84934a5283056b81,Quilcene School,1,10
+sch_fadaedbe03cd15ef,Snohomish County Christian School,1,1
+sch_c9e21646bc25fc99,Horizon Junior High School,0,603
+sch_d85ba2b32663f753,Northwood Junior High School,0,340
+sch_cf8128b8b6be07ea,Evergreen Junior High School,0,272
+sch_9d0e85fd59048f1d,Canyon Park Junior High School,0,255
+sch_672d7d0caacc3d65,Rose Hill Junior High School,0,250
+sch_c291b6a39149aefa,Ridgetop Junior High School,0,246
+sch_ee588cac562ed9dc,North Pines Middle School,0,242
+sch_7eea571ce256a7e5,Frontier Junior High School,0,226
+sch_fe4d9fbb1b6d2227,Leota Junior High School,0,219
+sch_560a5739c9cbbc86,Redmond Junior High School,0,218
+sch_39122da16697b8d8,Kirkland SDA School,0,209
+sch_c9f1c66928c76d9a,Kamiakin Junior High School,0,208
+sch_f939e99c1861c625,Curtis Junior High School,0,192
+sch_75f8b55f260a39a2,Finn Hill Junior High School,0,166
+sch_ac7982bb8d44b09c,Meridian Junior High School,0,159
+sch_69f2835935f04ef6,Ferrucci Junior High School,0,138
+sch_1a3489f994d4a65e,Illahee Junior High School,0,135
+sch_78a99394ee4e0151,Coweeman Junior High School,0,125
+sch_12f7c7fe4eb59b80,John Sedgwick Junior High School,0,120
+sch_125e60b166f879fa,Bowdish Junior High School,0,117
+sch_627a8a52fe3f9c9e,Skyview Junior High School,0,110
+sch_67afd7934756a103,Central Kitsap Junior High School,0,101
+sch_0b9d1e223137995b,Chelan Middle High School,0,93
+sch_a253cd3c9b24e334,Huntington Junior High School,0,85
+sch_e1fd81bd7172e5db,Olympic View Junior High School,0,75
+sch_5e87b30298bfc655,Ballou Junior High School,0,73
+sch_add227ad88b517d9,Kelso Longview SDA School,0,72
+sch_b5bcf86b96890f3a,Kalles Junior High School,0,60
+sch_564a45015169a7d9,Marysville Junior High School,0,57
+sch_77a0635b641e66f1,Aylen Junior High School,0,56
+sch_983e9f3e1cd54ea8,Jenkins High School,0,56
+sch_f4c39f73ae766b23,Stahl Junior High School,0,51
+sch_b03fec4bdfab5fe5,Bethel Junior High School,0,50
+sch_475a508dc2a563da,Marcus Whitman Middle School,0,49
+sch_a57def6dc9e4e5eb,Monroe Christian School,0,47
+sch_07d69063fbd05da8,Northeast Tacoma Elementary,0,42
+sch_fc84444f54c63969,Edgemont Junior High School,0,38
+sch_668fb9c570036ad3,Thomas Marshall Arts,0,36
+sch_1671e7be61940fd8,Forest Ridge School Of Sacred Heart,0,29
+sch_021fd78dbb28c769,Mansfield School,0,29
+sch_36624eb5f844bb59,Maple Valley High School,0,20
+sch_e96773889b35820d,International School,0,19
+sch_d3877305a39f374c,Thorp School,0,16
+sch_28dcd44a1e00a5e8,Renton Christian School,0,15
+sch_0be5362bd10c5726,Liberty Christian School,0,11
+sch_e439dc17cb7c9294,Northwest Montessori School,0,11
+sch_753babd86be23cce,St Michael's Academy,0,10
+sch_08d484a3fc892490,Deer Park Alternative High School,0,9
+sch_2a65b5a793b7134b,Christa McAuliffe Academy,0,6
+sch_b9a9b489c41a2337,Firm Foundation Christian,0,6
+sch_2738fef78b17efb8,Evergreen Christian School,0,3
+sch_90863d41052089e3,Cornerstone Christian School,0,2
+sch_1b9dba7132282425,Eagle High School,0,1
+sch_53a41d2234d0ac18,Lewis & Clark High School,0,1
+sch_2c9dcec7255c790e,Southside Christian School,0,1
+sch_760bc4def8788da1,A.G. West Black Hills High School,0,0
+sch_47f1e68dcad99859,Aim High School,0,0
+sch_9df58285ee86a6b6,Almira School,0,0
+sch_8b06e0c7725b4aa9,Almira-Coulee-Hartline High School,0,0
+sch_78f940d0c2cd916d,Arlington Christian School,0,0
+sch_3d51edb2872fceb0,Bellevue Christian / Mack Elementary,0,0
+sch_dd812df380535c6f,BEST High School,0,0
+sch_a72a21bf400da9d0,Bethel Christian Academy,0,0
+sch_948442898f959fdd,Bible Baptist Church School,0,0
+sch_44f9eec3cb0485b9,Black River High School,0,0
+sch_d05542470dd64c56,Bremerton Junior High School,0,0
+sch_59c78d5842b73936,Bridge School Learning Center,0,0
+sch_5212d73e322db81f,Burley Christian School,0,0
+sch_25f8f2b53188de6e,Cascade Junior High School,0,0
+sch_5b1a277cd9ebd0f5,Cedarbrook Adventist Christian School,0,0
+sch_752b9906dc6b43de,Cedarcrest Junior High School,0,0
+sch_1c4737365701039a,Centro Latino School,0,0
+sch_c6045010fde98005,Challenger Secondary School,0,0
+sch_15a73b265985cf13,Chimacum High School,0,0
+sch_8e4d3605da4d6ee8,Choice Alternative School,0,0
+sch_79052bfcfc3e8de5,Choice High School,0,0
+sch_90778581fdbe8c42,Christ The King Academy,0,0
+sch_2e8e0b48f2b45dc7,Christian Faith School,0,0
+sch_102a7d2f375366a6,Christian Heritage School,0,0
+sch_f2feee1480820cc0,Christian Life School,0,0
+sch_a2b85f09e02c95dc,Christian Worship Center,0,0
+sch_4cdad62e92e83d8f,Chrysalis School,0,0
+sch_66f91a28654e981f,Clark County Vocational Skills Center,0,0
+sch_30c932066cab7d1f,Colton School,0,0
+sch_64c03f59a549d049,Columbia Adventist Academy,0,0
+sch_f8d27ae2edd3f337,Columbia Basin Alternative High School,0,0
+sch_cc53c065f6fd1272,Columbia Ridge Baptist Academy,0,0
+sch_12aa4561aea1be07,Columbia River Christian Academy,0,0
+sch_1b581e8426a7cf34,Colville Valley Adventist School,0,0
+sch_87e444b64e4c7f94,Community Christian School,0,0
+sch_1632e073e46fa12f,Country Christian School,0,0
+sch_877cd4e0912793c3,Country Garden School,0,0
+sch_2a6acca09ee64f4b,Coupeville High School,0,0
+sch_64653a372034e9f1,Crest Learning Center,0,0
+sch_2b1c21c83f95ca20,Creston School,0,0
+sch_2b0489033a950d57,Darrington High School,0,0
+sch_c3d0daaf0bbe9887,Deep Creek Hutterite School,0,0
+sch_11f40d376ae0fceb,E.B. Walker High School,0,0
+sch_b3daaeb19e8679c1,Eastmont Junior High School,0,0
+sch_762298891a66ccf8,Echo Glen School,0,0
+sch_e50f1f77e3261aea,Educational Advancement Academy,0,0
+sch_c7d8f51788cb2226,Explorations Academy,0,0
+sch_ba91d6ba68ca4344,Fairhaven Runners,0,0
+sch_2137c9f14750e05d,Faith Christian School,0,0
+sch_fa1046e18022b2c0,Federal Way Public Academy,0,0
+sch_6f1fc3f06b5afe48,Five-Twelve School,0,0
+sch_9195b8a1a765b426,Flying Knights Run Club,0,0
+sch_96cba35c2b1a0673,Gates High School,0,0
+sch_e734df1448368d44,Grace Chapel Christian School,0,0
+sch_78482161db92de58,Green Hill School,0,0
+sch_f62eb931e29edbbe,Green Pastures Learning Center,0,0
+sch_975fa25f38030e7a,Harbor High School,0,0
+sch_7a02aa6996a0ed3c,Harrington School,0,0
+sch_d019e6ae23995fd6,Harry S Truman High School,0,0
+sch_4ce74657005c3d8c,Havermale Alternative Center,0,0
+sch_74782ace1630e71c,Hazen Track Club,0,0
+sch_655442d0cd6a12ab,Heart High School,0,0
+sch_9d87972b866ecaa8,Henderson Bay Alternative High School,0,0
+sch_7b1e9efe38f8a757,Hillside Student Community School,0,0
+sch_cdd7a673e9376a64,Holden Village Community School,0,0
+sch_79afac0977f58f37,Holy Innocents School Of The Northwest,0,0
+sch_8eab96e714c300c4,Hope School,0,0
+sch_2da4fc97fab3dbaa,Hudtloff Junior High School,0,0
+sch_8d552fa87f7a6b84,Indian Heritage School,0,0
+sch_9a2d1da85081c560,Internet Academy,0,0
+sch_3d71a8179c50d43b,Jantz Elementary School,0,0
+sch_345c8cf52ace7e8d,Johnson Christian School,0,0
+sch_02ec74cb6d9371cc,Kahlotus School,0,0
+sch_c39c2596c3520c9d,Kalama High School,0,0
+sch_386580ed61d22c52,Kenmore Junior High School,0,0
+sch_60c901c585e5e5a5,Kent Learning Center,0,0
+sch_9015ce5eeb03090d,Kent View Christian High School,0,0
+sch_0ff880da12058793,King's Way Christian Academy,0,0
+sch_16a42d12d329dfa6,Kings West School,0,0
+sch_166d5aef0c0f153e,Kingspoint Christian School,0,0
+sch_91565588990da5d2,Kirkland Junior High School,0,0
+sch_a1565dd9d4d4fdd3,Kitsap Peninsula Vocational Skill Center,0,0
+sch_38730b1523413613,Kitsap Seventh Day Adventist School,0,0
+sch_d71e94f90b92098b,Lacrosse Elementary School,0,0
+sch_3d8ee4fc9db6c7ae,Lake Quinault School,0,0
+sch_082145694af433c5,Lakeridge Junior High School,0,0
+sch_13fe228247196698,Lakeside TC,0,0
+sch_39cc4191200c09b0,Learning Opportunity Center,0,0
+sch_87992cefeb380290,Lewis County Adventist School,0,0
+sch_aca45b7f5ae2536c,Lyle Middle High School,0,0
+sch_f10b2d2146d4674b,M E A D Alternative,0,0
+sch_f7d5f64a593f2589,Manchester Christian Academy,0,0
+sch_cd2c1f0065d96aad,Maple Lane School,0,0
+sch_ef28a0fbaba3f99e,Marian Heights School,0,0
+sch_ee0c0990a1dd734b,Marlin Hutterite School,0,0
+sch_c1d2585113a341ad,Marysville Alternative High School,0,0
+sch_2305f0b38ecf35b7,Middle College High School,0,0
+sch_847d0a81c40df09a,Mission Creek Youth Camp School,0,0
+sch_0c65ab15d53fe8ec,Moby Dick Academy,0,0
+sch_f8d98ddbf05c61a3,Morningside Academy,0,0
+sch_bc8a438904a2b61d,Morton Junior Senior High School,0,0
+sch_3b102282ad5e4e94,Mount Ranier,0,0
+sch_cb8100c7a430b657,Mount Ranier Lutheran,0,0
+sch_d1652b8c5b498ee9,Napavine Junior Senior High School,0,0
+sch_727810d7114b6b44,Naselle-Grays River School,0,0
+sch_c191a150d9d11377,Neighborhood Christian School & Daycare,0,0
+sch_e372055e3585a133,New Generation Christian School,0,0
+sch_73d189a9faccef97,New Horizons High School,0,0
+sch_3cab86e13551df81,New Life Christian School,0,0
+sch_31cf093ea569a637,New Market Vocational Skills Center,0,0
+sch_92f9f1fbcfb1b62f,North Puget Adventist Junior Academy,0,0
+sch_d86285f6390a5711,North River School 200,0,0
+sch_d530b2b7f01acba2,North Seattle Christian School,0,0
+sch_758ea1c4fff255d8,Northstar Junior High School,0,0
+sch_0e92d4d8b6c554c0,Northwest Family Academy,0,0
+sch_dd78d88baf4cd825,Northwest Flyers,0,0
+sch_e1b6c454033f19c7,NW Christian  High School,0,0
+sch_da74437dd81c7a6e,Oakland Alternative High School,0,0
+sch_48f20f2819157ea8,Odyssey Junior High School,0,0
+sch_7f586b1c63d75396,Olympia Christian School,0,0
+sch_4348f49ba0f8a77d,Olympic Christian School,0,0
+sch_e1ca588499b8f763,Omak Alternative High School,0,0
+sch_711a366d5e67ae33,Options High School,0,0
+sch_a11d52d913fba0e6,OR Odyssey Acad,0,0
+sch_457e850f4307111f,Orcas Christian School,0,0
+sch_542b592aad5d57ab,Otteson High School,0,0
+sch_7871b3b5df5075db,Pace Alternative School,0,0
+sch_93bfb4eba2678bd2,Palouse School District #301,0,0
+sch_d8c3ba03fc647c79,Phoenix School,0,0
+sch_e79127a137f4279a,Pride High School,0,0
+sch_7f066db5704dc100,Puget Sound High School,0,0
+sch_0bdf1155e4c92fa2,Pullman Christian School,0,0
+sch_e25ebd96c00592e7,Pulse Alternative School,0,0
+sch_59b032a5b1fde50f,Queen Anne Christian School,0,0
+sch_ae006dc1e5501f5e,Queets - Clearwater School,0,0
+sch_2be969876c147c1f,Quileute Tribal Elementary School,0,0
+sch_40358ba7726ce609,Quincy Alternative High School,0,0
+sch_60d0c8bf9097083d,ranier christian,0,0
+sch_07b66fc85ede1956,Re Entry Junior High School,0,0
+sch_bdfae8bb48381690,Ritzville High School,0,0
+sch_c5718f470306e3f4,River's Edge High School,0,0
+sch_2cea98e2fa6b73bd,Riverview Baptist Christian School,0,0
+sch_0cc554a9a3f0c101,Royal Garrison School,0,0
+sch_20e93bfedc4030c9,Rufus Jones School,0,0
+sch_31ea32463541b1f8,Saint Christopher Academy,0,0
+sch_3e7dafa525321830,Scriber Lake High School,0,0
+sch_360e5ac85e46810d,Seattle Lutheran High School,0,0
+sch_898f2854c0053742,Seattle Waldorf School,0,0
+sch_0d427729899b1668,Secondary Academy For Success (SAS),0,0
+sch_7f72974eba41c783,Secret Harbor School,0,0
+sch_519e265e68b7640e,Selah Bible Baptist School,0,0
+sch_3c10178c3bc8b721,Sequim Bible Christian School,0,0
+sch_01e6573f9ef8bf41,Sequoia High School,0,0
+sch_666c2b521bf4edf1,Shorewood Christian,0,0
+sch_fd6469db110a36fd,Skykomish School,0,0
+sch_dfe18bdf3461090b,Smokiam Alternative High School,0,0
+sch_427847850260840b,Sno Isle Vocational Skills Center,0,0
+sch_d188bbf7d58600a1,Solid Rock Christian High School,0,0
+sch_d1aa433148f6a787,South Kitsap Christian School,0,0
+sch_63dff9e0e955e33e,South Lake High School,0,0
+sch_93b39f0fd767055b,South Sound High School,0,0
+sch_385489243e239578,Spanaway Junior High School,0,0
+sch_21b9b9b6dbd101f1,Spokane Professional Technical Skills,0,0
+sch_0ba8d2b1f81b8909,Spokane Valley High School,0,0
+sch_d8aa65635630622f,Sprague High School,0,0
+sch_3eccdfbccade63ac,St Paul's Academy,0,0
+sch_c77e684319a2976b,Stahlville School,0,0
+sch_e71ba30150275f41,State Street High School,0,0
+sch_9dfcbaf551e7bcce,Sumner Junior High School,0,0
+sch_9debfa1460d39614,Sunnyside Christian High School,0,0
+sch_b5133e45c2d2ba8f,Tacoma Adventist School,0,0
+sch_3cd31411eb845c79,Tacoma Baptist School,0,0
+sch_6b5c7614c3771283,Tahoma High School,0,0
+sch_d414a30bd8a506c3,TCRC,0,0
+sch_b718b19632aca878,Tekoa Junior Senior High School,0,0
+sch_92be30eff2d47dcd,Tekoa-Rosalia MS,0,0
+sch_c102e94c3dfa4c03,The Alternative For Individual School,0,0
+sch_c3b0dd6b26a07b40,The Clearwater School,0,0
+sch_b25e2b1a24b1a2b8,Tiger Mountain Community High School,0,0

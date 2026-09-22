@@ -1,0 +1,489 @@
+school_id,name,co2027,athletes_all
+sch_648eb0c55f5d7481,Fayetteville High School,107,346
+sch_9d415d10c0091f46,Bentonville High School,102,352
+sch_dce336f8ee658b3d,Bryant High School,86,466
+sch_e09f020eef51b74b,Bentonville West,80,255
+sch_5025a58ce5d92011,Ramay Junior High School,77,699
+sch_da4ec2705154950a,Rogers Heritage High School,72,181
+sch_5cbdf4b2081595a2,Rogers High School,71,292
+sch_027bcb006fe91be3,Har-Ber High School,65,134
+sch_aa49cf5c9eadec73,Jonesboro High School,65,109
+sch_e15b6d6fce68cb27,Lake Hamilton High School,62,486
+sch_118af6861763d377,Benton Junior High School,61,257
+sch_1d308b733117c9eb,Ft. Smith Southside High School,58,178
+sch_100bf874fdef1d78,Jacksonville High School,57,203
+sch_b2cac0540e6518ff,Ft. Smith Northside High School,57,164
+sch_b794ab2ab58c2769,Lakeside (HS) High School,56,300
+sch_f4211d89279c0027,Arkansas High School,55,253
+sch_2a5026f298622c7c,Russellville High School,53,264
+sch_a513085f371edf83,Hope High School,52,110
+sch_d8e4f9083d053217,Benton High School,51,168
+sch_c4139dad75b91bfc,Pea Ridge High School,51,134
+sch_bf4e69e665058515,Magnolia High School,50,108
+sch_4c2032816c767cdc,Marion High School,49,137
+sch_d0c53968ba6a5855,North Little Rock High School,49,136
+sch_f7c2ee0e44417516,Maumelle High School,47,95
+sch_b5359c92c5626e28,Russellville Junior High,46,390
+sch_1566cc8e541a4c70,Conway High School,46,106
+sch_57be23974cec4330,Van Buren Junior High,45,205
+sch_f0f1ba29e7c1e58a,Joe T. Robinson High School,45,115
+sch_46e2e4f123e5378e,Siloam Springs Schools,44,335
+sch_d22f16104501cf74,Forrest City High School,43,96
+sch_996363839c4d7f20,Sylvan Hills High School,43,81
+sch_5352fa7d953561ec,LR Central High School,42,157
+sch_778c58a165528aca,Pea Ridge Junior High,40,350
+sch_14e9d9f2dc8636cb,Cabot High School,39,494
+sch_e629e64a11f3e96c,Brookland High School,39,278
+sch_6c7d6c898fc22f34,Prescott High School,39,184
+sch_003fd39aeb4abefd,Caddo Hills High School,39,161
+sch_40bc2f6a035813d6,Valley View High School,39,130
+sch_0a6743af441b4c22,Parkview High School,39,126
+sch_d13f1938932c1105,Southwest Junior High School,38,336
+sch_4d4e92bae2ae0e47,Annie Camp Junior High,38,203
+sch_8c2a1d45c1db0c8f,Van Buren High School,38,87
+sch_ae1568704c21b42a,Don Tyson School of Innovation,37,217
+sch_aed2de9d7f6ddc29,DeQueen High School,37,181
+sch_95bf565a6c39ac14,Southside-Batesville High School,37,152
+sch_8986caaa0ca59d9a,Genoa Central High School,37,113
+sch_c702efe840d1549d,Camden Fairview High School,36,107
+sch_77e5c848815474e5,Clarksville High School,36,105
+sch_ae70443e82d67e9b,Nettleton High School,36,90
+sch_e200051197935d41,Magnolia Junior High,35,245
+sch_fd6eb867a28996c6,Clinton High School,35,172
+sch_89830ef73eb058cc,Booneville High School,34,176
+sch_325c69867fe9059a,Sylvan Hills Junior High,34,174
+sch_49118095285801a2,Quitman High School,34,160
+sch_72d7a5a422c1b0ab,Pocahontas High School,34,116
+sch_a43e2da4c19456bf,Mills University Studies High School,34,59
+sch_91be6a94b8573cb1,Genoa Central Junior High,33,326
+sch_4b027d882804f475,Waldron High School,33,248
+sch_0230e9dcb9bb191b,West Helena Central High School,33,142
+sch_446de28281c2504b,Springdale High School,33,106
+sch_3f82d9cb0aa955d8,Monticello High School,33,83
+sch_a84dcfde83a15380,Central Arkansas Christian,32,219
+sch_512175f495841498,Westside Consolidated High School,32,206
+sch_7508f39418335762,Bauxite High School,32,143
+sch_7c73ff4a0c7e7966,Thaden School,32,127
+sch_f6f26c74caee35b6,Nashville High School,32,101
+sch_eadf2332d0a558ad,LR Southwest High School,32,80
+sch_a695828c8c1bffbe,Greenwood High School,32,78
+sch_05f3c202b206dc66,Jessieville High School,32,78
+sch_686a82eab2e3753c,Cabot South Junior High,31,379
+sch_b0f24ecf19bb5176,MacArthur Junior High,31,242
+sch_5239d9b08a4cf8c2,Dardanelle High School,31,228
+sch_1f963c12951cdb05,Wynne High School,31,178
+sch_84bbfae1c1aa31ac,Forrest City Junior High,31,138
+sch_fc3097f8d29dad15,Lonoke High School,31,137
+sch_06b520fc773eb09c,Batesville High School,31,131
+sch_7dce46d4d01d98ef,Hot Springs High School,31,110
+sch_4688de51b405a923,Gentry High School,30,162
+sch_9370ac45e2a4c710,Warren High School,30,133
+sch_cec3cac24171d7bd,Farmington High School,30,106
+sch_e9a19faf71e8c0d4,Sheridan High School,30,92
+sch_97c0d11747eef4f8,Vilonia Junior High,29,227
+sch_ada54a7fd32964bb,Nashville Junior High,29,214
+sch_8aaa572fa4ea8faa,Camden Fairview Intermediate School,29,208
+sch_92b30d4f7ded7cbc,McGehee High School,29,133
+sch_398f8e2a4ae968a3,Searcy High School,29,133
+sch_c0796db39738c0ad,Vilonia High School,29,131
+sch_b9af277a69f70930,Murfreesboro High School,29,130
+sch_5c6fca5ecab004ef,Elkins High School,29,112
+sch_3eb3436c6bcf7c79,Pulaski Academy,29,101
+sch_2ea058a4b7c95e2d,Rison High School,29,81
+sch_02a48906af8324b1,Mountain Home High School,29,78
+sch_4b115d4d66c73e18,Lakeside Lake Village High School,29,56
+sch_9da3ce37732e4ccf,El Dorado Junior High,28,213
+sch_755037483a84dbd6,Heber Springs High School,28,212
+sch_9c8c84f99a229252,Berryville High School,28,194
+sch_cc280dd00e6a31db,Jessieville Junior High,28,105
+sch_b12ed15581d9e891,Hall High School,28,44
+sch_b989b44fdf0aee40,Greene County Tech,27,245
+sch_8097752cfa30a068,Paragould High School,27,148
+sch_8f71a97b820a8a53,Walnut Ridge High School,27,118
+sch_dfae19798535e65d,Beebe High School,27,94
+sch_870df546b09354c4,Green Forest High School,27,77
+sch_78a400a9533b5442,Beebe Junior High,26,290
+sch_f23bdcdfa21137d1,Mansfield High School,26,153
+sch_40e4d9c51a1b9ea6,Blytheville High School,26,51
+sch_b9d82cef1a4e83dc,Cabot North Junior High,25,384
+sch_da7fa9cb287b40c2,Shiloh Christian School,25,244
+sch_12ec10b904637452,Alma Junior High,25,210
+sch_9936d7670db95d7d,Wynne Junior High School,25,174
+sch_a139c1b7014b2f3d,Nettleton Jr. High,25,151
+sch_3e4e3106e6611583,Stuttgart High School,25,150
+sch_7df49d07e4098862,LISA Academy North,25,101
+sch_ab8895a1b22b647e,Cross County High School,25,98
+sch_6aa8aa656896a87f,Fountain Lake High School,25,96
+sch_7cae33dcbb99f4f2,Watson Chapel High School,25,63
+sch_915791dbe58b3637,Marion Jr. High,24,195
+sch_7252379c518ed16f,Maumelle Charter,24,173
+sch_9a6e1fe577ef7636,Sheridan Junior High,24,154
+sch_b408fbff072f6dd3,Bearden High School,24,145
+sch_ee9fe78f94655ae5,Elkins Junior High,24,134
+sch_1e8d67f9d04bf7ab,Greenland High School,24,100
+sch_d8ce02c42a9ef884,Atkins High School,24,51
+sch_36047f05e8d270d6,Mountain Home Jr. High,23,365
+sch_c5dc0949577ac123,Morrilton Junior High,23,215
+sch_e17bd4645d12ad25,Gravette High School,23,182
+sch_5ca6ed71595fa0f4,Batesville Junior High School,23,167
+sch_b530c9b2171d529b,Farmington Junior High,23,166
+sch_193078b2aded1fdc,Greenbrier Junior High,23,161
+sch_9dbc5494f9d8d732,Hot Springs Junior High School,23,139
+sch_e7ceef6608e094f9,Spring Hill High School,23,117
+sch_79c6664b1b042c47,Mena High School,23,101
+sch_5e03ad3dae0bc933,Newport High School,23,93
+sch_4097604c4c327a5f,Marked Tree High School,23,90
+sch_ede1f900678be625,El Dorado High School,23,87
+sch_58994d40a9d9f250,Ashdown High School,23,69
+sch_d804ad0235b19fdc,West Memphis West Junior High,22,243
+sch_9331c4c606be8efe,Pottsville High School,22,165
+sch_5f293ddcec08f25c,"Harmony Grove, High School",22,138
+sch_2bebc9c12d6578ab,White Hall Junior High School,22,126
+sch_feb41775226ad83e,Melbourne High School,22,111
+sch_3342e5d3e5bf8539,Corning High School,22,102
+sch_24bca9db207d7ec0,Two Rivers High School,22,101
+sch_4c6a7ebf2305698d,Fordyce Junior High,22,98
+sch_556a6640238e094f,Mineral Springs High School,22,94
+sch_29707c522bb56337,Magazine High School,22,92
+sch_fe5415575960783f,Charleston High School,22,84
+sch_bd9479738b3c3045,Lamar High School,22,71
+sch_24c6b8849d9d199e,Western Yell County,22,63
+sch_ecdccf97582a2fc3,White Hall High School,22,52
+sch_79a8835c165d1cef,Arkadelphia High School,21,150
+sch_1d53a16949fc2201,Crossett High School,21,147
+sch_a94dcc2952af4dd4,Kingston,21,146
+sch_c848c1d14daea523,Monticello Junior High,21,132
+sch_a882d16def02c4ef,Acorn High School,21,125
+sch_f288343bcfeb12d9,Prairie Grove High School,21,122
+sch_54d637a2dc48ace6,Emerson High School,21,115
+sch_198e85d8dda50896,Gosnell High School,21,110
+sch_e2768109c7bd5881,White County Central,21,109
+sch_8877d954a57e2a82,Cossatot River High School,21,103
+sch_d98b5961a2542e35,Gurdon High School,21,103
+sch_4edefecf7c5824b4,Drew Central High School,21,102
+sch_f2d579e1d5c545e3,Parkers Chapel High School,21,102
+sch_e77fa9bbf43e0d28,Perryville High School,21,98
+sch_46ee4f323a8c222c,Mount Ida High School,21,97
+sch_bd16d25a8968da46,Lee County High School,21,84
+sch_e111935b9184a1d6,Dermott High School,21,80
+sch_a27fb31dd5f51267,Magnet Cove High School,21,79
+sch_fd4595936be173ec,Rivercrest High School,21,74
+sch_e5e245f3165b512e,Mountainburg High School,21,70
+sch_ed604e7af75db8d1,Benton Maroon HS,21,40
+sch_21f6a2d25ab697c9,Clarendon,21,40
+sch_f371cc531c398abb,George Junior High,20,371
+sch_0c8145c8cf32cb7c,Searcy Junior High,20,272
+sch_e711ad498cdb1256,Huntsville High School,20,213
+sch_36b4b54ca78b41a4,LR Christian Academy,20,210
+sch_233d2eb397c32c6b,Ashdown Junior High,20,161
+sch_470b01c7566afdf4,Ozark High School,20,145
+sch_7872655aab1992c8,DeQueen Junior High,20,144
+sch_0e0f2498458ffed2,Harding Academy,20,129
+sch_d2c04f7f72cf7b02,Dover High School,20,128
+sch_5fbea1971120df14,Salem High School,20,112
+sch_8b12063a1a535742,Haas Hall Academy,20,106
+sch_70cc7524c2a4126e,Ozark Catholic,20,58
+sch_84e99cceaa39e324,Pine Bluff High School,20,58
+sch_e02d162d5d2c5958,Hope Junior High,19,183
+sch_395ba786a78402e5,Bald Knob High School,19,123
+sch_40438dbc2aeba7e7,DeWitt High School,19,103
+sch_b787ffd89487bacf,West Memphis High School,19,86
+sch_7b469b1bf29138a5,Harmony Grove-Haskell High School,19,81
+sch_8dfd9b1e3f6778cf,Marshall High School,19,79
+sch_310155ef4f0cf5e1,Horatio,19,71
+sch_de3ca54bb741d37e,Foreman High School,19,70
+sch_17656e564fb2f6f6,Subiaco Academy,19,67
+sch_56d6d05751f76030,Rector HS,19,60
+sch_e856d7969b8b47cc,Mulberry,19,46
+sch_6fb896a5fa2727e1,Lakeside (Springdale) Junior High,18,317
+sch_a539963dc7e554ac,Green Forest Jr. High,18,173
+sch_bc9e4dd74ddd5d8a,Riverview High School,18,163
+sch_9312c0650549d501,Atkins Junior High,18,126
+sch_d2f4738382f6ff64,Lincoln Junior High/Middle School,18,104
+sch_5878db9d4621eea4,Hermitage High School,18,102
+sch_6c6ad074cc985cea,Greenbrier High School,18,98
+sch_f8969b5864c0a418,Rose Bud High School,18,85
+sch_91aa5287e5312227,KIPP Delta Collegiate Prep High School,18,76
+sch_77ab1433c320d493,West Side Greers Ferry High School,18,72
+sch_7080eda43b9f6fb6,Haas Hall Bentonville,18,71
+sch_e0051a6a14288d66,Earle High School,18,66
+sch_6b2cca3f1912bc4b,Barton High School,18,58
+sch_6126f6312a9c0a3b,eStem High School,18,40
+sch_018f52b625c05ab2,Dumas High School,18,37
+sch_8ca26330e22eeb73,Central Junior High School,17,442
+sch_9bfc9019f7d816fd,Greenwood Junior High,17,301
+sch_00bf4ab561e778ab,Harrison Junior High,17,270
+sch_992fc65c16a0f444,Highland High School,17,149
+sch_ca59bbf918810ba0,Founders Classical Academy,17,125
+sch_5c86e671037df77f,Tuckerman,17,106
+sch_fb0ff2a6184a1054,Des Arc High School,17,99
+sch_766231425fbd99aa,Cedarville High School,17,86
+sch_d679f0d5ed951885,Fouke High School,17,86
+sch_86ca9597dfc2f7ca,Scranton High School,17,81
+sch_893ec50e6b711df0,Dierks High School,17,60
+sch_5bf9643e61b9cf24,West Fork High School,16,111
+sch_753d9edacb429696,Lakeside Lake Village Junior High,16,95
+sch_803f156c012fcdb4,Manila High School,16,93
+sch_61e1af189829fcb0,Mount Vernon-Enola High School,16,85
+sch_50e1bc331a2d299a,Blevins High School,16,73
+sch_81cae5fa4b849cd3,Riverside High School,16,73
+sch_d1b9af2bca20d7a9,Catholic High School,16,63
+sch_1cb7ad0aea2dbfff,Fordyce High School,16,55
+sch_81543ebb6aaf1ada,Lincoln High School,16,39
+sch_a3da999c5e859269,Palestine-Wheatley,16,35
+sch_04dbc37a1d60af48,Trumann High School,15,102
+sch_30a9c98c78a08d52,Watson Chapel Jr High,15,102
+sch_71612243b329b412,Hampton High School,15,90
+sch_fbd12f2c310a509e,Norfork High School,15,81
+sch_8a81ced12e49c95f,Guy-Perkins High School,15,71
+sch_d3e237d85a445b7f,Viola,15,71
+sch_5f04a263ac32d64a,Alma High School,15,61
+sch_2351fcfb306f8847,Nevada School District,15,59
+sch_a62835eb6f2a4087,Smackover High School,15,35
+sch_9f488abec8f34f19,Centerpoint High School,14,106
+sch_a747e0ecfcbb208b,Dierks Junior High,14,106
+sch_69f68aab2ad516eb,Junction City,14,106
+sch_b3080a7339c3e53e,Bigelow High School,14,99
+sch_e45fd52bbe359d5b,Westside - Johnson County High School,14,95
+sch_e9937592e9e8aa6d,Izard County Consolidated High School,14,92
+sch_0f9b2459823d8880,Lafayette County High School,14,59
+sch_a7cd27a6a8d12015,Glen Rose High School,14,57
+sch_e6f5c2dd6d5dded8,Alpena High School,14,53
+sch_b9c3d4ab075a848d,Piggott High School,14,49
+sch_49a136d78ccca86b,Cedar Ridge High School,14,37
+sch_befcffd875d4eeb7,Clarksville Junior High,13,152
+sch_feb06266a3ee427f,Episcopal Collegiate School,13,123
+sch_efec1f972babe379,Decatur High School / JH,13,102
+sch_632055567869ea5b,Hamburg High School,13,94
+sch_73c5a93f24387dad,Hoxie High School,13,91
+sch_28d6b8f97a820115,Dumas Junior High,13,87
+sch_bba54a4d392d5ddf,Providence Academy,13,87
+sch_e319eb0792149d74,Wonderview High School,13,80
+sch_c59df2e1961bdd12,Concord High School,13,75
+sch_a8811220a4fb6d93,Rural Special,13,69
+sch_f0030cc9a690f0ea,Unattached - AR,13,67
+sch_5869fb73c433a043,Osceola High School,13,65
+sch_b859c16bb0c2496b,Timbo,13,65
+sch_5b6fb101378d1227,KIPP Blythville,13,60
+sch_2e377ee35465d43e,Harrison High School,13,54
+sch_2c3faa00089e293e,Valley Springs High School,13,51
+sch_3f0d4c5ded49b612,Mount St. Mary Academy,13,48
+sch_c37eba523d5400df,The New School,13,40
+sch_5aecf5d1d54bc7f0,Morrilton Senior High School,13,32
+sch_095abc66a5397d7b,Carlisle High School,13,26
+sch_eca6dbafd89359ca,Mountain View High School,12,132
+sch_b0f119e43929a5df,Lamar Junior High,12,119
+sch_46450d997f2b408c,Smackover Junior High School,12,83
+sch_aea346a654d57023,Mammoth Spring High School,12,62
+sch_61510485d53bedb9,Flippin High School,12,59
+sch_48d0f0836c6c2048,Bergman High School,12,30
+sch_263f386a12e232b3,Danville High School,11,127
+sch_94245b69c53ea9ac,Star City High School,11,120
+sch_e0d5a17f8c814177,Yellville-Summit High School,11,80
+sch_1a66ec67d1f63547,England High School,11,65
+sch_3ac528955a6d4114,Omaha High School,11,65
+sch_648ed231c65f6abd,Crowley's Ridge Academy,11,64
+sch_57d1688fabb1cbe9,Mayflower High School,11,39
+sch_f360de5a82768f67,Armorel,11,30
+sch_ff0c107e9954bd91,Malvern High School,11,22
+sch_a84019fc22564b6a,Cutter-Morningstar,10,82
+sch_b4c50758c68e8534,Cave City High School,10,81
+sch_634dd8580bf16a00,Hillcrest High School,10,78
+sch_e3d9cb7a0c2dfc68,Lead Hill High School,10,75
+sch_675acce481d7d807,Abundant Life Christian Academy,10,71
+sch_e23552693e0be07a,Maynard High School,10,71
+sch_895613a2205a820b,Hackett High School,10,68
+sch_7cb4a7efb4294a09,Lavaca High School,10,62
+sch_e8f796c925dd6b46,Bismarck High School,10,59
+sch_2e7071588d50f380,Brinkley High School,10,49
+sch_ddcea9434306d400,Shirley High School,10,32
+sch_3c5790b972b4a41c,Mena Junior High,9,135
+sch_476d40739d8a54d9,Malvern Junior High,9,88
+sch_1ac4d3a3ad3f36f9,Sloan-Hendrix High School,9,88
+sch_af61fc585d399e72,Paris High School,9,81
+sch_58b4d797f24b5cb7,Osceola Junior High,9,69
+sch_244c2d6a172ea2c2,St Joseph High School - Conway,9,69
+sch_de826b84315506bb,Hazen High School,9,55
+sch_4abc854c51db8d13,Marvell High School,9,53
+sch_61c15efc31112e22,County Line,9,49
+sch_85dbd085bbee0565,MHCA Eagles,9,48
+sch_30ba196472769bca,Mountain Pine High School,9,47
+sch_d6c5d7c025af8efe,Ridgefield Christian School,9,44
+sch_8d5e61b29269e5b8,Eureka Springs High School,9,36
+sch_59c37bf933484625,Central Arkansas Track Club,9,33
+sch_07b3a1f58986f629,Bradford High School,9,31
+sch_e02a7e2bbb0d1f88,Midland High School,9,28
+sch_fe0c7b8d294e45b6,Strong High School,9,28
+sch_5afdf0491d8fc3f8,Augusta High School,9,23
+sch_30cf16ab359b1e79,Ozark Mountain,8,83
+sch_5dec554880bb8b47,Union Christian Academy,8,69
+sch_c17afc8c6a9f0204,Harrisburg High School,8,65
+sch_ac457ad32fff1cae,Strong Junior High,8,59
+sch_eb489a2f1adb056a,Bearden Junior High,8,13
+sch_83f9ff42401837b0,Blytheville Junior High,7,105
+sch_9c1e7ec7c25d7b9d,Friendship Aspire Academy Southeast,7,104
+sch_983dc76edab02975,Bismarck Junior High,7,76
+sch_2528d1481bc04010,Ouachita,7,64
+sch_bf9f5b2828bdbe1a,St. Paul High School,7,53
+sch_b0a44096616086af,Southwest Christian Academy,7,44
+sch_35bbfa42032be576,Bergman Junior High,7,29
+sch_8a69cf45652bc3b5,Cotter High School,7,20
+sch_0242fcb89bec384b,Chaffin Junior,6,267
+sch_160ebd0908ac6581,Rivercrest Junior High,6,90
+sch_75de270b951669a6,Valley Springs Junior High,6,66
+sch_bae4ee932b9e89da,Palestine-Wheatley Junior High,6,58
+sch_6c9420a1accdcb9d,Nemo-Vista,6,51
+sch_af4bc86c0f543163,Poyen High School,6,49
+sch_6ee7179f52883c42,Legacy Academy,6,39
+sch_1b99e6e2dd15985c,Lisa Academy,6,36
+sch_8799cbef88291636,Knee For Speed,6,12
+sch_33b9078d661d4889,Mayflower Junior High,5,105
+sch_75e058609feb34aa,Friendship Aspire Academy Little Rock,5,90
+sch_55071f44586d2b2b,Life Way Christian,5,72
+sch_b5da8ab914b0e3ef,Carlisle Junior High,5,59
+sch_cfc9b9447be8d3ab,Eureka Springs Junior High,5,56
+sch_b726773f3f297712,Deer / Mt Judea HS,5,29
+sch_3e8fa67128b001c3,Scott Charter School,5,29
+sch_18a4f14a24ccf338,Alpena Junior High School,5,27
+sch_e4e3c311a3b5186c,Kirby High School,5,26
+sch_0df58f4edb3be5a2,Umpire High School,5,25
+sch_b6b690bee91fdca6,Westside Christian High School,5,17
+sch_583578ba353e54b9,Deer / Mt Judea JH,5,6
+sch_068488d903b5e333,Conway Christian High School,4,119
+sch_878e21edf816c801,Bradford Junior High,4,56
+sch_b5340b2be304be51,Columbia Christian School HS,4,10
+sch_c2c1060360ac6923,boston mountain athletics,4,7
+sch_6b74216acd68df5c,Rogers Junior High,4,4
+sch_260d7d2c42df72a2,Riverside Junior High,3,45
+sch_845198e4d3f5c6aa,Woodlawn High School,3,39
+sch_744a4e51e25895e2,Hector High School,3,29
+sch_2cbc8b5c14681130,Valley Christian High School,3,25
+sch_0d27ca10701e6f05,Marmaduke High School,3,22
+sch_c09be5d7f4c4b8fd,Arkansas School For the Deaf,3,20
+sch_873446cca2e80cdc,Jacksonville Lighthouse Charter School,3,15
+sch_459d7ccc7878a252,Legacy Christian Academy Arkansas HS,3,12
+sch_a37a35337cb3805c,Garrett Memorial Christian School,2,29
+sch_6b52e541c6f2a86f,Sacred Heart High School,2,27
+sch_41afda1ed5ab23b9,Arkansas Christian Academy,2,24
+sch_024f5a6f6c1bc3de,Arkansas Arts Academy,2,17
+sch_9b257bd6633d4658,Pine Bluff Thunder Track Club,2,10
+sch_fbfa5593143cc9ae,Bentonville Lincoln JH,1,418
+sch_a6aa6f60dd50c29f,Grimsley Junior High,1,414
+sch_061f2564002ad44a,Fulbright Junior High,1,396
+sch_a7e53c6864bd572e,Barton Junior High School,1,242
+sch_99e3e69cf2199698,Kimmons Jr. High,1,159
+sch_0486b970280b4ae9,Calico Rock,1,62
+sch_acc465f50cb9ef32,The Baptist Preparatory School,1,40
+sch_709d65b3ec44050d,Southside Bee Branch,1,32
+sch_d8014cdecfc45376,Trinity Christian School,1,26
+sch_b5af49f8d07379e7,Christian Ministries Academy,1,21
+sch_ccfc6b20497d357b,Haas Hall Fort Smith,1,17
+sch_338f3acc7e36a6c1,Louis Moss Striders Track Club,1,16
+sch_65e61820ed904121,West Memphis Christian High School,1,15
+sch_a4235ce0ef8fb994,Gospel Light Christian School,1,11
+sch_8c9b1e88e578f857,Bradley,1,9
+sch_6756d62c03371509,Bauxite Jr. High,1,8
+sch_5d59c72f4d460ec6,speed track club,1,8
+sch_b1e2407ad352c88f,Baker Academy,1,6
+sch_ffa4779f0bdf3e62,PULLENS PERFORMANCE ACADEMY,1,3
+sch_ff6048b1a3c3c61b,T.G.T. Track Club,1,3
+sch_4d165036aee104e0,Twin City Breeze Track Club,1,3
+sch_c1c383ab989c5510,Haas Hall Rogers,1,1
+sch_42526f2d44eec06a,Little Rock Trailblazers Homeschool,1,1
+sch_b17727a262ebccba,Woodland Junior High School,0,533
+sch_c4f5885405e44db7,Darby Jr. High,0,211
+sch_e841df3edcd2f3f7,North Little Rock Junior High,0,189
+sch_921d22761212f2c3,Ramsey Jr. High,0,177
+sch_90be0c060a1c642b,Conway Junior High,0,168
+sch_f9885836aecce62e,Cabot Junior High North,0,163
+sch_9292177c47c1ffe6,St Joseph Catholic School - Fay,0,107
+sch_9a00b6cd708a0850,J.A. Fair High School,0,105
+sch_8a2bf5efa59186ea,Lonoke Middle School,0,69
+sch_4d8f824da3a0078d,Lake Hamilton Middle School,0,60
+sch_f8e12ca9b3114a1e,St. Vincent's De Paul School,0,45
+sch_7bb0aed527c5172a,Pinnacle Classical Academy,0,30
+sch_dbf12fd645d73bfe,School for Advanced Studies Northwest Arkansas HS,0,26
+sch_02d5a1be24be67fd,Barton Junior High,0,24
+sch_4b89fc5c3141576e,Jasper High School,0,24
+sch_08b13f6543fc9518,Pangburn High School,0,21
+sch_6e7085cfdc858e60,Immaculate Heart of Mary,0,20
+sch_6dbc5fb173734441,Christian Competition Track Club,0,9
+sch_895ebfd330ef366f,Cornerstone Christian Academy,0,6
+sch_ac101d9e4e9f59c2,Gurdon Junior High School,0,5
+sch_4fa0781ed1bd5d9e,Avilla Christian Academy,0,3
+sch_a2b349b04664e1ed,Haas Hall Springdale,0,2
+sch_a7216d928a289975,Faith Works Flames,0,1
+sch_c06b6f615337a49a,Hartford Junior High,0,1
+sch_8f8330dbbfb75401,RunLab Distance,0,1
+sch_6a676384c107edf2,South Arkansas Christian School (HS),0,1
+sch_6ec950eabb49f51c,Tigers Track Club,0,1
+sch_d5e0785e72688fe6,Arkansas Military and First Responders Academy,0,0
+sch_259ecd1b7f2968e9,Arkansas School for the Blind,0,0
+sch_435a4490371c50e3,Arkansas Track Coaches Association,0,0
+sch_2b2a2c948a47f71c,Arkansas Trail Blazers,0,0
+sch_8a83112aac3ae974,badger striders track club,0,0
+sch_e418408d07de6f2f,Bauxite Black,0,0
+sch_57cea0cdffec8402,Bay High School,0,0
+sch_54b86e48bb20a950,Bismark High School,0,0
+sch_d7c4694c7c8008b6,Bruno-Pyatt High School,0,0
+sch_6d3b80af1b184c5d,Buffalo Island Central High School,0,0
+sch_8d4e50c2828ff246,Cabot JH,0,0
+sch_76a0f95b6d412069,Champion Christian College,0,0
+sch_5edeab459b2b5c06,Cross County Junior High,0,0
+sch_c474db8cb477676f,Crossett Junior High,0,0
+sch_1b7f3129c258aa70,Cushman High School,0,0
+sch_41d917f3bd75e8b4,Delight High School,0,0
+sch_65b25d1139e8fbaa,Dollarway High School,0,0
+sch_5d44c88ba73f2182,Dollarway Junior High,0,0
+sch_bd740e00f6e290cf,East Poinsett Co.,0,0
+sch_04739af964ccb67a,Emmet High School,0,0
+sch_97773ee6172f93bc,Evening Shade High School,0,0
+sch_a61b42d44e04585a,Exalt Academy,0,0
+sch_ace8b34e68d1fb40,F,0,0
+sch_6948bc687f577a0c,Fayetteville Christian School,0,0
+sch_a3210656134ff62f,Fayetteville White,0,0
+sch_0c6f2be9d1e6c9a6,Fourche Valley,0,0
+sch_c2676149ab4bdd99,Future School - FS,0,0
+sch_6c9f25b7bc9bbffa,Harrison Blue,0,0
+sch_8db2e59aaf8c69db,Hartford High School,0,0
+sch_8d93edfdf31442bc,Hazen Junior High,0,0
+sch_b83ba07ce02a3c3a,Hesselgren Homeschool,0,0
+sch_f51468bc12861764,Hot Springs Middle School,0,0
+sch_282a8b72d142fa82,Hughes High School Arkansas,0,0
+sch_9d468381025bea5b,Imboden,0,0
+sch_7a205cd0a4066e9c,Joe T Robinson Junior High,0,0
+sch_49206b8b6df2ea06,Lamar Middle School,0,0
+sch_e514d5ee16296088,Leslie High School,0,0
+sch_3305d256320b27f7,Lockesburg High School,0,0
+sch_b072fc225c4195f6,Lutheran High School,0,0
+sch_b34221c8e1453ed8,Marianna,0,0
+sch_3214b20719a9f894,McClellan High School,0,0
+sch_ba913b02bb419c66,McCrory High School,0,0
+sch_bbf8cf7f69898119,Mount Judea High School,0,0
+sch_8f964f4b2ce0c243,North Pulaski High School,0,0
+sch_88cb73785a0660f6,North River Christian Academy HS,0,0
+sch_d282cb4dadadf019,Oak Ridge Central High School,0,0
+sch_a392ce918bec12ef,Oark,0,0
+sch_9bef52511ddf907e,Oden High School,0,0
+sch_480923698ae1483a,Ola High School,0,0
+sch_c4b3f62f3cf8a327,Plainview-Rover,0,0
+sch_c5fe45cb875e3a45,Premier High School - Little Rock,0,0
+sch_1acd216af37bb829,Prism Education Center,0,0
+sch_94902d2c38b6653d,Quest Academy,0,0
+sch_8a88373b5b11a276,Red Dog Track Club,0,0
+sch_d6af59a0a54e8a07,Rogers Heritage Junior High,0,0
+sch_eb21eee1d00867a4,Saratoga High School,0,0
+sch_c75e604e80ad13df,Sparkman High School,0,0
+sch_7e6e09a33c685275,St. Joe High School,0,0
+sch_f715f9a867c26783,St. Joseph Catholic - PB,0,0
+sch_9e1ba02d8e61f162,Stephens High School,0,0
+sch_cd9af282814367a3,Stutgart Junior High,0,0
+sch_a151cc407da91e29,Taylor,0,0
+sch_031e8dd6c963211b,Texarkana Junior High,0,0
+sch_d74d1896fa7e01b2,The Delta School,0,0
+sch_8897cd9420e9da8e,Trinity Jr. High,0,0
+sch_5688fd87aad79d73,Van-Cove High School,0,0
+sch_b70a8377b675a073,Village Academy,0,0
+sch_ab253106f1488fa6,Weiner High School,0,0
+sch_7e4b23589d11af51,Wickes High School,0,0
+sch_c4ad2622d65d5fc1,Y Timing LLC,0,0

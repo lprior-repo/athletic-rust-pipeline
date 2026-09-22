@@ -1,0 +1,69 @@
+2026-09-22T10:42:17-05:00
+--- frozen fragment hashes (32 files, WI.rebuilt.csv excluded):
+ca2831cbc7cf24d93b29c9314b188e5864a49731ecbf3ed253953a31d774198e  out/coach-fragments-ad/IA.csv
+b878ce617b8f70da1a6e081a9ef67549883e080b245565f2ef9a6403626b42fb  out/coach-fragments-ad/IL.csv
+ef78f56abcb14a71e13854ac4af2b289558d94b2fb8818d93aea9780cda2acae  out/coach-fragments-ad/KS.csv
+f7dd3614f43924ecebf6180495e1ecf624181a0ecff8f41063b5b68e2fe13f1f  out/coach-fragments-ad/MI.csv
+74d725e3e89d8e1184a982ca33492db569dafee44bb4a784acb3233c4a78d360  out/coach-fragments-ad/MN.csv
+fb4ad076ff25c40c165c5e0222a314b5c07d40dcd5b813604e3e8be37b450980  out/coach-fragments-ad/ND.csv
+86311c7c4b57c768352003683ca90a1517731d979f19eb3ea109000c608aa8f9  out/coach-fragments-ad/NE.csv
+f3ec78719299730f0ee684b25806323d55131e124b6d7766993046d4b043d25b  out/coach-fragments-ad/OH.csv
+95abd33062e730bf39f7d7da1833d2bed25339f2ad0e193044de7379b332a5a3  out/coach-fragments-ad/SD.csv
+b9ff36966868623154f05a1f9b63fe522e0747e1e9e39767acc43e199dbef61b  out/coach-fragments-ad/WI.csv
+8d93c03d074b68123797202534776105c203e692e6c84955b67243545bcabe92  out/coach-fragments/AZ.csv
+679772f9de5c4aaa9960aa543aae440abfa9b32b1c76d634adec9d01609a6813  out/coach-fragments/CA.csv
+2caa2227605fb5cccca013f54064cd40529b5117a0d9a62fb85f02d65296b9bb  out/coach-fragments/CO.csv
+f149ea4a853ca3834a39a4cb0e00ef146d69042286c204b5eeecdc47848c010c  out/coach-fragments/DC.csv
+928578d8e9b1c00cab273c412bbbd87adebb559d0e9d1692e9da51c4eb31cd36  out/coach-fragments/FL.csv
+8e6ab647cc058f7c4c96a0be02b61a03e40e00128a3a09f24e9c3f0396b54231  out/coach-fragments/GA.csv
+93af2824e1c7451e9e714924579195e67443cf542e509d797b90e0dc255d3cbe  out/coach-fragments/IA.csv
+61525ae105e827dc13f3817c56f894e006c1c85151325e7cb20f9171062ab65a  out/coach-fragments/IL.csv
+b57421276bc7dea4a2ec8d2f1deabd62238f1ec2c59d5371abe39869ca35cfd6  out/coach-fragments/IN.csv
+9c5a4baf55e1f96ddee677a2ab91e842b922a8accab9f81432c382f47e861d6c  out/coach-fragments/KS.csv
+100f5b2a53d4709b694aea7ac0eb1fffdbba57d98d59e6812aa5d682186806a1  out/coach-fragments/MI.csv
+29ba0fa5fc8504bed98e5a8428428796ed064d2e2853f52c77da52815063dfe7  out/coach-fragments/MN.csv
+1313725530cd711dff476fa99eaeee7e97bbaeaa236f37244d2b7fad10bc6f08  out/coach-fragments/MO.csv
+bd90e2564032af4874947a95832a87fe52a86e6c8efc3c546f7ace7784258c20  out/coach-fragments/ND.csv
+a2a5a2f39cb78d9ef9814bf1d460a53588dee627c9b20cada3877037c3488008  out/coach-fragments/NE.csv
+9db656434360f7156eb65d68986df0099708147c02e7266136a6b7d2c63c2fdc  out/coach-fragments/NJ.csv
+9b30a50be03b551f91f16200d4bd2288406b9b83f870d42e3839536a7aeb602e  out/coach-fragments/OH.csv
+1ab9eaf9d2f4cbb8319252ca3aaafe9c254ed03c7b0ab8718711c7c149ddb718  out/coach-fragments/OR.csv
+783399e3b94fe2c72c820ad538aa94825323dc8500b40ddd5c4d248c07816923  out/coach-fragments/TN.csv
+d25aafefdb732c58cd08eb615213cbadeb1d1ca125e63cdb3dc9ea533bb6f70e  out/coach-fragments/TX.csv
+42881d753686b8204fdc3308c4d4899cc13a36a19e02c980224bc6e71ef58567  out/coach-fragments/UT.csv
+686020ae2ce3383fdcedd89118e69e2d40943f261fefc82504ffad34294f54eb  out/coach-fragments/WI.csv
+
+--- verification log (tools/verify-all-coach-fragments.sh, 8 workers, fixed verifier):
+coach-fragments/FL.csv: total=4 ok=1 role_context=3 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments/DC.csv: total=50 ok=36 role_context=4 role_contradicted=0 render_required=10 mismatch=0 empty=0
+coach-fragments/AZ.csv: total=158 ok=139 role_context=0 role_contradicted=10 render_required=8 mismatch=1 empty=0
+coach-fragments/CO.csv: total=200 ok=200 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments/IN.csv: total=130 ok=101 role_context=15 role_contradicted=9 render_required=5 mismatch=0 empty=0
+coach-fragments/MO.csv: total=61 ok=54 role_context=6 role_contradicted=0 render_required=1 mismatch=0 empty=0
+coach-fragments/CA.csv: total=193 ok=152 role_context=0 role_contradicted=41 render_required=0 mismatch=0 empty=0
+coach-fragments/MI.csv: total=106 ok=82 role_context=11 role_contradicted=12 render_required=1 mismatch=0 empty=0
+coach-fragments/NJ.csv: total=86 ok=37 role_context=4 role_contradicted=0 render_required=45 mismatch=0 empty=0
+coach-fragments/IA.csv: total=93 ok=68 role_context=16 role_contradicted=0 render_required=4 mismatch=0 empty=5
+coach-fragments/IL.csv: total=197 ok=170 role_context=0 role_contradicted=27 render_required=0 mismatch=0 empty=0
+coach-fragments/ND.csv: total=199 ok=134 role_context=0 role_contradicted=62 render_required=3 mismatch=0 empty=0
+coach-fragments/OR.csv: total=196 ok=193 role_context=0 role_contradicted=2 render_required=1 mismatch=0 empty=0
+coach-fragments/NE.csv: total=209 ok=70 role_context=16 role_contradicted=92 render_required=31 mismatch=0 empty=0
+coach-fragments/TX.csv: total=72 ok=45 role_context=17 role_contradicted=5 render_required=5 mismatch=0 empty=0
+coach-fragments-ad/IA.csv: total=63 ok=53 role_context=0 role_contradicted=7 render_required=3 mismatch=0 empty=0
+coach-fragments-ad/IL.csv: total=16 ok=13 role_context=0 role_contradicted=3 render_required=0 mismatch=0 empty=0
+coach-fragments/UT.csv: total=200 ok=176 role_context=0 role_contradicted=24 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/MI.csv: total=14 ok=14 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/MN.csv: total=7 ok=7 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/ND.csv: total=39 ok=39 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/NE.csv: total=16 ok=2 role_context=1 role_contradicted=13 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/OH.csv: total=31 ok=13 role_context=18 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/SD.csv: total=30 ok=26 role_context=0 role_contradicted=4 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/WI.csv: total=19 ok=17 role_context=2 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments-ad/KS.csv: total=523 ok=523 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments/WI.csv: total=706 ok=706 role_context=0 role_contradicted=0 render_required=0 mismatch=0 empty=0
+coach-fragments/MN.csv: total=1176 ok=1174 role_context=0 role_contradicted=0 render_required=0 mismatch=2 empty=0
+coach-fragments/GA.csv: total=188 ok=0 role_context=41 role_contradicted=147 render_required=0 mismatch=0 empty=0
+coach-fragments/KS.csv: total=37 ok=9 role_context=22 role_contradicted=0 render_required=0 mismatch=0 empty=6
+coach-fragments/TN.csv: total=183 ok=153 role_context=0 role_contradicted=0 render_required=20 mismatch=1 empty=9
+coach-fragments/OH.csv: total=190 ok=92 role_context=76 role_contradicted=5 render_required=11 mismatch=0 empty=6
+=== sweep done 10:41:08

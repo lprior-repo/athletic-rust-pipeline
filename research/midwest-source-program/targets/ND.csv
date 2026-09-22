@@ -1,0 +1,340 @@
+school_id,name,co2027,athletes_all
+sch_74ff97d18d3f276b,Sheyenne High School,77,508
+sch_35077e24aacb805c,Century High School,68,269
+sch_b2616e4c1d05944f,Davies High School,66,575
+sch_4828687c028179d3,Mandan High School,64,364
+sch_ca92b2ac5bef07b4,Magic City Campus (Minot) High School,61,178
+sch_95201e491d055792,Dickinson High School,59,638
+sch_500ea6460f16267c,Minot North High School,57,200
+sch_ee55d484190a4ccc,Bismarck High School,52,246
+sch_1e16578c771a158f,Moorhead,51,95
+sch_f98bf759fcab2d44,Red River High School,48,211
+sch_6e28e7f0d4dbe440,Grand Forks Central High School,47,190
+sch_caa27d8b2d8e70c7,North High School,43,393
+sch_6d5bafdaf08cbd82,Legacy High School,43,198
+sch_0f375238d89b7155,Central Cass High School,43,190
+sch_e094e856bdb02cf3,West Fargo High School,42,312
+sch_87f3942daa84efd2,Horace High School,40,356
+sch_26f62112a468eef2,Watford City High School,38,268
+sch_37a50353d985a2d0,Devils Lake High School,37,220
+sch_f12609d3b459c463,Shanley High School,37,213
+sch_fb15f7f047501b19,Minot High School,37,60
+sch_cb9f8ea879d38ebb,Kindred High School,36,185
+sch_85c4c1071aca770a,Williston High School,35,498
+sch_c053304573af2904,Rugby High School,35,175
+sch_39bbec4ad0921674,South High School,33,287
+sch_26e820ef26b9f7d1,Jamestown High School,33,244
+sch_f367dddbbefd5819,Unattached,33,84
+sch_e0acf20e230aa2cb,Hazen High School,30,140
+sch_9f10ab009956ae77,St. Cloud Tech,30,45
+sch_e461140b2e37e190,Fargo North High School,29,50
+sch_d5adad7e9399b50e,Stanley Community Schools,26,129
+sch_482dda6383ef70e9,St. Mary's Central High School,24,160
+sch_b06ff13994de8fc0,Grafton High School,23,124
+sch_af0729f0a9ed94f3,Northern Cass High School,22,124
+sch_39c8146687e4f329,Valley City High School,22,94
+sch_befc6e421e799bb4,Northern Lights,22,76
+sch_02a9451368c46725,Larimore High School,22,61
+sch_12357376157f4dd0,East Grand Forks,22,27
+sch_90b6c2f8d31d0077,Southern McLean High School,21,110
+sch_0e95da87fe6ada4e,Thompson High School,21,91
+sch_a58b4e2fef742c07,Midway/Minto High School,20,57
+sch_1897a729edcc3016,Thief River Falls,20,25
+sch_0bdb6d8adb90a489,Bottineau High School,19,104
+sch_50a06830f3a1ed3e,Surrey High School,19,83
+sch_8ef207ad02dee8d8,United Clay-Becker,19,33
+sch_b99477de7d844bba,Oak Grove Lutheran High School,18,110
+sch_4e029bc41a808211,Des Lacs-Burlington High School,18,79
+sch_bdaec832591a810d,Edgeley/Kulm High School,18,74
+sch_46111d0d71541efa,May-Port CG High School,18,72
+sch_485985d0e2f7a0e5,St. Mary's,18,33
+sch_05cf4b67cdd3e15c,Turtle Mountain Community High School,17,95
+sch_88e3316d951a76d1,Fargo South High School,17,36
+sch_c48379bb447abdbf,Trinity Catholic High School,16,125
+sch_90804ad28ef3d6db,Lisbon High School,16,123
+sch_446acfde86354ecd,New Salem/Glen Ullin High School,16,97
+sch_f7cab1b0c672c817,Brainerd,16,44
+sch_9b236e759e8b7e7a,Detroit Lakes,16,35
+sch_0d81f539a127cb66,Sidney,16,33
+sch_56eb41aea8a9a9f0,Stanley High School,16,19
+sch_4682afc5c8426ae3,Beulah/Hazen High School,15,122
+sch_59f414b0e25dcb2f,Bowman High School,15,107
+sch_e7b127b80fc210d0,Wyndmere-Lidgerwood,15,106
+sch_73b3df75d66ce434,Standing Rock Community School,15,99
+sch_8c7101394eae15ae,Hettinger High School,15,93
+sch_4ecf19733d49335f,Velva High School,15,58
+sch_9aecd7761ab8aee7,Dunseith High School,15,27
+sch_1fe2f55431755ba6,Dilworth-Glyndon-Felton,15,23
+sch_6c652e6b4f9ed095,New Rockford-Sheyenne High School,14,122
+sch_6ea8554e060d8eb4,South Prairie-Max,14,67
+sch_3f59b8046a9c9c88,Team NoDak Youth,14,33
+sch_3150a2af2a2864bf,Perham,14,31
+sch_7e8192175eab5413,Breckenridge,14,24
+sch_7785fd715887648c,Bagley/Fosston,14,17
+sch_bbde69f4eed4bcbc,Killdeer High School,13,129
+sch_e4ce54868bbed23b,Wahpeton High School,13,93
+sch_c72f0db180acd7f7,Heart River High School,13,84
+sch_c70796afb9ef3c6c,Divide County High School,13,61
+sch_bca0e695e6474fd2,Center Stanton,13,31
+sch_f0c3aaa536cb8c33,Hettinger County,13,24
+sch_d61c1b27af6c5bd0,Pelican Rapids,13,20
+sch_86d93e89e781eefb,Hillsboro/Central Valley HS,12,100
+sch_c4e99fce65616498,Pembina County North,12,94
+sch_94b8cf9aaa365fdf,Lamoure/Litchville-Marion High School,12,48
+sch_1e5dae7d3d118938,Oakes High School,12,47
+sch_1a652072ab759f96,Powers Lake High School,12,47
+sch_94ed4465ffd64676,Warwick High School,12,30
+sch_2785d65ba2ef88d4,Des-Lacs Burlington/Lewis an,12,24
+sch_a4ce3f96c5bedc86,Southern McLean (Washburn/Wi,12,22
+sch_e05834206c65b333,Sargent Central High School,11,83
+sch_d99e2b96d86fd45e,Benson County - Leeds/Minnewaukan/Maddock,11,61
+sch_1a4ad114b455eb60,Sheyenne River Track and Fie,11,27
+sch_71b1ce38734257a8,Mott Regent,11,26
+sch_4e8586f8ac29364d,Bowman County High School,11,18
+sch_56068395c0f62391,Harvey/Wells County High School,10,72
+sch_c876a1aac56b116c,Parshall High School,10,69
+sch_1754bac1da197728,Ellendale High School,10,62
+sch_84f3c9c7ba2081d8,Linton High School,10,61
+sch_43d9907afa63ff9a,Williams County High School,10,61
+sch_64e41840bcda2eb1,Kenmare/Bowbell/Burke Central,10,58
+sch_031a236b31062d13,Grant County High School,10,53
+sch_8d5df1bbdffb49ae,Standing Rock High School,10,22
+sch_18d4c41b504a9823,Dawson County,10,21
+sch_4526dbec2afd0fb6,Roseau,10,20
+sch_ae90539ce45a7932,Glasgow,10,18
+sch_ac73cf4a4d9c87d0,Hatton-Northwood,9,95
+sch_cce5968302da96dc,New Town High School,9,80
+sch_b8da043561db5b99,Griggs Midkota,9,75
+sch_1456cb0d1e52f8b5,Richland High School,9,74
+sch_fe59c4c6d4d4189e,Drayton/Valley-Edinburg,9,50
+sch_90941755a2e9cc8e,Mohall High School,9,43
+sch_f8886180eccd8e58,Dickinson Trinity High School,9,22
+sch_14a3b233f914ce0b,Beulah High School,9,19
+sch_36d3a725c074dddd,Barnesville,9,18
+sch_af5acd944e7c023e,Williams County [Tioga/Ray],9,17
+sch_c9b77553d1ec3c2a,LaMoure/Litch-Marion,9,16
+sch_9723acae842b73d8,Mahnomen/Waubun,9,16
+sch_500044b7f19fe1fd,Velva-Drake/Anamoose,9,16
+sch_b8d7e89ac0e3c881,Max - South Prairie,9,14
+sch_dec08ba25276cb47,Border West,9,13
+sch_a9beef8e2c80525c,Powers Lake-Burke Central,9,13
+sch_d91710709d696784,Grant County/Flasher,9,12
+sch_ef797624a3ce6e9d,Win-E-mac,9,11
+sch_5cdfbd6119d0aeef,Kidder County High School,8,104
+sch_9b30cfe699f8864b,Langdon Area/Edmore/Munich,8,66
+sch_a30bd0257d0186c3,North Star High School,8,52
+sch_97ec5d50c73d5a9d,Sargent County,8,35
+sch_9c30fb093059b85d,Lemmon,8,13
+sch_101b7fa186dbc50d,Linton/HMB,8,13
+sch_f6a35092433df0ad,Benson County,8,12
+sch_bc0de512f2de6da1,Climax-Fisher-Sacred Heart,8,11
+sch_ede10c2ce0fc3a94,Ada-Borup-West,8,8
+sch_e1127b5b52c49ec5,Carrington High School,7,96
+sch_b7a39dad641fcf9b,Shiloh Christian High School,7,87
+sch_51efce066f113084,Richardton-Taylor High School,7,69
+sch_f4e606ba82e24d67,Central McLean,7,55
+sch_181512c716e9202e,Enderlin High School,7,53
+sch_02b68dc9112641f1,Trenton High School,7,49
+sch_b4612d2fdc2016ae,Beach High School,7,46
+sch_aba67d6fb1ffe89c,Williston Trinity Christian High School,7,40
+sch_ba7b78f937ac636e,Hankinson High School,7,37
+sch_5b2e1dee97a85f5c,Clearbrook-Gonvick,7,17
+sch_46cfedd67cc2863a,A-B-E,7,14
+sch_6d4f70cf1fd90f79,Glen Ullin/Hebron,7,13
+sch_0b6fff9e04b1476f,Lake of the Woods/Rainy Rive,7,13
+sch_d0ff6ff2caeae948,Maple River,6,65
+sch_32ee3905c6ff90c7,South Border High School,6,43
+sch_e2c34caed9a274cb,White Shield High School,6,42
+sch_24b9cb4a41bb7f68,Westhope High School,6,26
+sch_53424f5181d2d16f,Mohall-Lansford-Sherwood High School,6,12
+sch_fc1ae384d74b8a68,Napoleon-Gackle-Streeter,6,12
+sch_e7be05b620b133b6,Deacon Wings Training Club,6,11
+sch_1dc2a79e3bf1fbc8,Poplar,6,11
+sch_8be9c3151f3bcb63,Fertile-Beltrami,6,10
+sch_51fb596ffeb62bf2,Northome/Kelliher/Blackduck,6,10
+sch_c20c1675abf0852b,Harding County,6,9
+sch_72f9eb5a2ca22dac,Deacon Wings,6,8
+sch_773dee0c35d756a3,Mobridge-Pollock,6,7
+sch_d43f2c3bfb9deddc,Hettinger-Scranton,5,66
+sch_70ee2baf003157dd,Medina-Pingree-Buchanan HS,5,38
+sch_d11a41532ada626b,Wadena-Deer Creek,5,13
+sch_322cfa45f6e12836,Staples-Motley,5,12
+sch_07270687fa9fdc5a,New Salem-Almont High School,5,11
+sch_7a043a49a9ef51e4,Culbertson,5,10
+sch_a6fdc28b95a3e842,Langdon Area/Munich,5,10
+sch_198b096affd619ba,Tri-State,5,8
+sch_66cdf861ef47e085,Westhope/Newburg,5,6
+sch_6ce697b684b07fee,Lustre Christian,5,5
+sch_1fab1d13579a1832,Lewis & Clark High School,4,111
+sch_c1c2e530d1432a4b,Glenburn High School,4,36
+sch_3bd69e54fee55e30,Rolette High School,4,26
+sch_447abb65c8b2099f,Fergus Falls,4,11
+sch_21603616db5278a3,South Border (Wishek/Ashley),4,11
+sch_65dfaf51b3c19a74,West Marshall,4,11
+sch_8a04d88e491c6417,BGMR Freeze,4,10
+sch_ba077b955da58c77,Nedrose High School,4,9
+sch_60821c937b4e2384,Kenmare-Bowbells,4,7
+sch_66f06c2428d4eccf,Circle,4,6
+sch_59d7687a0f769f5c,Saco,4,4
+sch_389137cb33e7f1f1,Nelson County,3,57
+sch_c12e839c4aad8597,Bishop Ryan Catholic School,3,45
+sch_53c50645c12337d7,Garrison High School,3,33
+sch_b4c4c4867391f4e2,Mandaree High School,3,33
+sch_730c3f1b71e6dc04,Four Winds Community High School,3,28
+sch_7067a96637fccba2,Strasburg High School,3,27
+sch_69edcb4999e0cb4f,Tioga High School,3,19
+sch_6cafb7f31e0d9892,Park River/Fordville-Lankin,3,12
+sch_3ab72fb1f8cd7460,Bainville,3,10
+sch_e1dd58e85b6de91a,Baker,3,10
+sch_380c61be84c93aad,Plentywood,3,8
+sch_34097c1ace315f93,Wolf Point,3,7
+sch_790a53c6675ade63,Braham,3,6
+sch_082983653bb6297c,Fairview,3,6
+sch_a37660a043d19de1,Lewis and Clark,3,6
+sch_f0abc07f2dfabfea,Dinius Track & Field,3,5
+sch_3bec7731dca7129e,Rothsay,3,5
+sch_7a6b6434c2a75f83,Savage,3,5
+sch_caa562d633568da1,Richey-Lambert,3,3
+sch_e25af3f056e09329,Gackle-Streeter High School,2,43
+sch_7dd701444fb445f3,Fordville High School,2,20
+sch_13579ed704ef1962,Rolette/Wolford,2,8
+sch_cb391cd5994ee537,McLaughlin,2,7
+sch_104712e66c145e9b,Hazelton-Moffit-Braddock High School,2,5
+sch_e4dc2b668032c07f,Scobey,2,5
+sch_e824c6c1827de328,Trinity Christian (Williston,2,5
+sch_e4a6c8d6f674adce,Centralia Running,2,4
+sch_96f40589132c2141,Rolla High School,2,4
+sch_ea507d85b8938c2f,Whitewater,2,4
+sch_03f7eda3b973b0d2,New England High School (ND),1,9
+sch_6f3377a25b10e1f9,Zeeland High School,1,7
+sch_2510e5a9812b53c6,Bishop Ryan High School,1,5
+sch_121497d4c200f6b1,Lewis and Clark NSP,1,4
+sch_67d4cbc1a517805c,St. John High School,1,3
+sch_d379c820169a8759,Westby-Grenora,1,3
+sch_9fe812491947137b,Fort Berthold,1,2
+sch_41f04cb5ffe10ca4,Froid-Medicine Lake,1,2
+sch_3bec6db49c81d7e1,Hillcrest Lutheran Academy,1,2
+sch_37fa66026caa8a14,Nashua,1,2
+sch_e2d7ae8a89511bce,McIntosh,1,1
+sch_1675e4f3b8c8c48a,Unattached Relay,1,1
+sch_06e3056be3470634,South Heart High School,0,123
+sch_1e487617a385739f,Griggs County Central High School,0,52
+sch_347d0667414516cc,Capstone Classical Academy,0,48
+sch_f0d854bbb70b163b,Circle of Nations School,0,22
+sch_3fdbc2fb1104dfe2,Barnes County North High School,0,15
+sch_442c081c79fa89af,Solen High School,0,14
+sch_ee98402e024f4baf,Philip,0,5
+sch_d2c2f286fdb52366,Dawson Athletic Club,0,3
+sch_a8eee072d135496e,Warroad,0,2
+sch_2ed37bb867e23327,Williston ms MS,0,2
+sch_81e800d618ebc638,30-Unattached,0,1
+sch_3d0163038262da0f,Brockton,0,1
+sch_7edbf8bbff0e11d4,Misfit Elite,0,1
+sch_01f076fe7f86436a,Parker/Marion,0,1
+sch_f783065355447dd1,Tough Track Athletic Club,0,1
+sch_b7aaf2374e559777,White Bear Lake Area,0,1
+sch_d96484c931a4fe14,Winnipeg Optimist Athletics,0,1
+sch_a0f0e1f87679191c,Alexander High School,0,0
+sch_372c5710a60a7a1d,Anamoose/Drake High School,0,0
+sch_66b20b3039e57bdb,Ashley High School,0,0
+sch_8c13278b584d2a1a,Belfield High School,0,0
+sch_925c0d5cf6896058,Bismarck Century High School,0,0
+sch_1fb3a6a2e3d6a6cd,Bismarck Legacy High School,0,0
+sch_c3f3d16a1ee4f3a4,Bismarck St. Mary's High School,0,0
+sch_ff96d937f2b69a2d,Bowbells High School,0,0
+sch_b49c168ddeacde91,Burke Central High School,0,0
+sch_4cea4358e685ac45,Cavalier High School,0,0
+sch_7ac314ef55cb1f99,Central Prairie High School,0,0
+sch_82b8c33e8e0fba22,Central Valley High School,0,0
+sch_54d1d1e5db4ab2fb,Dakota Memorial High School,0,0
+sch_6955e48e1ff56c37,Dakota Prairie High School,0,0
+sch_2e5c081725f6883f,Drake-Anamoose High School,0,0
+sch_fa9b6eb201f24088,Drayton High School,0,0
+sch_62728b102386a0e9,Edgeley High School,0,0
+sch_44c44ea35614a3e3,Fairmount High School,0,0
+sch_90bea031dca77448,Fargo Davies High School,0,0
+sch_a12f533932dceb95,Fessenden-Bowdon High School,0,0
+sch_2b14b379d218868d,Finley Sharon/Hope/Page High School,0,0
+sch_0983f5b7f8ce0330,Finley-Sharon High School,0,0
+sch_77d8fb9114507939,Flasher High School,0,0
+sch_94e554fa5a176f64,Fordville-Lankin High School,0,0
+sch_a0b02947b681cb94,Four Winds High School,0,0
+sch_e5db34c7846b8673,Glen Ullin High School,0,0
+sch_54a7b83c862dbbbf,Grand Forks Red River High School,0,0
+sch_51a3d2e4a640594c,Grenora High School,0,0
+sch_60147e0ba1d59eb6,Harvey High School,0,0
+sch_e8e0e36fa3446ea1,Hatton Eielson High School,0,0
+sch_85cf53c111bd8bd7,Hebron High School,0,0
+sch_f15c349e233f013c,Hillsboro High School,0,0
+sch_5d05c5bd3f88f42b,Hope Christian Academy High School,0,0
+sch_6cda59fedff81b39,Hope-Page High School,0,0
+sch_e4cddbd5f762058d,Johnson Corners Christian Academy,0,0
+sch_fd9d52ac5293870b,Kenmare High School,0,0
+sch_1fece5b6bf1be000,Kensal High School,0,0
+sch_e6046a880dae3f97,Kulm High School,0,0
+sch_f6dacfcce722040c,Lakota High School,0,0
+sch_7c46094829a05917,LaMoure High School,0,0
+sch_b5e916ab45918abc,Langdon Area High School,0,0
+sch_6e005174e59aeebf,Leeds High School,0,0
+sch_f196a1be50ac0465,Lewis & Clark High School - Berthold,0,0
+sch_a91f71958d095faa,Lewis & Clark North Shore-Plaza,0,0
+sch_1d6e24078b738467,Lidgerwood High School,0,0
+sch_d5c9a5544d504023,Litchville-Marion High School,0,0
+sch_500ffa6549d003b5,Maddock High School,0,0
+sch_923bf42605772b4c,Mandan Classical Academy,0,0
+sch_900e20e222f5c50e,Maple Valley High School,0,0
+sch_388b1a52d81774e4,Max High School,0,0
+sch_cf6db010bcded6b8,McClusky-Goodrich High School,0,0
+sch_cb4fbb07b4522923,Medina High School,0,0
+sch_c0a1115c1bbb6009,Midkota High School,0,0
+sch_b21cd632415f7d0e,Midway High School,0,0
+sch_f87a9c7fe33b5b8a,Milnor High School,0,0
+sch_d9078db39f76c05e,Minnewaukan High School,0,0
+sch_dfb9266210475e3b,Minto High School,0,0
+sch_6691004dee146787,Montpelier High School,0,0
+sch_ccd8a76753ae1388,Munich High School,0,0
+sch_0ec366d196c37c45,Munich Public School,0,0
+sch_99b9c852a284a707,Napoleon High School,0,0
+sch_85fa8450c0fde394,New England High School,0,0
+sch_0f9b5d5c892a7193,Newburg High School,0,0
+sch_1161395f22bd6549,North Border High School,0,0
+sch_4f74b7cb636cecec,North Border High School-Pembina,0,0
+sch_6f3ca59277d03348,North Border High School-Walhalla,0,0
+sch_9d4f2ed5a2e554fd,North Sargent High School,0,0
+sch_5a2fad9d17343a78,Northwood High School,0,0
+sch_e4dfabfda453809a,Oak Grove High School,0,0
+sch_7794fc95db570046,Our Redeemer's High School,0,0
+sch_7a2f526dd72d2291,Park River Area High School,0,0
+sch_a55f17682ed3094a,Pingree-Buchanan High School,0,0
+sch_1056bc5ab6839b88,Ray High School,0,0
+sch_df617716bf6b48c7,Sawyer School,0,0
+sch_5b28189df8b2fe93,Scranton High School,0,0
+sch_03a0eaf3e547e11a,Selfridge High School,0,0
+sch_72344e80ba6cc094,Sheridan County High School,0,0
+sch_28cb2011453719e8,Sioux XC Club,0,0
+sch_faf40dbc004150cf,South Central Prairie Special Education Unit,0,0
+sch_21d6e195c4af46c6,South Prairie High School,0,0
+sch_18ab98d01dc53b4e,Starkweather High School,0,0
+sch_d40606ef638f3b4b,Steele-Dawson High School,0,0
+sch_50c1922213ec2aa1,Stevens High School,0,0
+sch_a9a9ecc5408a208f,TEST Grant,0,0
+sch_1d403cd3296e747c,Test Lake Oswego,0,0
+sch_2260a6efd3c41acc,Test Southridge,0,0
+sch_7ba43a0472b153b2,TEST Tigard,0,0
+sch_3577c1931ecf3448,TEST West Salem,0,0
+sch_7fe5126ce9843246,TGU Granville High School,0,0
+sch_4a12cb7914abc7b0,TGU Towner High School,0,0
+sch_d25480e1a854bd2a,Trenton High School - Eight Mile School Dist,0,0
+sch_aefeea4c931db368,Trenton-Trinity Christian,0,0
+sch_085a028f855938da,Turtle Lake-Mercer High School,0,0
+sch_5dba42735820795c,Underwood High School,0,0
+sch_fddb5e06a248207e,Valley High School,0,0
+sch_56c5eeca31037862,Valley-Edinburg School District,0,0
+sch_e2c2c70d3c05698b,Washburn High School,0,0
+sch_062969a2c4db184d,Washburn/Wilton High School,0,0
+sch_cb4ad4fdf0b507ad,West Fargo Horace High School,0,0
+sch_1b752c954c9ada64,West Fargo Sheyenne High School,0,0
+sch_a5ad715bfd8e1f3d,Wilton High School,0,0
+sch_69202fb12888e0a6,Wing High School,0,0
+sch_6190d65ec2ff8199,Wishek High School,0,0
+sch_4483c7a78260dc5a,Wyndmere High School,0,0

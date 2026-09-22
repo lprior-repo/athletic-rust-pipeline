@@ -1,0 +1,550 @@
+school_id,name,co2027,athletes_all
+sch_70c99e4b795266c8,Bridgewater-Raritan HS,184,388
+sch_33eff0bb36d17188,Southern Regional HS,143,325
+sch_ae551eb946e7dfd6,Elizabeth HS,139,331
+sch_41cdd8bcb55a7a3f,Westfield HS,137,445
+sch_49f99148d1e3e5b0,Clifton HS,136,293
+sch_833f35b602fcb8ba,Old Bridge HS,133,397
+sch_eed3f879d16cd483,Rancocas Valley Reg HS,130,315
+sch_0ac1673b10adaf20,Hillsborough HS,123,326
+sch_f11422659d485574,East Brunswick HS,121,398
+sch_525d084abf259d3a,Livingston HS,121,326
+sch_711d7cf06b8abf6f,Piscataway Twp HS,121,286
+sch_a60907bb3b04b79f,Ridgewood HS,120,381
+sch_c5c963614c4154e4,Cherokee HS,117,274
+sch_f09339ceea762908,South Brunswick HS,116,363
+sch_554befaa5e746fb0,Lenape Regional HS,116,260
+sch_91efc9a9438c1c50,Vineland HS,115,315
+sch_9548d2358b8b0923,Montgomery HS,115,284
+sch_9ec9faefacd8a690,Bloomfield HS,115,262
+sch_32772fe8024a4230,Passaic HS,112,223
+sch_d6bd2ea397dfd85f,NV - Demarest HS,111,359
+sch_1decb0e32e212cd2,Watchung Hills Reg. HS,111,329
+sch_704700513154682c,Passaic County Tech,110,253
+sch_63183229503c007f,Morristown HS,105,284
+sch_1356bf46a534e3d9,Chatham HS,103,234
+sch_42fa26bd8a7f5cef,Cherry Hill East HS,102,298
+sch_f68660559480f1be,Columbia HS,101,271
+sch_9ed091c4706d3bcf,Haddonfield Memorial HS,100,228
+sch_6b97ae7a3e9f6abf,Cranford HS,98,306
+sch_07392dd0a619c99a,Lakewood HS,98,182
+sch_f214154a753c0ce6,Ridge HS,96,259
+sch_c84e67aa96f21793,Hopewell Valley HS,95,181
+sch_1b43960d2d8de466,Morris Knolls HS,94,257
+sch_70ad7b1760665be1,Nutley HS,93,251
+sch_6fcdbf042fe2073a,Passaic Valley HS,93,188
+sch_50b5dd222174051a,Hackensack HS,92,169
+sch_8a66a9298d36687f,NV - Old Tappan HS,89,260
+sch_0d6295925797ee9a,Middletown South HS,89,213
+sch_7ca604f4f517e529,Montville Twp. HS,89,203
+sch_c43e8ee8d36c7d8a,Phillipsburg HS,89,190
+sch_68ed23022c4397f8,Scotch Plains-Fanwood HS,88,217
+sch_2eef54aadfe2ac18,Hamilton North - Nottingham,88,190
+sch_e8d5afe4b4b0efc6,Hunterdon Central HS,87,228
+sch_aa2b4efaf0e59794,West Orange HS,87,223
+sch_f144106c4064efcd,Mainland Regional HS,87,199
+sch_5fae42259eca56ca,Lakeland Regional HS,87,189
+sch_3b6a6216d0648834,South Plainfield HS,85,269
+sch_575f46fd70fda193,Seton Hall Prep,85,197
+sch_32294d54c524bb06,Bridgeton HS,84,171
+sch_60f3400ea92b343a,Irvington HS,83,241
+sch_2c920e25e936c95e,Edison HS,82,247
+sch_59e6eb6e4d9eb0a5,Central Reg HS,82,240
+sch_54a697e352487ac6,Toms River South HS,82,201
+sch_b2ed85914c862a42,Mahwah HS,82,187
+sch_121cab7e67ca69b7,Matawan Reg. HS,81,228
+sch_8005f44381bf9143,Kingsway HS,81,224
+sch_b636d912d84ee924,Monroe Twp. HS,79,229
+sch_00ee58ee062194da,West Windsor Plainsboro South HS,78,251
+sch_9ddb21e940333f71,Trenton Central HS,78,138
+sch_0aefefb08825f4cf,Princeton HS,77,251
+sch_4e5b9ea0f510b71e,Marlboro HS,77,241
+sch_0bafc97cc52a73f2,Randolph HS,77,213
+sch_19182d22d9965923,Moorestown HS,77,202
+sch_b2194ab46dd70932,Hightstown HS,77,189
+sch_c8f92032f39c13d7,Northern Burlington Reg. HS,77,186
+sch_325c512ab2cbe57c,Egg Harbor Twp HS,77,176
+sch_7a92ec5160ca9c96,Washington Twp HS,76,254
+sch_a1b3c3107fc84c08,Union City HS,76,233
+sch_413d8b8cfb8c4a2a,Madison HS,76,214
+sch_335483c13fb68e15,Mount Olive HS,76,212
+sch_730c28a7ecb07df4,Summit HS,75,205
+sch_02ce281b1a9d8c6a,Memorial HS WNY,75,194
+sch_0d1b2ca9d3beeb10,Bayonne HS,75,170
+sch_cea88ee3c8e820ca,Spotswood HS,73,248
+sch_904de7256d21732b,Holmdel HS,73,204
+sch_0988999604797b7e,Fair Lawn HS,72,280
+sch_5a258b8acbded5b8,Governor Livingston HS,72,203
+sch_8281f11b6698499c,Williamstown HS,72,170
+sch_ab64c2cf4d771688,Linden HS,72,165
+sch_ce01abe5f74061ea,Ridgefield Park HS,72,151
+sch_a96ad9f8ab0f5629,North Hunterdon HS,71,214
+sch_1ccdfa38ab53b5bc,Perth Amboy HS,71,206
+sch_1d35092be55558f7,Middletown North HS,71,171
+sch_af46e81fc108c3d2,Pennsauken HS,71,167
+sch_382d35534e48c9b2,Millburn HS,70,218
+sch_9a0a342d4316cf2c,Eastern Regional HS,70,198
+sch_79390b850a280a0d,Garfield HS,70,181
+sch_aa52d7105b2a5003,East Orange Campus,70,109
+sch_56752e36c962b1de,Bergen County Tech,69,267
+sch_2d6fa400c2da3908,The Lawrenceville School,69,177
+sch_c05c31cfed39d34f,Cedar Creek HS,69,170
+sch_aab8705c33ab5536,Toms River North HS,69,159
+sch_8bb67ea187eaa0e1,Freehold Township HS,68,202
+sch_e7754dc4dfbc82ea,Payne Tech - Essex,68,173
+sch_b438c975c69de2eb,River Dell HS,68,171
+sch_bf3fff964e068656,Hamilton HS West,68,156
+sch_81cc73a8ba5193e0,North Plainfield HS,68,136
+sch_569c08307047c16a,Howell HS,67,175
+sch_788b61ddfd7df339,Clearview Reg. HS,67,143
+sch_3622494095226e27,Jackson Memorial HS,67,97
+sch_361012fdb5e0faf1,Paul VI HS,66,211
+sch_027303f50f505be8,Ocean City HS,66,162
+sch_c6d39ae7215c3969,Plainfield HS,66,160
+sch_f1beaf9f4c9fc404,West Windsor-Plainsboro North HS,65,223
+sch_cb3f791dd883d37e,Burlington Twp. HS,65,169
+sch_1f141e9850d11213,New Brunswick HS,65,116
+sch_5aa3e64cff2db260,West Morris Central HS,64,153
+sch_b267775d3bcfb4d2,Raritan HS,64,136
+sch_b17de421f84bcf8e,North Bergen HS,64,123
+sch_74d8c1a7384d1f39,Tenafly HS,63,188
+sch_a75a116abdc400dd,Northern Highlands Reg. HS,63,182
+sch_e2a0121d738b09f1,Lawrence HS,63,176
+sch_930dbe124925f767,Pascack Valley HS,63,176
+sch_ba42742c6efa8a36,Lyndhurst HS,63,173
+sch_f804ca22f0224c25,St. Benedict's Prep,63,112
+sch_0af9f8141a3926fa,Morris Hills HS,62,253
+sch_ccfd2ef2483465c1,Toms River East HS,62,201
+sch_96775a324508389e,New Milford HS,62,172
+sch_ef7438abe528ea08,J F Kennedy HS - Iselin,62,167
+sch_0be965911bb266fb,Voorhees HS,62,160
+sch_ca6673bc5b5b0340,Glen Rock HS,62,148
+sch_09e794e67512ff6c,Dwight Morrow HS,62,123
+sch_90185de6dbd8605f,Camden Co. V/T (Sicklerville),61,178
+sch_5ceb21a4bd4f887c,Montclair HS,61,159
+sch_a0cf019c5b784683,Bergenfield HS,61,112
+sch_efa0ed0efe96f318,North Brunswick HS,60,195
+sch_1e7b22d3cde611a0,Highland Reg HS,60,178
+sch_1b782e8584c96ae5,Union Catholic Reg. HS,60,172
+sch_7ded6cbf6db93872,Metuchen HS,60,130
+sch_d2620948606e22ae,Barnegat Township HS,60,113
+sch_ec223bb21be2a7cb,Somerville HS,59,164
+sch_7425de71ccaec298,Red Bank Regional HS,59,162
+sch_ae024089b5035e4a,Brick Memorial HS,59,141
+sch_692516bd89b9320f,Dumont HS,59,139
+sch_60ba1dd3e5cf728e,Sterling HS,59,137
+sch_8f2eeed452ee2934,Christian Brothers Academy,58,213
+sch_d5c79a1fd53968c9,St. Peter's Prep,58,189
+sch_e6efda170e72218c,Rahway HS,58,167
+sch_c58756d59042b415,Roxbury HS,58,155
+sch_4ca4845b3bd7c4d9,Absegami HS,58,131
+sch_ebc363c97baf0b99,Franklin Township HS,57,188
+sch_42fea08f5867967e,Don Bosco Prep,57,179
+sch_2eb85d7eaefa80fb,Snyder HS,57,92
+sch_9648ba2cd1372348,Lodi HS,56,205
+sch_8876e66ff80a52d1,Hamilton East - Steinert HS,56,187
+sch_3a8e74f6f96bf9d4,Rutherford HS,56,168
+sch_ed078ca474ef8672,Manchester Reg. HS,56,164
+sch_d797cf68563cec90,West Milford HS,56,141
+sch_bdf693db22adb733,Jonathan Dayton HS,56,133
+sch_c8f0ec96eb152e53,Manalapan HS,55,179
+sch_9282b6c707241262,Shawnee HS,55,177
+sch_245b64e35909b185,Fort Lee HS,55,153
+sch_7728eeafb99bce58,Deptford HS,55,137
+sch_906f4b10c1b04f51,Wall HS,55,137
+sch_05b0438aa8528413,Millville HS,55,120
+sch_0e502006b4112229,Colts Neck HS,54,156
+sch_e9e3777d52ddc545,Peddie School,54,155
+sch_0c9fc204acafae66,St. John Vianney HS,54,154
+sch_8db594d182259b12,Parsippany HS,54,152
+sch_b70b5babd6ea68cb,Wayne Valley HS,54,146
+sch_8f40457992816d38,Union HS,54,138
+sch_8e523cbae0c47f31,Kearny HS,54,125
+sch_7683393bb5ca5531,Glassboro HS,53,204
+sch_b9d957a19460c5c0,J P Stevens HS,53,168
+sch_4ecce24deae8e8f5,Robbinsville HS,53,165
+sch_b3ca5d8a6d868238,Whippany Park HS,53,146
+sch_a708a54e6108ffc3,Central HS,53,113
+sch_198d4bc433e54399,Burlington City HS,53,100
+sch_29ea9ae8013bf9f3,Eastside HS - Camden,53,87
+sch_85f6a9552fe9cb4b,Bernards HS,52,146
+sch_6f63cb7ae9cf1be9,McNair Academic HS,52,143
+sch_adcbc97810afc703,Jefferson Twp. HS,52,141
+sch_4f84ba9bf9f41f2f,West Essex HS,52,132
+sch_c8e8eb162b52a96d,A P Schalick HS,52,120
+sch_e7b24d298fe8e9c0,Boonton HS,52,113
+sch_3041af27675cc081,Seneca HS,51,172
+sch_943c03defef55b14,J F Kennedy HS - Paterson,51,158
+sch_fac2c409fa71ecd8,Triton Regional HS,51,148
+sch_2c0ede902af09195,Immaculate Heart Academy,51,145
+sch_81d48d73f2be7a64,Becton Reg. HS,51,138
+sch_1f2191cd80aa81e0,Notre Dame HS,51,136
+sch_a867c2e4d0e23a2f,West Deptford HS,51,131
+sch_35dec30255aca34d,Cumberland Regional HS,51,122
+sch_8619abaafd0669f6,Oakcrest HS,51,94
+sch_6b93c8cf760760ad,Allentown HS,50,198
+sch_b46e7b30a1944c15,Bergen Catholic HS,50,178
+sch_21f80b6c33d45e49,Wayne Hills HS,50,157
+sch_d4a536f21fe5ea6b,Newark Academy,50,155
+sch_5da3a9d26e057e02,Manchester Township HS,50,148
+sch_3ba061c13be97624,Willingboro HS,50,140
+sch_99e3e12983c18977,Hanover Park HS,50,132
+sch_9503c2063843ff54,David Brearley HS,50,127
+sch_c8e20fbef9c0261a,Woodbridge HS,50,125
+sch_0d76d645a4342fd0,Ewing HS,50,122
+sch_44edc508c0391163,St. Joseph HS (Metuchen),49,130
+sch_12b3dffdce7c61ba,Freehold Boro HS,49,124
+sch_e631624f09e025ff,Atlantic County Tech,49,115
+sch_5c71693c9f962e4e,Cliffside Park HS,49,114
+sch_df22c9b10db246d1,Weequahic HS,49,96
+sch_c0aaca6965ea2117,Roselle Park HS,49,89
+sch_18301e4844348a5c,Haddon Heights HS,48,146
+sch_889af5082e219440,Rumson-Fair Haven HS,48,143
+sch_723b0782bd58dced,Maple Shade HS,48,133
+sch_3a98bb4c7cb9687c,Pascack Hills HS,48,133
+sch_f4a7287962bec062,Cherry Hill West HS,48,131
+sch_074db29cc168e520,Hoboken HS,48,129
+sch_8c6a9d7f5842ba64,Bordentown Regional HS,48,122
+sch_a5f849ecb680f7e1,Neptune HS,48,109
+sch_ade7d9e6da6b5ae0,Donovan Catholic HS,48,97
+sch_71543dc4d24262b9,Jackson Township HS,47,180
+sch_00105eec1b308195,East Side - Newark,47,120
+sch_c1c55d1c696bc1a1,Monmouth Reg. HS,47,118
+sch_c5233014849828b5,North Star Academy,47,111
+sch_eb5e1f3e57426984,New Providence HS,46,182
+sch_b56ba779f30d2ffa,Mendham HS,46,158
+sch_fc3f4fb2a30c85a3,Camden Catholic HS,46,129
+sch_dd8d0cacbf4c6e3a,Waldwick HS,46,88
+sch_71211f15683cb8a3,Parsippany Hills HS,45,186
+sch_6628f70c757e292b,Verona HS,45,148
+sch_aa20b4e581d155d6,Pinelands Regional HS,45,125
+sch_3a8f9dd0432aff4a,Sayreville HS,45,121
+sch_40700427d347ba10,Lindenwold HS,45,99
+sch_04d597694be1a577,Kinnelon HS,44,145
+sch_5b716493ff9b8206,Leonia HS,44,140
+sch_baca3fb7878b145b,Red Bank Catholic HS,44,121
+sch_e0aec2c01d0f790f,Brick Township HS,44,117
+sch_42d570583530162c,Long Branch HS,44,117
+sch_69cbe2fd0becd95f,Ramsey HS,44,112
+sch_f5a49452731f0133,Saddle Brook HS,44,105
+sch_8ddc47dd741b370e,Atlantic City HS,44,98
+sch_78b1554c535a5621,Delran HS,44,94
+sch_f4dbcbaa4f14df8a,Penns Grove HS,44,78
+sch_f631656bd8cd9970,Paramus Catholic HS,43,132
+sch_dfbc16ad58bfcf40,Ramapo HS,43,120
+sch_b051ff0a34a18a08,Pt. Pleasant Boro HS,43,116
+sch_9f7579f6be5e82ed,Delbarton School,43,113
+sch_f3ad127cd472d652,Overbrook HS,43,104
+sch_ea2532b4cd4f3cbf,Roselle - Abraham Clark HS,43,97
+sch_bf1bcdea9940819e,Wallkill Valley HS,43,93
+sch_25754c0c921b42cf,BelovED Community Charter School,42,223
+sch_6b0b47407491da74,Timber Creek Reg. HS,42,145
+sch_173e06e10d30d95a,Pequannock HS,42,112
+sch_a9e168079db6ff69,Haddon Township HS,42,110
+sch_f0f69803a9365b0c,Science Park HS,42,105
+sch_5df3eda1407e7b00,St. Joseph Reg. HS (Montvale),42,100
+sch_e879709682f5018e,Eastside HS - Paterson,41,148
+sch_4f956b937aceb4a4,Hasbrouck Heights HS,41,136
+sch_52bcaf9185e08035,Winslow Township HS,41,136
+sch_1bee4ee89416a7b2,Sparta HS,41,133
+sch_b888dfebc27500e7,Ocean Township HS,41,113
+sch_dd449780a6cfd91a,Mountain Lakes HS,41,107
+sch_093ea69d65d4852c,Riverside HS,41,105
+sch_a2c5d331a0686c7c,Princeton Day School,41,99
+sch_e2c9d00fd722e0e0,Delsea Regional HS,41,97
+sch_dabe3a2d02f79fb2,Salem HS,41,95
+sch_fde6652aff6940a2,Teaneck HS,41,93
+sch_d4743fa02d724967,Bound Brook HS,41,91
+sch_522c5613c175a700,Lenape Valley HS,41,81
+sch_9da538939936aacc,Warren Hills HS,40,140
+sch_5eeda956a26d6cae,Caldwell HS,40,130
+sch_70e99165a294057f,Hun School of Princeton,40,122
+sch_4e683db1baf65fea,Middle Township HS,40,111
+sch_a38ce9fb7b9b468e,Trinity Hall,40,102
+sch_f0571f0e0f757990,St. Thomas Aquinas,40,95
+sch_5d19f66ef9bb1995,Woodstown HS,40,95
+sch_d3edd3397daf846b,Morris County Tech,39,158
+sch_be6537ea3d2a6ad1,Hackettstown HS,39,133
+sch_9966128fb9b63a1f,Cinnaminson HS,39,127
+sch_460e165041609363,Dover HS,39,119
+sch_48bb1d2316e2ece9,Newark Tech - Essex,39,109
+sch_d7c39e4317a5ebb8,High Point Reg. HS,39,90
+sch_04c47efc8b7cdf40,Colonia HS,38,118
+sch_2d1746b7c5d5acff,Shore Regional HS,38,116
+sch_946edb96473fa6fa,Blair Academy,38,110
+sch_6d3973fe0e201228,North Arlington HS,38,93
+sch_65469b9acf6c51dc,Pingry School,37,265
+sch_7c1dd3feb5cba1b7,Vernon Twp HS,37,107
+sch_216a974acae44d89,Secaucus HS,37,105
+sch_7cac7a365f672082,Technology HS,37,93
+sch_699ff59aaa8a384e,Ferris HS,37,92
+sch_dab09da59a271b6b,Pompton Lakes HS,37,91
+sch_6fcae49b6014eafd,Hawthorne HS,37,90
+sch_72870d9041abb611,Palmyra HS,37,86
+sch_2f5f5d35920507b9,Paulsboro HS,37,80
+sch_f776885aed0b4fa7,Malcolm X Shabazz HS,37,71
+sch_f8f6f26f6a9a1a84,Manville HS,35,121
+sch_d6dcf24642839cac,Butler HS,35,94
+sch_615ba93a35880a27,Collingswood HS,35,76
+sch_46989f8dadf00d18,Cresskill HS,34,115
+sch_d8274a722d634619,Dwight - Englewood School,34,105
+sch_44ecb51650b4e8c3,Immaculata HS,34,105
+sch_85e27b079f68f116,The Pennington School,34,103
+sch_32806a98c277f43c,Indian Hills HS,34,96
+sch_e0b7c154945215c6,St. Rose HS,34,85
+sch_40992c0a07eba475,Hopatcong HS,34,78
+sch_7cf3fa91aab4f3b3,Newton HS,34,78
+sch_c818e4a9f8f75e20,Wood-Ridge HS,34,76
+sch_4e2a3efaf10a2bf0,Manasquan HS,33,117
+sch_fe3c52a338014b62,Hammonton HS,33,100
+sch_23c91afe97e4c51d,Montclair Kimberley Academy,33,96
+sch_a202675ce48ec7c5,West Caldwell Tech - Essex,33,86
+sch_1d4aa43f70da6437,Woodbury  HS,33,78
+sch_d0047cbe85a24d24,Florence Twp HS,33,69
+sch_f53508691f8cbaea,Empowerment Academy Charter HS,33,64
+sch_0ef64ec0996841e9,Jackson Liberty HS,33,62
+sch_663514ed4b1251ef,Pleasantville HS,32,66
+sch_df9eac8c0f7e46aa,Carteret HS,32,64
+sch_44ea55be3076b486,Cedar Grove HS,32,60
+sch_111cdc307230641e,Westwood HS,31,89
+sch_32169217a4afefee,Bard High School Early College,31,63
+sch_b2139496bfb420dd,Morristown Beard School,30,140
+sch_b0d5517d078a381c,Lacey Twp. HS,30,102
+sch_f8bb41613ff3c6e3,Gateway Regional HS,30,91
+sch_004675708b5cc71f,Audubon HS,30,87
+sch_1384d5d03c5a0fde,Clayton HS,30,84
+sch_e0526e17c1e5e4ec,Midland Park HS,30,83
+sch_f7af9abc3e622b50,A. L. Johnson HS,30,62
+sch_08da0d57d128f924,Hudson Catholic HS,29,82
+sch_17230f5c22525431,Hillside HS,29,74
+sch_4466cc2cfcd41e3f,Delaware Valley HS,28,84
+sch_70b8b4386f12539c,Dickinson HS,28,78
+sch_eb572deda7df76ff,Eastern Christian HS,28,78
+sch_7593d4feafe0afac,Palisades Park HS,28,75
+sch_0738291a786b2c23,Dunellen HS,28,63
+sch_fd83c82230605a50,Orange HS,28,49
+sch_ba4d516f79d7cc51,Pennsville  HS,27,89
+sch_aed5caafa9e6310f,Wardlaw-Hartridge School,27,83
+sch_3c622c9260efb2cb,Bogota HS,27,76
+sch_f9fe6249832c8be9,Pope John XXIII HS,27,73
+sch_a715a508223746aa,Bishop Eustace Prep,27,72
+sch_beda11ba1675c4bb,Glen Ridge HS,26,77
+sch_48eec33ded611102,Paramus HS,26,74
+sch_2a7d8144c0e53a9a,Sussex County Tech,26,69
+sch_ae14931cef39c712,Gloucester City HS,26,65
+sch_ef1247f4def3b507,Atlantic Christian School,25,116
+sch_aa8c899d73a1ecab,Buena Regional HS,25,91
+sch_85e8aa516ad8db20,Lower Cape May Regional HS,25,62
+sch_8a7bac4f49182bbb,Barringer HS,25,34
+sch_788bb064fa4c3bd0,Oak Knoll School,24,91
+sch_fd03f69ecf20771d,Pitman HS,24,80
+sch_57bea4cde97b6934,Morris Catholic HS,24,77
+sch_28d85ade373fbf68,Newark Collegiate Academy,24,72
+sch_08466c1da5cd08df,Emerson HS,24,57
+sch_ee38588cd9c215f2,Henry Hudson Reg HS,24,49
+sch_5f70b1eeaae74717,Thrive Charter School,24,47
+sch_6e4ad8ad4ec5a6d9,West Side HS,24,47
+sch_4fb999bc4628bee8,The King's Christian School,23,138
+sch_0e760ed9fb233dc6,Oratory Preparatory School,23,92
+sch_2f11abb626a5fac1,Ranney School,23,81
+sch_c196670b1707abc9,Gill St. Bernard's School,23,72
+sch_6d3c96691686d397,Pemberton Township HS,23,67
+sch_487bf939cf21375f,Holy Cross HS,23,57
+sch_63b6f6eac40d3583,Weehawken HS,23,54
+sch_dee8fd7f6fff3595,Roselle Catholic HS,23,44
+sch_aa03383bc5fbc9b8,Gloucester County Institute of Technology,22,75
+sch_23723788bd6eb160,Academy Of The Holy Angels,22,67
+sch_13075ea7c962a6f5,Elmwood Park HS,22,62
+sch_3fa8c5a8e5a0b6db,Kittatinny HS,22,59
+sch_9bda14846abfa24f,Belvidere HS,22,43
+sch_55e39c42e57a7d4c,Wallington HS,22,25
+sch_51e69a2c9e8af5de,Camden HS,21,69
+sch_9abe40664f1416fd,St. Vincent Academy,21,57
+sch_308977eb3a9fdd95,Mount Saint Dominic Academy,21,55
+sch_05199fa7c0cf617a,Frisch School,21,52
+sch_5151e3b4096d83d7,Bergen Arts & Science Charter School,21,48
+sch_ac55250f8e206f12,Kent Place School,20,102
+sch_8e90f8ec1f7d9d8b,DePaul Catholic HS,20,75
+sch_4ec3892ecb635582,North Warren HS,20,53
+sch_64dff0a5e585f289,American History HS,20,52
+sch_f05bef842ee3959b,Wildwood HS,20,51
+sch_9995491998391c82,Harrison HS,20,46
+sch_54d236c9971d495c,Lincoln HS,20,39
+sch_d119c165e0e9973e,University HS,19,86
+sch_1ac81847d74a67c8,Highland Park HS,19,69
+sch_6303d0d255b18cd1,Park Ridge HS,19,62
+sch_eec96e4267ec08fa,St. Augustine Prep,19,52
+sch_5ce5e91537766436,Ridgefield Memorial HS,18,49
+sch_14bc06a44341f0c4,St. Mary's HS (Rutherford),18,28
+sch_c1d7462231ae44a6,Rutgers Prep,17,106
+sch_21d668ad150ec9a5,Middlesex HS,17,73
+sch_0740f7bb09b08bf5,Timothy Christian School,17,63
+sch_e82719eb015adbf3,Newark Lab HS,17,62
+sch_46180fddfe421581,Belleville HS,17,58
+sch_bbc3e0c68563c3a6,South Amboy HS,17,49
+sch_9d3bb50c485997e7,KIPP Norcross Academy,17,36
+sch_29b22362bcb900a5,Keyport HS,17,33
+sch_da2439fa02282885,Eagle Academy for Young Men of Newark,17,32
+sch_7e72d92c66a88562,Ma'ayanot Yeshiva High School for,16,57
+sch_912a30aa706269a3,Wildwood Catholic HS,16,52
+sch_c81daeee3a4a1bb6,Academy of St. Elizabeth,16,41
+sch_1ecc6a151e0409fe,Burlington Co. Tech - Medford,16,31
+sch_a648a86f604a5632,STEM Civics Charter School,16,21
+sch_436ab8dd5f77f865,Marion P. Thomas Charter,15,46
+sch_9a7d4450212ec79f,The Wilberforce School,15,46
+sch_a3834f83a092b550,Asbury Park HS,15,44
+sch_b868d3039aa406ec,Academy Charter HS,15,33
+sch_41c85e09780f6460,Mother Seton,14,38
+sch_3ae3cddeaf8685fc,Mary Help of Christians Academy,14,29
+sch_e796952ba0f6cec7,Gateway Academy Charter,13,69
+sch_bf7ed37c82f33d3d,Saddle River Day School,13,55
+sch_81894d04b1835fd1,Hawthorne Christian Academy,13,48
+sch_f59eb5b8dd2ec0ec,Pt. Pleasant Beach HS,13,48
+sch_256f29b8e7eb1225,Co-op Gateway / Woodbury,13,18
+sch_a3b18565375e40b2,Calvary Christian,12,72
+sch_b3c6b29e4d9a2f19,Warren County Tech,12,35
+sch_5371d0fceae9b985,Paterson Charter School - Science & Tech,12,34
+sch_7b0ae78d98f2a647,Gloucester Catholic HS,12,22
+sch_bbe057a537cf1f50,Newark Global Studies,11,84
+sch_44ee52f12f2c8330,Villa Walsh Academy,11,51
+sch_957b8a3e7e358502,College Achieve Charter School,11,46
+sch_227119220bf2cbe6,St. Dominic Academy,11,45
+sch_4e7c9bd20c9ac403,Mount St. Mary Academy,11,38
+sch_e046f29fe4ff5a93,Moorestown Friends School,11,24
+sch_b537959b109d128e,South River HS,10,83
+sch_2fddc2dd93c1bc45,Franklin School,10,49
+sch_9b91c5b3e2510608,New Egypt HS,10,40
+sch_aa8d18dc7aa4993c,Passaic Charter,10,22
+sch_80f122d1d34beca9,St. Joseph HS (Hammonton),10,20
+sch_949890df6dbf6252,University Academy  Charter,10,20
+sch_4f1e69b44685d115,American Christian School,9,51
+sch_07cd6d0983699d68,South Hunterdon HS,9,49
+sch_b2d60238137d4489,BCIT Westhampton,9,30
+sch_843f43d9fb1a27c1,Golda Och Academy,9,25
+sch_8ef093886f9997ce,Cape May County Tech,9,24
+sch_a106323cbe6bb435,Holy Spirit HS,9,18
+sch_64942b66732ab383,Keansburg HS,8,26
+sch_c2ef3ee0d6b5cc27,Stuart Country Day School,8,25
+sch_5855c45fcf0b0d11,Trinity Christian School,7,43
+sch_24ba5d1191ee8b67,East Brunswick Magnet School,7,35
+sch_7027478af722883e,New Jersey School for the Deaf,7,27
+sch_e6d8bbaa6dea330c,Salem County Vo-Tech,7,24
+sch_30d26872dd3995aa,Co-op Park Ridge / Emerson,7,18
+sch_862a47292e89c567,College Achieve Paterson,7,14
+sch_e92fbde7335871a9,Junior Bees,6,87
+sch_536a7a30c66a6ed4,College Achieve Charter Asbury School,6,48
+sch_a48eca5676d82a1b,Villa Victoria Academy,6,22
+sch_bb88e7049962d631,Lumen Gentium Academy,6,21
+sch_d3a83e8baf10cda2,Mastery HS of Camden,5,28
+sch_3fd7e2ace759d7ef,Torah Academy of Bergen County,5,27
+sch_cc947d1e94dbe996,Arts HS,5,15
+sch_fa2e111769ff2135,United Christian Academy,5,11
+sch_6f5a5ce837062f00,Trenton Catholic Academy,5,5
+sch_c610032208d3c44e,Abundant Life Academy,4,62
+sch_2df39a935db2ec77,Great Oaks Legacy Charter,4,42
+sch_a47aa58d4f07299a,Newark School of Data Science and Information Technology,4,14
+sch_61a751c84501a06f,People's Preparatory Charter School,4,4
+sch_e64fd1d33c580bf7,Ambassador Christian Academy,3,26
+sch_b882a20eff0b28e5,Our Lady of Mercy Academy,3,26
+sch_016a58adddb9ee6d,Camden Co. Tech - Pennsauken,3,23
+sch_5046976d29972891,Life Center Academy HS,3,22
+sch_778269b392854a8f,Harmony Christian Academy,3,14
+sch_852c327e449bb730,Calvary Academy,2,33
+sch_7ad15f8f2c2c75cf,Central Jersey College Prep Charter School,2,21
+sch_0dc84eb75c4370d1,Camden Prep HS,2,19
+sch_249ed3cab30e83ea,Rae Kushner Yeshiva High School,2,19
+sch_dab727209657ced3,Immaculate Conception HS (Montclair),2,10
+sch_80baf3594900829c,Doane Academy,2,5
+sch_91c558976a4adf76,Lacordaire Academy,1,50
+sch_c46ca918168556bd,Foundation Academy Collegiate,1,12
+sch_86e65308b39c2334,Hopkins TC,1,2
+sch_47a0da55d33b4e27,Cardinals Track and Field Club,1,1
+sch_227eba1633ae0e43,Academy of our Lady of Grace,0,64
+sch_0f023e44b6a91031,Paterson Arts and Science Charter School,0,57
+sch_e7867d5e954a1a14,The Hudson School,0,54
+sch_b581b0b73f8061e0,Newark School of Architecture & Interior Design,0,49
+sch_7d89a1a09b33df27,School of Saint Elizabeth,0,39
+sch_a3bb8d9798f54711,Ocean Academy Charter School,0,18
+sch_b244c8d945fd5e39,St. Rose of Lima - Freehold,0,12
+sch_bf41d9a424f4c0cd,Jersey City Rec. Panthers,0,7
+sch_acc15511165489d3,East Orange STEM Academy,0,1
+sch_b3925e40d3785e8d,NJ All-Stars,0,1
+sch_cf4b5e4fae73dc2f,SJTCA,0,1
+sch_0356fe202a689451,Trocki Hebrew Academy,0,1
+sch_255562ff6c03a265,Academy of Greatness and Excellence,0,0
+sch_2804884f2c051223,Academy of Our Lady of Mount Carmel,0,0
+sch_2f1733828c066e6c,Academy of Vocational Careers,0,0
+sch_0a8e0aa5672e2ede,Agape Faith,0,0
+sch_c5bfb504dce710ec,Baptist,0,0
+sch_2ace888d6a57b36b,Bayley-Ellard,0,0
+sch_8be6a6c6b6aa051d,Benedictine Academy,0,0
+sch_49483a521df97bc6,Bonnie Brae HS,0,0
+sch_c1aca98d20d51009,Bound Brook Track Club,0,0
+sch_f2818a485a3e95dd,Camden Academy Charter,0,0
+sch_24a7185682a5c300,Cardinal McCarrick HS,0,0
+sch_61a017fd80cc1aef,Cedar Ridge (Closed),0,0
+sch_9c9b9df6159e5dae,Center for Education,0,0
+sch_85bc5feff74c108f,Christ the King Prep,0,0
+sch_2a021652b784176d,Clifford Scott,0,0
+sch_28a15487ff2a4a6f,Co-op Becton / Wallington,0,0
+sch_7d901a75f1096f6b,Co-op Jackson Memorial / Liberty,0,0
+sch_f2a90679261d5c34,Co-op Keyport / Henry Hudson,0,0
+sch_445f0f04e14f3b87,Co-op Wallkill Valley / High Point,0,0
+sch_eff9e77c3dbde1f4,Co-op Wood-Ridge / Wallington,0,0
+sch_3dbeb3a8bca04ad3,Cornerstone Christian School,0,0
+sch_9bf3d1f5926a3c2f,Craig High School,0,0
+sch_2e18d59b47735167,Cumberland Christian School,0,0
+sch_50c4db7ba6895070,Don Bosco Tech,0,0
+sch_7a25e14b36400651,Edgewood Regional,0,0
+sch_6de93b45ae0928be,Essex Catholic (Closed),0,0
+sch_e81c56b761eaea10,Essex CV-Tech 13th St,0,0
+sch_68e76da4dc19c3a8,Essex TCA Meet Management,0,0
+sch_38d9209310894b5c,Freedom Prep Charter Camden,0,0
+sch_48c5685cafdf1bfc,Gill Saint Bernard's,0,0
+sch_465d9556787d47df,Hoboken Charter School,0,0
+sch_7d2c0d3771471ea7,Holy Family Academy,0,0
+sch_df23b867f18566d2,Holy Innocents,0,0
+sch_8d1bc4e3d8e7a75f,Hudson Co. Prep,0,0
+sch_78115ea90556d235,Hudson County Track Coaches,0,0
+sch_e6874cc88742adc6,Immaculate Conception HS (Lodi),0,0
+sch_8a38eae39e73701a,Kearny Christian Academy,0,0
+sch_e1ce3cc33534c4ca,"Kindle Education Public Charter School, High School",0,0
+sch_50b7cd2898e82149,Koinonia Academy,0,0
+sch_2770ad6e3eeea0f3,Lakeland League Management,0,0
+sch_bf97a5d09ab48dda,Living Faith HS,0,0
+sch_a97b67fe87bef944,M.E.T.S. Charter School,0,0
+sch_83b8c982430997a2,Madison Central,0,0
+sch_64ea0d22ca6844f0,Marist HS,0,0
+sch_74892c79dfc58152,Marylawn of The Oranges Academy,0,0
+sch_3b0055f7809e6208,Mater Dei Prep,0,0
+sch_897e7ef2069d4a82,MCCATS,0,0
+sch_9c7a2e947a38f22c,McCorriston Catholic,0,0
+sch_f529c7f326b4d40d,Middlesex Co. Academy,0,0
+sch_951fb05f6af6cd6b,Middlesex Co. V/T (Perth Amboy),0,0
+sch_34fcd60794201e07,Middlesex Co. V/T (Piscataway),0,0
+sch_09ab28e8f4348ce8,Neumann Prep,0,0
+sch_05052e2fa00218c9,New Jersey Academic,0,0
+sch_ddf59ba7f4e7b90a,Newark Vocational HS,0,0
+sch_28a18c95c272a45f,Northern Highlands 800,0,0
+sch_ff9432a8a980a8bb,Oakland County Trackhawks,0,0
+sch_99065f2c4a2e79d2,Our Lady of Good Counsel,0,0
+sch_031172ae38f06b4d,Paterson Catholic (Closed),0,0
+sch_2faea05802ad812a,Queen of Peace HS,0,0
+sch_a11f2d2632eaea7a,Raven's Track Club,0,0
+sch_7b3e79078e71eb4e,Sacred Heart HS (Closed),0,0
+sch_249f95306ee87b03,Shore Conference Management,0,0
+sch_1e92e5db8abe6133,Six Flags Wild Safari Meet Management,0,0
+sch_7d7efd20b1bd2ae8,Solomon Schechter,0,0
+sch_203f24c4bb2c84a6,St. Anthony,0,0
+sch_5adaa9a30d2857d6,St. James HS,0,0
+sch_bcc7bea462efaf4e,St. Mary  of the Assumption,0,0
+sch_952fc19deeb3c066,St. Mary HS (JC),0,0
+sch_383ee7398ca7caeb,St. Peters HS (Closed),0,0
+sch_e61a6712d7cea1a4,The Lewis School of Princeton,0,0
+sch_eb75949d6a7a6660,The Patrick School,0,0
+sch_11b1d31ed81705ae,The Paulo Charter School,0,0
+sch_4fdbdd3e8b873b74,Three Italian Stooges,0,0
+sch_c4bf7592fd0c0e6a,Trinity Christian Academy,0,0
+sch_f3a181fd313c31bb,Union Hill HS,0,0
+sch_afddf05ae6e08591,Veritas Christian Academy,0,0
+sch_f3c57d0e8e766d33,Winston Preparatory School,0,0

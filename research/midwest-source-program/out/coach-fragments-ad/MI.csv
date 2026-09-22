@@ -1,0 +1,15 @@
+school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed
+East Kentwood HS,Kentwood,MI,,Superintendent,,,Kevin Polston,kevin.polston@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Principal,,,Omar Bakri,omar.bakri@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Director,,,Blaine Brumels,blaine.brumels@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Director,,,Dave Emeott,david.emeott@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Director Secretary,,,Imari Lamar-Gonzales,imari.lamar-gonzales@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Director Secretary,,,Megan Whitley,megan.whitley@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Trainer,,,Mindy Langlois,mindy.langlois@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+East Kentwood HS,Kentwood,MI,,Athletic Trainer,,,Madelin Willerer,madelin.willerer@kentwoodps.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,Superintendent,,,Eric Haley,haley.eric@aod.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,City Wide Athletic Director,,,Michael Evoy,evoy.michael@aod.org,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,Principal,,,Mitch Hancock,mhancock@catholiccentral.net,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,Athletic Director,,,Aaron Babicz,ababicz@catholiccentral.net,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,Athletic Director,,,Jessica Foster,jfoster@catholiccentral.net,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19
+Detroit Catholic Central HS,Novi,MI,,Athletic Director,,,David Sofran,dsofran@catholiccentral.net,https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239,2026-09-19

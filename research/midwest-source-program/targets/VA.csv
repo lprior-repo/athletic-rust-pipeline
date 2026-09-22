@@ -1,0 +1,603 @@
+school_id,name,co2027,athletes_all
+sch_75c7ce0ecd0a7c8d,Westfield,165,424
+sch_9a8a8f21a54ad36f,Yorktown,161,604
+sch_1d54b50532e90075,Lake Braddock,147,439
+sch_29609091a0094849,George C. Marshall,139,306
+sch_c746e10361389fae,Washington-Liberty High School,134,465
+sch_a7887310c2a9c540,West Springfield,132,304
+sch_93d7047ee73324e4,Oakton,131,373
+sch_1ffb705c9c296cdb,Alexandria City High School,130,431
+sch_7e4b5268cbf38dd5,Bishop O'Connell,123,354
+sch_515a041c375ab06d,James W. Robinson,119,339
+sch_d081baa5242e2ed7,Centreville,119,283
+sch_40ffb296b86dbbe0,Stone Bridge,104,369
+sch_4d88b2691f5c37c3,Colgan High School,103,260
+sch_8425710724a3fb49,Landstown High School,103,230
+sch_9a31fd31a8ef407d,Albemarle,101,246
+sch_b7ba8fcf4ad3f7f4,Glen Allen High School,101,200
+sch_8b75619d8b5ac421,C.G. Woodson,100,259
+sch_73bfabd9626bea76,Chantilly,98,238
+sch_ba35ec6c97589b11,Atlee,97,309
+sch_3c7fad17baf2c98a,St. Paul VI Catholic High School,96,269
+sch_49cefbf822625ccd,Hayfield Secondary School,95,343
+sch_111cdb0af57f414b,New Kent,94,349
+sch_fc9a4519bb807024,Blacksburg High School,94,290
+sch_4bcda9ac31a4df21,Patriot High School,94,248
+sch_a9a40dd319f5c7b7,Jamestown,91,300
+sch_aa419bd22c584767,Dominion,90,239
+sch_1a47523af1b21e2c,Freedom (South Riding),86,262
+sch_f063b5f4e69d9fa3,West Potomac,86,248
+sch_cf78bf2ffca229c6,North Stafford,86,193
+sch_6af42536f5bba9b3,Langley,85,288
+sch_401bbcb15c3572a0,Mount Vernon,85,242
+sch_e0e66c321615c20d,Deep Run,84,247
+sch_9c74af4bc4fbcfa5,James Madison,83,278
+sch_536689f0860c7264,Kellam,83,234
+sch_c1d43b0cca7e2e7b,Lightridge High School,81,268
+sch_d1c09b8ecbb15821,Douglas Freeman,81,209
+sch_6c50b0a1a6bf5584,Bishop Ireton,80,206
+sch_4c31c2269f3b7b45,Tabb,79,241
+sch_5ef57204cd0cfb0e,J.R. Tucker High School,79,212
+sch_d0db34060dd9b5dc,Annandale,78,257
+sch_6cbd04f634429daa,Woodgrove,77,237
+sch_dffc721033284e51,Gainesville High School,77,202
+sch_28ed921cd8d1c437,Western Albemarle,76,264
+sch_251672226f4daae7,South Lakes,75,192
+sch_34fd075588cb1d54,James River (Midlothian),75,175
+sch_32a6de9adc5146c5,Osbourn Park,74,189
+sch_64f58c4b802a2b22,Hickory High School,74,187
+sch_ed209c3744a752f8,Gar-Field,74,186
+sch_47e94dcfd0300a63,Fauquier,73,222
+sch_8526af84c1b9c5d5,Cosby,73,174
+sch_7dfecabb31275ffa,Herndon,72,230
+sch_b81b8df1ffdc0680,Falls Church,72,225
+sch_44683ac380fc5c9a,McLean,71,231
+sch_97fa46977dc3fa78,Gloucester High School,71,213
+sch_73ae6847cd62ce9d,Hanover,71,205
+sch_d022681b62aedb9d,Justice,71,184
+sch_0b9d5d3dedf15393,Potomac Falls,71,184
+sch_d435fa945ab17fe3,Bassett,70,166
+sch_8a56c390a50ebaa4,Varina,69,173
+sch_fd33251ae9a4a38e,South County High School,68,255
+sch_bc5abf707d6c9082,Cave Spring High School,68,247
+sch_b8a3ac281777538f,Midlothian High School,68,179
+sch_abe5d3146759ee2c,Salem (Virginia Beach),68,168
+sch_541fd840a8d1613a,Independence High School,67,224
+sch_c60db0fe8f724cdc,Colonial Forge,67,212
+sch_8ede8d176850268d,Thomas Edison,66,197
+sch_91bb543b1ad54120,Franklin County,66,177
+sch_b4d5a1b1bb168023,Ocean Lakes,66,171
+sch_865b8e0a0777766b,Sherando,66,166
+sch_8b28558d6de8ac23,Loudoun Valley,65,169
+sch_c6ea280b0d07c870,Fairfax,64,201
+sch_6481418a93fd7b0c,E.C. Glass,64,164
+sch_ac9002c79d30f3dc,Bruton,64,161
+sch_0e72a87dbbd02878,Loudoun County,64,150
+sch_baa072e8a723d3c7,Jefferson Forest,63,218
+sch_857f4cee2f9811f3,Wakefield High School,63,199
+sch_87c3d049b21494f6,Western Branch High School,63,172
+sch_83db20286ae0e41f,Tallwood,63,170
+sch_ebc611cc19c32e39,Forest Park,63,169
+sch_d5da8943cdc15a5d,Patrick Henry (Roanoke),62,166
+sch_c7c1f5600f6c1345,Charlottesville,61,201
+sch_ae0e984969cae56d,Brooke Point,61,156
+sch_85de65fcfff1a900,Churchland,60,160
+sch_bdb66f44e0b4ccb4,Nansemond River,60,152
+sch_0df2edc9d0f072e1,Norview,60,119
+sch_96b8ee0a21bd9f22,John R. Lewis High School,60,115
+sch_9df3ae9c524a5645,Collegiate,59,272
+sch_be8583fea26aeb9f,Potomac Senior High School,59,159
+sch_5b7867fe657cd59f,Brookville High School,59,158
+sch_9271b484c6ca1989,Stafford High School,59,134
+sch_cdf1152dde36ea19,Mechanicsville High School,59,119
+sch_3f77a07ad39792aa,Monacan High School,58,179
+sch_4a51803c9cc1ec23,Bayside High School,58,127
+sch_e784af5987bf6e8f,Louisa County High School,57,227
+sch_eecbf9bc819cf90a,William Byrd High School,57,220
+sch_8f03085e4bcd0987,Rustburg High School,57,161
+sch_72395fe403614313,Hermitage,57,139
+sch_e087994141461dd3,Lake Taylor,57,123
+sch_0e562b0b689d358b,Mountain View,56,220
+sch_45e476ed7b68a946,Kempsville High School,56,191
+sch_4e9d27e284f1dcd1,Eastern View High School,56,156
+sch_d140b1a4038da5f1,Manchester High School,56,135
+sch_2daad600558b850a,Magna Vista,56,113
+sch_bd8b8ce04649221f,Norfolk Academy,55,242
+sch_ed4f3dd1c9f55775,Liberty Christian Academy,55,222
+sch_c34063fccc5c0288,Osbourn,55,140
+sch_a2f48bc20ce49279,Thomas Jefferson S&T,54,190
+sch_30ff8c0cd78eea3f,Maury High School,54,163
+sch_39477dbcb14c9373,Maggie Walker,53,178
+sch_471573d61f889ec0,Northside High School,53,114
+sch_d6ef7dbcc054fa08,Grafton High School,52,224
+sch_40bf06a9eae37247,Kettle Run,52,198
+sch_4bee4c7bd889b73c,Bethel,52,154
+sch_dd4c048b5501e9db,Thomas Dale,52,140
+sch_eab24b9488c5f2cf,Woodbridge,52,138
+sch_f97f902993856fa3,John Champe High School,52,136
+sch_ce217b372d7e8359,Warwick,52,130
+sch_0a128da40330d32c,Meridian,51,195
+sch_4029d2d1c5cad4aa,First Colonial,51,167
+sch_d7551e861e297374,Pulaski County,51,164
+sch_b8d11b2926550d18,Cox,51,152
+sch_f35b984cdbe5f4ba,Warhill,50,168
+sch_b670578a65a3cfc1,Heritage (Lynchburg),50,119
+sch_6665b764e7bead5a,John Handley,49,158
+sch_113b6739f9de66ed,Stuarts Draft,49,112
+sch_28e38dccb5b151e1,Hidden Valley High School,48,179
+sch_670d9b8818153cda,Riverbend High School,48,161
+sch_bf0d422836c8a5eb,Granby,48,157
+sch_4c48c77f0627d7a3,Culpeper County,48,126
+sch_ceb4347b79f67bb3,George Washington (Danville),48,119
+sch_ec1332c994d8b168,William Fleming,48,109
+sch_95854cc42e743a6a,Brentsville District,47,163
+sch_e9cb60f379f4e107,Heritage (Leesburg),47,155
+sch_ccc3e870d7693efc,Monticello,47,153
+sch_b9ea4587aedabdf7,Broad Run HS,47,147
+sch_754a8335ff6d189d,Manor,47,134
+sch_0c9439a84abe09a8,King George,47,103
+sch_9c4f5746209e7cb1,Clarke County,47,96
+sch_78a36ac69d430bb4,Riverside High School,46,137
+sch_b5b623c00d3c1e19,Kings Fork,46,132
+sch_8e85c35043a26e58,Patrick Henry (Ashland),46,120
+sch_dec36555cec69d8b,Smithfield,45,303
+sch_727d74ba7b253502,York,45,132
+sch_ff7c2cbdfda4224a,Saint John Paul the Great Catholic High School,45,115
+sch_9e164fe6ddcd0240,Lafayette,44,152
+sch_242bf5ccc5851305,Episcopal,44,112
+sch_cacc19bc262757bc,Catholic High School,43,141
+sch_99999ab7e15b244b,Clover Hill,43,137
+sch_c5e8bf70567ff7d9,Park View (Sterling),43,108
+sch_4c30e919d6e85e10,Indian River High School,43,89
+sch_ffe9eb1a9a31850a,Brunswick High,43,82
+sch_79d777d018ec5599,Green Run,42,114
+sch_739451be30b00ddc,L.C. Bird,41,183
+sch_7fd6e13dc2392bcd,Rock Ridge High School,41,154
+sch_d8ba1db8aa5a632d,Battlefield,41,152
+sch_c2e57e98b401c656,Buckingham County,41,136
+sch_0d4f6fdfaadb0025,Harrisonburg,41,134
+sch_1c6a924e0140e78e,Orange County,41,106
+sch_5b4be5f89ceb9635,Phoebus,41,103
+sch_21509c51191bd04f,The Potomac School,40,216
+sch_323b7e28a5ff61c3,Prince George High School,40,150
+sch_459f6ae7efc5f8e4,Salem (Roanoke),40,116
+sch_7a94ad27c5336da6,C.D. Hylton,40,97
+sch_746bbcdc03390885,Nelson County,40,93
+sch_218de0826ba48b52,Arcadia,40,89
+sch_ae18cf3e70d09f19,Staunton High School,40,86
+sch_87685c38b1d56914,Blue Ridge School,40,78
+sch_296b6324c3316041,Mecklenburg County High School,39,112
+sch_16fe5019d33d8125,Highland Springs,39,108
+sch_93e8964598323895,James Monroe,39,107
+sch_a86c85a10eeae2da,Trinity Episcopal School,39,101
+sch_f07aa905ca0ef866,Southern Gap High School,38,262
+sch_73a437dd506b19cd,St. Stephen's and St. Agnes School,38,182
+sch_774081d60e4b3985,Fluvanna County,38,163
+sch_943271227d2ad5da,Briar Woods,38,149
+sch_e62f673d9c520835,Amherst County,38,143
+sch_4edd34887b80ac5b,Matoaca High School,38,143
+sch_7a10c1adac9e0975,Tuscarora High School (VA),38,135
+sch_f029ef39d46ec581,Grassfield,38,122
+sch_4b48bef6052a74f9,Princess Anne High School,38,121
+sch_d3d9d345138384c4,Lord Botetourt,38,95
+sch_a2b91458a5bf0ff9,Abingdon High School,37,254
+sch_dbbb5c7f45932ba7,Union High School,37,208
+sch_f99bbc39c2780e42,Wise Central High School,37,165
+sch_a8792d556cd0fd03,Southampton,37,147
+sch_5b60fb9132e22072,James Wood High School,37,140
+sch_59db56bdc99f8f00,St. Christopher's,37,116
+sch_a762c7d4484de802,Liberty (Bealeton) High School,37,109
+sch_166a361501963325,Manassas Park,37,106
+sch_8bd02688c77b6243,I.C. Norcom,37,81
+sch_c94a915da415b2c2,Saint Catherine's,36,137
+sch_0d26de11807b36ed,Woodberry Forest,36,129
+sch_a41101c7897d3a49,Mills Godwin,36,120
+sch_a81cedfcee4415a9,Oscar Smith High School,36,101
+sch_846aefc204f3cf6c,Unity Reed,36,90
+sch_6c08541a3383f16f,Freedom (Woodbridge),36,66
+sch_db77e4266f06ce2d,Alleghany,35,132
+sch_74232be237ffa603,Caroline High School,35,116
+sch_0502aeae64a812fd,Fork Union,35,113
+sch_d27e57e05978b353,Spotsylvania,35,78
+sch_816a423d1573fab7,Central Lunenburg High School,35,69
+sch_fedaed4e81f5c03d,Norfolk Christian,34,140
+sch_c2fb45be3ed80f62,Rocktown,34,129
+sch_b07101aa9ca449e9,Heritage (Newport News),34,119
+sch_05a46d7f140cad8b,Courtland,34,117
+sch_14d7ec16e140a446,Waynesboro,34,111
+sch_3d121d1cdcc1ef71,Spotswood,34,101
+sch_988c5c38b271a6e6,Chancellor,34,77
+sch_e0e139c0555319b0,Lee,33,237
+sch_4c85b92d67b0ae90,Floyd County,33,204
+sch_f1c0271ab831727a,Dinwiddie,33,183
+sch_d044178bfe6dc7ca,Powhatan High School,33,125
+sch_f1bbfc08a5b94816,Fort Defiance,33,123
+sch_74d6e9f1d5744ce0,Millbrook (VA),33,112
+sch_003d307f604e85e1,Hampton,33,108
+sch_15293ebcd10ac501,Tunstall,33,78
+sch_e2e68a2adc7d261c,Auburn,33,71
+sch_f1256de3e76686fd,Chilhowie,32,137
+sch_ae97c73a04eda145,Appomattox County High School,32,132
+sch_62603483f6273414,Wilson Memorial,32,122
+sch_307b0cb09ffc9b42,Halifax County,32,91
+sch_b77e43645a48a41c,William Monroe,32,74
+sch_21e040525532eaa6,Flint Hill School,31,219
+sch_8639074d59b17cb3,Christiansburg,31,160
+sch_f044887c83042fdb,St. Anne's-Belfield School,31,153
+sch_301621fe609503cb,Cape Henry Collegiate,31,139
+sch_2f18a33757bce227,Woodside,31,131
+sch_10cccba6e05b0803,Goochland High School,31,117
+sch_93ef74bdf86d8e45,Northampton,31,97
+sch_a2142fa490e8d940,Dan River High School,31,77
+sch_f0f56233e4eebbb5,Fairfax Home School,30,196
+sch_f32e0ab2c6f82b54,Franklin,30,143
+sch_c215ef538df41e92,Randolph-Macon Academy,30,94
+sch_98b9a9b7fc4b2ef8,East Rockingham High School,30,81
+sch_31db651ba2765be9,Liberty (Bedford),30,70
+sch_bf532c018ae5339d,Virginia Bearcats,29,202
+sch_2c0a3cb5fa2c833d,Broadway,29,118
+sch_67991c716683f684,Strasburg,29,112
+sch_37faf6a3b2e0d460,Eastside High School,29,104
+sch_d8c14deeab25af07,Cumberland High School,29,99
+sch_d8b9268b592fa7ec,Nandua,29,90
+sch_8b675a49feb5eff2,Rockbridge County,29,76
+sch_f3f5e77f4c93d99e,Virginia Episcopal School,29,73
+sch_f1af467248795df1,Rappahannock,28,126
+sch_919821db5be2fed3,Gretna High School,28,114
+sch_a21bf5d57128f58b,Riverheads,28,111
+sch_ae31f6cac8b026c4,Lakeland,28,94
+sch_94ae66f2e04f7259,Turner Ashby,28,92
+sch_61a130d74e731583,Nottoway,28,80
+sch_8cb53cc2f6f331cd,John Marshall,28,74
+sch_e7b6532e026677d0,Luray,28,60
+sch_7ab9947dd542bc57,Atlantic Shores Christian,27,160
+sch_fed2022b1adc7016,Poquoson,27,112
+sch_6d29814b8cafcc71,Glenvar High School,27,81
+sch_c568c12ca57ffd04,Henrico,27,80
+sch_d87c28582d7fea9e,Booker T. Washington,27,72
+sch_0307ee57bf53e1bc,John I. Burton,26,103
+sch_019c9d4d0c6646eb,Denbigh,26,99
+sch_d268fb331776211e,Middlesex,26,85
+sch_9a43c9b0770e4fe3,James River (Buchanan),26,74
+sch_34488651b6adeb54,Hargrave Military Academy,26,59
+sch_eecdbcd0187480e2,Galileo High School,26,51
+sch_faf55d375f1c038e,Madison County,25,132
+sch_484edcf6fb419a03,North Cross,25,98
+sch_533402ebdc1e0586,Windsor,25,84
+sch_9f93970517bca9b2,Patrick Henry (G. Spring),25,82
+sch_0f6b1fac3b4360a4,Great Bridge High School,25,75
+sch_5a6e8b95b6becd1e,Martinsville,25,70
+sch_859475a9b3ffae92,Amelia County,25,60
+sch_d118793c8c058673,Page County,25,48
+sch_f97c0bf3473accd4,Skyline,24,152
+sch_fdbe65f48875d84d,Prince Edward County High School,24,104
+sch_71fc07f81e35657d,St. Gertrude,24,79
+sch_7d4f275404664633,Marion,24,68
+sch_804c0b64c24aa3aa,Essex,24,64
+sch_5e6c0947f3ba7456,Menchville,24,51
+sch_24d7ce09f05d117d,Immanuel Christian School,23,145
+sch_7beb9f9a2f9e370e,King William,23,107
+sch_1472fa6605b7316d,Ridgeview High School,22,150
+sch_2e3a4509d03d1b96,Nansemond-Suffolk Academy,22,133
+sch_16c40490780ce76b,Trinity Christian School,22,123
+sch_6b0b5f967e31373b,Veritas School,22,99
+sch_f73009044d936fd4,Spire,22,84
+sch_7e6f84f29007aa24,Meadowbrook,22,63
+sch_199cbfc5fe3a4e88,Petersburg,22,56
+sch_2d947ebbf20f2241,Miller School,22,53
+sch_a057cf8001b70aca,Thomas Jefferson (Richmond),22,47
+sch_3b2d6ce00cdaf4a4,Huguenot,22,38
+sch_5d2aefb0af2107df,Giles,21,122
+sch_565f02d11596e3c7,Oakcrest School,21,119
+sch_7577bdc8efe00c04,Benedictine,21,91
+sch_5e4d2299fd401820,Massaponax,21,56
+sch_993b3c8a0f800aef,Peninsula Catholic,21,54
+sch_d28cfe361a9e291e,Sussex Central,21,54
+sch_f047019e53265f56,Chatham Hall,21,43
+sch_b59009c0644f7198,Staunton River High School,20,116
+sch_cecdbf8959c0b238,Colonial Heights,20,114
+sch_864e1e0ba1f84196,Central (Woodstock),20,77
+sch_126b92a2ff9245ea,Eastern Montgomery,20,68
+sch_4de061d8d131ae9f,Massanutten Academy,20,50
+sch_eb1f16b5461b2fb3,George Wythe (Wytheville),19,142
+sch_e8307decc348fcfa,Hopewell,19,124
+sch_271f19a4eff98107,Radford High School,19,119
+sch_a7be62ff5a1af45c,Tandem Friends School,19,113
+sch_0f1eb73aa254f148,Greenbrier Christian Academy,19,85
+sch_5ba7f34ceb2e84dc,Kecoughtan,19,78
+sch_75743e5a7639a745,Stonewall Jackson (Quicksburg),19,56
+sch_2c37fc71c7630ba7,Gate City High School,18,138
+sch_524d194118b4c845,Graham,18,121
+sch_21e3283c3a688f5a,Northumberland,18,112
+sch_5957edaa253bdb9f,Patrick County,18,107
+sch_d7bd81a00ae047d7,Grayson County,18,89
+sch_ed18ad37ffb96c23,Lancaster,18,78
+sch_21887ab071f88291,Warren County,18,77
+sch_11237254f06a35a5,Rural Retreat,18,73
+sch_cbead1ec470d4c70,Hampton Roads Academy,18,68
+sch_1982a42b8af934d0,"Cristo Rey, Richmond",18,67
+sch_2a39078a22fbd92b,Chatham High School,18,55
+sch_530effc2146ea2db,Grundy,17,140
+sch_7ac0ccec510ce5c3,Carroll County,17,135
+sch_a9baecb9dfd6900d,Seton School,17,79
+sch_42dd8f970287c3d4,Smith Mountain Lake Christian Academy,17,75
+sch_0110d329e7b584dd,Westmoreland,17,62
+sch_31bfbc016e10a418,Greensville County,17,44
+sch_c178eac559df0d02,Fredericksburg Christian,16,121
+sch_dcb1941f24f2de63,Walsingham Academy,16,109
+sch_8824494f7888b87d,Tazewell,16,99
+sch_490c507ff492ec56,Virginia Academy (VAAC),16,90
+sch_9829e7c8b6c40c9f,Rappahannock County,16,80
+sch_8de9411133ae77dd,Randolph-Henry,16,71
+sch_9d7d8b749a4e0116,West Point,16,59
+sch_994f6fd31e25ca9f,Buffalo Gap,16,58
+sch_f8132cb3f1ecea4a,Armstrong HS,16,47
+sch_6f06d94b1be91c15,Richmond High School,16,45
+sch_adf91b55ab48ecaf,Narrows,16,40
+sch_abc4f81822f4d71f,Altavista Combined School,15,119
+sch_2c3da262f2ca940e,Lebanon,15,89
+sch_df9a33f42b7236a5,Roanoke Catholic School,15,75
+sch_e214ee05a02590c6,Rye Cove,15,68
+sch_53b55cf016d3cbba,The St. James Academy,15,50
+sch_adfe81b42dded16d,Craig County,15,40
+sch_0a1e69f86c79ae19,Oak Hill Academy,15,30
+sch_972361056086aec0,Fredericksburg Academy,14,85
+sch_9ddf239b2ecd6243,William Campbell Combined School,14,84
+sch_236ea5a95594608c,Mathews,14,59
+sch_60881e5941a7e04d,Madeira School,14,40
+sch_04f6e8b1d310b1e5,Northern Virginia Homeschool Athletic Association,13,126
+sch_bcf653b4292bd288,Flames Homeschool Sports,13,95
+sch_0616115b49e840ff,New Covenant Schools,13,91
+sch_704e159f9a03b1c2,Pacers Homeschool,13,84
+sch_8da73ff6c9475514,Hampton Christian,13,37
+sch_e80df988a919df15,Chincoteague,13,24
+sch_156d7ca7326bf406,Christchurch School,13,24
+sch_d4e4c7399511f9b0,Richlands,12,114
+sch_b01ae6caeee68eee,Saint Sebastian Academy,12,97
+sch_2ea9f766d95f9768,Christ Chapel Academy,12,89
+sch_94006cda4781925c,Deep Creek High School,12,82
+sch_eb6ff30b5fd69d2a,Isle of Wight Academy,12,60
+sch_5ce625f89fef6be2,Fort Chiswell,12,51
+sch_a81c9ce123db6c44,Thomas Walker,12,45
+sch_f47325703481aea3,Fishburne Military School,12,42
+sch_464bbea482c3f959,Northwood,12,31
+sch_51e6ec319ba7ab26,Surry County,12,28
+sch_9c1554939ebe5570,The New Community School,11,90
+sch_e24162bebcccec76,Regents School of Charlottesville,11,84
+sch_36b25391b0569636,The Covenant School,11,84
+sch_0794f3095c2de3b0,John S. Battle,11,71
+sch_423ae35500c664a2,Castlewood,11,59
+sch_4591f90fd1ad9712,Hurley,11,56
+sch_a66b7d90fbc41a7b,Roanoke Valley Christian,11,42
+sch_aafb1bcf328500f7,Mountain Mission School,11,36
+sch_04b77b182e2c85c0,Swift Creek Middle School,10,100
+sch_822fcb5494eac326,Southwest Virginia Academy,10,92
+sch_7ac0c545a2ba2557,Honaker,10,67
+sch_6ceeb9bfb5fce402,Williamsburg Christian Academy,10,56
+sch_76095a65118b9ef9,Holston,9,68
+sch_23fd83666c794eec,Twin Springs,9,65
+sch_46c5a278e22b7aaa,Trinity Academy Meadow View,9,62
+sch_1f695106b257210e,Patriots Running,9,40
+sch_23a82fd8826c2e3d,Blue Ridge Christian School,9,36
+sch_3b2a7568af25fa88,Broadwater Academy,8,79
+sch_b52b7d97deca19ae,Grove Christian School,8,70
+sch_9a4bd6b8681a90fc,Eastern Mennonite School,8,69
+sch_ce4e71e2a5fff29e,Steward School,8,61
+sch_b5e80c1981902ed2,Christian Heritage Academy,8,57
+sch_ac8fabf9fc8b610b,King's Christian Academy,8,33
+sch_b6a40501dcfb0199,Foxcroft School,8,23
+sch_aa0168c179db4207,Galax,7,73
+sch_2aa00e1a5e822a0f,King & Queen,7,54
+sch_4dc76e51ad69b801,Quantico,7,46
+sch_98b36de4b274f90c,Tidewater Academy,7,44
+sch_3d5582092a538227,Evergreen Christian School,7,38
+sch_0ffff9e934cd1bfc,Twin Valley,7,18
+sch_682784251978d73b,Titan Running Club,7,15
+sch_f28bc33729d02fb7,Timber Ridge School,7,13
+sch_d1651a9ad4c398d6,The Summit Academy,6,53
+sch_339fd2f18f5c0a0f,Faith Christian School,6,52
+sch_bf540e1ba8520f2e,Grace Christian School (S),6,40
+sch_4bb12433255aee74,Charles City County,6,36
+sch_e2b7a89e009c5b92,Richmond Christian,6,34
+sch_d0b9453cb1809983,Parry McCluer,6,33
+sch_154f26c9beaf280b,Oaktree Academy,6,31
+sch_4759f3c25812d7f1,Veritas Collegiate Academy,6,25
+sch_4c742c96270131df,Carver Academy,6,17
+sch_98d7125bc82f73bb,Dominion Christian School,5,53
+sch_a31ee94961bd4022,Covenant Classical Community High School,5,49
+sch_e6f6d36a0f010123,Teach Beach Breakers High School,5,46
+sch_77b72400eba6d039,Timberlake Christian School,5,43
+sch_faf1b967ba7c6a41,Banner Christian School,5,35
+sch_20edd3be5cd36a9f,Appomattox Governor's School,5,17
+sch_9f1f0dba4d044e4f,Bath County,5,13
+sch_ce4c13f967a13b89,James River Eagles Home School Athletics,4,44
+sch_9e331cc35a78c902,Blessed Sacrament Huguenot,4,41
+sch_67a8487d7cd6bf5d,Grace Christian School (M),4,35
+sch_6fdc4a2ae9672316,Guardian Christian Academy,4,35
+sch_293132ed7db60431,Kenston Forest School,4,35
+sch_e2a2177d8bef5f53,The Carmel School,4,35
+sch_07e7f2c5b7683ae7,Bland County,4,33
+sch_d5f5a7c4988d90c5,Council,4,24
+sch_0b042be29a0ab320,Appalachian Christian School,4,17
+sch_7f8cb4b1219a6fd7,The Fuqua School,4,17
+sch_d90d4f65f1be1a1d,Grymes Memorial School,4,11
+sch_65718a7773b3e39f,Ideaventions Academy HS,4,7
+sch_e15fb9dff9f93ab3,Summit Christian Academy,3,52
+sch_9c88110d200c8d36,Denbigh Baptist,3,34
+sch_36ab123d123c90d9,Westover Christian Academy,3,30
+sch_66ec2e2506baebd9,Brunswick Academy,3,21
+sch_abeb0a30bf2b1263,Lighthouse Academy,3,19
+sch_555bc73205348714,Millwood School,3,18
+sch_5aac4bd29fd74f9e,Jefferson Christian Academy HS,3,10
+sch_25261801ac616a7c,Mountain View Christian Academy HS,3,8
+sch_33cc6417fe4b2f21,Stuart Hall School,3,8
+sch_97c273f33dd8dd9e,Church Hill Academy,3,3
+sch_cd1f59bd5990e2cb,Onward Christian Academy,2,50
+sch_10137fe8d4d0d55a,Endorphin Fitness Homeschool,2,28
+sch_e3eae4288889b7f8,Norfolk Collegiate,2,27
+sch_9d287d5439ca39a3,Carlisle School,2,25
+sch_c1a28d240e1097f8,Bethel Christian High School,2,19
+sch_3353aa5001245ffc,Chelsea Academy,2,7
+sch_416683dc0c873e1c,Legacy Christian Academy HS,2,6
+sch_9c89d05efbe75e5c,Loudoun Sports Academy,2,5
+sch_6572043e8e9a844b,Lynnhaven School,2,2
+sch_613af4db5a29f289,Providence Classical High School,2,2
+sch_10b1e89aeff720e2,Wolf Hills,1,65
+sch_52490752cda962c7,Cornerstone Christian Academy,1,45
+sch_9a5c030f96a2a51b,Highland School,1,43
+sch_2aeb0082d281d909,Auburn Baptist Christian Academy,1,30
+sch_8e19f2771c33623b,Gateway Christian Academy,1,28
+sch_6e78c2d40f87edd1,Southampton Academy,1,22
+sch_e43f060e39b0ba95,Amelia Academy,1,20
+sch_193fa25ce314a796,West End Christian School,1,19
+sch_dc52bb517b37370e,St. Joseph the Just,1,9
+sch_2be2d3e96ca25ca0,St. Edith Stein School for Girls HS,1,8
+sch_0ccf419aa8c2160a,Virginia School for the Deaf & the Blind,1,7
+sch_a7a7bbf419e9ee97,Cap City Homeschool Athletics,1,3
+sch_2154bd47d75af2ae,Suffolk SECEP Center,1,3
+sch_9229bfc6f5f7c101,John Rolfe Middle School,0,135
+sch_7d907e24a4a43cfb,North Fork Middle School,0,94
+sch_7b9a5f852d769d3f,Carver Middle School,0,90
+sch_e44a9924eefcecbf,Star of the Sea,0,78
+sch_ed047b2f3cf38024,Lindsay Middle School,0,71
+sch_81ebe41dd9b03688,Hampton Middle School,0,65
+sch_de1ca2756a7598aa,Cornerstone Christian Academy HS- Middleburg,0,56
+sch_137f425f6f684a33,Charlottesville Day School,0,50
+sch_6b85f3bee60abba0,Fred Lynn Middle,0,50
+sch_7f36786a1fb67e14,Redeemer Classical School,0,49
+sch_3497a6304a687df4,Andrew Lewis,0,41
+sch_616fe1db93d19d56,St. Paul,0,40
+sch_009fa4ba18fa435d,Seven Hills School,0,38
+sch_ae99e348998e1128,Desmond T Doss Christian Academy HS,0,34
+sch_02e0bd831c7f1a22,Hartwood High School,0,33
+sch_51f6fb38318808a0,Covenant Christian Academy,0,32
+sch_d3bf052869f4d5d2,Elijah House Academy,0,31
+sch_6ec7fc5de3d75821,Ridgeview Christian High School,0,26
+sch_3263306b37664bfb,Sullins Academy,0,21
+sch_82035fca761c5831,King Abdullah Academy,0,17
+sch_92c18d5a2a6d950a,Mount Carmel Christian Academy HS,0,16
+sch_272ffc388184837a,Providence Academy,0,16
+sch_d0feec892939f1e1,Powell Valley,0,11
+sch_80a4ba870089cbee,Sabot at Stony Point,0,10
+sch_03eb6856cf2c6ac2,Covington,0,7
+sch_32ea35942cda1558,Banner Christian School(Culpeper),0,3
+sch_e8d9fb90b74ae21c,Fort Hunt High School,0,3
+sch_9b227b6f44818fbb,Speed Express TC,0,3
+sch_3dbfc7b77ced64e9,TUFF Training,0,3
+sch_2e9791d4c0cfcb4b,Tyndale Christian High School,0,3
+sch_459b6e3aebfdcc35,St. Michael the Archangel,0,2
+sch_4020dbd3f425602e,East Norfolk TC,0,1
+sch_093d3ca75ccd12b3,Pound,0,1
+sch_496c84470af209d9,540 TC,0,0
+sch_7d111ed7f3650f4d,Abeka Academy,0,0
+sch_a09c82aee552236c,Abingdon TCS,0,0
+sch_aef15ae24936fb24,ACTS,0,0
+sch_5914029387c84e23,Ad Fontes Academy,0,0
+sch_e69e691bc76eec4c,Alliance Christian School,0,0
+sch_e3a6cdf858618935,Appalachia,0,0
+sch_9850067c8f43e5f2,Appomattox Christian Academy,0,0
+sch_beeee621de1696f4,Armstrong-Kennedy,0,0
+sch_6f76b804161beb5a,Ashburn Elite Track Club,0,0
+sch_900c0380c39dc567,BASIS Independent McLean,0,0
+sch_f3b369ffcd5050fa,Bluestone,0,0
+sch_8c636b4b0919a8fd,Boys Home of Virginia,0,0
+sch_72ff694fbd0c5b25,Broad Run Unified,0,0
+sch_6e55cd05f4c488cb,Brook Road Academy,0,0
+sch_b4fa4d2fc5bde351,Calvary Christian School System,0,0
+sch_7019ea60d8bf1705,Cardinal Newman Academy,0,0
+sch_5037164a64041f44,Clifton Forge,0,0
+sch_72e8972d3370fdf6,Clintwood,0,0
+sch_41554f06e483dc43,Coeburn,0,0
+sch_00309ff754276039,Collis P. Huntington HS (closed 1980),0,0
+sch_719cc974c4ea72bd,Colonial Beach,0,0
+sch_aff9b993e150aef7,Commonwealth Academy,0,0
+sch_bc1136e51e9fa5c8,County Christian High School,0,0
+sch_351603930f692c46,Cradock HS (Closed 1992),0,0
+sch_2bc90afa391d18ac,Culpeper Christian,0,0
+sch_65d868b968efc835,Dayspring Christian,0,0
+sch_bd620bd97930b346,Dominion Ridge Academy,0,0
+sch_ef72873bc5646d6f,Ervinton,0,0
+sch_0e7d9f1ad5982584,Fairfax Christian School,0,0
+sch_26ae0c50d2b10413,Ferguson High School,0,0
+sch_277163cea504952e,FJ Crusdaers,0,0
+sch_ca0827fb80ea269f,Francis C. Hammond High School (Closed),0,0
+sch_0acaeea65ecab0c7,Franklin Military Academy HS,0,0
+sch_ccae08c29047ce4e,Fresta Valley Christian School,0,0
+sch_753422856feeaaa5,Front Royal Christian School,0,0
+sch_218c3f4e0ae4725c,Garden High School-CLOSED,0,0
+sch_11bbc7513e5346dd,George Mason Middle School,0,0
+sch_07b849738a92fa90,George Washington (Alexandria),0,0
+sch_2112216b505c9c23,George Washington Carver HS (closed 1970),0,0
+sch_731604f7a11790b4,Grace Preparatory School,0,0
+sch_5eeac17b845f5cc2,Groveton High School,0,0
+sch_db0babf1bfbe8dd9,Hammond,0,0
+sch_ee9a24af8066f6a8,Haysi,0,0
+sch_494dc8a21b696ff0,Heritage Christian School,0,0
+sch_0e30a8a72fab3d5c,Heritage High School - Unified,0,0
+sch_1b5b833e275a76cb,Holy Cross Regional Catholic,0,0
+sch_6551aae7f82bbd15,Holy Family Academy,0,0
+sch_c946760d9c6ff867,J.J. Kelly,0,0
+sch_549a4367a66aca51,James Blair,0,0
+sch_1c2a17f8fc28d540,Jefferson HS (Roanoke) (closed),0,0
+sch_e4e2e0ee5b5558b3,Jefferson-Huguenot-Wythe,0,0
+sch_95eb7d45a0bb3f46,John F. Kennedy,0,0
+sch_5e6ae90598d2e782,John Paul the Great Montessori Academy,0,0
+sch_0045c1a6b6f5e9b9,Jungle Track Club,0,0
+sch_084d45c6163576ea,K12 International Academy,0,0
+sch_fcbb888034a73488,Landry Academy,0,0
+sch_9668989b75bab182,Lane,0,0
+sch_21da2281b9b719d7,Leesburg Christian,0,0
+sch_8e000e09fb0065bc,Lexington High School,0,0
+sch_30849e31cf2ae7ec,Liberty University Online Academy (High School),0,0
+sch_80c80b271d3a18b9,Life Academy,0,0
+sch_29330aa61fa26f12,Life Christian Academy,0,0
+sch_1223ebaf3f6b6f14,Lion's Home School,0,0
+sch_19e2dd2097659a1c,Luther Jackson HS,0,0
+sch_1d77e7798f1d15ca,Lynchburg Christian,0,0
+sch_d9d2eba5bdadc3ab,Manor High School (Closed),0,0
+sch_0e6fe4abec75ef2b,Marshall - Walker,0,0
+sch_0b7b8d3672d4cb86,Martinsville Christian,0,0
+sch_520a8ade7e32d20b,MHSCT,0,0
+sch_4007ba0371c6fe7e,Middleburg Academy,0,0
+sch_238c9e649b200779,Montevideo,0,0
+sch_d6b5e91d28c5136d,Morrison School,0,0
+sch_fb04e87c155d4ca8,Mount Rogers,0,0
+sch_b2ac555b1441c1ee,Nansemond River Champions Together,0,0
+sch_745d430aa2a71a8f,Newport News,0,0
+sch_c6a42ebfaef3f230,Oak Hill Christian School,0,0
+sch_ff7bc7947be36ece,ODU Cross Country/Running Club,0,0
+sch_a7d7d3f40ee94227,Park View (South Hill),0,0
+sch_bfb71a16f21602b0,Park View High School - Unified,0,0
+sch_87e5ba444125ee9a,Patrick Henry Community College,0,0
+sch_21ebef7a4c340eab,Pembroke HS (closed 1980),0,0
+sch_92568c941c263fc8,Piedmont Christian School,0,0
+sch_6cf5ee826740eb81,Pocahontas,0,0
+sch_5db412f33e92a785,Portsmouth Christian,0,0
+sch_be96aac39b0708ce,Portsmouth City Cowboys TC,0,0
+sch_c775af8f42fb0739,Richmond Sports Backers,0,0
+sch_d6aab426f79c0da0,Riverside Rams Unified,0,0
+sch_817b9094c5169629,Rocky Gap,0,0
+sch_ccc0f556d603918c,Ryan Academy of Norfolk,0,0
+sch_edea45e1ee49c919,Shawsville High School,0,0
+sch_554b52ea4aa6aa58,Shenandoah Valley Academy,0,0
+sch_e1efa77c1330e835,Southside Baptist Christian School,0,0
+sch_d9cd2b40ba2ca966,Spirit Homeschool,0,0
+sch_ba132678ce1bce29,St. Margaret's School,0,0
+sch_2557e76769346f29,Stonewall High School,0,0
+sch_c69adf5304f1179b,Suffolk Christian Academy,0,0
+sch_47adbc798dae6ea6,Temple Christian School,0,0
+sch_b30de7e022f5e682,Terra Cursors,0,0
+sch_c26998ffff67dbb1,The Learning Center HS,0,0
+sch_c45e0b8eccc94540,The Light Academy,0,0
+sch_12b51240dcdf222b,Veritas Preparatory School,0,0
+sch_2208352773c423f8,VHSL Group AAA Central Region Rep,0,0
+sch_a0242753b30d060e,VHSL Group AAA Eastern Region Rep,0,0
+sch_25ad6607dc57afa1,VHSL Group AAA Northern Region Rep,0,0
+sch_22b8afa4c8adad1a,VHSL Group AAA Northwest Region Rep,0,0
+sch_0b7ecdee0af6c62a,VHSL State,0,0
+sch_13fac9d325230c2a,VHSL State Meet Rep,0,0
+sch_59b74cb09fd23b2e,Virginia Beach Friends School,0,0
+sch_919aab9b25d9b89c,VISAA State Meet Committee,0,0
+sch_fd0b2a1727dcfaaf,W. C. Taylor High School,0,0
+sch_af86297a3f40067b,Wakefield Country Day School,0,0
+sch_6e21aa4daac1bcbb,Whitewood High School-CLOSED,0,0

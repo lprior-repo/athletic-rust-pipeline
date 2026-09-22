@@ -1,0 +1,583 @@
+school_id,name,co2027,athletes_all
+sch_a226e58066387a62,Loyola Prep,59,98
+sch_06f7eced3aed48b4,Neville,55,123
+sch_a76955ade8e12893,Northshore,53,106
+sch_40ec3bc510a5d6a6,Benton,52,93
+sch_d87835e27dc1fdcd,Central - B.R.,48,182
+sch_8ff430a6fd8b64c8,Acadiana,46,100
+sch_671810c747625869,Brother Martin,45,111
+sch_65e58ede395d6469,E.D. White,44,214
+sch_9572135064ac8192,Teurlings Catholic,43,86
+sch_ad8edae2789cab84,Ouachita Parish,43,77
+sch_be3d0cb36bcb6b35,Acadiana Renaissance Charter,42,272
+sch_8e1a94428d4c8d49,St. Amant,42,109
+sch_deab922e055d692e,Zachary,42,79
+sch_b605fb2b5793fa14,Ponchatoula,42,76
+sch_6938a0ad3eab6c04,West Ouachita,41,70
+sch_efb84c2491bb5750,Franklinton,40,69
+sch_b2b9a0d3dc0e9e70,Ruston,40,61
+sch_ef810e1d4709e9ed,Ouachita Christian,39,234
+sch_486cb5793ec85e16,Patrick Taylor - Science/Tech.,39,101
+sch_248818fdb8f93719,Minden,39,82
+sch_218f510ef4f019b9,Thibodaux,38,151
+sch_4dfa33d36f51da83,Dutchtown,38,121
+sch_3dc6dd0f64e116d8,St. Frederick,38,111
+sch_12d5c80f4e33883d,East Jefferson,38,63
+sch_2c13f64cba2f7b9d,Denham Springs,37,87
+sch_5710e43de4223709,Central Lafourche,37,70
+sch_86c3accce84f5fea,Airline,37,69
+sch_763f0403685a8393,Terrebonne,36,101
+sch_c7c272bf8d817f7a,Hahnville,36,76
+sch_d4d3a5342e11a9aa,John Curtis Christian,35,253
+sch_c0e869bc34c765d3,Isidore Newman,35,148
+sch_086b26b2ce780904,Jesuit,35,93
+sch_1f3e223663934831,Franklin Parish,35,85
+sch_492e47775c9faf87,Kenner Discovery Health Science,35,68
+sch_ef745de39faae010,Sterlington,34,61
+sch_d2cd1a7c486aff9a,Barbe,34,59
+sch_50affccf056bfc15,Slidell,34,55
+sch_86f30581ff1eefa5,D'Arbonne Woods Charter,33,417
+sch_4c954745af523867,St. Thomas More,33,158
+sch_47f758303c1b587e,Mt. Carmel,33,140
+sch_aa7a99faa22d718c,Salmen,33,52
+sch_f13fcc1ff6481fa9,Belle Chasse,32,82
+sch_c2ee351d3d0ed16a,Southside,32,70
+sch_d2890059f7e3c178,Young Audiences Charter,32,61
+sch_bb6b5e99c817e46a,DeRidder,32,60
+sch_37a2837097d68278,Jewel Sumner,32,45
+sch_6ca93fd7afa6db40,Cedar Creek,31,205
+sch_161486b92f339dd3,Natchitoches Central,31,88
+sch_e5d479245514e7e1,Haynes Academy,31,71
+sch_1cdf875e80468126,Ville Platte,31,57
+sch_9e3c5184f4c0af76,Huntington,31,52
+sch_bc9cbafd7d1afbef,Lake Charles College Prep,31,50
+sch_9eb80907dfeb2bd5,Alexandria,30,103
+sch_756b75df751cabdb,Archbishop Hannan,30,64
+sch_45ca3b467e6c42c0,South Lafourche,30,64
+sch_7a7dbb59e96044ce,Iowa,29,81
+sch_5096b90947b5f4bf,St. Michael the Archangel,29,81
+sch_a57332b6d54e221c,New Iberia,29,55
+sch_6cb2e9a7e5ad3b2c,Covington,29,50
+sch_1398e7fd64765564,Riverdale,29,50
+sch_e60dfd4059745e99,Sulphur,29,50
+sch_809bad703b975bcd,East Ascension,29,49
+sch_e3ce42a25bd1ba5b,Wossman,29,41
+sch_40e9d8975eef9c50,Brusly,28,182
+sch_72e31b732bdababe,Livonia,28,89
+sch_82056dbce0f8cdf8,East St. John,28,62
+sch_3a6b27b508aab0cc,West Jefferson,28,58
+sch_5d3b85729c44f754,Leesville,28,55
+sch_782c89f3e56994d9,Ben Franklin,28,54
+sch_6ed57df00cd5dcb5,Hammond,28,50
+sch_c2ddf8fb2ca54cb2,Madison Prep,28,49
+sch_3dfd38173e0d306c,North Webster,28,49
+sch_4c3ac41fdcf9b09e,Berwick,28,39
+sch_53c26acb01d04465,St. James,27,190
+sch_8edabfe3c61138a8,Red River,27,94
+sch_63fb9d8d22834408,Buckeye,27,89
+sch_284d0c0652b75918,Winnfield,27,56
+sch_1a361c91b05d5717,West Monroe,27,52
+sch_8c2eae22e1c8c0e2,C.E. Byrd,27,44
+sch_b98927d7b248cdd9,North DeSoto,27,42
+sch_e1f4a5d599e90934,St. John,27,42
+sch_eee2ebf587eac464,Parkview Baptist,26,128
+sch_fb491f6a66a2a7fe,Prairieville,26,124
+sch_9aea36eedeb028a1,Slaughter Community Charter,26,76
+sch_f2008d748c20498f,Mandeville,26,74
+sch_37dc975b0182f288,Westminster Christian,26,73
+sch_e6fd0bb0c2629369,Vandebilt Catholic,26,70
+sch_ff0f30701cb66246,Eunice,26,65
+sch_3e9e97aa632ef153,Captain Shreve,26,61
+sch_6000dddbd5e81215,South Beauregard,26,61
+sch_1eb2d9d7bdcb49c1,Many,26,50
+sch_2de15eeadf6d5280,Comeaux,26,46
+sch_9e34d81d77068e53,Abbeville,26,45
+sch_bf137b0f1d8d9f27,H.L. Bourgeois,26,39
+sch_0eb4267b51e6ca2e,Oak Forest Academy,25,163
+sch_15c52c7a9c7615ab,Silliman Institute,25,125
+sch_8d46e296fd31e90d,Bastrop,25,86
+sch_dae73c61f1075a07,Haughton,25,64
+sch_4104702557a40737,St. Joseph's Academy,25,60
+sch_56ada04e56ec0c96,Destrehan,25,47
+sch_9f84d7c4bbc98f53,Lakeshore,25,46
+sch_820afe5d5c412676,Academy of Our Lady,25,40
+sch_490e365efd1aec42,Lincoln Preparatory School,25,34
+sch_933cd50017b7c058,The Willow School,24,263
+sch_a1f48d786d6e8be7,Northlake Christian,24,211
+sch_b0b6db12eaccc707,Catholic - N.I.,24,165
+sch_cc56adebff7e1ecd,West Feliciana,24,138
+sch_26e07c8f655ca6e5,Catholic - B.R.,24,94
+sch_80a9c790f8c7bf41,Dominican,24,74
+sch_e0897c594c337830,Bell City,24,71
+sch_f35c500c844ab2d8,Walker High School,24,48
+sch_d0e315c0bf572be1,Tioga,24,44
+sch_f3863692edcbef70,Rayville,24,41
+sch_c05509500e464953,Washington-Marion,24,36
+sch_d72ccc2b9f240404,Kentwood,23,198
+sch_827a44a1f1f707be,University Lab,23,154
+sch_905386a5a5a4cd29,Covenant Christian,23,113
+sch_efb617115d66063c,Fontainebleau,23,59
+sch_410ca867915e4602,Homer,23,42
+sch_bb87308a5b3ad087,Westgate,23,41
+sch_82a7193a99257175,John Ehret,23,38
+sch_e17994f561456425,Mangham,23,32
+sch_a8be34a927230240,Lafayette Renaissance Charter Academy,22,284
+sch_7a68d0ad8bc12688,Metairie Park Country Day,22,209
+sch_929b44656d18a13d,Hamilton Christian,22,63
+sch_4f5e7f14a460f526,Glenmora,22,58
+sch_c78015fb8dabc990,Hanson Memorial,22,55
+sch_5809d37e5741a37f,Parkway,22,51
+sch_4d1db131dd06fc45,Assumption,22,49
+sch_fb2f6a9893eec869,Grant,22,39
+sch_985d5bd4dca7ea3b,Chalmette,22,34
+sch_17c15aebcf998d1a,Erath,21,180
+sch_da7447f2d0f7c05c,Episcopal,21,136
+sch_e81a42fece1b9a04,Lakeside,21,126
+sch_63e6112594d999f3,Lafayette,21,66
+sch_2bdc74a0f7f7f20a,A.J. Ellender,21,36
+sch_cb8c15254df7b4c6,Warren Easton,21,28
+sch_85524fdf745b5edc,Delhi Charter,20,114
+sch_3add9824de47a22c,Lafayette Christian,20,102
+sch_602bda7315ff60a9,Quitman,20,73
+sch_ec271b0fa696221e,Bogalusa,20,68
+sch_ba70df31f5cccad4,DeQuincy,20,65
+sch_7d923f022ac76f75,Opelousas,20,65
+sch_9f457795b0b97aef,South Terrebonne,20,55
+sch_65b78efe1eaf32b6,George Washington Carver,20,36
+sch_30975ea497a23e14,Madison,20,36
+sch_0c6d9ea2494d1510,Avoyelles,20,32
+sch_ca5be58e65221287,Northwood - Shrev.,20,25
+sch_8f4a5e104e09aebc,Loranger,19,143
+sch_4de3d9c3f9490a1b,Weston,19,134
+sch_0de4a17112b9583c,Oak Grove,19,103
+sch_7ff35bf02c9c04ee,Providence Classical Academy,19,93
+sch_80913102b7313a02,Union Parish,19,88
+sch_6c133da897340411,Archbishop Chapelle,19,67
+sch_279147b0e20cfb04,Scotlandville,19,66
+sch_961e9692c4d5d180,JS Clark Leadership Academy,19,52
+sch_55956461d2544f41,Lutcher,19,41
+sch_a18f36c66c1ad8f5,Northeast,19,40
+sch_fe35a7792a1788f9,Bossier,19,37
+sch_68b97d2ed3ce172c,Kaplan,19,34
+sch_e9ee90ef0b852b0e,Mamou,19,33
+sch_8c6d2c73af423e68,Bunkie,19,32
+sch_b32e10bf9ae99fcd,Mentorship,19,25
+sch_12fa7a76355c5f20,Tara,19,24
+sch_1742120f25a2f61f,Live Oak,18,169
+sch_96e68800ebb94b7e,North Vermilion,18,156
+sch_712e0bc4a77d4aa2,Beekman Charter,18,134
+sch_2084faa989900d76,Springfield,18,55
+sch_93aeadc0724e85b4,St. Charles,18,52
+sch_00bff641e5e60e27,Elton,18,37
+sch_886820f868e87ebe,Basile,18,34
+sch_9227a28b53e83280,Eleanor McMain,18,32
+sch_a6a9ac9e03e58c2e,Carencro,18,31
+sch_3640c109b6f60e59,Liberty,18,31
+sch_5a0687eaa9b2fab7,Donaldsonville,18,30
+sch_ba12f5c295e284bd,Southwood,18,30
+sch_c5ff146d19154ca6,Booker T. Washington - Shr.,18,28
+sch_be6aaa85bad12562,New Orleans Military & Maritime,18,28
+sch_09703b27a4def958,Collegiate Baton Rouge,18,26
+sch_57dd7b03afc5ca0e,Acad. of Sacred Heart - N.O.,17,245
+sch_86e807d2d337577a,McKinley,17,226
+sch_110ae0ef5d380960,St. Scholastica,17,85
+sch_8518869b341ed371,Breaux Bridge High School,17,82
+sch_17cabf79f2b2caa2,South Plaquemines,17,67
+sch_6f4e3cf03ad9cef9,Caddo Magnet,17,51
+sch_776a14f8b4e20573,Avoyelles Public Charter,17,49
+sch_ee58466ef9e5f873,Archbishop Shaw,17,46
+sch_0da425eca2369b96,Pineville,17,46
+sch_85d732e6a7760dbd,St. Helena College & Career Acad.,17,46
+sch_b94834fc04b31e9f,Pearl River,17,42
+sch_0a01b00985426f2b,Jena,17,33
+sch_559e17b6ab7654a2,Beau Chene,17,29
+sch_5fb9fb5737190818,Southern Lab,17,28
+sch_c635d5ccb969fdce,Morris Jeff,17,26
+sch_75e4268cf9e86132,Rayne,17,25
+sch_005f9ce515b738c8,Baton Rouge Homeschool,16,167
+sch_72e494646af0261e,De La Salle,16,137
+sch_16aa130dff0b9594,Delcambre,16,119
+sch_d9ef86e439ad4830,West St. John,16,74
+sch_3ca0fe7544d58609,Cecilia,16,72
+sch_64bbdae736fd0d40,Caldwell Parish,16,61
+sch_014434977f4a587a,Franklin,16,54
+sch_eab98058958d100f,Vidalia,16,34
+sch_a3e476951cfece6b,Woodlawn - B.R.,16,29
+sch_1511a2de817f135d,Midland,16,28
+sch_c246ac2a5b43c77d,Richwood,16,28
+sch_d89613761b619663,L. W. Higgins,16,16
+sch_a3774c11f0069baf,Welsh,15,99
+sch_e449d1eed2c13653,Glenbrook,15,80
+sch_5daabff7ed22d541,Evangel Christian,15,77
+sch_0a521f9e76673952,Northwood - Lena,15,55
+sch_b7d3aafa0e853b32,Calvary Baptist,15,49
+sch_286edc1142da4c12,Houma Christian,15,39
+sch_0d125d3180e02e56,Hackberry,15,38
+sch_18f73ab4bd8af9d7,Ascension Catholic,15,36
+sch_d534aff5c14103d8,Sam Houston,15,36
+sch_880958a9c095367e,Jonesboro-Hodge,15,35
+sch_ce3130bd927b5440,LaGrange,15,32
+sch_3e14b21e64d1cc1f,Ebarb,15,29
+sch_bda7e9f403df78c2,Northwest,15,26
+sch_3eb89f520e676040,St. Augustine,15,24
+sch_ff7c7d1c70fd9866,Baker,15,22
+sch_412828dfa231634d,Bonnabel,15,18
+sch_339d10cc68ef3b42,Holden,14,176
+sch_ea827c0727e1bcc8,Carroll,14,87
+sch_9c32154b38e90306,St. Paul's,14,86
+sch_dbe08d6f697cb800,East Feliciana,14,81
+sch_c0b681a8baedbe66,Episcopal of Acadiana,14,69
+sch_f1c031a8b5ef6756,Independence,14,63
+sch_d696ea5c0f786cc2,Magnolia School of Excellence,14,62
+sch_348de13cb84c3288,Riverside Academy,14,57
+sch_bef72c768b614ea8,Folsom Junior High,14,50
+sch_050872f2c734c985,St. Louis Catholic,14,48
+sch_269ded3d95dd22cf,Iota,14,47
+sch_6279c0361aec12be,North Caddo,14,47
+sch_a07efbc1489bd4c6,Anacoco,14,43
+sch_7decd21916abf639,Plaquemine,14,35
+sch_e6521b7eef4eca25,Westlake,14,22
+sch_ba73b51e1e373964,East Iberville,14,20
+sch_c8d472010e1dd534,Northside,14,19
+sch_8f99450c7020ecd2,Louise McGehee,13,140
+sch_8d0debb61a8a5eb2,David Thibodaux,13,136
+sch_a79057f24ecee501,Holy Cross,13,119
+sch_4fb8f413eec59fef,Ascension Episcopal,13,104
+sch_5dd2c4177ff064ef,Baton Rouge,13,49
+sch_8f2c09f7541eaf9c,East Beauregard,13,41
+sch_bc37bf32dd212d0c,White Castle,13,39
+sch_2cbc560b0779df97,Rosepine,13,38
+sch_eae0823cabf9e9f2,Glen Oaks,13,32
+sch_4c99ea9758a9cc83,Patterson,13,25
+sch_f5076b8e93fa4750,Livingston Collegiate,13,20
+sch_035d9b87b1434dea,La. School for Deaf,13,19
+sch_481238912ad616c3,Sophie B. Wright,13,15
+sch_45145baa65fbf78a,Simsboro,12,116
+sch_89e37647b9266223,Holy Savior Menard,12,91
+sch_4c5177ff080e6c1e,Pickering,12,70
+sch_136bbcc173c2dfb8,Grand Lake,12,69
+sch_90411ca5b024b08b,Jennings,12,68
+sch_286f9a714f197429,Archbishop Rummel,12,65
+sch_fe9be1a5c93cc95a,Pitkin,12,64
+sch_e50ca8e716fcad60,Doyline,12,51
+sch_94027a5ed6486f56,Marksville,12,38
+sch_b34cf4ffaece966b,Ferriday,12,36
+sch_6971c053de895025,Church Point,12,35
+sch_7c96e539dcc4180b,Central Catholic,12,32
+sch_172bb67545ffb302,Albany,12,30
+sch_ec16ecd0e45b86ee,Pope John Paul II,12,29
+sch_66ac1df440aab08b,West St. Mary,12,19
+sch_28a6f8634526caf5,Sarah T. Reed,12,16
+sch_f0c42f9420b05c24,Bowling Green School,11,101
+sch_a672bba7ffc606df,Oakdale,11,80
+sch_97f7e248c497e5f8,Vinton,11,74
+sch_563906d6727d16f4,Lake Arthur,11,55
+sch_fac5ad7c728d7f3d,Highland Baptist,11,50
+sch_41773e7ca8f8f6b4,Haynesville,11,46
+sch_763a961a0260129e,Northeast Louisiana Home School,11,45
+sch_db2c8be58a609500,Saline,11,45
+sch_ada1a09cd76d4793,Sacred Heart,11,36
+sch_c6e33d984d0b6f1c,Istrouma,11,30
+sch_454db1e7eeea24ba,Pine Prairie,11,28
+sch_e31810f80c44ed2d,St. Mary's,11,28
+sch_422ed0759361accd,Delhi,11,27
+sch_72fe2eee9852f136,St. Helena Central,11,23
+sch_6044b06b47f15621,Green Oaks,11,18
+sch_4d997c6befb664e9,Rapides,11,16
+sch_a43ec9351a51f8c9,Walter L. Cohen,11,15
+sch_c911d32763a708ea,Woodlawn - Shrev.,11,15
+sch_4c7e7654eb30af84,Choudrant,10,83
+sch_074c98038e03d0e1,Gibsland-Coleman,10,66
+sch_ed40b439ee69e9d6,Converse,10,48
+sch_37153f020cfe0dab,North Central High School,10,42
+sch_337cc62f6d3eb92e,Hathaway,10,39
+sch_cabfbe398af83f2f,Pleasant Hill,10,33
+sch_a56455596679e902,Kinder,10,32
+sch_e994707a93cbccaf,Merryville,10,28
+sch_74d29af1e485a9fc,Jehovah-Jireh,10,25
+sch_acb1847179db83ac,N.O. Charter Science and Math,10,22
+sch_56ef1f234201a1e7,Singer,10,18
+sch_bbe3350aa960fabb,Centerville,10,17
+sch_aeaa23953c90a45e,Belaire,10,16
+sch_ec66ff8dc92f5bc5,General Trass,10,15
+sch_cbc3ecf4409f15e2,St. Katharine Drexel Prep,10,15
+sch_cbfd2f7ded08e4f4,Einstein Sherwood Forest,10,10
+sch_e462d4fe677a8388,Evans,9,103
+sch_16e95fd72a4ae859,Ringgold,9,61
+sch_fb1e97ffe050704a,Shreveport Force Homeschool,9,51
+sch_53ccbd222127900c,Central Private,9,48
+sch_8c5ef50f51ecf49b,Florien,9,43
+sch_daddddc67b5c7579,Logansport,9,35
+sch_911c7c4695bec89a,John Paul the Great Academy,9,32
+sch_b3322bbb92853843,Mansfield,9,30
+sch_088105a6700de26a,Edna Karr,9,29
+sch_50854b205027e6d9,Calvin,9,26
+sch_069ff00c70d7340b,Dubach,9,24
+sch_5e5633aefae35d62,Peabody,9,23
+sch_ecfd553e2691f377,Southwest Louisiana Charter Academy,9,16
+sch_f0e414f984b9e213,McDonogh #35,9,13
+sch_3ac566d4956c00e3,"Landry, L.B.",9,12
+sch_be3743e579737c41,Phoenix,9,12
+sch_67b314f6f5f9f240,Dunham,8,93
+sch_3dc7542c5e08e9ae,Bishop Noland Episcopal Day School,8,89
+sch_67503c757c57b72d,Doyle,8,72
+sch_fa8a007c1e9e3303,St. Martin's Episcopal,8,68
+sch_b134fbaa517dfc62,Acadiana Home School,8,62
+sch_2d3b2e13cc132738,Thomas Jefferson,8,58
+sch_ada9283db50cd8a8,Ray D. Molo Middle School,8,56
+sch_bdde584f0be74042,St. Martinville,8,47
+sch_c8d7fa4189ec3c25,Hicks,8,43
+sch_13e7430842db0a4d,Gueydan,8,42
+sch_18922557cb02eb9c,Oak Hill,8,29
+sch_810b10721da5839f,Frederick A Douglass,8,23
+sch_bd9a47c2b0128a70,Lacassine,8,23
+sch_3409b2d9ae33e92a,St. Thomas Aquinas,8,23
+sch_f7b956a160e69ae8,North Iberville,8,22
+sch_8e873611bf26c7b3,Starks,8,22
+sch_8b87188c72512ffa,Morgan City,8,18
+sch_c4bc8b36876772f3,Tallulah Academy,8,18
+sch_6fe10979b9307366,John F. Kennedy,8,17
+sch_e9acb87c413c6cfc,Monterey,8,17
+sch_92dae2806772af94,V.B. Glencoe Charter,8,14
+sch_97a37eb12d177f54,Venom Track Club,8,10
+sch_d5707460a0561c88,International High School of N.O.,8,9
+sch_5217469d73fd2c85,Castor,7,49
+sch_910519e5cc811b58,St. Edmund,7,47
+sch_e84e45e822cfba11,Zwolle,7,46
+sch_262529f93965d5cf,Port Allen,7,44
+sch_f6c12ead349751fd,Simpson,7,42
+sch_a0ae1dfe423acf76,Ursuline Academy,7,42
+sch_cf086ff239ba4ede,Lakeview,7,37
+sch_bd46f73b0ba18d20,Crowley,7,30
+sch_878217e480eff605,Westminster Christian - Lafayette,7,29
+sch_6295145dd3af00bb,Christ Episcopal School,7,28
+sch_45fad87e667e0ff7,Opelousas Catholic,7,23
+sch_b65081438cfb5a00,Thrive Academy,7,23
+sch_bbf1949598e07501,Montgomery,7,19
+sch_c877e44a8670be26,Cabrini,7,18
+sch_28e205965bb077ce,Jeanerette,7,17
+sch_c28e7cf6a01d98a7,Grand Isle,7,13
+sch_fc11bc9b551c4b55,Atlanta,7,11
+sch_eac1bd70c9efafdc,Abramson,7,9
+sch_b591dd8a6a082f41,French Settlement,6,84
+sch_bddbd6e916ece32b,Westdale Middle School,6,60
+sch_87e5bf0338eb8ed9,Georgetown,6,56
+sch_57dfba8730f7991b,Pine,6,53
+sch_f538939fbb76a686,Loreauville,6,46
+sch_ef19d935eae81456,Union Christian Academy,6,35
+sch_22cfb5c409bc05ab,Delta Charter,6,34
+sch_3f4136cd028401a1,LaSalle,6,30
+sch_ddf9a104a6b3b66d,Capitol,6,28
+sch_5a045dc78f08cc41,Old Bethel Christian Academy HS,6,28
+sch_30adfbc9b186a46d,Fifth Ward,6,27
+sch_442b5240f2fe68c6,Block,6,25
+sch_5f8d1b5219f306c7,Riverdale Academy,6,25
+sch_a0526204b696d02b,Johnson Bayou,6,22
+sch_345c57a504358618,Broadmoor,6,18
+sch_4f28331bf32bf78c,Oberlin,6,18
+sch_1b54141461c6d659,Arcadia,6,16
+sch_09dd2fa4e083f1ca,KIPP Booker T Washington HS,6,12
+sch_948081566de98fa4,River Oaks School,6,9
+sch_2942fa769c8d41c3,"Clark, J.S.",6,7
+sch_0c7b9ed9953981ab,Catholic - P.C.,5,64
+sch_cbb42a3ee246ecd8,Christ Church Academy,5,37
+sch_cbcd3962bda034af,Maurepas,5,35
+sch_a81d412138c5120c,Fisher,5,29
+sch_d7e53b61068a58a8,Berchmans Academy,5,25
+sch_22373e7ad2839cbd,Plain Dealing,5,25
+sch_072ada57a7b01ba2,Varnado,5,23
+sch_a1913c364413b17e,Northside Christian,5,22
+sch_ff829bcde5701a9b,Plainview,5,21
+sch_085173dcd0275db3,Elizabeth,5,19
+sch_9a750e827b6bb99d,South Cameron,5,19
+sch_8e469cccb3b2cac2,Notre Dame,5,15
+sch_217ca5ad837b7295,GEO Next Generation,5,14
+sch_827d5035bbbbcb2e,Reeves,5,13
+sch_2681c97fb8dd4d8b,La. School for Visually Impaired,5,12
+sch_40635ce2171a7c76,Mt. Hermon,5,11
+sch_74860d0b7e480884,First Baptist Christian,4,104
+sch_d0f715eb4928c488,Vermilion Catholic,4,74
+sch_b52081a6b3934aa8,Downsville,4,64
+sch_a36595465b3790cc,Bolton Academy,4,58
+sch_b49cf63dc4a55f72,Jefferson RISE Charter,4,35
+sch_0a52a73826969cc8,Tensas,4,35
+sch_e4748d6dee4604cb,Acad. of Sacred Heart - G.C.,4,32
+sch_6c3c109d84115148,Hornbeck,4,31
+sch_a26bab5f58b97288,Grace Christian,4,29
+sch_34d89b77c880328d,Family Christian,4,20
+sch_08ca24d955c499c2,Amite,4,15
+sch_3ea56e24e164e46c,Lutheran,4,11
+sch_75a032c7ca398a49,Maplewood Middle School,3,64
+sch_2f74088934cf558b,Summerfield,3,51
+sch_fbc5cf2d82ca881a,Acadiana Christian School,3,34
+sch_6995cdf2086ea678,St. Joseph's - Plaucheville,3,30
+sch_6c09ae1de26e1688,Northshore Vultures,3,29
+sch_7c5917a03114596a,Brighton School,3,18
+sch_a51eec349a07fd37,Northeast Baptist School,3,16
+sch_ad69c764ab2308bd,Faith Christian,3,15
+sch_be274fb46f2d46fc,Claiborne Academy,3,11
+sch_6756aa3159b5a462,False River,3,8
+sch_8c0db81155f52937,St. Tammany,2,106
+sch_a463f1bbc23fb9ef,The Christian Academy,2,60
+sch_52cc4879bab5f81e,St. Mary Academy (NO),2,17
+sch_b9d594ddd0e2baa4,LJA Trojan Flash,2,14
+sch_5166c1c0b7111722,St. Bernard,2,12
+sch_1462de0922383382,Crescent City Christian,2,9
+sch_d6dc51e041f98c83,Dodson,2,8
+sch_8a53046065d55627,Word of God Academy hs,2,7
+sch_3e0652cd531ae280,Ascension Christian,2,5
+sch_95b75a25979ec088,Salesian,2,5
+sch_b73adf1f81673473,Kilbourne,2,2
+sch_7e1eb94a4c0a9a3b,Claiborne Christian,1,83
+sch_99bdbf65802d6deb,Harrisonburg,1,17
+sch_f8b92f6d5dd3860d,Morehouse Magnet School,1,13
+sch_da99b881f9356357,Open Door Christian Academy,1,12
+sch_09699324868bb646,Forest,1,3
+sch_3acd973cde36e0a6,Bethel Christian,1,1
+sch_2a531c2a92dca316,Booker T. Washington - N.O.,1,1
+sch_e734f124a2306079,Dr. King Charter School,1,1
+sch_617b2dadcbbbf8af,Epps,1,1
+sch_89c24f4bc697e108,Ridgewood,1,1
+sch_9b94f642b777cba4,University Academy of Cenla,1,1
+sch_35be238848956c47,Stanley,0,88
+sch_c72eab3d9e061270,Monteleone,0,78
+sch_24305795caac8ddc,Tioga Jr. High,0,66
+sch_dfc884118564b7fc,Alexandria Country Day School,0,54
+sch_3c269a4c59cc7923,Mustangs,0,54
+sch_8628cba38ed52404,Our Lady Queen of Heaven,0,54
+sch_85e3cc0f53866311,St. Mary's Nativity School,0,50
+sch_8ee9e3c38200d684,STEM Magnet Academy of Pointe Coupee,0,50
+sch_53d1b969205e57cf,Great Hearts Harveston,0,43
+sch_62fe0b9624d77b3a,Levi Milton,0,42
+sch_ec26154fe7d1c9d2,South Walker Elementary,0,40
+sch_fac836af76ffb6ac,St. Paul's Episcopal HS,0,39
+sch_a0bdd673cfde9aa0,Alexandria Middle Magnet School,0,30
+sch_72c92aa3d84382aa,New Living Word,0,29
+sch_66820dd68fcc0cda,GCM WILDCATS,0,28
+sch_fae86b9e5f993073,Holy Family School,0,25
+sch_b97a5a3f3f5bcb5b,Holy Trinity Academy,0,25
+sch_b8153ce96de94f9b,Greenville Park Leadership Academy,0,24
+sch_89a1b06d87f80f8d,John McDonogh (CLOSED),0,18
+sch_b091a9ba22153446,Louisiana Key Academy,0,15
+sch_8fda2abcbbd4ef9c,Negreet,0,15
+sch_52a7616c78eccf5b,Vision Academy,0,14
+sch_bee3bec5e4635a5d,Caroline Dormon Junior High,0,13
+sch_1ec0f8f89473303e,Central School,0,7
+sch_1e01f6c305d273c6,Immanuel Christian School,0,7
+sch_cf41aebd638bfda0,Hope Academy,0,5
+sch_1002d739a9820d97,Lycée Français International de la Louisiane,0,3
+sch_60aef3f5d27e492a,Pointe Coupee Central,0,3
+sch_7121fec4dc0be903,Raiders Express,0,3
+sch_ae5d6c6d18d34c7f,North Caddo Middle School,0,2
+sch_88c19c2d07bdb0f6,Northeast Louisiana Christian Homeschool Association,0,2
+sch_3643dfebedee2470,Converse Middle School,0,1
+sch_60e8f09434d9a530,Northshore Homeschool,0,1
+sch_749dbc61bae9e677,Port Barre High School,0,1
+sch_df9c0afacb4c6111,Acadiana Prep,0,0
+sch_8286f4575b00acbe,Algiers Technology Academy,0,0
+sch_3cb8bd6157209276,Architecture Design Engineering Prep,0,0
+sch_ebedafaca8075816,Ascension Classical School,0,0
+sch_f5b86702fd05c7fa,Ascension Preparatory School,0,0
+sch_242dc8ff3641ea8b,Assembly Christian,0,0
+sch_a95bc9ac5492c697,Athens,0,0
+sch_61205298fcde4dcd,barbados combine,0,0
+sch_5cbf7ef4c32c8b64,Baton Rouge International,0,0
+sch_81c391b3e67ab6e9,Believers Life Christian,0,0
+sch_f49a6f3e307ed7e9,Belle Place Middle,0,0
+sch_98866e92ca616c1e,Benton Independent Academy,0,0
+sch_655c33b106f81ef3,Bernice,0,0
+sch_4a68e27997e40c98,Bethany Christian,0,0
+sch_a3eb1da9fb8dd244,Bienville,0,0
+sch_23c082b9c3b78b50,Bishop McManus Academy,0,0
+sch_227ac7800eaf9799,Boothville-Venice,0,0
+sch_bdacc890f3624a7c,Brusly Middle School,0,0
+sch_ae83963737c45417,Buras,0,0
+sch_5b691063c8c3db11,CAD,0,0
+sch_88545bd1ddd80916,Cedarwood,0,0
+sch_8b03888d3f4b5490,Cenla Storm High School,0,0
+sch_9eb4691de886efd7,Changin Gears HS,0,0
+sch_4eaa401d6055d0a6,Cheetahs,0,0
+sch_f7c12d79e27bfb4e,Christian Homeschool Assc. NE,0,0
+sch_66133df78e3dbd8c,Christian Life Academy,0,0
+sch_7286dcb3123f4ca7,Clinton (now East Feliciana),0,0
+sch_b5bd248dc878835a,Cohen College Prep,0,0
+sch_ea237311dbc5f233,Cotton Valley,0,0
+sch_cff631256fc716f9,Cristo Rey Baton Rouge,0,0
+sch_c07d97f1e97500c3,Cypress Heights Academy,0,0
+sch_eed9146a64e3c263,Davidson,0,0
+sch_35b94218f901d389,Delta,0,0
+sch_972805bbc72325b9,Denham Springs JH,0,0
+sch_ffdc2ed436d912f4,Desire Street Academy,0,0
+sch_b99415c5d8ecfadd,East Baton Rouge Laboratory School,0,0
+sch_902c64ac926bcefe,Ecole Classique,0,0
+sch_1d9e9cdada904fd6,Episcopal Day School,0,0
+sch_8c958732c90a3a57,Excelsior-Christian,0,0
+sch_5a707007f17d9034,Fairview,0,0
+sch_33bb489ffe0ab37c,Family Community Christian High School,0,0
+sch_856de47e027f3956,Farmerville,0,0
+sch_a0e7aef50921fb32,Fortier,0,0
+sch_7d6acebf07c81206,Gables Academy,0,0
+sch_ff7c243503a159f2,GIBS-COLE,0,0
+sch_a3ebe3857fc26751,good tree good fruit learning,0,0
+sch_6b9f67c5ef4f0559,Grace King,0,0
+sch_e1c46f5ba9c48a35,Grambling High School,0,0
+sch_14c0570c84321c3e,Grand Caillou,0,0
+sch_3f4fc7df858e6480,Helen Cox,0,0
+sch_365ac3e3c568b13b,Holy Rosary,0,0
+sch_71af4e40da80bdc7,Hosanna Christian Academy,0,0
+sch_507805b92492db00,Hyatt,0,0
+sch_99e609d2bda2d005,Immaculata,0,0
+sch_b94fc267587150ff,Kennedy,0,0
+sch_8f048b9148ccd354,KIPP Renaissance,0,0
+sch_c0108fa9bb1e3888,Lake Charles Boston,0,0
+sch_f00ebb48868f6a6b,Lake Providence,0,0
+sch_a82b4e6c5fa9f2ce,Landry-Walker,0,0
+sch_08f089844019dd0c,Lawless,0,0
+sch_3e1fc5af513dac76,Life Christian Academy HS,0,0
+sch_21cd3085a4faa257,Lions,0,0
+sch_826cbaed5c1a236a,Louisiana Distance Project,0,0
+sch_91a4a314634bd977,Louisiana New School,0,0
+sch_a15b22b315405656,Louisiana Running Company,0,0
+sch_b2bf362e55b202a1,Lusher Charter School,0,0
+sch_83ace7c698ec8e9a,Marion,0,0
+sch_8fa37b5d17b4f3b8,Miller McCoy Academy for Mathematics and Business,0,0
+sch_8b779740214678ca,Millerville Academy,0,0
+sch_170584589fd1d98f,Monticello,0,0
+sch_b1435fccb9010e1a,Mt Olive Christian,0,0
+sch_6daec0f4fff2db33,Nakuru,0,0
+sch_53030a183d1f3a53,O P Walker,0,0
+sch_6954958c943914ab,OLQH Barons,0,0
+sch_7044eba716c2b3f4,Pecan Island,0,0
+sch_7a2014ae4901273b,Pelican High School,0,0
+sch_2439772f10b036ef,Peyton Arthur,0,0
+sch_478d7664604d4904,Pineview,0,0
+sch_1339e84478edba3d,Port Sulphur,0,0
+sch_a567b1e63caa53e5,Priestly Charter,0,0
+sch_304dec3add0e3251,Rabouin,0,0
+sch_9a6c9f422f09ec1e,Redemptorist (BR),0,0
+sch_d315affedc2737d2,Redemptorist (NO),0,0
+sch_341c70d06082aafc,Reserve Christian,0,0
+sch_f1ca07687a791f29,Richmond,0,0
+sch_15121c70251cdb3b,Rosenwald Collegiate Academy,0,0
+sch_130763f0a2e90662,Runnels,0,0
+sch_3da18869298dc1cd,Sarepta,0,0
+sch_de959e15064d7d5b,Senergy,0,0
+sch_67e625123a5f3d94,Shady Grove,0,0
+sch_0cb5a63fefffc5f4,Shongaloo High School,0,0
+sch_0a98c0f20bcdde7c,Sicily Island,0,0
+sch_d9103bcd9741d7ee,Silliman,0,0
+sch_cb4d8b5ceddef67d,South Beau Knights Rec,0,0
+sch_61c8bb36436c248f,Spearsville,0,0
+sch_eeb50053dca8b929,St . Luke's Episcopal School,0,0
+sch_e0696f5db4fb8361,St. Therese Academy,0,0
+sch_51dc9d04f681ece7,St. Thomas More Catholic School,0,0
+sch_90e588d93c46b3c6,Sulphur Juniors,0,0
+sch_33170672cd864ddd,Sunshine,0,0
+sch_ee0d8efad76ab8ae,Tangipahoa Parish High School,0,0
+sch_415361357ec30cc6,Trinity Christian,0,0
+sch_87be705176a32475,University Christian,0,0
+sch_caf769a029dfa8f5,Vermilion Charter Academy HS,0,0
+sch_78331ead9758de4a,Vipers track club,0,0
+sch_b6e56674a9289557,Warrior Track Club,0,0
+sch_af13b8782e76f488,Winnsboro,0,0
+sch_81aabe908faccd94,Yellowjackets track club,0,0

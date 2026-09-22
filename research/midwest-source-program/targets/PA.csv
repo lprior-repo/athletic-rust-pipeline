@@ -1,0 +1,911 @@
+school_id,name,co2027,athletes_all
+sch_a865dd0cf4f99fe2,North Allegheny 07,137,384
+sch_b18d69364143dd87,Lower Merion 01,132,297
+sch_5215a074dda5356f,Strath Haven 01,129,367
+sch_d3afb8ee15de254b,Upper Darby 01,128,299
+sch_9b2ed9f0881396f1,West Chester Henderson 01,120,299
+sch_3d6e9ae5abe99197,North Penn 01,119,369
+sch_d3b844a6fd111528,Seneca Valley 07,119,294
+sch_e071a0c710481081,Spring Ford 01,116,335
+sch_9e6b5120ff929dfb,Parkland 11,115,506
+sch_d379c706364006ff,Pine-Richland 07,114,346
+sch_5d21a90ac1cdfd8c,Owen J. Roberts 01,106,274
+sch_02dfd1439c5e8de1,Downingtown West 01,104,271
+sch_45ea5c4542873b1c,State College 06,102,280
+sch_75318a22839d2e35,Downingtown East,100,330
+sch_eca1551771824659,Perkiomen Valley 01,98,295
+sch_6e3c99bfdbd732f4,Pennsbury 01,97,268
+sch_f47fbfd6b73637fd,Stroudsburg 11,96,266
+sch_2d75f96f46ff3fdc,Reading 03,96,191
+sch_d3d2dfc1ae66a853,Conestoga 01,95,286
+sch_09acdf43692dc342,Great Valley 01,91,231
+sch_bb167e723850f7aa,Haverford Township 01,90,301
+sch_ee14bd09ef2a4a19,McDowell 10,90,260
+sch_ec43af2376d877eb,Upper Merion 01,89,216
+sch_51accc12398f9bbf,Hempfield Area 07,88,321
+sch_75dcf126be217372,Liberty 11,88,272
+sch_a0290bd82a79dece,Methacton 01,88,258
+sch_87620d72287694e5,Milton Hershey 03,88,237
+sch_31b26f75684015b1,Mount Lebanon 07,87,236
+sch_fe7e32897114fb83,Carlisle 03,85,213
+sch_59087e58ac9b793e,Altoona Area 06,84,279
+sch_300c75ee775c07ee,Wissahickon 01,83,196
+sch_34ca72ee8bc2e2e5,Nazareth Area 11,82,209
+sch_a12a6f1d17beee52,West Chester Rustin 01,81,186
+sch_24787eaf93af854e,Marple Newtown,78,223
+sch_c1ec4ad5c857a7ca,Phoenixville Area 01,78,204
+sch_ab319aa300008faa,Easton Area 11,76,167
+sch_9522f26632efd64d,Neshaminy 01,75,210
+sch_69a24f6698bc6e09,Penncrest 01,75,203
+sch_3702c6ce957f187b,Upper Dublin 01,75,190
+sch_0aa6fa8ddea0f35e,Ridley 01,75,178
+sch_cab44af6b8e61d27,Shikellamy 04,74,202
+sch_afa5935af113d708,Wilkes-Barre Area 02,74,153
+sch_f2cc07d3d4aa8cdb,Norwin 07,73,502
+sch_1038cdbd5a89ae8e,Garnet Valley 01,73,333
+sch_ee3494de059d8f5e,Souderton Area 01,73,248
+sch_53ce059a6d98932e,Taylor Allderdice 08,73,209
+sch_099c084eb898b3f8,Hatboro Horsham 01,73,175
+sch_80b8033ea861c49e,Germantown Academy,71,271
+sch_949f3764cc0eee53,Radnor 01,70,196
+sch_486bef19e613d631,Council Rock North 01,70,193
+sch_dd96cdc271ab9d9c,Palmyra 03,70,187
+sch_088e8374c574880a,West Chester East 01,70,179
+sch_868a7b42f5fdce58,East Stroudsburg South 11,70,172
+sch_41a5fcd5e097ccd9,Williamsport Area 04,68,244
+sch_c2d386bd4674984e,Butler 07,68,206
+sch_2ae920dff3324373,Central Bucks South 01,68,169
+sch_fdc02a7bdc0b66f6,Moon Area 07,67,198
+sch_1b24214608523302,Coatesville 01,67,173
+sch_8f32ad7c9c7ffe32,Pennridge 01,66,196
+sch_713fcc8626789944,Unionville 01,65,197
+sch_b0f38e5ae1ee2f53,William Allen,65,188
+sch_c21feb257d5dfa7a,Manheim Township 03,65,162
+sch_2ab0e2d2d916fd11,Avon Grove 01,64,207
+sch_18dcbbbdf972d7dc,Cardinal O'Hara 12,64,160
+sch_f8cce08c527f7ef1,Hempfield 03,64,158
+sch_9eacd8d1830ee146,Fox Chapel Area 07,62,394
+sch_de18dca10b0ef61c,Springfield (Delco) 01,62,223
+sch_525db6ff89fb16b7,Governor Mifflin 03,62,168
+sch_d932fff317596a9c,Red Land,62,154
+sch_40fc4bc3f22fa68e,Episcopal Academy,61,279
+sch_a314d790e9e6a3a9,Plymouth Whitemarsh 01,61,230
+sch_49ae25cb743e33e5,Emmaus 11,61,214
+sch_be1114b3344306a2,Council Rock South 01,61,171
+sch_4cbdb0d17157a1e8,Upper Moreland 01,61,142
+sch_074146a7bb05595b,Franklin Regional 07,60,237
+sch_152a5ac2d121fce2,Canon-McMillan 07,60,205
+sch_8058e18b2d85fdae,La Salle College 12,60,197
+sch_7db085612d755933,Penn Manor 03,60,167
+sch_085413f0da7286d2,Whitehall 11,60,151
+sch_5c2c7bc56bd1ba07,Saint Joseph's Prep 12,59,223
+sch_b2de1d01eee08af6,Shady Side Academy 07,59,177
+sch_ce377c50d8750950,Central Columbia 04,59,164
+sch_1dc4366c889c857e,North Hills,59,153
+sch_6d1ed58db7759fa4,Louis E. Dieruff 11,59,121
+sch_c6e96a762a7d0562,Hershey 03,58,188
+sch_e71ad51c4faead08,Upper Perkiomen,58,175
+sch_87ff9ba3481fc21c,The Hill School,58,144
+sch_0e0d6b3414bafe48,Lower Dauphin 03,57,153
+sch_9bccf8262a2a8ba2,MsgrBonner & AbpPrendergast 12,57,151
+sch_a17bb65db0ce05b9,Cumberland Valley 03,57,147
+sch_59c4ceeebc5911e5,Mars Area 07,56,474
+sch_ef51673c9084b5bf,Northeast,56,173
+sch_f6b6a5190e993f7f,Chambersburg 03,56,154
+sch_aa38e56f4d0ebbeb,West Perry 03,56,133
+sch_81dd07ce918f9d02,Exeter Township 03,55,301
+sch_5b5134341f872695,Shamokin Area 04,55,211
+sch_131e7725952e6197,Harriton 01,55,183
+sch_daf4d5d123c05369,North East 10,54,259
+sch_0fcb8ae2b987550d,Cedar Crest 03,54,171
+sch_a0d08907df564558,Harry S Truman,54,152
+sch_ab9ee68623118c22,George School,54,134
+sch_ecd199c836a36cc1,South Western 03,54,129
+sch_4305cbb729aa97b0,Hazleton Area 02,53,349
+sch_aec9e710367722c2,Central Bucks East 01,53,187
+sch_09cd096a52ce25d8,Montour 07,53,187
+sch_7cce61ecdc939092,Northampton Area 11,53,182
+sch_405ac77d28786f2c,Mount Saint Joseph Academy 01,53,139
+sch_e41c826480b94811,Chichester,53,128
+sch_19a65e51b6d28a23,Norristown 01,53,116
+sch_b801dfe6d4eccdf6,Freedom 11,52,197
+sch_06f56ecf7b3d11d2,Cathedral Prep 10,52,117
+sch_d14b26905f692448,Erie 10,51,138
+sch_5bfc839bab724a3b,Warwick 03,51,135
+sch_acfb303afd94ad5f,General McLane 10,51,127
+sch_ac44a8e0ef9bf012,Conwell-Egan 12,51,117
+sch_de4688effc2a131e,Wyomissing Area 03,50,250
+sch_ac65522c04c551f5,Abington,50,176
+sch_3fb44d2c0fc1f162,Bensalem 01,50,171
+sch_584de8b08d69c5e6,Lebanon,50,160
+sch_efca5bf6585c75b3,Bishop McDevitt 03,50,139
+sch_791dfcf5366be663,Pottsgrove 01,50,139
+sch_7b63f89e904578a9,Bishop Shanahan 01,50,131
+sch_1d56e5f8a16c2ebf,Avonworth/Northgate 07,50,128
+sch_17aa775c096bf429,Dallastown 03,49,195
+sch_9279320a35a3b46e,Muhlenberg 03,49,154
+sch_d334f3d8b9b9e1f8,McKeesport Area 07,49,138
+sch_160b0061fc66f49a,Central Dauphin 03,49,136
+sch_92ed7c1e5cab7f6e,Uniontown Area,49,116
+sch_ab3f6f649b5d6f2f,JP McCaskey 03,49,102
+sch_e57065be211b27a8,Danville Area 04,48,285
+sch_7817106f3dc50252,Wilson 03,48,166
+sch_60cbfbfb01632038,Middletown Area,48,144
+sch_37a22b5974812b7d,Engineering & Science 12,48,128
+sch_7f598c22077a7722,Bedford 05,48,123
+sch_e9d5c594722243ba,John Bartram 12,48,99
+sch_4af8633b9be24c4b,Hickory 10,47,292
+sch_d3bf8c936cc2e6ec,Penn Charter,47,207
+sch_43f0fd357af6bf68,Bellwood Antis 06,47,166
+sch_1832c15b22eb014a,Harbor Creek 10,47,156
+sch_018878b6900d77b4,East Stroudsburg North,47,134
+sch_e162894eb255bb32,Mercersburg Academy,47,121
+sch_4232f76dba849f4c,Notre Dame Green Pond 11,47,109
+sch_2f50ed81d2e83425,Wilson Area 11,46,226
+sch_0099c82ae861d04a,Lewisburg Area 04,46,216
+sch_097d8974833d1b15,Plum 07,46,175
+sch_754f20bfdfe3ae4c,Boyertown,46,145
+sch_b8f66516f6cc089d,Malvern Prep,46,138
+sch_5ab072460903346e,Quaker Valley 07,46,131
+sch_5ccfdc09d9fb967e,East Pennsboro Area 03,46,119
+sch_a6843cd9c41fe067,Quakertown 01,46,115
+sch_f42eaa21f6a1137e,Archbishop Carroll 12,46,110
+sch_c012c796fc95526a,Milton Area 04,45,164
+sch_f084f6844602b571,West Allegheny 07,45,158
+sch_df9da49a1e1b20c8,Warren Area 10,45,149
+sch_98ac02df62b956b6,DuBois Area 09,45,128
+sch_0ddcd3312516e419,Central Bucks West 01,44,162
+sch_75712345d8865b40,Chartiers Valley 07,44,153
+sch_b5d5ae9b0f6bf619,Indiana Area 07,44,146
+sch_231acd6238ab1152,York County School of Tech 03,44,145
+sch_c4947c63081da0fc,Selinsgrove 04,44,144
+sch_3c0ada08aee5d67b,Pope John Paul II,44,139
+sch_fb75ec4a56ccaeef,Archbishop Ryan 12,44,137
+sch_daa23084a18b7f6d,Lancaster Catholic 03,44,133
+sch_fd445185d90e7baa,Central Dauphin East 03,44,96
+sch_babc5f043d54f080,George Washington 12,44,75
+sch_b4e29268cdfbfe03,Pocono Mountain West 11,43,247
+sch_99e77265d87f2cb3,Pottsville Area 11,43,244
+sch_dd231555cd217f52,Greater Latrobe 07,43,226
+sch_687da1adb3f33ba5,Mechanicsburg Area,43,178
+sch_50ee8e1b15c49236,Baldwin 07,43,175
+sch_2193aae883447189,Hollidaysburg 06,43,170
+sch_8ee67fef13ba91f9,William Tennent,43,146
+sch_55f9e5c12a23d22f,Clearfield Area 09,43,116
+sch_5cfb89eb0302bb4a,Towanda 04,43,110
+sch_7ea5773bc861e3dc,Ephrata 03,42,337
+sch_d342c436f08090d5,Blue Mountain 11,42,244
+sch_1029b991e5330aa6,William Penn 03,42,160
+sch_d4ed87bac329fe44,Woodland Hills 07,42,136
+sch_fe0c1b0d1138c1a4,Bradford Area 09,42,123
+sch_b30bbc2d5202d53e,Cedar Cliff 03,42,121
+sch_975daaace092c603,Hopewell 07,42,117
+sch_7ae0b0d7b071d5f4,South Park 07,42,103
+sch_318920aae13f7bab,Perkiomen School,42,102
+sch_4c9fb736ecd28970,Delaware County Christian 01,42,96
+sch_4267cf85b6170cbc,South Philadelphia HS,42,90
+sch_f28d1b21504a692a,Northern Lehigh 11,41,184
+sch_0ed3f1a847ceeba1,Pocono Mountain East,41,168
+sch_6099917615c13827,Central Valley 07,41,157
+sch_d348893a11adacca,Montoursville Area 04,41,136
+sch_d0737881e499d695,Cheltenham 01,41,134
+sch_6e2b55784b7897c4,Connellsville,41,120
+sch_6e6acbb99dd24e07,Allentown Central Catholic 11,41,116
+sch_d087406e58587086,North Catholic 07,41,112
+sch_b4b5c58bb232e4da,Trinity 03,41,110
+sch_20587412891a5852,Neighborhood Academy 07,41,105
+sch_4b3c6103ddb62d61,Trinity Area High School (7),41,101
+sch_c44df15d5b04f567,Conrad Weiser 03,41,100
+sch_78f49b0b0b17b528,Peters Township 07,40,141
+sch_38f4e484ef1b02f3,Fairview,40,130
+sch_3b2b3b5410503610,Interboro,40,120
+sch_e601717b741c6d04,Schuylkill Valley 03,40,107
+sch_f3b26cd426d40d5e,Gettysburg Area 03,40,105
+sch_dbe9f0f4d1467f2f,Greenwood 03,40,92
+sch_ab16b8dde3bfd38d,Greater Johnstown,40,91
+sch_af43ff8b562cde1c,Riverview 07,39,155
+sch_1b7b44d4480237c6,Villa Maria Academy,39,126
+sch_fbbc5b7391abe460,Pleasant Valley 11,39,125
+sch_ebe1cda60da013d0,Athens Area 04,39,118
+sch_51cd43f75c419f03,Conestoga Valley,39,109
+sch_e538d7d011e92394,Derry Area 07,39,109
+sch_95804f19c021629b,Chestnut Ridge 05,39,105
+sch_4e6865f44e44915c,Twin Valley 03,38,220
+sch_dc6f6a1760dc3718,Girard,38,156
+sch_151df6927aff5835,Susquehannock,38,115
+sch_93bffa5abba63954,Elizabethtown Area 03,38,114
+sch_e5ad6d1592310f28,Susquehanna Township 03,38,110
+sch_49572034701a0a89,Abington Heights 02,38,105
+sch_73220cdf15475251,Palisades 11,38,103
+sch_79a6592b0a717d6d,Montgomery,38,78
+sch_21ace61648ab971a,Bethlehem Catholic 11,38,69
+sch_0b169562f256d044,Oil City 10,37,252
+sch_4b115705a5e9ddec,Fort LeBoeuf 10,37,219
+sch_5f41483d634e8bf4,Fleetwood Area,37,218
+sch_d2d9ccab4a3155cb,Central Cambria 06,37,183
+sch_37b0d72b9e49f174,Slippery Rock Area 10,37,183
+sch_bd2a244e3f91c9a9,Shippensburg 03,37,152
+sch_b9d9c8502d56633f,Belle Vernon 07,37,138
+sch_878a6c53523085b2,Somerset Area 05,37,127
+sch_1b5f01aba7b42ca9,Bethel Park 07,37,122
+sch_63770788cedc9b5a,South Fayette 07,37,117
+sch_aa470ebc86613d05,Forest Hills 06,37,112
+sch_df15e299ca05f946,Midd-West 04,37,90
+sch_fbcca3a4fcd8bb76,Delone Catholic 03,37,87
+sch_6c4f20c55881d96f,Dallas 02,37,86
+sch_e442866530c996b3,Southern Lehigh 11,36,318
+sch_f1f06f81619b724e,Mount Carmel Area 04,36,172
+sch_9fcceda5bcb55848,Loyalsock Township 04,36,162
+sch_2db1ac9c058fb446,Wyalusing Valley Area 04,36,150
+sch_17269feea966a960,Merion Mercy Academy,36,136
+sch_0015adffb61befa0,Elizabeth Forward 07,36,132
+sch_b3425578162b1746,West Scranton,36,129
+sch_95bf674877f26b83,Bellefonte Area 06,36,124
+sch_ac231b906b4b93b6,Kennett 01,36,119
+sch_b70c53386190c15a,Catasauqua 11,36,114
+sch_f7dfafb559a95035,Central York 03,36,105
+sch_644abcf49505d7a4,Lansdale Catholic 12,36,101
+sch_e79588228c6600b2,Oxford Area,36,100
+sch_f70d7649ccb1ebac,Salisbury Township,36,100
+sch_e6ca8e5197ce71c9,Academy Park 01,36,83
+sch_edacb632bf8191e6,Wyoming Valley West,36,82
+sch_71e5fa4d5b81544c,Marian Catholic 11,36,74
+sch_8ec6665bed75483e,Riverside 07,35,193
+sch_53f5ed15a62df749,New Oxford 03,35,168
+sch_dfded4d6ab00a7a6,Laurel Highlands 07,35,117
+sch_cbf205e4acd7ba63,Springfield Township 01,35,117
+sch_b90be50271048376,Central 12,35,107
+sch_2b033425038766e5,Ringgold,35,103
+sch_e85e9bfce40e3f29,Martinsburg Central 06,35,101
+sch_b4679d7625ace9a9,Propel Braddock Hills High School,35,77
+sch_4e8aeaced5a1d5d3,Cristo Rey Philadelphia,35,67
+sch_4edc3d30deca7a59,Richland 06,34,252
+sch_e9bba7aac7c93ce1,Beaver Area 07,34,223
+sch_bebc36e695ce0fd3,Greenville 10,34,199
+sch_ef7b816f4d65005d,Jim Thorpe Area 11,34,193
+sch_50fc6b45e6c23b9a,Punxsutawney Area 09,34,186
+sch_a41485511bc6e925,Northern York 03,34,158
+sch_f0f2e2b5ab733cc7,Beaver Falls 07,34,138
+sch_14c43d2b9a95f5fc,Westtown School,34,131
+sch_f4ff8ca3ed1bc509,James Buchanan,34,112
+sch_9ac9c585c5199bee,Eastern Lebanon County 03,34,104
+sch_54b5762651d5cfc7,Simon Gratz 12,34,98
+sch_aa28d9cdbecf8e80,Tyrone Area 06,34,98
+sch_619fa2a441360353,Hampton 07,34,95
+sch_4e6ab9574db1aa74,McGuffey 07,34,88
+sch_7f593b642cc3ffdc,Freedom Area 07,34,87
+sch_a19c72054d961c01,Mercy Vocational HS,34,58
+sch_60540a24bfb4aed5,Mohawk 07,33,168
+sch_bfebd90f9585d190,Susquenita 03,33,126
+sch_ddc636eb3b05a3c3,Penn Wood 01,33,118
+sch_823d978b246d8fb9,Wallenpaupack 02,33,108
+sch_d5723da85700405c,Berks Catholic 03,33,105
+sch_c2ac8fb0f0fa68a2,Penn Hills 07,33,94
+sch_17406b5a33228c02,Community Academy of Philadelphia Charter School,33,87
+sch_b1fcec191ded2ec6,Waynesburg Central 07,33,83
+sch_e93f0a189dcb56d1,Fels High School,33,75
+sch_43df65ea8f34a8a1,Freire Charter School,33,70
+sch_ed7846db8776bc88,Grove City Area 10,32,236
+sch_59262a7a9618e073,Greencastle-Antrim 03,32,197
+sch_eadc44b24f97b980,Camp Hill 03,32,140
+sch_24833e34d50d604c,Faith Christian Academy 01,32,123
+sch_662c4241f54453f3,Eden Christian 07,32,119
+sch_e83f67d0a58d5d37,Red Lion,32,101
+sch_a524ca934ed15891,Shaler Area 07,31,317
+sch_1ea4fadf27d917e9,Germantown Friends School,31,160
+sch_b1414af304eef5ee,Meadville Area 10,31,151
+sch_7fb9efd113327b5d,Penn Trafford 07,31,140
+sch_bafccf314ea99c9f,Harrisburg 03,31,112
+sch_8e156a054e09a357,Spring Grove 03,31,95
+sch_48ce25f83f2c087c,York Suburban,31,95
+sch_c2bdaab0b6b6a77c,Pittsburgh Central Catholic,31,92
+sch_9c605e5005d04268,Lower Moreland 01,31,86
+sch_02495a374725b9cb,Church Farm School,31,80
+sch_abf3503198534fab,Archbishop Wood 12,31,70
+sch_6d2a95bcdf81e85a,North Pocono 02,30,177
+sch_afaa796c95242067,Armstrong,30,172
+sch_f93e690cefcb48f6,Western Wayne 02,30,166
+sch_ba0370aa90db2ffb,New Castle 07,30,158
+sch_f446b7348b9afe6e,Mount Pleasant Area 07,30,151
+sch_05c8cdf9c9eab1c9,Saint Marys Area 09,30,147
+sch_f441a3b0446dc7c2,North Penn - Mansfield 04,30,137
+sch_199a2c0278738e80,Upper Saint Clair 07,30,137
+sch_95fc02292f096b93,Bermudian Springs 03,30,135
+sch_2b3695f834de9972,Jersey Shore Area 04,30,106
+sch_21551c6587b5eb8e,Father Judge 12,30,101
+sch_093702383c7f8f38,Boiling Springs,30,99
+sch_753546f6d879f601,Fort Cherry 07,30,96
+sch_38c6667b23c03a3f,Mifflin County 06,30,93
+sch_b73469dddf091de2,Northeastern 03,30,93
+sch_bd77988a1ca70b31,Southmoreland 07,30,87
+sch_7b6cb8073d9b73fa,Oley Valley 03,30,83
+sch_7e720869998c3e39,TECH Freire Charter School,30,83
+sch_bf9ee11c7526224b,Philipsburg-Osceola 06,30,75
+sch_44d487c9eb589a3e,Nativity Bvm 11,30,55
+sch_462703ee3db1fbd1,Riverside 02,29,201
+sch_5f73f906653e84be,Scranton 02,29,150
+sch_bb8d9573baa2fd7a,Pittston Area 02,29,121
+sch_b35a961c4f6e8a78,Octorara 03,29,120
+sch_a7f74ebe54726863,Tamaqua Area 11,29,120
+sch_85887d859a1e99b1,Gwynedd-Mercy Academy 01,29,119
+sch_2cb25a7b51308d2f,Hamburg Area,29,117
+sch_5557a9c8758dab40,Lampeter Strasburg 03,29,113
+sch_3b3eb80faadd0a94,Conemaugh Township 05,29,96
+sch_af1afb0ea42e79cf,West Mifflin 07,29,85
+sch_03d6559fb5eda3c8,St. Hubert's 12,29,81
+sch_5d48c1a8e3d153bb,Scranton Preparatory 02,29,79
+sch_f9f973fc297a79ec,Donegal,29,78
+sch_29fd21f71d3e2ba5,Swenson Arts & Technology,29,77
+sch_1fedb0490598f667,Nazareth Academy 12,29,71
+sch_b7b2cff06e8dd6a6,Titusville 10,29,69
+sch_f249ad4db70b31d0,A. Philip Randolph Career Academy,29,43
+sch_d0dba6b5e1e84280,Knoch 07,28,191
+sch_7ef4bd8e740b99d0,Valley View 02,28,160
+sch_bc966c8907d68176,Thomas Jefferson 07,28,153
+sch_3eb862922c612f67,Schuylkill Haven 11,28,151
+sch_a4b9d1c6d5c5a254,Sharon 10,28,149
+sch_102e2aa4177cbc27,Cranberry 09,28,144
+sch_e91470692f178d1f,Abington Friends,28,140
+sch_371dab7fb4a0352d,Iroquois,28,135
+sch_c9e33c1cfc4b59ca,Northwestern Lehigh 11,28,129
+sch_7e45560ab93e89fe,Eisenhower,28,127
+sch_c582342d11b539a2,Holy Cross 02,28,125
+sch_11a285c439050eda,Wellsboro Area 04,28,122
+sch_e29d45f1c7a9b443,Williamson 04,28,119
+sch_5ba5d1e1ef05b7ce,Central Mountain 06,28,114
+sch_1c25877a377a51c6,River Valley 06,28,107
+sch_24a86596730f13e4,Penns Valley Area 06,28,91
+sch_b3dc0afe752d84f3,Sun Valley 01,28,79
+sch_58fc4b51e5343132,Lake Lehman 02,28,68
+sch_51d4486dceb2623c,West Philadelphia High School,28,61
+sch_b05280a03f83765c,Brownsville Area 07,28,60
+sch_99889d4a88724268,The Haverford School for,27,230
+sch_5c277263533db013,Shenango 07,27,224
+sch_710b9d59dd8652d9,Shenandoah Valley,27,141
+sch_e3dc24bd312d0c96,Phil-Mont Christian Academy 01,27,139
+sch_aec6969e4fde03fb,North Clarion 09,27,132
+sch_6f609e18bd5d3e7c,Palmerton Area 11,27,122
+sch_343257b27c80c75d,Yough,27,108
+sch_07cfdd4caeff7db3,Mid Valley 02,27,107
+sch_772e9c305d278c85,New Brighton,27,100
+sch_da8eef87636b2277,Ligonier Valley 07,27,96
+sch_561894847b999bf3,Gateway 07,27,92
+sch_9cbb7f83fd435a67,Karns City 09,27,83
+sch_7c5ceec11dbe1224,Mercyhurst Preparatory 10,27,71
+sch_67c5c8a65cc52fa9,Northern Cambria 06,27,70
+sch_862b6f68c1b01852,Little Flower 12,27,54
+sch_009dbba9e22c89f0,Audenried 12,27,45
+sch_55f7f88fba16dc1a,Vaux Big Picture 12,27,44
+sch_f94d52955092bfc6,Bangor Area,26,210
+sch_089d20c286f630ec,Lehighton 11,26,187
+sch_c0c2e7cdf10d597f,Friends' Central,26,149
+sch_34a6d5963acb12f5,Central Clarion,26,145
+sch_89af2a0e9fe961f4,North Schuylkill 11,26,119
+sch_a5e629a2259b6a6a,Albert Gallatin,26,82
+sch_3b4f67d7dab90219,Chester 01,26,70
+sch_ed6bffb371a9165c,Apollo-Ridge 07,26,56
+sch_993828837add25f7,Blacklick Valley,26,50
+sch_5e532f7e76ed1e53,Brashear 08,26,42
+sch_9183cbf4233b1eb2,Kiski Area 07,25,192
+sch_f076eb936658580b,Honesdale,25,165
+sch_49a26a734b18be6f,Waynesboro 03,25,161
+sch_42f9550fe934e2bb,Crestwood 02,25,143
+sch_7411b12c5e5b7854,Washington,25,131
+sch_4043961c94cee768,Deer Lakes 07,25,127
+sch_12c3d8ebea1ff05f,Troy 04,25,126
+sch_43bc1a86dcdf2c7c,United 06,25,112
+sch_3ff96befad6fc2f0,Marion Center 06,25,101
+sch_a816d8f99a552b44,School of the Future,25,101
+sch_327c356fc79ab4d7,Annville-Cleona 03,25,100
+sch_f8513adfbfacfe84,Solanco 03,25,98
+sch_38b239283aad965b,Garden Spot 03,25,94
+sch_53f051171cce8683,Warrior Run 04,25,94
+sch_70e3503a5f0ef7eb,Agnes Irwin,25,93
+sch_710d04c1be5ecdd1,Academy of Notre Dame,25,88
+sch_81f0b2581336102d,Aliquippa 07,25,56
+sch_f1c9071991b6a94f,Valley,25,51
+sch_11bd79296b46b863,Kiski Prep,25,46
+sch_e8471459839814e3,Sayre High School,25,41
+sch_8c19d5345f2b53ea,Brookville Area 09,24,189
+sch_393996ae892b1caa,Tulpehocken 03,24,146
+sch_f7f141d9af73cee8,Moniteau 09,24,120
+sch_4f455abb9818ca8b,Daniel Boone Area,24,91
+sch_c0d9afe2cad5c844,Bloomsburg 04,24,90
+sch_e1aadb037604873b,Baldwin School,24,79
+sch_417fb2038bd509ba,Tussey Mountain,24,79
+sch_5cb792730aac24e5,Wyoming Area 02,24,76
+sch_c969547940f7698d,Huntingdon Area 06,24,73
+sch_65018d03244e6db5,Lehigh Valley Academy 11,23,152
+sch_e41fb35f40d04c33,Burrell 07,23,149
+sch_6c7ebd55cefb790a,Franklin Area 10,23,136
+sch_87eaaf10e41c30d2,Chartiers Houston,23,130
+sch_ba9acf17e5ee49c5,Kane Area 09,23,101
+sch_f2a90766d1494fc8,Masterman 12,23,101
+sch_5009b889f475f46d,Northern Lebanon,23,101
+sch_bc53cb1c999b4ea9,Redbank Valley 09,23,87
+sch_4890a3cec85222b4,Our Lady Of Sacred Heart,23,77
+sch_4077243a961f8553,South Allegheny,23,77
+sch_0a9f66ba8e717b8d,Southern Columbia 04,23,73
+sch_83698ec89656a40e,Westinghouse 08,23,62
+sch_54822691b53ffa85,Frankford,23,60
+sch_0ec298e9c308e3ca,Imhotep Institute Charter 12,23,47
+sch_1362bbc4cb18d4ba,Corry Area 10,22,168
+sch_07b5ca5a031c1ae5,Kutztown Area 03,22,158
+sch_06a3132c6a5ee27a,Ambridge Area,22,124
+sch_e8e11258abc7490d,Hughesville 04,22,118
+sch_add33ffb8fa78d2c,Smethport Area,22,118
+sch_b7173096765c874f,Manheim Central 03,22,103
+sch_b27dc4699bc93f99,West Middlesex 10,22,95
+sch_a3f08e2a1b71181d,Girard College HS,22,70
+sch_178e3d7047156ed7,Shalom Christian Academy,22,70
+sch_35e8264343acd864,Keystone Oaks 07,22,65
+sch_a684694f2606a89c,Frazier,22,62
+sch_33d9eb62f871f178,Shoemaker - Mastery Charter,22,60
+sch_aeaf13e442809b62,New Hope-Solebury 01,22,58
+sch_5290d78da9584ace,Bethlehem-Center 07,22,57
+sch_5f4f4ad54b4376a9,Strawberry Mansion 12,22,52
+sch_67693254f5afc2a6,Perry Traditional Academy,22,49
+sch_104b5817346c7b29,Wilmington 10,21,198
+sch_4411c8308a1d563c,Saucon Valley,21,176
+sch_dc00d914aacefc8d,Delaware Valley 02,21,112
+sch_6d6747e85d51d032,Carlynton 07,21,105
+sch_4b058a2a71a15b79,Benjamin Franklin 12,21,102
+sch_8784bbb7cd65dd59,Bentworth,21,100
+sch_ea25fd347baf28f0,Sharpsville Area 10,21,98
+sch_9a98bd5d29c43673,Farrell 10,21,94
+sch_3dcf0e20f014cfa5,Eastern York,21,91
+sch_bb721c2570eb50e5,Academy at Palumbo 12,21,82
+sch_a740a708a89e0f2f,Berlin Brothersvalley,21,79
+sch_c4019726217d1d1a,Northwest Area 04,21,68
+sch_be86f7ae8ac771ae,Martin Luther King 12,21,60
+sch_b948f3d849891ce7,Neumann Goretti 12,21,51
+sch_8a77011e617cb464,Pine Grove Area 11,21,50
+sch_3d377435d4435a03,Bishop McCort,21,43
+sch_2a41fe4e8d25e744,Shipley School,20,163
+sch_49a5b7614a74a4c2,Westmont Hilltop,20,115
+sch_5eb2361d3e5ec058,Dover 03,20,102
+sch_89e16211177200c5,Northeast Bradford 04,20,90
+sch_b1e9feed1956d4e6,Johnsonburg Area 09,20,86
+sch_b6926228c8ac5008,West York Area 03,20,85
+sch_389b729121499ab4,Otto-Eldred 09,20,79
+sch_367238ce79bdac50,Seneca 10,20,76
+sch_dbd2bdde0f41c236,Canton Area 04,20,75
+sch_efa436b7bffe2152,Keystone 09,20,65
+sch_55ff015ecdd84825,Pen Argyl Area 11,20,62
+sch_ece33b3b7955f0df,Hanover Area,20,58
+sch_96c4b730437beeaa,Western Beaver 07,20,57
+sch_4c35d2c3a4b174d3,Bald Eagle Area,20,53
+sch_97b74b71be93b549,West Catholic 12,20,50
+sch_1615fd0ced3a89da,Science Leadership - Beeber,20,28
+sch_e890c70ba5cccfe4,Freeport Area 07,19,187
+sch_6828ed270631aa9d,Lakeland 02,19,163
+sch_cd1983599859493b,Blackhawk,19,135
+sch_4f834d8a96a648e6,Greensburg Salem 07,19,127
+sch_d4c29e66a2f422fe,Cambria Heights 06,19,117
+sch_044b817aeb3248fc,Mt. Calvary Christian School,19,111
+sch_9103131a90657b68,Kennard-Dale 03,19,101
+sch_7fd7fcc62847a134,Montrose 02,19,101
+sch_30b451d76075e178,Sheffield,19,87
+sch_b1662393a34070e6,Mercer Area 10,19,76
+sch_68967157f8759d4f,Seton-LaSalle,19,76
+sch_3c44c4dd76b1d98d,Trinity Christian 07,19,75
+sch_0f6466a464c0dcc7,Moravian Academy,19,68
+sch_788f46d6cbf603e1,DuBois Central Catholic 09,19,52
+sch_0c951db5c6a1769a,Highlands 07,19,47
+sch_668271777d95b474,Olney Charter High School,19,39
+sch_8f8fea8782ccbce2,Mastbaum Technical School,19,35
+sch_79a7bc04c99619e9,Lincoln,19,23
+sch_5db3a04eebefdab8,Neshannock 07,18,180
+sch_5c37d2ab2f786d9f,Ellwood City 07,18,173
+sch_04f2026f22c978d2,Union City Area,18,162
+sch_6725fb22b10c02c5,Portage Area 06,18,113
+sch_aa2fc86157412a43,Tunkhannock,18,95
+sch_52164541853318ed,Winchester Thurston 07,18,86
+sch_5eacd30d887c9926,Greensburg Central Catholic 07,18,82
+sch_bb28f97b7c609ce4,Oakland Catholic,18,76
+sch_fd3bd0c73954bbae,California Area,18,65
+sch_b6d78981af7e6bb8,Northwestern 10,18,65
+sch_73ce5631c7ae34e6,Steelton-Highspire 03,18,64
+sch_40bb8d04bedb9e23,Bishop Guilfoyle,18,58
+sch_95e68ba2368b8321,Roman Catholic 12,18,58
+sch_ec877ce246926d14,Bishop Carroll 06,18,57
+sch_4a93f9ae98dadcd1,Everett Area,18,56
+sch_c5d5912c9c32205f,New Foundations Charter School,18,55
+sch_2329f83e99857941,Carrick,18,40
+sch_94b16e434e986420,Penn Treaty School 12,18,31
+sch_cec2be41610f6a40,Springside Chestnut Hill Academy,17,134
+sch_713691fc963ad163,West Shore Christian 03,17,115
+sch_dbd9026d1aaf6601,Minersville Area 11,17,107
+sch_ebae2cfb159133a9,Mifflinburg 04,17,101
+sch_053bd679f53c18ae,Lancaster County Christian School,17,84
+sch_e09c507768f4e97b,Dunmore 02,17,79
+sch_d71c6dd37bd06ed2,Wyoming Seminary,17,79
+sch_aefb2a6497122814,Bristol 01,17,77
+sch_46c736ed0671b051,Juniata 06,17,77
+sch_008e74529dd4843c,Obama Academy 08,17,75
+sch_94c48597ae52ee5a,Northern Bedford 05,17,59
+sch_47e792f7fccec082,Big Spring,17,57
+sch_35764075acf0945c,South Williamsport 04,17,56
+sch_ea054308c29c1cbd,Brandywine Heights 03,17,51
+sch_654a62048dddb36e,Lakeview 10,16,129
+sch_a285aaf8b1247472,Dobbins Tech,16,121
+sch_fd8731b8351b0823,Lackawanna Trail 02,16,109
+sch_9c191046d06a32e7,South Side 07,16,94
+sch_bf6d486749a58bd2,Laurel 07,16,86
+sch_fab80e7911d64a1e,Port Allegany,16,81
+sch_caf22b3ceab022cd,East Allegheny,16,69
+sch_9acbae775781d3d9,Biglerville,16,67
+sch_988fe7963eb9a6fc,Cameron County,16,67
+sch_b2ba647cba7427cd,Philadelphia Electrical & Technology Charter High School,16,50
+sch_64fd699a58e61b75,Pickett - Mastery Charter 12,16,50
+sch_e28fe89b1fb0cfad,Millersburg 03,16,48
+sch_85016a329e383936,Halifax Area 03,16,41
+sch_e9dc835d722783a0,Western Pennsylvania School for the Deaf,16,26
+sch_93c3c8a673c09d0b,Panther Valley,15,117
+sch_faeaeb223af2d479,Berwick,15,113
+sch_d1c30ac42db0e271,Union-Allegheny Clarion Val 09,15,86
+sch_0b02cb9bc505f2c5,Penns Manor 06,15,75
+sch_35a225032b90222a,Elk Lake 02,15,74
+sch_1eb2c2e4e71039a4,Purchase Line 06,15,74
+sch_613b9c758a2696e2,Coudersport,15,73
+sch_36122491ce3cf08d,Carbondale Area 02,15,71
+sch_b9565e230e6efa02,Pequea Valley HS,15,55
+sch_16b992bad3c66f00,Saul,15,50
+sch_bb8eaafad034d632,West Branch,15,50
+sch_58a063ae9432c05c,East Juniata 04,15,46
+sch_62803b275db95bc2,Sewickley Academy,15,46
+sch_b207d8adbdf1f96c,Clairton High School,15,43
+sch_a4b19a7ab67c361b,Covenant Christian Academy,15,37
+sch_7a14dc1f6d672b0f,Boys Latin Charter,15,25
+sch_52e87ed405b320f7,Tacony Academy Charter HS,15,20
+sch_fe2f0fc2d84d52e7,Reynolds 10,14,123
+sch_d17c897a2ed67f0e,Windber Area 05,14,103
+sch_01c0dba641fb1fc6,Southern Huntingdon,14,85
+sch_ef3ed9383a05a1bd,Susquehanna Community 02,14,80
+sch_dca1eddd024f41d1,Blue Ridge,14,78
+sch_af589c4039b1fd52,MaST Community Charter School III (Crown),14,66
+sch_0f25dcf19f94c8ba,Penn Cambria 06,14,58
+sch_32cf22d64c1867cd,Meyersdale Area 05,14,55
+sch_f9edb5e17b91bf2e,Brentwood 07,14,51
+sch_0e3174ed6143d8bd,Charleroi Area 07,14,50
+sch_705cb9c20eaedccf,Northern Potter,14,50
+sch_f130078e133ff231,Solebury School,14,47
+sch_b692c9a591884e70,Serra Catholic 07,14,40
+sch_42741f70b8427b30,McConnellsburg 05,14,38
+sch_7213bf5eb68f2b5f,Calvary Christian Academy 01,14,36
+sch_3f48b1e3a720e640,Mount Union Area 06,14,35
+sch_dfd6f94d941aa333,Wilson High School - Lower House (3),14,26
+sch_e83541cee27dc549,Burgettstown 07,13,105
+sch_ae8eace843c7818d,Holy Ghost Preparatory School,13,91
+sch_fea79048b6775469,Homer Center 06,13,81
+sch_c43c6393cdfa31fd,Oswayo Valley 09,13,45
+sch_f8f95dba9ac1cf7b,Thomas - Mastery Charter,13,45
+sch_6de8845a1bcca02d,Villa Joseph Marie 01,13,43
+sch_aaf8ed2795b7d369,Hanover 03,13,30
+sch_1cd4bed8ec96b931,North - Mastery Charter,13,30
+sch_2aaf5f124188c4bf,St. Joseph's Catholic,13,29
+sch_0ab93de13f096985,Regina Luminis Academy 01,13,26
+sch_f5438f7daaeb1172,Mahanoy Area 11,12,118
+sch_3cd7cd26546a5ae0,Chester Charter 01,12,82
+sch_6e9a5a1860bac0e2,Harrisburg Christian,12,80
+sch_2450c5c99d032f40,Plants and Pillars,12,76
+sch_c92d3ceeaabeb911,Franklin Towne Charter,12,69
+sch_82533737b5a04113,Redeemer Lutheran,12,48
+sch_88a6d31f793d2321,Paul Robeson 12,12,44
+sch_36f47a1c24085bde,Parkway Center City 12,12,43
+sch_ba22e08d15900ce5,Creative & Performing Arts HS,12,42
+sch_243d1acb7645a3e6,Bodine,12,39
+sch_b810dbb27995e24e,Philadelphia Military Academy at Elverson,12,37
+sch_27c9e09a5a3012aa,Bishop McDevitt (Closed 2021),12,23
+sch_4a070d0e0bda6167,Valley Forge Military Academy,12,23
+sch_b0d71f0699c934e9,KIPP DuBois Collegiate Academy,12,21
+sch_631f6c3d6469331d,Weatherly Area,11,91
+sch_f6b9b8bfb9e13c75,Pottstown,11,66
+sch_cc32da547f79339e,MaST Community Charter School II    (Voyagers),11,65
+sch_54c63d5dafe7ebc4,West Greene High School,11,64
+sch_b581260e6e3149d5,Christian School of York,11,63
+sch_2e98d69ee9f0df1f,Columbia,11,42
+sch_c6ce618e3e31af91,GAMP,11,33
+sch_218775d1ae07ff8b,Littlestown 03,11,30
+sch_42977522107c1d4f,Leechburg Area High School,11,29
+sch_e9f2426b3a3ea1cc,Imani Christian Academy,11,21
+sch_03c459eca1df70ae,Commodore Perry 10,10,103
+sch_6d1b2fcb48f8b650,Dayspring Christian,10,70
+sch_4d7bf607e3c8bd43,Greater Nanticoke 02,10,66
+sch_4668d5d101df2ec8,Elk County Catholic 09,10,65
+sch_8d98698732f42b3d,Union Area 07,10,48
+sch_c0b8eefcb3507968,Lancaster Mennonite 03,10,47
+sch_2297071653c84e82,Dock Mennonite Academy 01,10,46
+sch_6a6b062da8a7b424,Mansfield,10,46
+sch_23bc9c3573dfbafa,Cocalico,10,39
+sch_2b9a813451c4e145,Girls' High 12,10,37
+sch_53bb6ab898676052,Sayre 04,10,36
+sch_4bbb36a347122b0a,Martin Saints Classical,10,31
+sch_44acccfde56cbac4,Overbrook 12,10,31
+sch_eaa1ba4ae1a77a52,Faith Christian School,10,28
+sch_1499d30f92e1b056,Aleithia School,10,26
+sch_7a214e37ade74a34,Grace Prep High School,10,15
+sch_485d1f980617e652,Southern Fulton 05,9,101
+sch_cf02410dce46f09f,Franklin Learning Center,9,75
+sch_d7456b8d7544eb4c,Mountain View 02,9,69
+sch_81291ea360161541,Old Forge,9,46
+sch_1759997bba46e883,Sacred Heart High School,9,46
+sch_20cfe8d5e0779953,Springdale 07,9,44
+sch_bfae2866527675ad,Calvary Chapel Christian School,9,42
+sch_e3219bdfd71f9615,Unknown-PA,9,39
+sch_94c948ff9a96e4a0,Fairfield Area 03,9,32
+sch_9f45eb83f51893cd,Beaver County Christian HS,9,30
+sch_4012f30eab65a9f5,Juniata Valley 06,9,28
+sch_182c5cdc313aadc8,Pine Forge Academy,9,28
+sch_944f8e48080989e2,Geibel Catholic 07,9,26
+sch_bda9f195ed19f589,Columbia County Christian School,9,24
+sch_f83058bfe4f9433c,Sankofa Freedom Academy Charter School,9,24
+sch_2ec9a7c80560c183,Nazareth Prep,9,22
+sch_6417c5434062eb7d,Northern Cambria Girls Varsity,9,20
+sch_2a1f009a1f0c4550,The City School,9,14
+sch_d86115687bd81f26,MMI Preparatory,9,12
+sch_922b5587b29a8002,Aquinas Academy,8,204
+sch_b76bca28a45926e2,Holy Redeemer 02,8,90
+sch_42f41824057b3336,Friends Select,8,74
+sch_dc95598a0e8ecea0,Propel Montour,8,70
+sch_39f04062ce55ffe8,Hillel Academy of Pittsburgh,8,43
+sch_48457c598a0552dd,Youngsville 10,8,42
+sch_becef269c5583748,Conneaut Area High School,8,36
+sch_3b6eaf6055fc626a,Hardy - Mastery Charter 12,8,35
+sch_5f162c3eb71a1bc4,Lenfest - Mastery Charter,8,28
+sch_1a0d8913fc058417,Lincoln Leadership Academy Charter School,7,99
+sch_964c06a56d9a7991,York Catholic,7,67
+sch_6c13f255d86f20e3,Hill-Freedman World Academy,7,46
+sch_5ef9d953efde03eb,Devon Preparatory 12,7,41
+sch_b831fcb08c45c9ec,Jack M. Barrack Hebrew Academy,7,39
+sch_08c6afd03a1c507d,Forest City,7,38
+sch_c739ea9051b90d09,Sto-Rox,7,31
+sch_64fea1b1de3d9515,Collegium Charter School,7,30
+sch_fd5b6a88d3886b99,Great Commission,7,30
+sch_7a973445b9b4fd6f,Shade,7,30
+sch_246ef09b5a385c05,Newport,7,27
+sch_f4e50d6b475d2b93,Environmental Charter High School,7,24
+sch_c9d1e94434918b86,Roxborough High,7,22
+sch_ba69baeeb45cf1a3,Lincoln Park Performing Arts Charter School,7,18
+sch_5fd3777bbe632dfd,Belmont Charter 12,7,12
+sch_0dd02050458c9f9d,School Lane Charter School,7,12
+sch_bf269f178584d81f,Sullivan County,6,46
+sch_23e254eb5b669f9d,Martin Luther School,6,40
+sch_fda05e225123dc45,Woodlynde School,6,38
+sch_4efd2d296c3ca446,Saegertown,6,35
+sch_527e24a19b4bdac8,Plumstead Christian,6,34
+sch_7d48c01c6e34b901,The Ellis School,6,33
+sch_dd52eda2690fc6b4,Clarion Limestone,6,31
+sch_58670a790635b34f,West Shamokin HS,6,31
+sch_c9ed13f3fb62cb58,Parkway West 12,6,30
+sch_ad9078572ceef8f5,Carmichaels,6,28
+sch_4c52a62a5e3837ed,Williamsburg Community JS/HS,6,28
+sch_7ea5964fb1a87405,Rochester,6,27
+sch_bf1b66475d233722,Mariana Bracetti Academy Charter,6,24
+sch_79ae081def14ea45,MaST Community Charter School,6,22
+sch_751cadf5773be209,Lehigh Christian Academy High School,6,20
+sch_2adc677d478765c9,Mathematics Civics and Sciences,6,6
+sch_04cf998b8e0a4c72,Kennedy Catholic,5,57
+sch_8527c2d88caefbef,Renaissance Academy Charter School,5,45
+sch_5b6763589083e80f,Cambridge Springs,5,35
+sch_1983240d59576ae9,Veritas Academy,5,32
+sch_de31942100876e31,Monessen,5,26
+sch_b5ceafd0f1ec1956,Avonworth,5,25
+sch_3f67b3431412ad47,Johnstown Christian High School,5,11
+sch_a16e921ebe17710d,Liguori Academy,5,10
+sch_30285c4788f92852,Jamestown Area,4,46
+sch_a683d7c6c2dc114c,AIM Academy,4,39
+sch_c3afa0630d414c75,Brockway Area,4,38
+sch_1fd08356f5a72f1d,Avella Area,4,27
+sch_547005602021e461,Jenkintown,4,27
+sch_1c64cfe0c21ad30a,Northgate,4,27
+sch_7260b4c497805d29,North Star High School,4,21
+sch_0903179b2ebbf7b9,Belleville Christian High School,4,20
+sch_41a2672a4c31f130,Delaware Valley Friends School,4,16
+sch_a1c68de11f56dcd3,Forbes Road,4,14
+sch_537017e702c85f98,Bethlehem Christian,4,8
+sch_f3928bec64baabe0,Constitution High School,4,7
+sch_d12faf36b50c2189,GC Christian,3,60
+sch_ea663645501a4215,Maplewood,3,54
+sch_3f4a3cb310e20aca,Meadowbrook Christian,3,46
+sch_d829456c34b7dfef,Philadelphia Classical School,3,33
+sch_ad2d4ad969f418fb,Calvary Christian Academy - Huntingdon,3,28
+sch_b60b86e614ee1fb3,DuBois Christian School,3,23
+sch_e48b5f41a7213c6e,Notre Dame E S,3,22
+sch_9ba6727e9c13ac3f,Cochranton,3,16
+sch_700fea2e53de7182,Upper Dauphin HS,3,14
+sch_832d513f5659397f,Maritime Academy Charter,3,9
+sch_54c2e01d58139289,Grace Christian School of Armstrong County,3,5
+sch_b63c6e03501e1a40,Kohelet Yeshiva,3,3
+sch_82742c40171bf328,Robinson Township Christian School,2,60
+sch_f1216b18868f24ce,Rocky Grove,2,54
+sch_c33d5a10f2ffe59d,Cowanesque Valley,2,35
+sch_e953e133a252283d,Philly Elite Track Club,2,29
+sch_43666364796c95d0,Kimberton Waldorf School,2,18
+sch_80ff6f03ab172bc6,Clearfield Alliance Christian School,2,16
+sch_16b498cfd21b36f6,Ferndale Area HS,2,15
+sch_acdb495d3221f30d,Foundations Christian Academy,2,15
+sch_74e200ea128a10c5,Steel Valley,2,14
+sch_db1d7e574258b47c,Science Leadership Academy,2,12
+sch_ac0829d21e3d313e,Columbia Montour Area Vo Tech,2,7
+sch_351ad88342815a8b,Salisbury Elk Lick,2,6
+sch_39e43530dbe933c3,Immanuel Christian High School,2,5
+sch_86453482622e4198,Fannett-Metal High School,2,3
+sch_313e88489c06f150,Saint Joseph High School,2,2
+sch_da862c9eacc2f70c,Tri-Valley,1,28
+sch_40df09a293b34343,Coventry Christian,1,23
+sch_dc440f75fc19f10c,Portersville Christian School,1,21
+sch_ace27479d6472b00,Mount Calvary Christian School (HS),1,19
+sch_5e39158ef3ccd21a,Conestoga Christian School,1,18
+sch_1fa90c34d647ea3b,Crawford Christian Academy,1,17
+sch_8c711d4d2021fb21,Esperanza Academy Charter,1,16
+sch_ec072793f1189257,Ridgway,1,13
+sch_92ebb8d98fbd54aa,Alliance Christian School,1,7
+sch_118b0ff359c60902,Moshannon Valley JSHS,1,5
+sch_36748d499ee63710,Heritage Christian Academy,1,4
+sch_b8fbb6d6bda44272,Gillingham Charter School,1,3
+sch_13487c6f09d13220,Hornets,1,1
+sch_8311c20f4e07519f,PA District XI,1,1
+sch_46e040cc6d32c732,South Park Middle School,0,187
+sch_e7106bf29d87bfef,West Scranton Intermediate School,0,63
+sch_ac085b3410a30cc1,Bethel Christian School - Erie,0,55
+sch_f585f501245a9e36,Hinkletown Mennonite School,0,40
+sch_413fdd3e0655de12,Anchor Christian Academy,0,36
+sch_352ff79ccbf7d8db,Erie First Christian Academy,0,33
+sch_ae285ca769878c1f,Saint Joseph Robert CYO,0,29
+sch_b5b092ab08b6a8d5,Wyoming Seminary Lower School,0,28
+sch_ec758b4642588e05,Carlisle Christian Academy,0,27
+sch_0954b68e8f1b0c8d,Northumberland Christian School,0,20
+sch_04b1065f390759cf,Lankenau High School,0,15
+sch_b3c548e62bebd9f3,Thomas A. Edison High School,0,15
+sch_9ec762f70890ecbc,Buckingham Friends,0,12
+sch_6d05ac689fa1e916,Cornerstone Prep,0,12
+sch_d77114a48e7b4b97,Strayer Middle School,0,12
+sch_e9f50aaf2afabcd0,The Phelps School,0,12
+sch_ff5d085da6658323,The Wyndcroft School,0,10
+sch_a0ee9eacc7a6e568,Somerset Christian School,0,8
+sch_f02dce31330e4d5d,Fellowship Christian High School,0,5
+sch_9ff120505f38a9d4,Muncy High School,0,4
+sch_029bf9f446197741,The Saint Constantine High School,0,4
+sch_2d0a80687b5513fd,Philadelphia Catholic League,0,3
+sch_fdc80a7aa5bd307a,Allegheny Clarion Valley,0,2
+sch_a31efb839092929a,Curwensville Area,0,2
+sch_76533f6a8e2efdfb,PA Test Team,0,2
+sch_689acf2a212525ce,Bishop Canevin,0,1
+sch_8c380ddf62ae2be2,Erie Preparatory Academy,0,1
+sch_13421d14147ba390,Lehigh Valley Christian High School,0,1
+sch_5e33a0546e83cb86,Pittsburgh CAPA 6-12,0,1
+sch_e82debd5f0ad8abb,Saltsburg High School,0,1
+sch_66caa373c822dd09,Seton Catholic School,0,1
+sch_ce69134d59931852,Abraxas,0,0
+sch_a80df099e2877148,Academy of the New Church,0,0
+sch_d06033774f5d6430,Adams County Christian Academy,0,0
+sch_36d72930b22ee09b,Athletes Academy,0,0
+sch_667eeb70c2fb6b17,Avon Grove Charter School,0,0
+sch_1e58b9b696a390d8,Bedford County Technical Center,0,0
+sch_36a9cf9fc89661fb,Bethany Christian School,0,0
+sch_3b9570c985654419,Bible Baptist School,0,0
+sch_a9333e29c1acab63,Bishop Hafey,0,0
+sch_32ed4867628cdcd3,Bishop Hannan,0,0
+sch_43857fa10308955e,Bishop O'Hara,0,0
+sch_5f29defd50616465,Bishop O'Reilly,0,0
+sch_6b1214ccd5f1645b,Blairsville,0,0
+sch_f29461347f41b395,Bradford Road Runers,0,0
+sch_4a5b69f50b2ee1ce,Building 21,0,0
+sch_a6567db82e0fec2b,Calvary Baptist School,0,0
+sch_654f80d15c546c6e,Cardinal Brennan,0,0
+sch_1998c8b0b6c44388,Cardinal Dougherty,0,0
+sch_047fc41bb42b9a7f,Carson Long,0,0
+sch_98b3baa54ccacbe3,Champion Christian School,0,0
+sch_ddf0f0286741c61d,Cheswick Christian Academy,0,0
+sch_8d953c506d3387e9,Claysburg-Kimmel,0,0
+sch_1127a31b5051ee68,Communications Tech  (Closed 2013),0,0
+sch_9d6cfcb7f3693f7c,Conemaugh Valley High School,0,0
+sch_80aea3ab3509098c,Cornell High School,0,0
+sch_f6d12797487cf613,Cumberland Valley Christian School,0,0
+sch_1046e88bb3f77bdf,Delaware Valley Charter,0,0
+sch_6f05580c867dadab,District 10,0,0
+sch_233d90d643b61c32,District 12,0,0
+sch_b6874e4508ff31ec,District 8,0,0
+sch_7b3ac0c4bfd4c341,Divine Redeemer Catholic School,0,0
+sch_cbefccd5b640c215,E W Rhodes,0,0
+sch_abc9e4f3db4ea8da,East,0,0
+sch_963e4e33ce4705be,Eastern University Academy Charter School,0,0
+sch_b49759d83fe918d6,Elderton,0,0
+sch_ffea631c78c23d97,Faith Mountain Christian Academy,0,0
+sch_f04171b48914dc9d,Fitzsimons High School (Closed 2013),0,0
+sch_a76e47cba5201b08,Furness High School,0,0
+sch_84e39da86cf5bb04,George Junior Republic HS,0,0
+sch_46c751e165167a31,Glen Mills Schools,0,0
+sch_70a9db9c633e960e,Glendale Jr./Sr. High School,0,0
+sch_5b9552c9d935036c,Greenville Jr/Sr High School,0,0
+sch_c8ca6b4f03642a52,Grier School,0,0
+sch_bd934c1f11c8b376,Heritage Baptist Academy,0,0
+sch_48739376edbc1ff7,High Point Baptist Academy,0,0
+sch_8a833869b0f82cd3,Holy Family Academy,0,0
+sch_8621a193ea3c20c5,Homeschooled,0,0
+sch_120d380d706febe0,Homeschooled-Bethel Park,0,0
+sch_247d1e19e1153c8f,Hope Charter High School,0,0
+sch_263edfe5d55321d2,HOPE for Hyndman Charter School,0,0
+sch_f00178d6d766d2d1,Imani School (Closed 2016),0,0
+sch_bfe2ab3a0312dbb8,Innovative Arts Academy HS,0,0
+sch_995bf8cf0afc3825,Jeannette,0,0
+sch_84e82ac05241fa40,Jefferson-Morgan,0,0
+sch_294b2edb520ac11b,John W. Hallahan,0,0
+sch_36302ec3f41912bf,Kennedy Kenrick (CLOSED),0,0
+sch_b0eafdbe3d370a55,"Keystone State Games, Inc.",0,0
+sch_fa819ad16217218e,Lackawanna County,0,0
+sch_6f1ac21be34de79f,Lancaster Country Day School,0,0
+sch_7806bbdce23a65c6,Lancaster Mennonite Hershey Campus (Closed),0,0
+sch_56b8ef95a32c9b26,Langley,0,0
+sch_779f08b9d07d59a4,Laurel Valley,0,0
+sch_b4e574140b234efc,Lebanon Catholic School,0,0
+sch_8c13069542ac53e8,Linden Hall School,0,0
+sch_7e2599724ebd4d64,Line Mountain,0,0
+sch_27d13660b1d67d37,Linville Hill Christian School,0,0
+sch_4b420e088ed32a3d,Lititz Christian School,0,0
+sch_550cbcc549177863,Living Word Academy,0,0
+sch_a288c30b297c6416,Logos Academy,0,0
+sch_6a9ad713f7b2a64c,Meyers,0,0
+sch_dc4a9b58ab3dae3b,Mid Penn Conference,0,0
+sch_c9c0c02d1ca71c36,Middle Years Alternative,0,0
+sch_6982964b8c461e1e,Millville,0,0
+sch_55ccf67fa871949a,Morrisville High School,0,0
+sch_7dbbdec1cd699cd2,Motivation High School,0,0
+sch_8e0ac528c7bf6b4a,Mount Alvernia,0,0
+sch_26a2fa161aff7dde,New Castle Christian Academy,0,0
+sch_3b4ef1002b87140b,New Covenant Academy,0,0
+sch_3fde0bcbb701b5a4,New Media Technology Charter School,0,0
+sch_eb4e7c03c10bd463,New School Montessori,0,0
+sch_0876b5b82478b851,NONE,0,0
+sch_6ed02c27fc1adfa3,North Catholic (Closed 2010),0,0
+sch_1f82afc2632057e2,North East Scranton Intermediate School,0,0
+sch_23c041fb9aaa1f96,North Rome Christian School,0,0
+sch_b7fe4c5026a4197f,Northeast Catholic,0,0
+sch_901a5149b5e2bbf7,Oliver (CLOSED 2012),0,0
+sch_7eb02c509f41ed95,Our Lady of Lourdes Regional,0,0
+sch_19b19abff27f9c7f,Parkway Northwest HS,0,0
+sch_3a86b68f0b72cb87,Peabody,0,0
+sch_ab00d7a1b5922c14,Pennsylvania Interscholastic Athletic Association,0,0
+sch_7904185d15ec4db6,Philadelphia Mennonite HS,0,0
+sch_234e0f0f76d982ba,Philadelphia Performing Arts: A String Theory Charter School,0,0
+sch_29941b9c1e5f7a47,Pius X High School,0,0
+sch_a9c6ee60ec93cf53,Propel Andrew Street High School,0,0
+sch_ecc592e8d7a672a5,Quigley Catholic High School (CLOSED 2020),0,0
+sch_1ceed8c7e628bfb1,Revolution School,0,0
+sch_6721ed28438afe30,Rhodes High School,0,0
+sch_1140baa1d32ac984,Rockwood,0,0
+sch_f3e7468d1b84a0c4,Rush High School,0,0
+sch_4c6e618504b37cba,Saint Basil Academy (CLOSED 2021),0,0
+sch_5f6f900393d45e3f,Saint John Neumann (7),0,0
+sch_c0cf9d95a5c4ef55,Saint John Neumann Regional Academy,0,0
+sch_6a1c773e92b2eb45,Salem Christian School,0,0
+sch_e2726c71f92bd3c5,Schenley (CLOSED 2011),0,0
+sch_56e8fa391ce0cfda,Scotland School,0,0
+sch_1508b235c2b440c9,Seeds of Faith Christian Academy,0,0
+sch_221136ae96be8989,Shanksville Stonycreek,0,0
+sch_77de09f43cc56762,South Scranton Int School,0,0
+sch_833f8bb14619560a,South Vo-Tech,0,0
+sch_60372ede38f23162,Southwestern,0,0
+sch_e2b740e4195e32d7,St Marie Gorretti,0,0
+sch_14becf2daa6f1b04,St. Aloysius Academy,0,0
+sch_a1b095d32b13e0bf,Sunbury Christian Academy,0,0
+sch_f2aa127f0ed60ea5,The King's Academy,0,0
+sch_b4eb6e5b26198f69,The Summit Academy,0,0
+sch_fbcf0e7a834cf960,Tidioute Community Charter HS,0,0
+sch_81246f84aa74a626,Turkeyfoot Valley High School,0,0
+sch_11b50791cef13976,University City HS,0,0
+sch_c10086ac068f5590,Venango Catholic HS (Closed 2024),0,0
+sch_445ce947f6cd1ff6,Villa Maria Academy (CLOSED),0,0
+sch_092c5716c1715a56,Village Charter School (CLOSED 2008),0,0
+sch_96ee54542c4a261b,Vincentian Academy (CLOSED 2020),0,0
+sch_1ba03417d7385ab4,Walter D. Palmer Leadership Prep Academy Charter High School,0,0
+sch_5aa025429f96145a,Watsontown Christian Academy,0,0
+sch_8e283b353972ab7c,Wilkinsburg High School (Closed 2015),0,0
+sch_674a8a5fff6fe301,William Penn High School,0,0
+sch_1c855ada9e22b7b1,Williams Valley,0,0
+sch_7bf98e2fd769e63f,Wilmington Area School District,0,0
+sch_477842f685bc9e0f,World Communications Charter (CLOSED 2016),0,0
+sch_db8f81e93467a6d0,YAIAA League,0,0
+sch_0c509c2c41113fbe,York Country Day,0,0
+sch_0e277b9288653185,ZZ-test,0,0

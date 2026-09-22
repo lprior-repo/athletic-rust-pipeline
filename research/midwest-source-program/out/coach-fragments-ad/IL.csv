@@ -1,0 +1,17 @@
+school,city,state,sport,role,coach_name,public_professional_email,ad_name,ad_email,source_url,last_observed
+Abingdon-Avon High School,Abingdon,IL,Boys Cross Country Head Coach,Boys Cross Country Head Coach,Mr. Barry Mink,,Mr. Reid Kelso,,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,Boys Track & Field Head Coach,Boys Track & Field Head Coach,Mr. Justin Rakestraw,,Mr. Reid Kelso,,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,Girls Cross Country Head Coach,Girls Cross Country Head Coach,Mr. Barry Mink,,Mr. Reid Kelso,,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,Girls Track & Field Head Coach,Girls Track & Field Head Coach,Mr. Justin Rakestraw,,Mr. Reid Kelso,,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Abingdon-Avon High School,Abingdon,IL,,Boys Athletic Director,,,Mr. Reid Kelso,,https://api.ihsa.org/v1/schools/0101/staff2,2026-09-19
+Dixon High School,Dixon,IL,Boys Cross Country Head Coach,Boys Cross Country Head Coach,Simon Thorpe,,Mr. Roger Fegan,,https://api.ihsa.org/v1/schools/0418/staff2,2026-09-19
+Dixon High School,Dixon,IL,Boys Track & Field Head Coach,Boys Track & Field Head Coach,Mr. Ryan Deets,,Mr. Roger Fegan,,https://api.ihsa.org/v1/schools/0418/staff2,2026-09-19
+Dixon High School,Dixon,IL,Girls Cross Country Head Coach,Girls Cross Country Head Coach,Miss Megan Hildreth,,Mr. Roger Fegan,,https://api.ihsa.org/v1/schools/0418/staff2,2026-09-19
+Dixon High School,Dixon,IL,Girls Track & Field Head Coach,Girls Track & Field Head Coach,Miss Megan Hildreth,,Mr. Roger Fegan,,https://api.ihsa.org/v1/schools/0418/staff2,2026-09-19
+Dixon High School,Dixon,IL,,Boys Athletic Director,,,Mr. Roger Fegan,,https://api.ihsa.org/v1/schools/0418/staff2,2026-09-19
+Downers Grove North High School,Downers Grove,IL,Boys Cross Country Head Coach,Boys Cross Country Head Coach,John Sipple,,Dave Rose,,https://api.ihsa.org/v1/schools/0422/staff2,2026-09-19
+Downers Grove North High School,Downers Grove,IL,Boys Track & Field Head Coach,Boys Track & Field Head Coach,Mr. Andrew Adelmann,,Dave Rose,,https://api.ihsa.org/v1/schools/0422/staff2,2026-09-19
+Downers Grove North High School,Downers Grove,IL,Girls Cross Country Head Coach,Girls Cross Country Head Coach,Tim McDonald,,Dave Rose,,https://api.ihsa.org/v1/schools/0422/staff2,2026-09-19
+Downers Grove North High School,Downers Grove,IL,Girls Track & Field Head Coach,Girls Track & Field Head Coach,Mr. Matthew Maletich,,Dave Rose,,https://api.ihsa.org/v1/schools/0422/staff2,2026-09-19
+Downers Grove North High School,Downers Grove,IL,,Boys Athletic Director,,,Dave Rose,,https://api.ihsa.org/v1/schools/0422/staff2,2026-09-19
+Unity Christian High School,Decatur,IL,,Boys Athletic Director,,,Mr. Kurt Younghouse,,https://api.ihsa.org/v1/schools/0430/staff2,2026-09-19

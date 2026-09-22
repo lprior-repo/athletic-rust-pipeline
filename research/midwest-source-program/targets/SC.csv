@@ -1,0 +1,453 @@
+school_id,name,co2027,athletes_all
+sch_735febe737e1d2ac,Byrnes,109,348
+sch_42ca9d25adbe182e,Mauldin,97,289
+sch_d405b81fe2554c1c,Clover,97,272
+sch_fe00f521eb1b75f3,Northwestern,91,295
+sch_41ab606c1e826b55,Dorman,88,392
+sch_935c5d889d40a092,Ashley Ridge,87,234
+sch_7780e430d14625f0,Ridge View,85,287
+sch_994b292d68138cd4,Rock Hill,81,187
+sch_aae0919967a68db6,Spring Valley,80,248
+sch_4a5511e5dfa35d82,Blythewood,79,275
+sch_1fb480a6387b7592,Westwood,79,193
+sch_1f0a3252b8c85bf7,Spartanburg,76,353
+sch_8bce25ddda0a21c0,Cane Bay,76,256
+sch_30985dd8b5e0ea41,Wando,75,302
+sch_f5912d9ba55ffa5c,Summerville,74,223
+sch_261280c3d74b288b,Daniel,73,259
+sch_6e7665d486812380,Eastside,73,242
+sch_0459c99f6862fd6d,Greenville,71,217
+sch_bdf9e9d0081f77b4,Travelers Rest,71,209
+sch_4bd92e0ecf617a37,T.L. Hanna,70,338
+sch_46f62c665e44f996,J.L. Mann,70,251
+sch_810d1ffd2d910306,Fountain Inn High School,70,217
+sch_5c4f1c41c9cad73d,Riverside,69,259
+sch_271c4121e73216eb,Stratford,69,215
+sch_ae934c92d0a3496a,River Bluff,68,213
+sch_192c5d9bd69b1928,Sumter,67,169
+sch_5fc70605a543c248,Fort Mill,66,294
+sch_a42cb93b5028b6fe,Fort Dorchester,64,215
+sch_0a3a1a59b14518a1,Lugoff Elgin,63,248
+sch_389184e9225fbca9,Lexington HS,63,226
+sch_ab371b85988e9c4c,Irmo,61,233
+sch_c4db0b89b8207bdd,Emerald,60,233
+sch_4eb18abddccea637,Indian Land,60,186
+sch_ae258fdd13303b0e,Hillcrest,59,219
+sch_97c3bf841064a509,West Ashley,59,168
+sch_8e28392c5a09d54f,Marlboro County High School,58,159
+sch_cdef2ad6357957f2,Chapman,57,352
+sch_2bd93c2e8151a8c2,Chapin,56,285
+sch_7a128a6f8132c7ba,Catawba Ridge HS,56,186
+sch_8f8234b62e0c8dd7,Woodruff,55,234
+sch_e316a4ae9c9dba49,Hanahan,55,175
+sch_1e0e71930827075d,Camden,54,171
+sch_d3a2d6ca4fb7f104,Richland Northeast,54,164
+sch_41dacdd58286c2b1,Dreher,54,159
+sch_0cb4f5c69d96dc7b,North Augusta,54,158
+sch_8cc41aaba58e884d,Carolina Forest,53,214
+sch_a4f4032e878831ce,Gray Collegiate,53,198
+sch_9f7322cd3e68f67c,South Pointe,53,177
+sch_691a141454c96ca3,Nation Ford,53,144
+sch_64caebd4c079af4f,Lower Richland,53,107
+sch_6f92e284fedc6527,Wren,52,273
+sch_4a578ec86c1f486e,North Myrtle Beach,52,168
+sch_cc0b9a0a29626874,James Island,52,160
+sch_153bb48b472dac8f,Orangeburg-Wilkinson,52,129
+sch_3cf91ed87d16e1b1,Woodland,51,150
+sch_f477ad90644ec26c,Academic Magnet High School,50,185
+sch_0976804a33ed99d4,Woodmont,50,182
+sch_81f67b0df05cecf5,May River,50,144
+sch_81851efef95482f2,York,50,119
+sch_b0a7d92525b9f15f,Blue Ridge,49,193
+sch_a53d5ee0c9c81292,White Knoll,48,227
+sch_3448c8ee150e7e7e,Strom Thurmond,48,175
+sch_9ddbf0183148baaa,AC Flora,48,170
+sch_8c73f53fbf38ac04,Philip Simmons,47,237
+sch_d420a98a6272ba17,Seneca,47,200
+sch_a006ee03c1bf21af,Palmetto,47,157
+sch_02f10e3a95cbdf5a,Lucy Beckham,47,153
+sch_cd0ba9f91ede6bd2,Waccamaw,47,127
+sch_4e1f2ed271f52b68,Westside,46,243
+sch_80a84cb7dd3f9d1e,Socastee,46,200
+sch_ab1d8e0ded71496f,Boiling Springs,45,185
+sch_7986080f2ac00b27,Midland Valley,45,140
+sch_332d8b2e16aa9f6f,Broome,45,139
+sch_14ae9dffcbed5770,South Florence,45,111
+sch_cb082cba300456ca,Porter Gaud,44,253
+sch_e20ec4d0c4e2ca21,South Aiken,44,184
+sch_8323d3a9b17d5207,Beaufort High School,44,123
+sch_4fe36e513cdc5a47,Myrtle Beach,42,201
+sch_ddc9424e2f8a1aaa,Conway,42,188
+sch_0f4dca03e736af56,Mid-Carolina,42,158
+sch_b28944d122b1e83c,Berkeley,42,136
+sch_637dd685f2713b9e,Bishop England,42,105
+sch_7ffef48bb60484d8,Battery Creek,42,76
+sch_b83bd07f1196149f,Keenan,42,73
+sch_bbff877f49830d7e,Hampton County High School,41,142
+sch_23bfaf37593b8279,Johnsonville,41,134
+sch_349e73724ee74dc1,Powdersville,40,244
+sch_4783a90963d549e4,Greenwood,40,205
+sch_806f90ebeffcc0fb,Stall,40,77
+sch_5127d7798e743d86,Airport,38,248
+sch_a68a82f40553059b,St. James,38,184
+sch_f1fb4e42fdae0c9e,Crestwood,38,143
+sch_2afee8df361b25c6,Lakewood,38,87
+sch_7d700e209c6deeba,Greenville Hurricanes,37,175
+sch_d6eabfe190403818,Wade Hampton,37,149
+sch_fb13ba2ed004a290,Columbia,37,114
+sch_92063c611239028b,Darlington,37,86
+sch_3237207c7fff9c39,Aiken,36,145
+sch_0b744f57d5ee704e,Manning,36,141
+sch_def3c3814f35d647,Brookland Cayce,36,129
+sch_bcc134ed15502ff6,Fairfield Central,36,109
+sch_fa4073a5b4321876,Pelion,35,176
+sch_8b7ebe04cb67167b,Walhalla,35,159
+sch_f3e0cf8d3ccbad66,Hartsville,35,103
+sch_806d2c22e86c3d24,Gilbert,34,205
+sch_4ab2f07a46caee3b,Dutch Fork,34,157
+sch_d557c85d7821e7fe,West Florence,34,135
+sch_ed1370004e4b774a,Crescent,33,157
+sch_3da51123fbcf6e68,Saluda,33,123
+sch_ed94fdd924ed41ad,Lamar,33,121
+sch_34b34de41966b837,Bamberg-Ehrhardt,33,111
+sch_57b16dc49e5b2c83,Ben Lippen,32,234
+sch_9478ba3ae7df4b2d,Lake City,32,160
+sch_eeb8aadfe54c7d9f,Gaffney,32,122
+sch_511b0ae5c08657e5,Dixie,32,96
+sch_5e32abf7b2115fbd,Pendleton,31,151
+sch_2e892f4517b928da,Clinton,31,145
+sch_74849b4d01775427,Goose Creek,31,127
+sch_b3c2eef6aca83cc5,Wilson,31,118
+sch_86d657c9f1db226c,Cheraw,31,108
+sch_7299f41e573766b4,Fox Creek,31,104
+sch_76ede5c81548faab,Governor's School,31,52
+sch_cf5d4bd00c455061,Easley,30,217
+sch_13c4f5176e67fa06,Christ Church,30,147
+sch_d5fbc31c85d93063,Laurence Manning Academy,30,136
+sch_483c5726f7ba6d7a,Lancaster,30,124
+sch_d7ba38d902eea7c1,Mountain View Prep HS,30,80
+sch_451d83e46fc29fb7,Landrum,29,172
+sch_31f670f18a8da579,Pickens,29,152
+sch_e3e311eb284532c0,Union County,29,119
+sch_d45d4b4f7d368587,Hilton Head,29,93
+sch_93c1451d972bb6c1,C.A. Johnson,28,61
+sch_60e75cc9e9c11a67,Heathwood Hall,27,201
+sch_f54d0e3962d0c251,Hammond School,27,148
+sch_d214223bf21e68f7,Greer Middle College Charter,27,139
+sch_deec65e9015eee6a,Loris,27,130
+sch_b270a3a686034285,Bluffton,27,104
+sch_6df7b8b4ae92f1ec,Denmark-Olar,27,92
+sch_520f8dc2d1a1a1fd,Belton-Honea Path,26,127
+sch_e7459e858e7652c7,Marion,26,91
+sch_46e2aefaab1739aa,Ridgeland Secondary Academy of Excellence,26,90
+sch_4272e48db6965a0b,Wagener-Salley,26,89
+sch_7d36002f4b32ed94,Timberland,26,84
+sch_e7fb82634d2b3fe5,Camden Military,26,48
+sch_7b6c2baad5fe3b7f,Southside Christian,25,185
+sch_955e4ce191e08ece,Colleton County,25,149
+sch_b22b965d038fffef,Latta,25,116
+sch_1a9979143e02f0eb,Chesnee,25,110
+sch_e547a965d920c02b,Greenville Tech Charter,25,87
+sch_0262497804277d63,North Charleston,25,85
+sch_d5c6ab3b2caa45e4,Ridge Spring - Monetta,25,77
+sch_d7741bbd2f18e0e8,Dillon,25,74
+sch_650cee7815e8de27,York County Trailblazers,24,191
+sch_2274260455ec01c9,Cardinal Newman,24,171
+sch_2d949d4f4f1af98a,Laurens,24,148
+sch_a3ea06f2bcc62fea,Chesterfield,24,119
+sch_680109808e4c1dd2,Aynor,24,112
+sch_70d14c775829628a,Georgetown,24,108
+sch_801eae483a910a58,Green Sea-Floyds,24,81
+sch_20027231cf9d56fa,Northwood Academy,24,76
+sch_064e1ee95dcfb0d6,Southside,24,54
+sch_986988e08d979e31,Carolina,24,50
+sch_e8bc75454b4bb12c,Wilson Hall,23,197
+sch_7a4923118bb6b826,Thomas Sumter,23,120
+sch_321d405d824de986,Cross,23,88
+sch_c853602571a5a8e9,Silver Bluff,23,82
+sch_2c0a022ce1c0916e,Royal Live Oaks,23,69
+sch_ed6daa0d35da4f56,Batesburg-Leesville,22,117
+sch_cdb5bd61499fc35a,Carvers Bay,22,96
+sch_6351e1013659ecc1,Lake Marion,22,96
+sch_51bacad3a91ba266,Andrew Jackson,22,86
+sch_b24fb4ec9371f5d1,Blackville-Hilda,22,79
+sch_852e98e3a34ab925,Mullins,22,75
+sch_a335ceaaa15c0bf8,Summerville Unified,22,49
+sch_7737d97af1ee1af1,Eau Claire,21,71
+sch_d23532d85676f5f1,Greer,20,132
+sch_ef244cfddce8b834,Hilton Head Christian Academy,20,99
+sch_6c7df1822fdd9717,Oceanside Collegiate Academy,20,61
+sch_4705f99b0ed57d1d,Lewisville,20,59
+sch_cca9578f64c34ba5,Northside Christian Academy,19,121
+sch_30b607883cc40748,Trinity Collegiate,19,94
+sch_c5a1265f6bbc1c50,Calhoun County,19,89
+sch_a996526ee5a3d7fe,John Paul II Catholic School,19,88
+sch_6ee25b037328ed1c,Lee Central,19,72
+sch_f1cc5ebdc80ae35a,North Central,19,70
+sch_c63df5d08b72fd06,Military Magnet Academy,19,66
+sch_1ae70dbcfbd44b72,Bethune Bowman,19,64
+sch_d9f2dc2dfb24b8b5,High Point Academy,18,106
+sch_b9f06abf1950299a,Berea,18,90
+sch_8c497a322c9a0f4e,West-Oak,18,67
+sch_89fab780a278c36c,Hannah-Pamplico,18,61
+sch_a9cfcf231110cb39,Baptist Hill,18,52
+sch_db96d49a8abdc31d,Riverwalk Academy,17,131
+sch_f7fbf5c41b0127f7,Williamsburg Academy,17,115
+sch_618c882eca40b5dd,Ninety-Six,17,91
+sch_8004f03d78c4a1ec,Chester,17,90
+sch_11e87d173ddf3e53,Edisto,17,76
+sch_1916531813cee9c7,First Baptist,17,62
+sch_569a52bed6b70ead,Whale Branch Early College,17,60
+sch_abf01bdce2b053c5,Williston-Elko,17,52
+sch_4ccf15f8ff5b783a,Kingstree,17,34
+sch_4f255b158ff822c7,Abbeville,16,96
+sch_5aea9c330f40af6d,Andrews High School,16,89
+sch_b28a701a4cda0360,Liberty,16,88
+sch_ee8db3e1aedc5b08,Newberry,16,78
+sch_66185634e638e860,River Bluff Unified,16,26
+sch_f1769de427b81282,Woodland Unified,16,25
+sch_482e8492b232ba50,First Presbyterian Academy Shannon Forest,15,182
+sch_62d670a6c68e7868,East Clarendon,15,94
+sch_ce444a9d887154f3,Swansea,15,86
+sch_95fb6c5732d66de9,Spartanburg Day School,15,83
+sch_80d7229276d1995f,Scott's Branch,15,66
+sch_d1c48a2ebef554c3,Great Falls,15,55
+sch_5758b9551b61fb23,Barnwell,14,105
+sch_d3d225182f2685b1,McBee,14,73
+sch_78873ec61d0a83a1,Carolina Homeschool,14,70
+sch_71569d6eeb6579e4,Buford,14,63
+sch_138ede7f5c1d1849,Legacy Early College,14,63
+sch_4c5affedbc29ebc0,Burke,14,46
+sch_d69b907d96744c20,St. Josephs,13,115
+sch_21cef2b97c99e043,Hardeeville JR-SR High School,13,85
+sch_df019f0fc8a94db2,Hilton Head Prep,13,76
+sch_6e541e69e5b2293f,Pinewood Prep,13,73
+sch_6da3bf631a288de2,Spartanburg Flames,13,69
+sch_e22630461a1a33a9,Allendale-Fairfax,13,58
+sch_e2204c614943e37f,North,13,39
+sch_7dbe7716f8c060ba,Hemingway,12,67
+sch_8c384a0d48a3225f,Blacksburg,12,63
+sch_7ec56c38ecbc2e97,Westminster Catawba Christian School,12,53
+sch_cc8a3f99d7486a85,Ashley Hall,12,50
+sch_320a03d7e5a5ad9a,Greenwood Christian,12,43
+sch_aa9d5cb8f05c776c,New Covenant School,12,38
+sch_bb5a1f299924a8af,Ware Shoals,11,31
+sch_cd352400ee689cbf,PAP Sports,11,21
+sch_76a804406a18279a,Our Lady of the Rosary,10,101
+sch_bf7cbcc66a4e7ec1,Central,10,90
+sch_ccd225d00216cb0d,Spartanburg Christian,10,73
+sch_915c529d836c4fd6,PAC Panthers,10,61
+sch_edb4d50489240bf8,McCormick,10,48
+sch_56cc765a105dcfc9,Providence Classical,10,42
+sch_48db223c5355d126,Hunter-Kinard-Tyler,10,38
+sch_cd24019507edd497,Augusta Christian,10,27
+sch_0decde40145eb39d,Brashier,9,65
+sch_991ea3d2bfc8491d,Orangeburg Preparatory,9,55
+sch_58a28137642e25a2,Green Upstate High School,9,45
+sch_29081b2bfda95cf8,Midlands STEM Institute,9,28
+sch_32002b37e607cdff,Charleston Charter for Math and Science,9,27
+sch_6c3416c57602eb3c,Palmetto Christian Academy,8,121
+sch_555f63b508f67e8a,American Leadership Academy - Lexington,8,95
+sch_953222bb88672c56,Bridges Prep,8,71
+sch_fe383b3e7a0cf4a0,St. Johns,8,63
+sch_53b463f2508b92dd,Oakbrook Preparatory,8,56
+sch_5ae9667da7e1b49c,Calhoun Academy,8,47
+sch_74f50c8e52df7e15,Hampton Park,8,45
+sch_34e4b889df0a293d,Ashley Ridge Unified,8,22
+sch_1cd876a1728b4484,Charleston Collegiate,7,60
+sch_bd7dcc12550c4e6a,Virtus Academy of SC HS,7,41
+sch_979194f173d10bfc,South Carolina School for the Deaf and Blind,7,17
+sch_4d41116bca49016e,Cane Bay Unified,7,15
+sch_feb0d6dee4f584db,Fort Dorchester Unified,7,10
+sch_4fbf21e0979c3906,CBCCA,6,56
+sch_df18e73529c963ac,Lowcountry,6,33
+sch_cb52e0d83ee70306,Faith Christian School,6,18
+sch_1ae89303848032b7,T.L. Hanna Unified,6,16
+sch_5e52bf5d047ea219,Oakwood Eagles,6,8
+sch_e76a8b234b656de8,Bob Jones,5,91
+sch_cf61d5f16739e515,Oaktown Academy,5,46
+sch_cd0a1f9d0155612e,Holy Trinity Classical,5,44
+sch_3abd5a7f2d8d5541,Calhoun Falls,5,42
+sch_cc07e30bafe7a35d,Mead Hall,5,40
+sch_ed4bdaff39a1c1d2,Ridge Christian Academy,5,39
+sch_fd99d202908222bc,Horse Creek Academy,5,38
+sch_b361568ddba3863c,Newberry Academy,5,24
+sch_b7cbb481daaddc12,Jets,5,20
+sch_28d7bbf160f126e4,Lugoff-Elgin Unified,5,17
+sch_362154c93f657fe6,Southside Unified,5,13
+sch_36b55e79de7ae280,Cross Schools,4,46
+sch_9391825161e5516c,Veritas Preparatory School,4,46
+sch_5df51f461d7e6353,Community Christian,4,28
+sch_97fee91eb93b04da,Wardlaw Academy,4,25
+sch_39ec60060230a957,Palmetto Scholars,4,22
+sch_9b7f311d1d9cefd7,Lexington Unified,4,13
+sch_123f01b3b906e5e4,Tempo Sports Academy,4,8
+sch_96a42a5b17c924bf,Northwestern Unified,4,6
+sch_9faaca6a5d307c0d,Marlboro Academy,3,31
+sch_79fae8365b1ffeb5,Branchville,3,26
+sch_498f8d622cd4b632,York Prep,3,26
+sch_3f3b13d03b340fc8,Ragin Preparatory Christian Academy High School,3,23
+sch_4a671e37517167c3,Thomas Heyward Academy,3,20
+sch_c9a23593ca0b391e,Camden Unified,3,19
+sch_ca27d592f3207853,Greenville Classical,3,14
+sch_467b57c2a97682dd,The Complete Student,3,10
+sch_f710f6d52c5d4ba3,The King's Academy,3,8
+sch_0851ce19aa1cc0ab,Beaufort Academy,3,7
+sch_37434a951ec5a8e6,Heritage Academy,3,6
+sch_5fc2a8ec5127e40c,Robert E. Lee,3,4
+sch_40c20db8291e6991,Coastal Christian,2,28
+sch_73b9e6d131e01192,Lake Pointe Academy,2,25
+sch_24fba55c636121f5,Victory Christian School,2,23
+sch_e25da0bfec5092d6,Town Creek Christian Academy,2,16
+sch_fd214462309e3a57,Conway Christian School,2,12
+sch_96dad1c133b22af0,Upstate Falcons High School,2,11
+sch_c52b1931459ccf5e,Newberry Unified,2,10
+sch_641ba6337c24c47a,Westgate Christian School,2,6
+sch_31d8265b86a7edce,Chapin Unified,2,5
+sch_a5af08b6d980d1e6,North Central Unified,2,4
+sch_ee65563da8186c2f,Thornwell High School,1,34
+sch_9970a4b1aa4faa6b,Calvary Christian School,1,24
+sch_020370272a737f57,Hawthorne Christian Academy,1,24
+sch_c28b49f378b80530,The Carolina Academy,1,24
+sch_44ab23ddb0a40929,Dorchester Academy,1,22
+sch_0446c03c51a2aea6,Covenant Christian,1,17
+sch_7c0262c131a193aa,Oconee Christian,1,17
+sch_41ca111f009e65c7,Highlands Latin School,1,15
+sch_75a4e459cadeda39,Lowcountry Leadership HS,1,14
+sch_11842f2daa958234,Cambridge Academy,1,8
+sch_452d3e2a6f78b975,Patrick Henry Academy,1,8
+sch_82b0a2de063a197e,Elite Moves TC,1,7
+sch_56b7072e719188be,Low Country Prep,1,7
+sch_d2675acf05c36a04,Powdersville Unified,1,7
+sch_519ca2acbf6c6b31,Crown Leadership Academy,1,5
+sch_b9dc173894ce3616,New Hope Leadership Academy,1,5
+sch_24e093d3051f8747,Cane Bay Youth Track Club,1,1
+sch_03d286f0f181df2a,Laurens Unified,1,1
+sch_12c1d9d80d909f69,South Aiken Christian,1,1
+sch_3157ce2b2f9e0e47,Lake Wylie,0,87
+sch_e4e7f1576407de5b,St. Andrews,0,65
+sch_c4ad7146496adc82,Orange Grove Charter School,0,57
+sch_2b1103d3d5a91d3b,James Island Christian School,0,43
+sch_101c7764b71cdc4b,American Leadership Academy Blythewood HS,0,40
+sch_e3331e4cec49b479,Colleton Prep,0,39
+sch_b5fef1208e5ad761,St. Elizabeth Ann Seton,0,36
+sch_0c74a04a0ac5e493,Timmerman School,0,33
+sch_88000d7f65342258,GTC Rabbits,0,28
+sch_829d5e381237d98f,Spartanburg Prep,0,27
+sch_07b298ca12eaebde,Sandhills School,0,25
+sch_79c1e680323b7042,LEAD Academy,0,24
+sch_0ab4c2ad669b60d4,Emmanuel Christian Hartsville,0,21
+sch_eb2d47c7cc0f841c,Holly Hill Academy HS,0,18
+sch_b5fd46033a38028f,Richard Winn Academy,0,18
+sch_edf7f9f418ee243c,Thomas Hart Academy,0,18
+sch_837d2f67c5c9b714,Trident Academy,0,15
+sch_a4c35fecd85cdd68,Johnsonville Unified,0,12
+sch_0708b8eee383a263,St John's Christian Academy,0,12
+sch_4b7038103a77fcf6,Columbia Unified,0,5
+sch_7db7e5a3ec03505d,Brookland Cayce Unified,0,4
+sch_da17b269167c38ab,Eastside Unified,0,4
+sch_a39850cdb97e6f2b,GCS XC,0,4
+sch_efa990037b0b88c0,Walnut Grove Christian School,0,4
+sch_e6fd94ecf3fc4849,Anderson Christian,0,3
+sch_2946aead208e97b5,Pelion High School - Unified,0,3
+sch_5f9db449c35fabee,Riverpointe Christian Academy,0,3
+sch_5f57b55e7fac9566,Express Lane Track and Field Club,0,2
+sch_91a22237c5815d16,Garden Academy,0,2
+sch_be2db9ff05723dc2,Lake Pointe,0,2
+sch_c1bfdcc0ab1355f5,CA Johnson Unified,0,1
+sch_77bbdcbcf85b2465,Clarendon Hall,0,1
+sch_913d460d44ca6366,N/A,0,1
+sch_6d9d578e43e13f92,South Pointe Christian,0,1
+sch_2c274eff9d5f89ce,AC Flora Unified,0,0
+sch_c697df0a8d65d6c0,Aiken Christian,0,0
+sch_5f03c0828e5301fc,Aiken Prep,0,0
+sch_96da30c3e468f3af,Andrew Jackson Academy,0,0
+sch_9896e1047931e23c,Atlantic Collegiate,0,0
+sch_2bf76ca86285f1c2,Blue Ridge Christian,0,0
+sch_4108992bf30eaa9e,Bridgeway Christian Academy,0,0
+sch_e37ce93ac72488ce,Byrnes Unified,0,0
+sch_b5536bbc67b3ebe1,C.E. Murray,0,0
+sch_c034a695e33c4ab8,Catawba Ridge Unified,0,0
+sch_f413d10dcbe413fd,Charleston County Park,0,0
+sch_4091e1d0b06fdf71,Charleston Middle School,0,0
+sch_6c3d23a3cbca5254,Charlotte Velocity Track Club,0,0
+sch_351bebc715235995,Classics Track Club,0,0
+sch_8c3561d80ac6e392,Clemson Area Racing Team,0,0
+sch_a1b0001c03914739,Clinton Junior College,0,0
+sch_2e17533d62a17972,Coastal Leadership,0,0
+sch_2823dd77f9dcaf54,Community Christian Academy,0,0
+sch_c0621b45ab031f9a,Covenant Central,0,0
+sch_979a489d067609ae,Creek Bridge,0,0
+sch_91ed3fb0aa8df0a6,Dillon Christian,0,0
+sch_11cd9b3d05f32816,Dreamchaserz,0,0
+sch_d4d3d09964cc35dc,Dreher Unified,0,0
+sch_afbe180992f24d1d,Eau Claire Unified,0,0
+sch_a4ce0cb0e9742741,Elloree,0,0
+sch_14af610ac04ac93b,Estill - inactive,0,0
+sch_e43532eda3e01f7d,Extra Mile Tigers,0,0
+sch_aaaf41ea2ca0a784,Fastlane TC,0,0
+sch_0fd05f43baca3301,Florence Christian School,0,0
+sch_20df3a827f47259f,Fountain Inn Unified,0,0
+sch_b8586e9b7ee62ead,Garrett Academy of Technology,0,0
+sch_17147a9ce8cab981,Glenforest School,0,0
+sch_aaafbd4497024a6b,Governors School - Arts & Humanities,0,0
+sch_65debe4e2dde6c19,Harleyville-Ridgeville (Closed),0,0
+sch_7ba2ecce8d864554,Hillcrest - Dalzell,0,0
+sch_42043f17a604166d,Hillcrest Unified,0,0
+sch_c3bd360a0ff26ce7,Holly-Hill Roberts,0,0
+sch_3870ee6ba5604de5,J.L. Mann Unified,0,0
+sch_0ceaaa5c5ab8f921,Jasper County,0,0
+sch_365d6f58f10f0dee,Jefferson Davis Academy,0,0
+sch_69d529b95074aac8,Jonesville,0,0
+sch_3de06361c59fdafa,Keenan Unified,0,0
+sch_05a03c96d57d3ef6,Lake View,0,0
+sch_703a0702dbe43f90,Laurens Academy,0,0
+sch_ad5d9fadf177cdf0,Legion Collegiate Academy,0,0
+sch_0ee3a77fc66ab730,Lexington Championship Track Club,0,0
+sch_d36158a6dfab3c23,Lincoln,0,0
+sch_1848191201288fee,LMA,0,0
+sch_4265bbbef95ea48c,Lockhart (Closed),0,0
+sch_8ec2e92b1f9cdd2d,Lower Richland Unified,0,0
+sch_f94026b1dd804b58,Mauldin Unified,0,0
+sch_4db1a4d8ce2f8544,McDuffie (Closed),0,0
+sch_c716de99c31b2250,Middleton (Closed),0,0
+sch_6314abe56bda0fe0,Montessori School of Anderson,0,0
+sch_aa6efa5ac725e6e6,Myrtle Beach Christian Academy,0,0
+sch_889e0c28fd998684,N0 Name,0,0
+sch_cf0e65f63f8cdea4,Nation Ford Unified,0,0
+sch_b269f1b396b1822e,NEXT School Eagle Ridge,0,0
+sch_c387f5b9368ccad6,None,0,0
+sch_7b2e3e46fd75ccc3,North Myrtle Beach Christian,0,0
+sch_7c708d4563fe8236,Oak Ridge,0,0
+sch_71dd68c113d83ce5,Orangeburg TC,0,0
+sch_0b31c782602e3ddd,Palmetto Homeschool,0,0
+sch_a4b2d88035e1f0fc,Pawleys Island Christian Academy,0,0
+sch_8e42e79623277aeb,Pee Dee,0,0
+sch_653d1e9b7de7c326,Philip Simmons Unified,0,0
+sch_bfa65263e4b1d12b,Piedmont,0,0
+sch_a8e4ae48e5b06744,Polaris Tech,0,0
+sch_081f971c01f0dcba,Richland One Middle College,0,0
+sch_6824e02dcadc9cc9,Ridge View Unified,0,0
+sch_c907651619a39453,Sabres Club Track,0,0
+sch_87e909d1fc5ec991,SCHSL,0,0
+sch_80bcd0d076e1f502,SCTCCCA,0,0
+sch_b6409df1e9709755,Sea Pines Montessori Academy,0,0
+sch_2a8414f8b866a901,SEE BASS,0,0
+sch_b8d5460aa2da2527,Spartanburg Striders,0,0
+sch_b16afb0bd41af633,St. Anne Catholic School,0,0
+sch_59dafc8b06591563,St. Francis Xavier,0,0
+sch_4d1be0f7ecf6c7c7,St. Maria Goretti HS,0,0
+sch_c5b81356a4d05c12,Swamp Fox Youth Track,0,0
+sch_1addd8da3204c0b5,Tamassee-Salem (inactive),0,0
+sch_0d37d4d4b30b8b92,Team Flash TC,0,0
+sch_495bbfa7aa513a7f,The E.L.I.T.E.S.,0,0
+sch_cbd5805accb3c886,The Georgetown School,0,0
+sch_2b98b8b87840e9a7,Timmonsville,0,0
+sch_9053d1b605790e8f,Unity Flight TC,0,0
+sch_81d32345de12e0ae,Upstate Bearcats,0,0
+sch_a2340efe77582193,Wade Hampton-Hampton - inactive,0,0
+sch_0a2e3c0618960d84,Walterboro,0,0
+sch_83cfa465edf96bef,Whitmire,0,0
+sch_b4c9237412a8af8c,Woodmont Unified,0,0
+sch_c34ad3fa70f140c1,Woodruff Unified,0,0
+sch_9496cadf0da5fe46,Wyman King Academy,0,0

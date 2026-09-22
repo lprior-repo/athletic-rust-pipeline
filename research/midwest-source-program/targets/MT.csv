@@ -1,0 +1,208 @@
+school_id,name,co2027,athletes_all
+sch_14f8fec5283e6137,Glacier High School,95,315
+sch_12d6b4b90a740996,Billings West High School,80,227
+sch_37713b4465de0c76,Helena High School,70,224
+sch_2a5b544920dc6842,Sentinel High School,66,173
+sch_51ace146b52eb991,Gallatin,61,196
+sch_3ceb1fd7c2352632,Skyview High School,59,155
+sch_cea299038b59bda2,Great Falls High School,57,527
+sch_ad5eb9aee2a6ba7d,Big Sky High School,56,201
+sch_e3d677b3876bf4fa,Bozeman High School,56,193
+sch_57a536bdbf3476fb,Capital High School,56,178
+sch_cd61e4063bd085cd,Billings Sr High School,56,173
+sch_a450d1a9b3d70426,Laurel High School,53,290
+sch_bf12a662f8d218a1,Flathead High School,48,188
+sch_737fa178bc7c31e7,Browning High School,48,186
+sch_7292f001e78518aa,Hellgate High School,46,481
+sch_b7ae96241335ef5e,Charles M. Russell High School,44,160
+sch_5eb8307f7f291b65,Columbia Falls High Schl,40,258
+sch_431bc0742e67c62e,Hardin High School,40,228
+sch_3cff3679de420df7,Custer Co District High,39,122
+sch_12c87af3fd9044ca,Butte High School,37,162
+sch_4577f5121f745743,Lockwood High School,35,258
+sch_e573ff6810f0d0d4,Belgrade High School,33,188
+sch_9fe223f3528b95d9,Whitefish High School,33,124
+sch_d58e2ca84369630b,Billings Central Catholic High School,33,97
+sch_b95e3258f2feb26d,Corvallis High School,32,279
+sch_fc65671bf0b91f4b,Jefferson High School,32,91
+sch_341c0132968a602c,Polson High School,29,267
+sch_149964c7934e7b5c,East Helena High School,28,71
+sch_98550120a6585ce1,Frenchtown High School,26,263
+sch_cd0809149f232366,Fergus High School,26,91
+sch_0fdcf658c75fec9a,Hamilton High School,25,281
+sch_aa3a16212085c652,Bigfork High School,24,170
+sch_6cd9fc05698a5729,Shepherd High School,24,154
+sch_85bbe272a4d39d25,Huntley Project High School,24,126
+sch_1c494106e1a54f11,Thompson Falls High Schl,24,92
+sch_a9ffa0172009da41,Sidney High School,23,166
+sch_1b8f14e751d42321,Columbus High School,21,126
+sch_5299bbc333a68833,Beaverhead Co High School,21,65
+sch_b985645b6bd35a4a,Havre High School,20,256
+sch_0f76ca5853c3dff4,Lodge Grass High School,20,138
+sch_f3e7f7fe543d3725,Ronan High School,19,182
+sch_4043ac976e1a5c7f,Manhattan High School,19,114
+sch_e6f390ca40b5a5c1,Three Forks High School,19,113
+sch_c28ba0e1ee980aaa,Harlem High School,19,91
+sch_64a85fbc59c27579,Dawson High School,18,79
+sch_9671247414bb95cc,Florence-Carlton HS,18,61
+sch_966057752123f9a2,Joliet High School,17,106
+sch_7bc055ed89afb626,Lame Deer High School,17,77
+sch_b57e81386fd56045,Belt High School,16,110
+sch_b0ebe19c19f20881,Whitehall High School,16,92
+sch_d8c0dc48065cabdb,Arlee High School,16,85
+sch_b76ae5b5a289579f,Anaconda High School,16,60
+sch_ca87175bdf4b7682,Broadwater High School,16,58
+sch_15b24dccf9f29815,Darby High School,16,58
+sch_0f44fa2f36c0fcd2,Loyola Sacred Heart,16,46
+sch_a014c532d4a8eeab,Glasgow High School,15,151
+sch_97418d22d8ebc01a,Libby High School,15,133
+sch_01f15143f4fa4a6e,Fairfield High School,15,97
+sch_bf33bffe8062af93,Shelby High School,15,77
+sch_2aded2ffea86d106,Ennis High School,15,47
+sch_8cd9982adca59d5e,Drummond High School,15,37
+sch_e469a01237fe093b,Malta High School,14,115
+sch_7a25a25f0d5851c1,Cut Bank High School,14,86
+sch_c22e9b6e1de3e7a5,Red Lodge High School,13,139
+sch_38353368c3c15a84,Poplar High School,13,110
+sch_302ef1bf10eda3b5,Park City High School,13,83
+sch_3a50cf3cfaed2f83,Fort Benton High School,13,80
+sch_c075d4d72603bf0e,Park High School,13,72
+sch_2be40dacbc64cc25,Sweet Grass Co High Schl,13,71
+sch_8f80b4ca216b25a4,Simms High School,13,52
+sch_5e33e09b0278a2b8,Forsyth High School,12,75
+sch_6e47b39f10f1ac8e,Chinook High School,12,72
+sch_7424cb389a4b2781,Culbertson High School,12,65
+sch_9a3eb59991dcd001,Stevensville High School,11,94
+sch_41dd18f074db92b3,Manhattan Christian,11,93
+sch_5613e33732bc5bdd,Conrad High School,11,84
+sch_fe956a9e2ceefa8c,Garfield Co Dist HS,11,25
+sch_f89ba382915a8d14,Absarokee High School,10,77
+sch_e3076f332427e49e,Superior High School,10,61
+sch_793a5979c243673e,Bainville High School,10,56
+sch_1b6b626db450ab45,Big Sandy High School,10,49
+sch_7f9ce19036b3fa74,Colstrip High School,10,47
+sch_21e818f5217fae14,Stillwater Christian,10,37
+sch_db99fa8a56ffea6d,Melstone High School,10,32
+sch_27290a801f337263,Circle High School,10,31
+sch_42e6bdf14495d397,Choteau High School,9,81
+sch_6e38a3e78fbedcc6,Cascade High School,9,71
+sch_434a6ee3f9c99db5,Plains High School,9,68
+sch_213f14d5b3aef7fa,Sunburst High School,9,40
+sch_806076dd85095e99,Hot Springs High School,9,29
+sch_2aad585c5704023e,Judith Gap High School,9,28
+sch_53cb5abe556620b1,Fairview High School,8,76
+sch_961634cecdc8ad3a,Twin Bridges High School,8,62
+sch_3d1f8cc39763870b,Centerville High School,8,38
+sch_317568ad371ad92c,Hays-Lodge Pole High Sch,8,33
+sch_110abaca7b1e6297,Turner High School,8,31
+sch_445eaa7750f154f5,Seeley-Swan High School,8,23
+sch_1aa438e1a6366e44,Granite High School,8,17
+sch_58d1adc51754df81,Lone Peak High School,8,15
+sch_fff01c6b0c389236,MT Sch For Deaf & Blnd HS,8,10
+sch_4f8918228764d935,Plentywood High School,7,117
+sch_ad81867afc5599cf,St. Labre Indian School,7,101
+sch_5910d08489504000,Baker High School,7,99
+sch_14be96211d8f859e,Box Elder High School,7,70
+sch_d0b488cb89374198,Charlo High School,7,59
+sch_fc0eac6ac7fb2efc,Reed Point High School,7,47
+sch_54b88588b548fe9b,Denton High School,7,44
+sch_fced5b701023c0b2,North Star High School,7,39
+sch_2125a70c300b54f3,Two Eagle River School,7,29
+sch_1dbce638e26d65a6,Medicine Lake High School,7,19
+sch_51b0fdc30ce8c761,Carter County High School,7,17
+sch_9741e37419032ec3,Lincoln High School,7,16
+sch_accb91f3bb1be533,Wolf Point High School,6,100
+sch_150baab86e9446c7,Hobson High School,6,77
+sch_e213e34090ceca17,Bridger High School,6,76
+sch_2548efc3a64c583e,Scobey High School,6,72
+sch_9eed3b33d0592699,Broadview High School,6,69
+sch_caffcb73f0f8a3c7,Rocky Boy High School,6,66
+sch_da65f2355c4cbb5e,Plenty Coups High School,6,56
+sch_bb38513f781bfa0d,Troy High School,6,49
+sch_ef25a799331d9a8f,Dodson High School,6,47
+sch_18f607171b7134fd,Richey High School,6,47
+sch_70e51ac9aec6a59c,Shields Valley High Schl,6,45
+sch_bed2fa6046df4978,Roundup High School,6,44
+sch_35bcf8c2ba837c44,Lustre Christian,6,39
+sch_f049d74078c2ee5f,Roy High School,6,38
+sch_c51483c51907445a,Brockton High School,6,24
+sch_ebf0dbaddf0db67a,Augusta High School,6,21
+sch_a40bf85231ca4004,St Ignatius High School,5,91
+sch_18fdbb16c8d0db95,Joplin-Inverness HS,5,59
+sch_ed0c6953db5b431c,Lincoln Co High School,5,47
+sch_1e296a82d4282a48,West Yellowstone HS,5,44
+sch_08ea4e44f4d50bfc,Savage High School,5,41
+sch_ec5cb5b39ce03f14,Heart Butte High School,5,33
+sch_c52f081aec1b08af,Nashua High School,5,33
+sch_bf70ce86207eba07,Powell County High School,5,30
+sch_edf464c579c76b3d,Roberts High School,5,27
+sch_fed6c8686e40dc2a,Geraldine High School,5,25
+sch_450c770b0d82d442,Saco High School,5,19
+sch_cca94542ebf226dd,Electric City Track Club,5,11
+sch_ac0255535d9a962a,Harlowton High School,5,7
+sch_05c64c759df1a774,Billings Christian,4,55
+sch_30dabb03591d7dab,Victor High School,4,49
+sch_db47e30e26340067,Grass Range High School,4,47
+sch_33fd2b102813aa63,Sheridan High School,4,46
+sch_83eecef03b9e2d07,Wibaux High School,4,46
+sch_17cfef66caa1a55b,Valley Christian School,4,38
+sch_682f7d65e78ef5c2,St Regis High School,4,24
+sch_1823e6fd5ebdb41e,Northern Cheyenn,4,18
+sch_1ebb25e96f381e9d,Rosebud High School,4,13
+sch_08776b77c7454928,Heritage Christian,3,92
+sch_727bd5aea0d2c6c7,Westby High School,3,49
+sch_efaf1cd32f648db9,Alberton High School,3,44
+sch_088ddd330c57b7df,Power High School,3,44
+sch_3a8445036b1e94bb,Frazer High School,3,34
+sch_9e492b65bdb3606d,Plevna High School,3,34
+sch_0d2766502191af76,Custer High School,3,12
+sch_92b76f5c9b62274d,Butte Central Catholic High School,2,60
+sch_abd518f15913f696,White Sulphur Springs HS,2,47
+sch_9184303b1907727d,Gardiner High School,2,42
+sch_33c3a7181226d7c2,Great Falls Central Catholic High School,2,42
+sch_8e5ebf98d425d814,Terry High School,2,39
+sch_73e5ec377cc84e24,St. Patrick's Academy,2,29
+sch_080de08f1e365c0e,Highwood High School,2,27
+sch_c707c7ae3708d9ef,Noxon High School,2,24
+sch_c9cf6c22027e2b2b,Whitewater High School,2,17
+sch_29d9ef519f547b0c,Chester High School,2,2
+sch_990ace4d50d8fcb3,Miles City High School,1,126
+sch_4113bfd5f80add5d,Townsend High School,1,42
+sch_197c15963a037ee4,Harrison High School,1,18
+sch_b1329dcb335f2541,Powder River Co Dist High,1,16
+sch_4e401f2611cd0cd6,Fromberg High School,1,15
+sch_5ad1932423cfb9c8,Belfry High School,1,12
+sch_436eb4fbe45e39e0,Lima High School,1,7
+sch_fc509ad6be171516,Geyser High School,1,1
+sch_141113ac5fbcae17,Lambert High School,1,1
+sch_47c455eb4b4866d3,Dillon,0,136
+sch_15246adc2d98fa7c,Deer Lodge High School,0,40
+sch_8220bc98fdc05a1d,Froid High School,0,32
+sch_75511aae6fd940c4,Valier High School,0,26
+sch_68ec1c0079344495,Ekalaka High School,0,21
+sch_ba392d95675f25a3,Barbara Gilligan Junior High School,0,20
+sch_153c43538606d345,Hinsdale High School,0,17
+sch_2cd2f88968c2c363,Willow Creek High School,0,11
+sch_d9f4c02fd8495e2e,Indigenous Trail Running,0,9
+sch_89ff2430887ddb4b,Brady High School,0,1
+sch_5f782f0482f332e1,Central,0,1
+sch_b106f5adde8490ab,Dutton High School,0,1
+sch_b08c8ee77bca3f33,Blue Sky High School,0,0
+sch_803ccd70d44b08cd,Broadus High School,0,0
+sch_12327fb17e528ee1,Eureka High School,0,0
+sch_11ebbc363a2dec61,Flaxville High School,0,0
+sch_e630836fb037c519,Hysham High School,0,0
+sch_d5be14affbed378c,K-G High School,0,0
+sch_9b95ecccf9c43cfd,Lavina High School,0,0
+sch_16f430973b931e32,Moore High School,0,0
+sch_62052ca4b79bdbf0,Opheim High School,0,0
+sch_57cd6b30813beb39,Outlook High School,0,0
+sch_ee6d41c34f93aaa0,Pearl RIver,0,0
+sch_b9abf95dfe11fa8e,Peerless High School,0,0
+sch_d003849349f574d9,Pine Hills Youth Corr Facil HS,0,0
+sch_f064eddba9d7b950,Rapelje High School,0,0
+sch_2f24f60f3fea48fe,Riverside Youth Corr Facil HS,0,0
+sch_ff05b1e6d2ec6124,Ryegate High School,0,0
+sch_debd857265a5c3ba,Stanford High School,0,0
+sch_ccbab2d479cf7fd6,Winifred High School,0,0
+sch_4c733286dbacc5ab,Winnett High School,0,0

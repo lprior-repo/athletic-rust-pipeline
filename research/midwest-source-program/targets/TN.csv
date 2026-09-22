@@ -1,0 +1,592 @@
+school_id,name,co2027,athletes_all
+sch_d8517616d255ecae,Houston High School,80,199
+sch_d1078bc5ea9dc83f,Blackman High School,73,201
+sch_f36255701e041e2c,Kirkwood High School,73,187
+sch_8caa61d93b8aa317,Morristown-West High School,71,176
+sch_aedbae86fb06c881,Bartlett High School,70,188
+sch_8ad39672f0eb8c1d,Cookeville High School,64,201
+sch_3c56a856b21deb3b,Brentwood Academy,64,181
+sch_5dfc484014c677d0,Beech Senior High School,63,143
+sch_236656b970126678,Science Hill High School,62,181
+sch_aab397a67b9adacf,Nolensville High School,62,172
+sch_d91ce656153a4d02,Dobyns Bennett High School,62,159
+sch_e87965f559974bf1,Station Camp High School,61,154
+sch_0519e37e713c5373,Franklin High School,59,174
+sch_a6a5cce1d546c0f6,Siegel High School,59,145
+sch_154a8cb23cc051e0,Ravenwood High School,58,177
+sch_fc7b67a2f711119d,Maryville High School,58,156
+sch_4e2b36bcaf8ca206,Fred J. Page High School,57,126
+sch_ea2bdaa9d48b7571,Rossview High School,56,151
+sch_212ae32a274e9f89,Lebanon High School,56,138
+sch_b03dae44286e5fa6,Riverdale High School,55,195
+sch_4d772ad4f0b82d7f,Baylor School,55,156
+sch_4d24cb5424bfbaa5,Munford High School,54,154
+sch_ea85677d887a29d0,Wilson Central High School,53,142
+sch_9e67d372adb78fa0,Gallatin High School,53,129
+sch_7eeef23cc293f346,Tennessee High School,52,150
+sch_845ee937e3606457,John Overton High School,52,95
+sch_d278ecc5e3667cdd,Brentwood High School,50,187
+sch_e112f0be9254e2e6,David Crockett High School,50,135
+sch_0c5b4fbc2b4aeb50,Independence High School,49,150
+sch_20e41e09709100c3,White Station High School,49,143
+sch_2ff8f7c829ae35bc,Brighton High School,49,120
+sch_d05b0f5581ab98b1,Jefferson County High School,48,153
+sch_20ec819953682597,Dickson Co. High School,48,129
+sch_540bfc62265474c0,Hardin Valley Academy,48,127
+sch_8e50c5d75dccbae8,Craigmont High School,48,105
+sch_5d63ea6bb2c14d4f,Cordova High School,48,83
+sch_dbed1809241a3e4f,Green Hill High School,47,171
+sch_fb9df974b5a80227,Montgomery Bell Academy,47,118
+sch_578ad1a2f14aba9d,William Blount High School,47,114
+sch_2d9282aa61c62ecc,Germantown High School,47,98
+sch_5645c899c35e1af5,James Lawson High School,47,86
+sch_9b1a6bb57ac66df8,Mt. Juliet High School,46,153
+sch_10dd202b8a17298a,Northwest High School,46,129
+sch_4e57fa395835ee8c,Morristown-East High School,46,111
+sch_8e44e190ce2d2c1e,Hendersonville High School,46,86
+sch_c7d26a28b30109ce,LaVergne High School,46,85
+sch_0f6b5c372d02aad9,West High School,44,129
+sch_d3b63a5cfddf093f,Central Magnet High School,44,111
+sch_d1bf1f8abdcbb6e0,Franklin Co. High School,44,105
+sch_9e628ac79ead9e7b,Red Bank High School,44,104
+sch_8aa94f8f45534625,Farragut High School,43,191
+sch_722cd82f6bcb41f6,Liberty Creek High School,43,169
+sch_5296cc3ad9b1a37b,Stewarts Creek High School,43,129
+sch_0d1f258dd394af90,West Ridge High School,43,113
+sch_43c154af954c436f,Warren Co. High School,42,103
+sch_d6212c90b66a2514,Lipscomb Academy,41,158
+sch_23db91a11c89c50c,Oakland High School,41,156
+sch_d59d00291e166228,Martin Luther King High School,41,128
+sch_588076d3702a306e,University School of Nashville,40,113
+sch_e34655edc61104fa,Rockvale High School,40,108
+sch_5dd203b180c63a10,Trezevant High School,40,108
+sch_fe4c9ef42e236323,Memphis Central High School,40,78
+sch_b600198b37b9f184,Brainerd High School,40,54
+sch_5c6b06e0b055bdb4,Clarksville High School,39,136
+sch_e9eb3622057b1788,Ooltewah High School,39,100
+sch_9ca798301bbb8162,Hillsboro High School,39,99
+sch_21ee17a0ea403ace,KIPP Antioch Global High School,39,90
+sch_b3e739d2360c845e,Raleigh Egypt High School,38,128
+sch_ff95d043ca615f91,Boyd Buchanan High School,38,79
+sch_aa8d43d0c0b73362,Collierville High School,37,176
+sch_1b566458f47ec108,Arlington High School,37,128
+sch_1b46eccc1d87b480,Father Ryan High School,37,124
+sch_8e805877afb95886,Christian Brothers High School,37,119
+sch_06829d61f0d56949,Chattanooga Christian School,37,117
+sch_f63ea66b2283d215,Gatlinburg-Pittman High School,37,93
+sch_41444ee7a949a12e,Jackson Central-Merry High School,37,85
+sch_a87f834c63159bea,Lakeway Christian Academy,36,150
+sch_14018678e8977de1,Oak Ridge High School,36,135
+sch_8d66510f86d5b4f2,Christ Presbyterian Academy,36,125
+sch_bf6f4b4f1a1fe6e1,Montgomery Central High School,36,108
+sch_4f86f6fa47324fa0,McCallie School,36,85
+sch_3498f0498c376c5e,Bearden High School,36,81
+sch_9d7f4eeb54e5177d,Sullivan East High School,36,81
+sch_a082a932701356f5,Alcoa High School,36,74
+sch_0183360d99027b38,East Nashville Magnet School,36,51
+sch_b4d92b2053f5b393,West Creek High School,35,124
+sch_7f6270c281e4791a,Walker Valley High School,35,119
+sch_6904fa65fe929b09,Centennial High School,35,97
+sch_1094c23f7a5e0d16,Soddy Daisy High School,35,87
+sch_2c679c864b33fa78,Sequoyah High School,35,75
+sch_88cac723d926f299,Ensworth,34,116
+sch_5fe78327fc85ddd7,The Webb School Of Bell Buckle,34,116
+sch_ece022e0f68c1aeb,Briarcrest Christian School,34,94
+sch_025f80ffd48e7efd,Kenwood High School,34,88
+sch_64f4e87451361aea,Watertown High School,34,81
+sch_29532d017a6efe36,Overton High School,34,78
+sch_2730f49853aef97d,Cane Ridge High School,34,74
+sch_d21f239f12c5f062,Milan High School,34,74
+sch_55e284d1852b9720,Portland High School,34,74
+sch_db4a31d956bb2c4e,RePublic High School,34,61
+sch_f151572119f4a122,Summit High School,33,111
+sch_4b264dc8c5564b3d,Cocke County High School,33,102
+sch_12e02d7af8b18b4e,Memphis Academy of Science & Engineering,33,101
+sch_56036dfa89f4a1ff,Franklin Road Academy,33,100
+sch_5f0af87b1a5ce60f,Pope Saint John Paul II Preparatory School,33,81
+sch_61d70ac8b46c88c8,Daniel Boone High School,32,122
+sch_a7bd1a4355d6b87a,Signal Mountain High School,32,117
+sch_f8f6b4b2f0b028b9,Battle Ground Academy,32,102
+sch_5021d01288a306b3,Henry County High School,32,90
+sch_49e5ce4138583b89,McGavock High School,32,85
+sch_e8b3ad805ef424fa,Silverdale Baptist Academy,32,83
+sch_bfe5d6f7c0610d21,Knoxville Halls High School,32,79
+sch_480ca753bdafd5d4,Ripley High School,32,74
+sch_e2cd8c9505a99fc6,Lakeland Preparatory High School,31,99
+sch_12467fbffe58635f,Knoxville Catholic High School,31,87
+sch_f3a3eaef7cd6878c,Haywood High School,31,83
+sch_855e5f20a31cb851,Cherokee High School,31,82
+sch_706f9824fe941e91,Hume-Fogg Academic Magnet,31,82
+sch_a978ad3b0fa22ac0,St. Mary's Episcopal School,31,75
+sch_0fa7ab0be747d762,Sweetwater High School,31,51
+sch_32f799599f21db84,Lausanne Collegiate School,30,109
+sch_2ab83359155fd92f,Gibbs High School,30,96
+sch_77aec51a7df60caf,Memphis Rise Academy HS,30,74
+sch_9e2226f508e2aa21,Shelbyville Central High School,30,63
+sch_bc84f23fbd1effc1,Hutchison School,29,90
+sch_76fb4287bb0af978,Pearl Cohn High School,29,80
+sch_813a16b3240ea862,Knoxville Central High School,29,76
+sch_4ef39324ca959603,Memphis University School,28,157
+sch_f56158f93e20da90,Rhea County High School,28,86
+sch_9a23228429273c8d,University High School,28,81
+sch_a17e28fdb314e70a,Wooddale High School,28,71
+sch_f25d66b928b56731,Hunters Lane High School,28,59
+sch_f1a1523b644e93d3,Donelson Christian Academy,28,53
+sch_aa8982f6b6c5357e,Glencliff High School,28,39
+sch_1448765e131b3165,Davidson Academy,27,114
+sch_c85c7defee4cbeb8,Columbia Academy,27,104
+sch_6e5e572a35fcbb9b,Pigeon Forge High School,27,93
+sch_38c37f808670f780,Elizabethton High School,27,77
+sch_78cdf034264f18ca,Sevier Co. High School,27,66
+sch_593ff08a204a2143,Millington Central High School,27,64
+sch_bbfe807ccb33e660,Whites Creek High School,27,64
+sch_d1204b0a9c389dfd,Bolton High School,27,61
+sch_795265b9bd78806f,Bolivar Central High School,27,40
+sch_ee7f8867a78dc126,Creek Wood High School,26,88
+sch_0d4027793b720ab0,Northeast High School,26,77
+sch_1b34b9b6e104c868,City University School of Liberal Arts,26,74
+sch_2b85d5bd3863e3d1,Stratford High School,26,61
+sch_f27ce6f90c5f090c,Seymour High School,26,58
+sch_c6ba7ce36110ab15,Douglass High School,26,56
+sch_3140f5872bd36989,St. Benedict at Auburndale,26,49
+sch_ef03d2b8685c4ac4,White Co. High School,25,110
+sch_cd49eb9deb6409eb,Middle Tennessee Christian School,25,101
+sch_1f69665a1ebd5c72,Harpeth Hall School,25,91
+sch_c1d2b5b202eb053e,Harding Academy,25,80
+sch_d5903fb0054d4beb,Crosstown High School,25,75
+sch_6b40178419913e15,Alvin C. York Institute,25,73
+sch_b965e747b53a094a,Christian Academy of Knoxville,25,72
+sch_4345c1717cdb4e0a,South Gibson County High School,25,72
+sch_8a985261101ec0d6,Memphis East High School,25,64
+sch_174aeffde8a15c5e,Hardin Co. High School,25,61
+sch_b882aaf8cbe7c39a,Lenoir City High School,25,60
+sch_64cc3652bdf47214,Union City High School,25,60
+sch_a3085bc772dd5d67,Providence Christian Academy,24,174
+sch_c318a24c74cd3537,Memphis Middle College High School,24,85
+sch_bf05912c78576f5d,Smyrna High School,24,82
+sch_84dcd92aa6619366,Sovereign Grace,24,75
+sch_5d6567f309b7b829,Mitchell High School,24,67
+sch_4585f47a97b0fc84,Spring Hill High School,24,55
+sch_946adedfc11f213e,Westwood High School,24,50
+sch_ac3d825ab1a8fa9a,Trinity Christian Academy,23,136
+sch_c59cd02de68e1a64,Grace Christian Academy (Knoxville),23,94
+sch_02cff349c59be63e,Greeneville High School,23,77
+sch_0e272bbbaf91212a,South-Doyle High School,23,74
+sch_382c9749c97b3936,St. George's Independent School,23,69
+sch_0cf9a03ca0249443,Cleveland High School,23,68
+sch_3d3a5fe26e36ad94,St. Cecilia Academy,23,66
+sch_ad75a8956c2f54f1,White House High School,23,64
+sch_0967adbcb0e5ac6b,University School of Jackson,23,61
+sch_784b215207988a65,Tyner Academy,23,60
+sch_7c2164e66d59c636,Stone Memorial High School,23,57
+sch_c38c19bc2792be9b,Grainger High School,23,53
+sch_70ebb4fc4bd83ccc,Jackson South Side High School,23,48
+sch_c4d81bb9c4d20bf4,Huntingdon High School,23,39
+sch_f088f5ada7922610,Grace Christian Academy (Franklin),22,84
+sch_7d14169e572d67c1,Coffee Co. Central High School,22,78
+sch_b4f6e55c69fc9653,Nashville Christian School,22,70
+sch_ff905a160936d4d7,Maplewood Comprehensive High School,22,56
+sch_e8085a1dfdecfe16,Bradley Central High School,22,49
+sch_83e48674c0eb6ebd,Happy Valley High School,22,48
+sch_a4aa9393425400d6,Chattanooga Preparatory High School,22,45
+sch_c36f59edb6630c2d,Memphis School of Excellence Winchester,22,40
+sch_74f79bfef9018025,Hamilton High School,22,39
+sch_998cc1e004be72bd,Ezell-Harding Christian School,21,105
+sch_2c2744b4bfaf3371,Notre Dame High School,21,74
+sch_9a785bc9ec3e3699,Karns High School,21,73
+sch_5e2469b6e5fd4cc8,Powell High School,21,68
+sch_d6cb3cae7724c11a,Cumberland Co. High School,21,65
+sch_cb53a6076a9bfe19,KIPP Nashville Collegiate High School,21,60
+sch_3ad70c54e7fa2c95,Hixson High School,21,56
+sch_c0bc532e8171f88f,Oakhaven High School,21,56
+sch_f28adc051b204a72,Volunteer High School,21,55
+sch_2fc8c3fa64962b79,Kirby High School,21,52
+sch_ba9fcb71282c7c19,Union Co. High School,21,38
+sch_e855937f571f9869,Ivy Academy,20,114
+sch_d181669bad5dd654,Northview Academy,20,85
+sch_29ab60eafce694e8,East Hamilton High School,20,80
+sch_62561fb6101cfc8f,Webb School of Knoxville,20,74
+sch_28e484fd2674aa88,Madison Academic Magnet High School,20,60
+sch_88fb8916a4ff7abd,Dyer Co. High School,20,59
+sch_a8fd925c77fc0a99,Columbia Central High School,20,56
+sch_dd6e31de844e31a4,Westminster Academy High School,20,55
+sch_aa5e4f8efe67b9cf,Girls Preparatory School,20,50
+sch_c5da6d9e380c73e3,Tellico Plains High School,20,49
+sch_167655b015271f50,Springfield High School,20,46
+sch_37e03332256375ed,Goodpasture Christian School,19,82
+sch_81e7054956933e15,Heritage High School,19,61
+sch_ea012a7121afc8e2,Crockett Co. High School,19,60
+sch_171012ea0605cb3d,Chester Co. High School,19,57
+sch_651cfaa5f3204478,Greenbrier High School,19,51
+sch_778577404a603113,Heritage High School (White House),19,51
+sch_a5ce9ecdd3ae5a5d,CSTHEA Patriots High School,18,82
+sch_7ca8f95a16681698,Lexington High School,18,70
+sch_85dbc35a54ceee81,Evangelical Christian School,18,63
+sch_29c8fc602853332e,McMinn County High School,18,60
+sch_8d67414eba180ee8,Kingston High School,18,54
+sch_1ee8fb7b635bd789,Grace Baptist Academy,18,49
+sch_6d1dbd14fa5c71a1,Memphis Business Academy (MBA),18,46
+sch_28033c8f2dd5d93a,Southwind High School,18,45
+sch_a35d46d83bc4dcb4,Cheatham Co. Central High School,18,36
+sch_7542f837b795e555,Sycamore High School,18,27
+sch_8defdfaedac940c0,Memphis-Area Home Education Association,17,223
+sch_d403010b58e2dbfb,Battle Creek High School,17,98
+sch_b17a3a73a4d96466,Gordonsville High School,17,55
+sch_5ddc995e928ec787,Providence Academy HS,17,52
+sch_cea456098dd285c5,Covington High School,17,50
+sch_163c69b2256ce4f6,Booker T. Washington High School,17,48
+sch_f51bc6f37b247aca,Grundy County High School,17,48
+sch_ba39491a6676c7f1,Smith County High School,17,48
+sch_af74f6851bcfe237,Antioch High School,17,46
+sch_6a481f08102f75db,Clarksville-Academy,17,45
+sch_aa2c81d8595d7047,Manassas High School,17,43
+sch_d71bd97f3d04d451,Chattanooga School for the Arts & Sciences,17,42
+sch_91ccb63313732d54,Johnson Co. High School,17,40
+sch_417247ac84fb9668,Macon Co. High School,17,30
+sch_503edd7709437d99,Tullahoma High School,16,97
+sch_c9ca5e0187db62e4,University School of Johnson City,16,77
+sch_cb7584ceffa2add0,Dresden High School,16,71
+sch_0dec0fbb1d33f373,Freedom Prep Academy High School,16,66
+sch_fd7bda83b25221db,Livingston Academy,16,57
+sch_a5712d0391d19d04,Anderson County High School,16,55
+sch_a0e538d0b9984214,Upperman High School,16,52
+sch_a90d786764bcf92e,St. Agnes Academy,16,51
+sch_c8930a88d7a4c9e1,Unicoi Co. High School,16,51
+sch_53fe41d0cb3b1a5a,Campbell Co. High School,16,50
+sch_d448a9565ffffd9e,Community High School,16,50
+sch_2f51be72c5224532,Marion County High School,16,45
+sch_6e40e3ca2ca3f30e,Sequatchie Co. High School,16,45
+sch_7b17098ef3faff1f,Fayette Ware High School,16,44
+sch_8f49af8dd42aa9ed,Jackson North Side High School,16,44
+sch_9e3b926042350449,Cascade High School,16,42
+sch_6d17fc90ae3d7be4,Loudon High School,16,37
+sch_d6c807e68cb02160,Clayton-Bradley Academy,15,81
+sch_f4da219980a3c401,McKenzie High School,15,71
+sch_8be874b980279558,Eagleton College & Career Academy,15,68
+sch_055cd56d9a37e524,Lawrence Co. High School,15,64
+sch_04580587e5b2af92,Fulton High School,15,55
+sch_ac09e99b3733d610,Hickman Co. High School,15,54
+sch_e23bc4b4c50c96d6,Austin-East High School,15,50
+sch_e854431ec0698c70,Kingsbury High School,15,45
+sch_470bfb0bada47b5f,Midway High School,15,44
+sch_81893edd3a119c37,Westview High School,15,42
+sch_d3cbd22d0a661b30,Liberty Technology Magnet High School,15,33
+sch_e3906d6730edb421,MLK College Preparatory High School,15,15
+sch_4a98edf97327573b,Tennessee Heat,14,135
+sch_a6d48fbee1d57ce5,Franklin Road Christian,14,79
+sch_89881af5e234f354,Collegedale Academy,14,65
+sch_852b216f2b859e2a,Mt. Juliet Christian Academy,14,57
+sch_62ae1d9399060eca,South Greene High School,14,52
+sch_f31437d16aa349b3,East Hickman High School,14,47
+sch_6ec718722f4bfe4a,Sheffield High School,14,37
+sch_3c8fe068aba13f4e,Bluff City High School,14,33
+sch_78f4a936b07adb38,South Pittsburg High School,14,29
+sch_ea0db65d0822ad39,Mt. Pleasant High School,14,28
+sch_6243fd6c4f04f678,Marshall County High School,14,27
+sch_c5a7cfedb2f1de78,Merrol Hyde Magnet,13,74
+sch_a286911d1dd373dc,McMinn Central High School,13,62
+sch_215d3ebf42ef4dc1,Dyersburg High School,13,53
+sch_807f7c7b7eb39ced,L & N STEM Academy,13,43
+sch_3857ac8558a11cea,Eagleville High School,13,42
+sch_e9fdc81582a5b910,Fairley High School,13,41
+sch_73bff01664c5e5eb,Scott High School,13,40
+sch_0b0d80faf91a84d5,Clinton High School,13,39
+sch_10a1e53aa5faea51,West Greene High School,13,38
+sch_b82f272d5b4c73bf,Humboldt High School,13,37
+sch_30b0e22d6b3acba6,Cordova Memphis School of Excellence,13,28
+sch_a00e87ff0ec99db9,Power Center Academy,13,25
+sch_ed3875558a60a3c1,Dickson Christian Academy,12,135
+sch_a0160e1119496447,Friendship Christian High School,12,109
+sch_05430e78712fd533,KIPP Memphis Collegiate High,12,71
+sch_36e2ef18cecff75d,Bethel Christian Academy,12,64
+sch_5ec49477a6bf6c03,Fairview High School,12,60
+sch_b104a86e9784db47,Hollow Rock-Bruceton Central High School,12,50
+sch_0e327ebdd39b7a58,Chuckey-Doak High School,12,44
+sch_1eea6793ccdd668b,Melrose High School,12,32
+sch_34aa5617cf3e77a7,Whitehaven High School,12,32
+sch_ad868e6e8f56ecde,Clarkrange High School,12,28
+sch_c8228432061764d5,Polk County High School,12,25
+sch_a2cd546a5e065622,Knoxville Ambassadors High School,11,36
+sch_ffdb3b3bdfb3ae3e,Jackson Christian High School,11,30
+sch_9a021cb9d0f89844,Hillcrest High School,11,29
+sch_115835bc2ff77556,Howard School of Academics & Tech.,11,26
+sch_3ffd99b4afec5649,East Robertson High School,11,21
+sch_86c2448587799235,Tri-Cities Christian Academy,10,73
+sch_b49883a0c9568307,Valor Collegiate Academy,10,57
+sch_559b051f44bfcf26,Collegiate School of Memphis,10,51
+sch_e552b4b8e72571f1,Obion Co. Central High School,10,50
+sch_91d28c9e0b71ef3f,The Kings Academy High School,10,36
+sch_311b514d58bfd5e0,Claiborne High School,10,33
+sch_1026c7eca139a51f,East Ridge High School,10,31
+sch_f2178cad013ed6a7,First Assembly Christian School,10,30
+sch_db74b0363103d76b,Lead Academy,10,30
+sch_d5851fdfb8646087,Chattanooga Central High School,10,26
+sch_d70fb22295be5920,Sale Creek School,9,82
+sch_5e37c6bdb27013ea,Houston County High School,9,38
+sch_c6952580bf354b37,Ridgeway High School,9,31
+sch_8035b508ed4d2129,CSLA High School,9,29
+sch_e72946e395defd9b,Adamsville High School,9,22
+sch_58822d2942560ce8,Chesterton Academy of the Incarnation,9,18
+sch_d439675842106896,Arrows XC,8,103
+sch_3c9ab420b319ccbc,Giles County High School,8,37
+sch_533f6d80872319de,Richland School,8,36
+sch_04da02c66a0bc63e,Carter High School,8,35
+sch_0def8db925de8012,Harpeth High School,8,34
+sch_98a18544920b2e76,Rossville Christian Academy High School,8,33
+sch_ecac0c7cc07f76a7,Overton Wolverines,8,27
+sch_646c7a57c4eb15f0,Career Magnet Academy,8,23
+sch_d71e0f2394a2174b,Greenfield High School,8,16
+sch_beccb3bb766750dd,Chattanooga Charter School of Excellence High School,8,15
+sch_2cf35458226e5938,North Greene High School,8,14
+sch_d7f7b263e1a84a98,Concord Christian School,7,97
+sch_215961e5df47932a,McEwen High School,7,70
+sch_2780bdb4707e825f,St. Andrew's-Sewanee High School,7,64
+sch_e74f21fe7a46abd3,Clarksville Christian School,7,52
+sch_aec0443a066f0471,Westmoreland High School,7,39
+sch_fd8d269b1e96b9e1,Lincoln Co. High School,7,35
+sch_4b37f886bd92bc22,Compass Midtown,7,26
+sch_f87afd9ffb3a5140,Pure Academy,7,16
+sch_77b290991df7bab4,Whitwell High School,7,9
+sch_1a8082472d1f10b6,Kingsport Area Christian Home Education Association,6,66
+sch_e11b10dc4e81e7ab,Peabody High School,6,32
+sch_ac87b2fba6d5a0b5,Lancaster Christian Academy,6,28
+sch_f2ce87d754ee5fd8,Camden Central High School,6,21
+sch_0df6af459eff34a2,Berean Christian School,6,18
+sch_c04cd51d1a82d882,J. Frank White Academy,6,16
+sch_3be323530647500f,Lookout Valley High School,6,11
+sch_9983a3b9c6f1907b,Huntland High School,5,36
+sch_2fb996b55f0637ab,Chattanooga High Center for Creative Arts,5,34
+sch_d2300f3f9f22ec07,Pleasant View School HS,5,34
+sch_99994229c45dbcd2,Hampshire High School,5,31
+sch_e6551d41b3495faa,Loretto High School,5,31
+sch_166a55342e91770c,Forrest High School,5,27
+sch_df41c754f41bfa73,McNairy Central High School,5,25
+sch_7cd9c95a88e4eb9f,West Tennessee Home Education Association - HS,5,23
+sch_720cb30c440f83c7,Collinwood High School,5,20
+sch_18ba171892ff8379,Cumberland Gap High School,5,19
+sch_13f0117d6edc1ce8,Oneida High School,5,16
+sch_401d15e1ab691762,Cannon Co. High School,5,12
+sch_932a8a4df6d3c556,Clarksburg High School,5,10
+sch_b4da6e8d4530c263,Madison Academy,4,60
+sch_891e6fd688143b8e,Culleoka Unit School,4,53
+sch_4952d6650a4ee7c0,Tipton-Rosemark Academy,4,47
+sch_7f93ac600699d15b,Currey Ingram Academy,4,45
+sch_f58e2a47255469b3,Soulsville Charter School,4,31
+sch_1104c22e94cfb5ba,DeKalb Co. High School,4,29
+sch_c1eca96e18fd2ad9,Summertown,4,28
+sch_4fdad65589cbea96,Santa Fe High School,4,23
+sch_ce387ee68ba789c2,Stewart County High School,4,22
+sch_78abeb44e4621b38,Chattanooga Girls Leadership Academy High School,4,17
+sch_146da99608802fbd,Augustine High School,4,13
+sch_ca372d308db3e453,Scotts Hill High School,4,13
+sch_91795222a33ff35b,Waverly Central High School,4,13
+sch_c94e543332aa1638,Jonathan Edwards Classical Academy,3,98
+sch_28a22ebeeabd936c,Franklin Christian Academy High School,3,48
+sch_e6533f9d0607d6c2,Cornersville High School,3,42
+sch_89cb0f48b895a6d1,Gibson Co. High School,3,30
+sch_5fad10ce71a6fe76,Jellico High School,3,20
+sch_5d320e5ec2091281,Tipton Christian Academy High School,3,15
+sch_6a52dd337c5f546f,Winchester Christian Academy,3,11
+sch_ee243deab5febb7a,Agathos Classical High School,3,9
+sch_0f610f38a23aca26,Cloudland High School,3,9
+sch_4196b6b0053171be,Accel Sports,2,163
+sch_93d796f49f7c7d08,Maryville Christian School,2,75
+sch_c461aad5624fa847,Franklin Classical School,2,56
+sch_b11dcc61b0fc5165,Metro Christian Academy,2,40
+sch_94ec6d353c4c829e,Towering Oaks Christian School,2,31
+sch_ca8208979e69be87,Skyuka Hall,2,29
+sch_342cf8b8766a7aae,Clay County High School,2,26
+sch_b65c3ac53c44a347,Boyd Christian high school,2,25
+sch_7125aecbe52cb718,Paideia Academy,2,24
+sch_c8f0f5ef34aea68b,Lewis Co. High School,2,23
+sch_6bea0cdc77892fe8,Christ's Legacy Academy (CLA),2,18
+sch_3fc0f403d53f7ea8,Bledsoe Co. High School,2,17
+sch_b34f2c80f0d64d08,Pleasant View Christian HS,2,16
+sch_a510fe6944df47ea,United Christian Academy High School,2,15
+sch_d1291f0de54e9d40,Sunbright High School,2,13
+sch_43188f94e24ae6e5,Mount Pisgah Christian Academy- High School,2,8
+sch_d7abab2e9a18349f,Academy for GOD High School,2,5
+sch_c1b21ff1a5d9a89f,East Hamilton Unified Track and Field,2,2
+sch_72625d7039e8b524,LEAD Southeast High School,2,2
+sch_0f7eda3cad15e430,Middle Tennessee Home School XC,1,99
+sch_c88b7fbdb3f49ae5,Highland Rim Academy,1,75
+sch_c07903f9763928ad,Robertson County Road Runners,1,47
+sch_da09152396b93b58,Wartburg Central High School,1,30
+sch_3334692abea21f4a,Moore County High School,1,25
+sch_78d70dbbc97d003a,Zion Christian Academy,1,25
+sch_1f1c0ea22816d28c,River Christian Academy HS,1,17
+sch_447856e262f9691d,Fairview Christian Academy,1,16
+sch_eb7e94d2475d80eb,Valley Christian Academy High School,1,13
+sch_e4b6398e5bc83182,Van Buren County High School,1,13
+sch_1af08712b35a9ac7,Washburn School,1,9
+sch_49f342c7ba8a92cb,Fayette Academy High School,1,8
+sch_305fe422c0cc7f55,Gleason School,1,8
+sch_620831503b527349,Chesterton Academy of St. Margaret Clitherow,1,7
+sch_135d19a2b6f60efd,Genesis Homeschool program,1,6
+sch_c667e9d41ceb0a4d,Tennessee Christian Preparatory School,1,6
+sch_070dbeb3a949fccc,Samuel Everett High School,1,5
+sch_270be72a03936604,Hickory Classical Christian High School,1,4
+sch_fefeedbc173fcb02,Legacy Christian Academy HS,1,2
+sch_28fb0999c575add4,Greater Things Christian High School,1,1
+sch_5a33c763699fbc14,Knowledge Academy High School,1,1
+sch_f2ab43de7e93cfe9,West Carroll High School,1,1
+sch_b4b4bcea2b66b72b,Strive Collegiate Academy,0,78
+sch_13f4f8e53f2c02be,Amqui Global Communications K-8 Magnet,0,55
+sch_531351c98fbc5da4,Christ the King School,0,38
+sch_76f6465b707ad281,Fentress County Homeschool,0,33
+sch_46348764a46b8c2f,Christian Community School HS,0,30
+sch_e20e44bd2de959ef,First Baptist Academy,0,26
+sch_4efd6b8ffd15cecf,Innovation Middle Academy of Robertson County,0,23
+sch_fe687c60f70e2d59,Christ Life Academy HS,0,18
+sch_6d3102274cbd83db,Immaculate Heart of Mary Hybrid,0,17
+sch_88851d118ee1e154,Lighthouse Christian School,0,16
+sch_afb23ef39c95eaa4,Fayette Christian School,0,13
+sch_f908d309341432dd,Oakdale High School,0,13
+sch_9bcf5e156f3cf4d7,Copper Basin High School,0,11
+sch_d48e8ff9affe90f8,Nashville Collegiate Prep,0,11
+sch_5d06512496da806d,Tennessee Avenue Christian Academy,0,10
+sch_509a09bd071c29d6,Bradford High School,0,9
+sch_65173e6da009eb63,Germantown Warriors,0,9
+sch_c53317610f6d7a9f,Red Boiling Springs High School,0,9
+sch_00145f6cd7a55ebf,Hendersonville Christian Academy,0,8
+sch_6246b1dc03a2ce99,River's Edge Christian Academy High School (RECA),0,8
+sch_59c5165c960c5e90,Temple Baptist Academy,0,8
+sch_9f171c731670f8f4,South Fulton High School,0,3
+sch_4f192140422cc652,Cedar View Christian School,0,2
+sch_0183fb86e1b9db3f,Devout Academy HS,0,1
+sch_af22dfc558552f6f,Highland Christian Academy,0,1
+sch_a5933bc37caf4cca,Home School Runner,0,1
+sch_2b70e160b1e279c9,Shelby County Interscholastic Athletic Association,0,1
+sch_f745b2c15906e05f,St. Patrick School,0,1
+sch_cbb64eaed98502db,21st Century Academy,0,0
+sch_2d379b7aeb3d622b,Aaron Academy,0,0
+sch_72a25b1f95fe9a87,AERO Homeschool,0,0
+sch_6834f36ff09a5e03,Alcoa High School Unified,0,0
+sch_bbf264f22fde1cc5,Antioch High School Unified,0,0
+sch_72f545ff698dab4a,Apostolic Christian Academy,0,0
+sch_5e849c11d94e1153,Arch Academy Vipers,0,0
+sch_e229dff5658abd9d,ASU-Mountain Home,0,0
+sch_7f5edec81489b3ac,Bachman Academy,0,0
+sch_40d967920c55674c,Bartlett High Unified,0,0
+sch_d3becde6f1cc69a4,Berean Academy High School,0,0
+sch_9b5152e044ab1454,Big Sandy High School,0,0
+sch_6af68f593479d065,Bradley Knights Homeschool,0,0
+sch_0614a632e2aff771,Brainerd High School Unified,0,0
+sch_c54f2e428808ad12,Brentwood High School Unified,0,0
+sch_33df4b3eb77f0035,Caldwell-Guthrie STEAM Academy,0,0
+sch_8987b15985ae2565,Calvary Christian School,0,0
+sch_fe494a1cb5736050,Carroll Academy,0,0
+sch_d1c9ae5b89984db1,Central Baptist School,0,0
+sch_1c664e62870045d8,Charlotte High School,0,0
+sch_2000ef4cb89c0806,Clinch High School,0,0
+sch_9f1030b2d60d0f07,Clinton High School Unified,0,0
+sch_f1dfc1402ffe7148,Coalfield High School,0,0
+sch_8a50f5f3e4012d58,Collierville High School Unified,0,0
+sch_de585779cf12e108,Cosby High School,0,0
+sch_4650c5c7d05b3c70,Covenant Academy High School,0,0
+sch_1b4bb5c6631bd40d,Daniel Boone High School Unified,0,0
+sch_ef1093d01ab94db9,David Brainerd Christian School,0,0
+sch_8488a17c84b8bf35,Dayspring Academy Shires,0,0
+sch_1bff2e640c2c2198,Dickson Academy,0,0
+sch_5ec28599cef504f8,Dobyns Bennett High School Unified,0,0
+sch_5173ab922b1259f1,East Nashville Magnet High School Unified,0,0
+sch_5d93bc00fdfd0fb5,Fayetteville High School,0,0
+sch_f431f3e5d2a624ad,Franklin High School Unified,0,0
+sch_8b490651a2f2bdce,Franklin Road Academy Unified,0,0
+sch_9a21391d13fd8dfb,Gateway University HS,0,0
+sch_ae614ee8591d9eae,George Washington Carver High School,0,0
+sch_35fbb7fd844ee3a3,Gibbs High Unified,0,0
+sch_c96058e7ad443602,GRAD Academy Memphis,0,0
+sch_45586556ca2ed710,Green Hill High School Unified,0,0
+sch_21baa1c1b57df480,Hamilton Heights Christian Academy,0,0
+sch_418ab758edd202ef,Hampton High School,0,0
+sch_0010906b564eb777,Hancock High School,0,0
+sch_3ff5ee7b79f99555,Hardin County High School Unified,0,0
+sch_5d66052924cbde14,Hardin Valley Academy Unified,0,0
+sch_e79dd90fedf25406,Harriman High School,0,0
+sch_08267bb6da245c54,Heavenly Host Lutheran School - High School,0,0
+sch_43e90baad36eb522,Houston High School Unified,0,0
+sch_a83b6b16c07b34fb,Hunters Lane High School Unified,0,0
+sch_9136af552a516e95,Immaculate Conception High School,0,0
+sch_470f1195c555ce87,Inactive Runners,0,0
+sch_8fb9f9744892b848,Independence Unified,0,0
+sch_bb725b72413ec107,Jackson County High School,0,0
+sch_4baa3406eead3f76,Jackson Heat,0,0
+sch_1beffb48dbb922e4,Jo Byrns High School,0,0
+sch_2951ce67c9141d6c,John Overton High School Unified,0,0
+sch_a76a678643009dd2,Karns High School Unified,0,0
+sch_d341f8900039180e,Kenwood High School Unified,0,0
+sch_e5828d8c33b023fa,KIPP Nashville High School,0,0
+sch_b7cbfb4f4e6e6b60,Lake County High School,0,0
+sch_25997bce22a49699,"Leadership & Public Policy, W.E.B. DuBois High School",0,0
+sch_8a2c2914086decc2,Liberty Collegiate Academy High School,0,0
+sch_5ebd56e890cc354a,Maranatha Baptist Academy,0,0
+sch_84821fa9a0f1be8e,Margolin Hebrew Academy High School,0,0
+sch_330109961ef29de3,Maryville High School Unified,0,0
+sch_1d076a6303f54ef3,McClain Christian Academy,0,0
+sch_7af6a7c5cf99ff35,Meigs Co. High School,0,0
+sch_9b869a0f9610a920,Memphis Academy of Health Sciences,0,0
+sch_e33f7059054df0fd,Memphis Northside High School,0,0
+sch_e95ccab473c4eceb,Memphis South Side High School,0,0
+sch_b4d524f97a390287,Metro Knoxville XC,0,0
+sch_f2cb1e4db889c77f,Middleton High School,0,0
+sch_35f32984c9cfb9c0,Monterey High School,0,0
+sch_abeb0d6e45d6d4e3,Munford High School Unified,0,0
+sch_16ab2596d44b989a,Natchez Trace Youth Academy,0,0
+sch_20218dd8878ac4ec,Nolensville High school Unified,0,0
+sch_7b14c6529bc8ef80,Northeast High School Unified,0,0
+sch_ccad29033737ba7f,Northeast Prep Academy,0,0
+sch_a0b4965a3b3d7a3c,Northview Junior Academy Unified,0,0
+sch_67b1274ad0525cb0,Northview Senior Academy Unified,0,0
+sch_338918c712daa456,Northwest High School Unified,0,0
+sch_09bd70a336a20290,Oliver Springs High School,0,0
+sch_5f55004396c6520c,Park Ave,0,0
+sch_a8a3761602f8e8c2,Pearl-Cohn High School Unified,0,0
+sch_3cd39b0147964838,Phoenix School,0,0
+sch_91b39eee80d9e952,Pickett County High School,0,0
+sch_38ea761c9c5981b6,Powell High Unified,0,0
+sch_7c3f2949d2ea53c1,"Prep Academy, W.E.B. DuBois High School",0,0
+sch_a23a18c63d812d8f,Redemption Point Christian Academy HS,0,0
+sch_485bb94154ee2ee5,Restoring Hope Christian Academy High,0,0
+sch_57cea1f166e8113f,Richard Hardy Memorial School,0,0
+sch_ce5b2bdc4c6907b7,River City High School,0,0
+sch_02817196979e731d,Riverdale High School Unified,0,0
+sch_708ce4bed287f712,Riverside Christian Academy,0,0
+sch_4ba69ef7ab99e5d7,Riverside High School (Decatur),0,0
+sch_ec0750fa1c5c1169,Road Runner Home School,0,0
+sch_fb9b2225f4bdddf9,Rockwood High School,0,0
+sch_202f58055b64b722,Rossview High School Unified,0,0
+sch_41cc97fd47ccaf29,Rutledge High School,0,0
+sch_ac2a82940491f594,Sacred Heart Catholic School - Lawrenceburg,0,0
+sch_342e4d6cfad5ce35,Sacred Heart of Jesus High School,0,0
+sch_3f48019bed194ce2,Sevier County High School Unified,0,0
+sch_303fbd57e955111e,Seymour Home School,0,0
+sch_332b26ca5ca78b12,Shanan Homeschool Co-op,0,0
+sch_33cadee8f5d4dde2,Shenandoah Baptist Academy,0,0
+sch_06c08c6a5a39499a,Southwest Early College High School,0,0
+sch_cf443f2d04f481bb,Station Camp High School Unified,0,0
+sch_e4d2fc184305de03,Stc Elite,0,0
+sch_c46d235809b86d56,Stem Preparatory Academy,0,0
+sch_953ed9be7a3bbe44,Step of Faith Academy,0,0
+sch_fb3ea11484a678b0,Sullivan Central High School,0,0
+sch_b5d8c3a9b11e7c17,Sullivan North High School,0,0
+sch_2d3a30afbc189a21,Sullivan South High School,0,0
+sch_1d37be746e21d5b5,Summit High School Unified,0,0
+sch_ba0b2544b07bec7a,Telos Academy,0,0
+sch_325f409be6de19f3,Templeton Academy,0,0
+sch_728cfc091caa3457,Tennessee Nature Academy HS,0,0
+sch_ec39f21bcc2d57b3,Tennessee School for the Deaf,0,0
+sch_9fa8da082bffdb41,Tennessee Secondary School Athletic Association,0,0
+sch_6ab10fae4e6e2431,Tennessee Temple Academy,0,0
+sch_fe783463bdfeb4cf,Tennessee Track & Cross-Country Coaches Association,0,0
+sch_deaa2961d8ffbf7d,Treadwell High School,0,0
+sch_209d8e1ddd431e5c,Trezevant High School Unified,0,0
+sch_34bc021a24aa0936,Tri Cities Christian School,0,0
+sch_0869570f6734b04b,Trinitas Classical Academy HS,0,0
+sch_08f733c86c94fc9a,Trousdale Co. High School,0,0
+sch_2ee4c6a4fb89e1bc,Unaka High School,0,0
+sch_aa581ccf773333a9,Unattached Track Team,0,0
+sch_ef6a18a93b84be9e,Valor Collegiate Prep Unified,0,0
+sch_3c275c7f11764c3c,West TN Homeschool Sports Association,0,0
+sch_50e3e6844d685db6,Westside High School,0,0
+sch_0b62bd8af85e275c,William Blount High School Unified,0,0
