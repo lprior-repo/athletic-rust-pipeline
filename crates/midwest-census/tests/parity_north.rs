@@ -18,6 +18,7 @@
 
 mod common;
 
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
@@ -666,7 +667,7 @@ async fn plain_names_collect_matches_golden() -> Result<()> {
         limit: Some(1),
         refresh: false,
         observed_on: OBSERVED_ON.to_string(),
-        states: vec!["ND".to_string(), "NE".to_string()],
+        states: vec![UsJurisdiction::NorthDakota, UsJurisdiction::Nebraska],
         school_names: Vec::new(),
     };
     let report = plain_names::collect(&ctx, &options).await?;

@@ -9,14 +9,14 @@ Everything below is read from source. Where it comes from:
 | Path | Contents |
 |---|---|
 | `src/runtime/worker.rs`, `src/runtime/**` | Pipeline-worker endpoint and its 13 Restate definitions (`run/`, `row_worker/`, `rankings_collection/` hold submodules) |
-| `crates/midwest-census/src/restate_services.rs` | `Census`, `Ingest`, `Sweep` and `build_endpoint` |
-| `crates/midwest-census/src/bin/midwest-serve.rs`, `.../bootstrap.rs`, `.../store.rs` | Census endpoint process, supervisor and store |
+| `crates/midwest-census/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
+| `crates/midwest-census/src/bin/midwest-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`), `.../store/` | Census endpoint process, supervisor and store |
 | `src/cli.rs`, `src/cli/{args,transport,flow_control}.rs`, `src/runtime/{protocol,run_protocol,row_protocol}.rs` | Operator surface (ingress clients, deployment, flow control) and retry/revision vocabulary |
 
 Two path notes. There is **no** `src/restate.rs` and no `src/restate_services.rs` in the root crate;
-the census registrations live at `crates/midwest-census/src/restate_services.rs`. Line numbers are as
-read on 2026-09-21, and other agents edit this tree: when a number and a name disagree, trust the
-name.
+the census registrations live at `crates/midwest-census/src/restate_services/mod.rs`. Line numbers
+are as read on 2026-09-21, and other agents edit this tree: when a number and a name disagree, trust
+the name.
 
 ## 1. Overview
 
@@ -32,11 +32,11 @@ Two processes serve two endpoints.
 | Process | Started by | Binds | Serves |
 |---|---|---|---|
 | **Pipeline worker** | `athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`) | default `127.0.0.1:19181` (`src/cli/args.rs:19-20`) | the 13 definitions in §2.1 |
-| **Census service** | `midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30` (`crates/midwest-census/src/bin/midwest-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` (`bootstrap.rs:256`); flags parsed by `ServeOptions::from_env` (`bootstrap.rs:264-265`) | `Census`, `Ingest`, `Sweep` |
+| **Census service** | `midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30` (`crates/midwest-census/src/bin/midwest-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/midwest-census/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
 
 `midwest-census serve` is **not** a third server: it prints the `midwest-serve` argv built from
 `ServeOptions::default()`, so the printed command cannot drift from what the binary parses
-(`crates/midwest-census/src/main.rs:100-101`, `:725-739`).
+(`crates/midwest-census/src/cli/serve.rs`).
 
 Registration is an operator step, not a boot step:
 `athletic-rust-pipeline deploy --admin http://127.0.0.1:19070/ --endpoint http://127.0.0.1:19181/`
@@ -45,16 +45,19 @@ to the admin `deployments` resource (`src/cli/transport.rs`).
 
 Both processes refuse a non-loopback bind: the worker with `bail!("worker must bind a loopback
 address")` (`src/runtime/worker.rs:14-16`), the census endpoint because it "has no identity key
-configured, so it must not be reachable from another host" (`bootstrap.rs:125-129`). The census side
+configured, so it must not be reachable from another host" (`bootstrap/serve.rs:52`). The census side
 also holds the store exclusively (`Store::open` takes an exclusive lock,
 `crates/midwest-census/src/main.rs:5-7`), so `midwest-serve` cannot share a `--data-dir` with a batch
 subcommand.
 
 ## 2. Service and object catalog
 
-Wire names come from struct names (`restate_services.rs:1-5`), and the e2e test pins the census set to
-`["Census", "Ingest", "Sweep"]` (`crates/midwest-census/tests/fjall_restate_e2e.rs:40`). Renaming a
-struct is therefore a breaking API change; the SDK escape hatch is `#[handler(name = "...")]`.
+Wire names come from struct names (`restate_services/mod.rs:1-10`). The e2e test asserts each of the
+historical names `["Census", "Ingest", "Sweep"]`
+(`crates/midwest-census/tests/fjall_restate_e2e.rs:40`) is advertised by `/discover` — a subset
+check, so the endpoint may serve more definitions than the list (`build_endpoint` currently binds
+five). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
+`#[handler(name = "...")]`.
 
 ### 2.1 Pipeline worker (`src/runtime/worker.rs:23-60`)
 
@@ -84,6 +87,14 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Census` | service | `status`, `consolidate`, `report`, `bests`, `workbook` | Holds the concurrency semaphore (`self.permit()`); every heavy step goes through `blocking(...)` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, consolidate — recorded in durable state as each completes |
+| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction` and folds the reports into one `NationalReport`, listing failed states as `failures` rows instead of failing the run |
+
+**In flight.** `JurisdictionCensus` and `NationalCensus` are the newest definitions: both are bound
+in `build_endpoint` (`restate_services/mod.rs`) and their wire types are exported from
+`restate_services/wire.rs`, but the modules carry no inline tests yet and the national fan-out has
+not been exercised against a live Restate server in this tree. Treat the two rows as the current
+code shape, not as qualified behaviour.
 
 ## 3. The work-snapshot objects
 
@@ -97,13 +108,13 @@ All of an endpoint's durable state is written as a single value under one key:
 
 ```text
 object = endpoint string
-state  = "state"                                   # KEY_STATE (restate_services.rs:38)
+state  = "state"                                   # KEY_STATE (restate_services/mod.rs)
 value  = IngestState { endpoint, total_observations, cursor, last_appended_at, windows }
 ```
 
 The code's stated reason: the endpoint's "whole durable state, written as one value so a partially
 updated endpoint (cursor advanced but totals not, or the reverse) cannot exist"
-(`restate_services.rs:36-38`). Per handler:
+(`restate_services/ingest.rs` and the `KEY_STATE` definition in `restate_services/mod.rs`). Per handler:
 
 | Handler | Writes | Notes |
 |---|---|---|
@@ -173,7 +184,8 @@ server-side journal/state, and content-addressed local artifacts.
    drain in step 4 owns it: a supervisor that stops early cannot leave an opening store behind it.
    `Store::open` is also where legacy recovery happens: pre-Fjall
    `entities/*.jsonl` and `journal/*.jsonl` are imported exactly once and marked under `meta`, and the
-   sequence counter is "seeded from the last key present at open time" (`store.rs:1-40`).
+   sequence counter is "seeded from the last key present at open time"
+   (`crates/midwest-census/src/store/mod.rs:1-40`).
 3. Reject a non-loopback `--listen`; bind the listener; install the stop future (SIGINT/SIGTERM or
    the caller's `shutdown`, recording a `StopReason`), then build the endpoint with
    `restate_services::build_endpoint(store, max_concurrent, region)` and spawn exactly one task —
@@ -184,7 +196,7 @@ server-side journal/state, and content-addressed local artifacts.
    not leaked). Then finalize: `store.flush()` (`PersistMode::SyncAll`) and drop the store — "after the
    region is empty: nothing can still be writing when the journal is synced".
 5. Return `DrainReport { accepted, completed, cancelled, timed_out, aborted, panicked, stop_reason }`
-   (`bootstrap.rs:83-92`), which `midwest-serve` prints as one line before exiting.
+   (`bootstrap/drain.rs`), which `midwest-serve` prints as one line before exiting.
 
 ### 4.2 Pipeline worker (`runtime::worker::serve`)
 
@@ -257,7 +269,9 @@ clients use a 300 s timeout with retries and redirects disabled.
   `Option<ExportSnapshot>`; `ExportRequest` → `PublishedExport`; `RowJob` → `EvidenceDigest`;
   `SourceResource` → `FetchOutcome`; `ReadinessRequest` / nothing → `BrowserStatus`.
 * Census: `StatusReply`, `Consolidate*`, `Report*`, `Bests*`, `Workbook*`, `IngestRequest` →
-  `IngestReply`, `WindowRequest` → `IngestState`, `SweepRequest` → `SweepReport`.
+  `IngestReply`, `WindowRequest` → `IngestState`, `SweepRequest` → `SweepReport`,
+  `JurisdictionRequest` → `JurisdictionReport` (`JurisdictionState`, `JurisdictionSummary`),
+  `NationalRequest` → `NationalReport` (`NationalFailure`).
 * Counts on the wire are `u64`, not `usize` — "the wire shape must not change with the host pointer
   width" (`IngestReply`).
 
@@ -272,7 +286,7 @@ Definition attributes (omitted option = not declared, so the SDK/server default 
 | `SourceCache` | `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 4, on_max_attempts = "pause"`) |
 | `BrowserSession` | `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 4 / pause` (a human may be clearing a challenge) |
 | `LocalReviewer` | `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 4 / pause` |
-| `Census`, `Ingest`, `Sweep` | SDK/server defaults (bare macros) |
+| `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` | SDK/server defaults (bare macros) |
 
 Handler-internal bounds:
 
@@ -347,7 +361,9 @@ reports `Ready`.
 
 ### 6.2 Census endpoint
 
-1. Add the struct, wire types and a free function taking `&Store` in `restate_services.rs`; keep the
+1. Add the struct, wire types and a free function taking `&Store` in
+   `crates/midwest-census/src/restate_services/` (one file per definition, wire types in `wire.rs`);
+   keep the
    handler thin — "Handler bodies stay thin; the work sits in free functions that take `&Store`, so
    the interesting behaviour is testable without a Restate runtime".
 2. Run heavy work as `ctx.run(|| async { blocking(|| …).await … })`: `blocking` puts it on
@@ -381,7 +397,8 @@ reports `Ready`.
   may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`), and "If the SDK loses the
   acknowledgement after this run, its kept stage may orphan" (`export_worker.rs`).
 * The census store is append-only: "appending the same entity twice writes two rows, and
-  `Store::consolidate` merges them through `Entity::merge`" (`store.rs`). A duplicate observation is
+  `Store::consolidate` merges them through `Entity::merge`"
+  (`crates/midwest-census/src/store/mod.rs`). A duplicate observation is
   visible in `total_observations` and in raw scans until the next consolidation; it is not deduplicated
   at append time.
 

@@ -1,0 +1,14 @@
+User-agent: *
+Disallow: /wp-admin/
+Disallow: /wp*
+Disallow: /school_logos/
+Disallow: /httpdocs/school_logos/
+Disallow: /payments/
+Disallow: /httpdocs/payments/
+Disallow: /Publications
+Disallow: /httpdocs/Publications
+Disallow: /officials
+Disallow: /rpi_details
+User-agent: GPTBot
+Disallow: /
+

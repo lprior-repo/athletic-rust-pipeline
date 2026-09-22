@@ -1,0 +1,340 @@
+[
+ {
+  "label": "WI Abbotsford orgID=1 coach+AD",
+  "state": "WI",
+  "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1",
+  "must": [
+   "JACOB KNAPMILLER",
+   "jknapmiller@abbotsford.k12.wi.us",
+   "Alex Larson",
+   "alarson@abbotsford.k12.wi.us"
+  ],
+  "note": "baseline row: Abbotsford / Boys Track and Field / Head Coach",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/WI_Abbotsford_orgID_1_coach_AD.html"
+ },
+ {
+  "label": "WI Madison East orgID=219 coach+AD",
+  "state": "WI",
+  "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=219",
+  "must": [
+   "Jessa Victor",
+   "jlvictor@madison.k12.wi.us",
+   "Jeremy Schlitz",
+   "jschlitz@madison.k12.wi.us"
+  ],
+  "note": "baseline row: Madison East / Girls Cross Country / Head Coach",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/WI_Madison_East_orgID_219_coach_AD.html"
+ },
+ {
+  "label": "WI Wabeno orgID=441 coach+AD",
+  "state": "WI",
+  "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=441",
+  "must": [
+   "Richard Sorenson",
+   "richardsorenson@laona.k12.wi.us",
+   "Michelle Boor",
+   "mboor@wabeno.k12.wi.us"
+  ],
+  "note": "baseline row: Wabeno / Girls Track and Field / Head Coach",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/WI_Wabeno_orgID_441_coach_AD.html"
+ },
+ {
+  "label": "ND West Fargo Sheyenne 1045",
+  "state": "ND",
+  "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne",
+  "must": [
+   "Beth Slette"
+  ],
+  "note": "baseline row: AD Superintendent role row",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/ND_West_Fargo_Sheyenne_1045.html"
+ },
+ {
+  "label": "ND Bismarck Legacy 1131",
+  "state": "ND",
+  "url": "https://ndhsaa.com/schools/1131/bismarck-legacy",
+  "must": [
+   "Thomas Schmidt"
+  ],
+  "note": "baseline row: Principal row named as AD in CSV",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/ND_Bismarck_Legacy_1131.html"
+ },
+ {
+  "label": "ND Minot North 1307",
+  "state": "ND",
+  "url": "https://ndhsaa.com/schools/1307/minot-north",
+  "must": [
+   "Matt Ruhland"
+  ],
+  "note": "baseline row: Athletic Director row",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/ND_Minot_North_1307.html"
+ },
+ {
+  "label": "OH Dublin Coffman 474 XC coach",
+  "state": "OH",
+  "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474",
+  "must": [
+   "Joe DePalma",
+   "depalma_joseph@dublinschools.net"
+  ],
+  "note": "baseline row: DUBLIN COFFMAN / Cross Country (boys) / Head Coach",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/OH_Dublin_Coffman_474_XC_coach.html"
+ },
+ {
+  "label": "OH Dublin Coffman 474 AD",
+  "state": "OH",
+  "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474",
+  "must": [
+   "Duane Sheldon",
+   "sheldon_duane@dublinschools.net"
+  ],
+  "note": "AD row for same school",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/OH_Dublin_Coffman_474_AD.html"
+ },
+ {
+  "label": "OH Centerville 336 TF coach",
+  "state": "OH",
+  "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=336",
+  "must": [
+   "Matt Somerlot",
+   "matt.somerlot@centerville.k12.oh.us"
+  ],
+  "note": "baseline row: CENTERVILLE / Track & Field (boys) / Head Coach",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/OH_Centerville_336_TF_coach.html"
+ },
+ {
+  "label": "OH St Ignatius 1354 AD",
+  "state": "OH",
+  "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=1354",
+  "must": [
+   "BRAD GANOR",
+   "bganor@ignatius.edu"
+  ],
+  "note": "baseline row: ST IGNATIUS / Assistant Athletic Director",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/OH_St_Ignatius_1354_AD.html"
+ },
+ {
+  "label": "MI East Kentwood 4351",
+  "state": "MI",
+  "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351",
+  "must": [
+   "Kevin Polston",
+   "kevin.polston@kentwoodps.org",
+   "Imari Lamar-Gonzales"
+  ],
+  "note": "baseline rows: Superintendent + AD Secretary",
+  "data": null,
+  "name": null,
+  "sample": null,
+  "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; the cited path /DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory is disallowed. Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z)."
+ },
+ {
+  "label": "MI Detroit Catholic Central 4239",
+  "state": "MI",
+  "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239",
+  "must": [
+   "Eric Haley",
+   "haley.eric@aod.org"
+  ],
+  "note": "baseline row: Superintendent",
+  "data": null,
+  "name": null,
+  "sample": null,
+  "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; same path prefix. Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z)."
+ },
+ {
+  "label": "MN ada-borup-west",
+  "state": "MN",
+  "url": "https://www.mshsl.org/schools/ada-borup-west-high-school",
+  "must": [
+   "Kenley Wahlin"
+  ],
+  "note": "baseline row: Activities Director",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/MN_ada_borup_west.html"
+ },
+ {
+  "label": "MN alexandria-area",
+  "state": "MN",
+  "url": "https://www.mshsl.org/schools/alexandria-area-high-school",
+  "must": [
+   "Ben Kvidt"
+  ],
+  "note": "baseline row: Activities Director",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/MN_alexandria_area.html"
+ },
+ {
+  "label": "MN albany",
+  "state": "MN",
+  "url": "https://www.mshsl.org/schools/albany-high-school",
+  "must": [
+   "Scott Buntje"
+  ],
+  "note": "baseline row: Activities Director",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/MN_albany.html"
+ },
+ {
+  "label": "IL Abingdon-Avon 0101 staff2",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0101/staff2",
+  "must": [
+   "Mink",
+   "Kelso"
+  ],
+  "note": "baseline row: Boys XC Head Coach Mr. Barry Mink / AD Mr. Reid Kelso",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/IL_Abingdon_Avon_0101_staff2.html"
+ },
+ {
+  "label": "IL Dixon 0418 staff2",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0418/staff2",
+  "must": [
+   "Thorpe",
+   "Fegan"
+  ],
+  "note": "baseline row: Boys XC Head Coach Simon Thorpe / AD Mr. Roger Fegan",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/IL_Dixon_0418_staff2.html"
+ },
+ {
+  "label": "IL Downers Grove North 0422 staff2",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0422/staff2",
+  "must": [
+   "Sipple",
+   "Rose"
+  ],
+  "note": "baseline row: Boys XC Head Coach John Sipple / AD Dave Rose",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/IL_Downers_Grove_North_0422_staff2.html"
+ },
+ {
+  "label": "NE NSAA direxportscreen",
+  "state": "NE",
+  "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+  "must": [
+   "NSAA Home"
+  ],
+  "note": "reachability probe only: GET on the POST-only export screen; proves the host serves, not that any school row resolves",
+  "data": null,
+  "name": null,
+  "sample": "samples/validate/NE_NSAA_direxportscreen.html"
+ },
+ {
+  "label": "NE NSAA Adams Central",
+  "state": "NE",
+  "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+  "must": [
+   "Toni Fowler",
+   "Alan Frank"
+  ],
+  "sample": "samples/validate/NE_nsaa_Adams_Central.html",
+  "note": "baseline rows: coach 'Toni Fowler' + AD 'Alan Frank' via POST school=Adams Central"
+ },
+ {
+  "label": "NE NSAA Gothenburg",
+  "state": "NE",
+  "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+  "must": [
+   "Tony Neels",
+   "Marc Mroczek"
+  ],
+  "sample": "samples/validate/NE_nsaa_Gothenburg.html",
+  "note": "baseline rows: coach 'Tony Neels' + AD 'Marc Mroczek' via POST school=Gothenburg"
+ },
+ {
+  "label": "NE NSAA Omaha Gross Catholic",
+  "state": "NE",
+  "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+  "must": [
+   "Joe Wiebold",
+   "Nate Frankman"
+  ],
+  "sample": "samples/validate/NE_nsaa_Omaha_Gross_Catholic.html",
+  "note": "baseline rows: coach 'Joe Wiebold' + AD 'Nate Frankman' via POST school=Omaha Gross Catholic"
+ },
+ {
+  "label": "SD Bound aberdeencentral",
+  "state": "SD",
+  "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new",
+  "must": [
+   "Bo Beck"
+  ],
+  "note": "baseline row: Activities Director Bo Beck",
+  "data": null,
+  "name": null,
+  "sample": null,
+  "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /sd/schools/aberdeencentral/directory/new is disallowed. The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it."
+ },
+ {
+  "label": "IA Bound adm",
+  "state": "IA",
+  "url": "https://www.gobound.com/ia/schools/adm/directory/new",
+  "must": [
+   "Rod Wiebers"
+  ],
+  "note": "baseline row: Activities Director Rod Wiebers",
+  "data": null,
+  "name": null,
+  "sample": null,
+  "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /ia/schools/<slug>/directory/new is disallowed. Same [29] provenance as the SD row; not reproduced here."
+ },
+ {
+  "label": "IL Abingdon-Avon 0101 staff email",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0101/staff/40964/email",
+  "must": [
+   "bmink@atown276.net"
+  ],
+  "sample": "samples/validate/IL_0101_staff_40964_email.json",
+  "note": "baseline row: Abingdon-Avon Boys XC Head Coach email bmink@atown276.net (Mr. Barry Mink, PersonID 40964)"
+ },
+ {
+  "label": "IL Dixon 0418 staff email",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0418/staff/91589/email",
+  "must": [
+   "sthorpe@dps170.org"
+  ],
+  "sample": "samples/validate/IL_0418_staff_91589_email.json",
+  "note": "baseline row: Dixon Boys XC Head Coach email sthorpe@dps170.org (Simon Thorpe, PersonID 91589)"
+ },
+ {
+  "label": "IL Downers Grove North 0422 staff email",
+  "state": "IL",
+  "url": "https://api.ihsa.org/v1/schools/0422/staff/7939/email",
+  "must": [
+   "jsipple@csd99.org"
+  ],
+  "sample": "samples/validate/IL_0422_staff_7939_email.json",
+  "note": "baseline row: DGN Boys XC Head Coach email jsipple@csd99.org (John Sipple, PersonID 7939)"
+ }
+]

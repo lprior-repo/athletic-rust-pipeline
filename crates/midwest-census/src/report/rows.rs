@@ -4,6 +4,7 @@
 use super::notes::bump;
 use super::{SportsBreakdown, StateCensus};
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, Gender, Sport};
+use census_domain::UsJurisdiction;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 fn is_track_or_xc(sport: Sport) -> bool {
@@ -86,7 +87,8 @@ pub(super) fn school_state_index(schools: &[CanonicalSchool]) -> HashMap<&str, &
         .map(|school| {
             (
                 school.id.as_str(),
-                school.state.as_deref().unwrap_or("UNKNOWN"),
+                // The report buckets are text, so an unknown school keeps the historic label.
+                school.state.map_or("UNKNOWN", UsJurisdiction::code),
             )
         })
         .collect()

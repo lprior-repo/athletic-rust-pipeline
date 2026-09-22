@@ -44,6 +44,7 @@
 //! lives here too: `parse_targets` reads the operator's file and `read_registry` is the run's way in.
 
 use crate::sources::{CrawlError, CrawlResult};
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 mod absorb;
@@ -75,15 +76,15 @@ pub struct Options {
     pub refresh: bool,
     /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// State applied to targets that carry none. Only unambiguous for a single-state batch.
-    pub states: Vec<String>,
+    /// Jurisdiction applied to targets that carry none. Only unambiguous for a single-state batch.
+    pub states: Vec<UsJurisdiction>,
 }
 
-/// One athlete to read, with the state that disambiguates its school.
+/// One athlete to read, with the jurisdiction that disambiguates its school.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Target {
     pub athlete_id: u64,
-    pub state: Option<String>,
+    pub state: Option<UsJurisdiction>,
 }
 
 /// A registry refusal, carried verbatim in the error's detail.
@@ -98,18 +99,19 @@ fn registry_refusal(detail: String) -> CrawlError {
 ///
 /// Lines are `athlete_id` or `athlete_id,ST`; a single `--states` value fills in the state for
 /// targets that name none, and two or more are refused as ambiguous rather than guessed between.
-pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<Target>> {
+///
+/// A per-line state is a USPS code or nothing: the registry is a vendor file, so a spelled-out name
+/// is refused rather than accepted through the lenient jurisdiction parser.
+pub fn parse_targets(body: &str, default_states: &[UsJurisdiction]) -> CrawlResult<Vec<Target>> {
     if default_states.len() > 1 {
+        let codes: Vec<&str> = default_states.iter().map(|state| state.code()).collect();
         return Err(registry_refusal(format!(
             "a registry without a per-line state needs exactly one --states value, got {} ({})",
             default_states.len(),
-            default_states.join(",")
+            codes.join(",")
         )));
     }
-    let fallback = default_states
-        .first()
-        .map(|state| state.trim().to_ascii_uppercase())
-        .filter(|state| !state.is_empty());
+    let fallback = default_states.first().copied();
     let mut targets = Vec::new();
     let mut seen = HashSet::new();
     for (number, line) in body.lines().enumerate() {
@@ -126,24 +128,29 @@ pub fn parse_targets(body: &str, default_states: &[String]) -> CrawlResult<Vec<T
                 line_number
             ))
         })?;
-        let state = parts
-            .next()
-            .map(|state| state.trim().to_ascii_uppercase())
-            .or_else(|| fallback.clone());
+        let published = parts.next().map(|state| state.trim().to_ascii_uppercase());
         if parts.next().is_some() {
             return Err(registry_refusal(format!(
                 "registry line {}: expected `athlete_id[,ST]`, got `{line}`",
                 line_number
             )));
         }
-        if let Some(state) = &state {
-            if state.len() != 2 || !state.chars().all(|c| c.is_ascii_alphabetic()) {
-                return Err(registry_refusal(format!(
-                    "registry line {}: `{state}` is not a two-letter state code",
-                    line_number
-                )));
+        let state = match published {
+            Some(raw) if raw.len() == 2 && raw.chars().all(|c| c.is_ascii_alphabetic()) => {
+                Some(UsJurisdiction::from_code(&raw).ok_or_else(|| {
+                    registry_refusal(format!(
+                        "registry line {line_number}: `{raw}` is not one of the 50 states or the \
+                         District of Columbia"
+                    ))
+                })?)
             }
-        }
+            Some(raw) => {
+                return Err(registry_refusal(format!(
+                    "registry line {line_number}: `{raw}` is not a two-letter state code"
+                )))
+            }
+            None => fallback,
+        };
         // A registry may legitimately repeat an athlete across state files; read it once.
         if seen.insert(athlete_id) {
             targets.push(Target { athlete_id, state });

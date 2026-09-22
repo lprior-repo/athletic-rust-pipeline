@@ -3,6 +3,7 @@
 
 use crate::school_index::SchoolIndex;
 use census_domain::model::CompetitionLevel;
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 /// Venue markers that identify one of the three states the provider times in.
@@ -10,45 +11,45 @@ use std::collections::HashMap;
 /// Only unambiguous markers are listed: a venue that is not recognised stays unresolved rather than
 /// being attributed to the state the provider happens to be based in, and ambiguous names
 /// ("Augustana College" exists in Illinois and South Dakota) are deliberately absent.
-const VENUE_STATES: [(&str, &str); 34] = [
-    ("university of minnesota", "MN"),
-    ("macalester", "MN"),
-    ("st. olaf", "MN"),
-    ("st olaf", "MN"),
-    ("carleton college", "MN"),
-    ("hamline", "MN"),
-    ("gustavus", "MN"),
-    ("bethel university", "MN"),
-    ("university of st. thomas", "MN"),
-    ("minnesota state mankato", "MN"),
-    ("bemidji state", "MN"),
-    ("concordia college moorhead", "MN"),
-    ("university of iowa", "IA"),
-    ("northern iowa", "IA"),
-    ("iowa state", "IA"),
-    ("wartburg", "IA"),
-    ("drake university", "IA"),
-    ("luther college", "IA"),
-    ("simpson college", "IA"),
-    ("coe college", "IA"),
-    ("central college", "IA"),
-    ("grinnell", "IA"),
-    ("cornell college", "IA"),
-    ("loras", "IA"),
-    ("buena vista university", "IA"),
-    ("dubuque", "IA"),
-    ("mount mercy", "IA"),
-    ("uw-", "WI"),
-    ("university of wisconsin", "WI"),
-    ("-la crosse", "WI"),
-    ("eau claire", "WI"),
-    ("oshkosh", "WI"),
-    ("stevens point", "WI"),
-    ("whitewater", "WI"),
+const VENUE_STATES: [(&str, UsJurisdiction); 34] = [
+    ("university of minnesota", UsJurisdiction::Minnesota),
+    ("macalester", UsJurisdiction::Minnesota),
+    ("st. olaf", UsJurisdiction::Minnesota),
+    ("st olaf", UsJurisdiction::Minnesota),
+    ("carleton college", UsJurisdiction::Minnesota),
+    ("hamline", UsJurisdiction::Minnesota),
+    ("gustavus", UsJurisdiction::Minnesota),
+    ("bethel university", UsJurisdiction::Minnesota),
+    ("university of st. thomas", UsJurisdiction::Minnesota),
+    ("minnesota state mankato", UsJurisdiction::Minnesota),
+    ("bemidji state", UsJurisdiction::Minnesota),
+    ("concordia college moorhead", UsJurisdiction::Minnesota),
+    ("university of iowa", UsJurisdiction::Iowa),
+    ("northern iowa", UsJurisdiction::Iowa),
+    ("iowa state", UsJurisdiction::Iowa),
+    ("wartburg", UsJurisdiction::Iowa),
+    ("drake university", UsJurisdiction::Iowa),
+    ("luther college", UsJurisdiction::Iowa),
+    ("simpson college", UsJurisdiction::Iowa),
+    ("coe college", UsJurisdiction::Iowa),
+    ("central college", UsJurisdiction::Iowa),
+    ("grinnell", UsJurisdiction::Iowa),
+    ("cornell college", UsJurisdiction::Iowa),
+    ("loras", UsJurisdiction::Iowa),
+    ("buena vista university", UsJurisdiction::Iowa),
+    ("dubuque", UsJurisdiction::Iowa),
+    ("mount mercy", UsJurisdiction::Iowa),
+    ("uw-", UsJurisdiction::Wisconsin),
+    ("university of wisconsin", UsJurisdiction::Wisconsin),
+    ("-la crosse", UsJurisdiction::Wisconsin),
+    ("eau claire", UsJurisdiction::Wisconsin),
+    ("oshkosh", UsJurisdiction::Wisconsin),
+    ("stevens point", UsJurisdiction::Wisconsin),
+    ("whitewater", UsJurisdiction::Wisconsin),
 ];
 
-/// Resolve a venue to a state, or `None` when no unambiguous marker matches.
-pub fn venue_state(location: &str) -> Option<&'static str> {
+/// Resolve a venue to a jurisdiction, or `None` when no unambiguous marker matches.
+pub fn venue_state(location: &str) -> Option<UsJurisdiction> {
     let location = location.to_ascii_lowercase();
     VENUE_STATES
         .iter()
@@ -60,21 +61,25 @@ pub fn venue_state(location: &str) -> Option<&'static str> {
 /// inside its own region: seeking a venue name nationally turns "Austin HS" into a three-way tie
 /// with Indiana and Michigan, while the provider's Austin is the Minnesota one. A name that still
 /// answers in two region states is left unresolved.
-const REGION_STATES: [&str; 3] = ["MN", "IA", "WI"];
+const REGION_STATES: [UsJurisdiction; 3] = [
+    UsJurisdiction::Minnesota,
+    UsJurisdiction::Iowa,
+    UsJurisdiction::Wisconsin,
+];
 
 /// How one schedule row's venue became a state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VenueResolution {
     /// A recurring site the provider publishes ([`venue_state`]).
-    Site(&'static str),
+    Site(UsJurisdiction),
     /// A venue that names a school, resolved through the consolidated school snapshot.
-    School(&'static str),
+    School(UsJurisdiction),
     /// Answers in more than one state, or in none: never guessed.
     Unknown,
 }
 
 impl VenueResolution {
-    pub const fn state(self) -> Option<&'static str> {
+    pub const fn state(self) -> Option<UsJurisdiction> {
         match self {
             VenueResolution::Site(state) | VenueResolution::School(state) => Some(state),
             VenueResolution::Unknown => None,
@@ -130,18 +135,18 @@ pub fn resolve_venue(
         Some(state) => VenueResolution::Site(state),
         None => {
             let candidates = venue_candidates(location);
-            let mut hits: Vec<&'static str> = REGION_STATES
+            let mut hits: Vec<UsJurisdiction> = REGION_STATES
                 .iter()
                 .copied()
                 .filter(|state| {
                     candidates
                         .iter()
-                        .any(|label| index.resolve(state, label).is_some())
+                        .any(|label| index.resolve(*state, label).is_some())
                 })
                 .collect();
             hits.dedup();
             match hits.as_slice() {
-                [only] => VenueResolution::School(only),
+                [only] => VenueResolution::School(*only),
                 _ => VenueResolution::Unknown,
             }
         }

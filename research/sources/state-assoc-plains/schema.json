@@ -1,0 +1,483 @@
+{
+  "lane": "state-assoc-plains",
+  "scope": "IA, KS, MN, MO, ND, NE, SD state-association and adjacent platform record shapes",
+  "observed_on": "2026-09-22",
+  "conventions": {
+    "example": "A real value observed in the cited evidence. null means the key was documented but no example value was retained; see the field's note.",
+    "evidence_kind": {
+      "fresh_capture": "fetched by this lane on 2026-09-22; file in research/sources/state-assoc-plains/samples/",
+      "repo_fixture": "retained capture in crates/midwest-census/tests/fixtures/",
+      "downloads_capture": "retained capture under ~/Downloads/midwest-tfxc-source-research/",
+      "report_citation": "verbatim example from a Midwest report; no raw capture retained on this machine"
+    },
+    "privacy": "Person fields here are published professional directory data. Phone/fax/home fields are listed only to mark them as deliberately ignored; no personal contact data is copied into this file."
+  },
+  "sources": {
+    "kshsaa_directory_record": {
+      "jurisdiction": "KS",
+      "surface": "GET https://kshsaa-api.kshsaa.org/directory/search/name/a/",
+      "format": "json",
+      "evidence": "crates/midwest-census/tests/fixtures/ks/kshsaa_directory_a.json",
+      "evidence_kind": "repo_fixture",
+      "identifiers": {
+        "Id": "KSHSAA internal integer, same space as schoolId in PublicClassifications (example 458 = Abilene HS)",
+        "Identifier": "KSHSAA school code, stable across years (example KSS0001)"
+      },
+      "fields": {
+        "Identifier": {"type": "string", "example": "KSS0001"},
+        "SchoolName": {"type": "string", "example": "Abilene HS"},
+        "MailingAdress": {"type": "string", "example": "1300 N Cedar St.", "note": "source's own spelling; second address line in SecondaryMailingAddress"},
+        "MailingCity": {"type": "string", "example": "Abilene"},
+        "MailingState": {"type": "string", "example": "KS"},
+        "MailingZip": {"type": "string", "example": "674102053"},
+        "PhysicalCity": {"type": "string", "example": "Abilene"},
+        "USD": {"type": "integer", "example": 435},
+        "Enrollment": {"type": "integer", "example": 467, "note": "9-12 enrollment as published"},
+        "FootballEnrollment": {"type": "integer", "example": 355},
+        "FBClass": {"type": "string", "example": "4A"},
+        "Class": {"type": "string", "example": "4A", "note": "adapter writes this into CanonicalSchool.classification"},
+        "SchoolType": {"type": "string", "example": "High School"},
+        "SchoolSubType": {"type": "string", "example": "9-10-11-12"},
+        "League": {"type": "string", "example": "KSL0033"},
+        "LeagueName": {"type": "string", "example": "North Central Kansas"},
+        "WebSite": {"type": "string", "example": "www.abileneschools.org", "note": "scheme-less as published"},
+        "ADName": {"type": "string", "example": "Derek Berns ", "note": "trailing space as published; adapter trims + strips honorifics"},
+        "ADEmail": {"type": "string", "example": "dberns@abileneschools.org"},
+        "Id": {"type": "integer", "example": 458},
+        "DateModified": {"type": "string", "example": "2019-08-10T10:06:00.000Z", "note": "staleness signal; observed range 2018-08-07..2026-07-08"},
+        "ADCell": {"type": "string", "example": "7854793733", "note": "IGNORED by the adapter (cell phone); listed to prove non-collection"},
+        "PrincipalName": {"type": "string", "example": "Dr. Ben Smith", "note": "not mapped by the adapter"},
+        "PrincipalCell": {"type": "string", "example": "7852636382", "note": "IGNORED"},
+        "SchoolPhone": {"type": "string", "example": "7852631260", "note": "IGNORED"},
+        "SchoolFax": {"type": "string", "example": "7852633327", "note": "IGNORED"},
+        "Email": {"type": "string", "example": "bsmith@abileneschools.org", "note": "principal email; IGNORED"},
+        "TwitterUserName": {"type": "string", "example": "", "note": "IGNORED"}
+      },
+      "gaps": ["letter query returns up to ~526 rows including junior-high schools; HS filtering is the consumer's job"]
+    },
+
+    "kshsaa_public_classifications": {
+      "jurisdiction": "KS",
+      "surface": "GET https://kshsaa-api.kshsaa.org/PublicClassifications",
+      "format": "json",
+      "evidence": "research/sources/state-assoc-plains/samples/kshsaa-publicclassifications-2026-09-22.json",
+      "evidence_kind": "fresh_capture",
+      "fields": {
+        "year": {"type": "integer", "example": 2026},
+        "previousYear": {"type": "integer", "example": 2025},
+        "fullYear": {"type": "string", "example": "2025-2026"},
+        "displayYear": {"type": "string", "example": "2025"},
+        "status": {"type": "string", "example": "1 "},
+        "classes[].schools[]": {"type": "array", "example": {"schoolId": 800, "name": "Blue Valley North HS", "finalEnrollment": 1367, "classId": 6, "moved": "same"}}
+      },
+      "measured": {"classified_schools": 348, "by_classId_desc": {"6": 36, "5": 36, "4": 36, "3": 64, "2": 64, "1": 112}}
+    },
+
+    "kshsaachamps_individual_result_row": {
+      "jurisdiction": "KS",
+      "surface": "kshsaachamps.org result surfaces (ActivityYearClassIndividualResultID / SearchDetailPopup)",
+      "format": "html/json",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/23-kansas-kshsaa-directathletics.md",
+      "evidence_kind": "report_citation",
+      "identifiers": {
+        "SchoolID": "championship-site school id, NOT the KSHSAA Id space (example 8 = Washburn Rural, 646 = Olathe North)",
+        "ActivityYearClassIndividualResultID": "example 187267",
+        "ActivityYearClassID": "example 8283 (2025 6A XC boys)"
+      },
+      "fields": {
+        "Name": {"type": "string", "example": "Jacob D'Souza"},
+        "School": {"type": "string", "example": "Blue Valley Northwest"},
+        "Statistic1": {"type": "string", "example": "15:42.50", "note": "mark; unit implied by Category"},
+        "PlaceFinish": {"type": "integer", "example": 1},
+        "Category": {"type": "string", "example": "Boys 5k Run CC 6A", "note": "encodes event/round; no numeric event id observed"},
+        "Student": {"type": "string", "example": "", "note": "empty on relay rows — relay legs are not resolvable here"},
+        "grade (worked example)": {"type": "integer", "example": 11, "note": "worked example is from the 2025 XC cohort endpoint (activityID 57 boys / 56 girls): 286 graded rows total, of which 89 are grade 11 (50 boys of 143 + 39 girls of 143)"}
+      }
+    },
+
+    "mshsl_school_detail": {
+      "jurisdiction": "MN",
+      "surface": "GET https://www.mshsl.org/schools/<slug>",
+      "format": "html",
+      "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_aitkin-high-school.html",
+      "evidence_kind": "repo_fixture",
+      "identifiers": {"group id": "numeric /group/<id>/ id (example 7 for Aitkin)", "slug": "aitkin-high-school"},
+      "fields": {
+        "school_name": {"type": "string", "example": "Aitkin High School"},
+        "website": {"type": "string", "example": "https://isd1.rschoolteams.com/"},
+        "nickname": {"type": "string", "example": "Gobblers"},
+        "school_colors": {"type": "string", "example": "Red and Black"},
+        "school_song": {"type": "string", "example": "Aitkin Fight Song"},
+        "mshsl_classification_enrollment": {"type": "integer", "example": 291},
+        "isd_number": {"type": "string", "example": "ISD No. 1"},
+        "admin_region": {"type": "string", "example": "7A"},
+        "ad_role": {"type": "string", "example": "Activities Director"},
+        "ad_name": {"type": "string", "example": "Jim Henrickson"},
+        "ad_phone": {"type": "string", "example": "218-927-2115", "note": "IGNORED by the adapter (tel: link)"},
+        "ad_email_cfemail": {"type": "string", "example": null, "note": "Cloudflare-obfuscated, decoded locally; no example value retained in this fixture (Aitkin's AD row carries a phone, not an email)"}
+      },
+      "gaps": ["office roles (principal, superintendent, trainer, advisors, Title IX officer) are parsed then REJECTED by the adapter"]
+    },
+
+    "mshsl_coach_record": {
+      "jurisdiction": "MN",
+      "surface": "GET https://www.mshsl.org/api/coaches/<team nid>",
+      "format": "json",
+      "evidence": "crates/midwest-census/tests/fixtures/mshsl/coach_records_aitkin_track-and-field-boys.json",
+      "evidence_kind": "repo_fixture",
+      "fields": {
+        "name": {"type": "string", "example": "Adam Carlson"},
+        "title": {"type": "string", "example": "Head Coach", "note": "free-text discipline/role, e.g. \"Hurdles & Sprints\""},
+        "coach_level": {"type": "string", "example": "Head Coach", "note": "MSHSL levels kept; \"Non-MSHSL Coach\" rows dropped"},
+        "coach_level_weight": {"type": "integer", "example": 0},
+        "coach_level_vocabulary": {"type": "string", "example": "varsity_coach_levels"},
+        "field_email": {"type": "string", "example": "acarlson@isd1.org", "note": "kept only when the domain is the school's own"},
+        "field_work_phone": {"type": "string", "example": "2189272115", "note": "field is NOT declared in the adapter's deserializer (mixes school extensions with personal mobiles)"}
+      }
+    },
+
+    "mshsl_team_node": {
+      "jurisdiction": "MN",
+      "surface": "GET https://www.mshsl.org/jsonapi/views/teams/list_school?views-argument[]=<schoolId>",
+      "format": "json (JSON:API)",
+      "evidence": "crates/midwest-census/tests/fixtures/mshsl/team_nodes_aitkin.json",
+      "evidence_kind": "repo_fixture",
+      "fields": {
+        "drupal_internal__nid": {"type": "integer", "example": 589034, "note": "the coach endpoint key; Wayzata example value"},
+        "path.alias": {"type": "string", "example": "/team/wayzata-track-and-field-boys"},
+        "title": {"type": "string", "example": "Wayzata Track and Field Boys"},
+        "activity (derived)": {"type": "string", "example": "track-and-field-boys", "note": "mapped from the alias/nid; activityId set 124|125|150|151"}
+      }
+    },
+
+    "mshsl_roster_row": {
+      "jurisdiction": "MN",
+      "surface": "GET https://www.mshsl.org/api/team-data/roster/<schoolId>/<level>/<activityId>",
+      "format": "json",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/09-minnesota-mshsl.md",
+      "evidence_kind": "report_citation",
+      "fields": {
+        "student_id": {"type": "string", "example": null, "note": "32-hex opaque id; documented in report 09, no example body retained in this repo"},
+        "student_name": {"type": "string", "example": null, "note": "no roster body retained"},
+        "student_grade": {"type": "string", "example": "JR", "note": "grade codes 07|08|FR|SO|JR|SR (JR = Co2027 in 2026-27)"}
+      },
+      "status": "NOT IMPLEMENTED and NOT CAPTURED — highest-value unimplemented MSHSL surface (in-season, authoritative per-athlete grade)"
+    },
+
+    "mshsl_team_data_schedule": {
+      "jurisdiction": "MN",
+      "surface": "GET https://www.mshsl.org/api/team-data/schedule/<schoolId>/<level>/<activityId>",
+      "format": "json",
+      "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_wayzata-high-school.html + report 09",
+      "evidence_kind": "repo_fixture",
+      "fields": {
+        "MeetID": {"type": "integer", "example": 666673, "note": "Athletic.net meet id for the 2026 state T&F meet, read from the schedule JSON"}
+      },
+      "gaps": ["full row shape not retained in this repo"]
+    },
+
+    "nsaa_directory_option_row": {
+      "jurisdiction": "NE",
+      "surface": "GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+      "format": "html",
+      "evidence": "research/sources/state-assoc-plains/samples/nsaa-directory-form-2026-09-22.html",
+      "evidence_kind": "fresh_capture",
+      "fields": {
+        "option (school)": {"type": "string", "example": "Adams Central"},
+        "option (ui)": {"type": "string", "example": "View all schools", "note": "bulk-render control; 314 options = 312 schools + this + one disabled placeholder"}
+      },
+      "identifiers": {"school key": "the published school NAME — NSAA publishes no numeric school id"}
+    },
+
+    "nsaa_school_record": {
+      "jurisdiction": "NE",
+      "surface": "GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=<name>",
+      "format": "html",
+      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nsaa_directory_export.html",
+      "evidence_kind": "repo_fixture",
+      "fields": {
+        "school_name": {"type": "string", "example": "Adams Central"},
+        "address": {"type": "string", "example": "1090 South Adams Central Avenue"},
+        "city_state_zip": {"type": "string", "example": "Hastings, NE 68901-7458"},
+        "phone": {"type": "string", "example": "402-463-3285", "note": "IGNORED by the adapter"},
+        "fax": {"type": "string", "example": "402-463-6344", "note": "IGNORED"},
+        "conference": {"type": "string", "example": "Central Conference"},
+        "nsaa_district": {"type": "integer", "example": 4},
+        "enrollment": {"type": "integer", "example": 215},
+        "mascot": {"type": "string", "example": "Patriots"},
+        "colors": {"type": "string", "example": "Red/White/Blue"},
+        "homepage": {"type": "string", "example": "http://www.adamscentral.us/"},
+        "staff_role": {"type": "string", "example": "Activities Director", "note": "roles observed: Superintendent, Principal, Activities Director, AD Secretary, Athletic Director, Assistant Athletic Director"},
+        "staff_name": {"type": "string", "example": "Alan Frank"},
+        "sport_row": {"type": "string", "example": "Cross-Country (Boys)", "note": "one coach per sport; multi-name cells like \"Trey Schlueter/Katie Winters\" are split into one entity per person"},
+        "sport_coach": {"type": "string", "example": "Toni Fowler", "note": "Adams Central boys XC row; role becomes HeadCoach"}
+      },
+      "measured": {"school_blocks_in_fixture": 8, "live_option_count": 312},
+      "gaps": ["no email anywhere in the NE directory by design"]
+    },
+
+    "nsaa_district_xc_top15_row": {
+      "jurisdiction": "NE",
+      "surface": "https://nsaa-static.s3.amazonaws.com/textfile/cc/ccbClassAResults.html (mirror of the NSAA /textfile corpus)",
+      "format": "html",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/tools/ne/ccbClassAResults.html",
+      "evidence_kind": "downloads_capture",
+      "fields": {
+        "caption": {"type": "string", "example": "2025 Boys Class A District Results"},
+        "district_heading": {"type": "string", "example": "District A-1:"},
+        "top15_row": {"type": "string", "example": "1. J'Shawn Afuh (11), 15:50.75", "note": "place, name, GRADE in parentheses, time; \"Top 15 Individuals:\" + team scores; per-class-gender file (8 files)"}
+      }
+    },
+
+    "nsaa_state_xc_plaintext_row": {
+      "jurisdiction": "NE",
+      "surface": "https://www.onlineraceresults.com/race/view_plain_text.php?race_id=79870 (timer: Precision Race Results, id=37)",
+      "format": "text/html wrapping a fixed-width report",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/24-nebraska-nsaa.md",
+      "evidence_kind": "report_citation",
+      "fields": {
+        "columns": {"type": "string", "example": "Place Team Bib Name Year Team Rank 1m Rank 2m Time Pace"},
+        "row_example": {"type": "string", "example": "Aiden Gehring 10 ...", "note": "grade printed inline; 96 rows for the sampled race; full field with 1m/2m splits"}
+      }
+    },
+
+    "ndhsaa_school_record": {
+      "jurisdiction": "ND",
+      "surface": "GET https://ndhsaa.com/schools/<id>/<slug>",
+      "format": "html",
+      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nd_school_page.html",
+      "evidence_kind": "repo_fixture",
+      "identifiers": {"school id": "numeric (examples 7 Bismarck, 100 Maple Valley, 1045 West Fargo Sheyenne, 1378 Mandan Classical Academy)"},
+      "fields": {
+        "school_name": {"type": "string", "example": "West Fargo Sheyenne"},
+        "grades": {"type": "string", "example": "Grades 9-12, 1399 students enrolled in 2025"},
+        "enrollment": {"type": "integer", "example": 1399},
+        "website": {"type": "string", "example": "https://www.west-fargo.k12.nd.us/shs/activities"},
+        "superintendent": {"type": "string", "example": "Beth Slette"},
+        "principal": {"type": "string", "example": "Ryan Salisbury"},
+        "athletic_director": {"type": "string", "example": "Logan Midthun"},
+        "activities_director": {"type": "string", "example": "Logan Midthun"},
+        "business_manager": {"type": "string", "example": "Levi Bachmeier", "note": "office role — REJECTED by the adapter"},
+        "phone": {"type": "string", "example": "701-499-6687", "note": "IGNORED"},
+        "fax": {"type": "string", "example": "701-499-6687", "note": "IGNORED"}
+      }
+    },
+
+    "ndhsaa_offering_row": {
+      "jurisdiction": "ND",
+      "surface": "same page, `Sport/Activity Offering | Coaches` table",
+      "format": "html table",
+      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nd_school_page.html",
+      "evidence_kind": "repo_fixture",
+      "fields": {
+        "offering": {"type": "string", "example": "Boys' Cross Country", "note": "HTML-escaped as Boys&#039; Cross Country"},
+        "coaches": {"type": "string", "example": "Troy Thorson, Jared Slinde", "note": "sport-scoped rows; role becomes CoachRole::Unknown; multi-name cells split per person"},
+        "girls_xc": {"type": "string", "example": "Troy Thorson, Jared Slinde"},
+        "boys_track": {"type": "string", "example": "Jared Slinde"},
+        "girls_track": {"type": "string", "example": "Jaime Watson"}
+      },
+      "gaps": ["no email field exists on this surface"]
+    },
+
+    "athleticlive_es_meet_doc": {
+      "jurisdiction": "ND (the same index serves every AthleticLIVE tenant; verified for ND here)",
+      "surface": "POST https://search.athletic.live/heros_meet_list/_search",
+      "format": "json (Elasticsearch)",
+      "evidence": "research/sources/state-assoc-plains/samples/athleticlive-heros-nd-xc-2026-09-22.json",
+      "evidence_kind": "fresh_capture",
+      "fields": {
+        "i": {"type": "integer", "example": 76088, "note": "AthleticLIVE meet id"},
+        "ani": {"type": "integer", "example": 277450, "note": "Athletic.net meet id — the join key"},
+        "n": {"type": "string", "example": "Orriginals Invite"},
+        "md": {"type": "array of date", "example": ["2026-08-22"], "note": "array, not a scalar"},
+        "ls": {"type": "string", "example": "Jamestown, ND", "note": "free-text location, 'City, ST' as published (not a bare state code)"},
+        "o": {"type": "string", "example": "xc", "note": "sport/outdoor flag; observed values include xc, track, indoor"}
+      },
+      "measured": {"total_hits_for_query": 6, "query": "ls:ND AND md:[2026-08-15,2026-11-30]"}
+    },
+
+    "athleticlive_rtdb_standing_row": {
+      "jurisdiction": "ND (same node shape across AthleticLIVE tenants)",
+      "surface": "GET <tenant>/meet_<i>/liveRunStandings/<rui>.json",
+      "format": "json",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/25-north-dakota-ndhsaa.md:171",
+      "evidence_kind": "report_citation",
+      "fields": {
+        "ani": {"type": "integer", "example": 20010099, "note": "Athletic.net entity id; athlete-level semantics are [INFERENCE] in report 25"},
+        "anli": {"type": "integer", "example": 42660317},
+        "fn": {"type": "string", "example": "Jaydyn"},
+        "l": {"type": "string", "example": "Velek"},
+        "n": {"type": "string", "example": "Jaydyn Velek"},
+        "tn": {"type": "string", "example": "Jamestown"},
+        "g": {"type": "string", "example": "M"},
+        "y": {"type": "string", "example": "SR", "note": "year in school — the ND grade oracle (JR = Co2027)"},
+        "p": {"type": "integer", "example": 98},
+        "rtm": {"type": "string", "example": "18:23.114", "note": "raw time to thousandths"},
+        "m": {"type": "string", "example": "18:23.2"}
+      }
+    },
+
+    "mshsaa_school_listing_row": {
+      "jurisdiction": "MO",
+      "surface": "GET https://www.mshsaa.org/Schools/SchoolListing.aspx",
+      "format": "html",
+      "evidence": "research/sources/state-assoc-plains/samples/mshsaa-school-listing-2026-09-22.html",
+      "evidence_kind": "fresh_capture",
+      "identifiers": {"school id": "integer in `MySchool/?s=<id>` (example 1567); 1,006 rows span ids 2..1,913 with 47.4% gaps"},
+      "fields": {
+        "tr attributes": {"type": "string", "example": "class=\"fs_tablecolumn\" data-organizationtype=\"3\" data-membertype=\"member\""},
+        "data-organizationtype": {"type": "integer", "example": "1|2|3", "note": "1 = senior high, 2 = junior high, 3 = combined 7-12"},
+        "data-membertype": {"type": "string", "example": "member|affiliate|hsa"},
+        "school_cell": {"type": "string", "example": "<span data-type=\"school\"><a href='../MySchool/?s=1567'>Academie Lafayette Charter High School</a></span>"},
+        "affiliation_cell": {"type": "string", "example": "Full Member", "note": "cell is mis-tagged data-type=\"county\" in the source markup"},
+        "county": {"type": "string", "example": "Jackson"},
+        "city": {"type": "string", "example": "Kansas City"}
+      },
+      "measured": {
+        "rows": 1006,
+        "by_orgtype": {"1": 316, "2": 360, "3": 330},
+        "by_membertype": {"member": 719, "affiliate": 257, "hsa": 30},
+        "hs_level_orgs": 646,
+        "full_members_hs_level": 592
+      }
+    },
+
+    "mshsaa_state_meet_pdf_row": {
+      "jurisdiction": "MO",
+      "surface": "https://www.mshsaa.org/resources/…/state-meet PDFs (Hy-Tek, \"Licensed to PrimeTime Timing\")",
+      "format": "pdf text",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/21-missouri-mshsaa.md:239",
+      "evidence_kind": "report_citation",
+      "fields": {
+        "row_example": {"type": "string", "example": "1 Tanner Briddle 12 Tina-Avalon 10.96 0.6 10 / 10.956 (10.956)", "note": "place, name, YEAR/Grade, school, mark, wind, points, raw+converted time"},
+        "columns": {"type": "string", "example": "Place, Name, Year, School, Finals, Wind, H#, Points"},
+        "relay_row": {"type": "string", "example": "Relay  Knox County  44.25", "note": "team-level only; no legs or splits"}
+      },
+      "gaps": ["district and sectional rounds publish no result artifact on mshsaa.org"]
+    },
+
+    "pttiming_result_row": {
+      "jurisdiction": "MO (PrimeTime also covers WI/KCA)",
+      "surface": "data.pttiming.com public bucket (PrimeTime event id + Athletic.net MeetID when exEntryLink is an Athletic.net URL)",
+      "format": "html/pdf (Hy-Tek)",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/22-missouri-primetime.md:120-145",
+      "evidence_kind": "report_citation",
+      "identifiers": {"event id": "example 2874 / 9011 / 619619-family", "Athletic.net MeetID": "619619"},
+      "fields": {
+        "mark": {"type": "string", "example": "10.82 (10.813)"},
+        "wind": {"type": "string", "example": "1.5"},
+        "heat": {"type": "string", "example": "H3"},
+        "place": {"type": "string", "example": "--", "note": "states DNF/DNS/DQ are represented this way"},
+        "relay_legs": {"type": "string", "example": "Poplar Bluff 1:27.50 -> 1) Lee Hughes 9 2) Devin Ferguson 11 3) Xzavir Jones 11 4) Kinyon Johnson 12", "note": "legs carry individual grades"}
+      },
+      "gaps": ["2026 corpus is 92% PDF; some 2026 PDFs are image-only scans requiring OCR (rejected)"]
+    },
+
+    "ihsaa_member_row": {
+      "jurisdiction": "IA",
+      "surface": "GET https://www.iahsaa.org/member-schools/",
+      "format": "html table",
+      "evidence": "research/sources/state-assoc-plains/samples/iahsaa-member-schools-2026-09-22.html",
+      "evidence_kind": "fresh_capture",
+      "fields": {
+        "school_link": {"type": "string", "example": "<td class=\"column-1\"><a href=\"https://www.iahsaa.org/schools/acgc/\" target=\"_blank\">ACGC</a></td>"},
+        "slug": {"type": "string", "example": "acgc"},
+        "nickname": {"type": "string", "example": "Chargers"},
+        "colors": {"type": "string", "example": "Black, Gold"},
+        "conference": {"type": "string", "example": "West Central"}
+      },
+      "measured": {"rows": 380, "distinct_names": 379, "rows_with_school_link": 364},
+      "gaps": ["no coach/AD contact fields anywhere in the IHSAA member surface"]
+    },
+
+    "bound_team_card_row": {
+      "jurisdiction": "IA (same platform in SD; KS/MN DAT records)",
+      "surface": "Bound team list HTML, exported by the Midwest phase to CSV",
+      "format": "csv (from html)",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/tools/iowa-11/bound-ihsaa-boystrack-teams-2025-26.csv",
+      "evidence_kind": "downloads_capture",
+      "fields": {
+        "team_id": {"type": "string", "example": "h2022217542312fc27f4365ab4ff28f2", "note": "season-scoped: 0 of 365 IA boys-T&F team ids shared between 2025-26 and 2026-27"},
+        "name": {"type": "string", "example": "CAL Cadets"},
+        "classes": {"type": "array", "example": []},
+        "school_guid": {"type": "string", "example": "0F209AAD-EBFC-4C89-B023-D35820D4AE97", "note": "stable across seasons"}
+      }
+    },
+
+    "bound_school_staff_row": {
+      "jurisdiction": "IA, SD",
+      "surface": "GET https://www.gobound.com/<st>/schools/<slug>/directory/new",
+      "format": "html -> csv (consolidated by the Midwest phase)",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv",
+      "evidence_kind": "downloads_capture",
+      "fields": {
+        "school": {"type": "string", "example": "albia"},
+        "state": {"type": "string", "example": "IA"},
+        "sport": {"type": "string", "example": "Boys Cross Country"},
+        "role": {"type": "string", "example": "Varsity Head Coach - Boys Cross Country"},
+        "coach_name": {"type": "string", "example": "Larry Achenbach"},
+        "public_professional_email": {"type": "string", "example": "larry.achenbach@albia.k12.ia.us", "note": "per-school opt-in; also observed: school rapidcitystevens / Jesse Coy / Jesse.Coy@k12.sd.us"},
+        "ad_name": {"type": "string", "example": "Kevin Archer", "note": "from the SAME school's separate Activities Director row (school=albia, role=Activities Director); the coach row itself carries empty AD fields — AD and coach rows are independent rows in this product"},
+        "ad_email": {"type": "string", "example": "kevin.archer@albia.k12.ia.us"},
+        "source_url": {"type": "string", "example": "https://www.gobound.com/ia/schools/albia/directory/new"},
+        "last_observed": {"type": "string", "example": "2026-09-19"}
+      },
+      "measured": {"rows_total": 2298, "by_state": {"NE": 1528, "KS": 526, "IA": 83, "ND": 39, "OH": 31, "SD": 30, "WI": 22, "IL": 16, "MI": 14, "MN": 9, "MO": 0}},
+      "gaps": ["email absent for most schools; names only"]
+    },
+
+    "sdhsaa_region_link_row": {
+      "jurisdiction": "SD",
+      "surface": "GET https://sdhsaa.com/cross-country-region/",
+      "format": "html",
+      "evidence": "research/sources/state-assoc-plains/samples/sdhsaa-cross-country-region-2026-09-22.html",
+      "evidence_kind": "fresh_capture",
+      "fields": {
+        "class_heading": {"type": "string", "example": "Class B"},
+        "anchor": {"type": "string", "example": "<a href=\"https://www.athletic.net/CrossCountry/meet/278826/info\" target=\"_blank\" rel=\"noopener\">Region 1B</a>"},
+        "athletic_net_meet_id": {"type": "integer", "example": 278826}
+      },
+      "measured": {"distinct_meet_ids": 10, "ids": [277461, 278813, 278815, 278816, 278817, 278821, 278826, 278829, 278838, 278840]}
+    },
+
+    "sdhsaa_yearbook_result_row": {
+      "jurisdiction": "SD",
+      "surface": "sdhsaa.com yearbook PDFs (last completed season only)",
+      "format": "pdf text",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/research/midwest/26-south-dakota-sdhsaa.md:114-129",
+      "evidence_kind": "report_citation",
+      "fields": {
+        "row_example": {"type": "string", "example": "Holdeman, Silas / 11 Mitchell Christian / 16:16.94 / 1", "note": "name, GRADE, school, mark, place"},
+        "measured": {"boys_xc_grade_rows": 400, "grade_11_rows": 106, "tf_participants_by_class": [476, 512, 528]}
+      },
+      "gaps": ["no athlete ids, no regular-season marks; Bound /scores carries an empty Result column for the state T&F date"]
+    },
+
+    "coach_contacts_csv_row": {
+      "jurisdiction": "all seven (product of the Midwest coach-graph pass)",
+      "surface": "derived product, rebuilt from raw captures by tools/a29-coach/build_csv.py",
+      "format": "csv",
+      "evidence": "~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv",
+      "evidence_kind": "downloads_capture",
+      "fields": {
+        "school": {"type": "string", "example": "Adams Central", "note": "NE rows use the NSAA spelling; IA/SD rows use the Bound slug (e.g. albia, rapidcitystevens)"},
+        "city": {"type": "string", "example": "Abilene", "note": "example from the KS rows; populated on 641 of 2,298 rows (KS 526, ND 32, OH 31, WI 22, IL 16, MI 14); empty for every NE, IA, SD and MN row"},
+        "state": {"type": "string", "example": "NE"},
+        "sport": {"type": "string", "example": "Cross-Country (Boys)", "note": "the SAME sport is spelled 5+ ways across sources: Cross-Country (Boys), Cross Country (boys), Boys Cross Country, Boys Cross Country Head Coach, Boys Track & Field, Track & Field (Boys)"},
+        "role": {"type": "string", "example": "Head Coach (Cross-Country (Boys))", "note": "NSAA rows wrap the sport in the role; Bound rows use Varsity Head Coach - Boys Cross Country; AD rows use Activities Director / Asst Athletic Director"},
+        "coach_name": {"type": "string", "example": "Toni Fowler"},
+        "public_professional_email": {"type": "string", "example": "", "note": "empty for all 1,528 NE rows (the NSAA directory publishes no email at all)"},
+        "ad_name": {"type": "string", "example": "Alan Frank"},
+        "ad_email": {"type": "string", "example": ""},
+        "source_url": {"type": "string", "example": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"},
+        "last_observed": {"type": "string", "example": "2026-09-19"}
+      }
+    }
+  },
+  "cross_source_identifiers": {
+    "Athletic.net MeetID (ani)": ["athleticlive_es_meet_doc.ani", "mshsl_team_data_schedule.MeetID", "sdhsaa_region_link_row.athletic_net_meet_id", "bound calendar rows (SD)"],
+    "Athletic.net athlete/team id": ["athleticlive_rtdb_standing_row.ani", "bound_school_staff_row (none)"],
+    "association school id": ["kshsaa_directory_record.Id", "mshsaa_school_listing_row (s=)", "ndhsaa_school_record (/schools/<id>/)"],
+    "Bound school GUID / slug": ["bound_team_card_row.school_guid", "bound_school_staff_row.school"]
+  }
+}

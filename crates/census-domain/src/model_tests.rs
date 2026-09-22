@@ -5,7 +5,11 @@ use super::*;
 
 #[test]
 fn display_impls_render_their_value() {
-    let school = CanonicalSchool::mint("WI", "Abbotsford High School", "abbotsford");
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+    );
     assert_eq!(school.to_string(), "sch_b5ea31ddfcd999ba");
     let kid = CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear(2027), Gender::Boys);
     assert_eq!(kid.to_string(), "ath_77445d74c6dd8dbb");
@@ -152,7 +156,7 @@ fn milesplit_gender_aliases_parse() {
 
 #[test]
 fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
-    let school = CanonicalSchool::mint("WI", "Abbotsford", "abbotsford");
+    let school = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     let cohort = GradYear(2027);
     let mint = |name: &str, gender| CanonicalAthlete::mint(&school, name, cohort, gender);
     let boys = mint("Julian Aguilera", Gender::Boys);
@@ -299,25 +303,121 @@ fn flip_last_first_handles_both_shapes() {
 
 #[test]
 fn ids_are_deterministic_and_prefixed() {
-    let a = CanonicalSchool::mint("WI", "Abbotsford High School", "abbotsford");
-    let b = CanonicalSchool::mint("WI", "Abbotsford High School", "abbotsford");
+    let a = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+    );
+    let b = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+    );
     assert_eq!(a, b);
     assert!(a.as_str().starts_with("sch_"));
-    let other = CanonicalSchool::mint("MN", "Abbotsford High School", "abbotsford");
+    let other = CanonicalSchool::mint(
+        UsJurisdiction::Minnesota,
+        "Abbotsford High School",
+        "abbotsford",
+    );
     assert_ne!(a, other, "state participates in the natural key");
 }
 
 #[test]
 fn meet_identity_is_date_and_name_scoped() {
-    let a = CanonicalMeet::mint("WI", "2026-05-29", "D3 Sectional #3", None);
-    let b = CanonicalMeet::mint("WI", "2026-05-29", "D3 sectional #3", None);
-    let c = CanonicalMeet::mint("WI", "2026-05-30", "D3 Sectional #3", None);
+    let a = CanonicalMeet::mint(
+        Some(UsJurisdiction::Wisconsin),
+        "2026-05-29",
+        "D3 Sectional #3",
+        None,
+    );
+    let b = CanonicalMeet::mint(
+        Some(UsJurisdiction::Wisconsin),
+        "2026-05-29",
+        "D3 sectional #3",
+        None,
+    );
+    let c = CanonicalMeet::mint(
+        Some(UsJurisdiction::Wisconsin),
+        "2026-05-30",
+        "D3 Sectional #3",
+        None,
+    );
     assert_eq!(a, b);
     assert_ne!(a, c);
     let venue = "La Crosse, WI";
-    let d = CanonicalMeet::mint("WI", "2026-05-29", "D3 Sectional #3", Some(venue));
+    let d = CanonicalMeet::mint(
+        Some(UsJurisdiction::Wisconsin),
+        "2026-05-29",
+        "D3 Sectional #3",
+        Some(venue),
+    );
     assert_eq!(a, d, "venue spelling must not fork meet identity");
     let level = CompetitionLevel::Sectional;
-    let built = CanonicalMeet::new("WI", "D3 Sectional #3", "2026-05-29", level);
+    let built = CanonicalMeet::new(
+        Some(UsJurisdiction::Wisconsin),
+        "D3 Sectional #3",
+        "2026-05-29",
+        level,
+    );
     assert_eq!(built.id, a, "constructor and mint must agree");
+    // The literal is the pre-cutover id, computed independently from
+    // `sha256("meet" 0x1f "WI" 0x1f date 0x1f normalized)`: the jurisdiction participates as its
+    // USPS code, so typing the parameter re-mints nothing already in the store.
+    assert_eq!(a.to_string(), "meet_019891d607bdeb6c");
+    assert_eq!(built.state, Some(UsJurisdiction::Wisconsin));
+}
+
+/// The unresolved bucket is not a jurisdiction: `None` and the legacy `??` row are one meet.
+#[test]
+fn an_unplaced_meet_keeps_the_legacy_unknown_state_id() {
+    let unplaced = CanonicalMeet::mint(None, "2026-05-29", "D3 Sectional #3", None);
+    // Literal from `sha256("meet" 0x1f "??" 0x1f date 0x1f normalized)`: the same bytes the
+    // free-string era hashed for this row, so the 442 stored `"state":"??"` meets are not orphaned.
+    assert_eq!(unplaced.to_string(), "meet_ddb3074882d2561f");
+    let placed = CanonicalMeet::mint(
+        Some(UsJurisdiction::Wisconsin),
+        "2026-05-29",
+        "D3 Sectional #3",
+        None,
+    );
+    assert_ne!(
+        unplaced, placed,
+        "placing the venue is what separates a coverage gap from a known jurisdiction"
+    );
+    assert_eq!(
+        CanonicalMeet::new(
+            None,
+            "D3 Sectional #3",
+            "2026-05-29",
+            CompetitionLevel::Sectional
+        )
+        .state,
+        None
+    );
+}
+
+/// The legacy sentinel is the only string that may decode to an absent jurisdiction.
+#[test]
+fn a_legacy_unresolved_meet_state_decodes_to_none() {
+    use serde::de::value::{Error, StrDeserializer};
+    let decode = |raw: &str| super::deserialize_meet_state(StrDeserializer::<Error>::new(raw));
+    assert_eq!(decode(MEET_STATE_UNRESOLVED), Ok(None));
+    assert_eq!(decode("WI"), Ok(Some(UsJurisdiction::Wisconsin)));
+    assert_eq!(decode("wi"), Ok(Some(UsJurisdiction::Wisconsin)));
+    assert!(decode("PR").is_err(), "a territory is not a jurisdiction");
+}
+
+#[test]
+fn school_state_is_stored_as_the_validated_jurisdiction() {
+    let (school, id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Abbotsford High School",
+        "abbotsford",
+    );
+    assert_eq!(school.state, Some(UsJurisdiction::Wisconsin));
+    // Same id as the free-string era: the natural key hashes the jurisdiction code.
+    assert_eq!(id.to_string(), "sch_b5ea31ddfcd999ba");
+    // The jurisdiction's code is what a report or key renderer asks for, and it is the wire form.
+    assert_eq!(school.state.map(UsJurisdiction::code), Some("WI"));
 }

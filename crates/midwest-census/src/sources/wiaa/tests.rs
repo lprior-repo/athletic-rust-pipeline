@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::UsJurisdiction;
 
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
@@ -92,7 +93,7 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
 
     let extract = extract_for("1", SCHOOL_ABBOTSFORD);
     assert_eq!(extract.school.name, "Abbotsford");
-    assert_eq!(extract.school.state.as_deref(), Some("WI"));
+    assert_eq!(extract.school.state, Some(UsJurisdiction::Wisconsin));
     assert_eq!(extract.school.city.as_deref(), Some("Abbotsford"));
     assert_eq!(extract.school.association.as_deref(), Some("wiaa"));
     assert_eq!(extract.school.classification.as_deref(), Some("Marawood"));
@@ -105,7 +106,12 @@ fn school_page_yields_name_city_conference_ad_and_identity() {
     // Abbotsford mints the same school.
     assert_eq!(
         extract.school.id,
-        CanonicalSchool::new("WI", "Abbotsford", normalize_name("Abbotsford")).1
+        CanonicalSchool::new(
+            UsJurisdiction::Wisconsin,
+            "Abbotsford",
+            normalize_name("Abbotsford")
+        )
+        .1
     );
     let identity = extract
         .school

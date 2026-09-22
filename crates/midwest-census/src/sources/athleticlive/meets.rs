@@ -13,7 +13,7 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
     let mut meets: BTreeMap<MeetId, CanonicalMeet> = BTreeMap::new();
     for row in rows {
         let id = CanonicalMeet::mint(
-            &row.state_code,
+            Some(row.state_code),
             &row.start,
             &row.name,
             row.city_state.as_deref(),
@@ -53,7 +53,7 @@ pub fn build_meets(rows: &[MeetRow], observed_on: &str, source_label: &str) -> V
 /// One canonical meet as a single harvest row publishes it.
 fn meet_from_row(row: &MeetRow, observed_on: &str, source_label: &str) -> CanonicalMeet {
     let mut meet = CanonicalMeet::new(
-        &row.state_code,
+        Some(row.state_code),
         row.name.clone(),
         row.start.clone(),
         infer_level(&row.name),

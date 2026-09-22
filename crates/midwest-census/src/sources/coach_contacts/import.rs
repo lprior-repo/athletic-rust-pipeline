@@ -6,6 +6,7 @@ use std::convert::{TryFrom, TryInto};
 use std::path::Path;
 
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachId};
+use census_domain::UsJurisdiction;
 
 use crate::sources::{AdapterReport, CrawlError, CrawlResult};
 use crate::store::{Store, Table};
@@ -34,8 +35,8 @@ pub fn import_csv(
     let mut skipped_roles = 0usize;
 
     for (index, record) in reader.deserialize::<CoachContactRow>().enumerate() {
-        let row = contact_row(record, index, csv_path)?;
-        let entities = row_entities(&row, default_observed_on)?;
+        let (row, state) = contact_row(record, index, csv_path)?;
+        let entities = row_entities(&row, state, default_observed_on)?;
         if merge_entities(&mut schools, &mut coaches, entities) {
             skipped_roles = skipped_roles.saturating_add(1);
         }
@@ -46,12 +47,16 @@ pub fn import_csv(
     Ok(report)
 }
 
-/// Deserialize one CSV record, rejecting a row with no school or state.
+/// Deserialize one CSV record into a row plus the jurisdiction it names.
+///
+/// The CSV is an operator-supplied file, so this is the one place its state column becomes a
+/// [`UsJurisdiction`]: a row that names no school, no state, or a state outside the census is
+/// refused with its line number rather than filed under a guess.
 fn contact_row(
     record: Result<CoachContactRow, csv::Error>,
     index: usize,
     csv_path: &Path,
-) -> CrawlResult<CoachContactRow> {
+) -> CrawlResult<(CoachContactRow, UsJurisdiction)> {
     let line = index.saturating_add(2);
     let row = record.map_err(|source| CrawlError::Schema {
         url: csv_path.display().to_string(),
@@ -63,7 +68,14 @@ fn contact_row(
             detail: format!("row {line} has no school/state"),
         });
     }
-    Ok(row)
+    let state = UsJurisdiction::from_code(row.state.trim()).ok_or_else(|| CrawlError::Schema {
+        url: csv_path.display().to_string(),
+        detail: format!(
+            "row {line}: `{}` is not one of the 50 states or the District of Columbia",
+            row.state.trim()
+        ),
+    })?;
+    Ok((row, state))
 }
 
 /// Fold one row's entities into the accumulated schools and coaches.

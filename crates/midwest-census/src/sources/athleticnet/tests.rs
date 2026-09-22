@@ -10,7 +10,7 @@ fn payload(body: &str) -> Bio {
 fn a_registry_line_carries_an_id_and_optionally_a_state() {
     let targets = parse_targets(
         "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n",
-        &["wi".to_string()],
+        &[UsJurisdiction::Wisconsin],
     )
     .expect("registry parses");
     assert_eq!(
@@ -18,11 +18,11 @@ fn a_registry_line_carries_an_id_and_optionally_a_state() {
         vec![
             Target {
                 athlete_id: 28127170,
-                state: Some("AK".to_string())
+                state: Some(UsJurisdiction::Alaska)
             },
             Target {
                 athlete_id: 26631105,
-                state: Some("WI".to_string())
+                state: Some(UsJurisdiction::Wisconsin)
             },
         ],
         "the per-line state wins, the default fills a bare id, and a repeat reads once"
@@ -31,8 +31,11 @@ fn a_registry_line_carries_an_id_and_optionally_a_state() {
 
 #[test]
 fn a_registry_is_refused_rather_than_guessed_between_states() {
-    let error = parse_targets("28127170\n", &["WI".to_string(), "AK".to_string()])
-        .expect_err("two candidate states are ambiguous");
+    let error = parse_targets(
+        "28127170\n",
+        &[UsJurisdiction::Wisconsin, UsJurisdiction::Alaska],
+    )
+    .expect_err("two candidate states are ambiguous");
     assert!(
         error.to_string().contains("exactly one --states"),
         "the refusal names the fix: {error}"

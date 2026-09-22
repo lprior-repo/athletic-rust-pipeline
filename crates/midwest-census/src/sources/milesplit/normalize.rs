@@ -1,6 +1,5 @@
 //! Roster -> canonical entities: the school, its athletes with their observed grade, and one
 //! team per sport the roster carries.
-use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalSchool, CanonicalTeam, Confidence, Evidence, Gender,
     GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
@@ -44,14 +43,16 @@ impl RosterAthlete {
 }
 
 /// Convert a parsed roster into canonical entities.
+///
+/// The state every entity is filed under comes from the [`Site`] the roster was fetched through, so
+/// there is no second, string-shaped copy of the jurisdiction for a caller to get wrong.
 pub fn roster_entities(
     roster: &Roster,
-    state: &str,
     school_year: SchoolYear,
     observed_on: &str,
     site: &Site,
 ) -> (CanonicalSchool, Vec<CanonicalAthlete>, Vec<CanonicalTeam>) {
-    let (school, school_id, source) = roster_school(roster, state, observed_on, site);
+    let (school, school_id, source) = roster_school(roster, observed_on, site);
 
     let mut seen_sports: Vec<(Sport, Gender)> = Vec::new();
     let mut athletes = Vec::new();
@@ -87,7 +88,6 @@ pub fn roster_entities(
 /// the roster is stamped with.
 fn roster_school(
     roster: &Roster,
-    state: &str,
     observed_on: &str,
     site: &Site,
 ) -> (CanonicalSchool, SchoolId, SourceRef) {
@@ -96,7 +96,8 @@ fn roster_school(
         Some(format!("{}/roster", roster.team.url)),
     );
     let owner = owner_name(&roster.team);
-    let (mut school, school_id) = CanonicalSchool::new(state, &owner, normalize_name(&owner));
+    let (mut school, school_id) =
+        CanonicalSchool::new(site.jurisdiction(), &owner, normalize_name(&owner));
     school.city = city_of(&roster.team.city_state);
     school.source_identities.push(
         SourceIdentity::new(SourceNamespace::MilesplitSchool, roster.team.id.clone())
@@ -205,11 +206,4 @@ fn title_case(value: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(" ")
-}
-
-/// MileSplit's own site id (`wi`, `mn`, …) for a state code.
-pub fn site_for_state(code: &str) -> CrawlResult<Site> {
-    Site::for_state(code).ok_or_else(|| CrawlError::Invariant {
-        detail: format!("no MileSplit site registered for {code}"),
-    })
 }

@@ -1,0 +1,41 @@
+{
+ "sheet_name": "2025-26 Fall Participation Summ",
+ "schools": 301,
+ "columns": [
+  "School",
+  "Classification",
+  "FBL-B",
+  "FBL-G",
+  "FBL-X",
+  "FBL-T",
+  "VBL-B",
+  "VBL-G",
+  "VBL-X",
+  "VBL-T",
+  "BSC-B",
+  "BSC-G",
+  "BSC-X",
+  "BSC-T",
+  "GSC-B",
+  "GSC-G",
+  "GSC-X",
+  "GSC-T",
+  "BXC-B",
+  "BXC-G",
+  "BXC-X",
+  "BXC-T",
+  "GXC-B",
+  "GXC-G",
+  "GXC-X",
+  "GXC-T",
+  "Total"
+ ],
+ "BXC_T": {
+  "schools_gt0": 238,
+  "total": 7266
+ },
+ "GXC_T": {
+  "schools_gt0": 214,
+  "total": 5232
+ }
+}

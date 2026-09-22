@@ -11,7 +11,9 @@ fn parses_harvest_rows_and_keeps_only_known_states() {
         rows.iter().all(|r| !r.name.is_empty()),
         "every kept row has a name"
     );
-    assert!(rows.iter().any(|r| r.state_code == "IL"));
+    assert!(rows
+        .iter()
+        .any(|r| r.state_code == UsJurisdiction::Illinois));
     assert!(
         rows.iter().any(|r| r.athleticnet_meet_id.is_some()),
         "the harvest carries Athletic.net meet ids"
@@ -26,7 +28,7 @@ fn quoted_fields_do_not_break_column_alignment() {
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].name, "4th Annual St. Pius X, Knights Classic");
     assert_eq!(rows[0].city_state.as_deref(), Some("Lombard, IL"));
-    assert_eq!(rows[0].state_code, "IL");
+    assert_eq!(rows[0].state_code, UsJurisdiction::Illinois);
     assert_eq!(rows[0].athleticnet_meet_id.as_deref(), Some("259955"));
     assert!(rows[0].has_results);
 }

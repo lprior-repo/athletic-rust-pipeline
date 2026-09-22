@@ -14,8 +14,11 @@
 //!   "crates": {"<crate dir>": {"assert_family": .., "panic": .., "expect": ..,
 //!                              "unwrap": .., "unsafe": .., "indexing": .., "as_cast": ..,
 //!                              "todo": .., "production_lines": .., "files": ..}},
-//!   "structure": {"files_over_300_lines": [..], "functions_over_60_lines": ..,
-//!                 "functions_over_25_logical_lines": ..}
+//!   "structure": {"files_over_300_lines": ["<crate>:<path> (<lines>)", ..],
+//!                 "functions_over_60_lines": ..,
+//!                 "functions_over_60_sites": ["<crate>:<path>:<start>-<end> <fn> (<lines>)", ..],
+//!                 "functions_over_25_logical_lines": ..,
+//!                 "unstable_feature_sites": ["<crate>:<path>:<line> <feature>", ..]}
 //! }
 //! ```
 //!
@@ -30,6 +33,19 @@ use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::Path;
+
+/// Unstable features this workspace's own source may gate on (the Holzman pinned-nightly policy).
+///
+/// The list is closed and must stay equal to the names the gate's `FEATURE_ALLOWLIST` passes to
+/// `-Zallow-features` for our crates; adding a name is a deliberate edit in both places. The
+/// dependency graph may name more (`proc-macro2` probes `proc_macro_span`, `anyhow` probes
+/// `error_generic_member_access`), which is why the compiler flag cannot be the only enforcement: it
+/// is crate-graph-wide, so it either fails on a dependency's probe or permits our source too. This
+/// scan is the per-crate half of the policy, and it runs on our crates only.
+const ALLOWED_FEATURES: [&str; 2] = ["portable_simd", "try_blocks"];
+
+/// A crate-root feature gate: `#![feature(a, b)]`.
+const FEATURE_GATE: &str = r"#!\[feature\(([^)]*)\)\]";
 
 /// Line budget for one production `.rs` file.
 const FILE_LINE_BUDGET: usize = 300;
@@ -110,7 +126,8 @@ pub fn run() -> Result<()> {
     let root = paths::repo_root();
     let mut crates: Map<String, Value> = Map::new();
     let mut over_300: Vec<String> = Vec::new();
-    let mut over_60 = 0usize;
+    let mut over_60: Vec<String> = Vec::new();
+    let mut features: Vec<String> = Vec::new();
     let mut over_logical = 0usize;
 
     for (name, relative_root) in CRATES {
@@ -120,16 +137,19 @@ pub fn run() -> Result<()> {
                 continue;
             }
             let budgets = crate_scan.measure(&path, name, &rules, &mut over_300)?;
-            over_60 = over_60.saturating_add(budgets.functions_over_60);
+            over_60.extend(budgets.functions_over_60);
             over_logical = over_logical.saturating_add(budgets.functions_over_logical);
         }
+        features.extend(crate_scan.feature_sites.iter().cloned());
         crates.insert(name.to_string(), Value::Object(crate_scan.into_counts()));
     }
 
     over_300.sort();
+    over_60.sort();
+    features.sort();
     println!(
         "{}",
-        serde_json::to_string_pretty(&report(crates, over_300, over_60, over_logical))?
+        serde_json::to_string_pretty(&report(crates, over_300, over_60, features, over_logical))?
     );
     Ok(())
 }
@@ -138,7 +158,8 @@ pub fn run() -> Result<()> {
 fn report(
     crates: Map<String, Value>,
     over_300: Vec<String>,
-    over_60: usize,
+    over_60: Vec<String>,
+    features: Vec<String>,
     over_logical: usize,
 ) -> Value {
     let mut structure: Map<String, Value> = Map::new();
@@ -148,7 +169,23 @@ fn report(
     );
     structure.insert(
         "functions_over_60_lines".to_string(),
-        Value::from(count(over_60)),
+        Value::from(count(over_60.len())),
+    );
+    // The sites ride along as evidence: a budget the gate fails on has to name the function that
+    // broke it, or the fix starts with a search instead of a read. They are not ratcheted — the count
+    // above is the metric this scan certifies.
+    structure.insert(
+        "functions_over_60_sites".to_string(),
+        Value::Array(over_60.into_iter().map(Value::String).collect()),
+    );
+    structure.insert(
+        "unstable_feature_sites".to_string(),
+        Value::Array(
+            features
+                .into_iter()
+                .map(Value::String)
+                .collect::<Vec<Value>>(),
+        ),
     );
     structure.insert(
         "functions_over_25_logical_lines".to_string(),
@@ -162,7 +199,8 @@ fn report(
 
 /// The function budgets one production file contributed.
 struct Budgets {
-    functions_over_60: usize,
+    /// One entry per function over the physical budget: `<crate>:<path>:<start>-<end> <fn> (<lines>)`.
+    functions_over_60: Vec<String>,
     functions_over_logical: usize,
 }
 
@@ -171,6 +209,8 @@ struct CrateScan {
     counts: BTreeMap<String, u64>,
     production_lines: usize,
     files: u64,
+    /// Feature gates outside [`ALLOWED_FEATURES`], as `<crate>:<path>:<line> <name>`.
+    feature_sites: Vec<String>,
 }
 
 impl Default for CrateScan {
@@ -182,10 +222,12 @@ impl Default for CrateScan {
             .map(|(name, _)| ((*name).to_string(), 0))
             .collect();
         counts.insert("indexing".to_string(), 0);
+        counts.insert("unstable_features".to_string(), 0);
         Self {
             counts,
             production_lines: 0,
             files: 0,
+            feature_sites: Vec::new(),
         }
     }
 }
@@ -220,7 +262,12 @@ impl CrateScan {
             self.add(name, count(hits));
         }
         self.add("indexing", count_indexing(rules, &production));
-        let (functions_over_60, functions_over_logical) = scan_functions(rules, &production);
+        let label = format!("{crate_name}:{}", paths::relative(path));
+        let features = unallowed_features(rules, &production, &label);
+        self.add("unstable_features", count(features.len()));
+        self.feature_sites.extend(features);
+        let (functions_over_60, functions_over_logical) =
+            scan_functions(rules, &production, &label);
         Ok(Budgets {
             functions_over_60,
             functions_over_logical,
@@ -297,16 +344,42 @@ fn count_indexing(rules: &Rules, lines: &[String]) -> u64 {
     )
 }
 
+/// Crate-root feature gates that name a feature outside [`ALLOWED_FEATURES`].
+///
+/// The names on one gate line are split on commas, so `#![feature(a, b)]` reports one entry per
+/// disallowed name. A gate that spans lines cannot be read whole by a per-line scan; the names its
+/// first line carries are still checked, and the metric is a violation count rather than a census.
+fn unallowed_features(rules: &Rules, lines: &[String], label: &str) -> Vec<String> {
+    let mut sites: Vec<String> = Vec::new();
+    for (index, line) in lines.iter().enumerate() {
+        let Some(captures) = rules.feature_gate.captures(line) else {
+            continue;
+        };
+        let Some(names) = captures.get(1) else {
+            continue;
+        };
+        for name in names.as_str().split(',') {
+            let name = name.trim();
+            if name.is_empty() || ALLOWED_FEATURES.contains(&name) {
+                continue;
+            }
+            let at = index.saturating_add(1);
+            sites.push(format!("{label}:{at} {name}"));
+        }
+    }
+    sites
+}
+
 /// Functions over the physical and logical line budgets.
 ///
 /// Braces are counted on masked lines. A `{` that is character-literal, string-literal or comment
 /// text opens no block, and counting it left the walk's depth above zero for the rest of the file:
 /// `profile/html/state.rs`'s `decode` measured an 85-line span because of `rest.find('{')`, and every
 /// function after it was swallowed into that one span.
-fn scan_functions(rules: &Rules, production: &[String]) -> (usize, usize) {
+fn scan_functions(rules: &Rules, production: &[String], label: &str) -> (Vec<String>, usize) {
     let mut mask = CodeMask::default();
     let masked = mask.apply_all(production, &rules.char_literal);
-    let mut over_60 = 0usize;
+    let mut over_60: Vec<String> = Vec::new();
     let mut over_logical = 0usize;
     let mut index = 0usize;
     while let Some(line) = production.get(index) {
@@ -318,8 +391,15 @@ fn scan_functions(rules: &Rules, production: &[String]) -> (usize, usize) {
         let body = production
             .get(index..span_end.min(production.len()))
             .unwrap_or_default();
-        if span_end.saturating_sub(index) > FN_LINE_BUDGET {
-            over_60 = over_60.saturating_add(1);
+        let span = span_end.saturating_sub(index);
+        if span > FN_LINE_BUDGET {
+            let name = rules
+                .function
+                .captures(line)
+                .and_then(|captures| captures.get(1))
+                .map_or("<unnamed>", |name| name.as_str());
+            let start = index.saturating_add(1);
+            over_60.push(format!("{label}:{start}-{span_end} {name} ({span})"));
         }
         let logical = body
             .iter()
@@ -585,6 +665,7 @@ struct Rules {
     attribute: Regex,
     test_item: Regex,
     function: Regex,
+    feature_gate: Regex,
 }
 
 impl Rules {
@@ -600,6 +681,7 @@ impl Rules {
             attribute: compile(ATTRIBUTE_LINE)?,
             test_item: compile(TEST_ITEM_LINE)?,
             function: compile(FUNCTION)?,
+            feature_gate: compile(FEATURE_GATE)?,
         })
     }
 }

@@ -20,6 +20,7 @@
 
 mod common;
 
+use census_domain::UsJurisdiction;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use std::time::Duration;
@@ -378,7 +379,7 @@ async fn ohsaa_collect_from_a_seeded_cache_matches_golden() -> Result<()> {
         limit: None,
         refresh: false,
         observed_on: OBSERVED_ON.to_string(),
-        states: vec!["OH".to_string()],
+        states: vec![UsJurisdiction::Ohio],
         school_names: vec!["Dublin Coffman".to_string()],
     };
     let report = ohsaa::collect(&context(&fetcher, &store), &options).await?;
@@ -762,7 +763,7 @@ impl MeetRowFacts {
             location: location.clone(),
             slug: slug.clone(),
             aria_label: aria_label.clone(),
-            venue_state: wayzata::venue_state(location).map(str::to_string),
+            venue_state: wayzata::venue_state(location).map(|state| state.code().to_string()),
             level: wayzata::level_of(name),
         }
     }

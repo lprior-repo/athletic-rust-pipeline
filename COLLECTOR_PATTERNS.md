@@ -6,13 +6,20 @@ was observed to change mid-inventory, so all line numbers are a snapshot). Compa
 [`SOURCES_SURVEY.md`](SOURCES_SURVEY.md) (source inventory + the ≤2 RPS operating policy),
 [`PROFILE_REPLICATION.md`](PROFILE_REPLICATION.md) (cohort definition + phased plan).
 
+**Tree note (2026-09-21):** the in-flight work landed. `crates/midwest-census/**` and
+`crates/census-domain/**` are tracked in git now, the census domain types moved out of
+`crates/midwest-census/src/model.rs` into `crates/census-domain/src/{model,jurisdiction}.rs`, and
+`crates/midwest-census/src/net/` was rewritten into a module directory with retries, conditional GET
+and robots counting. Line numbers below are the 2026-09-20 snapshot; §2 carries a status column with
+what was re-checked on 2026-09-21.
+
 **Evidence labels.** `[READ]` = static source reading with file:line; `[RUN]` = a command executed in
 this session; `[RECORDED]` = a value taken from files the collector itself wrote. No `cargo`
 build/test/lint was executed, so no behavioural claim below is an execution claim. The three claims
 that carry the most weight were re-verified directly (`[RUN]` grep over
 `crates/midwest-census/src`: zero matches for `retry|backoff|429|Retry-After|FetchError::Http`;
 `net/execute.rs` contains `expect("host registered")`; `FetchStats` is only ever cloned into in-memory
-reports).
+reports). **Both of the first two of those had already changed by 2026-09-21** — see §2.
 
 ---
 
@@ -46,23 +53,23 @@ remain, and the main pipeline already contains working implementations of the *p
 | `src/runtime/source/retry.rs::next_delay` | **PATTERN ONLY** | `next_delay`: `Retry-After` wins, else `429 → [60,120,240] s`, other retryable → `[1,2,4] s`, clamp by attempt, floor at the pacing interval, `MAX_ATTEMPTS = 4`, `MAX_RETRY_DELAY = 86_400 s`, no jitter. This is the exact ladder the census transport lacks |
 | `src/cli/flow_control.rs::source_rules` | **PATTERN ONLY** | Server-side pattern+concurrency rules and refusal to shadow a stricter wildcard; the collector's equivalent is a per-host concurrency of 1 enforced in-process |
 
-### P1 — cohort seed (**already delivered, midwest only**)
+### P1 — cohort seed (**already delivered, midwest evidence only**)
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `model.rs::GradYear::of` / `ObservedGrade` | **REUSE AS-IS** | `grad_year = school_year.start + 13 - grade`; the cohort key is derived, never assumed, and the observation carries its source — this is the `SCOPE.md` evidence rule in code |
-| `model.rs::SchoolYear::containing` | **REUSE AS-IS** | Aug-1 boundary; grade evidence is season-bound by construction |
+| `census-domain/src/model.rs::GradYear::of` / `ObservedGrade` | **REUSE AS-IS** | `grad_year = school_year.start + 13 - grade`; the cohort key is derived, never assumed, and the observation carries its source — this is the `SCOPE.md` evidence rule in code |
+| `census-domain/src/model.rs::SchoolYear::containing` | **REUSE AS-IS** | Aug-1 boundary; grade evidence is season-bound by construction |
 | `sources/milesplit.rs::parse_roster` + `roster_entities` | **REUSE AS-IS** | Roster rows are dropped when the grad cell or name is missing (fail-closed), `identity_confidence = HIGH` only for the 2027 cohort |
 | `report/` (`build_census` + `write_census`) | **REUSE AS-IS** | Every cohort number is paired with a coverage counter; `co2027_multisource = 0` is reported honestly rather than papered over |
-| MaxPreps sitemap path (`PROFILE_REPLICATION.md` §1) | **GAP** | Not implemented anywhere; the census is Midwest-only and MileSplit/association-seeded |
+| MaxPreps sitemap path (`PROFILE_REPLICATION.md` §1) | **GAP** | Not implemented anywhere; the census is MileSplit/association-seeded (2026-09-21: the jurisdiction type covers all 51 US jurisdictions and the MileSplit host is derived per jurisdiction, but the *ingested* evidence is still Midwest state associations plus MileSplit rosters) |
 
 ### P2 — performances + grade evidence per row (the main gap)
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `model.rs::CanonicalPerformance` | **REUSE AS-IS** | `{athlete, team, event, meet, date, mark, wind_mps, place, heat, round, timing, observed_grade, evidence, source_key}` — already the full field set the target requires |
-| `model.rs::EventKind` + `SourceEventLabel` | **REUSE AS-IS** | 35 canonical variants with `Unmapped{label}` preservation; `from_source_label` maps vendor labels without losing the raw string |
-| `model.rs::Mark` | **ADAPT** | `Raw(String)` keeps unparsed marks honest, but the numeric variants are `f64`; the main pipeline's integer-exact parsers are strictly better (below) |
+| `census-domain/src/model.rs::CanonicalPerformance` | **REUSE AS-IS** | `{athlete, team, event, meet, date, mark, wind_mps, place, heat, round, timing, observed_grade, evidence, source_key}` — already the full field set the target requires |
+| `census-domain/src/model.rs::EventKind` + `SourceEventLabel` | **REUSE AS-IS** | 35 canonical variants with `Unmapped{label}` preservation; `from_source_label` maps vendor labels without losing the raw string |
+| `census-domain/src/model.rs::Mark` | **ADAPT** | `Raw(String)` keeps unparsed marks honest, but the numeric variants are `f64`; the main pipeline's integer-exact parsers are strictly better (below) |
 | `store/entities.rs::Entity for CanonicalPerformance` + `source_key` | **ADAPT** | `source_key` is documented as the idempotent-upsert key but **no consumer exists** — wire it into `merge` or delete it; a documented-but-unused idempotency key is exactly what the verification lane will flag |
 | MileSplit `/raw` HY-TEK text + performance API (`SOURCES_SURVEY.md` §2) | **GAP** | Nothing in the crate fetches per-performance data; `out/events.jsonl` and `out/performances.jsonl` are 0 B `[RECORDED]` |
 
@@ -70,7 +77,7 @@ remain, and the main pipeline already contains working implementations of the *p
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `model.rs::SourceNamespace` | **REUSE AS-IS** | Already declares `TfrrsAthlete`, `TfrrsTeam`, `DirectAthletics*`, `TimerMeet{provider}`, `LegacyAthleticNet{kind}` — the history sources are pre-modelled |
+| `census-domain/src/model.rs::SourceNamespace` | **REUSE AS-IS** | Already declares `TfrrsAthlete`, `TfrrsTeam`, `DirectAthletics*`, `TimerMeet{provider}`, `LegacyAthleticNet{kind}` — the history sources are pre-modelled |
 | `report/` (`ProviderCoverage`) | **REUSE AS-IS** | Already counts “Athletic.net URLs known without any Athletic.net request” — the no-broad-crawl thesis, measured |
 | TFRRS adapter | **GAP** | No module; TFRRS is static HTML with `ETag`s and one request per athlete career |
 
@@ -78,8 +85,8 @@ remain, and the main pipeline already contains working implementations of the *p
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `sources/wiaa/`, `ks.rs`, `ihsa/`, `mhsaa.rs`, `ohsaa/`, `mshsl/`, `plain_names/`, `coach_contacts.rs` | **REUSE AS-IS** | Association APIs/directories → staff → `CanonicalCoach` with `CoachRole` (AD is school-wide, never sport-bound) and per-field evidence; 526 KS + 526 emails already imported `[RECORDED]` |
-| `model.rs::CanonicalCoach` / `CoachRole` | **REUSE AS-IS** | Role + optional sport binding + professional email + phone, all evidence-carrying |
+| `sources/wiaa/`, `ks.rs`, `ihsa/`, `ohsaa/`, `mshsl/`, `plain_names/`, `coach_contacts.rs` (2026-09-21: there is no `mhsaa.rs` module; `mhsaa` survives only as a host tag in `sources/coach_contacts/wire.rs`) | **REUSE AS-IS** | Association APIs/directories → staff → `CanonicalCoach` with `CoachRole` (AD is school-wide, never sport-bound) and per-field evidence; 526 KS + 526 emails already imported `[RECORDED]` |
+| `census-domain/src/model.rs::CanonicalCoach` / `CoachRole` | **REUSE AS-IS** | Role + optional sport binding + professional email + phone, all evidence-carrying |
 | GPA as a nullable field with a source enum | **GAP** | Not modelled yet; plan §6 requires `recruiting_profile | academic_list | school_page` and never-inferred values |
 
 ### P5 — verification lane (deterministic gates first)
@@ -94,7 +101,7 @@ remain, and the main pipeline already contains working implementations of the *p
 | `assessment.rs::admit` + `ByteCount` | **PATTERN ONLY → port** | Replays the runtime's per-row byte budget instead of trusting it — directly reusable as the collector's per-athlete parse budget |
 | `src/runtime/reviewer/mod.rs::LocalReviewer` | **PATTERN ONLY** | Durable object, one lane key, request content-addressed **before** the call, `blocked` latch on artifact failure, cooldown = max `Retry-After`, receipts retained through exhaustion. The collector's AI lane should copy this shape without Restate |
 | `reviewer/model.rs::ChatRequest` + `input.rs::prepare` | **REUSE AS-IS (shape)** | OpenAI-compatible request typing and 3-line endpoint/model resolution; the prompt text itself is task-specific (`PATTERN ONLY`) |
-| `review_case.rs` / `model.rs::Review*` protocol types | **PATTERN ONLY** | Verdict + evidence envelope for “AI proposes, deterministic gate decides” |
+| `src/runtime/review_case.rs` / `src/runtime/protocol.rs::Review*` protocol types | **PATTERN ONLY** | Verdict + evidence envelope for “AI proposes, deterministic gate decides” |
 
 ### P6 — PR computation (deterministic only)
 
@@ -110,6 +117,22 @@ remain, and the main pipeline already contains working implementations of the *p
 ---
 
 ## 2. Transport defects found in `crates/midwest-census` (each is small and blocking)
+
+**Status re-checked 2026-09-21** against the current tree (`net/` is now a module directory:
+`net/{mod,request,execute,execute/attempt,cache,robots,decode,client,tests}.rs`). The list below is
+the 2026-09-20 snapshot; four of the nine are fixed and one is structurally different:
+
+| # | 2026-09-20 finding | Status 2026-09-21 |
+|---|---|---|
+| 1 | 429/5xx returned as `Ok`, no backoff, `FetchError::Http` never constructed | **Fixed.** `FetchError::Http` carries the status; `retry_loop` retries transient statuses (`FetchError::retryable`: 429/5xx) up to `MAX_RETRIES = 3` with `wait_backoff`, and `status_verdict` fails 404 when `allow_not_found` is false (`net/execute/attempt.rs`, `net/mod.rs:57-58,80,147`) |
+| 2 | Conditional GET unreachable; 304 replays a cached error body | **Fixed.** A 304 goes to `replay_cached`, which publishes the cached body with refreshed timestamps and counts `stats.conditional_304` (`net/execute/attempt.rs:70,136`) |
+| 3 | Cache key is request-keyed, not content-addressed; no `body_sha256 → key` index | **Still true.** `Fetcher::key_for` still hashes `method ␟ url ␟ extra`, and `CacheMeta.sha256` is still the 16-byte body prefix (`net/cache.rs`) |
+| 4 | robots.txt fetches bypass pacing and counters and fail open on 5xx | **Still true.** `robots_for` calls `fetch_text_uncached`, which uses the raw client with no host gate and no `FetchStats`, and any non-200 (including 5xx) leaves `fetched: false`, i.e. allow-all (`net/robots.rs:45-79`) |
+| 5 | `hosts.get_mut(host).expect("host registered")` panic surface in the pacing path | **Fixed.** No `expect(`/`unwrap()` remains in `crates/midwest-census/src` outside `#[cfg(test)]` (the gate's scan records `expect = 0`, `unwrap = 0` for the crate) |
+| 6 | `FetchStats` never persisted; no run log | **Partly true.** Per-adapter stats now flow into `AdapterReport` (`sources/mshsl/collect/run.rs:235`, `sources/wiaa/collect.rs:96`) and are printed, but no `out/run-*.json` writer exists in the crate |
+| 7 | `let _ = store.journal_done(...)` discards the append result | **Fixed.** `record_roster` matches on the journal result and reports the failure (`census/sweep.rs:105-110`) |
+| 8 | Tail-tolerance inverted: append-log reader `bail!`s on the first bad line | **Structurally changed, not re-verified.** The JSONL path is now the one-time legacy import (`store/legacy.rs`, line-oriented `BufReader::lines()`); whether a crash-truncated tail still wedges it was not exercised |
+| 9 | No global concurrency bound and no signal drain for the batch CLI | **Still true for the batch CLI.** Fan-out is still `concurrency × state_concurrency` (`census/mod.rs`); the drain protocol belongs to the service (`bootstrap/stop.rs`, `drain.rs`), not to `midwest-census collect` |
 
 1. **429/5xx are returned as `Ok`.** `FetchError::Http` (net/mod.rs::FetchError) is never constructed `[RUN]`; a
    non-2xx is counted in `stats.errors` and `warn!`ed (net/execute.rs::fetch) and then handed back as a
@@ -170,9 +193,11 @@ remain, and the main pipeline already contains working implementations of the *p
 - **One prerequisite if the collector is ever wired into the pipeline:** `runtime/config.rs::validate_source`
   hard-pins `https://www.athletic.net/` and `RawConfig` carries a single `source_origin`/`source_interval_ms`.
   A second host needs a per-origin allowlist with per-origin intervals before anything else works.
-- **Coordination note:** `crates/` and `var/` are untracked and were being written by another session
-  during this inventory. Nothing in this document should be applied to those files before that
-  session's changes land.
+- **Coordination note (updated 2026-09-21):** the earlier warning that "`crates/` and `var/` are
+  untracked and were being written by another session" no longer applies to `crates/` — it is tracked
+  in git (`git ls-files crates` lists it, including `crates/census-domain/**`). `var/` remains
+  untracked runtime output. Nothing in this document should be applied to another session's files
+  without checking who owns them (`AGENTS.md` §2).
 
 ---
 

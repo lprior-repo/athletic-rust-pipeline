@@ -1,0 +1,87 @@
+{
+  "lane": "state-assoc-mountain",
+  "captured_utc_window": ["2026-09-22T03:54:26Z", "2026-09-22T04:10:23Z"],
+  "captured_utc_window_note": "first and last timestamps in samples/.captures.tsv (the harness log, 128 rows); the six AIA PDF/extract files in samples/ predate the harness log and are listed as derived in samples/CAPTURES.md",
+  "policy": {
+    "fetch": "anonymous curl only, <=1 req/s per host (probe.sh sleeps 1.2 s)",
+    "robots_checked_first": true,
+    "robots_disallowed_paths_not_fetched": ["https://uhsaa.org/v2/historical-cross-country-results/", "https://uhsaa.org/v2/historical-track-field-results/", "https://uhsaa.org/v2/**"],
+    "auth_or_paywall_bypassed": false
+  },
+  "jurisdictions": {
+    "AZ": {
+      "association": "AIA",
+      "enumerates_school_universe": {"yes": true, "count": 287, "mechanism": "https://aiaonline.org/alignments/2026/ (287 unique /alignments/2026/operators/<id>), corroborated by /alignments/2026/operators/ (287 ids)", "sample": "samples/aia-alignments.html"},
+      "enumerates_sport_participation": {"yes": true, "counts": {"xc_boys_teams": 252, "xc_girls_teams": 251, "tf_boys_teams": 267, "tf_girls_teams": 266}, "mechanism": "per-activity alignment pages", "sample": "samples/aia-alignments-activities.html"},
+      "enumerates_athletes": {"yes": false, "note": "AIA delegates entries to Athletic.net; only state result PDFs carry athletes", "sample": "samples/aia-2026-xc-tournament-guide.pdf"},
+      "enumerates_coaches_ad": {"yes": true, "fields": ["name", "role", "tel"], "emails_published": false, "sample": "samples/aia-school-detail-58.html"},
+      "athlete_grade_published": {"xc": true, "tf": false, "sample": "samples/aia-state-xc-2025-pdf-page3.txt"},
+      "historical_depth_observed": {"xc_result_sets": 33, "tf_result_sets": 30, "earliest": "2001 Cross Country 1A-3A State Championships", "sample": "samples/azpreps365-results-xc-boys.html"},
+      "gaps": ["/schools/search.json caps at 20 rows with no paging (limit=500 and page=2 both returned 20)", "state XC results ship as one 22.4 MB PDF per season"]
+    },
+    "CO": {
+      "association": "CHSAA",
+      "enumerates_school_universe": {"yes": true, "count": 378, "member_types": {"Member": 363, "Preliminary": 7, "Activity": 8}, "mechanism": "server-rendered React payload on /schools", "sample": "samples/chsaa-schools-path.html"},
+      "enumerates_sport_participation": {"yes": true, "mechanism": "per-school activity alignment lists (e.g. Cherry Creek 34 activities incl. Boys Cross Country 5A)", "sample": "samples/chsaa-school-cherry-creek.html"},
+      "enumerates_athletes": {"yes": false, "note": "athlete-level records live with Rapid Results Timing / TFMeetPro (XC) and in the end-of-meet Hy-Tek PDF (TF)"},
+      "enumerates_coaches_ad": {"yes": "partial", "fields": ["name", "position"], "emails_published": false, "note": "per-school staff tab contents are fetched client-side; endpoint not captured", "sample": "samples/chsaa-schools-staff.html"},
+      "athlete_grade_published": {"tf": true, "xc": "not measured", "sample": "samples/chsaa-media-tf-state-results-5a-2026.pdf"},
+      "historical_depth_observed": {"championship_titles_history": "15 most recent of 209 titles for Boys Cross Country, back to 1976", "sample": "samples/chsaa-xc-champions.html"},
+      "gaps": ["schools.chsaa.org is authentication-only (redirects to /login)", "staff directory contents behind client-side fetch", "one Calameo digital-program link now 404s"]
+    },
+    "ID": {
+      "association": "IDHSAA",
+      "enumerates_school_universe": {"yes": true, "count": 174, "headline_claim": 173, "discrepancy": "the page headline says 173 but the table renders 174 unique rows", "classes": {"1A": 42, "2A": 36, "3A": 30, "4A": 21, "5A": 25, "6A": 20}, "sample": "samples/idhsaa-directory.html"},
+      "enumerates_sport_participation": {"yes": false, "note": "no per-school XC/TF sponsorship published; Athletic.net state-meet entries are the proxy"},
+      "enumerates_athletes": {"yes": false, "sample": "samples/athleticnet-idhsaa-xc-state-263030.html"},
+      "enumerates_coaches_ad": {"yes": true, "fields": ["AD Name", "AD Phone", "AD Email"], "emails_published": true, "obfuscation": "base64 behind document.write(window.atob('...'))", "school_rows": 174, "sample": "samples/idhsaa-directory.html"},
+      "athlete_grade_published": {"note": "not on association pages"},
+      "gaps": ["/rosters returns 404", "directory count mismatch 173 vs 174", "results only via Athletic.net links, which answer a Cloudflare challenge to curl"]
+    },
+    "MT": {
+      "association": "MHSA",
+      "enumerates_school_universe": {"yes": true, "count": 184, "enrollment_total": 45205, "note": "2 of the entries are out-of-state schools (Grenora ND, Mullan ID)", "mechanism": "2024-25 Fall Enrollment PDFs (alphabetical + by classification)", "sample": "samples/mhsa-enrollment-alpha.pdf"},
+      "enumerates_sport_participation": {"yes": false, "note": "per-class counts not extracted; per-school sponsorship not published"},
+      "enumerates_athletes": {"yes": false},
+      "enumerates_coaches_ad": {"yes": false, "note": "member directory is ArbiterSports-hosted and JS-only (https://live.arbiter.io/org/4497); only association sport contacts are published as mailto links"},
+      "athlete_grade_published": {"note": "no athlete-level data published by MHSA"},
+      "gaps": ["Arbiter SPA shell only (4278 B)", "Competitive Timing results page renders client-side", "no on-site athlete-level results"]
+    },
+    "NM": {
+      "association": "NMAA",
+      "enumerates_school_universe": {"yes": true, "count_xc": 126, "count_tf": 156, "per_class": {"xc": {"5A": 25, "4A": 29, "3A": 25, "2A": 26, "A": 21}, "tf": {"5A": 25, "4A": 29, "3A": 28, "2A": 33, "A": 41}}, "mechanism": "Section IV Classification & Alignment PDF 2026-2028 (explicit TOTAL lines + district lists)", "sample": "samples/nmaa-section4-classification.pdf"},
+      "member_schools_page": {"server_rendered_list": false, "note": "/member-schools/ renders no school table (0 <tr>)", "sample": "samples/nmaa-member-schools.html"},
+      "enumerates_athletes": {"yes": true, "mechanism": "state-championship roster PDFs with grade; 4A/5A boys 361 entries, grade histogram {8: 15, 9: 41, 10: 82, 11: 110, 12: 113}", "sample": "samples/nmaa-2026-4a5a-boys-rosters.pdf"},
+      "enumerates_coaches_ad": {"yes": false, "note": "/for-coaches/ and /for-athletic-directors/ are resource hubs (31 and 6 PDF links, 2 mailto each); no coach directory", "sample": "samples/nmaa-for-coaches.html"},
+      "athlete_grade_published": {"xc": true, "tf_rosters": true, "tf_results": "Hy-Tek results pages (relay/individual) without a per-athlete grade column in the captured pages", "sample": "samples/nmaa-2025-cc-results.pdf"},
+      "historical_depth_observed": {"records_page_years": ["2022", "2023", "2024", "2025"], "timer_archive_from": 2021, "sample": "samples/nmaa-records.html"},
+      "gaps": ["live-results host liverunningresults.com carries a NON-COMMERCIAL-use copyright restriction", "member-schools page needs a browser", "live results are provisional; finals are published as PDFs"]
+    },
+    "UT": {
+      "association": "UHSAA",
+      "enumerates_school_universe": {"yes": true, "count": 162, "classes": {"6A": 17, "5A": 29, "4A": 34, "3A": 17, "2A": 35, "1A": 30}, "mechanism": "server-rendered data-school anchors on /school-directory-new/ + independent class->region->school tables in the 2025-27 alignment PDF", "sample": "samples/uhsaa-school-directory.html"},
+      "enumerates_sport_participation": {"yes": true, "mechanism": "https://uhsaa.org/ParticipationNumbers.pdf 2026-27 per-school X-mark matrix", "measured": {"rows_with_marks": 92, "total_marks": 2109, "attributed_per_xc_tf_column": 74, "caveat": "[INFERENCE] the four XC/TF column attributions carry +/-1-column ambiguity (rotated headers); the 92/2109 totals are exact"}, "sample": "samples/uhsaa-participation-numbers.pdf"},
+      "enumerates_athletes": {"yes": false, "reason": "RunnerCard results host returned 503 on two attempts; no association-side athlete data"},
+      "enumerates_coaches_ad": {"yes": true, "fields": ["Principal", "Ast. Principal Over Athletics", "Athletic Director", "Athletic Trainer", "per-sport coach", "coach email (mailto)"], "per_school_pages": 162, "measured_example": {"school": "Alta", "ad": "Jim Langford", "xc_coach": "Rebecca Bennion", "mailto_targets": 25}, "sample": "samples/uhsaa-school-alta.html"},
+      "athlete_grade_published": {"note": "no athlete grade published by UHSAA"},
+      "blocked": {"results_host": "results.runnercard.com", "status": 503, "body": "No server is available to handle this request.", "attempts": 2, "fallback_origin": "http://66.29.162.100/Results/ViewResults.html?class=server&meetid=1001674", "fallback_result": "connection failed, no body written"}
+    },
+    "WY": {
+      "association": "WHSAA",
+      "enumerates_school_universe": {"yes": "count only", "count": 70, "classes": {"4A": 16, "3A": 16, "2A": 18, "1A": 20}, "names_published": false, "mechanism": "forms/2026-28ADMs.pdf (single page of class counts)", "sample": "samples/whsaa-2026-28-adms.pdf"},
+      "unreachable": {"https://www.whsaa.org/schools/": 403, "https://www.whsaa.org/archives/": 403, "https://www.whsaa.org/track/": 403, "https://www.whsaa.org/whsaa/members.html": 404, "https://www.whsaa.org/xc/": 404, "robots": "https://www.whsaa.org/robots.txt 404 (no published policy)"},
+      "enumerates_sport_participation": {"yes": false},
+      "enumerates_athletes": {"yes": false},
+      "enumerates_coaches_ad": {"yes": false},
+      "athlete_grade_published": {"note": "nothing published anonymously"},
+      "result_linkage": {"platform": "MileSplit Live", "url": "https://milesplit.live/meets/681838", "athletic_net_matches_in_captured_pages": 0, "sample": "samples/whsaa-track-state.html"}
+    }
+  },
+  "totals": {
+    "jurisdictions_with_measured_school_universe": ["AZ", "CO", "ID", "MT", "NM", "UT", "WY"],
+    "jurisdictions_with_athlete_level_grade_data": ["NM"],
+    "jurisdictions_with_coach_or_ad_contacts": ["AZ", "ID", "UT"],
+    "jurisdictions_with_zero_anonymously_reachable_result_data": ["WY"],
+    "samples_files": 125
+  }
+}

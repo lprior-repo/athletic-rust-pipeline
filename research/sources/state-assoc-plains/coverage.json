@@ -1,0 +1,315 @@
+{
+  "lane": "state-assoc-plains",
+  "jurisdictions": ["IA", "KS", "MN", "MO", "ND", "NE", "SD"],
+  "observed_on": "2026-09-22",
+  "evidence_kinds": {
+    "measured_fresh": "count computed by this lane from a capture listed in samples/CAPTURES.md (command recorded there)",
+    "measured_repo": "count computed from a retained repo fixture",
+    "downloads_capture": "count computed from a ~/Downloads/midwest-tfxc-source-research capture",
+    "report_citation": "count as stated in a Midwest report (verbatim quote available at the cited line)"
+  },
+  "ADAPTER_STATUS_LEGEND": {
+    "implemented": "an adapter module exists in crates/midwest-census/src/sources/",
+    "none": "no adapter module exists; the source is unscraped by the pipeline",
+    "state_filter_today": "every existing adapter declares `pub states: Vec<String>`; the jurisdiction-typing lane converts these to Vec<UsJurisdiction>"
+  },
+  "jurisdictions": {
+    "IA": {
+      "association": {
+        "name": "Iowa High School Athletic Association (IHSAA) + Iowa Girls High School Athletic Union (IGHSAU)",
+        "url": "https://www.iahsaa.org/",
+        "robots": "https://www.iahsaa.org/robots.txt -> 200, 146 B: Disallow /wp-admin/, /search/, /*?*; Sitemap /sitemap.xml (fresh capture; apex iahsaa.org redirects to www and serves the identical 146 B file)"
+      },
+      "school_universe": [
+        {"count": 362, "what": "distinct /schools/<slug>/ slugs on the member-schools page", "evidence": "samples/iahsaa-member-schools-2026-09-22.html (fresh; 380 <tr>, 363 link rows, 362 distinct slugs)", "kind": "measured_fresh"},
+        {"count": 379, "what": "IHSAA member schools (report figure for the same page, one day earlier)", "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:21", "kind": "report_citation"},
+        {"count": 379, "what": "IGHSAU BEDs 2026-27 member list with grade 9/10/11 enrollment; 368/379 join to IHSAA after normalization", "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:21-22", "kind": "report_citation"},
+        {"count": 444, "what": "Bound Iowa school index entries (378 HS + 51 middle/JH + 15 club/college/other) - NOT a member list", "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:27", "kind": "report_citation"}
+      ],
+      "track_xc_participation": [
+        {"count": 351, "what": "schools classed in IHSAA FINAL T&F 2026 classifications (4A 48, 3A 64, 2A 96, 1A 143); 28 of 379 members unclassed", "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:23", "kind": "report_citation"},
+        {"count": 365, "what": "Bound team cards for 2025-26 boys T&F (one per school entry)", "evidence": "~/Downloads/midwest-tfxc-source-research/tools/iowa-11/bound-ihsaa-boystrack-teams-2025-26.csv", "kind": "downloads_capture"}
+      ],
+      "result_surfaces": [
+        {"surface": "Wayzata Timing on AthleticLIVE (state T&F 2021-2025, state XC 2024-2025)", "ids": ["results.wayzatatiming.com/meets/73956 (2026 T&F)", "results.wayzatatiming.com/meets/53818 (2025 T&F)", "results.wayzatatiming.com/meets/58504 (2025 XC)", "results.wayzatatiming.com/meets/41636 (2024 XC)"], "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:15,56", "kind": "report_citation"},
+        {"surface": "IGHSAU 2026 state T&F results PDF", "ids": ["ighsau.nyc3.digitaloceanspaces.com/2026-track/results.pdf (200, 1.2 MB)"], "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:56", "kind": "report_citation"},
+        {"surface": "IHSAA state-qualifying XC per-meet PDFs under iahsaa.org/wp-content/uploads/YYYY/MM/", "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:56", "kind": "report_citation"},
+        {"surface": "IATC weekly meet index (regular-season discovery)", "ids": ["https://www.iatrackcoaches.org/results/"], "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:85", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "nothing - IHSAA member rows carry School | Nickname | Colors | Conference only; no AD or coach field exists on the surface",
+        "best_source": "Bound school directory /ia/schools/<slug>/directory/new",
+        "measured": {"rows_in_consolidated_product": 83, "named_coaches": 49, "coach_emails": 3, "ad_emails": 2, "evidence": "~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv (recounted by this lane)", "kind": "downloads_capture"}
+      },
+      "athletic_net_linkage": {
+        "bound_to_an": "zero - 0 occurrences of 'athletic.net' across all 41 saved Bound-origin pages",
+        "real_link": "timing chain: live.athletic.net/meets/<id> routers to the tenant host (75990 -> dakotatiming.anet.live/meets/75990, 200); anet core meet id from an ATN meet id remains unverified",
+        "tenant_origins": 258,
+        "evidence": "research/midwest/11-iowa-ihsaa-ighsau.md:73,78-84"
+      },
+      "timing_providers": ["Wayzata Timing (AthleticLIVE)", "dakotatiming.anet.live", "bwracingservices.anet.live", "aatiming.com", "resultscm.com", "results.blacksquirreltiming.com", "crosscountryratings.com", "results.truetimeracing.com"],
+      "adapter": {
+        "status": "none",
+        "verified_absent": "grep -rn 'iahsaa|ighsau' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "not_collected": "everything: schools, coaches, results",
+        "recommendation": "DISCOVERY_SOURCE via Bound + AthleticLIVE timing chain; the association itself is a VALIDATION_SOURCE (classification lists only)"
+      },
+      "gaps": ["no robotted coach/AD data on iahsaa.org", "Bound exposes no Athletic.net ids", "IA XC/TF regular season is timer-fragmented (8+ hosts)"]
+    },
+
+    "KS": {
+      "association": {
+        "name": "Kansas State High School Activities Association (KSHSAA)",
+        "url": "https://www.kshsaa.org/",
+        "api_host": "https://kshsaa-api.kshsaa.org/",
+        "robots": "www.kshsaa.org/robots.txt -> 200, 135 B; kshsaa-api.kshsaa.org/robots.txt -> 404 (no file; RFC 9309 default = allow) (fresh captures)"
+      },
+      "school_universe": [
+        {"count": 526, "what": "KS school directory records carrying AD name + AD email (A-Z letter queries concatenated)", "evidence": "~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv (recounted by this lane); endpoint https://kshsaa-api.kshsaa.org/directory/search/name/a/", "kind": "downloads_capture"},
+        {"count": 940, "what": "rows from /Shared/GetSchools (championship-site school id space, distinct from KSHSAA Id)", "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:163", "kind": "report_citation"},
+        {"count": 348, "what": "schools in PublicClassifications 2026, by classId: 6:36, 5:36, 4:36, 3:64, 2:64, 1:112", "evidence": "samples/kshsaa-publicclassifications-2026-09-22.json (fresh; 31,885 B, parsed by this lane)", "kind": "measured_fresh"}
+      ],
+      "track_xc_participation": [
+        {"count": 286, "what": "graded XC rows in the 2025 state cohort endpoints (143 boys + 143 girls), of which 89 are grade 11 (50 boys + 39 girls)", "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:215,408-409 (RetrieveResultsByActivity activityID 57 boys / 56 girls: 63,930 B / 63,697 B)", "kind": "report_citation"},
+        {"count": 24, "what": "6A individual results 2025 (top 20 at Rim Rock Farm + 4 regional champions)", "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:408", "kind": "report_citation"}
+      ],
+      "result_surfaces": [
+        {"surface": "kshsaachamps.org individual results + RetrieveRoster (grade-bearing, champion-only)", "ids": ["ActivityYearClassID 8283 = 2025 6A XC boys", "ActivityYearClassIndividualResultID 187267", "RetrieveRoster?activityYearClassID=8283&schoolID=8 -> 200, 2,724 B, 10 athletes with Grade", "non-champion schoolID=648 -> 200, []"], "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:167-168,401-402", "kind": "report_citation"},
+        {"surface": "DirectAthletics KS (regular season)", "ids": ["/athletes/{sport}/{id}.html profile URLs"], "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:238-244", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "AD name + AD email on every directory record; athletics-director only",
+        "measured": {"records_with_ad": 526, "ad_emails": 526, "coach_emails": 0, "evidence": "coach-contacts.csv by-state recount", "kind": "downloads_capture"},
+        "deliberately_ignored": ["ADCell", "PrincipalCell", "SchoolPhone", "SchoolFax", "principal name/email", "TwitterUserName"]
+      },
+      "athletic_net_linkage": {"direct_links": "none observed on the KSHSAA surfaces", "join": "name + school + class + grade; the 89 grade-11 rows came from anet profile fetches", "evidence": "research/midwest/23-kansas-kshsaa-directathletics.md:215,355"},
+      "timing_providers": ["DirectAthletics (regular season)", "kshsaachamps (state)", "MileSplit (aggregator)"],
+      "adapter": {
+        "status": "implemented",
+        "module": "crates/midwest-census/src/sources/ks/",
+        "entry": "ks/collect.rs collect()",
+        "endpoint": "https://kshsaa-api.kshsaa.org/directory/search/name/a/ (1 request per run)",
+        "state_filter_today": {"file": "crates/midwest-census/src/sources/ks/collect.rs", "lines": "22-23", "signature": "pub states: Vec<String>"},
+        "collects": "CanonicalSchool (city, class, enrollment, website, kshsaa source identity, evidence) + CanonicalCoach (AD, honorific-stripped)",
+        "not_collected": ["PublicClassifications endpoint (class already present in the directory record)", "teams", "rosters", "athletes", "XC/TF participation", "kshsaachamps results", "assistant ADs", "non-AD coaches"],
+        "recommendation": "PRIMARY for the AD/school layer; RESULT_SOURCE for kshsaachamps is separate work"
+      },
+      "gaps": ["directory letter queries return junior-high rows too (~526 vs ~348 classified HS)", "DateModified is stale (2018-08-07..2026-07-08 range)", "no coach names beyond AD"]
+    },
+
+    "MN": {
+      "association": {
+        "name": "Minnesota State High School League (MSHSL)",
+        "url": "https://www.mshsl.org/",
+        "robots": "https://www.mshsl.org/robots.txt -> 200, 2,385 B (fresh capture): declares /jsonapi/**, /api/coaches/<nid>, /api/team-data/**"
+      },
+      "school_universe": [
+        {"count": 664, "what": "unique /schools/<slug> URLs in the MSHSL sitemap page 1 (page 1 holds 2,000 <loc> total: 664 schools + 1,097 tournaments + other nodes)", "evidence": "samples/mshsl-sitemap-page1-2026-09-22.xml (fresh; 341,086 B, parsed by this lane) + research/midwest/09-minnesota-mshsl.md:66", "kind": "measured_fresh"},
+        {"count": 1328, "what": "roster targets if every school's XC + T&F team nodes are walked (664 x 2)", "evidence": "research/midwest/09-minnesota-mshsl.md:165 (arithmetic restated from the same line)", "kind": "report_citation"}
+      ],
+      "track_xc_participation": [
+        {"count": 39, "what": "team nodes for one large school (Wayzata) across all activities; 4 of them are T&F/XC", "evidence": "crates/midwest-census/tests/fixtures/mshsl/team_nodes_aitkin.json + research/midwest/09-minnesota-mshsl.md:130 (Wayzata 39 teams, nid 589000-589038)", "kind": "measured_repo"},
+        {"count": 291, "what": "example MSHSL classification enrollment (Aitkin HS)", "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_aitkin-high-school.html", "kind": "measured_repo"}
+      ],
+      "result_surfaces": [
+        {"surface": "/api/team-data/scores/<schoolId>/<level>/<activityId> (score rows)", "evidence": "research/midwest/09-minnesota-mshsl.md:12", "kind": "report_citation"},
+        {"surface": "/api/team-data/schedule/<schoolId>/<level>/<activityId> (free Athletic.net MeetID per meet)", "ids": ["MeetID 666673 = 2026 state T&F meet (anet TrackAndField/meet/666673)"], "evidence": "research/midwest/09-minnesota-mshsl.md (headline + schedule section)", "kind": "report_citation"},
+        {"surface": "Punt return: regular-season results are NOT published by MSHSL; they live with the timers", "evidence": "research/midwest/09-minnesota-mshsl.md:headline", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "head coach + assistant coach names, roles, and school-domain professional emails, per team node; plus AD rows on the school page",
+        "measured": {"school_page_admin_rows": "role + name + phone/email (cfemail-obfuscated)", "coach_records": "free per team node", "evidence": "crates/midwest-census/tests/fixtures/mshsl/*.html|json", "kind": "measured_repo"},
+        "deliberately_ignored": ["FieldWorkPhone in the coach record (mixes school extensions with personal mobile numbers)", "office roles parsed from the school page (principal, superintendent, trainer, advisors, Title IX officer)"]
+      },
+      "athletic_net_linkage": {"direct_links": "state T&F meet via the timer's AthleticLIVE page (meet/666673); MeetID also present in the schedule JSON", "join": "MeetID is the strongest per-meet join of the seven states", "evidence": "research/midwest/09-minnesota-mshsl.md:headline"},
+      "timing_providers": ["AthleticLIVE (state meets, via MSHSL)", "Wayzata Timing", "various anet.live tenants"],
+      "adapter": {
+        "status": "implemented",
+        "module": "crates/midwest-census/src/sources/mshsl/",
+        "entry": "mshsl/collect.rs collect() + collect/run.rs",
+        "flow": "per school: school page (facts + AD rows) -> /jsonapi/views/teams/list_school team nodes -> /api/coaches/<nid> per team",
+        "state_filter_today": {"file": "crates/midwest-census/src/sources/mshsl/mod.rs", "lines": "67-68", "signature": "pub states: Vec<String>"},
+        "collects": "CanonicalSchool (name, slug, group id, enrollment, website, address) + CanonicalCoach (AD + head/assistant coaches with school-domain emails)",
+        "not_collected": ["/api/team-data/roster (in-season, per-athlete grade - the highest-value unimplemented surface)", "schedule/scores", "athletes", "results", "state-meet PDFs", "tournament brackets"],
+        "recommendation": "PRIMARY for MN school + coach identity; roster endpoint CONDITIONAL (in-season only)"
+      },
+      "gaps": ["roster endpoint is seasonal (in-season participation lists only)", "no regular-season results at the association level", "coach emails are opt-in per coach; many rows carry phone only"]
+    },
+
+    "MO": {
+      "association": {
+        "name": "Missouri State High School Activities Association (MSHSAA)",
+        "url": "https://www.mshsaa.org/",
+        "robots": "https://www.mshsaa.org/robots.txt -> 200, 670 B (fresh capture; a BOM+CR variant of the 634 B copy the peer lane retained - content-identical): many path-level disallows, two bot groups, then a trailing 'user-agent: *' + 'disallow: /' group. Under RFC 9309 group merging this reads as disallow-all for generic crawlers; the peer lane's independent robots checker reached the same verdict (refused at 2026-09-22T03:57:12Z). One 200 page fetch was performed for universe evidence, with the interpretation documented in samples/CAPTURES.md."
+      },
+      "school_universe": [
+        {"count": 1006, "what": "school listing rows on SchoolListing.aspx", "evidence": "samples/mshsaa-school-listing-2026-09-22.html (fresh; 1,006 <tr data-organizationtype>)", "kind": "measured_fresh"},
+        {"count": {"orgtype_1_senior_high": 316, "orgtype_2_junior_high": 360, "orgtype_3_combined_7_12": 330, "hs_level_total": 646}, "what": "organization type split", "evidence": "same capture (fresh parse by this lane)", "kind": "measured_fresh"},
+        {"count": {"member": 719, "affiliate": 257, "hsa": 30, "full_members_hs_level": 592}, "what": "membership split", "evidence": "same capture (fresh parse by this lane)", "kind": "measured_fresh"},
+        {"count": {"id_min": 2, "id_max": 1913, "rows": 1006, "id_gap_pct": 47.4}, "what": "school-id sparsity in the MySchool/?s=<id> space", "evidence": "same capture (fresh parse by this lane)", "kind": "measured_fresh"}
+      ],
+      "track_xc_participation": [
+        {"count": 646, "what": "senior-high or combined-7-12 organizations (the XC/T&F-eligible universe)", "evidence": "samples/mshsaa-school-listing-2026-09-22.html", "kind": "measured_fresh"}
+      ],
+      "result_surfaces": [
+        {"surface": "MSHSAA state-meet PDFs (text-based Hy-Tek output)", "ids": ["row example: '1 Tanner Briddle 12 Tina-Avalon 10.96 0.6 10 / 10.956 (10.956)'"], "evidence": "research/midwest/21-missouri-mshsaa.md:239,342", "kind": "report_citation"},
+        {"surface": "PrimeTime Timing (data.pttiming.com) for district/sectional + regular season", "ids": ["event ids 2874 / 9011 / 619619-family", "Athletic.net MeetID 619619"], "evidence": "research/midwest/22-missouri-primetime.md:120-145", "kind": "report_citation"},
+        {"surface": "Athletic.net MSHSAA path (no id)", "ids": ["/track-and-field-outdoor/usa/high-school/missouri/mshsaa"], "evidence": "research/sources/athleticnet/coverage.json:953", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "NOTHING - 'MSHSAA publishes no coach or athletic-director information on any public page reachable without authentication' (verified on two school pages: zero coach/AD fields, zero AD/coach links)",
+        "measured": {"rows_in_consolidated_product": 0, "coach_emails": 0, "ad_emails": 0, "evidence": "coach-contacts.csv has no MO rows at all (recounted by this lane)", "kind": "downloads_capture"},
+        "note": "MO is the only one of the seven with zero coach rows in the consolidated product"
+      },
+      "athletic_net_linkage": {"direct_links": "no ids; a path URL only", "join": "name + school + grade; PrimeTime exEntryLink sometimes carries an anet MeetID", "evidence": "research/midwest/21-missouri-mshsaa.md:270-276"},
+      "timing_providers": ["PrimeTime Timing (state + many districts)", "DAK Timing", "AthleticLIVE tenants"],
+      "adapter": {
+        "status": "none",
+        "verified_absent": "grep -rn 'mshsaa' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "not_collected": "everything: schools, coaches, results",
+        "recommendation": "RESULT_SOURCE via PrimeTime (HTML/PDF) — CONDITIONAL because 92% of the 2026 corpus is PDF and some is image-only; the association itself is VALIDATION_SOURCE at best and its robots reads disallow-all"
+      },
+      "gaps": ["district and sectional rounds have no association-side result artifact", "2026 PDFs: 28 of 352 events (7%) publish HTML vs 244 of 452 (53%) in 2025", "some 2026 PDFs are image-only scans (OCR explicitly out of scope)", "no coach/AD data anywhere"]
+    },
+
+    "ND": {
+      "association": {
+        "name": "North Dakota High School Activities Association (NDHSAA)",
+        "url": "https://ndhsaa.com/",
+        "robots": "https://ndhsaa.com/robots.txt -> 200, 24 B (fresh capture)"
+      },
+      "school_universe": [
+        {"count": 169, "what": "distinct https://ndhsaa.com/schools/<id>/<slug> links on the (single-page) /schools index", "evidence": "samples/ndhsaa-schools-2026-09-22.html (fresh; 97,754 B, recounted by this lane) + research/midwest/25-north-dakota-ndhsaa.md:50-59", "kind": "measured_fresh"},
+        {"count": 169, "what": "member high schools (cross-checked on ndhsaanow.com by the Midwest pass)", "evidence": "research/midwest/25-north-dakota-ndhsaa.md:50", "kind": "report_citation"}
+      ],
+      "track_xc_participation": [
+        {"count": 22, "what": "schools in the systematic coach-table sample (22/22 pages carry the offering table)", "evidence": "research/midwest/25-north-dakota-ndhsaa.md:188", "kind": "report_citation"}
+      ],
+      "result_surfaces": [
+        {"surface": "AthleticLIVE Elasticsearch index (search.athletic.live/heros_meet_list/_search)", "count": 6, "what": "ND 2026 XC meets indexed for 2026-08-15..2026-11-30", "ids": ["76088/277450 Orriginals Invite", "76109/277021", "76112/276762", "76117/272168", "76139/278116", "76140/278115"], "evidence": "samples/athleticlive-heros-nd-xc-2026-09-22.json (fresh POST) + research/midwest/25-north-dakota-ndhsaa.md:239", "kind": "measured_fresh"},
+        {"surface": "AthleticLIVE RTDB meet_<i>/liveRunStandings/<rui> (full per-athlete results with `y` grade and `ani`)", "ids": ["state XC 2025: AL meet 55421, anet 261403, Class A boys = rui 4-1, 234,753 B, 185 entries", "event ids 2144806-2144809"], "evidence": "research/midwest/25-north-dakota-ndhsaa.md:166,228", "kind": "report_citation"},
+        {"surface": "NDHSAA yearbook PDFs (last completed season)", "evidence": "research/midwest/25-north-dakota-ndhsaa.md", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "per-sport coach table on every school page (no email field exists) + AD/Activities Director names",
+        "measured": {"rows_in_consolidated_product": 39, "named_xc_tf_coach_rows": "17/22 boys XC, 16/22 girls XC, 19/22 boys TF, 19/22 girls TF on the 22-school sample", "coach_emails": 0, "evidence": "coach-contacts.csv (recounted) + research/midwest/25-north-dakota-ndhsaa.md", "kind": "downloads_capture"}
+      },
+      "athletic_net_linkage": {"direct_links": "anet ids appear only inside AthleticLIVE payloads, not on ndhsaa.com", "join": "AL meet id <-> anet MeetID pairs from the ES index (6 pairs above)", "evidence": "research/sources/athleticnet/coverage.json:956"},
+      "timing_providers": ["AthleticLIVE tenants (state meets stream there)"],
+      "adapter": {
+        "status": "implemented (ND half of plain_names)",
+        "module": "crates/midwest-census/src/sources/plain_names/",
+        "entry": "plain_names/mod.rs collect() -> nd_walk/nd_coaches (nd/nd_walk/nd_coaches submodules)",
+        "state_filter_today": {"file": "crates/midwest-census/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 163-170 (application: state == \"ND\")", "signature": "pub states: Vec<String>"},
+        "collects": "CanonicalSchool (name, grades, enrollment, website, address) + CanonicalCoach from the AD/principal/superintendent rows and the per-sport coach table (names only)",
+        "not_collected": ["athletes", "results", "AthleticLIVE meet enumeration", "co-op annotations", "classifications", "district Athletic.net meet ids"],
+        "recommendation": "PRIMARY for ND school + coach identity; AthleticLIVE ES index is the DISCOVERY_SOURCE for ND meets"
+      },
+      "gaps": ["two-roster rule: co-op teams are annotated in the sport cell, so school attribution needs the coop sheet", "no coach emails exist", "no association-published results beyond yearbooks"]
+    },
+
+    "NE": {
+      "association": {
+        "name": "Nebraska School Activities Association (NSAA)",
+        "url": "https://nsaahome.org/",
+        "form_host": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php",
+        "robots": "nsaahome.org/robots.txt -> 200, 31 B, Crawl-delay: 5 (fresh capture); secure.nsaahome.org/robots.txt -> 302 (fresh; no file served)"
+      },
+      "school_universe": [
+        {"count": 312, "what": "schools offered by the directory form (314 <option> minus the 'Select a school to view...' prompt and the 'View all schools' bulk control)", "evidence": "samples/nsaa-directory-form-2026-09-22.html (fresh; 11,585 B, parsed by this lane)", "kind": "measured_fresh"},
+        {"count": 8, "what": "school blocks in the retained fixture (the adapter parses one page per school)", "evidence": "crates/midwest-census/tests/fixtures/plain_names/nsaa_directory_export.html", "kind": "measured_repo"}
+      ],
+      "track_xc_participation": [
+        {"count": 8, "what": "district XC result files per season = 4 classes x 2 genders (Top 15 individuals per district + team scores, grade in parentheses)", "evidence": "research/midwest/24-nebraska-nsaa.md:243-246", "kind": "report_citation"},
+        {"count": 96, "what": "finisher rows in the one state XC race captured (view_plain_text.php?race_id=79870, 33,461 B)", "evidence": "research/midwest/24-nebraska-nsaa.md:247-248,368", "kind": "report_citation"}
+      ],
+      "result_surfaces": [
+        {"surface": "NSAA static textfile corpus (district XC HTML, state T&F 'textfile' plain text)", "ids": ["nsaa-static.s3.amazonaws.com/textfile/cc/ccbClassAResults.html", "abres26.txt (state T&F)"], "evidence": "~/Downloads/midwest-tfxc-source-research/tools/ne/ccbClassAResults.html + research/midwest/24-nebraska-nsaa.md", "kind": "downloads_capture"},
+        {"surface": "Precision Race Results on onlineraceresults.com (state XC full field with 1m/2m splits)", "ids": ["race_id 79870 (200, 33,461 B)", "group_id=33"], "evidence": "research/midwest/24-nebraska-nsaa.md:247,266", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "school facts + one staff row per role (Superintendent/Principal/AD/AD Secretary/Athletic Director/Assistant AD) + one coach per sport; NO email field anywhere",
+        "measured": {"rows_in_consolidated_product": 1528, "named_coaches": 1217, "coach_emails": 0, "ad_emails": 0, "evidence": "coach-contacts.csv (recounted by this lane)", "kind": "downloads_capture"}
+      },
+      "athletic_net_linkage": {"direct_links": ["AN meet/<MeetID>/results/all for district meets (research/midwest/24-nebraska-nsaa.md:140)"], "join": "AN district meet ids are known but the mapping table is not implemented"},
+      "timing_providers": ["Precision Race Results (onlineraceresults.com, id=37)"],
+      "adapter": {
+        "status": "implemented (NE half of plain_names)",
+        "module": "crates/midwest-census/src/sources/plain_names/",
+        "entry": "plain_names/mod.rs collect() -> nsaa_walk/nsaa_coaches (nsaa/nsaa_walk/nsaa_coaches submodules)",
+        "state_filter_today": {"file": "crates/midwest-census/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 170 (application: state == \"NE\")", "signature": "pub states: Vec<String>"},
+        "collects": "CanonicalSchool (address, conference, district, enrollment, mascot, colors, homepage) + CanonicalCoach from staff roles and per-sport coach rows (multi-name cells split per person)",
+        "not_collected": ["athletes", "results", "AL meet enumeration", "classifications", "district AN meet ids"],
+        "recommendation": "PRIMARY for NE school + coach identity (1,528 rows / 1,217 names); result layer separate"
+      },
+      "gaps": ["no emails at all", "district XC only gives Top 15 per district (not full fields)", "state XC full field requires the timer site, not NSAA"]
+    },
+
+    "SD": {
+      "association": {
+        "name": "South Dakota High School Activities Association (SDHSAA)",
+        "url": "https://sdhsaa.com/",
+        "robots": "sdhsaa.com/robots.txt -> 200, 156 B (fresh capture)"
+      },
+      "school_universe": [
+        {"count": 176, "what": "SDHSAA member schools (Bound association directory parse)", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:21,36", "kind": "report_citation"},
+        {"count": 207, "what": "distinct SD schools in the Athletic.net SD tree, identical name set for XC and TF", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:30", "kind": "report_citation"},
+        {"count": 153, "what": "SDHSAA schools that match an Athletic.net record by normalized prefix (86.9%); 23 unmatched, 53 AN records unmatched (co-op composites)", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:38", "kind": "report_citation"}
+      ],
+      "track_xc_participation": [
+        {"count": 400, "what": "grade-labelled boys XC finishers in the 2025-26 yearbook PDF, 106 of them grade 11; girls XC 383 rows / 74 grade 11", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:100", "kind": "report_citation"},
+        {"count": {"boys_tf_event_rows": 1299, "boys_tf_grade11_rows": 392, "girls_tf_event_rows": 1307, "girls_tf_grade11_rows": 305}, "what": "state T&F yearbook rows (upper bounds - athletes repeat per event/round)", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:100", "kind": "report_citation"}
+      ],
+      "result_surfaces": [
+        {"surface": "sdhsaa.com/cross-country-region/ (10 Athletic.net region meet links)", "ids": [277461, 278813, 278815, 278816, 278817, 278821, 278826, 278829, 278838, 278840], "evidence": "samples/sdhsaa-cross-country-region-2026-09-22.html (fresh; 286,293 B, parsed by this lane)", "kind": "measured_fresh"},
+        {"surface": "sdhsaa.com/Yearbook/{B,G}-CrossCountry.pdf and {B,G}-Track.pdf (last completed season only, ~4.6 MB for 4 files)", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:10-11,84,100", "kind": "report_citation"},
+        {"surface": "Bound calendar row carries both ids: calendar ID 4931063 <-> Athletic.net MeetID 278813 (name-independent join)", "evidence": "research/midwest/26-south-dakota-sdhsaa.md:58,75", "kind": "report_citation"}
+      ],
+      "coach_directory": {
+        "association_publishes": "nothing directly; coaches come from the Bound school directory",
+        "measured": {"rows_in_consolidated_product": 30, "named_coaches": 20, "coach_emails": 4, "ad_emails": 2, "evidence": "coach-contacts.csv (recounted by this lane); example row school=rapidcitystevens, Jesse Coy, Jesse.Coy@k12.sd.us", "kind": "downloads_capture"}
+      },
+      "athletic_net_linkage": {"direct_links": "10 region meet links (fresh capture) + Bound calendar MeetID column", "join": "Bound calendar ID <-> anet MeetID within one row", "evidence": "samples/sdhsaa-cross-country-region-2026-09-22.html + research/midwest/26-south-dakota-sdhsaa.md:75"},
+      "timing_providers": ["AthleticLIVE tenants", "Bound (no results published for state T&F: empty Result column)"],
+      "adapter": {
+        "status": "none",
+        "verified_absent": "grep -rn 'sdhsaa' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "not_collected": "everything: schools, coaches, results",
+        "recommendation": "DISCOVERY_SOURCE (sdhsaa.com region pages give free anet meet ids) + COACH_SOURCE via Bound; CONDITIONAL for results (yearbook PDFs, last season only)"
+      },
+      "gaps": ["regular-season results absent from SDHSAA and Bound", "state-meet results exist only as yearbook PDFs or on Athletic.net", "no athlete ids anywhere in the association lane"]
+    }
+  },
+  "cross_state": {
+    "consolidated_coach_product": {
+      "rows": 2298,
+      "by_state": {"NE": 1528, "KS": 526, "IA": 83, "ND": 39, "OH": 31, "SD": 30, "WI": 22, "IL": 16, "MI": 14, "MN": 9, "MO": 0},
+      "emails": {"coach_rows_with_email": 51, "ad_rows_with_email": 620},
+      "email_by_state": {"coach": {"WI": 17, "IL": 12, "OH": 15, "SD": 4, "IA": 3}, "ad": {"WI": 22, "MN": 7, "IL": 16, "MI": 14, "OH": 31, "SD": 2, "IA": 2, "KS": 526}},
+      "named_coaches_by_state": {"WI": 17, "IL": 12, "OH": 18, "SD": 20, "IA": 49, "NE": 1217},
+      "evidence": "~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv (all counts recounted by this lane)",
+      "kind": "downloads_capture"
+    },
+    "athleticlive_search_index": {
+      "endpoint": "POST https://search.athletic.live/heros_meet_list/_search",
+      "tenant_inventory": {"live_results": {"meet_docs": 75401, "with_an_id": 63439, "pct": 84.1}, "athleticlive": {"meet_docs": 18009, "with_an_id": 16047, "pct": 89.1}},
+      "evidence": "~/Downloads/midwest-tfxc-source-research/data/athleticlive-tenant-inventory.csv",
+      "kind": "downloads_capture"
+    },
+    "an_meet_id_availability_by_state": {
+      "MN": "MeetID in the MSHSL schedule JSON",
+      "SD": "10 region links + Bound calendar MeetID column",
+      "NE": "district AN meet links referenced in report 24",
+      "ND": "anet ids only inside AthleticLIVE payloads (6 pairs verified)",
+      "IA": "no direct ids; AN-family via AthleticLIVE meet ids",
+      "KS": "none observed",
+      "MO": "path URL only; PrimeTime exEntryLink sometimes carries one"
+    }
+  },
+  "open_questions": [
+    "Does the NDHSAA /schools index hide schools behind any filter? 169 links observed on the single page; no pager control found in the markup (the two 'next' strings are Alpine.js $nextTick calls).",
+    "Athletic.net core meet id for a given AthleticLIVE meet id remains unverified for IA (single probe returned 404).",
+    "MSHSAA robots.txt is read as disallow-all by two independent parsers; whether the operator intends that is unknown - it blocks a 1,006-school universe.",
+    "Are ND co-op teams resolvable from the NDHSAA sport-cell annotation alone, or is the coop sheet required (report 25 says a sheet exists)?"
+  ]
+}

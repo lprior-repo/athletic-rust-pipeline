@@ -1,0 +1,1454 @@
+{
+ "lane": "athleticnet",
+ "generated_utc": "2026-09-21",
+ "generated_by": "research/sources/athleticnet/samples/checks-enum-crosscheck.py (state table) + hand assembly from the captures in samples/",
+ "source": {
+  "name": "Athletic.net",
+  "hosts_observed": [
+   "www.athletic.net",
+   "angular.athletic.net",
+   "live.athletic.net",
+   "livestatic.athletic.net"
+  ],
+  "census_role": "PRIMARY (national high-school TF/XC results, rankings, athlete/team/meet identity)",
+  "jurisdiction_model": "Athletic.net publishes its own State-divType region per jurisdiction; the USPS code rides on the node as `state`"
+ },
+ "jurisdiction_coverage": {
+  "sport": "tf",
+  "season_id": 2026,
+  "indoor": false,
+  "nav_request": "GET /api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m&recordSetId=0&locationId=0&teamId=0&indoor=false",
+  "level_node": {
+   "id": 168416,
+   "name": "High School",
+   "divType": "Level",
+   "levelDivId": 168416
+  },
+  "country_node": {
+   "id": 167952,
+   "name": "   United States",
+   "divType": "Country"
+  },
+  "state_nodes_total": 53,
+  "state_nodes_in_regions": 52,
+  "state_nodes_elsewhere": [
+   {
+    "nav_path": "tree[0]",
+    "nav_id": 170770,
+    "name": "Wisconsin",
+    "note": "the selected region echoed into tree[]; duplicate of regions[74]"
+   }
+  ],
+  "mapped_to_UsJurisdiction": 51,
+  "out_of_scope_count": 1,
+  "out_of_scope": [
+   {
+    "nav_id": 170162,
+    "name": "Overseas",
+    "state": null,
+    "reason": "no USPS code; not one of the 51 UsJurisdiction variants - reported, not dropped"
+   }
+  ],
+  "distinct_usps_codes": 51,
+  "entries": [
+   {
+    "nav_path": "regions[1]",
+    "nav_id": 168417,
+    "usps": "AL",
+    "jurisdiction_variant": "Alabama",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[2]",
+    "nav_id": 168476,
+    "usps": "AK",
+    "jurisdiction_variant": "Alaska",
+    "sub_div_type": "Regions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[3]",
+    "nav_id": 168493,
+    "usps": "AZ",
+    "jurisdiction_variant": "Arizona",
+    "sub_div_type": "Conferences",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[4]",
+    "nav_id": 168503,
+    "usps": "AR",
+    "jurisdiction_variant": "Arkansas",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[5]",
+    "nav_id": 168546,
+    "usps": "CA",
+    "jurisdiction_variant": "California",
+    "sub_div_type": "Sections",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[16]",
+    "nav_id": 168811,
+    "usps": "CO",
+    "jurisdiction_variant": "Colorado",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[17]",
+    "nav_id": 168817,
+    "usps": "CT",
+    "jurisdiction_variant": "Connecticut",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[18]",
+    "nav_id": 168823,
+    "usps": "DE",
+    "jurisdiction_variant": "Delaware",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[19]",
+    "nav_id": 168833,
+    "usps": "DC",
+    "jurisdiction_variant": "DistrictOfColumbia",
+    "sub_div_type": "Leagues",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[20]",
+    "nav_id": 168842,
+    "usps": "FL",
+    "jurisdiction_variant": "Florida",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[21]",
+    "nav_id": 168928,
+    "usps": "GA",
+    "jurisdiction_variant": "Georgia",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[22]",
+    "nav_id": 169013,
+    "usps": "HI",
+    "jurisdiction_variant": "Hawaii",
+    "sub_div_type": "Regions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[23]",
+    "nav_id": 169019,
+    "usps": "ID",
+    "jurisdiction_variant": "Idaho",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[24]",
+    "nav_id": 169070,
+    "usps": "IL",
+    "jurisdiction_variant": "Illinois",
+    "sub_div_type": "Class",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": true,
+    "list_id_evidence": [
+     "IHSA publishes the list URL itself: rankings link .../rankings/list/169070/m/hj on the IHSA T&F page (research/midwest/13-illinois-ihsa.md:159)"
+    ]
+   },
+   {
+    "nav_path": "regions[25]",
+    "nav_id": 169137,
+    "usps": "IN",
+    "jurisdiction_variant": "Indiana",
+    "sub_div_type": "Regions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[26]",
+    "nav_id": 169178,
+    "usps": "IA",
+    "jurisdiction_variant": "Iowa",
+    "sub_div_type": "Class",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[27]",
+    "nav_id": 169215,
+    "usps": "KS",
+    "jurisdiction_variant": "Kansas",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[28]",
+    "nav_id": 169249,
+    "usps": "KY",
+    "jurisdiction_variant": "Kentucky",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[29]",
+    "nav_id": 169275,
+    "usps": "LA",
+    "jurisdiction_variant": "Louisiana",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[30]",
+    "nav_id": 169369,
+    "usps": "ME",
+    "jurisdiction_variant": "Maine",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[31]",
+    "nav_id": 169373,
+    "usps": "MD",
+    "jurisdiction_variant": "Maryland",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[32]",
+    "nav_id": 169400,
+    "usps": "MA",
+    "jurisdiction_variant": "Massachusetts",
+    "sub_div_type": "Districts",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[33]",
+    "nav_id": 169407,
+    "usps": "MI",
+    "jurisdiction_variant": "Michigan",
+    "sub_div_type": "Peninsula",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[34]",
+    "nav_id": 169465,
+    "usps": "MN",
+    "jurisdiction_variant": "Minnesota",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[35]",
+    "nav_id": 169493,
+    "usps": "MS",
+    "jurisdiction_variant": "Mississippi",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[36]",
+    "nav_id": 169578,
+    "usps": "MO",
+    "jurisdiction_variant": "Missouri",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[37]",
+    "nav_id": 169651,
+    "usps": "MT",
+    "jurisdiction_variant": "Montana",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[38]",
+    "nav_id": 169689,
+    "usps": "NE",
+    "jurisdiction_variant": "Nebraska",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[39]",
+    "nav_id": 169722,
+    "usps": "NV",
+    "jurisdiction_variant": "Nevada",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[40]",
+    "nav_id": 169739,
+    "usps": "NH",
+    "jurisdiction_variant": "NewHampshire",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[41]",
+    "nav_id": 169743,
+    "usps": "NJ",
+    "jurisdiction_variant": "NewJersey",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[42]",
+    "nav_id": 169769,
+    "usps": "NM",
+    "jurisdiction_variant": "NewMexico",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[43]",
+    "nav_id": 169804,
+    "usps": "NY",
+    "jurisdiction_variant": "NewYork",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[49]",
+    "nav_id": 169903,
+    "usps": "NC",
+    "jurisdiction_variant": "NorthCarolina",
+    "sub_div_type": "Schools",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[50]",
+    "nav_id": 170039,
+    "usps": "ND",
+    "jurisdiction_variant": "NorthDakota",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[51]",
+    "nav_id": 170050,
+    "usps": "OH",
+    "jurisdiction_variant": "Ohio",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[52]",
+    "nav_id": 170117,
+    "usps": "OK",
+    "jurisdiction_variant": "Oklahoma",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[53]",
+    "nav_id": 170124,
+    "usps": "OR",
+    "jurisdiction_variant": "Oregon",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[54]",
+    "nav_id": 170162,
+    "usps": null,
+    "jurisdiction_variant": null,
+    "sub_div_type": "Schools",
+    "in_scope": false,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false,
+    "out_of_scope_reason": "state=null in the nav payload: Athletic.net models Overseas as a State-divType region with no USPS code; UsJurisdiction has no variant and UsJurisdiction::parse(\"\") returns None"
+   },
+   {
+    "nav_path": "regions[55]",
+    "nav_id": 170180,
+    "usps": "PA",
+    "jurisdiction_variant": "Pennsylvania",
+    "sub_div_type": "Schools",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[56]",
+    "nav_id": 170206,
+    "usps": "RI",
+    "jurisdiction_variant": "RhodeIsland",
+    "sub_div_type": "Leagues",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[57]",
+    "nav_id": 170211,
+    "usps": "SC",
+    "jurisdiction_variant": "SouthCarolina",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[58]",
+    "nav_id": 170271,
+    "usps": "SD",
+    "jurisdiction_variant": "SouthDakota",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[59]",
+    "nav_id": 170275,
+    "usps": "TN",
+    "jurisdiction_variant": "Tennessee",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[60]",
+    "nav_id": 170305,
+    "usps": "TX",
+    "jurisdiction_variant": "Texas",
+    "sub_div_type": "Associations",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[69]",
+    "nav_id": 170581,
+    "usps": "UT",
+    "jurisdiction_variant": "Utah",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[70]",
+    "nav_id": 170610,
+    "usps": "VT",
+    "jurisdiction_variant": "Vermont",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[71]",
+    "nav_id": 170614,
+    "usps": "VA",
+    "jurisdiction_variant": "Virginia",
+    "sub_div_type": null,
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[72]",
+    "nav_id": 170658,
+    "usps": "WA",
+    "jurisdiction_variant": "Washington",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[73]",
+    "nav_id": 170754,
+    "usps": "WV",
+    "jurisdiction_variant": "WestVirginia",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   },
+   {
+    "nav_path": "regions[74]",
+    "nav_id": 170770,
+    "usps": "WI",
+    "jurisdiction_variant": "Wisconsin",
+    "sub_div_type": "Divisions",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": true,
+    "list_id_evidence": [
+     "nav.seasons[\"2026\"] == 170770 == regions[74].id (samples/har1-getnavinfo-wi-2026-hs-boys.json)",
+     "live request POST /api/v1/tfRankings/GetRankings body divListId=170770 -> division.ID=170770, Name=Wisconsin, ParentID=168416, SeasonID=2026 (samples/har1-getrankings-wi-170770-m-100m-p2-n102.json)"
+    ]
+   },
+   {
+    "nav_path": "regions[75]",
+    "nav_id": 170838,
+    "usps": "WY",
+    "jurisdiction_variant": "Wyoming",
+    "sub_div_type": "Classes",
+    "in_scope": true,
+    "role": "High-School state region list id for seasonId 2026 (outdoor)",
+    "list_id_verified_by_request": false
+   }
+  ],
+  "seasons_map": {
+   "scope": "the selected region only (Wisconsin)",
+   "key_form": "<seasonId> = outdoor, 1<seasonId> = indoor",
+   "outdoor_keys": 22,
+   "outdoor_first": 2006,
+   "outdoor_last": 2027,
+   "indoor_keys": 21,
+   "indoor_first": 12007,
+   "indoor_last": 12027,
+   "examples": {
+    "2027": 181951,
+    "2026": 170770,
+    "12026": 175082
+   },
+   "consequence": "a per-state season-id matrix needs one session-bound GetNavInfo per state; the 52 regions[] list ids this file maps are the seasonId=2026 outdoor lists"
+  },
+  "second_tier_in_nav": {
+   "count": 23,
+   "by_state": {
+    "CA": 10,
+    "TX": 8,
+    "NY": 5
+   },
+   "note": "depth-2 Section/Association/League nodes ship in the same payload for three states; every other state's second tier needs its own nav call"
+  },
+  "event_vocabulary": {
+   "events": 283,
+   "events_main": 36,
+   "by_type": {
+    "T": 240,
+    "F": 35,
+    "M": 8
+   },
+   "relays": 96,
+   "hurdles": 57,
+   "note": "eventShort is the request key for both GetRankings and GetResultsData3; EventID is gender-qualified"
+  },
+  "sub_div_type_counts": {
+   "Classes": 18,
+   "Divisions": 10,
+   "Associations": 9,
+   "Regions": 3,
+   "Schools": 3,
+   "Leagues": 2,
+   "Class": 2,
+   "Conferences": 1,
+   "Sections": 1,
+   "Districts": 1,
+   "Peninsula": 1,
+   "null": 1
+  },
+  "accounting": {
+   "nav_state_nodes_total": 53,
+   "nav_nodes_in_regions_array": 52,
+   "nav_nodes_elsewhere": 1,
+   "elsewhere_detail": "tree[0] = the selected region (Wisconsin, 170770) echoed back; duplicate of regions[74]; not a 53rd jurisdiction",
+   "mapped_to_UsJurisdiction": 51,
+   "distinct_usps_codes": 51,
+   "not_a_jurisdiction": 1,
+   "not_a_jurisdiction_detail": "Overseas (divListId 170162, state=null) - reported as out-of-scope, never coerced and never dropped",
+   "reconciliation": "52 state nodes = 51 UsJurisdiction variants + Overseas; +1 duplicate echo = 53 seen in tree[]"
+  }
+ },
+ "enum_crosscheck": {
+  "command": "python3 samples/checks-enum-crosscheck.py",
+  "output": "samples/checks-enum-crosscheck.txt",
+  "domain_enum": "crates/census-domain/src/jurisdiction.rs",
+  "enum_code_arms": 51,
+  "nav_state_nodes": 53,
+  "mapped": 51,
+  "result": "every USPS code published by the nav has a UsJurisdiction variant; no enum code is missing from the nav; no nav code falls outside the enum. Overseas (170162) is the only State node with state=null and is out of scope."
+ },
+ "enumeration": {
+  "enumerates": [
+   {
+    "what": "all 51 jurisdictions of the High-School level in one session-bound nav call",
+    "how": "GET /api/v1/tfRankings/GetNavInfo?seasonId=2026&level=4&gender=m -> regions[] (52 State nodes)",
+    "evidence": "samples/har1-getnavinfo-wi-2026-hs-boys.json"
+   },
+   {
+    "what": "historic season list ids for the selected region",
+    "how": "same payload's seasons map (22 outdoor + 21 indoor keys for WI)",
+    "evidence": "samples/har1-getnavinfo-wi-2026-hs-boys.json"
+   },
+   {
+    "what": "meet results, all divisions/events, with per-row Grade",
+    "how": "GET /api/v1/Meet/GetAllResultsData?meetId=634313&sport=tf&rawResults=&showTips=",
+    "evidence": "samples/live-allresults-634313.redacted.json"
+   },
+   {
+    "what": "one event x division x gender of a meet, with Wind/Heat/HeatPlace",
+    "how": "POST /api/v1/Meet/GetResultsData3",
+    "evidence": "samples/live-resultsdata3-100m-wind-615580.json"
+   },
+   {
+    "what": "ranked athletes per (state list, event, gender, grade, page)",
+    "how": "POST /api/v1/tfRankings/GetRankings",
+    "evidence": "samples/har1-getrankings-wi-170770-m-100m-g11-p17-n17.json"
+   },
+   {
+    "what": "an athlete's whole history plus the meet map that seeds MeetIDs",
+    "how": "GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=28872883&sport=tf&level=0",
+    "evidence": "samples/live-getathletebiodata-28872883-2026-09-20.json"
+   },
+   {
+    "what": "team identity + state + the state's list id",
+    "how": "GET /api/v1/TeamNav/Team?team=3204&sport=tf&season=2026 -> team.State, divisions[].id=170770",
+    "evidence": "samples/har2-teamnav-3204.json"
+   },
+   {
+    "what": "the division hierarchy below a state (class/section/conference nodes) with their ids",
+    "how": "GET /api/v1/SiteHeader/GetDivChildren?sport=tf&divId=<state node> (anonymous) then one call per child",
+    "evidence": "samples/atn-probe-divchildren-170770.json, samples/atn-probe-divchildren-170771.json, samples/atn-probe-divchildren-168416.json"
+   }
+  ],
+  "does_not_enumerate": [
+   {
+    "what": "state -> schools without a per-state expansion",
+    "why": "regions[] stops at the state node; school lists come from tree[] after selecting a state (68 WI nodes captured) or from GetDivChildren per division"
+   },
+   {
+    "what": "the meet calendar per state",
+    "why": "no /api/v1/Meet/* calendar route was captured (0 requests to that path family in either HAR); the UI calendar is a separate route (/events/<country>/<state>/<date>), linked by state associations (research/midwest/06-wisconsin-wiaa.md:172)"
+   },
+   {
+    "what": "ranked athletes filtered only by grade with no event",
+    "why": "GetRankings rows are per-event; the multi-event page (eventShort:\"\") returns depth-10 groups of 10 rows (180 rows measured), not a full grade roster"
+   },
+   {
+    "what": "girls / indoor / XC coverage in this lane's captures",
+    "why": "all captures are boys outdoor TF; the nav request carried gender=m and indoor=false"
+   },
+   {
+    "what": "coach or contact fields",
+    "why": "GetAthleteBioData and TeamNav carry no staff/AD/email fields (verified absence, research/midwest/02)"
+   },
+   {
+    "what": "row counts per meet before fetching it",
+    "why": "GetMeetData reports eventDivsWithResults[] and HasResults but no row count"
+   },
+   {
+    "what": "schools per state",
+    "why": "no captured endpoint returns a state's school list: GetDivChildren.teams[] is a capped, name-sorted list of team accounts (0..332 measured, page param ignored, empty for sectionals), and GetStatesCountries2 only lists jurisdictions"
+   }
+  ]
+ },
+ "counts_measured": {
+  "nav_payload": {
+   "bytes": 78468,
+   "levels": 6,
+   "countries": 220,
+   "regions": 76,
+   "state_nodes": 52,
+   "tree_nodes": 68,
+   "events": 283,
+   "events_main": 36,
+   "record_sets": null
+  },
+  "states_countries_payload": {
+   "bytes": 34159,
+   "entries": 220
+  },
+  "meet_634313": {
+   "get_meetdata_bytes": 18790,
+   "event_div_data_bytes": 8341,
+   "all_results_bytes": 565387,
+   "individual_results": 758,
+   "relay_legs": 288,
+   "distinct_athlete_ids": 586,
+   "distinct_athlete_ids_relay_only": 45,
+   "event_divs_with_results": 45,
+   "flat_event_blocks": 49,
+   "distinct_event_ids": 36,
+   "teams": 12,
+   "event_types": 17,
+   "rounds": 2,
+   "corrected_result_ids": 4,
+   "distinct_athlete_ids_relay_seen": 214,
+   "distinct_athlete_ids_union": 586,
+   "grade_unknown_rows": 71,
+   "relay_teams": 70,
+   "relay_legs_distinct_result_ids": 72
+  },
+  "rankings": {
+   "page_depth": 100,
+   "rows_per_single_event_page": 102,
+   "rows_multi_event_page": 180,
+   "multi_event_groups": 18,
+   "multi_event_group_depth": 10,
+   "grade11_100m_min_count": 1616,
+   "grade11_100m_pages": 17,
+   "grade11_100m_last_page_rows": 17,
+   "unfiltered_100m_min_count_p2": 2117,
+   "unfiltered_100m_min_count_p3": 3282,
+   "distinct_meet_ids_per_full_page": [
+    66,
+    77,
+    81,
+    80,
+    92
+   ],
+   "row_key_shapes_over_180_rows": 29,
+   "distinct_meet_ids_full_page_p2": 66,
+   "page_2_rows": 102,
+   "page_2_rank_range": [
+    100,
+    201
+   ],
+   "page_2_min_count": 2117,
+   "page_17_rows": 17,
+   "grade11_100m_last_page_rank": 1616,
+   "relay_rows_in_multievent_page": 40,
+   "relay_rows_with_GradeID_99": 40,
+   "rows_GradeID_99_that_are_not_relays": 0
+  },
+  "athlete_bio": {
+   "bytes_har": 30344,
+   "bytes_live": 30285,
+   "result_rows": 53,
+   "meet_entries": 18,
+   "seasons": 2,
+   "identical_id_result_sets_across_captures": true,
+   "row_order_stable": false,
+   "pr_sb_flags_stable": false
+  },
+  "team_nav": {
+   "bytes": 1222,
+   "grades": 4,
+   "divisions": 4,
+   "custom_divisions": 1,
+   "linked_teams": 2
+  },
+  "getagesgrades": {
+   "grades_entries": 11,
+   "ages_entries": 31,
+   "grade_counts": {
+    "6": 12,
+    "7": 23,
+    "8": 66,
+    "9": 22934,
+    "10": 21535,
+    "11": 19725,
+    "12": 16436,
+    "21": 19,
+    "22": 21,
+    "23": 25,
+    "24": 17
+   },
+   "request_body_events": 18,
+   "note": "one anonymous-callable sizing primitive for a division; whether GradeCount counts athlete-event rows or distinct athletes is unverified"
+  },
+  "divchildren": {
+   "probes": [
+    {
+     "divId": 168416,
+     "what": "High School level",
+     "teams": 5,
+     "divInfo": 52,
+     "bytes": 11875,
+     "children": "the 52 State nodes"
+    },
+    {
+     "divId": 168546,
+     "what": "California",
+     "teams": 13,
+     "divInfo": 10,
+     "bytes": 4567,
+     "children": "CA's 10 association nodes (nav also reports 10)"
+    },
+    {
+     "divId": 170305,
+     "what": "Texas",
+     "teams": 332,
+     "divInfo": 8,
+     "bytes": 51554,
+     "children": "TX's 8 association nodes (nav also reports 8)"
+    },
+    {
+     "divId": 170770,
+     "what": "Wisconsin",
+     "teams": 150,
+     "divInfo": 3,
+     "bytes": 22361,
+     "children": "Division 1/2/3 (nav tree agrees: 3 divisions)"
+    },
+    {
+     "divId": 170771,
+     "what": "WI Division 1",
+     "teams": 1,
+     "divInfo": 8,
+     "bytes": 1962,
+     "children": "Sectional 1..8 (nav tree agrees: 8 sectionals)"
+    },
+    {
+     "divId": 170772,
+     "what": "WI Sectional 1",
+     "teams": 0,
+     "divInfo": 2,
+     "bytes": 503,
+     "children": "Regional 1A/1B (nav tree agrees: 2 regionals)"
+    }
+   ],
+   "teams_semantics": "team ACCOUNTS attached to the division, sorted by name, sizes 0/1/5/13/150/332 measured; the nav labels Sectional nodes 'Schools' but GetDivChildren(sectional) returned an empty teams[], so this endpoint is NOT a school roster. Not a school enumerator.",
+   "page_param": "ignored: divId=170770&page=2 returned bytes identical to divId=170770 (sha256 d44148702207693b)",
+   "auth": "anonymous 200; the HAR's browser response for divId=170771 is byte-identical to the anonymous curl response"
+  }
+ },
+ "requests": {
+  "unit_note": "counts are integers of HTTP requests; every row names the endpoint that produces the count. Rows marked anonymous work without any session; rows marked session require the browser's anettokens (GetNavInfo: 403 anonymous) or are blurred/ignore the page parameter (GetRankings).",
+  "strategies": [
+   {
+    "id": "whole_meet_3_step",
+    "endpoints": [
+     "GET /api/v1/Meet/GetMeetData",
+     "GET /api/v1/Meet/GetEventDivisionData",
+     "GET /api/v1/Meet/GetAllResultsData"
+    ],
+    "params": "meetId=634313&sport=tf ; GetAllResultsData adds rawResults=&showTips=; both later calls send header anettokens: <jwtMeet from step 1>",
+    "requests": 3,
+    "unit": "meet",
+    "rows_yielded": 1046,
+    "rows_breakdown": {
+     "individual": 758,
+     "relay_legs": 288
+    },
+    "rows_per_request": 348.7,
+    "evidence": "samples/live-meetdata-634313.redacted.json, samples/live-eventdiv-634313.json, samples/live-allresults-634313.redacted.json"
+   },
+   {
+    "id": "per_event_fallback",
+    "endpoints": [
+     "POST /api/v1/Meet/GetResultsData3"
+    ],
+    "params": "body {gender, divId, eventShort, rawResults, showTips, groupParentId}; one event x division x gender per request",
+    "requests": 45,
+    "unit": "meet (meet 634313, 45 eventDivsWithResults)",
+    "rows_yielded": 758,
+    "rows_per_request": 16.8,
+    "evidence": "samples/live-resultsdata3-100m.json, samples/live-resultsdata3-4x100m.json, samples/live-resultsdata3-shot-615580.json"
+   },
+   {
+    "id": "per_athlete_bio",
+    "endpoints": [
+     "GET /api/v1/AthleteBio/GetAthleteBioData"
+    ],
+    "params": "athleteId=<id>&sport=tf&level=0",
+    "requests": 586,
+    "unit": "the 586 distinct athletes of meet 634313",
+    "rows_yielded": 53,
+    "rows_per_request": 53.0,
+    "evidence": "samples/live-getathletebiodata-28872883-2026-09-20.json, samples/har2-getathletebiodata-28872883.json"
+   },
+   {
+    "id": "rankings_single_event_page",
+    "endpoints": [
+     "POST /api/v1/tfRankings/GetRankings"
+    ],
+    "params": "body {reportType:\"div\",mode:\"list\",divListId:170770,indoor:null,eventShort:\"100m\",gender:\"m\",qParams:{page:N},qualifyingListKey:\"\",version:2,debug:\"\"}",
+    "requests": 1,
+    "unit": "page",
+    "rows_yielded": 102,
+    "rows_per_request": 102.0,
+    "evidence": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json"
+   },
+   {
+    "id": "rankings_multi_event_page",
+    "endpoints": [
+     "POST /api/v1/tfRankings/GetRankings"
+    ],
+    "params": "body same but eventShort:\"\" and qParams:{} (18 groups x depth 10)",
+    "requests": 1,
+    "unit": "page",
+    "rows_yielded": 180,
+    "rows_per_request": 180.0,
+    "evidence": "samples/har1-getrankings-wi-170770-m-multievent-n180.json"
+   },
+   {
+    "id": "rankings_full_event_grade_filter",
+    "endpoints": [
+     "POST /api/v1/tfRankings/GetRankings"
+    ],
+    "params": "divListId=170770, eventShort=\"100m\", gender=\"m\", qParams.grades=[11], qParams.page=1..17",
+    "requests": 17,
+    "unit": "state x event x gender x grade (WI 2026 outdoor boys grade 11, 100m)",
+    "rows_yielded": 1616,
+    "rows_per_request": 95.1,
+    "evidence": "samples/har1-getrankings-wi-170770-m-100m-g11-p17-n17.json (minCount 1616, page 17 = 17 rows)"
+   },
+   {
+    "id": "state_list_id_matrix",
+    "endpoints": [
+     "GET /api/v1/tfRankings/GetNavInfo"
+    ],
+    "params": "seasonId=2026&level=4&gender=m&recordSetId=0&locationId=0&teamId=0&indoor=false (session-bound; 403 to a plain client)",
+    "requests": 51,
+    "unit": "jurisdiction (one nav call per state page; this one call also carries all 52 state ids for the selected season)",
+    "rows_yielded": 43,
+    "note": "43 = the selected state's season keys (22 outdoor + 21 indoor); a per-state season matrix needs the other 50 calls",
+    "evidence": "samples/har1-getnavinfo-wi-2026-hs-boys.json"
+   },
+   {
+    "id": "rankings_anonymous_preview",
+    "auth": "anonymous",
+    "endpoints": [
+     "POST /api/v1/tfRankings/GetRankings"
+    ],
+    "params": "same body as the session call; qParams.page is ignored by the server",
+    "requests": 1,
+    "unit": "page",
+    "rows_yielded": 101,
+    "rows_usable": 5,
+    "note": "row 1..5 unblurred, rows 6..101 masked (AthleteID 0, 'Xxxx Xxxxx'); settings.blurAfterDepth=5",
+    "evidence": "samples/atn-probe-getrankings-anon.json, samples/atn-probe-getrankings-anon-g11-p2.json"
+   },
+   {
+    "id": "division_tree_walk",
+    "auth": "anonymous",
+    "endpoints": [
+     "GET /api/v1/SiteHeader/GetDivChildren"
+    ],
+    "params": "sport=tf&divId=<node>; one call per node that has children",
+    "requests": 21,
+    "unit": "state (Wisconsin: 1 level call + 1 state + 3 divisions + 16 sectionals)",
+    "rows_yielded": 24,
+    "note": "24 child rows = 3 divisions + 8 + 4 + 4 sectionals + ... measured from the tree: 1 level node -> 52 states, state -> 3, divisions -> 8/4/4",
+    "evidence": "samples/atn-probe-divchildren-168416.json, samples/atn-probe-divchildren-170770.json, samples/atn-probe-divchildren-170771.json, samples/atn-probe-divchildren-170772.json"
+   },
+   {
+    "id": "getagesgrades_sizing",
+    "auth": "session",
+    "endpoints": [
+     "POST /api/v1/tfRankings/GetAgesGrades"
+    ],
+    "params": "recordSetId=0, locationId=0, teamId=0, listId=0, seasonId=2026, includeEvents=[18 events]",
+    "requests": 1,
+    "unit": "division",
+    "rows_yielded": 11,
+    "note": "grade->count map used by the UI's grade filter; sizes a crawl before spending it (grade 9: 22,934; 10: 21,535; 11: 19,725; 12: 16,436)",
+    "evidence": "samples/har1-getagesgrades-wi-2026.json"
+   }
+  ],
+  "tradeoffs": [
+   {
+    "between": [
+     "whole_meet_3_step",
+     "per_athlete_bio"
+    ],
+    "requests_a": 3,
+    "requests_b": 586,
+    "ratio": "195.3x fewer",
+    "basis": "meet 634313: 586 distinct AthleteID (541 individual + 214 relay-only, union 586) vs 3 requests"
+   },
+   {
+    "between": [
+     "whole_meet_3_step",
+     "per_event_fallback"
+    ],
+    "requests_a": 3,
+    "requests_b": 45,
+    "ratio": "15.0x fewer (1 vs 45 for the results payload alone: 45.0x)",
+    "basis": "45 eventDivsWithResults in meet 634313"
+   },
+   {
+    "between": [
+     "rankings_multi_event_page",
+     "rankings_single_event_page"
+    ],
+    "requests_a": 1,
+    "requests_b": 18,
+    "ratio": "18.0x fewer for the same 180 rows",
+    "basis": "the multi-event page returns 18 groups x 10 rows in one request"
+   },
+   {
+    "between": [
+     "rankings_full_event_grade_filter",
+     "per_athlete_bio"
+    ],
+    "requests_a": 17,
+    "requests_b": 1616,
+    "ratio": "95.1x fewer",
+    "basis": "WI boys grade-11 100m: 1,616 ranked rows in 17 requests vs 1,616 profile requests at 1/athlete"
+   },
+   {
+    "between": [
+     "whole_meet_3_step",
+     "rankings_single_event_page"
+    ],
+    "requests_a": 3,
+    "requests_b": 1,
+    "ratio": "3 vs 1 per unit",
+    "basis": "not comparable per row: a meet pull yields 1,046 rows for 3 requests; rankings yield 102 rows for 1, but only for athletes who hold a ranked mark"
+   },
+   {
+    "between": [
+     "national_rankings_scan",
+     "national_profile_scan"
+    ],
+    "requests_a": 4233,
+    "requests_b": 142705,
+    "ratio": "33.7x fewer",
+    "basis": "research/midwest/04 table 2 (model validated within 0.6% of the repo's 4,256 receipts) vs 142,705 athletes in the retained national grade-11 delivery"
+   },
+   {
+    "between": [
+     "rankings_single_event_page",
+     "rankings_anonymous_preview"
+    ],
+    "requests_a": 1,
+    "requests_b": 1,
+    "ratio": "same cost, 20.4x usable rows (102 vs 5)",
+    "basis": "99.5% of the page-2 session response is real rows; 95.0% of the anonymous preview is masked"
+   },
+   {
+    "between": [
+     "division_tree_walk",
+     "per_state_nav_call"
+    ],
+    "requests_a": 21,
+    "requests_b": 1,
+    "ratio": "21 vs 1 per state",
+    "basis": "the nav call returns the state's whole tree in one session-bound request (68 nodes for WI); GetDivChildren needs one call per internal node but no session"
+   },
+   {
+    "between": [
+     "whole_meet_3_step",
+     "per_event_fallback"
+    ],
+    "field_tradeoff": "GetResultsData3 rows carry Wind/Heat/HeatPlace; GetAllResultsData rows do not (verified absent from all 758 rows). Wind-graded marks therefore need the per-event path (45 extra requests for meet 634313)."
+   }
+  ],
+  "corpus_cited_counts": {
+   "discovery_12_states_boys_outdoor_grade11": 2728,
+   "discovery_national_list_168416_boys_grade11": 4233,
+   "repo_receipts_same_division": 4256,
+   "athlete_event_rows_national_boys_grade11": 408810,
+   "profile_requests_equivalent_12_states": 40695,
+   "profile_requests_equivalent_national": 142705,
+   "source": "research/midwest/04-athletic-net-rankings-discovery.md tables 1-3 + tools/04-rankings-request-model.py (read-only model, not re-run here)"
+  },
+  "anon_meet_probe_2026_09_21": {
+   "question": "does the 3-request whole-meet pull need a browser session?",
+   "command": "python3 samples/probe-anon-meet.py",
+   "client": "plain urllib + browser-grade headers, no cookie jar, 1.2 s spacing",
+   "results": [
+    {
+     "step": 1,
+     "endpoint": "/api/v1/Meet/GetMeetData?meetId=634313&sport=tf",
+     "auth": "none",
+     "http": 200,
+     "bytes": 16644,
+     "sample": "samples/anon-meetdata-634313.json",
+     "note": "response mints jwtMeet (255 chars) itself; LiveID null for this meet; eventDivsWithResults 45; tfDivisions 2"
+    },
+    {
+     "step": 2,
+     "endpoint": "/api/v1/Meet/GetEventDivisionData?meetId=634313&sport=tf",
+     "auth": "anettokens: jwtMeet from step 1",
+     "http": 200,
+     "bytes": 8341,
+     "sample": "samples/anon-eventdiv-634313.json",
+     "note": "36 events"
+    },
+    {
+     "step": 3,
+     "endpoint": "/api/v1/Meet/GetAllResultsData?meetId=634313&sport=tf&rawResults=false&showTips=false",
+     "auth": "anettokens: jwtMeet from step 1",
+     "http": 200,
+     "bytes": 506882,
+     "sample": "samples/anon-allresults-634313.json",
+     "note": "758 result rows, 288 relay legs, 12 teams, 49 flatEvents, 17 eventTypes, 2 rounds, 45 eventDivsWithResults, 4 correctedResultIDs"
+    }
+   ],
+   "conclusion": "whole-meet lane is browser-free; only discovery (GetNavInfo, unblurred rankings, calendar) needs the SPA session",
+   "parity_check": "structurally identical to samples/live-allresults-634313.redacted.json: same 9 top-level keys, same counts 758/288/12/17/2/45/4, first result row field-identical; byte delta (506,882 vs 565,387) is indentation only (retained file pretty-printed: 30,869 newlines vs 0)"
+  }
+ },
+ "handoffs": {
+  "grammar": {
+   "meet": "https://www.athletic.net/{TrackAndField|CrossCountry}/meet/<MeetID>[/{info|results|results/all|teamscores|entries}]",
+   "team": "https://www.athletic.net/team/<TeamID>/<track-and-field-outdoor|track-and-field-indoor|cross-country>/<SeasonID>",
+   "athlete": "https://www.athletic.net/athlete/<AthleteID>/<track-and-field|cross-country>[/all]",
+   "result": "https://www.athletic.net/result/<shortCode>",
+   "rankings_list": "https://www.athletic.net/TrackAndField/rankings/list/<divListId>/<m|f>[/<eventShort>]?grades=<n>&page=<n>",
+   "state_events_index": "https://www.athletic.net/events/usa/<state-slug>/<YYYY-M-D>",
+   "note": "every id is the URL path segment; the same integers come back as MeetID / TeamID / AthleteID / id inside API payloads"
+  },
+  "sources": [
+   {
+    "source": "state association sites (state-assoc-* lanes)",
+    "hands_over": "AN MeetID as a result link, sometimes the rankings list URL",
+    "measured_instances": [
+     "MI MHSAA: 215 TF + 117 XC distinct AN MeetIDs across 13 captured pages (evidence/gaps/39/mhsaa_an_meetids_by_page.json, mhsaa_an_link_inventory.json)",
+     "IL IHSA: meet/663321/entries on the state-scoring page and its own rankings links .../rankings/list/169070/m/hj (research/midwest/13-illinois-ihsa.md:148,159)",
+     "OH OHSAA: meet/656920/info + /entries, team/22671 (research/midwest/19-ohio-ohsaa.md:150,176-177)",
+     "MN MSHSL: meet/666673 href on the state-meet page (research/midwest/09-minnesota-mshsl.md:135,151)",
+     "NE NSAA: meet/<MeetID>/results/all for district meets (research/midwest/24-nebraska-nsaa.md:140)",
+     "SD SDHSAA: team/6112 and team/22678 school links, /events/usa/south-dakota;sport=2 (research/midwest/26-south-dakota-sdhsaa.md:54,67-68)",
+     "WI WIAA: /events/usa/wisconsin/2026-5-26 regional date index (research/midwest/06-wisconsin-wiaa.md:172)",
+     "MO MSHSAA: delegates to /track-and-field-outdoor/usa/high-school/missouri/mshsaa - a path, no id (research/midwest/21-missouri-mshsaa.md:270-276)",
+     "IN IHSAA: zero athletic.net links in every captured page (research/midwest/17-indiana-ihsaa.md:172)",
+     "KS KSHSAA: same, no direct links (research/midwest/23-kansas-kshsaa-directathletics.md:35)",
+     "ND NDHSAA: ids only inside AthleticLIVE payloads (research/midwest/25-north-dakota-ndhsaa.md:31)"
+    ]
+   },
+   {
+    "source": "timing providers running AthleticLIVE (timing-providers-national lane)",
+    "hands_over": "AN MeetID (`ani`), AN athlete id (`ani` on athlete docs), AN team id (`t.ani`)",
+    "measured_instances": [
+     "4,586 documents with a non-null ani across the captured Elasticsearch extracts (evidence/gaps/36, /37, /39, /41, /42, /43)",
+     "crates/midwest-census/src/sources/athleticlive/meets.rs already builds /TrackAndField/meet/{an_id}/info from `ani`"
+    ]
+   },
+   {
+    "source": "timer sites that publish an upcoming-meets table",
+    "hands_over": "AN MeetID per upcoming meet plus meet name/date/director",
+    "measured_instances": [
+     "trxctiming.com (MO) upcoming page: 37 AN meet links (36 XC + 1 TF) in 1 request (evidence/gaps/40/upcoming-table.json, research/midwest/40-missouri-trxctiming.md:354)"
+    ]
+   },
+   {
+    "source": "MileSplit (milesplit-national lane)",
+    "hands_over": "no Athletic.net ids or URLs - a tuple (name, school, state, grad year) that needs an AN-side lookup",
+    "measured_instances": [
+     "0 athletic.net matches across 28 WI captures (research/midwest/07-wisconsin-milesplit.md:133) and 80 captures in report 31 (:218)"
+    ]
+   },
+   {
+    "source": "coach/directory lanes",
+    "hands_over": "school + city + state + sport + role; no Athletic.net ids",
+    "measured_instances": [
+     "no AN ids in the WIAA school directory (research/midwest/06-wisconsin-wiaa.md:510)"
+    ],
+    "note": "AN TeamID therefore has to be resolved once per school and cached; TeamNav/Team?team=<id> then returns State and the state's divListId"
+   },
+   {
+    "source": "national aggregators (national-aggregators lane)",
+    "hands_over": "unverified - no capture in this corpus ties an aggregator page to an AN id",
+    "measured_instances": []
+   }
+  ],
+  "corpus_csv_artifacts": {
+   "root": "~/Downloads/midwest-tfxc-source-research/data/",
+   "athleticnet-meet-seeds.csv": {
+    "rows": 9844,
+    "with_an_meet_id": 9747,
+    "with_an_url": 9747,
+    "with_an_and_athleticlive_ids": 9747,
+    "columns": [
+     "state",
+     "date",
+     "end_date",
+     "name",
+     "location",
+     "level",
+     "athleticnet_meet_id",
+     "athleticnet_url",
+     "athleticlive_meet_ids",
+     "tenants",
+     "source"
+    ],
+    "level_counts": {
+     "unknown": 4767,
+     "invitational": 3991,
+     "conference": 475,
+     "sectional": 152,
+     "dual": 140,
+     "regional": 131,
+     "district": 118,
+     "state": 70
+    },
+    "state_counts": {
+     "IL": 2159,
+     "MI": 1433,
+     "OH": 1232,
+     "IA": 1004,
+     "MN": 987,
+     "WI": 777,
+     "NE": 589,
+     "MO": 569,
+     "IN": 381,
+     "SD": 369,
+     "KS": 182,
+     "ND": 162
+    }
+   },
+   "canonical-meets.csv": {
+    "rows": 9667,
+    "with_an_meet_id": 9593,
+    "distinct_an_meet_ids": 9562,
+    "caveat": "the athleticnet_url column exists but is empty in this artifact"
+   },
+   "athleticnet-athlete-seeds.csv": {
+    "rows": 189705,
+    "with_an_athlete_id": 189705,
+    "distinct_an_athlete_ids": 167277,
+    "with_milesplit_athlete_id": 69819,
+    "derived_from_sources": [
+     "athleticlive_athletes",
+     "milesplit_ia",
+     "milesplit_il",
+     "milesplit_in",
+     "milesplit_ks",
+     "milesplit_mi",
+     "milesplit_mn",
+     "milesplit_mo",
+     "milesplit_ne",
+     "milesplit_oh",
+     "milesplit_wi"
+    ],
+    "states": [
+     "IA",
+     "IL",
+     "IN",
+     "KS",
+     "MI",
+     "MN",
+     "MO",
+     "ND",
+     "NE",
+     "OH",
+     "SD",
+     "WI"
+    ]
+   },
+   "canonical-athletes-co2027.csv": {
+    "rows": 183875,
+    "with_an_athlete_id": 93619,
+    "with_both_an_and_milesplit": 56842
+   },
+   "verified_utc": "2026-09-21"
+  },
+  "association_and_timer_evidence": {
+   "mhsaa_an_meetids_by_page.json": {
+    "path": "research/midwest/evidence/gaps/39/mhsaa_an_meetids_by_page.json",
+    "pages": 13,
+    "distinct_tf_meet_ids": 215,
+    "distinct_xc_meet_ids": 117,
+    "union": 332,
+    "overlap": 0,
+    "note": "mhsaa_an_link_inventory.json (same dir) holds 521 AN hrefs / 505 unique across 20 files"
+   },
+   "trxctiming_upcoming_table.json": {
+    "path": "research/midwest/evidence/gaps/40/upcoming-table.json",
+    "meet_rows": 40,
+    "athletic_net_links": 39,
+    "distinct_urls": 38,
+    "distinct_meet_ids": 37,
+    "by_sport": {
+     "CrossCountry": 36,
+     "TrackAndField": 1,
+     "non_meet": 2
+    }
+   },
+   "repo_adapter": {
+    "file": "crates/midwest-census/src/sources/athleticlive/meets.rs",
+    "line": 45,
+    "builds": "https://www.athletic.net/TrackAndField/meet/{an_id}/info",
+    "fixture": "crates/midwest-census/src/sources/athleticlive/tests.rs:98 -> meet/259955/info"
+   }
+  }
+ },
+ "gaps": [
+  "girls, indoor and XC list ids and row counts: no capture in this lane (boys outdoor TF only)",
+  "the per-state season matrix: only WI's seasons map is in the nav payload",
+  "second-tier (class/section/conference) node ids outside CA/TX/NY require a per-state nav call",
+  "GetEventDivisionData (step 2 of the 3-step meet pull) was not tested for skippability; the 3-request figure is the measured sequence",
+  "no /api/v1/tfRankings/GetNavInfo capture with a plain client (403); the nav path needs the SPA session",
+  "DownloadRankings (bulk export) stays 403 anonymous - unverified whether it would collapse a state list to 1 request",
+  "one athlete bio does not prove Bio stability for all athletes; only the one id was captured twice",
+  "school roster per state: not enumerated by any captured endpoint (follow-up: load /TrackAndField/division/<id> or a school list page in the browser and log the /api/v1/** calls it makes)",
+  "meet calendar API: not captured; the state events HTML page is an SPA shell with 0 server-rendered meet ids",
+  "anonymous minCount differs from session minCount for the same filter (982 vs 2117); which one is authoritative is unverified",
+  "the anonymous rank>5 blur threshold is verified only at settings.blurAfterDepth=5 on one list/event",
+  "GetDivChildren team list cap: 150 for WI, 332 for TX - whether 332 is a cap or the real count is unverified",
+  "girls/indoor/XC rankings and their blur/minCount behaviour: not captured"
+ ],
+ "verification": "counts in this file are re-derived by samples/build-schema.py from the sample bytes; jurisdiction rows come from samples/checks-state-divs.tsv Anonymous whole-meet probe re-run 2026-09-21 (samples/probe-anon-meet.py -> samples/anon-meet-probe-report.json). Handoff counts re-derived 2026-09-21 from the corpus CSVs and evidence JSON listed in handoffs.*. All 21 requests in this lane's captures were made at >=1.2 s spacing, <=1 req/s.",
+ "entitlement_and_blur": {
+  "mechanism": "GetRankings mints a jwtTFTopReport for the caller; with userRoles empty the response sets settings.blurAfterDepth=5 and rows past rank 5 are masked",
+  "blurred_row_shape": {
+   "blurred": true,
+   "AthleteID": 0,
+   "AthleteName": "Xxxx Xxxxx",
+   "TeamName": "Xxxxx Xxxxxx Xxxx",
+   "State": "XX",
+   "MeetID": 0,
+   "MeetName": "Xxxx Xxxxx Xxxx Xxxxxxxxxxxx",
+   "SortIntRaw": -1,
+   "shortCode": null
+  },
+  "measured": {
+   "blurred_rows": 96,
+   "unblurred_ranks": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "session_blurred_rows": 0
+  },
+  "page_param": "anonymous requests ignore qParams.page (settings.page echoes 1 for both page:2 and no page; the two responses are field-identical apart from the minted token)",
+  "min_count_difference": "same filter, anonymous minCount 982 vs session minCount 2117 (unfiltered) and 1108 vs 1616 (grades [11]); the counts differ by session state, so per-list totals must be recorded with their entitlement",
+  "consequence": "rankings data beyond the top 5 per (list, event, gender, grade) requires the browser/session lane; anonymous access is usable for structure, ids and pass-1 validation only",
+  "evidence": [
+   "samples/atn-probe-getrankings-anon.json",
+   "samples/atn-probe-getrankings-anon-g11-p2.json",
+   "samples/atn-probe-getrankings-anon-nopage.json",
+   "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json"
+  ]
+ },
+ "division_tree": {
+  "endpoint": "GET /api/v1/SiteHeader/GetDivChildren?sport=tf&divId=<node>",
+  "auth": "anonymous",
+  "returns": {
+   "divInfo": "child nodes {IDDivision (parent), DivIDDivision (child), DivDivName, Level, SeasonID, IDBaseDiv, StateName, Country}",
+   "teams": "capped team-account list, see counts_measured.divchildren"
+  },
+  "cross_check": "divInfo child counts equal the nav's second-tier counts for CA(10), TX(8), WI(3) and the national node(52 states); WI's 3 children and its sectional/regional children match the nav tree exactly",
+  "request_cost": {
+   "whole_country_states": 1,
+   "one_state_children": 1,
+   "WI_full_tree_walk": 21,
+   "basis": "one request per nav node carrying a non-null subDivType: WI has 1 state + 3 divisions + 16 sectionals = 20 nodes + the level call above them"
+  },
+  "not_covered": "sports other than tf; division trees for a different season than the node's SeasonID"
+ },
+ "events_page_negative": {
+  "url": "https://www.athletic.net/events/usa/wisconsin/2026-5-26",
+  "status": 200,
+  "bytes": 7430,
+  "server_rendered_meet_links": 0,
+  "conclusion": "the national/state calendar page is an SPA shell (7.4 KB, no meet ids); the calendar must be read from the browser lane or from an events API that neither HAR captured",
+  "evidence": [
+   "samples/atn-probe-events-wisconsin-2026-5-26.html",
+   "samples/atn-probe-events-wisconsin-2026-5-26.headers"
+  ]
+ },
+ "robots": {
+  "url": "https://www.athletic.net/robots.txt",
+  "status": 200,
+  "bytes": 1080,
+  "last_modified_header": "Sun, 15 Mar 2026 19:18:17 GMT",
+  "disallows": [
+   "/Admin/",
+   "/Account/",
+   "/User/",
+   "/Edit/",
+   "/Partner/",
+   "/post/",
+   "/Secure/",
+   "/home/",
+   "/search.aspx",
+   "/trackandfield/print/",
+   "/trackandfield/report/",
+   "/TrackAndField/State/",
+   "/CrossCountry/State/",
+   "/trackandfield/meet/teamresults.aspx",
+   "/crosscountry/results/team.aspx",
+   "/crosscountry/results/season.aspx",
+   "/crosscountry/division.aspx",
+   "/trackandfield/school_new.aspx",
+   "/CrossCountry/Results/CourseHistory.aspx"
+  ],
+  "no_sitemap_line": true,
+  "consequence": "the /TrackAndField/State/ path is off-limits; the /api/v1/** endpoints, /TrackAndField/rankings/list/** and /events/** are not disallowed",
+  "evidence": [
+   "samples/atn-robots.txt",
+   "samples/atn-robots.headers"
+  ]
+ }
+}

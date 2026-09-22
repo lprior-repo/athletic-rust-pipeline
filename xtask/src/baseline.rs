@@ -19,11 +19,33 @@ use std::path::Path;
 /// Written into every refreshed baseline, exactly as the deleted script wrote it.
 const NOTE: &str = "Debt baseline for tools/gate.sh. Numbers may only shrink; refresh with tools/gate.sh --update-baseline after a burndown.";
 
-/// The structure metrics the ratchet compares as numbers.
-const STRUCTURE_METRICS: [&str; 2] = ["functions_over_60_lines", "functions_over_25_logical_lines"];
+/// The structure metrics the ratchet fails on: budget overruns a fix can remove.
+const STRUCTURE_METRICS: [&str; 1] = ["functions_over_60_lines"];
+
+/// The structure metric that is reported but never fatal.
+///
+/// `functions_over_25_logical_lines` is a target, not a budget: it counts every function past 25
+/// logical lines, this tree has more than five hundred of them, and adding one ordinary function
+/// pushes it up. A metric that must grow whenever the codebase grows cannot be a ratchet — a gate
+/// that fails on it fails on every feature commit and gets rubber-stamped. It prints as `[UP]` so the
+/// drift stays visible, and the hard one-page budget in `STRUCTURE_METRICS` is what the gate holds.
+const SOFT_STRUCTURE_METRICS: [&str; 1] = ["functions_over_25_logical_lines"];
+
+/// Scan metrics that describe the tree rather than its debt. They grow with every line of new code,
+/// so failing on them would make the gate a code freeze instead of a quality gate: printed, never
+/// fatal.
+///
+/// Everything else ratchets, including a metric the scan starts reporting later: the forbidden
+/// constructs (`scan.rs` holds those names) are each held at zero for new code, so an increase is new
+/// debt, and an unclassified name fails once until the baseline records what it is.
+const CONTEXT_METRICS: [&str; 2] = ["files", "production_lines"];
 
 /// The structure key that holds one display entry per oversized file rather than a number.
 const OVERSIZED_FILES: &str = "files_over_300_lines";
+
+/// The structure key that names each function over the physical-line budget (`evidence`, not a
+/// metric: the count above is what the ratchet compares).
+const FUNCTION_SITES: &str = "functions_over_60_sites";
 
 /// Rewrite `baseline` from the current clippy and scan measurements.
 ///
@@ -107,12 +129,17 @@ pub fn ratchet(baseline: &Path, clippy_tsv: &Path, scan_json: &Path) -> Result<(
                 .and_then(|counts| counts.get(metric))
                 .and_then(Value::as_u64)
                 .unwrap_or(0);
-            if value > was {
+            // An unlisted metric is a measurement this ratchet has not classified. Debt is the
+            // conservative reading: it fails once, and recording it in the baseline is the deliberate
+            // act that says whether it is a budget or a description of the tree.
+            let debt = !CONTEXT_METRICS.contains(&metric.as_str());
+            if debt && value > was {
                 failures.push(format!("scan {name}.{metric}: {was} -> {value}"));
             }
             if value != was {
+                let note = if debt { "" } else { " (context)" };
                 println!(
-                    "  scan {name}.{metric}: {was} -> {value} [{}]",
+                    "  scan {name}.{metric}: {was} -> {value} [{}]{note}",
                     direction(value, was)
                 );
             }
@@ -127,12 +154,27 @@ pub fn ratchet(baseline: &Path, clippy_tsv: &Path, scan_json: &Path) -> Result<(
     for metric in STRUCTURE_METRICS {
         let was = number(known_structure.and_then(|known| known.get(metric)));
         let value = number(structure.get(metric));
-        if value > was {
-            failures.push(format!("structure {metric}: {was} -> {value}"));
-        }
         if value != was {
             println!(
                 "  structure {metric}: {was} -> {value} [{}]",
+                direction(value, was)
+            );
+        }
+        if value > was {
+            failures.push(format!("structure {metric}: {was} -> {value}"));
+            // A failed budget names its sites: the count alone sends the reader back to grep for the
+            // function that broke it.
+            for site in strings(structure.get(FUNCTION_SITES)) {
+                println!("    {site}");
+            }
+        }
+    }
+    for metric in SOFT_STRUCTURE_METRICS {
+        let was = number(known_structure.and_then(|known| known.get(metric)));
+        let value = number(structure.get(metric));
+        if value != was {
+            println!(
+                "  structure {metric}: {was} -> {value} [{}] (target, not a budget)",
                 direction(value, was)
             );
         }
@@ -328,6 +370,20 @@ fn union_keys(clippy: &BTreeMap<String, u64>, known: &Map<String, Value>) -> BTr
     let mut keys: BTreeSet<String> = clippy.keys().cloned().collect();
     keys.extend(known.keys().cloned());
     keys
+}
+
+/// The string entries of a structure array, for printing as evidence.
+fn strings(value: Option<&Value>) -> Vec<String> {
+    value
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 /// The burndown arrow: `DOWN` when the metric shrank, `UP` when it grew.

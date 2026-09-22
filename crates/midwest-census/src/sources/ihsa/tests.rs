@@ -54,7 +54,7 @@ fn parses_school_into_canonical() {
         .expect("Abingdon has a name");
 
     assert_eq!(school.name, "Abingdon-Avon High School");
-    assert_eq!(school.state.as_deref(), Some("IL"));
+    assert_eq!(school.state, Some(UsJurisdiction::Illinois));
     assert_eq!(school.association.as_deref(), Some("ihsa"));
     assert_eq!(school.city.as_deref(), Some("Abingdon"));
     // `/v1/schools` rows carry no `URL` field (see this capture-backed fixture), so the school
@@ -73,7 +73,7 @@ fn parses_school_into_canonical() {
 
     // School id is deterministic.
     let expected_id = CanonicalSchool::mint(
-        "IL",
+        UsJurisdiction::Illinois,
         "Abingdon-Avon High School",
         &normalize_name("Abingdon-Avon High School"),
     );

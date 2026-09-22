@@ -31,3 +31,12 @@ __pycache__/
 *.pyc
 /rust_out
 /mutants.out/
+
+# Source research: reports, schemas, coverage and manifests are tracked; raw captured payloads are
+# re-fetchable evidence and stay on disk only (they are what fills `fixtures/` once an adapter
+# lands). 26 Python probe scripts that produced the captures were moved out of the repository
+# (owner decision: zero Python in the repo) to
+# ~/Downloads/midwest-tfxc-source-research/repo-probes/.
+research/sources/**/samples/*
+!research/sources/**/samples/*.md
+*.curlerr

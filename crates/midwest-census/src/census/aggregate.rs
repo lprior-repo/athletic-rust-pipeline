@@ -10,6 +10,7 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam,
 };
+use census_domain::UsJurisdiction;
 use std::path::Path;
 use tracing::info;
 
@@ -22,9 +23,9 @@ fn count(value: usize) -> u64 {
 
 /// Fold the per-state outcomes into one report, returning it with the states that failed.
 ///
-/// Bounded by the number of requested states.
+/// Bounded by the number of requested jurisdictions.
 pub(super) fn summarize_states(
-    results: Vec<(String, CrawlResult<StateProgress>)>,
+    results: Vec<(UsJurisdiction, CrawlResult<StateProgress>)>,
 ) -> (CollectReport, Vec<String>) {
     let mut report = CollectReport {
         states: Vec::new(),
@@ -38,7 +39,7 @@ pub(super) fn summarize_states(
         elapsed_seconds: 0.0,
     };
     let mut failures = Vec::new();
-    for (state, outcome) in results {
+    for (jurisdiction, outcome) in results {
         match outcome {
             Ok(progress) => {
                 report.teams_total = report.teams_total.saturating_add(progress.teams);
@@ -50,7 +51,7 @@ pub(super) fn summarize_states(
                     .saturating_add(progress.class_of_2027);
                 report.errors = report.errors.saturating_add(count(progress.errors.len()));
                 info!(
-                    state,
+                    state = jurisdiction.code(),
                     teams = progress.teams,
                     rosters = progress.rosters_done,
                     co2027 = progress.class_of_2027,
@@ -58,12 +59,10 @@ pub(super) fn summarize_states(
                 );
                 report.states.push(progress);
             }
-            Err(error) => failures.push(format!("{state}: {error}")),
+            Err(error) => failures.push(format!("{}: {error}", jurisdiction.code())),
         }
     }
-    report
-        .states
-        .sort_by(|left, right| left.state.cmp(&right.state));
+    report.states.sort_by_key(|progress| progress.jurisdiction);
     (report, failures)
 }
 

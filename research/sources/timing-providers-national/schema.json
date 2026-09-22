@@ -1,0 +1,888 @@
+{
+ "lane": "timing-providers-national",
+ "observed_on": "2026-09-22",
+ "note": "Every example row below is copied verbatim from a captured file in samples/. No example is invented.",
+ "formats": [
+  {
+   "id": "flashresults.meet_index_html",
+   "family": "FlashResults (flashresults.com)",
+   "sample": "samples/flashresults-2027meets-xc-adidasxc-index.html",
+   "request": "GET https://www.flashresults.com/2027_Meets/xc/adidasXC/index.htm",
+   "kind": "HTML tables (per day) — 3 tables / 31 event rows for the sampled meet; event + Result/Split hrefs are UNQUOTED (`<a href=203-1_compiled.htm>`): 62 `_compiled.htm` occurrences = 31 distinct event pages, plus 31 distinct `_start.htm`",
+   "columns": [
+    "Day",
+    "Start",
+    "",
+    "Event name",
+    "",
+    "",
+    "Result|Split",
+    "Status",
+    ""
+   ],
+   "example_row": [
+    "Saturday",
+    "8:00 AM",
+    "",
+    "Boys JV Red 5k",
+    "",
+    "",
+    "Result",
+    "",
+    ""
+   ],
+   "event_url_patterns": {
+    "compiled": "<NNN>-<round>_compiled.htm",
+    "start_list": "<NNN>-<round>_start.htm",
+    "splits_or_detail": "<NNN>-<round>-<seq>.htm",
+    "entries": "athleteList.htm",
+    "team_scores": "scores.htm",
+    "note": "hrefs are unquoted; a quoted-href regex returns zero matches"
+   },
+   "identifiers": {
+    "meet": "URL slug path /<YYYY>_Meets/<Sport>/<MM-DD_Slug>/",
+    "event": "<NNN> event number, meet-local",
+    "round": "<round> suffix (1=prelims, 2=final)"
+   },
+   "marks": null,
+   "wind": null,
+   "heat_round": "Result vs Split rows; round encoded in the filename suffix",
+   "relay_membership": "n/a at index level"
+  },
+  {
+   "id": "flashresults.event_compiled_html_xc",
+   "family": "FlashResults",
+   "sample": "samples/flashresults-2027meets-xc-adidasxc-203-1_compiled.htm",
+   "request": "GET <meet>/<NNN>-<round>_compiled.htm",
+   "kind": "HTML table",
+   "columns": [
+    "Pl",
+    "",
+    "Athlete",
+    "Time",
+    "Pace",
+    "Pts",
+    "TmPl",
+    ""
+   ],
+   "example_row": [
+    "1",
+    "",
+    "Hank DELK Broughton [9]",
+    "10:36.2",
+    "5:19",
+    "1",
+    "1",
+    ""
+   ],
+   "athlete_cell_grammar": "<LAST FIRST> <School> [<grade>]  — grade token bracketed, e.g. 'Hank DELK Broughton [9]'",
+   "mark_format": "mm:ss.t (XC); '+NN' suffix = gap behind winner; team-score tables carry Total[Avg] and Spread",
+   "wind": "none on XC pages",
+   "heat_round": "none on XC pages (race = the page)",
+   "relay_membership": "none observed on XC pages",
+   "identifiers": {
+    "result": "none — rows positional",
+    "athlete": "none (name+school only)",
+    "grade": "yes, bracketed token"
+   }
+  },
+  {
+   "id": "flashresults.event_compiled_html_track",
+   "family": "FlashResults",
+   "sample": "samples/flashresults-2026meets-outdoor-06-10_NCAA-001-2_compiled.htm",
+   "request": "GET <meet>/<NNN>-<round>_compiled.htm",
+   "kind": "HTML table + <caption>",
+   "columns": [
+    "Pl",
+    "",
+    "Athlete",
+    "Time",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "example_row": [
+    "1",
+    "",
+    "Kanyinsola AJAYI 2Auburn [JR]",
+    "9.72",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "SB"
+   ],
+   "caption": "<i>Results: Men 100 M (Final)<br>Wind: <font color=red>+2.2</font> m/s",
+   "wind_in_caption": "Wind: +2.2 m/s appears in <caption>; relay page also shows a weather line and UA/WA-L eligibility flags",
+   "mark_format": "ss.hh (sprints), mm:ss.hh, field marks with metric+imperial ('75.78m248-7'); qualifier suffix 'Q'/'q'; 'SB'/'PB' annotation column",
+   "heat_round": "round in URL suffix; 'Heat'/'Flight' columns on prelims pages",
+   "relay_membership": "separate Team|Athletes table on <NNN>-<round>-<seq>.htm",
+   "identifiers": {
+    "result": "none positional",
+    "athlete": "TFRRS profile URL link on row (https://www.tfrrs.org/athletes/<id>/...)"
+   },
+   "tfrrs_join": "row links a TFRRS athlete id → the FlashResults↔TFRRS join key"
+  },
+  {
+   "id": "flashresults.relay_detail_html",
+   "family": "FlashResults",
+   "sample": "samples/flashresults-2026meets-outdoor-06-10_NCAA-011-2-01.htm",
+   "request": "GET <meet>/<NNN>-<round>-<seq>.htm",
+   "kind": "HTML tables (results + leg table)",
+   "columns": [
+    "Pl",
+    "Ln",
+    "",
+    "Team",
+    "Time"
+   ],
+   "legs_table": [
+    "Team",
+    "Athletes"
+   ],
+   "example_row": [
+    "Tennessee",
+    "Traunard Folson, Davonte Howell, T'Mars McCallum, Elijah Clark"
+   ],
+   "relay_membership": "YES — one row per team, comma-separated 4 legs (order = leg order)",
+   "identifiers": {
+    "relay_team": "team name string only"
+   }
+  },
+  {
+   "id": "flashresults.athlete_list_html",
+   "family": "FlashResults",
+   "sample": "samples/flashresults-2027meets-xc-adidasxc-athleteList.htm",
+   "request": "GET <meet>/athleteList.htm",
+   "kind": "HTML table, one request for the whole meet",
+   "columns": [
+    "Athlete ⇵",
+    "Comp# ⇵",
+    "Gender ⇵",
+    "Affiliation ⇵",
+    "",
+    "Events Entered"
+   ],
+   "example_row": [
+    "BROWN Maya",
+    "380",
+    "F",
+    "A.C. Reynolds",
+    "[9]",
+    "College/Open 5kJV Red 5k"
+   ],
+   "measured_rows": {
+    "adidasXC 2026 HS (3,038 data rows / 3,039 <tr> incl. header / 551,745 B)": "samples/flashresults-2027meets-xc-adidasxc-athleteList.htm",
+    "NCAA 2026 outdoor (1,276 data rows / 1,277 <tr> incl. header / 363,462 B)": "samples/flashresults-2026meets-outdoor-06-10_NCAA-athleteList.htm"
+   },
+   "cell_grammar": "'<LAST FIRST>' then Comp# then Gender then Affiliation then bracketed class token then space-joined event names",
+   "grade_evidence": "bracketed token is a GRADE for HS meets ('[9]','[11]') and a CLASS STANDING for college meets ('[JR]','[SR]')",
+   "identifiers": {
+    "competitor_number": "Comp# (meet-local bib)",
+    "athlete": "none"
+   }
+  },
+  {
+   "id": "tfrrs.xc_meet_html",
+   "family": "TFRRS (tfrrs.org, DirectAthletics)",
+   "sample": "samples/tfrrs-xc-27822-southern-stampede-hs.html",
+   "request": "GET https://www.tfrrs.org/results/xc/<meetId>/<Slug>",
+   "kind": "HTML tables (team-score table then individual table per race)",
+   "columns": [
+    "PL",
+    "NAME",
+    "YEAR",
+    "TEAM",
+    "Avg. Mile",
+    "TIME",
+    "SCORE"
+   ],
+   "example_row": [
+    "1",
+    "Claire Grennan",
+    "2030",
+    "Manhattan",
+    "6:56.9",
+    "12:57.2",
+    "1"
+   ],
+   "measured": {
+    "rows_in_one_request": 2060,
+    "tables": 14,
+    "bytes": 833212,
+    "url": "samples/tfrrs-xc-27822-southern-stampede-hs.html",
+    "note": "2,059 rows carry a numeric place; one team-score row does not"
+   },
+   "grade_evidence": "YEAR column = GRADUATING YEAR for HS meets (2029/2030 observed); college pages use JR/SO/FR/SR standing",
+   "mark_format": "mm:ss.t / h:mm:ss.t; Avg. Mile column; SCORE column",
+   "identifiers": {
+    "meet": "path segment /results/xc/<id>",
+    "athlete_link": "page links athlete profiles (not sampled in this capture)"
+   }
+  },
+  {
+   "id": "pttiming.api_events_json",
+   "family": "PrimeTime Timing (pttiming.com)",
+   "sample": "samples/pttiming-api-results-current-2026-page1.json",
+   "request": "GET https://www.pttiming.com/api/results/current?year=2026&page=1&limit=200",
+   "kind": "JSON: {page,limit,hasMore,rows[]}",
+   "row_keys": [
+    "id",
+    "clientId",
+    "name",
+    "status",
+    "startDate",
+    "deadline",
+    "exTimezone",
+    "exEventStart",
+    "exStatusNote",
+    "exTimer",
+    "exEntryLink",
+    "exEntryOpen",
+    "exEntryClose",
+    "exGps",
+    "exVenueOr",
+    "exHostOr",
+    "exCityOr",
+    "exStateOr",
+    "clientCompany",
+    "clientCity",
+    "clientState",
+    "eventUrl",
+    "computed{dateRangeText,locationTextLines,meetStatusText,meetStatusVariant,showLiveCount,entryBadge,entryLinkHtml,timerIsPtt}",
+    "results{liveResultsHtml,fileLinks[{label,url}]}"
+   ],
+   "example_row": {
+    "id": 0,
+    "name": "Zuma Beach Triathlon",
+    "status": 4,
+    "startDate": "2026-09-20",
+    "exStateOr": "CA",
+    "eventUrl": "/event/b591a3b1-55b1-4b4e-b7db-6028100a76d0?pt=results",
+    "fileLink_example": {
+     "label": "Girls Varsity Results",
+     "url": "https://data.pttiming.com/storage/v1/object/public/event-files/bf1179d1-dbc6-443e-a06e-1ac7816faf7b/1789828588735-bill-dawson-invitational-gv.pdf"
+    }
+   },
+   "measured_page1": {
+    "rows": 200,
+    "hasMore": true,
+    "fileLinks_total": 339,
+    "fileLink_formats": {
+     "pdf": 318,
+     "htm": 20,
+     "html": 1
+    },
+    "exStateOr_top": {
+     "WI": 154,
+     "MO": 11,
+     "IL": 7,
+     "Wisconsin": 7
+    },
+    "exEntryLink_domains": {
+     "www.athletic.net": 130
+    }
+   },
+   "identifiers": {
+    "event": "eventUrl uuid (/event/<uuid>?pt=results)",
+    "result_file": "Supabase object path <event-uuid>/<epoch-ms>-<slug>.<ext>"
+   },
+   "join_keys": {
+    "athletic_net": "computed.entryLinkHtml href → www.athletic.net (130/200 rows on page 1)"
+   }
+  },
+  {
+   "id": "pttiming.result_hytek_htm",
+   "family": "PrimeTime Timing",
+   "sample": "samples/pttiming-data-cyclone-opener-womenisu.htm",
+   "request": "GET https://data.pttiming.com/storage/v1/object/public/event-files/<uuid>/<ts>-<slug>.htm",
+   "kind": "Hy-Tek MEET MANAGER plain text inside <PRE>",
+   "header_line": "Name                    Year School                  Finals  Points",
+   "example_row": "1 Ali Weimer                Sr Minnesota              16:15.3    1",
+   "grade_evidence": "Year column = class standing (Sr/So/Fr/Jr) for college meets; numeric grade for HS meets",
+   "mark_format": "time with tenths; wind column appears in prelims tables of track files",
+   "heat_round": "separate Prelims/Finals sections; H# heat column on track files"
+  },
+  {
+   "id": "pttiming.result_runscore_pdf",
+   "family": "PrimeTime Timing",
+   "sample": "samples/pttiming-data-wi-meet-sample.pdf",
+   "extract": "samples/extract-pttiming-wi-meet-pdftotext.txt",
+   "request": "GET https://data.pttiming.com/storage/v1/object/public/event-files/<uuid>/<ts>-<slug>.pdf",
+   "kind": "PDF, text-extractable (pdftotext -layout)",
+   "text_shape": "team-score block 'rank. score Team (avg total spread)' then numbered finisher rows",
+   "example_row": "1      6 Logan Peters             SR   16:39.5",
+   "grade_evidence": "Year token FR/SO/JR/SR on every finisher line",
+   "mark_format": "mm:ss.t; pace and (nn) displace-score markers",
+   "ocr_required": false
+  },
+  {
+   "id": "athleticlive.es_meet_doc",
+   "family": "AthleticLIVE / anet.live (shared platform)",
+   "sample": "samples/search-athleticlive-flashresultstexas-meet-doc-6951.json",
+   "request": "POST https://search.athletic.live/<tenant>_meet_list/_doc/<id>",
+   "kind": "Elasticsearch document (_source) with short keys",
+   "keys": [
+    "i",
+    "ani",
+    "anis",
+    "n",
+    "ln",
+    "ls",
+    "lsa",
+    "lo",
+    "sd",
+    "sdy",
+    "o",
+    "tna",
+    "li",
+    "atr",
+    "qn",
+    "qe",
+    "mvs",
+    "cc",
+    "us",
+    "ml",
+    "md",
+    "tf"
+   ],
+   "example_row": {
+    "i": 6951,
+    "ani": 6951,
+    "n": "H-Town SpeedCity - 1",
+    "ln": "H-Town SpeedCity Series - Meet 1",
+    "ls": "Houston, TX",
+    "lsa": "Texas",
+    "lo": "Yeoman Fieldhouse, Francis Street, Houston, TX, USA",
+    "sd": "2021-01-16T05:00:00Z",
+    "sdy": "2021-01-16",
+    "o": "indoor",
+    "tna": "Flash Results Texas",
+    "li": "Hy-Tek",
+    "atr": "Licensed to Hy-Tek. Timed by <a target=\"blank\" href=\"http://flashresults.com/flashtexas\">Flash Results Texas</a>. Please email results questions to Mike Takaha (<a target=\"blank\" href=\"mailto:mike@flashresults.com\">mike@flashresults.com</a>).",
+    "qn": "Mike Takaha",
+    "qe": "mike@flashresults.com",
+    "mvs": [
+     "collegiate"
+    ],
+    "us": "http://frtx.anet.live/0blbi0"
+   },
+   "notes": {
+    "ani": "Athletic.net meet id (6951 here) — the direct join key",
+    "tna": "timing company display name ('Flash Results Texas')",
+    "li": "meet-management software ('Hy-Tek')",
+    "qn/qe": "meet contact name + email (timer, not school coach)",
+    "lsa": "state (keyword field, aggregatable)",
+    "atr": "attribution HTML naming the timer and contact"
+   },
+   "identifiers": {
+    "meet": "i / ani",
+    "tenant": "index prefix <tenant>_meet_list",
+    "state_agg": "lsa.keyword (70 buckets)"
+   }
+  },
+  {
+   "id": "athleticlive.blob_event_doc",
+   "family": "AthleticLIVE / anet.live",
+   "sample": "samples/athleticlive-blob-ind_res_list-2150205.json",
+   "request": "GET https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/<eventId>",
+   "kind": "Azure blob JSON (public) — WHOLE EVENT in one request; document shape {_source:{…}}, result array under key 'r'",
+   "event_keys": [
+    "ab",
+    "ano",
+    "ccl",
+    "cna",
+    "d",
+    "dve",
+    "dvt",
+    "ec",
+    "enu",
+    "eo",
+    "es",
+    "fi",
+    "frua",
+    "fruam",
+    "fsu",
+    "g",
+    "gl",
+    "hds",
+    "he",
+    "hfrv",
+    "hg",
+    "hh",
+    "hhs",
+    "hno",
+    "hp",
+    "hr",
+    "hrh",
+    "hsc",
+    "htf",
+    "hvs",
+    "hwr",
+    "hy",
+    "i",
+    "ifi",
+    "ifrr",
+    "irds",
+    "itds",
+    "mag",
+    "magt",
+    "me",
+    "mi",
+    "mms",
+    "mps",
+    "mt",
+    "n",
+    "na",
+    "nh",
+    "nmps",
+    "nrds",
+    "nu",
+    "peg",
+    "pv",
+    "r",
+    "rhn",
+    "rp",
+    "rru",
+    "ru",
+    "rui",
+    "rul",
+    "runm",
+    "rus",
+    "ry",
+    "sd",
+    "sg",
+    "sk",
+    "sn",
+    "spd",
+    "sr",
+    "sso",
+    "ts",
+    "tsu",
+    "ua",
+    "un",
+    "us",
+    "xc"
+   ],
+   "event_level_fields": {
+    "cna": [
+     "event name",
+     "Class 2A Girls 5000M"
+    ],
+    "g": [
+     "gender",
+     "Female"
+    ],
+    "gl": [
+     "gender label?",
+     "Girls"
+    ],
+    "mi": [
+     "meet id",
+     58504
+    ],
+    "n": [
+     "event short name",
+     "Class 2A Girls 5000M"
+    ],
+    "xc": [
+     "is XC",
+     true
+    ],
+    "runm": [
+     "round name",
+     "Finals"
+    ],
+    "rui": [
+     "round id",
+     "1-1"
+    ],
+    "ry": [
+     "class-token vocabulary used by this meet",
+     [
+      "FR",
+      "JR",
+      "SO",
+      "SR"
+     ]
+    ],
+    "mms": [
+     "meet-management system tag",
+     "MP-FTP"
+    ],
+    "spd": [
+     "divisions offered",
+     [
+      {
+       "n": "1M",
+       "nu": 0
+      },
+      {
+       "n": "2M",
+       "nu": 1
+      },
+      {
+       "n": "5K",
+       "nu": 2
+      }
+     ]
+    ],
+    "i": [
+     "event id",
+     2150205
+    ]
+   },
+   "result_row_keys": {
+    "i": "result id (int)",
+    "p": "place as string",
+    "pt": "place/points integer (semantics not distinguished in this capture)",
+    "ro": "rank order int",
+    "im": "mark in integer milliseconds",
+    "m": "display mark",
+    "mps": "mark parts (empty here)",
+    "er": "entry/seed mark",
+    "pr": "personal best mark",
+    "ern": "entry annotation ('PR','SB')",
+    "irs": "interval/split rows {sp: split, cs: cumulative split}",
+    "avk": "average km pace",
+    "avm": "average mile pace",
+    "gap": "gap to winner",
+    "iv": "interval value",
+    "w": "wind (null here)",
+    "hn": "heat number",
+    "hl": "lane/heat position",
+    "hfli": "heat-flight flag (null here)",
+    "hflv": "heat-flight flag (null here)",
+    "hfav": "heat-flight flag (null here)",
+    "ith": "timing-integration flag (null here)",
+    "iu": "timing-integration flag (null here)",
+    "no": "bib number (null here)",
+    "s": "status (null here)",
+    "cp": "not populated in this capture",
+    "co": "not populated in this capture",
+    "vm": "version marker (all 1)",
+    "a": "athlete object"
+   },
+   "result_row_example": {
+    "hn": null,
+    "i": 32546801,
+    "no": null,
+    "p": "1",
+    "hl": null,
+    "ro": 0,
+    "s": null,
+    "im": 1100700,
+    "vm": 1,
+    "m": "18:20.7",
+    "pt": 1,
+    "cp": null,
+    "co": null,
+    "w": null,
+    "hfli": 0,
+    "hflv": 0,
+    "ith": "",
+    "iu": "",
+    "hfav": 0,
+    "gap": null,
+    "iv": null,
+    "er": "17:36.90",
+    "pr": "17:36.90",
+    "mps": [],
+    "avk": "3:41",
+    "avm": "5:55",
+    "irs": [
+     {
+      "sp": "5:37.4",
+      "cs": "5:37.4"
+     },
+     {
+      "sp": "5:58.4",
+      "cs": "11:35.8"
+     },
+     {
+      "sp": "6:44.9",
+      "cs": "18:20.7"
+     }
+    ],
+    "a": "{…athlete object, see athlete_object_example…}"
+   },
+   "athlete_object_example": {
+    "i": 42748637,
+    "n": "McKenna Montgomery",
+    "fn": "McKenna",
+    "l": "Montgomery",
+    "y": "SR",
+    "ag": null,
+    "g": "Female",
+    "mi": 58504,
+    "phu": "",
+    "cco": null,
+    "cm": 6,
+    "ani": 17327390,
+    "xc": 1,
+    "t": {
+     "i": 1371954,
+     "f": "Albia",
+     "n": "Albia",
+     "mi": 58504,
+     "hr": false,
+     "hir": false,
+     "hrr": false,
+     "he": false,
+     "hie": false,
+     "hre": false,
+     "cco": null,
+     "lg": "https://lh3.googleusercontent.com/N8y8QQVQ7r0kN7kvNvxERfUH4tHGHl8aK8wMGMn1-L7LsML_VWp1hHPwKlNL4yk0xpOQBSXYBfkklmo7Mn4O8Q=s80-c",
+     "ani": 19361,
+     "xc": 1,
+     "hbl": true,
+     "rks": {
+      "F": [
+       {
+        "link": "https://www.iatrackcoaches.org/2025-team-cross-country-rankings/",
+        "prefix": "Iowa 2A",
+        "typeTitle": "2024 Girls Iowa 2A HS State Rankings",
+        "instanceId": 345,
+        "rankNumber": 10,
+        "instanceTitle": "2025 Girls Iowa 2A HS PreState Rankings"
+       }
+      ]
+     },
+     "rknfe": [
+      "10"
+     ]
+    }
+   },
+   "team_object_example": {
+    "i": 1371954,
+    "f": "Albia",
+    "n": "Albia",
+    "mi": 58504,
+    "hr": false,
+    "hir": false,
+    "hrr": false,
+    "he": false,
+    "hie": false,
+    "hre": false,
+    "cco": null,
+    "lg": "https://lh3.googleusercontent.com/N8y8QQVQ7r0kN7kvNvxERfUH4tHGHl8aK8wMGMn1-L7LsML_VWp1hHPwKlNL4yk0xpOQBSXYBfkklmo7Mn4O8Q=s80-c",
+    "ani": 19361,
+    "xc": 1,
+    "hbl": true,
+    "rks": {
+     "F": [
+      {
+       "link": "https://www.iatrackcoaches.org/2025-team-cross-country-rankings/",
+       "prefix": "Iowa 2A",
+       "typeTitle": "2024 Girls Iowa 2A HS State Rankings",
+       "instanceId": 345,
+       "rankNumber": 10,
+       "instanceTitle": "2025 Girls Iowa 2A HS PreState Rankings"
+      }
+     ]
+    },
+    "rknfe": [
+     "10"
+    ]
+   },
+   "marks": "display mark 'm' plus exact integer milliseconds 'im' (1100700 = 18:20.7); split rows carry both split and cumulative",
+   "grade_evidence": "athlete object 'y' = class token (SR/JR/SO/FR); the event's 'ry' lists the vocabulary for the meet (['FR','JR','SO','SR'] here)",
+   "wind": "row key 'w' (null when not entered)",
+   "heat_round": "round is EVENT-level ('runm':'Finals','rui':'1-1'); row-level heat/lane = hn/hl (null in this XC capture)",
+   "relay_membership": "relay events carry the same athlete objects with a leg index; individual events (this capture) do not",
+   "ids": {
+    "athlete_id": "a.i (42748637)",
+    "athletic_net_athlete_id": "a.ani (17327390)",
+    "team_id": "a.t.i",
+    "athletic_net_team_id": "a.t.ani (19361)",
+    "result_id": "row i (32546801)",
+    "event_id": "event i (2150205)",
+    "meet_id": "mi (58504)"
+   },
+   "measured": {
+    "rows": 136,
+    "bytes": 159531
+   }
+  },
+  {
+   "id": "athleticlive.tenant_census_es_agg",
+   "family": "AthleticLIVE / anet.live",
+   "sample": "samples/search-athleticlive-all-meet_list-indices.json",
+   "request": "POST https://search.athletic.live/*_meet_list/_search {\"size\":0,\"aggs\":{\"tenants\":{\"terms\":{\"field\":\"_index\",\"size\":500}}}}",
+   "kind": "Elasticsearch terms aggregation over the wildcard index pattern — ONE request enumerates the whole platform",
+   "measured": {
+    "tenant_indexes": 256,
+    "total_meet_docs": 153774
+   },
+   "note": "Tenant index name = provider key; doc_count = meet docs ever (all sports, includes road races).",
+   "state_agg": {
+    "request": "POST /*_meet_list/_search {terms on lsa.keyword, size 70}",
+    "sample": "samples/search-athleticlive-all-meet_list-by-state-keyword.json",
+    "buckets": 70,
+    "top": [
+     [
+      "Illinois",
+      14599
+     ],
+     [
+      "California",
+      12703
+     ],
+     [
+      "Michigan",
+      10775
+     ],
+     [
+      "Oregon",
+      8353
+     ],
+     [
+      "Minnesota",
+      7502
+     ],
+     [
+      "Iowa",
+      7169
+     ]
+    ]
+   }
+  },
+  {
+   "id": "gse.json_race",
+   "family": "GSE Timing (gsetiming.com, MN)",
+   "sample": "samples/gsetiming-adv_source-race7784.json",
+   "request": "GET https://gsetiming.com/results/cc_rslts/adv_source.asp?race_id=<id>",
+   "kind": "JSON array-of-arrays (DataTables server-side)",
+   "columns": [
+    "place",
+    "field2",
+    "Tm|Ind",
+    "bib",
+    "first",
+    "last",
+    "school_code",
+    "grade",
+    "gender",
+    "time",
+    "pct",
+    "gap"
+   ],
+   "example_row": [
+    "2",
+    "2",
+    "Tm",
+    "5105",
+    "August",
+    "Swenson",
+    "LIT",
+    "12",
+    "M",
+    "16:02.9",
+    "0.45%",
+    "0:13.0"
+   ],
+   "note": "Rows carry HTML fragments for logo/flag cells; strip tags before use.",
+   "grade_evidence": "numeric grade column (11, 12)",
+   "identifiers": {
+    "meet": "meet_id",
+    "race": "race_id",
+    "athlete": "bib (meet-local)"
+   }
+  },
+  {
+   "id": "finishtiming.hytek_text_html",
+   "family": "Finish Timing (finishtimingresults.com, OH)",
+   "sample": "samples/finishtiming-2026-1000739707.html",
+   "request": "GET https://finishtimingresults.com/2026/<id>.html",
+   "kind": "Hy-Tek MEET MANAGER plain text inside <pre> (whole meet in one file)",
+   "header_line": "    Name                         Year School                             Finals H# Points",
+   "example_row": "  1 Whiteley, Pazeley              10 Unattached                          15.31  2 ",
+   "measured": {
+    "events_in_file": 29,
+    "athlete_lines": 372,
+    "bytes": 41721
+   },
+   "grade_evidence": "Year column numeric for HS athletes; blank for unattached/unknown rows",
+   "heat_round": "H# column; separate prelim/final sections",
+   "wind": "not present in the sampled XC/field file; appears on sprint pages of the same archive [not re-verified in this capture]"
+  },
+  {
+   "id": "raceresult.event_page_html",
+   "family": "RACE RESULT (my.raceresult.com)",
+   "sample": "samples/my-raceresult-event-423470-results.html",
+   "request": "GET https://my.raceresult.com/<eventId>/results",
+   "kind": "HTML shell + schema.org JSON-LD + JS component (RRPublish)",
+   "example_row": "{\"context\":\"https://schema.org\",\"@type\":\"Event\",\"name\":\"2026 Escanaba Fall Classic\",\"startDate\":\"2026-09-19\",\"endDate\":\"2026-09-19\",\"eventAttendanceMode\":\"https://schema.org/OfflineEventAttendanceMode\",\"eventStatus\":\"https://schema.org/EventScheduled\",\"location\":{\"@type\":\"Place\",\"address\":{\"@type\":\"PostalAddress\",\"stre ...}",
+   "available": "event name, dates, location, attendance mode (JSON-LD)",
+   "results_payload": "/RRPublish/** — DISALLOWED by https://www.raceresult.com/robots.txt (see robots-my-raceresult.txt, robots-www.raceresult.com.txt); no result rows captured",
+   "identifiers": {
+    "event": "numeric id 423470 (2026 Escanaba Fall Classic, Escanaba MI)"
+   }
+  },
+  {
+   "id": "runwv.news_file",
+   "family": "RunWV.com (WV)",
+   "sample": "samples/runwv-cc26-news-best0917.htm",
+   "request": "GET http://www.runwv.com/CC26/news/<slug>.htm",
+   "kind": "Microsoft Word-exported HTML (no tables) — meet ANNOUNCEMENT, not results",
+   "measured": {
+    "tables": 0,
+    "rows": 0,
+    "bytes": 5106
+   },
+   "corpus": "Mixed: .htm Word exports and .pdfs under CC26/news/, listed by CC26/schedule/MEETLIST.HTML",
+   "identifiers": {
+    "meet": "none — filename only"
+   }
+  },
+  {
+   "id": "trackmeetio.meet_pdf",
+   "family": "TrackMeet.io (static.trackmeetio.com) / athletic.live artifact",
+   "sample": "samples/trackmeetio-meet-67670-results.pdf",
+   "request": "GET https://static.trackmeetio.com/meetFiles/<MeetID>/<hash>.pdf",
+   "kind": "PDF — WHOLE MEET in one request",
+   "measured": {
+    "bytes": 317088,
+    "pages": "12 (per report 12; not re-counted here)"
+   },
+   "text_extractable": false,
+   "extraction_evidence": "samples/extract-trackmeetio-67670-pdftotext.txt (68,604 B of mojibake; subset-font encoding)",
+   "identifiers": {
+    "meet": "path segment <MeetID> (67670)"
+   }
+  },
+  {
+   "id": "meetpro.results_host",
+   "family": "MeetPro (DirectAthletics; tfmeetpro.com)",
+   "sample": "samples/tfmeetpro-documentation.html",
+   "request": "documented publish target: https://results.tfmeetpro.com/<CustomerFolder>/<MeetFolder>/",
+   "kind": "documented upload target ('Interfaces ▸ Upload To Web'); folder name is the meet key",
+   "observed": {
+    "http_root": "http://results.tfmeetpro.com/ → 301 to https://tfmeetpro.com",
+    "https": "connection reset (curl 35) on https://results.tfmeetpro.com/",
+    "doc_example_path": "http://results.tfmeetpro.com/Acme_Timing/SmithInvite → 404"
+   },
+   "status": "FORMAT UNVERIFIED — no live MeetPro-published meet was located or captured in this lane; do not claim a parsed row shape"
+  },
+  {
+   "id": "opentrack.challenge_blocked",
+   "family": "OpenTrack (opentrack.run)",
+   "sample": "samples/opentrack-robots-chromeua.txt",
+   "status": "BLOCKED — Cloudflare challenge (HTTP 403 'Just a moment...') on /robots.txt and /results/ with both curl UA and a Chrome UA; results.opentrack.run does not resolve (curl 6)",
+   "result_format": "UNVERIFIED"
+  },
+  {
+   "id": "xcstats.paywall_home",
+   "family": "XCStats (xcstats.com, CA)",
+   "sample": "samples/xcstats-root.html",
+   "status": "homepage captured; subscribe.php / guest-pass.php indicate an account/paywall gate; robots.txt explicitly disallows ClaudeBot and other AI crawlers",
+   "result_format": "UNVERIFIED (no meet/result page captured; policy caution on record)"
+  }
+ ]
+}

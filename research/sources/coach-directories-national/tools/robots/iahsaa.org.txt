@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /wp-admin/
+Allow: /wp-admin/admin-ajax.php
+Disallow: /search/
+Disallow: /*?*
+
+Sitemap: https://www.iahsaa.org/sitemap.xml

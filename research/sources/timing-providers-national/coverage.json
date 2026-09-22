@@ -1,0 +1,1176 @@
+{
+ "lane": "timing-providers-national",
+ "generated": "2026-09-22",
+ "method": "All counts measured from files in samples/ (see each entry's evidence list). No count is estimated unless the field name says [INFERENCE].",
+ "request_cost_unit": "HTTP requests needed to obtain 1,000 athlete performances (rows), whole-meet-first strategy",
+ "providers": [
+  {
+   "family": "FlashResults (flashresults.com)",
+   "class": "PRIMARY/RESULT_SOURCE candidate for the meets it times",
+   "hosts": [
+    "www.flashresults.com"
+   ],
+   "robots": {
+    "file": "samples/robots-www.flashresults.com.txt",
+    "verdict": "HTML meet/results pages allowed; the '*' group DISALLOWS /*.pdf$, /*.csv$, /*.js$, /flashwest/, /flashtexas*, /images/, /admin/, /services/",
+    "consequence": "per-meet result PDFs are off-limits to automated agents; use per-event HTML"
+   },
+   "jurisdictions": {
+    "measured": "2027-season schedule lists meets in TX, NC, VA, AR, KY, SC (14 meets); archived 2026 NCAA (OR) and 2016 NCAA (OR) pages reachable",
+    "evidence": [
+     "samples/flashresults-schedule.htm",
+     "samples/flashresults-2026meets-outdoor-06-10_NCAA-index.html",
+     "samples/flashresults-2016-guess-NCAA.html"
+    ]
+   },
+   "meets_observed": {
+    "current_schedule_rows": 14,
+    "archived_meet_pages_verified": 3,
+    "note": "no cumulative meet index exists; results.htm lists the current season only"
+   },
+   "formats": [
+    "HTML event pages (per event/round)",
+    "HTML whole-meet athleteList",
+    "HTML relay detail with legs",
+    "PDF whole-meet (robots-disallowed)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "partial",
+    "what_you_get": "athleteList.htm = every entry in the meet with school + bracketed class/grade (3,038 rows for adidasXC; 1,277 for NCAA 2026)",
+    "what_you_do_not_get_for_one_request": "marks/places (per-event compiled pages needed)"
+   },
+   "request_cost_per_1000": {
+    "grade_roster_path": 0.33,
+    "full_marks_path": 10.2,
+    "worked_example": "adidasXC 2026: 1 athleteList request = 3,038 data rows (0.33/1000); the meet index lists 31 distinct compiled event pages (62 unquoted `_compiled.htm` hrefs) covering all marks (31/3038 = 10.2/1000)"
+   },
+   "join_keys": {
+    "tfrrs": "per-row TFRRS athlete profile links (https://www.tfrrs.org/athletes/<id>/...)",
+    "athletic_net": "none observed"
+   },
+   "evidence": [
+    "samples/flashresults-2027meets-xc-adidasxc-index.html",
+    "samples/flashresults-2027meets-xc-adidasxc-203-1_compiled.htm",
+    "samples/flashresults-2027meets-xc-adidasxc-athleteList.htm",
+    "samples/flashresults-2026meets-outdoor-06-10_NCAA-athleteList.htm",
+    "samples/flashresults-2026meets-outdoor-06-10_NCAA-001-2_compiled.htm",
+    "samples/flashresults-2026meets-outdoor-06-10_NCAA-011-2-01.htm"
+   ],
+   "historical_depth": {
+    "year_indexes": {
+     "listed_in_sitemap": [
+      "2018results.htm",
+      "2019results.htm",
+      "2020results.htm"
+     ],
+     "verified_live": "2019results.htm (79,334 B, 60 meet links, e.g. /2019_Meets/Outdoor/06-13_NBNO/)",
+     "evidence": [
+      "samples/flashresults-sitemap-probe.xml",
+      "samples/flashresults-2019results.htm"
+     ]
+    },
+    "note": "sitemap lastmod 2021-01-01 and lists only 8 URLs; later seasons are reachable only via results.htm (current season) or direct meet paths"
+   }
+  },
+  {
+   "family": "FlashResults Texas (flashresultstexas.com)",
+   "class": "RESULT_SOURCE (region) + AthleticLIVE tenant",
+   "hosts": [
+    "www.flashresultstexas.com",
+    "flashresultstexas.com",
+    "live.flashresultstexas.com"
+   ],
+   "robots": {
+    "www": "empty 200 (no rules) — PDFs allowed here, unlike the parent host",
+    "live": "samples/live-flashresultstexas-robots.txt: Disallow /admin*, /meets/*/athletes*, /meets/*/live*, /meets/*/teams*, /meets/*/follow*"
+   },
+   "jurisdictions": {
+    "measured": "TX-centric; meet docs carry lsa state names via the shared platform",
+    "evidence": [
+     "samples/flashresultstexas-root.html",
+     "samples/search-athleticlive-flashresultstexas-meet-doc-6951.json"
+    ]
+   },
+   "meets_observed": {
+    "tenant_meet_docs": 222,
+    "source": "samples/search-athleticlive-flashresultstexas-meet_list-search.json"
+   },
+   "formats": [
+    "PDF compiled results on own domain (allowed)",
+    "anet.live SPA meet pages",
+    "ES meet docs + Azure blob event docs (shared platform)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "yes-for-PDFs-on-own-domain; yes-for-blob-event-doc per event"
+   },
+   "request_cost_per_1000": {
+    "per_event_blob_doc": 7.4,
+    "note": "blob event doc = 136 rows/159 KB in 1 request"
+   },
+   "join_keys": {
+    "athletic_net": "meet doc ani (Athletic.net meet id)"
+   },
+   "evidence": [
+    "samples/flashresultstexas-root.html",
+    "samples/flashresultstexas-results.htm",
+    "samples/live-flashresultstexas-meet-76403.html",
+    "samples/search-athleticlive-flashresultstexas-meet_list-search.json"
+   ],
+   "historical_depth": {
+    "legacy_aggregation_page": "results.htm lists 843 links (542 meet-ish) spanning 2006→2026, including links back to other timing companies (e.g. cfpitiming.com 2006)",
+    "evidence": [
+     "samples/flashresultstexas-results.htm"
+    ]
+   }
+  },
+  {
+   "family": "AthleticLIVE / anet.live (shared multi-tenant platform; includes Wayzata, Athletic Timing, hundreds of timers)",
+   "class": "PRIMARY platform",
+   "hosts": [
+    "<tenant>.anet.live",
+    "live.athletic.net",
+    "search.athletic.live",
+    "athleticlive.blob.core.windows.net",
+    "static.trackmeetio.com",
+    "livestatic.athletic.net"
+   ],
+   "robots": {
+    "search_athletic_live": "no robots policy served (403 on that path is an Elasticsearch error body, samples/robots-search.athletic.live.txt)",
+    "tenant": "per-tenant rules; flashresultstexas tenant disallows /meets/*/athletes, /meets/*/teams, /meets/*/live"
+   },
+   "jurisdictions": {
+    "states_measured": 70,
+    "top": [
+     [
+      "Illinois",
+      14599
+     ],
+     [
+      "California",
+      12703
+     ],
+     [
+      "Michigan",
+      10775
+     ],
+     [
+      "Oregon",
+      8353
+     ],
+     [
+      "Minnesota",
+      7502
+     ],
+     [
+      "Iowa",
+      7169
+     ],
+     [
+      "New York",
+      6917
+     ],
+     [
+      "Pennsylvania",
+      5937
+     ],
+     [
+      "Maryland",
+      5900
+     ],
+     [
+      "Ohio",
+      4542
+     ],
+     [
+      "Nebraska",
+      4534
+     ],
+     [
+      "Alabama",
+      4510
+     ],
+     [
+      "Wisconsin",
+      3902
+     ],
+     [
+      "Texas",
+      3454
+     ],
+     [
+      "West Virginia",
+      1035
+     ],
+     [
+      "North Dakota",
+      875
+     ]
+    ],
+    "evidence": [
+     "samples/search-athleticlive-all-meet_list-by-state-keyword.json"
+    ]
+   },
+   "meets_observed": {
+    "tenant_indexes": 256,
+    "total_meet_docs": 153774,
+    "evidence": [
+     "samples/search-athleticlive-all-meet_list-indices.json"
+    ],
+    "top_tenants": [
+     [
+      "live_results_meet_list",
+      75526
+     ],
+     [
+      "athleticlive_meet_list",
+      18055
+     ],
+     [
+      "athletic_timing_meet_list",
+      4381
+     ],
+     [
+      "wayzata_meet_list",
+      2768
+     ],
+     [
+      "fulton_meet_list",
+      2384
+     ],
+     [
+      "xpress_meet_list",
+      2172
+     ],
+     [
+      "michiana_meet_list",
+      2000
+     ],
+     [
+      "blacksquirrel_meet_list",
+      1887
+     ]
+    ]
+   },
+   "formats": [
+    "Elasticsearch JSON (meet list per tenant)",
+    "Azure blob JSON (per-event result doc)",
+    "whole-meet PDF (trackmeetio static, OCR often required)",
+    "SPA HTML shell (no data)"
+   ],
+   "bulk_download": {
+    "one_request_platform_census": "yes — wildcard terms agg returns all 256 tenants + counts",
+    "one_request_whole_meet": "yes for event docs (1 per event); yes for trackmeetio meet PDF",
+    "one_request_whole_event": "yes"
+   },
+   "request_cost_per_1000": {
+    "blob_event_doc": 7.4,
+    "platform_meet_census": 0.0065,
+    "note": "census = 1 request / 153,774 meet docs; event doc = 1 request / 136 rows"
+   },
+   "join_keys": {
+    "athletic_net_athlete": "a.ani (e.g. 17327390)",
+    "athletic_net_team": "a.t.ani (e.g. 19361)",
+    "athletic_net_meet": "meet doc ani + anis[]"
+   },
+   "evidence": [
+    "samples/live-flashresultstexas-meet-76403.html",
+    "samples/search-athleticlive-all-meet_list-indices.json",
+    "samples/search-athleticlive-all-meet_list-by-state-keyword.json",
+    "samples/athleticlive-blob-ind_res_list-2150205.json",
+    "samples/trackmeetio-meet-67670-results.pdf",
+    "samples/extract-trackmeetio-67670-pdftotext.txt"
+   ],
+   "census_triangulation": "this lane measured 256 tenant indexes in one request; data/adapter-ranking.csv rank 5 reports 258 tenant origins on the SPA — agreement within 2"
+  },
+  {
+   "family": "PrimeTime Timing (pttiming.com)",
+   "class": "RESULT_SOURCE (multi-state timer: WI home market, MO/IA/IL/IN/NE/FL)",
+   "hosts": [
+    "www.pttiming.com",
+    "data.pttiming.com",
+    "results.pttiming.com"
+   ],
+   "robots": {
+    "www.pttiming.com": "404 (no robots.txt served) — recorded in samples/robots-www.pttiming.com.txt",
+    "results.pttiming.com": "404 (samples/pttiming-results-robots.txt)",
+    "terms": "report 22 flags a legal overlay on the live platform (subscription-restricted); the static API + files are the safe lane",
+    "live_platform": "samples/robots-live.pttiming.com.txt (HTTP 200, 3,287 B): ToU prohibits automated bulk extraction and AI/ML use; Claude named 4x; 50 Disallow rules — live platform OFF-LIMITS (inherited verdict: REJECT for live, research/midwest/22-missouri-primetime.md)"
+   },
+   "jurisdictions": {
+    "measured_2026": "WI 245, MO 24, IL 12, FL 11, 'Wisconsin' 10, IA 8, IN 8, NE 6, TX 5, PA 4, GA 4, NY 3, CA 2, MN 2, KS 2, UK 1, TN 1, KY 1, '' 2",
+    "normalization_warning": "the exStateOr field mixes USPS codes and spelled-out names ('WI' and 'Wisconsin' in the same payload)",
+    "evidence": [
+     "samples/pttiming-api-results-current-2026-page1.json",
+     "samples/pttiming-api-results-current-2026-page2.json"
+    ]
+   },
+   "meets_observed": {
+    "2026_events": 353,
+    "2026_events_with_result_files": 265,
+    "result_files": 532,
+    "formats": {
+     "pdf": 489,
+     "htm": 38,
+     "html": 5
+    },
+    "evidence": [
+     "samples/pttiming-api-results-current-2026-page1.json",
+     "samples/pttiming-api-results-current-2026-page2.json"
+    ]
+   },
+   "formats": [
+    "JSON API (event index)",
+    "Hy-Tek .htm result file",
+    "RunScore/RUNMEET PDF (text-extractable)",
+    "Next.js event page (data via API)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "partial — result files are per division/race, not one file per meet",
+    "one_request_whole_index": "yes — /api/results/current?year=Y&page=N&limit=200"
+   },
+   "request_cost_per_1000": {
+    "api_index": 0.35,
+    "result_files": 5.0,
+    "worked_example": "1 API page = 200 events (0.062 events/request... index cost 2 pages/1,000 events); a division PDF/htm carries ~100-300 performances ⇒ ~3-10 file requests per 1,000 rows; the Smiley Invitational D2/D3 boys PDF alone = 1 request for a full division"
+   },
+   "join_keys": {
+    "athletic_net": "computed.entryLinkHtml → www.athletic.net (130/200 page-1 rows)"
+   },
+   "evidence": [
+    "samples/pttiming-api-results-current-2026-page1.json",
+    "samples/pttiming-api-results-current-2026-page2.json",
+    "samples/pttiming-data-cyclone-opener-womenisu.htm",
+    "samples/pttiming-data-wi-meet-sample.pdf",
+    "samples/extract-pttiming-wi-meet-pdftotext.txt",
+    "samples/pttiming-event-2910.html"
+   ],
+   "identifiers": {
+    "event_id_caveat": "dual-space: numeric CRM id or UUID, id=0 on some rows — key on eventUrl"
+   }
+  },
+  {
+   "family": "TFRRS (tfrrs.org, DirectAthletics)",
+   "class": "RESULT_SOURCE / VALIDATION (HS XC meets present; college-dominant)",
+   "hosts": [
+    "www.tfrrs.org"
+   ],
+   "robots": {
+    "file": "samples/robots-www.tfrrs.org.txt",
+    "verdict": "empty policy (comment only) → no restrictions"
+   },
+   "jurisdictions": {
+    "measured": "HS meets appear in the same feed as college (e.g. 'Southern Stampede ... High School', Joplin MO area teams Manhattan/Webb City/Eudora KS)",
+    "evidence": [
+     "samples/tfrrs-xc-27822-southern-stampede-hs.html"
+    ]
+   },
+   "meets_observed": {
+    "rss_window_items": 75,
+    "note": "RSS is a rolling window of latest results",
+    "evidence": [
+     "samples/tfrrs-results.rss"
+    ],
+    "rows_per_meet_request": 2060
+   },
+   "formats": [
+    "HTML meet pages (all races in one page)",
+    "RSS feed"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "yes — 2,060 result rows across 14 tables in one 833,212 B page",
+    "one_request_new_results_feed": "yes — results.rss"
+   },
+   "request_cost_per_1000": {
+    "whole_meet": 0.49,
+    "worked_example": "1 request = 2,060 result rows across 14 tables (833,212 B) for the sampled HS meet"
+   },
+   "join_keys": {
+    "flashresults": "inbound links from FlashResults event rows to TFRRS athlete profiles",
+    "athletic_net": "0 occurrences in the sampled page (no Athletic.net join observed)"
+   },
+   "evidence": [
+    "samples/tfrrs-root.html",
+    "samples/tfrrs-results.rss",
+    "samples/tfrrs-xc-27822-southern-stampede-hs.html"
+   ],
+   "grade_trap": "inherited (data/adapter-ranking.csv rank 6): on 2025-26 lists &year=JR = Co2027, &year=SR = Co2026 (at-meet grade, not cohort)"
+  },
+  {
+   "family": "MeetPro (DirectAthletics; tfmeetpro.com + results.tfmeetpro.com)",
+   "class": "publisher family — CONDITIONAL",
+   "hosts": [
+    "tfmeetpro.com",
+    "results.tfmeetpro.com",
+    "www.directathletics.com",
+    "blog.tfmeetpro.com"
+   ],
+   "robots": {
+    "file": "samples/tfmeetpro-robots.txt",
+    "verdict": "empty policy (comment only)"
+   },
+   "publish_path": {
+    "documented": "Interfaces ▸ Upload To Web uploads to https://results.tfmeetpro.com/<MeetFolder>/ (folder name is the meet key; reuse overwrites)",
+    "source": "samples/tfmeetpro-documentation.html"
+   },
+   "observed": {
+    "https_root": "connection reset (curl 35)",
+    "http_root": "301 → https://tfmeetpro.com",
+    "doc_example_path": "http://results.tfmeetpro.com/Acme_Timing/SmithInvite → 404"
+   },
+   "jurisdictions": {
+    "measured": "none captured (no live MeetPro-published meet located in this lane)",
+    "prior_evidence": "prior Midwest research maps MeetPro = DirectAthletics' meet-management software, used by 18 of 64 Ohio FAT contractors (report 19)"
+   },
+   "meets_observed": {
+    "count": 0,
+    "reason": "no index/listing exists; per-meet folders are unguessable"
+   },
+   "formats": [
+    "[UNVERIFIED] published results pages under results.tfmeetpro.com/<folder>/"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "unknown"
+   },
+   "request_cost_per_1000": {
+    "value": null,
+    "status": "cannot be estimated without a captured MeetPro meet"
+   },
+   "join_keys": {
+    "directathletics": "MeetPro is DirectAthletics software; TFRRS is the DirectAthletics results-of-record for college"
+   },
+   "evidence": [
+    "samples/tfmeetpro-root.html",
+    "samples/tfmeetpro-documentation.html",
+    "samples/tfmeetpro-meetpro_server.html",
+    "samples/tfmeetpro-results-demo-smithinvite.html"
+   ],
+   "alternate_surface": {
+    "host": "directathletics.com league/index pages",
+    "evidence": "inherited: ~/Downloads/midwest-tfxc-source-research/data/dat-provider-coverage.csv",
+    "measured_there": {
+     "states": 12,
+     "dat_tf_team_records": 11791,
+     "dat_xc_team_records": 10736,
+     "canonical_schools": 5933,
+     "meet_index_rows_at_least": 921,
+     "hs_marked_rows": 17,
+     "live_hs_performance_lists": "Indiana only",
+     "best_grade_artifacts": [
+      "IA event sheet 2022 (FR/SO/JR/SR)",
+      "MN result page 2016"
+     ]
+    }
+   }
+  },
+  {
+   "family": "RACE RESULT (raceresult.com / my.raceresult.com)",
+   "class": "CONDITIONAL — metadata allowed, results payload robots-disallowed",
+   "hosts": [
+    "www.raceresult.com",
+    "my.raceresult.com"
+   ],
+   "robots": {
+    "files": [
+     "samples/robots-www.raceresult.com.txt",
+     "samples/my-raceresult-robots.txt"
+    ],
+    "verdict": "www: only /*/company/index disallowed. my: DISALLOWS /RREvents (event index API), /RRPublish (results renderer), /RRRegStart, /*/*/list, /*/*/pdf, /*/*/view, /users*"
+   },
+   "jurisdictions": {
+    "measured": "event 423470 = '2026 Escanaba Fall Classic', Escanaba MI (High School XC, 2026-09-19) from the JSON-LD block; prior research places RACE RESULT with Michigan timers (Superior Timing)",
+    "evidence": [
+     "samples/my-raceresult-event-423470-results.html"
+    ]
+   },
+   "meets_observed": {
+    "event_pages_verified": 1,
+    "event_index": "JS app; its data endpoint /RREvents/** is robots-disallowed → no enumeration"
+   },
+   "formats": [
+    "HTML event page with schema.org JSON-LD (allowed)",
+    "results tables via /RRPublish/** (disallowed)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "unknown/likely yes via RRPublish, but robots-disallowed"
+   },
+   "request_cost_per_1000": {
+    "value": null,
+    "status": "not measurable under robots policy"
+   },
+   "join_keys": {
+    "athletic_net": "none observed"
+   },
+   "evidence": [
+    "samples/raceresult-root.html",
+    "samples/raceresult-en-us-home.html",
+    "samples/my-raceresult-events.html",
+    "samples/my-raceresult-event-423470-results.html"
+   ]
+  },
+  {
+   "family": "OpenTrack (opentrack.run)",
+   "class": "REJECT (automated access blocked)",
+   "hosts": [
+    "www.opentrack.run",
+    "opentrack.run"
+   ],
+   "robots": {
+    "file": "samples/opentrack-robots-chromeua.txt",
+    "verdict": "robots.txt itself is behind a Cloudflare interstitial; HTTP 403 'Just a moment...' with curl UA and with a Chrome UA"
+   },
+   "jurisdictions": {
+    "measured": "none"
+   },
+   "meets_observed": {
+    "count": 0
+   },
+   "formats": [
+    "[UNVERIFIED]"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "unknown"
+   },
+   "request_cost_per_1000": {
+    "value": null,
+    "status": "blocked; a browser/managed challenge would be required, which this lane is forbidden to solve"
+   },
+   "join_keys": {},
+   "evidence": [
+    "samples/robots-www.opentrack.run.txt",
+    "samples/opentrack-robots-chromeua.txt",
+    "samples/opentrack-results-path-probe.html"
+   ]
+  },
+  {
+   "family": "GSE Timing (gsetiming.com, MN)",
+   "class": "RESULT_SOURCE (state/regional timer, JSON data plane)",
+   "hosts": [
+    "gsetiming.com"
+   ],
+   "robots": {
+    "file": "samples/robots-gsetiming.com.txt",
+    "verdict": "see file"
+   },
+   "jurisdictions": {
+    "measured": "Minnesota XC only (T&F results redirect to athletic.net per prior research)"
+   },
+   "meets_observed": {
+    "meets_in_index": 608,
+    "index": "<select name='meets'> option list (609 <option> entries incl. one value='0' placeholder)",
+    "depth": "2005-09-08 … 2025-10-25",
+    "evidence": [
+     "samples/gsetiming-cc_rslts-index.html"
+    ],
+    "cross_check": "matches the inherited 608 count in research/midwest/10-minnesota-results-timers.md"
+   },
+   "formats": [
+    "ASP HTML index (option list)",
+    "JSON array-of-arrays per race (DataTables server-side)"
+   ],
+   "bulk_download": {
+    "one_request_whole_race": "yes — adv_source.asp returns every row of a race as JSON",
+    "one_request_whole_meet": "no (race-by-race)"
+   },
+   "request_cost_per_1000": {
+    "per_race": 7.5,
+    "worked_example": "1 request = 133 rows (87,823 B) for race_id 7784"
+   },
+   "join_keys": {
+    "athletic_net": "none observed"
+   },
+   "evidence": [
+    "samples/gsetiming-cc_rslts-index.html",
+    "samples/gsetiming-adv_source-race7784.json"
+   ]
+  },
+  {
+   "family": "Finish Timing (finishtimingresults.com, OH)",
+   "class": "RESULT_SOURCE (static Hy-Tek archive)",
+   "hosts": [
+    "finishtimingresults.com",
+    "www.finishtiming.com"
+   ],
+   "robots": {
+    "file": "samples/robots-finishtimingresults.com.txt",
+    "verdict": "see file"
+   },
+   "jurisdictions": {
+    "measured": "Ohio (prior research: 29 Athletic.net MeetIDs published free on the homepage)"
+   },
+   "meets_observed": {
+    "2026_archive_files": 325,
+    "plus_dirs": 2,
+    "index": "Apache autoindex",
+    "evidence": [
+     "samples/finishtimingresults-2026-index.html"
+    ]
+   },
+   "formats": [
+    "Hy-Tek plain text inside <pre>, one file per meet (29 events / 372 athlete lines in the sampled file)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "yes — one .html = the whole meet"
+   },
+   "request_cost_per_1000": {
+    "whole_meet": 2.7,
+    "worked_example": "1 request = 372 athlete lines across 29 events (41,721 B)"
+   },
+   "join_keys": {
+    "athletic_net": "homepage publishes AN MeetIDs (prior research); not re-verified in this capture"
+   },
+   "evidence": [
+    "samples/finishtiming-2026-1000739707.html",
+    "samples/finishtimingresults-2026-index.html"
+   ]
+  },
+  {
+   "family": "RunWV.com (WV)",
+   "class": "DISCOVERY_SOURCE (heterogeneous host uploads)",
+   "hosts": [
+    "www.runwv.com",
+    "runwv.com"
+   ],
+   "robots": {
+    "file": "samples/robots-www.runwv.com.txt",
+    "verdict": "404 (no policy)"
+   },
+   "jurisdictions": {
+    "measured": "West Virginia (site frameset: 'WV Cross Country and Track & Field')",
+    "evidence": [
+     "samples/runwv-root.html"
+    ]
+   },
+   "meets_observed": {
+    "2026_xc_schedule_entries": 37,
+    "uploaded_files_linked": 58,
+    "evidence": [
+     "samples/runwv-cc26-meetlist.html"
+    ]
+   },
+   "formats": [
+    "Word-exported .htm announcements",
+    "PDFs (file mix is arbitrary)"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "no — no structured result surface; the sampled file is a meet announcement with 0 tables"
+   },
+   "request_cost_per_1000": {
+    "value": null,
+    "status": "no result rows observed to normalise"
+   },
+   "join_keys": {
+    "athletic_net": "none observed",
+    "hy_tek": "contents page links https://hytek.active.com"
+   },
+   "evidence": [
+    "samples/runwv-root.html",
+    "samples/runwv-contents.html",
+    "samples/runwv-main.html",
+    "samples/runwv-cc26-index.html",
+    "samples/runwv-cc26-contents.html",
+    "samples/runwv-cc26-meetlist.html",
+    "samples/runwv-cc26-news-best0917.htm"
+   ]
+  },
+  {
+   "family": "XCStats (xcstats.com, CA)",
+   "class": "REJECT/CONDITIONAL (paywall + explicit AI-crawler disallow)",
+   "hosts": [
+    "www.xcstats.com"
+   ],
+   "robots": {
+    "file": "samples/robots-www.xcstats.com.txt",
+    "verdict": "default '*' group allows all except /FusionCharts, but the file explicitly Disallows ClaudeBot (and 20+ other crawlers)"
+   },
+   "jurisdictions": {
+    "measured": "California high-school XC/T&F (site self-description)"
+   },
+   "meets_observed": {
+    "count": 0,
+    "note": "no meet/result page fetched in this lane — the ClaudeBot disallow is on record and was treated as a stop signal"
+   },
+   "formats": [
+    "[UNVERIFIED]"
+   ],
+   "bulk_download": {
+    "one_request_whole_meet": "unknown",
+    "gate": "subscribe.php / guest-pass.php on the homepage"
+   },
+   "request_cost_per_1000": {
+    "value": null,
+    "status": "no data plane captured; policy caution"
+   },
+   "join_keys": {},
+   "evidence": [
+    "samples/xcstats-root.html",
+    "samples/robots-www.xcstats.com.txt"
+   ]
+  },
+  {
+   "family": "Hy-Tek MEET MANAGER output (format family, not a host)",
+   "class": "format standard spanning many publishers",
+   "hosts": [
+    "n/a"
+   ],
+   "publishers_observed_in_this_lane": [
+    "PrimeTime Timing (pttiming htm/pdf)",
+    "Finish Timing (finishtimingresults.com)",
+    "Wayzata Results / AthleticLIVE meet docs (li='Hy-Tek')"
+   ],
+   "grade_evidence": "every observed Hy-Tek export carries a Year/class column (numeric grade or FR/SO/JR/SR)",
+   "bulk_download": "one file per meet or per event depending on the publisher",
+   "evidence": [
+    "samples/pttiming-data-cyclone-opener-womenisu.htm",
+    "samples/finishtiming-2026-1000739707.html",
+    "samples/search-athleticlive-flashresultstexas-meet-doc-6951.json"
+   ]
+  },
+  {
+   "family": "Wayzata Results (wayzataresults.com + AthleticLIVE tenant wayzata, MN)",
+   "class": "CONDITIONAL as publisher (own CMS UA-gated) / PRIMARY via the AthleticLIVE tenant",
+   "hosts": [
+    "www.wayzataresults.com",
+    "results.wayzatatiming.com"
+   ],
+   "robots": {
+    "curl_ua": "samples/robots-www.wayzataresults.com.txt (CloudFront 403 page — UA gate, not a block)",
+    "browser_ua": "samples/robots-www.wayzataresults.com.browserua.txt (HTTP 200, 954 B, PrestoSports policy: disallows /cgi-bin/, /_private/, /_vti_bin/, /_vti_cnf/, /_vti_log/, /_vti_pvt/, /_vti_txt/, /reports/; Googlebot Crawl-delay 10)",
+    "tenant": "samples/robots-results.wayzatatiming.com.txt (194 B: disallows /admin*, /meets/*/athletes*, /meets/*/live*, /meets/*/teams*, /meets/*/follow*)"
+   },
+   "jurisdictions": {
+    "measured": "MN core; also IA, WI, ND, IL meets (inherited: research/midwest/10-minnesota-results-timers.md)"
+   },
+   "meets_observed": {
+    "tenant_meet_docs": 2768,
+    "source": "samples/search-athleticlive-all-meet_list-indices.json"
+   },
+   "formats": [
+    "PrestoSports CMS HTML (browser UA only)",
+    "AthleticLIVE ES meet docs + Azure blob event docs",
+    "Hy-Tek-printed PDFs (inherited: report 36 saw 'DirectAthletics MeetPro 2' footers on 2025 MN XC PDFs)"
+   ],
+   "bulk_download": {
+    "one_request_whole_event": "yes via tenant blob docs",
+    "own_site": "/reports/ is robots-disallowed"
+   },
+   "request_cost_per_1000": {
+    "blob_event_doc": 7.4
+   },
+   "known_blocks": "CloudFront 403 for non-browser UAs; /reports/ robots-disallowed even for browser UAs",
+   "join_keys": {
+    "athletic_net": "ani via the tenant plane"
+   },
+   "evidence": [
+    "samples/robots-www.wayzataresults.com.browserua.txt",
+    "samples/robots-results.wayzatatiming.com.txt",
+    "samples/search-athleticlive-all-meet_list-indices.json"
+   ]
+  },
+  {
+   "family": "TRXC Timing (trxctiming.com, MO)",
+   "class": "RESULT_SOURCE (Missouri) + VALIDATION (grade column)",
+   "hosts": [
+    "trxctiming.com"
+   ],
+   "robots": {
+    "file": "samples/robots-trxctiming.com.txt",
+    "verdict": "WordPress 404 'Page not found' (52,301 B body) — no policy"
+   },
+   "jurisdictions": {
+    "measured": "Missouri core + SW Illinois path prefix; inherited from research/midwest/40-missouri-trxctiming.md"
+   },
+   "meets_observed": {
+    "page_inventory": {
+     "pages_returned": 54,
+     "request": "GET https://trxctiming.com/wp2/wp-json/wp/v2/pages?per_page=100&page=1&_fields=id,slug,link,title,parent",
+     "evidence": [
+      "samples/trxctiming-wp-pages.json"
+     ]
+    },
+    "season_counts_inherited": {
+     "T&F 2026 (non-IL)": 132,
+     "T&F 2025": 111,
+     "T&F 2024": 127,
+     "XC per season": 55
+    }
+   },
+   "formats": [
+    "WordPress REST JSON (page inventory)",
+    "static HTML result directories",
+    "PDFs per meet [inherited]"
+   ],
+   "bulk_download": {
+    "one_request_whole_site_map": "yes — 54 pages in 1 request (verified first-hand)",
+    "one_request_whole_meet": "no (per-meet directories)"
+   },
+   "request_cost_per_1000": {
+    "site_map": 0.02,
+    "per_meet": "~1 request per meet directory [INFERENCE]"
+   },
+   "join_keys": {
+    "athletic_net": "upcoming-meets page carries ATN ids (DISCOVERY-ONLY per prior report)"
+   },
+   "evidence": [
+    "samples/trxctiming-wp-pages.json",
+    "samples/robots-trxctiming.com.txt"
+   ]
+  },
+  {
+   "family": "Hero's Timing (herostiming.com / live.herostiming.com, MN+ND)",
+   "class": "RESULT_SOURCE via AthleticLIVE tenant",
+   "hosts": [
+    "www.herostiming.com",
+    "live.herostiming.com"
+   ],
+   "robots": {
+    "file": "samples/robots-www.herostiming.com.txt",
+    "verdict": "User-agent: * disallows /ajax/, /apps/, /results.html, /honor-rolls.html, /past-results.html; NerdyBot fully disallowed; dotbot Crawl-delay 10. The /NNNN-results.html year pages are NOT matched by these rules."
+   },
+   "jurisdictions": {
+    "measured": "MN + ND (inherited: research/midwest/10-minnesota-results-timers.md)"
+   },
+   "meets_observed": {
+    "year_pages": "2012–2026 (15 seasons) verified first-hand from the homepage link set",
+    "meets_2026": 256,
+    "evidence": [
+     "samples/herostiming-root.html",
+     "samples/herostiming-2026-results.html"
+    ],
+    "cross_check": "the inherited report counted 256 live.herostiming.com/meets/<id> links on the 2026 page — identical"
+   },
+   "formats": [
+    "Weebly HTML year pages",
+    "AthleticLIVE tenant (ES meet docs + Azure blob event docs)"
+   ],
+   "bulk_download": {
+    "one_request_whole_season_index": "yes — 1 year page = 256 meet links",
+    "one_request_whole_event": "yes via tenant blob docs"
+   },
+   "request_cost_per_1000": {
+    "blob_event_doc": 7.4,
+    "season_index": "1 request per season"
+   },
+   "join_keys": {
+    "athletic_net": "via the tenant plane (ani)"
+   },
+   "evidence": [
+    "samples/herostiming-root.html",
+    "samples/herostiming-2026-results.html",
+    "samples/robots-www.herostiming.com.txt"
+   ]
+  }
+ ],
+ "platform_state_census": {
+  "index": "samples/search-athleticlive-all-meet_list-by-state-keyword.json",
+  "source": "athletic.live shared ES cluster",
+  "buckets": [
+   [
+    "Illinois",
+    14599
+   ],
+   [
+    "California",
+    12703
+   ],
+   [
+    "Michigan",
+    10775
+   ],
+   [
+    "Oregon",
+    8353
+   ],
+   [
+    "Minnesota",
+    7502
+   ],
+   [
+    "Iowa",
+    7169
+   ],
+   [
+    "New York",
+    6917
+   ],
+   [
+    "Pennsylvania",
+    5937
+   ],
+   [
+    "Maryland",
+    5900
+   ],
+   [
+    "Ohio",
+    4542
+   ],
+   [
+    "Nebraska",
+    4534
+   ],
+   [
+    "Alabama",
+    4510
+   ],
+   [
+    "Washington",
+    3932
+   ],
+   [
+    "Wisconsin",
+    3902
+   ],
+   [
+    "Connecticut",
+    3718
+   ],
+   [
+    "Massachusetts",
+    3681
+   ],
+   [
+    "Texas",
+    3454
+   ],
+   [
+    "Arizona",
+    2757
+   ],
+   [
+    "",
+    2538
+   ],
+   [
+    "Missouri",
+    2517
+   ],
+   [
+    "North Carolina",
+    2478
+   ],
+   [
+    "Louisiana",
+    2362
+   ],
+   [
+    "Virginia",
+    2340
+   ],
+   [
+    "Mississippi",
+    2330
+   ],
+   [
+    "Indiana",
+    2233
+   ],
+   [
+    "Kentucky",
+    1969
+   ],
+   [
+    "South Dakota",
+    1869
+   ],
+   [
+    "Kansas",
+    1698
+   ],
+   [
+    "Oklahoma",
+    1644
+   ],
+   [
+    "Tennessee",
+    1590
+   ],
+   [
+    "Nevada",
+    1542
+   ],
+   [
+    "New Jersey",
+    1150
+   ],
+   [
+    "West Virginia",
+    1035
+   ],
+   [
+    "Idaho",
+    938
+   ],
+   [
+    "North Dakota",
+    875
+   ],
+   [
+    "Australia",
+    747
+   ],
+   [
+    "Montana",
+    738
+   ],
+   [
+    "New Hampshire",
+    685
+   ],
+   [
+    "New Zealand",
+    660
+   ],
+   [
+    "Colorado",
+    590
+   ],
+   [
+    "South Carolina",
+    444
+   ],
+   [
+    "Florida",
+    425
+   ],
+   [
+    "Ontario",
+    351
+   ],
+   [
+    "District of Columbia",
+    338
+   ],
+   [
+    "Vermont",
+    255
+   ],
+   [
+    "Delaware",
+    247
+   ],
+   [
+    "Saskatchewan",
+    234
+   ],
+   [
+    "Georgia",
+    206
+   ],
+   [
+    "Jamaica",
+    161
+   ],
+   [
+    "New Brunswick",
+    160
+   ],
+   [
+    "Alberta",
+    146
+   ],
+   [
+    "Hawaii",
+    135
+   ],
+   [
+    "Cayman Islands",
+    124
+   ],
+   [
+    "Utah",
+    110
+   ],
+   [
+    "Nova Scotia",
+    107
+   ],
+   [
+    "Arkansas",
+    96
+   ],
+   [
+    "New Mexico",
+    92
+   ],
+   [
+    "Alaska",
+    86
+   ],
+   [
+    "Germany",
+    74
+   ],
+   [
+    "Japan",
+    58
+   ],
+   [
+    "Newfoundland and Labrador",
+    56
+   ],
+   [
+    "Rhode Island",
+    56
+   ],
+   [
+    "Colombia",
+    52
+   ],
+   [
+    "United Kingdom",
+    39
+   ],
+   [
+    "British Columbia",
+    37
+   ],
+   [
+    "Italy",
+    36
+   ],
+   [
+    "Wyoming",
+    28
+   ],
+   [
+    "Saint Kitts and Nevis",
+    22
+   ],
+   [
+    "Maine",
+    20
+   ],
+   [
+    "Manitoba",
+    20
+   ]
+  ]
+ },
+ "platform_mapping_limits": {
+  "provider_aggregation": "POST /*_meet_list/_search terms-agg on 'tna' FAILS on 250/256 shards: illegal_argument_exception 'Text fields are not optimised for ... Please use a keyword field instead ... fielddata=true on [tna]'. No keyword subfield exists. Per-provider meet counts are therefore NOT obtainable from the shared cluster in one request.",
+  "evidence": [
+   "samples/search-athleticlive-all-meet_list-by-state.json",
+   "samples/search-athleticlive-all-meet_list-by-state-keyword.json"
+  ],
+  "state_aggregation": "terms-agg on 'lsa' (text) fails the same way; 'lsa.keyword' works and returns 70 buckets.",
+  "workaround": "enumerate tenants via _index agg (256), then count providers by fetching docs per tenant or by reading the tenant name as a provider proxy."
+ },
+ "downloads_package_sources": {
+  "dat_provider_coverage": "~/Downloads/midwest-tfxc-source-research/data/dat-provider-coverage.csv (12-state DirectAthletics matrix: 11,791 T&F team records, 10,736 XC team records, 5,933 canonical schools, >=921 meet-index rows, 17 HS-marked rows, live HS performance lists = Indiana only)",
+  "adapter_ranking": "~/Downloads/midwest-tfxc-source-research/data/adapter-ranking.csv (rank 5 AthleticLIVE/ATN-id carrier: 959/959 + 136/136 sampled rows carry the ATN athlete id, 258 tenant origins; rank 6 TFRRS IN with the &year=JR/SR cohort trap)",
+  "reports": [
+   "research/midwest/08-wisconsin-timing-providers.md",
+   "research/midwest/10-minnesota-results-timers.md",
+   "research/midwest/19-ohio-ohsaa.md",
+   "research/midwest/20-ohio-independent-sources.md",
+   "research/midwest/21-missouri-mshsaa.md",
+   "research/midwest/22-missouri-primetime.md",
+   "research/midwest/23-kansas-kshsaa-directathletics.md",
+   "research/midwest/24-nebraska-nsaa.md",
+   "research/midwest/25-north-dakota-ndhsaa.md",
+   "research/midwest/26-south-dakota-sdhsaa.md",
+   "research/midwest/40-missouri-trxctiming.md"
+  ],
+  "note": "facts drawn from these paths are marked 'inherited' in SOURCE_REPORT.md; only files listed under each provider's evidence[] are first-hand captures of this lane"
+ }
+}

@@ -82,7 +82,7 @@ impl<'a> Ctx<'a> {
     fn canonical_school(&mut self, school_id: &str) -> Option<SchoolId> {
         let school = school_for(
             school_id,
-            self.target.state.as_deref(),
+            self.target.state,
             &self.school_names,
             self.index,
             self.resolved,

@@ -9,6 +9,7 @@ use census_domain::model::{
     Mark, ObservedGrade, SchoolId, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace,
     SourceRef, Sport, TeamId, TimingMethod,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 /// Profile URL for an athlete id, in the form Athletic.net itself links to.
@@ -64,7 +65,7 @@ pub(super) fn grade_in(observed: &[ObservedGrade], school_year: SchoolYear) -> O
 #[allow(clippy::too_many_arguments)]
 pub(super) fn school_for(
     school_id: &str,
-    state: Option<&str>,
+    state: Option<UsJurisdiction>,
     school_names: &HashMap<String, &str>,
     index: &SchoolIndex,
     resolved: &mut HashMap<String, SchoolId>,
@@ -113,7 +114,7 @@ pub(super) fn school_for(
 pub(super) fn meet_for(
     meet_id: Option<i64>,
     bio: &Bio,
-    state: Option<&str>,
+    state: Option<UsJurisdiction>,
     source: &SourceRef,
     observed_on: &str,
     accumulated: &mut Accumulator,
@@ -127,7 +128,7 @@ pub(super) fn meet_for(
         .entry(format!("{state}:{meet_id}"))
         .or_insert_with(|| {
             let mut meet = CanonicalMeet::new(
-                state,
+                Some(state),
                 published.name.clone(),
                 date.clone(),
                 CompetitionLevel::Unknown,

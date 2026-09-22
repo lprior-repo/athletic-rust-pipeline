@@ -5,6 +5,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 
 use crate::sources::{CrawlError, CrawlResult};
 
@@ -12,10 +13,15 @@ use super::parse::{clean, nonempty, parse_role, parse_sport, strip_honorific};
 use super::wire::{CoachContactRow, RowEntities, RowSource};
 
 /// Build the canonical entities for one CSV row.
-pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> CrawlResult<RowEntities> {
-    let state = clean(&row.state).to_ascii_uppercase();
+///
+/// The jurisdiction arrives resolved from the CSV boundary; every school this row mints carries it.
+pub fn row_entities(
+    row: &CoachContactRow,
+    state: UsJurisdiction,
+    default_observed_on: &str,
+) -> CrawlResult<RowEntities> {
     let school_name = clean(&row.school);
-    let (mut school, school_id) = school_with_city(&state, &school_name, &row.city);
+    let (mut school, school_id) = school_with_city(state, &school_name, &row.city);
     let source = RowSource::of(row, default_observed_on, &school_name);
     school.source_identities.push(
         SourceIdentity::new(source.namespace.clone(), source.key.clone())
@@ -50,12 +56,16 @@ pub fn row_entities(row: &CoachContactRow, default_observed_on: &str) -> CrawlRe
 }
 
 /// The canonical school one CSV row describes, with the city alias the row publishes.
-fn school_with_city(state: &str, school_name: &str, city: &str) -> (CanonicalSchool, SchoolId) {
+fn school_with_city(
+    state: UsJurisdiction,
+    school_name: &str,
+    city: &str,
+) -> (CanonicalSchool, SchoolId) {
     let (mut school, school_id) =
         CanonicalSchool::new(state, school_name, normalize_name(school_name));
     school.city = nonempty(city);
     if let Some(city) = school.city.clone() {
-        school.aliases.push(format!("{city} {state}"));
+        school.aliases.push(format!("{city} {}", state.code()));
     }
     (school, school_id)
 }

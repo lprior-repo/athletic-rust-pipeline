@@ -8,18 +8,30 @@ adapter author must satisfy; `DOMAIN.md` covers the types, `ARCHITECTURE.md` the
 ## Where an adapter lives
 
 ```text
-crates/midwest-census/src/sources/<name>/          the adapter (collect + parse + tests)
-crates/midwest-census/src/sources/mod.rs           `pub mod <name>;`
-crates/midwest-census/src/main.rs                  dispatch arm under `Command::Provider`
+crates/midwest-census/src/sources/<name>.rs         module root (facade) when the adapter has parts
+crates/midwest-census/src/sources/<name>/           the adapter's parts (collect + parse + map + tests)
+crates/midwest-census/src/sources/mod.rs            `pub mod <name>;` in the alphabetical module list
+crates/midwest-census/src/cli/provider.rs           `<name>` arm in `run_provider` + `ProviderArgs` doc list
+crates/midwest-census/src/cli/mod.rs                the `Command::Provider` variant itself
 ```
+
+The worked example is `wiaa` (Wisconsin association directory), which has no flat file:
+`sources/wiaa/{mod.rs, parse.rs, map.rs, collect.rs, collect_schools.rs, primitives.rs, tests.rs}`.
+Adapters that only need one file use the flat `sources/<name>.rs` (e.g. `ks.rs`, `ohsaa.rs`); both
+shapes are ordinary Rust module layouts, not two kinds of adapter.
 
 Registration is three edits, no more:
 
 1. `pub mod <name>;` in `sources/mod.rs` (keep the alphabetical block).
-2. A `"<name>" => providers::<name>::collect(&context, &providers::<name>::Options { .. }).await`
-   arm in `main.rs`, mapping the shared `ProviderArgs` fields.
-3. Add `<name>` to the adapter-name doc comment on `ProviderArgs` (`main.rs`), which is also the
-   list the `unknown adapter` error prints.
+2. A `"<name>" => <name>_report(&context, args, observed_on).await` arm in the `match` of
+   `run_provider` (`crates/midwest-census/src/cli/provider.rs`), plus the thin helper that maps the
+   shared `ProviderArgs` fields onto the adapter's own `Options`.
+3. Add `<name>` to the adapter-name doc comment on `ProviderArgs` (`cli/provider.rs`), which is also
+   the list the `unknown adapter` error prints.
+
+`cargo xtask new-source <name>` performs edits 1 and the module layout for you
+(`xtask/src/scaffold.rs`, templates in `xtask/src/templates.rs`); it writes a placeholder adapter
+whose `collect` bails, so edits 2 and 3 are still yours.
 
 ## The one required function
 
@@ -42,12 +54,20 @@ ones: `limit`, `states`, `seasons`, `school_names`, `input`, `refresh`, `observe
 exists for import-style adapters whose subject list comes from a file (the Athletic.net bio
 adapter reads an operator-supplied athlete registry, never a search endpoint).
 
+A state-shaped subject list is `census_domain::UsJurisdiction`, not `String`: the `teams`/`collect`
+CLI flags parse `Vec<UsJurisdiction>` (`crates/midwest-census/src/cli/gather.rs` accepts any USPS
+code), and the `milesplit` adapter derives its per-state host from the jurisdiction code
+(`crates/midwest-census/src/sources/milesplit/wire.rs: Site::for_jurisdiction`) instead of carrying a
+table of site strings. **Mid-refactor**: adapters that still declare a free-form
+`states: Vec<String>` are the remaining cutover sites — new adapters must take the typed jurisdiction
+and derive any host/URL from it, never a parallel string convention.
+
 ## Evidence rules
 
 * Every canonical fact must carry `Evidence` with a `SourceRef::new("<namespace>", Some(key))`,
   where the namespace is the adapter's stable id and the key is the source's own stable object id
   (school id, meet id, athlete id) — never a name, never a position.
-* `SourceNamespace` variants are declared in `crates/midwest-census/src/model.rs`; add a variant
+* `SourceNamespace` variants are declared in `crates/census-domain/src/model.rs`; add a variant
   there rather than smuggling a source tag through a `String` (ADR-003's rule about precision
   applies to source identity too).
 * Evidence method matters: `EvidenceMethod::Parsed` for a document you parsed, distinct from
@@ -61,9 +81,14 @@ adapter reads an operator-supplied athlete registry, never a search endpoint).
 
 ## Traffic rules (non-negotiable)
 
-* **One attempt per operation.** No retries inside the adapter, no retry loops around `fetcher`
-  calls — Restate/the workflow owns retries (ADR-002). Layered retries multiply traffic against
-  origins that do not care which layer caused it.
+* **No retries inside the adapter.** Adapters perform one attempt per requested resource, and never
+  wrap a `fetcher` call in their own retry loop. The transport (`net/`) owns the only two retry
+  paths: the loop over `FetchError::retryable` (`Transport`, `Timeout`, `RateLimited`, `Http` with
+  status ≥ 500 or 429), at most `MAX_RETRIES = 3` attempts with ±25% jittered exponential backoff
+  from `RETRY_BASE_DELAY_MS = 500`, and the conditional-GET path's retry of a `304` with no cached
+  body (`net/execute/attempt.rs::replay_cached`). Restate/the workflow owns every other retry,
+  including retrying a whole step (ADR-002). A second retry layer on top of those multiplies
+  traffic against origins that do not care which layer caused it.
 * All requests go through `ctx.fetcher`; never construct a client locally, never bypass robots
   checks, never spoof a browser user agent to evade an access control.
 * Bounded concurrency only: stay within the crate's `CONCURRENCY_BOUND` unless the adapter
@@ -76,25 +101,38 @@ adapter reads an operator-supplied athlete registry, never a search endpoint).
 
 ## Idempotency
 
-Re-running an adapter must be safe and must not duplicate observations:
+Re-running an adapter must be safe and must leave the store consistent:
 
-* observations are keyed by source identity + evidence digest, so a re-run overwrites rather than
-  appends a second copy;
-* `refresh` only controls whether the network/parse step is repeated;
-* a crash mid-collection must leave the store consistent (partial evidence is fine; duplicates are
-  not).
+* observations are **append-only** under `<table>\0<entity-id>\0<sequence:u64 big-endian>`
+  (`crates/midwest-census/src/store/keys.rs`). A re-run appends new observations; it does not
+  overwrite the old ones. Readers merge an entity's observations (`Store::scan`,
+  `crates/midwest-census/src/store/read.rs`) through `Entity::merge` and then `Entity::publish`, and
+  merge is idempotent and commutative — the set-valued fields (`source_identities`, `evidence`,
+  `aliases`, `known_names`, `sports`, `source_urls`, `source_labels`) cannot double-count and a
+  scalar a row already carries is never replaced. Two identical observations therefore cost bytes,
+  not correctness;
+* the journal is the real dedup: a completed unit of work is recorded (`Store::journal_done`) and a
+  re-run skips it, so a resumed adapter re-requests only what it never finished;
+* `refresh` only controls whether the network/parse step is repeated (the HTTP cache is the other
+  gate); it does not change what a re-run appends;
+* a crash mid-collection must leave the store consistent (partial evidence is fine; a half-written
+  batch is not — a batch commits as one `SyncData` transaction,
+  `crates/midwest-census/src/store/write.rs`).
 
 ## Reporting
 
 Return an `AdapterReport` with real counters (schools/meets/athletes/requests/errors as the
-adapter's shape implies) plus notes. `main.rs` prints notes for the operator; notes are the right
+adapter's shape implies) plus notes. The `provider` subcommand prints the whole report as pretty
+JSON (`crates/midwest-census/src/cli/provider.rs`), and the gather stages print the notes line by
+line for the operator (`crates/midwest-census/src/cli/cycle.rs`, `cli/gather.rs`); notes are the right
 place for "artifact did not parse" style per-item failures so a parse failure is diagnosable
 rather than silently counted.
 
 ## Tests and fixtures
 
-* Unit tests live in the adapter file under `#[cfg(test)]`, driven by embedded payloads or
-  `crates/midwest-census/tests/fixtures/**`; **no test may touch the network**.
+* Unit tests live under the adapter's `#[cfg(test)] mod tests;` (a sibling `tests.rs` — `wiaa/mod.rs`
+  ends with `mod tests;`), driven by embedded payloads or `crates/midwest-census/tests/fixtures/**`;
+  **no test may touch the network**.
 * Test the parse layer against real captured snippets (trimmed), including the shapes that break
   naive parsing: missing columns, `no mark` rows, wind/attempt columns, Unicode names, empty
   divisions.
@@ -106,12 +144,15 @@ rather than silently counted.
 ## Checklist for a new adapter
 
 1. `sources/<name>/` with `Options`, `Target`/subject type, parse layer, `collect`, tests.
-2. Registry wiring (mod.rs, main.rs arm, `ProviderArgs` doc list).
-3. Namespace in `model.rs`; `NON_CORE_SOURCE_IDS` entry if the source is not core.
+2. Registry wiring (`sources/mod.rs` module list, `cli/provider.rs` arm and `ProviderArgs` doc list).
+3. Namespace in `crates/census-domain/src/model.rs`; `NON_CORE_SOURCE_IDS` entry in
+   `crates/midwest-census/src/report/core_scope.rs` if the source is not core.
 4. Evidence on every fact; source-native stable ids in keys.
-5. One attempt per operation; `CONCURRENCY_BOUND` respected; no local HTTP clients.
-6. Idempotent observation writes; `refresh` handled.
+5. No retries in the adapter; `CONCURRENCY_BOUND` respected; no local HTTP clients.
+6. Idempotent observation writes; `refresh` handled; the journal records each completed unit.
 7. `AdapterReport` counters + notes.
-8. Fixtures under `tests/fixtures/` if payloads are too large to embed; tests network-free.
-9. `cargo fmt`, strict clippy (zero new diagnostics), `cargo nextest run -p midwest-census`.
+8. Fixtures under `crates/midwest-census/tests/fixtures/<name>/` if payloads are too large to
+   embed; tests network-free.
+9. `cargo fmt`, strict clippy via `tools/gate.sh` (zero new diagnostics),
+   `cargo xtask source-test <name>`.
 10. Report back: files touched, commands run, results, remaining uncertainty.

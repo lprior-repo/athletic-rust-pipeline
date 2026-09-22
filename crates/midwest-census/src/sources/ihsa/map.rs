@@ -7,6 +7,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 
 /// Whether a coach's address is worth a reveal request.
 ///
@@ -33,7 +34,7 @@ pub fn parse_school(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new("IL", name, &normalized);
+    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Illinois, name, &normalized);
     school.city = nonempty(&record.city);
     school.association = Some("ihsa".into());
     school.school_website = record.url.as_ref().and_then(|v| nonempty(v));

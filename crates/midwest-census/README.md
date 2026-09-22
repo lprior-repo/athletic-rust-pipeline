@@ -16,7 +16,7 @@ marginal coverage of the source this pipeline refuses to depend on.
 cargo run --release -p midwest-census -- <command>
 
   fetch           Fetch a single URL through the polite fetcher (robots-enforced, cached)
-  sites           List the registered MileSplit state sites
+  sites           List the MileSplit state sites — one per jurisdiction, host derived from its code
   teams           Fetch (and cache) team indexes for the given states
   collect         Walk rosters and emit canonical entities for the given states
   import-coaches  Import the researched official coach-contact CSV into canonical entities
@@ -25,11 +25,17 @@ cargo run --release -p midwest-census -- <command>
   report          Compute the measured census from the store
   bests           Reduce to one best mark per athlete and event   [--grad-year 2027] [--limit N] [--all]
   workbook        Build the census workbook (.xlsx) and sidecars [--out PATH] [--grad-year 2027] [--limit N]
+  run             Gather a registry (optional), consolidate, publish both census scopes, reduce
+                  bests and write the workbook in one command
+                  [--input PATH] [--states WI,MN] [--limit N] [--grad-year 2027] [--all-sources]
+                  [--refresh] [--observed-on YYYY-MM-DD] [--out PATH]
   fjall-stats     Print per-table observation counts and the database footprint
   import-legacy   Run the one-time pre-Fjall JSONL import, then print the store stats
   serve           Print the command that runs the `midwest-serve` Restate endpoint
 
-Global: --store <dir> (default var/midwest-census), --delay-ms <n>, --user-agent <ua>
+Global: --store <dir> (default var/midwest-census), --delay-ms <n>, --user-agent <ua>,
+        --authorized-host <host> (repeatable; records the host's robots rules as authorized and
+        applies the 2 rps ceiling instead of blocking)
 ```
 
 A full cycle is `collect` → `provider <name>` per adapter → `consolidate` → `report` / `bests` /
@@ -141,6 +147,11 @@ and it never starts a server itself.
 | service | `Census` | `status`, `consolidate`, `report`, `bests`, `workbook`; each heavy job runs on `spawn_blocking` behind a semaphore sized by `--max-concurrent`, inside `ctx.run`, so a restart replays the journal value rather than repeating a completed pass |
 | virtual object | `Ingest` | one object per source endpoint, which is what makes the per-endpoint cursor and window bookkeeping safe against concurrent writers: `state`, `record`, `complete_window` |
 | workflow | `Sweep` | observes the ingest objects over `windows` windows (`window_seconds` apart, durable sleeps), exits early when `interrupt` is resolved, and reports per-endpoint observation counts, endpoints that never accepted an observation, and where the pass wrote its report |
+| virtual object | `JurisdictionCensus` | one object per jurisdiction identity (`jurisdiction:<state>:<season>:<revision>`, `census::WorkflowIdentity`), running that state's team index, roster walk and consolidate stages and recording each in durable state so a re-invocation resumes at the stage it still owes: `state` (shared), `run` |
+| workflow | `NationalCensus` | the root run per season and revision (`national:<season>:<revision>`): fans out one `JurisdictionCensus` call per jurisdiction and folds the per-state reports into one national report, listing failed states as rows instead of failing the run: `run`, `report` (shared) |
+
+The last two rows are the newest definitions (`restate_services/{jurisdiction,national}.rs`, bound in
+`build_endpoint`); they are the national-scope surface and have no CLI command in this crate yet.
 
 Shutdown is a protocol rather than a flag: intake stops, in-flight invocations get `--drain-timeout`
 seconds to finish, whatever outlives the deadline is aborted and counted, and the store is flushed
@@ -234,7 +245,7 @@ is never dereferenced by a core run.
 | A | researched official contact graph | `coach_contacts` (`import-coaches`) | artifact import: school / sport / role + published email |
 | B | MileSplit-style state sites | `milesplit` (driven by `teams` and `collect`) | rosters, graded athletes, profile URLs |
 | D | vendor result artifacts | `result_file` dispatching `hytek`, `compiled`, `xc`, `raceday` | performances with grade evidence |
-| E | Wayzata Results (MN / IA / WI timer) | `wayzata` | meet inventory from published schedules |
+| E | Wayzata Results (MN / IA / WI timer) | `wayzata` (provider name `wayzata_schedule`) | meet inventory from published schedules |
 | - | AthleticLIVE mirror | `athleticlive`, `athleticlive_athletes` | **non-core**: comparison only |
 
 ### Result-artifact parsing
@@ -294,6 +305,7 @@ Minnesota one. Unresolved venues are filed under `??` rather than guessed: on th
   `GradYear` and `ObservedGrade` as separate fields for exactly that reason.
 - Test and lint counts are not restated here because every slice of work moves them: the
   2026-09-20 record was 183 passing tests and 17 clippy warnings; both are now cleared, and the
-  crate is clippy-clean. The workspace gate is the current answer: `cargo fmt --check`,
-  `cargo clippy --workspace --all-targets --all-features`, and
-  `cargo test --workspace --all-features` from the repository root.
+  crate is clippy-clean. The workspace gate is the current answer: run `tools/gate.sh` from the
+  repository root — or `cargo xtask source-test <name>` for one adapter's tests,
+  `cargo xtask census-status --store <dir>` / `cargo xtask coverage --store <dir>` for the measured
+  census — and never quote a count that a gate run did not print.

@@ -25,6 +25,7 @@ use census_domain::model::{
     Id, Mark, MeetId, ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace,
     SourceRef, Sport, TeamId, TimingMethod,
 };
+use census_domain::UsJurisdiction;
 use clap::Parser;
 use midwest_census::report::{self, Scope};
 use midwest_census::store::{Store, Table};
@@ -188,9 +189,9 @@ fn build_corpus(school_count: usize) -> Result<Corpus> {
 /// One school, its team, its meet, and the athletes that compete at that meet.
 fn append_school(corpus: &mut Corpus, rng: &mut Lcg, index: usize) -> Result<()> {
     let state = match index % 3 {
-        0 => "WI",
-        1 => "MN",
-        _ => "IA",
+        0 => UsJurisdiction::Wisconsin,
+        1 => UsJurisdiction::Minnesota,
+        _ => UsJurisdiction::Iowa,
     };
     let name = format!("Synthetic School {index}");
     let (mut school, school_id) = CanonicalSchool::new(state, name.clone(), normalize_name(&name));
@@ -494,9 +495,9 @@ fn team_of(school_id: &SchoolId, index: usize) -> CanonicalTeam {
     }
 }
 
-fn meet_of(state: &str, index: usize) -> CanonicalMeet {
+fn meet_of(state: UsJurisdiction, index: usize) -> CanonicalMeet {
     let mut meet = CanonicalMeet::new(
-        state,
+        Some(state),
         format!("Synthetic Invite {index}"),
         MEET_DATE,
         CompetitionLevel::Invitational,

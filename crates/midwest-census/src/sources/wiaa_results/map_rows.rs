@@ -9,6 +9,7 @@ use census_domain::model::{
     AthleteId, CanonicalAthlete, CanonicalPerformance, CanonicalTeam, Evidence, Gender, GradYear,
     Grade, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TeamId,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 /// Count one result row and write its members, returning the athlete rows it produced.
@@ -64,18 +65,20 @@ fn resolve_school(
 ) -> Option<SchoolId> {
     resolved
         .entry(row.school.clone())
-        .or_insert_with(|| match index.resolve("WI", &row.school) {
-            Some((id, kind)) => {
-                let resolved_kind = stats.school_resolved.entry(kind.as_str()).or_default();
-                *resolved_kind = resolved_kind.saturating_add(1);
-                Some(id)
-            }
-            None => {
-                let unresolved = stats.unresolved.entry(row.school.clone()).or_default();
-                *unresolved = unresolved.saturating_add(1);
-                None
-            }
-        })
+        .or_insert_with(
+            || match index.resolve(UsJurisdiction::Wisconsin, &row.school) {
+                Some((id, kind)) => {
+                    let resolved_kind = stats.school_resolved.entry(kind.as_str()).or_default();
+                    *resolved_kind = resolved_kind.saturating_add(1);
+                    Some(id)
+                }
+                None => {
+                    let unresolved = stats.unresolved.entry(row.school.clone()).or_default();
+                    *unresolved = unresolved.saturating_add(1);
+                    None
+                }
+            },
+        )
         .clone()
 }
 

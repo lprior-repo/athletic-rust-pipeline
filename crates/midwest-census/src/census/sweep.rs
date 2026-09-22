@@ -12,6 +12,7 @@ use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::sources::{CrawlError, CrawlResult};
 use crate::store::{Store, Table};
 use census_domain::model::{Gender, SchoolYear};
+use census_domain::UsJurisdiction;
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -21,16 +22,17 @@ use super::aggregate::summarize_states;
 use super::scope::{count_co2027, count_cohort, pending_rosters};
 use super::{rosters_phase, teams_phase, CollectOptions, CollectReport, StateProgress};
 
-/// Fetch (or read the cached copy of) one state's team index.
+/// Fetch (or read the cached copy of) one jurisdiction's team index.
 #[tracing::instrument(skip(fetcher, store))]
 pub async fn collect_state_teams(
     fetcher: &Fetcher,
     store: &Store,
-    state: &str,
+    jurisdiction: UsJurisdiction,
     refresh: bool,
 ) -> CrawlResult<Vec<TeamRef>> {
-    let site = milesplit::site_for_state(state)?;
-    let phase = teams_phase(state);
+    let site = Site::for_jurisdiction(jurisdiction);
+    let state = jurisdiction.code();
+    let phase = teams_phase(jurisdiction);
     let known = store.journal_keys(&phase)?;
     if !refresh && known.contains(state) {
         // Team index already collected: reuse the journaled copy from the HTTP cache.
@@ -46,7 +48,7 @@ pub async fn collect_state_teams(
     store.journal_done(
         &phase,
         state,
-        &serde_json::json!({ "teams": teams.len(), "host": site.host }),
+        &serde_json::json!({ "teams": teams.len(), "host": site.host() }),
     )?;
     info!(state, teams = teams.len(), "team index collected");
     Ok(teams)
@@ -69,7 +71,7 @@ struct Shared {
 async fn record_roster(
     shared: &Mutex<Shared>,
     store: &Store,
-    state: &str,
+    jurisdiction: UsJurisdiction,
     team: &TeamRef,
     outcome: CrawlResult<Roster>,
 ) {
@@ -101,8 +103,8 @@ async fn record_roster(
         "co2027": co2027,
     });
     let journal = store.journal_done(
-        &rosters_phase(state),
-        &format!("{}:{}", state, team.id),
+        &rosters_phase(jurisdiction),
+        &format!("{}:{}", jurisdiction.code(), team.id),
         &payload,
     );
     if let Err(error) = journal {
@@ -111,9 +113,14 @@ async fn record_roster(
 }
 
 /// The progress row for one state, with the first few errors kept for the report.
-fn progress_of(state: &str, teams: usize, skipped: usize, shared: &Shared) -> StateProgress {
+fn progress_of(
+    jurisdiction: UsJurisdiction,
+    teams: usize,
+    skipped: usize,
+    shared: &Shared,
+) -> StateProgress {
     StateProgress {
-        state: state.to_string(),
+        jurisdiction,
         teams,
         rosters_done: shared.rosters,
         rosters_skipped: skipped,
@@ -126,19 +133,19 @@ fn progress_of(state: &str, teams: usize, skipped: usize, shared: &Shared) -> St
     }
 }
 
-/// Walk every team roster for one state (resumable), emitting canonical entities.
+/// Walk every team roster for one jurisdiction (resumable), emitting canonical entities.
 ///
-/// Bounded by the state's team index, with at most `options.concurrency` rosters in flight.
+/// Bounded by the jurisdiction's team index, with at most `options.concurrency` rosters in flight.
 #[tracing::instrument(skip(fetcher, store, teams, options))]
 pub async fn collect_state_rosters(
     fetcher: &Fetcher,
     store: &Store,
     teams: &[TeamRef],
     options: &CollectOptions,
-    state: &str,
+    jurisdiction: UsJurisdiction,
 ) -> CrawlResult<StateProgress> {
-    let site: Site = milesplit::site_for_state(state)?;
-    let (pending, skipped) = pending_rosters(store, teams, state)?;
+    let site: Site = Site::for_jurisdiction(jurisdiction);
+    let (pending, skipped) = pending_rosters(store, teams, jurisdiction)?;
     let shared = Arc::new(Mutex::new(Shared {
         athletes: 0,
         co2027: 0,
@@ -173,7 +180,7 @@ pub async fn collect_state_rosters(
                 refresh,
             )
             .await;
-            record_roster(&shared, store, state, &team, outcome).await;
+            record_roster(&shared, store, jurisdiction, &team, outcome).await;
         }
     }))
     .buffer_unordered(concurrency)
@@ -181,7 +188,7 @@ pub async fn collect_state_rosters(
     .await;
 
     let guard = shared.lock().await;
-    Ok(progress_of(state, teams.len(), skipped, &guard))
+    Ok(progress_of(jurisdiction, teams.len(), skipped, &guard))
 }
 
 async fn fetch_and_store_roster(
@@ -200,7 +207,7 @@ async fn fetch_and_store_roster(
     };
     let roster = milesplit::fetch_roster(fetcher, team, &options).await?;
     let (school, athletes, teams) =
-        milesplit::roster_entities(&roster, site.state, school_year, observed_on, site);
+        milesplit::roster_entities(&roster, school_year, observed_on, site);
     store.append(Table::Schools, &school)?;
     if !teams.is_empty() {
         store.append_many(Table::Teams, &teams)?;
@@ -211,24 +218,24 @@ async fn fetch_and_store_roster(
     Ok(roster)
 }
 
-/// Walk one state: its team index, then every roster in it.
+/// Walk one jurisdiction: its team index, then every roster in it.
 async fn walk_state(
     fetcher: &Fetcher,
     store: &Store,
-    state: &str,
+    jurisdiction: UsJurisdiction,
     options: &CollectOptions,
 ) -> CrawlResult<StateProgress> {
-    let teams = collect_state_teams(fetcher, store, state, options.refresh)
+    let teams = collect_state_teams(fetcher, store, jurisdiction, options.refresh)
         .await
-        .map_err(|error| team_index_failure(state, error))?;
-    collect_state_rosters(fetcher, store, &teams, options, state).await
+        .map_err(|error| team_index_failure(jurisdiction, error))?;
+    collect_state_rosters(fetcher, store, &teams, options, jurisdiction).await
 }
 
-/// Frame a team-index failure with the state and the step, so a failure line names which half of a
-/// state's walk stopped.
-fn team_index_failure(state: &str, error: CrawlError) -> CrawlError {
+/// Frame a team-index failure with the jurisdiction and the step, so a failure line names which half
+/// of a jurisdiction's walk stopped.
+fn team_index_failure(jurisdiction: UsJurisdiction, error: CrawlError) -> CrawlError {
     CrawlError::Invariant {
-        detail: format!("collecting {state} team index: {error}"),
+        detail: format!("collecting {} team index: {error}", jurisdiction.code()),
     }
 }
 
@@ -237,7 +244,7 @@ fn team_index_failure(state: &str, error: CrawlError) -> CrawlError {
 /// States are walked concurrently (each state is a different host) while every individual host keeps
 /// its one-request-at-a-time, rate-limited discipline. Progress is journaled per state and per roster,
 /// so an interrupted run resumes without refetching anything already collected.
-#[tracing::instrument(skip(fetcher, store, options), fields(states = options.states.len()))]
+#[tracing::instrument(skip(fetcher, store, options), fields(jurisdictions = options.jurisdictions.len()))]
 pub async fn collect_milesplit(
     fetcher: &Fetcher,
     store: &Store,
@@ -246,14 +253,19 @@ pub async fn collect_milesplit(
     let started = SystemClock.now();
     let state_concurrency = options.state_concurrency.max(1);
 
-    let results: Vec<(String, CrawlResult<StateProgress>)> =
-        stream::iter(options.states.iter().cloned().map(|state| async move {
-            let outcome = walk_state(fetcher, store, &state, options).await;
-            (state, outcome)
-        }))
-        .buffer_unordered(state_concurrency)
-        .collect()
-        .await;
+    let results: Vec<(UsJurisdiction, CrawlResult<StateProgress>)> = stream::iter(
+        options
+            .jurisdictions
+            .iter()
+            .copied()
+            .map(|jurisdiction| async move {
+                let outcome = walk_state(fetcher, store, jurisdiction, options).await;
+                (jurisdiction, outcome)
+            }),
+    )
+    .buffer_unordered(state_concurrency)
+    .collect()
+    .await;
 
     let (mut report, failures) = summarize_states(results);
     let stats = fetcher.stats().await;

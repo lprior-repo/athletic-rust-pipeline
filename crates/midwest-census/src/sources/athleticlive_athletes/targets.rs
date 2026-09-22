@@ -1,6 +1,7 @@
 //! Meet selection: which timer-published meets this adapter queries, keyed by timer meet id.
 
 use census_domain::model::{CanonicalMeet, SourceNamespace};
+use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap};
 
 /// A canonical meet plus the timer identity this adapter queries it by.
@@ -10,11 +11,11 @@ pub struct MeetTarget {
     pub meet_id: String,
     pub tenant: String,
     pub name: String,
-    pub state: String,
+    pub state: UsJurisdiction,
     pub date: String,
 }
 
-/// Meets the adapter will query, plus the count it refused to query.
+/// Meets the adapter will query, plus what it refused to query.
 #[derive(Debug, Clone, Default)]
 pub struct MeetSelection {
     pub targets: Vec<MeetTarget>,
@@ -24,6 +25,12 @@ pub struct MeetSelection {
     /// class is derived from the meet date, so an implausible date would mint an implausible
     /// class; those meets are skipped rather than guessed at.
     pub skipped_implausible: usize,
+    /// Meets dropped because no evidence placed them in a jurisdiction.
+    ///
+    /// A meet row carries its jurisdiction into every school it mints, so a meet whose venue was
+    /// never placed cannot produce a school without inventing one; the count is reported instead of
+    /// the rows being filed under a state nobody observed.
+    pub skipped_unplaced: usize,
 }
 
 /// The window a meet date must fall in to be usable. Same convention as the meet-index harvest.
@@ -42,15 +49,19 @@ fn plausible_meet_year(date: &str) -> bool {
 /// Meets are deduplicated by canonical id: several tenants publishing one meet collapse to the first
 /// target, because the athlete rows are keyed by the AthleticLIVE meet id and duplicate ids would
 /// multiply requests.
-pub fn meet_targets(meets: &[CanonicalMeet], states: &[String]) -> MeetSelection {
-    let wanted: BTreeSet<String> = states
-        .iter()
-        .map(|state| state.trim().to_ascii_uppercase())
-        .collect();
+pub fn meet_targets(meets: &[CanonicalMeet], states: &[UsJurisdiction]) -> MeetSelection {
+    let wanted: BTreeSet<UsJurisdiction> = states.iter().copied().collect();
     let mut seen: HashMap<u64, MeetTarget> = HashMap::new();
     let mut skipped_implausible = 0usize;
+    let mut skipped_unplaced = 0usize;
     for meet in meets {
-        if !wanted.is_empty() && !wanted.contains(&meet.state.to_ascii_uppercase()) {
+        // The jurisdiction reaches every school the meet's rows mint, so a meet that has none is
+        // not queryable: its count is reported rather than its rows being filed under a guess.
+        let Some(state) = meet.state else {
+            skipped_unplaced = skipped_unplaced.saturating_add(1);
+            continue;
+        };
+        if !wanted.is_empty() && !wanted.contains(&state) {
             continue;
         }
         if !plausible_meet_year(&meet.date) {
@@ -70,7 +81,7 @@ pub fn meet_targets(meets: &[CanonicalMeet], states: &[String]) -> MeetSelection
                     meet_id: meet.id.as_str().to_string(),
                     tenant: provider.clone(),
                     name: meet.name.clone(),
-                    state: meet.state.clone(),
+                    state,
                     date: meet.date.clone(),
                 });
         }
@@ -78,7 +89,7 @@ pub fn meet_targets(meets: &[CanonicalMeet], states: &[String]) -> MeetSelection
     let mut targets: Vec<MeetTarget> = seen.into_values().collect();
     targets.sort_by_key(|target| {
         (
-            target.state.clone(),
+            target.state,
             target.date.clone(),
             target.athleticlive_meet_id,
         )
@@ -86,5 +97,6 @@ pub fn meet_targets(meets: &[CanonicalMeet], states: &[String]) -> MeetSelection
     MeetSelection {
         targets,
         skipped_implausible,
+        skipped_unplaced,
     }
 }

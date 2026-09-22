@@ -1,0 +1,9 @@
+﻿User-agent: *
+Disallow: /DashboardSchedule.aspx
+Disallow: /DashboardGame.aspx
+Disallow: /DashboardSchool.aspx
+Disallow: /DashboardTeamSchedule.aspx
+Disallow: /ScheduleByWeek.aspx
+Disallow: /WebBot.aspx
+User-agent: SemrushBot
+Disallow: /

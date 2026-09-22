@@ -14,6 +14,7 @@
 
 use anyhow::{ensure, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, SchoolId};
+use census_domain::UsJurisdiction;
 use midwest_census::school_index::{SchoolIndex, SchoolMatch};
 use std::collections::BTreeMap;
 
@@ -36,35 +37,35 @@ const ABBREVIATIONS: [(&str, &str); 5] = [
 const TRUNCATED_TAIL: usize = 4;
 /// The snapshot the labels resolve against: unique normalized names inside their own state, so a
 /// partial match has exactly one candidate.
-const SCHOOLS: [(&str, &str); 16] = [
-    ("WI", "Milwaukee Bradley Tech"),
-    ("WI", "Brookfield Central"),
-    ("WI", "Madison La Follette"),
-    ("WI", "Wisconsin Lutheran"),
-    ("WI", "Eau Claire Memorial"),
-    ("WI", "Homestead"),
-    ("WI", "West De Pere"),
-    ("WI", "Franklin"),
-    ("WI", "Wisconsin Rapids Lincoln"),
-    ("WI", "Catholic Memorial"),
-    ("WI", "University School of Milwaukee"),
-    ("MN", "Wayzata"),
-    ("MN", "Aitkin"),
-    ("MN", "Foley"),
-    ("IL", "Lincoln Way Central"),
-    ("IL", "Adlai Stevenson"),
+const SCHOOLS: [(UsJurisdiction, &str); 16] = [
+    (UsJurisdiction::Wisconsin, "Milwaukee Bradley Tech"),
+    (UsJurisdiction::Wisconsin, "Brookfield Central"),
+    (UsJurisdiction::Wisconsin, "Madison La Follette"),
+    (UsJurisdiction::Wisconsin, "Wisconsin Lutheran"),
+    (UsJurisdiction::Wisconsin, "Eau Claire Memorial"),
+    (UsJurisdiction::Wisconsin, "Homestead"),
+    (UsJurisdiction::Wisconsin, "West De Pere"),
+    (UsJurisdiction::Wisconsin, "Franklin"),
+    (UsJurisdiction::Wisconsin, "Wisconsin Rapids Lincoln"),
+    (UsJurisdiction::Wisconsin, "Catholic Memorial"),
+    (UsJurisdiction::Wisconsin, "University School of Milwaukee"),
+    (UsJurisdiction::Minnesota, "Wayzata"),
+    (UsJurisdiction::Minnesota, "Aitkin"),
+    (UsJurisdiction::Minnesota, "Foley"),
+    (UsJurisdiction::Illinois, "Lincoln Way Central"),
+    (UsJurisdiction::Illinois, "Adlai Stevenson"),
 ];
 /// Labels that must stay unresolved, and the state they are published in.
-const DECOYS: [(&str, &str); 6] = [
+const DECOYS: [(UsJurisdiction, &str); 6] = [
     // A single token is ambiguous by construction: two schools in this state end in it.
-    ("WI", "Memorial"),
-    ("WI", "Central"),
+    (UsJurisdiction::Wisconsin, "Memorial"),
+    (UsJurisdiction::Wisconsin, "Central"),
     // A real school, but published in a state whose snapshot does not hold it.
-    ("MN", "West De Pere"),
-    ("IL", "Milwaukee Bradley Tech"),
+    (UsJurisdiction::Minnesota, "West De Pere"),
+    (UsJurisdiction::Illinois, "Milwaukee Bradley Tech"),
     // A misspelling the resolver must never guess at, and the empty label.
-    ("WI", "Milwaukie Bradley Tech"),
-    ("WI", ""),
+    (UsJurisdiction::Wisconsin, "Milwaukie Bradley Tech"),
+    (UsJurisdiction::Wisconsin, ""),
 ];
 
 /// The label the corpus counts under the third outcome: no school at all.
@@ -77,7 +78,7 @@ pub struct LabelCase {
     /// The label a timer would publish.
     pub label: String,
     /// The state it is published in.
-    pub state: &'static str,
+    pub state: UsJurisdiction,
     /// The school and match kind the resolver must report, or `None` when the label must stay
     /// unresolved.
     expected: Option<(SchoolId, SchoolMatch)>,
@@ -124,7 +125,7 @@ impl Corpus {
 fn snapshot() -> Vec<CanonicalSchool> {
     SCHOOLS
         .iter()
-        .map(|(state, name)| CanonicalSchool::new(state, *name, normalize_name(name)).0)
+        .map(|(state, name)| CanonicalSchool::new(*state, *name, normalize_name(name)).0)
         .collect()
 }
 
@@ -203,7 +204,7 @@ fn truncated(name: &str) -> Option<String> {
 /// Record one label that must resolve to `id` as `kind`.
 fn resolved(
     cases: &mut Vec<LabelCase>,
-    state: &'static str,
+    state: UsJurisdiction,
     label: String,
     id: &SchoolId,
     kind: SchoolMatch,

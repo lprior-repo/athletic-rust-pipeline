@@ -5,8 +5,9 @@ sharp-edge list with current line citations. This file is the design-side schema
 
 What `midwest-census` actually writes to its embedded store: directories, keyspaces, key bytes,
 values, the write and read paths, and the limits the code enforces. Derived from
-`crates/midwest-census/src/store/` (primary), `crates/midwest-census/src/main.rs`,
-`crates/midwest-census/src/bin/midwest-serve.rs`, `crates/midwest-census/src/bootstrap.rs`,
+`crates/midwest-census/src/store/` (primary), `crates/midwest-census/src/cli/` (the `midwest-census`
+binary, a thin clap shell),
+`crates/midwest-census/src/bin/midwest-serve.rs`, `crates/midwest-census/src/bootstrap/`,
 `crates/midwest-census/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
 dependency
 `fjall = "=3.1.10"` (`crates/midwest-census/Cargo.toml`). Dependency behaviour is cited from the
@@ -21,18 +22,18 @@ numbers below are file-system sizes of the live root, not store statistics.
 
 One Fjall database per store root. Fjall is an embedded LSM-tree key-value store: writes land in a
 write-ahead journal and a memtable, sealed memtables are flushed and compacted into immutable
-sorted tables (module doc, `store.rs` header). The store is the system of record
+sorted tables (module doc, `store/mod.rs` header). The store is the system of record
 (`ARCHITECTURE.md`: "Fjall is the system of record").
 
 | Property | Value | Source |
 | --- | --- | --- |
 | Crate / version | `fjall = "=3.1.10"` (exact pin) | `crates/midwest-census/Cargo.toml` |
-| Store root | `--store` (CLI), `--data-dir` (serve), default `var/midwest-census` | `main.rs`, `bootstrap.rs::ServeOptions` |
-| Database directory | `<root>/fjall` (`const DB_DIR`) | `store.rs:64-67` |
-| Unified cache | 256 MiB, set explicitly (`const CACHE_BYTES`) | `store.rs:62`, `Store::open` |
-| Entities table cap | 20,000,000 observations per table (`MAX_ROWS_PER_TABLE`) | `store.rs:54` |
-| Entity id cap | 512 bytes (`MAX_ID_BYTES`) | `store.rs:58` |
-| Ingest request cap | 50,000 rows (`MAX_ROWS_PER_REQUEST`) | `restate_services.rs` |
+| Store root | `--store` (CLI), `--data-dir` (serve), default `var/midwest-census` | `cli/`, `bootstrap/options.rs::ServeOptions` |
+| Database directory | `<root>/fjall` (`const DB_DIR`) | `store/mod.rs` |
+| Unified cache | 256 MiB, set explicitly (`const CACHE_BYTES`) | `store/mod.rs`, `Store::open` |
+| Entities table cap | 20,000,000 observations per table (`MAX_ROWS_PER_TABLE`) | `store/mod.rs` |
+| Entity id cap | 512 bytes (`MAX_ID_BYTES`) | `store/mod.rs` |
+| Ingest request cap | 50,000 rows (`MAX_ROWS_PER_REQUEST`) | `restate_services/mod.rs` |
 | Worker threads | not configured by the crate; fjall default `min(cores, 4)` | fjall 3.1.10 `src/db_config.rs` |
 
 ### Directory layout
@@ -93,7 +94,7 @@ per-table `AtomicU64` sequence counters.
 
 ## 2. Keyspaces and tables
 
-Three Fjall keyspaces exist, named by constants in `store.rs:64-67`:
+Three Fjall keyspaces exist, named by constants in `store/mod.rs`:
 
 | Keyspace | Constant | Contents | Key shape |
 | --- | --- | --- | --- |
@@ -102,7 +103,7 @@ Three Fjall keyspaces exist, named by constants in `store.rs:64-67`:
 | `meta` | `META` | import markers only | `imported:<table>`, `imported:resume-journals` |
 
 There is no fourth keyspace and no per-table keyspace. The seven **tables** are logical partitions
-inside `entities`, selected by the table-name byte prefix. `Table` (`store.rs`, `enum Table`) is
+inside `entities`, selected by the table-name byte prefix. `Table` (`store/mod.rs`, `enum Table`) is
 `Schools, Teams, Coaches, Athletes, Meets, Events, Performances`, with `Table::file()` giving the
 wire/prefix name (`schools`, `teams`, `coaches`, `athletes`, `meets`, `events`, `performances`),
 `Table::ALL` the ordered list, and `Table::from_wire` the ingest-side parser (unknown names are
@@ -144,7 +145,7 @@ value = serde_json::to_vec(entity)
 ```
 
 `table_prefix(table)` emits `<table>\0`; `observation_key(table, id, sequence)` appends the id, a
-separator `0x00`, then the eight big-endian sequence bytes (`store.rs`).
+separator `0x00`, then the eight big-endian sequence bytes (`store/keys.rs`).
 
 Byte order is load-bearing:
 
@@ -165,7 +166,7 @@ Byte order is load-bearing:
 Ids are the canonical `Id<T>` string (see below), validated before use: `observation_id` borrows the
 `id` field out of the serialized buffer with a `#[serde(borrow)]` view (`ObservationId`) and rejects
 an empty id or one longer than `MAX_ID_BYTES` (512). The stated rationale is fjall's assertion that
-keys stay below 64 KiB (module comment, `store.rs`).
+keys stay below 64 KiB (module comment, `store/keys.rs`).
 
 ### Journal keys (keyspace `journal`)
 
@@ -214,7 +215,7 @@ time, not by the compiler.
 ## 4. Entity model on disk
 
 All seven canonical entities are persisted, one table each, each row a complete JSON document.
-`Entity` (`store.rs`) supplies `entity_id`, `merge`, and two read-time hooks (`publish`,
+`Entity` (`store/entities.rs`) supplies `entity_id`, `merge`, and two read-time hooks (`publish`,
 `withheld_mailboxes`) applied by every read.
 
 | Entity | Evidence carried | External identities | Other provenance |
@@ -299,15 +300,15 @@ AtomicU64>`, seeded at open from the highest key in each table (`last_sequence`)
 `observations_survive_reopen_without_overwriting`), and no observation is ever overwritten
 because the sequence component is always fresh.
 
-Error taxonomy: `store.rs` uses `anyhow` throughout. Rejections surface as either `bail!` (empty id,
-id over 512 bytes, table over `MAX_ROWS_PER_TABLE` in both `scan` and the importer) or a
-`Context`-wrapped conversion ("observation has no string id field", "record count does not fit
-u64", "record offset does not fit u64", "observation sequence overflowed", "table <t> holds a
-malformed observation key"). Every fallible fjall or filesystem call carries context too ("opening
-the Fjall database under …", "opening the entities keyspace", "committing N observations to
-<table>", "parsing an observation of <table>", "persisting the Fjall journal", "table has no
-sequence counter"). There is no dedicated store error enum, and no error is swallowed: each
-fallible call is either `?`-propagated or mapped with context.
+Error taxonomy: the store returns a dedicated `StoreError` enum under `StoreResult<T>`
+(`store/mod.rs`), not `anyhow`. Variants cover the failure homes directly: `Open`/`Flush`/
+`Write`/`Read` wrap `fjall::Error`; `Decode`/`Json` wrap `serde_json::Error` with the offending
+key or a `detail` naming the step; `Invariant { detail }` carries the writer's own broken
+assumption; `TooManyRows { table, max }` is the `MAX_ROWS_PER_TABLE` rejection in `scan` and the
+importer; `JournalTooLarge`, `CounterOverflow`, `Io { path }` and `Legacy { detail }` cover the
+resume journal ceiling, sequence exhaustion, sidecar/artifact I/O and the one-time legacy import.
+Every fallible fjall or filesystem call is either `?`-propagated or mapped into one of those
+variants; no error is swallowed.
 
 ### Import path (pre-Fjall journals)
 

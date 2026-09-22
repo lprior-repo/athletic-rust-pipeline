@@ -6,11 +6,12 @@
 
 use super::map::{level_of, resolve_venue, VenueResolution};
 use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
-use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER, UNKNOWN_STATE};
+use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
 use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
+use census_domain::UsJurisdiction;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -129,7 +130,7 @@ impl Walk {
         sport: ScheduleSport,
         index: &SchoolIndex,
         month: u8,
-    ) -> Option<&'static str> {
+    ) -> Option<UsJurisdiction> {
         self.stats.rows = self.stats.rows.saturating_add(1);
         let resolution = resolve_venue(index, &mut self.venue_cache, &row.location);
         let state = resolution.state();
@@ -167,13 +168,14 @@ impl Walk {
         &mut self,
         row: &MeetRow,
         sport: ScheduleSport,
-        state: Option<&'static str>,
+        state: Option<UsJurisdiction>,
         month: u8,
         url: &str,
     ) {
         let level = level_of(&row.name);
-        let mut meet =
-            CanonicalMeet::new(state.unwrap_or(UNKNOWN_STATE), &row.name, &row.date, level);
+        // A venue that resolved to no jurisdiction mints an unplaced meet: the report spells that
+        // bucket `MEET_STATE_UNRESOLVED`, and a real meet row is never filed under a guess.
+        let mut meet = CanonicalMeet::new(state, &row.name, &row.date, level);
         meet.location = Some(row.location.clone());
         meet.sports.push(sport.sport_for(month));
         if let Some(slug) = &row.slug {

@@ -23,8 +23,8 @@ proptest! {
         co_op in any::<bool>(),
         other_co_op in any::<bool>(),
     ) {
-        let (mut first, _) = CanonicalSchool::new("WI", "Madison", "madison");
-        let (mut second, _) = CanonicalSchool::new("WI", "Madison", "madison");
+        let (mut first, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
+        let (mut second, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
         first.city = Some(city.clone());
         second.city = Some(other_city.clone());
         first.association = Some(association.clone());
@@ -63,8 +63,8 @@ proptest! {
         suffix in word(10),
     ) {
         let long_form = format!("{short} {suffix}");
-        let (mut first, _) = CanonicalSchool::new("WI", "Madison", "madison");
-        let (mut second, _) = CanonicalSchool::new("WI", "Madison", "madison");
+        let (mut first, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
+        let (mut second, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
         first.name = short.clone();
         second.name = long_form.clone();
 

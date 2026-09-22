@@ -17,6 +17,7 @@ use crate::sources::CrawlResult;
 use census_domain::model::{
     normalize_name, CanonicalSchool, Evidence, SchoolId, SourceIdentity, SourceNamespace, SourceRef,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 /// One member school as listed on the NDHSAA school index.
@@ -137,7 +138,8 @@ pub fn parse_nd_school_page(
     }
 
     let url = member.url();
-    let (mut school, school_id) = CanonicalSchool::new("ND", &name, normalize_name(&name));
+    let (mut school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::NorthDakota, &name, normalize_name(&name));
     school.city = nd_city(html)?;
     school.enrollment = nd_enrollment(html)?;
     school.school_website = nd_website_regex()?

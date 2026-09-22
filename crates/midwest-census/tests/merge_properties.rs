@@ -31,6 +31,7 @@ use census_domain::model::{
     Grade, ObservedGrade, SchoolYear, SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef,
     Sport,
 };
+use census_domain::UsJurisdiction;
 use midwest_census::store::Entity;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
@@ -65,16 +66,15 @@ fn word(max: usize) -> impl Strategy<Value = String> {
         .prop_map(|bytes| bytes.into_iter().map(char::from).collect())
 }
 
-fn state() -> impl Strategy<Value = String> {
+fn state() -> impl Strategy<Value = UsJurisdiction> {
     prop_oneof![
-        Just("WI"),
-        Just("OH"),
-        Just("IL"),
-        Just("KS"),
-        Just("IA"),
-        Just("MN")
+        Just(UsJurisdiction::Wisconsin),
+        Just(UsJurisdiction::Ohio),
+        Just(UsJurisdiction::Illinois),
+        Just(UsJurisdiction::Kansas),
+        Just(UsJurisdiction::Iowa),
+        Just(UsJurisdiction::Minnesota)
     ]
-    .prop_map(str::to_string)
 }
 
 fn sport() -> impl Strategy<Value = Sport> {
@@ -141,7 +141,7 @@ fn mailbox() -> impl Strategy<Value = String> {
 
 fn school() -> impl Strategy<Value = CanonicalSchool> {
     (state(), word(20), word(20))
-        .prop_map(|(state, name, normalized)| CanonicalSchool::new(&state, name, normalized).0)
+        .prop_map(|(state, name, normalized)| CanonicalSchool::new(state, name, normalized).0)
 }
 
 fn team() -> impl Strategy<Value = CanonicalTeam> {
@@ -179,7 +179,7 @@ fn coach() -> impl Strategy<Value = CanonicalCoach> {
 
 /// The same coach, carrying a published address.
 fn coach_with_email(address: String) -> CanonicalCoach {
-    let (school, _) = CanonicalSchool::new("WI", "Madison", "madison");
+    let (school, _) = CanonicalSchool::new(UsJurisdiction::Wisconsin, "Madison", "madison");
     let mut coach = CanonicalCoach::new(
         &school.id,
         "Coach Smith",
@@ -212,7 +212,7 @@ fn athlete() -> impl Strategy<Value = CanonicalAthlete> {
 
 fn meet() -> impl Strategy<Value = CanonicalMeet> {
     (state(), word(20), word(8), level())
-        .prop_map(|(state, name, date, level)| CanonicalMeet::new(&state, name, date, level))
+        .prop_map(|(state, name, date, level)| CanonicalMeet::new(Some(state), name, date, level))
 }
 
 fn event() -> impl Strategy<Value = CanonicalEvent> {

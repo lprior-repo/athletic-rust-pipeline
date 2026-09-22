@@ -1,5 +1,10 @@
 use std::path::PathBuf;
 
+use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
+
+use crate::census::{Revision, WorkflowIdentity};
+
 use super::*;
 
 #[test]
@@ -120,4 +125,133 @@ fn job_failures_classify_for_retry_but_a_violated_invariant_and_a_panic_never_re
         panic!("boom");
     }));
     assert!(matches!(panicked, Err(JobError::Terminal { .. })));
+}
+
+// ------------------------------------------------------- national fan-out admission
+
+/// The national request every fan-out test varies: season 2026-27 at revision 1, the CLI's default
+/// concurrency, and no roster ceiling.
+fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
+    NationalRequest {
+        season: SchoolYear(2026),
+        revision: Revision(1),
+        jurisdictions,
+        refresh: false,
+        limit_per_state: None,
+        concurrency: 4,
+        observed_on: None,
+    }
+}
+
+#[test]
+fn an_empty_jurisdiction_list_covers_every_state_in_declaration_order() {
+    let targets = national::targets(&national_request(Vec::new())).unwrap();
+    assert_eq!(targets.len(), UsJurisdiction::ALL.len());
+    let jurisdictions: Vec<UsJurisdiction> = targets.iter().map(|row| row.0).collect();
+    assert_eq!(jurisdictions, UsJurisdiction::ALL.to_vec());
+    // Each state is addressed by the identity of its own census, not by the position it was pushed.
+    for (jurisdiction, key) in &targets {
+        assert_eq!(
+            key.as_str(),
+            WorkflowIdentity::jurisdiction(*jurisdiction, SchoolYear(2026), Revision(1)).as_str()
+        );
+    }
+}
+
+#[test]
+fn a_named_jurisdiction_set_keeps_the_callers_order() {
+    let targets = national::targets(&national_request(vec![
+        UsJurisdiction::Iowa,
+        UsJurisdiction::Wisconsin,
+    ]))
+    .unwrap();
+    assert_eq!(targets.len(), 2);
+    assert_eq!(targets[0].0, UsJurisdiction::Iowa);
+    assert_eq!(targets[0].1, "jurisdiction:IA:2026-27:1");
+    assert_eq!(targets[1].0, UsJurisdiction::Wisconsin);
+    assert_eq!(targets[1].1, "jurisdiction:WI:2026-27:1");
+}
+
+#[test]
+fn a_state_named_twice_is_refused_instead_of_walked_twice() {
+    let error = national::targets(&national_request(vec![
+        UsJurisdiction::Wisconsin,
+        UsJurisdiction::Iowa,
+        UsJurisdiction::Wisconsin,
+    ]))
+    .unwrap_err();
+    assert!(
+        format!("{error:?}").contains("WI"),
+        "the refusal must name the repeated state: {error:?}"
+    );
+}
+
+#[test]
+fn the_walk_options_carry_the_runs_shared_knobs() {
+    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+    request.limit_per_state = Some(17);
+    request.concurrency = 3;
+    request.refresh = true;
+    let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
+    let options = super::options_for_request(&projected, "2026-09-21").unwrap();
+    assert_eq!(options.jurisdictions, vec![UsJurisdiction::Iowa]);
+    assert_eq!(options.limit_per_state, Some(17));
+    assert_eq!(options.concurrency, 3);
+    // One jurisdiction is one state host: nothing to interleave, whatever the national run asked for.
+    assert_eq!(options.state_concurrency, 1);
+    assert!(options.refresh);
+    assert_eq!(options.school_year, SchoolYear(2026));
+    assert_eq!(options.observed_on, "2026-09-21");
+}
+
+#[test]
+fn the_collection_date_is_the_days_today_unless_the_request_names_one() {
+    let request = national_request(vec![UsJurisdiction::Iowa]);
+    let today = super::options_for_request(
+        &request.for_jurisdiction(UsJurisdiction::Iowa),
+        "2026-09-21",
+    )
+    .unwrap();
+    assert_eq!(today.observed_on, "2026-09-21");
+
+    let mut dated = request;
+    dated.observed_on = Some("2026-09-01".to_string());
+    let named =
+        super::options_for_request(&dated.for_jurisdiction(UsJurisdiction::Iowa), "2026-09-21")
+            .unwrap();
+    assert_eq!(named.observed_on, "2026-09-01");
+}
+
+#[test]
+fn the_roster_ceiling_admits_its_boundary_and_refuses_one_past_it() {
+    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+    request.limit_per_state = Some(MAX_LIMIT_PER_STATE);
+    let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
+    assert_eq!(
+        super::options_for_request(&projected, "2026-09-21")
+            .unwrap()
+            .limit_per_state,
+        Some(MAX_LIMIT_PER_STATE)
+    );
+
+    let mut over = national_request(vec![UsJurisdiction::Iowa]);
+    over.limit_per_state = Some(MAX_LIMIT_PER_STATE.saturating_add(1));
+    let projected = over.for_jurisdiction(UsJurisdiction::Iowa);
+    let error = super::options_for_request(&projected, "2026-09-21").unwrap_err();
+    assert!(
+        format!("{error:?}").contains("limit_per_state"),
+        "the refusal must name the knob: {error:?}"
+    );
+}
+
+#[test]
+fn a_walk_with_no_concurrency_is_refused() {
+    let mut request = national_request(vec![UsJurisdiction::Iowa]);
+    request.concurrency = 0;
+    let projected = request.for_jurisdiction(UsJurisdiction::Iowa);
+    let error = super::options_for_request(&projected, "2026-09-21").unwrap_err();
+    assert!(
+        format!("{error:?}").contains("concurrency"),
+        "the refusal must name the knob: {error:?}"
+    );
 }

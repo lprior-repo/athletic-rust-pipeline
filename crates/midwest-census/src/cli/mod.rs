@@ -5,6 +5,7 @@
 //! because every subcommand reads them.
 
 use anyhow::{Context, Result};
+use census_domain::UsJurisdiction;
 use clap::{Parser, Subcommand};
 use midwest_census::net::Fetcher;
 use midwest_census::report;
@@ -63,7 +64,7 @@ enum Command {
     /// Fetch (and cache) team indexes for the given states.
     Teams {
         #[arg(long, value_delimiter = ',', default_value = "WI")]
-        states: Vec<String>,
+        states: Vec<UsJurisdiction>,
         #[arg(long)]
         refresh: bool,
     },

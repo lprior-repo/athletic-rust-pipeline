@@ -2,6 +2,7 @@ use super::*;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 /// Fixture provenance — every file is a real capture (or, for `ND_PAGE_NO_AD`, one documented
@@ -115,7 +116,7 @@ fn nd_school_page_parses_school_metadata() {
         school.normalized_name, "west fargo sheyenne",
         "normalize_name drops the `High School` suffix"
     );
-    assert_eq!(school.state.as_deref(), Some("ND"));
+    assert_eq!(school.state, Some(UsJurisdiction::NorthDakota));
     assert_eq!(school.association.as_deref(), Some("ndhsaa"));
     assert_eq!(school.city.as_deref(), Some("West Fargo"));
     assert_eq!(
@@ -148,12 +149,16 @@ fn nd_school_page_parses_school_metadata() {
     );
     assert_eq!(
         school_id,
-        CanonicalSchool::mint("ND", &school.name, &school.normalized_name)
+        CanonicalSchool::mint(
+            UsJurisdiction::NorthDakota,
+            &school.name,
+            &school.normalized_name
+        )
     );
     // Identity is the natural key, not the display name: the same school published elsewhere as
     // "West Fargo Sheyenne HS" mints the identical id, so the two observations merge.
     let (_, same_school) = CanonicalSchool::new(
-        "ND",
+        UsJurisdiction::NorthDakota,
         "West Fargo Sheyenne HS",
         normalize_name("West Fargo Sheyenne HS"),
     );
@@ -710,7 +715,7 @@ fn nsaa_director_rows_map_to_athletic_director() {
     let schools = parse_nsaa_directory(NSAA_PAGE).expect("the nsaa directory parses");
     let adams = &schools[0];
     let (school, school_id) = parse_nsaa_school(adams, &url_of(adams), OBSERVED_ON);
-    assert_eq!(school.state.as_deref(), Some("NE"));
+    assert_eq!(school.state, Some(UsJurisdiction::Nebraska));
     assert_eq!(school.association.as_deref(), Some("nsaa"));
     assert_eq!(school.city.as_deref(), Some("Hastings"));
     assert_eq!(school.enrollment, Some(215));
@@ -1174,7 +1179,7 @@ async fn collect_skips_providers_it_was_not_asked_for() {
     };
 
     let options = Options {
-        states: vec!["IA".to_string()],
+        states: vec![UsJurisdiction::Iowa],
         observed_on: OBSERVED_ON.to_string(),
         ..Options::default()
     };

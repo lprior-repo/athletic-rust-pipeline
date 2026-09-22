@@ -1,0 +1,36 @@
+﻿﻿sitemap: https://www.mshsaa.org/sitemap.xml
+
+user-agent: *
+disallow: /Ajax/
+disallow: /Data/
+disallow: /Utilities/
+disallow: /Config/
+disallow: /Modules/
+disallow: /Accounting/
+disallow: /Admin/
+disallow: /JS/
+disallow: /Style/
+disallow: /SchoolsAdmin/
+disallow: /Officials/Admin/
+disallow: /Officials/Ajax/
+disallow: /VIPs/
+disallow: /MyAccount/
+disallow: /Resources/UploadedFiles/
+disallow: /Resources/Home/Rotating/
+disallow: /MySchool/Matchup.aspx*
+
+user-agent: Amazonbot
+disallow: /
+
+user-agent: GPTBot 
+disallow: / 
+
+user-agent: meta-externalagent
+disallow: / 
+
+user-agent: OpenVAS
+disallow: /
+
+user-agent: *
+disallow: /
+

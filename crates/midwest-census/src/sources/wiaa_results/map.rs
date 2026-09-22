@@ -5,6 +5,7 @@ use census_domain::model::{
     CanonicalEvent, CanonicalMeet, CompetitionLevel, EventId, Evidence, SchoolId, SchoolYear,
     SourceEventLabel, SourceIdentity, SourceNamespace, SourceRef, Sport, TimingMethod,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 #[path = "map_rows.rs"]
@@ -93,7 +94,12 @@ fn meet_for(
         }
         _ => TimingMethod::Unknown,
     };
-    let mut meet = CanonicalMeet::new("WI", parsed.name.clone(), parsed.date.clone(), level);
+    let mut meet = CanonicalMeet::new(
+        Some(UsJurisdiction::Wisconsin),
+        parsed.name.clone(),
+        parsed.date.clone(),
+        level,
+    );
     meet.end_date = parsed.end_date.clone();
     meet.sports.push(sport);
     meet.source_urls.push(artifact.url.clone());

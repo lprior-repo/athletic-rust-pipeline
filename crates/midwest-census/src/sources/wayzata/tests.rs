@@ -1,6 +1,7 @@
 use super::*;
 use crate::school_index::SchoolIndex;
 use census_domain::model::{CompetitionLevel, Sport};
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 const TRACK_2026: &str = include_str!("../../../tests/fixtures/wayzata/track_2026_schedule.html");
@@ -42,9 +43,15 @@ fn schedule_rows_read_the_cross_country_table() {
 
 #[test]
 fn venue_state_only_answers_for_unambiguous_venues() {
-    assert_eq!(venue_state("University of Minnesota"), Some("MN"));
-    assert_eq!(venue_state("Wartburg College"), Some("IA"));
-    assert_eq!(venue_state("UW-River Falls"), Some("WI"));
+    assert_eq!(
+        venue_state("University of Minnesota"),
+        Some(UsJurisdiction::Minnesota)
+    );
+    assert_eq!(venue_state("Wartburg College"), Some(UsJurisdiction::Iowa));
+    assert_eq!(
+        venue_state("UW-River Falls"),
+        Some(UsJurisdiction::Wisconsin)
+    );
     assert_eq!(venue_state("St. Croix Falls HS"), None);
     assert_eq!(
         venue_state("Augustana College"),
@@ -185,7 +192,7 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         .iter()
         .find(|meet| meet.name == "USATF Minnesota All-Comers Meet #3")
         .expect("the first track row is a meet");
-    assert_eq!(opener.state, "MN");
+    assert_eq!(opener.state, Some(UsJurisdiction::Minnesota));
     assert_eq!(opener.date, "2026-01-04");
     assert_eq!(opener.location.as_deref(), Some("University of Minnesota"));
     assert_eq!(opener.sports, vec![Sport::IndoorTrack]);
@@ -220,16 +227,21 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         .iter()
         .find(|meet| meet.name == "River Falls Extreme Meet")
         .expect("the first cross-country row is a meet");
-    assert_eq!(xc.state, "WI");
+    assert_eq!(xc.state, Some(UsJurisdiction::Wisconsin));
     assert_eq!(xc.date, "2026-08-27");
     assert_eq!(xc.sports, vec![Sport::CrossCountry]);
 
-    // A venue the table does not claim lands under the explicit unknown bucket.
+    // A venue the table does not claim stays unplaced: the report spells that bucket
+    // `MEET_STATE_UNRESOLVED`, so the meet must carry no jurisdiction at all.
+    assert!(
+        appended.iter().any(|meet| meet.state.is_none()),
+        "the fixture carries venues the table does not claim"
+    );
     assert!(
         appended
             .iter()
-            .filter(|meet| meet.state == UNKNOWN_STATE)
-            .all(|meet| meet.state != "MN"),
+            .filter(|meet| meet.state.is_none())
+            .all(|meet| meet.state != Some(UsJurisdiction::Minnesota)),
         "unresolved venues are never filed under the provider's home state"
     );
 }
@@ -298,7 +310,7 @@ fn a_school_shaped_venue_is_read_with_its_suffix_written_out() {
 #[test]
 fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
     // Canonical schools carry a normalized name, exactly as the store writes them.
-    let school = |state: &str, name: &str| {
+    let school = |state: UsJurisdiction, name: &str| {
         census_domain::model::CanonicalSchool::new(
             state,
             name,
@@ -310,8 +322,8 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
 
     // The same school name in two states is never guessed at.
     let both = SchoolIndex::from_schools(&[
-        school("MN", "Albany High School"),
-        school("WI", "Albany High School"),
+        school(UsJurisdiction::Minnesota, "Albany High School"),
+        school(UsJurisdiction::Wisconsin, "Albany High School"),
     ]);
     assert_eq!(
         resolve_venue(&both, &mut cache, "Albany HS"),
@@ -320,21 +332,21 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
 
     // With one owner it resolves, including for the punctuated spelling a timer may print.
     let one = SchoolIndex::from_schools(&[
-        school("MN", "Albany High School"),
-        school("WI", "River Falls High School"),
+        school(UsJurisdiction::Minnesota, "Albany High School"),
+        school(UsJurisdiction::Wisconsin, "River Falls High School"),
     ]);
     let mut cache = HashMap::new();
     assert_eq!(
         resolve_venue(&one, &mut cache, "Albany HS"),
-        VenueResolution::School("MN")
+        VenueResolution::School(UsJurisdiction::Minnesota)
     );
     assert_eq!(
         resolve_venue(&one, &mut cache, "Albany H.S."),
-        VenueResolution::School("MN")
+        VenueResolution::School(UsJurisdiction::Minnesota)
     );
     assert_eq!(
         resolve_venue(&one, &mut cache, "River Falls HS"),
-        VenueResolution::School("WI")
+        VenueResolution::School(UsJurisdiction::Wisconsin)
     );
     assert_eq!(
         resolve_venue(&one, &mut cache, "Bassett Creek Park"),
@@ -342,6 +354,6 @@ fn a_school_venue_resolves_only_where_exactly_one_state_owns_it() {
     );
     assert_eq!(
         resolve_venue(&one, &mut cache, "University of Minnesota"),
-        VenueResolution::Site("MN")
+        VenueResolution::Site(UsJurisdiction::Minnesota)
     )
 }

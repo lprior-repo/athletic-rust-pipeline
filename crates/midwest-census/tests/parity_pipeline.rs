@@ -67,6 +67,7 @@ use census_domain::model::{
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence,
     GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 use midwest_census::bests::{self, BestResult, Measure};
 use midwest_census::net::Fetcher;
 use midwest_census::report::{self, Census, Scope};
@@ -619,13 +620,14 @@ fn wiaa_result_files(corpus: &mut Corpus) -> Result<()> {
     // A canonical school per published label: the adapter resolves labels through `SchoolIndex`, so
     // the corpus has to carry a school the index can find, and the check below proves it does.
     for label in &labels {
-        let (school, id) = CanonicalSchool::new("WI", label, normalize_name(label));
+        let (school, id) =
+            CanonicalSchool::new(UsJurisdiction::Wisconsin, label, normalize_name(label));
         schools.insert(id.as_str().to_string(), school);
     }
     let index = SchoolIndex::from_schools(&schools.values().cloned().collect::<Vec<_>>());
     for label in &labels {
         ensure!(
-            index.resolve("WI", label).is_some(),
+            index.resolve(UsJurisdiction::Wisconsin, label).is_some(),
             "the published school label {label:?} does not resolve against a school minted from it"
         );
     }
@@ -689,7 +691,7 @@ fn expected_ids_for(
     expected: &mut ExpectedEntities,
 ) -> Result<usize> {
     let expected_meet = CanonicalMeet::new(
-        "WI",
+        Some(UsJurisdiction::Wisconsin),
         &meet.name,
         &meet.date,
         wiaa_results::level_of(&meet.name),
@@ -722,7 +724,7 @@ fn expected_ids_for(
             if label.is_empty() {
                 continue;
             }
-            let Some((school_id, _)) = index.resolve("WI", label) else {
+            let Some((school_id, _)) = index.resolve(UsJurisdiction::Wisconsin, label) else {
                 bail!(
                     "{}: the published school label {label:?} has no canonical school",
                     artifact.file
@@ -1197,9 +1199,9 @@ fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
         !parsed.athletes.is_empty(),
         "the roster fixture parses to no athletes"
     );
-    let site = milesplit::site_for_state("WI")?;
+    let site = milesplit::Site::for_jurisdiction(UsJurisdiction::Wisconsin);
     let (school, athletes, school_teams) =
-        milesplit::roster_entities(&parsed, "WI", SCHOOL_YEAR, OBSERVED_ON, &site);
+        milesplit::roster_entities(&parsed, SCHOOL_YEAR, OBSERVED_ON, &site);
     corpus.schools.push(school);
     corpus.athletes.extend(athletes);
     corpus.teams.extend(school_teams);
@@ -1255,7 +1257,7 @@ fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
         // The adapter queries athlete rows through the meet's timer identity, so the corpus mints
         // the meet its own tests mint and hands the same selection to `build_entities`.
         let mut meet = CanonicalMeet::new(
-            "KS",
+            Some(UsJurisdiction::Kansas),
             "Abilene Invitational",
             "2025-04-25",
             CompetitionLevel::Invitational,
@@ -1270,7 +1272,8 @@ fn athleticlive_athletes(corpus: &mut Corpus) -> Result<()> {
             SourceRef::new(SOURCE_ATHLETICLIVE_MEETS, None),
             OBSERVED_ON,
         ));
-        let selection = athleticlive_athletes::meet_targets(&[meet.clone()], &["KS".to_string()]);
+        let selection =
+            athleticlive_athletes::meet_targets(&[meet.clone()], &[UsJurisdiction::Kansas]);
         let by_id: HashMap<u64, &athleticlive_athletes::MeetTarget> = selection
             .targets
             .iter()

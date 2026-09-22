@@ -1,5 +1,18 @@
+use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::census::{Revision, StateProgress};
+
+pub(super) mod ingest;
+
+/// The ingest family, re-exported so this module remains the one wire-protocol surface to import
+/// from. The types themselves are defined in [`ingest`].
+pub use ingest::{
+    EndpointObservation, IngestReply, IngestRequest, IngestState, SweepReport, SweepRequest,
+    WindowRequest,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableCount {
@@ -84,85 +97,137 @@ pub struct WorkbookReply {
     pub grad_year: Option<i16>,
 }
 
+/// What one jurisdiction's census asks for. The object key is the jurisdiction identity
+/// (`jurisdiction:<state>:<season>:<revision>`), so the request repeats those three fields only so
+/// the handler can refuse a request routed to the wrong key.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JurisdictionRequest {
+    pub jurisdiction: UsJurisdiction,
+    pub season: SchoolYear,
+    pub revision: Revision,
+    /// Bypass cached bodies for this run.
+    #[serde(default)]
+    pub refresh: bool,
+    /// Rosters per jurisdiction; absent means every team the index lists.
+    #[serde(default)]
+    pub limit_per_state: Option<usize>,
+    /// Rosters fetched concurrently inside this jurisdiction.
+    #[serde(default = "default_concurrency")]
+    pub concurrency: usize,
+    /// Collection date stamped on the evidence this run writes; absent means today.
+    #[serde(default)]
+    pub observed_on: Option<String>,
+}
+
+fn default_concurrency() -> usize {
+    4
+}
+
+impl NationalRequest {
+    /// The per-jurisdiction request one fan-out call carries. The national request holds the shared
+    /// knobs — season, revision, refresh, roster ceiling, concurrency, collection date — and this
+    /// projects them onto one state.
+    pub fn for_jurisdiction(&self, jurisdiction: UsJurisdiction) -> JurisdictionRequest {
+        JurisdictionRequest {
+            jurisdiction,
+            season: self.season,
+            revision: self.revision,
+            refresh: self.refresh,
+            limit_per_state: self.limit_per_state,
+            concurrency: self.concurrency,
+            observed_on: self.observed_on.clone(),
+        }
+    }
+}
+
+/// One completed stage: how many records it produced and when it finished.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StageOutcome {
+    pub records: usize,
+    pub at: String,
+}
+
+/// A jurisdiction object's whole durable state.
+///
+/// One value, written whole: the object key is the jurisdiction identity, and a partially updated
+/// jurisdiction — teams counted but rosters not recorded, or the reverse — must not be able to
+/// exist, because a resumed run reads this to decide which stages it still owes.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct IngestState {
-    /// Object key this state belongs to.
+pub struct JurisdictionState {
+    /// The identity this state belongs to; empty before the first run.
     #[serde(default)]
-    pub endpoint: String,
+    pub identity: String,
     #[serde(default)]
-    pub total_observations: u64,
+    pub teams: Option<StageOutcome>,
+    /// The roster walk's measured outcome, including its cohort counts and per-team errors.
     #[serde(default)]
-    pub cursor: Option<String>,
+    pub rosters: Option<StateProgress>,
     #[serde(default)]
-    pub last_appended_at: Option<String>,
+    pub consolidated: Option<Vec<ConsolidatedTable>>,
     #[serde(default)]
-    pub windows: Vec<String>,
+    pub updated_at: Option<String>,
+}
+
+/// The result of one `run`: the stages this invocation executed, and the state it left behind.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JurisdictionReport {
+    pub identity: String,
+    pub jurisdiction: UsJurisdiction,
+    /// Stages executed now, in order. Empty means every stage was already complete.
+    pub stages_run: Vec<String>,
+    pub teams: usize,
+    pub rosters: StateProgress,
+    pub consolidated: Vec<ConsolidatedTable>,
+    pub completed_at: String,
+}
+
+/// The national run's request. `jurisdictions` empty means all fifty states and the District of
+/// Columbia, in declaration order.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NationalRequest {
+    pub season: SchoolYear,
+    pub revision: Revision,
+    #[serde(default)]
+    pub jurisdictions: Vec<UsJurisdiction>,
+    #[serde(default)]
+    pub refresh: bool,
+    #[serde(default)]
+    pub limit_per_state: Option<usize>,
+    #[serde(default = "default_concurrency")]
+    pub concurrency: usize,
+    #[serde(default)]
+    pub observed_on: Option<String>,
+}
+
+/// One jurisdiction's row in the national report.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JurisdictionSummary {
+    pub jurisdiction: UsJurisdiction,
+    pub identity: String,
+    pub teams: usize,
+    pub rosters_done: usize,
+    pub rosters_skipped: usize,
+    pub athletes: usize,
+    pub class_of_2027: usize,
+}
+
+/// A jurisdiction whose run failed. The national run keeps going: one jurisdiction's source outage
+/// is a row in this list, never a failed national run (§69).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NationalFailure {
+    pub jurisdiction: UsJurisdiction,
+    pub identity: String,
+    pub error: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IngestRequest {
-    /// Target table, e.g. `athletes`.
-    pub table: String,
-    /// Canonical entity observations; each row must carry its `id`.
-    pub rows: Vec<Value>,
-    /// Cursor the caller claims to have consumed; stored only after the append commits.
-    #[serde(default)]
-    pub cursor: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct IngestReply {
-    pub endpoint: String,
-    /// Rows accepted in this request. `u64`, not `usize`: the wire shape must not change with the
-    /// host pointer width.
-    pub appended: u64,
-    pub total_observations: u64,
-    pub cursor: Option<String>,
-    pub last_appended_at: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WindowRequest {
-    /// Window label being declared complete, e.g. `2026-W38`.
-    pub window: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SweepRequest {
-    /// Ingest object keys to observe.
-    pub endpoints: Vec<String>,
-    /// How many windows to observe before completing.
-    #[serde(default = "default_windows")]
-    pub windows: u32,
-    /// Seconds slept between windows.
-    #[serde(default = "default_window_seconds")]
-    pub window_seconds: u64,
-}
-
-fn default_windows() -> u32 {
-    1
-}
-
-fn default_window_seconds() -> u64 {
-    1
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EndpointObservation {
-    pub endpoint: String,
-    pub total_observations: u64,
-    pub cursor: Option<String>,
-    pub completed_windows: usize,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SweepReport {
-    pub windows_observed: u32,
-    pub interrupted: bool,
-    pub endpoints: Vec<EndpointObservation>,
-    /// Endpoints that have never accepted an observation.
-    pub stale: Vec<String>,
+pub struct NationalReport {
+    pub season: SchoolYear,
+    pub revision: Revision,
+    pub jurisdictions: Vec<JurisdictionSummary>,
+    pub failures: Vec<NationalFailure>,
+    pub teams_total: usize,
+    pub athletes_total: usize,
+    pub class_of_2027_total: usize,
     pub today: String,
-    /// Where the durable pass wrote this report, when it reached that step.
-    pub report_path: Option<String>,
 }

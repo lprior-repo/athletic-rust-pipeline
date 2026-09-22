@@ -1,0 +1,2729 @@
+{
+ "counts": {
+  "ad_email_available_tier1": 5,
+  "ad_name_available_tier1": 14,
+  "blocked": 0,
+  "coach_email_available_tier1": 3,
+  "coach_name_available_tier1": 8,
+  "http_blocked_to_this_client": 4,
+  "identity_only": 10,
+  "jurisdictions": 51,
+  "robots_disallow": 3,
+  "tier1_collected": 22,
+  "unverified_client_rendered": 26
+ },
+ "generated_utc": "2026-09-22T04:16:30Z",
+ "jurisdictions": {
+  "AK": {
+   "association": {
+    "bytes": 46141,
+    "homepage": "https://asaa.org/",
+    "http": 200,
+    "name": "Alaska School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Alaska School Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "218-row school table: SCHOOL/PHONE/EN/RG/CL/ADDRESS/CITY/ZIP/DISTRICT; no staff or coach column (samples/dir/AK__member-schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 254708,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 216,
+     "school_word": 0,
+     "sport_label": 6,
+     "street": 46
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/AK__member-schools.html",
+    "url": "https://asaa.org/about/member-schools/",
+    "visible_chars": 20948
+   },
+   "tier1_response_is_stub": true
+  },
+  "AL": {
+   "association": {
+    "bytes": 0,
+    "homepage": "https://ahsaa.com/",
+    "http": null,
+    "name": "Alabama High School Athletic Association",
+    "robots_allow": null,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "robots.txt `User-agent: * Disallow: /` -> not fetched (see samples/CAPTURES.md refusals)",
+   "fields": {
+    "ad_email": "n/a",
+    "ad_name": "n/a",
+    "coach_email": "n/a",
+    "coach_name": "n/a",
+    "school": "n/a",
+    "tf_xc": "n/a"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 0,
+    "http": null,
+    "measured": null,
+    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "sample": "samples/dir/AL__home.html",
+    "url": "https://ahsaa.com/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "AR": {
+   "association": {
+    "bytes": 241427,
+    "homepage": "https://ahsaa.org/",
+    "http": 200,
+    "name": "Arkansas Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | Arkansas Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "AAA's menu item 'Public Directory' resolves to go.dragonflyathletics.com, a client-rendered DragonFly app whose served HTML has no directory content (visible text 'DragonFly'); AAA's own site serves 0 <tr> (samples/dir/AR__dragonfly.html, samples/dir/AR__home.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 1444036,
+    "http": 200,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/AR__home.html",
+    "url": "https://ahsaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "AZ": {
+   "association": {
+    "bytes": 10647,
+    "homepage": "https://aiaonline.org/",
+    "http": 200,
+    "name": "Arizona Interscholastic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "AIAOnline"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "/schools is a JS shell (2 117 visible chars, 0 school rows); data endpoint not located (samples/dir/AZ__schools.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 59463,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 1,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 0,
+     "sport_label": 4,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/AZ__schools.html",
+    "url": "https://aiaonline.org/schools",
+    "visible_chars": 2117
+   },
+   "tier1_response_is_stub": true
+  },
+  "CA": {
+   "association": {
+    "bytes": 24061,
+    "homepage": "https://cifstate.org/",
+    "http": 200,
+    "name": "California Interscholastic Federation",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Index Landing - California Interscholastic Federation"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "cifstate.org homepage returned HTTP 202 with an empty body; CIF is 10 autonomous sections, no state directory observed",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": "HTTP 202 with empty body from cifstate.org",
+   "tier1": {
+    "bytes": 0,
+    "http": 202,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/CA__home.html",
+    "url": "https://cifstate.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "CO": {
+   "association": {
+    "bytes": 65325,
+    "homepage": "https://chsaanow.com/",
+    "http": 200,
+    "name": "Colorado High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "CHSAA - Colorado High School Sports Scores, Rankings &amp; News | CHSAANow.com"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "schools.chsaa.org redirects to /login?callbackUrl=/dashboard - member-only School Center (samples/dir/CO__schools2.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "no",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 15213,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 0,
+     "sport_label": 0,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/CO__schools.html",
+    "url": "https://schools.chsaa.org",
+    "visible_chars": 15
+   },
+   "tier1_response_is_stub": true
+  },
+  "CT": {
+   "association": {
+    "bytes": 0,
+    "homepage": "https://ciacsports.com/",
+    "http": 0,
+    "name": "Connecticut Interscholastic Athletic Conference",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "FusionPoint directory, 190 school tables: 182 schools carry at least one XC/indoor+outdoor-track Head Coach row (1 043 such rows), 189 Athletic Director rows; the 4th column is a tel: phone (often the school main line, sometimes empty) and there is no email column (samples/dir/CT__directory.html; counted by tools/dir_coach_counts.py)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 76427,
+    "http": 200,
+    "measured": {
+     "ad_title": 189,
+     "cf_email": 0,
+     "city_state_zip": 187,
+     "coach_word": 3824,
+     "mailto": 0,
+     "phone": 3628,
+     "school_word": 6,
+     "sport_label": 353,
+     "street": 194
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/CT__home.html",
+    "url": "https://ciac.fpsports.org/",
+    "visible_chars": 256697
+   },
+   "tier1_response_is_stub": true
+  },
+  "DC": {
+   "association": {
+    "bytes": 26335,
+    "homepage": "https://dcsaasports.org/",
+    "http": 200,
+    "name": "DC State Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "\u0e41\u0e17\u0e07\u0e1a\u0e2d\u0e25\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c \u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a 1 \u0e02\u0e2d\u0e07\u0e42\u0e25\u0e01 UFABET \u0e40\u0e27\u0e47\u0e1a\u0e41\u0e17\u0e07\u0e1a\u0e2d\u0e25 \u0e17\u0e35\u0e48\u0e14\u0e35\u0e17\u0e35\u0e48\u0e2a\u0e38\u0e142025"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "www.dcsaa.org fetched (109 872 B) but no directory table or contact field served (samples/dir/DC__home.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 109872,
+    "http": 200,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/DC__home.html",
+    "url": "https://www.dcsaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "DE": {
+   "association": {
+    "bytes": 3218,
+    "homepage": "https://diaa.org/",
+    "http": 403,
+    "name": "Delaware Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Just a moment..."
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "diaa.org HTTP 403 'Just a moment...' Cloudflare interstitial to this client (samples/dir/DE__home.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": "HTTP 403 Cloudflare interstitial to this client",
+   "tier1": {
+    "bytes": 5531,
+    "http": 403,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/DE__home.html",
+    "url": "https://diaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "FL": {
+   "association": {
+    "bytes": 22691,
+    "homepage": "https://fhsaa.com/",
+    "http": 200,
+    "name": "Florida High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Florida High School Athletic Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "/schools 404; SPA shell only (samples/dir/FL__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 152120,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 2,
+     "sport_label": 4,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/FL__home.html",
+    "url": "https://fhsaa.com/",
+    "visible_chars": 1639
+   },
+   "tier1_response_is_stub": true
+  },
+  "GA": {
+   "association": {
+    "bytes": 13715,
+    "homepage": "https://ghsa.net/",
+    "http": 200,
+    "name": "Georgia High School Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Georgia High School Association | GHSA.net"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "GHSA member school directory = 40 rows of {school, street address, city/state/zip, colors}; the 'coach' hits are the nav item 'Coaches / ADs' (samples/dir/GA__school-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 81420,
+    "http": 200,
+    "measured": {
+     "ad_title": 2,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 54,
+     "mailto": 1,
+     "phone": 6,
+     "school_word": 379,
+     "sport_label": 5,
+     "street": 2
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/GA__school-directory.html",
+    "url": "https://ghsa.net/school-directory",
+    "visible_chars": 15193
+   },
+   "tier1_response_is_stub": true
+  },
+  "HI": {
+   "association": {
+    "bytes": 22484,
+    "homepage": "https://hhsaa.org/",
+    "http": 200,
+    "name": "Hawaii High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "HHSAA.org - Hawaii High School Athletic Association (HHSAA)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "member-schools page is a JS shell; no contact table (samples/dir/HI__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 64495,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 1,
+     "phone": 0,
+     "school_word": 2,
+     "sport_label": 4,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/HI__schools.html",
+    "url": "https://hhsaa.org/schools",
+    "visible_chars": 2809
+   },
+   "tier1_response_is_stub": true
+  },
+  "IA": {
+   "association": {
+    "bytes": 44439,
+    "homepage": "https://iahsaa.org/",
+    "http": 200,
+    "name": "Iowa High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "The Iowa High School Athletic Association | IA Boys Sports"
+   },
+   "baseline_rows_refused": [
+    {
+     "agree": null,
+     "found": {},
+     "label": "IA Bound adm",
+     "must": [
+      "Rod Wiebers"
+     ],
+     "note": "baseline row: Activities Director Rod Wiebers",
+     "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /ia/schools/<slug>/directory/new is disallowed. Same [29] provenance as the SD row; not reproduced here.",
+     "sample": null,
+     "state": "IA",
+     "status": "refused",
+     "url": "https://www.gobound.com/ia/schools/adm/directory/new"
+    }
+   ],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "IHSAA tier-1 list is {School, Nickname, School Colors, Conference} with no contacts (samples/dir/IA__member-schools.html). IHSAA member pages link out to Bound, whose directory is robots-disallowed (`Disallow: /*directory`); a compliant GET of the IA Bound directory returned a 118-byte 403 body (samples/validate/IA_Bound_adm.html). Contacts NOT verified by this lane; earlier table claims are retracted in tools/validation-retractions.json",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "yes",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 268201,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 4,
+     "sport_label": 2,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/IA__member-schools.html",
+    "url": "https://www.iahsaa.org/member-schools/",
+    "visible_chars": 21731
+   },
+   "tier1_response_is_stub": true
+  },
+  "ID": {
+   "association": {
+    "bytes": 12313,
+    "homepage": "https://idhsaa.org/",
+    "http": 200,
+    "name": "Idaho High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Welcome | IHSAA - Idaho High School Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "idhsaa.org loads a Cloudflare Turnstile challenge (challenges.cloudflare.com/turnstile) - no directory data served to this client (samples/dir/ID__home.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": "Cloudflare Turnstile challenge; no directory data served",
+   "tier1": {
+    "bytes": 45804,
+    "http": 200,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/ID__home.html",
+    "url": "https://idhsaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "IL": {
+   "association": {
+    "bytes": 1772,
+    "homepage": "https://ihsa.org/",
+    "http": 200,
+    "name": "Illinois High School Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "IHSA: Illinois High School Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "Kelso": true,
+      "Mink": true
+     },
+     "label": "IL Abingdon-Avon 0101 staff2",
+     "missing": [],
+     "must": [
+      "Mink",
+      "Kelso"
+     ],
+     "note": "baseline row: Boys XC Head Coach Mr. Barry Mink / AD Mr. Reid Kelso",
+     "on_disk_bytes": 5386,
+     "sample": "samples/validate/IL_Abingdon_Avon_0101_staff2.html",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Fegan": true,
+      "Thorpe": true
+     },
+     "label": "IL Dixon 0418 staff2",
+     "missing": [],
+     "must": [
+      "Thorpe",
+      "Fegan"
+     ],
+     "note": "baseline row: Boys XC Head Coach Simon Thorpe / AD Mr. Roger Fegan",
+     "on_disk_bytes": 6394,
+     "sample": "samples/validate/IL_Dixon_0418_staff2.html",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0418/staff2"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Rose": true,
+      "Sipple": true
+     },
+     "label": "IL Downers Grove North 0422 staff2",
+     "missing": [],
+     "must": [
+      "Sipple",
+      "Rose"
+     ],
+     "note": "baseline row: Boys XC Head Coach John Sipple / AD Dave Rose",
+     "on_disk_bytes": 10962,
+     "sample": "samples/validate/IL_Downers_Grove_North_0422_staff2.html",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0422/staff2"
+    },
+    {
+     "agree": true,
+     "found": {
+      "bmink@atown276.net": true
+     },
+     "label": "IL Abingdon-Avon 0101 staff email",
+     "missing": [],
+     "must": [
+      "bmink@atown276.net"
+     ],
+     "note": "baseline row: Abingdon-Avon Boys XC Head Coach email bmink@atown276.net (Mr. Barry Mink, PersonID 40964)",
+     "on_disk_bytes": 30,
+     "sample": "samples/validate/IL_0101_staff_40964_email.json",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0101/staff/40964/email"
+    },
+    {
+     "agree": true,
+     "found": {
+      "sthorpe@dps170.org": true
+     },
+     "label": "IL Dixon 0418 staff email",
+     "missing": [],
+     "must": [
+      "sthorpe@dps170.org"
+     ],
+     "note": "baseline row: Dixon Boys XC Head Coach email sthorpe@dps170.org (Simon Thorpe, PersonID 91589)",
+     "on_disk_bytes": 30,
+     "sample": "samples/validate/IL_0418_staff_91589_email.json",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0418/staff/91589/email"
+    },
+    {
+     "agree": true,
+     "found": {
+      "jsipple@csd99.org": true
+     },
+     "label": "IL Downers Grove North 0422 staff email",
+     "missing": [],
+     "must": [
+      "jsipple@csd99.org"
+     ],
+     "note": "baseline row: DGN Boys XC Head Coach email jsipple@csd99.org (John Sipple, PersonID 7939)",
+     "on_disk_bytes": 29,
+     "sample": "samples/validate/IL_0422_staff_7939_email.json",
+     "state": "IL",
+     "status": "verified",
+     "url": "https://api.ihsa.org/v1/schools/0422/staff/7939/email"
+    }
+   ],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "api.ihsa.org/v1/schools (828 rows) + /staff2 + /staff/<PersonID>/email; verified 3/3 coach emails live (samples/dir/IL__ihsa-schools.html, samples/validate/IL_0101_staff2.html)",
+   "fields": {
+    "ad_email": "yes",
+    "ad_name": "yes",
+    "coach_email": "yes",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 451188,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 700,
+     "sport_label": 0,
+     "street": 226
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/IL__ihsa-schools.html",
+    "url": "https://api.ihsa.org/v1/schools",
+    "visible_chars": 451176
+   },
+   "tier1_response_is_stub": true
+  },
+  "IN": {
+   "association": {
+    "bytes": 60541,
+    "homepage": "https://ihsaa.org/",
+    "http": 200,
+    "name": "Indiana High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | Indiana High School Athletic Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "IHSAA school-directory page: membership statistics + hand-off to myIHSAA.net; no per-school contact rows (samples/dir/IN__ihsaa-school-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 267694,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 2,
+     "sport_label": 5,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/IN__ihsaa-school-directory.html",
+    "url": "https://www.ihsaa.org/schools/ihsaa-school-directory",
+    "visible_chars": 2851
+   },
+   "tier1_response_is_stub": true
+  },
+  "KS": {
+   "association": {
+    "bytes": 790,
+    "homepage": "https://kshsaa.org/",
+    "http": 200,
+    "name": "Kansas State High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Kansas State High School Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": {
+    "agree_ad_email": 526,
+    "agree_ad_name": 526,
+    "artifact": "tools/validation-ks.json",
+    "baseline_rows": 526,
+    "command": "python3 tools/validate_ks.py",
+    "note": "every KS baseline row was checked against the live KSHSAA JSON directory (26 letter pages, saved under samples/api/KS__directory_*.json); the live directory holds 746 schools, so the baseline's 526 is a subset of the enumerable universe",
+    "schools_matched": 526
+   },
+   "delegated_directory_platform": null,
+   "evidence": "kshsaa-api.kshsaa.org/directory/search/name/a/ = 526 schools in 1 request, 526/526 AD name+email re-verified live (samples/dir/KS__kshsaa-api-letter-a.html)",
+   "fields": {
+    "ad_email": "yes",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 489381,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 750,
+     "sport_label": 0,
+     "street": 269
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/KS__kshsaa-api-letter-a.html",
+    "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/",
+    "visible_chars": 485715
+   },
+   "tier1_response_is_stub": true
+  },
+  "KY": {
+   "association": {
+    "bytes": 45690,
+    "homepage": "https://khsaa.org/",
+    "http": 200,
+    "name": "Kentucky High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Kentucky High School Athletic Association | KHSAA &#8211; Student-athletes of Today, Leaders of Tomorrow"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": "khsaa.arbitersports.com/front/104219/Site",
+   "evidence": "KHSAA delegates its school directory to ArbiterLive: khsaa.arbitersports.com/front/104219/Site (samples/dir/KY__arbiterlive-note.html). arbiterlive.com and *.arbitersports.com both publish `User-agent: * Disallow: /`, so the delegated directory is NOT collectible under this contract (tools/robots/khsaa.arbitersports.com.txt)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 368431,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 4,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 10,
+     "sport_label": 83,
+     "street": 1
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/KY__arbiterlive-note.html",
+    "url": "https://khsaa.org/08-16-2024-khsaa-school-directory-available-via-arbiterlive/",
+    "visible_chars": 49226
+   },
+   "tier1_response_is_stub": true
+  },
+  "LA": {
+   "association": {
+    "bytes": 77279,
+    "homepage": "https://lhsaa.org/",
+    "http": 200,
+    "name": "Louisiana High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "LHSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "LHSAA /school-directory is a JS shell; no contact rows served (samples/dir/LA__school-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 63566,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 1,
+     "sport_label": 6,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/LA__school-directory.html",
+    "url": "https://www.lhsaa.org/school-directory",
+    "visible_chars": 5433
+   },
+   "tier1_response_is_stub": true
+  },
+  "MA": {
+   "association": {
+    "bytes": 30875,
+    "homepage": "https://miaa.net/",
+    "http": 200,
+    "name": "Massachusetts Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | Massachusetts Interscholastic Athletic Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": "ArbiterSports (linked from MIAA Quick Links)",
+   "evidence": "miaa.net/schools and /about-miaa/miaa-member-schools are JS shells (0 <tr>, 13-69 KB, no contact rows); MIAA's Quick Links point to ArbiterSports, whose hosts publish `Disallow: /` (samples/dir/MA__member-schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 90508,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 4,
+     "mailto": 1,
+     "phone": 1,
+     "school_word": 1,
+     "sport_label": 4,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/MA__schools.html",
+    "url": "https://miaa.net/schools",
+    "visible_chars": 4514
+   },
+   "tier1_response_is_stub": true
+  },
+  "MD": {
+   "association": {
+    "bytes": 43785,
+    "homepage": "https://mpssaa.org/",
+    "http": 200,
+    "name": "Maryland Public Secondary Schools Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "The Maryland Public Secondary Schools Athletic Association (MPSSAA)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "wp-json/mpssaa/v1/search?q= returns school records; the school page carries 0 mailto and no AD name (samples/dir/MD__school-montgomery-blair.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 528894,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 2,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 2,
+     "sport_label": 7,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/MD__school-directory.html",
+    "url": "https://www.mpssaa.org/school-directory/",
+    "visible_chars": 9563
+   },
+   "tier1_response_is_stub": true
+  },
+  "ME": {
+   "association": {
+    "bytes": 0,
+    "homepage": "https://mpa.cc/",
+    "http": 0,
+    "name": "Maine Principals' Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "FusionPoint directory, 147 school tables: 81 schools carry an XC/indoor+outdoor-track Head Coach row (310 such rows), 149 Athletic Director rows; no email column (samples/dir/ME__directory.html; counted by tools/dir_coach_counts.py)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 54919,
+    "http": 200,
+    "measured": {
+     "ad_title": 149,
+     "cf_email": 0,
+     "city_state_zip": 117,
+     "coach_word": 1630,
+     "mailto": 0,
+     "phone": 582,
+     "school_word": 36,
+     "sport_label": 145,
+     "street": 122
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/ME__home.html",
+    "url": "https://www.mpa.cc/",
+    "visible_chars": 100560
+   },
+   "tier1_response_is_stub": true
+  },
+  "MI": {
+   "association": {
+    "bytes": 19439,
+    "homepage": "https://mhsaa.com/",
+    "http": 200,
+    "name": "Michigan High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | Michigan High School Athletic Association"
+   },
+   "baseline_rows_refused": [
+    {
+     "agree": null,
+     "found": {},
+     "label": "MI East Kentwood 4351",
+     "must": [
+      "Kevin Polston",
+      "kevin.polston@kentwoodps.org",
+      "Imari Lamar-Gonzales"
+     ],
+     "note": "baseline rows: Superintendent + AD Secretary",
+     "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; the cited path /DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory is disallowed. Refused 2x (2026-09-22T03:59:40Z, T04:08:43Z).",
+     "sample": null,
+     "state": "MI",
+     "status": "refused",
+     "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4351"
+    },
+    {
+     "agree": null,
+     "found": {},
+     "label": "MI Detroit Catholic Central 4239",
+     "must": [
+      "Eric Haley",
+      "haley.eric@aod.org"
+     ],
+     "note": "baseline row: Superintendent",
+     "refused": "my.mhsaa.com/robots.txt `User-agent: *` -> `Disallow: /DesktopModules/`; same path prefix. Refused 2x (2026-09-22T03:59:40Z, T04:08:44Z).",
+     "sample": null,
+     "state": "MI",
+     "status": "refused",
+     "url": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId=4239"
+    }
+   ],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "my.mhsaa.com AdministrationDirectory returns AD/Principal/Superintendent with MailAddress, BUT robots.txt disallows /DesktopModules/ for every user-agent -> not fetched this wave (tools/robots/my.mhsaa.com.txt)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "yes",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 145626,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 1,
+     "city_state_zip": 1,
+     "coach_word": 9,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 3,
+     "sport_label": 6,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/MI__schools.html",
+    "url": "https://mhsaa.com/schools",
+    "visible_chars": 4335
+   },
+   "tier1_response_is_stub": true
+  },
+  "MN": {
+   "association": {
+    "bytes": 18301,
+    "homepage": "https://mshsl.org/",
+    "http": 200,
+    "name": "Minnesota State High School League",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Minnesota State High School League | Education and Leadership for a Lifetime"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "Kenley Wahlin": true
+     },
+     "label": "MN ada-borup-west",
+     "missing": [],
+     "must": [
+      "Kenley Wahlin"
+     ],
+     "note": "baseline row: Activities Director",
+     "on_disk_bytes": 173330,
+     "sample": "samples/validate/MN_ada_borup_west.html",
+     "state": "MN",
+     "status": "verified",
+     "url": "https://www.mshsl.org/schools/ada-borup-west-high-school"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Ben Kvidt": true
+     },
+     "label": "MN alexandria-area",
+     "missing": [],
+     "must": [
+      "Ben Kvidt"
+     ],
+     "note": "baseline row: Activities Director",
+     "on_disk_bytes": 177484,
+     "sample": "samples/validate/MN_alexandria_area.html",
+     "state": "MN",
+     "status": "verified",
+     "url": "https://www.mshsl.org/schools/alexandria-area-high-school"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Scott Buntje": true
+     },
+     "label": "MN albany",
+     "missing": [],
+     "must": [
+      "Scott Buntje"
+     ],
+     "note": "baseline row: Activities Director",
+     "on_disk_bytes": 175076,
+     "sample": "samples/validate/MN_albany.html",
+     "state": "MN",
+     "status": "verified",
+     "url": "https://www.mshsl.org/schools/albany-high-school"
+    }
+   ],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "mshsl.org/schools/<slug>: Activities Director name + Cloudflare-obfuscated email; verified 3/3 AD names live (samples/dir/MN__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 219456,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 1,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 34,
+     "sport_label": 12,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/MN__schools.html",
+    "url": "https://mshsl.org/schools",
+    "visible_chars": 11709
+   },
+   "tier1_response_is_stub": true
+  },
+  "MO": {
+   "association": {
+    "bytes": 0,
+    "homepage": "https://mshsaa.org/",
+    "http": null,
+    "name": "Missouri State High School Activities Association",
+    "robots_allow": null,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "robots.txt has a second `User-agent: *` group with `Disallow: /`; combining groups (RFC 9309) blocks the whole host -> not fetched",
+   "fields": {
+    "ad_email": "n/a",
+    "ad_name": "n/a",
+    "coach_email": "n/a",
+    "coach_name": "n/a",
+    "school": "n/a",
+    "tf_xc": "n/a"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 0,
+    "http": null,
+    "measured": null,
+    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "sample": "samples/dir/MO__home.html",
+    "url": "https://www.mshsaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "MS": {
+   "association": {
+    "bytes": 57,
+    "homepage": "https://misshsaa.com/",
+    "http": 403,
+    "name": "Mississippi High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "misshsaa.com HTTP 403 to this client (samples/dir/MS__home.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": "HTTP 403 to this client",
+   "tier1": {
+    "bytes": 52,
+    "http": 403,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/MS__home.html",
+    "url": "https://misshsaa.com/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "MT": {
+   "association": {
+    "bytes": 136340,
+    "homepage": "https://mhsa.org/",
+    "http": 200,
+    "name": "Montana High School Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Montana High School Association (MT)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": "widget.arbitersports.com (arbiter-score-ticker)",
+   "evidence": "/schools/directory/ and /schools/member-schools/ are JS shells (0 <tr>); the only buried API references are WordPress REST routes and an arbiter widget (samples/dir/MT__directory.html, tools/api-hunt.json)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 301211,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 2,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/MT__directory.html",
+    "url": "https://www.mhsa.org/schools/directory/",
+    "visible_chars": 1765
+   },
+   "tier1_response_is_stub": true
+  },
+  "NC": {
+   "association": {
+    "bytes": 27231,
+    "homepage": "https://nchsaa.org/",
+    "http": 200,
+    "name": "North Carolina High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "North Carolina High School Athletic Association - NCHSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "nchsaa.org/schools/ = 452 school rows + a 'Conference Administrators' table (78 rows, 74 mailto) = conference-level admin name+email, not school AD and not coaches (samples/dir/NC__schools.html)",
+   "fields": {
+    "ad_email": "partial",
+    "ad_name": "partial",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 346464,
+    "http": 200,
+    "measured": {
+     "ad_title": 1,
+     "cf_email": 0,
+     "city_state_zip": 2,
+     "coach_word": 0,
+     "mailto": 81,
+     "phone": 2,
+     "school_word": 374,
+     "sport_label": 5,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/NC__schools.html",
+    "url": "https://www.nchsaa.org/schools/",
+    "visible_chars": 30804
+   },
+   "tier1_response_is_stub": true
+  },
+  "ND": {
+   "association": {
+    "bytes": 30222,
+    "homepage": "https://ndhsaa.com/",
+    "http": 200,
+    "name": "North Dakota High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Welcome | NDHSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "Beth Slette": true
+     },
+     "label": "ND West Fargo Sheyenne 1045",
+     "missing": [],
+     "must": [
+      "Beth Slette"
+     ],
+     "note": "baseline row: AD Superintendent role row",
+     "on_disk_bytes": 75488,
+     "sample": "samples/validate/ND_West_Fargo_Sheyenne_1045.html",
+     "state": "ND",
+     "status": "verified",
+     "url": "https://ndhsaa.com/schools/1045/west-fargo-sheyenne"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Thomas Schmidt": true
+     },
+     "label": "ND Bismarck Legacy 1131",
+     "missing": [],
+     "must": [
+      "Thomas Schmidt"
+     ],
+     "note": "baseline row: Principal row named as AD in CSV",
+     "on_disk_bytes": 77843,
+     "sample": "samples/validate/ND_Bismarck_Legacy_1131.html",
+     "state": "ND",
+     "status": "verified",
+     "url": "https://ndhsaa.com/schools/1131/bismarck-legacy"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Matt Ruhland": true
+     },
+     "label": "ND Minot North 1307",
+     "missing": [],
+     "must": [
+      "Matt Ruhland"
+     ],
+     "note": "baseline row: Athletic Director row",
+     "on_disk_bytes": 75068,
+     "sample": "samples/validate/ND_Minot_North_1307.html",
+     "state": "ND",
+     "status": "verified",
+     "url": "https://ndhsaa.com/schools/1307/minot-north"
+    }
+   ],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "ndhsaa.com/schools/<id>/<slug> carries two blocks: role->name pairs (Superintendent/Principal/AD) AND a 'Sport/Activity Offering | Coaches' matrix - e.g. Boys' Cross Country = Troy Wendt, Boys' Track and Field = 'Logan Krueger, Jordan Sanford', Girls' Cross Country = empty at this school. 3/3 AD names re-verified live; 0 emails (samples/validate/ND_Minot_North_1307.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 97754,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 163,
+     "sport_label": 4,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/ND__schools.html",
+    "url": "https://ndhsaa.com/schools",
+    "visible_chars": 6315
+   },
+   "tier1_response_is_stub": true
+  },
+  "NE": {
+   "association": {
+    "bytes": 30502,
+    "homepage": "https://nsaahome.org/",
+    "http": 200,
+    "name": "Nebraska School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Nebraska School Activities Association &#8211; Nebraska School Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "NSAA Home": true
+     },
+     "label": "NE NSAA direxportscreen",
+     "missing": [],
+     "must": [
+      "NSAA Home"
+     ],
+     "note": "reachability probe only: GET on the POST-only export screen; proves the host serves, not that any school row resolves",
+     "on_disk_bytes": 11585,
+     "sample": "samples/validate/NE_NSAA_direxportscreen.html",
+     "state": "NE",
+     "status": "verified",
+     "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Alan Frank": true,
+      "Toni Fowler": true
+     },
+     "label": "NE NSAA Adams Central",
+     "missing": [],
+     "must": [
+      "Toni Fowler",
+      "Alan Frank"
+     ],
+     "note": "baseline rows: coach 'Toni Fowler' + AD 'Alan Frank' via POST school=Adams Central",
+     "on_disk_bytes": 15579,
+     "sample": "samples/validate/NE_nsaa_Adams_Central.html",
+     "state": "NE",
+     "status": "verified",
+     "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Marc Mroczek": true,
+      "Tony Neels": true
+     },
+     "label": "NE NSAA Gothenburg",
+     "missing": [],
+     "must": [
+      "Tony Neels",
+      "Marc Mroczek"
+     ],
+     "note": "baseline rows: coach 'Tony Neels' + AD 'Marc Mroczek' via POST school=Gothenburg",
+     "on_disk_bytes": 15002,
+     "sample": "samples/validate/NE_nsaa_Gothenburg.html",
+     "state": "NE",
+     "status": "verified",
+     "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Joe Wiebold": true,
+      "Nate Frankman": true
+     },
+     "label": "NE NSAA Omaha Gross Catholic",
+     "missing": [],
+     "must": [
+      "Joe Wiebold",
+      "Nate Frankman"
+     ],
+     "note": "baseline rows: coach 'Joe Wiebold' + AD 'Nate Frankman' via POST school=Omaha Gross Catholic",
+     "on_disk_bytes": 15537,
+     "sample": "samples/validate/NE_nsaa_Omaha_Gross_Catholic.html",
+     "state": "NE",
+     "status": "verified",
+     "url": "https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+    }
+   ],
+   "baseline_wholesale_validation": {
+    "ad_rows": 1528,
+    "agree_ad": 1528,
+    "agree_coach": 1217,
+    "artifact": "tools/validation-ne-wholesale.json",
+    "baseline_rows": 1528,
+    "coach_rows": 1217,
+    "command": "python3 tools/validate_ne.py",
+    "distinct_schools": 311,
+    "note": "every NE baseline row was checked against its school's live NSAA export page (311 POSTs, one per distinct school, saved under samples/validate/ne/); NE publishes no email field, so only the coach and AD NAMES are comparable",
+    "school_pages_over_2kb": 311
+   },
+   "delegated_directory_platform": null,
+   "evidence": "NSAA POST 'school=<name>' directory returns role->name pairs including each sport's coach; 3/3 sampled schools re-verified live (coach name + AD name), no email field exists (samples/validate/NE_nsaa_Adams_Central.html). Row volumes 1 217 coach / 311 AD are from the prior Midwest study [29], not re-measured here",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 211681,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 1,
+     "sport_label": 3,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/NE__schools.html",
+    "url": "https://nsaahome.org/schools/",
+    "visible_chars": 5307
+   },
+   "tier1_response_is_stub": true
+  },
+  "NH": {
+   "association": {
+    "bytes": 133203,
+    "homepage": "https://nhiaa.org/",
+    "http": 200,
+    "name": "New Hampshire Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "New Hampshire Interscholastic Athletic Association (NHIAA)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "/about-nhiaa/schools/ serves no school rows (visible text 2 439 chars) (samples/dir/NH__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 294581,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 0,
+     "sport_label": 2,
+     "street": 1
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/NH__schools.html",
+    "url": "https://www.nhiaa.org/about-nhiaa/schools/",
+    "visible_chars": 2439
+   },
+   "tier1_response_is_stub": true
+  },
+  "NJ": {
+   "association": {
+    "bytes": 73673,
+    "homepage": "https://njsiaa.org/",
+    "http": 200,
+    "name": "New Jersey State Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "New Jersey State Interscholastic Athletic Association | NJSIAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "/schools is an icon/nav shell with no directory rows (samples/dir/NJ__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 166905,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 0,
+     "sport_label": 1,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/NJ__schools.html",
+    "url": "https://njsiaa.org/schools",
+    "visible_chars": 1496
+   },
+   "tier1_response_is_stub": true
+  },
+  "NM": {
+   "association": {
+    "bytes": 63216,
+    "homepage": "https://nmact.org/",
+    "http": 200,
+    "name": "New Mexico Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "NMAA | New Mexico Activities Association | News, Results, Records"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "member-schools page lists 137 school-name occurrences; no contact column (samples/dir/NM__member-schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 598393,
+    "http": 200,
+    "measured": {
+     "ad_title": 2,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 137,
+     "sport_label": 4,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/NM__member-schools.html",
+    "url": "https://www.nmact.org/member-schools/",
+    "visible_chars": 5668
+   },
+   "tier1_response_is_stub": true
+  },
+  "NV": {
+   "association": {
+    "bytes": 31840,
+    "homepage": "https://niaa.org/",
+    "http": 200,
+    "name": "Nevada Interscholastic Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Alumni | INROADS"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "FusionPoint directory: 464 rows across 125 schools = Principal/AD/Athletic-Admin only; 0 XC/track coach rows (samples/dir/NV__directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 57881,
+    "http": 200,
+    "measured": {
+     "ad_title": 124,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 4,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/NV__home.html",
+    "url": "https://niaa.fpsports.org/",
+    "visible_chars": 17411
+   },
+   "tier1_response_is_stub": true
+  },
+  "NY": {
+   "association": {
+    "bytes": 23760,
+    "homepage": "https://nysphsaa.org/",
+    "http": 200,
+    "name": "New York State Public High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "New York State Public High School Athletic Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "nysphsaa.org/schools is 404; homepage serves no directory rows and the section pages are JS (samples/dir/NY__home.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 154815,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 4,
+     "sport_label": 6,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/NY__home.html",
+    "url": "https://nysphsaa.org/",
+    "visible_chars": 2189
+   },
+   "tier1_response_is_stub": true
+  },
+  "OH": {
+   "association": {
+    "bytes": 14108,
+    "homepage": "https://ohsaa.org/",
+    "http": 200,
+    "name": "Ohio High School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "OHSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "Joe DePalma": true,
+      "depalma_joseph@dublinschools.net": true
+     },
+     "label": "OH Dublin Coffman 474 XC coach",
+     "missing": [],
+     "must": [
+      "Joe DePalma",
+      "depalma_joseph@dublinschools.net"
+     ],
+     "note": "baseline row: DUBLIN COFFMAN / Cross Country (boys) / Head Coach",
+     "on_disk_bytes": 22224,
+     "sample": "samples/validate/OH_Dublin_Coffman_474_XC_coach.html",
+     "state": "OH",
+     "status": "verified",
+     "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Duane Sheldon": true,
+      "sheldon_duane@dublinschools.net": true
+     },
+     "label": "OH Dublin Coffman 474 AD",
+     "missing": [],
+     "must": [
+      "Duane Sheldon",
+      "sheldon_duane@dublinschools.net"
+     ],
+     "note": "AD row for same school",
+     "on_disk_bytes": 11186,
+     "sample": "samples/validate/OH_Dublin_Coffman_474_AD.html",
+     "state": "OH",
+     "status": "verified",
+     "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Matt Somerlot": true,
+      "matt.somerlot@centerville.k12.oh.us": true
+     },
+     "label": "OH Centerville 336 TF coach",
+     "missing": [],
+     "must": [
+      "Matt Somerlot",
+      "matt.somerlot@centerville.k12.oh.us"
+     ],
+     "note": "baseline row: CENTERVILLE / Track & Field (boys) / Head Coach",
+     "on_disk_bytes": 21385,
+     "sample": "samples/validate/OH_Centerville_336_TF_coach.html",
+     "state": "OH",
+     "status": "verified",
+     "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=336"
+    },
+    {
+     "agree": true,
+     "found": {
+      "BRAD GANOR": true,
+      "bganor@ignatius.edu": true
+     },
+     "label": "OH St Ignatius 1354 AD",
+     "missing": [],
+     "must": [
+      "BRAD GANOR",
+      "bganor@ignatius.edu"
+     ],
+     "note": "baseline row: ST IGNATIUS / Assistant Athletic Director",
+     "on_disk_bytes": 10787,
+     "sample": "samples/validate/OH_St_Ignatius_1354_AD.html",
+     "state": "OH",
+     "status": "verified",
+     "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=1354"
+    }
+   ],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "officials.myohsaa.org SportsInformation (XC/TF head coaches w/ email) + AthleticDirector (AD w/ email); verified 4/4 live (samples/validate/OH_Dublin_Coffman_474_XC_coach.html)",
+   "fields": {
+    "ad_email": "yes",
+    "ad_name": "yes",
+    "coach_email": "yes",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 8129,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 1,
+     "sport_label": 0,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/OH__search-school.html",
+    "url": "https://officials.myohsaa.org/Outside/SearchSchool",
+    "visible_chars": 499
+   },
+   "tier1_response_is_stub": true
+  },
+  "OK": {
+   "association": {
+    "bytes": 26298,
+    "homepage": "https://ossaa.com/",
+    "http": 200,
+    "name": "Oklahoma Secondary School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Oklahoma Secondary School Activities Association - OSSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": "ossaa.arbitersports.com",
+   "evidence": "ossaaillustrated.com/athletic-directors/ is a landing page whose only data links are Google Docs plus ossaa.arbitersports.com; that host publishes `User-agent: * Disallow: /` (samples/dir/OK__athletic-directors.html, tools/robots/ossaa.arbitersports.com.txt)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "partial",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 147252,
+    "http": 200,
+    "measured": {
+     "ad_title": 2,
+     "cf_email": 0,
+     "city_state_zip": 2,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 0,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/OK__home.html",
+    "url": "https://ossaa.com/",
+    "visible_chars": 2797
+   },
+   "tier1_response_is_stub": true
+  },
+  "OR": {
+   "association": {
+    "bytes": 18902,
+    "homepage": "https://osaa.org/",
+    "http": 200,
+    "name": "Oregon School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "OSAA - Home"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "osaa.org/schools/full-members lists 248 school-name occurrences with no contact column (samples/dir/OR__full-members.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "no"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 59057,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 248,
+     "sport_label": 4,
+     "street": 1
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/OR__full-members.html",
+    "url": "https://www.osaa.org/schools/full-members",
+    "visible_chars": 9519
+   },
+   "tier1_response_is_stub": true
+  },
+  "PA": {
+   "association": {
+    "bytes": 15221,
+    "homepage": "https://piaa.org/",
+    "http": 200,
+    "name": "Pennsylvania Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "PIAA - Pennsylvania Interscholastic Athletic Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "piaa.org/schools/ serves 4 'athletic director' hits but no directory rows; PIAA school pages are JS (samples/dir/PA__schools.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "partial",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 58762,
+    "http": 200,
+    "measured": {
+     "ad_title": 4,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 3,
+     "school_word": 0,
+     "sport_label": 15,
+     "street": 1
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/PA__home.html",
+    "url": "https://piaa.org/",
+    "visible_chars": 8392
+   },
+   "tier1_response_is_stub": true
+  },
+  "RI": {
+   "association": {
+    "bytes": 24863,
+    "homepage": "https://riil.org/",
+    "http": 200,
+    "name": "Rhode Island Interscholastic League",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "FusionPoint Sports - Rhode Island Interscholastic League"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "FusionPoint directory, 55 school tables: 49 schools carry an XC/indoor+outdoor-track Head Coach row (259 such rows), 57 Athletic Director rows, 0 mailto (samples/dir/RI__directory.html; counted by tools/dir_coach_counts.py)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "yes",
+    "coach_email": "no",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 199963,
+    "http": 200,
+    "measured": {
+     "ad_title": 57,
+     "cf_email": 0,
+     "city_state_zip": 55,
+     "coach_word": 1116,
+     "mailto": 0,
+     "phone": 243,
+     "school_word": 98,
+     "sport_label": 95,
+     "street": 57
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/RI__directory.html",
+    "url": "https://riil.org/Directory.aspx",
+    "visible_chars": 64883
+   },
+   "tier1_response_is_stub": true
+  },
+  "SC": {
+   "association": {
+    "bytes": 26814,
+    "homepage": "https://schsl.org/",
+    "http": 200,
+    "name": "South Carolina High School League",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "South Carolina High School League"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "schsl-directory is a JS shell; no contact rows served (samples/dir/SC__schsl-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 82477,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 2,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/SC__schsl-directory.html",
+    "url": "https://schsl.org/schsl-directory",
+    "visible_chars": 2899
+   },
+   "tier1_response_is_stub": true
+  },
+  "SD": {
+   "association": {
+    "bytes": 117030,
+    "homepage": "https://sdhsaa.com/",
+    "http": 200,
+    "name": "South Dakota High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "SDHSAA &#8211; South Dakota High School Activities Association"
+   },
+   "baseline_rows_refused": [
+    {
+     "agree": null,
+     "found": {},
+     "label": "SD Bound aberdeencentral",
+     "must": [
+      "Bo Beck"
+     ],
+     "note": "baseline row: Activities Director Bo Beck",
+     "refused": "gobound.com/robots.txt `User-agent: *` -> `Disallow: /*directory`; the cited path /sd/schools/aberdeencentral/directory/new is disallowed. The earlier table claim in tools/validation-bound.json came from the prior Midwest study [29], which fetched it inside a browser session; this lane did not reproduce it.",
+     "sample": null,
+     "state": "SD",
+     "status": "refused",
+     "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new"
+    }
+   ],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "UNVERIFIED. sdhsaa.com's homepage (1,096,210 B, 35 gobound links) points the member directory at https://www.gobound.com/sd/associations/sdhsaa/schools - that LINK is the only SD evidence in this lane. The association index itself returned a 118-byte 403 Forbidden to this client (samples/dir/SD__bound-sd-schools.html, visible_chars=27), and every school-directory path under it is additionally robots-disallowed by `Disallow: /*directory` (tools/robots/gobound.com.txt). No SD school list was ever observed here, so school/ad/coach columns are all unknown; the table claims previously attached to SD are retracted in tools/validation-retractions.json",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 118,
+    "http": 403,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 0,
+     "sport_label": 0,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/SD__bound-sd-schools.html",
+    "url": "https://www.gobound.com/sd/associations/sdhsaa/schools",
+    "visible_chars": 27
+   },
+   "tier1_response_is_stub": true
+  },
+  "TN": {
+   "association": {
+    "bytes": 7354,
+    "homepage": "https://tssaa.org/",
+    "http": 200,
+    "name": "Tennessee Secondary School Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | TSSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "tssaa.org/directory renders as a JS shell (452 visible chars) (samples/dir/TN__directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 40864,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 0,
+     "school_word": 1,
+     "sport_label": 0,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/TN__directory.html",
+    "url": "https://tssaa.org/directory",
+    "visible_chars": 452
+   },
+   "tier1_response_is_stub": true
+  },
+  "TX": {
+   "association": {
+    "bytes": 15123,
+    "homepage": "https://uiltexas.org/",
+    "http": 200,
+    "name": "University Interscholastic League",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "University Interscholastic League (UIL)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "UIL /schools 404; homepage serves no directory rows (samples/dir/TX__home.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 82987,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 2,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 4,
+     "sport_label": 8,
+     "street": 1
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/TX__home.html",
+    "url": "https://uiltexas.org/",
+    "visible_chars": 7294
+   },
+   "tier1_response_is_stub": true
+  },
+  "UT": {
+   "association": {
+    "bytes": 157713,
+    "homepage": "https://uhsaa.org/",
+    "http": 200,
+    "name": "Utah High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "UHSAA Homepage - UHSAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "uhsaa.org/school-directory-new/ serves no rows; UHSAA directs schools to MaxPreps (samples/dir/UT__school-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 483588,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 3,
+     "mailto": 0,
+     "phone": 2,
+     "school_word": 1,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/UT__school-directory.html",
+    "url": "https://uhsaa.org/school-directory-new/",
+    "visible_chars": 7837
+   },
+   "tier1_response_is_stub": true
+  },
+  "VA": {
+   "association": {
+    "bytes": 0,
+    "homepage": "https://vhsl.org/",
+    "http": null,
+    "name": "Virginia High School League",
+    "robots_allow": null,
+    "robots_rule": "",
+    "title": ""
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "robots.txt `User-agent: * Disallow: /` -> not fetched",
+   "fields": {
+    "ad_email": "n/a",
+    "ad_name": "n/a",
+    "coach_email": "n/a",
+    "coach_name": "n/a",
+    "school": "n/a",
+    "tf_xc": "n/a"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 0,
+    "http": null,
+    "measured": null,
+    "outcome": "NOT_COLLECTED_ROBOTS_DISALLOW",
+    "sample": "samples/dir/VA__home.html",
+    "url": "https://www.vhsl.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  },
+  "VT": {
+   "association": {
+    "bytes": 44501,
+    "homepage": "https://vpaonline.org/",
+    "http": 200,
+    "name": "Vermont Principals' Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Homepage - Vermont Principals&#039; Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "vpaonline.org/membership/ mentions AD roles and has 1 mailto (association office), no school directory rows (samples/dir/VT__membership.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 130623,
+    "http": 200,
+    "measured": {
+     "ad_title": 2,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 1,
+     "phone": 0,
+     "school_word": 6,
+     "sport_label": 0,
+     "street": 1
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/VT__membership.html",
+    "url": "https://vpaonline.org/membership/",
+    "visible_chars": 5895
+   },
+   "tier1_response_is_stub": true
+  },
+  "WA": {
+   "association": {
+    "bytes": 119977,
+    "homepage": "https://wiaa.com/",
+    "http": 200,
+    "name": "Washington Interscholastic Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Washington Interscholastic Activities Association (WA)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "wiaa.finalforms.com/state_schools: paginated (51 pages) school records with address/city/ZIP/county/phone/website, league, classifications, sport lists and one Cloudflare-protected 'Contact Info' email per school (15 decoded on page 1) - the email's role is not labelled (samples/dir/WA__state_schools.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "yes",
+    "tf_xc": "partial"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 134962,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 15,
+     "city_state_zip": 15,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 15,
+     "school_word": 3,
+     "sport_label": 29,
+     "street": 4
+    },
+    "outcome": "TIER1_FETCHED_NO_CONTACT_FIELDS",
+    "sample": "samples/dir/WA__state_schools.html",
+    "url": "https://wiaa.finalforms.com/state_schools",
+    "visible_chars": 8129
+   },
+   "tier1_response_is_stub": true
+  },
+  "WI": {
+   "association": {
+    "bytes": 22783,
+    "homepage": "https://wiaawi.org/",
+    "http": 200,
+    "name": "Wisconsin Interscholastic Athletic Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Home | WIAA"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [
+    {
+     "agree": true,
+     "found": {
+      "Alex Larson": true,
+      "JACOB KNAPMILLER": true,
+      "alarson@abbotsford.k12.wi.us": true,
+      "jknapmiller@abbotsford.k12.wi.us": true
+     },
+     "label": "WI Abbotsford orgID=1 coach+AD",
+     "missing": [],
+     "must": [
+      "JACOB KNAPMILLER",
+      "jknapmiller@abbotsford.k12.wi.us",
+      "Alex Larson",
+      "alarson@abbotsford.k12.wi.us"
+     ],
+     "note": "baseline row: Abbotsford / Boys Track and Field / Head Coach",
+     "on_disk_bytes": 181100,
+     "sample": "samples/validate/WI_Abbotsford_orgID_1_coach_AD.html",
+     "state": "WI",
+     "status": "verified",
+     "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=1"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Jeremy Schlitz": true,
+      "Jessa Victor": true,
+      "jlvictor@madison.k12.wi.us": true,
+      "jschlitz@madison.k12.wi.us": true
+     },
+     "label": "WI Madison East orgID=219 coach+AD",
+     "missing": [],
+     "must": [
+      "Jessa Victor",
+      "jlvictor@madison.k12.wi.us",
+      "Jeremy Schlitz",
+      "jschlitz@madison.k12.wi.us"
+     ],
+     "note": "baseline row: Madison East / Girls Cross Country / Head Coach",
+     "on_disk_bytes": 214941,
+     "sample": "samples/validate/WI_Madison_East_orgID_219_coach_AD.html",
+     "state": "WI",
+     "status": "verified",
+     "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=219"
+    },
+    {
+     "agree": true,
+     "found": {
+      "Michelle Boor": true,
+      "Richard Sorenson": true,
+      "mboor@wabeno.k12.wi.us": true,
+      "richardsorenson@laona.k12.wi.us": true
+     },
+     "label": "WI Wabeno orgID=441 coach+AD",
+     "missing": [],
+     "must": [
+      "Richard Sorenson",
+      "richardsorenson@laona.k12.wi.us",
+      "Michelle Boor",
+      "mboor@wabeno.k12.wi.us"
+     ],
+     "note": "baseline row: Wabeno / Girls Track and Field / Head Coach",
+     "on_disk_bytes": 182549,
+     "sample": "samples/validate/WI_Wabeno_orgID_441_coach_AD.html",
+     "state": "WI",
+     "status": "verified",
+     "url": "https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID=441"
+    }
+   ],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "schools.wiaawi.org GetDirectorySchool?OrgID=<n> coach table (Sport|Name|Role|Email, CF-obfuscated, decodable) + Administration table; verified 3/3 schools live (samples/validate/WI_Abbotsford_orgID_1_coach_AD.html)",
+   "fields": {
+    "ad_email": "yes",
+    "ad_name": "yes",
+    "coach_email": "yes",
+    "coach_name": "yes",
+    "school": "yes",
+    "tf_xc": "yes"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 124698,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 1,
+     "city_state_zip": 0,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 0,
+     "sport_label": 0,
+     "street": 0
+    },
+    "outcome": "TIER1_FETCHED_CONTACT_FIELDS_PARTIAL",
+    "sample": "samples/dir/WI__school-list.html",
+    "url": "https://schools.wiaawi.org/Directory/School/List",
+    "visible_chars": 1380
+   },
+   "tier1_response_is_stub": true
+  },
+  "WV": {
+   "association": {
+    "bytes": 136475,
+    "homepage": "https://wvssac.org/",
+    "http": 200,
+    "name": "West Virginia Secondary School Activities Commission",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "West Virginia Secondary School Activities Commission (WV)"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "wvssac school-directory page serves no school rows (1 452 visible chars) (samples/dir/WV__school-directory.html)",
+   "fields": {
+    "ad_email": "no",
+    "ad_name": "no",
+    "coach_email": "no",
+    "coach_name": "no",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 272670,
+    "http": 200,
+    "measured": {
+     "ad_title": 0,
+     "cf_email": 0,
+     "city_state_zip": 1,
+     "coach_word": 0,
+     "mailto": 0,
+     "phone": 1,
+     "school_word": 1,
+     "sport_label": 2,
+     "street": 0
+    },
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/WV__school-directory.html",
+    "url": "https://www.wvssac.org/school-resources/school-directory/",
+    "visible_chars": 1452
+   },
+   "tier1_response_is_stub": true
+  },
+  "WY": {
+   "association": {
+    "bytes": 5501,
+    "homepage": "https://whsaa.org/",
+    "http": 200,
+    "name": "Wyoming High School Activities Association",
+    "robots_allow": true,
+    "robots_rule": "",
+    "title": "Wyoming High School Activities Association"
+   },
+   "baseline_rows_refused": [],
+   "baseline_rows_verified": [],
+   "baseline_wholesale_validation": null,
+   "delegated_directory_platform": null,
+   "evidence": "whsaa.org homepage (5 501 B) serves no directory; no /schools path located (samples/assoc-home/WY__whsaa.org.html)",
+   "fields": {
+    "ad_email": "unknown",
+    "ad_name": "unknown",
+    "coach_email": "unknown",
+    "coach_name": "unknown",
+    "school": "unknown",
+    "tf_xc": "unknown"
+   },
+   "http_blocked_reason": null,
+   "tier1": {
+    "bytes": 21570,
+    "http": 200,
+    "measured": null,
+    "outcome": "TIER1_CLIENT_RENDERED_UNVERIFIED",
+    "sample": "samples/dir/WY__home.html",
+    "url": "https://whsaa.org/",
+    "visible_chars": null
+   },
+   "tier1_response_is_stub": true
+  }
+ }
+}

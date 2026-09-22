@@ -11,6 +11,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachId, CoachRole, Evidence, Gender,
     SchoolId, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 /// Classify one NSAA directory row label.
@@ -53,8 +54,11 @@ pub fn parse_nsaa_school(
     source_url: &str,
     observed_on: &str,
 ) -> (CanonicalSchool, SchoolId) {
-    let (mut canonical, school_id) =
-        CanonicalSchool::new("NE", &school.name, normalize_name(&school.name));
+    let (mut canonical, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Nebraska,
+        &school.name,
+        normalize_name(&school.name),
+    );
     canonical.city = school.city.clone();
     canonical.enrollment = school.enrollment;
     canonical.school_website = school.homepage.clone();

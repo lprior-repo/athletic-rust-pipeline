@@ -1,0 +1,234 @@
+{
+  "$comment": "Field/identifier schema for MileSplit as observed in this lane's raw captures (samples/). Every 'example' string is copied verbatim from the named file; nothing here is inferred. Markup examples are whitespace-normalized excerpts (all runs of whitespace collapsed to one space) because the captures are indented multi-line HTML; text values, IDs, URLs and attribute values are byte-exact. Verification performed at the end of this lane: every example atom was re-searched against its cited file (verbatim), and the markup examples again whitespace-normalized; the six that failed the verbatim pass are the ones marked with a 'note'/'schematic' — see samples/CAPTURES.md 'Verification protocol'. Values held inside paywall masks are not listed as fields because they do not exist in the bytes (see rankings_event_row.locked_row).",
+  "source": "MileSplit / FloSports",
+  "observed_utc": "2026-09-21T22:31Z/2026-09-22T04:00Z (wave 1 by the prior phase 03:31-03:32Z, wave 2 this lane 03:54-04:00Z)",
+  "capture_manifest": "samples/CAPTURES.md",
+
+  "team_index_row": {
+    "surface": "GET https://<code>.milesplit.com/teams",
+    "file": "samples/teams-oh.html",
+    "container": "<table class=\"teams order-table table\"> ... <tr><td><a href=...>Name</a></td><td>Location</td></tr>",
+    "fields": [
+      {"key": "team_url", "example": "https://oh.milesplit.com/teams/9360-ada"},
+      {"key": "team_id", "example": "9360", "derivation": "digits after /teams/ in team_url"},
+      {"key": "team_slug", "example": "ada"},
+      {"key": "team_name", "example": "Ada"},
+      {"key": "team_location", "example": "Ada, OH, USA"},
+      {"key": "letter_heading", "example": "A", "container": "<tr class=\"thead letter heading\"><th><a name=\"A\"></a> A</th><th>Location</th></tr>"},
+      {"key": "team_type_filter", "example": {"select_id": "teamType", "default_value": "1", "default_label": "High School", "other_values": [["2", "College/University"], ["3", "Middle School"], ["4", "Elementary"], ["5", "Junior/Community College"], ["6", "Club"], ["7", "Company"], ["8", "Professional Team"], ["9", "Olympic/National Team"], ["10", "Group"], ["11", "Unattached"]]}},
+      {"key": "client_side_name_filter", "container": "<input id=\"txtFilter\" type=\"search\" data-table=\"order-table\" class=\"light-table-filter\" />", "note": "filters the rendered table in the browser (light-table-filter); issues no request"}
+    ],
+    "count_in_capture": 977,
+    "count_derivation": "grep -c over href=\"https://oh.milesplit.com/teams/<digits>-<slug>\" = 977 (samples/teams-count-sweep.tsv, oh row)"
+  },
+
+  "roster_row": {
+    "surface": "GET https://oh.milesplit.com/teams/10002-mason/roster",
+    "file": "samples/roster-oh-mason.html",
+    "container": "<ul id=rosterDataset class=\"data-set\"><li class=\"athlete-row data-row\">...",
+    "fields": [
+      {"key": "athlete_url", "example": "https://oh.milesplit.com/athletes/16846610-inioluwa-adesanya"},
+      {"key": "athlete_id", "example": "16846610", "derivation": "digits after /athletes/ in athlete_url"},
+      {"key": "athlete_name", "example": "Adesanya, Inioluwa", "note": "roster renders 'Last, First'; the profile page renders 'First Last'"},
+      {"key": "gender_cell", "example": "f", "container": "<div class=\"data-point ... column-gender\">f</div>", "note": "lowercase single letter; filter select offers '' | 'F' | 'M'"},
+      {"key": "grad_year_cell", "example": "2029", "container": "<div class=\"data-point ... column-grad-year\">2029</div>"},
+      {"key": "season_flags", "example": {"data-season-id=\"1\"": "icon-yes", "data-season-id=\"2\"": "icon-yes", "data-season-id=\"3\"": "icon-yes"}, "note": "three sibling divs per row, in the header order Indoor, Outdoor, XC; membership is an svg class icon-yes / icon-no"},
+      {"key": "class_filter_options", "example": ["2027", "2028", "2029", "2030"], "container": "<select id=rosterFilterClass>"},
+      {"key": "gender_filter_options", "example": [["", "All Genders"], ["F", "Female"], ["M", "Male"]], "container": "<select id=rosterFilterGender>"},
+      {"key": "type_filter", "example": [["", "All Rosters"], ["1", "Indoor"], ["2", "Outdoor"], ["3", "XC"]], "container": "<select id=rosterFilterType>", "selected_in_capture": "3 (XC)", "semantics": "client-side only: samples/js-ms18-teams-roster-index.js runs filter() on load and shows a row iff $(el).find('[data-season-id=\"' + val + '\"]').length > 0, so the served HTML always contains the whole roster and the XC selection merely hides the 139 non-XC athletes of the captured 319"}
+    ],
+    "count_in_capture": {"athlete_rows": 319, "column_grad_year_cells": 319, "data_season_id_attrs": 957, "icon_yes": 426, "icon_no": 531},
+    "coach_contact_fields": {"coach_occurrences": 0, "note": "string 'coach' (case-sensitive) does not occur in the capture; 'contact' 2x and 'email' 1x occur only in site chrome, not as team contact data"}
+  },
+
+  "grade_cell": {
+    "note": "Three independent grade encodings were observed; they do not always agree on the same human, and one sample athletes is not the target cohort at all.",
+    "encodings": [
+      {"kind": "roster column", "key": "column-grad-year", "example": "2029", "file": "samples/roster-oh-mason.html"},
+      {"kind": "profile header span", "key": "grad-year", "example": "Class of 2028", "file": "samples/athlete-oh-15005189.html", "note": "athlete 15005189 = Brice Fuller, the OH #1 XC 5K leader in samples/rank-event-oh-xc-5000m.html; he is Class of 2028, not 2027"},
+      {"kind": "raw result file column", "key": "Yr", "example": "8", "file": "samples/raw-oh-770621-rs1321880.txt", "note": "header row: \"     Athlete                   Yr Team                                          Mark      H#\"; the column is present or absent depending on the timing file (prior-phase evidence: 5/6 files, research/report 32)"},
+      {"kind": "roster ranking row (masked)", "key": "col-grade", "example": "JR", "file": "samples/rank-event-oh-xc-5000m.html"}
+    ],
+    "paywalled_grade_field_names": {"note": "the JSON the site's own widgets request names the field; the wire form was not requested (robots Disallow /api/)", "names": ["gradYear", "hsGraduationYear"], "evidence": ["samples/js-loadresultsnew.js fields: '...gradYear,...'", "samples/js-ms18-teams-rankings.js performance_1.hsGraduationYear"]}
+  },
+
+  "meet_info_page": {
+    "surface": "GET https://oh.milesplit.com/meets/771577-wooster-xc-invitational-hs-2026/info",
+    "file": "samples/meet-oh-771577.html",
+    "fields": [
+      {"key": "jsonld.@type", "example": "SportsEvent"},
+      {"key": "jsonld.name", "example": "Wooster XC Invitational-HS"},
+      {"key": "jsonld.startDate", "example": "2026-09-12"},
+      {"key": "jsonld.endDate", "example": "2026-09-12"},
+      {"key": "jsonld.homeTeam", "example": "Wooster"},
+      {"key": "jsonld.sport", "example": "Cross Country"},
+      {"key": "jsonld.location.name", "example": "Wooster HS Track"},
+      {"key": "jsonld.location.address.addressLocality", "example": "Wooster"},
+      {"key": "jsonld.location.address.addressRegion", "example": "OH"},
+      {"key": "jsonld.url", "example": "https://oh.milesplit.com/meets/771577-wooster-xc-invitational-hs-2026/info"},
+      {"key": "visible_date", "example": "Sep 12, 2026", "container": "<time>Sep 12, 2026</time>"}
+    ],
+    "absent_fields": ["meetResultFiles", "meetResultParams", "TeamID list", "entries", "coach/contact"]
+  },
+
+  "meet_results_page": {
+    "surface": "GET https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results (serves /results/1321880/formatted; canonical in the capture)",
+    "file": "samples/meet-oh-770621-results.html",
+    "fields": [
+      {"key": "meetResultParams.meetId", "example": "770621"},
+      {"key": "meetResultParams.resultsId", "example": "1321880"},
+      {"key": "meetResultParams.isTrack", "example": false},
+      {"key": "meetResultParams.startDate", "example": "2026-09-19"},
+      {"key": "meetResultParams.season", "example": "CC"},
+      {"key": "meetResultParams.phantomRunnerRule", "example": false},
+      {"key": "meetResultParams.teamScores", "example": "team"},
+      {"key": "meetResultParams.followedAthleteIds", "example": []},
+      {"key": "meetResultParams.followedTeamIds", "example": []},
+      {"key": "meetResultParams.teamLogoFallback", "example": "https://assets.sp.milesplit.com/images/milesplit-favicon.png"},
+      {"key": "meetResultFiles", "example": [{"id": 1321880, "name": "Results", "isMeetPro": 0}]},
+      {"key": "rows_in_html", "example": 0, "note": "the formatted page is a JS shell; rows come only from /api/v1/meets/<id>/performances (robots-disallowed)"}
+    ]
+  },
+
+  "raw_result_file": {
+    "surface": "GET https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw",
+    "file": "samples/raw-oh-770621-rs1321880.txt",
+    "transport": "content-type text/html; the fixed-width payload sits inside a single <pre> element",
+    "header_line": "     Athlete                   Yr Team                                          Mark      H#",
+    "example_rows": [
+      "    1 Jeydyn Fields              8 Jackson                                    12:40.6",
+      "    2 Case Nelson                8 Oak Hill                                   12:54.8"
+    ],
+    "fields": ["place", "athlete_name", "Yr (grade)", "team_name", "mark", "H# (heat)"],
+    "count_in_capture": {"content_lines_in_pre": 88, "result_rows": 80, "sections": ["Boys Middle School 3000 Meter (40 rows)", "Girls Middle School 3000 Meter (40 rows)"], "breakdown": "2 section headings + 4 '=' separator lines + 2 column headers + 80 result rows", "reproduce": "sed -n '/<pre>/,/<\\/pre>/p' samples/raw-oh-770621-rs1321880.txt | sed 's/<[^>]*>//g' | grep -cE '^\\s+[0-9]+ '  -> 80"},
+    "absent_fields": ["AthleteID", "TeamID", "wind (not in this XC file)", "round", "division id"]
+  },
+
+  "results_index_row": {
+    "surface": "GET https://oh.milesplit.com/results/ohio-meet-results?&page=1 (canonical of the capture)",
+    "file": "samples/results-oh.html",
+    "fields": [
+      {"key": "data-meet-id", "example": "770621"},
+      {"key": "data-filter-text", "example": "beaver eastern invite beaver oh"},
+      {"key": "date_label", "example": "Sep 19", "container": "<span class=\"meet-row__day\">Sep 19</span>"},
+      {"key": "meet_name", "example": "Beaver Eastern Invite"},
+      {"key": "meet_url", "example": "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results"},
+      {"key": "venue", "example": "Beaver, OH", "container": "<span class=\"meet-row__venue\">"},
+      {"key": "filters", "example": {"ddSeason": ["", "cc", "indoor", "outdoor", "road"], "ddLevel": ["", "youth", "ms", "hs", "college", "open", "pro"], "ddMonth": "present", "ddYear": "22 options: empty default + 2006..2026", "ddLeague": "present; its option values are league IDs, e.g. 2092 / 2094 = Greater Western Ohio Conference, not years"}},
+      {"key": "pager", "example": {"rel": "next", "href_raw_in_bytes": "/results?&amp;page=2", "href_decoded": "/results?&page=2"}}
+    ],
+    "count_in_capture": {"meet_rows": 50, "ddYear_options": 22, "ddYear_values_all": ["", "2006", "2007", "2008", "2009", "2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"], "ddLeague_values_note": "ddLeague carries 466 options whose values are league IDs (e.g. 2092 / 2094 = Greater Western Ohio Conference, 10137, 8503), not years"}
+  },
+
+  "calendar_row": {
+    "surface": "GET https://oh.milesplit.com/calendar/ohio-cc-meet-calendar (canonical of the capture)",
+    "file": "samples/calendar-oh.html",
+    "fields": [
+      {"key": "data-meet-id", "example": "778691"},
+      {"key": "data-level", "example": "hs,ms"},
+      {"key": "data-filter-text", "example": "caldwell fall classic caldwell oh"},
+      {"key": "date_label", "example": "Sep 19", "container": "<span class=\"meet-row__day\">"},
+      {"key": "meet_name", "example": "Caldwell Fall Classic"},
+      {"key": "meet_url", "example": "https://www.milesplit.com/meets/778691-caldwell-fall-classic-2026", "note": "calendar links the www host; the results index links the state host"},
+      {"key": "row_classes", "example": ["meet-row__body", "meet-row__date", "meet-row__day", "meet-row__links", "meet-row__name", "meet-row__reg", "meet-row__results", "meet-row__venue"]},
+      {"key": "filters", "example": ["ddSeason", "ddLevel", "ddMonth", "ddYear", "ddType"]},
+      {"key": "data-month_values", "example": ["2026-09", "2026-10", "2026-11", "2026-12", "2027-10"]}
+    ],
+    "count_in_capture": {"meet_rows": 294, "unique_meet_ids": 294}
+  },
+
+  "athlete_profile": {
+    "surface": "GET https://oh.milesplit.com/athletes/15005189-brice-fuller",
+    "file": "samples/athlete-oh-15005189.html",
+    "fields": [
+      {"key": "name", "example": "Brice Fuller", "container": "id=\"athleteName\""},
+      {"key": "grad_year", "example": "Class of 2028", "container": "class=\"grad-year\""},
+      {"key": "school", "example": {"name": "Fairless", "url": "https://oh.milesplit.com/teams/9573-fairless"}, "container": "class=\"current-school\""},
+      {"key": "city_state", "example": "Brewster, OH", "container": "class=\"city-state\""},
+      {"key": "season_block", "example": {"h4": "2026 - Cc", "data-season": "cc", "data-level": "hs"}, "note": "12 season blocks in the capture: 2026 cc/outdoor/indoor, 2025 cc/outdoor/indoor, 2024 cc/outdoor(ms)/indoor(ms), 2023 cc/outdoor(ms), 2022 cc(ms)"},
+      {"key": "pr_row", "example": {"row_attrs": {"data-pr-mode": "all", "data-pr-level": "all", "data-has-rank": "1"}, "pr-td-event": "800m", "pr-td-mark": "2:00.70", "state_rank_cell": "<span class=\"pr-rank--locked\" title=\"Subscribe to see State rank\" aria-label=\"Subscribe to see State rank\"><i class=\"fa fa-lock\" aria-hidden=\"true\"></i></span>", "national_rank_cell": "#6,790", "pr-td-date": "Nov 16, 2025", "note": "state rank is the one locked cell in an otherwise free PR table; the national rank cell is plain text (e.g. #105 on the 5K row)"}},
+      {"key": "result_row_event", "example": "1600 Meter Run", "container": "data-event"},
+      {"key": "result_row_payload", "example": "<span class=\"mask\" role=\"img\" aria-label=\"Locked\"></span>", "note": "the mark/place/round/meet/date of every result row is an empty mask span; there is nothing to parse"}
+    ],
+    "count_in_capture": {"result_rows": 96, "mask_spans_in_result_rows": 480, "masks_per_result_row": 5, "pr_rows": 33, "pr_rows_derivation": "count of <tr ... data-pr-mode=...> = 33", "locked_pr_state_rank_cells": 33, "unique_events": 7, "events": ["1600 Meter Run", "2 Mile Run", "3000 Meter Run", "3200 Meter Run", "5000 Meter Run", "800 Meter Run", "One Mile Run"]},
+    "www_host_variant": {"file": "samples/athlete-www-13966799.html", "requested_as": "the athlete was served on the www host", "canonical": "https://ny.milesplit.com/athletes/13966799-abigail-burt", "name": "Abigail Burt", "grad_year": "Class of 2029", "city_state": "East Syracuse, NY", "note": "identity is network-wide; the canonical host is the athlete's state host"}
+  },
+
+  "rankings_leaderboard_row": {
+    "surface": "GET https://oh.milesplit.com/rankings/leaders/high-school-boys/cross-country?year=2026&accuracy=fat&grade=all&conversion=n&page=1",
+    "file": "samples/rankings-oh-boys-xc.html",
+    "note": "ROBOTS-DISALLOWED path (/rankings). Captured for analysis only; the pipeline must not request it.",
+    "fields": [
+      {"key": "row_class", "example": "rankings-row"},
+      {"key": "col-event.anchor.text", "example": "5K"},
+      {"key": "col-event.anchor.data-event", "example": "5000m"},
+      {"key": "col-name.athlete", "example": {"text": "Brice Fuller", "url": "https://oh.milesplit.com/athletes/15005189-brice-fuller", "title": "Brice Fuller"}},
+      {"key": "col-name.team", "example": {"text": "Fairless", "url": "https://oh.milesplit.com/teams/9573-fairless"}},
+      {"key": "team_logo", "example": "https://assets.sp.milesplit.com/team_logos/9573"},
+      {"key": "col-grade", "example": "JR"},
+      {"key": "col-meet.meet", "example": {"text": "Wooster XC Invitational-HS", "url": "/meets/771577"}},
+      {"key": "col-meet.date", "example": "Sep 12, 2026"},
+      {"key": "col-time", "example": "14:54.10"},
+      {"key": "group_header", "example": {"row_class": "<tr class=\"rankings-group-header\">", "column_header_cell": "<th scope=\"col\" class=\"col-event\">Track</th>", "column_labels": ["Event", "Athlete/Team", "Grade", "Meet/Date", "Time"]}, "note": "the leaderboard table repeats this header row per event group; the event column header reads 'Track' on this capture"}
+    ],
+    "count_in_capture": {"rows": 8, "rows_with_data": 8, "columns": ["col-event", "col-name", "col-grade", "col-meet", "col-time"]}
+  },
+
+  "rankings_event_row": {
+    "surface": "GET https://oh.milesplit.com/rankings/events/high-school-boys/cross-country/5000m?year=2026&accuracy=fat&grade=all&conversion=n&page=1",
+    "file": "samples/rank-event-oh-xc-5000m.html",
+    "note": "ROBOTS-DISALLOWED path (/rankings). Captured for analysis only.",
+    "fields": [
+      {"key": "rank", "example": "1", "container": "<td class=\"col-rank\"><span class=\"rank-num\">1</span></td>"},
+      {"key": "free_row", "example": {"rank": "1", "athlete": {"text": "Brice Fuller", "url": "https://oh.milesplit.com/athletes/15005189-brice-fuller"}, "team": {"text": "Fairless", "url": "https://oh.milesplit.com/teams/9573-fairless"}, "grade": "JR", "meet": {"text": "Wooster XC Invitational-HS", "url": "/meets/771577"}, "date": "Sep 12, 2026", "mark": "14:54.10"}},
+      {"key": "locked_row", "example": {"row": "<tr class=\"rankings-row lk\" aria-hidden=\"true\">", "rank_cell": "<td class=\"col-rank\"><span class=\"rank-num dim\">2</span></td>", "placeholders": ["<span class=\"team-logo team-logo--mask\" aria-hidden=\"true\"></span>", "<span class=\"redact\" style=\"width:168px\"></span>", "<span class=\"mask\" style=\"width:150px;height:9px\"></span>", "<span class=\"mask mw-grade\"></span>", "<span class=\"mask blk\" style=\"width:130px\"></span>", "<span class=\"mask blk mw-date\"></span>", "<span class=\"mask mw-time\"></span>"]}, "note": "schematic, assembled from the 7 exact placeholder strings above; rank number is free, athlete/team/grade/meet/date/mark are empty spans — the values are absent from the bytes"},
+      {"key": "paywall_flag", "example": {"page_category": "Rankings", "subpage_category": "Locked", "paywall_present": 1, "event_code": "5000m"}, "container": "Segment inline args JSON.parse(...)"},
+      {"key": "cta_text", "rendered_text": "To see these rankings, subscribe to MileSplit PRO / Join Now / Already a PRO member? LOG IN", "fragments": ["<p>To see these rankings, <span>subscribe to</span></p>", "<figure><strong>MileSplit PRO</strong></figure>", "<a class=\"join button segment-tracked\" data-segment=\"{&quot;event_fired&quot;:&quot;Link Clicked&quot;,&quot;name&quot;:&quot;Join Now - Rankings&quot;}\" href=\"/join?ref=rankings-2026-cc-hs-m-5000m&next=…&p=1\"><span>Join Now</span></a>", "<a class=\"login link\" href=\"/login?ref=rankings-2026-cc-hs-m-5000m&next=…\"> Already a PRO member? LOG IN </a>"], "container": "div.pro-cta--ab > div.pro-cta-variant.pro-cta--legacy", "note": "the sentence is split across elements, so it is not a single searchable substring in the capture; /join and /login targets are robots-allowed but were never requested (no auth attempts in this lane). The same block carries the A/B experiment hook: new Drivefaze.Cointoss('mile_pro_cta_contextual', {variationId: parseInt('0',10), toggleVariation:false})"}
+    ],
+    "count_in_capture": {"rows": 50, "rows_with_data": 1, "rows_locked": 49, "redact_spans": 49, "mask_spans_in_rows": 245}
+  },
+
+  "athlete_search_json": {
+    "surface": "POST https://<code>.milesplit.com/search/v2/athletes (and https://www.milesplit.com/search/v2/athletes)",
+    "files": ["samples/search-v2-athletes-oh-2.json", "samples/search-v2-athletes-oh-fuller-p2.json", "samples/search-v2-athletes-oh-perpage100.json", "samples/search-v2-athletes-www.json"],
+    "robots": "allowed on every host sampled (robots.txt disallows only /rankings, /virtual-meets, /api/, /contact)",
+    "request_fields": [
+      {"key": "searchToken", "example": "6c89da652151bb31cd3e7fe634afb717", "source": "hidden input on GET /athletes (samples/athletes-oh-searchform.html)"},
+      {"key": "q", "example": "Fuller"},
+      {"key": "perPage", "example": 25, "note": "perPage=100 was honoured (100 hits returned)"},
+      {"key": "page", "example": 2},
+      {"key": "filters[subdomain]", "example": "oh", "note": "omitted on www, which searches nationally"}
+    ],
+    "response_fields": [
+      {"key": "query", "example": "Fuller"},
+      {"key": "hits[].value", "example": "Jacob Fuller"},
+      {"key": "hits[].data.id", "example": "3690502", "note": "this is the AthleteID used in profile URLs"},
+      {"key": "hits[].data.fields.title", "example": "Jacob Fuller"},
+      {"key": "hits[].data.fields.description", "example": "Ellet 2016 / Akron, OH, USA", "note": "free-text '<school> <year> / <city>, <state>, USA'; the year is not a labelled field"},
+      {"key": "hits[].data.fields.subdomain", "example": "oh", "note": "on the www search this carries the athlete's state host (e.g. 'ca')"},
+      {"key": "hits[].data.fields.url", "example": "https://oh.milesplit.com/athletes/3690502-jacob-fuller"},
+      {"key": "page", "example": 1},
+      {"key": "totalPages", "example": 100, "note": "observed 100 for q=Fuller and q=Smith; 100 is the cap, so a query yields at most 100 x perPage hits"}
+    ],
+    "absent_fields": ["grad_year as a labelled field", "gender", "team id", "class year filter"]
+  },
+
+  "observability_page_call": {
+    "note": "every page emits a Segment page-call whose second argument is a flat metadata object; it is the cheapest machine-readable statement of the page's own subject",
+    "file": "samples/rankings-oh-boys-xc.html",
+    "example": {"page_category": "Rankings", "subpage_category": "Leaderboard", "paywall_present": 0, "vertical": "MileSplit", "site_id": 15, "milesplit_site_id": "36", "milesplit_site_code": "oh", "year": 2026, "season": "cc", "level": "hs", "gender": "m", "event_code": null, "team_id": null},
+    "site_ids_observed": [{"milesplit_site_code": "oh", "milesplit_site_id": "36", "file": "samples/rankings-oh-boys-xc.html"}, {"milesplit_site_code": "www", "milesplit_site_id": "67", "file": "samples/homepage.html"}, {"milesplit_site_code": "ny", "milesplit_site_id": "33", "file": "samples/athlete-www-13966799.html"}]
+  },
+
+  "build_stamp": {
+    "key": "?build=",
+    "example": "20260921153357",
+    "note": "appended to every js.sp.milesplit.com bundle by every page captured in wave 2; identical across all 21 script tags of a page, so it dates the deployment the captures saw"
+  },
+
+  "inherited_not_reobserved": {
+    "note": "facts already on disk from the prior phase, cited for completeness; NOT re-measured in this lane",
+    "sitemap": {"source": "~/Downloads/midwest-tfxc-source-research/research/midwest/33-milesplit-sitemap-recency.md", "shape": "flat <urlset> of exactly 7,500 <loc>/<lastmod> pairs, /athletes/ URLs only, per host", "fields": ["loc (athlete profile URL)", "lastmod (page rewrite time)"], "historical_depth": "none"},
+    "raw_grade_presence": {"source": "~/Downloads/midwest-tfxc-source-research/research/midwest/32-milesplit-paywall-boundary.md", "fact": "5 of 6 sampled /raw result files carry a Yr grade column; the IHSA state file does not"}
+  }
+}

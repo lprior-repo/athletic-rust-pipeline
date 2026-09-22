@@ -9,16 +9,19 @@ use crate::store::{Store, StoreResult};
 use census_domain::model::{Gender, GradYear};
 
 use super::rosters_phase;
+use census_domain::UsJurisdiction;
 
-/// Rosters not yet journaled for `state`, plus how many were skipped because they already were.
+/// Rosters not yet journaled for `jurisdiction`, plus how many were skipped because they already
+/// were.
 ///
-/// The filter walks the state's team index once; `journal_keys` is the resume ledger.
+/// The filter walks the jurisdiction's team index once; `journal_keys` is the resume ledger.
 pub(super) fn pending_rosters(
     store: &Store,
     teams: &[TeamRef],
-    state: &str,
+    jurisdiction: UsJurisdiction,
 ) -> StoreResult<(Vec<TeamRef>, usize)> {
-    let done = store.journal_keys(&rosters_phase(state))?;
+    let state = jurisdiction.code();
+    let done = store.journal_keys(&rosters_phase(jurisdiction))?;
     let pending: Vec<TeamRef> = teams
         .iter()
         .filter(|team| !done.contains(&format!("{}:{}", state, team.id)))

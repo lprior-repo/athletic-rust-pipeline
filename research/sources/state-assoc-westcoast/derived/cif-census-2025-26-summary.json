@@ -1,0 +1,42 @@
+{
+ "source_file": "cif-census-2025-26.xlsx",
+ "header_rows": 1,
+ "data_rows": 1608,
+ "columns": 345,
+ "school_columns": [
+  "School Name",
+  "City",
+  "CIF Section",
+  "TOTAL School Enrollment BOYS",
+  "TOTAL School Enrollment GIRLS"
+ ],
+ "xc_tf_columns": {
+  "Cross Country - Boy Participants": 29,
+  "Cross Country - Girl Participants": 30,
+  "Cross Country - Total Number of Boy Teams": 31,
+  "Cross Country - Total Number of Girl Teams": 32,
+  "Track & Field - Boy Participants": 93,
+  "Track & Field - Girl Participants": 94,
+  "Track & Field - Total Number of Boy Teams": 95,
+  "Track & Field - Total Number of Girl Teams": 96
+ },
+ "schools_by_section": {
+  "Southern Section": 542,
+  "SAC-Joaquin Section": 201,
+  "North Coast Section": 175,
+  "Central Coast Section": 155,
+  "Los Angeles City Section": 152,
+  "Central Section": 139,
+  "San Diego Section": 129,
+  "Northern Section": 67,
+  "Oakland Section": 29,
+  "San Francisco Section": 18,
+  "4570": 1
+ },
+ "schools_with_xc_any": 1400,
+ "schools_with_tf_any": 1323,
+ "xc_participants_boys": 28646,
+ "xc_participants_girls": 29191,
+ "tf_participants_boys": 59829,
+ "tf_participants_girls": 47332
+}

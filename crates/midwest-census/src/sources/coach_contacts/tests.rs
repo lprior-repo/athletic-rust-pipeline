@@ -1,6 +1,7 @@
 use super::*;
 use crate::store::{Store, Table};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, Gender, Sport};
+use census_domain::UsJurisdiction;
 
 const CSV: &str = include_str!("../../../tests/fixtures/coach_contacts_sample.csv");
 
@@ -56,8 +57,8 @@ fn coach_rows_become_canonical_entities_with_evidence() {
         .iter()
         .find(|row| row.school == "Abbotsford")
         .expect("fixture row");
-    let entities = row_entities(wiaa, "2026-09-20").unwrap();
-    assert_eq!(entities.school.state.as_deref(), Some("WI"));
+    let entities = row_entities(wiaa, UsJurisdiction::Wisconsin, "2026-09-20").unwrap();
+    assert_eq!(entities.school.state, Some(UsJurisdiction::Wisconsin));
     assert_eq!(entities.school.city.as_deref(), Some("Abbotsford"));
     assert_eq!(entities.school.name, "Abbotsford");
     // one sport coach + one AD

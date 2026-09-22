@@ -11,6 +11,7 @@ use crate::sources::mshsl::{Options, MAX_LISTING_PAGES, SOURCE_ID};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
 use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SchoolId};
+use census_domain::UsJurisdiction;
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -39,12 +40,7 @@ impl<'a> MshslRun<'a> {
         ctx: &'a AdapterContext<'a>,
         options: &'a Options,
     ) -> CrawlResult<Option<Self>> {
-        if !options.states.is_empty()
-            && !options
-                .states
-                .iter()
-                .any(|state| state.trim().eq_ignore_ascii_case("MN"))
-        {
+        if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Minnesota) {
             return Ok(None);
         }
         let wanted = options

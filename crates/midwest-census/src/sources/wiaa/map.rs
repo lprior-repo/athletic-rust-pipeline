@@ -7,6 +7,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 use super::parse::{CoachRow, IndexEntry, SchoolPage, StaffRow};
@@ -189,7 +190,8 @@ fn school_from_page(
         association: ASSOCIATION.to_string(),
     };
 
-    let (mut school, school_id) = CanonicalSchool::new("WI", name, normalize_name(name));
+    let (mut school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name));
     school.city = page
         .city
         .as_deref()

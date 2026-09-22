@@ -35,6 +35,7 @@ use crate::sources::AdapterContext;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam, Sport,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 pub use archive::{archive_artifacts, ArchiveArtifact};
@@ -70,7 +71,7 @@ pub struct Options {
     /// Restrict to these archive years; empty means every year on the archive pages.
     pub seasons: Vec<i16>,
     /// Unused: the archive is a single state. Kept for the uniform provider CLI shape.
-    pub states: Vec<String>,
+    pub states: Vec<UsJurisdiction>,
     /// Unused: schools come from the consolidated school snapshot.
     pub school_names: Vec<String>,
 }

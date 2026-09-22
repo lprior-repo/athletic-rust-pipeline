@@ -1,0 +1,220 @@
+{
+  "_meta": {
+    "lane": "research/sources/state-assoc-southeast",
+    "jurisdictions": ["FL", "GA", "NC", "SC", "VA", "WV"],
+    "captured_utc": "2026-09-22",
+    "method": "anonymous curl; every sample referenced below is a byte-exact capture in ./samples/ and is listed in ./samples/CAPTURES.md",
+    "rule": "Every key below was observed in a captured file. Example values are verbatim from that file. Nothing here is inferred."
+  },
+  "shared": {
+    "robots_observation": {
+      "keys": ["url", "http_status", "body_file"],
+      "examples": {
+        "fhsaa": {"url": "https://www.fhsaa.com/robots.txt", "http_status": 200, "body_file": "samples/robots-fhsaa.txt", "crawl_delay": "5"},
+        "ghsa": {"url": "https://www.ghsa.net/robots.txt", "http_status": 200, "body_file": "samples/robots-ghsa.txt", "crawl_delay": "10"},
+        "nchsaa": {"url": "https://www.nchsaa.org/robots.txt", "http_status": 200, "body_file": "samples/robots-nchsaa.txt", "sitemap": "https://www.nchsaa.org/sitemap_index.xml"},
+        "schsl": {"url": "https://schsl.org/robots.txt", "http_status": 200, "body_file": "samples/robots-schsl.txt", "sitemap": "https://schsl.org/wp-sitemap.xml"},
+        "wvssac": {"url": "https://www.wvssac.org/robots.txt", "http_status": 404, "body_file": "samples/robots-wvssac.txt"},
+        "homecampus": {"url": "https://fhsaa.homecampus.com/robots.txt", "http_status": 200, "body_file": "samples/robots-fhsaa-homecampus.txt"},
+        "tfrrs": {"url": "https://florida.tfrrs.org/robots.txt", "http_status": 200, "body_file": "samples/robots-florida-tfrrs.txt", "body_verbatim": "# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file — comment-only, no directives"},
+        "vhsl_sibling_capture": {"url": "https://www.vhsl.org/robots.txt", "http_status": 200, "body_file": "../state-assoc-midatlantic/samples/robots-vhsl.txt", "note": "verbatim: User-agent: * / Disallow: / — this lane issued no request to vhsl.org"},
+        "va_milesplit_sibling_capture": {"url": "https://va.milesplit.com/robots.txt", "http_status": 200, "body_file": "../state-assoc-midatlantic/samples/robots-va-milesplit.txt", "note": "disallows /rankings, /virtual-meets, /api/, /contact for User-agent: *"}
+      }
+    },
+    "wp_rest_index": {
+      "keys": ["namespace", "routes[]"],
+      "example": {"namespace": "wp/v2", "route": "/wp/v2/pages/8039", "observed_in": "samples/wpjson-page-8039-wvssac.json"},
+      "nchsaa_types_example": ["nchsaa_championship", "nchsaa_record_book", "nchsaa_bracket", "nchsaa_sport", "nchsaa_staff", "sp_event", "sp_team", "sp_player", "sp_staff"],
+      "observed_in": "samples/wpjson-types-nchsaa.json"
+    }
+  },
+  "fl_fhsaa_homecampus": {
+    "source": "FHSAA member directory widget (Home Campus), section_id=10",
+    "school_directory": {
+      "surface": "HTML: https://fhsaa.homecampus.com/widget/school/directory",
+      "file": "samples/homecampus-school-directory.html",
+      "keys": {
+        "button_id": {"example": "school-button-2397", "note": "one <button> per member school; 880 present, 880 distinct"},
+        "data_id": {"example": "2397"},
+        "label": {"example": "Abundant Life Christian (Margate)"}
+      },
+      "markup_example": "<button class=\"  school-btn btn text-left  px-2 w-100\" id=\"school-button-2397\" data-id=\"2397\">                     Abundant Life Christian (Margate)                 </button>"
+    },
+    "school_search_api": {
+      "url": "https://fhsaa.homecampus.com/widget/schools/get?school=<q>&section_id=10&status=active&hide_from_directory=0",
+      "file": "samples/homecampus-schools-get.json",
+      "requires_header": "X-Requested-With: XMLHttpRequest (403 without — measured)",
+      "keys": {"id": {"example": 2037}, "name": {"example": "LaBelle"}}
+    },
+    "school_detail_api": {
+      "url": "https://fhsaa.homecampus.com/widget/get-school-details/2397/details",
+      "file": "samples/homecampus-school-details-2397.json",
+      "top_level_keys": ["athleticFaculties", "coaches", "geoGroups", "grades", "school"],
+      "school_keys": ["abbreviation", "ad_instagram", "ad_twitter", "address_line_1", "city", "coed", "color", "enrollment", "ext", "facebook", "fax", "fhsaa_school_id", "full_name", "hide_from_directory", "hytek_code", "id", "instagram", "is_boarding", "is_private", "logo", "logo_image", "mailing_address_line_1", "mailing_city", "mailing_state", "mailing_zip", "mascot", "name", "phone", "physical_state", "physical_zip", "school_category_name", "section", "section_id", "status", "twitter", "website", "year_established"],
+      "examples": {
+        "school.id": 2397,
+        "school.fhsaa_school_id": 714,
+        "school.hytek_code": null,
+        "school.name": "Abundant Life Christian (Margate)",
+        "school.full_name": "Abundant Life Christian Academy",
+        "school.city": "Margate",
+        "school.school_category_name": "Private",
+        "school.enrollment": null,
+        "school.mascot": "Eagle",
+        "school.color": "royal blue/navy blue",
+        "school.section_id": 10,
+        "grades": "K, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12"
+      },
+      "athleticFaculties_keys": ["aft_name", "email", "firstname", "id", "lastname", "work_extension", "work_phone"],
+      "athleticFaculties_example": {"firstname": "Antonio", "lastname": "Donascimento", "aft_name": "Athletic Director", "email": "adonascimento@alcaeagles.com", "count_in_sample": 1},
+      "coaches_keys": ["aft_name", "email", "firstname", "id", "lastname", "level_id", "level_name", "na_coach", "sport", "sport_id", "user_id"],
+      "coaches_example": {"sport": "Basketball, Boys", "level_name": "Varsity", "firstname": null, "lastname": null, "na_coach": 1, "count_in_sample": 5},
+      "geoGroups_keys": ["1 District", "4 Region", "5 County", "7 Class", "9 FIAAA District", "10 Section"],
+      "geoGroups_example": {"5": {"type": "County", "value": {"geo_group_id": 1360, "name": "Broward"}}, "10": {"type": "Section", "value": {"geo_group_id": 1554, "name": "Section 4"}}}
+    }
+  },
+  "fl_tfrrs_track": {
+    "source": "TFRRS — FHSAA's official T&F results/rankings provider (linked from fhsaa.com/sports/track)",
+    "robots": "comment-only file, no directives (samples/robots-florida-tfrrs.txt)",
+    "state_series_index": {
+      "surface": "https://florida.tfrrs.org/state_series.html",
+      "file": "samples/tfrrs-fl-state-series.html",
+      "keys": {"list_url": {"example": "https://florida.tfrrs.org/lists/5587/FHSAA_4A_Region_1_Sanctioned_SUBJECT_TO_CHANGE"}, "class_entry_point": {"example": "https://florida.tfrrs.org/lists.html?class=4a"}, "district_label": {"example": "FHSAA 4A District 1"}, "archive_year_link": {"example": "archives.html?year=2025"}},
+      "measured": {"distinct_list_links": 19, "region_sanctioned_lists": 16, "extra_lists": ["/lists/4832 FHSAA_Wheelchair_Track__Field_Official_Rankings", "/lists/4833 FHSAA_Ambulatory_Track__Field_Official_Rankings", "/lists/5134 2025_FHSAA_All_Florida_Official_Rankings"], "archive_years_offered": ["2019", "2020", "2021", "2022", "2023", "2024", "2025"], "tables_on_page": 7}
+    },
+    "performance_list": {
+      "surface": "https://florida.tfrrs.org/lists/5587/FHSAA_4A_Region_1_Sanctioned_SUBJECT_TO_CHANGE",
+      "file": "samples/tfrrs-fl-list-5587-4a-region-1.html",
+      "file_facts": {"bytes": 2522360, "table_elements": 0, "markup": "div-grid: div.performance-list-row > div.col-place / div.col-athlete / div.col-narrow, header cells carry data-label attributes"},
+      "row_keys": ["Place", "Athlete", "Year", "Team", "Time_or_Mark", "Meet", "Meet Date", "Wind"],
+      "row_examples": [
+        {"Place": "1", "Athlete": "Josh Howell", "Year": "SR", "Team": "Creekside", "Time": "10.53", "Meet": "Creekside Friday Knight Invite", "Meet Date": "Mar 13, 2026", "Wind": "2.4"},
+        {"Place": "2", "Athlete": "Jonathan Slack", "Year": "SO", "Team": "Winter Park", "Time": "10.54", "Meet": "Metro East Championships", "Meet Date": "Apr 10, 2026", "Wind": "1.8"},
+        {"Place": "14", "Athlete": "Hopkins, Jerrell", "Year": "FR", "Team": "Buchholz", "Time": "10.90", "Meet": "FSU Relays (High Schools) 2026", "Meet Date": "Mar 27, 2026", "Wind": "1.6"}
+      ],
+      "athlete_identity": {"key": "TFRRS athlete id in URL", "example": "https://florida.tfrrs.org/athletes/8405585/Creekside/_Josh_Howell", "note": "1,633 distinct athlete links on this one list page"},
+      "event_section": {"example": "100 Meters (Men)", "measured": {"sections": 36, "men": 18, "women": 18, "distinct_events": 19}},
+      "measured": {"athlete_rows": 1469, "class_labels": {"SR": 529, "JR": 487, "SO": 291, "FR": 167}, "team_anchors": 0, "meet_anchors": 0},
+      "class_of_2027_rule_used_by_this_lane": "a 2026-season row with Year=JR is a Class-of-2027 athlete [INFERENCE from the label semantics, not stated on the page]"
+    },
+    "negative_results": [
+      {"surface": "https://florida.tfrrs.org/tf_meets.html?per_page=25", "http_status": 404, "file": "samples/tfrrs-fl-meet-index.html"},
+      {"surface": "https://florida.tfrrs.org/meets.html", "file": "samples/tfrrs-fl-meets.html", "observed": "Not Found (404)"},
+      {"surface": "https://florida.tfrrs.org/teams.html", "file": "samples/tfrrs-fl-teams.html", "observed": "Not Found (404)"}
+    ]
+  },
+  "ga_ghsa": {
+    "school_dropdown": {
+      "surface": "https://www.ghsa.net/school-directory",
+      "file": "samples/school-directory-ghsa.html",
+      "keys": {"option_value": {"example": "680"}, "option_label": {"example": "Academy for Classical Education"}},
+      "counts": {"option_elements": 458, "numeric_value_options": 457, "placeholder": "<option value=\"\" selected=\"selected\">Select a school...</option>", "id_min": 6, "id_max": 713},
+      "markup_example": "<option value=\"680\">Academy for Classical Education </option>"
+    },
+    "directory_pdf": {
+      "surface": "https://www.ghsa.net/ghsa-directory-feed/pdf",
+      "file": "samples/ghsa-directory-feed.pdf",
+      "file_facts": {"bytes": 644097, "pages": 338, "producer": "FPDF 1.82", "title": "2026-2027 GHSA Member School Directory"},
+      "school_header_keys": ["name", "region", "class"],
+      "school_header_example": {"name": "ADAIRSVILLE", "region": "7", "class": "AAAA", "verbatim": "ADAIRSVILLE (7-AAAA)"},
+      "school_block_keys": ["street", "city_state_zip", "Phone", "AD", "BD", "Fax", "website", "email", "Colors", "Mascot"],
+      "school_block_example": {"street": "519 Old Highway 41, NW", "city_state_zip": "Adairsville, GA 30103", "Phone": "770-606-5841", "AD": "770-606-5800 x 4157", "BD": "770-606-5800 x 4169", "Fax": "770-773-2722", "website": "https://www.bartow.k12.ga.us/o/adairsville-high", "email": "drew.elrod@bartow.k12.ga.us", "Colors": "Green, White & Vegas Gold", "Mascot": "Tigers"},
+      "staff_row_keys": ["name", "codes[]", "head_coach(*)", "gender_suffix(B/G)"],
+      "staff_row_examples": [
+        {"verbatim": "Thomas Darrah AD*,1", "name": "Thomas Darrah", "codes": ["AD", "1"], "head_coach_on": "AD", "gender": null},
+        {"verbatim": "Henry Avery 1,5*", "name": "Henry Avery", "codes": ["1", "5"], "head_coach_on": "5", "gender": null},
+        {"verbatim": "Debbie Coker 14G*", "name": "Debbie Coker", "codes": ["14"], "head_coach_on": "14", "gender": "G"}
+      ],
+      "legend_keys_verbatim": {"P": "Principal", "D": "Dean", "HOS": "Head of School", "H": "Headmaster", "AP": "Assistant Principal", "AAD": "Assistant Athletic Director", "BD": "Band Director", "LC": "Literary Coordinator", "OAP": "One-Act Play", "AD": "Athletic Director", "BF": "Bass Fishing Coach", "FF": "Flag Football Coach", "DNC": "Dance Coach", "ES": "eSports Coach", "1": "Football Coach", "2": "Boys Basketball Coach", "3": "Girls Basketball Coach", "4": "Baseball Coach", "5": "Track Coach", "6": "Tennis Coach", "7": "Golf Coach", "8": "Swimming Coach", "9": "Wrestling Coach", "10": "Gymnastics Coach", "11": "Air Rifle Coach", "12": "Soccer Coach", "13": "Volleyball Coach", "14": "Cross Country Coach", "15F": "Football Cheer Coach", "15B": "Basketball Cheer Coach", "15G": "Game Day Cheerleading Coach", "15C": "Competition Cheer Coach", "16SP": "Slow Pitch Softball Coach", "16FP": "Fast Pitch Softball Coach", "17": "Lacrosse Coach", "18": "Athletic Trainer", "*": "Head Coach", "B": "Boys", "G": "Girls"},
+      "measured": {"distinct_school_headers": 456, "class_distribution": {"A": 72, "AA": 85, "AAA": 62, "AAAA": 60, "AAAAA": 61, "AAAAAA": 64, "AAAAAAA": 52}, "staff_rows_school_section": 23435, "distinct_person_names": 22789, "rows_code_5": 1761, "rows_code_14": 946, "rows_AD": 672, "rows_P": 443, "rows_AP": 1721, "section_pdf_pages": "27-321 of 338"}
+    },
+    "state_meet_result_pdf": {
+      "file": "samples/ghsa-2026-girls-6a-track-results.pdf",
+      "meet_header_example": "GHSA Track and Field State Championship ‐ 5/11/2026 to 5/14/2026",
+      "generator_example": "HY‐TEK's Meet Manager 5/18/2026 05:54 PM",
+      "license_example": "Licensed to Perfect Timing Group ‐ Contractor License",
+      "result_header_example": "    Name                    Year School                  Seed     Finals Wind H# Po",
+      "result_row_example": "  1 Lovelace, Mina               McEachern Hi           11.49      11.79 ‐0.9 2 1",
+      "measured": {"pages": 12, "event_sections": 18, "result_rows": 211, "rows_with_grade_value": 0}
+    },
+    "xc_archive": {
+      "surface": "https://www.ghsa.net/ghsa-cross-country-state-meet-results",
+      "file": "samples/ghsa-xc-state-meet-results.html",
+      "keys": {"season": {"example": "GHSA 2024-2025"}, "class_gender_label": {"example": "AA"}, "pdf_url": {"example": "/sites/default/files/documents/xc/GHSA 2024-2025 State Cross Country Boys Class AA Results.pdf"}},
+      "measured": {"unique_pdfs": 320, "seasons": 25, "per_season": {"2000-2001..2011-2012": 10, "2012-2013..2015-2016": 14, "2016-2017..2024-2025": 16}}
+    }
+  },
+  "nc_nchsaa": {
+    "member_table": {
+      "surface": "https://www.nchsaa.org/schools/",
+      "file": "samples/schools-nchsaa.html",
+      "school_row_keys": ["school_name", "region", "classification", "conference", "football_only_conference"],
+      "school_row_example": {"school_name": "A.C. Reynolds High School", "region": "8", "classification": "6A", "conference": "Mountain 5A/6A", "football_only_conference": ""},
+      "school_row_markup": "<td style=\"\">A.C. Reynolds High School</td> <td style=\"\">8</td> <td style=\"\">6A</td> <td style=\"\">Mountain 5A/6A</td> <td style=\"\"></td>",
+      "conference_row_keys": ["conference", "administrator", "email"],
+      "conference_row_example": {"conference": "Albemarle (AAC) 2A", "administrator": "Sonya Rinehart", "email": "srinehart@ecps.k12.nc.us"},
+      "measured": {"school_rows": 451, "conference_admin_rows": 77, "table_rows_total": 530}
+    },
+    "result_pdf": {
+      "file": "samples/xc-2025-5a-girls-nchsaa.pdf",
+      "meet_header_example": "NCHSAA State Cross Country Championships - 10/31/2025 to 11/1/2025",
+      "venue_example": "Ivey Redmon Sports Complex",
+      "event_header_example": "Event 11       Women 5k Run CC 5A",
+      "result_header_example": "    Name                    Year School                  Finals Points",
+      "result_row_example": "  1 Olivia Ferraro            12 North Lincoln         18:24.75    1",
+      "license_example": "Foothills Timing and Meet Management - Contractor License",
+      "measured": {"rows_with_grade": 146, "grade_distribution": {"9": 29, "10": 42, "11": 44, "12": 31}, "grade_11_count": 44}
+    },
+    "championship_page": {
+      "surface": "https://www.nchsaa.org/championships/cross-country/",
+      "files": ["samples/champ-cross-nchsaa.html", "samples/xc-champs-2025-nchsaa.html"],
+      "keys": {"recap_entries": {"example": "NCHSAA State Cross Country Championships"}, "result_pdf_url": {"example": "/wp-content/uploads/2025/11/5A-Girls-Results.pdf"}},
+      "measured": {"result_pdfs_linked_2025": 16, "other_pdf_linked": "Notice-of-Availability-Form-1095-B39.pdf"}
+    }
+  },
+  "sc_schsl": {
+    "reclassification_post": {
+      "surface": "https://schsl.org/archives/17912",
+      "file": "samples/reclassification-2026-2028-schsl.html",
+      "keys": {"class": {"example": "Class 5A"}, "region": {"example": "Region 1"}, "school_name": {"example": "Byrnes"}, "non_football_marker": {"example": "SC Deaf and Blind**"}, "marker_legend_verbatim": "**Denotes Schools Not Playing Football"},
+      "measured": {"total_schools": 229, "per_class": {"5A": 35, "4A": 45, "3A": 35, "2A": 44, "1A": 70}, "non_football_marked": 21, "regions_per_class": "9 (5A) / 6-8 (4A-1A)"},
+      "source_data_quality": {"verbatim": "Westsid", "note": "Class 4A Region 1 roster entry; the published post carries this string between 'T. L. Hanna' and 'Region 2' — a source typo, not a parse artifact"}
+    },
+    "championship_post": {
+      "surface": "https://schsl.org/archives/4541",
+      "file": "samples/xc-championships-schsl.html",
+      "keys": {"milesplit_link": {"example": "https://sc.milesplit.com/articles/305756/2021-south-carolina-cross-country-state-championships-hub"}, "schedule_lines": {"example": "THURSDAY NOVEMBER 11, 2021 9:00 am AAAA Girls"}}
+    }
+  },
+  "va_vhsl_via_milesplit": {
+    "meet_page": {
+      "surface": "https://va.milesplit.com/meets/742518",
+      "file": "samples/vhsl-class5-state-meet-va-milesplit.html",
+      "keys": {"meet_id": {"example": 742518}, "meet_name": {"example": "VHSL Class 5 State Championships 2026"}, "dates": {"example": "Jun 05, 2026 / Jun 06, 2026"}, "venue": {"example": "Todd Stadium"}, "city_state": {"example": "Newport News, VA"}, "host": {"example": "Hosted by VHSL"}, "level": {"example": "State"}, "timing_provider": {"example": "Timing/Results Tidewater Timing Company"}, "sections": ["View Live Results", "Registration Closed - View Your Entries", "Meet History", "Records", "Meet Venue", "Meet Records"]},
+      "redirect_evidence": {"file": "samples/milestat-redirect.html", "verbatim_location": "http://va.milesplit.com/"}
+    },
+    "blocked_surface": {"host": "https://www.vhsl.org/", "robots_body": "../state-assoc-midatlantic/samples/robots-vhsl.txt", "status": "crawl-disallowed; not fetched by this lane"}
+  },
+  "wv_wvssac": {
+    "classification_pdf": {
+      "surface": "https://assets-rst7.rschooltoday.com/rst7files/uploads/sites/588/2026/07/03113435/Classifications-25-27.pdf (linked from https://www.wvssac.org/school-resources/classifications-regional-alignment/)",
+      "file": "samples/classifications-2025-27-wvssac.pdf",
+      "title_verbatim": "WVSSAC CLASSIFICATIONS 2025-2026 to 2026-2027",
+      "row_keys": ["rank_in_class", "school_name", "enrollment"],
+      "row_example": {"rank_in_class": "1", "school_name": "MORGANTOWN HIGH SCHOOL", "enrollment": 1753},
+      "band_labels_verbatim": ["\"AAAA\" SCHOOLS (1050 or more)", "\"AAA\" SCHOOLS (625 to 1049)", "\"AA\" Schools (351 to 624)", "\"A\" SCHOOLS (350 or Less)"],
+      "measured": {"total_schools": 119, "per_class": {"AAAA": 20, "AAA": 28, "AA": 32, "A": 39}, "enrollment_min": 7, "enrollment_max": 1753, "class_A_id_gaps": [26, 30, 38, 40, 41, 44, 45, 46]}
+    },
+    "school_directory_page": {
+      "surface": "https://www.wvssac.org/school-resources/school-directory/",
+      "files": ["samples/school-directory-wvssac.html", "samples/wpjson-page-8039-wvssac.json"],
+      "observed": {"iframe_src": "https://live.arbiter.io/org/4223", "content_rendered_chars": 2101, "note": "page body is CSS for .responsive-iframe-container; the directory itself is client-side and was not driven"}
+    },
+    "wp_search": {
+      "surface": "https://www.wvssac.org/wp-json/wp/v2/search?search=state%20track%20meet%20results&per_page=10",
+      "file": "samples/wpjson-search-track-wvssac.json",
+      "observed_body": "[]",
+      "interpretation": "no WVSSAC post matches that query — the association host publishes no state-result posts for T&F/XC in its REST search index"
+    }
+  }
+}

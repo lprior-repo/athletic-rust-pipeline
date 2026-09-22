@@ -3,11 +3,13 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, GradYear,
     SourceIdentity, SourceNamespace, Sport,
 };
+use census_domain::UsJurisdiction;
 #[test]
 fn core_scope_keeps_only_non_athletic_net_evidence() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    let (school, school_id) = CanonicalSchool::new("WI", "Abbotsford", "abbotsford");
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
 
     // One athlete reachable only through the AthleticLIVE mirror, one only through the
@@ -47,7 +49,8 @@ fn core_scope_keeps_only_non_athletic_net_evidence() {
 fn census_counts_class_of_2027_with_evidence() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    let (school, school_id) = CanonicalSchool::new("WI", "Abbotsford", "abbotsford");
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
     let mut athlete = CanonicalAthlete::new(
         &school_id,
@@ -95,7 +98,8 @@ fn census_counts_class_of_2027_with_evidence() {
 fn census_reads_merged_observations_without_consolidating() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    let (school, school_id) = CanonicalSchool::new("WI", "Abbotsford", "abbotsford");
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
     let athlete = CanonicalAthlete::new(
         &school_id,

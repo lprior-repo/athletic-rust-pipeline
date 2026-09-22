@@ -34,7 +34,7 @@ jobs:
         run: rustup show
       - name: Install the optional gate tools (best effort)
         run: |
-          for tool in cargo-nextest cargo-deny cargo-audit cargo-machete cargo-geiger; do
+          for tool in cargo-nextest cargo-deny cargo-audit cargo-machete cargo-geiger cargo-vet cargo-hack; do
             cargo install "$tool" --locked || echo "gate tool unavailable: $tool (its lane will SKIP)"
           done
       - name: Gate

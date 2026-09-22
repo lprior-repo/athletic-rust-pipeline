@@ -1,0 +1,210 @@
+{
+  "generated_utc": "2026-09-22T04:07:58Z",
+  "note": "Only keys actually observed in the captures listed under samples/ are recorded, each with one real example value.",
+  "sources": {
+    "ahsaa-xpress-timing-live-page": {
+      "sample": "samples/al-ahsaa-2025-xc-state-live.html",
+      "keys": {
+        "meet_title": "AHSAA State Championship",
+        "meet_date": "Saturday, November 8, 2025",
+        "venue": "Oakville Indian Mounds",
+        "city_state": "Oakville, AL",
+        "live_results_url": "http://xt.anet.live/3bb7ev",
+        "timing_provider": "www.xpresstiming.com",
+        "contact_email": "paul.xpresstiming@gmail.com"
+      }
+    },
+    "aaa-homepage-stats": {
+      "sample": "samples/ar-aaa-home.html",
+      "keys": {
+        "member_schools": "502",
+        "students_involved_in_activities": "150,000+",
+        "championships_awarded_annually": "108"
+      }
+    },
+    "ar-mileSplit-links": {
+      "sample": "samples/ar-cross-country.html",
+      "keys": {
+        "cross_country_meet_calendar": "https://ar.milesplit.com/calendar/arkansas-cc-meet-calendar",
+        "meet_of_champs_entries": "https://milesplit.live/meets/731034/events/4/assignments/F/F",
+        "how_to_enter_meet_doc": "ARMileSplit - How to Enter a Meet Online",
+        "partnership_doc": "ARMileSplit - Letter of Partnership"
+      }
+    },
+    "khsaa-member-directory": {
+      "sample": "samples/ky-member-school-directory.html",
+      "keys": {
+        "school_name": "Adair County High School",
+        "arbiterlive_entity_url": "https://www.arbiterlive.com/Teams?entityId=131",
+        "arbiterlive_entity_id": "131",
+        "public_org_page": "https://live.arbiter.io/org/2507"
+      }
+    },
+    "tssaa-member-directory": {
+      "sample": "samples/tn-portal-directory.html",
+      "keys": {
+        "school_id": "1",
+        "school_name_raw": "Adamsville High School (Adamsville, TN)",
+        "city": "Adamsville",
+        "state_abbr": "TN",
+        "sport_roster_url": "https://tssaasports.com/sports/rosters/?sport=track-boys",
+        "classification_basis": "Grade 9-12 enrollment"
+      }
+    },
+    "ossaa-member-schools-pdf": {
+      "sample": "samples/ok-memberschools-2025-26.pdf",
+      "keys": {
+        "index": "1",
+        "school_name": "Achille",
+        "list_length": 482
+      }
+    },
+    "ossaa-state-xc-result-pdf": {
+      "sample": "samples/ok-cc-2025-6a-state-results.pdf",
+      "keys": {
+        "meet": "OSSAA 5A-6A CROSS COUNTRY STATE CHAMPIONSHIPS",
+        "date": "Saturday, November 1, 2025",
+        "venue": "Santa Fe High School, Edmond, OK",
+        "race_id": "Race #11",
+        "division": "WOMEN (6A)",
+        "distance": "5 Kilometers (3.11 Miles)",
+        "athlete_name": "CORNELIUS, Ava",
+        "athlete_year": "SR",
+        "athlete_bib": "8362",
+        "team": "Owasso",
+        "score": "1",
+        "time": "17:06.7",
+        "gap": "---",
+        "avg_mile": "5:30.1",
+        "avg_km": "3:25.3",
+        "split_1600m": "5:19.4",
+        "split_3200m": "11:15.8",
+        "team_score_line": "1   Edmond Memorial  44  2-6-9-10-17(21)(23)  1:33:42  18:45  1:01.8",
+        "producer": "DirectAthletics MeetPro 12"
+      }
+    },
+    "lhsaa-state-result-pdf": {
+      "sample": "samples/la-2026-state-champ-results.pdf",
+      "keys": {
+        "meet": "2026 LHSAA Track & Field Outdoor Meet",
+        "dates": "5/7/2026 to 5/9/2026",
+        "venue": "Bernie Moore Track, LSU Campus",
+        "session": "Results - Thursday B, C and 1A",
+        "producer": "Hy-Tek's MEET MANAGER",
+        "place": "1",
+        "athlete_name": "Christin Bailey",
+        "year": "(blank in this section)",
+        "school": "PHOENIX",
+        "finals": "12.76",
+        "wind": "2.1",
+        "record_lines": "CLASS: # 11.92 1984  Emily Vineyard, Monticello / COMPOSITE: * 11.42 1994 Kawajalein Butler, West Monroe 5A"
+      }
+    },
+    "lhsaa-coaches-directory-pdf": {
+      "sample": "samples/la-coaches-directory-2025-26.pdf",
+      "keys": {
+        "title": "LHSAA Coaches Directory",
+        "pages": 108,
+        "per_school_fields_observed": [
+          "school name",
+          "school class",
+          "phone",
+          "Athletic Director (with email)",
+          "Principal",
+          "per-sport coaches with emails",
+          "school address"
+        ],
+        "text_layer_note": "subset-font glyph permutation; raw example token '4G9E<' (= 'School'), 'O[[6P' (= 'Athletic')"
+      }
+    },
+    "uil-alignment-alpha-pdf": {
+      "sample": "samples/tx-alignment-26-28-alpha.pdf",
+      "keys": {
+        "school_name": "Abilene Cooper",
+        "conference": "5A",
+        "enrollment": "1720.5",
+        "volleyball_district": "4",
+        "basketball_district": "4",
+        "football_district": "2",
+        "football_division": "2",
+        "fb_type": "11-Man",
+        "total_rows": 1566
+      }
+    },
+    "uil-tf-school-codes-pdf": {
+      "sample": "samples/tx-tf-school-codes-2026.pdf",
+      "keys": {
+        "school_name": "ABBOTT HS",
+        "school_code": "ABBO",
+        "conference": "1A",
+        "district": "26",
+        "region": "4",
+        "total_rows": 1368
+      }
+    },
+    "uil-state-xc-result-page": {
+      "sample": "samples/tx-xc-2025-6a-boys-results.html",
+      "keys": {
+        "page_title": "2025 6A Boys Cross Country State Results",
+        "date": "11/01/2025",
+        "team_table": [
+          "School",
+          "Total Score",
+          "Notes"
+        ],
+        "team_row_example": "Southlake Carroll | 71 | 1st Place",
+        "individual_table": [
+          "Name",
+          "School",
+          "Time",
+          "Notes"
+        ]
+      }
+    },
+    "tn-championship-result-pdf": {
+      "sample": "samples/tn-champ-result-2025-d1aaa.pdf",
+      "keys": {
+        "meet": "2025 TSSAA State Cross Country Championship",
+        "venue": "Shelby Farms Park - Memphis,TN",
+        "dates": "11/6/2025 to 11/7/2025",
+        "event": "Event 2 Boys 5k Run CC D1AAA",
+        "timing_service": "AllTrax Timing - Contractor License",
+        "producer": "Hy-Tek's MEET MANAGER",
+        "place": "1",
+        "athlete_name": "Clemons, Owen",
+        "year": "12",
+        "school": "Cleveland",
+        "finals": "15:06.37",
+        "points": "1"
+      }
+    },
+    "milesplit-state-team-index": {
+      "samples": [
+        "samples/ms-milesplit-teams.html",
+        "samples/al-milesplit-teams.html",
+        "samples/la-milesplit-teams.html"
+      ],
+      "keys": {
+        "team_url": "https://ms.milesplit.com/teams/1140-tupelo-high-school",
+        "team_id": "1140",
+        "team_slug": "tupelo-high-school",
+        "counts": {
+          "MS": 463,
+          "AL": 562,
+          "LA": 588
+        }
+      }
+    },
+    "wayback-cdx": {
+      "samples": [
+        "samples/wayback-cdx-misshsaa-xc.txt",
+        "samples/wayback-cdx-ahsaa-classif.txt"
+      ],
+      "keys": {
+        "original": "http://www.misshsaa.com:80/2016/05/22/2015-class-1a-boys-cross-country-results/",
+        "timestamp": "20160725123424",
+        "statuscode": "200"
+      }
+    }
+  }
+}

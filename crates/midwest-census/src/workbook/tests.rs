@@ -6,6 +6,7 @@ use census_domain::model::{
     CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark, SchoolYear,
     SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 
 #[test]
 fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
@@ -13,7 +14,8 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     let store = Store::open(dir.path()).unwrap();
     let day = "2026-09-21";
 
-    let (school, school_id) = CanonicalSchool::new("WI", "Abbotsford", "abbotsford");
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
     store.append(Table::Schools, &school).unwrap();
 
     let mut athlete = CanonicalAthlete::new(
@@ -31,7 +33,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
     store.append(Table::Athletes, &athlete).unwrap();
 
     let mut meet = CanonicalMeet::new(
-        "WI",
+        Some(UsJurisdiction::Wisconsin),
         "WIAA Division 3 State",
         "2026-06-06",
         CompetitionLevel::State,

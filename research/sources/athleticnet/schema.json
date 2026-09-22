@@ -1,0 +1,929 @@
+{
+ "lane": "athleticnet",
+ "generated_by": "samples/build-schema.py",
+ "verification": "every example value was re-read from the cited sample file and compared at build time; structural claims (relay mapping, blur masking, wind fields, jurisdiction lists) are re-derived, so a changed sample fails the build instead of silently changing the docs",
+ "derived_counts": {
+  "allresults_rows": 758,
+  "allresults_blocks": 49,
+  "allresults_relay_legs": 288,
+  "allresults_teams": 12,
+  "allresults_event_divs_with_results": 45,
+  "allresults_distinct_athlete_ids": 541,
+  "allresults_relay_only_athlete_ids": 45,
+  "allresults_grade_unknown_rows": 71,
+  "rankings_full_page_rows": 102,
+  "rankings_page_min_count": 2117,
+  "rankings_page_rank_range": [
+   100,
+   201
+  ],
+  "rankings_row_key_shapes": 29,
+  "anon_blurred_rows": 96,
+  "anon_blur_after_depth": 5,
+  "anon_unblurred_ranks": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "anon_page_echo": 1
+ },
+ "endpoints": {
+  "GET /api/v1/tfRankings/GetNavInfo": {
+   "sample": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "auth": "session",
+   "top_level_keys": [
+    "countries",
+    "countryDivId",
+    "divListId",
+    "events",
+    "events_main",
+    "levelDivId",
+    "levels",
+    "recordSets",
+    "regionDivId",
+    "regions",
+    "seasons",
+    "tree"
+   ]
+  },
+  "POST /api/v1/tfRankings/GetRankings": {
+   "sample": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "auth": "session + anonymous (rows blurred past settings.blurAfterDepth)",
+   "top_level_keys": [
+    "bestsRecordSet",
+    "customList",
+    "debug",
+    "defaultSettings",
+    "division",
+    "eventId",
+    "eventShort",
+    "eventType",
+    "eventTypes",
+    "gender",
+    "groupedRankings",
+    "hasSiteSupport",
+    "includeDivisions",
+    "jwtTFTopReport",
+    "level",
+    "location",
+    "minCount",
+    "recordSet",
+    "relayTeams",
+    "reportTitle",
+    "settings",
+    "sportRankings"
+   ]
+  },
+  "POST /api/v1/tfRankings/GetAgesGrades": {
+   "sample": "samples/har1-getagesgrades-wi-2026.json",
+   "auth": "session",
+   "top_level_keys": [
+    "ages",
+    "grades"
+   ]
+  },
+  "GET /api/v1/tfRankings/GetStandards": {
+   "sample": "samples/har1-getstandards-empty.json",
+   "auth": "session",
+   "top_level_keys": "list[0]"
+  },
+  "GET /api/v1/tfRankings/GetConvertEvents": {
+   "sample": "samples/har1-getconvertevents.json",
+   "auth": "session",
+   "top_level_keys": "list[171]"
+  },
+  "GET /api/v1/public/GetStatesCountries2": {
+   "sample": "samples/har1-getstatescountries2.json",
+   "auth": "anonymous",
+   "top_level_keys": [
+    "countries",
+    "countriesLookup",
+    "states"
+   ]
+  },
+  "GET /api/v1/SiteHeader/GetDivChildren": {
+   "sample": "samples/atn-probe-divchildren-170771.json",
+   "auth": "anonymous",
+   "top_level_keys": [
+    "divInfo",
+    "teams"
+   ]
+  },
+  "GET /api/v1/SiteHeader/GetBreadcrumbs": {
+   "sample": "samples/har1-getbreadcrumbs-wi-170770.json",
+   "auth": "anonymous",
+   "top_level_keys": [
+    "breadCrumbs",
+    "googleBreadCrumbs"
+   ]
+  },
+  "GET /api/v1/Meet/GetMeetData": {
+   "sample": "samples/live-meetdata-634313.redacted.json",
+   "auth": "anonymous + jwtMeet for later steps",
+   "top_level_keys": [
+    "addOns",
+    "contactInfoExists",
+    "coverRsUrl",
+    "eventDivsWithResults",
+    "hasSchedule",
+    "hostIsSS",
+    "meet",
+    "meetRecordSetInfo",
+    "sport",
+    "sport1",
+    "sport2",
+    "teamScores",
+    "tfDivisions",
+    "timer",
+    "xcDivisions"
+   ]
+  },
+  "GET /api/v1/Meet/GetEventDivisionData": {
+   "sample": "samples/live-eventdiv-634313.json",
+   "auth": "anonymous + jwtMeet",
+   "top_level_keys": [
+    "events",
+    "tfDivisions"
+   ]
+  },
+  "GET /api/v1/Meet/GetAllResultsData": {
+   "sample": "samples/live-allresults-634313.redacted.json",
+   "auth": "anonymous + jwtMeet",
+   "top_level_keys": [
+    "canValidateResults",
+    "correctedResultIDs",
+    "eventDivsWithResults",
+    "eventTypes",
+    "flatEvents",
+    "groupedEventsParents",
+    "relayLegs",
+    "rounds",
+    "teams"
+   ]
+  },
+  "POST /api/v1/Meet/GetResultsData3": {
+   "sample": "samples/live-resultsdata3-100m-wind-615580.json",
+   "auth": "anonymous + jwtMeet",
+   "top_level_keys": [
+    "advancementData",
+    "canValidateResults",
+    "correctedResultIDs",
+    "currentEventValid",
+    "divId",
+    "eventDivsWithResults",
+    "eventId",
+    "eventTypes",
+    "events",
+    "groupParentId",
+    "groupedEventsParents",
+    "host",
+    "relayLegs",
+    "resultsTF",
+    "rounds"
+   ]
+  },
+  "GET /api/v1/AthleteBio/GetAthleteBioData": {
+   "sample": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "auth": "anonymous",
+   "top_level_keys": [
+    "allSeasons",
+    "allTeams",
+    "athlete",
+    "canEdit",
+    "distancesXC",
+    "eventsTF",
+    "grades",
+    "hasOtherSport",
+    "level",
+    "meets",
+    "photos",
+    "relayTeamMembers",
+    "resultsTF",
+    "resultsXC",
+    "synonyms",
+    "unattachedCalendars"
+   ]
+  },
+  "GET /api/v1/TeamNav/Team": {
+   "sample": "samples/har2-teamnav-3204.json",
+   "auth": "anonymous",
+   "top_level_keys": [
+    "customDivisions",
+    "customLists",
+    "divisions",
+    "grades",
+    "hasCoachAccess",
+    "linkedTeams",
+    "mascotToken2",
+    "team",
+    "userAthleteIdOnTeam"
+   ]
+  },
+  "GET /api/v1/General/GetRankings": {
+   "sample": "samples/har2-general-getrankings-28872883.json",
+   "auth": "anonymous",
+   "top_level_keys": "list[21]"
+  }
+ },
+ "identifiers": [
+  {
+   "identifier": "AthleteID",
+   "example": 22874443,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].AthleteID",
+   "note": "person key; national namespace shared across sports and levels",
+   "verified": true
+  },
+  {
+   "identifier": "AthleteID (bio alias)",
+   "example": 28872883,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "athlete.IDAthlete",
+   "note": "same integer as rankings AthleteID; profile URL segment",
+   "verified": true
+  },
+  {
+   "identifier": "AthleteID (relay placeholder)",
+   "example": 32663189,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-multievent-n180.json",
+   "json_path": "relayTeams.295310302.RelayTeamID",
+   "note": "on a relay row AthleteID equals RelayTeamID; the row itself lives at the IDResult key of relayTeams",
+   "verified": true
+  },
+  {
+   "identifier": "RelayTeamID",
+   "example": 32663189,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-multievent-n180.json",
+   "json_path": "relayTeams.295310302.RelayTeamID",
+   "note": "relay team record; 40 relay rows / 40 relayTeams keys in this capture",
+   "verified": true
+  },
+  {
+   "identifier": "IDResult",
+   "example": 294093256,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].IDResult",
+   "note": "one athlete, one mark, one meet entry",
+   "verified": true
+  },
+  {
+   "identifier": "IDResult (bio)",
+   "example": 258445410,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "resultsTF[0].IDResult",
+   "note": "same namespace as rankings IDResult",
+   "verified": true
+  },
+  {
+   "identifier": "ResultID (relay leg)",
+   "example": 294438034,
+   "observed_in": "samples/live-resultsdata3-4x100m.json",
+   "json_path": "relayLegs[0].ResultID",
+   "note": "leg-level result id inside a relay result",
+   "verified": true
+  },
+  {
+   "identifier": "shortCode",
+   "example": "2KiyYVPiwipw058tr",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].shortCode",
+   "note": "public result page slug: /result/<shortCode>",
+   "verified": true
+  },
+  {
+   "identifier": "ShortCode (meet result)",
+   "example": "VPiXK5dHri4J1oNsm",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "flatEvents[0].results[0].ShortCode",
+   "note": "camel-case key differs from the rankings row's `shortCode`",
+   "verified": true
+  },
+  {
+   "identifier": "MeetID",
+   "example": 667477,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].MeetID",
+   "note": "meet key on a rankings row",
+   "verified": true
+  },
+  {
+   "identifier": "IDMeet (bio meet map)",
+   "example": 610825,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "meets.610825.IDMeet",
+   "note": "the athlete payload carries its own meet map (name + end date)",
+   "verified": true
+  },
+  {
+   "identifier": "MeetID (meet payload)",
+   "example": 634313,
+   "observed_in": "samples/live-meetdata-634313.redacted.json",
+   "json_path": "meet.ID",
+   "note": "the captured whole-meet pull",
+   "verified": true
+  },
+  {
+   "identifier": "TeamID",
+   "example": 19566,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].TeamID",
+   "note": "team key on a rankings row",
+   "verified": true
+  },
+  {
+   "identifier": "IDSchool (teamnav sibling)",
+   "example": 57750,
+   "observed_in": "samples/har2-teamnav-3204.json",
+   "json_path": "linkedTeams[0].IDSchool",
+   "note": "one school has several team records (K-8 siblings of the high school team)",
+   "verified": true
+  },
+  {
+   "identifier": "IDSchool (divchildren)",
+   "example": 101718,
+   "observed_in": "samples/atn-probe-divchildren-170771.json",
+   "json_path": "teams[0].IDSchool",
+   "note": "school key as published by GetDivChildren",
+   "verified": true
+  },
+  {
+   "identifier": "IDSchool (allresults)",
+   "example": 3204,
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "teams[0].IDSchool",
+   "note": "school key on a meet team row, equal to the team page id for high schools",
+   "verified": true
+  },
+  {
+   "identifier": "SchoolID (bio athlete)",
+   "example": 3204,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "athlete.SchoolID",
+   "note": "same integer as IDSchool; the source uses both key names",
+   "verified": true
+  },
+  {
+   "identifier": "TeamCode",
+   "example": "MIDD",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "teams[0].TeamCode",
+   "note": "short code rendered in result tables",
+   "verified": true
+  },
+  {
+   "identifier": "IDCalendar",
+   "example": 7466322,
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "teams[0].IDCalendar",
+   "note": "per-season calendar id behind the team page",
+   "verified": true
+  },
+  {
+   "identifier": "IDDivision (conference)",
+   "example": 172497,
+   "observed_in": "samples/har2-teamnav-3204.json",
+   "json_path": "customDivisions[0].IDDivision",
+   "note": "custom league/conference division, e.g. Big Eight",
+   "verified": true
+  },
+  {
+   "identifier": "IDDivision (state node)",
+   "example": 170770,
+   "observed_in": "samples/har2-teamnav-3204.json",
+   "json_path": "divisions[2].id",
+   "note": "the ancestor chain a school belongs to for 2026",
+   "verified": true
+  },
+  {
+   "identifier": "DivIDDivision (child)",
+   "example": 170772,
+   "observed_in": "samples/atn-probe-divchildren-170771.json",
+   "json_path": "divInfo[0].DivIDDivision",
+   "note": "child division id returned by GetDivChildren",
+   "verified": true
+  },
+  {
+   "identifier": "IDBaseDiv",
+   "example": 709,
+   "observed_in": "samples/atn-probe-divchildren-170771.json",
+   "json_path": "divInfo[0].IDBaseDiv",
+   "note": "base-division id for the child node (WI state node base = 638)",
+   "verified": true
+  },
+  {
+   "identifier": "division.BaseDivID",
+   "example": 638,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "division.BaseDivID",
+   "note": "the rankings payload repeats the base id of the list's division",
+   "verified": true
+  },
+  {
+   "identifier": "IDMeetDiv",
+   "example": 1366830,
+   "observed_in": "samples/live-eventdiv-634313.json",
+   "json_path": "tfDivisions[0].IDMeetDiv",
+   "note": "meet-scoped division row (Varsity / Wheelchair)",
+   "verified": true
+  },
+  {
+   "identifier": "IDDiv",
+   "example": 1,
+   "observed_in": "samples/live-eventdiv-634313.json",
+   "json_path": "tfDivisions[0].IDDiv",
+   "note": "meet-scoped division number, repeated on every result row",
+   "verified": true
+  },
+  {
+   "identifier": "divListId",
+   "example": 170770,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "divListId",
+   "note": "the rankings list id: nav echo, breadcrumb URL, rankings POST body",
+   "verified": true
+  },
+  {
+   "identifier": "levelDivId",
+   "example": 168416,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "levelDivId",
+   "note": "High School level node",
+   "verified": true
+  },
+  {
+   "identifier": "countryDivId",
+   "example": 167952,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "countryDivId",
+   "note": "United States country node",
+   "verified": true
+  },
+  {
+   "identifier": "regionDivId",
+   "example": 170770,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "regionDivId",
+   "note": "the region selected for the nav call (Wisconsin)",
+   "verified": true
+  },
+  {
+   "identifier": "seasonId (outdoor)",
+   "example": 170770,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "seasons.2026",
+   "note": "one nav call carries every season list id for the selected region",
+   "verified": true
+  },
+  {
+   "identifier": "seasonId (indoor)",
+   "example": 175082,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "seasons.12026",
+   "note": "indoor seasons are keyed 1<seasonId>",
+   "verified": true
+  },
+  {
+   "identifier": "SeasonID (meet)",
+   "example": 2026,
+   "observed_in": "samples/live-meetdata-634313.redacted.json",
+   "json_path": "meet.SeasonID",
+   "note": "season id on the meet",
+   "verified": true
+  },
+  {
+   "identifier": "EventID",
+   "example": 1,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].EventID",
+   "note": "event key on a rankings row",
+   "verified": true
+  },
+  {
+   "identifier": "IDEvent (bio vocabulary)",
+   "example": 1,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "eventsTF[0].IDEvent",
+   "note": "the athlete's event list, same id namespace",
+   "verified": true
+  },
+  {
+   "identifier": "EventShort",
+   "example": "100m",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].EventShort",
+   "note": "the request key for GetRankings and GetResultsData3",
+   "verified": true
+  },
+  {
+   "identifier": "IDEventType",
+   "example": 0,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "eventsTF[0].IDEventType",
+   "note": "0 = standard; 99 = relay/wheelchair type bucket",
+   "verified": true
+  },
+  {
+   "identifier": "eventTypes[].IDEventType",
+   "example": 99,
+   "observed_in": "samples/live-resultsdata3-100m-wind-615580.json",
+   "json_path": "eventTypes[0].IDEventType",
+   "note": "per-event type list returned by GetResultsData3; empty list when the event has no type variants (4x100m capture: [])",
+   "verified": true
+  },
+  {
+   "identifier": "GradeID",
+   "example": 12,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].GradeID",
+   "note": "numeric grade on a rankings row",
+   "verified": true
+  },
+  {
+   "identifier": "Grade (string)",
+   "example": "11",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "flatEvents[0].results[0].Grade",
+   "note": "string grade on a meet result row",
+   "verified": true
+  },
+  {
+   "identifier": "Grade (unknown sentinel)",
+   "example": "-",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": null,
+   "note": "71 of 758 meet rows publish '-' instead of a grade (see counts)"
+  },
+  {
+   "identifier": "AgeGrade",
+   "example": "11",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "flatEvents[0].results[0].AgeGrade",
+   "note": "grade used for the age-based divisions; matches Grade on this row",
+   "verified": true
+  },
+  {
+   "identifier": "Age",
+   "example": 18,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].Age",
+   "note": "present only on some rows (sparse object)",
+   "verified": true
+  },
+  {
+   "identifier": "Handle",
+   "example": "EvanRoell",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].Handle",
+   "note": "profile slug; null for many athletes",
+   "verified": true
+  },
+  {
+   "identifier": "UsatfId",
+   "example": null,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "athlete.UsatfId",
+   "note": "present-but-null; no USATF id for the captured athlete",
+   "verified": true
+  },
+  {
+   "identifier": "LiveID",
+   "example": 73767,
+   "observed_in": "samples/live-meetdata-634313.redacted.json",
+   "json_path": "meet.LiveID",
+   "note": "AthleticLIVE meet id: the join key into the AthleticLIVE source",
+   "verified": true
+  },
+  {
+   "identifier": "State (USPS)",
+   "example": "WI",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].State",
+   "note": "USPS code as published on rankings rows; null on 2 of 102 rows in this capture",
+   "verified": true
+  },
+  {
+   "identifier": "StateName",
+   "example": "Wisconsin",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "division.BaseDiv.StateName",
+   "note": "spelled-out jurisdiction name on the same payload",
+   "verified": true
+  },
+  {
+   "identifier": "State (team page)",
+   "example": "WI",
+   "observed_in": "samples/har2-teamnav-3204.json",
+   "json_path": "team.State",
+   "note": "USPS code on the team record",
+   "verified": true
+  },
+  {
+   "identifier": "state (nav region)",
+   "example": "AL",
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "regions[1].state",
+   "note": "USPS code on the State-divType nav node",
+   "verified": true
+  },
+  {
+   "identifier": "Country",
+   "example": "USA",
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].Country",
+   "note": "3-letter country code on rankings rows",
+   "verified": true
+  },
+  {
+   "identifier": "EventSelectionID",
+   "example": 58,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "division.EventSelectionID",
+   "note": "which event-selection rule the list uses",
+   "verified": true
+  },
+  {
+   "identifier": "minCount",
+   "example": 2117,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "minCount",
+   "note": "server-reported row count for the filter - the pagination driver",
+   "verified": true
+  },
+  {
+   "identifier": "settings.depth",
+   "example": 100,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "settings.depth",
+   "note": "page depth the server reports for single-event lists",
+   "verified": true
+  },
+  {
+   "identifier": "settings.blurAfterDepth",
+   "example": 5,
+   "observed_in": "samples/atn-probe-getrankings-anon.json",
+   "json_path": "settings.blurAfterDepth",
+   "note": "rows past this depth are blurred for a token with empty userRoles",
+   "verified": true
+  },
+  {
+   "identifier": "rowNum",
+   "example": 100,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].rowNum",
+   "note": "position in the ranking; not an identifier",
+   "verified": true
+  },
+  {
+   "identifier": "rank",
+   "example": 100,
+   "observed_in": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "json_path": "groupedRankings[0][0].rank",
+   "note": "display rank; equal to rowNum on this row",
+   "verified": true
+  },
+  {
+   "identifier": "IDGrade",
+   "example": 9,
+   "observed_in": "samples/har2-teamnav-3204.json",
+   "json_path": "grades[0].IDGrade",
+   "note": "grade vocabulary on the team nav payload",
+   "verified": true
+  },
+  {
+   "identifier": "relayTeamMembers[].AthleteID",
+   "example": 23113661,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "relayTeamMembers[0].AthleteID",
+   "note": "athlete key inside a relay roster",
+   "verified": true
+  },
+  {
+   "identifier": "relayTeamMembers[].TeamID",
+   "example": 29163596,
+   "observed_in": "samples/live-getathletebiodata-28872883-2026-09-20.json",
+   "json_path": "relayTeamMembers[0].TeamID",
+   "note": "relay team record key inside a relay roster",
+   "verified": true
+  },
+  {
+   "identifier": "divType",
+   "example": "State",
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "regions[1].divType",
+   "note": "nav node typing; the 52 state rows are divType State",
+   "verified": true
+  },
+  {
+   "identifier": "subDivType (region)",
+   "example": "Associations",
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "regions[1].subDivType",
+   "note": "the child node class the UI would open next",
+   "verified": true
+  },
+  {
+   "identifier": "subDivType (tree)",
+   "example": "Divisions",
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "tree[0].subDivType",
+   "note": "the tree echo for the selected region",
+   "verified": true
+  },
+  {
+   "identifier": "states[].Code",
+   "example": "AL",
+   "observed_in": "samples/har1-getstatescountries2.json",
+   "json_path": "states[2].Code",
+   "note": "jurisdiction code in the source's own list",
+   "verified": true
+  },
+  {
+   "identifier": "states[].CountryCode",
+   "example": "US",
+   "observed_in": "samples/har1-getstatescountries2.json",
+   "json_path": "states[2].CountryCode",
+   "note": "the filter that makes Code unambiguous (14 non-US rows exist)",
+   "verified": true
+  },
+  {
+   "identifier": "countriesLookup[].Alpha3",
+   "example": "AFG",
+   "observed_in": "samples/har1-getstatescountries2.json",
+   "json_path": "countriesLookup[0].Alpha3",
+   "note": "country vocabulary for venue nationality",
+   "verified": true
+  },
+  {
+   "identifier": "nav events[] id",
+   "example": 570,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "events[0].id",
+   "note": "10 Meter Fly: the vocabulary is wider than the main HS event set",
+   "verified": true
+  },
+  {
+   "identifier": "nav events_main[] id",
+   "example": 1,
+   "observed_in": "samples/har1-getnavinfo-wi-2026-hs-boys.json",
+   "json_path": "events_main[0]",
+   "note": "the 36 main event ids (100m is the first)",
+   "verified": true
+  },
+  {
+   "identifier": "meet.Name",
+   "example": "Big 8 Conference",
+   "observed_in": "samples/live-meetdata-634313.redacted.json",
+   "json_path": "meet.Name",
+   "note": "meet title as published",
+   "verified": true
+  },
+  {
+   "identifier": "meet.MeetDate",
+   "example": "2026-05-15T00:00:00",
+   "observed_in": "samples/live-meetdata-634313.redacted.json",
+   "json_path": "meet.MeetDate",
+   "note": "date-only meet anchor in ISO-local form",
+   "verified": true
+  },
+  {
+   "identifier": "flatEvents[].EventShort",
+   "example": "100m",
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "flatEvents[0].EventShort",
+   "note": "event key inside the whole-meet payload",
+   "verified": true
+  },
+  {
+   "identifier": "teams[].IDDivision (meet context)",
+   "example": 170776,
+   "observed_in": "samples/live-allresults-634313.redacted.json",
+   "json_path": "teams[0].IDDivision",
+   "note": "the meet's division node for that team, e.g. WIAA Regional 2A",
+   "verified": true
+  },
+  {
+   "identifier": "breadcrumbs[].url",
+   "example": "/TrackAndField/rankings/list/166948",
+   "observed_in": "samples/har1-getbreadcrumbs-wi-170770.json",
+   "json_path": "breadCrumbs[1].url",
+   "note": "canonical rankings URL grammar, observed for World/US/HS/state nodes",
+   "verified": true
+  },
+  {
+   "identifier": "GetAgesGrades grades[].GradeCount",
+   "example": 22934,
+   "observed_in": "samples/har1-getagesgrades-wi-2026.json",
+   "json_path": "grades[3].GradeCount",
+   "note": "grade 9 count for the WI boys HS 2026 division (semantics: rows or athletes unverified)",
+   "verified": true
+  },
+  {
+   "identifier": "General/GetRankings Position",
+   "example": 1,
+   "observed_in": "samples/har2-general-getrankings-28872883.json",
+   "json_path": "[0].Position",
+   "note": "athlete PR/rank per event per division context",
+   "verified": true
+  },
+  {
+   "identifier": "GetConvertEvents FromEventShort",
+   "example": "Indoor Pentathlon",
+   "observed_in": "samples/har1-getconvertevents.json",
+   "json_path": "[0].FromEventShort",
+   "note": "event conversion table: merges equivalent events across rulesets",
+   "verified": true
+  }
+ ],
+ "sparse_row_warning": "row key sets are NOT uniform: the multi-event capture holds 29 distinct key shapes over 180 rows; keys (Wind, Age, Handle, PhotoUrl, display_secondary, EventTypeDescription) are omitted when absent, and one row omits Country/State/TeamMascot entirely. Deserialize with Option + serde(default), never with required fields.",
+ "entitlement": {
+  "anonymous": "rankings rows past settings.blurAfterDepth are blurred: AthleteID 0, masked names ('Xxxx Xxxxx'), State 'XX', MeetID 0, shortCode null; qParams.page is ignored (settings.page echoes 1)",
+  "session": "unblurred rows; qParams.page honored (page 2 -> ranks 100..201, page 17 -> 17 rows)",
+  "evidence": [
+   "samples/atn-probe-getrankings-anon.json",
+   "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json",
+   "samples/har1-getrankings-wi-170770-m-100m-g11-p17-n17.json"
+  ]
+ },
+ "jurisdiction_fields": {
+  "nav_region_state": "samples/har1-getnavinfo-wi-2026-hs-boys.json regions[*].state - USPS code or null (Overseas)",
+  "rankings_row_state": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json groupedRankings[*][*].State - 'WI' on 100/102 rows, null on 2",
+  "division_base_div_state": "samples/har1-getrankings-wi-170770-m-100m-p2-n102.json division.BaseDiv.State/.StateName",
+  "team_state": "samples/har2-teamnav-3204.json team.State",
+  "statescountries_states": "samples/har1-getstatescountries2.json states[] - 65 rows, 51 with CountryCode 'US' (set-equal to UsJurisdiction codes), 14 non-US (Canadian provinces) that are not USPS codes"
+ },
+ "endpoint_field_delta": {
+  "question": "which endpoint must be called for which field (measured on meet 634313)",
+  "Meet/GetAllResultsData": {
+   "sample": "samples/anon-allresults-634313.json",
+   "flatEvents[]_keys": [
+    "DivId",
+    "Division",
+    "Event",
+    "EventId",
+    "EventShort",
+    "Gender",
+    "IDEventType",
+    "Round",
+    "hasSplitsSeries",
+    "isField",
+    "isPersonal",
+    "results"
+   ],
+   "carries": [
+    "every individual result row with AthleteID/TeamID/Grade/IDResult/ShortCode",
+    "relayLegs[] with leg-level AthleteID/ResultID",
+    "teams[] with IDSchool/IDDivision/TeamCode",
+    "eventTypes[] {eventId, IDEventType, Description}",
+    "correctedResultIDs[]"
+   ],
+   "does_not_carry": [
+    "Measure",
+    "Type",
+    "FieldMeasureType",
+    "isHurdle",
+    "Wind",
+    "Heat",
+    "HeatPlace",
+    "tfDivisions[]"
+   ]
+  },
+  "Meet/GetEventDivisionData": {
+   "sample": "samples/anon-eventdiv-634313.json",
+   "events[]_keys": [
+    "Entry",
+    "Event",
+    "EventShort",
+    "FieldMeasureType",
+    "Gender",
+    "ID",
+    "Measure",
+    "Result",
+    "Type",
+    "focus",
+    "isHurdle",
+    "isPersonal",
+    "photos",
+    "sort"
+   ],
+   "carries": [
+    "per-event Measure/Type/FieldMeasureType/isHurdle",
+    "tfDivisions[] (IDMeetDiv, MaxAthleteEvents, MaxAthleteFieldEvents, MaxAthleteTrackEvents, QStandardList, TeamScoresJson, DestDepth...)"
+   ],
+   "needed_only_for": "event metadata absent from the results payload; the results lane itself runs without it (probe step 3 was issued with only the jwtMeet from step 1)"
+  },
+  "Meet/GetResultsData3": {
+   "sample": "samples/live-resultsdata3-100m-wind-615580.json",
+   "carries": [
+    "Wind",
+    "Heat",
+    "HeatPlace",
+    "Measure",
+    "advancementData"
+   ],
+   "note": "per event x division x gender; POST only; body gender must be lowercase m/f"
+  },
+  "verified_utc": "2026-09-21"
+ }
+}

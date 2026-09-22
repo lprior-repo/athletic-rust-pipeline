@@ -39,6 +39,7 @@ use serde_json::{json, Value};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use crate::store::Table;
 use census_domain::model::CanonicalMeet;
+use census_domain::UsJurisdiction;
 
 mod batches;
 mod map;
@@ -68,8 +69,8 @@ pub struct Options {
     pub limit: Option<usize>,
     pub refresh: bool,
     pub observed_on: String,
-    /// Restrict to meets in these state codes; empty = every state present in the meet log.
-    pub states: Vec<String>,
+    /// Restrict to meets in these jurisdictions; empty = every state present in the meet log.
+    pub states: Vec<UsJurisdiction>,
     pub school_names: Vec<String>,
 }
 
@@ -114,10 +115,11 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         .filter(|target| !journal.contains(&target.athleticlive_meet_id.to_string()))
         .collect();
     report.note(format!(
-        "meets in store: {}; timer-published after state filter: {}; skipped (implausible date): {}; already journaled: {}; pending: {}",
+        "meets in store: {}; timer-published after state filter: {}; skipped (implausible date): {}; skipped (no jurisdiction): {}; already journaled: {}; pending: {}",
         meets.len(),
         targets.len(),
         selection.skipped_implausible,
+        selection.skipped_unplaced,
         journal.len(),
         pending.len()
     ));
@@ -170,7 +172,8 @@ async fn finish_run(
         stats.rows_with_grade, stats.rows, stats.rows_with_athlete_id, stats.rows_with_team_id, stats.rows_without_school
     ));
     if !options.states.is_empty() {
-        report.note(format!("state filter: {}", options.states.join(",")));
+        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
+        report.note(format!("state filter: {}", codes.join(",")));
     }
 }
 

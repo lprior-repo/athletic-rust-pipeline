@@ -3,6 +3,7 @@
 
 use crate::sources::{CrawlError, CrawlResult};
 use census_domain::model::CompetitionLevel;
+use census_domain::UsJurisdiction;
 
 /// One parsed row of the AthleticLIVE harvest.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,76 +13,10 @@ pub struct MeetRow {
     pub athleticnet_meet_id: Option<String>,
     pub name: String,
     pub city_state: Option<String>,
-    pub state_code: String,
+    pub state_code: UsJurisdiction,
     pub start: String,
     pub end: Option<String>,
     pub has_results: bool,
-}
-
-/// Full US state name -> postal code, as AthleticLIVE publishes them.
-const STATES: [(&str, &str); 51] = [
-    ("Alabama", "AL"),
-    ("Alaska", "AK"),
-    ("Arizona", "AZ"),
-    ("Arkansas", "AR"),
-    ("California", "CA"),
-    ("Colorado", "CO"),
-    ("Connecticut", "CT"),
-    ("Delaware", "DE"),
-    ("District of Columbia", "DC"),
-    ("Florida", "FL"),
-    ("Georgia", "GA"),
-    ("Hawaii", "HI"),
-    ("Idaho", "ID"),
-    ("Illinois", "IL"),
-    ("Indiana", "IN"),
-    ("Iowa", "IA"),
-    ("Kansas", "KS"),
-    ("Kentucky", "KY"),
-    ("Louisiana", "LA"),
-    ("Maine", "ME"),
-    ("Maryland", "MD"),
-    ("Massachusetts", "MA"),
-    ("Michigan", "MI"),
-    ("Minnesota", "MN"),
-    ("Mississippi", "MS"),
-    ("Missouri", "MO"),
-    ("Montana", "MT"),
-    ("Nebraska", "NE"),
-    ("Nevada", "NV"),
-    ("New Hampshire", "NH"),
-    ("New Jersey", "NJ"),
-    ("New Mexico", "NM"),
-    ("New York", "NY"),
-    ("North Carolina", "NC"),
-    ("North Dakota", "ND"),
-    ("Ohio", "OH"),
-    ("Oklahoma", "OK"),
-    ("Oregon", "OR"),
-    ("Pennsylvania", "PA"),
-    ("Rhode Island", "RI"),
-    ("South Carolina", "SC"),
-    ("South Dakota", "SD"),
-    ("Tennessee", "TN"),
-    ("Texas", "TX"),
-    ("Utah", "UT"),
-    ("Vermont", "VT"),
-    ("Virginia", "VA"),
-    ("Washington", "WA"),
-    ("West Virginia", "WV"),
-    ("Wisconsin", "WI"),
-    ("Wyoming", "WY"),
-];
-
-/// Map a full US state name (as published by AthleticLIVE) to its postal code.
-pub fn state_code(name: &str) -> Option<&'static str> {
-    let trimmed = name.trim();
-    STATES
-        .iter()
-        .find(|(full, code)| {
-            full.eq_ignore_ascii_case(trimmed) || code.eq_ignore_ascii_case(trimmed)
-        })
-        .map(|(_, code)| *code)
 }
 
 /// True when a date's year is outside a plausible high-school competition window.
@@ -241,7 +176,11 @@ fn meet_row(
     let tenant = required_field(columns, fields, "tenant", line_number)?;
     let meet_id = required_field(columns, fields, "athleticlive_meet_id", line_number)?;
     let name = required_field(columns, fields, "name", line_number)?;
-    let Some(state_code) = state_code(field(columns, fields, "state").unwrap_or("")) else {
+    // The harvest publishes the full state name ("Illinois"); the lenient parse is exactly this
+    // vocabulary, and a row in a territory the census does not cover is dropped like any other row
+    // with no usable state.
+    let Some(state_code) = UsJurisdiction::parse(field(columns, fields, "state").unwrap_or(""))
+    else {
         return Ok(None);
     };
     let Some(start) = field(columns, fields, "start").and_then(date_prefix) else {
@@ -256,7 +195,7 @@ fn meet_row(
         athleticnet_meet_id: athleticnet_id(columns, fields),
         name,
         city_state: non_empty(columns, fields, "city_state"),
-        state_code: state_code.to_string(),
+        state_code,
         start,
         end,
         has_results: field(columns, fields, "has_results")

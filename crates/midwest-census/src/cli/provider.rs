@@ -5,6 +5,7 @@
 
 use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::sources::{self as providers, AdapterContext, AdapterReport};
 use midwest_census::store::Store;
@@ -19,9 +20,9 @@ pub(super) struct ProviderArgs {
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
     limit: Option<usize>,
-    /// Restrict to these state codes (adapters that span several states).
+    /// Restrict to these jurisdictions (adapters that span several states).
     #[arg(long, value_delimiter = ',')]
-    states: Vec<String>,
+    states: Vec<UsJurisdiction>,
     /// Restrict to these archive years (result-archive adapters only).
     #[arg(long, value_delimiter = ',')]
     seasons: Vec<i16>,

@@ -1,0 +1,23 @@
+[
+ {
+  "school": "Abingdon-Avon",
+  "baseline_email": "bmink@atown276.net",
+  "live": "{\"email\":\"bmink@atown276.net\"}",
+  "live_has": true,
+  "http": "200"
+ },
+ {
+  "school": "Dixon",
+  "baseline_email": "sthorpe@dps170.org",
+  "live": "{\"email\":\"sthorpe@dps170.org\"}",
+  "live_has": true,
+  "http": "200"
+ },
+ {
+  "school": "Downers Grove North",
+  "baseline_email": "jsipple@csd99.org",
+  "live": "{\"email\":\"jsipple@csd99.org\"}",
+  "live_has": true,
+  "http": "200"
+ }
+]

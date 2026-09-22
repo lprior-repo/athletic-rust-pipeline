@@ -10,7 +10,7 @@ use crate::store::Store;
 
 use super::ingest::IngestClient;
 use super::jobs::write_sweep_report;
-use super::wire::{EndpointObservation, SweepReport, SweepRequest};
+use super::wire::ingest::{EndpointObservation, SweepReport, SweepRequest};
 use super::{blocking, job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 
 /// `Sweep`: observe the ingest objects across windows, durably sleeping between them.

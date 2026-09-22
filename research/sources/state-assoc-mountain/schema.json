@@ -1,0 +1,92 @@
+{
+  "lane": "state-assoc-mountain",
+  "jurisdictions": ["AZ", "CO", "ID", "MT", "NM", "UT", "WY"],
+  "generated_from": "samples/** captures listed in samples/CAPTURES.md; entity keys and example values below were read out of those files (AZ/CO/ID/MT examples are the same values quoted in SOURCE_REPORT.md sections 1-4, which were written from the same captures)",
+  "sources": {
+    "AIA": {
+      "home": "https://aiaonline.org/",
+      "keys": {
+        "operator_id": {"example": "206", "where": "https://aiaonline.org/alignments/2026/operators/206", "sample": "samples/aia-alignments.html", "note": "school key for the alignment views; Ash Fork, enrollment 97"},
+        "directory_id": {"example": "58", "where": "https://aiaonline.org/schools/58", "sample": "samples/aia-school-detail-58.html"},
+        "result_story_id": {"example": "18609", "where": "https://www.aiaonline.org/story?id=18609 -> /files/18609/2025-cross-country-division-i-iv-state-championships.pdf", "sample": "samples/azpreps365-results-xc-boys.html"},
+        "result_story_id_tf": {"example": "18666", "where": "https://www.aiaonline.org/story?id=18666", "sample": "samples/azpreps365-results-tf-boys.html"},
+        "schools_search_json": {
+          "example": {"id": 58, "name": "Ash Fork", "full_name": "Ash Fork High School", "mascot": "Spartans", "alignment": {"conference": "1A", "region": "North"}},
+          "where": "GET /schools/search.json?q=", "sample": "samples/aia-schools-search-emptystring.json", "limit_rows": 20
+        },
+        "xc_result_row": {"example": "1  Taylor Drewry  12  Basha  18:05.8  1", "columns": ["Place", "Name", "Grade", "Team", "Time", "Points"], "sample": "samples/aia-state-xc-2025-pdf-page3.txt"},
+        "coach_role_string": {"example": "Robert Kochis Coach Cross Country - Girl's Division II South", "sample": "samples/aia-school-detail-58.html"},
+        "staff_contact": {"example": "Jeff Frazine | Athletic Director | tel: link", "sample": "samples/aia-school-detail-58.html"}
+      }
+    },
+    "CHSAA": {
+      "home": "https://chsaanow.com/",
+      "keys": {
+        "school_code": {"example": 309, "sample": "samples/chsaa-schools-path.html"},
+        "school_slug": {"example": "/schools/academy", "sample": "samples/chsaa-schools-path.html"},
+        "official_name": {"example": "Academy", "sample": "samples/chsaa-school-academy.html"},
+        "maxpreps_schoolid": {"example": "2ffb2809-94ad-4f52-9425-b918046fbeaf", "sample": "samples/chsaa-school-academy.html"},
+        "member_type": {"example": "Member", "distribution": {"Member": 363, "Preliminary": 7, "Activity": 8}, "sample": "samples/chsaa-schools-path.html"},
+        "tf_result_row": {"example": "1 Case Matteson / 12 Legend / 10.74Q 0.5 2", "columns": ["Place", "Name", "Year(grade)", "School", "Mark", "Wind"], "sample": "samples/chsaa-media-tf-state-results-5a-2026.pdf"},
+        "xc_results_index": {"example": "http://results.tfmeetpro.com/Rapid_Results_Timing/2A_Colorado_State_Championships25/", "sample": "samples/co-state-xc-2025-results-index.html"},
+        "staff_directory_note": {"example": "Listings show names and positions only — no email addresses or phone numbers are published.", "sample": "samples/chsaa-schools-staff.html"}
+      }
+    },
+    "IDHSAA": {
+      "home": "https://idhsaa.org/",
+      "keys": {
+        "directory_row": {"example": "Aberdeen High School | 3A | V", "columns": ["School", "Classification", "District"], "sample": "samples/idhsaa-directory.html"},
+        "ad_email_obfuscated": {"example": "document.write(window.atob('...')) -> <a href='mailto:lewisn@aberdeen58.org'>lewisn@aberdeen58.org</a>", "sample": "samples/idhsaa-directory.html"},
+        "ad_name_phones": {"example": "AD Name | AD Phone | AD Email columns present for 174 school rows", "sample": "samples/idhsaa-directory.html"},
+        "athleticnet_meet_id": {"example": "263030", "url": "https://www.athletic.net/CrossCountry/meet/263030/info", "sample": "samples/idhsaa-cross-country.html"},
+        "athleticnet_tf_meet_ids": {"example": ["646835", "646834", "591968", "596626"], "sample": "samples/idhsaa-track-field.html"},
+        "snake_river_timing_meet": {"example": "https://live.snakerivertiming.com/meets/41688", "sample": "samples/idhsaa-cross-country.html"}
+      }
+    },
+    "MHSA": {
+      "home": "https://www.mhsa.org/",
+      "keys": {
+        "school_enrollment_pair": {"example": {"school": "<name from 2024-25-Fall-Enrollment-Alphabetically.pdf>", "enrollment": "<integer>"}, "measured_entries": 184, "measured_enrollment_total": 45205, "sample": "samples/mhsa-enrollment-alpha.pdf"},
+        "class": {"example": "AA / A / B / C", "sample": "samples/mhsa-enrollment-classification.pdf"},
+        "arbiter_org_id": {"example": "4497", "url": "https://live.arbiter.io/org/4497", "sample": "samples/mhsa-schools-directory.html"},
+        "athleticnet_ids": {"example": {"xc_meet": "267780", "team": "22658"}, "sample": "samples/mhsa-xc-postseason.html"},
+        "sport_contact_mailto": {"example": "mailto: kryan@mhsa.org (Kip Ryan, XC contact)", "sample": "samples/mhsa-cross-country.html"}
+      }
+    },
+    "NMAA": {
+      "home": "https://www.nmact.org/",
+      "keys": {
+        "roster_row": {"example": "1. Carson Ames 500 M 11", "columns": ["Name", "Comp#", "Sex", "Year(grade)"], "sample": "samples/nmaa-2026-4a5a-boys-rosters.pdf", "measured_entries": 361},
+        "comp_number": {"example": "500", "sample": "samples/nmaa-2026-4a5a-boys-rosters.pdf"},
+        "xc_result_row": {"example": "5 250 Carlos Ragland JR Pecos 16:23.2 5:17", "columns": ["Place", "TmPl", "Bib", "Name", "Year", "School", "Finals", "Pace"], "sample": "samples/nmaa-2025-cc-results.pdf"},
+        "class_counts": {"example": {"CrossCountry": {"5A": 25, "4A": 29, "3A": 25, "2A": 26, "A": 21, "total": 126}, "TrackField": {"5A": 25, "4A": 29, "3A": 28, "2A": 33, "A": 41, "total": 156}}, "sample": "samples/nmaa-section4-classification.pdf"},
+        "district_listing": {"example": "5A CROSS COUNTRY – 25 SCHOOLS / District 1: Cleveland, Farmington, Piedra Vista, Rio Rancho, Volcano Vista", "sample": "samples/nmaa-section4-classification.pdf"},
+        "live_results_host": {"example": "http://liverunningresults.com/", "sample": "samples/nmaa-track-and-field.html"},
+        "milesplit_onboarding": {"example": "https://support.milesplit.com/s/onboarding/nmaa-coach-onboarding", "sample": "samples/nmaa-track-and-field.html"}
+      }
+    },
+    "UHSAA": {
+      "home": "https://uhsaa.org/",
+      "keys": {
+        "school_directory_tuple": {"example": "?id=Alta&Reg=6&schoolID=1", "fields": {"id": "Alta", "Reg": 6, "schoolID": 1}, "sample": "samples/uhsaa-school-directory.html", "measured_schools": 162},
+        "classification": {"example": "5A", "attribute": "data-category", "distribution": {"2A": 35, "4A": 34, "1A": 30, "5A": 29, "6A": 17, "3A": 17}, "sample": "samples/uhsaa-school-directory.html"},
+        "school_detail": {"example": {"name": "Alta Hawks", "address": "11055 S. 1000 E., Sandy, UT 84092", "district": "Canyons", "classification": "5A", "region": 6, "phone": "801- 826-5600", "fax": "801-826-5609"}, "sample": "samples/uhsaa-school-alta.html"},
+        "ad_entry": {"example": {"role": "Athletic Director", "name": "Jim Langford"}, "sample": "samples/uhsaa-school-alta.html"},
+        "coach_entry": {"example": {"sport": "Boys Cross Country", "coach": "Rebecca Bennion"}, "sample": "samples/uhsaa-school-alta.html"},
+        "coach_email": {"example": "Rebecca.Bennion@canyonsdistrict.org", "sample": "samples/uhsaa-school-alta.html", "measured_mailto_targets_on_alta_page": 25},
+        "participation_matrix": {"example": "School | X per sport column (Boys Cross Country, Girls Cross Country, Boys Track, Girls Track, ...)", "sample": "samples/uhsaa-participation-numbers.pdf", "measured_rows_with_marks": 92, "measured_total_marks": 2109},
+        "runnercard_meet_id": {"example": "1001674", "url": "https://www.runnercard.com/e/runner.Main?meet=1001674", "sample": "samples/uhsaa-track-and-field.html"},
+        "runnercard_results_route": {"example": "http://results.runnercard.com/Results/results.jsp?meetid=1001674", "sample": "samples/runnercard-uhsaa-state-results.html"}
+      }
+    },
+    "WHSAA": {
+      "home": "https://www.whsaa.org/",
+      "keys": {
+        "class_counts": {"example": {"4A": 16, "3A": 16, "2A": 18, "1A": 20, "total": 70}, "sample": "samples/whsaa-2026-28-adms.pdf", "note": "counts only; no school names in the file"},
+        "milesplit_live_meet": {"example": "https://milesplit.live/meets/681838", "label": "MILESPLIT LIVE RESULTS LINK", "sample": "samples/whsaa-track-state.html"},
+        "state_pages": {"example": {"track": "https://www.whsaa.org/track/statetrack.html", "xc": "https://www.whsaa.org/crosscountry/statecrosscountry.html"}, "sample": "samples/whsaa-track-state.html"},
+        "record_pdfs": {"example": ["../archives/track/class.pdf", "../archives/track/overallstate.pdf"], "note": "referenced relatively from the state TF page; /archives/ itself returns 403", "sample": "samples/whsaa-track-state.html"}
+      }
+    }
+  }
+}

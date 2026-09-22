@@ -1,0 +1,354 @@
+{
+  "_meta": {
+    "lane": "state-assoc-westcoast",
+    "jurisdictions": ["CA", "OR", "WA", "AK", "HI", "NV"],
+    "observed_at_utc": "2026-09-22T03:54:03Z..2026-09-22T04:00:17Z",
+    "rule": "Every key below was observed in a file under samples/. Every example value is copied verbatim from that file. Keys that were NOT observed are listed under `not_observed` rather than invented.",
+    "evidence_root": "samples/",
+    "derived_root": "derived/"
+  },
+
+  "CA": {
+    "source_name": "California Interscholastic Federation (CIF) - state office plus 10 sanctioned sections",
+    "school_universe": {
+      "file": "samples/cif-census-2025-26.xlsx",
+      "url": "https://www.cifstate.org/coaches-admin/census/2025-26_census_web.xlsx",
+      "format": "xlsx (OOXML), sheet `Worksheet`, 1609 rows x 345 columns",
+      "identity_keys": {
+        "School Name": "ABLE Charter",
+        "City": "Stockton",
+        "CIF Section": "SAC-Joaquin Section"
+      },
+      "measured": {
+        "data_rows": 1608,
+        "distinct_section_labels_incl_artifact": 11,
+        "schools_by_section": {
+          "Southern Section": 542,
+          "SAC-Joaquin Section": 201,
+          "North Coast Section": 175,
+          "Central Coast Section": 155,
+          "Los Angeles City Section": 152,
+          "Central Section": 139,
+          "San Diego Section": 129,
+          "Northern Section": 67,
+          "Oakland Section": 29,
+          "San Francisco Section": 18,
+          "4570": 1
+        },
+        "note_4570": "One row carries the literal string `4570` in the `CIF Section` column where a section name was expected; it is a data artefact in the published file, not a section."
+      },
+      "enrollment_fields": {
+        "TOTAL School Enrollment BOYS": "167",
+        "TOTAL School Enrollment GIRLS": "154"
+      },
+      "participation_fields": {
+        "pattern": "<Sport> - Boy Participants | <Sport> - Girl Participants | <Sport> - Total Number of Boy Teams | <Sport> - Total Number of Girl Teams",
+        "Cross Country - Boy Participants": "12",
+        "Cross Country - Girl Participants": "4",
+        "Cross Country - Total Number of Boy Teams": "1",
+        "Cross Country - Total Number of Girl Teams": "1",
+        "Track & Field - Boy Participants": "12",
+        "Track & Field - Girl Participants": "8",
+        "Track & Field - Total Number of Boy Teams": "1",
+        "Track & Field - Total Number of Girl Teams": "1"
+      },
+      "adapted_and_unified_variants_also_present": [
+        "Adapted Cross Country - {Boy,Girl} Participants / Total Number of {Boy,Girl} Teams",
+        "Adapted Track & Field - {Boy,Girl} Participants / Total Number of {Boy,Girl} Teams",
+        "Unified Cross Country - {Boy,Girl} Participants / Total Number of {Boy,Girl} Teams",
+        "Unified Track & Field - {Boy,Girl} Participants / Total Number of {Boy,Girl} Teams"
+      ],
+      "measured_participation": {
+        "schools_with_xc_any": 1400,
+        "schools_with_tf_any": 1323,
+        "xc_participants_boys": 28646,
+        "xc_participants_girls": 29191,
+        "tf_participants_boys": 59829,
+        "tf_participants_girls": 47332
+      },
+      "historical_files": {
+        "index": "samples/cifstate-census.html",
+        "url": "https://www.cifstate.org/coaches-admin/census/index",
+        "seasons": ["2012-2013", "2012", "2013-2014", "2014_-_2015", "2015_-_2016", "2016-17", "2017-18", "2018-19", "2019-20", "2021-22", "2022-23", "2023-24", "2024-25", "2025-26"],
+        "formats": [".xls", ".xlsx"],
+        "example": "/coaches-admin/census/2013-2014_CIF_Participation_Census_Public_Data.xlsx"
+      }
+    },
+    "section_school_directory": {
+      "presto_widget_pattern": "https://www.cif<section>home.org/widget/school/directory",
+      "observed_widgets": {
+        "Central Section": {"file": "samples/cifcs-widget-directory.html", "url": "https://www.cifcshome.org/widget/school/directory", "schools_measured": 150, "derived_list": "derived/cif-central-widget-school-names.txt", "first": "Alpaugh", "last": "Yosemite"},
+        "North Coast Section": {"file": "samples/cifncs-widget-directory.html", "url": "https://www.cifncshome.org/widget/school/directory", "schools_measured": 179, "derived_list": "derived/cif-ncs-widget-school-names.txt", "first": "Acalanes", "last": "Ygnacio Valley"},
+        "Los Angeles City Section": {"file": "samples/cif-la-widget-directory.html", "url": "https://www.cif-lahome.org/widget/school/directory", "schools_measured": 173, "derived_list": "derived/cif-la-city-widget-school-names.txt", "first": "Academy of Science and Engineering", "last": "WISH Academy High School"}
+      },
+      "widget_school_name_line_example": "Acalanes",
+      "widget_pagination": "none observed - flat single-response list, no page parameter",
+      "not_enumerable_in_static_html": {
+        "Central Coast Section": "https://www.cifccs.org/schools/ccs_directory - nav-only; 1 school-name string in static HTML, list is JS/iframe rendered",
+        "SAC-Joaquin Section": "https://www.cifsjs.org/member-schools - 0 school-name strings in static HTML",
+        "Southern Section": "https://cifss.org/directory/ - titled `School Directory` but rendered by SearchWP live-search; no list in static HTML"
+      },
+      "sections_without_a_directory_endpoint_found": {
+        "Oakland Section": "cifoakland.org 302s to https://www.ousd.org/oal; no CIF directory endpoint located",
+        "San Francisco Section": "https://www.cifsf.org/schools/high-schools/ (WordPress page, observed, no machine-readable table)"
+      }
+    },
+    "results_archive": {
+      "xc": {"file": "samples/cifstate-xc-past-results.html", "url": "https://www.cifstate.org/sports/cross_country/past_results_records/index", "links_measured": 66, "year_span": "2004-2025", "formats": [".pdf", "html recap pages"], "example": "/sports/cross_country/past_results_records/2013_BoysXC_FinalResults.pdf"},
+      "track_and_field": {"file": "samples/cifstate-tf-past-results.html", "url": "https://www.cifstate.org/sports/track_and_field/past_results_records/index", "links_measured": 36, "year_span": "2005-2026", "note": "2020 and 2021 absent from the year set", "formats": [".pdf", "html recap pages"]}
+    },
+    "officials_platform": {
+      "arbiter": "https://cif.arbitersports.com/front/111820/site",
+      "observed_in": "samples/cifstate-xc-index.html"
+    },
+    "not_observed": ["a CA-section-published Athletic.net link", "a CA-section-published MileSplit link", "a named coach/AD email directory at section level"]
+  },
+
+  "OR": {
+    "source_name": "Oregon School Activities Association (OSAA)",
+    "school_universe": {
+      "file": "samples/osaa-schools-full-members.html",
+      "url": "https://www.osaa.org/schools/full-members",
+      "format": "html list of anchors",
+      "anchor_example": "<a href=\"https://www.osaa.org/schools/347\">Adrian High School</a><br />",
+      "stable_identifier": {"key": "osaa_school_id", "example": "347", "url_template": "https://www.osaa.org/schools/{id}"},
+      "measured": {"distinct_school_ids": 299, "duplicate_ids": 0},
+      "derived_list": "derived/osaa-member-schools.tsv"
+    },
+    "school_detail_fields": {
+      "file": "samples/osaa-school-347.html",
+      "url": "https://www.osaa.org/schools/347",
+      "staff_table": {
+        "columns": ["Position", "Name", "Phone", "Email"],
+        "rows": [
+          ["Superintendent", "Nick Ketterling", "(541) 372-2337 x3713", "nick.ketterling@adriansd.org"],
+          ["Principal", "Bill Wortman", "(541) 372-2335 x3708", "billy.wortman@adriansd.org"],
+          ["Athletic Director", "George Ellsworth", "(541) 372-2335 x3735", "george.ellsworth@adriansd.org"],
+          ["Assistant Athletic Director", "Aimee Esplin", "(541) 372-2335 x3705", "aimee.esplin@adriansd.org"],
+          ["Activities Director", "Michelle Dudley", "(541) 372-2335 x3700", "michelle.dudley@adriansd.org"]
+        ]
+      },
+      "coach_table": {
+        "columns": ["Activity", "Head Coach", "League", "Coop", "Teams"],
+        "rows_sample": [
+          ["Football", "Bill Wortman", "1A[8]-SD4 Special District 4", "", "V, JV"],
+          ["Boys Track & Field", "Reagan Shira", "1A-SD4 Special District 4", "", "V"],
+          ["Girls Track & Field", "Reagan Shira", "1A-SD4 Special District 4", "", "V"],
+          ["Boys Soccer", "Miguel Segura", "3A-SD7 Greater Oregon League Hybrid", "Nyssa / Adrian", "V"]
+        ],
+        "note": "`TBD` is a literal observed value in the Head Coach column."
+      }
+    },
+    "participation_bulk_files": {
+      "index": "samples/osaa-participation.html",
+      "url": "https://www.osaa.org/schools/participation",
+      "files_measured": 43,
+      "year_span": "2008-09..2025-26",
+      "url_pattern": "https://www.osaa.org/docs/participation/{season} {Fall|Winter|Spring}.xlsx",
+      "example_file": "samples/osaa-participation-2025-26-fall.xlsx",
+      "sheet_name": "2025-26 Fall Participation Summ",
+      "columns": ["School", "Classification", "FBL-B", "FBL-G", "FBL-X", "FBL-T", "VBL-B", "VBL-G", "VBL-X", "VBL-T", "BSC-B", "BSC-G", "BSC-X", "BSC-T", "GSC-B", "GSC-G", "GSC-X", "GSC-T", "BXC-B", "BXC-G", "BXC-X", "BXC-T", "GXC-B", "GXC-G", "GXC-X", "GXC-T", "Total"],
+      "column_semantics_observed": {"suffix_B": "boys", "suffix_G": "girls", "suffix_X": "mixed/co-ed", "suffix_T": "total"},
+      "row_example": {"School": "Adrian", "Classification": "1A", "FBL-B": "23", "VBL-G": "19"},
+      "measured": {"schools": 301, "BXC-T_schools_gt0": 238, "BXC-T_total": 7266, "GXC-T_schools_gt0": 214, "GXC-T_total": 5232}
+    },
+    "activity_slugs": {
+      "observed_in": "samples/osaa-home.html",
+      "boys_cross_country": "/activities/bxc",
+      "girls_cross_country": "/activities/gxc",
+      "boys_track_and_field": "/activities/btf",
+      "girls_track_and_field": "/activities/gtf",
+      "meet_schedules_pattern": "/activities/{bxc|gxc}/meet-schedules",
+      "results_pattern": "/activities/bxc-gxc/results"
+    },
+    "athletic_net_links": [
+      {"url": "https://www.athletic.net/cross-country/usa/high-school/oregon", "observed_in": ["samples/osaa-home.html", "samples/osaa-gxc.html", "samples/osaa-school-347.html"]},
+      {"url": "https://www.athletic.net/CrossCountry/Oregon/", "observed_in": ["samples/osaa-gxc.html"]}
+    ],
+    "timing_provider": {"name": "Athletic Timing", "url": "https://live.athletictiming.net/meets/58997", "observed_in": "samples/osaa-xc-results.html"}
+  },
+
+  "WA": {
+    "source_name": "Washington Interscholastic Activities Association (WIAA)",
+    "school_universe": {
+      "file_page1": "samples/wiaa-finalforms-state-schools.html",
+      "file_p2": "samples/wiaa-finalforms-p2.html",
+      "file_plast": "samples/wiaa-finalforms-p51.html",
+      "host": "wiaa.finalforms.com",
+      "request_pattern": "https://wiaa.finalforms.com/state_schools?page={N}&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false",
+      "pagination": {"rows_per_page": 15, "first_page": 1, "last_page": 51, "last_page_rows": 2, "page_count": 51},
+      "measured_member_schools": 752,
+      "derived": "derived/wiaa-finalforms-page1-fields.json",
+      "row_key": {"attribute": "id", "example": "state_school_109587"},
+      "school_url_pattern": "https://wiaa.finalforms.com/state_schools/{id}",
+      "fields": {
+        "student_count": "919",
+        "name": "Aberdeen",
+        "nces_name": "J M Weatherwax High School",
+        "nces_id": "530003000007",
+        "nces_url": "https://nces.ed.gov/ccd/schoolsearch/school_detail.asp?Search=1&ID=530003000007",
+        "state_id": "WA-14005-3476",
+        "grades": "9th - 12th",
+        "district": "Aberdeen School District",
+        "district_url": "/state_districts/18432",
+        "league": "Evergreen 2A/3A",
+        "league_url": "/state_partitions/14498",
+        "classification": "2A",
+        "badge": "Combine Host"
+      },
+      "row_2_example": {"name": "Adna", "student_count": "369", "nces_name": "Adna Middle/High School", "nces_id": "530006000013", "state_id": "WA-21226-2441", "grades": "6th - 12th", "district": "Adna School District", "league": "Central", "classification": "2B"},
+      "other_endpoints": {"map": "/state_schools/map?state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false", "sort_param": "sort=state_schools.full_name", "ajax_select2": "/select2/state_records/state_partitions?athletic_association_abbreviation=WIAA&include_state_counties=true"}
+    },
+    "platforms": {
+      "cms": "rschooltoday (rst7)",
+      "registration_coach_platform": "Arbiter - https://mywiaa.wiaa.com (paths: /ad-center, /coaches, /finalforms), https://arbiter.io/",
+      "state_tournament_brackets": "https://www.wpanetwork.com/wiaa/brackets/tournament.php (xajax bracket index, team brackets only)"
+    },
+    "athletic_net_links": [],
+    "milesplit_links": [],
+    "not_observed": ["a WIAA-published third-party timing-provider link", "a WIAA-published named coach or AD directory", "a WIAA per-school XC/TF participation bulk file"]
+  },
+
+  "AK": {
+    "source_name": "Alaska School Activities Association (ASAA)",
+    "school_universe": {
+      "file": "samples/asaa-member-schools.html",
+      "url": "https://asaa.org/about/member-schools/",
+      "format": "html table, id=tablepress-1 (WordPress TablePress plugin)",
+      "columns": ["SCHOOL", "PHONE", "EN", "RG", "CL", "ADDRESS", "CITY", "ZIP", "DISTRICT"],
+      "row_example": ["Akiachak (Moses Peter)", "907-825-3616", "63", "R1", "1A", "PO Box 51189", "Akiachak", "99551", "Yupiit School"],
+      "column_semantics_observed": {"EN": "enrollment (numeric)", "RG": "region", "CL": "classification"},
+      "measured": {
+        "rows_including_header": 218,
+        "member_schools": 217,
+        "duplicate_school_names": 0,
+        "numeric_EN_values": 212,
+        "EN_total": 27635,
+        "by_region": {"R1": 109, "R2": 52, "R3": 14, "R4": 8, "R5": 25, "R6": 9},
+        "by_class": {"1A": 152, "2A": 28, "3A": 15, "4A": 19, "3A/4A": 2, "4/A": 1}
+      },
+      "derived_table": "derived/asaa-member-schools.tsv",
+      "public_api": {"endpoint": "https://asaa.org/wp-json/wp/v2/pages/19", "observed_in": "samples/asaa-member-schools.html", "note": "WordPress REST API page id 19 = the member-schools page"}
+    },
+    "activity_slugs": {
+      "cross_country": "/activities/cross-country-running/",
+      "track_and_field": "/activities/track-field/"
+    },
+    "result_formats": {
+      "xc_2025_pdfs_measured": 12,
+      "xc_pdf_examples": [
+        "https://asaa.org/wp-content/uploads/2025-XCR-DI-ASAA-State-Championship-Results-.pdf",
+        "https://asaa.org/wp-content/uploads/2025-XCR-DI-Girls-ASAA-State-Championship-Results-.pdf",
+        "https://asaa.org/wp-content/uploads/2025-XCR-DII-Team-ASAA-State-Championship-Results-.pdf"
+      ],
+      "tf_pdf_examples": [
+        "https://asaa.org/wp-content/uploads/ASAA-Division-I-State-Championship-Results-Track-Field-Meet.pdf",
+        "https://asaa.org/wp-content/uploads/ASAA-Division-II-State-Championship-Team-Scores-Track-Field-Meet.pdf",
+        "https://asaa.org/wp-content/uploads/ASAA-Adaptive-Unified-State-Championship-Results-Track-Field-Meet-1.pdf"
+      ]
+    },
+    "timing_provider": {"name": "RaceResult", "url": "http://my.raceresult.com/363555/", "label_published": "Live Results Link"},
+    "athletic_net_links": [{"url": "https://www.athletic.net/team/22622/track-and-field-outdoor/2025", "anchor_text": "Visit Athletic.net to view results", "observed_in": "samples/asaa-track-field.html", "note": "team-scoped Athletic.net page, not a state landing page"}],
+    "not_observed": ["an ASAA named coach/AD directory with contact fields", "a MileSplit link published by ASAA"]
+  },
+
+  "HI": {
+    "source_name": "Hawaii High School Athletic Association (HHSAA)",
+    "school_universe": {
+      "format": "league pages listing anchors to /schools/<slug>",
+      "league_index": "samples/hhsaa-schools.html",
+      "leagues": {"BIIF": 23, "ILH": 20, "KIF": 8, "MIL": 13, "OIA": 31},
+      "measured_member_schools": 95,
+      "leagues_sum_exceeds_total": false,
+      "league_meaning": "BIIF=Big Island, ILH=Interscholastic League of Honolulu, KIF=Kauai, MIL=Maui, OIA=Oahu Interscholastic Association",
+      "slug_example": "hilo_high_school",
+      "school_url_template": "https://www.hhsaa.org/schools/{slug}",
+      "card_markup_example": "<a href=\"/schools/hilo_high_school\" class=\"flex flex-col items-center text-center\"> <img src=\"/assets/content/schools/hilo_high_school/BIIF=Hilo-thumb.png?1744327451\" alt=\"\" class=\"h-[60px] object-contain\"> <h4 class=\"text-[15px] leading-[1.2] font-normal text-black\">Hilo High School</h4> </a>",
+      "derived": "derived/hhsaa-schools-by-league.json",
+      "cms": "Imagine CMS (imagine-cms-toolbar observed in page source)"
+    },
+    "result_formats": {
+      "tf_2026": {
+        "milesplit": "https://hi.milesplit.com/meets/730986-hhsaa-championship-2026/results/1304674?type=raw",
+        "athletic_net_live": "https://live.athletic.net/meets/58854",
+        "pdfs": ["/assets/content/sports/track_field/tournament/2026/HHSAA-Championship-Meet-Program.pdf", "/assets/content/sports/track_field/tournament/2026/HHSAA-Championship-Performance-List.pdf", "/assets/content/sports/track_field/tournament/2026/hawaii_2026_boys_track_top35.pdf", "/assets/content/sports/track_field/tournament/2026/hawaii_2026_girls_track_top35.pdf", "/assets/content/sports/track_field/tournament/2026/2026-HHSAA-Track-and-Field-Coaches-Packet--v4-28-2026.pdf"],
+        "google_sheets": ["https://docs.google.com/spreadsheets/d/1UiOX9VJry4oNRpoJCHb1WxeAD9azvg2bh2jM_c8vjik/edit?usp=sharing", "https://docs.google.com/spreadsheets/d/1hpvfwDoRjE_sZlinlEfA03144cVfirS6qmPNWFoWOHo/edit?usp=sharing", "https://docs.google.com/spreadsheets/d/1ue88lrNAXpCqrTOfTtJYrI2tljOebNDHXGhlEdA2J5s/edit?usp=sharing"],
+        "rss": "https://hhsaa.org/rss/9939/Schedule%20&amp;%20Results"
+      },
+      "xc_2026": {
+        "rss_pair": ["https://hhsaa.org/rss/10085/Schedule%20&amp;%20Results", "https://hhsaa.org/rss/10085/2026%20Honolulu%20Marathon%20Cross%20Country%20State%20Championships%20Presented%20by%20Hawaii%20Army%20National%20Guard%20News%20Feed"],
+        "google_sheets": ["https://docs.google.com/spreadsheets/d/1UiOX9VJry4oNRpoJCHb1WxeAD9azvg2bh2jM_c8vjik/edit?usp=sharing"],
+        "note": "the XC tournament page carried no direct PDF result link at capture time; results are surfaced through the RSS feeds"
+      }
+    },
+    "athletic_net_links": [{"url": "https://live.athletic.net/meets/58854", "anchor_text": "HHSAA Live Results", "observed_in": "samples/hhsaa-tf-tournament-2026.html"}],
+    "milesplit_links": [{"url": "https://hi.milesplit.com/meets/730986-hhsaa-championship-2026/results/1304674?type=raw", "anchor_text": "HHSAA Championships Final Results", "observed_in": "samples/hhsaa-tf-tournament-2026.html"}],
+    "not_observed": ["an HHSAA named coach/AD directory with contact fields", "an HHSAA school-count field on the league pages"]
+  },
+
+  "NV": {
+    "source_name": "Nevada Interscholastic Activities Association (NIAA)",
+    "domain_correction": {
+      "wrong_host": "niaa.org",
+      "observed": "samples/robots-niaa.txt (301) and samples/robots-niaa-follow.txt (200, 198356 bytes of HTML titled `Alumni | INROADS`, canonical https://inroads.org/alumni/)",
+      "correct_host": "niaa.com"
+    },
+    "school_universe": {
+      "file_page1": "samples/niaa-finalforms-state-schools.html",
+      "file_plast": "samples/niaa-finalforms-p9.html",
+      "host": "niaa.finalforms.com",
+      "request_pattern": "https://niaa.finalforms.com/state_schools?page={N}&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false",
+      "pagination": {"rows_per_page": 15, "last_page": 9, "last_page_rows": 7, "page_count": 9},
+      "stated_total_in_page_text": "127 Records",
+      "measured_member_schools": 127,
+      "measured_check": "8*15 + 7 = 127",
+      "derived": "derived/niaa-finalforms-page1-fields.json",
+      "fields": {
+        "student_count": "689",
+        "name": "Adelson School",
+        "nces_name": "THE DR. MIRIAM AND SHELDON G. ADELSON SCHOOL",
+        "nces_id": "00847227",
+        "nces_url": "https://nces.ed.gov/surveys/pss/privateschoolsearch/school_detail.asp?Search=1&ID=00847227",
+        "grades": "PPPK - 12th",
+        "badge": "Non-public School"
+      },
+      "row_2_example": {"name": "American Heritage", "student_count": "--", "nces_name": "AMERICAN HERITAGE ACADEMY", "grades": "PPK - 12th", "badge": "Non-public School"},
+      "field_variance_note": "NV rows carry no State ID; some rows use the literal string `--` in the student_count cell, and private schools link the NCES private-school search (surveys/pss) rather than the CCD search (ccd) used by WA."
+    },
+    "other_endpoints": {
+      "members_landing": "https://www.niaa.com/members/Landing",
+      "members_portal": "https://members.niaa.org/",
+      "officials": "http://highschoolofficials.com/",
+      "xc_slug": "/sports/xc",
+      "xc_archive": "/sports/xc/archive",
+      "track_slug": "/sports/track",
+      "coaches": "/coaches/Landing",
+      "legacy_host": "https://niaa.prestosports.com/sports/xc/2020-21/Landing"
+    },
+    "result_formats": {
+      "archive_examples": ["/sports/xc/2010-11/files/2A_Boys.pdf", "/sports/xc/2010-11/files/4A_Girls.pdf", "/sports/xc/2011-12/files/2011_4A_Sunrise_BXC_Individual_Results.mht", "/sports/xc/2011-12/files/2011_4A_Sunrise_BXC_Team_Scores.mht", "/sports/xc/2010-11/files/SR_Boys.htm"],
+      "note": "archived results are a mixed bag of .pdf, legacy .mht (MIME HTML) and .htm; early seasons are per-division (2A/3A/4A) and per-region (Sunrise/Sunset/Northern/Southern)"
+    },
+    "timing_provider": null,
+    "timing_provider_status": "NOT OBSERVED - /sports/track and /coaches/Landing returned HTTP 202 with a zero-byte body (PrestoSports bot challenge) on both attempts",
+    "athletic_net_links": [],
+    "milesplit_links": [],
+    "not_observed": ["a NIAA-published third-party timing provider", "a NIAA-published named coach/AD directory", "a NIAA-published Athletic.net or MileSplit link"]
+  },
+
+  "cross_source_join_keys": {
+    "nces_id": {"observed_in": ["WA (samples/wiaa-finalforms-state-schools.html)", "NV (samples/niaa-finalforms-state-schools.html)"], "example": "530003000007", "note": "12-digit CCD id for public schools; 8-digit PSS id for NV private schools"},
+    "state_id": {"observed_in": ["WA"], "example": "WA-14005-3476"},
+    "state_association_school_id": {"observed_in": ["OR (osaa_school_id=347)"], "note": "WA/NV use FinalForms numeric ids (109587 / 73153) which are NOT the same namespace as NCES"},
+    "athletic_net_team_id": {"observed_in": ["AK (team/22622)"], "example": "22622"},
+    "athletic_net_meet_id": {"observed_in": ["HI (live.athletic.net/meets/58854)"], "example": "58854"},
+    "milesplit_meet_id": {"observed_in": ["HI (hi.milesplit.com/meets/730986-.../results/1304674)"], "example": "730986", "result_id_example": "1304674"},
+    "coop_note": "OSAA school pages expose a `Coop` column naming the partner school(s) for a combined program, e.g. `Nyssa / Adrian` - relevant when reconciling shared XC/TF squads."
+  },
+
+  "not_observed_anywhere_in_lane": [
+    "a published API (JSON/REST) for school enumeration at any of the six associations, other than the ASAA WordPress REST API for page content",
+    "a published per-school Track & Field / Cross Country participation file for WA, AK, HI or NV (only CA and OR publish one)",
+    "a single national or multi-state directory published by any of these six associations"
+  ]
+}

@@ -38,6 +38,7 @@
 
 use crate::net::FetchOptions;
 use crate::sources::AdapterContext;
+use census_domain::UsJurisdiction;
 
 /// Host serving the WIAA school directory.
 pub const HOST: &str = "https://schools.wiaawi.org";
@@ -63,8 +64,8 @@ pub struct Options {
     pub refresh: bool,
     /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// Restrict to these state codes when the provider spans several states.
-    pub states: Vec<String>,
+    /// Restrict to these jurisdictions when the provider spans several states.
+    pub states: Vec<UsJurisdiction>,
     /// School names to resolve when the provider has no bulk index.
     pub school_names: Vec<String>,
 }

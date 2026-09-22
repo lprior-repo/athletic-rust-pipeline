@@ -3,6 +3,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
 };
+use census_domain::UsJurisdiction;
 
 use super::wire::KshsaaRecord;
 
@@ -17,7 +18,7 @@ pub fn parse_school(
         return None;
     }
     let normalized = normalize_name(name);
-    let (mut school, id) = CanonicalSchool::new("KS", name, &normalized);
+    let (mut school, id) = CanonicalSchool::new(UsJurisdiction::Kansas, name, &normalized);
     school.city = nonempty(&record.mailing_city);
     school.association = Some("kshsaa".into());
     school.classification = record.class.as_ref().and_then(|v| nonempty(v));

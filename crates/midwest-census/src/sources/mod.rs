@@ -76,11 +76,19 @@ pub mod mshsl;
 pub mod ohsaa;
 pub mod plain_names;
 pub mod raceday;
+pub mod registry;
 pub mod result_file;
 pub mod wayzata;
 pub mod wiaa;
 pub mod wiaa_results;
 pub mod xc;
+
+// The source capability registry (§10/§11): what each adapter can be asked for, what a request to it
+// costs its origin, and the bulk-meet-first ordering a plan starts from.
+pub use registry::{
+    bulk_first, descriptor, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
+    REGISTRY,
+};
 
 use crate::net::{FetchOptions, Fetcher};
 use crate::store::{Store, Table};

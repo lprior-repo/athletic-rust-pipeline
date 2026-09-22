@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::UsJurisdiction;
 
 /// Trimmed fixture: 5 real KSHSAA records extracted from the full directory capture.
 ///
@@ -26,7 +27,7 @@ fn parses_school_from_record() {
         parse_school(record, "https://example.com/api", "2026-09-20").expect("Abilene has a name");
 
     assert_eq!(school.name, "Abilene HS");
-    assert_eq!(school.state.as_deref(), Some("KS"));
+    assert_eq!(school.state, Some(UsJurisdiction::Kansas));
     assert_eq!(school.association.as_deref(), Some("kshsaa"));
     assert_eq!(school.classification.as_deref(), Some("4A"));
     assert_eq!(school.enrollment, Some(467));
@@ -55,7 +56,7 @@ fn parses_school_from_record() {
 
     // The school id is deterministic from state + normalized name.
     let normalized = normalize_name("Abilene HS");
-    let expected_id = CanonicalSchool::mint("KS", "Abilene HS", &normalized);
+    let expected_id = CanonicalSchool::mint(UsJurisdiction::Kansas, "Abilene HS", &normalized);
     assert_eq!(id, expected_id);
 }
 

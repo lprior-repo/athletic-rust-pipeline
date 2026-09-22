@@ -76,7 +76,7 @@ impl<'a> Ctx<'a> {
         let Some(meet) = meet_for(
             row.meet_id,
             bio,
-            self.target.state.as_deref(),
+            self.target.state,
             self.source,
             self.observed_on,
             self.accumulated,
@@ -119,7 +119,7 @@ impl<'a> Ctx<'a> {
         let Some(meet) = meet_for(
             row.meet_id,
             bio,
-            self.target.state.as_deref(),
+            self.target.state,
             self.source,
             self.observed_on,
             self.accumulated,

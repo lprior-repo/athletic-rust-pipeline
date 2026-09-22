@@ -1,4 +1,5 @@
-//! Collection orchestration: state → teams → rosters → canonical entities, resumable at every step.
+//! Collection orchestration: jurisdiction → teams → rosters → canonical entities, resumable at
+//! every step.
 //!
 //! Resume model: the entity logs are append-only and the journal records each completed unit of work
 //! (`<state>:<team_id>`). A run that is interrupted — or an operator who stops one deliberately —
@@ -12,20 +13,23 @@
 //! the run report and the merged snapshots. This file holds the options, the progress and report
 //! types, and the journal phase keys the three share.
 
-use crate::sources::milesplit;
 use census_domain::model::SchoolYear;
-use serde::Serialize;
+use census_domain::UsJurisdiction;
+use serde::{Deserialize, Serialize};
 
 mod aggregate;
+mod identity;
 mod scope;
 mod sweep;
 
 pub use aggregate::consolidate;
+pub use identity::{Revision, WorkflowIdentity};
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 
 #[derive(Debug, Clone)]
 pub struct CollectOptions {
-    pub states: Vec<String>,
+    /// The jurisdictions this walk covers, in the caller's order.
+    pub jurisdictions: Vec<UsJurisdiction>,
     pub limit_per_state: Option<usize>,
     pub concurrency: usize,
     /// How many state hosts to walk at once. Each host is still limited to one request at a time by
@@ -39,10 +43,7 @@ pub struct CollectOptions {
 impl Default for CollectOptions {
     fn default() -> Self {
         Self {
-            states: milesplit::SITES
-                .iter()
-                .map(|site| site.state.to_string())
-                .collect(),
+            jurisdictions: UsJurisdiction::ALL.to_vec(),
             limit_per_state: None,
             concurrency: 4,
             state_concurrency: 4,
@@ -53,9 +54,12 @@ impl Default for CollectOptions {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateProgress {
-    pub state: String,
+    /// The jurisdiction this row summarizes; serializes as its USPS code under the historic
+    /// `state` key, so stored reports keep their shape while the type stays validated.
+    #[serde(rename = "state")]
+    pub jurisdiction: UsJurisdiction,
     pub teams: usize,
     pub rosters_done: usize,
     pub rosters_skipped: usize,
@@ -80,12 +84,18 @@ pub struct CollectReport {
     pub elapsed_seconds: f64,
 }
 
-/// Team index phase key.
-fn teams_phase(state: &str) -> String {
-    format!("milesplit_teams_{}", state.to_ascii_lowercase())
+/// Team index phase key: `milesplit_teams_wi`.
+fn teams_phase(jurisdiction: UsJurisdiction) -> String {
+    format!(
+        "milesplit_teams_{}",
+        jurisdiction.code().to_ascii_lowercase()
+    )
 }
 
-/// Roster phase key.
-fn rosters_phase(state: &str) -> String {
-    format!("milesplit_rosters_{}", state.to_ascii_lowercase())
+/// Roster phase key: `milesplit_rosters_wi`.
+fn rosters_phase(jurisdiction: UsJurisdiction) -> String {
+    format!(
+        "milesplit_rosters_{}",
+        jurisdiction.code().to_ascii_lowercase()
+    )
 }

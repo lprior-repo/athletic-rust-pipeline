@@ -1,13 +1,21 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
+use census_domain::UsJurisdiction;
+use restate_sdk::prelude::{HandlerError, Json, RunRetryPolicy, TerminalError};
 use serde_json::Value;
 
+use crate::census::{self, CollectOptions, StateProgress};
+use crate::net::Fetcher;
 use crate::report::{self, ReportError, ReportResult, Scope};
+use crate::sources::CrawlError;
+use crate::spawn::Spawner;
 use crate::store::{Store, StoreError, StoreResult, Table};
 use crate::{bests, workbook};
 
-use super::wire::{BestsReply, ConsolidatedTable, ReportReply, SweepReport, WorkbookReply};
-use super::{cohort_label, MAX_ROWS_PER_REQUEST};
+use super::wire::ingest::SweepReport;
+use super::wire::{BestsReply, ConsolidatedTable, ReportReply, StageOutcome, WorkbookReply};
+use super::{blocking, cohort_label, job_error, JobError, MAX_ROWS_PER_REQUEST};
 
 /// Append observations for one table. Every row must carry its canonical `id`; that is what the
 /// store keys the observation by.
@@ -109,4 +117,82 @@ pub(super) fn write_sweep_report(
         source,
     })?;
     Ok(path)
+}
+
+// ------------------------------------------------------- jurisdiction census stages
+
+/// The team-index stage: enumerate one jurisdiction's teams and report how many the index lists.
+///
+/// The index itself stays where `collect_state_teams` put it — the store's observations and the
+/// fetch cache — because the roster stage re-reads it. Returning the count rather than the refs is
+/// what keeps the journal entry small on a state with thousands of teams.
+pub(super) async fn teams_stage(
+    store: Arc<Store>,
+    fetcher: Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    refresh: bool,
+    at: String,
+) -> Result<Json<StageOutcome>, HandlerError> {
+    let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, refresh)
+        .await
+        .map_err(collect_error)?;
+    Ok(Json(StageOutcome {
+        records: teams.len(),
+        at,
+    }))
+}
+
+/// The roster stage: walk every roster the jurisdiction's index lists, under one set of collection
+/// options. This is the stage the cohort counts come from, so its outcome is recorded whole.
+pub(super) async fn rosters_stage(
+    store: Arc<Store>,
+    fetcher: Arc<Fetcher>,
+    options: CollectOptions,
+    jurisdiction: UsJurisdiction,
+) -> Result<Json<StateProgress>, HandlerError> {
+    let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, false)
+        .await
+        .map_err(collect_error)?;
+    let progress = census::collect_state_rosters(&fetcher, &store, &teams, &options, jurisdiction)
+        .await
+        .map_err(collect_error)?;
+    Ok(Json(progress))
+}
+
+/// The consolidate stage: merge this jurisdiction's append observations into the snapshots the
+/// reports read. It runs through the shell's region like every other blocking job, so an invocation
+/// aborted mid-merge leaves the work owned by the region.
+pub(super) async fn consolidate_stage(
+    store: Arc<Store>,
+    region: Arc<Spawner>,
+) -> Result<Json<Vec<ConsolidatedTable>>, HandlerError> {
+    blocking(region, move || consolidate_tables(&store, &Table::ALL))
+        .await
+        .map_err(job_error)
+        .map(Json)
+}
+
+/// Classify a collection failure for retry. The store keeps its own classification, an invariant
+/// violation is terminal because replaying it cannot restore one, and everything else — a fetch, a
+/// schema mismatch, a poisoned page — is what a bounded retry is for.
+fn collect_error(error: CrawlError) -> JobError {
+    match error {
+        CrawlError::Store(source) => JobError::from(source),
+        CrawlError::Invariant { detail } => JobError::Terminal { message: detail },
+        other => JobError::Transient {
+            message: other.to_string(),
+        },
+    }
+}
+
+/// One attempt per `run` over a fetch-bearing stage: the fetcher owns the three attempts ADR-002
+/// allows per external operation, and a retrying `run` around a fetch would multiply them.
+pub(super) fn no_run_retry() -> RunRetryPolicy {
+    RunRetryPolicy::new().max_attempts(1)
+}
+
+/// A stage that should have completed has no recorded outcome: a bug in the stage sequence, not a
+/// source condition, so it is terminal.
+pub(super) fn invariant(message: &str) -> HandlerError {
+    TerminalError::new(format!("jurisdiction census invariant: {message}")).into()
 }

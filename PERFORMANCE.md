@@ -26,44 +26,24 @@ across them.
 ### 1.1 Debt baseline — `tools/quality-baseline.json`
 
 Strict clippy, measured on source targets (`--lib --bins --examples`), counted per crate and lint
-(a lint absent from the map is zero, which is how the ratchet compares it — see §5):
-
-| Lint | `athletic_rust_pipeline` (root) | `midwest_census` |
-|---|---:|---:|
-| `clippy::arithmetic_side_effects` | 36 | 64 |
-| `clippy::as_conversions` | 10 | 7 |
-| `clippy::expect_used` | 0 | 0 |
-| `clippy::indexing_slicing` | 2 | 4 |
-| `clippy::let_underscore_must_use` | 1 | 0 |
-| `clippy::string_slice` | 2 | 1 |
-| `clippy::unwrap_used` | 0 | 0 |
-| `clippy::explicit_counter_loop` | 0 | 0 |
+(a lint absent from the map is zero, which is how the ratchet compares it — see §5). As read on
+2026-09-21, the clippy map is **empty**: `tools/quality-baseline.json` carries `"clippy": {}`, i.e.
+zero strict-lint diagnostics in both scanned crates, so the per-lint table this section used to
+carry has burned down. Regenerate it with `tools/gate.sh --update-baseline` after any change.
 
 Production scan (`cargo xtask scan`; "production-reachable" = before the first `#[cfg(test)]` in a
-file, test files excluded):
+file, test files excluded), as recorded in the same baseline file:
 
 | Metric | root (`athletic-rust-pipeline`) | census (`midwest-census`) |
 |---|---:|---:|
-| `production_lines` | 34,308 | 22,912 |
-| `files` | 238 | 125 |
-| `unsafe` | 0 | 0 |
-| `unwrap` | 0 | 0 |
-| `expect` | 0 | 0 |
-| `indexing` | 0 | 0 |
-| `as_cast` | 0 | 7 |
+| `production_lines` | 36,656 | 24,039 |
+| `files` | 305 | 160 |
+| `unsafe`, `unwrap`, `expect`, `indexing`, `as_cast` | 0 | 0 |
 | `assert_family`, `panic`, `todo`, `dbg`, `unreachable` | 0 | 0 |
 
-Structure, workspace-wide: **22** files over 300 lines, **0** functions over 60 logical lines,
-**551** functions over 25 logical lines. Hot-path files currently on the oversize list:
-`src/xlsx/parser/rows.rs` (331), `src/workbook_ingest/guards.rs` (322),
-`src/workbook_ingest/stream.rs` (310), `crates/midwest-census/src/bootstrap.rs` (384),
-`crates/midwest-census/src/sources/coach_contacts.rs` (553),
-`crates/midwest-census/src/sources/compiled.rs` (579),
-`crates/midwest-census/src/sources/ks.rs` (578),
-`crates/midwest-census/src/sources/milesplit.rs` (610),
-`crates/midwest-census/src/sources/raceday.rs` (327),
-`crates/midwest-census/src/sources/xc.rs` (551). Phase 2 of the hardening program is scheduled to split
-them; until then any hot-path edit has to fit inside the size budget or shrink it.
+Structure, workspace-wide: **0** files over 300 lines, **0** functions over 60 logical lines, **549**
+functions over 25 logical lines. `cargo xtask scan` reports the offending paths when the first of
+those stops being zero.
 
 ### 1.2 Program baselines — `docs/HARDENING-PROGRAM.md`
 
@@ -76,7 +56,7 @@ them; until then any hot-path edit has to fit inside the size budget or shrink i
 | Async inventory (§2.3) | `tokio::spawn` 0 census / 4 root; `spawn_blocking` 2/2; `buffer_unordered` 4/0; async fns with >3 `.await` "several"/"many"; tokio-console and OTLP absent; `tokio::time::pause`, loom, shuttle, turmoil absent |
 | Determinism evidence (§1) | rebuild reproduced 6 of 7 JSONL snapshots byte-identically; `coaches.jsonl` differs only in 917 withheld rows; the published workbook had 0 of 459 published numbers missing |
 | Build profile (§1, verified in `Cargo.toml`) | release: `lto = "thin"`, `codegen-units = 1`, `strip` |
-| Absent (§2.5) | no CI, no `benches/`, no criterion/divan, no fuzz targets |
+| Absent (§2.5) — *as measured at commit `4e5b828`* | no CI, no `benches/`, no criterion/divan, no fuzz targets. **Superseded since 2026-09-21:** CI (`.github/workflows/gate.yml`), criterion benches (`benches/`, `crates/midwest-census/benches/core.rs`), fuzz targets (`fuzz/`) and Kani/loom models all exist now — see §2 and §6 |
 | Missing workstation tools (§1) | `cargo-fuzz`, `cargo-semver-checks`, `hyperfine` |
 
 The program's Phase 7 target — criterion benches under `benches/`, committed baselines, CI failing on
@@ -85,10 +65,25 @@ The harnesses in §2 are the first half of that work: measurement exists, gating
 
 ## 2. Bench harness
 
-Two clap-based example binaries in `crates/midwest-census/examples/`. They are examples, not
-`benches/` targets: `cargo bench` has no target, and `tools/gate.sh`'s bench-presence lane looks for
-a `benches/` directory and currently prints `no benchmark target exists yet`. Nothing enforces a
-regression threshold on either harness.
+Two kinds of harness exist, both runnable; neither is gated by a threshold.
+
+**Committed criterion targets** (`harness = false`, registered in the manifests). This is the
+measurement the rest of the repository cites:
+
+```bash
+cargo bench -p athletic-rust-pipeline --bench artifact_store    # root ArtifactStore: put_bytes/put_source_batch/get_bytes
+cargo bench -p athletic-rust-pipeline --bench blocking_fanout  # Runtime::blocking at cpu_workers 1/8/32
+cargo bench -p athletic-rust-pipeline --bench workbook_export  # WorkbookExport::{new,write,finish}
+cargo bench -p midwest-census --bench core                     # census/parse, census/school_index, census/merge
+```
+
+Each target builds its own dataset and asserts it before reporting a rate — the root workbook bench
+round-trips its synthetic XLSX through `calamine`, the census bench reads its corpus from
+`crates/midwest-census/tests/fixtures/**`, and the census merge group appends to a temporary store —
+so a rate can never describe a corpus that lost rows.
+
+**Example harnesses** (clap-based, whole-pipeline and substrate throughput). They are examples, not
+`benches/` targets: the gate compiles the criterion targets, not these.
 
 Run from the repository root (examples are auto-discovered; the census crate's manifest declares no
 `[[example]]` sections):
@@ -101,6 +96,9 @@ cargo run --release -p midwest-census --example bench_store -- --rows 200000 --b
 `--release` is required for a meaningful number; the workspace's release profile is the one under
 test (`lto = "thin"`, `codegen-units = 1`, `strip = true`). Both harnesses open a `tempfile::TempDir`,
 print `note=…` saying the store root is removed at process exit, and leave nothing behind.
+
+The gate's bench-presence lane runs `cargo bench --workspace --no-run`: it fails if a benchmark
+target does not compile and otherwise only *compiles* (`tools/gate.sh`, `lane_bench_presence`).
 
 ### 2.1 `bench_census` — whole-pipeline throughput
 
@@ -292,26 +290,38 @@ memory is bounded independently of document size.
 ## 4. Allocation and safety policy
 
 **Unsafe.** `#![forbid(unsafe_code)]` is on `src/lib.rs:1`, `src/main.rs:1`, `src/store.rs:1`, and in
-the census crate on `src/lib.rs:25`, `src/main.rs:9`, `src/bin/midwest-serve.rs:10`. The scan counts
+the census crates on `crates/midwest-census/src/lib.rs:27`, `crates/midwest-census/src/main.rs:9`,
+`crates/midwest-census/src/bin/midwest-serve.rs:10`, and `crates/census-domain/src/lib.rs:9`. The scan counts
 0 `unsafe` in both crates, and the gate runs `cargo geiger`. There is no unsafe waiver, and none is
 requested (program §6).
 
-**Lints.** Workspace lints forbid `unsafe_code` and deny `unused_must_use`, `dbg_macro`, `todo`,
-`unimplemented`, `panic_in_result_fn` for every target. The gate's strict lane adds, for source
-targets only, `-D warnings` plus `unwrap_used`, `expect_used`, `panic`, `indexing_slicing`,
-`string_slice`, `get_unwrap`, `arithmetic_side_effects`, `as_conversions`,
-`let_underscore_must_use`, `await_holding_lock`. Existing violations are frozen in the ratchet (§5),
-not waived per site.
+**Lints.** Workspace lints (`Cargo.toml:103-115`) forbid `unsafe_code` and deny `unused_must_use`,
+`dbg_macro`, `todo`, `unimplemented`, `panic_in_result_fn` for every target. The gate's strict lane
+(`tools/gate.sh` `LINT_SET`) adds, for source targets only:
 
-**Panic surface, as measured.** Root: 0 `unwrap`, 0 `expect`, 0 assert-family, 0 panic macros in
-production code. Census: 1 `unwrap`, 75 `expect` (per the program, uniformly startup-invariant
-shapes — regex/static parses), 0 panic macros, 0 production `assert!`-family. The gap is census-only
-and is Phase 1 work.
+```text
+-D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic
+-D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro
+-D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap
+-D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use
+-D clippy::await_holding_lock
+```
 
-**Errors.** The root store returns typed errors (`StoreError::BatchTooLarge`, …). The census store,
-adapters and report path return `anyhow::Result` with `.context(...)` on every fallible step;
-`thiserror` appears only in `net/` (`FetchError`). The program records the missing census error
-taxonomy as a Phase 3 gap. Typed failure at every bound is the pattern in both crates — a limit is
+Existing violations are frozen in the ratchet (§5), not waived per site.
+
+**Panic surface, as measured.** The gate's scan covers exactly two crates — `src` and
+`crates/midwest-census/src`, a deliberately closed set (`xtask/src/scan.rs:47`) — and the current
+baseline is zero in both: 0 `unwrap`, 0 `expect`, 0 panic macros, 0 assert-family, 0 `unsafe`,
+0 `indexing`, 0 `as_cast`, 0 `todo` (`tools/quality-baseline.json`). The earlier census reading of
+1 `unwrap` / 75 `expect` has been burned down to that zero; the ratchet only shrinks, so a
+reappearance fails `tools/gate.sh`. `crates/census-domain` and `xtask` are not scan targets at all; the baseline's `clippy` block is
+`{}` — no lint debt recorded for any crate the gate's strict source lane measures.
+
+**Errors.** The root store returns typed errors (`StoreError::BatchTooLarge`, …). The census crate
+now has typed error enums at its own layer boundaries too — `FetchError` (`net/mod.rs`),
+`CrawlError` (`sources/mod.rs`), `StoreError` (`store/mod.rs`) and the Restate job/service errors
+(`restate_services/mod.rs`) — with `anyhow::Result` and `.context(...)` above them in the CLI and
+orchestration layers. Typed failure at every bound is the pattern in both crates — a limit is
 never enforced with a panic.
 
 **Static dispatch.** The hot APIs are generic, not object-safe: `append_many<T: Serialize>`,
@@ -409,13 +419,16 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
 
 **Not wired.**
 
-- No criterion/divan: there is no `benches/` directory in either crate, and no criterion, flamegraph,
-  pprof or hyperfine reference exists in `src/`, `tools/`, or either `Cargo.toml`. (Program §1 notes
-  `perf` is installed on the workstation; nothing in the repo calls it.)
-- No regression gate: `tools/gate.sh`'s bench-presence lane checks for a `benches/` directory and
-  otherwise prints `no benchmark target exists yet`. The two harnesses in `examples/` are not seen by
-  it, so their numbers are not compared to anything.
-- No CI (program §2.5), so even a wired threshold would not run on its own.
+- Criterion benches exist (`benches/artifact_store.rs`, `benches/blocking_fanout.rs`,
+  `benches/workbook_export.rs`, `crates/midwest-census/benches/core.rs`); there is still no
+  flamegraph, pprof or hyperfine reference in `src/`, `tools/`, or either `Cargo.toml`. (Program §1
+  notes `perf` is installed on the workstation; nothing in the repo calls it.)
+- No regression gate: `tools/gate.sh`'s bench-presence lane runs `cargo bench --workspace --no-run`,
+  which fails only when a benchmark target does not compile. Nothing compares a benchmark number to a
+  threshold, so a slowdown is not caught. The two harnesses in `examples/` are not compiled by that
+  lane at all.
+- CI exists (`.github/workflows/gate.yml` runs `bash tools/gate.sh`), but it inherits the same gap:
+  the gate compiles the benches and does not threshold them.
 - No throughput number is recorded in the repo; the historical 559–627k obs/s figures are explicitly
   out-of-repo in program §2.5.
 - No allocation accounting: no counting allocator, no `try_reserve` policy applied, no peak-RSS
@@ -449,6 +462,6 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
    a per-observation allocation target, then add `try_reserve` at the capped growth points the program
    names (JSONL ingest, parser buffers).
 
-A throughput claim becomes citable only when a `benches/` target exists, the harness numbers move
-into it, and `tools/gate.sh` fails on a regression threshold — that is the acceptance target the
-program already sets for Phase 7.
+A throughput claim becomes citable only when it comes from a committed criterion target or an
+example harness run on the machine in hand, with the corpus size stated beside it, **and** the gate
+fails on a regression threshold — the second half of that is still open (program Phase 7).

@@ -1,8 +1,9 @@
 use super::*;
 use census_domain::model::*;
+use census_domain::UsJurisdiction;
 
 fn school(name: &str) -> CanonicalSchool {
-    CanonicalSchool::new("WI", name, normalize_name(name)).0
+    CanonicalSchool::new(UsJurisdiction::Wisconsin, name, normalize_name(name)).0
 }
 
 #[test]

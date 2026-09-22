@@ -1,0 +1,155 @@
+{
+  "lane": "national-aggregators",
+  "captured_utc_window": ["2026-09-22T03:55:18Z", "2026-09-22T04:10:01Z"],
+  "note": "Observed keys only. Every example value was read from the cited sample file; nothing here is inferred. Keys are grouped by provider. [browser] marks captures taken with managed Chromium because curl is Cloudflare-blocked.",
+  "providers": {
+    "directathletics": {
+      "source_name": "DirectAthletics",
+      "hosts": ["www.directathletics.com"],
+      "identifiers": {
+        "league_url": {"pattern": "/leagues/{sport}/{league_id}.html", "example": "/leagues/track/43.html", "sample": "samples/directathletics-tfrrs/dat-league-track-43-oh.html", "observed": "league 43 = Ohio; league 115 = Wisconsin (data/dat-team-index.csv)"},
+        "team_url": {"pattern": "/teams/{sport}/{team_id}", "example": "/teams/track/42070", "sample": "samples/directathletics-tfrrs/dat-league-track-43-oh.html"},
+        "meet_url": {"pattern": "/results/{sport}/{meet_id}.html", "example": "/results/track/96459.html", "sample": "samples/directathletics-tfrrs/dat-results-index-oh-track.html"},
+        "event_sheet_url": {"pattern": "/results/{sport}/{meet_id}_{sheet_id}.html", "example": "/results/track/74867_4545019.html", "sample": "samples/directathletics-tfrrs/dat-hs-event-sheet-74867_4545019.html"},
+        "meet_handle": {"field": "meet_hnd", "example": "27326", "sample": "samples/directathletics-tfrrs/dat-fusedriver-upcoming.js"},
+        "list_url": {"pattern": "/lists/{sport}/{league_id}_{list_id}.html?year={GRADE}&limit={n}", "example": "/lists/track/1428_5490.html?year=JR&limit=100", "sample": "samples/directathletics-tfrrs/dat-list-track-1428_5490-jr.html"}
+      },
+      "upcoming_index_fields": {
+        "source": "samples/directathletics-tfrrs/dat-fusedriver-upcoming.js",
+        "entries": 946,
+        "keys": ["venue_state", "club", "college", "date_begin", "hs", "jcollege", "jhs", "meet_hnd", "name", "outdoors", "public_registration", "reg_message", "reg_status", "sport"],
+        "examples": {"venue_state": "VA", "name": "2027 Richmond Invitational", "date_begin": "2027-10-01", "meet_hnd": "27326", "sport": "xc", "hs": "0", "college": "1"}
+      },
+      "result_row_fields": {
+        "source": "samples/directathletics-tfrrs/dat-hs-event-sheet-74867_4545019.html",
+        "columns": ["Place", "Overall", "Name", "Year", "Team", "mark", "Score"],
+        "header": {"meet": "MVC Girls Divisional Meet", "date": "May 5, 2022", "venue": "Western Dubuque - Epworth, IA", "event": "Girls High Jump Varsity", "round": "Finals:"},
+        "example_row": {"Place": "1", "Overall": "1", "Name": "Woody, Isabelle", "Year": "SR", "Team": "Iowa City-Liberty High", "mark": "5' 2\"", "Score": "10"}
+      },
+      "results_index_row_fields": {
+        "source": "samples/directathletics-tfrrs/dat-results-index-oh-track.html",
+        "columns": ["col-date", "meetLink", "col-sport", "col-state"],
+        "example_row": {"date": "04/22/2026", "meet": "Mount Union Classic", "sport": "TF", "state": "OH"},
+        "pagination": {"param": "page", "rows_per_page": 100, "observed": "page=2, page=3 links"}
+      }
+    },
+    "tfrrs": {
+      "source_name": "TFRRS (DirectAthletics)",
+      "hosts": ["www.tfrrs.org", "florida.tfrrs.org", "indiana.tfrrs.org", "nh.tfrrs.org", "tf.tfrrs.org", "xc.tfrrs.org"],
+      "high_school_instances": [
+        {"host": "florida.tfrrs.org", "title": "TFRRS | Florida High School Track & Field Rankings and Meet Results", "sample": "samples/directathletics-tfrrs/florida-tfrrs-home.html"},
+        {"host": "indiana.tfrrs.org", "title": "TFRRS | ... (HS performance lists observed)", "sample": "samples/directathletics-tfrrs/indiana-tfrrs-home.html"},
+        {"host": "nh.tfrrs.org", "title": "TFRRS | NHIAA Track & Field Rankings and Meet Results", "sample": "samples/directathletics-tfrrs/nh-tfrrs-home.html"}
+      ],
+      "negative_probes": ["texas.tfrrs.org (curl exit 6, DNS NXDOMAIN)", "ohio.tfrrs.org (curl exit 6)", "california.tfrrs.org (curl exit 6)"],
+      "identifiers": {
+        "athlete_url": {"pattern": "/athletes/{athlete_id}.html", "example": "/athletes/8429704.html", "sample": "samples/directathletics-tfrrs/tfrrs-athlete-8429704.html"},
+        "meet_url": {"pattern": "/results/{meet_id}/{slug}/", "example": "/results/96753/River_States_Conference_Track__Field_Championships/", "sample": "samples/directathletics-tfrrs/tfrrs-result-96753.html"},
+        "event_url": {"pattern": "/results/{meet_id}/{event_id}/{slug}/{Event-Name}", "example": "/results/96753/5981923/River_States_Conference_Track__Field_Championships/Womens-10000-Meters", "sample": "samples/directathletics-tfrrs/tfrrs-event-96753-5981923.html"},
+        "list_url": {"pattern": "/lists/{list_id}/{slug}/{season_year}/{season_letter}", "example": "/lists/5489/HSR_All_School_Performance_List/2026/i (indiana.tfrrs.org)", "sample": "samples/directathletics-tfrrs/indiana-tfrrs-list-5489.html"},
+        "meet_search": {"pattern": "/results_search_page.html?with_states={USPS}&with_sports={xc|tf}&with_year={year}", "example": "/results_search_page.html?with_states=IN&with_sports=xc&with_year=2026", "sample": "samples/directathletics-tfrrs/tfrrs-results-search-in-xc-2026.html"}
+      },
+      "athlete_page_fields": {"source": "samples/directathletics-tfrrs/tfrrs-athlete-8429704.html", "observed": {"name": "EVAN WILLIAMS", "class_year": "SR", "team": "LAWRENCE CENTRAL", "conference_prefix": "IH"}},
+      "performance_list_row_fields": {
+        "source": "samples/directathletics-tfrrs/indiana-tfrrs-list-5489.html",
+        "columns": ["Place", "Athlete", "Year (grade)", "Team", "Mark", "Meet", "Date"],
+        "example_row": {"Place": "5", "Athlete": "Rylan Hainje", "Year": "SR", "Team": "Franklin Central", "Mark": "6.84", "Meet": "Warren Central HSR Qualifier #1", "Date": "Mar 4, 2026"},
+        "grade_filter_values": ["SR", "JR", "SO", "FR", "8", "7", "6"],
+        "page_size_control": ["Top 5", "Top 10", "Top 20", "Top 25", "Top 30", "Top 50", "Top 100", "Top 200", "Top 500"],
+        "distinct_athlete_ids_observed": 1671
+      }
+    },
+    "athleticlive": {
+      "source_name": "AthleticLIVE",
+      "hosts": ["live.athletic.net", "livestatic.athletic.net", "search.athletic.live", "athleticlive.blob.core.windows.net", "*.firebaseio.com (ns=trackmeet-io)", "live.<tenant-domain> (e.g. live.michianatiming.com, results.wayzatatiming.com)"],
+      "identifiers": {
+        "meet_id": {"example": 61710, "sample": "samples/athleticlive/al-rtdb-meet-61710.json"},
+        "meet_id_alt": {"field": "mi", "example": 61710, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "athleticnet_meet_id": {"field": "athleticnet_meet_id", "example": 259955, "sample": "data/athleticlive-midwest-2026-meets-all.csv (row: live_results,55274,259955,...)"},
+        "event_id": {"example": 2254285, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "athlete_id": {"field": "r[].a.i", "example": 44251790, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "athleticnet_athlete_id": {"field": "r[].a.ani", "example": 15728090, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "team_id": {"field": "r[].a.t.i", "example": 1469981, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "result_id": {"field": "r[].i", "example": 34824794, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"},
+        "tenant_slug": {"examples": ["live_results", "athleticlive", "wayzata", "michiana", "iptt"], "sample": "data/athleticlive-tenant-inventory.csv"},
+        "session_id": {"field": "se.i", "example": 103434, "sample": "samples/athleticlive/al-blob-ind-res-2254285.json"}
+      },
+      "es_index_conventions": {"meet_index_pattern": "{tenant}_meet_list", "wildcard": "*_meet_list", "observed_indices": ["live_results_meet_list", "athleticlive_meet_list", "wayzata_meet_list", "aatiming_meet_list", "heros_meet_list"], "sample": "samples/athleticlive/CAPTURES.log (probe lines)"},
+      "meet_doc_fields": {"source": "data/athleticlive-midwest-2026-meet-seeds.csv + samples/athleticlive/al-es-sample-2026.json", "keys": ["tenant", "athleticlive_meet_id", "athleticnet_meet_id", "name", "city_state", "state", "start", "end", "has_results", "sport_flags_tf", "timer_credit"], "example": {"athleticlive_meet_id": 55274, "athleticnet_meet_id": 259955, "name": "4th Annual St. Pius X Knights Chicagoland Cross Country Classic", "city_state": "Lombard, IL", "state": "Illinois", "start": "2025-08-16T04:00:00Z", "has_results": true}},
+      "event_doc_fields": {"source": "samples/athleticlive/al-blob-ind-res-2254285.json", "top_level_keys": ["ab", "ane", "ccl", "dv", "ec", "enu", "es", "fi", "frua", "fruam", "g", "gl", "hy", "i", "ifi", "mi", "mms", "n", "na", "nh", "nu", "peg", "r", "rhn", "rks", "runm", "ry", "sd", "se", "sg", "sk", "sn", "sso", "ua", "un", "us", "xc"], "examples": {"ab": "1600m", "n": "Boys 1600m MITS", "sn": "Boys 1600m (MITS)", "peg": "Distance", "runm": "Finals", "ec": "Individual", "g": "Male", "mi": 61710, "ua": "2026-02-14T16:59:08Z", "us": "http://fatresults.com/nsvii3", "ry": ["3", "5", "7", "8", "9", "10", "11", "12"], "nh": 3, "ane": 52}},
+      "result_row_fields": {"source": "samples/athleticlive/al-blob-ind-res-2254285.json", "r_keys": ["hn", "i", "no", "p", "hl", "ro", "s", "im", "vm", "m", "pt", "cp", "co", "w", "hfli", "hflv", "ith", "iu", "hfav", "gap", "iv", "mps", "a"], "examples": {"p": "1", "s": "4:32.33", "m": "4:40.80", "hn": 1, "ro": 0}},
+      "athlete_fields_in_result_row": {"source": "samples/athleticlive/al-blob-ind-res-2254285.json", "fields": ["i", "n", "fn", "l", "y", "ag", "g", "mi", "ani", "t"], "examples": {"i": 44251790, "n": "Edward Mugisha", "fn": "Edward", "l": "Mugisha", "y": "12", "g": "Male", "ani": 15728090, "t.i": 1469981, "t.n": "Unattached"}},
+      "date_filter_field": {"field": "sdy", "example": "range: {sdy: {gte: \"2025-08-01\"}}", "sample": "samples/athleticlive/al-es-msearch-state-counts.json (query bodies recorded in samples/athleticlive/CAPTURES.log)"},
+      "text_only_fields": [{"field": "lsa", "note": "aggregations rejected: 'Text fields are not optimised ... set fielddata=true on [ls]'", "sample": "samples/athleticlive/al-es-agg-states.json"}]
+    },
+    "runnerspace_dyestat": {
+      "source_name": "RunnerSpace / DyeStat / ResultsCentral",
+      "hosts": ["www.runnerspace.com", "www.dyestat.com", "nxn.runnerspace.com", "nxrnw.runnerspace.com", "nxrhl.runnerspace.com", "resultscentral.runnerspace.com"],
+      "identifiers": {
+        "title_page": {"pattern": "https://{site}/eprofile.php?do=title&title_id={title_id}&event_id={event_id}", "example": "https://nxn.runnerspace.com/eprofile.php?do=title&title_id=187&event_id=13", "sample": "samples/runnerspace-dyestat/rs-nxn-2025-results-title187.html"},
+        "event_id_examples": {"NXN": 13, "NXR Northwest": 248, "NXR Heartland": 300}
+      },
+      "result_row_fields": {"source": "samples/runnerspace-dyestat/rs-nxn-2025-results-title187.html", "columns": ["Place", "grade code", "NAME", "Time", "Team/Club"], "example_rows": [{"Place": "1", "grade": "SR", "name": "Jackson SPENCER", "time": "15:01.1", "team": "Herriman"}, {"Place": "2", "grade": "JR", "name": "Yohanes VAN MEERTEN", "time": "15:03.3", "team": "SW Individuals -6"}, {"Place": "10", "grade": "SO", "name": "Jack MCGOVERN", "time": "15:21.1", "team": "MW Individuals -4"}]},
+      "resultscentral_fields": {"source": "samples/runnerspace-dyestat/rs-resultscentral-home.html", "shape": "news posts `<year> Results - <meet name>` with an outbound 'View Live Results Here' link", "examples": ["2026 Results - Nike South XC Invitational", "2026 Results - Nike Portland XC", "2026 Results - Desert Twilight XC Festival"], "counts_observed": {"year_2026_news_items": 153}}
+    },
+    "maxpreps": {
+      "source_name": "MaxPreps",
+      "hosts": ["www.maxpreps.com"],
+      "identifiers": {
+        "athlete_career_url": {"pattern": "/{state}/{city}/{team}/athletes/{athlete-slug}/?careerid={token}", "example": "/az/surprise/paradise-honors-panthers/athletes/gage-baker/?careerid=9qdc8bm62h599", "sample": "samples/maxpreps/mp-athlete-gage-baker.html"},
+        "team_url": {"pattern": "/{state}/{city}/{team-slug}/{sport}/", "example": "/tx/aledo/aledo-bearcats/track-field/", "sample": "samples/maxpreps/mp-mobile-team-aliedo.html"},
+        "state_sport_url": {"pattern": "/{state}/{sport}/", "example": "/tx/track-field/", "sample": "samples/maxpreps/mp-state-tx-track.html"},
+        "athlete_directory": {"pattern": "/{state}/{sport}/athletes/?page={n}", "example": "/oh/track-field/athletes/", "sample": "samples/maxpreps/mp-oh-track-athletes.html"}
+      },
+      "athlete_page_keys_seen": ["height", "position", "weight"],
+      "grade_fields_found": [],
+      "negative_findings": {"class_of_string_in_career_html": false, "athlete_ids_in_roster_html": false, "sample": "samples/maxpreps/mp-aledo-roster.html"}
+    },
+    "world_athletics": {
+      "source_name": "World Athletics",
+      "endpoint": "https://graphql-prod-4895.edge.aws.worldathletics.org/graphql",
+      "required_headers": {"x-api-key": "da2-q7toieeiobcjxbov4abq3abk5u (public key shipped with the site bundle)", "referer": "https://worldathletics.org/"},
+      "observed_without_headers": {"status": 503, "sample": "samples/world-athletics/wa-graphql-metadata-curl.json"},
+      "queries": {
+        "getAthlete_by_urlSlug": {"args": "urlSlug", "example_result": {"id": 14377384, "iaafId": 252802, "fullName": "Malaika MIHAMBO", "countryCode": "GER", "birthDate": "1994-02-03T00:00:00.000Z", "urlSlug": "malaika-mihambo-14377384", "sexCode": "W"}, "sample": "samples/world-athletics/wa-graphql-athlete-slug.json"},
+        "getAthlete_by_id": {"args": "id", "observed": "returns a placeholder record for every id tried: {id: 7911, fullName: ' ', countryCode: 'FRA', birthDate: null}", "samples": ["samples/world-athletics/wa-graphql-athlete-252802.json", "samples/world-athletics/wa-graphql-athlete-14377384.json", "samples/world-athletics/wa-graphql-athlete-14479487.json"]},
+        "getTrendingAthletes": {"sample": "samples/world-athletics/wa-graphql-trending-full.json", "example": {"athleteIds": [252802], "athletesList": [{"id": 14377384, "firstName": "Malaika", "lastName": "MIHAMBO", "countryCode": "GER", "urlSlug": "malaika-mihambo-14377384"}]}},
+        "searchAthletes": {"args": ["eventId", "searchValue"], "observed": {"eventId": 0, "searchValue": "smith", "result": []}, "sample": "samples/world-athletics/wa-graphql-search-probe.json"}
+      },
+      "athlete_type_fields": {"type": "AthleteNewData", "fields": ["id", "iaafId", "firstName", "lastName", "friendlyName", "fullName", "friendlyNameLetter", "friendlyNameFirst3Letter", "sexCode", "sexName", "countryCode", "countryName", "birthDate", "birthPlace", "birthPlaceCountryName", "sexNameUrlSlug", "countryUrlSlug", "birthPlaceCountryUrlSlug", "birthCountryCode", "primaryMediaId", "primaryMediaEdited", "primaryMedia", "urlSlug", "representativeId", "biography"], "sample": "samples/world-athletics/wa-graphql-athletenewdata.json"},
+      "grade_evidence": "none (no HS grade concept); birthDate present"
+    },
+    "usatf": {
+      "source_name": "USATF",
+      "hosts": ["www.usatf.org", "usatf.org"],
+      "identifiers": {
+        "event_url": {"pattern": "/events/{year}/{slug}", "example": "/events/2026/2026-usatf-national-junior-olympic-track-field-cha", "sample": "samples/usatf-aau/usatf-jo-tf.html"},
+        "sitemap": {"url": "https://www.usatf.org/sitemap.xml", "url_count": 3890, "junior_olympic_url_count": 101, "sample": "samples/usatf-aau/usatf-sitemap-www.xml"}
+      },
+      "outbound_platform_links": [
+        {"target": "athletic.net", "url": "https://www.athletic.net/TrackAndField/meet/644030/register", "meaning": "Athletic.net MeetID 644030 for the 2026 USATF National JO Track & Field Championships", "sample": "samples/usatf-aau/usatf-jo-tf.html"},
+        {"target": "trackscoreboard/finishedresults", "url": "https://finishedresults.trackscoreboard.com/meets/14258/events", "meaning": "live results board for the same meet", "sample": "samples/usatf-aau/usatf-jo-tf.html"},
+        {"target": "sport80", "url": "https://usatf.sport80.com/register/membership?id_add_on=941", "meaning": "JO XC registration path (no results link on the XC event page)", "sample": "samples/usatf-aau/usatf-junior-olympic-xc.html"}
+      ]
+    },
+    "aau": {"source_name": "AAU", "hosts": ["www.aausports.org", "aausports.org", "aautrackandfield.org"], "observed": {"aausports_robots": {"status": 404, "bytes": 0, "sample": "samples/usatf-aau/other-www.aausports.org_robots.txt"}, "sports_track_field": {"status": 403, "bytes": 5787, "sample": "samples/usatf-aau/aau-sports-track.html"}, "redirect_chain": ["aautrackandfield.org -> 301", "aausports.org/track-and-field -> 403"]}, "schema": null},
+    "cross_country_ratings": {
+      "source_name": "Cross Country Ratings",
+      "hosts": ["www.crosscountryratings.com"],
+      "states": ["Iowa", "Nebraska", "Minnesota", "North Dakota", "South Dakota", "Illinois", "Wisconsin", "Missouri", "Kansas"],
+      "identifiers": {
+        "runner_url": {"pattern": "/runner/{runner_id}", "example": "/runner/11669", "sample": "samples/other-databases/ccr-runner.html"},
+        "school_url": {"pattern": "/school/{school_id}", "example": "/school/18", "sample": "samples/other-databases/ccr-runner.html"},
+        "event_url": {"pattern": "/event/{event_id}", "example": "/event/1010", "sample": "samples/other-databases/ccr-runner.html"},
+        "results_index": {"url": "/results", "event_links_observed": 101, "sample": "samples/other-databases/ccr-results.html"},
+        "individuals_index": {"url": "/individuals", "runner_links_observed": 240, "sample": "samples/other-databases/ccr-individuals.html"}
+      },
+      "runner_page_fields": {"source": "samples/other-databases/ccr-runner.html", "observed": {"name": "Kuma Gutema", "grade_word": "Junior", "town": "Sioux City, North", "class_of": "Class of 2028", "season": "2026 Season", "marks": ["14:30.8", "14:53.2", "14:59.2", "15:16.7", "15:21.3", "15:27.1", "15:29.7", "15:33.7"]}}
+    },
+    "screened_rejects": {
+      "ncsa_sports": {"robots": {"status": 200, "bytes": 2673, "sample": "samples/other-databases/other-www.ncsasports.org_robots.txt"}, "reason": "recruiting profiles behind a paywall; no grade/meet-result surface in anonymous pages"},
+      "fieldlevel": {"robots": {"status": 200, "bytes": 110, "sample": "samples/other-databases/other-www.fieldlevel.com_robots.txt"}, "reason": "recruiting profiles; no meet results"},
+      "baumspage": {"robots": {"status": 404, "bytes": 1510, "sample": "samples/other-databases/other-www.baumspage.com_robots.txt"}, "reason": "Ohio-centric timing/results host; belongs to the timing-provider lane"}
+    }
+  }
+}

@@ -2,6 +2,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
     SourceIdentity, SourceNamespace, SourceRef,
 };
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 use super::parse::{SchoolDetail, SchoolListRow};
@@ -57,7 +58,8 @@ pub fn school_entities(
     } else {
         row.name.clone()
     };
-    let (mut school, school_id) = CanonicalSchool::new("MN", &name, normalize_name(&name));
+    let (mut school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Minnesota, &name, normalize_name(&name));
     school.city = row.city.clone();
     school.association = Some(SOURCE_ID.to_string());
     school.enrollment = detail.enrollment;

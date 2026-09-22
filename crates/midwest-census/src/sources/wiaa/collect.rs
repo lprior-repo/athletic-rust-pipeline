@@ -2,6 +2,7 @@
 
 use crate::net::{FetchError, FetchOutcome, FetchStats};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use census_domain::UsJurisdiction;
 use futures::stream::{self, StreamExt};
 use std::collections::{BTreeMap, HashSet};
 
@@ -31,17 +32,12 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     };
     let before = ctx.fetcher.stats().await;
 
-    if !options.states.is_empty()
-        && !options
-            .states
-            .iter()
-            .any(|state| state.eq_ignore_ascii_case("WI"))
-    {
+    if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Wisconsin) {
         let after = ctx.fetcher.stats().await;
         report.requests = after.requests.saturating_sub(before.requests);
+        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
         report.note(format!(
-            "states {:?} do not include WI; this adapter covers Wisconsin only",
-            options.states
+            "states {codes:?} do not include WI; this adapter covers Wisconsin only"
         ));
         return Ok(report);
     }

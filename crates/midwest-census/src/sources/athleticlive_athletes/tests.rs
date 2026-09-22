@@ -6,7 +6,7 @@ const SAMPLE: &str =
 
 fn targets_for() -> Vec<MeetTarget> {
     let mut meet = CanonicalMeet::new(
-        "KS",
+        Some(UsJurisdiction::Kansas),
         "Abilene Invitational",
         "2025-04-25",
         census_domain::model::CompetitionLevel::Invitational,
@@ -18,7 +18,7 @@ fn targets_for() -> Vec<MeetTarget> {
         "73566".to_string(),
     ));
     let meets = vec![meet];
-    meet_targets(&meets, &["KS".to_string()]).targets
+    meet_targets(&meets, &[UsJurisdiction::Kansas]).targets
 }
 
 fn parsed_hits() -> Vec<AthleteHit> {
@@ -122,7 +122,7 @@ fn one_athlete_seen_at_two_meets_stays_one_athlete() {
         meet_id: "meet_a".into(),
         tenant: "reddirt".into(),
         name: "Abilene Invitational".into(),
-        state: "KS".into(),
+        state: UsJurisdiction::Kansas,
         date: "2025-04-25".into(),
     };
     let meet_b = MeetTarget {
@@ -130,7 +130,7 @@ fn one_athlete_seen_at_two_meets_stays_one_athlete() {
         meet_id: "meet_b".into(),
         tenant: "reddirt".into(),
         name: "Abilene Invitational".into(),
-        state: "KS".into(),
+        state: UsJurisdiction::Kansas,
         date: "2025-04-25".into(),
     };
     let by_id: HashMap<u64, &MeetTarget> =
@@ -150,7 +150,7 @@ fn one_athlete_seen_at_two_meets_stays_one_athlete() {
 #[test]
 fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
     let mut meet = CanonicalMeet::new(
-        "KS",
+        Some(UsJurisdiction::Kansas),
         "Abilene Invitational",
         "2025-04-25",
         census_domain::model::CompetitionLevel::Invitational,
@@ -169,7 +169,7 @@ fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
         "73566".to_string(),
     )];
     let other_state = CanonicalMeet::new(
-        "SD",
+        Some(UsJurisdiction::SouthDakota),
         "Dakota XC",
         "2025-10-04",
         census_domain::model::CompetitionLevel::Invitational,
@@ -181,7 +181,7 @@ fn meet_targets_deduplicate_by_athleticlive_id_and_respect_state_filter() {
         },
         "75742".to_string(),
     ));
-    let targets = meet_targets(&[meet, duplicate, other_state], &["KS".to_string()]).targets;
+    let targets = meet_targets(&[meet, duplicate, other_state], &[UsJurisdiction::Kansas]).targets;
     assert_eq!(
         targets.len(),
         1,
@@ -195,7 +195,7 @@ fn implausible_meet_dates_are_skipped_and_counted() {
     // The tenant meet index carries placeholder rows dated in the 2220s. A grade interpreted
     // against such a date would mint a class of 2223, so the meet is refused, not guessed at.
     let mut placeholder = CanonicalMeet::new(
-        "KS",
+        Some(UsJurisdiction::Kansas),
         "Sample Meet",
         "2222-04-15",
         census_domain::model::CompetitionLevel::Invitational,
@@ -207,7 +207,7 @@ fn implausible_meet_dates_are_skipped_and_counted() {
         "31939".to_string(),
     ));
     let mut real = CanonicalMeet::new(
-        "KS",
+        Some(UsJurisdiction::Kansas),
         "Abilene Invitational",
         "2025-04-25",
         census_domain::model::CompetitionLevel::Invitational,
@@ -218,7 +218,7 @@ fn implausible_meet_dates_are_skipped_and_counted() {
         },
         "73566".to_string(),
     ));
-    let selection = meet_targets(&[placeholder, real], &["KS".to_string()]);
+    let selection = meet_targets(&[placeholder, real], &[UsJurisdiction::Kansas]);
     assert_eq!(
         selection.targets.len(),
         1,

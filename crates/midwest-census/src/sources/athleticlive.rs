@@ -22,12 +22,13 @@ use std::path::PathBuf;
 
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalMeet, EvidenceMethod};
+use census_domain::UsJurisdiction;
 
 mod meets;
 mod parse;
 
 pub use meets::build_meets;
-pub use parse::{implausible_year, infer_level, parse_meets_csv, state_code, MeetRow};
+pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
 
 /// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]
@@ -37,8 +38,8 @@ pub struct Options {
     pub limit: Option<usize>,
     pub refresh: bool,
     pub observed_on: String,
-    /// Restrict to these state codes; empty = every state present in the file.
-    pub states: Vec<String>,
+    /// Restrict to these jurisdictions; empty = every state present in the file.
+    pub states: Vec<UsJurisdiction>,
     pub school_names: Vec<String>,
 }
 
@@ -69,11 +70,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let parsed = parse_meets_csv(&body)?;
     report.note(format!("rows read: {}", parsed.len()));
 
-    let wanted: BTreeSet<String> = options
-        .states
-        .iter()
-        .filter_map(|s| state_code(s).map(str::to_string))
-        .collect();
+    let wanted: BTreeSet<UsJurisdiction> = options.states.iter().copied().collect();
     let filtered: Vec<MeetRow> = parsed
         .into_iter()
         .filter(|row| wanted.is_empty() || wanted.contains(&row.state_code))

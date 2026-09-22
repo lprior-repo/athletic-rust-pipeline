@@ -5,6 +5,7 @@ weakened checks. Existing debt is recorded in `tools/quality-baseline.json` and 
 
 ```bash
 tools/gate.sh                     # every lane, then compare the measurements with the baseline
+tools/gate.sh --full              # ... plus the mutation-testing lane (pre-release only, it is slow)
 tools/gate.sh --update-baseline   # rewrite the baseline from current measurements
 tools/gate.sh --update-baseline --allow-increase   # ... accepting a number that grew
 cargo xtask gate                  # the same script, through the developer command
@@ -14,15 +15,20 @@ The script exits `0` on `gate: PASS` and `1` on `gate: FAIL -> <lanes>`; the sum
 lane that failed. Every lane's output is printed as it runs, so a failure is readable without a
 re-run.
 
+The check and strict-clippy lanes run through the pinned nightly with
+`-Zallow-features=portable_simd,try_blocks`. That is the source-policy allowlist: a `#![feature(..)]`
+outside it fails the gate, and on a stable toolchain the two lanes fail on the `-Z` flag rather than
+silently dropping the check.
+
 ## Lanes
 
 | Lane | Command | Fails when |
 | --- | --- | --- |
 | fmt | `cargo fmt --all -- --check` | any file is not rustfmt-clean |
-| check | `cargo check --workspace --all-targets --all-features` | anything does not compile, tests and examples included |
+| check | `cargo -Zallow-features=portable_simd,try_blocks check --workspace --all-targets --all-features` | anything does not compile, tests and examples included |
 | doc | `cargo doc --workspace --all-features --no-deps` | a doc comment breaks `rustdoc` |
 | tests | `cargo nextest run --workspace --all-features`, else `cargo test --workspace --all-features --quiet` | a test fails |
-| strict clippy | `cargo clippy --workspace --lib --bins --examples --all-features -- <LINT_SET>` | (measurement lane, not a pass/fail lane: its tallies feed the ratchet) |
+| strict clippy | `cargo -Zallow-features=portable_simd,try_blocks clippy --workspace --lib --bins --examples --all-features -- <LINT_SET>` | (measurement lane, not a pass/fail lane: its tallies feed the ratchet) |
 | production scan | `cargo xtask scan` | the scan cannot run; the numbers themselves are ratcheted below |
 | domain type integrity | `cargo xtask integrity` | (measurement lane: review candidates, ratcheted in the DDD phase) |
 | domain purity | `cargo xtask domain-purity` | a banned async/I/O package is in the `census-domain` normal tree |
@@ -30,9 +36,19 @@ re-run.
 | debt ratchet | `cargo xtask ratchet` | any metric grew against the baseline |
 | deny | `cargo deny check` | a dependency policy violation (needs `cargo-deny`; a missing tool fails this lane) |
 | audit | `cargo audit --quiet` | an advisory covers a locked crate (prints `SKIP` when `cargo-audit` is absent) |
+| vet | `cargo vet --locked` | a locked crate is neither audited nor exempted in `supply-chain/` (prints `SKIP` when `cargo-vet` is absent) |
 | machete | `cargo machete` | an unused dependency is declared (prints `SKIP` when `cargo-machete` is absent) |
 | geiger | `cargo geiger --workspace --all-features --output-format Json` | unsafe code appears (prints `SKIP` when `cargo-geiger` is absent) |
+| feature powerset | `cargo hack check --workspace --feature-powerset` | a feature combination does not compile (prints `SKIP` when `cargo-hack` is absent) |
 | bench presence | `cargo bench --workspace --no-run` | a benchmark target exists and does not build; with no `benches/` yet it prints why and passes |
+| mutants | `cargo mutants --workspace --in-place` | a mutant survives the test suite (only with `--full`; prints `SKIP` when `cargo-mutants` is absent) |
+
+## Supply chain
+
+`supply-chain/` is the `cargo-vet` ledger: `config.toml` holds the exemptions the tree was
+initialized with, `audits.toml` the audits, `imports.lock` the peer imports. The vet lane runs
+`--locked`, so it answers from that ledger and never fetches new imports mid-gate; a dependency
+added without an exemption or audit fails the lane and names itself.
 
 ## The debt baseline
 

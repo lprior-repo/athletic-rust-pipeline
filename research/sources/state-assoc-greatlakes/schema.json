@@ -1,0 +1,402 @@
+{
+  "generated_on": "2026-09-21",
+  "lane": "research/sources/state-assoc-greatlakes",
+  "jurisdictions": ["IL", "IN", "MI", "OH", "WI"],
+  "method": "Only keys actually observed in a cited capture or report are listed. Each entry carries one real example value and the evidence path it was read from. Where a source's JSON key names were not itemized in the cited report, the entity records an empty key list plus a note instead of guessed names.",
+  "sources": {
+    "ihsa": {
+      "display_name": "IHSA (Illinois High School Association) public JSON API",
+      "hosts": ["https://api.ihsa.org", "https://www.ihsa.org"],
+      "entities": {
+        "school": {
+          "route": "GET /v1/schools",
+          "evidence": "crates/midwest-census/tests/fixtures/ihsa/v1_schools.json (repo fixture, observed_on 2026-09-20); report [13]",
+          "keys": [
+            {"key": "data[].SchoolID", "example": "0101", "evidence": "fixture ihsa/v1_schools.json:4; report [13] (range 0101-7097)"},
+            {"key": "data[].nameFormal", "example": "Abingdon-Avon High School", "evidence": "fixture ihsa/v1_schools.json:5"},
+            {"key": "data[].NameIHSA", "example": "Abingdon (A.-Avon)", "evidence": "fixture ihsa/v1_schools.json:6"},
+            {"key": "data[].Address", "example": "600 W. Martin", "evidence": "fixture ihsa/v1_schools.json:7"},
+            {"key": "data[].POBox", "example": null, "evidence": "fixture ihsa/v1_schools.json:8"},
+            {"key": "data[].State", "example": "IL", "evidence": "fixture ihsa/v1_schools.json:9"},
+            {"key": "data[].Zip", "example": "61410", "evidence": "fixture ihsa/v1_schools.json:10"},
+            {"key": "data[].DirectorySort", "example": "A", "evidence": "fixture ihsa/v1_schools.json:11"},
+            {"key": "data[].city", "example": "Abingdon", "evidence": "fixture ihsa/v1_schools.json:12"},
+            {"key": "data[].membershipType", "example": "full member", "evidence": "fixture ihsa/v1_schools.json:13 (others: approved school x26, associate member x1 per [13])"},
+            {"key": "data[].schoolLogo", "example": "Abingdon (A.-Avon)_t_t.jpg", "evidence": "fixture ihsa/v1_schools.json:14"},
+            {"key": "data[].hasBoundary", "example": "true", "evidence": "fixture ihsa/v1_schools.json:15 (604 boundary / 224 non-boundary per [13])"},
+            {"key": "data[].isCPS", "example": "true", "evidence": "report [13] (126 Chicago Public Schools flagged)"},
+            {"key": "data[].latitude / data[].longitude", "example": "missing on 18 records", "evidence": "report [13]"},
+            {"key": "data[].URL", "example": "https://il.8to18.com/elgin/dailycalendar", "evidence": "report [13] (10/11 sampled were district sites, 1 athletics platform)"},
+            {"key": "data[].AthleticsURL", "example": null, "evidence": "report [13] (null in all 11 sampled records)"},
+            {"key": "data[].NFHSNetwork_School_Landing / GoFan_School_Landing", "example": "present", "evidence": "report [13]"},
+            {"key": "data[].Conferences[]", "example": "present", "evidence": "report [13]"}
+          ]
+        },
+        "staff2": {
+          "route": "GET /v1/schools/{SchoolID}/staff2",
+          "evidence": "report [13]; repo fixtures ihsa/staff2_coach_rich.json and ihsa/staff2_office_only.json",
+          "groups_observed": ["Administration", "Boys Athletics - Head Coaches", "Girls Athletics - Head Coaches", "Athletic Medical Staff", "Activities - ...", "Non-Competitive Activities - ..."],
+          "keys": [
+            {"key": "PersonID", "example": "96256", "evidence": "report [13] (email-reveal example route /v1/schools/0101/staff/96256/email)"},
+            {"key": "Name", "example": "Mr. Justin Rakestraw", "evidence": "crates/midwest-census/tests/fixtures/coach_contacts_sample.csv:16"},
+            {"key": "DefaultTitle", "example": "Boys Track & Field Head Coach", "evidence": "fixture coach_contacts_sample.csv:16"},
+            {"key": "HasEmail", "example": true, "evidence": "report [13] (477/482 records true; 49/49 track/XC head-coach rows true)"},
+            {"key": "LastName", "example": "Rakestraw", "evidence": "report [13]"},
+            {"key": "RoleID", "example": "HCB-TRB", "evidence": "report [13] (vocabulary: HCB-TRB, HCG-TRG, HCB-CCB, HCG-CCG, C1-BoysAD, D1-GirlsAD, E1-ActivDir)"},
+            {"key": "Phone / Fax", "example": "present", "evidence": "report [13]"}
+          ]
+        },
+        "email_reveal": {
+          "route": "GET /v1/schools/{SchoolID}/staff/{PersonID}/email",
+          "keys": [
+            {"key": "email", "example": "jrakestraw@atown276.net", "evidence": "report [13] (200, no auth; anti-spam reveal gate, used at low volume)"}
+          ]
+        },
+        "classification_row": {
+          "route": "GET /v2/classification/classifications?season=F|S",
+          "evidence": "report [13]",
+          "keys": [
+            {"key": "class", "example": "1A", "evidence": "report [13] (T&F classes 1A/2A/3A)"},
+            {"key": "EntryStatus", "example": "Y", "evidence": "report [13] (TRB 562 Y of 632 rows)"},
+            {"key": "ActualEnroll / EffectiveEnroll / MultipliedEnroll / TourneyEnroll", "example": "present", "evidence": "report [13]"},
+            {"key": "MultiplierNB / SuccessFactor / TourneyWaiver", "example": "present", "evidence": "report [13]"},
+            {"key": "Coop / CoopWith / CoopName", "example": "present", "evidence": "report [13]"}
+          ]
+        },
+        "terms": {
+          "route": "GET /v1/terms",
+          "keys": [
+            {"key": "currentTerm", "example": "2026-27", "evidence": "report [13]"},
+            {"key": "terms", "example": ["2025-26", "2024-25", "2023-24"], "evidence": "report [13]"}
+          ]
+        },
+        "track_field_meet_and_event_summary": {
+          "routes": ["GET /v1/track-field/meets", "GET /v1/track-field/events/{eventId}/summary"],
+          "keys": [
+            {"key": "count", "example": 2, "evidence": "report [13] (2026 boys + girls state finals only)"},
+            {"key": "athlete.athleticNetId", "example": "present on every finisher incl. relay legs", "evidence": "report [13]"},
+            {"key": "athlete.year", "example": "11", "evidence": "report [13] (grade on relay members)"},
+            {"key": "team.athleticNetId", "example": "present", "evidence": "report [13]"},
+            {"key": "athleticLiveId", "example": "74003 / 74002", "evidence": "report [13]"},
+            {"key": "rankings[].label / rankings[].link", "example": "https://www.athletic.net/TrackAndField/rankings/list/169070/m/hj", "evidence": "report [13]"}
+          ]
+        },
+        "xc_qualifiers": {
+          "route": "GET /v1/{term}/statefinal/cc-qualifiers?tournamentId={688..693}",
+          "keys": [
+            {"key": "ihsaSchoolId", "example": "present per qualifying school", "evidence": "report [13]"},
+            {"key": "name / grade / school / box", "example": "1,214 boys qualifiers measured, 358 grade-11", "evidence": "report [13]"},
+            {"key": "coaches[].coachType / coaches[].coachName", "example": "Head", "evidence": "report [13] (season-frozen coach names, no emails)"}
+          ]
+        },
+        "identifier_constants": [
+          {"key": "T&F state-finals AN meet ids", "example": "boys 663321/663320/663319, girls 663324/663323/663322", "evidence": "report [13]"},
+          {"key": "XC state-finals AN meet ids", "example": "268054 (1A), 268064 (2A), 268066 (3A) - shared by both genders", "evidence": "report [38]"},
+          {"key": "AthleticLive ids", "example": "74003 (boys), 74002 (girls)", "evidence": "report [13]"},
+          {"key": "XC tournamentIds", "example": "688-693 (boys 688-690, girls 691-693)", "evidence": "report [13], closed in [38]"}
+        ]
+      }
+    },
+    "ihsaa": {
+      "display_name": "IHSAA (Indiana) association surface",
+      "hosts": ["https://www.ihsaa.org", "https://www.myihsaa.net"],
+      "entities": {
+        "tournament_index": {
+          "route": "GET /api/tournaments",
+          "keys_observed": [],
+          "note": "The cited report counts and classifies the 91 T&F/XC nodes (Boys T&F 19, Girls T&F 19, Boys XC 20, Girls XC 20, Unified T&F 13, school years 2008-09 ... 2026-27 plus one Archived node per varsity sport) but does not itemize the JSON key names; none are guessed here.",
+          "evidence": "report [17]"
+        },
+        "hytek_state_final_row": {
+          "shape": "fixed-column Hy-Tek report, grade and wind inline",
+          "example": "1 McMillian, Zarion 12 Anderson Hig 10.50Q2.8",
+          "fields_observed": ["place", "name", "grade (Yr)", "school", "mark", "qualifier flag (Q/q)", "wind (+2.8)", "relay member lists"],
+          "evidence": "report [17]"
+        },
+        "tfrrs_indiana": {
+          "hosts": ["https://indiana.tfrrs.org", "https://www.tfrrs.org", "https://www.directathletics.com"],
+          "url_shapes_observed": [
+            "/leagues/track/123.html and /leagues/xc/108.html (Indiana HS leagues; 929 + 887 team records)",
+            "/teams/tf/{slug}_{m|f}.html",
+            "/athletes/{AthleteID}/{School}/{Name}.html",
+            "/results/{MeetID}/{EventID}/{slug}",
+            "/lists/track/{league}_{list}.html?limit=1000&year=JR",
+            "/list_data/{ListID}?gender=&year=&event_type=&limit=",
+            "/results.rss"
+          ],
+          "keys": [
+            {"key": "AthleteID", "example": "8608546", "evidence": "report [17]"},
+            {"key": "MeetID", "example": "26194 (XC) / 92370 (T&F)", "evidence": "report [17]"},
+            {"key": "EventID", "example": "5664942", "evidence": "report [17]"},
+            {"key": "TeamID", "example": "1,816 numeric TeamIDs = 929 T&F + 887 XC", "evidence": "report [18]"},
+            {"key": "grade token", "example": "JR / SR / FR / SO (season-scoped; 2026 list &year=JR = Co2027)", "evidence": "report [18]"},
+            {"key": "4-digit class", "example": "2030", "evidence": "report [28] (profile header current class; historical rows class-at-meet)"}
+          ]
+        },
+        "timing_md": {
+          "url_shape_observed": "https://live.timingmd.net/meets/{id} (2026 state final id 74720)",
+          "keys_observed": [],
+          "note": "live page observed; no grade column on it (report [17]). No key names captured.",
+          "evidence": "report [17]"
+        }
+      }
+    },
+    "mhsaa": {
+      "display_name": "MHSAA (Michigan) association + my.mhsaa.com admin API",
+      "hosts": ["https://www.mhsaa.com", "https://my.mhsaa.com"],
+      "entities": {
+        "enrollment_list_pdf": {
+          "shape": "(MHSAA ID, school name, enrollment total, classification enrollment)",
+          "example_rows": ["5792 East Kentwood 3042 3042", "4183 Rockford 2319", "4638 Detroit Catholic Central 1046 2092"],
+          "derived_attributes": ["class A >=783 (188 schools)", "class B 358-782 (189)", "class C 167-357 (189)", "class D <=166 (189)"],
+          "evidence": "report [15] (26-27-Enrollment-List.pdf)"
+        },
+        "coop_program_pdf": {"key": "leading (NNNN) program id", "example": "(1804) Ada Forest Hills Eastern(735)", "evidence": "report [15] (hscoop.pdf; distinct id space from the school id 4506)"},
+        "result_pdf_columns": [
+          {"key": "XC finals columns", "example": "Pl | Bib | Pts | Name | Year | Time | Pace", "evidence": "report [15] (2025lpgd1final.pdf)"},
+          {"key": "TF finals columns", "example": "Athlete | Yr | Team | Finals | Pts", "evidence": "report [15]"},
+          {"key": "Wind", "example": "present in 2023/2024 LP TF finals", "evidence": "report [15]"}
+        ],
+        "athleticnet_link_patterns": [
+          "https://www.athletic.net/TrackAndField/meet/{MeetID}/results",
+          "https://www.athletic.net/TrackAndField/meet/{MeetID}/results/all",
+          "https://www.athletic.net/TrackAndField/meet/{MeetID}/teamscores",
+          "https://www.athletic.net/TrackAndField/meet/{MeetID}/info",
+          "https://www.athletic.net/CrossCountry/meet/{MeetID}/results",
+          "https://www.athletic.net/CrossCountry/meet/{MeetID}/results/all",
+          "https://www.athletic.net/CrossCountry/meet/{MeetID}/info",
+          "legacy: https://www.athletic.net/TrackAndField/Print/EntryMeet.aspx?Meet={MeetID}&t={token}"
+        ],
+        "my_mhsaa_admin_api": {
+          "route": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId={SchoolID}",
+          "evidence": "crates/midwest-census/tests/golden/coach_contacts__coach_contacts_sample-import-schools.json:102; report [29]",
+          "keys": [
+            {"key": "SchoolID", "example": "4351 (East Kentwood)", "evidence": "report [29]"},
+            {"key": "VanityURL", "example": "eastkentwood", "evidence": "report [29]"},
+            {"key": "OldSchoolId", "example": "present", "evidence": "report [29]"},
+            {"key": "SportTeamID", "example": "3121100 (Track & Field)", "evidence": "report [29]"},
+            {"key": "SportTypeCode", "example": "TR", "evidence": "report [29]"}
+          ]
+        },
+        "absent_identifiers": {
+          "keys": ["MHSAA meet id", "event id", "season id", "Athletic.net team/athlete/result ids"],
+          "note": "MHSAA has no meet identifier of its own; meets are identified by season + sport + division + region number + host. Region/division numbers are MHSAA-local and change yearly.",
+          "evidence": "report [15]"
+        }
+      }
+    },
+    "ohsaa": {
+      "display_name": "OHSAA + myOHSAA member portal",
+      "hosts": ["https://www.ohsaa.org", "https://officials.myohsaa.org", "https://www.oatccc.com"],
+      "entities": {
+        "search_school": {
+          "route": "GET officials.myohsaa.org/Outside/SearchSchool?Name={school}",
+          "keys": [
+            {"key": "ohsaaId", "example": "972 (Mason)", "evidence": "report [19]"},
+            {"key": "duplicate rows", "example": "captured: crates/midwest-census/tests/fixtures/ohsaa/search_duplicate_rows.html", "evidence": "repo fixture; report [19]"}
+          ],
+          "escape_hatches_captured": ["no results: fixtures/ohsaa/search_no_results.html", "malformed: fixtures/ohsaa/ad_malformed.html, sports_malformed.html"]
+        },
+        "sports_information": {
+          "route": "GET officials.myohsaa.org/Outside/SportsInformation?ohsaaId={id}",
+          "keys": [
+            {"key": "sport section", "example": "Cross Country", "evidence": "report [19]"},
+            {"key": "coach name", "example": "Tim Pitcher", "evidence": "report [19]"},
+            {"key": "division tag", "example": "(Div-I)", "evidence": "report [19] (also Div-II ... Div-V)"},
+            {"key": "coach email", "example": "pitchert@masonohioschools.com", "evidence": "report [19] (mailto:)"},
+            {"key": "cell semantics", "example": "N/A = sport not offered; TBA = position not yet published", "evidence": "report [19] (page's own note)"},
+            {"key": "page tag", "example": "Sports (2026-27)", "evidence": "report [19]"}
+          ]
+        },
+        "athletic_director": {
+          "route": "GET officials.myohsaa.org/Outside/AthleticDirector?ohsaaId={id}",
+          "keys": [
+            {"key": "Athletic Director", "example": "SCOTT STEMPLE", "evidence": "report [19]"},
+            {"key": "AD email", "example": "stemples@masonohioschools.com", "evidence": "report [19]"},
+            {"key": "assistant AD / athletic secretary rows", "example": "4/5 sampled schools", "evidence": "report [19]"}
+          ]
+        },
+        "school_page_fields": {
+          "keys": [
+            {"key": "OHSAA Tournament Name", "example": "MASON", "evidence": "report [19] (the join key to Athletic.net team names)"},
+            {"key": "Primary Athletic Conference", "example": "Greater Miami Conference", "evidence": "report [19]"},
+            {"key": "School Colors", "example": "Green and White", "evidence": "report [19]"},
+            {"key": "Boys/Girls Mascot", "example": "Comets", "evidence": "report [19]"},
+            {"key": "County", "example": "Warren", "evidence": "report [19]"},
+            {"key": "School Type", "example": "PUBLIC", "evidence": "report [19]"},
+            {"key": "Phone / Fax", "example": "(513) 398-5025 / (513) 398-4183", "evidence": "report [19]"},
+            {"key": "Website", "example": "http://mhs.masonohioschools.com/", "evidence": "report [19]"}
+          ]
+        },
+        "state_final_pdf": {
+          "artifact": "OHSAA_State_2026_Final_Results.pdf (816,147 bytes; 83 pages; 5,638 extracted text lines; 178 event-division combinations)",
+          "fields_observed": ["Place", "Name", "grade (e.g. 12)", "Team (abbreviated: 'Hil. Davidso')", "mark ('13.54Q', '8:53.49')", "Wind ('Heat 1 Preliminaries Wind: -0.3')", "round/heat/section", "implement spec inside event name (33\", 39\")", "relay legs ('1) Sophia Ryan 12  2) Kaylee May 10 ...')", "records/standards ('OHSAA Div. 1: 8:53.49 % 6/1/2018 Gahanna Lincoln')"],
+          "absent_keys": ["ResultID", "AthleteID", "EventID (only Hy-Tek 'Event 103', meet-local)"],
+          "evidence": "report [19]"
+        },
+        "oatccc": {
+          "route": "GET https://www.oatccc.com/Contact-Us/",
+          "keys": ["name", "role", "school", "phone", "email"],
+          "measured": "32 role-published contacts, 100% with email, incl. 16 District Representatives",
+          "evidence": "report [45]"
+        }
+      }
+    },
+    "wiaa": {
+      "display_name": "WIAA school database + result archive",
+      "hosts": ["https://www.wiaawi.org", "https://schools.wiaawi.org"],
+      "entities": {
+        "directory_school": {
+          "route": "GET https://schools.wiaawi.org/Directory/School/GetDirectorySchool?orgID={OrganizationID}",
+          "blocks_observed": ["School Administrators (Role | Name | Email)", "Head Coaches (Sport | Name | Role | Email)", "school identity block", "tblTeamList (SportSeason | Calendar)", "outbound links (district website, conference site)"],
+          "keys": [
+            {"key": "Administrator roles", "example": "Superintendent, Principal, Athletic Director, City-Wide Athletic Director, Assistant Athletic Director", "evidence": "report [06]"},
+            {"key": "Head coach row", "example": "Girls Cross Country | Ginna Irwin | Head Coach", "evidence": "report [06] (orgID 222 Madison Memorial)"},
+            {"key": "Email", "example": "jknapmiller@abbotsford.k12.wi.us", "evidence": "crates/midwest-census/tests/fixtures/coach_contacts_sample.csv:2"},
+            {"key": "School identity fields", "example": "level, class, member type, enrollment size, conference, mascot, colors, address, phone, fax", "evidence": "report [06]"}
+          ]
+        },
+        "identifiers": [
+          {"key": "OrganizationID", "example": "1 (Abbotsford), 222 (Madison Memorial)", "evidence": "report [06]; fixture wiaa/school_org1_abbotsford.html"},
+          {"key": "TeamID", "example": "per-school team id in RunSportListReport", "evidence": "report [06]"},
+          {"key": "SportSeasonID", "example": "1544 B-TF, 1558 G-TF, 1537 B-XC, 1549 G-XC", "evidence": "report [06]"},
+          {"key": "LevelTypeCode", "example": "1 = High School, 2 = Middle School", "evidence": "report [06]"},
+          {"key": "ContactID", "example": "person view for de-duplicating multi-sport coaches", "evidence": "report [06]"},
+          {"key": "ResultID / AthleteID / MeetID", "example": "do not exist for WIAA files (URLs are the identity)", "evidence": "report [06]"}
+        ],
+        "result_file_shapes": [
+          {"key": "state T&F HTML row", "example": "4 Ryan Heiman  11 Arrowhead  10.59q  0.4  1 (place, name, Yr, school, mark, qualifier, wind, heat)", "evidence": "report [08] appendix"},
+          {"key": "legacy XC .txt row", "example": "MATT ESCHE 11   15:42", "evidence": "report [06] (/Portal.../Cross_Country/1999/d1bresults.txt)"},
+          {"key": "Athletic.net 'Compiled' export", "example": "Athlete | Yr | Team", "evidence": "report [06] (tr2026arrowheadregionalindiv.pdf)"},
+          {"key": "Hy-Tek", "example": "Name | Yr | School | H# | Result", "evidence": "report [06]"}
+        ]
+      }
+    },
+    "milesplit": {
+      "display_name": "MileSplit state network (FloSports)",
+      "hosts": ["<lowercased state code>.milesplit.com"],
+      "url_shapes_observed": [
+        "/teams (per-state team index; level selector ?type=1..11)",
+        "/teams/{TeamID}-{slug}",
+        "/teams/{TeamID}/roster",
+        "/athletes/{AthleteID}-{slug} (also /athletes/{id}/{slug}/{event} for results)",
+        "/results?season={s}&level=hs&year={Y}&page={N} (50 meets/page)",
+        "/api/v1/meets/{MeetID}/performances?isMeetPro=0&fields=... (robots-disallowed; used read-only in research)",
+        "/sitemap.xml (7,500 <loc> athlete URLs with lastmod)"
+      ],
+      "roster_grade_columns": [
+        {"key": "column-grad-year", "example": "2027", "evidence": "report [27]; fixtures/milesplit/wi_roster_52649.html; data/milesplit-candidate-records.csv"},
+        {"key": "Class", "example": "2027 (0 = unset)", "evidence": "report [16] (Michigan rosters)"},
+        {"key": "gradYear (JSON)", "example": "2027", "evidence": "report [20] (Ohio rosters)"}
+      ],
+      "measured_value_ranges": [
+        {"key": "grad years observed", "example": "2027 ... 2034 plus 0", "evidence": "report [27] (must be filtered, not assumed)"},
+        {"key": "team ids", "example": "52649 (Abbotsford WI)", "evidence": "fixture milesplit/wi_roster_52649.html"},
+        {"key": "athlete ids", "example": "14399169", "evidence": "data/milesplit-candidate-records.csv:2"},
+        {"key": "meet ids", "example": "780853 (Osceola Invitational 2026, WI)", "evidence": "report [07]"}
+      ],
+      "robots_posture": {"allowed": ["/teams", "/teams/<id>/roster", "meets"], "disallowed": ["/api/", "/rankings", "/virtual-meets", "/contact"], "evidence": "report [20], report [27]"}
+    },
+    "dat_tfrrs": {
+      "display_name": "DirectAthletics / TFRRS",
+      "hosts": ["https://www.directathletics.com", "https://<state>.tfrrs.org", "https://www.tfrrs.org"],
+      "url_shapes_observed": [
+        "/leagues/track/{ID}.html, /leagues/xc/{ID}.html (one row = school x sport x gender team entry)",
+        "/teams/{sport}/{TeamID}.html",
+        "/athletes/{sport}/{AthleteID}.html (302 -> tfrrs.org/athletes/{id})",
+        "/results/{sport}/{MeetID}_{EventResultID}.html",
+        "/lists/track/{league}_{list}.html?limit=&year=&gender=",
+        "/scripts/fuseDriver_Upcoming.js",
+        "/results.rss (state subdomains)"
+      ],
+      "keys": [
+        {"key": "TeamID", "example": "10536 (Abbotsford, WI league 115)", "evidence": "data/dat-team-index.csv:2"},
+        {"key": "league ids", "example": "WI track 115; IN track 123 / xc 108; IL Top Times 1467/1468/1469, CPS 1355, IHSA Class A/AA 1088/1089, Charter/Other 1432/993", "evidence": "report [28]"},
+        {"key": "AthleteID", "example": "9444606", "evidence": "report [28] (HS rows carry DirectAthletics athlete/team ids)"},
+        {"key": "class token", "example": "FR / SO / JR / SR (view filter &year=JR)", "evidence": "report [18]"},
+        {"key": "4-digit grad year", "example": "2030", "evidence": "report [28]"},
+        {"key": "upcoming feed fields", "example": "date_begin, name, sport, venue_state, meet_hnd, reg_status, hs, jhs, college, jcollege, club", "evidence": "report [14]"},
+        {"key": "results index", "example": "65 US+CA state/province <option> values + 'All States' = 66", "evidence": "report [14]"},
+        {"key": "athletic_net_team_id", "example": "always empty in data/school-alias-map.csv with athletic_net_team_id_source = 'not exposed on DAT (no athletic.net links found on any sampled page)'", "evidence": "data/school-alias-map.csv"}
+      ]
+    },
+    "timing_providers": {
+      "display_name": "Timer surfaces named by this lane",
+      "evidence": "reports [08], [16], [20], [39], [45]",
+      "entities": {
+        "primetime": {
+          "route": "GET https://www.pttiming.com/api/results/current?year={Y}&page={N} (100 rows/page, hasMore)",
+          "keys": [{"key": "exEntryLink", "example": "anchor href = Athletic.net or MileSplit meet page (2026 almost entirely Athletic.net)", "evidence": "report [08]"}]
+        },
+        "performance_timing": {
+          "route": "WordPress REST ?after= / ?search=",
+          "keys": [{"key": "CId / RId", "example": "stable meet/result ids", "evidence": "report [08]"}]
+        },
+        "finish_timing": {
+          "url_shapes_observed": ["/{YEAR}/CC/{meet}/", "/{YEAR}/ holds 325 result files (2026 YTD)"],
+          "keys": [{"key": "FT id = '20' + ANID", "example": "verified 28/28", "evidence": "report [20]"}]
+        },
+        "athleticlive": {
+          "url_shapes_observed": [
+            "https://live.athletic.net/meets/{MeetID}",
+            "POST https://search.athletic.live/live_results_meet_list/_search and /{tenant}_meet_list/_search",
+            "GET https://athleticlive.blob.core.windows.net/$web/ind_res_list/_doc/{EventID}",
+            "GET https://s-gke-usc1-nssi3-33.firebaseio.com/meet_{i}/event_summary.json?ns=trackmeet-io"
+          ],
+          "keys": [{"key": "i / ani / n / md / o / us", "example": "i = AthleticLIVE meet id, ani = Athletic.net MeetID (nullable), n = meet name, md = meet date", "evidence": "report [39]"}]
+        },
+        "hytek_text_layout": {
+          "example_header": "Name                    Year School                 Prelims  Wind H#",
+          "example_row": "  1 Ben Lemirand              12 West De Pere             10.56Q  0.4  1",
+          "example_relay_leg": "     1) Jamir Erving 11                 2) Sean O'Byrne 12",
+          "evidence": "crates/midwest-census/src/sources/hytek/mod.rs (module doc example, read-only)"
+        }
+      }
+    }
+  },
+  "repo_boundary": {
+    "evidence": ["crates/census-domain/src/jurisdiction.rs (read directly)", "batch brief domain facts (verified)"],
+    "type": "census_domain::UsJurisdiction",
+    "variants_observed": 51,
+    "variant_examples": ["Illinois", "Indiana", "Michigan", "Ohio", "Wisconsin"],
+    "functions": [
+      {"key": "ALL", "example": "[Self; 51]", "evidence": "jurisdiction.rs:84"},
+      {"key": "code(self) -> &'static str", "example": "Self::Illinois => \"IL\"", "evidence": "jurisdiction.rs:139-141"},
+      {"key": "name()", "example": "spelled-out name", "evidence": "batch brief (verified): code()/name()/parse(&str)/from_code(&str) exist; FromStr Err = DomainError::Unsupported { field: \"jurisdiction\" }"},
+      {"key": "parse(&str) -> Option<Self>", "example": "accepts a code or a spelled-out name, case/whitespace-insensitive", "evidence": "batch brief (verified)"},
+      {"key": "from_code(&str) -> Option<Self>", "example": "\"OH\" -> Ohio", "evidence": "batch brief (verified)"}
+    ],
+    "territories_excluded": "PR, GU, VI, AS, MP and freely associated states are deliberately absent (doc comment, jurisdiction.rs:6-11)",
+    "adapter_state_filter_surface": {
+      "note": "Options structs still carrying `pub states: Vec<String>` at the time of this snapshot (in-flight jurisdiction-typing lanes own the conversion)",
+      "files": [
+        "crates/midwest-census/src/sources/athleticlive.rs:41",
+        "crates/midwest-census/src/sources/athleticlive_athletes/mod.rs:72",
+        "crates/midwest-census/src/sources/athleticnet/mod.rs:79",
+        "crates/midwest-census/src/sources/ihsa/mod.rs:48",
+        "crates/midwest-census/src/sources/ks/collect.rs:23",
+        "crates/midwest-census/src/sources/mshsl/mod.rs:68",
+        "crates/midwest-census/src/sources/ohsaa/mod.rs:63",
+        "crates/midwest-census/src/sources/plain_names/mod.rs:95",
+        "crates/midwest-census/src/sources/wiaa/mod.rs:67",
+        "crates/midwest-census/src/sources/wiaa_results/mod.rs:73"
+      ],
+      "already_typed_example": "crates/midwest-census/src/sources/milesplit/wire.rs (Site::for_jurisdiction(UsJurisdiction); host = `<lowercased code>.milesplit.com`)"
+    }
+  },
+  "pipeline_datasets": {
+    "note": "Column names as they appear in the on-disk CSVs produced by the Midwest run (read directly, headers printed via csv.DictReader).",
+    "files": {
+      "reports/census-by-state.csv": ["state", "schools", "athletes", "co2027", "co2027_boys", "co2027_girls", "co2027_profile_url", "co2027_grade_evidence", "co2027_multisource", "co2027_with_coach", "co2027_with_coach_email", "coaches", "coaches_with_email"],
+      "reports/report-core.json": ["generated_on", "store_dir", "scope", "totals", "by_state"],
+      "data/coach-contacts.csv": ["school", "city", "state", "sport", "role", "coach_name", "public_professional_email", "ad_name", "ad_email", "source_url", "last_observed"],
+      "data/school-alias-map.csv": ["state", "canonical_school", "canonical_key", "alias_variants", "n_alias_variants", "dat_tf_men_team_ids", "dat_tf_women_team_ids", "dat_xc_men_team_ids", "dat_xc_women_team_ids", "n_dat_team_records", "all_dat_team_ids", "duplicate_team_records", "sports_present", "dat_leagues", "source_league_urls", "athletic_net_team_id", "athletic_net_team_id_source", "source", "observed_on", "verification"],
+      "data/dat-team-index.csv": ["state", "dat_league_name", "dat_league_sport", "dat_league_id", "dat_team_id", "dat_team_sport", "team_gender", "dat_team_name_raw", "level_guess", "dat_league_url", "source", "observed_on", "verification"],
+      "data/milesplit-coverage-matrix.csv": ["state_code", "state", "ms_subdomain", "hs_team_records_on_milesplit", "teams_sampled", "teams_sampled_with_nonempty_roster", "roster_enumeration_free", "sampled_athletes_all_grades", "sampled_c2027_total", "sampled_c2027_boys", "sampled_c2027_girls", "sampled_c2027_boys_outdoor", "sampled_c2027_boys_indoor", "sampled_c2027_boys_xc", "sampled_median_roster_size", "sampled_c2027_share_of_roster_pct", "est_c2027_total_order_of_magnitude_low", "est_c2027_total_order_of_magnitude_high", "est_note", "athnet_corpus_boys_g11", "sampled_c2027_boys_outdoor_in_athnet_corpus", "sampled_c2027_boys_outdoor_match_pct", "rankings_grade_filter", "leaderboard_grade_filter_free", "meet_results_raw_free", "athlete_profile_grad_year_free", "athlete_profile_results_free"],
+      "data/milesplit-candidate-records.csv": ["state", "athlete_name_normalized", "athlete_name_roster", "gender", "grad_year", "class_of_2027_evidence", "school", "school_city_state", "ms_team_id", "ms_athlete_id", "ms_profile_url", "ms_roster_url", "indoor", "outdoor", "xc", "source", "observed_on", "confidence"],
+      "data/dat-provider-coverage.csv": ["state", "dat_t&f_team_records", "dat_xc_team_records", "canonical_schools", "meets_idx", "hs-marked", "dat_live_hs_performance_lists", "strongest_hs_result_artifact_inspected", "source", "observed_on"],
+      "data/source-coverage-matrix.csv": ["state", "source_family", "role", "enumeration_ids", "grade_evidence", "result_evidence", "coach_evidence", "access_class", "report_ref", "confidence"],
+      "data/atn-id-fields.csv": ["id_name", "sample_value", "source_request", "notes"]
+    }
+  }
+}

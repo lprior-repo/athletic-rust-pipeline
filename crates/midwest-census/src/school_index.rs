@@ -18,8 +18,13 @@
 //!    La Follette`).
 //!
 //! Anything else is reported as unresolved. A label that matches two schools is never guessed.
+//!
+//! Both indexes are keyed by [`UsJurisdiction`]: the jurisdiction a label is published in is a
+//! validated domain value, not a free string, so a misspelled or territorial "state" can never
+//! select a slice of the snapshot, and a lookup allocates nothing to normalize the key.
 
 use census_domain::model::{normalize_name, CanonicalSchool, SchoolId};
+use census_domain::UsJurisdiction;
 use std::collections::HashMap;
 
 /// How a school label was resolved onto a canonical school.
@@ -63,26 +68,27 @@ struct Entry {
 
 /// School label resolver over the consolidated school snapshot.
 pub struct SchoolIndex {
-    exact: HashMap<(String, String), SchoolId>,
-    by_state: HashMap<String, Vec<Entry>>,
+    exact: HashMap<(UsJurisdiction, String), SchoolId>,
+    by_state: HashMap<UsJurisdiction, Vec<Entry>>,
 }
 
 impl SchoolIndex {
     pub fn from_schools(schools: &[CanonicalSchool]) -> Self {
         let mut exact = HashMap::new();
-        let mut by_state: HashMap<String, Vec<Entry>> = HashMap::new();
+        let mut by_state: HashMap<UsJurisdiction, Vec<Entry>> = HashMap::new();
         for school in schools {
-            let Some(state) = school.state.as_deref() else {
+            // A school with no jurisdiction cannot be resolved against: the label's state is the
+            // first half of the key, and guessing one would cross state lines.
+            let Some(state) = school.state else {
                 continue;
             };
-            let state = state.to_ascii_uppercase();
             exact
-                .entry((state.clone(), school.normalized_name.clone()))
+                .entry((state, school.normalized_name.clone()))
                 .or_insert_with(|| school.id.clone());
             // Aliases resolve only when they do not collide with a real name.
             for alias in &school.aliases {
                 exact
-                    .entry((state.clone(), normalize_name(alias)))
+                    .entry((state, normalize_name(alias)))
                     .or_insert_with(|| school.id.clone());
             }
             by_state.entry(state).or_default().push(Entry {
@@ -98,20 +104,19 @@ impl SchoolIndex {
     }
 
     /// Resolve one raw school label observed in a result file.
-    pub fn resolve(&self, state: &str, raw: &str) -> Option<(SchoolId, SchoolMatch)> {
-        let state = state.to_ascii_uppercase();
+    pub fn resolve(&self, state: UsJurisdiction, raw: &str) -> Option<(SchoolId, SchoolMatch)> {
         let normalized = normalize_name(raw);
         if normalized.is_empty() {
             return None;
         }
-        if let Some(id) = self.exact.get(&(state.clone(), normalized.clone())) {
+        if let Some(id) = self.exact.get(&(state, normalized.clone())) {
             return Some((id.clone(), SchoolMatch::Exact));
         }
         for (pattern, replacement) in ABBREVIATIONS {
             if raw.to_ascii_lowercase().contains(pattern) {
                 let expanded =
                     normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
-                if let Some(id) = self.exact.get(&(state.clone(), expanded)) {
+                if let Some(id) = self.exact.get(&(state, expanded)) {
                     return Some((id.clone(), SchoolMatch::Abbreviation));
                 }
             }
@@ -119,7 +124,7 @@ impl SchoolIndex {
         // Relay squads are published as `<school> A`, `<school> B`, …; the letter is not part of
         // the school name.
         if let Some(without_squad) = without_squad_letter(&normalized) {
-            if let Some(id) = self.exact.get(&(state.clone(), without_squad.to_string())) {
+            if let Some(id) = self.exact.get(&(state, without_squad.to_string())) {
                 return Some((id.clone(), SchoolMatch::Exact));
             }
             for (pattern, replacement) in ABBREVIATIONS {
@@ -127,19 +132,19 @@ impl SchoolIndex {
                     let expanded =
                         normalize_name(&raw.to_ascii_lowercase().replace(pattern, replacement));
                     let key = without_squad_letter(&expanded).unwrap_or(&expanded);
-                    if let Some(id) = self.exact.get(&(state.clone(), key.to_string())) {
+                    if let Some(id) = self.exact.get(&(state, key.to_string())) {
                         return Some((id.clone(), SchoolMatch::Abbreviation));
                     }
                 }
             }
-            return self.partial(&state, without_squad);
+            return self.partial(state, without_squad);
         }
-        self.partial(&state, &normalized)
+        self.partial(state, &normalized)
     }
 
     /// Token-aligned partial match; returns a candidate only when exactly one school matches.
-    fn partial(&self, state: &str, normalized: &str) -> Option<(SchoolId, SchoolMatch)> {
-        let entries = self.by_state.get(state)?;
+    fn partial(&self, state: UsJurisdiction, normalized: &str) -> Option<(SchoolId, SchoolMatch)> {
+        let entries = self.by_state.get(&state)?;
         // A single-token label (`Memorial`, `Central`) is ambiguous by construction.
         let (head, last) = normalized.rsplit_once(' ')?;
         let head = format!("{head} ");
@@ -189,7 +194,9 @@ mod tests {
         ];
         let schools: Vec<CanonicalSchool> = names
             .iter()
-            .map(|(name, normalized)| CanonicalSchool::new("WI", *name, *normalized).0)
+            .map(|(name, normalized)| {
+                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, *normalized).0
+            })
             .collect();
         SchoolIndex::from_schools(&schools)
     }
@@ -198,12 +205,14 @@ mod tests {
     fn exact_and_abbreviated_labels_resolve() {
         let index = index();
         assert_eq!(
-            index.resolve("WI", "West De Pere").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "West De Pere")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Exact)
         );
         assert_eq!(
             index
-                .resolve("WI", "Milw. Bradley Tech")
+                .resolve(UsJurisdiction::Wisconsin, "Milw. Bradley Tech")
                 .map(|(_, kind)| kind),
             Some(SchoolMatch::Abbreviation)
         );
@@ -215,20 +224,26 @@ mod tests {
         // Hy-Tek truncates the school column and drops the district prefix.
         assert_eq!(
             index
-                .resolve("WI", "Brookfield Cent.")
+                .resolve(UsJurisdiction::Wisconsin, "Brookfield Cent.")
                 .map(|(_, kind)| kind),
             Some(SchoolMatch::Partial)
         );
         assert_eq!(
-            index.resolve("WI", "La Follette").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "La Follette")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Partial)
         );
         assert_eq!(
-            index.resolve("WI", "Wisconsin Luth.").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "Wisconsin Luth.")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Partial)
         );
         assert_eq!(
-            index.resolve("WI", "EC Memorial").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "EC Memorial")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Abbreviation)
         );
     }
@@ -237,17 +252,21 @@ mod tests {
     fn relay_squad_letters_are_not_part_of_the_school_name() {
         let index = index();
         assert_eq!(
-            index.resolve("WI", "Homestead A").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "Homestead A")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Exact)
         );
         assert_eq!(
-            index.resolve("WI", "Homestead B").map(|(_, kind)| kind),
+            index
+                .resolve(UsJurisdiction::Wisconsin, "Homestead B")
+                .map(|(_, kind)| kind),
             Some(SchoolMatch::Exact)
         );
         // An abbreviated label carries the squad letter too: the letter drops after expansion.
         assert_eq!(
             index
-                .resolve("WI", "Milw. Bradley Tech A")
+                .resolve(UsJurisdiction::Wisconsin, "Milw. Bradley Tech A")
                 .map(|(_, kind)| kind),
             Some(SchoolMatch::Abbreviation)
         );
@@ -257,15 +276,20 @@ mod tests {
     fn ambiguous_labels_stay_unresolved() {
         let schools: Vec<CanonicalSchool> = ["Madison Memorial", "Milwaukee Memorial"]
             .iter()
-            .map(|name| CanonicalSchool::new("WI", *name, normalize_name(name)).0)
+            .map(|name| {
+                CanonicalSchool::new(UsJurisdiction::Wisconsin, *name, normalize_name(name)).0
+            })
             .collect();
         let index = SchoolIndex::from_schools(&schools);
-        assert_eq!(index.resolve("WI", "Memorial"), None);
+        assert_eq!(index.resolve(UsJurisdiction::Wisconsin, "Memorial"), None);
     }
 
     #[test]
     fn matching_never_crosses_state_lines() {
         let index = index();
-        assert_eq!(index.resolve("MN", "West De Pere"), None);
+        assert_eq!(
+            index.resolve(UsJurisdiction::Minnesota, "West De Pere"),
+            None
+        );
     }
 }

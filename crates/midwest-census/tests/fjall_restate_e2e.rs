@@ -18,6 +18,7 @@ use census_domain::model::{
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
+use census_domain::UsJurisdiction;
 use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use midwest_census::report::{self, Census, Scope};
 use midwest_census::store::{Store, StoreStats, Table};
@@ -87,7 +88,11 @@ fn synthetic_corpus(school_count: usize, athletes_per_school: usize) -> Corpus {
 
 fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     let name = format!("E2E School {index}");
-    let (mut school, school_id) = CanonicalSchool::new("WI", name.clone(), normalize_name(&name));
+    let (mut school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        name.clone(),
+        normalize_name(&name),
+    );
     school.evidence.push(evidence());
     let team = CanonicalTeam {
         id: Id::mint("team", &[school_id.as_str(), "outdoor", "2026"]),
@@ -101,7 +106,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
     };
     let team_id = team.id.clone();
     let mut meet = CanonicalMeet::new(
-        "WI",
+        Some(UsJurisdiction::Wisconsin),
         format!("E2E Invite {index}"),
         MEET_DATE,
         CompetitionLevel::Invitational,
@@ -190,7 +195,11 @@ fn store_round_trip_merges_observations_and_reports_stats() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
 
-    let (mut first, school_id) = CanonicalSchool::new("WI", "Round Trip High School", "round trip");
+    let (mut first, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "Round Trip High School",
+        "round trip",
+    );
     first
         .evidence
         .push(Evidence::parsed(SourceRef::id(SOURCE_ID), "2026-05-01"));
@@ -264,7 +273,8 @@ fn legacy_jsonl_journals_are_imported_once() {
     std::fs::create_dir_all(root.join("entities")).unwrap();
     std::fs::create_dir_all(root.join("journal")).unwrap();
 
-    let (mut school, _) = CanonicalSchool::new("WI", "Legacy High School", "legacy");
+    let (mut school, _) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Legacy High School", "legacy");
     school
         .evidence
         .push(Evidence::parsed(SourceRef::id(SOURCE_ID), "2026-04-01"));

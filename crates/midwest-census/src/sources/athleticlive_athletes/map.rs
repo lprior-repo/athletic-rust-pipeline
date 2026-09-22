@@ -183,7 +183,7 @@ fn absorb_athlete(
 /// The canonical school one row's competitor belongs to, minted or reused by state + name.
 fn row_school(schools: &mut BTreeMap<String, CanonicalSchool>, row: &RowFacts<'_>) -> SchoolId {
     let (mut school, school_id) = CanonicalSchool::new(
-        &row.target.state,
+        row.target.state,
         row.school_name,
         census_domain::model::normalize_name(row.school_name),
     );

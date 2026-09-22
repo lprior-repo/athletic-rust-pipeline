@@ -1,0 +1,32 @@
+[
+ {
+  "school": "Adams Central",
+  "http": "200",
+  "bytes": "15579",
+  "coach": "Toni Fowler",
+  "coach_ok": true,
+  "ad": "Alan Frank",
+  "ad_ok": true,
+  "cmd": "curl -sS -L --max-time 30 -A omp-research/1.0 (contact-directory research) -o /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-directories-national/samples/validate/NE_nsaa_Adams_Central.html -w %{http_code}\t%{size_download} --data-urlencode school=Adams Central https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+ },
+ {
+  "school": "Gothenburg",
+  "http": "200",
+  "bytes": "15002",
+  "coach": "Tony Neels",
+  "coach_ok": true,
+  "ad": "Marc Mroczek",
+  "ad_ok": true,
+  "cmd": "curl -sS -L --max-time 30 -A omp-research/1.0 (contact-directory research) -o /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-directories-national/samples/validate/NE_nsaa_Gothenburg.html -w %{http_code}\t%{size_download} --data-urlencode school=Gothenburg https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+ },
+ {
+  "school": "Omaha Gross Catholic",
+  "http": "200",
+  "bytes": "15537",
+  "coach": "Joe Wiebold",
+  "coach_ok": true,
+  "ad": "Nate Frankman",
+  "ad_ok": true,
+  "cmd": "curl -sS -L --max-time 30 -A omp-research/1.0 (contact-directory research) -o /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/coach-directories-national/samples/validate/NE_nsaa_Omaha_Gross_Catholic.html -w %{http_code}\t%{size_download} --data-urlencode school=Omaha Gross Catholic https://secure.nsaahome.org/nsaaforms/direxportscreen.php"
+ }
+]

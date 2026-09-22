@@ -63,6 +63,13 @@ const ALLOWED: &[(&str, &str)] = &[
     ("restate_services", "bests"),
     ("restate_services", "census"),
     ("restate_services", "clock"),
+    // ARCHITECTURE.md §1: the batch path and the durable path share the adapters, the store and the
+    // reports, and differ only in who owns the journal. The workflow layer therefore names the
+    // adapter error type it classifies into the durable retry policy (`jobs::collect_error`) and the
+    // polite fetcher the jurisdiction object holds for the whole process, which is also what keeps
+    // one remote origin drawing from one admission budget (§3).
+    ("restate_services", "net"),
+    ("restate_services", "sources"),
     ("restate_services", "outcome"),
     ("restate_services", "report"),
     ("restate_services", "spawn"),

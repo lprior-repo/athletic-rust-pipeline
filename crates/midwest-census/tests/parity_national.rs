@@ -32,6 +32,7 @@ use anyhow::{bail, Context, Result};
 use census_domain::model::{
     CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
 };
+use census_domain::UsJurisdiction;
 use midwest_census::net::{FetchOptions, Fetcher};
 use midwest_census::sources::athleticlive_athletes::{self, AthleteHit, MeetTarget};
 use midwest_census::sources::{
@@ -252,7 +253,7 @@ fn hits_from_response(body: &str) -> Result<Vec<AthleteHit>> {
 /// way the `athleticlive` adapter publishes it before this adapter selects it.
 fn captured_meet() -> CanonicalMeet {
     let mut meet = CanonicalMeet::new(
-        "KS",
+        Some(UsJurisdiction::Kansas),
         "Abilene Invitational",
         "2025-04-25",
         CompetitionLevel::Invitational,
@@ -327,7 +328,7 @@ async fn athleticlive_athletes_fixture_corpus_parity() -> Result<()> {
 
         // Target selection and the query body the adapter pages with.
         let selection =
-            athleticlive_athletes::meet_targets(&[captured_meet()], &["KS".to_string()]);
+            athleticlive_athletes::meet_targets(&[captured_meet()], &[UsJurisdiction::Kansas]);
         let targets: Vec<MeetTarget> = selection.targets;
         if targets.is_empty() {
             bail!("{SOURCE}/{file}: the captured meet is not selectable");
@@ -473,7 +474,9 @@ async fn milesplit_html_parity() -> Result<()> {
 
     // Pass two: each roster resolves its team out of the matching index capture.
     for (file, stem, body, site_id, team_id) in rosters {
-        let site = milesplit::site_for_state(&site_id.to_ascii_uppercase())?;
+        let jurisdiction = UsJurisdiction::from_code(&site_id)
+            .with_context(|| format!("{site_id} is not a USPS jurisdiction code"))?;
+        let site = milesplit::Site::for_jurisdiction(jurisdiction);
         let (index_file, index_teams) = indexes.get(&site_id).with_context(|| {
             format!("no `{site_id}_teams_index.html` capture to resolve {file}'s team with")
         })?;
@@ -495,7 +498,7 @@ async fn milesplit_html_parity() -> Result<()> {
         )?;
 
         let (school, athletes, teams) =
-            milesplit::roster_entities(&roster, site.state, SCHOOL_YEAR, OBSERVED_ON, &site);
+            milesplit::roster_entities(&roster, SCHOOL_YEAR, OBSERVED_ON, &site);
         case(
             &mut cases,
             &format!("{SOURCE}__{stem}-entities"),
@@ -606,7 +609,14 @@ async fn coach_contacts_csv_parity() -> Result<()> {
         let mut expected_schools: BTreeSet<String> = BTreeSet::new();
         let mut expected_coaches: BTreeSet<String> = BTreeSet::new();
         for (index, row) in parsed.iter().enumerate() {
-            let entities = coach_contacts::row_entities(row, OBSERVED_ON)
+            let state = UsJurisdiction::from_code(row.state.trim()).with_context(|| {
+                format!(
+                    "{SOURCE}/{file} row {}: state {:?}",
+                    index.saturating_add(2),
+                    row.state
+                )
+            })?;
+            let entities = coach_contacts::row_entities(row, state, OBSERVED_ON)
                 .with_context(|| format!("{SOURCE}/{file} row {}", index.saturating_add(2)))?;
             expected_schools.insert(entities.school.id.as_str().to_string());
             for coach in &entities.coaches {
@@ -670,8 +680,11 @@ const REGISTRY: &str = "# season 2026\n28127170,AK\n\n26631105\n28127170,AK\n";
 
 /// Registries the adapter refuses rather than guesses about: two candidate states, a state that is
 /// not a postal code, a line that is not an id, and a third column.
-const REFUSED_REGISTRIES: [(&str, &[&str]); 4] = [
-    ("28127170\n", &["WI", "AK"]),
+const REFUSED_REGISTRIES: [(&str, &[UsJurisdiction]); 4] = [
+    (
+        "28127170\n",
+        &[UsJurisdiction::Wisconsin, UsJurisdiction::Alaska],
+    ),
     ("28127170,Alaska\n", &[]),
     ("natalia\n", &[]),
     ("28127170,AK,extra\n", &[]),
@@ -792,7 +805,7 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
     let mut cases: Vec<(String, String)> = Vec::new();
 
     // The registry: a per-line state wins, the default fills a bare id, a repeat reads once.
-    let targets = athleticnet::parse_targets(REGISTRY, &["wi".to_string()])?;
+    let targets = athleticnet::parse_targets(REGISTRY, &[UsJurisdiction::Wisconsin])?;
     case(
         &mut cases,
         &format!("{SOURCE}__registry-targets"),
@@ -808,7 +821,7 @@ async fn athleticnet_inline_capture_parity() -> Result<()> {
     // The refusals, message and all: an ambiguous or malformed registry is an error, not a guess.
     let mut refusals: Vec<Value> = Vec::new();
     for (registry, states) in REFUSED_REGISTRIES {
-        let states: Vec<String> = states.iter().map(|state| (*state).to_string()).collect();
+        let states: Vec<UsJurisdiction> = states.to_vec();
         match athleticnet::parse_targets(registry, &states) {
             Ok(parsed) => bail!(
                 "registry `{registry}` was accepted with {} targets where the adapter refuses",

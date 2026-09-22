@@ -15,9 +15,9 @@ mod parse;
 mod wire;
 
 pub use fetch::{fetch_roster, fetch_team_index};
-pub use normalize::{roster_entities, site_for_state};
+pub use normalize::roster_entities;
 pub use parse::{parse_roster, parse_team_index};
-pub use wire::{Roster, RosterAthlete, Site, TeamRef, SITES};
+pub use wire::{Roster, RosterAthlete, Site, TeamRef};
 
 // The moved bodies reach these through `super::*`; the test module is the only reader.
 #[cfg(test)]

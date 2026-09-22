@@ -23,6 +23,7 @@ use census_domain::model::{
     normalize_name, professional_email, CanonicalCoach, CanonicalSchool, CoachRole, Evidence,
     Gender, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::UsJurisdiction;
 use midwest_census::store::{Store, Table};
 use tempfile::TempDir;
 
@@ -34,7 +35,7 @@ const SEED: u64 = 0x4D57_4345_4E53_5553;
 const SCHOOL_PREFIX: &str = "Census Academy";
 
 /// The state every synthetic school belongs to.
-const STATE: &str = "WI";
+const STATE: UsJurisdiction = UsJurisdiction::Wisconsin;
 /// Schools the batch covers.
 const SCHOOLS: usize = 256;
 /// Observations per school: four, so the first-writer, union and longer-name arms all run.

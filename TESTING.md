@@ -4,16 +4,19 @@ Where tests live, what they assert, how to run one of them, and what the suite r
 Structure only: this document makes no claim about the current pass/fail state of any lane. The
 gate is the answer to "is it green"; `tools/gate.sh` prints it per lane.
 
-Two crates, one workspace: `athletic-rust-pipeline` (root, `src/`) and `midwest-census`
-(`crates/midwest-census/`). Tests are unit tests inside `#[cfg(test)]` modules, integration tests
-under `tests/`, and generated-at-runtime workbook fixtures assembled into `tempfile::tempdir()`.
+Four workspace members (`Cargo.toml`): the root package `athletic-rust-pipeline` (`src/`),
+`crates/census-domain`, `crates/midwest-census`, and `xtask`. Test-bearing code lives in the first
+three (plus `xtask/src/templates.rs`). Tests are unit tests inside `#[cfg(test)]` modules,
+integration tests under `tests/`, and generated-at-runtime workbook fixtures assembled into
+`tempfile::tempdir()`.
 
-Counts below come from counting `#[test]` / `#[tokio::test]` attributes plus `proptest!` cases under
-`src/**`, `crates/midwest-census/src/**`, `tests/**` and `crates/midwest-census/tests/**`, measured
-2026-09-21: **467 attributes + 7 proptest cases across 79 files** — root `src/` 168 (37 files),
-`crates/midwest-census/src/` 220 (26), root `tests/` 75 + 7 proptest (15), census `tests/` 4 (1).
-Counts move with every slice of work — this tree is being edited while this is written — and are not
-a gate; names and locations are the durable part.
+Counts below come from counting `#[test]` / `#[tokio::test]` attributes plus `proptest!` blocks under
+`src/**`, `crates/midwest-census/src/**`, `tests/**` and `crates/midwest-census/tests/**`, recounted
+2026-09-21: **598 attributes + 8 `proptest!` blocks across 104 files** — root `src/` 178 (41 files),
+`crates/midwest-census/src/` 253 (33), root `tests/` 75 + 1 `proptest!` block (15), census `tests/`
+66 + 7 `proptest!` blocks (13). Per-area counts in §2 carry the same date and move with the tree too;
+names and locations are the durable part, and a rewrite of §2's numbers is not required to make this
+document true. To recount, count `#\[(test|tokio::test)` and `proptest!\s*\{` over those four roots.
 
 ---
 
@@ -113,13 +116,16 @@ One row per area; "tests" is the 2026-09-21 attribute count, not a promise.
 
 | Area | Where | Tests | What the tests actually assert |
 |---|---|---|---|
-| `net/` — robots, authorization, pacing, cache | `crates/midwest-census/src/net/` | 10 | No host is authorized by default; a bare domain authorizes its subdomains (case-insensitively) but not lookalikes (`notathletic.net`, `athletic.net.evil.com`); an exact host never widens into its parent domain; the authorized-host spacing is a *floor*, not a target (the test asserts `MIN_AUTHORIZED_DELAY >= 500 ms`, so a 1 ms configured delay is still raised); robots rules honour longest match with allow-on-tie, an absent or empty robots.txt allows everything, rules outside a group do not apply, and named-agent groups (`GPTBot`) are ignored; jittered delay grows with attempt and is capped at 10 s; and `Fetcher::key_for` is pinned to exact digests because the key *is* the on-disk layout (`{key}.body` + `{key}.meta.json`). The authorization tests construct a fetcher on a throwaway cache and never issue a request |
-| `store/` — Fjall round trip | `crates/midwest-census/src/store/`, `crates/midwest-census/tests/fjall_restate_e2e.rs` | 12 (9 + 3) | Keys whose low sequence byte is zero still reopen (300 observations); consolidation merges evidence and source identities and fills an empty field; journal resume keys round trip; observations survive reopen without overwriting (one row, two evidence entries); legacy JSONL journals are imported exactly once — the e2e test proves the second `Store::open` is a no-op; oversized/empty ids are rejected before any write (stats stay 0); stats count observations per table and report every table. The e2e test additionally drives `census::consolidate` → `report::build_census` (both scopes) → `bests::build` → `workbook::build` over a synthetic corpus, asserting counts at every step, one best mark per athlete resting on both performances, and that the published file is a complete zip container (`PK\x03\x04` … `PK\x05\x06`) |
-| census model / domain types | `crates/midwest-census/src/model.rs` | 10 | Consumer mailboxes (`gmail.com` and friends) are never professional contacts while school domains survive the filter; `GradYear::of(grade, school_year)` implements the cohort rule both ways (grade 11 in 2025 → CO2027, grade 12 in 2026 → CO2027); `ObservedGrade` retains its season (`2025-26`); ids are deterministic, prefixed (`sch_…`, 20 chars); athlete identity ignores provider ids; event labels map onto the ontology; name normalisation folds school suffixes and diacritics; roster names flip to natural order idempotently; meet identity is date+name scoped and a venue spelling difference does not fork it |
-| census reports, bests, index, supervisor, services | `crates/midwest-census/src/report/`, `…/bests/`, `…/school_index.rs`, `…/bootstrap.rs`, `…/restate_services/` | 24 | Core scope keeps only non-Athletic.net evidence; census counts class-of-2027 with evidence and reads merged observations without consolidating; bests order times down and field marks up, print notation a reader expects (`4:41.23`), emit exactly one CSV header row, and never treat relays as personal bests; the school index resolves exact/abbreviated/truncated labels, refuses ambiguous labels, ignores relay squad letters and never matches across state lines; supervisor options parse every flag and reject unknown flags and zero concurrency, `StopReason` round trips through its wire byte, and drain reports count aborted tasks after the deadline vs completed tasks before it; service helpers resolve table names and scopes (omitted scope = all sources), label cohorts (`co2027`/`all`), refuse batches with rows lacking an id without touching the store, and classify job errors (`JobError::Transient` vs a panicking job) |
+| `net/` — robots, authorization, pacing, cache | `crates/midwest-census/src/net/` | 14 (10 + 4) | No host is authorized by default; a bare domain authorizes its subdomains (case-insensitively) but not lookalikes (`notathletic.net`, `athletic.net.evil.com`); an exact host never widens into its parent domain; the authorized-host spacing is a *floor*, not a target (the test asserts `MIN_AUTHORIZED_DELAY >= 500 ms`, so a 1 ms configured delay is still raised); robots rules honour longest match with allow-on-tie, an absent or empty robots.txt allows everything, rules outside a group do not apply, and named-agent groups (`GPTBot`) are ignored; jittered delay grows with attempt and is capped at 10 s; and `Fetcher::key_for` is pinned to exact digests because the key *is* the on-disk layout (`{key}.body` + `{key}.meta.json`). The authorization tests construct a fetcher on a throwaway cache and never issue a request |
+| `store/` — Fjall round trip | `crates/midwest-census/src/store/` (`tests.rs` + `loom_tests.rs`), `crates/midwest-census/tests/fjall_restate_e2e.rs` | 13 (9 + 4) | Keys whose low sequence byte is zero still reopen (300 observations); consolidation merges evidence and source identities and fills an empty field; journal resume keys round trip; observations survive reopen without overwriting (one row, two evidence entries); legacy JSONL journals are imported exactly once — the e2e test proves the second `Store::open` is a no-op; oversized/empty ids are rejected before any write (stats stay 0); stats count observations per table and report every table. The e2e test additionally drives `census::consolidate` → `report::build_census` (both scopes) → `bests::build` → `workbook::build` over a synthetic corpus, asserting counts at every step, one best mark per athlete resting on both performances, and that the published file is a complete zip container (`PK\x03\x04` … `PK\x05\x06`) |
+| census model / domain types | `crates/census-domain/src/model.rs` + `src/jurisdiction.rs` (tests in `src/model_tests.rs`, `src/jurisdiction_tests.rs`) | 26 (20 + 8) | Consumer mailboxes (`gmail.com` and friends) are never professional contacts while school domains survive the filter; `GradYear::of(grade, school_year)` implements the cohort rule both ways (grade 11 in 2025 → CO2027, grade 12 in 2026 → CO2027); `ObservedGrade` retains its season (`2025-26`); ids are deterministic, prefixed (`sch_…`, 20 chars); athlete identity ignores provider ids; event labels map onto the ontology; name normalisation folds school suffixes and diacritics; roster names flip to natural order idempotently; meet identity is date+name scoped and a venue spelling difference does not fork it |
+| census reports, bests, index, supervisor, services | `crates/midwest-census/src/report/` (3), `…/bests/` (4), `…/school_index.rs` (5), `…/bootstrap/tests.rs` (7), `…/restate_services/tests.rs` (7) | 26 | Core scope keeps only non-Athletic.net evidence; census counts class-of-2027 with evidence and reads merged observations without consolidating; bests order times down and field marks up, print notation a reader expects (`4:41.23`), emit exactly one CSV header row, and never treat relays as personal bests; the school index resolves exact/abbreviated/truncated labels, refuses ambiguous labels, ignores relay squad letters and never matches across state lines; supervisor options parse every flag and reject unknown flags and zero concurrency, `StopReason` round trips through its wire byte, and drain reports count aborted tasks after the deadline vs completed tasks before it; service helpers resolve table names and scopes (omitted scope = all sources), label cohorts (`co2027`/`all`), refuse batches with rows lacking an id without touching the store, and classify job errors (`JobError::Transient` vs a panicking job) |
 | census workbook (golden output) | `crates/midwest-census/src/workbook/` | 1 | The workbook carries the expected sheets (`Goal & method`, `Summary`, `By state - core`, `By state - all sources`, `Athletic.net marginal`, `Best results`, `Meets`, `Evidence mix`, `Method notes`), the best-mark reduction picks the fastest 400 m (`48.55`) and longest jump (`6.42 m`), and the sheet is read back with `calamine` to assert the header row contains `Best mark` and `Profile URL` |
-| provider adapters | `crates/midwest-census/src/sources/*` | 167 | See the adapter table below |
-| census school index / adapters dispatch | `crates/midwest-census/src/school_index.rs` (above), `crates/midwest-census/src/census/`, `crates/midwest-census/src/sources/mod.rs` | — | `census/` and `sources/mod.rs` have no unit tests of their own; `census::consolidate` is exercised by the e2e test and `sources::append_all` by the adapters' `collect` tests |
+| provider adapters | `crates/midwest-census/src/sources/*` | 173 (18 files) | See the adapter table below |
+| census identity scoring | `crates/midwest-census/src/census/identity/tests.rs` | 8 | Identity scoring over candidate rows: see that file for the pinned rules |
+| census orchestration / adapter dispatch | `crates/midwest-census/src/census/` (except `identity/`) and `crates/midwest-census/src/sources/mod.rs` | — | No unit tests of their own; `census::consolidate` is exercised by the e2e and parity-pipeline tests, and `sources::append_all` by the adapters' `collect` tests |
+| golden-corpus parity harnesses | `crates/midwest-census/tests/parity_{wisconsin,north,mideast,national,pipeline}.rs` + `tests/common/mod.rs`, goldens under `crates/midwest-census/tests/golden/` (107 files) | 26 | Every fixture of a covered source is parsed and compared byte-for-byte with a checked-in golden; per-source rollup digests fail when a fixture stops being walked. `GOLDEN_UPDATE=1` rewrites goldens (local seeding only; CI never sets it) |
+| merge algebra + parser-roundtrip properties | `crates/midwest-census/tests/merge_properties.rs` (+ `merge_properties/`), `crates/midwest-census/tests/parser_roundtrip_properties.rs` (+ `parser_roundtrip_properties/`) | 36 attributes + 7 `proptest!` blocks | Merge laws (idempotency, union commutativity, first-writer-wins, identity preservation) and the `wiaa_results` parse seam (dispatch agreement, prefix stability, totality) |
 
 ### Provider adapters (all in `crates/midwest-census/src/sources/`)
 
@@ -157,6 +163,7 @@ through `hytek::lines_from_pdf_text`; the other adapters read checked-in fixture
 |---|---|---|
 | `crates/midwest-census/tests/fixtures/` | 47 captured provider payloads across 11 provider directories: `mshsl/` (11), `ohsaa/` (9), `plain_names/` (6), `wiaa_results/` (6), `wiaa/` (4), `ihsa/` (3), `wayzata/` (2), `milesplit/` (2), `athleticlive/` (1 csv), `athleticlive_athletes/` (1 json), `ks/` (1 json), plus `coach_contacts_sample.csv` at the top level | `include_str!("../../tests/fixtures/<provider>/<file>")` inside the adapter's `mod tests`, or a tempdir write for the CSV |
 | `tests/fixtures/` (root) | `cdp/request_will_be_sent_extra_info.json`, `rankings/indoor-nav.json`, `rankings/indoor-girls-100m-p1.json` | `tests/cdp_frame_compat.rs` (`include_str!`) and `src/result_verify/rankings/` (`include_str!`), which also embeds `fuzz/fixtures/retained_results_jsonl/seed-valid-accepted.json` via `include_bytes!("../../fuzz/fixtures/…")` |
+| `crates/midwest-census/tests/golden/` | 107 checked-in golden JSON files: `<source>__<case>.json` per parity case plus `<source>__rollup` and `<source>__corpus` digests | the parity harnesses under `tests/parity_*.rs`; rewritten only by `GOLDEN_UPDATE=1`, which is a local seeding affordance and never set in CI |
 | `fuzz/fixtures/retained_results_jsonl/` | 8 retained native-pipeline seeds plus `raw/<sha256>` bodies | `tests/result_verify.rs` and `src/result_verify/rankings/`; the directory name is historical — there is no fuzz target crate (see §4) |
 | generated at test time | xlsx workbooks, stores, caches | `tempfile::tempdir()` + `zip::ZipWriter` (`xlsx_scope_tests`, `xlsx_stream_tests`, `workbook_zip_layout`, `workbook_verify`) or `rust_xlsxwriter` (`workbook_zip_layout`, `workbook_verify`, `tests/bundle_verify.rs`) |
 
@@ -216,17 +223,27 @@ Stated plainly, from the tree as it stands:
 - **No CAPTCHA / human-required end-to-end case.** Challenge *classification* and the escalation
   predicate are unit-tested; nothing drives a served challenge through the full browser recovery
   path except the ignored `challenge_response_revokes_the_gate_and_ends_pagination`.
-- **No benchmark or performance lane.** `benches/` and `crates/midwest-census/benches/` do not
-  exist, so the gate's bench-presence lane prints "no benchmark target exists yet" and passes.
-  `crates/midwest-census/examples/bench_census.rs` and
-  `crates/midwest-census/examples/bench_store.rs` are measurement harnesses whose phases assert the
-  row counts they produced before reporting a rate, but nothing runs them in a gate, no rate is
-  committed as a baseline, and no document's performance claim is backed by a test.
-- **No verification harnesses.** There is no `kani/`, no `verification/` (Verus/Flux), and no fuzz
-  target: `fuzz/` contains fixtures only, no `Cargo.toml` and no `fuzz_targets`. `loom` is declared
-  as a dev-dependency of `midwest-census` with no model in the tree. The root `fuzzing` feature only
-  gates an entry point (`fuzz_parse_response` in `src/runtime/reviewer/model.rs`); nothing calls it.
-- **No CI.** `.github/` does not exist, so nothing runs `tools/gate.sh` automatically.
+- **Benchmarks exist as of 2026-09-21 but nothing gates them.** `benches/` (root) holds
+  `artifact_store`, `blocking_fanout` and `workbook_export`; `crates/midwest-census/benches/core.rs`
+  holds the census groups `census/parse`, `census/school_index` and `census/merge`. The gate's
+  bench-presence lane compiles them (`cargo bench --workspace --no-run`) and passes; no lane compares
+  their numbers to a threshold, so a regression is not caught. `crates/midwest-census/examples/`
+  still holds the `bench_census` and `bench_store` harnesses.
+- **Verification harnesses exist but are not run by the gate.** Kani harnesses live in
+  `crates/census-domain/kani/` and `crates/midwest-census/kani/`, wired with
+  `#[cfg(kani)] include!(...)` in each crate's `lib.rs`; the crate manifests declare the `kani` cfg
+  (`Cargo.toml`, `[workspace.lints.rust] unexpected_cfgs`). Fuzz targets live in the standalone
+  `fuzz/` workspace (`fuzz/fuzz_targets/{hytek,compiled,xc,raceday}.rs`, corpus under
+  `fuzz/corpus/<target>/`). Loom models live in `crates/midwest-census/src/store/loom_tests.rs` and
+  `crates/midwest-census/src/spawn/loom_tests.rs`, behind the census crate's `loom` feature
+  (`cargo test -p midwest-census --features loom --lib`); a default `--all-features` gate run does
+  test them, because `loom` is in the crate's dev-dependency set and the feature is enabled by
+  `--all-features`. None of the Kani or fuzz lanes is invoked by `tools/gate.sh`. The root `fuzzing`
+  feature only gates an entry point (`fuzz_parse_response` in `src/runtime/reviewer/model.rs`);
+  nothing calls it.
+- **CI exists.** `.github/workflows/gate.yml` runs `bash tools/gate.sh` on push to `main` and on pull
+  requests, installing the pinned toolchain from `rust-toolchain.toml` and the optional gate tools
+  best-effort.
 - **No mutation testing lane.** `cargo-mutants` is installed on this workstation but `tools/gate.sh`
   does not invoke it.
 - **Doc tests are not run by the gate** when nextest is installed — the tests lane prefers
@@ -240,7 +257,8 @@ Stated plainly, from the tree as it stands:
   `src/store/backend.rs`, `src/runtime/browser/request.rs`,
   `src/runtime/browser/state.rs`, the two files under `src/runtime/run/`,
   `src/runtime/source/dispatch.rs`,
-  `src/runtime/source/admission.rs`, `crates/midwest-census/src/census/`,
+  `src/runtime/source/admission.rs`, `crates/midwest-census/src/census/` except
+  `census/identity/tests.rs` (8 tests),
   `crates/midwest-census/src/sources/result_file.rs`.
 - **No happy-path CLI test against a real Restate ingress.** The single CLI integration test asserts
   a *failure* message relay; `fjall_restate_e2e.rs` drives `serve_until` in-process instead.
@@ -311,14 +329,14 @@ runs even after one fails.
 | tests | the whole suite | `cargo nextest run --workspace --all-features` (falls back to `cargo test --workspace --all-features --quiet` and prints `cargo-nextest absent: falling back to cargo test` when nextest is missing) |
 | strict clippy (source targets) | `-D warnings` plus the doctrine set on production targets; counted per crate and lint code | `cargo clippy --workspace --lib --bins --examples --all-features --message-format=json -- <LINT_SET>` |
 | production scan | forbidden constructs and size budgets in production-reachable lines | `cargo xtask scan` |
-| domain type integrity | review candidates only (boolean signatures, primitive id parameters, structs with ≥2 `Option` fields) in `src/domain/` and `crates/census-domain/src/model.rs`; **printed, not ratcheted** | `cargo xtask integrity` |
+| domain type integrity | review candidates only (boolean signatures, primitive id parameters, structs with ≥2 `Option` fields) in `src/domain/` and `crates/census-domain/src/` (the two roots in `xtask/src/integrity.rs`); **printed, not ratcheted** | `cargo xtask integrity` |
 | debt ratchet | baseline comparison; fails on any increase | `cargo xtask ratchet tools/quality-baseline.json <clippy.tsv> <scan.json>` |
 | domain purity | the census domain crate's *normal* dependency tree contains only `serde` + `sha2` | `cargo xtask domain-purity` |
 | deny | `cargo deny check` (licenses, advisories, bans) | `cargo deny check` |
 | audit | `cargo audit --quiet` | `cargo audit --quiet` |
 | machete | unused dependencies | `cargo machete` |
 | geiger | unsafe-surface report (JSON to /dev/null) | `cargo geiger --workspace --all-features --output-format Json > /dev/null` |
-| bench presence | a benchmark target exists and compiles; today only prints the "no benchmark target exists yet" message | `cargo bench --workspace --no-run` |
+| bench presence | a benchmark target exists and compiles. `benches/` and `crates/midwest-census/benches/` both exist, so this lane runs `cargo bench --workspace --no-run`; the fallback message ("no benchmark target exists yet: …") only prints if both directories are gone | `cargo bench --workspace --no-run` |
 
 `LINT_SET` (exactly as defined in `tools/gate.sh`, with `-D` for each):
 `warnings`, `unsafe_code`, `clippy::unwrap_used`, `clippy::expect_used`, `clippy::panic`,

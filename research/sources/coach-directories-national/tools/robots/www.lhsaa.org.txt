@@ -1,0 +1,890 @@
+<!doctype html>
+
+<html>
+
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+
+
+
+<title>LHSAA</title>
+
+<base href="https://www.lhsaa.org/" />
+
+<meta name="robots" content="index, follow" /><meta property="og:url" content="http://www.lhsaa.org/error" /><meta name="twitter:site" content="http://www.lhsaa.org/error" />	<meta name="twitter:card" content="summary" />
+
+<link href="html/css/page5-minified.css" rel="stylesheet" type="text/css" /><link rel="shortcut icon" href="favicon.ico" >
+
+<script src="script/common.js" type="text/javascript"></script>
+									 <!--  <script src="script/jquery.jcarousel.js" type="text/javascript"></script>
+									 <script src="script/jcarousel.responsive.js" type="text/javascript"></script>-->
+									  
+									  
+									  
+									<script src="script/jquery.magnific-popup.js" type="text/javascript"></script>
+									  	<script>
+											jQuery( document ).ready( function () {
+												jQuery( '.popup-youtube, .popup-vimeo, .popup-gmaps' ).magnificPopup( {
+													disableOn: 700,
+													type: 'iframe',
+													mainClass: 'mfp-fade',
+													removalDelay: 160,
+													preloader: false,
+													fixedContentPos: false
+												} ); //jQuery('.popup-youtube, .popup-vimeo, .popup-gmaps')
+												
+											} );
+										</script>
+									  	
+									   
+									
+
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8YDWXCWRV0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8YDWXCWRV0');
+</script>
+
+
+
+
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8YDWXCWRV0"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8YDWXCWRV0');
+</script>
+
+
+
+</head>
+
+
+
+<body class="ErrorBodyWrap">
+
+		
+
+<!--<script type="text/javascript" src="script/jquery.validate.min.js"></script>
+<link href="html/css/validation.css" rel="stylesheet" type="text/css" />-->
+<script type="text/javascript">
+jQuery(document).ready(function(e){
+// for normal navigation
+jQuery('#frmSearch2').validate();
+	jQuery('.SubmitSearch2').click(function(e) {
+		e.preventDefault() ;
+		//jQuery("#frmSearch2 #searchtext2").val($("#frmSearch2 #searchtext2").val() == 'Enter keyword' ? '' : $("#frmSearch2 #searchtext2").val()) ;	
+		
+		//alert(jQuery("#searchtext2").val()+jQuery('#frmSearch2').attr("name"));
+		if(jQuery("#frmSearch2 #searchtext2").val() != ''){
+		//jQuery("#frmSearch3 #searchtext2").val(jQuery("#frmSearch2 #searchtext2").val());
+		jQuery('#frmSearch2').trigger('submit') ;
+		$('.ResultCont').show();
+		}else{
+			jQuery('#frmSearch2 #searchtext2').addClass('error') ;
+			return false;
+		}		
+	}) ;
+}) ;
+</script>	
+<nav class="ResponsiveMenu" style="display: none;">
+
+				<div class="PhoneImg"> <i class="fa fa-mobile"></i> 
+					<span class=""><a href="tel:225.296.5882">225.296.5882</a></span>  
+				</div>
+			
+	<a class="menu-link" href="#menu"><i class="fa fa-bars"></i></a>
+	<div id="menu" class="menu">
+		<ul>                                                   
+			<li><a href="https://www.lhsaa.org/">Home</a></li>
+			<li><a href="https://www.lhsaa.org/lhsaa-classifieds">Classifieds</a></li>
+			<li><a href="https://online.flippingbook.com/view/611190912/" Target="_blank">Handbook</a></li>
+			<li><a href="https://www.lhsaa.org/lhsaa-calendar">Calendar</a></li>
+			<li><a href="https://www.lhsaa.org/contact-us">Contact</a></li>
+			<li><a href="https://www.lhsaa.org/about">ABOUT The LHSAA</a>
+				<span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+				<ul>
+					<li><a href="https://www.lhsaa.org/about#History" class="scroll2">History</a></li>
+					<li><a href="https://www.lhsaa.org/about#Staff" class="scroll2">Staff</a></li>
+					<li><a href="https://www.lhsaa.org/about#ExecutiveCommittee" class="scroll2">Executive Committee</a></li>
+				</ul>
+			</li>
+			<li><a href="https://www.lhsaa.org/sports-medicine">Sports Medicine</a></li>
+			<li><a href="https://www.lhsaaonline.org/login.aspx"  Target="_blank">Member Login</a></li>
+			<li><a href="https://www.lhsaa.org/sports">Sports</a>
+				<span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+				<ul>
+					<li>
+											<h5>Fall</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/cross-country">Cross Country</a></li><li><a href="https://www.lhsaa.org/football">Football</a></li><li><a href="https://www.lhsaa.org/swimming">Swimming</a></li><li><a href="https://www.lhsaa.org/volleyball">Volleyball</a></li>
+											</ul>
+										</li><li>
+											<h5>Winter</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/basketball-boys">Basketball - Boys</a></li><li><a href="https://www.lhsaa.org/basketball-girls">Basketball - Girls</a></li><li><a href="https://www.lhsaa.org/indoor-track-field">Indoor Track And Field</a></li><li><a href="https://www.lhsaa.org/powerlifting">Powerlifting</a></li><li><a href="https://www.lhsaa.org/soccer">Soccer</a></li><li><a href="https://www.lhsaa.org/wrestling">Wrestling</a></li>
+											</ul>
+										</li><li>
+											<h5>Spring</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/baseball">Baseball</a></li><li><a href="https://www.lhsaa.org/bowling">Bowling</a></li><li><a href="https://www.lhsaa.org/golf">Golf</a></li><li><a href="https://www.lhsaa.org/gymnastics">Gymnastics</a></li><li><a href="https://www.lhsaa.org/outdoor-track-and-field">Outdoor Track and Field</a></li><li><a href="https://www.lhsaa.org/softball">Softball</a></li><li><a href="https://www.lhsaa.org/tennis">Tennis</a></li>
+											</ul>
+										</li><li>
+											<h5>Non-Sanctioned</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/bass-fishing">Bass Fishing</a></li><li><a href="https://www.lhsaa.org/esports">Esports</a></li><li><a href="https://www.lhsaa.org/girls-flag-football">Girls' Flag Football</a></li><li><a href="https://www.lhsaa.org/cheer-dance">Cheer & Dance</a></li>
+											</ul>
+										</li>
+					<li><a href="https://www.lhsaa.org/sports#SportsFaqWrapper" class="scroll3">Sports Season Dates</a>
+						<span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+						<ul><li>
+														<a href="https://www.lhsaa.org/siteuploads/editorimg/file/Administration/2026-2029%20Sports%20Season%20Dates%20(updated%205-22-26).pdf" target="_blank">
+															2026-2029
+														</a></li>
+													</ul>
+					</li>
+				</ul>
+			</li>
+			<li><h5>Schools</h5>
+                <span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+                <ul> 
+                    <li><a href="https://www.lhsaa.org/administration" >Administration</a></li><li><a href="https://www.lhsaa.org/schools-all-academic" >All-Academic</a></li><li><a href="https://www.lhsaa.org/annual-convention" >Annual Convention</a></li><li><a href="https://www.lhsaa.org/apply-for-membership" >Apply for Membership</a></li><li><a href="https://www.lhsaa.org/forms-resources" >Forms & Resources</a></li><li><a href="https://www.lhsaa.org/school-directory" >School Directory </a></li><li><a href="https://www.lhsaa.org/scholarships" >Scholarships</a></li><li><a href="https://www.lhsaa.org/sportsmanship" >Sportmanship</a></li><li><a href="https://www.lhsaa.org/students-parents" >Students & Parents</a></li>
+                </ul>
+            </li>
+			
+			<li><a href="https://www.lhsaa.org/media">Media</a></li>
+			<li><h5>Affiliations</h5>
+				<span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+				<ul> 
+					<li><h5><a href="https://www.lhsaa.org/lhsada" >LHSADA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsca" >LHSCA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsoa" >LHSOA</a></h5></li><li><a href="https://www.lhsaa.org/corporate-sponsorships" >Corporate Partners</a></li><li><a href="https://www.lhsaa.org/hall-of-fame" >Hall of Fame</a></li><li><a href="https://www.lhsaa.org/venue-proposal-requests" >Venue Proposal Requests</a></li>
+				</ul>
+			</li>
+			<!-- <li><a href="">Power Rankings</a></li> -->
+			<li><a href="https://www.lhsaa.org/power-rankings">Power Rankings</a>
+												<span class="has-submenu"><i class="fa fa-angle-double-down"></i></span>
+												<ul>
+													<li>
+										<h5>Fall</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/football-3">Football </a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/volleyball-4">Volleyball</a>
+
+											
+											
+										</li>
+											</ul>
+										</li><li>
+										<h5>Winter</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/soccer-3">Soccer</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/basketball">Boys' Basketball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/girls-basketball-2">Girls' Basketball</a>
+
+											
+											
+										</li>
+											</ul>
+										</li><li>
+										<h5>Spring</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/test-3">Baseball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/softball-3">Softball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/bowling-3">Bowling</a>
+
+											
+											
+										</li>
+											</ul>
+										</li>
+												</ul>
+											</li>
+			<li><a href="https://www.lhsaa.org/champ-central" >Champ Central </a></li>
+			<li class="MemberLoginLI"><a href="https://payments.lhsaaonline.org/default.aspx"  Target="_blank">Payment</a></li>
+			<!-- <li></li> -->
+		</ul>
+	</div>
+</nav><!--ResponsiveMenu-->
+<header class="TopHeader"> 
+	<div class="group ClearBoth">
+		<div class="BlueTopHeader BgColor3 TAR">
+			<div class="TopMainWrapper">
+				<div class="group ClearBoth">
+					<nav id="menu" class="menu">
+						<ul>                                                   
+							<li><a href="https://www.lhsaa.org/">Home</a></li>
+							<li><a href="https://www.lhsaa.org/lhsaa-classifieds">Classifieds</a></li>
+							<li><a href="https://online.flippingbook.com/view/611190912/" Target="_blank">Handbook</a></li>
+							<li><a href="https://www.lhsaa.org/lhsaa-calendar">Calendar</a></li>
+							<li><a href="https://www.lhsaa.org/contact-us">Contact</a></li>
+							<li><a href="https://www.lhsaa.org/about">ABOUT The LHSAA</a>
+								<ul>
+									<li><a href="https://www.lhsaa.org/about#History" class="scroll2">History</a></li>
+									<li><a href="https://www.lhsaa.org/about#Staff" class="scroll2">Staff</a></li>
+									<li><a href="https://www.lhsaa.org/about#ExecutiveCommittee" class="scroll2">Executive Committee</a></li>
+								</ul>
+							</li>
+							<li><a href="https://www.lhsaa.org/sports-medicine">Sports Medicine</a></li>
+							<li class="MemberLoginLI"><a href="https://www.lhsaaonline.org/login.aspx"  Target="_blank">Member Login</a></li>
+							<li class="MemberLoginLI"><a href="https://payments.lhsaaonline.org/default.aspx"  Target="_blank">Payment</a></li>
+						</ul>
+					</nav>
+				</div>
+			</div>
+		</div>
+		<div class="WhiteTopHeader TAR">
+			<div class="HeaderCol">
+				<nav class="menu">
+				<ul>                                                                         
+					<li><a href="https://www.lhsaa.org/sports">Sports</a>
+																			<div class="SubMenuCol FiveColMenu">
+																				<div class="group ClearBoth">
+																					<ul class="NoBullet FiveMenuColLI"> 
+																						<li>
+											<h5>Fall</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/cross-country">Cross Country</a></li><li><a href="https://www.lhsaa.org/football">Football</a></li><li><a href="https://www.lhsaa.org/swimming">Swimming</a></li><li><a href="https://www.lhsaa.org/volleyball">Volleyball</a></li>
+											</ul>
+										</li><li>
+											<h5>Winter</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/basketball-boys">Basketball - Boys</a></li><li><a href="https://www.lhsaa.org/basketball-girls">Basketball - Girls</a></li><li><a href="https://www.lhsaa.org/indoor-track-field">Indoor Track And Field</a></li><li><a href="https://www.lhsaa.org/powerlifting">Powerlifting</a></li><li><a href="https://www.lhsaa.org/soccer">Soccer</a></li><li><a href="https://www.lhsaa.org/wrestling">Wrestling</a></li>
+											</ul>
+										</li><li>
+											<h5>Spring</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/baseball">Baseball</a></li><li><a href="https://www.lhsaa.org/bowling">Bowling</a></li><li><a href="https://www.lhsaa.org/golf">Golf</a></li><li><a href="https://www.lhsaa.org/gymnastics">Gymnastics</a></li><li><a href="https://www.lhsaa.org/outdoor-track-and-field">Outdoor Track and Field</a></li><li><a href="https://www.lhsaa.org/softball">Softball</a></li><li><a href="https://www.lhsaa.org/tennis">Tennis</a></li>
+											</ul>
+										</li><li>
+											<h5>Non-Sanctioned</h5>
+            								
+											<ul>
+												<li><a href="https://www.lhsaa.org/bass-fishing">Bass Fishing</a></li><li><a href="https://www.lhsaa.org/esports">Esports</a></li><li><a href="https://www.lhsaa.org/girls-flag-football">Girls' Flag Football</a></li><li><a href="https://www.lhsaa.org/cheer-dance">Cheer & Dance</a></li>
+											</ul>
+										</li>
+																						<li>
+																							<h5>
+																								<a href="https://www.lhsaa.org/sports#SportsFaqWrapper" class="scroll3">Sports Season Dates</a>
+																							</h5>
+																							<ul><li>
+														<a href="https://www.lhsaa.org/siteuploads/editorimg/file/Administration/2026-2029%20Sports%20Season%20Dates%20(updated%205-22-26).pdf" target="_blank">
+															2026-2029
+														</a></li>
+													</ul>
+																						</li>
+																					</ul>
+																				</div> 
+																			</div>
+																		</li>
+					<li><a href="javascript:void()">Schools</a>
+						<div class="SubMenuCol TwoColMenu">
+							<div class="group ClearBoth">
+								<ul class="NoBullet TwoMenuColLI">	
+                                    <li><a href="https://www.lhsaa.org/administration" >Administration</a></li><li><a href="https://www.lhsaa.org/schools-all-academic" >All-Academic</a></li><li><a href="https://www.lhsaa.org/annual-convention" >Annual Convention</a></li><li><a href="https://www.lhsaa.org/apply-for-membership" >Apply for Membership</a></li><li><a href="https://www.lhsaa.org/forms-resources" >Forms & Resources</a></li><li><a href="https://www.lhsaa.org/school-directory" >School Directory </a></li><li><a href="https://www.lhsaa.org/scholarships" >Scholarships</a></li><li><a href="https://www.lhsaa.org/sportsmanship" >Sportmanship</a></li><li><a href="https://www.lhsaa.org/students-parents" >Students & Parents</a></li>
+                                 </ul>
+                             </div>
+                        </div>
+                    </li>
+					<li><a href="https://www.lhsaa.org/media">Media</a></li>
+					<li><a href="javascript:void()">Affiliations</a>
+						<div class="SubMenuCol OneColMenu">
+							<div class="group ClearBoth">
+								<ul class="NoBullet OneMenuColLI"> 
+									<li><h5><a href="https://www.lhsaa.org/lhsada" >LHSADA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsca" >LHSCA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsoa" >LHSOA</a></h5></li><li><a href="https://www.lhsaa.org/corporate-sponsorships" >Corporate Partners</a></li><li><a href="https://www.lhsaa.org/hall-of-fame" >Hall of Fame</a></li><li><a href="https://www.lhsaa.org/venue-proposal-requests" >Venue Proposal Requests</a></li>
+								 </ul>
+							 </div>
+						</div>
+					</li>
+					<!-- <li><a href="">Power Rankings</a></li> -->
+					<li><a href="https://www.lhsaa.org/power-rankings">Power Rankings</a>
+											<div class="SubMenuCol FiveColMenu">
+												<div class="group ClearBoth">
+													<ul class="NoBullet FiveMenuColLI"> 
+														<li>
+										<h5>Fall</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/football-3">Football </a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/volleyball-4">Volleyball</a>
+
+											
+											
+										</li>
+											</ul>
+										</li><li>
+										<h5>Winter</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/soccer-3">Soccer</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/basketball">Boys' Basketball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/girls-basketball-2">Girls' Basketball</a>
+
+											
+											
+										</li>
+											</ul>
+										</li><li>
+										<h5>Spring</h5>
+            								
+											<ul>
+												<li>
+											<a href="https://www.lhsaa.org/test-3">Baseball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/softball-3">Softball</a>
+
+											
+											
+										</li><li>
+											<a href="https://www.lhsaa.org/bowling-3">Bowling</a>
+
+											
+											
+										</li>
+											</ul>
+										</li>
+													</ul>
+												</div> 
+											</div>
+										</li>
+					<li><a href="https://www.lhsaa.org/champ-central" >Champ Central </a></li>
+				</ul>
+			</nav>
+				<div class="HeaderSearchCol">
+					  <form name="frmSearch2" id="frmSearch2" action="https://www.lhsaa.org/lhsaa-search" method="get">
+						<div class="Col SearchCol">
+							<input name="searchtext2" type="text" id="searchtext2"  value="" size="50" placeholder="*Search"  class="required" >
+						</div>
+						<div class="SearchBtn">
+							<a href="javascript:void(0);"  class="SearchIcon SubmitSearch2"><i class="fa fa-search"></i></a>
+						</div>
+					</form>
+				</div>
+					<div class="SponsorBtn">
+                                <div class="jcarousel-wrapper TAC" id="LogoSlider">
+                                    <div class="WithoutSlider">
+                                        <ul class="NoBullet TAC">
+                                            <li>
+                                                                    <a href="https://allstatesugarbowl.org/" target="_blank">
+                                                                        <div class="Col">
+                                                                            <div class="ImgWrap">
+                                                                                <img src="siteuploads/photogalleryimg/133_sld_sugar-bowl-committee-logo_a_color.png"  >
+                                                                            </div>  
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                        </ul>
+                                    </div> 
+                                    
+                                </div>
+                            </div>
+				
+			</div>
+			
+			<div class="LogoWrap">
+				<a href="https://www.lhsaa.org/">
+					<div class="ResLogo">
+						<img src="html/images/imgs/main-logo.svg" alt="">
+					</div>
+				</a> 
+			</div>
+			<div class="ResImg LogoWrap "><div class="SponsorBtn">
+                                <div class="jcarousel-wrapper TAC" id="LogoSlider">
+                                    <div class="WithoutSlider">
+                                        <ul class="NoBullet TAC">
+                                            <li>
+                                                                    <a href="https://allstatesugarbowl.org/" target="_blank">
+                                                                        <div class="Col">
+                                                                            <div class="ImgWrap">
+                                                                                <img src="siteuploads/photogalleryimg/133_sld_sugar-bowl-committee-logo_a_color.png"  >
+                                                                            </div>  
+                                                                        </div>
+                                                                    </a>
+                                                                </li>
+                                        </ul>
+                                    </div> 
+                                    
+                                </div>
+                            </div></div>
+		</div>
+	</div>
+</header>
+    
+
+<section class="WithoutImgHeader BgColor3">
+	<div class="Wrapper">
+		<div class="InnerContainWrapper">
+			<div class="InnerWrap">
+				<h2 class="PageTitle">Error</h2>
+			</div>
+		</div>
+	</div>
+</section>
+
+
+
+
+
+	<div class="InfoWrapper group">
+
+      																								<div class="InnerContainWrapper">
+
+																										<div class="Error404Title" >404 ERROR: PAGE OR DOCUMENT NOT FOUND</div>  <div class="TagLine">This could be caused by the following:</div><div class="SolutionPoints">
+
+            									<div class="EditorText">
+
+													  <ul>
+	<li>The page or document is temporarily not available.</li>
+	<li>The page or document was renamed and no longer exists.</li>
+	<li>The bookmark being used is outdated.</li>
+	<li>The URL was entered incorrectly.</li>
+</ul>
+In an effort to consolidate the information that is on the site, some content that was previously on the site is not on this version.&nbsp; If you have any questions or would like specific information, please don&#39;t hesitate to reach out!&nbsp;&nbsp;<br />
+<br />
+PHONE:&nbsp;<a href="tel:225.296.5882">225.296.5882</a><br />
+EMAIL:&nbsp;<a href="mailto:beyondthegame@lhsaa.org">beyondthegame@lhsaa.org</a>
+
+												 </div>
+
+											 </div>
+
+																									  </div>
+
+																								 </div>
+
+<footer class="FooterWrap TAC">
+	<div class="InnerContainWrapper">
+	   <div class="FooterLogo">
+			<a href="https://www.lhsaa.org/">
+				<img src="html/images/imgs/footer-logo.svg" alt=" " width="290" height="85">
+			</a>
+		</div> <!--FooterLogo-->
+		<div class="FooterLinkWrap">
+			<div class="LinkCol MainLinks">
+				 <ul class="NoBullet">          
+         			<li><a href="https://www.lhsaa.org/">Home</a></li>
+         			<li><a href="https://www.lhsaa.org/lhsaa-classifieds">Classifieds</a></li>
+				 	<li><a href="https://online.flippingbook.com/view/611190912/" Target="_blank">Handbook</a></li>
+				 	<li><a href="https://www.lhsaa.org/lhsaa-calendar">Calendar</a></li>
+				 	<li><a href="https://www.lhsaa.org/contact-us">Contact</a></li>
+				 	<li><a href="https://www.lhsaa.org/about">ABOUT The LHSAA</a></li>
+				 	<li><a href="https://www.lhsaaonline.org/login.aspx"  Target="_blank">Member Login</a></li>
+				 	
+				 	<li><a href="https://www.lhsaa.org/media">Media</a></li>
+				 	<li><a href="https://www.lhsaa.org/champ-central" >Champ Central </a></li>
+				 </ul>
+			</div> 
+			<div class="LinkCol">
+				<h6>Sports</h6>
+				<ul class="NoBullet">            
+					<li><a href="https://www.lhsaa.org/cross-country">Fall</a></li><li><a href="https://www.lhsaa.org/basketball-boys">Winter</a></li><li><a href="https://www.lhsaa.org/baseball">Spring</a></li><li><a href="https://www.lhsaa.org/bass-fishing">Non-Sanctioned</a></li>
+				 </ul>
+			</div>
+			<div class="LinkCol">
+																	<h6>SCHOOLS</h6>
+																	<ul class="NoBullet"> 
+													                    <li><a href="https://www.lhsaa.org/administration" >Administration</a></li><li><a href="https://www.lhsaa.org/schools-all-academic" >All-Academic</a></li><li><a href="https://www.lhsaa.org/annual-convention" >Annual Convention</a></li><li><a href="https://www.lhsaa.org/apply-for-membership" >Apply for Membership</a></li><li><a href="https://www.lhsaa.org/forms-resources" >Forms & Resources</a></li><li><a href="https://www.lhsaa.org/school-directory" >School Directory </a></li><li><a href="https://www.lhsaa.org/scholarships" >Scholarships</a></li><li><a href="https://www.lhsaa.org/sportsmanship" >Sportmanship</a></li><li><a href="https://www.lhsaa.org/students-parents" >Students & Parents</a></li>
+													                 </ul>
+													             </div>
+			<!-- <div class="LinkCol">
+				<h6>Memberships and News</h6>
+				<ul class="NoBullet">             
+ 					<li><a href="javascript:void()">Press Releases</a></li>
+			 		<li><a href="javascript:void()">Resources</a></li>
+			 		<li><a href="javascript:void()">Championship/Tournament Information</a></li>
+			 		<li><a href="javascript:void()">Media Credentials</a></li>
+			 		<li><a href="javascript:void()">LSWA</a></li>
+				 </ul>
+			</div> -->
+			<div class="LinkCol">
+																<h6>Affiliations</h6>
+																<ul class="NoBullet"> 
+																	<li><h5><a href="https://www.lhsaa.org/lhsada" >LHSADA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsca" >LHSCA</a></h5></li><li><h5><a href="https://www.lhsaa.org/lhsoa" >LHSOA</a></h5></li><li><a href="https://www.lhsaa.org/corporate-sponsorships" >Corporate Partners</a></li><li><a href="https://www.lhsaa.org/hall-of-fame" >Hall of Fame</a></li><li><a href="https://www.lhsaa.org/venue-proposal-requests" >Venue Proposal Requests</a></li>
+																</ul>
+															</div>
+			<!-- <div class="LinkCol">
+				<h6></h6>
+				<ul class="NoBullet">  
+					<li><a href="javascript:void()">Championships</a></li>
+					<li><a href="javascript:void()">Tickets</a></li>
+					<li><a href="javascript:void()">Hotels</a></li>
+					<li><a href="javascript:void()">Apparel</a></li>
+					<li><a href="javascript:void()">Pictures</a></li>
+				 </ul>
+			</div> -->
+		</div>
+	</div>	 
+		<div class="ButtomCol">
+		<div class="InnerContainWrapper">
+			<div class="group ClearBoth">
+				<div class="NFHSLogo">
+					<img src="html/images/imgs/nfhs-logo.png" alt="">
+				</div>
+			<!--	<div class="FSocialIcon RightFloat">
+					<div class="SquareLogo">
+						<img src="html/images/imgs/small-square-logo.png" alt="">
+					</div>
+					<ul class="SocialIcons">
+						<li>
+							<a href="#" class="fa-stack fa-lg" target="_blank">			
+								<i class="fa fa-circle fa-stack-2x"></i>			
+								<i class="fa fa-facebook fa-stack-1x fa-inverse"></i>			
+							</a>			
+						</li>
+						<li> 
+							<a href="#" class="fa-stack fa-lg" target="_blank"> 
+								<i class="fa fa-circle fa-stack-2x"></i> 
+								<i class="fa fa-twitter fa-stack-1x fa-inverse"></i>
+							</a> 
+						</li>
+						<li> 
+							<a href="#" class="fa-stack fa-lg" target="_blank"> 
+								<i class="fa fa-circle fa-stack-2x"></i> 
+								<i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+							</a> 
+						</li>
+						<li>
+							<a href="#" class="fa-stack fa-lg" target="_blank">			
+								<i class="fa fa-circle fa-stack-2x"></i>			
+								<i class="fa fa-youtube-play fa-stack-1x fa-inverse"></i>			
+							</a>			
+						</li>
+					</ul>
+			   </div> --> <!--social icons-->
+               <div class="FSocialIcon RightFloat">
+					<div class="SquareLogo">
+						<img src="html/images/imgs/small-square-logo.svg" alt="" width="50" height="50">
+					</div>
+					<ul class="SocialIcons">
+						<li>
+										<a href="http://www.Facebook.com/LHSAAsports" class="fa-stack fa-lg" target="_blank">			
+											<i class="fa fa-circle fa-stack-2x"></i>			
+											<i class="fa fa-facebook fa-stack-1x fa-inverse"></i>			
+										</a>			
+									</li><li class="">
+					  <a href="http://x.com/LHSAAsports" class="fa-stack fa-lg" target="_blank">
+					  <i class="fa fa-circle fa-stack-2x"></i>                         
+						  <div class="icon">
+								  <img src="html/images/icons/twitter-x.png" alt="">
+						  </div>                        
+					  </a>                        
+				</li> <li> 
+							<a href="http://www.Instagram.com/LHSAAsports" class="fa-stack fa-lg" target="_blank"> 
+								<i class="fa fa-circle fa-stack-2x"></i> 
+								<i class="fa fa-instagram fa-stack-1x fa-inverse"></i>
+							</a> 
+						</li>  <li class="">
+                                <a href="http://youtube.com/@LHSAAsports?feature=shared" class="fa-stack fa-lg" target="_blank">			
+                                    <i class="fa fa-circle fa-stack-2x"></i>			
+                                    <i class="fa fa-youtube-play fa-stack-1x fa-inverse"></i>			
+                                </a>			
+                             </li> <li class="">
+							<a href="http://play.google.com/store/search?q=lhsaa&c=apps" class="fa-stack fa-lg" target="_blank">
+								<i class="fa fa-circle fa-stack-2x"></i>                         
+								<div class="icon">
+										<img src="html/images/icons/playstore.png" alt="">
+								</div>                        
+							</a>                        
+					  </li>
+					</ul>
+			   </div> 
+				<div class="CopyRightWrap LeftFloat TAL">
+					<div class="Link">
+						<ul class="NoBullet">  
+							<li>
+																<a href="https://www.lhsaa.org/copyright-notice" target="_blank" >
+																	Copyright Notice 
+																</a>
+															</li>
+							<li>
+															<a href="https://www.lhsaa.org/privacy-notice"  >
+																Privacy Notice
+															</a>
+														</li>
+							<li>
+													<a href="https://www.lhsaa.org/site-terms"  >
+														Site Terms
+													</a>
+												</li>
+							<li><a href="https://www.lhsaa.org/sitemap"  >Site Map</a></li>
+							<li><a href="https://www.lhsaa.org/siterequirements"  >Site Requirements</a></li>
+							
+							<!-- <li><a href="#">Site Map</a></li> -->
+						</ul>
+					</div>
+					<div class="copy">
+						&copy;  2022 Louisiana High School Athletic Association
+					</div> <!--copy-->
+					<div class="DevelopedBy">
+					   Developed by <a href="https://uglymugmarketing.com/" target="_blank">Ugly Mug Marketing</a>
+					</div> <!--DevelopedBy-->
+			   </div>
+			</div>
+		</div>
+		<div class="TopArrow">
+			<a href="#top" class="scroll">
+				<i class="fa fa-circle fa-stack-2x"></i>			
+				<i class="fa fa-angle-up fa-stack-1x fa-inverse"></i>
+			</a>
+		</div> <!--TopArrow-->
+	</div>
+	
+</footer> 
+<script type="text/javascript">
+jQuery(document).ready(function(){
+ 
+  		jQuery(window).scroll(function() {
+			var sd = jQuery(window).scrollTop();
+			if ( sd > 95 ) 
+				jQuery(".TopHeader").addClass("StickyTopHeader");
+			else 
+				jQuery(".TopHeader").removeClass("StickyTopHeader");
+		});
+});
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+		jQuery(".hide").hide() ;
+		jQuery(".HideWrap").hide() ;
+    	jQuery(".MinusIcon").hide() ;
+        jQuery(document).on('click', '.qus', function (e) {
+            $IDX = jQuery(".qus").index(this);
+			if (jQuery(this).next("div").is(':visible')) 
+			{ 
+				jQuery(this).next("div").slideUp();
+	            jQuery('.MinusIcon').hide() ;
+	            jQuery('.PlusIcon').show() ;
+			}
+			else  
+			{  	
+				jQuery(".hide").slideUp('slow') ;
+				jQuery(this).next("div").slideToggle();
+	            jQuery('.MinusIcon').hide() ;
+	            jQuery('.PlusIcon').show() ;
+	            jQuery('.MinusIcon').eq($IDX).show();
+	            jQuery('.PlusIcon').eq($IDX).hide();
+			} 
+			e.preventDefault();
+	}) ;
+}) ;//jQuery(document).ready
+</script>
+<script type="text/javascript">
+jQuery(document).ready(function(){
+		jQuery(".hide2").hide() ;
+		jQuery(".HideWrap2").hide() ;
+    	jQuery(".MinusIcon2").hide() ;
+        jQuery(document).on('click', '.qus2', function (e) {
+            $IDX = jQuery(".qus2").index(this);
+			if (jQuery(this).next("div").is(':visible')) 
+			{ 
+				jQuery(this).next("div").slideUp();
+	            jQuery('.MinusIcon2').hide() ;
+	            jQuery('.PlusIcon2').show() ;
+			}
+			else  
+			{  	
+				jQuery(".hide2").slideUp('slow') ;
+				jQuery(this).next("div").slideToggle();
+	            jQuery('.MinusIcon2').hide() ;
+	            jQuery('.PlusIcon2').show() ;
+	            jQuery('.MinusIcon2').eq($IDX).show();
+	            jQuery('.PlusIcon2').eq($IDX).hide();
+			} 
+			e.preventDefault();
+	}) ;
+}) ;//jQuery(document).ready
+</script>
+<script type="text/javascript">
+		jQuery( document ).ready( function ( $ ) {
+			$( 'body' ).addClass( 'js' );
+			var $menu = $( '#menuNew' ),
+				$menulink = $( '.menuNew-link' ),
+				$menuTrigger = $( '.has-submenuNew' ),
+				$HideMenu = $( '.HideMenu' );
+			$menulink.click( function ( e ) {
+				e.preventDefault();
+				$menulink.toggleClass( 'active' );
+				$menu.toggleClass( 'active' );
+				//
+			} );
+			$menuTrigger.click( function ( e ) {
+				e.preventDefault();
+				var $this = $( this );
+				$( '.menuNew ul' ).removeClass( 'active' );
+				$this.toggleClass( 'active' ).next( 'ul' ).toggleClass( 'active' );
+			} );
+			$HideMenu.click( function ( e ) {
+				e.preventDefault();
+				$( '.menuNew-link' ).removeClass( 'active' );
+				$( '.menuNew' ).toggleClass( 'active' ).next( 'ul' ).toggleClass( 'active' );
+			} );
+		$( '.clicktab' ).click( function ( e ) {
+				e.preventDefault();
+				$( '#menuNew' ).removeClass( 'active' );
+				//
+			} );
+		} ); //jQuery( document ).ready( function( $ )
+	</script>
+	
+<!--magnific popup-->
+<script>
+	function scrollpage( $ID ) {
+		$Top = $( '#' + $ID ).offset().top;
+		jQuery( 'html, body' ).animate( {
+			scrollTop: $Top - 100
+		}, 1000 );
+	}
+	jQuery( document ).ready( function () {
+		jQuery( '.box' ).hide();
+		jQuery( '.activator' ).click( function ( e ) {
+			e.preventDefault();
+			$ID = $( this ).attr( 'rel' );
+			$( '#overlay' ).fadeIn( 'fast' );
+			$( '#' + $ID ).fadeIn();
+			scrollpage( $ID );
+			//$(this).toggle() ;
+		} );
+		jQuery( '.boxclose' ).click( function ( e ) {
+			e.preventDefault();
+			$ID = $( this ).attr( 'rel' );
+			jQuery( '#' + $ID ).fadeOut( 'fast', function () {
+				jQuery( '#overlay' ).fadeOut( 'fast' );
+			} );
+		} );
+	} );
+</script> <!--overlay script-->
+<div class="overlay" id="overlay" style="display:none;"> </div>
+<div class="box RequestAQuote" id="RequestAQuote" style="display:none;"> 
+	<a href="#" class="boxclose" rel="RequestAQuote">
+        <i class="fa fa-close"></i>
+     </a>
+	<div class="ContactFormWrap  OverlayWrapper">
+	
+		<h3 class="Title">RequestAQuote</h3>
+	
+		<div class="FormWrapper" id="HideRequestAQuoteForm">
+            <form name="FormRequestAQuote" id="FormRequestAQuote" method="post"  action="thanks-request-a-quote.php" target="_blank">
+            <div class="Col3">
+                <input type="text" placeholder="First Name*" name="FName" id="FName">
+                 <input type="hidden" name="ServiceName" id="ServiceName">
+            </div>
+            <div class="Col3">
+                <input type="text" placeholder="Last Name*" name="LName" id="LName">
+            </div>
+            <div class="Col3">
+                <input type="text" placeholder="Phone*" name="Phone" id="Phone">
+            </div>
+            <div class="Col3">
+                <input type="text" placeholder="City" name="City" id="City">
+            </div>
+            <div class="Col3">
+                <select name="State" id="State">
+                    <option value="AK">Alaska</option><option value="AL">Alabama</option><option value="AR">Arkansas</option><option value="AZ">Arizona</option><option value="CA">California</option><option value="CO">Colorado</option><option value="CT">Connecticut</option><option value="DC">District of Columbia</option><option value="DE">Delaware</option><option value="FL">Florida</option><option value="GA">Georgia</option><option value="HI">Hawaii</option><option value="IA">Iowa</option><option value="ID">Idaho</option><option value="IL">Illinois</option><option value="IN">Indiana</option><option value="KS">Kansas</option><option value="KY">Kentucky</option><option value="LA">Louisiana</option><option value="MA">Massachusetts</option><option value="ME">Maine</option><option value="MD">Maryland</option><option value="MI">Michigan</option><option value="MN">Minnesota</option><option value="MO">Missouri</option><option value="MS">Mississippi</option><option value="MT">Montana</option><option value="NC">North Carolina</option><option value="ND">North Dakota</option><option value="NE">Nebraska</option><option value="NH">New Hampshire</option><option value="NJ">New Jersey</option><option value="NM">New Mexico</option><option value="NV">Nevada</option><option value="NY">New York</option><option value="OH">Ohio</option><option value="OK">Oklahoma</option><option value="OR">Oregon</option><option value="PA">Pennsylvania</option><option value="RI">Rhode Island</option><option value="SC" selected >South Carolina</option><option value="SD">South Dakota</option><option value="TN">Tennessee</option><option value="TX">Texas</option><option value="UT">Utah</option><option value="VT">Vermont</option><option value="VA">Virginia</option><option value="WA">Washington</option><option value="WI">Wisconsin</option><option value="WV">West Virginia</option><option value="WY">Wyoming</option>
+                </select>
+            </div>
+            <div class="Col3">
+                <input type="text" placeholder="Zip" name="Zip" id="Zip">
+            </div>
+            <div class="Col2">
+                <input type="text" placeholder="Email*" name="Email" id="Email">
+                 <input type="email"  name="_Email" id="_Email" style="display:none;">
+            </div>
+            <div class="Col2">
+                <input type="text" placeholder="Address" name="Address" id="Address">
+            </div>
+            <div class="Col1">
+                <textarea placeholder="Comments" name="Comment" id="Comment"></textarea>
+            </div>
+            <div class="group ClearBoth">
+                <div class="SecurityCode Col2">
+                 <div class="g-recaptcha" id="recaptcha1"></div>
+				   <input type="hidden" class="hiddenRecaptcha required" name="hiddenRecaptcha1" id="hiddenRecaptcha1">
+                </div>
+                <div class="Col2 SubmitBtn TAR">
+                    <div class="FillRedBtn">
+                        <a href="#"  id="RequestAQuoteSubmitBtn">Submit</a>
+                    </div>
+                </div>
+            </div>	
+            
+           </form>
+        </div><!--FormWrapper-->
+		<div class="LoaderImg TAC" id="LoaderCont" style="display:none;margin:100px 80px;">
+			<img src="html/images/loader.gif" /> 
+		</div>
+		<div class="ThanksMsg TAC" id="CntThanksMsg" style="display:none; margin:100px 80px;"> 
+			Thank you for your information. <br /> We will get back to you soon.
+		</div>
+	</div>
+</div>
+<!-- <script type="text/javascript">
+	jQuery(document).ready(function(){
+		jQuery(".TwoMenuColLI").makeacolumnlists({cols: 2, colWidth:203, equalHeight: ' ul li', startN: 1});
+		jQuery(".ThreeMenuColLI").makeacolumnlists({cols: 3, colWidth:203, equalHeight: ' ul li', startN: 1});
+		jQuery(".FiveMenuColLI").makeacolumnlists({cols: 5, colWidth:203, equalHeight: ' ul li', startN: 1});
+		jQuery(".SixMenuColLI").makeacolumnlists({cols: 6, colWidth:175, equalHeight: ' ul li', startN: 1});
+	}) ;
+</script> --></body>
+
+</html>	

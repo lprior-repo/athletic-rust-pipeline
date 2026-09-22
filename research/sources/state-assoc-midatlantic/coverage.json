@@ -1,0 +1,204 @@
+{
+  "lane": "state-assoc-midatlantic",
+  "captured_utc_date": "2026-09-22",
+  "jurisdictions": ["DC", "DE", "MD", "NJ", "NY", "PA", "CT", "MA", "RI", "NH", "VT", "ME"],
+  "method": {
+    "transport": "anonymous urllib / curl, chrome-like UA with an identifying `athletic-census-research/1.0` token, redirects followed, TLS verification never disabled",
+    "rate": "per-host spacing >= 1.1 s enforced by /tmp/cap.py; single request per URL unless a second capture is listed",
+    "robots": "robots.txt fetched first for every host that serves pages; disallowed paths were not fetched",
+    "evidence": "each count below names the sample file it was computed from; extraction commands are in samples/CAPTURES.md"
+  },
+  "jurisdictions_detail": {
+    "DC": {
+      "association": {"name": "District of Columbia State Athletic Association", "abbrev": "DCSAA", "url": "https://www.dcsaasports.com/", "verified": true},
+      "robots": {"url": "https://www.dcsaasports.com/robots.txt", "status": 404, "effect": "no restrictions"},
+      "enumerates": [
+        {"what": "sanctioned schools (state directory)", "count": 45, "method": "distinct `https://www.dcsaasports.com/school-directory/<slug>/` links in one response", "evidence": "samples/dcsaasports-school-directory.html"},
+        {"what": "sports offered per school", "count": null, "method": "school pages list sports (Boys/Girls Cross Country, Indoor/Outdoor Track & Field observed)", "evidence": "samples/dcsaasports-boys-xc.html"}
+      ],
+      "does_not_enumerate": ["individual athlete results (only competition/team-level)", "meet calendar with dates for the whole season (not found in captured pages)"],
+      "track_xc": {"paths": ["/boys-cross-country/", "/girls-cross-country/", "/sports/indoor-track-field/", "/sports/outdoor-track-field/"], "state_meet_evidence": "2025 DCSAA Cross Country State Championship Meet; team winner St. John's College High School; 'MVP School: Gonzaga College High School'", "results_depth": "competition_level"},
+      "coach_admin_fields": {"public": false, "note": "no coach/AD contact fields observed on DCSAA pages"},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": ["assets-rst7.rschooltoday.com (platform assets, 236 refs)"]},
+      "timing_providers": [],
+      "gaps": ["athlete-level DC state meet results not located on the association site", "no robots.txt means no published crawl policy"],
+      "rejected_hosts": [{"url": "https://www.dcsaasports.org/", "reason": "Thai online-gambling spam page, not the association", "evidence": "samples/dcsaa-home.html"}],
+      "recommendation": "DISCOVERY_SOURCE"
+    },
+    "DE": {
+      "association": {"name": "Delaware Interscholastic Athletic Association (expansion inferred)", "abbrev": "DIAA", "url": "https://www.diaa.org/ -> 302 -> https://education.delaware.gov/diaa", "verified": false},
+      "robots": {"url": "https://education.delaware.gov/robots.txt", "status": 200, "bytes": 311, "directives": "Disallow /wp-admin/; Crawl-delay: 10"},
+      "enumerates": [],
+      "does_not_enumerate": ["everything on the association host: content paths are behind a Cloudflare interstitial"],
+      "blocked_evidence": {"status": 403, "bytes": 5659, "body": "Cloudflare 'Just a moment...'", "file": "samples/diaa-home.html", "attempts": ["https://www.diaa.org/ (302)", "https://education.delaware.gov/diaa (403)", "https://education.delaware.gov/diaa/ (403)", "https://education.delaware.gov/ (403)", "https://www.doe.k12.de.us/robots.txt (403 -> effective education.delaware.gov)", "https://regulations.delaware.gov/AdminCode/title14/1000/1001.shtml (soft-404 shell)", "https://regulations.delaware.gov/AdminCode/title14/ (soft-404 shell)", "DNS: diaa.doe.k12.de.us NXDOMAIN"]},
+      "track_xc": {"paths": [], "state_meet_evidence": null, "results_depth": "none_observed_from_association"},
+      "coach_admin_fields": {"public": null},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": []},
+      "alternate_result_source": {"host": "https://de.milesplit.com/", "measured_team_links": 82, "evidence": ["samples/de-milesplit-teams.html", "samples/de-milesplit-home.html"]},
+      "gaps": ["DE sanctioned school universe unmeasured", "DE state meet format unverified", "whether DIAA has a non-Cloudflare-protected host not established"],
+      "recommendation": "CONDITIONAL"
+    },
+    "MD": {
+      "association": {"name": "Maryland Public Secondary Schools Athletic Association", "abbrev": "MPSSAA", "url": "https://www.mpssaa.org/", "verified": true},
+      "robots": {"url": "https://www.mpssaa.org/robots.txt", "status": 200, "bytes": 352, "directives": "Disallow /wp-admin/; sitemap_index.xml published"},
+      "enumerates": [
+        {"what": "school directory pages", "count": 201, "method": "distinct `/school-directory/<slug>/` links; 9 of them are county/aggregate pages (allegany, calvert, frederick, howard, kent-county, north-county, queen-annes, washington, wicomico) leaving 192 school pages", "evidence": "samples/mpssaa-school-directory.html"},
+        {"what": "school sitemap entries", "count": 200, "method": "`<loc>` count in school-sitemap.xml (likely a per-sitemap cap; do not read as the member count)", "evidence": "samples/sitemap-mpssaa-school.xml"},
+        {"what": "region meet schedule entries", "count": null, "method": "page exists but the schedule table is client-rendered ('0 results found' in static HTML)", "evidence": "samples/mpssaa-xc-region-schedule.html"}
+      ],
+      "does_not_enumerate": ["athletic-director email directory (login-gated)", "coach vacancy notices beyond the public landing page"],
+      "track_xc": {"paths": ["/sports/cross-country/", "/cross-country-region-meet-schedule/", "/track-and-field-region-meet-schedule/", "/2026/cross-country/2025-championship-results/"], "state_meet_evidence": "2025 Cross Country State Championships, November 8 at Hereford High School; class-by-class tables", "results_depth": "athlete_level"},
+      "result_fields": {"classes": ["1A", "2A", "3A", "4A"], "team_champion": "Smithsburg 49 (1A), River Hill 75 (2A), Centennial 77 (3A), Urbana 53 (4A)", "team_runner_up": "Brunswick 83, Hereford 110, Sherwood 84, Montgomery Blair 81", "individual_champion": "Simon McGillivray 16:28.02", "evidence": "samples/mpssaa-cross-country.html"},
+      "coach_admin_fields": {"public": false, "paths_tried": ["/members/", "/members/athletic-director-email-directory/"], "result": "302 to https://www.mpssaa.org/login/?redirect_to=...", "evidence": ["samples/mpssaa-members.html", "samples/mpssaa-ad-directory.html"]},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": ["https://www.nfhsnetwork.com/ (Watch Live)"]},
+      "timing_providers": [],
+      "gaps": ["state meet result pages are per-season hand-built pages; no stable results endpoint", "no timing vendor named on the pages captured"],
+      "recommendation": "RESULT_SOURCE"
+    },
+    "NJ": {
+      "association": {"name": "New Jersey State Interscholastic Athletic Association", "abbrev": "NJSIAA", "url": "https://www.njsiaa.org/", "verified": true},
+      "robots": {"url": "https://www.njsiaa.org/robots.txt", "status": 200, "bytes": 2183, "directives": "Drupal default disallows (/core/, /profiles/, /admin/, /search/, /user/login, /media/oembed)"},
+      "enumerates": [
+        {"what": "member schools with AD contact", "count": 47, "method": "school rows on the first page of /schools/member-information (pagination control not exposed in static HTML; total not asserted)", "evidence": "samples/njsiaa-member-info.html"}
+      ],
+      "does_not_enumerate": ["full member count in one response", "athlete-level results"],
+      "track_xc": {"paths": ["/sports/cross-country", "/sports/track-field-indoor", "/sports/track-field-outdoor"], "state_meet_evidence": "page structure lists 'PUBLIC SECTIONAL CHAMPIONSHIPS' and 'STATE CHAMPIONSHIPS' plus MileSplit entry windows", "results_depth": "none_observed_from_association"},
+      "coach_admin_fields": {"public": true, "fields": ["School", "Title", "Address", "Phone", "Ath. Dir."], "example": "Abraham Clark High School | 122 East 6th Avenue | Roselle, NJ 07203 | 908-298-2022 | Dr. Edwin Griffin", "evidence": "samples/njsiaa-member-info.html"},
+      "linkage": {"athletic_net": [], "milesplit": [{"context": "entry deadline rows", "markup": "<td headers=\"view-field-date-label-table-column\">MileSplit Opens:</td> / MileSplit Closes (Public Schools): / MileSplit Closes (Non-Public Schools):", "evidence": "samples/njsiaa-tf-outdoor.html"}], "other": [{"href": "https://njschoolsports.com", "text": "Report Score"}, {"href": "https://www.everythingtrackandfield.com/", "note": "rendered in the sport page Sponsors block with logo mf-athletic-logo-16-17.jpg -> sponsor, not a results host"}]},
+      "timing_providers": [],
+      "gaps": ["NJSIAA member total not established from the captured page", "NJ result hosting for XC/TF is external (MileSplit deadlines imply MileSplit is the entry system; results host not proven from NJSIAA pages)"],
+      "recommendation": "DISCOVERY_SOURCE"
+    },
+    "NY": {
+      "associations": [
+        {"name": "New York State Public High School Athletic Association", "abbrev": "NYSPHSAA", "url": "https://www.nysphsaa.org/", "scope": "upstate sections, state championships; NYC excluded", "verified": true},
+        {"name": "Public Schools Athletic League", "abbrev": "PSAL", "url": "https://www.psal.org/", "scope": "New York City only", "verified": true}
+      ],
+      "robots": [
+        {"url": "https://www.nysphsaa.org/robots.txt", "status": 200, "bytes": 5489, "directives": "User-agent: * disallows /images/, /documents/, /admin/, /services/, /site/, *.js, *.css, *.jpg, *.gif, *.axd, /*print=true*; Crawl-delay: 5; Visit-time: 0100-0645", "consequence": "NYSPHSAA /documents/ (handbooks, PDFs) is off-limits"},
+        {"url": "https://www.psal.org/robots.txt", "status": "no robots.txt (returns the site 404 HTML page, 40245 bytes)", "file": "samples/robots-psal.txt"}
+      ],
+      "enumerates": [
+        {"what": "NYSPHSAA sport modules", "count": 30, "method": "distinct `/index.aspx?path=<slug>` entries in the homepage nav JSON", "evidence": "samples/nysphsaa-home.html"},
+        {"what": "PSAL sport codes", "count": 36, "method": "distinct `spCode` values with labels in the homepage", "evidence": "samples/psal-home.html"},
+        {"what": "PSAL schools participating in XC", "count": 11, "method": "school-like lines on one sport page (partial; the page is a sport hub, not a directory)", "evidence": "samples/psal-xc.html"}
+      ],
+      "does_not_enumerate": ["NYSPHSAA member-school directory (https://www.nysphsaa.org/schools -> 404; /index.aspx?path=schools is an administrative hub, no school list)", "PSAL system-wide school directory"],
+      "track_xc": {"nysphsaa_paths": ["/index.aspx?path=cross", "/index.aspx?path=itrack", "/index.aspx?path=otrack"], "psal_urls": ["https://www.psal.org/sports/sport.aspx?spCode=033&flag=All", "https://www.psal.org/sports/sport.aspx?spCode=030&flag=All", "https://www.psal.org/sports/sport.aspx?spCode=035&flag=All"], "results_depth": "none_observed_from_associations"},
+      "coach_admin_fields": {"public": false, "note": "NYSPHSAA hub advertises an 'ADS & Coaches' area; no public roster captured"},
+      "linkage": {"athletic_net": [], "milesplit": [{"state": "NYSPHSAA", "markup": "\"campaigns\":[{\"id\":24,\"title\":\"MileSplitAside\",...,\"url\":\"/common/controls/adhandler.aspx?ad_id=24&target=https%3a%2f%2fny.milesplit.com%2f\"", "interpretation": "sponsor/ad handler on the track pages pointing at https://ny.milesplit.com/ — paid placement, not an official results contract", "evidence": "samples/nysphsaa-otrack.html"}], "other": [{"href": "https://www.maxpreps.com/state/new-york.htm", "state": "NYSPHSAA (also secure.maxpreps.com, 2 refs)"}, {"state": "PSAL", "href": "https://docs.google.com/spreadsheets/d/11F7f0HVBlmwpKOsiBPWg6I7Ba6GGq6z70KN61HCuVHw/edit?gid=0#gid=0", "note": "XC results published as Google Sheets/Drive documents"}, {"state": "PSAL", "href": "https://drive.google.com/file/d/15uGBx0vuDiRgOc3DsgdbzPzQBtnbVG3b/view"}]},
+      "timing_providers": [],
+      "gaps": ["no athlete-level NYSPHSAA or PSAL state-meet result pages located", "NYSPHSAA member universe only obtainable from /documents/ PDFs, which robots disallows"],
+      "recommendation": "VALIDATION_SOURCE"
+    },
+    "PA": {
+      "association": {"name": "Pennsylvania Interscholastic Athletic Association", "abbrev": "PIAA", "url": "https://www.piaa.org/", "verified": true},
+      "robots": {"url": "https://www.piaa.org/robots.txt", "status": 200, "bytes": 593, "directives": "Disallow /_mm/, /_notes/, /_baks/, /MMWIP/, /assets/, /account/, /blaze/, /admin/, /officials/forms/, /officials/directory/, /maint/, /error404.aspx/, /kitchen-sink.aspx/, /shop", "consequence": "PIAA officials directory is off-limits"},
+      "enumerates": [
+        {"what": "site tree", "count": 220, "method": "distinct internal hrefs on /sitemap.aspx", "evidence": "samples/piaa-sitemap.aspx.html"},
+        {"what": "school directory letters", "count": 25, "method": "distinct `list.aspx?alpha=` links (A-W and Y; X and Z absent)", "evidence": "samples/piaa-school-directory-a.html"}
+      ],
+      "does_not_enumerate": ["per-school rows in the alpha directory: the page renders no school anchors in static HTML"],
+      "track_xc": {"paths": ["/sports/crscountry/championships/default.aspx -> /sports/championship_details.aspx?sport=crscountry", "/championships/default.aspx", "/about/committees/steering/cross-country.aspx", "/about/committees/steering/track-field.aspx"], "state_meet_evidence": "page title '2026 PIAA Cross Country Championships Information and Results'", "results_depth": "none_observed_in_static_html"},
+      "coach_admin_fields": {"public": false, "note": "/officials/directory/ is robots-disallowed"},
+      "linkage": {"athletic_net": [], "milesplit": [{"markup": "<li><a href=\"https://pa.milesplit.com/\" target=\"_blank\">Access District and PIAA Championships coverage from PenntrackXC.com</a></li>", "interpretation": "PIAA championship page points at pa.milesplit.com (PenntrackXC) for district/state championship coverage", "evidence": "samples/piaa-championship-details-xc.html"}], "other": [{"href": "http://pcnselect.com", "note": "PCN broadcast link"}, {"href": "http://www.marketstreetsportsgroup.com", "note": "sponsorship contact"}]},
+      "timing_providers": [],
+      "gaps": ["PIAA member-school count unmeasured (directory rows are client-rendered)", "PIAA state meet result files not enumerated"],
+      "recommendation": "VALIDATION_SOURCE"
+    },
+    "CT": {
+      "association": {"name": "Connecticut Interscholastic Athletic Conference", "abbrev": "CIAC", "url": "https://ciac.fpsports.org/ (live) / https://www.ciacsports.com/ (TLS broken)", "verified": true},
+      "robots": {"url": "https://ciac.fpsports.org/robots.txt", "status": 200, "bytes": 247, "directives": "Disallow /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx", "consequence": "team schedule/score dashboards off-limits"},
+      "tls_finding": {"host": "www.ciacsports.com", "openssl": "verify error:num=10:certificate has expired; Verify return code: 10; leaf CN=ciacsports.com issued by Let's Encrypt R3; chain anchor DST Root CA X3", "curl": "exit 60 / ssl_verify_result 20; http:// returns 302", "effect": "no verified-HTTPS access to the CIAC results host as of 2026-09-22; verification was NOT disabled"},
+      "enumerates": [
+        {"what": "member schools in the vendor school list", "count": 440, "method": "distinct `SchoolID=<n>` values (list mixes levels; not asserted as the sanctioned high-school count)", "evidence": "samples/ciac-school-list.aspx"},
+        {"what": "tournament/sport ids", "count": 20, "method": "distinct `TournamentID=` values with labels in the school-list page", "evidence": "samples/ciac-school-list.aspx"}
+      ],
+      "does_not_enumerate": ["casciac.org /memberschools/ (robots-disallowed)"],
+      "track_xc": {"paths": ["/SportPages/SportPageInfo.aspx?TournamentID=1 (XC Boys)", "?TournamentID=9 (XC Girls)", "?TournamentID=104 (Indoor Track B&G)", "?TournamentID=204 (Outdoor Track B&G)"], "state_meet_evidence": "2026-2027 Boys Cross Country Championships: Divisional Championships, October 31 at Wickham Park; Open Championships, November 6 at Wickham Park (weather date Nov. 9); NE Championships", "results_depth": "schedule_plus_championship_metadata"},
+      "coach_admin_fields": {"public": false},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": [{"href": "https://www.nfhsnetwork.com/", "note": "2 refs on the CIAC homepage"}, {"href": "https://gofan.co/", "note": "ticketing"}, {"href": "http://cas.casciac.org/", "note": "CAS (coaches association) linked from the splash"}]},
+      "timing_providers": [],
+      "gaps": ["CT results host (ciacsports.com) unreachable over verified TLS", "no athlete-level CT result page captured"],
+      "recommendation": "CONDITIONAL"
+    },
+    "MA": {
+      "association": {"name": "Massachusetts Interscholastic Athletic Association", "abbrev": "MIAA", "url": "https://www.miaa.net/", "verified": true},
+      "robots": {"url": "https://www.miaa.net/robots.txt", "status": 200, "bytes": 2027, "directives": "Drupal default"},
+      "enumerates": [
+        {"what": "member schools", "count": 381, "method": "`grep -c 'MIAA District:'` over `pdftotext -layout` of the member list PDF", "breakdown": {"School Level H": 260, "School Level MH": 97, "School Level EMH": 24, "Private School? True": 41, "Voc School? True": 35, "Charter School? True": 36, "districts 1-9": "62/36/32/37/45/60/35/33/41"}, "document_header": "MIAA Member School List — March 27, 2026", "evidence": "samples/miaa-school-list.pdf"},
+        {"what": "sitemap entries", "count": 904, "method": "`<loc>` count", "evidence": "samples/sitemap-miaa.xml"}
+      ],
+      "does_not_enumerate": ["athlete-level results on the association site"],
+      "track_xc": {"paths": ["/track-cross-country", "/scores", "/tournaments", "/tournament-formats"], "state_meet_evidence": "track & XC resource page lists committee meetings, tournament formats and rankings", "results_depth": "none_observed_from_association (entries and rankings route through Athletic.net)"},
+      "coach_admin_fields": {"public": false, "note": "member PDF carries school + address + division, no coach/AD names"},
+      "linkage": {"athletic_net": [{"markup": "<div class=\"text-long\"><h3>Resources</h3><p><a href=\"https://www.athletic.net/\">Athletic.Net&nbsp;</a> The MIAA has partnered with Athletic.Net for all on-line entries in Cross Country, Indoor, and Outdoor Track.</p>", "interpretation": "MIAA states a formal entry partnership with Athletic.net for XC/indoor/outdoor track", "evidence": "samples/miaa-track-xc.html"}, {"markup": "<h3>New: MSTCA Indoor Track rankings</h3><p>These rankings were created by a committee of the Mass State Track Coaches' Association, using data supplied by athletic.net.</p>", "evidence": "samples/miaa-track-xc.html"}], "milesplit": [], "other": [{"href": "https://www.arbiterlive.com/", "note": "schedules/scores"}, {"href": "https://www.arbitersports.com/", "note": "officials"}, {"href": "https://gofan.co/", "note": "tickets"}]},
+      "timing_providers": [],
+      "gaps": ["member PDF is a static file dated 2026-03-27; refresh cadence unknown", "MSTCA (coaches' association) is the ranking publisher and was not separately crawled"],
+      "recommendation": "DISCOVERY_SOURCE"
+    },
+    "RI": {
+      "association": {"name": "Rhode Island Interscholastic League", "abbrev": "RIIL", "url": "https://www.riil.org/", "verified": true},
+      "robots": {"url": "https://www.riil.org/robots.txt", "status": 200, "bytes": 247, "directives": "Disallow /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx", "consequence": "team schedule/score dashboards off-limits; school list and sport pages allowed"},
+      "enumerates": [
+        {"what": "schools in the vendor school list", "count": 128, "method": "distinct `SchoolID=<n>` values (includes middle-school level entries; not asserted as the high-school count)", "evidence": "samples/riil-school-list.aspx"},
+        {"what": "sport tournament ids", "count": null, "method": "TournamentID list on the homepage nav (e.g. 1, 2, 3, 100-108, 200-208, 310, 1021, 1024)", "evidence": "samples/riil-home.html"}
+      ],
+      "does_not_enumerate": ["dual-meet results (dashboard pages are robots-disallowed)"],
+      "track_xc": {"paths": ["/SportPages/SportPageInfo.aspx?TournamentID=1 (XC Boys)", "?TournamentID=310 (XC Girls)", "?TournamentID=104 (Indoor Boys)", "?TournamentID=1024 (Indoor Girls)", "?TournamentID=204 (Outdoor Boys)", "?TournamentID=1021 (Outdoor Girls)"], "state_meet_evidence": "Fall 2026 Cross Country Championships: Class Championships, RI State Championships, New England Championships; CNESSPA New England XC Championship Packet 2026", "results_depth": "schedule_plus_championship_metadata"},
+      "coach_admin_fields": {"public": false},
+      "linkage": {"athletic_net": [], "milesplit": [{"markup": "<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1104' CarouselEntry='Mile Split'><a target='_blank' href='https://ri.milesplit.com/'> and a resources link <a ... href=\"https://ri.milesplit.com/\" target=\"_blank\"> labelled 'RIIL Cross Country on MileSplit'", "interpretation": "RIIL publishes MileSplit as its XC results/partner host", "evidence": "samples/riil-xc-boys.aspx"}], "other": [{"note": "CNESSPA packet hosted at riil.org"}]},
+      "timing_providers": ["MileSplit (via ri.milesplit.com link published by RIIL)"],
+      "gaps": ["RI high-school-only universe not separable from the 128-ID vendor list without following the page's client-side filters"],
+      "recommendation": "DISCOVERY_SOURCE"
+    },
+    "NH": {
+      "association": {"name": "New Hampshire Interscholastic Athletic Association", "abbrev": "NHIAA", "url": "https://www.nhiaa.org/", "verified": true},
+      "robots": {"url": "https://www.nhiaa.org/robots.txt", "status": 404, "bytes": 13, "effect": "no restrictions published"},
+      "enumerates": [
+        {"what": "sitemap entries", "count": 386, "method": "`<loc>` count", "evidence": "samples/sitemap-nhiaa.xml"},
+        {"what": "member-directory pages", "count": 42, "method": "page-42 capture (362449 B, same <title>Member Directory | New Hampshire Interscholastic Athletic Association (NHIAA)</title>) shows page links 1, 40, 41, 42 -> 42 is the last page; entries themselves are client-rendered (no school rows in either capture), so the member count is NOT measured", "evidence": ["samples/nhiaa-member-directory.html", "samples/nhiaa-member-directory-p42.html"]}
+      ],
+      "does_not_enumerate": ["member rows in static HTML", "meet results on the association host"],
+      "track_xc": {"paths": ["/sports/fall/boys-cross-country/", "/sports/fall/girls-cross-country/", "/sports/winter/boys-indoor-track/", "/sports/winter/girls-indoor-track/", "/sports/spring/boys-outdoor-track/", "/sports/spring/girls-outdoor-track/"], "state_meet_evidence": "Championship Programs page; 2026-27 CNESSPA Cross Country New England Championship Packet", "results_depth": "schedule_platform_only"},
+      "coach_admin_fields": {"public": null, "note": "rSchoolToday platform typically carries school/AD records but none were captured"},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": [{"href": "https://www.arbiter.io/", "note": "3 refs on the sports page"}, {"host": "assets-rst7.rschooltoday.com", "note": "200 asset refs -> rSchoolToday platform"}, {"href": "https://www.newenglandsports.com/"}, {"href": "https://www.nfhsnetwork.com/"}]},
+      "timing_providers": [],
+      "gaps": ["NHIAA member count requires the rSchoolToday data layer (not captured)", "no athlete-level NH results page captured"],
+      "recommendation": "DISCOVERY_SOURCE"
+    },
+    "VT": {
+      "association": {"name": "Vermont Principals' Association", "abbrev": "VPA", "url": "https://vpaonline.org/", "verified": true},
+      "robots": {"url": "https://vpaonline.org/robots.txt", "status": 200, "bytes": 187, "directives": "Crawl-delay: 10; User-agent: * Disallow: (empty = everything allowed); sitemap_index.xml published", "consequence": "10 s per-request spacing required by policy"},
+      "enumerates": [
+        {"what": "athletics pages", "count": 17, "method": "`<loc>` entries under /athletics/ in the page sitemap", "evidence": "samples/sitemap-vpa-page.xml"}
+      ],
+      "does_not_enumerate": ["member school roster in static HTML", "scores on the association host (published as Google documents)"],
+      "track_xc": {"paths": ["/athletics/scoreboard/", "/athletics/tournaments/", "/athletics/tournament-pairings/", "/athletics/divisional-alignments/", "/athletics/sports-rankings/"], "state_meet_evidence": "tournament pairings + scoreboard pages; individual tournament docs are Google Docs (e.g. /document/d/1_DMlEHHX3zIzO2jgqzaXLv2Puklx-o4y7IriQtRjQ0I/edit)", "results_depth": "document_links"},
+      "coach_admin_fields": {"public": false},
+      "linkage": {"athletic_net": [], "milesplit": [], "other": [{"href": "https://www.nfhsnetwork.com/"}, {"href": "https://www.maxpreps.com/"}, {"href": "https://vermontsportshistory.com/"}, {"host": "docs.google.com", "note": "scoreboards and tournament documents"}]},
+      "timing_providers": [],
+      "gaps": ["VPA member universe not enumerated", "track & field is not listed as its own /athletics/ page in the sitemap; VT T&F governance pages were not located in this pass"],
+      "recommendation": "VALIDATION_SOURCE"
+    },
+    "ME": {
+      "association": {"name": "Maine Principals' Association", "abbrev": "MPA", "url": "https://www.mpa.cc/", "verified": true},
+      "robots": {"url": "https://www.mpa.cc/robots.txt", "status": 200, "bytes": 247, "directives": "Disallow /DashboardSchedule.aspx, /DashboardGame.aspx, /DashboardSchool.aspx, /DashboardTeamSchedule.aspx, /ScheduleByWeek.aspx, /WebBot.aspx", "identical_md5_to": ["https://www.riil.org/robots.txt", "https://ciac.fpsports.org/robots.txt"]},
+      "enumerates": [
+        {"what": "schools in the vendor school list", "count": 152, "method": "distinct `SchoolID=<n>` values", "evidence": "samples/mpa-school-list.aspx"},
+        {"what": "tournament/sport ids", "count": null, "method": "TournamentID entries on the school-list page", "evidence": "samples/mpa-school-list.aspx"}
+      ],
+      "does_not_enumerate": ["team schedules (robots-disallowed dashboards)"],
+      "track_xc": {"paths": ["/SportPages/SportPageInfo.aspx?TournamentID=1 (XC Boys)", "?TournamentID=9 (XC Girls)", "?TournamentID=104/300 (Indoor Boys/Girls)", "?TournamentID=204/301 (Outdoor Boys/Girls)"], "state_meet_evidence": "2026-2027 Boys Cross Country Championships with Regional Championships, State Championships, New England Championships; 'Entries must be posted to MileSplit'; 'Entries Posted to Sub5.com: October 20'", "results_depth": "schedule_plus_entries_deadlines"},
+      "coach_admin_fields": {"public": false},
+      "linkage": {"athletic_net": [], "milesplit": [{"markup": "<span class='CarouselTracker' CarouselID='9' Carousel='Partner' CarouselEntryID='1025' CarouselEntry='Mile Split'><a target='_blank' href='https://me.milesplit.com/'>", "interpretation": "MPA publishes MileSplit as its championship partner for entries", "evidence": "samples/mpa-xc-boys.aspx"}, {"markup": "<span class=\"SportInfoTitle\">Entries must be posted to MileSplit:", "evidence": "samples/mpa-xc-boys.aspx"}], "other": [{"host": "sub5.com", "markup": "<span class=\"SportInfoTitle\">Entries Posted to Sub5.com:</span> October 20", "note": "second entries portal used by Maine XC", "evidence": "samples/mpa-xc-boys.aspx"}]},
+      "timing_providers": ["MileSplit (me.milesplit.com, published partner link)", "Sub5.com (entries)"],
+      "gaps": ["ME results files themselves are not on mpa.cc; no athlete-level ME result page captured", "MPA site is the shared vendor platform, so 152 SchoolIDs mix levels (same caveat as RI/CT)"],
+      "recommendation": "DISCOVERY_SOURCE"
+    }
+  },
+  "host_probes": {
+    "resolved": ["mpa.cc (MPA Maine)", "diaa.org (302 redirector to education.delaware.gov)", "dcsaa.org (squatter)", "dcsaasports.com (real DCSAA)", "dcsaasports.org (spam)", "ciacsports.com (TLS expired)", "casciac.org (splash)", "newengland.milesplit.com (resolves, 500)"],
+    "nxdomain": ["mpa.ccsso.org", "www.mpa.ccsso.org", "maineprincipals.org", "www.maineprincipals.org", "maineinterscholastic.org", "diaa.doe.k12.de.us", "dcsaa.dc.gov", "dcstateathletic.org"]
+  }
+}

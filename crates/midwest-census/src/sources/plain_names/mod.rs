@@ -55,6 +55,7 @@ use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 // The module doc links `CoachRole`; rustdoc needs it in scope, rustc does not.
 #[cfg(doc)]
 use census_domain::model::CoachRole;
+use census_domain::UsJurisdiction;
 
 /// NDHSAA member-school index (server-rendered HTML, 169 schools, no pagination).
 pub const ND_SCHOOLS_URL: &str = "https://ndhsaa.com/schools";
@@ -91,8 +92,8 @@ pub struct Options {
     pub refresh: bool,
     /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// Restrict to these state codes when the provider spans several states.
-    pub states: Vec<String>,
+    /// Restrict to these jurisdictions when the provider spans several states.
+    pub states: Vec<UsJurisdiction>,
     /// School names to resolve when the provider has no bulk index.
     pub school_names: Vec<String>,
 }
@@ -160,14 +161,8 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let before = ctx.fetcher.stats().await;
     let fetch = fetch_options(ctx, options);
 
-    let states: Vec<String> = options
-        .states
-        .iter()
-        .map(|state| state.trim().to_ascii_uppercase())
-        .filter(|state| !state.is_empty())
-        .collect();
-    let run_nd = states.is_empty() || states.iter().any(|state| state == "ND");
-    let run_ne = states.is_empty() || states.iter().any(|state| state == "NE");
+    let run_nd = options.states.is_empty() || options.states.contains(&UsJurisdiction::NorthDakota);
+    let run_ne = options.states.is_empty() || options.states.contains(&UsJurisdiction::Nebraska);
 
     // Counters saturate: they only feed the report, and no source carries 2^64 rows.
     let mut schools_written = 0u64;
@@ -183,9 +178,9 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         coaches_written = coaches_written.saturating_add(coaches);
     }
     if !run_nd && !run_ne {
+        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
         report.note(format!(
-            "no provider selected: states {:?} match neither ND nor NE",
-            options.states
+            "no provider selected: states {codes:?} match neither ND nor NE"
         ));
     }
     if !options.school_names.is_empty() {

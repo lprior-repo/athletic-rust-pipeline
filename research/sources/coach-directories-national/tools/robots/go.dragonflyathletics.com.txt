@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>AccessDenied</Code><Message>User: arn:aws:sts::847657604460:assumed-role/max-infosite-website-gateway-live/BackplaneAssumeRoleSession is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::max-infosite-live" because no identity-based policy allows the s3:ListBucket action</Message><RequestId>63JEEV4NJE38CEW9</RequestId><HostId>UIeUiuKWoeQ4179099Fk5fVvr//Idhmh8XJ9hgx5jnZSrzdJV2NUfDB9i+2u1/eigatURLps878=</HostId></Error>

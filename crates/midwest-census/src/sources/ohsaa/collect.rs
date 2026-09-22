@@ -10,6 +10,7 @@ use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
 use crate::store::Table;
 use census_domain::model::SourceNamespace;
+use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 // ── Collection ─────────────────────────────────────────────────────────────
@@ -28,13 +29,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     let before = ctx.fetcher.stats().await;
 
     // Restrict to OH state
-    if !options.states.is_empty() && !options.states.iter().any(|s| s.eq_ignore_ascii_case("OH")) {
+    if !options.states.is_empty() && !options.states.contains(&UsJurisdiction::Ohio) {
         let after = ctx.fetcher.stats().await;
         report.requests = after.requests.saturating_sub(before.requests);
         report.from_cache = after.cache_hits.saturating_sub(before.cache_hits);
+        let codes: Vec<&str> = options.states.iter().map(|state| state.code()).collect();
         report.note(format!(
-            "states {:?} do not include OH; this adapter covers Ohio only",
-            options.states
+            "states {codes:?} do not include OH; this adapter covers Ohio only"
         ));
         return Ok(report);
     }

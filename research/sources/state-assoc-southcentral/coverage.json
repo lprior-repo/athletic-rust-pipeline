@@ -1,0 +1,743 @@
+{
+  "AL": {
+    "usps": "AL",
+    "association": "Alabama High School Athletic Association (AHSAA)",
+    "urls": {
+      "primary": "https://www.ahsaa.com/",
+      "apex": "https://ahsaa.com/",
+      "robots": "samples/robots-www.ahsaa.com.txt",
+      "robots_apex": "samples/robots-ahsaa-apex.txt"
+    },
+    "robots_verdict": "BLOCKED: 'User-agent: * / Disallow: /' (Googlebot/Bingbot are the only allowed agents). No anonymous fetch of any ahsaa.com content path was performed after this was observed.",
+    "enumeration": {
+      "method": "AHSAA member-school / classification listing on ahsaa.com (path not reachable anonymously; robots-disallowed)",
+      "measured_count": null,
+      "status": "blocked",
+      "proxy_measures": [
+        {
+          "what": "MileSplit Alabama (AlabamaRunners) team pages",
+          "count": 562,
+          "sample": "samples/al-milesplit-teams-ids.txt",
+          "host": "al.milesplit.com"
+        }
+      ]
+    },
+    "track_xc": {
+      "xc_state_meet_2025": "AHSAA State Championship, Saturday 2025-11-08, Oakville Indian Mounds, Oakville AL",
+      "sample": "samples/al-ahsaa-2025-xc-state-live.html",
+      "athlete_fields_observed": "none (live results are delegated to anet.live; see links)"
+    },
+    "championship_results": {
+      "surface": "Xpress Timing state-meet live page -> Athletic.net Live",
+      "sample": "samples/al-ahsaa-2025-xc-state-live.html",
+      "state_meet_2025": "https://www.xpresstiming.com/Live/2025/XC/AHSAA/index.html"
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "note": "AHSAA site robots-blocked; no public coach/AD directory reachable anonymously."
+    },
+    "timing_providers": [
+      {
+        "name": "Xpress Timing",
+        "url": "https://www.xpresstiming.com/",
+        "evidence": "samples/al-xpresstiming-home.html (1,543 xt.anet.live links; 217 distinct Live/ result paths)"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "http://xt.anet.live/3bb7ev",
+        "anchor": "Live Results",
+        "markup": "<a href=\"http://xt.anet.live/3bb7ev\">Live Results</a>",
+        "found_on": "https://www.xpresstiming.com/Live/2025/XC/AHSAA/index.html",
+        "sample": "samples/al-ahsaa-2025-xc-state-live.html"
+      }
+    ],
+    "blocks": [
+      "www.ahsaa.com robots.txt = Disallow: / (all anonymous agents)",
+      "every Xpress Timing meet page delegates live results to xt.anet.live (Athletic.net)",
+      "no sitemap/content path may be crawled on ahsaa.com"
+    ],
+    "recommendation": "CONDITIONAL",
+    "recommendation_reason": "State-meet result provenance is reachable (Xpress Timing), but it terminates on Athletic.net Live (anet.live) and the association site itself forbids crawling; the sanctioned school universe cannot be enumerated anonymously.",
+    "open_questions": [
+      "Does AHSAA publish a member-school/classification PDF on any host whose robots allows anonymous crawling?",
+      "Is a mailto/contact route to AHSAA acceptable to obtain the classification list (owner decision)?"
+    ]
+  },
+  "AR": {
+    "usps": "AR",
+    "association": "Arkansas Activities Association (AAA)",
+    "urls": {
+      "primary": "https://www.ahsaa.org/",
+      "robots": "samples/robots-www.ahsaa.org.txt",
+      "sitemap": "https://www.ahsaa.org/sitemap.xml"
+    },
+    "robots_verdict": "ALLOWED: 'User-agent: * / Allow: / / Disallow: /api/'.",
+    "enumeration": {
+      "method": "AAA homepage published counters (Apptegy CMS block 'btn-title/btn-value'); per-school membership data lives in DragonFly Athletics behind the AAA 'Public Directory' link",
+      "measured_count": 502,
+      "unit": "member schools (AAA self-published)",
+      "sample": "samples/ar-aaa-home.html",
+      "markup": "\"btn-title\":{\"text\":\"Member Schools\"},\"btn-value\":{\"text\":\"502\"}",
+      "companion_stats": {
+        "students_involved": "150,000+",
+        "championships_awarded_annually": 108
+      },
+      "status": "measured (self-published counter; not a per-school list)"
+    },
+    "track_xc": {
+      "cross_country_page": "https://www.ahsaa.org/page/cross-country/",
+      "track_page": "https://www.ahsaa.org/page/track-and-field/",
+      "samples": [
+        "samples/ar-cross-country.html",
+        "samples/ar-track-and-field.html"
+      ],
+      "state_meet": "AAA state XC/track entries and 'Meet of Champs' pass through MileSplit"
+    },
+    "championship_results": {
+      "state_champions_page": "https://www.ahsaa.org/page/track-and-field/ ('2026 State Champions')",
+      "history": "AAA links Google Drive folders for boys/girls state champions + history",
+      "note": "AAA does not publish per-athlete result tables on its own site; results are delegated (see links)."
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "surface": "menu link 'AD Directory' -> Google Form; 'Staff Directory' page; 'Public Directory' -> go.dragonflyathletics.com",
+      "note": "coach/AD roster fields are not published as a list; DragonFly is the association's roster platform (login)."
+    },
+    "timing_providers": [
+      {
+        "name": "MileSplit (registration + live results)",
+        "url": "https://ar.milesplit.com/",
+        "evidence": "samples/ar-cross-country.html (calendar link + 'ARMileSplit - Letter of Partnership')"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://ar.milesplit.com/calendar/arkansas-cc-meet-calendar",
+        "anchor": "Cross Country Meets",
+        "markup": "<a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"https://ar.milesplit.com/calendar/arkansas-cc-meet-calendar\">Cross Country Meets</a>",
+        "sample": "samples/ar-cross-country.html"
+      },
+      {
+        "href": "https://milesplit.live/meets/731034/events/4/assignments/F/F",
+        "anchor": "Meet of Champs Entries",
+        "markup": "<a target=\"_blank\" rel=\"noopener noreferrer nofollow\" class=\"d-block link\" href=\"https://milesplit.live/meets/731034/events/4/assignments/F/F\">Meet of Champs Entries</a>",
+        "sample": "samples/ar-track-and-field.html"
+      }
+    ],
+    "blocks": [],
+    "recommendation": "DISCOVERY_SOURCE",
+    "recommendation_reason": "AAA is the authoritative membership/calendar authority (502 schools) and it publicly delegates meet discovery, entries and results to MileSplit Arkansas; the site itself carries no per-athlete results.",
+    "open_questions": [
+      "Does go.dragonflyathletics.com expose an anonymous public directory listing (SPA; not resolved here)?",
+      "Exact AAA classification (1A-7A) counts per class are not published on the AAA site in a crawlable form."
+    ]
+  },
+  "KY": {
+    "usps": "KY",
+    "association": "Kentucky High School Athletic Association (KHSAA)",
+    "urls": {
+      "primary": "https://khsaa.org/",
+      "robots": "samples/robots-khsaa.org.txt",
+      "member_directory": "https://khsaa.org/khsaa-member-school-directory-and-information/"
+    },
+    "robots_verdict": "ALLOWED except /wp-admin/, /wp*, /school_logos/, /payments/, /Publications, /officials, /rpi_details; GPTBot fully disallowed.",
+    "enumeration": {
+      "method": "KHSAA member-school directory page: one <li> per school with a stable ArbiterLive entity id link (https://www.arbiterlive.com/Teams?entityId=<id>)",
+      "measured_count": 290,
+      "unit": "member schools",
+      "sample": "samples/ky-member-school-directory.html",
+      "extracted": "samples/ky-schools-arbiterlive.tsv",
+      "id_range": "131..123058",
+      "markup_example": "<a href='https://www.arbiterlive.com/Teams?entityId=131'>Adair County High School</a>",
+      "status": "measured, with stable per-school ids"
+    },
+    "track_xc": {
+      "cross_country_page": "https://khsaa.org/sports-sport-activities/individual-sports/cross-country/",
+      "track_page": "https://khsaa.org/sports-sport-activities/individual-sports/track/",
+      "samples": [
+        "samples/ky-cross-country.html",
+        "samples/ky-track.html"
+      ]
+    },
+    "championship_results": {
+      "format": "per-class news posts (Class 1A/2A/3A x indoor + outdoor + XC), plus a results-and-entries index",
+      "results_index": "https://khsaa.org/2025-2026-cross-country-state-region-results-entries/",
+      "sample": "samples/ky-xc-results-entries.html",
+      "live_results": "https://milesplit.live/meets/711786"
+    },
+    "coach_ad_directory": {
+      "public": true,
+      "surface": "ArbiterLive per-school pages (entityId), reached from the KHSAA directory",
+      "fields_stated_by_khsaa": "'Data shown by this report is managed by each individual school including coaching staffs and rosters. The data mirrors the ArbiterLive page of each school'",
+      "sample": "samples/ky-member-school-directory.html",
+      "note": "the directory page itself links 290 school names; per-school staff/roster fields are rendered by the ArbiterLive SPA."
+    },
+    "timing_providers": [
+      {
+        "name": "MileSplit (official online registration provider)",
+        "url": "https://www.milesplit.com/",
+        "evidence": "samples/ky-cross-country.html news links 'MileSplit Named Online Registration Provider for KHSAA Cross Country/Track Field' (2024-07-31, 2024-08-19)"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://milesplit.live/meets/711786",
+        "anchor": "Follow Live Results via MileSplit",
+        "markup": "<a title=\"Follow Live Results via MileSplit\" href=\"https://milesplit.live/meets/711786\">",
+        "sample": "samples/ky-cross-country.html"
+      }
+    ],
+    "blocks": [],
+    "recommendation": "VALIDATION_SOURCE",
+    "recommendation_reason": "290 schools with stable ArbiterLive entity ids give a clean join key for roster/coach verification; results are delegated to MileSplit.",
+    "open_questions": [
+      "ArbiterLive per-school roster/coach pages are JS-rendered; the underlying JSON endpoint was not identified (not guessed).",
+      "KHSAA 'School Enrollments' page lists a report but exposes no crawlable file link."
+    ]
+  },
+  "LA": {
+    "usps": "LA",
+    "association": "Louisiana High School Athletic Association (LHSAA)",
+    "urls": {
+      "primary": "https://www.lhsaa.org/",
+      "robots_absent": "samples/robots-lhsaa.org.txt",
+      "robots_probe": "samples/robots-www.lhsaa.org.txt"
+    },
+    "robots_verdict": "NO robots.txt PUBLISHED: /robots.txt 302 -> /error.php (404). Per RFC 9309 an unavailable robots.txt means no published restrictions; requests were still made one-per-second.",
+    "enumeration": {
+      "method": "LHSAA 'School Administration Directory' PDF (linked as 'School Administration Directory' from /forms-resources) + state-championship participation",
+      "measured_count": 306,
+      "unit": "distinct school tokens in the 2026 outdoor state-meet results PDF (derived)",
+      "membership_count_status": "UNVERIFIED - the coaches/school directory PDF text layer uses subset-font glyph permutations ('4G9E<' = 'School', 'O[[6P' = 'Athletic'), so an exact school count could not be extracted mechanically; 108 pages",
+      "samples": [
+        "samples/la-2026-state-champ-results.pdf",
+        "samples/la-2026-state-champ-results.txt",
+        "samples/la-coaches-directory-2025-26.pdf"
+      ],
+      "proxy_measures": [
+        {
+          "what": "MileSplit Louisiana team pages",
+          "count": 588,
+          "sample": "samples/la-milesplit-teams-ids.txt"
+        }
+      ],
+      "derivation": "pdftotext -layout samples/la-2026-state-champ-results.pdf samples/la-2026-state-champ-results.txt ; A) place-led rows: regex ^\\s*\\d{1,3}\\s+\\S -> 2266 lines (2017 carry a numeric mark) ; B) school-token rows: regex ^\\s*\\d{1,3}\\s+\\S.{2,40}?\\s{2,}([A-Z][A-Z0-9 \\-'.&]{2,24}?)\\s{2,}(?:\\d|DNS|DNF|DQ|NT) -> 1749 rows, 306 distinct tokens (the reported measured_count)",
+      "status": "measured (derived from state-meet results PDF); membership count UNVERIFIED (directory PDF font-encoded)",
+      "result_rows": {
+        "place_led_lines": 2266,
+        "with_numeric_mark": 2017,
+        "school_token_rows": 1749
+      }
+    },
+    "track_xc": {
+      "cross_country_page": "https://www.lhsaa.org/cross-country",
+      "outdoor_track_page": "https://www.lhsaa.org/outdoor-track-and-field",
+      "indoor_track_page": "https://www.lhsaa.org/indoor-track-field",
+      "samples": [
+        "samples/la-cross-country.html",
+        "samples/la-outdoor-track-field.html"
+      ]
+    },
+    "championship_results": {
+      "format": "HY-TEK Meet Manager printout (PDF), per class",
+      "classes": [
+        "B",
+        "C",
+        "1A",
+        "2A",
+        "3A",
+        "4A",
+        "5A"
+      ],
+      "sessions": [
+        "Thursday B, C and 1A",
+        "Friday 2A, 3A",
+        "Saturday 4A, 5A"
+      ],
+      "row_columns": [
+        "place",
+        "Name",
+        "Year",
+        "School",
+        "Finals",
+        "Wind"
+      ],
+      "result_rows_2026": 2254,
+      "sample": "samples/la-2026-state-champ-results.pdf",
+      "archive": "https://www.lhsaa.org/outdoor-track-and-field links season PDFs 2003-2026",
+      "outdoor_state_result_years_pdf": "2003-2011, 2013-2019, 2021, 2023-2026 (linked on samples/la-outdoor-track-field.html)",
+      "outdoor_state_result_years_other": {
+        "2012": "no link published",
+        "2020": "no link published",
+        "2022": "https://live.deltatiming.com/meets/16151/winners"
+      }
+    },
+    "coach_ad_directory": {
+      "public": true,
+      "surface": "LHSAA Coaches Directory PDF (108 pages) - per school: school name, class, phone, Athletic Director, Principal, per-sport coach names with emails",
+      "sample": "samples/la-coaches-directory-2025-26.pdf",
+      "note": "text layer is font-encoded; structure is visible but automated field extraction requires the font mapping to be solved first."
+    },
+    "timing_providers": [
+      {
+        "name": "Delta Timing",
+        "url": "https://live.deltatiming.com/",
+        "evidence": "samples/la-outdoor-track-field.html (2022 results link)"
+      },
+      {
+        "name": "Hy-Tek Meet Manager",
+        "evidence": "samples/la-2026-state-champ-results.pdf ('Hy-Tek's MEET MANAGER 9:12 PM 5/7/2026')"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://support.milesplit.com/s/lhsaa-coach-onboarding",
+        "anchor": "MileSplit Coach Onboarding",
+        "markup": "<li><a href=\"https://support.milesplit.com/s/lhsaa-coach-onboarding\">MileSplit Coach Onboarding</a>",
+        "sample": "samples/la-cross-country.html"
+      },
+      {
+        "href": "https://www.milesplit.com/articles/336667/meetpro-milesplit-the-future-of-meet-management",
+        "anchor": "MeetPro Meet Management Software Information",
+        "markup": "<li><a href=\"https://www.milesplit.com/articles/336667/meetpro-milesplit-the-future-of-meet-management\">MeetPro Meet Management Software Information</a>",
+        "sample": "samples/la-cross-country.html"
+      }
+    ],
+    "blocks": [
+      "lhsaaonline.org (member portal) publishes 'User-agent: * / Disallow: /'",
+      "unknown paths on lhsaa.org return a soft 404 (error.php); no sitemap.xml"
+    ],
+    "recommendation": "RESULT_SOURCE",
+    "recommendation_reason": "State-meet results are published as downloadable HY-TEK PDFs (2003-2026) with grade (Year) and wind columns, and the association publishes a coaches/AD directory; both are crawlable.",
+    "open_questions": [
+      "Solve the LHSAA PDF font encoding to get the membership count per class.",
+      "Does the LHSAA publish the member list in HTML anywhere (the /school-directory page is a nav shell)?"
+    ]
+  },
+  "MS": {
+    "usps": "MS",
+    "association": "Mississippi High School Activities Association (MHSAA)",
+    "urls": {
+      "primary": "https://www.misshsaa.com/",
+      "robots": "samples/robots-misshsaa.com.txt",
+      "robots_www": "samples/robots-www.misshsaa.com.txt"
+    },
+    "robots_verdict": "BLOCKED: robots.txt itself returns HTTP 403 ('403 - Forbidden | Access to this page is forbidden.'); the home page returns the same 403 for both apex and www. Appears to be a WAF/site-shield (the archived crawl of 2025-11-09 shows /.well-known/sgcaptcha/ interstitials). No bypass attempted.",
+    "enumeration": {
+      "method": "MHSAA member-school listing (unreachable anonymously)",
+      "measured_count": null,
+      "status": "blocked",
+      "proxy_measures": [
+        {
+          "what": "MileSplit Mississippi team pages",
+          "count": 463,
+          "sample": "samples/ms-milesplit-teams-ids.txt",
+          "ids_example": [
+            "1140-tupelo-high-school",
+            "14027-strayhorn-high-school"
+          ]
+        }
+      ],
+      "historical_structure": {
+        "source": "Wayback Machine CDX + one replay",
+        "samples": [
+          "samples/wayback-cdx-misshsaa-xc.txt",
+          "samples/ms-2019-1a-girls-xc-results-wayback.html"
+        ],
+        "observation": "MHSAA publishes per-class XC/track result posts (Class 1A-6A boys/girls) plus 'Cross Country Championships' and 'Track Regions' pages; archived captures stop before the WAF era."
+      }
+    },
+    "track_xc": {
+      "live_site": "403",
+      "coverage_proxy": "MileSplit Mississippi (ms.milesplit.com) calendar + meet results",
+      "samples": [
+        "samples/ms-milesplit-home.html",
+        "samples/ms-milesplit-teams.html"
+      ]
+    },
+    "championship_results": {
+      "surface": "MHSAA posts (blocked live); historical per-class result posts visible only in the archive",
+      "sample": "samples/ms-2019-1a-girls-xc-results-wayback.html",
+      "live_meets_2026_on_milesplit": [
+        "761631-simpson-academy-invitational-2026",
+        "717400-admiral-bayou-classic-2026",
+        "739717-saltillo-cross-country-invitational-2026",
+        "761587-warren-central-valhalla-invitational-2026"
+      ]
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "note": "site blocked; no anonymous coach/AD surface verified (archived index shows 'Athletic Directors' style posts only)."
+    },
+    "timing_providers": [
+      {
+        "name": "unknown",
+        "evidence": "none captured - live site 403; not inferred"
+      }
+    ],
+    "athleticnet_milesplit_links": [],
+    "blocks": [
+      "misshsaa.com robots.txt and all content paths -> HTTP 403 (WAF)",
+      "Wayback captures after ~2023 are captcha interstitials, so the archive cannot substitute for current data"
+    ],
+    "recommendation": "CONDITIONAL",
+    "recommendation_reason": "Mississippi is covered by MileSplit Mississippi (463 enumerated team ids) but the sanctioned association surface is unavailable to anonymous clients; the school universe is only available as a third-party proxy.",
+    "open_questions": [
+      "Is the 403 IP/agent-based or a global site shield? (single anonymous agent only; not tested further)",
+      "Which timing company produces MHSAA state-meet results (no evidence captured)?"
+    ]
+  },
+  "OK": {
+    "usps": "OK",
+    "association": "Oklahoma Secondary School Activities Association (OSSAA) - presenting site 'OSSAA Illustrated'",
+    "urls": {
+      "primary": "https://ossaaillustrated.com/",
+      "old_host": "https://ossaa.com/ (302 -> ossaaillustrated.com)",
+      "robots": "samples/robots-ossaaillustrated.com.txt",
+      "robots_old": "samples/robots-www.ossaa.com.txt"
+    },
+    "robots_verdict": "ALLOWED: only /wp-admin/ is disallowed (with /wp-admin/admin-ajax.php re-allowed); sitemap published at /wp-sitemap.xml.",
+    "enumeration": {
+      "method": "OSSAA 'Member Schools' PDF (numbered list, 4 columns x 2 pages)",
+      "measured_count": 482,
+      "unit": "member schools",
+      "sample": "samples/ok-memberschools-2025-26.pdf",
+      "extracted": "samples/ok-memberschools-2025-26.txt",
+      "url": "https://ossaaillustrated.com/wp-content/uploads/2025/10/MF_2025-26_MemberSchools.pdf",
+      "status": "measured"
+    },
+    "track_xc": {
+      "cross_country_page": "https://ossaaillustrated.com/cross-country/",
+      "track_page": "https://ossaaillustrated.com/track/",
+      "samples": [
+        "samples/ok-xc-page-links-note.txt",
+        "samples/ok-track.html"
+      ],
+      "classifications": {
+        "page": "https://ossaaillustrated.com/wp-content/uploads/2025/09/MF_2025-26_Classifications.pdf",
+        "cross_country_bands": "6A=32 largest, 5A=next 40, 4A=next 56, 3A=next 56, 2A=next 72, A=all remaining",
+        "sample": "samples/ok-classifications-2025-26.pdf"
+      }
+    },
+    "championship_results": {
+      "format": "per-class 'OFFICIAL MEET REPORT' PDFs produced by DirectAthletics MeetPro",
+      "state_xc_2025": "https://ossaaillustrated.com/wp-content/uploads/2025/11/CC_2025-26_6AStateResults.pdf (6 class files referenced: 6A, 5A[file spelled '5AStaeResults.pdf'], 4A, 3A, 2A, A)",
+      "athlete_columns": [
+        "place",
+        "Athlete",
+        "YR (grade)",
+        "bib #",
+        "Team",
+        "Score",
+        "Time",
+        "Gap",
+        "Avg. Mile",
+        "Avg. kM",
+        "1600 Meters",
+        "3200 Meters"
+      ],
+      "team_columns": [
+        "place",
+        "school",
+        "Score",
+        "Scoring Order",
+        "Total",
+        "Avg.",
+        "Spread"
+      ],
+      "sample": "samples/ok-cc-2025-6a-state-results.pdf",
+      "state_track_2026": [
+        "TR_2025-26_6A5AStateResults.pdf",
+        "TR_2025-26_4A3AStateResults.pdf",
+        "TR_2025-26_2AAStateResults.pdf"
+      ]
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "surface": "https://ossaaillustrated.com/athletic-directors/ - handbooks/manuals only (0 tables; no AD list)",
+      "sample": "samples/ok-athletic-directors.html",
+      "note": "OSSAA member login lives at ossaarankings.com/membership/MemberLogin.aspx (login-gated)."
+    },
+    "timing_providers": [
+      {
+        "name": "DirectAthletics MeetPro",
+        "evidence": "samples/ok-cc-2025-6a-state-results.pdf footer 'DirectAthletics MeetPro 12'"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://ossaaillustrated.com/wp-content/uploads/2024/01/TR_2023-24_MileSplitPartnership.pdf",
+        "anchor": "OSSAA Partners with MileSplit",
+        "markup": "<p class=\"wp-block-paragraph\"><strong><a href=\"https://ossaaillustrated.com/wp-content/uploads/2024/01/TR_2023-24_MileSplitPartnership.pdf\" data-type=\"link\" data-id=\"...\">OSSAA Partners with MileSplit</a></strong></p>",
+        "sample": "samples/ok-cross-country.html",
+        "pdf_text": "'MileSplit Named Strategic Partner of OSSAA Cross Country and Track and Field' - OKLAHOMA CITY, OK - January 4, 2024",
+        "pdf_sample": "samples/ok-milesplit-partnership.pdf"
+      }
+    ],
+    "blocks": [],
+    "recommendation": "PRIMARY",
+    "recommendation_reason": "Highest-value association surface in the batch: crawlable member-school count (482), per-activity classification bands, per-class state results with grade + splits (MeetPro), and an explicit MileSplit partnership.",
+    "open_questions": [
+      "The 5A XC state-results file is published with a typo ('5AStaeResults.pdf') - the collector must tolerate it.",
+      "No AD/coach contact list is published; only the AD manual."
+    ]
+  },
+  "TN": {
+    "usps": "TN",
+    "association": "Tennessee Secondary School Athletic Association (TSSAA)",
+    "urls": {
+      "primary": "https://tssaa.org/",
+      "championships": "https://tssaasports.com/",
+      "member_directory": "https://portal.tssaa.org/common/directory/",
+      "robots": "samples/robots-tssaa.org.txt",
+      "robots_portal": "samples/robots-portal.tssaa.org.txt"
+    },
+    "robots_verdict": "ALLOWED: tssaa.org disallows only /cpresources/, /vendor/, /.env, /cache/ and publishes two sitemaps; portal.tssaa.org disallows everything except '/common' (the member directory lives under /common/directory/).",
+    "enumeration": {
+      "method": "portal.tssaa.org/common/directory/ embeds the complete member directory as an inline JS array {id,name}",
+      "measured_count": 456,
+      "unit": "member schools (high-school directory)",
+      "sample": "samples/tn-portal-directory.html",
+      "extracted": "samples/tn-schools-extracted.tsv",
+      "markup_example": "{id: '1', name: 'Adamsville High School (Adamsville, TN)'}",
+      "status": "measured, with stable TSSAA school ids",
+      "class_evidence": "'TSSAA classifies schools by Grade 9-12 enrollment' (samples/tn-classification.html); current cycle 2025-2027"
+    },
+    "track_xc": {
+      "xc_boys": "https://tssaa.org/sports/cross-country-boys",
+      "track_boys": "https://tssaa.org/sports/track-boys",
+      "samples": [
+        "samples/tn-xc-boys.html",
+        "samples/tn-track-boys.html"
+      ],
+      "rosters": "https://tssaasports.com/sports/rosters/?sport=track-boys",
+      "schedules": "https://tssaasports.com/sports/schedules/?sport=track-boys"
+    },
+    "championship_results": {
+      "format": "per-championship PDF via /event/file.cfm?championshipid=<id>&type=results (Hy-Tek Meet Manager, AllTrax Timing)",
+      "history_depth": "151 boys-XC championship result files, back to 1960-1961",
+      "sample_index": "samples/tn-champs-history-results-xc-boys.html",
+      "sample_pdf": "samples/tn-champ-result-2025-d1aaa.pdf",
+      "row_columns": [
+        "place",
+        "Name",
+        "Year (grade 9-12)",
+        "School",
+        "Finals",
+        "Points"
+      ],
+      "divisions_2025": [
+        "Division I-AAA (20250803)",
+        "Division I-AA (20250802)",
+        "Division I-A (20250801)",
+        "Division II-A",
+        "Division II-AA"
+      ]
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "surface": "https://tssaa.org/home/coaches (coaching hub, no directory); member directory exposes school name + city only",
+      "sample": "samples/tn-coaches.html",
+      "note": "no coach names/emails published on the public TSSAA surfaces sampled."
+    },
+    "timing_providers": [
+      {
+        "name": "AllTrax Timing",
+        "evidence": "samples/tn-champ-result-2025-d1aaa.pdf header 'AllTrax Timing - Contractor License'"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://tssaa.org/getting-started-with-milesplit",
+        "anchor": "Getting Started with MileSplit",
+        "markup": "<a class=\"list-group-item list-group-item-action\" href=\"https://tssaa.org/getting-started-with-milesplit\">Getting Started with MileSplit</a>",
+        "resolves_to": "https://cms-files.tssaa.org/documents/tssaa/track/milesplit-on-boarding-2021.pdf (302)",
+        "sample": "samples/tn-track-boys.html"
+      },
+      {
+        "href": "https://tssaa.org/maxpreps-official-sports-statistics",
+        "anchor": "MaxPreps Official Sports Statistics",
+        "markup": "<a class=\"list-group-item list-group-item-action\" href=\"https://tssaa.org/maxpreps-official-sports-statistics\">MaxPreps Official Sports Statistics</a>",
+        "sample": "samples/tn-track-boys.html"
+      }
+    ],
+    "blocks": [],
+    "recommendation": "PRIMARY",
+    "recommendation_reason": "Anonymous, machine-readable member universe (456 ids), rosters/schedules per sport, and 151 downloadable championship PDFs with grade + top-8 depth.",
+    "open_questions": [
+      "Do the tssaasports.com roster pages expose athlete names publicly (roster page renders a sport/school selector; per-school output not yet captured)?",
+      "enrollment numbers per school are referenced by /classification but not captured in this pass."
+    ]
+  },
+  "TX": {
+    "usps": "TX",
+    "association": "University Interscholastic League (UIL)",
+    "urls": {
+      "primary": "https://www.uiltexas.org/",
+      "robots": "samples/robots-www.uiltexas.org.txt"
+    },
+    "robots_verdict": "RESTRICTED: 'User-agent: *' / Disallow list includes /files/ (where every alignment, school-code and handbook PDF lives), /archives/, /resources/, /views/, /site/ and others. DISCLOSURE: three /files/ PDFs (Alpha_26-28.pdf, 26-28_Rank.pdf, TF_School_Codes_2026.pdf) were fetched with explicit URLs before the /files/ rule was reconciled; they are marked in CAPTURES.md and no further /files/ fetches were made.",
+    "enumeration": {
+      "method": "UIL 2026-28 Reclassification & Realignment PDFs (alphabetical listing + rank order) and the Track & Field School Codes PDF",
+      "measured_count": 1566,
+      "unit": "schools in the 2026-28 realignment (all activities)",
+      "conferences": {
+        "1A": 225,
+        "2A": 241,
+        "3A": 285,
+        "4A": 283,
+        "5A": 269,
+        "6A": 263
+      },
+      "samples": [
+        "samples/tx-alignment-26-28-alpha.pdf",
+        "samples/tx-alignment-26-28-rank.pdf"
+      ],
+      "track_subset": {
+        "count": 1368,
+        "unit": "schools listed in TF_School_Codes_2026",
+        "conferences": {
+          "1A": 210,
+          "2A": 223,
+          "3A": 229,
+          "4A": 213,
+          "5A": 250,
+          "6A": 243
+        },
+        "columns": [
+          "School Name",
+          "School Codes (4 letters)",
+          "Conference",
+          "District",
+          "Region"
+        ],
+        "sample": "samples/tx-tf-school-codes-2026.pdf",
+        "id_examples": [
+          [
+            "ABBOTT HS",
+            "ABBO",
+            "1A",
+            "26",
+            "4"
+          ]
+        ]
+      },
+      "enrollment_examples": {
+        "largest": [
+          "Allen ISD Allen",
+          6798,
+          "6A"
+        ],
+        "smallest": [
+          "San Vicente ISD San Vicente",
+          3,
+          "1A"
+        ]
+      },
+      "status": "measured"
+    },
+    "track_xc": {
+      "cross_country_page": "https://www.uiltexas.org/cross-country",
+      "xc_state_page": "https://www.uiltexas.org/cross-country/state",
+      "track_page": "https://www.uiltexas.org/track-field",
+      "samples": [
+        "samples/tx-cross-country.html",
+        "samples/tx-xc-state-follow.html",
+        "samples/tx-track-field.html"
+      ],
+      "state_meet_location": "Old Settlers Park, Round Rock (2025)"
+    },
+    "championship_results": {
+      "format": "HTML result pages per conference, two tables each",
+      "team_columns": [
+        "School",
+        "Total Score",
+        "Notes"
+      ],
+      "individual_columns": [
+        "Name",
+        "School",
+        "Time",
+        "Notes"
+      ],
+      "url_pattern": "https://www.uiltexas.org/cross-country/results/<year>-<class>-<boys|girls>-cross-country-state-results",
+      "sample": "samples/tx-xc-2025-6a-boys-results.html",
+      "archive": "https://www.uiltexas.org/cross-country/historical-archive (samples/tx-xc-historical-archive.html)"
+    },
+    "coach_ad_directory": {
+      "public": false,
+      "surface": "UIL Portal (/uil-portal, login) is the only coach/AD surface; the T&F page publishes UIL staff contacts (Assistant Athletic Director Virginia Flores, Assistant Athletic Director Joseph Garmon) and department phone 512-471-5883",
+      "sample": "samples/tx-track-field-school-codes.html",
+      "note": "no per-school AD/coach directory published."
+    },
+    "timing_providers": [
+      {
+        "name": "unknown",
+        "evidence": "no timing-provider branding on the UIL state result pages captured; not inferred"
+      }
+    ],
+    "athleticnet_milesplit_links": [
+      {
+        "href": "https://www.uiltexas.org/athletics/uil-maxpreps",
+        "anchor": "Learn how coaches and fans can participate.",
+        "markup": "The UIL and MaxPreps.com have teamed up to make results, records, team information and stats from UIL sports available using MaxPrep's sports information system. (<a href=\"https://www.uiltexas.org/athletics/uil-maxpreps\">Learn how coaches and fans can participate.</a>)",
+        "sample": "samples/tx-track-field-school-codes.html",
+        "note": "UIL's published stats partner is MaxPreps; no Athletic.net/MileSplit link was found on any UIL page captured (grep over samples/tx-*.html returned only MaxPreps references)."
+      },
+      {
+        "href": "https://tx.milesplit.com/",
+        "anchor": "(third-party state portal)",
+        "markup": "n/a - not linked from UIL",
+        "sample": "samples/tx-milesplit-home.html"
+      }
+    ],
+    "blocks": [
+      "robots.txt disallows /files/ (all alignment/classification/handbook PDFs) for anonymous agents"
+    ],
+    "recommendation": "CONDITIONAL",
+    "recommendation_reason": "UIL publishes the best identifier surface in the batch (1,366 unique 4-letter school codes + conference/district/region, 1,566-school realignment with enrollment), but every source document sits under the robots-disallowed /files/ path, and the association delegates stats to MaxPreps rather than MileSplit; needs an owner decision on fetching /files/.",
+    "open_questions": [
+      "Owner decision: treat UIL /files/ PDFs as permitted (they are linked from allowed index pages and are public PDFs) or restrict the collector to the HTML index?",
+      "Texas conference alignment is realignment-cycle based (2026-28); mid-cycle enrollments change but alignments do not."
+    ]
+  },
+  "compliance": {
+    "robots_checked_before_content": true,
+    "one_request_per_second_per_host": true,
+    "anonymous_only": true,
+    "disclosures": [
+      {
+        "host": "www.uiltexas.org",
+        "rule": "robots.txt contains 'Disallow: /files/'",
+        "impact": "3 PDFs were fetched under /files/ with explicit URLs before the rule was reconciled",
+        "samples": [
+          "samples/tx-alignment-26-28-alpha.pdf",
+          "samples/tx-alignment-26-28-rank.pdf",
+          "samples/tx-tf-school-codes-2026.pdf"
+        ],
+        "mitigation": "no further /files/ requests were issued; TX numbers depend on these files, so the owner must confirm scope"
+      },
+      {
+        "host": "www.ahsaa.com",
+        "rule": "robots.txt 'User-agent: * / Disallow: /'",
+        "impact": "no content path was fetched",
+        "samples": []
+      },
+      {
+        "host": "lhsaaonline.org",
+        "rule": "robots.txt 'Disallow: /'",
+        "impact": "member portal not fetched",
+        "samples": []
+      },
+      {
+        "host": "misshsaa.com",
+        "rule": "HTTP 403 on robots.txt and all content",
+        "impact": "no content fetched; wayback replay used instead (different host, own rules)",
+        "samples": [
+          "samples/ms-2019-1a-girls-xc-results-wayback.html"
+        ]
+      }
+    ]
+  }
+}

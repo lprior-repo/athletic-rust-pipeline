@@ -1,0 +1,250 @@
+{
+  "_meta": {
+    "lane": "state-assoc-westcoast",
+    "jurisdictions": ["CA", "OR", "WA", "AK", "HI", "NV"],
+    "observed_at_utc": "2026-09-22T03:54:03Z..2026-09-22T04:00:17Z",
+    "counts_are": "measured (extracted from a captured file) - every count names the file it came from",
+    "inference_marker": "[INFERENCE]"
+  },
+
+  "CA": {
+    "recommendation": "PRIMARY",
+    "association": "California Interscholastic Federation (CIF) - state office + 10 sections",
+    "state_office_url": "https://www.cifstate.org/",
+    "school_count": 1608,
+    "school_count_source": "samples/cif-census-2025-26.xlsx (data rows)",
+    "secondary_school_counts": {
+      "Los_Angeles_City_Section_widget": {"count": 173, "source": "samples/cif-la-widget-directory.html"},
+      "North_Coast_Section_widget": {"count": 179, "source": "samples/cifncs-widget-directory.html"},
+      "Central_Section_widget": {"count": 150, "source": "samples/cifcs-widget-directory.html"}
+    },
+    "enumeration": {
+      "method": "bulk file",
+      "primary": "https://www.cifstate.org/coaches-admin/census/2025-26_census_web.xlsx",
+      "index": "https://www.cifstate.org/coaches-admin/census/index",
+      "auth_required": false,
+      "requests_to_enumerate_all": 1,
+      "alternate_method": "Presto widget flat name list per section: https://www.cif<section>home.org/widget/school/directory"
+    },
+    "coach_fields": {
+      "names": "no",
+      "emails": "no",
+      "source": "none located at state or section level in this lane",
+      "note": "CIF state publishes an Athletic Administrators Summit and an Athletic Director eligibility workshop, but no machine-readable AD/coach directory"
+    },
+    "result_formats": ["xlsx (participation census 2012-13..2025-26)", "pdf (XC finals 2004-2025; TF finals 2005-2026)"],
+    "result_formats_measured": {"xc_archive_links": 66, "tf_archive_links": 36},
+    "sanctioned_timing_provider": "not published by CIF state; officials/registration via Arbiter (https://cif.arbitersports.com/front/111820/site)",
+    "athletic_net_linkage": false,
+    "milesplit_linkage": false,
+    "per_school_xc_tf_participation": {
+      "exposed": true,
+      "source": "samples/cif-census-2025-26.xlsx",
+      "columns": {"Cross Country - Boy Participants": 28646, "Cross Country - Girl Participants": 29191, "Track & Field - Boy Participants": 59829, "Track & Field - Girl Participants": 47332},
+      "schools_with_xc_any": 1400,
+      "schools_with_tf_any": 1323
+    },
+    "sections": [
+      {"name": "Central Coast Section", "abbrev": "CCS", "url": "https://www.cifccs.org/", "publishes_school_list": false, "directory_endpoint": "https://www.cifccs.org/schools/ccs_directory", "census_schools": 155, "platform": "PrestoSports"},
+      {"name": "Central Section", "abbrev": "CIFCS", "url": "https://www.cifcs.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifcshome.org/widget/school/directory", "directory_schools": 150, "census_schools": 139, "platform": "PrestoSports"},
+      {"name": "Los Angeles City Section", "abbrev": "CIF-LA", "url": "https://www.cif-la.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cif-lahome.org/widget/school/directory", "directory_schools": 173, "census_schools": 152, "platform": "app-platform (/apps/*) + Presto widget"},
+      {"name": "North Coast Section", "abbrev": "NCS", "url": "https://www.cifncs.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifncshome.org/widget/school/directory", "directory_schools": 179, "census_schools": 175, "platform": "PrestoSports"},
+      {"name": "Northern Section", "abbrev": "CIFNS", "url": "https://www.cifns.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifns.org/governance/directory/home", "bulk_pdf": "https://www.cifns.org/landing/26-27_School_Member_List.pdf", "census_schools": 67, "platform": "PrestoSports"},
+      {"name": "Oakland Section", "abbrev": "CIF-OAK", "url": "https://www.cifoakland.org/", "redirects_to": "https://www.ousd.org/oal", "publishes_school_list": false, "census_schools": 29, "platform": "Oakland Unified School District site"},
+      {"name": "Sac-Joaquin Section", "abbrev": "SJS", "url": "https://www.cifsjs.org/", "publishes_school_list": false, "directory_endpoint": "https://www.cifsjs.org/member-schools", "directory_static_html_school_names": 0, "census_schools": 201, "platform": "custom (serves SPA shell for /robots.txt)"},
+      {"name": "San Diego Section", "abbrev": "CIFSDS", "url": "https://www.cifsds.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifsds.org/school-resources/CIF_School_Directory", "secondary_endpoint": "https://www.cifsds.org/information/directory", "census_schools": 129, "platform": "PrestoSports"},
+      {"name": "San Francisco Section", "abbrev": "CIFSF", "url": "https://www.cifsf.org/", "publishes_school_list": true, "directory_endpoint": "https://www.cifsf.org/schools/high-schools/", "census_schools": 18, "platform": "WordPress + Yoast"},
+      {"name": "Southern Section", "abbrev": "CIFSS", "url": "https://www.cifss.org/", "publishes_school_list": "partial", "directory_endpoint": "https://cifss.org/directory/", "directory_static_html_school_names": 0, "directory_render": "SearchWP live search (client-side)", "census_schools": 542, "platform": "WordPress"}
+    ],
+    "gaps": [
+      "CIF-SS /directory/ is labelled `School Directory` but the static HTML contains no school list - it is SearchWP client-side search. Count not measured.",
+      "SJS /member-schools returns 0 school-name strings in static HTML. Count not measured.",
+      "CCS /schools/ccs_directory returns 1 school-name string in static HTML. Count not measured.",
+      "Oakland Section has no CIF-hosted directory; census is the only CA-wide enumerator that covers it.",
+      "The census file contains one row whose `CIF Section` value is the literal string `4570` instead of a section name."
+    ]
+  },
+
+  "OR": {
+    "recommendation": "PRIMARY",
+    "association": "Oregon School Activities Association (OSAA)",
+    "url": "https://www.osaa.org/",
+    "school_count": 299,
+    "school_count_source": "samples/osaa-schools-full-members.html (distinct https://www.osaa.org/schools/{id} anchors)",
+    "secondary_school_count": {"count": 301, "source": "samples/osaa-participation-2025-26-fall.xlsx (rows with a School value)", "note": "2 more than the member list - the participation workbook includes schools absent from the full-members list"},
+    "enumeration": {
+      "method": "paginated directory (single page, flat list)",
+      "primary": "https://www.osaa.org/schools/full-members",
+      "auth_required": false,
+      "requests_to_enumerate_all": 1,
+      "stable_id": "https://www.osaa.org/schools/{osaa_school_id}",
+      "robots_constraint": "osaa.org/robots.txt Disallows /teams/, /contests/, /brackets/, /forms/, /mobile/, /demo/, /dev/ - the school list is NOT under any of those, but per-school TEAM pages are (/teams/) and were therefore not fetched"
+    },
+    "coach_fields": {
+      "names": "yes",
+      "emails": "yes",
+      "phones": "yes",
+      "source": "samples/osaa-school-347.html",
+      "staff_roles_observed": ["Superintendent", "Principal", "Athletic Director", "Assistant Athletic Director", "Activities Director"],
+      "coach_table": "per-activity `Activity | Head Coach | League | Coop | Teams`, e.g. `Girls Track & Field | Reagan Shira | 1A-SD4 Special District 4 | | V`",
+      "requests_to_enumerate_all": 299,
+      "caveat": "`TBD` appears as a literal Head Coach value where the school has not named one"
+    },
+    "result_formats": ["html (live results page)", "xlsx (participation 2008-09..2025-26)", "pdf (planbooks/memos)"],
+    "sanctioned_timing_provider": {"name": "Athletic Timing", "evidence": "https://live.athletictiming.net/meets/58997 linked from samples/osaa-xc-results.html"},
+    "athletic_net_linkage": true,
+    "athletic_net_urls": ["https://www.athletic.net/cross-country/usa/high-school/oregon", "https://www.athletic.net/CrossCountry/Oregon/"],
+    "per_school_xc_tf_participation": {
+      "exposed": true,
+      "source": "samples/osaa-participation-2025-26-fall.xlsx",
+      "BXC_T_schools_gt0": 238,
+      "BXC_T_total": 7266,
+      "GXC_T_schools_gt0": 214,
+      "GXC_T_total": 5232,
+      "historical": "43 files, 2008-09..2025-26, Fall/Winter/Spring"
+    },
+    "gaps": ["No OR state-level XC/TF coach directory with emails (only per-school pages)", "TF participation is in the Spring workbook, not measured in this lane"]
+  },
+
+  "WA": {
+    "recommendation": "PRIMARY",
+    "association": "Washington Interscholastic Activities Association (WIAA)",
+    "url": "https://www.wiaa.com/",
+    "school_count": 752,
+    "school_count_source": "samples/wiaa-finalforms-p51.html (2 rows on page 51) combined with samples/wiaa-finalforms-state-schools.html (15 rows/page, last page link = 51); 50*15 + 2 = 752",
+    "enumeration": {
+      "method": "paginated directory (server-rendered HTML table)",
+      "primary": "https://wiaa.finalforms.com/state_schools?page={N}&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false",
+      "auth_required": false,
+      "rows_per_page": 15,
+      "page_range": "1..51",
+      "requests_to_enumerate_all": 51,
+      "alternate": "https://wiaa.finalforms.com/state_schools/map?... (map view) and /select2/state_records/state_partitions JSON select2 endpoint",
+      "declared_membership_filter": "state_schools.athletic_association_member_status_in=member (there is also an is_archived_eq=false filter in the pagination links)"
+    },
+    "coach_fields": {
+      "names": "no",
+      "emails": "no",
+      "source": "coach/AD tooling is Arbiter (https://mywiaa.wiaa.com/ad-center, /coaches, /finalforms) - the pages carry PDF checklists and Google Forms, not a roster of names",
+      "note": "the FinalForms school row DOES carry an AD-facing badge (e.g. `Combine Host`) but no person names"
+    },
+    "result_formats": ["html (rschooltoday tournament pages)", "iOS/Android app (WIAA Live)"],
+    "sanctioned_timing_provider": null,
+    "sanctioned_timing_provider_status": "not observed - the 2026 state XC page (https://www.wiaa.com/tournament-xch/?sportid=22) lists only arbiter.io, finalforms.com and 4nsp.com photo links; no third-party timing host",
+    "athletic_net_linkage": false,
+    "milesplit_linkage": false,
+    "per_school_xc_tf_participation": {"exposed": false, "note": "no WA participation bulk file located; FinalForms rows carry total student_count (e.g. 919) but not per-sport participation"},
+    "rich_fields_available": ["student_count", "NCES name + 12-digit NCES id", "state_id (WA-14005-3476)", "grades", "district", "league", "classification (e.g. 2A)"],
+    "gaps": ["Timing provider unidentified", "No coach/AD name directory", "No per-sport participation file", "752 is derived from pagination arithmetic, not from a stated total on the page"]
+  },
+
+  "AK": {
+    "recommendation": "PRIMARY",
+    "association": "Alaska School Activities Association (ASAA)",
+    "url": "https://asaa.org/",
+    "school_count": 217,
+    "school_count_source": "samples/asaa-member-schools.html (218 <tr> incl. header, table id=tablepress-1)",
+    "enumeration": {
+      "method": "bulk table on one page",
+      "primary": "https://asaa.org/about/member-schools/",
+      "auth_required": false,
+      "requests_to_enumerate_all": 1,
+      "public_api": "https://asaa.org/wp-json/wp/v2/pages/19 (WordPress REST, page id 19)",
+      "sitemap": "https://asaa.org/wp-sitemap.xml (declared in robots.txt)"
+    },
+    "coach_fields": {
+      "names": "no",
+      "emails": "no",
+      "table_has_phone": "yes - the member-schools table carries a school PHONE column (e.g. 907-825-3616), not a coach phone",
+      "source": "samples/asaa-coaches.html and samples/asaa-coaches-advisors.html carry policy/education content only"
+    },
+    "result_formats": ["pdf (12 XC 2025 result PDFs; per-division TF result + team-score PDFs)", "html live results (RaceResult)"],
+    "sanctioned_timing_provider": {"name": "RaceResult", "evidence": "http://my.raceresult.com/363555/ linked twice from samples/asaa-state-xc-results.html as `Live Results Link`"},
+    "athletic_net_linkage": true,
+    "athletic_net_urls": ["https://www.athletic.net/team/22622/track-and-field-outdoor/2025"],
+    "athletic_net_note": "team-scoped URL, published with anchor text `Visit Athletic.net to view results`",
+    "per_school_xc_tf_participation": {"exposed": false, "partial": "the member table exposes EN (enrollment, e.g. 63) per school but not per-sport participation", "note": "212 of 217 rows carry a numeric EN; EN total = 27635"},
+    "rich_fields_available": ["EN (enrollment)", "RG (region R1-R6)", "CL (class 1A/2A/3A/4A)", "ADDRESS", "CITY", "ZIP", "DISTRICT", "PHONE"],
+    "gaps": ["No coach/AD names or emails", "No per-sport participation data", "5 of 217 rows have no numeric EN value"]
+  },
+
+  "HI": {
+    "recommendation": "PRIMARY",
+    "association": "Hawaii High School Athletic Association (HHSAA)",
+    "url": "https://www.hhsaa.org/",
+    "school_count": 95,
+    "school_count_source": "samples/hhsaa-league-BIIF.html + ILH + KIF + MIL + OIA (unique /schools/<slug> anchors)",
+    "league_breakdown": {"BIIF": 23, "ILH": 20, "KIF": 8, "MIL": 13, "OIA": 31},
+    "enumeration": {
+      "method": "paginated directory (one request per league, 5 leagues total)",
+      "primary": "https://www.hhsaa.org/schools/{BIIF|ILH|KIF|MIL|OIA}",
+      "index": "https://www.hhsaa.org/schools",
+      "auth_required": false,
+      "requests_to_enumerate_all": 5,
+      "stable_id": "slug, e.g. https://www.hhsaa.org/schools/hilo_high_school"
+    },
+    "coach_fields": {
+      "names": "no",
+      "emails": "no",
+      "source": "samples/hhsaa-coaches.html (Imagine CMS page; 0 named coach entries in static HTML)",
+      "related": "https://www.hhsaa.org/about/officials-coordinators and /about/sport-coordinators list association-side coordinators, not school coaches"
+    },
+    "result_formats": ["milesplit (raw result type)", "athletic.net live", "pdf (meet program, performance list, schedule, coaches packet, top-35 lists)", "google sheets (public)"],
+    "sanctioned_timing_provider": {"name": "MileSplit Hawaii (primary published final results) and Athletic.net Live (live results)", "evidence": "samples/hhsaa-tf-tournament-2026.html"},
+    "athletic_net_linkage": true,
+    "athletic_net_urls": ["https://live.athletic.net/meets/58854"],
+    "milesplit_linkage": true,
+    "milesplit_urls": ["https://hi.milesplit.com/meets/730986-hhsaa-championship-2026/results/1304674?type=raw"],
+    "per_school_xc_tf_participation": {"exposed": false, "note": "the school cards carry a display name and a logo only"},
+    "gaps": ["No per-school participation numbers", "The 2026 XC tournament page carried no direct PDF result link at capture time (results surface via RSS)", "95 is the sum of league lists; no single HHSAA page states the total"]
+  },
+
+  "NV": {
+    "recommendation": "CONDITIONAL",
+    "association": "Nevada Interscholastic Activities Association (NIAA)",
+    "url": "https://www.niaa.com/",
+    "domain_correction": {
+      "niaa.org_is_not_the_NIAA": true,
+      "evidence": "samples/robots-niaa-follow.txt - niaa.org 301s and serves a 198356-byte page titled `Alumni | INROADS` with canonical https://inroads.org/alumni/"
+    },
+    "school_count": 127,
+    "school_count_source": "samples/niaa-finalforms-state-schools.html (page text `127 Records`, last page link = 9) + samples/niaa-finalforms-p9.html (7 rows); 8*15 + 7 = 127",
+    "enumeration": {
+      "method": "paginated directory (server-rendered HTML table, same FinalForms platform as WA)",
+      "primary": "https://niaa.finalforms.com/state_schools?page={N}&state_schools.athletic_association_member_status_in=member&state_schools.is_archived_eq=false",
+      "auth_required": false,
+      "rows_per_page": 15,
+      "page_range": "1..9",
+      "requests_to_enumerate_all": 9
+    },
+    "coach_fields": {
+      "names": "no",
+      "emails": "no",
+      "source": "https://www.niaa.com/coaches/Landing returned HTTP 202 with a zero-byte body (PrestoSports bot challenge)",
+      "related": "https://members.niaa.org/ and http://highschoolofficials.com/ are linked but were not enumerated"
+    },
+    "result_formats": ["pdf", "mht (legacy MIME HTML)", "htm"],
+    "sanctioned_timing_provider": null,
+    "sanctioned_timing_provider_status": "not observed - /sports/track returned HTTP 202 zero-byte on two attempts",
+    "athletic_net_linkage": false,
+    "milesplit_linkage": false,
+    "per_school_xc_tf_participation": {"exposed": false},
+    "rich_fields_available": ["student_count (e.g. 689; literal `--` on some rows)", "NCES name + NCES id (PSS private-school ids for non-public)", "grades (e.g. PPPK - 12th)", "non-public badge"],
+    "gaps": [
+      "PrestoSports returns HTTP 202 + empty body for /sports/track and /coaches/Landing - timing provider and coach directory UNRESOLVED",
+      "NV rows carry no State ID field (unlike WA)",
+      "Recommendation CONDITIONAL because sport-result and coach surfaces could not be verified"
+    ]
+  },
+
+  "lane_summary": {
+    "school_counts": {"CA": 1608, "OR": 299, "WA": 752, "AK": 217, "HI": 95, "NV": 127},
+    "school_counts_total": 3098,
+    "associations_with_athletic_net_linkage": ["OR", "AK", "HI"],
+    "associations_with_milesplit_linkage": ["HI"],
+    "associations_with_published_timing_provider": {"OR": "Athletic Timing", "AK": "RaceResult", "HI": "MileSplit Hawaii / Athletic.net Live"},
+    "associations_with_coach_names_and_emails": ["OR"],
+    "associations_with_per_school_xc_tf_participation": ["CA", "OR"],
+    "note": "school_counts_total is the arithmetic sum of six separately measured figures; no claim is made that the six sets are disjoint at the school level (a school cannot belong to two state associations, but CA's census counts one row per school name+city, so intra-state duplicates by name are possible)"
+  }
+}

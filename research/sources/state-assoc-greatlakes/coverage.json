@@ -1,0 +1,856 @@
+{
+ "lane": "state-assoc-greatlakes",
+ "jurisdictions": [
+  "IL",
+  "IN",
+  "MI",
+  "OH",
+  "WI"
+ ],
+ "lane_type": "consolidation of the Midwest TF/XC source research into the national contract; no new fetches",
+ "generated": "2026-09-21",
+ "input_corpus": "~/Downloads/midwest-tfxc-source-research (reports 01-46, synthesis/, data/, reports/)",
+ "evidence_manifest": "research/sources/state-assoc-greatlakes/samples/CAPTURES.md",
+ "source_report": "research/sources/state-assoc-greatlakes/SOURCE_REPORT.md",
+ "denominator_policy": {
+  "rule": "A count is only quotable if a fetched artifact produced it; the path is always given. Bands and 3-team samples are never coverage.",
+  "measured_universes": {
+   "IL": {
+    "count": 828,
+    "unit": "member schools",
+    "detail": "801 full member + 26 approved school + 1 associate member; 604 boundary / 224 non-boundary; 677 public / 151 private; 126 CPS",
+    "provenance": "RE-DERIVED from retained bytes: evidence/gaps/38/il-schools.json (minified, no trailing whitespace, md5 498179f68c66793396dd4c6123a4a4bc, byte-identical copy tools/a13-ihsa/schools.json) parses to exactly 828 rows; its fetch ledger gaps/38/ledger.jsonl records the same GET api.ihsa.org/v1/schools at 451182 B vs 451188 B on disk (6 B delta, both printed, cause not established). In-repo fixture ihsa/v1_schools.json is a 3-row sample - schema evidence only"
+   },
+   "IN": {
+    "count": 413,
+    "unit": "member schools",
+    "detail": "408 full + 5 provisional; 356 public / 57 non-public",
+    "provenance": "[17]: the association school-directory fetch (https://www.ihsaa.org/schools/ihsaa-school-directory). QUOTED, NOT re-derivable: no retained capture re-produces the count - the corpus copies of that page (tools/a29-coach/in-school-directory.html 267694 B, tools/a29-coach/in-schools.html 275390 B) are SPA shells with 0 <tr> rows"
+   },
+   "MI": {
+    "count": 755,
+    "unit": "schools with stable MHSAA ids",
+    "provenance": "[15]: enrollment-list PDF row count (26-27-Enrollment-List.pdf; PDF bytes not retained - see CAPTURES.md section C). QUOTED, NOT re-derivable: tools/a01/assoc/mhsaa_schools.html and tools/a29-coach/mi-schools.html are the SPA shell of /schools with 0 <tr> rows"
+   },
+   "OH": {
+    "count": 815,
+    "unit": "schools",
+    "detail": "815/815 identified; 742 with a deterministic Athletic.net path; class cell 267 AAA + 267 AA + 267 A + 14 blank",
+    "provenance": "RE-DERIVED from retained bytes: evidence/gaps/45/ohsaa-enrollment.html (GET https://www.ohsaa.org/school-resources/school-enrollment, 228567 B) holds one <table> with 816 <tr> = 1 header + 815 data rows and 815 distinct OhsaaSchoolId (100-1000027) [19][45]"
+   },
+   "WI": {
+    "count": 516,
+    "unit": "schools",
+    "detail": "published by WIAA, NOT enumerated (1 of 26 directory letters fetched -> 39 schools)",
+    "provenance": "[06]/[35]"
+   }
+  },
+  "not_measured": [
+   "No state in this lane has a measured statewide Class-of-2027 TF/XC population; no percentage-of-Co2027-coverage figure exists for IL, IN, MI, OH or WI.",
+   "Per-sport participation is unmeasured for MI and IN (MHSAA publishes class sizes, not per-sport school counts; IHSAA publishes declared sectional slots only).",
+   "Per-team roster completeness: MileSplit/DAT samples are 3-12 teams per state.",
+   "Regular-season grade: association-published grade exists only for WI tournament files, IL/OH state finals and MI finals PDFs.",
+   "Pipeline snapshots disagree with each other and with the research estimates (e.g. WI athletes 73,202 then 125,844); numbers are attributed to one snapshot, never averaged.",
+   "The pipeline gender split does not sum to its Co2027 total (IL 26,472 vs 26,488; IN 16,826 vs 16,931; OH 31,631 vs 31,708; WI 22,045 vs 22,074; MI exact) - never print the total as boys+girls."
+  ],
+  "bands_not_counts": {
+   "source": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement)",
+   "note": "n=3 teams/state; NOT a point estimate, band only",
+   "IL": [
+    5943,
+    30564
+   ],
+   "IN": [
+    2843,
+    8528
+   ],
+   "MI": [
+    895,
+    895
+   ],
+   "OH": [
+    9770,
+    86953
+   ],
+   "WI": [
+    16119,
+    39999
+   ]
+  }
+ },
+ "adapter_status": {
+  "IL": {
+   "modules": [
+    "crates/midwest-census/src/sources/ihsa/ (collect.rs, parse.rs, staff.rs, map.rs, tests.rs)"
+   ],
+   "fixtures": [
+    "ihsa/v1_schools.json",
+    "ihsa/staff2_coach_rich.json",
+    "ihsa/staff2_office_only.json"
+   ],
+   "state": "implemented"
+  },
+  "IN": {
+   "modules": [],
+   "fixtures": [],
+   "state": "absent",
+   "note": "no ihsaa/tfrrs module anywhere in the crate; Hy-Tek PDFs readable via the generic hytek/ parser; milesplit/ covers in.milesplit.com via Site::for_jurisdiction(UsJurisdiction::Indiana)"
+  },
+  "MI": {
+   "modules": [],
+   "fixtures": [
+    "mshsl/* (MN, not MI - do not cite as MI)"
+   ],
+   "state": "absent",
+   "note": "no mhsaa module; MI coach rows enter the pipeline only through the mhsaa host branch of the coach-CSV importer"
+  },
+  "OH": {
+   "modules": [
+    "crates/midwest-census/src/sources/ohsaa/ (collect.rs, parse.rs, pages.rs, map.rs, tests.rs)"
+   ],
+   "fixtures": [
+    "ohsaa/ (9 files incl. the negative fixtures)"
+   ],
+   "state": "implemented"
+  },
+  "WI": {
+   "modules": [
+    "crates/midwest-census/src/sources/wiaa/",
+    "crates/midwest-census/src/sources/wiaa_results/"
+   ],
+   "fixtures": [
+    "wiaa/ (4)",
+    "wiaa_results/ (6)",
+    "milesplit/wi_roster_52649.html"
+   ],
+   "state": "implemented"
+  }
+ },
+ "per_jurisdiction": {
+  "IL": {
+   "association": {
+    "name": "Illinois High School Association",
+    "urls": [
+     "https://www.ihsa.org",
+     "https://api.ihsa.org"
+    ],
+    "recommendation": "PRIMARY",
+    "secondary_roles": [
+     "COACH_SOURCE",
+     "RESULT_SOURCE (state finals only)",
+     "VALIDATION_SOURCE"
+    ]
+   },
+   "school_universe": {
+    "count": 828,
+    "measured": true,
+    "provenance": "RE-DERIVED from evidence/gaps/38/il-schools.json (828 rows, md5 498179f68c66793396dd4c6123a4a4bc) [13]; fixture ihsa/v1_schools.json = 3-row sample (schema only)"
+   },
+   "sponsorship": {
+    "TRB": 632,
+    "TRG": 624,
+    "CCB": 539,
+    "CCG": 507,
+    "class_split": {
+     "TRB": [
+      267,
+      168,
+      197
+     ],
+     "TRG": [
+      261,
+      168,
+      195
+     ],
+     "CCB": [
+      245,
+      140,
+      154
+     ],
+     "CCG": [
+      215,
+      141,
+      151
+     ]
+    },
+    "entered": {
+     "TRB": 562,
+     "TRG": 558,
+     "CCB": 531,
+     "CCG": 499
+    },
+    "extra_fields": [
+     "ActualEnroll",
+     "EffectiveEnroll",
+     "MultipliedEnroll",
+     "TourneyEnroll",
+     "MultiplierNB",
+     "SuccessFactor",
+     "Coop/CoopWith/CoopName",
+     "TourneyWaiver"
+    ],
+    "provenance": "[13]: api.ihsa.org/v2/classification/classifications?season=S (1,789,503 B) and ?season=F (2,271,933 B), both HTTP 200"
+   },
+   "state_meet_cohort": {
+    "tf_rows": 3342,
+    "tf_unique_event_school_triples": 2555,
+    "tf_junior_rows": 838,
+    "xc_boys_qualifiers_per_season": 1214,
+    "xc_boys_grade11": 358,
+    "xc_girls_per_class": {
+     "1A": {
+      "athletes": 357,
+      "grade11": 97
+     },
+     "2A": {
+      "athletes": 397,
+      "grade11": 96
+     },
+     "3A": {
+      "athletes": 423,
+      "grade11": 125
+     }
+    },
+    "xc_boys_1A_control": {
+     "athletes": 398,
+     "grade11": 104
+    },
+    "provenance": "[13] event summaries + statefinal/cc-qualifiers?tournamentId=688..693 (all 200); [38] appendix-table.md"
+   },
+   "athlete_identity": {
+    "athleticnet_id_in_state_finals": "every finisher + every relay member, zero Athletic.net requests needed",
+    "provenance": "[13]"
+   },
+   "coach": {
+    "sample_rows": {
+     "coach_contacts_rows": 16,
+     "coach_email": 12,
+     "ad_email": 16
+    },
+    "pipeline_census": {
+     "coaches": 15102,
+     "coaches_with_email": 3235,
+     "co2027_with_coach": 8170,
+     "co2027_with_coach_email": 7958
+    },
+    "provenance": "data/coach-contacts.csv (re-derived 2026-09-21 by this lane) + reports/census-by-state.csv (2026-09-21 pipeline snapshot, core = Athletic.net off)",
+    "scope": "sample-scale in coach-contacts.csv; the census numbers are a pipeline snapshot"
+   },
+   "provider_milesplit": {
+    "hs_team_records": 849,
+    "teams_sampled": 3,
+    "sampled_c2027": 58,
+    "sampled_c2027_share_pct": 37.9,
+    "athnet_corpus_boys_g11": 6136,
+    "provenance": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement)"
+   },
+   "provider_dat": {
+    "tf_team_records": 1744,
+    "xc_team_records": 1596,
+    "canonical_schools": 880,
+    "team_id_enumerations": {
+     "site_search_distinct_hs_team_ids": 4964,
+     "site_search_hs_rows": 12447,
+     "site_search_school_names": 893,
+     "retained_csv_slice_rows": 3340,
+     "retained_csv_hs_or_unknown": 3315,
+     "retained_csv_middle_school": 25
+    },
+    "note": "the two id enumerations are different artifacts and must never be summed",
+    "live_hs_performance_lists": "none (IL Top Times lists are 2023/2024 only)",
+    "top_times_co2027": {
+     "default_cut": 336,
+     "limit_1000": 1580
+    },
+    "league_ids": {
+     "IL Top Times 1A": 1467,
+     "2A": 1468,
+     "3A": 1469,
+     "CPS": 1355,
+     "IHSA Class A": 1088,
+     "IHSA Class AA": 1089,
+     "Charter": 1432,
+     "Other": 993
+    },
+    "provenance": "data/dat-provider-coverage.csv + data/dat-team-index.csv (2026-09-19 measurement; IL/IN/MI/OH/WI slices re-counted 2026-09-21); [14] site-search POST 200x4 (34.9/35.3/28.8/29.6 MB)"
+   },
+   "atn_ranking": {
+    "divListId": 169070,
+    "g11_athletes": 6009,
+    "variants": 44,
+    "provenance": "data/source-coverage-matrix.csv (from [04])"
+   },
+   "enumerates": [
+    "member schools + sponsorship + class + enrollment + coop",
+    "T&F state-final event summaries with athleticNetId, grade, school, mark",
+    "XC state-final qualifier rosters per class",
+    "staff2 coach/AD directory (email reveal per row)",
+    "AthleticLive state-final live meets"
+   ],
+   "does_not_enumerate": [
+    "regular-season meets (no calendar endpoint; /v1/sports/boys-track-field/calendar = 404)",
+    "XC tournament ids from the API (they exist only in a site JS chunk)",
+    "statewide coach emails without a per-school staff2 call"
+   ],
+   "gaps": [
+    "no IL-specific timing-provider report exists in the Midwest set",
+    "results beyond the state series sit behind the MileSplit paywall"
+   ]
+  },
+  "IN": {
+   "association": {
+    "name": "Indiana High School Athletic Association",
+    "urls": [
+     "https://www.ihsaa.org"
+    ],
+    "recommendation": "DISCOVERY_SOURCE",
+    "secondary_roles": [
+     "RESULT_SOURCE via the TFRRS/state-PDF layer (Indiana's PRIMARY athlete layer)"
+    ]
+   },
+   "school_universe": {
+    "count": 413,
+    "measured": true,
+    "detail": {
+     "full": 408,
+     "provisional": 5,
+     "public": 356,
+     "non_public": 57,
+     "districts": {
+      "1": 132,
+      "2": 143,
+      "3": 138
+     }
+    },
+    "reconciliation": "union of the four 2025-26 sport lists = 413 distinct name strings; 345 of 413 appear in all four; 24 field T&F but not XC",
+    "provenance": "[17] school-directory fetch + section 4 lists - QUOTED, not re-derived here: the retained corpus copies of the directory page are SPA shells (0 <tr>)"
+   },
+   "participation": {
+    "per_sport_school_counts": "not measured",
+    "declared_xc_postseason_slots": 391,
+    "xc_sectionals": 25,
+    "tf_bracket_shape": "32 -> 8 -> 1",
+    "provenance": "[17] 2026 XC declaration page"
+   },
+   "enrolment": {
+    "grade11_statewide": [
+     77661,
+     77691
+    ],
+    "note": "approx 77.7k Class-of-2027 enrolment, +/-1% for layout recovery",
+    "provenance": "[17]"
+   },
+   "athlete_layer": {
+    "provider": "DirectAthletics / indiana.tfrrs.org",
+    "team_ids": {
+     "tf": 929,
+     "xc": 887
+    },
+    "team_records_fetched": 1816,
+    "hsr_lists": {
+     "athletes_a": 3978,
+     "athletes_b": 2555,
+     "union": 6533
+    },
+    "co2027_via_year_filter": 1861,
+    "live_hs_performance_lists": "yes - HSR Large (4A-6A), HSR Small (1A-3A), All-School journal (1,180 rows / 312 teams)",
+    "athleticnet_id": "not present anywhere",
+    "provenance": "[18] + data/dat-provider-coverage.csv + data/dat-team-index.csv (2026-09-19 measurement; IL/IN/MI/OH/WI slices re-counted 2026-09-21)"
+   },
+   "coach": {
+    "rows": 0,
+    "note": "no public Indiana coach directory exists; myIHSAA is behind authentication and was NOT attempted (out of contract)",
+    "provenance": "data/coach-contacts.csv (re-derived 2026-09-21 by this lane); [17]"
+   },
+   "provider_milesplit": {
+    "hs_team_records": 533,
+    "teams_sampled": 3,
+    "sampled_c2027": 32,
+    "detail": {
+     "outdoor_hs_meets_pages_1_2": 101,
+     "sitemap_athlete_urls": 7500
+    },
+    "athnet_corpus_boys_g11": 2710,
+    "provenance": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement); [18]"
+   },
+   "timing_providers": {
+    "Timing MD": {
+     "live_meet_page": "live.timingmd.net/meets/74720 (2026 state final)",
+     "grade_on_page": false
+    }
+   },
+   "atn_ranking": {
+    "divListId": 169137,
+    "g11_athletes": 2681,
+    "variants": 37,
+    "provenance": "data/source-coverage-matrix.csv (from [04])"
+   },
+   "enumerates": [
+    "member schools + districts",
+    "postseason site map (T&F 32->8->1, XC 25->5->1)",
+    "TFRRS team ids + performance lists with FR/SO/JR/SR grade tokens"
+   ],
+   "does_not_enumerate": [
+    "school-name lists behind the sectional slots",
+    "result links from the declaration page",
+    "any coach/AD contact"
+   ],
+   "gaps": [
+    "zero coach coverage",
+    "TFRRS regular-season corpus thin mid-September 2026 (56 track meets vs 1,022 in 2025; 1 XC meet vs 128 in 2025) - re-measure in November"
+   ]
+  },
+  "MI": {
+   "association": {
+    "name": "Michigan High School Athletic Association",
+    "urls": [
+     "https://www.mhsaa.com",
+     "https://my.mhsaa.com"
+    ],
+    "recommendation": "DISCOVERY_SOURCE",
+    "secondary_roles": [
+     "VALIDATION_SOURCE (grades)",
+     "marginal COACH_SOURCE via the AD API"
+    ]
+   },
+   "school_universe": {
+    "count": 755,
+    "measured": true,
+    "stable_ids": true,
+    "detail": "co-op program ids are a distinct id space (hscoop.pdf)",
+    "provenance": "[15] - QUOTED, not re-derivable: the enrollment PDF bytes were not retained and the corpus /schools copies (tools/a01/assoc/mhsaa_schools.html, tools/a29-coach/mi-schools.html, both 145587 B) are SPA shells with 0 <tr> rows"
+   },
+   "tournament_map": {
+    "an_meetids_per_season": 89,
+    "tf_regionals": 48,
+    "tf_finals": 5,
+    "xc_regionals": 36,
+    "requests": "~12 HTML",
+    "historical_links": {
+     "tf_regionals": "2026/2025/2024 at 48 each, 100% linked",
+     "tf_finals": "2023-2026 + legacy 2016-2019 qualifier links",
+     "xc_regionals": "2023-2025 at 36 each",
+     "xc_finals": "PDF-only"
+    },
+    "provenance": "data/source-coverage-matrix.csv (MI row) + [15]"
+   },
+   "state_meet_cohort": {
+    "lpgd1final_2025": {
+     "grade11": 47,
+     "rows": 187
+    },
+    "up_boys_d1_finals_2026": {
+     "grade11": 30,
+     "rows": 103
+    },
+    "annual_athlete_rows_estimate": "~2,000 [INFERENCE: extrapolated from two sampled PDFs]",
+    "result_fields": {
+     "xc_finals": "Pl | Bib | Pts | Name | Year | Time | Pace",
+     "tf_finals": "Athlete | Yr | Team | Finals | Pts"
+    },
+    "provenance": "[15]"
+   },
+   "coach": {
+    "mhsaa_directory": "none (school page 404; AD/coach services login-gated)",
+    "ad_api": {
+     "endpoint": "my.mhsaa.com AdministrationDirectory?SchoolId=",
+     "rows_in_coach_contacts": 14,
+     "coach_rows": 0,
+     "ad_with_email": 14
+    },
+    "host_school_pdfs": {
+     "host_opportunities_per_year": "~84",
+     "tf_2026": "35/48 PDFs",
+     "xc_to_date": "18/36"
+    },
+    "pipeline_census": {
+     "coaches": 6,
+     "coaches_with_email": 6,
+     "co2027_with_coach": 0
+    },
+    "provenance": "[15][29]; data/coach-contacts.csv (re-derived 2026-09-21 by this lane); reports/census-by-state.csv (2026-09-21 pipeline snapshot, core = Athletic.net off)"
+   },
+   "provider_dat": {
+    "tf_team_records": 1612,
+    "xc_team_records": 1618,
+    "canonical_schools": 814,
+    "live_hs_performance_lists": "none",
+    "provenance": "data/dat-provider-coverage.csv + data/dat-team-index.csv (2026-09-19 measurement; IL/IN/MI/OH/WI slices re-counted 2026-09-21)"
+   },
+   "provider_milesplit": {
+    "hs_team_records": 895,
+    "teams_sampled": 3,
+    "teams_with_nonempty_roster": 1,
+    "sampled_c2027": 3,
+    "athnet_corpus_boys_g11": 6041,
+    "provenance": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement)"
+   },
+   "atn_ranking": {
+    "divListId": 169407,
+    "g11_athletes": 5984,
+    "variants": 48,
+    "distinct_teamid_in_707_row_sample": 294,
+    "provenance": "data/source-coverage-matrix.csv (from [04])"
+   },
+   "enumerates": [
+    "school ids + co-op ids + enrollment/classification",
+    "postseason AN MeetIDs (regionals/finals)",
+    "finals PDFs with Yr/Year",
+    "AD name+email per school via the admin API"
+   ],
+   "does_not_enumerate": [
+    "MHSAA-hosted regional results (none exist)",
+    "per-sport school participation counts",
+    "coach rows of any kind",
+    "regular-season meets"
+   ],
+   "gaps": [
+    "grade evidence exists only in finals PDFs",
+    "regional grade evidence does not exist at MHSAA",
+    "no coach lane beyond AD"
+   ]
+  },
+  "OH": {
+   "association": {
+    "name": "Ohio High School Athletic Association",
+    "urls": [
+     "https://www.ohsaa.org",
+     "https://officials.myohsaa.org"
+    ],
+    "recommendation": "COACH_SOURCE",
+    "secondary_roles": [
+     "DISCOVERY_SOURCE (AN team/meet identity)",
+     "VALIDATION_SOURCE (grades)"
+    ]
+   },
+   "school_universe": {
+    "count": 815,
+    "measured": true,
+    "deterministic_an_path": 742,
+    "division_rows": {
+     "xc": [
+      556,
+      468
+     ],
+     "tf": [
+      685,
+      644
+     ]
+    },
+    "provenance": "RE-DERIVED from evidence/gaps/45/ohsaa-enrollment.html (815 data rows, 815 distinct ids, class cell 267 AAA / 267 AA / 267 A / 14 blank) [19]"
+   },
+   "state_meet_cohort": {
+    "pdf": "tools/ohio-independent/raw/ohsaa-state-tf-2026.pdf",
+    "bytes": 816147,
+    "pages": {
+     "analysis": 83,
+     "artifact_table": 82,
+     "status": "unresolved discrepancy, both values as printed in [19]"
+    },
+    "event_division_combos": 178,
+    "grade11": {
+     "individual_events_only": 561,
+     "including_relay_legs": 1067
+    },
+    "fields": "place, mark, wind, round/heat, implement/hurdle in event name, relay legs, records/standards",
+    "provenance": "[19]"
+   },
+   "coach": {
+    "myohsaa_path": {
+     "requests_per_school": 3,
+     "steps": [
+      "SearchSchool -> ohsaaId",
+      "SportsInformation -> XC + T&F head coaches with mailto: emails + (Div-I..V) tags",
+      "AthleticDirector -> AD name + email + assistants/secretaries"
+     ],
+     "school_page_extra": [
+      "conference",
+      "colors",
+      "mascot",
+      "county",
+      "school type",
+      "website",
+      "phone/fax"
+     ]
+    },
+    "stress_sample": {
+     "coach_cells": 56,
+     "named": 33,
+     "named_with_email_pct": 100,
+     "xc_named": "18/28",
+     "tf_named": "15/28",
+     "TBA": 7,
+     "NA": 16,
+     "ad_name_and_email": "5/5"
+    },
+    "coach_contacts_rows": {
+     "rows": 31,
+     "coach_email": 15,
+     "ad_email": 31
+    },
+    "pipeline_census": {
+     "coaches": 28,
+     "coaches_with_email": 23,
+     "co2027_with_coach": 456,
+     "co2027_with_coach_email": 456
+    },
+    "association_tier": {
+     "OATCCC": {
+      "contacts": 32,
+      "all_with_email": true,
+      "district_reps": 16
+     }
+    },
+    "provenance": "[19][29][45]; data/coach-contacts.csv (re-derived 2026-09-21 by this lane); reports/census-by-state.csv (2026-09-21 pipeline snapshot, core = Athletic.net off)"
+   },
+   "provider_dat": {
+    "tf_team_records": 1749,
+    "xc_team_records": 1679,
+    "canonical_schools": 875,
+    "live_hs_performance_lists": "none",
+    "league_ids": {
+     "track": 43,
+     "xc": 80
+    },
+    "provenance": "data/dat-provider-coverage.csv + data/dat-team-index.csv (2026-09-19 measurement; IL/IN/MI/OH/WI slices re-counted 2026-09-21)"
+   },
+   "provider_milesplit": {
+    "hs_team_records": 977,
+    "teams_sampled": 3,
+    "sampled_c2027": 136,
+    "athnet_corpus_boys_g11": 6390,
+    "provenance": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement)"
+   },
+   "result_providers": {
+    "Finish Timing": "results platform (+ district PDFs)",
+    "Baum's Page": "meet enumeration 2003-2026; Hy-Tek Year column empty in every sampled file",
+    "Track Scoreboard (MileSplit Live)": "live only",
+    "Ohio Runner": "road races only - REJECT"
+   },
+   "atn_ranking": {
+    "divListId": 170050,
+    "g11_athletes": 6361,
+    "variants": 51,
+    "all_815_schools_have_atn_team_pages": true,
+    "provenance": "data/source-coverage-matrix.csv (from [04])"
+   },
+   "enumerates": [
+    "school universe with deterministic AN paths",
+    "postseason AN MeetID set",
+    "state-final grade-bearing results",
+    "coach + AD contacts via myOHSAA (3 requests/school)"
+   ],
+   "does_not_enumerate": [
+    "results API (none)",
+    "the OHSAA-approved team-page listing (Angular shell over a 403 API)"
+   ],
+   "gaps": [
+    "no HTTP validators on the PDFs",
+    "district PDFs (45) only partially sampled"
+   ]
+  },
+  "WI": {
+   "association": {
+    "name": "Wisconsin Interscholastic Athletic Association",
+    "urls": [
+     "https://www.wiaawi.org",
+     "https://schools.wiaawi.org"
+    ],
+    "recommendation": "PRIMARY",
+    "secondary_roles": [
+     "COACH_SOURCE (highest unique marginal value)",
+     "VALIDATION_SOURCE (tournament grades)",
+     "RESULT_SOURCE (tournament series only)"
+    ]
+   },
+   "school_universe": {
+    "count": 516,
+    "measured": false,
+    "note": "published by WIAA; only 1 of 26 directory letters was ever fetched (39 schools), so the 26-letter enumeration is a recipe, not a run",
+    "team_seasons_with_teamids": 1796,
+    "team_universe_requests": "4/season; 26 letter POSTs + 1 detail GET per school; a 516-school sweep is ~542 requests",
+    "provenance": "[06][35]"
+   },
+   "tournament_results": {
+    "result_file_links_per_season": 104,
+    "unique_2026_boys_links_sampled": 103,
+    "grade_evidence": {
+     "grade11_rows_tolerant_matcher": 2786,
+     "grade11_rows_retained_summary_v2": 2653,
+     "note": "same 26-file 2026 sample, two matchers; treat as a 2,653-2,786 range, not one number",
+     "worked_example": {
+      "file": "tr2026homesteadsectional",
+      "grade11_rows": 69
+     },
+     "single_file_max": {
+      "file": "D1 Regional 5A",
+      "distinct_athletes": 234,
+      "grade11": 71
+     }
+    },
+    "extractability": {
+     "sample": 26,
+     "pdftotext_ok": 24,
+     "failures": [
+      "zero-font raster",
+      "Type-3 without ToUnicode"
+     ],
+     "ocr_recovery": "1.06 s/page"
+    },
+    "formats": [
+     "Athletic.net export",
+     "Hy-Tek",
+     "HTML",
+     "legacy .txt (63 on the girls XC archive alone, incl. 1999)"
+    ],
+    "provenance": "[06][35]; summaries in evidence/gaps/35/pdf-extract/summary-v2.json"
+   },
+   "coach": {
+    "endpoint": "GetDirectorySchool?orgID=",
+    "fields": [
+     "Superintendent",
+     "Principal",
+     "Athletic Director",
+     "City-Wide AD",
+     "Assistant AD",
+     "Head Coaches per sport (published emails)"
+    ],
+    "sample_9_schools": {
+     "BXC": "8/9",
+     "GXC": "9/9",
+     "BTF": "7/9",
+     "GTF": "8/9",
+     "any_tf_or_xc_email": "9/9"
+    },
+    "refresh": {
+     "change_signal": "none - poll per school",
+     "bytes_per_school": "~195 KiB",
+     "sweep_516": "~103 MB / ~5 min"
+    },
+    "coach_contacts_rows": {
+     "rows": 22,
+     "coach_email": 17,
+     "ad_email": 22
+    },
+    "pipeline_census": {
+     "coaches": 2550,
+     "coaches_with_email": 2155,
+     "co2027_with_coach": 16085,
+     "co2027_with_coach_email": 14921
+    },
+    "provenance": "[06][29][35]; data/coach-contacts.csv (re-derived 2026-09-21 by this lane); reports/census-by-state.csv (2026-09-21 pipeline snapshot, core = Athletic.net off)"
+   },
+   "provider_dat": {
+    "tf_team_records": 976,
+    "xc_team_records": 936,
+    "canonical_schools": 492,
+    "live_hs_performance_lists": "none",
+    "provenance": "data/dat-provider-coverage.csv + data/dat-team-index.csv (2026-09-19 measurement; IL/IN/MI/OH/WI slices re-counted 2026-09-21)"
+   },
+   "provider_milesplit": {
+    "hs_team_records": 597,
+    "teams_sampled": 3,
+    "sampled_c2027": 142,
+    "state_meet": {
+     "rows": 2454,
+     "co2027": 382
+    },
+    "roster_grad_year": {
+     "column": "column-grad-year",
+     "verified_against_profile_bio": true
+    },
+    "athnet_corpus_boys_g11": 3961,
+    "provenance": "data/milesplit-coverage-matrix.csv (2026-09-19 measurement); [07][27]"
+   },
+   "timer_providers": {
+    "PrimeTime Timing": {
+     "rows_2025": 319,
+     "rows_2026": 255,
+     "pdfs_2025": 266,
+     "pdfs_2026_ytd": 200,
+     "entry_link_2026": {
+      "athleticnet": 195,
+      "milesplit": 0,
+      "none": 60
+     },
+     "entry_link_2025": {
+      "milesplit": 163,
+      "athleticnet": 76,
+      "none": 80
+     }
+    },
+    "Performance Timing LLC": {
+     "xc_pdfs": "grade-bearing",
+     "track_2026_pdfs": "file-specific extractability (24/26)"
+    },
+    "TrackSide/K2/OnYourMarks": "AN team pages as meet hubs - never use MileSplit timer counts as a completeness measure",
+    "Karmarush / ptt-franklin.firebaseio.com": "REJECT - terms prohibit automated access",
+    "provenance": "[08][35]"
+   },
+   "atn_ranking": {
+    "divListId": 170770,
+    "g11_athletes": 3924,
+    "variants": 39,
+    "provenance": "data/source-coverage-matrix.csv (from [04])"
+   },
+   "enumerates": [
+    "school universe + org ids + per-sport team-season ids",
+    "tournament file set per sport/round with Yr grades",
+    "coach + AD + administrator emails per school",
+    "deterministic AN tournament seeds"
+   ],
+   "does_not_enumerate": [
+    "athlete-level enumeration",
+    "indoor",
+    "regular season",
+    "any HTTP validator for refresh (no-cache, no-store)"
+   ],
+   "gaps": [
+    "~a third of sectional uploads are image-only",
+    "no change signal for the coach table",
+    "/Reports/ returns 403"
+   ]
+  }
+ },
+ "cross_source_join_keys": {
+  "IL": [
+   "athleticNetId (state finals + relay members)",
+   "MileSplit TeamID/AthleteID/MeetID",
+   "DAT team id",
+   "school name (association <-> TFRRS <-> MileSplit)"
+  ],
+  "IN": [
+   "school name (association <-> TFRRS <-> MileSplit)",
+   "TFRRS TeamID (929 TF + 887 XC)",
+   "MileSplit MeetID",
+   "no Athletic.net id anywhere"
+  ],
+  "MI": [
+   "MHSAA school id (stable) + co-op id space",
+   "Athletic.net MeetID published in MHSAA hrefs",
+   "MHSAA has no meet id / event id / season id"
+  ],
+  "OH": [
+   "AN meet ids from the OHSAA team pages",
+   "myOHSAA schoolId",
+   "MileSplit MeetID"
+  ],
+  "WI": [
+   "TeamID / SportSeasonID / OrganizationID",
+   "meet name+date (no id) -> AN/TFRRS by name",
+   "AN MeetIDs from WIAA instruction PDFs + RUNMEET titles (13/26 sampled)"
+  ]
+ },
+ "corpus_filing_warnings": [
+  "TWO ASSOCIATIONS ARE NAMED IHSAA: Indiana's is ihsaa.org; Iowa's is iahsaa.org and Iowa's boys association is also 'IHSAA'. The corpus dir tools/scratch-11/ belongs to the [11] IOWA lane (11-iowa-ihsaa-ighsau.md): its ihsaa-members.csv (379 rows: ACGC, ADM, AGWSR; conferences River Valley / SEISC), p-ihsaa-*.html (435 iahsaa links, 0 'Indiana') and bound-ihsaa-* files are Iowa's. No Indiana fact in this lane is drawn from them; they are relabelled in samples/CAPTURES.md B5-IA.",
+  "tools/scratch-NN/ does not reliably mean report NN: tools/scratch-28/ serves the DAT/MileSplit super-index lanes (reports 18/28), gaps31-style dirs are cross-cutting. Per-file state identity was checked by reading the bytes.",
+  "A retained capture can disagree with its own ledger: gaps/38/il-schools.json measures 451188 B on disk while gaps/38/ledger.jsonl records 451182 B for the same URL. Both printed everywhere the file is cited; never averaged."
+ ],
+ "open_questions": [
+  "OH state-final PDF page count: 83 (analysis) vs 82 (artifact table) in [19] - unresolved, both printed.",
+  "WI grade-11 sample yield: 2,786 ([35] matcher) vs 2,653 (retained summary-v2.json) - unresolved matcher difference, printed as a range.",
+  "IL DAT team-id enumerations: 4,964 (site search) vs 3,340 (retained CSV slice) - different artifacts, never summed, both printed.",
+  "MI finals PDFs named in [15] (2025lpgd1final.pdf, 2026-UP-Boys-D1-Finals.pdf) have no retained bytes in the searched corpus (CAPTURES.md section C).",
+  "IN sectional slots (391 / 25 sectionals) carry no school-name list and no result links yet."
+ ]
+}

@@ -7,7 +7,7 @@ use crate::spawn::Spawner;
 use crate::store::Store;
 
 use super::jobs::append_observations;
-use super::wire::{IngestReply, IngestRequest, IngestState, WindowRequest};
+use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
 use super::{blocking, job_error, resolve_table, JobError, KEY_STATE};
 
 /// `Ingest`: durable per-endpoint cursor and window bookkeeping, plus the append itself.

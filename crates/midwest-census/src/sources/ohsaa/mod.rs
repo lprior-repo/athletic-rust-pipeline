@@ -29,6 +29,7 @@ pub mod collect;
 pub mod map;
 pub mod pages;
 pub mod parse;
+use census_domain::UsJurisdiction;
 
 pub use collect::collect;
 pub use map::{school_entities, AdPage, CoachEntry, SchoolExtract, SearchResult};
@@ -41,8 +42,8 @@ pub const HOST: &str = "https://officials.myohsaa.org";
 pub const SOURCE_ID: &str = "ohsaa_portal";
 /// Association slug carried by every school identity this adapter mints.
 pub const ASSOCIATION: &str = "ohsaa";
-/// State code for Ohio.
-pub const STATE: &str = "OH";
+/// Jurisdiction this adapter covers.
+pub const STATE: UsJurisdiction = UsJurisdiction::Ohio;
 
 /// URL patterns.
 const SEARCH_PATH: &str = "/Outside/SearchSchool";
@@ -59,8 +60,8 @@ pub struct Options {
     pub refresh: bool,
     /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// Restrict to these state codes when the provider spans several states.
-    pub states: Vec<String>,
+    /// Restrict to these jurisdictions when the provider spans several states.
+    pub states: Vec<UsJurisdiction>,
     /// School names to resolve when the provider has no bulk index.
     pub school_names: Vec<String>,
 }

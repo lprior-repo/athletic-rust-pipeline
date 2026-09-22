@@ -17,6 +17,7 @@
 
 use anyhow::{Context, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, Evidence, SourceRef};
+use census_domain::UsJurisdiction;
 use clap::Parser;
 use midwest_census::store::{Store, Table};
 use serde::Serialize;
@@ -159,9 +160,9 @@ fn build_rows(count: usize, observed_on: &str) -> Vec<CanonicalSchool> {
     let mut rows = Vec::with_capacity(count);
     for index in 0..count {
         let state = match index % 3 {
-            0 => "WI",
-            1 => "MN",
-            _ => "IA",
+            0 => UsJurisdiction::Wisconsin,
+            1 => UsJurisdiction::Minnesota,
+            _ => UsJurisdiction::Iowa,
         };
         let name = format!("Bench School {index}");
         let (mut school, _) = CanonicalSchool::new(state, name.clone(), normalize_name(&name));

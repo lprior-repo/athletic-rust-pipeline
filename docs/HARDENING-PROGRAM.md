@@ -171,7 +171,11 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
   panic-macro scan → `cargo audit`/`deny`/`vet`/`geiger`/`machete` → bench-regression lane.
 - **Ratchet:** `tools/quality-baseline.json` records the forbidden-construct and strict-lint counts
   per crate; the gate fails on any *increase* and prints the remaining debt. This is how debt is
-  frozen without weakening the gate (no allow-lists, no `#[allow]`).
+  frozen without weakening the gate (no allow-lists, no `#[allow]`). The ratcheted set is the debt
+  only: forbidden constructs, the 60-line function budget, and the oversized-file ledger. Sizes that
+  a feature legitimately raises (`files`, `production_lines`, `functions_over_25_logical_lines`)
+  print with a context marker and never fail, and a metric the scan starts reporting later fails
+  until the baseline records what it is.
 - `cargo-deny.toml` (advisories, licenses, bans incl. async runtimes), `.github/workflows/gate.yml`
   (or equivalent) running `tools/gate.sh`.
 - Acceptance: `tools/gate.sh` green; ratchet recorded; CI runs it.

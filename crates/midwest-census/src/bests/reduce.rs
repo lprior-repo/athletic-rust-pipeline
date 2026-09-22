@@ -5,6 +5,7 @@ use crate::report::{retain_core, CoreScoped, Scope};
 use crate::store::{Entity, Store, StoreResult, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventKind,
+    MEET_STATE_UNRESOLVED,
 };
 use std::collections::HashMap;
 
@@ -148,9 +149,13 @@ fn best_row(
         athlete_id: athlete.id.as_str().to_string(),
         name: athlete.canonical_name.clone(),
         school: athlete.school.as_str().to_string(),
+        // CSV cell: the jurisdiction code, or the unresolved sentinel when the winning mark's meet
+        // (or the meet's venue) could not be placed in one.
         state: meet
-            .map(|meet| meet.state.clone())
-            .unwrap_or_else(|| "??".to_string()),
+            .and_then(|meet| meet.state)
+            .map_or(MEET_STATE_UNRESOLVED.to_string(), |state| {
+                state.code().to_string()
+            }),
         grad_year: athlete.grad_year.get(),
         gender: format!("{:?}", athlete.gender),
         sport: sport_of(kind).to_string(),

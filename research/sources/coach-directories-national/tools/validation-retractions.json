@@ -1,0 +1,449 @@
+{
+ "retracted_file": "tools/validation-bound.json",
+ "retracted_utc": "2026-09-22",
+ "reason": "Every table/rowcount/hdr claim in the retracted file was inherited from the prior Midwest study [~/Downloads/midwest-tfxc-source-research/research/midwest/29-coach-contact-graph.md, rows for IA and SD], which fetched gobound.com directory pages INSIDE A BROWSER SESSION (its own line 143 records 'gobound.com IA/SD directory pages (403 to curl; rendered + same-origin fetch() worked in the browser)'). This lane holds no captured body for those pages, so the claims were not reproducible here.",
+ "compliance_finding": "https://www.gobound.com/robots.txt declares `User-agent: *` with `Disallow: /*directory`, `Crawl-Delay: 10`. The cited paths /{sd,ia}/schools/<slug>/directory/new match the disallowed `/*directory` pattern, so this lane must not fetch them at all - by curl or by headless browser.",
+ "observed_block": "A compliant request to https://www.gobound.com/sd/schools/aberdeencentral/directory/new returned '<title>403 Forbidden</title>' (118 bytes) and was saved as samples/validate/SD_Bound_aberdeencentral.html; the IA path returned the identical 118-byte 403 body (samples/validate/IA_Bound_adm.html).",
+ "status_of_sd_ia_contacts": "NOT VERIFIED BY THIS LANE. Treat Bound IA/SD coach+AD rows in the baseline as unattributed.",
+ "retracted_claims": [
+  {
+   "state": "SD",
+   "slug": "aberdeencentral",
+   "url": "https://www.gobound.com/sd/schools/aberdeencentral/directory/new",
+   "baseline_name": "Bo Beck",
+   "tables": 7,
+   "rowcounts": [
+    14,
+    7,
+    2,
+    9,
+    12,
+    13,
+    14
+   ],
+   "heads": [
+    [],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    []
+   ],
+   "hits": [
+    {
+     "table": 1,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Activities Director",
+      "Bo Beck",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 1,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Athletic Director",
+      "Bo Beck",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   ]
+  },
+  {
+   "state": "SD",
+   "slug": "watertown",
+   "url": "https://www.gobound.com/sd/schools/watertown/directory/new",
+   "baseline_name": "Jen McElroy",
+   "tables": 7,
+   "rowcounts": [
+    14,
+    7,
+    2,
+    9,
+    12,
+    13,
+    14
+   ],
+   "heads": [
+    [],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    []
+   ],
+   "hits": [
+    {
+     "table": 3,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Head Coach - Boys Cross Country",
+      "Jen McElroy",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 4,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Head Coach - Girls Cross Country",
+      "Jen McElroy",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   ]
+  },
+  {
+   "state": "IA",
+   "slug": "adm",
+   "url": "https://www.gobound.com/ia/schools/adm/directory/new",
+   "baseline_name": "Rod Wiebers",
+   "tables": 6,
+   "rowcounts": [
+    21,
+    23,
+    44,
+    56,
+    5,
+    21
+   ],
+   "heads": [
+    [],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    []
+   ],
+   "hits": [
+    {
+     "table": 1,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Activities Director",
+      "Rod Wiebers",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 1,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Athletic Director",
+      "Rod Wiebers",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 1,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "School Media Contact",
+      "Rod Wiebers",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   ]
+  },
+  {
+   "state": "IA",
+   "slug": "agwsr",
+   "url": "https://www.gobound.com/ia/schools/agwsr/directory/new",
+   "baseline_name": "Vacant Vacant",
+   "tables": 6,
+   "rowcounts": [
+    21,
+    23,
+    35,
+    56,
+    5,
+    21
+   ],
+   "heads": [
+    [],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    [
+     "Role",
+     "Name",
+     "School Phone",
+     "Home Phone",
+     "Email",
+     "Address"
+    ],
+    []
+   ],
+   "hits": [
+    {
+     "table": 2,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Head Coach - Boys Track & Field",
+      "Vacant Vacant",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 2,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Head Coach - Boys Track & Field",
+      "Vacant Vacant",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 2,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Assistant Coach - Boys Track & Field",
+      "Vacant Vacant",
+      "",
+      "",
+      "",
+      ""
+     ]
+    },
+    {
+     "table": 2,
+     "heads": [
+      "Role",
+      "Name",
+      "School Phone",
+      "Home Phone",
+      "Email",
+      "Address"
+     ],
+     "row": [
+      "Varsity Assistant Coach - Boys Track & Field",
+      "Vacant Vacant",
+      "",
+      "",
+      "",
+      ""
+     ]
+    }
+   ]
+  }
+ ]
+}

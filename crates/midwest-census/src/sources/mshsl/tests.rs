@@ -4,6 +4,7 @@ use crate::store::Table;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
+use census_domain::UsJurisdiction;
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -183,7 +184,7 @@ fn school_page_yields_canonical_school_with_identity_and_evidence() {
     let url = school_page_url(&row.slug);
     let (school, school_id) = school_entities(row, &detail, &url, OBSERVED_ON).expect("school");
     assert_eq!(school.name, "Aitkin High School");
-    assert_eq!(school.state.as_deref(), Some("MN"));
+    assert_eq!(school.state, Some(UsJurisdiction::Minnesota));
     assert_eq!(school.city.as_deref(), Some("Aitkin"));
     assert_eq!(school.association.as_deref(), Some("mshsl"));
     assert_eq!(school.enrollment, Some(291));
@@ -194,7 +195,7 @@ fn school_page_yields_canonical_school_with_identity_and_evidence() {
     assert_eq!(
         school.id,
         CanonicalSchool::mint(
-            "MN",
+            UsJurisdiction::Minnesota,
             "Aitkin High School",
             &normalize_name("Aitkin High School")
         )
@@ -546,7 +547,7 @@ fn coach_levels_map_to_roles_and_only_school_domains_survive() {
         ],
     }];
     let school_id = CanonicalSchool::mint(
-        "MN",
+        UsJurisdiction::Minnesota,
         "Wayzata High School",
         &normalize_name("Wayzata High School"),
     );
@@ -603,7 +604,7 @@ fn malformed_payloads_yield_zero_rows_instead_of_panicking() {
     assert_eq!(empty, SchoolDetail::default());
     assert!(ad_coaches(
         &empty,
-        &CanonicalSchool::mint("MN", "Empty", "empty"),
+        &CanonicalSchool::mint(UsJurisdiction::Minnesota, "Empty", "empty"),
         "x",
         "u",
         OBSERVED_ON
@@ -697,7 +698,7 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         .expect("schools log");
     assert_eq!(schools.len(), 1);
     assert_eq!(schools[0].name, "Aitkin High School");
-    assert_eq!(schools[0].state.as_deref(), Some("MN"));
+    assert_eq!(schools[0].state, Some(UsJurisdiction::Minnesota));
     assert_eq!(schools[0].city.as_deref(), Some("Aitkin"));
     assert_eq!(schools[0].association.as_deref(), Some("mshsl"));
     assert_eq!(schools[0].enrollment, Some(291));

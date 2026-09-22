@@ -1,12 +1,13 @@
 //! Commands that talk to a source host: the polite-fetcher probe, the state site list,
 //! cached team indexes, the MileSplit roster walk and the coach-contact CSV import.
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::census;
 use midwest_census::net::FetchOptions;
-use midwest_census::sources::milesplit::{self, SITES};
+use midwest_census::sources::milesplit::Site;
 use midwest_census::store::Store;
 use std::path::Path;
 
@@ -14,8 +15,9 @@ use super::{build_fetcher, Cli};
 
 /// List the registered MileSplit state sites.
 pub(super) fn run_sites() -> Result<()> {
-    for site in SITES {
-        println!("{}\t{}", site.state, site.host);
+    for jurisdiction in UsJurisdiction::ALL {
+        let site = Site::for_jurisdiction(jurisdiction);
+        println!("{}\t{}", site.code(), site.host());
     }
     Ok(())
 }
@@ -40,17 +42,17 @@ pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool
     Ok(())
 }
 
-/// Fetch (and cache) team indexes for the given states.
+/// Fetch (and cache) team indexes for the given jurisdictions.
 pub(super) async fn run_teams(
     cli: &Cli,
     store: &Store,
-    states: &[String],
+    states: &[UsJurisdiction],
     refresh: bool,
 ) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
-    for state in states {
-        let teams = census::collect_state_teams(&fetcher, store, state, refresh).await?;
-        println!("{state}\tteams={}", teams.len());
+    for jurisdiction in states {
+        let teams = census::collect_state_teams(&fetcher, store, *jurisdiction, refresh).await?;
+        println!("{}\tteams={}", jurisdiction.code(), teams.len());
         for team in teams.iter().take(3) {
             println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
         }
@@ -60,9 +62,9 @@ pub(super) async fn run_teams(
 
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
-    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD).
+    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS code).
     #[arg(long, value_delimiter = ',', default_value = "WI")]
-    states: Vec<String>,
+    states: Vec<UsJurisdiction>,
     /// Cap the number of rosters fetched per state (for smoke runs).
     #[arg(long)]
     limit_per_state: Option<usize>,
@@ -83,20 +85,10 @@ pub(super) struct CollectArgs {
     observed_on: Option<String>,
 }
 
-/// Upper-case the requested state codes, reject the unknown ones and build the options.
+/// Build the census options: the codes are already validated by clap's parser.
 fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
-    let states: Vec<String> = args
-        .states
-        .iter()
-        .map(|state| state.to_ascii_uppercase())
-        .collect();
-    for state in &states {
-        if milesplit::site_for_state(state).is_err() {
-            bail!("unknown state code {state}");
-        }
-    }
     Ok(census::CollectOptions {
-        states,
+        jurisdictions: args.states.clone(),
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
         state_concurrency: args.state_concurrency,

@@ -2,6 +2,7 @@
 
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
+use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::store::Store;
 use midwest_census::{bests, census, report, workbook};
@@ -15,9 +16,9 @@ pub(super) struct RunArgs {
     /// cycle publishes whatever the store already holds.
     #[arg(long)]
     input: Option<String>,
-    /// State codes for the registry, used only for lines that name no state (so exactly one).
+    /// Jurisdictions for the registry, used only for lines that name no state (so exactly one).
     #[arg(long, value_delimiter = ',')]
-    states: Vec<String>,
+    states: Vec<UsJurisdiction>,
     /// Cap the athletes read from the registry, and the rows each later stage writes.
     #[arg(long)]
     limit: Option<usize>,

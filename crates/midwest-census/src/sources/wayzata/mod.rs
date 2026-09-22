@@ -31,8 +31,9 @@
 //!
 //! * The venue is a free-text `Location` cell. A venue that names one of the provider's recurring
 //!   sites resolves to a state through [`venue_state`]; a school-shaped venue (`"Albany HS"`) goes
-//!   through the consolidated school snapshot via [`resolve_venue`]; anything else is filed under
-//!   the `??` state so it can never collide with a real one, and the runner reports how many.
+//!   through the consolidated school snapshot via [`resolve_venue`]; anything else mints an
+//!   unplaced meet (`state` absent, spelled `??` only in reports) so an unresolved venue can never
+//!   be attributed to the state the provider happens to sit next to, and the runner counts them.
 //! * The track schedule mixes indoor and outdoor seasons. A row in November-March is published as
 //!   [`Sport::IndoorTrack`](census_domain::model::Sport::IndoorTrack), everything else as
 //!   [`Sport::OutdoorTrack`](census_domain::model::Sport::OutdoorTrack); the cross-country schedule is
@@ -79,10 +80,6 @@ pub const PROVIDER: &str = "wayzata";
 /// Site root.
 pub const BASE: &str = "https://www.wayzataresults.com";
 
-/// State code for a row whose venue does not resolve. Distinct from every real state on purpose: an
-/// unresolved venue must never be filed under the state it happens to sit next to.
-pub const UNKNOWN_STATE: &str = "??";
-
 pub struct Options {
     /// Season years to walk. Empty means the current and previous year, read from the run date.
     pub years: Vec<i16>,
@@ -107,7 +104,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
     // The venue table covers the provider's recurring sites; school-shaped venues ("Albany HS") go
     // through the consolidated school snapshot instead, so a meet is filed in the state its host
-    // school is in. Before the snapshot exists every such venue stays `??`, and the run says so.
+    // school is in. Before the snapshot exists every such venue stays unplaced, and the run says so.
     let schools: Vec<census_domain::model::CanonicalSchool> =
         ctx.store.scan(crate::store::Table::Schools)?;
     let index = SchoolIndex::from_schools(&schools);

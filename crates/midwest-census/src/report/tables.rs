@@ -3,7 +3,10 @@
 use super::notes::{add, bump};
 use super::rows::RowCounts;
 use super::{MeetCoverage, StateCensus};
-use census_domain::model::{CanonicalMeet, CanonicalSchool, SourceNamespace};
+use census_domain::model::{
+    CanonicalMeet, CanonicalSchool, SourceNamespace, MEET_STATE_UNRESOLVED,
+};
+use census_domain::UsJurisdiction;
 use std::collections::BTreeMap;
 
 /// Meet-table coverage, one pass over the merged meet rows.
@@ -11,7 +14,12 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     let mut coverage = MeetCoverage::default();
     for meet in meets {
         bump(&mut coverage.total);
-        bump(coverage.by_state.entry(meet.state.clone()).or_default());
+        // The report is a text artifact, so its bucket key is the printed code; an unplaced meet
+        // stays in the unresolved bucket the pre-cutover reports already published.
+        let state = meet
+            .state
+            .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code);
+        bump(coverage.by_state.entry(state.to_string()).or_default());
         let names_athletic_net = meet.source_identities.iter().any(|identity| {
             matches!(
                 identity.namespace,
@@ -43,11 +51,8 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
 pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<String, usize> {
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
     for school in schools {
-        let state = school
-            .state
-            .clone()
-            .unwrap_or_else(|| "UNKNOWN".to_string());
-        bump(counts.entry(state).or_default());
+        let state = school.state.map_or("UNKNOWN", UsJurisdiction::code);
+        bump(counts.entry(state.to_string()).or_default());
     }
     counts
 }
@@ -57,7 +62,9 @@ pub(super) fn duplicate_school_names(schools: &[CanonicalSchool]) -> usize {
     let mut name_counts: BTreeMap<(String, String), usize> = BTreeMap::new();
     for school in schools {
         let key = (
-            school.state.clone().unwrap_or_default(),
+            school
+                .state
+                .map_or(String::new(), |state| state.code().to_string()),
             school.normalized_name.clone(),
         );
         bump(name_counts.entry(key).or_default());

@@ -44,11 +44,14 @@ pub struct Options {
     pub refresh: bool,
     /// ISO date stamped into evidence.
     pub observed_on: String,
-    /// Restrict to these state codes when the provider spans several states.
-    pub states: Vec<String>,
+    /// Restrict to these jurisdictions when the provider spans several states.
+    pub states: Vec<UsJurisdiction>,
     /// School names to resolve when the provider has no bulk index.
     pub school_names: Vec<String>,
 }
+
+// The jurisdiction this adapter covers: the IHSA is the Illinois association.
+use census_domain::UsJurisdiction;
 
 // The moved test module reaches these through `use super::*`; no production path in this
 // file needs them, so they are bound for tests only instead of widening their visibility.

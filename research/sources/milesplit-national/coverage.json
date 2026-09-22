@@ -1,0 +1,1011 @@
+{
+  "lane": "milesplit-national",
+  "generated_utc": "2026-09-22T04:00:37Z",
+  "source": "MileSplit / FloSports (MileSplit Network) \u2014 per-state hosts <code>.milesplit.com + www.milesplit.com",
+  "host_pattern": {
+    "state_host": "https://<lowercased-usps-code>.milesplit.com",
+    "evidence": "samples/state-subdomain-probe.txt (51/51 codes HTTP 200; newengland/dcmdva/national HTTP 500)",
+    "national_host": "https://www.milesplit.com (observability site_code=www, site_id=67 \u2014 samples/homepage.html)",
+    "canonical_state_redirect": "an athlete requested on www is served/canonicalised to its state host: samples/athlete-www-13966799.html canonical = https://ny.milesplit.com/athletes/13966799-abigail-burt"
+  },
+  "measured": {
+    "teams_index": {
+      "surface": "GET /teams (default type filter = 1 High School, samples/teams-oh.html select#teamType)",
+      "jurisdictions_measured": 51,
+      "jurisdictions_total": 51,
+      "hs_teams_total": 26562,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "method": "count of href=\"https://<code>.milesplit.com/teams/<digits>-<slug>\" on one page per host; dc counted over the www+dc host spellings it mixes (samples/teams-dc.html contains hrefs on both hosts)",
+      "single_page": true,
+      "pagination_observed": false,
+      "cross_check": {
+        "source": "~/Downloads/midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv (column hs_team_records_on_milesplit)",
+        "states_compared": 12,
+        "states_agreeing": 12,
+        "mismatches": []
+      },
+      "noise": {
+        "measure": "OH names matching /test|timing|youth|closed|exempt|-boys$/ on samples/teams-oh.html",
+        "count": 10,
+        "of": 977,
+        "pct": 1.0,
+        "examples": [
+          "ghg-test",
+          "ghg-test-2",
+          "test-2-main",
+          "finishtiming",
+          "timing-first",
+          "fairland-youth",
+          "youngstown-youth-academy",
+          "seneca-east-boys",
+          "bridgeport-exempted-village-school-district"
+        ]
+      }
+    },
+    "roster": {
+      "surface": "GET /teams/<TeamID>-<slug>/roster",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "team_sampled": {
+        "team_id": 10002,
+        "name": "Mason",
+        "rows": 319,
+        "file": "samples/roster-oh-mason.html"
+      },
+      "prior_measurement": {
+        "source": "~/Downloads/midwest-tfxc-source-research/research/midwest/34-milesplit-discovery-vs-validation.md",
+        "states": [
+          "WI",
+          "MN"
+        ],
+        "teams": 50,
+        "rostered_athletes": 4883,
+        "c2027": 1029,
+        "grad_year_present_pct": 95.9,
+        "note": "inherited evidence from the prior phase, NOT re-measured in this lane"
+      },
+      "cost": "1 request per team; full 51-jurisdiction sweep = 26,562 requests at the measured team counts"
+    },
+    "meet_info": {
+      "surface": "GET /meets/<MeetID>-<slug>/info",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "meet_id": 771577,
+      "file": "samples/meet-oh-771577.html"
+    },
+    "meet_results_files": {
+      "surface": "GET /meets/<MeetID>-<slug>/results",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "meet_id": 770621,
+      "result_files": [
+        {
+          "id": 1321880,
+          "name": "Results",
+          "isMeetPro": 0
+        }
+      ],
+      "file": "samples/meet-oh-770621-results.html"
+    },
+    "raw_results": {
+      "surface": "GET /meets/<MeetID>/results/<RSID>/raw",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "rsid": 1321880,
+      "content_lines_in_pre": 88,
+      "result_rows": 80,
+      "sections": {"Boys Middle School 3000 Meter": 40, "Girls Middle School 3000 Meter": 40},
+      "grade_column": "Yr (values 7,8 in the captured file)",
+      "file": "samples/raw-oh-770621-rs1321880.txt"
+    },
+    "results_index": {
+      "surface": "GET /results?&page=N",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "meets_per_page": 50,
+      "pages_visible_in_capture": [
+        1,
+        2
+      ],
+      "next_link": "/results?&page=2 (rel=next)",
+      "year_filter_options_min": 2006,
+      "year_filter_options_count": 23,
+      "file": "samples/results-oh.html"
+    },
+    "calendar": {
+      "surface": "GET /calendar/<state>-<season>-meet-calendar",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "meet_rows": 294,
+      "unique_meet_ids": 294,
+      "levels_seen": [
+        "hs",
+        "hs,ms",
+        "hs,ms,open",
+        "hs,ms,youth",
+        "hs,ms,youth,open"
+      ],
+      "file": "samples/calendar-oh.html",
+      "link_host": "https://www.milesplit.com/meets/<id>-<slug> (cross-host; the results index links the state host instead)"
+    },
+    "athlete_profile": {
+      "surface": "GET /athletes/<AthleteID>-<slug>",
+      "jurisdictions_sampled": 2,
+      "jurisdictions": [
+        "OH",
+        "NY (requested via www)"
+      ],
+      "oh_athlete": {
+        "id": 15005189,
+        "name": "Brice Fuller",
+        "class_of": "2028",
+        "result_rows": 96,
+        "mask_spans": 480,
+        "file": "samples/athlete-oh-15005189.html"
+      },
+      "ny_athlete": {
+        "id": 13966799,
+        "name": "Abigail Burt",
+        "class_of": "2029",
+        "file": "samples/athlete-www-13966799.html"
+      }
+    },
+    "athlete_search_json": {
+      "surface": "POST /search/v2/athletes",
+      "jurisdictions_sampled": 2,
+      "jurisdictions": [
+        "OH",
+        "www(national)"
+      ],
+      "anonymous": true,
+      "http": 200,
+      "content_type": "application/json",
+      "hits_per_page_max_observed": 100,
+      "total_pages_cap": 100,
+      "page_param": "page",
+      "files": [
+        "samples/search-v2-athletes-oh-2.json",
+        "samples/search-v2-athletes-oh-fuller-p2.json",
+        "samples/search-v2-athletes-oh-perpage100.json",
+        "samples/search-v2-athletes-www.json"
+      ],
+      "precondition": "fresh searchToken from GET /athletes + the unique_id cookie it sets (samples/athletes-oh-searchform.html, samples/search-v2-athletes-oh-notoken.json -> HTTP 400)",
+      "robots": "allowed (robots.txt disallows only /rankings, /virtual-meets, /api/, /contact)"
+    },
+    "rankings": {
+      "surface": "GET /rankings/events/... and /rankings/leaders/...",
+      "jurisdictions_sampled": 1,
+      "jurisdiction": "OH",
+      "leaderboard_rows": 8,
+      "leaderboard_rows_with_data": 8,
+      "event_page_rows": 50,
+      "event_rows_with_data": 1,
+      "event_rows_masked": 49,
+      "files": [
+        "samples/rankings-oh-boys-xc.html",
+        "samples/rank-event-oh-xc-5000m.html"
+      ],
+      "robots": "DISALLOWED (/rankings) on all 7 hosts sampled \u2014 not usable by the pipeline; captured for analysis only"
+    },
+    "team_rankings_widget": {
+      "surface": "GET /teams/<TeamID>-<slug>/rankings (robots-allowed path, data arrives from robots-disallowed /api/)",
+      "jurisdiction": "OH",
+      "team_id": 10002,
+      "rows_in_html": 0,
+      "file": "samples/team-oh-10002-rankings.html"
+    },
+    "entries": {
+      "surface": "GET /meets/<MeetID>-<slug>/entries",
+      "jurisdiction": "OH",
+      "meet_id": 770621,
+      "rows_in_html": 0,
+      "file": "samples/meet-oh-770621-entries.html",
+      "note": "shell only; visible text contains 'Loading'"
+    },
+    "sitemap": {
+      "surface": "GET /sitemap.xml",
+      "measured_in_this_lane": false,
+      "inherited": {
+        "source": "~/Downloads/midwest-tfxc-source-research/research/midwest/33-milesplit-sitemap-recency.md",
+        "hosts": 13,
+        "urls_per_host": 7500,
+        "athlete_urls_only": true,
+        "www_is_complement_namespace": true,
+        "historical_depth": "none (lastmod = page rewrite time; no index; no pagination)"
+      }
+    }
+  },
+  "jurisdictions": [
+    {
+      "usps_code": "AK",
+      "state_name": "Alaska",
+      "subdomain": "ak.milesplit.com",
+      "teams_index_url": "https://ak.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 173,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:29Z"
+    },
+    {
+      "usps_code": "AL",
+      "state_name": "Alabama",
+      "subdomain": "al.milesplit.com",
+      "teams_index_url": "https://al.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 562,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:27Z"
+    },
+    {
+      "usps_code": "AR",
+      "state_name": "Arkansas",
+      "subdomain": "ar.milesplit.com",
+      "teams_index_url": "https://ar.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 489,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:33Z"
+    },
+    {
+      "usps_code": "AZ",
+      "state_name": "Arizona",
+      "subdomain": "az.milesplit.com",
+      "teams_index_url": "https://az.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 411,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:31Z"
+    },
+    {
+      "usps_code": "CA",
+      "state_name": "California",
+      "subdomain": "ca.milesplit.com",
+      "teams_index_url": "https://ca.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 2029,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:34Z"
+    },
+    {
+      "usps_code": "CO",
+      "state_name": "Colorado",
+      "subdomain": "co.milesplit.com",
+      "teams_index_url": "https://co.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 430,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:36Z"
+    },
+    {
+      "usps_code": "CT",
+      "state_name": "Connecticut",
+      "subdomain": "ct.milesplit.com",
+      "teams_index_url": "https://ct.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 251,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:38Z"
+    },
+    {
+      "usps_code": "DC",
+      "state_name": "District of Columbia",
+      "subdomain": "dc.milesplit.com",
+      "teams_index_url": "https://dc.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 80,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:41Z"
+    },
+    {
+      "usps_code": "DE",
+      "state_name": "Delaware",
+      "subdomain": "de.milesplit.com",
+      "teams_index_url": "https://de.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 82,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:40Z"
+    },
+    {
+      "usps_code": "FL",
+      "state_name": "Florida",
+      "subdomain": "fl.milesplit.com",
+      "teams_index_url": "https://fl.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 1027,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:43Z"
+    },
+    {
+      "usps_code": "GA",
+      "state_name": "Georgia",
+      "subdomain": "ga.milesplit.com",
+      "teams_index_url": "https://ga.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 709,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:45Z"
+    },
+    {
+      "usps_code": "HI",
+      "state_name": "Hawaii",
+      "subdomain": "hi.milesplit.com",
+      "teams_index_url": "https://hi.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 112,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:47Z"
+    },
+    {
+      "usps_code": "IA",
+      "state_name": "Iowa",
+      "subdomain": "ia.milesplit.com",
+      "teams_index_url": "https://ia.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 411,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:53Z",
+      "prior_csv_count": 411,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 85,
+      "prior_c2027_band": [
+        8220,
+        18084
+      ]
+    },
+    {
+      "usps_code": "ID",
+      "state_name": "Idaho",
+      "subdomain": "id.milesplit.com",
+      "teams_index_url": "https://id.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 199,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:48Z"
+    },
+    {
+      "usps_code": "IL",
+      "state_name": "Illinois",
+      "subdomain": "il.milesplit.com",
+      "teams_index_url": "https://il.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 849,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:50Z",
+      "prior_csv_count": 849,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 58,
+      "prior_c2027_band": [
+        5943,
+        30564
+      ]
+    },
+    {
+      "usps_code": "IN",
+      "state_name": "Indiana",
+      "subdomain": "in.milesplit.com",
+      "teams_index_url": "https://in.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 533,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:52Z",
+      "prior_csv_count": 533,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 2,
+      "prior_sampled_c2027": 32,
+      "prior_c2027_band": [
+        2843,
+        8528
+      ]
+    },
+    {
+      "usps_code": "KS",
+      "state_name": "Kansas",
+      "subdomain": "ks.milesplit.com",
+      "teams_index_url": "https://ks.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 413,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:55Z",
+      "prior_csv_count": 413,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 2,
+      "prior_sampled_c2027": 34,
+      "prior_c2027_band": [
+        1652,
+        7709
+      ]
+    },
+    {
+      "usps_code": "KY",
+      "state_name": "Kentucky",
+      "subdomain": "ky.milesplit.com",
+      "teams_index_url": "https://ky.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 438,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:57Z"
+    },
+    {
+      "usps_code": "LA",
+      "state_name": "Louisiana",
+      "subdomain": "la.milesplit.com",
+      "teams_index_url": "https://la.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 588,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:56:59Z"
+    },
+    {
+      "usps_code": "MA",
+      "state_name": "Massachusetts",
+      "subdomain": "ma.milesplit.com",
+      "teams_index_url": "https://ma.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 464,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:04Z"
+    },
+    {
+      "usps_code": "MD",
+      "state_name": "Maryland",
+      "subdomain": "md.milesplit.com",
+      "teams_index_url": "https://md.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 400,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:02Z"
+    },
+    {
+      "usps_code": "ME",
+      "state_name": "Maine",
+      "subdomain": "me.milesplit.com",
+      "teams_index_url": "https://me.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 160,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:00Z"
+    },
+    {
+      "usps_code": "MI",
+      "state_name": "Michigan",
+      "subdomain": "mi.milesplit.com",
+      "teams_index_url": "https://mi.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 895,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:06Z",
+      "prior_csv_count": 895,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 1,
+      "prior_sampled_c2027": 3,
+      "prior_c2027_band": [
+        895,
+        895
+      ]
+    },
+    {
+      "usps_code": "MN",
+      "state_name": "Minnesota",
+      "subdomain": "mn.milesplit.com",
+      "teams_index_url": "https://mn.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 592,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:07Z",
+      "prior_csv_count": 592,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 2,
+      "prior_sampled_c2027": 25,
+      "prior_c2027_band": [
+        2368,
+        7499
+      ]
+    },
+    {
+      "usps_code": "MO",
+      "state_name": "Missouri",
+      "subdomain": "mo.milesplit.com",
+      "teams_index_url": "https://mo.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 700,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:11Z",
+      "prior_csv_count": 700,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 55,
+      "prior_c2027_band": [
+        10500,
+        16100
+      ]
+    },
+    {
+      "usps_code": "MS",
+      "state_name": "Mississippi",
+      "subdomain": "ms.milesplit.com",
+      "teams_index_url": "https://ms.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 463,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:09Z"
+    },
+    {
+      "usps_code": "MT",
+      "state_name": "Montana",
+      "subdomain": "mt.milesplit.com",
+      "teams_index_url": "https://mt.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 208,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:13Z"
+    },
+    {
+      "usps_code": "NC",
+      "state_name": "North Carolina",
+      "subdomain": "nc.milesplit.com",
+      "teams_index_url": "https://nc.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 897,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:25Z"
+    },
+    {
+      "usps_code": "ND",
+      "state_name": "North Dakota",
+      "subdomain": "nd.milesplit.com",
+      "teams_index_url": "https://nd.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 153,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:27Z",
+      "prior_csv_count": 153,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 2,
+      "prior_sampled_c2027": 19,
+      "prior_c2027_band": [
+        714,
+        1224
+      ]
+    },
+    {
+      "usps_code": "NE",
+      "state_name": "Nebraska",
+      "subdomain": "ne.milesplit.com",
+      "teams_index_url": "https://ne.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 317,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:14Z",
+      "prior_csv_count": 317,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 63,
+      "prior_c2027_band": [
+        2853,
+        11729
+      ]
+    },
+    {
+      "usps_code": "NH",
+      "state_name": "New Hampshire",
+      "subdomain": "nh.milesplit.com",
+      "teams_index_url": "https://nh.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 108,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:18Z"
+    },
+    {
+      "usps_code": "NJ",
+      "state_name": "New Jersey",
+      "subdomain": "nj.milesplit.com",
+      "teams_index_url": "https://nj.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 549,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:20Z"
+    },
+    {
+      "usps_code": "NM",
+      "state_name": "New Mexico",
+      "subdomain": "nm.milesplit.com",
+      "teams_index_url": "https://nm.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 199,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:21Z"
+    },
+    {
+      "usps_code": "NV",
+      "state_name": "Nevada",
+      "subdomain": "nv.milesplit.com",
+      "teams_index_url": "https://nv.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 136,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:16Z"
+    },
+    {
+      "usps_code": "NY",
+      "state_name": "New York",
+      "subdomain": "ny.milesplit.com",
+      "teams_index_url": "https://ny.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 1357,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:23Z"
+    },
+    {
+      "usps_code": "OH",
+      "state_name": "Ohio",
+      "subdomain": "oh.milesplit.com",
+      "teams_index_url": "https://oh.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 977,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:28Z",
+      "prior_csv_count": 977,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 136,
+      "prior_c2027_band": [
+        9770,
+        86953
+      ]
+    },
+    {
+      "usps_code": "OK",
+      "state_name": "Oklahoma",
+      "subdomain": "ok.milesplit.com",
+      "teams_index_url": "https://ok.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 777,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:30Z"
+    },
+    {
+      "usps_code": "OR",
+      "state_name": "Oregon",
+      "subdomain": "or.milesplit.com",
+      "teams_index_url": "https://or.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 370,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:32Z"
+    },
+    {
+      "usps_code": "PA",
+      "state_name": "Pennsylvania",
+      "subdomain": "pa.milesplit.com",
+      "teams_index_url": "https://pa.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 913,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:34Z"
+    },
+    {
+      "usps_code": "RI",
+      "state_name": "Rhode Island",
+      "subdomain": "ri.milesplit.com",
+      "teams_index_url": "https://ri.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 72,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:35Z"
+    },
+    {
+      "usps_code": "SC",
+      "state_name": "South Carolina",
+      "subdomain": "sc.milesplit.com",
+      "teams_index_url": "https://sc.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 456,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:37Z"
+    },
+    {
+      "usps_code": "SD",
+      "state_name": "South Dakota",
+      "subdomain": "sd.milesplit.com",
+      "teams_index_url": "https://sd.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 196,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:39Z",
+      "prior_csv_count": 196,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 64,
+      "prior_c2027_band": [
+        588,
+        10584
+      ]
+    },
+    {
+      "usps_code": "TN",
+      "state_name": "Tennessee",
+      "subdomain": "tn.milesplit.com",
+      "teams_index_url": "https://tn.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 592,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:40Z"
+    },
+    {
+      "usps_code": "TX",
+      "state_name": "Texas",
+      "subdomain": "tx.milesplit.com",
+      "teams_index_url": "https://tx.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 2424,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:42Z"
+    },
+    {
+      "usps_code": "UT",
+      "state_name": "Utah",
+      "subdomain": "ut.milesplit.com",
+      "teams_index_url": "https://ut.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 172,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:44Z"
+    },
+    {
+      "usps_code": "VA",
+      "state_name": "Virginia",
+      "subdomain": "va.milesplit.com",
+      "teams_index_url": "https://va.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 609,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:47Z"
+    },
+    {
+      "usps_code": "VT",
+      "state_name": "Vermont",
+      "subdomain": "vt.milesplit.com",
+      "teams_index_url": "https://vt.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 117,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:46Z"
+    },
+    {
+      "usps_code": "WA",
+      "state_name": "Washington",
+      "subdomain": "wa.milesplit.com",
+      "teams_index_url": "https://wa.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 655,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:49Z"
+    },
+    {
+      "usps_code": "WI",
+      "state_name": "Wisconsin",
+      "subdomain": "wi.milesplit.com",
+      "teams_index_url": "https://wi.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 597,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:52Z",
+      "prior_csv_count": 597,
+      "prior_csv": "midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv",
+      "counts_agree": true,
+      "prior_sampled_teams": 3,
+      "prior_sampled_nonempty": 3,
+      "prior_sampled_c2027": 142,
+      "prior_c2027_band": [
+        16119,
+        39999
+      ]
+    },
+    {
+      "usps_code": "WV",
+      "state_name": "West Virginia",
+      "subdomain": "wv.milesplit.com",
+      "teams_index_url": "https://wv.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 170,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:51Z"
+    },
+    {
+      "usps_code": "WY",
+      "state_name": "Wyoming",
+      "subdomain": "wy.milesplit.com",
+      "teams_index_url": "https://wy.milesplit.com/teams",
+      "teams_http": 200,
+      "hs_teams_measured": 81,
+      "measurement_source": "samples/teams-count-sweep.tsv",
+      "sweep_utc": "2026-09-22T03:57:54Z"
+    }
+  ],
+  "jurisdictions_with_no_captured_team_count": [],
+  "jurisdictions_without_any_deep_capture": [
+    "AK",
+    "AL",
+    "AR",
+    "AZ",
+    "CA",
+    "CO",
+    "CT",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "IA",
+    "ID",
+    "IL",
+    "IN",
+    "KS",
+    "KY",
+    "LA",
+    "MA",
+    "MD",
+    "ME",
+    "MI",
+    "MN",
+    "MO",
+    "MS",
+    "MT",
+    "NC",
+    "ND",
+    "NE",
+    "NH",
+    "NJ",
+    "NM",
+    "NV",
+    "OK",
+    "OR",
+    "PA",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VA",
+    "VT",
+    "WA",
+    "WI",
+    "WV"
+  ],
+  "deep_capture_notes": {
+    "teams_index": [
+      "OH",
+      "DC",
+      "WY",
+      "CA",
+      "TX",
+      "NY",
+      "FL",
+      "IL",
+      "PA"
+    ],
+    "roster": [
+      "OH"
+    ],
+    "meet_info": [
+      "OH"
+    ],
+    "meet_results": [
+      "OH"
+    ],
+    "raw_results": [
+      "OH"
+    ],
+    "results_index": [
+      "OH"
+    ],
+    "calendar": [
+      "OH"
+    ],
+    "athlete_profile": [
+      "OH",
+      "NY"
+    ],
+    "rankings": [
+      "OH"
+    ]
+  },
+  "probe_subdomain_outcomes": {
+    "200": [
+      "ak",
+      "al",
+      "ar",
+      "az",
+      "ca",
+      "co",
+      "ct",
+      "dc",
+      "de",
+      "fl",
+      "ga",
+      "hi",
+      "ia",
+      "id",
+      "il",
+      "in",
+      "ks",
+      "ky",
+      "la",
+      "ma",
+      "md",
+      "me",
+      "mi",
+      "mn",
+      "mo",
+      "ms",
+      "mt",
+      "nc",
+      "nd",
+      "ne",
+      "nh",
+      "nj",
+      "nm",
+      "nv",
+      "ny",
+      "oh",
+      "ok",
+      "or",
+      "pa",
+      "ri",
+      "sc",
+      "sd",
+      "tn",
+      "tx",
+      "ut",
+      "va",
+      "vt",
+      "wa",
+      "wi",
+      "wv",
+      "wy"
+    ],
+    "500": [
+      "newengland",
+      "dcmdva",
+      "national"
+    ],
+    "source": "samples/state-subdomain-probe.txt"
+  },
+  "gaps": [
+    "Roster/meet/result coverage is measured in OH only (this lane). Non-OH jurisdictions have team-index counts but no roster, meet, result or calendar capture.",
+    "Class-of-2027 shares per jurisdiction exist only for the 12 Midwest states, from the prior phase's n=3-teams-per-state sample (milesplit-coverage-matrix.csv, columns sampled_c2027_* and est_c2027_total_order_of_magnitude_*) \u2014 order-of-magnitude bands, not point estimates.",
+    "The per-state athlete search endpoint was exercised on oh and www only; per-state behaviour on the other 49 hosts is unverified.",
+    "The rankings table beyond row 1 is server-side masked for anonymous clients; its XHR path (teams scope only: /api/v1/teams/<id>/rankings|best|records) is robots-disallowed and was therefore not requested.",
+    "No coach/AD/contact field was observed on any captured surface (0 occurrences of 'coach' in samples/roster-oh-mason.html)."
+  ],
+  "not_attempted_by_policy": [
+    "GET/POST /api/** (robots Disallow on oh, www, ca, tx, mi, wy; and by prior-phase evidence on va) \u2014 includes the only JSON that carries per-row gradYear + windReading + AthleteID.",
+    "GET /rankings/** beyond the two already-captured URLs (robots Disallow).",
+    "Any login, PRO entitlement, paywall bypass, or CAPTCHA work."
+  ]
+}

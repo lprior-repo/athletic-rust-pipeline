@@ -59,3 +59,7 @@ tempfile = "3"
 [[bench]]
 name = "core"
 harness = false
+
+[[bench]]
+name = "pipeline"
+harness = false

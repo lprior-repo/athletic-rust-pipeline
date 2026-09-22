@@ -1,21 +1,29 @@
 # DOMAIN.md — types, identities and evidence rules
 
 The census answers one question for every athlete: *who is this, what did they run, and how do we
-know?* The types in `crates/midwest-census/src/model.rs` exist to make the wrong answer hard to
-express. This document is the contract; the code is the implementation.
+know?* The types in `crates/census-domain/src/model.rs` (plus `src/jurisdiction.rs` and
+`src/error.rs`) exist to make the wrong answer hard to express. This document is the contract; the
+code is the implementation.
 
 ## 1. Identity is minted, not borrowed
 
 `Id<T>` is a locally minted, deterministic id for a canonical entity: `Id<CanonicalAthlete>`,
 `Id<CanonicalSchool>`, `Id<CanonicalMeet>`, `Id<CanonicalTeam>`, `Id<CanonicalCoach>`. Provider ids
-never become canonical ids. A provider id lives in `SourceIdentity { namespace, source_id, url }`
-where `SourceNamespace` names the provider (`MileSplit`, `Wiaa`, `Mshsl`, `AthleticNet`, …).
+never become canonical ids. A provider id lives in `SourceIdentity { namespace, id, url }`
+(`id` is the provider's own id, `url` optional) where `SourceNamespace` names the provider
+(`MileSplit`, `Wiaa`, `Mshsl`, `AthleticNet`, …).
 
 Consequences:
 
 - One athlete with four provider profiles is one canonical athlete with four `SourceIdentity` rows.
 - Deleting or re-importing a provider never renumbers canonical entities.
 - Two providers that disagree stay disagreeing and visible; the merge does not average them.
+
+A state is not a string either: `UsJurisdiction` (`crates/census-domain/src/jurisdiction.rs`)
+declares the 50 states plus the District of Columbia, and `UsJurisdiction::ALL` is the census
+denominator. Territories and freely associated states are deliberately absent, so `"PR"` *fails to
+parse* instead of silently widening coverage; every source id, journal phase, report row and
+workflow identity that needs a state formats it as the USPS code (`Display` writes the code).
 
 ## 2. Cohort is a graduation year; grade is time-scoped evidence
 
@@ -83,8 +91,22 @@ unrelated personal data are outside the contract: if a directory exposes them, t
 
 ## 8. Failure is a first-class value
 
-`OperationTerminal<T>` distinguishes `Complete`, `NotFound`, `Incomplete`, `RateLimited`,
-`HumanRequired`, `RetryExhausted`, `SourceUnavailable`, `PolicyBlocked`. Collapsing `RateLimited` or
-`SourceUnavailable` into "not found" is forbidden: it silently corrupts coverage reporting, which is
-the artifact the whole census is judged on. Where an outcome must cross an async boundary, keep the
-cause: panic (`BrowserError::TaskPanicked`), cancellation and timeout are distinct from domain errors.
+There is no single `OperationTerminal<T>` type in this tree: earlier revisions of this document named
+one, and no such type exists in the code. The vocabulary is per layer, and each layer names its own
+causes:
+
+- root crate: `FailureCode` (`src/runtime/protocol.rs`), `InvalidInput`, `Transport`,
+  `AccessDenied`, `BrowserChallenge`, `BrowserUnavailable`, `RateLimited`, `HttpFailure`,
+  `PayloadLimit`, `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect`;
+  `BrowserError` (`src/runtime/browser.rs`), including `HumanRequired`, `Unavailable`,
+  `TaskPanicked`, `Shutdown`; and `DomainError` (`src/domain/error.rs`) for pure validation.
+- census crate: `FetchError` (`crates/midwest-census/src/net/mod.rs`) for the transport
+  (`Robots`, `Http{status}`, `RateLimited{retry_after_secs}`, `TooLarge`, `Transport`, `Cache`,
+  `Timeout`, …) and `CrawlError` (`crates/midwest-census/src/sources/mod.rs`) for the adapter
+  layer.
+
+Collapsing `RateLimited` or `SourceUnavailable`/`Unavailable` into "not found" is forbidden: it
+silently corrupts coverage reporting, which is the artifact the whole census is judged on. Where an
+outcome must cross an async boundary, keep the cause: `outcome::Outcome<T, E>`
+(`crates/midwest-census/src/outcome.rs`) separates `Ok`/`Err` from `Cancelled`/`Timeout`/`Panicked`,
+so panic and cancellation stay distinct from domain errors.

@@ -1,0 +1,130 @@
+{
+ "AK": [
+  "https://asaa.org/wp-json/",
+  "https://asaa.org/wp-json/wp/v2/pages/19"
+ ],
+ "AZ": [],
+ "CA": [],
+ "CO": [
+  "/api/auth",
+  "/api/auth/active-context",
+  "/api/auth/active-district",
+  "/api/auth/active-school",
+  "/api/public",
+  "/api/signup",
+  "/api/transfer-form",
+  "http://localhost:3000/api/auth"
+ ],
+ "DE": [],
+ "FL": [],
+ "GA": [],
+ "HI": [],
+ "IA": [
+  "https://www.iahsaa.org/wp-json/",
+  "https://www.iahsaa.org/wp-json/pum/v1",
+  "https://www.iahsaa.org/wp-json/tribe/events/v1/",
+  "https://www.iahsaa.org/wp-json/wp/v2/pages/22914"
+ ],
+ "ID": [
+  "https://challenges.cloudflare.com/turnstile/v0/api.js",
+  "https://maps.googleapis.com/maps/api/js"
+ ],
+ "IN": [],
+ "KY": [
+  "https://khsaa.org/wp-json/",
+  "https://khsaa.org/wp-json/wp/v2/posts/70402"
+ ],
+ "LA": [],
+ "MA": [],
+ "MD": [
+  "/wp-json/mpssaa/v1/search",
+  "https://www.mpssaa.org/wp-json/",
+  "https://www.mpssaa.org/wp-json/mpssaa/v1/search",
+  "https://www.mpssaa.org/wp-json/mpssaa/v1/search/popular",
+  "https://www.mpssaa.org/wp-json/smartsheet-sports/v1/"
+ ],
+ "ME": [],
+ "MI": [],
+ "MS": [],
+ "MT": [
+  "https://widget.arbitersports.com/widgets/v1/arbiter-score-ticker.iife.js",
+  "https://www.mhsa.org/wp-json/",
+  "https://www.mhsa.org/wp-json/wp/v2/media",
+  "https://www.mhsa.org/wp-json/wp/v2/pages/8649"
+ ],
+ "NC": [
+  "https://www.nchsaa.org/wp-json/",
+  "https://www.nchsaa.org/wp-json/pum/v1",
+  "https://www.nchsaa.org/wp-json/wp/v2/pages/10201"
+ ],
+ "ND": [],
+ "NE": [
+  "https://nsaahome.org/wp-json/",
+  "https://nsaahome.org/wp-json/elementskit/v1/",
+  "https://nsaahome.org/wp-json/wp/v2/pages/27"
+ ],
+ "NH": [
+  "https://www.nhiaa.org/wp-json/",
+  "https://www.nhiaa.org/wp-json/wp/v2/media",
+  "https://www.nhiaa.org/wp-json/wp/v2/pages/8075"
+ ],
+ "NJ": [],
+ "NM": [
+  "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  "https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}",
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}",
+  "https://www.nmact.org/wp-json/",
+  "https://www.nmact.org/wp-json/tribe/events/v1/",
+  "https://www.nmact.org/wp-json/wp/v2/pages/921"
+ ],
+ "NY": [],
+ "OH": [],
+ "OK": [
+  "https://ossaaillustrated.com/wp-json/",
+  "https://ossaaillustrated.com/wp-json/wp/v2/ads/",
+  "https://ossaaillustrated.com/wp-json/wp/v2/pages/1558"
+ ],
+ "OR": [],
+ "RI": [],
+ "SC": [
+  "https://schsl.org/wp-json/",
+  "https://schsl.org/wp-json/wp/v2/pages/1277"
+ ],
+ "SD": [],
+ "TN": [],
+ "UT": [
+  "/v2/wp-admin/admin-ajax.php",
+  "https://uhsaa.org/v2/how-to-use-maxpreps/",
+  "https://uhsaa.org/v2/rules-clinics/",
+  "https://uhsaa.org/v2/scores/",
+  "https://uhsaa.org/v2/superintendents/",
+  "https://uhsaa.org/v2/uhsaa-corporate-partners/",
+  "https://uhsaa.org/v2/uhsaa-media-information/",
+  "https://uhsaa.org/v2/uhsaa-sports-medicine/",
+  "https://uhsaa.org/v2/wp-content/themes/inspiro-child/menu-date.js",
+  "https://uhsaa.org/v2/wp-content/themes/inspiro/fonts/inspiro.woff2",
+  "https://uhsaa.org/v2/wp-content/themes/inspiro/fonts/onest/Onest-Var-latin.woff2",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/Coachofthemonth-300x180.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/PlayoftheWeek-Hudl-300x180.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/UHSAAmenulogo.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/maxpreps-app.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/nfhs.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/sportsmanship.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/teamofthemonth2-300x200.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2024/12/uhsaacircleelogowebp.webp",
+  "https://uhsaa.org/v2/wp-content/uploads/2025/05/ico512-150x150.webp"
+ ],
+ "VT": [
+  "https://vpaonline.org/wp-json/",
+  "https://vpaonline.org/wp-json/wp/v2/pages/107"
+ ],
+ "WA": [],
+ "WI": [],
+ "WV": [
+  "https://www.wvssac.org/wp-json/",
+  "https://www.wvssac.org/wp-json/wp/v2/media",
+  "https://www.wvssac.org/wp-json/wp/v2/pages/8039"
+ ]
+}

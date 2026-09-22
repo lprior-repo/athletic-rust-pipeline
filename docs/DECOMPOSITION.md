@@ -89,9 +89,12 @@ cargo xtask scan | jq -c '.structure'                         # sizes: files >30
 bash tools/gate.sh                                                         # all lanes
 ```
 
-The debt ratchet is only satisfied when `functions_over_60` / `functions_over_25_logical_lines` and
+The debt ratchet is only satisfied when the forbidden-construct counts, `functions_over_60` and
 `files_over_300_lines` go **down** or stay flat for the touched crate. Do not refresh the baseline to
-absorb a rise — that is the failure mode this phase exists to avoid.
+absorb a rise in any of those — that is the failure mode this phase exists to avoid.
+`functions_over_25_logical_lines` and the per-crate `files` / `production_lines` counts describe the
+tree rather than the debt: a feature adds files, lines and the occasional 26-logical-line function, so
+the ratchet prints those with `(context)` and `(target, not a budget)` and does not fail on them.
 
 ## Layout rule
 
