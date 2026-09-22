@@ -1,0 +1,34 @@
+Coach sources,Records
+association_school:ihsa,15114
+mshsl_team_coach,5843
+association_school:nsaa,1528
+association_school:mshsl,760
+association_school:kshsaa,526
+bound,78
+association_school:ohsaa,33
+association_school:wiaa,22
+association_school:ndhsaa,13
+association_school:mhsaa,6
+
+Grade-evidence sources,Athletes
+athleticlive_athletes,462875
+milesplit_oh,27000
+milesplit_il,19398
+milesplit_mi,16176
+milesplit_wi,14984
+wiaa_results,13573
+milesplit_mo,13218
+milesplit_in,11909
+milesplit_mn,11261
+milesplit_ks,9252
+milesplit_ia,8738
+milesplit_ne,5921
+milesplit_sd,2669
+milesplit_nd,2043
+
+Class-of-2027 sport mix,Athletes
+indoor_only,10375
+outdoor_only,61666
+cross_country_only,26293
+multi_sport,77602
+none,14151

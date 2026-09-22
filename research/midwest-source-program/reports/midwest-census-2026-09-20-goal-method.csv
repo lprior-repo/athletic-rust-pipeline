@@ -1,0 +1,26 @@
+Midwest high-school track & field / cross-country recruiting census
+
+Goal
+"Own the canonical graph (school, team, coach, athlete, meet, event, performance) for boys and girls track & field and cross-country, with graduating class kept separate from the grade a source happened to publish, without depending on Athletic.net."
+Success test,Athletic.net and its AthleticLIVE mirror switched off: the census still runs and reports.
+Core scope,Evidence produced by adapters that do not read Athletic.net or its mirror.
+All-sources scope,Adds the two AthleticLIVE modules (mirror + athlete index) as the comparison baseline.
+
+Source tiers
+Tier A,"Official state associations: WIAA, MSHSL, IHSA, OHSAA, KSHSAA, NDHSAA, NSAA"
+Tier B,"MileSplit-style state sites: rosters, graded athletes, public profile URLs"
+Tier D,"Official result artifacts: Hy-Tek, Compiled, cross-country and RaceDay layouts"
+Tier E,Compliant timing providers: Wayzata Results (MN / IA / WI) published schedules
+Non-core,Athletic.net and the AthleticLIVE mirror: never fetched by a core run
+
+Reproduce
+Consolidate,cargo run --release -p midwest-census -- consolidate
+Core report,cargo run --release -p midwest-census -- report --core
+All-source report,cargo run --release -p midwest-census -- report
+Workbook,python3 reports/build-census-workbook.py
+
+Provenance
+Core report generated,2026-09-20
+Store,var/midwest-census
+Core note,scope=core schools=12267 athletes=651736 coaches=27580 from var/midwest-census/out
+All-source note,scope=all_sources schools=12267 athletes=787584 coaches=27580 from var/midwest-census/out

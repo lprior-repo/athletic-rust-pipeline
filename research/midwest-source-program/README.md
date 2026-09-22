@@ -15,6 +15,10 @@ the reasoning the adapters implement is reviewable next to the code that impleme
 | `reports/` | 16 | the measured scopes, by-state CSVs, best results for the class of 2027, and the run reports |
 | `scripts/` | 1 | the fragment merge script the coach lane calls |
 
+The `data/` and `reports/` artifacts are force-added: the repository's `.gitignore` skips CSV and
+JSONL by default, and these eighteen data products and sixteen reports are the products the program
+exists to publish, not regenerable scratch.
+
 ## What is deliberately not mirrored
 
 Four products exceed the 25 MB cap and stay in the working corpus:

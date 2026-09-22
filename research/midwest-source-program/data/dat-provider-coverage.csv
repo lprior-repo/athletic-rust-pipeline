@@ -1,0 +1,14 @@
+state,dat_t&f_team_records,dat_xc_team_records,canonical_schools,meets_idx,hs-marked,dat_live_hs_performance_lists,strongest_hs_result_artifact_inspected,source,observed_on
+WI,976,936,492,95 (full),0,none,"index page only (95 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+MN,753,121,380,65 (full),0,none,"result page: Lake Conference Championships, May 17 2016, 10 teams",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+IA,808,784,408,≥100,0,none,"event sheet: MVC Girls Divisional, May 5 2022, `FR/SO/JR/SR` grades",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+IL,1744,1596,880,≥100,0,none (`IL Top Times` lists are 2023/2024 only — peer 14),"index page only (≥100 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+MI,1612,1618,814,92 (full),0,none,"index page only (92 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+IN,929,887,466,≥100,6,"yes — HSR Large (4A-6A), HSR Small (1A-3A), All-School journal","HS performance lists + event sheets, 2026 season (1,180 rows / 312 teams)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+OH,1749,1679,875,≥100,0,none,"index page only (≥100 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+MO,980,939,492,68 (full),4,none,"index HS-marked rows (68 rows, 4 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+KS,865,804,436,90 (full),7,none,"index HS rows (90, 7 HS) + HS meet page sampled by peer 23 (`SCBL HS Track 2026`, 20 teams)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+NE,634,632,319,52 (full),0,none,"index page only (52 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+ND,361,362,181,29 (full),0,none,"index page only (29 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+SD,380,378,190,30 (full),0,none,"index page only (30 rows, 0 HS)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
+Total,"11,791","10,736","5,933",≥921,17,1 state,"2 HS result pages verified (IA 2022, MN 2016)",report 28 table; measured from directathletics.com league/index pages,2026-09-19
