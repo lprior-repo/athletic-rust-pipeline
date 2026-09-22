@@ -1,0 +1,288 @@
+{
+  "generated_on": "2026-09-22",
+  "scope": "all_sources",
+  "store": "var/midwest-census",
+  "q1_source_discovery": {
+    "athleticlive_grade_observations": 462875,
+    "milesplit_grade_observations_total": 260144,
+    "milesplit_grade_observations_by_state": {
+      "AK": 1340,
+      "AL": 5619,
+      "AR": 5635,
+      "AZ": 7055,
+      "CA": 7987,
+      "CO": 8955,
+      "CT": 4336,
+      "DC": 126,
+      "DE": 2090,
+      "FL": 2200,
+      "GA": 3723,
+      "HI": 1619,
+      "IA": 8738,
+      "ID": 2355,
+      "IL": 19398,
+      "IN": 11909,
+      "KS": 9252,
+      "KY": 1957,
+      "LA": 1582,
+      "MA": 3232,
+      "MD": 2528,
+      "ME": 2711,
+      "MI": 16176,
+      "MN": 11261,
+      "MO": 13218,
+      "MS": 1495,
+      "MT": 2054,
+      "NC": 2505,
+      "ND": 2043,
+      "NE": 5921,
+      "NH": 2293,
+      "NJ": 4392,
+      "NM": 2609,
+      "NV": 2816,
+      "NY": 2988,
+      "OH": 27000,
+      "OK": 1306,
+      "OR": 2308,
+      "PA": 2820,
+      "RI": 2118,
+      "SC": 2672,
+      "SD": 2669,
+      "TN": 2031,
+      "TX": 3999,
+      "UT": 3808,
+      "VA": 3406,
+      "VT": 889,
+      "WA": 2144,
+      "WI": 14984,
+      "WV": 1704,
+      "WY": 2168
+    },
+    "namespaces": {
+      "legacy_athletic_net:athlete": 93619,
+      "milesplit_athlete": 260101
+    }
+  },
+  "q2_reconciled_unique": {
+    "athletes": 1226212,
+    "class_of_2027": 307653,
+    "co2027_boys": 172413,
+    "co2027_girls": 134829,
+    "co2027_unknown_gender": 411,
+    "grad_year_evidence": 307653
+  },
+  "q3_athletic_net_profile_coverage": {
+    "co2027_with_profile_url": 294451,
+    "pct": 95.71,
+    "athletic_net_urls_known_without_an_search": 93619,
+    "meets_total": 11007,
+    "meets_with_athletic_net_id": 9593,
+    "meets_by_state": {
+      "??": 442,
+      "IA": 1051,
+      "IL": 1994,
+      "IN": 381,
+      "KS": 181,
+      "MI": 1429,
+      "MN": 1054,
+      "MO": 569,
+      "ND": 161,
+      "NE": 589,
+      "OH": 1232,
+      "SD": 364,
+      "WI": 1560
+    }
+  },
+  "q4_independent_corroboration": {
+    "multisource_co2027": 59269,
+    "pct": 19.26
+  },
+  "q5_school_with_coach": {
+    "co2027_with_coach": 43201,
+    "pct": 14.04,
+    "coaches_total": 27580,
+    "coach_sources": {
+      "association_school:ihsa": 15114,
+      "association_school:kshsaa": 526,
+      "association_school:mhsaa": 6,
+      "association_school:mshsl": 760,
+      "association_school:ndhsaa": 13,
+      "association_school:nsaa": 1528,
+      "association_school:ohsaa": 33,
+      "association_school:wiaa": 22,
+      "bound": 78,
+      "mshsl_team_coach": 5843
+    }
+  },
+  "q6_public_coach_contact": {
+    "co2027_with_coach_email": 33340,
+    "pct": 10.84,
+    "coaches_with_email": 8284
+  },
+  "q7_athletic_net_requests_avoided": {
+    "profile_page_requests_avoided_by_known_urls": 93619,
+    "meet_page_requests_avoided_by_known_meet_ids": 9593,
+    "note": "counterfactual proxy: one Athletic.net profile request per known URL and one meet request per known MeetID; no broad Athletic.net search performed"
+  },
+  "q8_remaining_gaps": {
+    "midwest_zero_meets": [],
+    "midwest_zero_coaches": [
+      "IN",
+      "MO"
+    ],
+    "midwest_cohort_without_coach_school": {
+      "MI": 22073,
+      "IN": 16931,
+      "MO": 15168,
+      "KS": 10077,
+      "ND": 3004
+    },
+    "provider_meets_by_source": {
+      "timer_meet:live_results": 9705,
+      "timer_meet:athleticlive": 2432,
+      "timer_meet:wayzata": 1264,
+      "timer_meet:michiana": 440,
+      "timer_meet:dakota": 421,
+      "timer_meet:iptt": 403,
+      "timer_meet:palatine": 349,
+      "timer_meet:blacksquirrel": 345,
+      "timer_meet:heros": 329,
+      "timer_meet:aatiming": 311,
+      "timer_meet:tracksidetiming": 284,
+      "timer_meet:fstiming": 249
+    },
+    "states_with_cohort_but_zero_performance": [
+      "MN",
+      "IA",
+      "IL",
+      "MI",
+      "IN",
+      "OH",
+      "MO",
+      "KS",
+      "NE",
+      "ND",
+      "SD"
+    ]
+  },
+  "q9_best_adapters": [
+    {
+      "rank": "1",
+      "adapter": "MileSplit team-roster adapter (HTML)",
+      "states_covered": "12 states [27]",
+      "athletes_est": "Co2027 boys census 41,145 (ATN corpus w/ primary-state attribution [27]; 40,695 measured by rankings sweep [04]) to ~62,400 [INFERENCE: 41,145/0.659 measured corpus overlap [27]]; measured 716 Co2027 from 30 schools (median 18/team, range 3-89)",
+      "coach_est": "0 (no coach fields; 0 \"coach\" occurrences on a team page)",
+      "requests_est": "6,633 rosters + 12 team lists = 6,645 first build; then 12/day sitemap delta",
+      "effort_est": "LOW (one unpaginated HTML table per school: gender, grad-year, Indoor/Outdoor/XC booleans; class filter is client-side)",
+      "ratio_notes": "Breadth winner: 12/12 states, free Class-of-2027 grad-year evidence, no paywall, robots-allowed surface (/teams, /teams/<id>/roster). Cost note: 6,645 requests is MORE than the 2,728-request ATN rankings sweep [04], so it does not \"avoid\" requests - it adds grade evidence and reaches the 34.1% (CI 28.9-39.8) of sampled Co2027 who are absent from the ATN G11 corpus [27]. No ATN ids: join by normalized name+school+state+grad year.",
+      "report_refs": "[27],[07],[16],[20],[18]"
+    },
+    {
+      "rank": "2",
+      "adapter": "IHSA API adapter (IL)",
+      "states_covered": "IL only [13]",
+      "athletes_est": "Grade-bearing cohorts: XC qualifiers 1,214 boys (358 G11); T&F state-finals entries 3,342 lines -> 2,555 unique triples, 838 Jr [sampled]; athleticNetId on every finisher and relay member",
+      "coach_est": "828 member schools; 4/4 sampled AD rows w/ email, 12/12 coach rows w/ email [29]; head-coach row present in 42/56 sampled school-sport-gender cells (75%) [13]",
+      "requests_est": "~10/season universe+structure (1 for /v1/schools=828 rows, 2 for classification matrices); ~200/season T&F ops; ~3/school for the full staff+email build",
+      "effort_est": "LOW-MED (clean unauthenticated REST JSON; no CF challenge, no cookies; openapi absent)",
+      "ratio_notes": "Highest verified payload per request: 1 request = 828 schools with membership/enrollment/class/coop; event summaries return athlete.athleticNetId + grade per finisher (the only association surface handing over ATN athlete ids in bulk). Coach-email path is per-person but 100% of sampled rows carry HasEmail.",
+      "report_refs": "[13],[29]"
+    },
+    {
+      "rank": "3",
+      "adapter": "MSHSL JSON API adapter (MN)",
+      "states_covered": "MN only [09]",
+      "athletes_est": "664 schools x 2 sports in-season rosters with per-athlete grade (07/08/FR/SO/JR/SR); 1,494 team targets (386+388+361+359)",
+      "coach_est": "AD 9 rows / 7 w/ email on school pages [29]; head/assistant coach names free on the roster endpoint; coach email via /api/coaches/<nid> (4/10 records on Wayzata T&F, both head coaches named w/ email) [09]",
+      "requests_est": "4 (team lists) + 664x2 roster calls for names; 1,494 coach calls for emails; 664 school pages for AD",
+      "effort_est": "MED (JSON:API + /api/team-data/*; must replicate the site filter that excludes Non-MSHSL Coach records carrying personal-domain emails)",
+      "ratio_notes": "Only association found returning grade + head-coach name + professional email in one request family; grade is school-published, i.e. ATN-independent. State-meet ATN MeetID 666673 comes free. No marks/PRs (results still need ATN or the AL blob).",
+      "report_refs": "[09],[29]"
+    },
+    {
+      "rank": "4",
+      "adapter": "KSHSAA directory API adapter (KS)",
+      "states_covered": "KS only [23],[29]",
+      "athletes_est": "89 association-grade-verified Co2027 XC records (2025) + ~90-200/season seed identities; no enumeration beyond state-meet cohorts",
+      "coach_est": "526 schools in 1 request, 100% AD name+email (ADCell present but not collected); 0 sport-coach rows",
+      "requests_est": "1 (526 schools + AD emails) + 2 for grade seeds + 3 for the full school universe",
+      "effort_est": "LOW (public JSON, no auth, 489 KB/request)",
+      "ratio_notes": "Best single-request ratio in the study: 1 request = 526 schools with AD emails/class/enrollment/league/USD (vs 526 ATN team searches). Narrow athlete value (~89 grade-11 XC records from 2 requests) but the cheapest AD layer in the Midwest.",
+      "report_refs": "[29],[23]"
+    },
+    {
+      "rank": "5",
+      "adapter": "AthleticLIVE blob + ES bridge (ATN-id carrier)",
+      "states_covered": "MN, IA, ND evidenced; 258 tenant origins published on the SPA [10],[12],[25]",
+      "athletes_est": "Per meet: 242 Co2027 (MSHSL state XC 2025, 6 requests), 1,265 G11 (IA state T&F); 959/959 and 136/136 sampled rows carry the ATN athlete id; network-wide season total UNVERIFIED",
+      "coach_est": "0 (zero coach/contact keys on team_detail docs)",
+      "requests_est": "5-6 per meet (event docs) or 1 per 1,000-doc ES query; 1 per meet for discovery diffs",
+      "effort_est": "MED (Elasticsearch query shapes + Azure blob doc types ind_res_list/athlete_detail/team_detail; ND variant is an RTDB with the same ani payload)",
+      "ratio_notes": "Only external source that hands over Athletic.net AthleteID/TeamID + grade + marks with no Cloudflare, no browser and no token: 6 requests = 959 rows / 242 Co2027 / 959 ATN ids [10]; 1 request = 121 rows for a regular-season meet [10]; ND state series is the same shape on Firebase RTDB [25]. ATN profile URL is composable from ani with zero ATN requests [12].",
+      "report_refs": "[10],[12],[25]"
+    },
+    {
+      "rank": "6",
+      "adapter": "TFRRS/DirectAthletics Indiana adapter (IN)",
+      "states_covered": "IN only (plus a 12-state team registry from the parent domain) [18],[28]",
+      "athletes_est": "1,861 distinct Co2027 in 2 requests via &year=JR (HSR Large 1,155 + Small 706, disjoint; 6,533 athletes unfiltered at ?limit=1000); GRADE TRAP: &year=SR on these 2025-26 lists = 1,678 and is the Class of 2026 (at-meet grade), not Co2027. Also: 1,816 numeric TeamIDs (929 TF + 887 XC) in 2 requests; 1,180 rows / 312 teams of 2026 HS performance lists; roster route: ≈12,300 Co2027 from ≈901 gender-team roster requests (≈0.07 req/athlete, [INFERENCE] from 28.6% JR over 419 sampled roster rows - JR is the Co2027 token because the live rosters serve the 2025-26 season)",
+      "coach_est": "0 (verified: no personnel fields on team/meet/athlete/list pages) [18],[28]",
+      "requests_est": "2 (HSR Co2027 cohort via &year=JR) + 2 (team universes) + 1/team roster refresh + 1 feed (results.rss)",
+      "effort_est": "LOW (plain HTML tables + RSS; no auth, no Cloudflare)",
+      "ratio_notes": "Densest grade-filtered athlete instrument per request in the region: 1,861 Co2027 for 2 requests (~0.0011 req/athlete) [28][18]. Only state where DAT has a live HS surface; elsewhere DAT HS results are not discoverable from the index. CAVEAT 2026: the meet-results surface collapsed - 56 track meets vs 1,022 in 2025, IHSAA outdoor tournament absent from the 2026 list - so treat the HSR lists as the value and re-measure the meet surface from November 2026 [18] Roster route is the broad-coverage option (all teams, not just HSR qualifiers); corrected upward after the at-meet-grade fix (was quoted as ≈9,800 SR-based).",
+      "report_refs": "[18],[28]"
+    },
+    {
+      "rank": "7",
+      "adapter": "OHSAA / myOHSAA portal adapter (OH)",
+      "states_covered": "OH only [19],[29]",
+      "athletes_est": "0 enumeration (561 G11 names with grade from the state-final PDF set; 1,067 incl. relay legs)",
+      "coach_est": "5/5 sampled schools: 18 coach rows (15 w/ email) + 13 AD rows (13 w/ email) [29]; full-sample 33/56 cells named (59%), 100% of named cells carry a public email [19]",
+      "requests_est": "3 requests per school (SearchSchool -> ohsaaId, SportsInformation = XC+TF coach emails, AthleticDirector = AD email); full OH build 815 x 3 = ~2,445, or ~1,630 if ohsaaId already known from the [19] blob [CALC]. Plus 18 PDFs for divisional alignment (2,353 rows)",
+      "effort_est": "LOW (plain HTML + mailto; Azure blob for PDFs; no auth)",
+      "ratio_notes": "Most complete sport-scoped coach-email set after WIAA/IHSA, and the only state whose association mandates ATN - every member school already has an ATN team page, so team identity needs no search. No ranking replacement. Caveat: some coach slots hold personal-domain addresses (3 of 18 sampled rows) - filter on domain if policy is school-domain-only [29]",
+      "report_refs": "[19],[29]"
+    },
+    {
+      "rank": "8",
+      "adapter": "WIAA schools database adapter (WI)",
+      "states_covered": "WI only [06],[29]",
+      "athletes_est": "1,796 team-season rows (462/462/437/435 per sport-season); no athlete rows",
+      "coach_est": "1 request/school: 17/17 coach rows w/ email + 5/5 AD w/ email [29]; earlier 9-school sample 7-9/9 head coaches named, 9/9 schools with >=1 TF/XC email [06]",
+      "requests_est": "4 (team universes) + 26 letter queries to enumerate 629 schools + 1/school detail (629) = ~659 for a full coach build [CALC from 06]; +1 archive page +1 PDF for the tournament meet set",
+      "effort_est": "LOW (ASP.NET POST, no auth, no anti-forgery token)",
+      "ratio_notes": "Cheapest per-school coach-email directory measured (1 request/school, 100% of sampled rows carry email) and WIAA itself publishes the 2026 T&F tournament ATN MeetIDs + 104 result-file links/season with Yr grade. No athlete enumeration.",
+      "report_refs": "[06],[29]"
+    },
+    {
+      "rank": "9",
+      "adapter": "NSAA directory + S3 mirror adapter (NE)",
+      "states_covered": "NE only [24],[29]",
+      "athletes_est": "283 TF / 253 XC participating teams; district XC HTML with grade-bearing top-15 rows; no athlete enumeration",
+      "coach_est": "1,217 coach name rows (0 emails) + AD 311 rows (0 emails) in the sampled build [29]; TF 274/275 and XC 243 boys/240 girls named [24]",
+      "requests_est": "311 POSTs (one per school) for the directory = 1,528 contact rows; +1 page for 28 district MeetIDs; +~40 for 2 sports x 2 decades of PDFs",
+      "effort_est": "LOW (S3 mirror of /textfile/** bypasses the nsaahome.org 403; public bucket, no auth)",
+      "ratio_notes": "Best name-coverage per request (1,528 contact rows from 311 requests) though email-free by design; also 28 ATN district MeetIDs from one page, and ~40 external requests replace >=300 ATN meet-search requests [24].",
+      "report_refs": "[24],[29]"
+    },
+    {
+      "rank": "10",
+      "adapter": "Long-tail official directories: Bound school dirs (IA, SD) + MHSAA admin API (MI) + NDHSAA school pages (ND)",
+      "states_covered": "IA, SD, MI, ND [29],[15],[25],[26]",
+      "athletes_est": "0 (contact layer only): IA/SD 365/176 school universes; MI 755 school IDs; ND 169 schools",
+      "coach_est": "Bound: 63 IA coach rows (3 with email - all Albia, 1 of 5 sampled schools) + 20 SD coach rows (4 with email - all Rapid City Stevens, 1 of 5); email strictly per-school opt-in; MHSAA: 14/14 AD rows w/ email, no sport coach; NDHSAA: B-XC 17/22, G-XC 16/22, B-TF 19/22, G-TF 19/22 named on a 22-school systematic sample, 0 emails",
+      "requests_est": "IA 2/school (~724 for the state), SD 1/school + 2 for the universe (176), MI 1/school (AD API), ND 1/school (169)",
+      "effort_est": "LOW-MED (server-rendered HTML for Bound/NDHSAA, JSON API for MHSAA; IA needs an IHSAA->Bound slug pass)",
+      "ratio_notes": "Same adapter class: one curl-friendly official directory request per school. Buys coach identity (names) for 4 more states and closes the \"who to contact\" gap where athletes exist but no contact does. ND names double as the only XC/TF coach identities for a 762-athlete state; MI adds AD emails. MO and IN remain uncovered by any official source.",
+      "report_refs": "[29],[26],[15],[25]"
+    }
+  ],
+  "generation": "coach-plane pre-import (store read 2026-09-22 ~05:30; superseded by the 2026-09-22 coach import and the products rebuild at 11:43)",
+  "superseded_by": [
+    "reports/report.json",
+    "reports/report-core.json",
+    "reports/census-by-state.csv",
+    "reports/census-by-state-core.csv",
+    "synthesis/01-acceptance-answers.md"
+  ]
+}
