@@ -289,7 +289,6 @@ pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spaw
         .bind(JurisdictionCensus::new(
             Arc::clone(&store),
             Arc::clone(&clock),
-            Arc::clone(&region),
         ))
         .bind(NationalCensus::new(clock))
         .build()

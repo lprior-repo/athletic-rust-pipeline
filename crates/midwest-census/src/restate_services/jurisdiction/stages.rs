@@ -21,9 +21,7 @@ use crate::net::Fetcher;
 use crate::sources::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
-use crate::restate_services::wire::{
-    ConsolidatedTable, JurisdictionRequest, JurisdictionState, StageOutcome,
-};
+use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, StageOutcome};
 use crate::restate_services::{jobs, KEY_STATE};
 
 /// Delay between requests to one host when a workflow drives the walk. The CLI's default is the same
@@ -164,18 +162,5 @@ impl JurisdictionCensus {
             .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(census)
-    }
-
-    /// Merge this jurisdiction's append observations into the snapshots the reports read.
-    pub(super) async fn consolidate_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-    ) -> Result<Vec<ConsolidatedTable>, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let region = Arc::clone(&self.region);
-        let Json(tables) = ctx
-            .run(move || jobs::consolidate_stage(store, region))
-            .await?;
-        Ok(tables)
     }
 }

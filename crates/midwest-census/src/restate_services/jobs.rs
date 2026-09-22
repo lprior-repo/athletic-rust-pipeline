@@ -9,13 +9,12 @@ use crate::census::{self, CollectOptions, MeetCensus, StateProgress};
 use crate::net::Fetcher;
 use crate::report::{self, ReportError, ReportResult, Scope};
 use crate::sources::CrawlError;
-use crate::spawn::Spawner;
 use crate::store::{Store, StoreError, StoreResult, Table};
 use crate::{bests, workbook};
 
 use super::wire::ingest::SweepReport;
 use super::wire::{BestsReply, ConsolidatedTable, ReportReply, StageOutcome, WorkbookReply};
-use super::{blocking, cohort_label, job_error, JobError, MAX_ROWS_PER_REQUEST};
+use super::{cohort_label, JobError, MAX_ROWS_PER_REQUEST};
 
 /// Append observations for one table. Every row must carry its canonical `id`; that is what the
 /// store keys the observation by.
@@ -174,19 +173,6 @@ pub(super) async fn rosters_stage(
         .await
         .map_err(collect_error)?;
     Ok(Json(progress))
-}
-
-/// The consolidate stage: merge this jurisdiction's append observations into the snapshots the
-/// reports read. It runs through the shell's region like every other blocking job, so an invocation
-/// aborted mid-merge leaves the work owned by the region.
-pub(super) async fn consolidate_stage(
-    store: Arc<Store>,
-    region: Arc<Spawner>,
-) -> Result<Json<Vec<ConsolidatedTable>>, HandlerError> {
-    blocking(region, move || consolidate_tables(&store, &Table::ALL))
-        .await
-        .map_err(job_error)
-        .map(Json)
 }
 
 /// Classify a collection failure for retry. The store keeps its own classification, an invariant

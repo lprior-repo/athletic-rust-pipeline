@@ -89,6 +89,13 @@ pub struct WorkbookRequest {
     pub grad_year: Option<i16>,
     #[serde(default)]
     pub limit: Option<usize>,
+    /// Scope the best-results sidecars are reduced over (`core` or `all_sources`); `core` when
+    /// absent, the same default the operator-facing reductions use.
+    #[serde(default)]
+    pub scope: Option<String>,
+    /// Directory the workbook is written into; the store's own `out/` when absent.
+    #[serde(default)]
+    pub out: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

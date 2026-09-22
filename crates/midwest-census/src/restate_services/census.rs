@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
@@ -153,8 +154,9 @@ impl Census {
     ) -> Result<Json<WorkbookReply>, HandlerError> {
         let options = workbook::Options {
             grad_year: request.grad_year,
+            out: request.out.map(PathBuf::from),
             limit: request.limit,
-            ..workbook::Options::default()
+            scope: resolve_scope(request.scope.as_deref())?,
         };
         let store = Arc::clone(&self.store);
         let region = Arc::clone(&self.region);

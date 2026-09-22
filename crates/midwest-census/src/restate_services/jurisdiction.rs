@@ -10,11 +10,15 @@
 //!
 //! Stages run in dependency order and each one is recorded in the object's single durable state
 //! value the moment it completes: `teams` (the jurisdiction's team index), `rosters` (the roster
-//! walk, which is where the cohort counts come from), then `consolidate` (merge the append
-//! observations into the snapshots the reports read). A re-invocation reads that state and runs
-//! only what it still owes, so a machine that reboots mid-walk resumes at the roster it had not
-//! finished rather than at the first team. The walk itself is additionally journaled per team, which
-//! is why the stage boundary is coarse here: within a stage, the journal is the finer resume point.
+//! walk, which is where the cohort counts come from) and `meets`. A re-invocation reads that state
+//! and runs only what it still owes, so a machine that reboots mid-walk resumes at the roster it
+//! had not finished rather than at the first team. The walk itself is additionally journaled per
+//! team, which is why the stage boundary is coarse here: within a stage, the journal is the finer
+//! resume point.
+//!
+//! Snapshots are not merged here. Merging a table reads every observation of it, so a merge per
+//! jurisdiction re-read the whole corpus once per state; the national run merges once, after the
+//! fan-out, and the merge reads what the walk appended.
 //!
 //! # Attempts
 //!
@@ -31,7 +35,6 @@ use tokio::sync::Mutex;
 use crate::census::WorkflowIdentity;
 use crate::clock::Clock;
 use crate::net::Fetcher;
-use crate::spawn::Spawner;
 use crate::store::Store;
 
 use super::jobs;
@@ -43,9 +46,6 @@ mod stages;
 pub struct JurisdictionCensus {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
-    /// The shell's region: the consolidate job runs through it, so an aborted invocation leaves the
-    /// work owned by the region instead of running unattached.
-    region: Arc<Spawner>,
     /// The polite fetcher, built once per process and shared by every jurisdiction.
     ///
     /// Shared on purpose: the fetcher owns the per-host gates and the request counters, and those are
@@ -57,11 +57,10 @@ pub struct JurisdictionCensus {
 }
 
 impl JurisdictionCensus {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, region: Arc<Spawner>) -> Self {
+    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>) -> Self {
         Self {
             store,
             clock,
-            region,
             fetcher: Arc::new(Mutex::new(None)),
         }
     }
@@ -121,13 +120,6 @@ impl JurisdictionCensus {
             stages_run.push("meets".to_string());
         }
 
-        if state.consolidated.is_none() {
-            let tables = self.consolidate_stage(ctx).await?;
-            state.consolidated = Some(tables);
-            self.save(ctx, state);
-            stages_run.push("consolidate".to_string());
-        }
-
         Ok(stages_run)
     }
 }
@@ -151,10 +143,9 @@ fn report(
         .rosters
         .clone()
         .ok_or_else(|| jobs::invariant("no walk outcome recorded after the rosters stage"))?;
-    let consolidated = state
-        .consolidated
-        .clone()
-        .ok_or_else(|| jobs::invariant("no table counts recorded after the consolidate stage"))?;
+    // Snapshots are merged once by the national run, so a jurisdiction reports no table counts of
+    // its own. The field stays for the reports written when the merge was a jurisdiction stage.
+    let consolidated = state.consolidated.clone().unwrap_or_default();
     let meets = state
         .meets
         .clone()

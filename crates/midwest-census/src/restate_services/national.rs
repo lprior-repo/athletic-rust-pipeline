@@ -33,9 +33,10 @@ use crate::clock::Clock;
 use super::jobs;
 use super::jurisdiction::JurisdictionCensusClient;
 use super::wire::{
-    JurisdictionReport, JurisdictionSummary, NationalFailure, NationalReport, NationalRequest,
+    ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure, NationalReport,
+    NationalRequest,
 };
-use super::KEY_STATE;
+use super::{census::CensusClient, KEY_STATE};
 
 #[derive(Clone)]
 pub struct NationalCensus {
@@ -49,8 +50,11 @@ impl NationalCensus {
 }
 
 /// The jurisdictions one national run covers, each with the object key its census is addressed by:
-/// the request's order when it names one, otherwise all fifty states and the District of Columbia in
-/// declaration order.
+/// the request's order when it names one, otherwise the census run scope — the 48 continental states
+/// plus the District of Columbia (ADR-009) — in declaration order.
+///
+/// A jurisdiction outside the run scope is terminal: Alaska and Hawaii are modelled but never
+/// acquired, and admitting one here would put it in every denominator afterwards.
 ///
 /// A duplicate is terminal. Restate would queue the second call behind the first rather than
 /// deduplicating it, so a repeated state would walk itself twice for no coverage and the report
@@ -62,13 +66,16 @@ pub(super) fn targets(
     request: &NationalRequest,
 ) -> Result<Vec<(UsJurisdiction, String)>, HandlerError> {
     let jurisdictions: Vec<UsJurisdiction> = if request.jurisdictions.is_empty() {
-        UsJurisdiction::ALL.to_vec()
+        UsJurisdiction::CENSUS_SCOPE.to_vec()
     } else {
         request.jurisdictions.clone()
     };
     let mut seen: Vec<UsJurisdiction> = Vec::with_capacity(jurisdictions.len());
     let mut targets = Vec::with_capacity(jurisdictions.len());
     for jurisdiction in jurisdictions {
+        if let Err(outside) = jurisdiction.require_census_scope() {
+            return Err(TerminalError::new(outside.to_string()).into());
+        }
         if seen.contains(&jurisdiction) {
             return Err(TerminalError::new(format!(
                 "jurisdiction {} appears twice in one national run",
@@ -197,6 +204,22 @@ impl NationalCensus {
             );
         }
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
+
+        // One snapshot merge for the whole run, after every jurisdiction has appended, and through
+        // the `Census` service so it is as durable as the fan-out itself. Merging a table reads
+        // every observation of it, so the per-jurisdiction merge this replaces re-read the whole
+        // corpus once per state: tens of gigabytes resident for a snapshot that does not depend on
+        // which state walked last.
+        let Json(consolidated) = ctx
+            .service_client::<CensusClient>()
+            .consolidate(Json(ConsolidateRequest { tables: Vec::new() }))
+            .call()
+            .await?;
+        tracing::info!(
+            tables = consolidated.tables.len(),
+            "merged table snapshots for the run"
+        );
+
         let report = assemble(
             request.season,
             request.revision,

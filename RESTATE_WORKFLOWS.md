@@ -87,8 +87,8 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Census` | service | `status`, `consolidate`, `report`, `bests`, `workbook` | Holds the concurrency semaphore (`self.permit()`); every heavy step goes through `blocking(...)` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
-| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, consolidate — recorded in durable state as each completes |
-| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction` and folds the reports into one `NationalReport`, listing failed states as `failures` rows instead of failing the run |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes |
+| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through `Census/consolidate` before it assembles the report |
 
 **Qualified.** Both definitions are exercised by the census CLI (`crates/midwest-census/src/cli/national.rs`):
 
@@ -126,16 +126,24 @@ contract: a qualification run with a small limit and the exhaustive run that fol
 share a revision.
 
 **Stage boundary.** A jurisdiction object owns exactly three durable stages — `teams`, `rosters`,
-`consolidate` (`restate_services/jurisdiction.rs:69-121`). Meet discovery, result acquisition, coach
-collection and §47 gap classification are batch commands (`collect`, `provider`, `import-coaches`) or
-the separate acquisition pipeline; they are not yet stages of a durable jurisdiction run, so a
-`NationalReport` says what the walk covered and deliberately says nothing about meets or coaches.
+`meets` (`restate_services/jurisdiction.rs:69-121`). Result acquisition, coach collection and §47 gap
+classification are batch commands (`collect`, `provider`, `import-coaches`) or the separate
+acquisition pipeline; they are not stages of a durable jurisdiction run, so a `NationalReport` says
+what the walk covered and says nothing about coaches.
 
-**Concurrency and snapshot publication.** Up to `--max-concurrent` jurisdictions consolidate at once,
-and consolidation writes the shared `out/*.jsonl` snapshots. `Store`'s snapshot writer therefore
-publishes by `rename` from a private temporary (`.name.pid.seq.part`), never by truncating in place:
-every reader — the report, the workbook, an operator with `less` — sees one complete snapshot or the
-other, and two concurrent consolidations cannot interleave into one file
+**Consolidation.** Merging a table reads every observation of it, so the merge is not a stage a
+jurisdiction can afford: with 49 jurisdictions each merging the whole corpus, the `athletes` table
+alone took `midwest-serve` to an 82 GB resident peak, and the supervisor's memory budget killed it.
+The merge is now one step of the national run — after the fan-out, before the report — invoked
+through `Census/consolidate`, so it is still a durable Restate call whose reply lands in the run's
+journal. The same athlete merge over the same corpus then runs in **18.5 s at a 5.8 GB peak**
+(measured 2026-09-22 on the serving process; the run's own reply counted 2,374,515 merged athlete
+rows out of 3,063,071 observations).
+
+**Snapshot publication.** Consolidation writes the shared `out/*.jsonl` snapshots, and `Store`'s
+snapshot writer publishes by `rename` from a private temporary (`.name.pid.seq.part`), never by
+truncating in place: every reader — the report, the workbook, an operator with `less` — sees one
+complete snapshot or the other, and two concurrent consolidations cannot interleave into one file
 (`store::read::write_snapshot`, pinned by `store::tests::concurrent_snapshot_writers_only_publish_whole_files`).
 
 ## 3. The work-snapshot objects
