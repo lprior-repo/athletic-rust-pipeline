@@ -1,408 +1,107 @@
-# AGENTS.md — working in this repository
+# AGENTS.md — working instructions for this repository
 
-Primary instruction document for coding agents. Read it first, then the one document a task needs.
-Every path and command below is one the tree actually has; §8 names the ones the objective asks for
-that do **not** exist yet.
+Primary instruction document for any person or coding agent working here. Read this first, then
+`ARCHITECTURE.md`, then `docs/adr/README.md`.
 
-| Document | Read it for |
-|---|---|
-| `ARCHITECTURE.md` | system shape: the census crates, the root acquisition pipeline, module seams |
-| `docs/architecture.md` | the census as it exists today: crate map, phase ladder and the artifact that advances each phase, store tables and durability, what a seal certifies and refuses, the module-edge table |
-| `DOMAIN.md` | canonical types, identity, evidence and cohort rules |
-| `SOURCE_ADAPTER_GUIDE.md` | the adapter contract in full |
-| `FJALL_SCHEMA.md`, `docs/FJALL_SCHEMA.md` | store schema and keys; durability and sharp edges |
-| `RESTATE_WORKFLOWS.md` | durable services, workflow identities, retry ownership |
-| `TESTING.md` | test layout, fixtures, how to run one test |
-| `PERFORMANCE.md` | which measurements may be quoted |
-| `SCOPE.md`, `HANDOFF.md` | product scope; executed-evidence handoff (the history lives here, not in `README.md`) |
-| `COLLECTOR_PATTERNS.md`, `SOURCES_SURVEY.md`, `PROFILE_REPLICATION.md` | dated source reconnaissance — research input, not current state |
-| `docs/HARDENING-PROGRAM.md` | the hardening program (plan, with measured gap numbers) |
-| `docs/DECOMPOSITION.md`, `docs/OPERATIONS.md`, `docs/VERIFICATION-EVIDENCE.md` | file-layout plan, runbook, executed evidence |
-| `docs/adr/` | the six architecture decisions; amending one is a separate ticket |
-| `research/README.md` | source-research lanes and their evidence contract |
-| `xtask/README.md`, `tools/README.md`, `crates/midwest-census/README.md` | developer commands, the gate, the census crate |
+## What this repository is
 
-## 1. Workspace map
+A nationwide Class-of-2027 high-school Track & Field / Cross Country recruiting census. A qualified
+source graph feeds durable acquisition, acquisition produces evidence, evidence lands in Fjall, a
+deterministic merge proposes canonical identities, the local Qwen lane adjudicates only what Rust
+cannot, and the result is projected into an Excel workbook a recruiter can filter. The workbook is a
+projection; the durable evidence system is the census.
 
-Workspace root `Cargo.toml` (package `athletic-rust-pipeline`) with members `crates/census-domain`,
-`crates/midwest-census`, `xtask`. `fuzz/` is a separate workspace of its own.
+## Read first
 
-| Area | What it is | Entry points | Tests |
-|---|---|---|---|
-| `crates/census-domain/` | pure domain: canonical entities, `Id<T>`, `GradYear`/`ObservedGrade`, `Evidence`, `SourceNamespace`, `UsJurisdiction`; no async, no I/O | `src/lib.rs`, `src/model.rs`, `src/jurisdiction.rs`, `src/error.rs` | `src/model_tests.rs`, `src/jurisdiction_tests.rs` |
-| `crates/census-domain/kani/` | Kani harnesses for the domain | `kani/{gradyear,id_mint,publish,census_domain_wiring}.rs` | the harnesses |
-| `crates/midwest-census/` | the census: polite fetcher, Fjall store, source adapters, orchestration, report/bests/workbook, Restate services; bins `midwest-census` and `midwest-serve` | `src/lib.rs`, `src/cli/mod.rs`, `src/bin/midwest-serve.rs` | `tests/*.rs` (`parity_*`, `merge_properties`, `parser_roundtrip_properties`, `fjall_restate_e2e`, `backup_restore`, `recovery`), per-module `tests.rs` |
-| `crates/midwest-census/src/net/` | fetcher: robots enforcement, per-host pacing, disk cache, conditional GET, bounded retries | `src/net/mod.rs`, `src/net/{execute,request,cache,robots,decode,client}.rs` | `src/net/tests.rs`, `src/net/execute/tests.rs` |
-| `crates/midwest-census/src/store/` | Fjall observation store: append-only writes, read-time merge, journal, legacy import | `src/store/mod.rs`, `src/store/{read,write,keys,entities,sequences,legacy,table}.rs` | `src/store/tests.rs`, `src/store/loom_tests.rs` |
-| `crates/midwest-census/src/sources/` | one module per provider adapter, plus `src/sources/registry/` (capability declarations) and `result_file` (vendor-artifact dispatch) | `src/sources/mod.rs`, `src/sources/<name>.rs`, `src/sources/<name>/` | per-adapter `tests.rs` |
-| `crates/midwest-census/src/{census,report,bests,workbook,spawn.rs,bootstrap}/` | orchestration and reductions: roster walk, measured census, best marks, workbook, region-owned task spawning, service supervisor | `src/census/mod.rs`, `src/report/mod.rs`, `src/bests/mod.rs`, `src/workbook/mod.rs`, `src/bootstrap.rs` | module `tests.rs` files |
-| `crates/midwest-census/src/restate_services/` | durable services (`Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus`) | `src/restate_services/mod.rs`, `src/restate_services/{jurisdiction,national,wire}.rs` | `src/restate_services/tests.rs` |
-| root package `athletic-rust-pipeline` | the older Athletic.net-facing acquisition pipeline and operator CLI (Restate worker, browser session, rankings collection, workbook export/verify) | `src/main.rs`, `src/cli.rs`, `src/runtime/**` | `tests/*.rs` |
-| `xtask/` | developer commands; the gate's measurement layer (`scan`, `seams`, `integrity`, `domain-purity`, `quality-baseline`, `ratchet`) | `xtask/src/main.rs` | 7 inline `#[cfg(test)]` tests in `xtask/src/{seams,templates}.rs` |
-| `tools/` | `tools/gate.sh` — the one quality gate — and `tools/quality-baseline.json`, the debt ratchet | `tools/README.md` | the gate itself |
-| `benches/`, `crates/midwest-census/benches/`, `crates/midwest-census/examples/bench_*` | committed measurements; a performance claim may cite only these | `benches/*.rs`, `crates/midwest-census/benches/core.rs` | self-asserting datasets inside each target |
-| `fuzz/` | standalone cargo-fuzz workspace | `fuzz/fuzz_targets/{hytek,compiled,xc,raceday}.rs` | the fuzz targets; seeds in `fuzz/corpus/` |
-| `research/` | source-research lanes, append-only captures | `research/README.md`, `research/sources/<lane>/` | not a test lane |
-| `deploy/systemd/` | unit/timer definitions for the collect timer and the Restate endpoints | `deploy/systemd/*.service`, `*.timer` | not a test lane |
+1. `ARCHITECTURE.md` — pipeline, crate boundaries, invariants, and the binding standards (§-numbered
+   so that references such as §9, §38, §70 resolve there).
+2. `docs/adr/README.md` — decisions that may not be silently re-litigated.
+3. `docs/migration/module-map.md` — the module inventory and the crate cut being executed.
+4. Per-crate `README.md` files as the crates are extracted.
 
-## 2. Ownership and lanes
+## Commands
 
-A ticket names the files one agent owns. Rules the workspace enforces:
+| Command | Purpose |
+| --- | --- |
+| `cargo xtask gate` | the four build gates (§55) plus the line-budget scan, in order, stopping at the first failure |
+| `cargo xtask census-status` | current store state from `var/midwest-census/snapshots.jsonl` and the CLI's status surface |
+| `cargo xtask coverage` | coverage summary (§49 fields) |
+| `cargo xtask export` | workbook export |
+| `cargo xtask source-check <name>` | adapter layout and fixture presence |
+| `cargo xtask source-fixture <name>` | fixture set integrity |
+| `cargo xtask source-test <name>` | offline fixture test for one source |
+| `cargo xtask replay <name>` | deterministic offline parser replay |
+| `cargo xtask new-source <name>` | scaffold a new adapter |
+| `cargo xtask bench parser` | parser benchmarks |
 
-- **One lane, one file set.** Edit only your files; never reformat, re-sort or "clean up" a file you
-  do not own. An adapter lane owns `crates/midwest-census/src/sources/<name>.rs` and/or
-  `src/sources/<name>/`, its fixtures `crates/midwest-census/tests/fixtures/<name>/`, and its
-  research lane `research/sources/<name>/`.
-- **Integration-owned files.** Do not edit unless your ticket says so: `Cargo.toml`, `Cargo.lock`,
-  `crates/*/Cargo.toml`, the census crate's facades
-  (`crates/midwest-census/src/{lib.rs,cli/**,bin/**}`, `crates/midwest-census/src/sources/mod.rs`,
-  `crates/midwest-census/src/sources/registry/table.rs`), `tools/**`, `xtask/**`, `.github/**`,
-  `docs/HARDENING-PROGRAM.md`, `HANDOFF.md`. When your change needs lines in one of them, post the
-  exact lines to the file's owner (`hub send` to `Main` for the integration list) and keep working.
-- **Registry declarations.** Never edit `src/sources/registry/table.rs` yourself: send one message
-  with slug, capabilities, origin, admission and the symbol each capability rests on to the registry
-  owner.
-- **Scoped commands only while lanes are in flight.** A workspace-wide sweep mid-flight blocks on
-  siblings' half-finished edits and reports phantom failures. Validate your change with
-  `cargo check -p midwest-census --all-targets`, `cargo test -p midwest-census <path>`,
-  `cargo xtask source-test <source>`, `rustfmt --edition 2021 <your files>`. The project-wide sweep —
-  `cargo fmt --all`, `cargo clippy --workspace`, a workspace-wide `cargo test`, `tools/gate.sh`,
-  `cargo xtask gate` — belongs to integration, once, after the lanes land.
-- **No new dependencies.** Manifests are integration-owned; a new crate or dependency is a request.
-- **No Python.** No `.py` file exists anywhere in this repository and none may be added; tooling is
-  Rust (`xtask`) plus `tools/gate.sh`.
-- **Git discipline.** Never run `git stash`, `reset`, `checkout`, `restore`, `clean` or `switch`:
-  other agents work in the same tree, and those commands destroy in-flight edits silently. Read-only
-  git (`status`, `diff`, `log`, `show`) is fine. Re-read a file before editing it.
-- **Captures are verbatim.** `research/**`, `crates/midwest-census/tests/fixtures/**`, `tests/fixtures/**`
-  and `fixtures/**` are raw captures: add new files, never rewrite an existing one. If a capture is
-  wrong, add a corrected file and say why in the report.
+Binary: `./target/release/midwest-census` today, renaming to `census-service` when the CLI crate is
+extracted — address it through the shared constant, never by inlining the name. Store root:
+`var/midwest-census`. **The store is single-writer**; lanes that write must serialize.
 
-## 3. Commands
+## Crate ownership
 
-`cargo xtask <command>` is the alias in `.cargo/config.toml` for `cargo run -p xtask -- <command>`.
-Every wrapper prints the child command it runs (`+ …`) before running it.
+| Crate | Owns | May not |
+| --- | --- | --- |
+| `census-domain` | pure types, cohort/grade evidence, event canonicalisation, PR ordering rules | depend on tokio, fjall, reqwest, chromiumoxide, restate, xlsx, llama clients |
+| `census-store` | Fjall keyspaces, journals, snapshots, migrations, backup/restore | know about HTTP or parsers |
+| `census-crawl` | source adapters, fetchers, admission, browser supervisor | write canonical entities |
+| `census-reconcile` | identity normalisation, deterministic scoring, conflict detection | call models |
+| `census-review` | the local Qwen identity-review lane | decide identity (it advises; Rust adjudicates) |
+| `census-report` | coverage, bests, PR projection, workbook/export | mutate evidence |
+| `census-service` | CLI, Restate workflows, bootstrap and task supervision | bypass the store's durability rules |
+| `g1-audit` | the audit lane | be imported by production paths |
+| `xtask` | the agent-facing verbs above | hold business logic |
 
-### 3.1 The gate (integration runs it once, after the lanes land)
+Main (the architect) owns: workspace layout, domain public contracts, serialized public types, Fjall
+schema revisions, Restate workflow contracts, migrations, and final integration. Adapter owners own
+their adapter directory, its fixtures, and its `research/sources/<source>/` report. Propose shared
+contract changes; Main applies them.
 
-```bash
-cargo xtask gate                          # == bash tools/gate.sh
-cargo xtask gate -- --full                # arguments after `--` go to gate.sh
-cargo xtask gate -- --update-baseline --allow-increase
-```
+## Coding standards (binding)
 
-| Lane | Command the gate runs (`tools/gate.sh`) |
-|---|---|
-| fmt | `cargo fmt --all -- --check` |
-| check | `cargo -Zallow-features="$FEATURE_ALLOWLIST" check --workspace --all-targets --all-features` |
-| doc | `cargo doc --workspace --all-features --no-deps` |
-| tests | `cargo nextest run --workspace --all-features` (`cargo test --workspace --all-features --quiet` if nextest is absent) |
-| strict clippy | `cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --lib --bins --examples --all-features --message-format=json -- <LINT_SET>` |
-| production scan | `cargo run -q -p xtask -- scan`, then the size budgets |
-| module seams | `cargo run -q -p xtask -- seams` |
-| domain purity | `cargo run -q -p xtask -- domain-purity` |
-| debt ratchet | `cargo run -q -p xtask -- ratchet tools/quality-baseline.json <clippy.tsv> <scan.json>` |
-| deny / audit / vet | `cargo deny check` / `cargo audit --quiet` / `cargo vet --locked` |
-| machete / geiger | `cargo machete` / `cargo geiger --workspace --all-features --output-format Json` |
-| feature powerset | `cargo hack check --workspace --feature-powerset` |
-| bench presence | `cargo bench --workspace --no-run` |
-| mutants (`--full` only) | `cargo mutants --workspace --in-place` |
+- **§55** all four gates pass; **§56** `#![forbid(unsafe_code)]` and `#![deny(unused_must_use)]`
+  workspace-wide, quality ratchet never increases, no suppression-based victory.
+- **§38** files ≤ 300 lines, production functions ≤ 60 logical lines (hot paths ≤ 25); decompose
+  long orchestrations into named stages.
+- **§37** no unwrap/expect/panic reachable from input, no ignored `Result`, no silent fallback, no
+  unchecked boundary conversion, no unbounded loop, queue, or spawn.
+- **§39** `thiserror` inside production crates; `anyhow` only at CLI/application composition edges.
+- **§44** structured `tracing` only — no `println!`/`eprintln!` in production paths.
+- **§9** exactly one retry owner: Restate retries (3 attempts max), transport performs one attempt.
+  Retry exhaustion becomes evidence; a source failure is never `NO_MATCH`.
+- **§10** admission is per remote origin, measured on physical requests — never multiplied by
+  spawning more workflows.
+- **§43** do not flatten async outcomes; **§42** supervised shutdown with drain accounting.
+- **§61-§62** cache only immutable successes; quarantine poisoned objects and keep going.
+- **Rust only**: no Python, and no shell scripts as pipeline steps.
 
-A cargo subcommand that is not installed prints `SKIP` for its lane; `jq` missing is a hard failure
-(the clippy and scan tallies flow through it). `LINT_SET` is `-D warnings -D unsafe_code -D
-clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D
-clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D
-clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions
--D clippy::let_underscore_must_use -D clippy::await_holding_lock`.
+## Source policy
 
-### 3.2 The gate's measurement layer, one at a time
+Robots and per-origin admission are honored. No CAPTCHA, authentication, or paywall circumvention.
+Athletic.net is acquired through the headed persistent-profile browser lane (§26-§28) with a
+`HumanRequired` handoff when a challenge appears. Never collect athlete personal contact data; never
+infer GPA (§36). A §69 stop condition for one source is persisted and the census continues elsewhere.
 
-```bash
-cargo xtask scan           # forbidden constructs + size budgets, JSON on stdout
-cargo xtask seams          # crate::… edges between the census crate's top-level modules
-cargo xtask integrity      # type-integrity review candidates, JSON on stdout
-cargo xtask domain-purity  # census-domain's normal dependency tree
-cargo xtask quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]
-cargo xtask ratchet <baseline> <clippy.tsv> <scan.json>
-```
+## How to add work
 
-`quality-baseline` refuses to raise a number without `--allow-increase` (`refusing to raise the
-baseline without --allow-increase`, exit 1); `ratchet` exits non-zero when any metric grew. The
-`clippy.tsv` shape is `crate<TAB>lint<TAB>count`, which is what the gate's clippy lane writes.
+- **Adapter**: `cargo xtask new-source <name>`, then fixtures per §64
+  (`fixtures/<name>/{README.md,index.json,raw/,expected/}`), offline test via
+  `cargo xtask source-test <name>`. Answer the §13 report questions in
+  `research/sources/<name>/SOURCE_REPORT.md`.
+- **Workflow**: identity per §8 (`jurisdiction:{state}:{season}:{revision}` and friends). Never mint a
+  new logical job because an HTTP call failed. Contract changes go through Main.
+- **Benchmark**: §57 list only; no optimisation without benchmark evidence.
+- **Fixture**: offline, deterministic, no network, no Restate required.
 
-### 3.3 Per-source lanes
+## Handing work back
 
-```bash
-cargo xtask source-fixture ks   # list crates/midwest-census/tests/fixtures/ks/, recursive, with sizes
-cargo xtask source-test ks      # cargo nextest run -p midwest-census -E 'test(ks)'
-cargo xtask source-check ks     # the same command: `source-check` is a visible alias of source-test
-cargo xtask new-source <name>   # scaffold the directory-layout adapter
-```
+**Agent-spawn policy (hard rule).** Never spawn the `luna-*` agents, and never spawn the default
+`task` agent without naming a model — the harness default resolves to `gpt-5.6-luna`, which is
+forbidden here. Allowed workers: `deepseek-flash` (read-mostly probes and evidence), `gpu5090-coder`
+and `gpu3090-coder` (local Qwen coding lanes, confined to assigned files), `scout` (read-only
+research), `reviewer` / `security-reviewer` (read-only review), `sonic` (mechanical edits). Always
+name the agent explicitly.
 
-`source-test`'s filter is a substring match over test names, so `ks` also selects
-`bests::tests::marks_print_in_the_notation_a_reader_expects` (`marks` contains `ks`); it runs
-whatever matches and does not prove the fixture set is complete. A missing fixture directory is an
-error naming the directories that do exist. See §5 and §6 for the layouts these commands serve.
-
-### 3.4 Census reports from a store
-
-```bash
-cargo xtask census-status --store <dir>   # midwest-census report --core
-cargo xtask coverage      --store <dir>   # midwest-census report (every source)
-cargo xtask export        --store <dir> [--out FILE] [--grad-year YYYY] [--all-sources] [--limit N]
-                                          # midwest-census workbook, from an existing store
-```
-
-All three run the shipped `midwest-census` binary and write into `<store>/out/`; the binary takes an
-exclusive Fjall lock, so stop `midwest-serve` first or use a different store. The store default is
-`var/midwest-census`. `var/` holds live stores (`var/midwest-census`, `var/midwest-athletes`): while a
-sweep is running, do not read, write, back up, restore or integrity-check anything under it — the
-run holds the lock, and a second writer or a copied database is how a census is corrupted. Tests and
-drills build their own store in a `tempfile::tempdir()`. The census CLI itself:
-
-```bash
-cargo run --release -p midwest-census --bin midwest-census -- teams   --states WI,MN --refresh
-cargo run --release -p midwest-census --bin midwest-census -- teams   --all-states --refresh
-cargo run --release -p midwest-census --bin midwest-census -- collect --states WI,MN
-cargo run --release -p midwest-census --bin midwest-census -- collect --all-states
-cargo run --release -p midwest-census --bin midwest-census -- provider wiaa
-cargo run --release -p midwest-census --bin midwest-census -- provider milesplit --states WI
-cargo run --release -p midwest-census --bin midwest-census -- consolidate
-cargo run --release -p midwest-census --bin midwest-census -- index
-cargo run --release -p midwest-census --bin midwest-census -- report --print
-cargo run --release -p midwest-census --bin midwest-census -- bests
-cargo run --release -p midwest-census --bin midwest-census -- workbook
-cargo run --release -p midwest-census --bin midwest-census -- seal --write
-cargo run --release -p midwest-census --bin midwest-census -- run
-```
-
-The phase ladder is `census/state.rs` (`Discovering → Acquiring → Reconciling → Reviewing →
-ResolvingGaps → Exporting → Complete`) and `seal` reads it back out of the store's own artifacts
-rather than trusting a caller. `index` is what advances three of those steps in one pass, a workbook
-in `<store>/out/` is Exporting, and `seal` is the only path to Complete: it assembles the §70
-evidence and otherwise refuses, naming the item and the number that blocked it.
-`docs/architecture.md` §2 and §4 carry the phase table and the acceptance items.
-
-The durable national census runs through the workflow, not through `collect`:
-
-```bash
-cargo run --release -p midwest-census --bin midwest-census -- national --revision 3 \
-    --concurrency 6 --ingress http://127.0.0.1:18095/          # submits, then observes
-cargo run --release -p midwest-census --bin midwest-census -- national --revision 3 --detach
-cargo run --release -p midwest-census --bin midwest-census -- national-report --revision 3
-cargo run --release -p midwest-census --bin midwest-census -- jurisdiction --state WI --revision 3
-```
-
-`national` fans out one `JurisdictionCensus` per state (51 by default, `--states` restricts),
-prints a per-jurisdiction table plus a progress line every minute, and exits non-zero when the fold
-carries `failed` rows; `national-report` prints the last report without starting anything. None of
-these opens the Fjall store — `midwest-serve` owns it — so they are safe to run beside the service,
-unlike the batch subcommands above, whose store open needs the lock the service holds. The
-walk is owned by the workflow: use `national` for the national corpus and `collect` for a single
-lane's slice. `--revision` is the parameter set's identity (`national:<season>:<revision>`): Restate
-deduplicates a repeat submission, and the CLI says so instead of pretending a changed parameter took
-effect, so a new limit or state list needs a new revision.
-
-Global flags: `--store <dir>`, `--delay-ms <n>`, `--user-agent <ua>`, `--authorized-host <host>`
-(repeatable). `cargo run --release -p midwest-census --bin midwest-census -- --help` prints the full
-subcommand list; `crates/midwest-census/README.md` documents each one.
-
-`--states <CODES>` and `--all-states` are the two jurisdiction selectors, and they resolve
-differently for a roster walk than for a restriction-shaped adapter (`cli::resolve_states` /
-`cli::resolve_restriction`). `collect`, `teams` and `provider milesplit` default to Wisconsin when
-neither flag is given. Every other `provider` arm treats an empty `--states` as "no restriction" and
-answers from its own coverage — `provider ohsaa` still covers Ohio — while a non-empty list that
-omits that state fails (`states ["IA"] do not include OH; this adapter covers Ohio only`, from
-`sources/ohsaa/collect.rs`). `--all-states` means 50 states + DC, and giving it together with
-`--states` is refused (`--all-states cannot be combined with --states`, exit 1) rather than silently
-preferring one.
-
-### 3.5 The root acquisition pipeline
-
-```bash
-cargo run --release -p athletic-rust-pipeline -- --help   # the operator CLI's command list
-cargo run --release -p athletic-rust-pipeline -- worker --config config.native.toml --bind 127.0.0.1:19181
-cargo run --release -p athletic-rust-pipeline -- <deploy|start|status|browser-start|browser-status|export|verify|rankings-status|rankings-pause|rankings-resume> …
-```
-
-### 3.6 Benchmarks and the concurrency lane
-
-```bash
-cargo xtask bench -- parse         # == cargo bench -p midwest-census parse; the `--` is required, and
-                                   # `parse` is a case in crates/midwest-census/benches/pipeline.rs
-cargo bench -p athletic-rust-pipeline --bench artifact_store
-cargo bench -p athletic-rust-pipeline --bench blocking_fanout
-cargo bench -p athletic-rust-pipeline --bench workbook_export
-cargo bench -p midwest-census --bench core
-cargo run --release -p midwest-census --example bench_store  -- --rows 200000 --batch 1000 --scan
-cargo run --release -p midwest-census --example bench_census -- --schools 500
-cargo test -p midwest-census --features loom --lib     # loom models, opt-in feature
-```
-
-A performance claim may only cite a committed benchmark or a harness run on the machine in hand, with
-the dataset assertion it printed (`PERFORMANCE.md`).
-
-### 3.7 Colocated source tests, without the integration binaries
-
-```bash
-cargo xtask source-tests   # cargo nextest run --workspace --lib --bins --examples --all-features
-```
-
-The gate's tests lane is `cargo nextest run --workspace --all-features`, falling back to
-`cargo test --workspace --all-features --quiet` when nextest is absent, and its "source targets"
-selector is `--lib --bins --examples`. `source-tests` composes those two facts — the same lane, the
-same fallback, over the targets that carry a colocated `#[cfg(test)]` module or a `tests.rs` — so the
-`tests/` integration binaries (the ones that build their own temp store) stay with the gate. It
-prints the child command (`+ …`) before running it, and exits non-zero if the child does. It still
-*compiles* the whole workspace, so it is not a mid-flight lane on a tree siblings are editing; that is
-why §2 does not list it.
-
-## 4. Source policy (non-negotiable)
-
-- Every source request goes through `crate::net::Fetcher` (`crates/midwest-census/src/net/mod.rs`).
-  No raw client, no parallel path around pacing, cache or robots.
-- `robots.txt` is enforced: a disallowed path returns `FetchError::Robots` and counts in
-  `FetchStats::robots_blocked`. An operator may name a host on `--authorized-host`; the rule is then
-  counted as `robots_authorized` and the request proceeds under the 2 rps ceiling. Default: every
-  host's robots rules are enforced.
-- Hard pacing: 2 requests/second per host, never closer than `MIN_AUTHORIZED_DELAY` (500 ms) for an
-  authorized host whatever `--delay-ms` says; default spacing 1 s; `gobound.com` 10 s
-  (`sources::default_host_delays`). Bounded fan-out via `sources::CONCURRENCY_BOUND`.
-- Cache before network: bodies are cached on disk by content hash, so a re-run is free and an
-  interrupted collection resumes without re-fetching.
-- Never bypass a CAPTCHA, an authentication barrier or an access control: no cookie jar, no challenge
-  evasion, no user-agent spoofing. A served challenge is a terminal state, not a bug to route around.
-- Retry ownership: **adapters and CLI shells perform one attempt** and never retry a fetcher call.
-  Retries live in exactly two places inside the transport (the `FetchError::retryable` loop, at most
-  `MAX_RETRIES = 3` attempts with jittered backoff, and the conditional-GET replay of a `304` with no
-  cached body). Durable retry of a whole step belongs to Restate (ADR-002).
-- Collect only athletic evidence and publicly published professional school/sport contacts. Never
-  athlete personal email, personal phone, home address or unrelated personal data.
-- A source failure is never "no match": record the terminal state and continue elsewhere. There is no
-  `OperationTerminal` type — use `FetchError` (net), `CrawlError` (census sources), or `FailureCode` /
-  `BrowserError` (root `src/runtime/`).
-
-## 5. Adapter layout and adding an adapter
-
-```text
-crates/midwest-census/src/sources/
-  <name>.rs            flat module: the whole adapter in one file (older adapters: ks, milesplit, …)
-  <name>/mod.rs        module root: doc header naming the measured request unit, SOURCE_ID, Options, collect
-  <name>/parse.rs      pure parsing: captured bytes in, parsed rows out, no I/O
-  <name>/map.rs        parsed rows -> canonical entities
-  <name>/tests.rs      fixture-driven tests (#[cfg(test)])
-  <name>/<other>.rs    adapter-specific stages when one file would be too large (wiaa/collect.rs, …)
-```
-
-- `collect` is a plain async function, no trait indirection:
-  `pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult<AdapterReport>`.
-  `AdapterReport` carries `adapter`, `rows`, `requests`, `from_cache`, `errors`, `with_email`, `unit`,
-  `notes` (`src/sources/mod.rs`).
-- `cargo xtask new-source <name>` writes `mod.rs`, `parse.rs`, `map.rs`, a module README, the fixture
-  README, and appends `pub mod <name>;` to the module list. Hyphens become underscores. It refuses a
-  name that is not a lowercase identifier, a Rust keyword, or one whose module directory, flat module
-  or fixture directory already exists. The generated `collect` carries the canonical signature —
-  `CrawlResult<AdapterReport>`, failing with `CrawlError::Invariant` until implemented — and
-  `xtask/src/templates.rs` pins that shape with its own tests.
-- Adapter steps: fixtures first (§6), then `parse.rs` (pure), then `map.rs`, then `collect` driving
-  `ctx.fetcher` and appending through `sources::append_all` — never by writing store keys directly.
-- Registration: the module list in `src/sources/mod.rs` (integration-owned), a registry declaration in
-  `src/sources/registry/table.rs` (send it to the registry owner), a CLI arm in `src/cli/provider.rs`
-  (integration-owned), and a `SourceNamespace` variant in `crates/census-domain/src/model.rs` if the
-  source is new. A non-core source also goes into `report::NON_CORE_SOURCE_IDS`.
-- Observations are append-only: a re-run appends rows and the reader merges them
-  (`src/store/read.rs`). `refresh` only controls whether the network/parse step repeats; resume state is
-  the journal.
-
-## 6. Fixtures
-
-```text
-crates/midwest-census/tests/fixtures/<name>/   one directory per source (13 exist today), plus
-                                               coach_contacts_sample.csv and tests/golden/*.json
-tests/fixtures/{cdp,rankings}/                 root-crate captures
-fuzz/corpus/<target>/                          fuzz seed corpora
-```
-
-- Verbatim captures: keep the bytes, never paraphrase or hand-edit. When a fixture must be edited for
-  a test, document the edit at the `include_str!`/loader site.
-- Tests run offline from the fixtures: no test may touch the network. Captures are embedded at compile
-  time (`include_str!`), so no fixture server and no flags are needed.
-- Provenance lives in the doc comment above each `include_str!` constant: the real URL, the capture
-  date, the HTTP status, and what the file proves. There is no `index.json`/`raw`/`expected` scheme;
-  follow the doc-comment pattern a neighbouring adapter uses.
-- `cargo xtask source-fixture <name>` lists what exists; `cargo xtask source-test <name>` runs the
-  tests whose names carry that source. A green `source-test` does not prove the capture set is
-  complete — the fixture directory is the coverage list.
-
-## 7. Coding standards
-
-Adapted NASA/JPL Power of Ten, enforced by the gate's clippy set plus `scan`, `integrity`,
-`seams` and `domain-purity`.
-
-- Production code (every `src/**` tree — root `src/**` and `crates/*/src/**` — excluding files named
-  `tests.rs` and code inside `#[cfg(test)]`) carries no
-  `unwrap`, `expect`, `panic!`, `todo!`, `unimplemented!`, `unsafe`, `as` casts, slice/string
-  indexing or unchecked arithmetic. Use `?`, `match`, `let … else`, `.get()`, `u32::try_from`,
-  `checked_*`/`saturating_*`.
-- Size budget: files stay under ~300 lines; functions under ~60 logical lines (≤25 for hot paths).
-  `scan` reports `files_over_300_lines`, `functions_over_60_lines`,
-  `functions_over_25_logical_lines`; the ratchet fails when the first two grow.
-- Errors are typed: `thiserror` in libraries, `anyhow` with `.context(…)` at the CLI boundary.
-- Values crossing a boundary are validated once, there, and carried in types rather than re-checked or
-  stringly typed. A jurisdiction is `census_domain::UsJurisdiction`, never a `String`.
-- Log with `tracing`, never `println!`/`eprintln!` in library code; async entry points carry
-  `#[tracing::instrument(skip_all, fields(…))]`.
-- **Module seams.** The census is one crate with a declared module graph: `cargo xtask seams` reads
-  every production `crate::…` edge between top-level modules and compares it against the `ALLOWED`
-  table in `xtask/src/seams.rs`. Adding an edge is a deliberate edit to that table with its reason;
-  the check fails closed, so deleting a row makes that edge a violation again. Direction rule:
-  adapters and workflows depend on domain types and on the store, never the reverse; `net` and
-  `school_index` are leaves. `docs/architecture.md` §5 has the table's shape.
-- **Domain purity.** `cargo xtask domain-purity` resolves `cargo tree -p census-domain --edges normal`
-  and fails on any async runtime, store engine, HTTP client, service framework or browser engine in
-  the tree. Nothing in the domain crate may gain one, and a value that crosses a boundary is carried
-  in a domain type rather than re-checked.
-- Debt is ratcheted, never blessed: `tools/quality-baseline.json` may only shrink, and a burndown is
-  the only legitimate reason to move it (`cargo xtask gate -- --update-baseline`).
-
-## 8. What does not exist yet
-
-- There is no `cargo xtask replay`: a truthful replay needs a cache-only read surface
-  (`net::cache` is crate-private and the fetcher has no offline mode). Do not document one as if it
-  existed.
-- `cargo xtask baseline` does not exist either: the debt subcommands are `quality-baseline` and
-  `ratchet`.
-- The target workspace split (`census-store`, `census-crawl`, `census-reconcile`, `census-review`,
-  `census-report`, `census-service`, the `acq-*` crates) is planned, not present: of that list only
-  `crates/census-domain` exists.
-- `JurisdictionCensus` and `NationalCensus` are reachable and live-qualified through the census CLI
-  (`national`, `national-report`, `jurisdiction` — AGENTS.md §3.4, RESTATE_WORKFLOWS.md §2.2). What
-  is still missing is *stage* coverage, not a command: a jurisdiction object owns exactly three
-  durable stages (`teams`, `rosters`, `consolidate`), so meet discovery, result acquisition, coach
-  collection and the §47 gap/sweep classes are batch commands or the separate acquisition pipeline,
-  and a `NationalReport` says nothing about them. Do not describe a durable run as covering meets,
-  results or coaches.
-
-## 9. Evidence discipline
-
-- Every claim in a report is backed by a command you actually ran, with the raw tail pasted
-  verbatim. If a thing is unverified, say which part and why; never invent a shape you could not
-  verify from a capture — report the capture that would settle it.
-- No stubs, no mock successes, no fabricated verification. A slice that cannot verify a behaviour says
-  so.
-- Hand work back in this shape and nothing else:
-
-```text
-TARGET:    <files>
-CHANGED:   <one line per change>
-COMMANDS:  <command> => <observed tail, verbatim>
-RESIDUAL:  <what was not converted and why>
-NEEDS:     <other files that must change, else none>
-```
-
-## 10. Decisions already made
-
-`docs/adr/`: ADR-001 (Fjall remains the primary store), ADR-002 (Restate owns retries), ADR-003
-(`GraduationYear` is cohort identity), ADR-004 (meet-first result ingestion), ADR-005 (AI cannot
-override a deterministic contradiction), ADR-006 (Excel is the recruiter query layer). Read the ADR
-before proposing a change to one of them; amending an ADR is a separate ticket.
+Use the §15 packet: TASK / OWNERSHIP / DO NOT MODIFY / INPUT CONTRACT / OUTPUT CONTRACT / ACCEPTANCE /
+HANDOFF. Report changes, the exact commands you ran with their observed results, and remaining
+uncertainty. Do not commit — Main commits.
