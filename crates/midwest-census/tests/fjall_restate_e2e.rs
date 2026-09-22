@@ -388,7 +388,11 @@ fn assert_census_counts(core: &Census, all_sources: &Census, corpus: &Corpus) {
     assert_eq!(core.totals.class_of_2027, corpus.athletes.len());
     assert_eq!(all_sources.totals.athletes, corpus.athletes.len());
     assert_eq!(
-        core.by_state.get("WI").map(|state| state.schools),
+        core.by_state
+            .get(&census_domain::JurisdictionBucket::from(
+                census_domain::UsJurisdiction::Wisconsin,
+            ))
+            .map(|state| state.schools),
         Some(corpus.schools.len()),
         "every synthetic school is in WI"
     );

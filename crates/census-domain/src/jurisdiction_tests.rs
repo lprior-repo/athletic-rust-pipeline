@@ -131,3 +131,107 @@ fn deserialization_validates_instead_of_retaining_strings() {
     let territory: StrDeserializer<DeError> = "PR".into_deserializer();
     assert!(UsJurisdiction::deserialize(territory).is_err());
 }
+
+#[test]
+fn unplaced_bucket_sorts_after_every_jurisdiction() {
+    let unplaced = JurisdictionBucket::Unplaced;
+    for jurisdiction in UsJurisdiction::ALL {
+        let placed = JurisdictionBucket::from(jurisdiction);
+        assert!(
+            placed < unplaced,
+            "{} must sort before the unplaced row",
+            jurisdiction
+        );
+        assert_eq!(placed.code(), jurisdiction.code());
+        assert_eq!(placed.jurisdiction(), Some(jurisdiction));
+    }
+    assert_eq!(unplaced.code(), JurisdictionBucket::UNPLACED_CODE);
+    assert_eq!(unplaced.jurisdiction(), None);
+}
+
+#[test]
+fn bucket_codes_round_trip_and_reserved_labels_are_not_jurisdictions() {
+    for jurisdiction in UsJurisdiction::ALL {
+        let bucket = JurisdictionBucket::from(Some(jurisdiction));
+        assert_eq!(JurisdictionBucket::from_code(bucket.code()), Some(bucket));
+        assert_eq!(bucket.to_string(), jurisdiction.code());
+    }
+    assert_eq!(
+        JurisdictionBucket::from_code("unknown"),
+        Some(JurisdictionBucket::Unplaced)
+    );
+    assert_eq!(
+        JurisdictionBucket::from_code(" wi "),
+        Some(UsJurisdiction::Wisconsin.into())
+    );
+    // A territory is still refused, and a bucket never admits a name the jurisdiction itself does
+    // not: the printed form is the code, so the name is not a bucket label.
+    assert_eq!(JurisdictionBucket::from_code("PR"), None);
+    assert_eq!(JurisdictionBucket::from_code("Wisconsin"), None);
+    assert_eq!(JurisdictionBucket::from_code(""), None);
+
+    let unplaced = JurisdictionBucket::Unplaced;
+    assert_eq!(unplaced.to_string(), JurisdictionBucket::UNPLACED_CODE);
+    assert_eq!(JurisdictionBucket::from(None::<UsJurisdiction>), unplaced);
+}
+
+#[test]
+fn bucketed_deserialization_rejects_an_unknown_label() {
+    use serde::de::value::{Error as DeError, StrDeserializer};
+    use serde::de::IntoDeserializer;
+
+    let placed: StrDeserializer<DeError> = "co".into_deserializer();
+    assert!(matches!(
+        JurisdictionBucket::deserialize(placed),
+        Ok(JurisdictionBucket::Jurisdiction(UsJurisdiction::Colorado))
+    ));
+
+    let unplaced: StrDeserializer<DeError> = "UNKNOWN".into_deserializer();
+    assert!(matches!(
+        JurisdictionBucket::deserialize(unplaced),
+        Ok(JurisdictionBucket::Unplaced)
+    ));
+
+    let territory: StrDeserializer<DeError> = "PR".into_deserializer();
+    assert!(JurisdictionBucket::deserialize(territory).is_err());
+}
+
+#[test]
+fn meet_state_prints_the_code_or_the_store_sentinel() {
+    let placed = MeetState::from(Some(UsJurisdiction::Wisconsin));
+    assert_eq!(placed.code(), "WI");
+    assert_eq!(placed.to_string(), "WI");
+    assert_eq!(placed.jurisdiction(), Some(UsJurisdiction::Wisconsin));
+
+    let unresolved = MeetState::from(None::<UsJurisdiction>);
+    assert_eq!(unresolved, MeetState::Unresolved);
+    assert_eq!(unresolved, MeetState::default());
+    assert_eq!(unresolved.code(), crate::model::MEET_STATE_UNRESOLVED);
+    assert_eq!(unresolved.jurisdiction(), None);
+    assert!(placed < unresolved, "the unresolved label sorts last");
+
+    // The bucket and the meet state are different vocabularies on purpose: a school with no state is
+    // a missing fact (UNKNOWN), a meet with no venue state is the label the store always wrote (??).
+    assert_ne!(JurisdictionBucket::Unplaced.code(), unresolved.code());
+}
+
+#[test]
+fn meet_state_deserializes_the_sentinel_and_rejects_anything_else() {
+    use serde::de::value::{Error as DeError, StrDeserializer};
+    use serde::de::IntoDeserializer;
+
+    let sentinel: StrDeserializer<DeError> = "??".into_deserializer();
+    assert!(matches!(
+        MeetState::deserialize(sentinel),
+        Ok(MeetState::Unresolved)
+    ));
+
+    let code: StrDeserializer<DeError> = "nv".into_deserializer();
+    assert!(matches!(
+        MeetState::deserialize(code),
+        Ok(MeetState::Placed(UsJurisdiction::Nevada))
+    ));
+
+    let bucket_only: StrDeserializer<DeError> = "UNKNOWN".into_deserializer();
+    assert!(MeetState::deserialize(bucket_only).is_err());
+}

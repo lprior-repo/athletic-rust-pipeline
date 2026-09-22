@@ -239,7 +239,7 @@ fn row<'a>(report: &'a CoverageReport, code: &str) -> &'a JurisdictionCoverage {
     report
         .jurisdictions
         .iter()
-        .find(|row| row.jurisdiction == code)
+        .find(|row| row.jurisdiction.code() == code)
         .unwrap()
 }
 
@@ -248,7 +248,7 @@ fn gap(report: &CoverageReport, code: &str, class: GapClass) -> Option<usize> {
     report
         .gaps
         .iter()
-        .find(|gap| gap.jurisdiction == code && gap.class == class)
+        .find(|gap| gap.jurisdiction.code() == code && gap.class == class)
         .map(|gap| gap.count)
 }
 
@@ -265,7 +265,10 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
         report.jurisdictions.len(),
         UsJurisdiction::ALL.len().saturating_add(1)
     );
-    assert_eq!(report.jurisdictions.last().unwrap().jurisdiction, "UNKNOWN");
+    assert_eq!(
+        report.jurisdictions.last().unwrap().jurisdiction.code(),
+        "UNKNOWN"
+    );
     assert!(report
         .jurisdictions
         .iter()
@@ -273,7 +276,7 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
     assert!(report
         .jurisdictions
         .iter()
-        .any(|row| row.jurisdiction == "WI" && row.schools == 0));
+        .any(|row| row.jurisdiction.code() == "WI" && row.schools == 0));
 
     // ... and an explicit gap class for every row, the unplaceable one included, so emptiness is
     // findable rather than inferred from an absent key.

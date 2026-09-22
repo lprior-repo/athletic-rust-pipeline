@@ -84,7 +84,10 @@ fn census_counts_class_of_2027_with_evidence() {
     assert_eq!(census.totals.class_of_2027_with_profile_url, 1);
     assert_eq!(census.totals.class_of_2027_with_coach, 1);
     assert_eq!(census.totals.class_of_2027_with_coach_email, 1);
-    assert_eq!(census.by_state.get("WI").unwrap().class_of_2027, 1);
+    assert_eq!(
+        census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].class_of_2027,
+        1
+    );
     assert_eq!(census.class_of_2027_sports.outdoor_only, 1);
     assert_eq!(
         census.providers.namespaces.get("milesplit_athlete"),
@@ -117,7 +120,10 @@ fn census_reads_merged_observations_without_consolidating() {
     assert_eq!(census.totals.schools, 1);
     // The workbook prints a state's school count off its `by_state` row, so the row has to carry
     // the count and not just the totals.
-    assert_eq!(census.by_state["WI"].schools, 1);
+    assert_eq!(
+        census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wisconsin)].schools,
+        1
+    );
     assert!(!store.out_dir().join("athletes.jsonl").exists());
 }
 
@@ -131,7 +137,7 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     let empty = build_census(&store, Scope::AllSources).unwrap();
     let expected = UsJurisdiction::ALL.len().saturating_add(1);
     assert_eq!(empty.by_state.len(), expected);
-    assert!(empty.by_state.contains_key(UNKNOWN_JURISDICTION));
+    assert!(empty.by_state.contains_key(&JurisdictionBucket::Unplaced));
     assert!(empty
         .by_state
         .values()
@@ -143,7 +149,7 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     store.append(Table::Schools, &school).unwrap();
     let census = build_census(&store, Scope::AllSources).unwrap();
     assert_eq!(census.by_state.len(), expected);
-    let wyoming = census.by_state.get("WY").unwrap();
+    let wyoming = &census.by_state[&JurisdictionBucket::from(UsJurisdiction::Wyoming)];
     assert_eq!(wyoming.schools, 1);
     assert_eq!(wyoming.athletes, 0);
     assert_eq!(census.totals.schools, 1);

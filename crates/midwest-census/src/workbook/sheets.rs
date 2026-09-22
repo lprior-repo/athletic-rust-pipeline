@@ -5,6 +5,7 @@
 //! tables are the only thing that decides which field backs a printed column.
 
 use crate::report::{Census, ReportError, ReportResult, StateCensus};
+use census_domain::JurisdictionBucket;
 
 use super::cells::{cell, row, share, Cell};
 
@@ -159,10 +160,12 @@ pub(super) fn state_sheet(census: &Census) -> ReportResult<Vec<Vec<Cell>>> {
     );
     let mut rows = vec![header];
 
-    let mut ordered: Vec<(&String, &StateCensus)> = census.by_state.iter().collect();
-    ordered.sort_by_key(|(_, row)| std::cmp::Reverse(row.class_of_2027));
+    let mut ordered: Vec<(&JurisdictionBucket, &StateCensus)> = census.by_state.iter().collect();
+    // Ties keep the printed label ascending: the published sheets ordered zero-count rows that way
+    // when the bucket was still a string, and a sheet that reorders them is a different sheet.
+    ordered.sort_by_key(|(state, row)| (std::cmp::Reverse(row.class_of_2027), state.code()));
     for (state, row) in ordered {
-        rows.push(state_row(state, row)?);
+        rows.push(state_row(state.code(), row)?);
     }
     let total = state_row("TOTAL", &census.totals)?;
     rows.push(total);
@@ -201,8 +204,9 @@ fn marginal(all_sources: usize, core: usize) -> ReportResult<usize> {
 }
 
 pub(super) fn marginal_sheet(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut ordered: Vec<(&String, &StateCensus)> = all_sources.by_state.iter().collect();
-    ordered.sort_by_key(|(_, row)| std::cmp::Reverse(row.class_of_2027));
+    let mut ordered: Vec<(&JurisdictionBucket, &StateCensus)> =
+        all_sources.by_state.iter().collect();
+    ordered.sort_by_key(|(state, row)| (std::cmp::Reverse(row.class_of_2027), state.code()));
     let mut rows = vec![row!(
         "State",
         "Co27, all sources",
@@ -214,7 +218,7 @@ pub(super) fn marginal_sheet(core: &Census, all_sources: &Census) -> ReportResul
     )];
     let (mut all_total, mut core_total, mut athletes_all, mut athletes_core) = (0, 0, 0, 0);
     let empty = StateCensus {
-        state: String::new(),
+        state: JurisdictionBucket::Unplaced.into(),
         schools: 0,
         athletes: 0,
         class_of_2027: 0,
@@ -236,7 +240,7 @@ pub(super) fn marginal_sheet(core: &Census, all_sources: &Census) -> ReportResul
         athletes_all = add_count(athletes_all, row.athletes)?;
         athletes_core = add_count(athletes_core, core_row.athletes)?;
         rows.push(row!(
-            Cell::text(state.clone()),
+            Cell::text(state.code()),
             Cell::number(row.class_of_2027)?,
             Cell::number(core_row.class_of_2027)?,
             Cell::number(marginal(row.class_of_2027, core_row.class_of_2027)?)?,

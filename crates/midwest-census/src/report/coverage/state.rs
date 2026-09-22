@@ -2,10 +2,10 @@
 //! the school sets the school and coach passes share, and the small primitives every pass needs.
 
 use super::gaps::GapCounters;
-use super::{CoverageGap, CoverageTotals, JurisdictionCoverage, UNKNOWN_JURISDICTION};
+use super::{CoverageGap, CoverageTotals, JurisdictionCoverage};
 use census_domain::model::CanonicalAthlete;
 use census_domain::model::CanonicalSchool;
-use census_domain::UsJurisdiction;
+use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// One row's accumulating state: the published columns plus the gap counts no column carries.
@@ -17,15 +17,18 @@ pub(super) struct Bucket {
 
 impl Bucket {
     /// The finished row and its gap counts, with the two derived columns filled.
-    pub(super) fn finish(mut self, code: &str) -> (JurisdictionCoverage, GapCounters) {
-        self.row.jurisdiction = code.to_string();
+    pub(super) fn finish(
+        mut self,
+        bucket: JurisdictionBucket,
+    ) -> (JurisdictionCoverage, GapCounters) {
+        self.row.jurisdiction = bucket;
         self.row.core_share_pct = share_pct(self.row.athletes_core, self.row.athletes);
         (self.row, self.gaps)
     }
 }
 
-/// One accumulator per published row, keyed by jurisdiction code.
-pub(super) type BucketMap = BTreeMap<&'static str, Bucket>;
+/// One accumulator per published row, keyed by the bucket it publishes in.
+pub(super) type BucketMap = BTreeMap<JurisdictionBucket, Bucket>;
 
 /// Per-athlete performance tallies: how many rows, how many carry a comparable mark, and how many
 /// name an event the events table does not hold.
@@ -53,26 +56,23 @@ pub(super) struct Outcome {
     pub(super) off_cohort_athletes: usize,
 }
 
-/// The bucket for `code`, created on first use; every code is seeded, so creation is unreachable.
-pub(super) fn bucket_mut<'a>(buckets: &'a mut BucketMap, code: &'static str) -> &'a mut Bucket {
-    buckets.entry(code).or_default()
+/// The bucket for `bucket`, created on first use; every bucket is seeded, so creation is
+/// unreachable.
+pub(super) fn bucket_mut(buckets: &mut BucketMap, bucket: JurisdictionBucket) -> &mut Bucket {
+    buckets.entry(bucket).or_default()
 }
 
-/// The jurisdiction one school id publishes in: its school row's state, else `UNKNOWN`.
-pub(super) fn jurisdiction_of(
+/// The jurisdiction one school id publishes in: its school row's state, else the unplaced row.
+pub(in crate::report) fn jurisdiction_of(
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     school: &str,
-) -> &'static str {
-    school_state
-        .get(school)
-        .copied()
-        .flatten()
-        .map_or(UNKNOWN_JURISDICTION, UsJurisdiction::code)
+) -> JurisdictionBucket {
+    school_state.get(school).copied().flatten().into()
 }
 
 /// School id to the jurisdiction of its school row, `None` when the row carries none. A school id
 /// that is absent is a missing school, which the gap rows count separately.
-pub(super) fn school_state_index(
+pub(in crate::report) fn school_state_index(
     schools: &[CanonicalSchool],
 ) -> HashMap<&str, Option<UsJurisdiction>> {
     schools

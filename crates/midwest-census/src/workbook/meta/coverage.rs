@@ -117,7 +117,7 @@ fn jurisdiction_table(report: &CoverageReport) -> ReportResult<Vec<Vec<Cell>>> {
 
 /// One jurisdiction's row, in `COLUMNS` order.
 fn jurisdiction_row(jurisdiction: &JurisdictionCoverage) -> ReportResult<Vec<Cell>> {
-    let mut cells = vec![Cell::text(jurisdiction.jurisdiction.clone())];
+    let mut cells = vec![Cell::text(jurisdiction.jurisdiction.code())];
     for (_, column) in COLUMNS {
         cells.push(match column {
             Column::Count(read) => Cell::number(read(jurisdiction))?,
@@ -132,7 +132,7 @@ fn gap_table(report: &CoverageReport) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!("Gap jurisdiction", "Gap class", "Unit", "Count")];
     for gap in &report.gaps {
         cells.push(row!(
-            Cell::text(gap.jurisdiction.clone()),
+            Cell::text(gap.jurisdiction.code()),
             Cell::text(gap.class.as_str()),
             Cell::text(gap.unit),
             Cell::number(gap.count)?,

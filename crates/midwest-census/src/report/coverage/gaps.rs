@@ -6,6 +6,7 @@
 //! with no universe — dropping it would hide exactly the state the report exists to expose.
 
 use super::JurisdictionCoverage;
+use census_domain::JurisdictionBucket;
 use serde::Serialize;
 use std::fmt;
 
@@ -72,8 +73,8 @@ impl fmt::Display for GapClass {
 /// One class of missing evidence in one jurisdiction, with the count that produced the class.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct CoverageGap {
-    /// The jurisdiction code (`WI`), or [`UNKNOWN_JURISDICTION`](super::UNKNOWN_JURISDICTION).
-    pub jurisdiction: String,
+    /// The row's jurisdiction bucket: the USPS code as it prints, or the unplaced row.
+    pub jurisdiction: JurisdictionBucket,
     pub class: GapClass,
     /// What `count` counts: [`GapClass::unit`].
     pub unit: &'static str,
@@ -125,7 +126,7 @@ pub(super) fn rows(row: &JurisdictionCoverage, counters: &GapCounters) -> Vec<Co
             continue;
         }
         gaps.push(CoverageGap {
-            jurisdiction: row.jurisdiction.clone(),
+            jurisdiction: row.jurisdiction,
             class,
             unit: class.unit(),
             count,
@@ -136,7 +137,7 @@ pub(super) fn rows(row: &JurisdictionCoverage, counters: &GapCounters) -> Vec<Co
 
 /// The athletes that landed in the unplaceable row; zero for a placed jurisdiction.
 fn unplaceable_athletes(row: &JurisdictionCoverage) -> usize {
-    if row.jurisdiction == super::UNKNOWN_JURISDICTION {
+    if row.jurisdiction == JurisdictionBucket::Unplaced {
         row.athletes
     } else {
         0

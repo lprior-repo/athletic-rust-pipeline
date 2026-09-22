@@ -3,10 +3,8 @@
 use super::notes::{add, bump};
 use super::rows::RowCounts;
 use super::{MeetCoverage, StateCensus};
-use census_domain::model::{
-    CanonicalMeet, CanonicalSchool, SourceNamespace, MEET_STATE_UNRESOLVED,
-};
-use census_domain::UsJurisdiction;
+use census_domain::model::{CanonicalMeet, CanonicalSchool, SourceNamespace};
+use census_domain::{JurisdictionBucket, MeetState};
 use std::collections::BTreeMap;
 
 /// Meet-table coverage, one pass over the merged meet rows.
@@ -14,12 +12,14 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     let mut coverage = MeetCoverage::default();
     for meet in meets {
         bump(&mut coverage.total);
-        // The report is a text artifact, so its bucket key is the printed code; an unplaced meet
-        // stays in the unresolved bucket the pre-cutover reports already published.
-        let state = meet
-            .state
-            .map_or(MEET_STATE_UNRESOLVED, UsJurisdiction::code);
-        bump(coverage.by_state.entry(state.to_string()).or_default());
+        // An unplaced venue stays in the unresolved bucket the pre-cutover reports published, and
+        // the key prints exactly that label.
+        bump(
+            coverage
+                .by_state
+                .entry(MeetState::from(meet.state))
+                .or_default(),
+        );
         let names_athletic_net = meet.source_identities.iter().any(|identity| {
             matches!(
                 identity.namespace,
@@ -47,12 +47,17 @@ pub(super) fn meet_coverage(meets: &[CanonicalMeet]) -> MeetCoverage {
     coverage
 }
 
-/// School counts per state, from the school table rather than from athlete-derived buckets.
-pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<String, usize> {
-    let mut counts: BTreeMap<String, usize> = BTreeMap::new();
+/// School counts per jurisdiction bucket, from the school table rather than from athlete-derived
+/// buckets. A school whose row carries no state counts under the unplaced bucket, exactly where the
+/// per-state row for it prints.
+pub(super) fn schools_by_state(schools: &[CanonicalSchool]) -> BTreeMap<JurisdictionBucket, usize> {
+    let mut counts: BTreeMap<JurisdictionBucket, usize> = BTreeMap::new();
     for school in schools {
-        let state = school.state.map_or("UNKNOWN", UsJurisdiction::code);
-        bump(counts.entry(state.to_string()).or_default());
+        bump(
+            counts
+                .entry(JurisdictionBucket::from(school.state))
+                .or_default(),
+        );
     }
     counts
 }
@@ -74,7 +79,7 @@ pub(super) fn duplicate_school_names(schools: &[CanonicalSchool]) -> usize {
 
 /// The `ALL` row: state buckets summed, school and coach totals taken from the tables.
 pub(super) fn totals_of(
-    by_state: &BTreeMap<String, StateCensus>,
+    by_state: &BTreeMap<JurisdictionBucket, StateCensus>,
     counts: &RowCounts,
 ) -> StateCensus {
     let mut totals = StateCensus::default();
@@ -108,7 +113,7 @@ pub(super) fn totals_of(
             entry.class_of_2027_with_coach_email,
         );
     }
-    totals.state = "TOTAL".to_string();
+    totals.state = crate::report::RowLabel::Total;
     totals.schools = counts.schools;
     totals.coaches = counts.coaches;
     totals.coaches_with_email = counts.coaches_with_email;

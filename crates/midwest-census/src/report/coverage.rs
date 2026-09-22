@@ -25,6 +25,7 @@
 
 use super::{ReportError, ReportResult};
 use crate::store::Store;
+use census_domain::JurisdictionBucket;
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -32,6 +33,9 @@ mod athletes;
 mod classify;
 mod gaps;
 mod state;
+
+// The typed jurisdiction helpers the report module's rollups bucket by.
+pub(in crate::report) use state::{jurisdiction_of, school_state_index};
 
 pub use gaps::{CoverageGap, GapClass};
 
@@ -41,7 +45,7 @@ use state::Outcome;
 mod tests;
 
 /// The label of the row no school placed: the label the census report's state buckets already use.
-pub const UNKNOWN_JURISDICTION: &str = "UNKNOWN";
+pub const UNKNOWN_JURISDICTION: &str = JurisdictionBucket::UNPLACED_CODE;
 
 /// Row counts the report read from the store, and the totals its rows must sum back to.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
@@ -58,8 +62,9 @@ pub struct CoverageTotals {
 /// stay in the denominator instead of vanishing from it.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct JurisdictionCoverage {
-    /// The USPS code, or [`UNKNOWN_JURISDICTION`].
-    pub jurisdiction: String,
+    /// The row's jurisdiction bucket: a state or DC, or [`UNKNOWN_JURISDICTION`]'s row. It prints as
+    /// the USPS code, so the published JSON and CSV keep the vocabulary they always had.
+    pub jurisdiction: JurisdictionBucket,
     /// School rows whose own `state` is this jurisdiction: the school universe.
     pub schools: usize,
     /// Schools holding at least one published cohort athlete.
@@ -236,7 +241,7 @@ fn coverage_notes(store: &Store, grad_year: Option<i16>, outcome: &Outcome) -> V
     let unplaceable = outcome
         .jurisdictions
         .iter()
-        .find(|row| row.jurisdiction == UNKNOWN_JURISDICTION)
+        .find(|row| row.jurisdiction == JurisdictionBucket::Unplaced)
         .map_or(0, |row| row.athletes);
     if unplaceable > 0 {
         notes.push(format!(

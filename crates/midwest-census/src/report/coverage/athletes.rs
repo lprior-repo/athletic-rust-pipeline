@@ -2,8 +2,9 @@
 //! tallies the published athlete ids then join to.
 
 use super::state::{bucket_mut, in_cohort, jurisdiction_of, Bucket, BucketMap, PerfTally};
-use super::{JurisdictionCoverage, UNKNOWN_JURISDICTION};
+use super::JurisdictionCoverage;
 use census_domain::model::{CanonicalAthlete, CanonicalPerformance, Gender, Mark, Sport};
+use census_domain::JurisdictionBucket;
 use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
@@ -178,7 +179,7 @@ pub(super) fn classify_performances(
     // The orphan bucket holds rows whose athlete was never stored: they publish as performances and
     // gap counts, never as athletes, because no athlete row exists for those columns to describe.
     {
-        let bucket = bucket_mut(buckets, UNKNOWN_JURISDICTION);
+        let bucket = bucket_mut(buckets, JurisdictionBucket::Unplaced);
         bucket.row.performances = bucket.row.performances.saturating_add(orphan.rows);
         bucket.gaps.missing_event_context = bucket
             .gaps
@@ -193,8 +194,8 @@ pub(super) fn classify_performances(
         let Some(tally) = tallies.get(athlete.id.as_str()) else {
             continue;
         };
-        let code = jurisdiction_of(school_state, athlete.school.as_str());
-        add_perf(bucket_mut(buckets, code), tally, &mut read);
+        let bucket = jurisdiction_of(school_state, athlete.school.as_str());
+        add_perf(bucket_mut(buckets, bucket), tally, &mut read);
     }
     read
 }

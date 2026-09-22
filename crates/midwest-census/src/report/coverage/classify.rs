@@ -8,13 +8,13 @@ use super::state::{
     bucket_mut, in_cohort, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
     SchoolSets,
 };
-use super::{athletes, CoverageGap, CoverageTotals, JurisdictionCoverage, UNKNOWN_JURISDICTION};
+use super::{athletes, CoverageGap, CoverageTotals, JurisdictionCoverage};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CoachRole, Sport,
 };
-use census_domain::UsJurisdiction;
+use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{HashMap, HashSet};
 
 /// §49 coverage for the store's merged tables. See [`super::coverage_report`] for the contract this
@@ -80,28 +80,26 @@ pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome
 /// row the publication order forgot.
 fn seed_buckets() -> BucketMap {
     let mut buckets = BucketMap::new();
-    for code in jurisdiction_codes() {
-        buckets.insert(code, Bucket::default());
+    for bucket in jurisdiction_buckets() {
+        buckets.insert(bucket, Bucket::default());
     }
     buckets
 }
 
-/// Every published row's code, in publication order: [`UsJurisdiction::ALL`], then `UNKNOWN`.
-fn jurisdiction_codes() -> impl Iterator<Item = &'static str> {
+/// Every published row's bucket, in publication order: [`UsJurisdiction::ALL`], then the unplaced
+/// row.
+fn jurisdiction_buckets() -> impl Iterator<Item = JurisdictionBucket> {
     UsJurisdiction::ALL
         .iter()
         .copied()
-        .map(UsJurisdiction::code)
-        .chain(std::iter::once(UNKNOWN_JURISDICTION))
+        .map(JurisdictionBucket::from)
+        .chain(std::iter::once(JurisdictionBucket::Unplaced))
 }
 
 /// The school pass: the universe, plus the columns that count schools the other passes reached.
 fn classify_schools(schools: &[CanonicalSchool], sets: &SchoolSets<'_>, buckets: &mut BucketMap) {
     for school in schools {
-        let code = school
-            .state
-            .map_or(UNKNOWN_JURISDICTION, UsJurisdiction::code);
-        let bucket = bucket_mut(buckets, code);
+        let bucket = bucket_mut(buckets, JurisdictionBucket::from(school.state));
         bump(&mut bucket.row.schools);
         let id = school.id.as_str();
         if sets.with_athletes.contains(id) {
@@ -129,8 +127,10 @@ fn classify_coaches<'a>(
     sets: &mut SchoolSets<'a>,
 ) {
     for coach in coaches {
-        let code = jurisdiction_of(school_state, coach.school.as_str());
-        let bucket = bucket_mut(buckets, code);
+        let bucket = bucket_mut(
+            buckets,
+            jurisdiction_of(school_state, coach.school.as_str()),
+        );
         bump(&mut bucket.row.coaches);
         let school = coach.school.as_str();
         if coach.professional_email.is_some() {
@@ -156,10 +156,11 @@ fn classify_coaches<'a>(
 /// filter never narrows them.
 fn classify_meets(meets: &[CanonicalMeet], buckets: &mut BucketMap) {
     for meet in meets {
-        let code = meet
-            .state
-            .map_or(UNKNOWN_JURISDICTION, UsJurisdiction::code);
-        bump(&mut bucket_mut(buckets, code).row.meets);
+        bump(
+            &mut bucket_mut(buckets, JurisdictionBucket::from(meet.state))
+                .row
+                .meets,
+        );
     }
 }
 
@@ -175,8 +176,8 @@ fn count_core(
         if !in_cohort(athlete, grad_year) {
             continue;
         }
-        let code = jurisdiction_of(school_state, athlete.school.as_str());
-        bump(&mut bucket_mut(buckets, code).row.athletes_core);
+        let bucket = jurisdiction_of(school_state, athlete.school.as_str());
+        bump(&mut bucket_mut(buckets, bucket).row.athletes_core);
     }
 }
 
@@ -185,10 +186,10 @@ fn count_core(
 fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGap>) {
     let mut jurisdictions = Vec::with_capacity(UsJurisdiction::ALL.len().saturating_add(1));
     let mut gap_rows = Vec::new();
-    for code in jurisdiction_codes() {
+    for bucket in jurisdiction_buckets() {
         // A missing accumulator still publishes a row of zeros: an omitted jurisdiction is the one
         // outcome a coverage report may not produce.
-        let (row, counters) = buckets.remove(code).unwrap_or_default().finish(code);
+        let (row, counters) = buckets.remove(&bucket).unwrap_or_default().finish(bucket);
         gap_rows.extend(gaps::rows(&row, &counters));
         jurisdictions.push(row);
     }

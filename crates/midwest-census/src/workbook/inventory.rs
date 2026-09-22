@@ -6,6 +6,7 @@
 
 use crate::bests::BestResult;
 use crate::report::{Census, ReportResult};
+use census_domain::MeetState;
 
 use super::cells::{cell, row, Cell};
 
@@ -32,7 +33,7 @@ pub(super) fn best_sheet(bests: &[BestResult]) -> ReportResult<Vec<Vec<Cell>>> {
         rows.push(row!(
             Cell::text(best.name.clone()),
             Cell::text(best.school.clone()),
-            Cell::text(best.state.clone()),
+            Cell::text(best.state.code()),
             Cell::Number(f64::from(best.grad_year)),
             Cell::text(best.gender.clone()),
             Cell::text(best.sport.clone()),
@@ -101,8 +102,8 @@ fn meets_totals(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cel
 
 /// The per-state counts of both scopes, side by side.
 fn meets_by_state(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<Cell>>> {
-    let core_states: Vec<(&String, &usize)> = sorted_counts(&core.meets.by_state);
-    let all_states: Vec<(&String, &usize)> = sorted_counts(&all_sources.meets.by_state);
+    let core_states = sorted_meet_states(&core.meets.by_state);
+    let all_states = sorted_meet_states(&all_sources.meets.by_state);
     let mut rows = vec![row!()];
     rows.push(row!(
         "By state (core)",
@@ -114,13 +115,13 @@ fn meets_by_state(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<C
         let left = core_states.get(index);
         let right = all_states.get(index);
         rows.push(row!(
-            left.map(|(state, _)| Cell::text((*state).clone()))
+            left.map(|(state, _)| Cell::text(state.code()))
                 .unwrap_or(Cell::Empty),
             left.map(|(_, count)| Cell::number(**count))
                 .transpose()?
                 .unwrap_or(Cell::Empty),
             right
-                .map(|(state, _)| Cell::text((*state).clone()))
+                .map(|(state, _)| Cell::text(state.code()))
                 .unwrap_or(Cell::Empty),
             right
                 .map(|(_, count)| Cell::number(**count))
@@ -202,6 +203,21 @@ pub(super) fn method_sheet() -> Vec<Vec<Cell>> {
         row!("Best marks", "One row per (athlete, event): the winning mark on that event's own scale, with the meet, date, place, wind and timing that produced it. Relay legs are excluded - a squad mark is not a personal best."),
         row!("Coach coverage", "WI, MN, IL, OH, NE and ND publish directories; MI, MO, IN and KS still have none."),
     ]
+}
+
+/// The meet buckets of one scope, most meets first; ties keep the printed label ascending, the
+/// order this sheet published before the key became a type.
+fn sorted_meet_states(
+    counts: &std::collections::BTreeMap<MeetState, usize>,
+) -> Vec<(&MeetState, &usize)> {
+    let mut ordered: Vec<(&MeetState, &usize)> = counts.iter().collect();
+    ordered.sort_by(|left, right| {
+        right
+            .1
+            .cmp(left.1)
+            .then_with(|| left.0.code().cmp(right.0.code()))
+    });
+    ordered
 }
 
 fn sorted_counts(counts: &std::collections::BTreeMap<String, usize>) -> Vec<(&String, &usize)> {

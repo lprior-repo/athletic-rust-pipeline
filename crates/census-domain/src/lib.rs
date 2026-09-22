@@ -13,7 +13,7 @@ pub mod jurisdiction;
 pub mod model;
 
 pub use error::DomainError;
-pub use jurisdiction::UsJurisdiction;
+pub use jurisdiction::{JurisdictionBucket, MeetState, UsJurisdiction};
 
 #[cfg(kani)]
 include!("../kani/census_domain_wiring.rs");

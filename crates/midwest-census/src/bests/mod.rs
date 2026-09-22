@@ -15,6 +15,7 @@
 //!   chosen as a best.
 
 use crate::report::Scope;
+use census_domain::MeetState;
 use serde::Serialize;
 
 mod events;
@@ -40,7 +41,9 @@ pub struct BestResult {
     pub athlete_id: String,
     pub name: String,
     pub school: String,
-    pub state: String,
+    /// The meet's jurisdiction as it prints: the USPS code, or the store's `??` sentinel when the
+    /// meet never states where it was held. A label, never a fabricated state.
+    pub state: MeetState,
     pub grad_year: i16,
     pub gender: String,
     pub sport: String,

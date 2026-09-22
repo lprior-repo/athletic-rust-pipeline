@@ -11,7 +11,7 @@ fn the_csv_carries_exactly_one_header_row() {
         athlete_id: "ath_0000000000000001".to_string(),
         name: "Ada Fixture".to_string(),
         school: "sch_0000000000000001".to_string(),
-        state: "AK".to_string(),
+        state: census_domain::MeetState::Placed(census_domain::UsJurisdiction::Alaska),
         grad_year: 2027,
         gender: "Girls".to_string(),
         sport: "CrossCountry".to_string(),

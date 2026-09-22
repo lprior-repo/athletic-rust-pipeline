@@ -19,6 +19,7 @@ use crate::report::ReportResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Sport,
 };
+use census_domain::JurisdictionBucket;
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::super::cells::{cell, row, Cell};
@@ -57,8 +58,8 @@ pub(super) struct PrRow {
     pub(super) athlete_id: String,
     pub(super) athlete: String,
     pub(super) school: String,
-    /// The athlete's school jurisdiction, or `UNKNOWN` when no school row places the school.
-    pub(super) state: String,
+    /// The athlete's school jurisdiction, or the unplaced row when no school row places the school.
+    pub(super) state: JurisdictionBucket,
     pub(super) sport: String,
     pub(super) event: String,
     /// `Indoor`, `Outdoor`, both, or blank when the meet records neither.
@@ -78,7 +79,7 @@ pub(super) struct PrRow {
 /// The school facts a PR row prints, resolved by the caller from the school table.
 pub(super) struct SchoolFacts {
     pub(super) name: String,
-    pub(super) state: String,
+    pub(super) state: JurisdictionBucket,
 }
 
 /// One `(athlete, event)` reduction slot: the mark that currently wins, the sources that attest the
@@ -179,8 +180,8 @@ fn row_for(context: &Context<'_>, performance: &CanonicalPerformance) -> PrRow {
             .map(|school| school.name.clone())
             .unwrap_or_else(|| context.athlete.school.as_str().to_string()),
         state: school
-            .map(|school| school.state.clone())
-            .unwrap_or_else(|| "UNKNOWN".to_string()),
+            .map(|school| school.state)
+            .unwrap_or(JurisdictionBucket::Unplaced),
         sport: sport_of(context.kind).to_string(),
         event: format!("{:?}", context.kind),
         season: season_of(context.meet),
@@ -250,7 +251,7 @@ pub(super) fn sheet(prs: &[PrRow]) -> ReportResult<Vec<Vec<Cell>>> {
             Cell::text(pr.athlete_id.clone()),
             Cell::text(pr.athlete.clone()),
             Cell::text(pr.school.clone()),
-            Cell::text(pr.state.clone()),
+            Cell::text(pr.state.code()),
             Cell::text(pr.sport.clone()),
             Cell::text(pr.event.clone()),
             Cell::text(pr.season.clone()),

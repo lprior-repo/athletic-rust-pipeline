@@ -4,7 +4,7 @@
 use super::notes::bump;
 use super::{SportsBreakdown, StateCensus};
 use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalSchool, Gender, Sport};
-use census_domain::UsJurisdiction;
+use census_domain::JurisdictionBucket;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 fn is_track_or_xc(sport: Sport) -> bool {
@@ -57,7 +57,7 @@ pub(super) struct Co2027Rollup {
 /// Athlete-derived census counters.
 #[derive(Default)]
 pub(super) struct AthleteRollup {
-    pub(super) by_state: BTreeMap<String, StateCensus>,
+    pub(super) by_state: BTreeMap<JurisdictionBucket, StateCensus>,
     pub(super) by_grad_year: BTreeMap<String, usize>,
     pub(super) co2027: Co2027Rollup,
 }
@@ -65,33 +65,10 @@ pub(super) struct AthleteRollup {
 /// Coach-derived census counters.
 #[derive(Default)]
 pub(super) struct CoachRollup {
-    pub(super) by_state: BTreeMap<String, (usize, usize)>,
+    pub(super) by_state: BTreeMap<JurisdictionBucket, (usize, usize)>,
     pub(super) roles: BTreeMap<String, usize>,
     pub(super) sports: BTreeMap<String, usize>,
     pub(super) sources: BTreeMap<String, usize>,
-}
-
-/// The state of the school an entity belongs to, or `UNKNOWN` for an unknown school.
-pub(super) fn state_of(school_state: &HashMap<&str, &str>, school: &str) -> String {
-    school_state
-        .get(school)
-        .copied()
-        .unwrap_or("UNKNOWN")
-        .to_string()
-}
-
-/// School id -> state of that school.
-pub(super) fn school_state_index(schools: &[CanonicalSchool]) -> HashMap<&str, &str> {
-    schools
-        .iter()
-        .map(|school| {
-            (
-                school.id.as_str(),
-                // The report buckets are text, so an unknown school keeps the historic label.
-                school.state.map_or("UNKNOWN", UsJurisdiction::code),
-            )
-        })
-        .collect()
 }
 
 /// School id -> (a track/XC coach, whether any track/XC coach brings a professional email).

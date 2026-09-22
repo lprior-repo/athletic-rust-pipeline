@@ -5,8 +5,11 @@
 //! wire shape: a hand-written mirror silently drifts from the model and would report on fields that
 //! no longer exist.
 
+pub use census_domain::{JurisdictionBucket, MeetState};
+use serde::ser::SerializeMap;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::fmt;
 use std::path::Path;
 
 // ---------------------------------------------------------------------------
@@ -90,12 +93,65 @@ pub use writer::write_census;
 
 pub use core_scope::{is_core_source, retain_core, CoreScoped, Scope, NON_CORE_SOURCE_IDS};
 
-/// Stream a JSONL entity log, tolerating a truncated tail from an interrupted run.
+/// The label one published row prints: where it is bucketed, or the grand total.
 ///
+/// A bucket alone cannot describe the totals row, and the totals row is published inside the same
+/// document (`totals.state == "TOTAL"`), so the label is its own value rather than a string a caller
+/// could fill with anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RowLabel {
+    /// A per-jurisdiction row: the state or DC it buckets, or the unplaced row.
+    Jurisdiction(JurisdictionBucket),
+    /// The row that sums every bucket.
+    Total,
+}
+
+impl Default for RowLabel {
+    /// A row that has not been labelled reads as the unplaced bucket, never as a jurisdiction and
+    /// never as the grand total.
+    fn default() -> Self {
+        Self::Jurisdiction(JurisdictionBucket::Unplaced)
+    }
+}
+
+impl RowLabel {
+    /// The label the row prints as: the bucket's code, or `TOTAL`.
+    pub const fn code(self) -> &'static str {
+        match self {
+            Self::Jurisdiction(bucket) => bucket.code(),
+            Self::Total => "TOTAL",
+        }
+    }
+}
+
+impl Serialize for RowLabel {
+    /// Serializes as the printed label (`"WI"`, `"UNKNOWN"`, `"TOTAL"`), so the published JSON keeps
+    /// the vocabulary its readers already parse.
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+impl From<JurisdictionBucket> for RowLabel {
+    fn from(bucket: JurisdictionBucket) -> Self {
+        Self::Jurisdiction(bucket)
+    }
+}
+
+impl fmt::Display for RowLabel {
+    /// Displays [`Self::code`], the form the published row carries.
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.code())
+    }
+}
 
 #[derive(Debug, Default, Clone, Serialize)]
 pub struct StateCensus {
-    pub state: String,
+    /// The row's own label: its jurisdiction bucket, or `TOTAL` for the summed row.
+    pub state: RowLabel,
     pub schools: usize,
     pub athletes: usize,
     pub class_of_2027: usize,
@@ -133,6 +189,42 @@ pub struct ProviderCoverage {
     pub grade_evidence_sources: BTreeMap<String, usize>,
 }
 
+/// Publishes `by_state` in jurisdiction-code order.
+///
+/// Buckets order by the domain's declaration order, which is what the coverage rows document;
+/// the published map keeps the code order every release has written, so diffing two `report.json`
+/// files shows rows whose numbers moved instead of every key reshuffling.
+fn by_jurisdiction_code<S>(
+    map: &BTreeMap<JurisdictionBucket, StateCensus>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let mut rows: Vec<(&JurisdictionBucket, &StateCensus)> = map.iter().collect();
+    rows.sort_by_key(|(bucket, _)| bucket.code());
+    let mut entries = serializer.serialize_map(Some(rows.len()))?;
+    for (bucket, row) in rows {
+        entries.serialize_entry(bucket, row)?;
+    }
+    entries.end()
+}
+
+/// Publishes the meet-state map in the same code order, with the unresolved label (`??`) first,
+/// which is where a byte-ordered map of the old `String` keys put it.
+fn meet_state_code<S>(map: &BTreeMap<MeetState, usize>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let mut rows: Vec<(&MeetState, &usize)> = map.iter().collect();
+    rows.sort_by_key(|(state, _)| state.code());
+    let mut entries = serializer.serialize_map(Some(rows.len()))?;
+    for (state, count) in rows {
+        entries.serialize_entry(state, count)?;
+    }
+    entries.end()
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct Census {
     pub generated_on: String,
@@ -143,7 +235,8 @@ pub struct Census {
     /// One row per configured jurisdiction, plus [`UNKNOWN_JURISDICTION`] for rows no school
     /// placed. Every key is present whatever the store holds, so a state with no observations
     /// publishes zeros instead of vanishing from the sheet and the per-state CSV.
-    pub by_state: BTreeMap<String, StateCensus>,
+    #[serde(serialize_with = "by_jurisdiction_code")]
+    pub by_state: BTreeMap<JurisdictionBucket, StateCensus>,
     pub athletes_by_grad_year: BTreeMap<String, usize>,
     pub class_of_2027_sports: SportsBreakdown,
     pub providers: ProviderCoverage,
@@ -163,7 +256,11 @@ pub struct Census {
 pub struct MeetCoverage {
     pub total: usize,
     pub with_athletic_net_id: usize,
-    pub by_state: BTreeMap<String, usize>,
+    /// Counts per [`MeetState`]: the USPS code, or the store's unresolved sentinel (`??`). Meets
+    /// carry the meet-state label rather than the school bucket, so an unplaced venue keeps the
+    /// label every published artifact already prints for it.
+    #[serde(serialize_with = "meet_state_code")]
+    pub by_state: BTreeMap<MeetState, usize>,
     /// Timer/provider namespace slug (for example `timer_meet:live_results`) to meet count.
     pub by_provider: BTreeMap<String, usize>,
     #[serde(skip_serializing_if = "Option::is_none")]

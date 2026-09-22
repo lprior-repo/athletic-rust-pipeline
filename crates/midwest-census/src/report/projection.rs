@@ -1,39 +1,37 @@
 //! The JSON projection: the rollup passes that turn the store's merged entity tables into one
 //! `Census` document.
 
+use super::coverage::{jurisdiction_of, school_state_index};
 use super::notes::{bump, census_notes, state_entry};
 use super::rows::{
-    coach_sport, school_coach_index, school_state_index, state_of, tally_co2027, AthleteRollup,
-    CoachRollup, RowCounts,
+    coach_sport, school_coach_index, tally_co2027, AthleteRollup, CoachRollup, RowCounts,
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
-use super::{
-    retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus, UNKNOWN_JURISDICTION,
-};
+use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
 use crate::clock::{Clock, SystemClock};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
 };
-use census_domain::UsJurisdiction;
+use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{BTreeMap, HashMap};
 
 /// One pass over the merged athlete rows.
 fn rollup_athletes(
     athletes: &[CanonicalAthlete],
-    school_state: &HashMap<&str, &str>,
+    school_state: &HashMap<&str, Option<UsJurisdiction>>,
     school_coach: &HashMap<&str, (&CanonicalCoach, bool)>,
 ) -> AthleteRollup {
     let mut rollup = AthleteRollup::default();
     for athlete in athletes {
-        let state = state_of(school_state, athlete.school.as_str());
+        let state = jurisdiction_of(school_state, athlete.school.as_str());
         bump(
             rollup
                 .by_grad_year
                 .entry(athlete.grad_year.to_string())
                 .or_default(),
         );
-        let entry = state_entry(&mut rollup.by_state, &state);
+        let entry = state_entry(&mut rollup.by_state, state);
         bump(&mut entry.athletes);
         if athlete.grad_year == GradYear::CO2027 {
             tally_co2027(entry, &mut rollup.co2027, athlete, school_coach);
@@ -43,10 +41,13 @@ fn rollup_athletes(
 }
 
 /// One pass over the merged coach rows.
-fn rollup_coaches(coaches: &[CanonicalCoach], school_state: &HashMap<&str, &str>) -> CoachRollup {
+fn rollup_coaches(
+    coaches: &[CanonicalCoach],
+    school_state: &HashMap<&str, Option<UsJurisdiction>>,
+) -> CoachRollup {
     let mut rollup = CoachRollup::default();
     for coach in coaches {
-        let state = state_of(school_state, coach.school.as_str());
+        let state = jurisdiction_of(school_state, coach.school.as_str());
         let slot = rollup.by_state.entry(state).or_insert((0, 0));
         slot.0 = slot.0.saturating_add(1);
         if coach.professional_email.is_some() {
@@ -70,11 +71,11 @@ fn rollup_coaches(coaches: &[CanonicalCoach], school_state: &HashMap<&str, &str>
 /// Merge per-state coach counts into the athlete-derived buckets, creating a state that only a coach
 /// mentions.
 fn apply_coach_states(
-    by_state: &mut BTreeMap<String, StateCensus>,
-    coach_states: &BTreeMap<String, (usize, usize)>,
+    by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
+    coach_states: &BTreeMap<JurisdictionBucket, (usize, usize)>,
 ) {
     for (state, (total, with_email)) in coach_states {
-        let entry = state_entry(by_state, state);
+        let entry = state_entry(by_state, *state);
         entry.coaches = *total;
         entry.coaches_with_email = *with_email;
     }
@@ -87,15 +88,11 @@ fn apply_coach_states(
 /// as one nobody looked at, when the measured answer is "covered, empty". The seeded rows are the
 /// same labels the rollups already mint, so a state with data overwrites its own zero row instead of
 /// gaining a second one.
-fn seed_states(by_state: &mut BTreeMap<String, StateCensus>) {
-    for code in UsJurisdiction::ALL
-        .iter()
-        .copied()
-        .map(UsJurisdiction::code)
-    {
-        state_entry(by_state, code);
+fn seed_states(by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>) {
+    for jurisdiction in UsJurisdiction::ALL {
+        state_entry(by_state, jurisdiction.into());
     }
-    state_entry(by_state, UNKNOWN_JURISDICTION);
+    state_entry(by_state, JurisdictionBucket::Unplaced);
 }
 
 /// Build the census from the store's merged entity tables.

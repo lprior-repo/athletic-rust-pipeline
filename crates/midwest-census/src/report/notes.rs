@@ -2,6 +2,7 @@
 
 use super::rows::RowCounts;
 use super::{Scope, StateCensus, NON_CORE_SOURCE_IDS};
+use census_domain::JurisdictionBucket;
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -20,16 +21,14 @@ pub(super) fn add(total: &mut usize, value: usize) {
 }
 
 /// The per-state bucket for `state`, created on first use.
-pub(super) fn state_entry<'a>(
-    by_state: &'a mut BTreeMap<String, StateCensus>,
-    state: &str,
-) -> &'a mut StateCensus {
-    by_state
-        .entry(state.to_string())
-        .or_insert_with(|| StateCensus {
-            state: state.to_string(),
-            ..StateCensus::default()
-        })
+pub(super) fn state_entry(
+    by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>,
+    state: JurisdictionBucket,
+) -> &mut StateCensus {
+    by_state.entry(state).or_insert_with(|| StateCensus {
+        state: state.into(),
+        ..StateCensus::default()
+    })
 }
 
 /// Provenance notes recorded in `report.json`.

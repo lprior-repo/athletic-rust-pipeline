@@ -56,9 +56,7 @@ pub(super) fn school_facts(
                 id.clone(),
                 SchoolFacts {
                     name: school.name.clone(),
-                    state: school
-                        .state
-                        .map_or("UNKNOWN".to_string(), |state| state.code().to_string()),
+                    state: school.state.into(),
                 },
             )
         })
