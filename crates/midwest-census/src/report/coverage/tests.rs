@@ -2,7 +2,6 @@
 //! fixture store built from canonical observations only (no network, no consolidated snapshot).
 
 use super::*;
-use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventKind, Evidence, Gender,
@@ -10,6 +9,7 @@ use census_domain::model::{
     Sport,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use tempfile::TempDir;
 
 /// The fixture spans four placed jurisdictions with distinct shapes: one with a core athlete and a

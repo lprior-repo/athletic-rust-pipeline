@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use super::MAX_BODY_BYTES;
 
-use crate::clock::{Clock, SystemClock};
+use census_store::clock::{Clock, SystemClock};
 // ---------------------------------------------------------------------------
 // Error types
 // ---------------------------------------------------------------------------

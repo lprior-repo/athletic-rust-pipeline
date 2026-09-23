@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use census_domain::model::{CanonicalAthlete, CanonicalPerformance};
 
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 
 /// A single discrepancy found during verification.
 #[derive(Debug)]

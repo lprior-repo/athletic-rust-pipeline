@@ -11,13 +11,13 @@
 //! One roster unit's work — the skip a blocked state earns, and the fetch-and-store step every other
 //! unit runs — lives in `units`, so this file stays inside the one-page budget.
 
-use crate::clock::{Clock, SystemClock};
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::sources::{CrawlError, CrawlResult};
-use crate::store::Store;
 use census_domain::model::Gender;
 use census_domain::UsJurisdiction;
+use census_store::clock::{Clock, SystemClock};
+use census_store::Store;
 use futures::stream::{self, StreamExt};
 use std::sync::Arc;
 use tokio::sync::Mutex;

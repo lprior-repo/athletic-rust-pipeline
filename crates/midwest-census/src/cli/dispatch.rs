@@ -6,7 +6,7 @@
 //! way to keep it out of a store open it does not want.
 
 use anyhow::Result;
-use midwest_census::store::Store;
+use census_store::Store;
 
 use super::export_data;
 use super::gather;

@@ -8,10 +8,10 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use clap::Args;
 use midwest_census::census;
 use midwest_census::restate_services::JurisdictionReport;
-use midwest_census::store::Store;
 use std::path::Path;
 
 use super::live::{self, jurisdiction_request};
@@ -109,9 +109,8 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
             Ok(())
         }
         Route::Ingress(origin) => {
-            let season = SchoolYear::new(args.season).ok_or_else(|| {
-                anyhow::anyhow!("--season {} is not a school year", args.season)
-            })?;
+            let season = SchoolYear::new(args.season)
+                .ok_or_else(|| anyhow::anyhow!("--season {} is not a school year", args.season))?;
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
@@ -159,9 +158,8 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
             Ok(())
         }
         Route::Ingress(origin) => {
-            let season = SchoolYear::new(school_year(args.year)?).ok_or_else(|| {
-                anyhow::anyhow!("--year {} is not a school year", args.year)
-            })?;
+            let season = SchoolYear::new(school_year(args.year)?)
+                .ok_or_else(|| anyhow::anyhow!("--year {} is not a school year", args.year))?;
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
@@ -216,7 +214,9 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         concurrency: args.concurrency,
         state_concurrency: args.state_concurrency,
         refresh: args.refresh,
-        school_year: SchoolYear::new(args.school_year),
+        school_year: SchoolYear::new(args.school_year).ok_or_else(|| {
+            anyhow::anyhow!("--school-year {} is not a school year", args.school_year)
+        })?,
         observed_on: args
             .observed_on
             .clone()

@@ -9,9 +9,9 @@ use crate::sources::mshsl::parse::{
 };
 use crate::sources::mshsl::{Options, MAX_LISTING_PAGES, SOURCE_ID};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{normalize_name, CanonicalCoach, CanonicalSchool, SchoolId};
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 

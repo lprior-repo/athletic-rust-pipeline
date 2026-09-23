@@ -6,6 +6,7 @@
 //! the names a canonical record was minted from included — belongs to the first writer.
 
 use super::*;
+use census_domain::model::NaturalKey;
 
 proptest! {
     #![proptest_config(law_config())]
@@ -146,18 +147,42 @@ proptest! {
         prop_assert_eq!(&reversed.location, &Some(other));
     }
 
+    /// One subject under two observations: the alias is absorbed and the name the row was minted from
+    /// is not, because a name is what the id is derived from and rewriting it would rewrite identity.
     #[test]
-    fn athlete_merge_never_rewrites_the_canonical_name(base in athlete(), other_name in word(20)) {
+    fn athlete_merge_unions_known_names_under_one_natural_key(base in athlete(), alias in word(20)) {
         let mut athlete = base.clone();
         let canonical = athlete.canonical_name.clone();
         let mut incoming = base;
-        incoming.canonical_name = other_name.clone();
-        incoming.known_names = vec![other_name.clone()];
+        incoming.known_names = vec![alias.clone()];
 
         athlete.merge(incoming);
         prop_assert_eq!(&athlete.canonical_name, &canonical);
-        prop_assert!(athlete.known_names.contains(&other_name));
+        prop_assert!(athlete.known_names.contains(&alias));
         prop_assert!(athlete.known_names.contains(&canonical));
+        prop_assert!(athlete.retained_conflicts.is_empty());
+    }
+
+    /// Two rows that share an id but not a natural key are an id collision, not one subject: the row
+    /// already there keeps every field it holds — its name and its known names included — and the
+    /// finding is recorded for an operator rather than absorbed into a third subject.
+    #[test]
+    fn athlete_merge_records_a_second_name_instead_of_absorbing_it(
+        base in athlete(),
+        other_name in word(20),
+    ) {
+        let mut incoming = base.clone();
+        incoming.canonical_name = other_name.clone();
+        incoming.known_names = vec![other_name.clone()];
+        prop_assume!(!base.same_natural_key(&incoming));
+
+        let mut athlete = base;
+        let canonical = athlete.canonical_name.clone();
+        let known_names = athlete.known_names.clone();
+        athlete.merge(incoming);
+        prop_assert_eq!(&athlete.canonical_name, &canonical);
+        prop_assert_eq!(&athlete.known_names, &known_names);
+        prop_assert_eq!(athlete.retained_conflicts.len(), 1);
     }
 
     #[test]

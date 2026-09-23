@@ -16,8 +16,8 @@ use super::workbook::{
     RUN_METRICS_SHEET,
 };
 use crate::census::Phase;
-use crate::store::{StoreStats, Table};
 use census_domain::model::{AccessBlockKind, SourceAccessCondition};
+use census_store::{StoreStats, Table};
 
 /// Write a workbook holding the three sheets the seal requires: `Athletes`, `Coverage` carrying
 /// `jurisdictions` data rows, and `Run Metrics` naming the cohort when one is given.

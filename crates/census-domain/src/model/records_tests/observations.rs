@@ -1,7 +1,9 @@
 //! What an observation row says: the provider's own object, in the source's own words.
 
 use super::super::*;
-use crate::model::{Gender, GradYear, Grade, ObservedGrade, SchoolYear, SourceNamespace, SourceRef};
+use crate::model::{
+    Gender, GradYear, Grade, ObservedGrade, SchoolYear, SourceNamespace, SourceRef,
+};
 
 #[test]
 fn an_athlete_observation_keeps_what_its_source_published() {

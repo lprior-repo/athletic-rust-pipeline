@@ -2,8 +2,8 @@
 //! One function per registry slug, each marshalling [`ProviderArgs`] into its adapter's `Options`.
 
 use anyhow::{bail, Result};
+use census_store::Store;
 use midwest_census::sources::{self as providers, AdapterContext, AdapterReport};
-use midwest_census::store::Store;
 
 use std::path::Path;
 

@@ -11,12 +11,12 @@ use super::state::{
     SchoolSets,
 };
 use super::{athletes, CoverageGap, JurisdictionCoverage};
-use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CoachRole, Sport,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
+use census_store::{Store, Table};
 use std::collections::{HashMap, HashSet};
 
 /// The merged tables one coverage pass reads, plus the event ids its performance tallies join to.

@@ -5,8 +5,8 @@ use super::map::{parse_coach, parse_school, reveal_address_for};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, IHSA_API};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{CanonicalCoach, Evidence, SchoolId, SourceRef};
+use census_store::Table;
 use std::collections::{HashMap, HashSet};
 
 // ---------------------------------------------------------------------------

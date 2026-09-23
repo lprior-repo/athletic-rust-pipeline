@@ -9,7 +9,7 @@ use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachId};
 use census_domain::UsJurisdiction;
 
 use crate::sources::{AdapterReport, CrawlError, CrawlResult};
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 
 use super::entities::row_entities;
 use super::wire::{CoachContactRow, RowEntities};

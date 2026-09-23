@@ -7,8 +7,8 @@
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, Roster, Site, TeamRef};
 use crate::sources::CrawlResult;
-use crate::store::{Store, Table};
 use census_domain::model::SchoolYear;
+use census_store::{Store, Table};
 
 /// Fetch one roster and append its school, teams and athletes.
 pub(super) async fn fetch_and_store(

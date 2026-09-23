@@ -12,7 +12,7 @@ use super::*;
 use census_domain::model::{normalize_name, Gender, GradYear};
 use census_domain::UsJurisdiction;
 
-use crate::identity::athlete_flags::key;
+use census_review::athlete_flags::key;
 
 /// A school the table can name, minted the way the store mints one.
 fn school(name: &str) -> CanonicalSchool {
@@ -131,7 +131,9 @@ fn retained_by_writer(rows: &[CanonicalAthlete]) -> Vec<String> {
 
 /// The ids of every row sharing `subject_id`'s key: the class a retained row's detail names.
 fn class_members(rows: &[CanonicalAthlete], subject_id: &str) -> Vec<String> {
-    let subject = rows.iter().find(|athlete| athlete.id.as_str() == subject_id);
+    let subject = rows
+        .iter()
+        .find(|athlete| athlete.id.as_str() == subject_id);
     subject
         .map(|subject| {
             let mut ids: Vec<String> = rows

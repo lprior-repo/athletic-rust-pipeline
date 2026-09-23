@@ -13,9 +13,19 @@ fn corpus_ids_keep_the_digest_they_were_minted_with() {
         "abbotsford",
     );
     assert_eq!(school.to_string(), "sch_b5ea31ddfcd999ba");
-    let team = CanonicalTeam::mint(&school, Sport::OutdoorTrack, Gender::Boys, SchoolYear::new(2025).unwrap());
+    let team = CanonicalTeam::mint(
+        &school,
+        Sport::OutdoorTrack,
+        Gender::Boys,
+        SchoolYear::new(2025).unwrap(),
+    );
     assert_eq!(team.to_string(), "team_6a4d256c6bc97232");
-    let xc = CanonicalTeam::mint(&school, Sport::CrossCountry, Gender::Girls, SchoolYear::new(2026).unwrap());
+    let xc = CanonicalTeam::mint(
+        &school,
+        Sport::CrossCountry,
+        Gender::Girls,
+        SchoolYear::new(2026).unwrap(),
+    );
     assert_eq!(xc.to_string(), "team_86312fb5a8522a0f");
     let coach = CanonicalCoach::new(
         &school,
@@ -40,7 +50,13 @@ fn corpus_ids_keep_the_digest_they_were_minted_with() {
         None,
     );
     assert_eq!(meet.to_string(), "meet_f661f872d6f53598");
-    let hundred = CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, Some("D2"), Some("final"));
+    let hundred = CanonicalEvent::new(
+        &meet,
+        EventKind::Track100m,
+        Gender::Boys,
+        Some("D2"),
+        Some("final"),
+    );
     assert_eq!(hundred.id.to_string(), "evt_d1abc1f15ea80cc9");
     let unmapped = CanonicalEvent::new(
         &meet,
@@ -52,7 +68,12 @@ fn corpus_ids_keep_the_digest_they_were_minted_with() {
         None,
     );
     assert_eq!(unmapped.id.to_string(), "evt_98381b783e2a0302");
-    let athlete = CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear::new(2027).unwrap(), Gender::Boys);
+    let athlete = CanonicalAthlete::mint(
+        &school,
+        "Julian Aguilera",
+        GradYear::new(2027).unwrap(),
+        Gender::Boys,
+    );
     assert_eq!(athlete.to_string(), "ath_77445d74c6dd8dbb");
     let performance = CanonicalPerformance::mint(
         &athlete,
@@ -67,21 +88,49 @@ fn corpus_ids_keep_the_digest_they_were_minted_with() {
 /// Every [`EventKind`], so the spelling test below cannot silently skip one.
 fn every_event_kind() -> Vec<EventKind> {
     let kinds = vec![
-        EventKind::Track100m, EventKind::Track200m, EventKind::Track400m, EventKind::Track800m,
-        EventKind::Track1600m, EventKind::Track3200m, EventKind::Track1Mile, EventKind::Track3000m,
-        EventKind::Track5000m, EventKind::Track110mHurdles, EventKind::Track100mHurdles,
-        EventKind::Track300mHurdles, EventKind::Track400mHurdles,
-        EventKind::Track2000mSteeplechase, EventKind::Track3000mSteeplechase, EventKind::CrossCountry,
-        EventKind::Relay4x100, EventKind::Relay4x200, EventKind::Relay4x400, EventKind::Relay4x800,
-        EventKind::SprintMedley, EventKind::DistanceMedley, EventKind::HighJump, EventKind::LongJump,
-        EventKind::TripleJump, EventKind::PoleVault, EventKind::ShotPut, EventKind::Discus,
-        EventKind::Javelin, EventKind::Hammer, EventKind::WeightThrow, EventKind::Pentathlon,
-        EventKind::Heptathlon, EventKind::Decathlon,
+        EventKind::Track100m,
+        EventKind::Track200m,
+        EventKind::Track400m,
+        EventKind::Track800m,
+        EventKind::Track1600m,
+        EventKind::Track3200m,
+        EventKind::Track1Mile,
+        EventKind::Track3000m,
+        EventKind::Track5000m,
+        EventKind::Track110mHurdles,
+        EventKind::Track100mHurdles,
+        EventKind::Track300mHurdles,
+        EventKind::Track400mHurdles,
+        EventKind::Track2000mSteeplechase,
+        EventKind::Track3000mSteeplechase,
+        EventKind::CrossCountry,
+        EventKind::Relay4x100,
+        EventKind::Relay4x200,
+        EventKind::Relay4x400,
+        EventKind::Relay4x800,
+        EventKind::SprintMedley,
+        EventKind::DistanceMedley,
+        EventKind::HighJump,
+        EventKind::LongJump,
+        EventKind::TripleJump,
+        EventKind::PoleVault,
+        EventKind::ShotPut,
+        EventKind::Discus,
+        EventKind::Javelin,
+        EventKind::Hammer,
+        EventKind::WeightThrow,
+        EventKind::Pentathlon,
+        EventKind::Heptathlon,
+        EventKind::Decathlon,
         EventKind::Unmapped {
             label: "Sprint Medley Relay".to_string(),
         },
     ];
-    assert_eq!(kinds.len(), 35, "extend this list when EventKind gains a variant");
+    assert_eq!(
+        kinds.len(),
+        35,
+        "extend this list when EventKind gains a variant"
+    );
     kinds
 }
 
@@ -96,7 +145,11 @@ fn stable_key_spells_exactly_what_the_mint_hashed_before() {
     }
     let genders = [Gender::Boys, Gender::Girls, Gender::Mixed, Gender::Unknown];
     for gender in genders {
-        assert_eq!(gender.stable_key(), format!("{gender:?}"), "gender spelling");
+        assert_eq!(
+            gender.stable_key(),
+            format!("{gender:?}"),
+            "gender spelling"
+        );
     }
     let roles = [
         CoachRole::HeadCoach,
@@ -105,10 +158,18 @@ fn stable_key_spells_exactly_what_the_mint_hashed_before() {
         CoachRole::Unknown,
     ];
     for role in roles {
-        assert_eq!(role.stable_key(), format!("{role:?}"), "coach role spelling");
+        assert_eq!(
+            role.stable_key(),
+            format!("{role:?}"),
+            "coach role spelling"
+        );
     }
     for kind in every_event_kind() {
-        assert_eq!(kind.stable_key(), format!("{kind:?}"), "event kind spelling");
+        assert_eq!(
+            kind.stable_key(),
+            format!("{kind:?}"),
+            "event kind spelling"
+        );
     }
     // A label that needs escaping: the mint hashed the escaped literal, and so must the key.
     let escaped = EventKind::Unmapped {
@@ -125,7 +186,12 @@ fn display_impls_render_their_value() {
         "abbotsford",
     );
     assert_eq!(school.to_string(), "sch_b5ea31ddfcd999ba");
-    let kid = CanonicalAthlete::mint(&school, "Julian Aguilera", GradYear::new(2027).unwrap(), Gender::Boys);
+    let kid = CanonicalAthlete::mint(
+        &school,
+        "Julian Aguilera",
+        GradYear::new(2027).unwrap(),
+        Gender::Boys,
+    );
     assert_eq!(kid.to_string(), "ath_77445d74c6dd8dbb");
     assert_eq!(kid.to_string(), kid.as_str(), "Display is the id itself");
     assert_eq!(Grade::new(9).unwrap().to_string(), "9");
@@ -157,10 +223,22 @@ fn grad_year_get_reads_the_cohort_it_was_built_from() {
 
 #[test]
 fn school_year_flips_at_august_first() {
-    assert_eq!(SchoolYear::containing(2025, 1), Some(SchoolYear::new(2024).unwrap()));
-    assert_eq!(SchoolYear::containing(2025, 7), Some(SchoolYear::new(2024).unwrap()));
-    assert_eq!(SchoolYear::containing(2025, 8), Some(SchoolYear::new(2025).unwrap()));
-    assert_eq!(SchoolYear::containing(2025, 12), Some(SchoolYear::new(2025).unwrap()));
+    assert_eq!(
+        SchoolYear::containing(2025, 1),
+        Some(SchoolYear::new(2024).unwrap())
+    );
+    assert_eq!(
+        SchoolYear::containing(2025, 7),
+        Some(SchoolYear::new(2024).unwrap())
+    );
+    assert_eq!(
+        SchoolYear::containing(2025, 8),
+        Some(SchoolYear::new(2025).unwrap())
+    );
+    assert_eq!(
+        SchoolYear::containing(2025, 12),
+        Some(SchoolYear::new(2025).unwrap())
+    );
     // A date that steps back past the earliest season a source publishes is not a season.
     assert_eq!(SchoolYear::containing(SchoolYear::MIN_START_YEAR, 1), None);
 }
@@ -517,7 +595,8 @@ fn an_unplaced_meet_keeps_the_legacy_unknown_state_id() {
 #[test]
 fn a_legacy_unresolved_meet_state_decodes_to_none() {
     use serde::de::value::{Error, StrDeserializer};
-    let decode = |raw: &str| super::meet::deserialize_meet_state(StrDeserializer::<Error>::new(raw));
+    let decode =
+        |raw: &str| super::meet::deserialize_meet_state(StrDeserializer::<Error>::new(raw));
     assert_eq!(decode(MEET_STATE_UNRESOLVED), Ok(None));
     assert_eq!(decode("WI"), Ok(Some(UsJurisdiction::Wisconsin)));
     assert_eq!(decode("wi"), Ok(Some(UsJurisdiction::Wisconsin)));

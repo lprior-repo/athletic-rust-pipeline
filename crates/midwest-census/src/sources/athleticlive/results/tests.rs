@@ -16,12 +16,12 @@ use crate::sources::athleticlive::map::SOURCE_ID;
 use crate::sources::athleticlive::wire::{event_doc_url, event_summary_url};
 use crate::sources::athleticlive_athletes::{school_year_for_date, MeetTarget};
 use crate::sources::{AdapterContext, AdapterReport};
-use crate::store::{Store, Table};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, EventKind, GradYear, Grade, Mark, SchoolYear, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 
 const XC_STATE: &str =
     include_str!("../../../../tests/fixtures/athleticlive_results/event-doc-2150205.json");
@@ -344,7 +344,10 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
     assert_eq!(athletes.len(), 136);
     // The meet is a fall one, so the school year is 2025-26: a senior is the class of 2026.
     assert_eq!(
-        school_year_for_date(&meets[0].date, SchoolYear::new(2026).expect("2026 is a season")),
+        school_year_for_date(
+            &meets[0].date,
+            SchoolYear::new(2026).expect("2026 is a season")
+        ),
         SchoolYear::containing(2025, 10).expect("2025-10 is a season")
     );
     assert!(athletes

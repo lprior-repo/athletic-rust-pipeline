@@ -8,8 +8,8 @@ use tracing::warn;
 
 use crate::net::{FetchError, Fetcher};
 use crate::sources::CrawlError;
-use crate::store::{Store, Table};
 use census_domain::model::SourceAccessCondition;
+use census_store::{Store, Table};
 
 /// Whether one failure is a hard access block: 403 (refused outright) or 429 (told to back off).
 ///

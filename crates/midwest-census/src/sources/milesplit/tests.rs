@@ -178,7 +178,10 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() {
     assert_eq!(page.meet.end_date.as_deref(), Some("2026-09-19"));
     assert_eq!(page.sport, Some(Sport::CrossCountry));
     assert_eq!(page.region.as_deref(), Some("OH"));
-    assert_eq!(page.school_year, SchoolYear::new(2026).expect("2026 is a season"));
+    assert_eq!(
+        page.school_year,
+        SchoolYear::new(2026).expect("2026 is a season")
+    );
     assert_eq!(page.meet.events.len(), 2);
     let boys = &page.meet.events[0];
     assert_eq!(boys.label, "Boys Middle School 3000 Meter");
@@ -280,7 +283,10 @@ fn a_high_school_grade_is_carried_as_dated_evidence() {
         .expect("the first section's winner");
     let observation = athlete.observed_grades.first().expect("grade evidence");
     assert_eq!(observation.grade.get(), 10);
-    assert_eq!(observation.school_year, SchoolYear::new(2026).expect("2026 is a season"));
+    assert_eq!(
+        observation.school_year,
+        SchoolYear::new(2026).expect("2026 is a season")
+    );
     assert_eq!(observation.source.id, "milesplit_oh");
     assert_eq!(observation.source.url.as_deref(), Some(OH_RAW_URL));
     // Grade 10 in 2026-27 graduates in 2029: the projection of the two evidence fields, not a year

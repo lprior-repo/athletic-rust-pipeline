@@ -24,8 +24,8 @@ use census_domain::model::{
     Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, StoreError, StoreStats, Table};
 use midwest_census::report::{self, Census, Scope};
-use midwest_census::store::{Store, StoreError, StoreStats, Table};
 use midwest_census::{bests, census};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
@@ -1000,7 +1000,9 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
         let store = Store::open(&live).expect("opening the live store");
         // Opening is a read; the one-time migration is the caller's decision, so the drill makes it
         // and then asserts what it imported.
-        let imported = store.import_legacy().expect("importing the legacy journals");
+        let imported = store
+            .import_legacy()
+            .expect("importing the legacy journals");
         assert_eq!(
             imported.observations, 2,
             "two school observations are imported"

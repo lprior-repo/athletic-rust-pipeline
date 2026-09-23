@@ -6,7 +6,7 @@
 //!
 //! Deleted once the before/after numbers are recorded; nothing else imports it.
 
-use midwest_census::store::{StorageMode, Store, Table};
+use census_store::{StorageMode, Store, Table};
 use std::collections::HashMap;
 
 #[test]

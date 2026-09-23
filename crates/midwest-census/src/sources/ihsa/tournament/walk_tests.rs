@@ -22,12 +22,12 @@
 use super::collect;
 use crate::sources::ihsa::Options;
 use crate::sources::{AdapterContext, AdapterReport};
-use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, Grade, Mark,
     SchoolYear, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 
 const FIXTURE_MEETS: &str =
     include_str!("../../../../tests/fixtures/ihsa_tournament/track_field_meets.json");
@@ -142,7 +142,7 @@ impl Harness {
             .expect("the walk returns a report")
     }
 
-    fn scan<T: crate::store::Entity>(&self, table: Table) -> Vec<T> {
+    fn scan<T: census_store::Entity>(&self, table: Table) -> Vec<T> {
         self.store.scan(table).expect("scan")
     }
 }

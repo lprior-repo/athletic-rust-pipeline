@@ -168,9 +168,10 @@ fn artifact_adapters_declare_no_fetchable_host() {
 }
 
 /// The derived acquisition class a plan records in its journal: the two artifact adapters cost a
-/// plan no request, and every other registered adapter is an open fetch — the table registers no
-/// browser-rendered surface today, and one would appear here as its own class rather than as a
-/// silent `Open`.
+/// plan no request, a browser-transported source renders only under a session, and every other
+/// registered adapter is an open fetch. The expectation is read from each descriptor's own transport
+/// rather than assumed, so a source that moves onto the browser lane appears as its own class instead
+/// of a silent `Open` — and the `browser_session` a durable plan now carries stays reachable.
 #[test]
 fn access_class_separates_artifact_reads_from_host_fetches() {
     for slug in ["athleticlive", "coach_contacts"] {
@@ -189,13 +190,24 @@ fn access_class_separates_artifact_reads_from_host_fetches() {
         descriptors().count() - 2,
         "only the two artifact adapters may skip the fetch route: {fetched:?}"
     );
+    let mut classes: Vec<AccessClass> = Vec::new();
     for slug in fetched {
+        let entry = descriptor(slug).expect("a fetched slug names a descriptor");
+        let expected = match entry.transport {
+            TransportKind::Browser => AccessClass::BrowserSession,
+            _ => AccessClass::Open,
+        };
         assert_eq!(
-            descriptor(slug).map(|entry| entry.access_class()),
-            Some(AccessClass::Open),
-            "{slug} is neither an artifact read nor a browser session"
+            entry.access_class(),
+            expected,
+            "{slug} is classed by its own transport"
         );
+        classes.push(expected);
     }
+    assert!(
+        classes.contains(&AccessClass::BrowserSession),
+        "a plan field no source can reach is a class nobody records: {classes:?}"
+    );
 }
 
 /// The class names are what a durable plan field carries, so they are part of the contract rather

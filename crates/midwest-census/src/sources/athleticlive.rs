@@ -121,7 +121,7 @@ fn write_meets(
             skipped_corrupt = skipped_corrupt.saturating_add(1);
             continue;
         }
-        ctx.store.append(crate::store::Table::Meets, &meet)?;
+        ctx.store.append(census_store::Table::Meets, &meet)?;
         ctx.store.journal_done(
             "athleticlive_meets",
             meet.id.as_str(),

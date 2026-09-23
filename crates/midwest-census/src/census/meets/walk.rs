@@ -7,9 +7,9 @@
 use crate::net::{FetchOptions, Fetcher};
 use crate::sources::milesplit::{self, MeetRef, Season, Site};
 use crate::sources::CrawlResult;
-use crate::store::Store;
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use std::collections::{BTreeMap, HashSet};
 use tracing::warn;
 

@@ -1,10 +1,12 @@
-//! The jurisdiction object's durable-state plumbing and its three stage runners.
+//! The jurisdiction object's durable-state plumbing and its stage runners.
 //!
 //! [`JurisdictionCensus`]'s endpoint surface lives in `jurisdiction.rs`; what lives here is what the
-//! endpoints drive: load and save of the object's single durable state value, the shared fetcher, and
-//! one runner per stage. Each runner wraps its [`jobs`] body in a durable `run` and keeps the retry
-//! policy at `no_run_retry`: ADR-002 makes Restate the owner of retries, and the one it owns is the
-//! invocation retry declared on the handler. A retrying `run` would be a second, in-process budget.
+//! endpoints drive: load and save of the object's single durable state value, the shared fetcher, the
+//! source plan, and one runner per stage. A stage has two halves — the `*_stage` method that wraps
+//! its [`jobs`] body in a durable `run`, and the `*_owed` method the endpoint's sequence calls,
+//! which records the outcome in the state value. Both stay at the `no_run_retry` policy: ADR-002
+//! makes Restate the owner of retries, and the one it owns is the invocation retry declared on the
+//! handler. A retrying `run` would be a second, in-process budget.
 //!
 //! The methods are `pub(super)` because the endpoint surface in `jurisdiction.rs` is the parent
 //! module; the struct's fields stay private to [`super`], which this child module may reach.
@@ -16,12 +18,15 @@ use restate_sdk::prelude::*;
 
 use census_domain::UsJurisdiction;
 
-use crate::census::{CollectOptions, MeetCensus, StateProgress};
+use crate::census::{CollectOptions, MeetCensus, StateProgress, WorkflowIdentity};
 use crate::net::Fetcher;
 use crate::sources::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
-use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, StageOutcome};
+use crate::restate_services::plan::{plan as planned, BrowserLaneState};
+use crate::restate_services::wire::{
+    JurisdictionRequest, JurisdictionState, SourcePlan, StageOutcome,
+};
 use crate::restate_services::{jobs, KEY_STATE};
 
 /// Delay between requests to one host when a workflow drives the walk. The CLI's default is the same
@@ -171,5 +176,91 @@ impl JurisdictionCensus {
             .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(census)
+    }
+
+    /// Record the run's source plan, once per state.
+    ///
+    /// Before any adapter runs: this jurisdiction's sources, split into the units this machine can
+    /// sweep and the ones it refuses. Built once and kept, so a re-invocation resumes the plan it
+    /// started with instead of deriving a second one from a machine that may have changed since.
+    pub(super) async fn record_plan(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        identity: &WorkflowIdentity,
+        state: &mut JurisdictionState,
+        today: &str,
+    ) -> Result<(), HandlerError> {
+        if state.plan.is_some() {
+            return Ok(());
+        }
+        let fetcher = self.fetcher().await?;
+        let lane = BrowserLaneState::of(&fetcher);
+        state.plan = Some(SourcePlan::of(&planned(request.jurisdiction, lane)));
+        state.identity = identity.as_str().to_string();
+        self.save(ctx, state, today);
+        Ok(())
+    }
+
+    /// Run the team-index stage and record its outcome.
+    pub(super) async fn teams_owed(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        identity: &WorkflowIdentity,
+        state: &mut JurisdictionState,
+        today: &str,
+    ) -> Result<(), HandlerError> {
+        let fetcher = self.fetcher().await?;
+        let outcome = self
+            .teams_stage(ctx, fetcher, request.jurisdiction, request.refresh)
+            .await?;
+        state.teams = Some(outcome);
+        state.identity = identity.as_str().to_string();
+        self.save(ctx, state, today);
+        Ok(())
+    }
+
+    /// Walk the jurisdiction's rosters and record the walk's outcome.
+    pub(super) async fn rosters_owed(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        options: CollectOptions,
+        state: &mut JurisdictionState,
+        today: &str,
+    ) -> Result<(), HandlerError> {
+        let fetcher = self.fetcher().await?;
+        let progress = self
+            .rosters_stage(ctx, fetcher, options, request.jurisdiction)
+            .await?;
+        state.rosters = Some(progress);
+        self.save(ctx, state, today);
+        Ok(())
+    }
+
+    /// Enumerate the season's published meets and record the census.
+    pub(super) async fn meets_owed(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        state: &mut JurisdictionState,
+        today: &str,
+    ) -> Result<(), HandlerError> {
+        // The season year reaches the results index as a query parameter, so a year the URL cannot
+        // carry is a request fault rather than a source condition.
+        let year = u16::try_from(request.season.get()).map_err(|_| {
+            TerminalError::new(format!(
+                "season year {} is not a results-index year",
+                request.season.get()
+            ))
+        })?;
+        let fetcher = self.fetcher().await?;
+        let census = self
+            .meets_stage(ctx, fetcher, request.jurisdiction, year, request.refresh)
+            .await?;
+        state.meets = Some(census);
+        self.save(ctx, state, today);
+        Ok(())
     }
 }

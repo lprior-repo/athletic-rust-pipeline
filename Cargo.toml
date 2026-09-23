@@ -12,6 +12,8 @@ workspace = true
 members = [
     "crates/athleticnet-browser",
     "crates/census-domain",
+    "crates/census-review",
+    "crates/census-store",
     "crates/midwest-census",
     "crates/g1-audit",
     "xtask",
@@ -38,7 +40,6 @@ tokio-console = ["dep:console-subscriber", "tokio/tracing"]
 [dependencies]
 anyhow = "1"
 athleticnet-browser = { path = "crates/athleticnet-browser" }
-base64 = "0.22"
 clap = { version = "4.5", features = ["derive"] }
 fjall = "=3.1.10"
 futures = "0.3"

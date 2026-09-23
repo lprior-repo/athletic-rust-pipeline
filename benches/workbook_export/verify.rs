@@ -16,7 +16,11 @@ pub(super) fn export_once(
 }
 
 /// The export must report exactly the manifest's rows, sheets, and source digest.
-pub(super) fn verify_stats(stats: &ExportStats, manifest: &SourceManifest, rows: usize) -> Result<()> {
+pub(super) fn verify_stats(
+    stats: &ExportStats,
+    manifest: &SourceManifest,
+    rows: usize,
+) -> Result<()> {
     let rows = u64::try_from(rows).context("row count conversion overflow")?;
     ensure!(
         stats.aggregate_rows == rows,

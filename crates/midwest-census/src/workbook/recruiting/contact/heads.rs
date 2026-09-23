@@ -46,10 +46,16 @@ impl Sides {
     /// The row the athlete reaches first: their own side, then a side-less row, then an unplaced
     /// one, then boys, then girls.
     fn resolve(&self, side: Gender) -> Option<&Side> {
-        [side, Gender::Mixed, Gender::Unknown, Gender::Boys, Gender::Girls]
-            .into_iter()
-            .map(|candidate| self.side(candidate))
-            .find(|bucket| bucket.row.is_some())
+        [
+            side,
+            Gender::Mixed,
+            Gender::Unknown,
+            Gender::Boys,
+            Gender::Girls,
+        ]
+        .into_iter()
+        .map(|candidate| self.side(candidate))
+        .find(|bucket| bucket.row.is_some())
     }
 
     fn side(&self, side: Gender) -> &Side {
@@ -172,10 +178,7 @@ pub(super) fn undecided<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> b
 /// The evidence the precedence order compares: whether the row published an address at all, then the
 /// newest observation that dates it.
 fn evidence_key(coach: &CanonicalCoach) -> (bool, &str) {
-    (
-        coach.professional_email.is_some(),
-        observed_on(coach),
-    )
+    (coach.professional_email.is_some(), observed_on(coach))
 }
 
 /// The newest `Evidence.observed_on` one row carries, blank when it carries no evidence.

@@ -28,7 +28,7 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
 use crate::census::{admitted_scope, Revision, WorkflowIdentity};
-use crate::clock::Clock;
+use census_store::clock::Clock;
 
 use super::jobs;
 use super::jurisdiction::JurisdictionCensusClient;

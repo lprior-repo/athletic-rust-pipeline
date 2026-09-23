@@ -6,7 +6,7 @@ use std::path::Path;
 use anyhow::{Context, Result};
 
 use super::ns_key::ns_key;
-use midwest_census::store::read::read_rows;
+use census_store::read::read_rows;
 
 /// Data extracted from the athlete and meet JSONL snapshots.
 pub(crate) struct Seeds {

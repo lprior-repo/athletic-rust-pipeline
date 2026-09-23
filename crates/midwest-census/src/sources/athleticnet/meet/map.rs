@@ -46,23 +46,7 @@ pub(in crate::sources::athleticnet) fn absorb_meet(
     accumulated: &mut Accumulator,
 ) -> (u64, MeetStats) {
     let mut counts = MeetStats::default();
-    let Some(state) = meet_state(meet) else {
-        counts.meets_unplaced = counts.meets_unplaced.saturating_add(1);
-        return (0, counts);
-    };
-    let Some(date) = meet_date(&meet.meet.date) else {
-        counts.meets_without_date = counts.meets_without_date.saturating_add(1);
-        return (0, counts);
-    };
-    let date = date.to_string();
-    let Some(season) = meet.meet.season_id.or_else(|| season_of(&date)) else {
-        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
-        return (0, counts);
-    };
-    // A published season the domain will not place is refused exactly as an absent one: the meet's
-    // rows are not filed under a year no source published.
-    let Some(school_year) = SchoolYear::containing(season, 5) else {
-        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
+    let Some(place) = place_meet(meet, &mut counts) else {
         return (0, counts);
     };
     let sport = sport_of(meet.sport2.as_deref());
@@ -72,7 +56,15 @@ pub(in crate::sources::athleticnet) fn absorb_meet(
         .map(|division| (division.id, division.name.as_str()))
         .collect();
     let legs = legs_by_result(&results.legs);
-    let row = meet_row(meet, state, &date, sport, source, observed_on, accumulated);
+    let row = meet_row(
+        meet,
+        place.state,
+        &place.date,
+        sport,
+        source,
+        observed_on,
+        accumulated,
+    );
     let mut ctx = MeetCtx {
         source,
         observed_on,
@@ -82,16 +74,12 @@ pub(in crate::sources::athleticnet) fn absorb_meet(
         accumulated,
         counts: &mut counts,
         metadata,
-        state,
+        state: place.state,
         sport,
-        school_year,
-        date,
+        school_year: place.school_year,
+        date: place.date,
         meet: row,
-        school_names: results
-            .teams
-            .iter()
-            .map(|team| (team.school_id.to_string(), team.school_name.as_str()))
-            .collect(),
+        school_names: school_names(results),
     };
     ctx.walk(results, &legs, &divisions);
     counts.meets_pulled = counts.meets_pulled.saturating_add(1);
@@ -112,6 +100,54 @@ fn meet_state(meet: &MeetData) -> Option<UsJurisdiction> {
 /// The season year a published meet date carries, used when the payload publishes no `SeasonID`.
 fn season_of(date: &str) -> Option<i16> {
     date.split('-').next()?.trim().parse::<i16>().ok()
+}
+
+/// The meet's own coordinates: the jurisdiction it happened in, the day it was held, and the school
+/// year its season falls in.
+struct Placement {
+    state: UsJurisdiction,
+    date: String,
+    school_year: SchoolYear,
+}
+
+/// Place the meet in a jurisdiction, a date and a school year, counting the refusal when it cannot.
+///
+/// Every refusal is the same shape — count it under its own reason, then drop the meet whole — so a
+/// meet the payload does not place is counted once, against the first fact the payload is missing.
+fn place_meet(meet: &MeetData, counts: &mut MeetStats) -> Option<Placement> {
+    let Some(state) = meet_state(meet) else {
+        counts.meets_unplaced = counts.meets_unplaced.saturating_add(1);
+        return None;
+    };
+    let Some(date) = meet_date(&meet.meet.date) else {
+        counts.meets_without_date = counts.meets_without_date.saturating_add(1);
+        return None;
+    };
+    let date = date.to_string();
+    let Some(season) = meet.meet.season_id.or_else(|| season_of(&date)) else {
+        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
+        return None;
+    };
+    // A published season the domain will not place is refused exactly as an absent one: the meet's
+    // rows are not filed under a year no source published.
+    let Some(school_year) = SchoolYear::containing(season, 5) else {
+        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
+        return None;
+    };
+    Some(Placement {
+        state,
+        date,
+        school_year,
+    })
+}
+
+/// The names a meet's rows resolve schools against, by the id a row carries as `TeamID`.
+fn school_names(results: &AllResults) -> HashMap<String, &str> {
+    results
+        .teams
+        .iter()
+        .map(|team| (team.school_id.to_string(), team.school_name.as_str()))
+        .collect()
 }
 
 /// One meet's walk: the meet it resolved, the names its rows resolve schools against, and where its

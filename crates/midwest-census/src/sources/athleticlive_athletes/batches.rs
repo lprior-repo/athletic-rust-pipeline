@@ -6,7 +6,7 @@ use super::parse::AthleteHit;
 use super::targets::MeetTarget;
 use super::{batch_query, BatchStats, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
+use census_store::Table;
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 

@@ -12,7 +12,7 @@ use restate_sdk::http_server::HttpServer;
 use crate::outcome::{DrainState, Outcome};
 use crate::restate_services;
 use crate::spawn::Spawner;
-use crate::store::Store;
+use census_store::Store;
 
 use super::drain::{count_error, DrainReport};
 use super::error::BootstrapError;

@@ -1,6 +1,6 @@
 //! The synthetic corpus: source workbook, manifest and rows, built once per run.
+use super::verify::{export_once, verify_export_workbook, verify_source_workbook, verify_stats};
 use super::*;
-use super::verify::{export_once, verify_stats, verify_export_workbook, verify_source_workbook};
 
 /// The synthetic corpus, its verified source workbook, and the manifest the export is built from.
 pub(super) struct Dataset {

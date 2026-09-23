@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
-use crate::clock::Clock;
 use crate::spawn::Spawner;
-use crate::store::Store;
+use census_store::clock::Clock;
+use census_store::Store;
 
 use super::jobs::append_observations;
 use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};

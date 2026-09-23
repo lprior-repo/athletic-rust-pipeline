@@ -32,7 +32,7 @@ use census_domain::model::{
     Sport,
 };
 use census_domain::UsJurisdiction;
-use midwest_census::store::Entity;
+use census_store::Entity;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 

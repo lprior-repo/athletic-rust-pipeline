@@ -24,13 +24,18 @@ use anyhow::Result;
 use regex::Regex;
 
 /// The handler-attribute form: `max_attempts = 3`, with the raw-identifier spelling allowed.
-const ATTRIBUTE: &str = r"(?:r#)?max_attempts\s*=\s*([0-9][0-9A-Za-z_]*)";
+///
+/// The leading `\b` is load-bearing: the grammar must not read the tail of a longer option name. The
+/// retry policy carries one of those — `on_max_attempts = "pause"`, the action taken at the ceiling —
+/// and a net that matched its last eleven characters would demand an integer where the SDK's grammar
+/// states an action. The word boundary leaves `on_max_attempts` to its own name.
+const ATTRIBUTE: &str = r"\b(?:r#)?max_attempts\s*=\s*([0-9][0-9A-Za-z_]*)";
 
 /// The inner-policy form: `.max_attempts(1)`.
 const BUILDER: &str = r"\.(?:r#)?max_attempts\s*\(\s*([0-9][0-9A-Za-z_]*)\s*\)";
 
 /// Every mention of the option name, whatever follows it: the coverage net.
-const MENTION: &str = r"(?:r#)?max_attempts";
+const MENTION: &str = r"\b(?:r#)?max_attempts";
 
 /// The numeric suffixes Rust accepts on an integer literal.
 const SUFFIXES: [&str; 12] = [
@@ -38,13 +43,14 @@ const SUFFIXES: [&str; 12] = [
 ];
 
 /// One `max_attempts` site: where it is (`<package>:<path>:<line>`) and what it declares.
+#[derive(Debug)]
 pub(crate) struct Site {
     pub(crate) at: String,
     pub(crate) attempts: u64,
 }
 
 /// Every site the tree declares, split by class.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(crate) struct Sites {
     /// Handler-attribute sites.
     pub(crate) attribute: Vec<Site>,
@@ -195,7 +201,7 @@ impl Grammars {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_attempts, violations, Site, Sites};
+    use super::{parse_attempts, violations, Grammars, Site, Sites};
 
     /// One attribute site and one builder site, at the given values.
     fn sites(attribute: u64, builder: u64) -> Sites {
@@ -250,6 +256,24 @@ mod tests {
             over.first()
                 .is_some_and(|line| line.contains("RunRetryPolicy")),
             "the inner policy is a class of its own: {over:?}"
+        );
+    }
+
+    /// The ceiling action is an option with a name of its own: `on_max_attempts` is neither a mention
+    /// nor a site, so in a spread definition attribute only the `max_attempts = 3` line is counted.
+    #[test]
+    fn the_ceiling_action_option_is_not_an_attempt_site() {
+        let grammars = Grammars::compile().expect("the grammars compile");
+        let action = "        on_max_attempts = \"pause\",";
+        let mut declared = Sites::default();
+        assert_eq!(grammars.claim("pkg:src/a.rs:1", action, &mut declared), 0);
+        assert_eq!(grammars.mention.find_iter(action).count(), 0);
+        let attempts = "        max_attempts = 3,";
+        assert_eq!(grammars.claim("pkg:src/a.rs:2", attempts, &mut declared), 1);
+        assert_eq!(declared.attribute.len(), 1);
+        assert!(
+            declared.builder.is_empty() && declared.unclaimed.is_empty(),
+            "the attempt line is claimed as an attribute site and nothing else: {declared:?}"
         );
     }
 

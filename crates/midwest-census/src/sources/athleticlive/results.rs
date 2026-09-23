@@ -13,7 +13,7 @@
 use super::map::{DocumentEntities, ResultStats, SOURCE_ID};
 use crate::sources::athleticlive_athletes::MeetTarget;
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
+use census_store::Table;
 
 mod absorb;
 mod manifest;

@@ -12,8 +12,8 @@ use super::parse::email_regex;
 use super::{ND_COACHES_PHASE, ND_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{CanonicalSchool, SchoolId};
+use census_store::Table;
 
 /// One parsed NDHSAA school page: its heading and the row sets the entity builders read.
 struct NdPage {

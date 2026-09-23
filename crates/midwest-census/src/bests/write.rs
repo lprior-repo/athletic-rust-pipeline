@@ -1,8 +1,8 @@
 //! The sidecars beside the workbook: one JSONL row per best mark, and its CSV twin.
 
 use super::BestResult;
-use crate::store::read::csv_failure;
-use crate::store::{Store, StoreError, StoreResult};
+use census_store::read::csv_failure;
+use census_store::{Store, StoreError, StoreResult};
 use std::path::{Path, PathBuf};
 
 /// The CSV header, one column per field [`BestResult`] serializes.
@@ -36,7 +36,7 @@ pub fn write(store: &Store, rows: &[BestResult], cohort: &str) -> StoreResult<(P
     })?;
     let jsonl = out.join(format!("best-results-{cohort}.jsonl"));
     let csv_path = out.join(format!("best-results-{cohort}.csv"));
-    crate::store::read::write_snapshot_rows(&jsonl, rows)?;
+    census_store::read::write_snapshot_rows(&jsonl, rows)?;
     write_csv(&csv_path, rows)?;
     Ok((jsonl, csv_path))
 }
@@ -47,7 +47,7 @@ pub fn write(store: &Store, rows: &[BestResult], cohort: &str) -> StoreResult<(P
 /// only once its bytes are on the disk — because the pair is one artifact: a reader that finds the CSV
 /// shorter than the JSONL beside it has no way to tell a torn write from a real reduction.
 fn write_csv(path: &Path, rows: &[BestResult]) -> StoreResult<()> {
-    crate::store::read::publish_atomically(path, |temporary| write_csv_body(temporary, path, rows))
+    census_store::read::publish_atomically(path, |temporary| write_csv_body(temporary, path, rows))
 }
 
 /// Encode the CSV twin into `temporary`, the file the publication renames to `published`.

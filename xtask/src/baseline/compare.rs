@@ -6,7 +6,7 @@
 //! says whether it is a budget or a description of the tree.
 
 use anyhow::{Context, Result};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::collections::BTreeMap;
 
 use super::measure::{direction, file_entries, strings, union_keys, FileEntry};
@@ -133,21 +133,27 @@ pub(super) fn raises(
     scan: &Value,
     old: &Value,
 ) -> Result<Vec<String>> {
-    let empty = Map::new();
     let mut raised: Vec<String> = Vec::new();
+    raised_clippy(clippy, old, &mut raised);
+    raised_scan(scan, old, &mut raised)?;
+    raised_structure(scan, old, &mut raised)?;
+    Ok(raised)
+}
 
-    let old_clippy = old
-        .get("clippy")
-        .and_then(Value::as_object)
-        .unwrap_or(&empty);
+/// The clippy tallies the refusal would report, appended to `raised` in key order.
+fn raised_clippy(clippy: &BTreeMap<String, u64>, old: &Value, raised: &mut Vec<String>) {
+    let known = old.get("clippy").and_then(Value::as_object);
     for (key, value) in clippy {
-        let before = number(old_clippy.get(key));
+        let before = number(known.and_then(|known| known.get(key)));
         if *value > before {
             raised.push(format!("clippy {key}: {before} -> {value}"));
         }
     }
+}
 
-    let old_scan = old.get("scan").and_then(Value::as_object).unwrap_or(&empty);
+/// The per-crate scan metrics the refusal would report, appended to `raised` in report order.
+fn raised_scan(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()> {
+    let known = old.get("scan").and_then(Value::as_object);
     let scan_crates = scan
         .get("crates")
         .and_then(Value::as_object)
@@ -156,7 +162,9 @@ pub(super) fn raises(
         let Some(counts) = counts.as_object() else {
             continue;
         };
-        let before_crate = old_scan.get(name).and_then(Value::as_object);
+        let before_crate = known
+            .and_then(|known| known.get(name))
+            .and_then(Value::as_object);
         for (metric, value) in counts {
             let Some(value) = value.as_u64() else {
                 continue;
@@ -170,7 +178,11 @@ pub(super) fn raises(
             }
         }
     }
+    Ok(())
+}
 
+/// The structure budgets and the oversized-file ledger behind them, appended to `raised`.
+fn raised_structure(scan: &Value, old: &Value, raised: &mut Vec<String>) -> Result<()> {
     let old_structure = old.get("structure").and_then(Value::as_object);
     let structure = scan
         .get("structure")
@@ -187,7 +199,10 @@ pub(super) fn raises(
         .collect();
     for entry in file_entries(structure.get(OVERSIZED_FILES)) {
         let Some(previous) = known_files.get(entry.path.as_str()) else {
-            raised.push(format!("structure {OVERSIZED_FILES}: new {}", entry.display));
+            raised.push(format!(
+                "structure {OVERSIZED_FILES}: new {}",
+                entry.display
+            ));
             continue;
         };
         let (Some(before), Some(after)) = (previous.count, entry.count) else {
@@ -207,7 +222,7 @@ pub(super) fn raises(
             raised.push(format!("structure {metric}: {before} -> {after}"));
         }
     }
-    Ok(raised)
+    Ok(())
 }
 
 /// The oversized-file ledger: a new file is debt, a file that grew is debt, and a file that shrank

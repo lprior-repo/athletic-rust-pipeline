@@ -8,7 +8,6 @@
 
 use super::*;
 use crate::bests;
-use crate::store::{Store, Table};
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
@@ -17,6 +16,7 @@ use census_domain::model::{
     SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 
 const DAY: &str = "2026-09-20";
 
@@ -937,7 +937,10 @@ fn the_newest_evidence_resolves_two_head_coaches_of_one_sport() {
     // the slot it is about, and every row the rule had to choose from.
     let recorded = disagreements(&[older.clone(), newer]);
     let disagreement = recorded.first().expect("one bucket disagreed");
-    assert!(disagreement.decided, "the newest observation separated the rows");
+    assert!(
+        disagreement.decided,
+        "the newest observation separated the rows"
+    );
     assert_eq!(disagreement.school, school.as_str());
     assert_eq!(disagreement.role, "Head TF Coach (boys)");
     assert_eq!(

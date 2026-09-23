@@ -3,8 +3,8 @@ use athletic_rust_pipeline::{
     domain::{identity::EvidenceDigest, name::CanonicalName},
     store::{
         rankings::{
-            RankingCandidateEntry, RankingCandidateKind, RankingPageIndex, RankingRosterObservation,
-            RankingSourceRow,
+            RankingCandidateEntry, RankingCandidateKind, RankingPageIndex,
+            RankingRosterObservation, RankingSourceRow,
         },
         ArtifactStore, StoreError,
     },
@@ -203,9 +203,17 @@ fn a_republished_page_hides_the_abandoned_capture() -> Result<()> {
         ("source results", stats.source_results, 1),
         ("row positions", stats.row_positions, 1),
         ("max row position", stats.max_row_position, 1),
-        ("grade 11 individual results", stats.grade11_individual_results, 1),
+        (
+            "grade 11 individual results",
+            stats.grade11_individual_results,
+            1,
+        ),
         ("unique athletes", stats.unique_athletes, 1),
-        ("unresolved roster results", stats.unresolved_roster_results, 0),
+        (
+            "unresolved roster results",
+            stats.unresolved_roster_results,
+            0,
+        ),
     ] {
         anyhow::ensure!(
             observed == expected,

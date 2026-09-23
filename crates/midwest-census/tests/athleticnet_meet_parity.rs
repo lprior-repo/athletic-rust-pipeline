@@ -26,10 +26,10 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, SchoolYear, Sport,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use midwest_census::net::Fetcher;
 use midwest_census::sources::athleticnet::{self, meet_requests, metadata_request, Options};
 use midwest_census::sources::AdapterContext;
-use midwest_census::store::{Store, Table};
 use serde_json::json;
 
 /// Reads `tests/fixtures/<source>/<file>` without linking the golden-corpus harness: this test

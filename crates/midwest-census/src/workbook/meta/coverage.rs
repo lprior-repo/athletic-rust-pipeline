@@ -8,8 +8,8 @@
 //! reconcile with the rest of the workbook.
 
 use crate::report::{coverage_report, CoverageReport, JurisdictionCoverage, ReportResult};
-use crate::store::Store;
 use census_domain::model::GradYear;
+use census_store::Store;
 use std::collections::BTreeMap;
 
 use crate::workbook::cells::{cell, row, Cell};

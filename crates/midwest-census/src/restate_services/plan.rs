@@ -11,6 +11,7 @@
 //! must not reach the invocation retry: a source that cannot run is not a source that failed, and
 //! spending three attempts on a missing lane would report a machine's gap as a source's fault.
 
+use crate::net::Fetcher;
 use crate::sources::applicability::applicable_sources;
 use crate::sources::registry::{AccessClass, SourceDescriptor};
 use census_domain::UsJurisdiction;
@@ -25,6 +26,20 @@ pub enum BrowserLaneState {
     Configured,
     /// No lane: a browser-session source is refused, naming what is missing.
     Absent,
+}
+
+impl BrowserLaneState {
+    /// This machine's lane state, as the transport the run will fetch through reports it.
+    ///
+    /// The run asks its own fetcher instead of a setting read somewhere else, so the plan refuses a
+    /// browser-transported source exactly when the fetcher would have no lane to hand it to.
+    pub fn of(fetcher: &Fetcher) -> Self {
+        if fetcher.has_browser_lane() {
+            Self::Configured
+        } else {
+            Self::Absent
+        }
+    }
 }
 
 /// One unit the run can sweep: the adapter's slug, and how its bytes are acquired.
@@ -136,7 +151,11 @@ pub(super) fn classify_access(
     lane: BrowserLaneState,
 ) -> UnitDisposition {
     if access == AccessClass::BrowserSession && lane == BrowserLaneState::Absent {
-        return UnitDisposition::Refused(Refusal { slug, access, reason: NO_BROWSER_LANE });
+        return UnitDisposition::Refused(Refusal {
+            slug,
+            access,
+            reason: NO_BROWSER_LANE,
+        });
     }
     UnitDisposition::Sweep(PlannedUnit { slug, access })
 }

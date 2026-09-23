@@ -2,7 +2,7 @@
 //!
 //! The group measures the read half of the store: [`Store::scan`], which walks a table's
 //! observations in key order, decodes each row, folds duplicates into one entity per canonical id
-//! through [`Entity::merge`](midwest_census::store::Entity::merge), and applies the collection
+//! through [`Entity::merge`](census_store::Entity::merge), and applies the collection
 //! contract to the result through `Entity::publish`. Storage is deliberately outside the measured
 //! region: the batch is appended once, before any timing, and every iteration is a read.
 //!
@@ -16,18 +16,21 @@
 //! aliases union across three observations; the third publishes a longer name that must survive
 //! while the minted name does not move; and half the coaches first publish a consumer mailbox, which
 //! `publish` must withhold. [`Dataset::build`] folds the batch once and refuses to hand it over
-//! unless every claim holds.
+//! unless every claim holds; the row checks that refusal is built from are in `checks.rs`.
 
 use anyhow::{ensure, Context, Result};
 use census_domain::model::{
-    normalize_name, professional_email, CanonicalCoach, CanonicalSchool, CoachRole, Evidence,
-    Gender, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity,
+    SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
-use midwest_census::store::{Store, Table};
+use census_store::{Store, Table};
 use tempfile::TempDir;
 
 use super::lcg::Lcg;
+
+#[path = "checks.rs"]
+mod checks;
 
 /// Seed of the later-value stream: ASCII `MWCENSUS`.
 const SEED: u64 = 0x4D57_4345_4E53_5553;
@@ -207,65 +210,10 @@ fn verify(schools: &[CanonicalSchool], coaches: &[CanonicalCoach]) -> Result<()>
         coaches.len()
     );
     for row in schools {
-        ensure!(
-            row.enrollment == Some(FIRST_ENROLLMENT),
-            "{} kept a later enrollment",
-            row.id
-        );
-        ensure!(
-            row.city.as_deref() == Some(FIRST_CITY),
-            "{} kept a later city",
-            row.id
-        );
-        ensure!(row.co_op, "{} lost the union of a co-op flag", row.id);
-        let aliases = row.aliases.len();
-        ensure!(
-            aliases == ALIASES_PER_SCHOOL,
-            "{} carries {aliases} aliases",
-            row.id
-        );
-        ensure!(
-            row.name.ends_with(LONG_SUFFIX),
-            "{} lost the longer name",
-            row.id
-        );
-        ensure!(
-            !row.normalized_name.contains("campus"),
-            "{} rewrote the minted name",
-            row.id
-        );
-        let provenance = !row.source_identities.is_empty() && !row.evidence.is_empty();
-        ensure!(provenance, "{} lost its provenance unions", row.id);
-    }
-    let mut published = 0_usize;
-    let mut withheld = 0_usize;
-    for row in coaches {
-        ensure!(
-            row.phone.is_some(),
-            "{} lost the union of a phone number",
-            row.id
-        );
-        match row.professional_email.as_deref() {
-            Some(email) => {
-                let publishable = professional_email(email).is_some() && !row.email_withheld;
-                ensure!(
-                    publishable,
-                    "{} published a withheld mailbox: {email}",
-                    row.id
-                );
-                published = published.saturating_add(1);
-            }
-            None => {
-                ensure!(
-                    row.email_withheld,
-                    "{} dropped a mailbox without recording it",
-                    row.id
-                );
-                withheld = withheld.saturating_add(1);
-            }
-        }
+        checks::school_row(row)?;
     }
     let half = COACHES / 2;
+    let (published, withheld) = checks::coach_tally(coaches)?;
     ensure!(
         published == half && withheld == half,
         "published {published}, withheld {withheld}"

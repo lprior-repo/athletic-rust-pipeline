@@ -3,13 +3,18 @@
 //! jurisdiction the research says nothing about.
 
 use super::*;
+use crate::restate_services::wire::{JurisdictionState, RefusedSource, SourcePlan};
 use census_domain::UsJurisdiction;
 
 /// A browser-session source with no lane behind it is refused, and the refusal names what is
 /// missing: the run records it as owed work, so the reason has to reach the record.
 #[test]
 fn a_browser_source_without_a_lane_is_refused_by_name() {
-    let disposition = classify_access("tfrrs", AccessClass::BrowserSession, BrowserLaneState::Absent);
+    let disposition = classify_access(
+        "tfrrs",
+        AccessClass::BrowserSession,
+        BrowserLaneState::Absent,
+    );
     let refusal = match disposition {
         UnitDisposition::Refused(refusal) => refusal,
         other => panic!("a browser source with no lane must be refused, not {other:?}"),
@@ -22,7 +27,11 @@ fn a_browser_source_without_a_lane_is_refused_by_name() {
 /// The same source on a machine that has the lane is ordinary sweeps, not a refusal.
 #[test]
 fn a_browser_source_with_a_lane_is_swept() {
-    let disposition = classify_access("tfrrs", AccessClass::BrowserSession, BrowserLaneState::Configured);
+    let disposition = classify_access(
+        "tfrrs",
+        AccessClass::BrowserSession,
+        BrowserLaneState::Configured,
+    );
     assert_eq!(
         disposition,
         UnitDisposition::Sweep(PlannedUnit {
@@ -50,9 +59,17 @@ fn an_open_source_needs_no_lane() {
 #[test]
 fn owed_keeps_plan_order_and_sweepable_excludes_refusals() {
     let dispositions = vec![
-        classify_access("tfrrs", AccessClass::BrowserSession, BrowserLaneState::Absent),
+        classify_access(
+            "tfrrs",
+            AccessClass::BrowserSession,
+            BrowserLaneState::Absent,
+        ),
         classify_access("mshsl", AccessClass::Open, BrowserLaneState::Absent),
-        classify_access("wiha", AccessClass::BrowserSession, BrowserLaneState::Absent),
+        classify_access(
+            "wiha",
+            AccessClass::BrowserSession,
+            BrowserLaneState::Absent,
+        ),
     ];
     let owed_slugs: Vec<&str> = owed(&dispositions)
         .iter()
@@ -92,4 +109,72 @@ fn a_jurisdiction_plans_the_sources_the_table_evidences_in_order() {
 #[test]
 fn a_jurisdiction_the_research_does_not_evidence_plans_nothing() {
     assert!(plan(UsJurisdiction::Alaska, BrowserLaneState::Absent).is_empty());
+}
+
+/// The plan as a run records it: sweepable slugs in plan order, every refusal with the reason it is
+/// owed, and no refused source left in the sweepable list.
+#[test]
+fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
+    let dispositions = vec![
+        classify_access(
+            "tfrrs",
+            AccessClass::BrowserSession,
+            BrowserLaneState::Absent,
+        ),
+        classify_access("mshsl", AccessClass::Open, BrowserLaneState::Absent),
+        classify_access(
+            "wiha",
+            AccessClass::BrowserSession,
+            BrowserLaneState::Absent,
+        ),
+    ];
+    let recorded = SourcePlan::of(&dispositions);
+    assert_eq!(recorded.sweepable, vec!["mshsl".to_string()]);
+    assert_eq!(
+        recorded.refused,
+        vec![
+            RefusedSource {
+                slug: "tfrrs".to_string(),
+                reason: NO_BROWSER_LANE.to_string(),
+            },
+            RefusedSource {
+                slug: "wiha".to_string(),
+                reason: NO_BROWSER_LANE.to_string(),
+            },
+        ]
+    );
+}
+
+/// A state journaled before the plan existed reads as absent rather than failing: that absence is
+/// what makes the object build a plan on the next run instead of reporting a machine's gap as a
+/// broken state.
+#[test]
+fn a_state_journaled_before_the_plan_reads_with_no_plan() {
+    let state: JurisdictionState = serde_json::from_value(serde_json::json!({
+        "identity": "jurisdiction:WI:2026-27:1"
+    }))
+    .expect("a state without a plan is still a state");
+    assert!(state.plan.is_none());
+}
+
+/// What a run wrote is what a re-invocation reads back: the recorded plan survives the journal
+/// whole, refusals and reasons included.
+#[test]
+fn a_recorded_plan_round_trips_through_the_journal() {
+    let mut state = JurisdictionState::default();
+    let dispositions = vec![
+        classify_access(
+            "tfrrs",
+            AccessClass::BrowserSession,
+            BrowserLaneState::Absent,
+        ),
+        classify_access("mshsl", AccessClass::Open, BrowserLaneState::Absent),
+    ];
+    state.plan = Some(SourcePlan::of(&dispositions));
+    let written = serde_json::to_value(&state).expect("a state serializes");
+    let read: JurisdictionState = serde_json::from_value(written).expect("and reads back");
+    assert_eq!(read.plan, state.plan);
+    let plan = read.plan.expect("the state carried a plan");
+    assert_eq!(plan.sweepable, vec!["mshsl".to_string()]);
+    assert_eq!(plan.refused.len(), 1);
 }

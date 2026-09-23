@@ -22,7 +22,7 @@ use clap::Args;
 use std::fs;
 use std::path::PathBuf;
 
-use midwest_census::store::read::read_rows;
+use census_store::read::read_rows;
 
 /// Arguments for the `export-data` subcommand.
 #[derive(Debug, Args)]

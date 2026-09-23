@@ -3,10 +3,10 @@ use std::time::Duration;
 
 use restate_sdk::prelude::*;
 
-use crate::clock::Clock;
 use crate::report::ReportResult;
 use crate::spawn::Spawner;
-use crate::store::Store;
+use census_store::clock::Clock;
+use census_store::Store;
 
 use super::ingest::IngestClient;
 use super::jobs::write_sweep_report;

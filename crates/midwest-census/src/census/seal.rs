@@ -16,17 +16,17 @@ use anyhow::{bail, Context, Result};
 
 use census_domain::model::{AccessBlockKind, ReviewCase, SourceAccessCondition};
 
-use super::{
-    owed_cohort_decisions, owed_identity_candidates, CensusState, GapTally, OpenWork,
-    RetainedFindings, SealCounts, SealEvidence, SealedCensus, WorkbookCheck,
-};
-use crate::report::{self, Census, CoverageReport, Scope};
-use crate::store::{Store, StoreStats, Table};
+use super::{CensusState, SealEvidence, SealedCensus};
+use crate::report::{self, Scope};
+use census_store::{Store, StoreStats, Table};
 
 pub mod workbook;
 
+mod assembly;
+
 mod ladder;
 
+use assembly::assemble;
 use ladder::{reached_phase, workbook_path};
 use workbook::inspect_workbook;
 
@@ -107,7 +107,9 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome> {
         count(census.totals.class_of_2027),
         count(coverage.jurisdictions.len()),
     )?;
-    let evidence = assemble(&coverage, &census, &stats, &cases, &access, request, workbook);
+    let evidence = assemble(
+        &coverage, &census, &stats, &cases, &access, request, workbook,
+    );
 
     let mut state = reached_phase(&stats, &path)?;
     let recorded = recorded_seal(store)?;
@@ -127,72 +129,6 @@ pub fn seal(store: &Store, request: &SealRequest) -> Result<SealOutcome> {
         refusal,
         wrote,
     })
-}
-
-/// Everything §70 asks the census to prove, from the store, the classifier and the run's journal.
-fn assemble(
-    coverage: &CoverageReport,
-    census: &Census,
-    stats: &StoreStats,
-    cases: &[ReviewCase],
-    access: &[SourceAccessCondition],
-    request: &SealRequest,
-    workbook: WorkbookCheck,
-) -> SealEvidence {
-    // Two counts come from the run's objects and two from the store's own rows, and they are not
-    // interchangeable. A jurisdiction's stages and a source object's accepted observations live in
-    // the workflow journal, which only the service can read; the cohort decisions and identity
-    // candidates are retained review cases, which the store is the authority on. A count nobody
-    // took is `None`, and `None` keeps its item open: that is what makes an offline seal refuse
-    // rather than certify a completion it never checked.
-    let journal = request.journal.unwrap_or_default();
-    // The access conditions are read as rows, not as a ledger count: the split a reader needs is a
-    // property of the rows' own `kind`, and one read answers both.
-    let (access_conditions, blocked_hosts, throttled_hosts) = retained_access(access);
-    SealEvidence {
-        open: OpenWork {
-            jurisdiction_sweeps: journal.jurisdiction_sweeps,
-            source_objects: journal.source_objects,
-            cohort_decisions: Some(owed_cohort_decisions(cases)),
-            identity_candidates: Some(owed_identity_candidates(cases)),
-        },
-        counts: SealCounts {
-            jurisdictions: count(census.by_state.len()),
-            schools: count(coverage.read.schools),
-            meets: count(coverage.read.meets),
-            athletes: count(census.totals.athletes),
-            class_of_2027: count(census.totals.class_of_2027),
-            performances: count(coverage.read.performances),
-            coaches: count(census.totals.coaches),
-        },
-        retained: RetainedFindings {
-            gaps: coverage
-                .gaps
-                .iter()
-                .map(|gap| GapTally {
-                    class: gap.class.to_string(),
-                    unit: gap.unit.to_string(),
-                    count: count(gap.count),
-                })
-                .collect(),
-            conflicts: table_rows(stats, Table::Conflicts),
-            // §70 item 2 is about operations that stopped, and a *refused host* is the store's record
-            // of that; a throttle is a slowdown with a cooldown, kept apart because reading it as a
-            // stopped operation would overstate what the census lost.
-            access_conditions,
-            blocked_hosts,
-            throttled_hosts,
-            // A source *failure* is a terminal outcome of one attempt, and the store keeps access
-            // conditions rather than attempts. The journal knows the objects that accepted nothing,
-            // which is the other half of §70 item 2's fact; per-attempt failures are reported only where
-            // the caller could read them.
-            source_failures: request.source_failures,
-            observations: stats.observations,
-            calculations: count(coverage.read.performances),
-        },
-        workbook,
-        observed_on: census.generated_on.clone(),
-    }
 }
 
 /// The retained access conditions as the seal publishes them: the count, and the split a reader needs

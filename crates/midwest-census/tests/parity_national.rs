@@ -33,12 +33,12 @@ use census_domain::model::{
     CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use midwest_census::net::{FetchOptions, Fetcher};
 use midwest_census::sources::athleticlive_athletes::{self, AthleteHit, MeetTarget};
 use midwest_census::sources::{
     athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext,
 };
-use midwest_census::store::{Store, Table};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashMap};

@@ -23,11 +23,11 @@
 use super::wire::ResultSetRef;
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam,
 };
+use census_store::Table;
 use std::collections::HashMap;
 
 mod report;
@@ -162,7 +162,7 @@ pub(super) struct EntityCounts {
 /// `consolidate` have not been run yet, which is an operator error rather than a parse failure.
 fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSchool>> {
     let schools: Vec<CanonicalSchool> =
-        crate::store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
+        census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
     if schools.is_empty() {
         return Err(CrawlError::Invariant {
             detail:

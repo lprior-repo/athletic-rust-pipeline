@@ -30,12 +30,12 @@ use census_domain::model::{
     CanonicalCoach, CanonicalMeet, CanonicalSchool, CompetitionLevel, EventKind, Gender, Grade,
     Mark, SchoolId, SchoolYear, SourceRef, Sport,
 };
+use census_store::{Store, Table};
 use midwest_census::net::Fetcher;
 use midwest_census::sources::compiled;
 use midwest_census::sources::hytek;
 use midwest_census::sources::wayzata::{self, ScheduleSport};
 use midwest_census::sources::{ihsa, ks, ohsaa, AdapterContext, AdapterReport};
-use midwest_census::store::{Store, Table};
 use serde::Serialize;
 
 /// Evidence date stamped into every entity a seeded run mints. Fixed so the goldens are stable.

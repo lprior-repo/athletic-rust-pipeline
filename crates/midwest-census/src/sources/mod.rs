@@ -42,7 +42,7 @@ pub enum CrawlError {
     Domain(#[from] census_domain::DomainError),
     /// The store rejected an append or scan.
     #[error(transparent)]
-    Store(#[from] crate::store::StoreError),
+    Store(#[from] census_store::StoreError),
     /// Counters, offsets or sizing math overflowed.
     #[error("arithmetic overflow: {detail}")]
     Arithmetic { detail: String },
@@ -93,7 +93,7 @@ pub use registry::{
 };
 
 use crate::net::{FetchOptions, Fetcher};
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 use serde::Serialize;
 use std::time::Duration;
 
@@ -190,6 +190,6 @@ pub fn append_all<T: Serialize>(
     store: &Store,
     table: Table,
     rows: &[T],
-) -> crate::store::StoreResult<()> {
+) -> census_store::StoreResult<()> {
     store.append_many(table, rows)
 }

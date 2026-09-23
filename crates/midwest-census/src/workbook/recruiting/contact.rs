@@ -222,7 +222,10 @@ pub(in crate::workbook) fn disagreements(coaches: &[CanonicalCoach]) -> Vec<Disa
 }
 
 /// The contact one athlete's row prefers, in the order this module's header states.
-pub(super) fn preferred(contacts: Option<&SchoolContacts>, athlete: &CanonicalAthlete) -> Preferred {
+pub(super) fn preferred(
+    contacts: Option<&SchoolContacts>,
+    athlete: &CanonicalAthlete,
+) -> Preferred {
     let Some(contacts) = contacts else {
         return Preferred::unnamed(ContactState::ContactSourceNotAttempted);
     };

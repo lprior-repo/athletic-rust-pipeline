@@ -38,8 +38,8 @@ use census_domain::model::{
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use midwest_census::census::{Revision, WorkflowIdentity};
-use midwest_census::store::{Store, Table};
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -541,7 +541,7 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     let key = WorkflowIdentity::national(
         SEASON,
         REVISION,
-        census_domain::UsJurisdiction::CENSUS_SCOPE,
+        &census_domain::UsJurisdiction::CENSUS_SCOPE,
     );
     let key = key.as_str().to_string();
     let path_run = format!("Consolidate/{key}/run");

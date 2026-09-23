@@ -70,60 +70,13 @@ pub struct Corpus {
 impl Corpus {
     /// Read every fixture and refuse the corpus unless each case publishes rows.
     pub fn build() -> Result<Self> {
-        let mut cases = Vec::new();
-        cases.push(case(
-            "hytek_html",
-            "wiaa_results",
-            "d1boysstateresults-sections.htm",
-            |body| {
-                let lines = hytek::lines_from_html(body);
-                let meet = hytek::parse(&lines, source())
-                    .context("the Hy-Tek HTML release parsed to no meet")?;
-                Ok(meet.rows_parsed)
-            },
-        )?);
-        cases.push(case(
-            "hytek_text",
-            "wiaa_results",
-            "d1boysstateresults-dash.txt",
-            |body| {
-                let lines = hytek::lines_from_text(body);
-                let meet = hytek::parse(&lines, source())
-                    .context("the Hy-Tek plain-text report parsed to no meet")?;
-                Ok(meet.rows_parsed)
-            },
-        )?);
-        cases.push(case(
-            "raceday_html",
-            "wiaa_results",
-            "racinesectionalb-finish-list.htm",
-            |body| {
-                let meet = raceday::parse(body, source(), RACEDAY_ARCHIVE_YEAR)
-                    .context("the RaceDay finish list was rejected")?;
-                Ok(meet.rows_parsed)
-            },
-        )?);
-        let team = roster_team()?;
-        cases.push(case(
-            "milesplit_roster",
-            "milesplit",
-            "wi_roster_52649.html",
-            move |body| {
-                let roster = milesplit::parse_roster(body, team.clone())
-                    .context("the graded roster page was rejected")?;
-                Ok(roster.athletes.len())
-            },
-        )?);
-        cases.push(case(
-            "nsaa_directory",
-            "plain_names",
-            "nsaa_directory_export.html",
-            |body| {
-                let schools = plain_names::parse_nsaa_directory(body)
-                    .context("the NSAA directory export was rejected")?;
-                Ok(schools.len())
-            },
-        )?);
+        let cases = vec![
+            hytek_html_case()?,
+            hytek_text_case()?,
+            raceday_case()?,
+            milesplit_roster_case()?,
+            nsaa_directory_case()?,
+        ];
 
         let archive = archive()?;
         let corpus = Self { cases, archive };
@@ -182,6 +135,79 @@ fn case(
         rows,
         parse: Box::new(parse),
     })
+}
+
+/// The Hy-Tek HTML release, replayed through `lines_from_html` and `hytek::parse`.
+fn hytek_html_case() -> Result<Case> {
+    case(
+        "hytek_html",
+        "wiaa_results",
+        "d1boysstateresults-sections.htm",
+        |body| {
+            let lines = hytek::lines_from_html(body);
+            let meet = hytek::parse(&lines, source())
+                .context("the Hy-Tek HTML release parsed to no meet")?;
+            Ok(meet.rows_parsed)
+        },
+    )
+}
+
+/// The Hy-Tek plain-text report, replayed through `lines_from_text` and `hytek::parse`.
+fn hytek_text_case() -> Result<Case> {
+    case(
+        "hytek_text",
+        "wiaa_results",
+        "d1boysstateresults-dash.txt",
+        |body| {
+            let lines = hytek::lines_from_text(body);
+            let meet = hytek::parse(&lines, source())
+                .context("the Hy-Tek plain-text report parsed to no meet")?;
+            Ok(meet.rows_parsed)
+        },
+    )
+}
+
+/// The RaceDay finish list, parsed under the year the collection loop stamps it with.
+fn raceday_case() -> Result<Case> {
+    case(
+        "raceday_html",
+        "wiaa_results",
+        "racinesectionalb-finish-list.htm",
+        |body| {
+            let meet = raceday::parse(body, source(), RACEDAY_ARCHIVE_YEAR)
+                .context("the RaceDay finish list was rejected")?;
+            Ok(meet.rows_parsed)
+        },
+    )
+}
+
+/// The graded MileSplit roster page, parsed for the team the committed index lists.
+fn milesplit_roster_case() -> Result<Case> {
+    let team = roster_team()?;
+    case(
+        "milesplit_roster",
+        "milesplit",
+        "wi_roster_52649.html",
+        move |body| {
+            let roster = milesplit::parse_roster(body, team.clone())
+                .context("the graded roster page was rejected")?;
+            Ok(roster.athletes.len())
+        },
+    )
+}
+
+/// The NSAA directory export, whose published row count is the schools it lists.
+fn nsaa_directory_case() -> Result<Case> {
+    case(
+        "nsaa_directory",
+        "plain_names",
+        "nsaa_directory_export.html",
+        |body| {
+            let schools = plain_names::parse_nsaa_directory(body)
+                .context("the NSAA directory export was rejected")?;
+            Ok(schools.len())
+        },
+    )
 }
 
 /// The MileSplit team the committed roster belongs to, read out of the committed team index through

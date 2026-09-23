@@ -31,8 +31,8 @@
 //! §47 classes, [`reads`] counts the read side, and `state` holds the accumulators they share.
 
 use super::{ReportError, ReportResult};
-use crate::store::Store;
 use census_domain::JurisdictionBucket;
+use census_store::Store;
 use serde::Serialize;
 use std::collections::BTreeMap;
 

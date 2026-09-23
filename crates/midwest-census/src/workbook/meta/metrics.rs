@@ -11,10 +11,10 @@
 
 use crate::bests::BestResult;
 use crate::report::{io_error, Census, ReportResult};
-use crate::store::Store;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, GradYear, SourceNamespace,
 };
+use census_store::Store;
 
 use crate::workbook::cells::{cell, row, Cell};
 

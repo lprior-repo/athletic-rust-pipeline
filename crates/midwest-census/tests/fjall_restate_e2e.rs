@@ -20,9 +20,9 @@ use census_domain::model::{
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, StoreStats, Table};
 use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use midwest_census::report::{self, Census, Scope};
-use midwest_census::store::{Store, StoreStats, Table};
 use midwest_census::{bests, census, workbook};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
@@ -116,6 +116,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
+        retained_conflicts: Vec::new(),
     };
     let team_id = team.id.clone();
     let mut meet = CanonicalMeet::new(
@@ -310,6 +311,9 @@ fn legacy_jsonl_journals_are_imported_once() {
 
     {
         let store = Store::open(root).unwrap();
+        // Opening a store is a read, so the one-time import is the caller's decision: this test is
+        // the caller, exactly as the offline run and the `import-legacy` verb are.
+        store.import_legacy().unwrap();
         let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
         assert_eq!(
             rows.len(),
@@ -332,6 +336,9 @@ fn legacy_jsonl_journals_are_imported_once() {
     // second live open of the same path is rejected by design. The import marker must now make the
     // importer a no-op instead of duplicating every observation.
     let store = Store::open(root).unwrap();
+    // The marker the first import wrote makes this call a no-op: the second open must not duplicate
+    // a single observation.
+    store.import_legacy().unwrap();
     let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
     assert_eq!(
         rows.len(),

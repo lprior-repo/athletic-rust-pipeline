@@ -8,9 +8,9 @@ use super::parse::resolve_school_name;
 use super::{Options, HOST, SEARCH_PATH};
 use crate::net::FetchOptions;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
-use crate::store::Table;
 use census_domain::model::SourceNamespace;
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use std::collections::HashSet;
 
 // ── Collection ─────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ async fn resolve_schools(
         search_schools(ctx, options, report).await?
     } else {
         let existing: Vec<census_domain::model::CanonicalSchool> =
-            crate::store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
+            census_store::read::read_rows(&ctx.store.out_dir().join("schools.jsonl"))?;
         existing
             .into_iter()
             .filter(|s| matches!(&s.association, Some(a) if a.as_str() == "ohsaa"))

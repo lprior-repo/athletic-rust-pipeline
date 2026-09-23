@@ -5,8 +5,8 @@
 //! is judged on. Both are predicates over a roster, never over a report.
 
 use crate::sources::milesplit::{Roster, TeamRef};
-use crate::store::{Store, StoreResult};
 use census_domain::model::{Gender, GradYear};
+use census_store::{Store, StoreResult};
 
 use super::rosters_phase;
 use census_domain::UsJurisdiction;

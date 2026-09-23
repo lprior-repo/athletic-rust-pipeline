@@ -61,9 +61,9 @@ use walk::{completed_pages, Walk};
 
 // The module's test file reads these through `use super::*`; the walk itself imports them.
 #[cfg(test)]
-use crate::store::Table;
-#[cfg(test)]
 use census_domain::model::{CanonicalMeet, SourceIdentity, SourceNamespace};
+#[cfg(test)]
+use census_store::Table;
 #[cfg(test)]
 use serde_json::json;
 
@@ -106,7 +106,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
     // through the consolidated school snapshot instead, so a meet is filed in the state its host
     // school is in. Before the snapshot exists every such venue stays unplaced, and the run says so.
     let schools: Vec<census_domain::model::CanonicalSchool> =
-        ctx.store.scan(crate::store::Table::Schools)?;
+        ctx.store.scan(census_store::Table::Schools)?;
     let index = SchoolIndex::from_schools(&schools);
 
     let mut walk = Walk::new(observed_on);

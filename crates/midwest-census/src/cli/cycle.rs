@@ -3,20 +3,19 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use clap::Args;
 use midwest_census::census;
 use midwest_census::report;
-use midwest_census::store::Store;
 use std::path::PathBuf;
 
 use super::live;
 
 mod publish;
-use publish::{
-    publish_bests_and_workbook, publish_bests_and_workbook_live, publish_scope,
-    publish_scope_live,
-};
 use super::{build_fetcher, school_year, scope_of, Cli, Route};
+use publish::{
+    publish_bests_and_workbook, publish_bests_and_workbook_live, publish_scope, publish_scope_live,
+};
 
 #[derive(Args, Debug)]
 pub(super) struct RunArgs {
@@ -167,8 +166,8 @@ async fn gather_athleticnet(
     let fetcher = build_fetcher(cli, store)?;
     // A literal year, still passed through the domain's own constructor: the field is private so a
     // value the domain would refuse cannot be constructed anywhere else in the tree.
-    let season = SchoolYear::new(2026)
-        .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
+    let season =
+        SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
     let context = midwest_census::sources::AdapterContext {
         fetcher: &fetcher,
         store,
@@ -205,4 +204,3 @@ async fn gather_athleticnet(
     }
     Ok(())
 }
-

@@ -9,14 +9,14 @@
 //!
 //! Nothing in this module re-derives a verdict. The transport classifies; this seat records what the
 //! classification means for the census — a retryable failure stays retryable, a human requirement
-//! becomes a row — and hands the answer on.
+//! becomes a row — and hands the answer on. What stays here is the entry, the accept path and the
+//! evidence; the two verdicts a lane call can carry that are not an answer live next door, in
+//! [`refusal`].
 
 use super::attempt::{blocking_kind, FetchPlan};
-use crate::net::bridge::{Action, BrowserCapture, BrowserError, BrowserOutcome, RequestSpec, Verdict};
+use crate::net::bridge::{Action, BrowserCapture, BrowserOutcome, RequestSpec};
 use crate::net::cache::{sha256_prefix16, write_cache, CacheMeta};
-use crate::net::{
-    instant_iso8601, now_iso8601, FetchError, FetchOutcome, Fetcher, MAX_BODY_BYTES,
-};
+use crate::net::{instant_iso8601, now_iso8601, FetchError, FetchOutcome, Fetcher, MAX_BODY_BYTES};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
 use census_domain::model::AccessBlockKind;
@@ -24,6 +24,14 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::warn;
+
+// This seat's tests drive [`refusal`]'s methods and read the transport's verdict vocabulary back
+// through here; the seat's own code never names a verdict, because naming one is the first step
+// towards re-deriving it.
+#[cfg(test)]
+use crate::net::bridge::{BrowserError, Verdict};
+
+mod refusal;
 
 impl Fetcher {
     /// Fetch one browser-transported target through the lane.
@@ -54,23 +62,7 @@ impl Fetcher {
             action: Action::Fetch { body: None },
         };
         let Some(lane) = self.lane.as_ref() else {
-            let detail = format!(
-                "no browser lane is installed in this process, so {} cannot be fetched here",
-                plan.host
-            );
-            self.record_access_condition(
-                plan.host,
-                AccessBlockKind::BrowserUnavailable,
-                0,
-                None,
-                detail.clone(),
-            )
-            .await;
-            return Err(FetchError::BrowserLane {
-                url: plan.url.to_string(),
-                detail,
-                retryable: false,
-            });
+            return self.refuse_without_lane(plan).await;
         };
         match lane.answer(&spec).await {
             Err(error) => {
@@ -91,67 +83,30 @@ impl Fetcher {
             Ok(BrowserOutcome::Captured(capture)) if capture.challenge => {
                 self.refuse_challenge(plan, &capture).await
             }
-            Ok(BrowserOutcome::Captured(capture)) => {
-                let status = capture.response.status;
-                self.count_request(plan.host, status).await;
-                if let Some(kind) = blocking_kind(status) {
-                    let retry_after = retry_after_secs(&capture.response.headers);
-                    self.record_access_condition(
-                        plan.host,
-                        kind,
-                        status,
-                        retry_after,
-                        plan.url.to_string(),
-                    )
-                    .await;
-                }
-                match status {
-                    200 | 404 => self.mint_capture(plan, capture).await,
-                    304 => Err(FetchError::Invariant {
-                        // A capture that reports 304 came from a transport that sent conditional
-                        // headers; a capture that was taken from the source cannot be a revalidation.
-                        detail: format!(
-                            "browser lane answered 304 for {}: a capture is a take, not a revalidation",
-                            plan.url
-                        ),
-                    }),
-                    _ => Err(self.status_error(status, plan).await),
-                }
-            }
+            Ok(BrowserOutcome::Captured(capture)) => self.accept_capture(plan, capture).await,
             Ok(BrowserOutcome::Failed(failure)) => {
-                self.refuse_failure(plan, failure.error, failure.verdict).await
+                self.refuse_failure(plan, failure.error, failure.verdict)
+                    .await
             }
         }
     }
 
-    /// Record a challenge capture as the refusal it is.
+    /// Refuse a target the registry routes to a lane this process does not have installed.
     ///
-    /// A challenged capture is the verification page, not the source's answer, so it is never minted
-    /// as evidence: the row is `human_required`, which carries no cooldown — a profile that wants a
-    /// person is cleared by a person and by nothing else, and a timer would only invite the run to
-    /// try the same wall again. The capture's own status travels in the detail; the row's `status`
-    /// column stays `0`, the audit schema's reading of "not an HTTP status".
-    async fn refuse_challenge(
-        &self,
-        plan: &FetchPlan<'_>,
-        capture: &BrowserCapture,
-    ) -> Result<FetchOutcome, FetchError> {
-        let waited = capture.retry_after_ms.map(|ms| ms / 1_000);
-        let detail = match waited {
-            Some(seconds) => format!(
-                "the source answered {} with human verification, asking for {seconds}s",
-                capture.response.status
-            ),
-            None => format!(
-                "the source answered {} with human verification",
-                capture.response.status
-            ),
-        };
+    /// `None` is not "fetch it over HTTP instead": attempting the other transport quietly is the
+    /// thing §69 exists to prevent, so the refusal names what is missing and records the
+    /// applicability row — a lane that is not there yet may be there later, which is why this row
+    /// expires where the human-requirement row does not.
+    async fn refuse_without_lane(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
+        let detail = format!(
+            "no browser lane is installed in this process, so {} cannot be fetched here",
+            plan.host
+        );
         self.record_access_condition(
             plan.host,
-            AccessBlockKind::HumanRequired,
+            AccessBlockKind::BrowserUnavailable,
             0,
-            waited,
+            None,
             detail.clone(),
         )
         .await;
@@ -162,62 +117,42 @@ impl Fetcher {
         })
     }
 
-    /// Grade one failed lane call, and hand it on.
+    /// Accept one capture that is the source's answer, and read the status it carries.
     ///
-    /// The verdict is the transport's, read rather than re-derived: `Retryable` leaves as a retryable
-    /// error for the durable layer to replay, `HumanRequired` becomes the same row a challenge does,
-    /// and a terminal failure that names the lane itself is the deployment row. The remaining
-    /// terminal failures are the request's own or the transport's, and neither is an observation
-    /// about the host, so no row is recorded for them.
-    async fn refuse_failure(
+    /// The statuses are read as the HTTP seat reads them: `200` and an allowed `404` are evidence, a
+    /// `304` cannot come from a transport that sends no conditional headers, and every other status
+    /// is graded once, by [`Fetcher::status_error`].
+    async fn accept_capture(
         &self,
         plan: &FetchPlan<'_>,
-        error: BrowserError,
-        verdict: Verdict,
+        capture: BrowserCapture,
     ) -> Result<FetchOutcome, FetchError> {
-        match (verdict, error) {
-            (Verdict::HumanRequired, error) => {
-                let detail = format!("the source answered with human verification ({error})");
-                self.record_access_condition(
-                    plan.host,
-                    AccessBlockKind::HumanRequired,
-                    0,
-                    None,
-                    detail.clone(),
-                )
-                .await;
-                Err(FetchError::BrowserLane {
-                    url: plan.url.to_string(),
-                    detail,
-                    retryable: false,
-                })
-            }
-            (Verdict::Retryable, error) => Err(FetchError::BrowserLane {
-                url: plan.url.to_string(),
-                detail: format!("the browser lane reported {error}, which it grades retryable"),
-                retryable: true,
+        let status = capture.response.status;
+        self.count_request(plan.host, status).await;
+        // A 403 or 429 is an observation about the *host*, not about this URL, so it is recorded
+        // once per run here exactly as it is on the HTTP path.
+        if let Some(kind) = blocking_kind(status) {
+            let retry_after = retry_after_secs(&capture.response.headers);
+            self.record_access_condition(
+                plan.host,
+                kind,
+                status,
+                retry_after,
+                plan.url.to_string(),
+            )
+            .await;
+        }
+        match status {
+            200 | 404 => self.mint_capture(plan, capture).await,
+            304 => Err(FetchError::Invariant {
+                // A capture that reports 304 came from a transport that sent conditional headers; a
+                // capture that was taken from the source cannot be a revalidation.
+                detail: format!(
+                    "browser lane answered 304 for {}: a capture is a take, not a revalidation",
+                    plan.url
+                ),
             }),
-            (Verdict::Terminal, BrowserError::Unavailable) => {
-                let detail = format!("the browser lane reported {error}");
-                self.record_access_condition(
-                    plan.host,
-                    AccessBlockKind::BrowserUnavailable,
-                    0,
-                    None,
-                    detail.clone(),
-                )
-                .await;
-                Err(FetchError::BrowserLane {
-                    url: plan.url.to_string(),
-                    detail,
-                    retryable: false,
-                })
-            }
-            (Verdict::Terminal, error) => Err(FetchError::BrowserLane {
-                url: plan.url.to_string(),
-                detail: format!("the browser lane reported {error}, which it grades terminal"),
-                retryable: false,
-            }),
+            _ => Err(self.status_error(status, plan).await),
         }
     }
 
@@ -231,28 +166,7 @@ impl Fetcher {
         capture: BrowserCapture,
     ) -> Result<FetchOutcome, FetchError> {
         let status = capture.response.status;
-        // Base64 is four characters per three bytes, plus padding: refusing on the encoded length
-        // keeps a body over the ceiling from being allocated only to be thrown away.
-        if capture.response.body.len() > MAX_BODY_BYTES / 3 * 4 + 4 {
-            return Err(FetchError::TooLarge {
-                url: plan.url.to_string(),
-            });
-        }
-        let body = BASE64
-            .decode(capture.response.body.as_bytes())
-            .map_err(|error| FetchError::Invariant {
-                // The transport's own codec writes this field by construction, so a body that does
-                // not decode did not come from the lane's codec: fail loudly, mint nothing.
-                detail: format!(
-                    "browser lane body for {} is not base64 ({error})",
-                    plan.url
-                ),
-            })?;
-        if body.len() > MAX_BODY_BYTES {
-            return Err(FetchError::TooLarge {
-                url: plan.url.to_string(),
-            });
-        }
+        let body = decode_capture_body(plan, &capture)?;
         let mut hasher = Sha256::new();
         hasher.update(&body);
         let sha256 = sha256_prefix16(hasher);
@@ -277,17 +191,7 @@ impl Fetcher {
             content_type: content_type.clone(),
         };
         write_cache(plan.body_path, plan.meta_path, &body, &meta)?;
-        {
-            let mut stats = self.stats.lock().await;
-            stats.bytes_downloaded = stats
-                .bytes_downloaded
-                .saturating_add(u64::try_from(bytes).unwrap_or(u64::MAX));
-        }
-        if status >= 400 && !(status == 404 && plan.options.allow_not_found) {
-            let mut stats = self.stats.lock().await;
-            stats.errors = stats.errors.saturating_add(1);
-            warn!(status, url = plan.url, "non-success response");
-        }
+        self.count_body(plan, status, bytes).await;
         Ok(FetchOutcome {
             url: plan.url.to_string(),
             method: plan.method.to_string(),
@@ -300,6 +204,53 @@ impl Fetcher {
             body,
         })
     }
+
+    /// Count the body one accepted capture carried, and flag the status it arrived under.
+    ///
+    /// The accounting is the one `process_response` keeps for an HTTP body: the bytes a source
+    /// served, and an error for a status the run must stop on — a `404` the run allowed is an
+    /// answer, not an error.
+    async fn count_body(&self, plan: &FetchPlan<'_>, status: u16, bytes: usize) {
+        {
+            let mut stats = self.stats.lock().await;
+            stats.bytes_downloaded = stats
+                .bytes_downloaded
+                .saturating_add(u64::try_from(bytes).unwrap_or(u64::MAX));
+        }
+        if status >= 400 && !(status == 404 && plan.options.allow_not_found) {
+            let mut stats = self.stats.lock().await;
+            stats.errors = stats.errors.saturating_add(1);
+            warn!(status, url = plan.url, "non-success response");
+        }
+    }
+}
+
+/// The body one capture carries, decoded, and refused before it is allocated when it is over the
+/// ceiling.
+fn decode_capture_body(
+    plan: &FetchPlan<'_>,
+    capture: &BrowserCapture,
+) -> Result<Vec<u8>, FetchError> {
+    // Base64 is four characters per three bytes, plus padding: refusing on the encoded length
+    // keeps a body over the ceiling from being allocated only to be thrown away.
+    if capture.response.body.len() > MAX_BODY_BYTES / 3 * 4 + 4 {
+        return Err(FetchError::TooLarge {
+            url: plan.url.to_string(),
+        });
+    }
+    let body = BASE64
+        .decode(capture.response.body.as_bytes())
+        .map_err(|error| FetchError::Invariant {
+            // The transport's own codec writes this field by construction, so a body that does
+            // not decode did not come from the lane's codec: fail loudly, mint nothing.
+            detail: format!("browser lane body for {} is not base64 ({error})", plan.url),
+        })?;
+    if body.len() > MAX_BODY_BYTES {
+        return Err(FetchError::TooLarge {
+            url: plan.url.to_string(),
+        });
+    }
+    Ok(body)
 }
 
 /// The `Retry-After` a capture published, when it published one in the delta-seconds form.

@@ -71,9 +71,7 @@ pub(crate) async fn milesplit_results_report(
     args: &ProviderArgs,
 ) -> Result<AdapterReport> {
     let states = resolve_states(args.all_states, &args.states)?;
-    let stored: Vec<SourceMeetRef> = context
-        .store
-        .scan(midwest_census::store::Table::SourceMeets)?;
+    let stored: Vec<SourceMeetRef> = context.store.scan(census_store::Table::SourceMeets)?;
     let meets = census::select_meets(stored, &states, args.limit);
     let mut urls: Vec<String> = Vec::new();
     let mut pages_read = 0_usize;

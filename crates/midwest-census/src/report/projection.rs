@@ -15,12 +15,12 @@ use super::rows::{
 };
 use super::tables::{duplicate_school_names, meet_coverage, schools_by_state, totals_of};
 use super::{retain_core, Census, ProviderCoverage, ReportResult, Scope, StateCensus};
-use crate::clock::{Clock, SystemClock};
-use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, GradYear,
 };
 use census_domain::{JurisdictionBucket, UsJurisdiction};
+use census_store::clock::{Clock, SystemClock};
+use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
 
 /// One pass over the merged athlete rows.
@@ -193,7 +193,7 @@ type ScannedTables = (
 
 /// Scan every merged table a census reads: [`Store::scan`] merges a table's append-only observations
 /// into one entity per id, so the report never needs the materialized export, and bounds the table at
-/// [`crate::store::MAX_ROWS_PER_TABLE`] rows, which bounds every loop over them.
+/// [`census_store::MAX_ROWS_PER_TABLE`] rows, which bounds every loop over them.
 fn scan_tables(store: &Store) -> ReportResult<ScannedTables> {
     Ok((
         store.scan(Table::Schools)?,

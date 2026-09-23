@@ -6,9 +6,9 @@
 
 use anyhow::Result;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use midwest_census::net::{FetchOptions, Fetcher};
 use midwest_census::sources::milesplit::Site;
-use midwest_census::store::Store;
 
 use super::{build_fetcher, Cli};
 

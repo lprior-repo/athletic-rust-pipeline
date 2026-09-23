@@ -49,7 +49,7 @@ pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(30);
 /// whatever the drain left unfinished, so the next start resumes where this stopped.
 pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
 
-pub use crate::clock::{Clock, SystemClock};
+pub use census_store::clock::{Clock, SystemClock};
 
 pub use drain::DrainReport;
 pub use options::ServeOptions;

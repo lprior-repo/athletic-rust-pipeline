@@ -25,9 +25,9 @@
 use crate::net::Fetcher;
 use crate::sources::milesplit::{MeetRef, Season, Site};
 use crate::sources::CrawlResult;
-use crate::store::{Store, Table};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use tracing::info;

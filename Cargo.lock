@@ -148,7 +148,6 @@ dependencies = [
  "anyhow",
  "athleticnet-browser",
  "axum",
- "base64",
  "calamine",
  "chromiumoxide",
  "clap",
@@ -449,6 +448,39 @@ dependencies = [
  "serde",
  "sha2 0.10.9",
  "thiserror",
+]
+
+[[package]]
+name = "census-review"
+version = "0.1.0"
+dependencies = [
+ "census-domain",
+ "census-store",
+ "futures",
+ "reqwest",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "census-store"
+version = "0.1.0"
+dependencies = [
+ "census-domain",
+ "chrono",
+ "csv",
+ "fjall",
+ "loom",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2000,6 +2032,8 @@ dependencies = [
  "base64",
  "calamine",
  "census-domain",
+ "census-review",
+ "census-store",
  "chrono",
  "clap",
  "criterion",
@@ -4348,6 +4382,7 @@ dependencies = [
  "anyhow",
  "calamine",
  "census-domain",
+ "census-store",
  "clap",
  "midwest-census",
  "regex",

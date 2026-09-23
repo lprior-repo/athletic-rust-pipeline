@@ -11,11 +11,11 @@ use anyhow::{bail, Context, Result};
 use calamine::Reader;
 use clap::Args;
 
+use census_store::Store;
 use midwest_census::census::verify::{
     self, column_index, missing_columns, sheets_matching_prefix, verify_athletes,
     verify_performances, ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
 };
-use midwest_census::store::Store;
 
 /// `midwest-census verify`
 #[derive(Debug, Args)]

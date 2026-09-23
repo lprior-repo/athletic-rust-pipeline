@@ -10,7 +10,8 @@
 //!   (`Census/status`, `Report/run`, `Workbook/run`) and never opens the store. That is the
 //!   mode that works *while* the census serves, and it is the default with the project node origin.
 //!
-//! Both modes announce what they ran before running it — the offline mode through [`Cmd`]'s
+//! Both modes announce what they ran before running it — the offline mode through
+//! [`crate::cmd::Cmd`]'s
 //! `+ <command>` line, the ingress mode through a `+ POST <origin>restate/call/<Service>/<handler>`
 //! line — and both print the same operator-facing lines from what came back.
 //!

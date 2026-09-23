@@ -45,7 +45,7 @@ use sha2::{Digest, Sha256};
 use std::{cell::Cell, collections::BTreeMap};
 use tempfile::TempDir;
 
-use self::fixtures::{Dataset, batch_records, document_payload};
+use self::fixtures::{batch_records, document_payload, Dataset};
 
 /// Worksheet name the synthetic source rows belong to.
 const SHEET: &str = "Prospects";
@@ -71,12 +71,6 @@ fn main() {
     bench_reads(&mut criterion, &dataset);
     criterion.final_summary();
 }
-
-
-
-
-
-
 
 /// `put_bytes`: the durability floor (one fresh synced commit per call) and the dedupe path.
 fn bench_put_bytes(criterion: &mut Criterion, dataset: &Dataset) {
@@ -162,11 +156,6 @@ fn bench_reads(criterion: &mut Criterion, dataset: &Dataset) {
     });
     group.finish();
 }
-
-
-
-
-
 
 /// A row count as the `u64` a criterion throughput declaration needs.
 fn row_count(count: usize) -> u64 {

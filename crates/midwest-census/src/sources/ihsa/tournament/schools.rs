@@ -10,11 +10,11 @@
 use super::map::{Accumulator, Origin, ASSOCIATION};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{
     normalize_name, CanonicalSchool, SchoolId, SourceIdentity, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use std::collections::HashMap;
 
 /// The schools a run resolves against.

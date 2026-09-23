@@ -42,7 +42,10 @@ fn an_oversized_file_swapped_for_another_is_a_raise() {
 
     assert_eq!(raised.len(), 1, "{raised:?}");
     assert!(raised[0].contains("src/new.rs"), "{raised:?}");
-    assert!(raised[0].contains("structure files_over_300_lines"), "{raised:?}");
+    assert!(
+        raised[0].contains("structure files_over_300_lines"),
+        "{raised:?}"
+    );
 }
 
 #[test]

@@ -1,10 +1,10 @@
 use super::*;
 use crate::sources::AdapterContext;
-use crate::store::Table;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Gender, SourceNamespace, Sport,
 };
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -640,7 +640,7 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         AITKIN_TF_GIRLS,
     );
 
-    let store = crate::store::Store::open(dir.path().join("store")).expect("store");
+    let store = census_store::Store::open(dir.path().join("store")).expect("store");
     let fetcher = crate::net::Fetcher::new(
         &cache,
         None,

@@ -40,32 +40,35 @@ pub use review::{
     ReviewVerdictRecord, VerdictBatch,
 };
 
-
-mod identifiers;
-mod cohort;
-mod provenance;
-mod classification;
-mod event_ontology;
-mod school;
-mod coach;
 mod athlete;
-mod meet;
-mod event_performance;
+mod classification;
+mod coach;
+mod cohort;
 mod contact;
+mod event_ontology;
+mod event_performance;
+mod identifiers;
+mod meet;
 mod normalization;
+mod provenance;
+mod school;
 
-pub use identifiers::{tag, Id, SchoolId, TeamId, CoachId, AthleteId, MeetId, EventId, PerformanceId };
-pub use cohort::{SchoolYear, Grade, GradYear, ObservedGrade };
-pub use provenance::{SourceRef, EvidenceMethod, Evidence, SourceNamespace, SourceIdentity, Confidence };
-pub use classification::{Gender, Sport, CanonicalTeam, CompetitionLevel };
-pub use event_ontology::{EventKind, SourceEventLabel };
-pub use school::{CanonicalSchool };
-pub use coach::{CanonicalCoach, CoachRole };
-pub use athlete::{CanonicalAthlete };
-pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED };
-pub use event_performance::{CanonicalEvent, Mark, CanonicalPerformance, TimingMethod };
-pub use contact::{CONSUMER_MAIL_DOMAINS, professional_email };
-pub use normalization::{normalize_name, flip_last_first, Counters };
+pub use athlete::CanonicalAthlete;
+pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
+pub use coach::{CanonicalCoach, CoachRole};
+pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
+pub use contact::{professional_email, CONSUMER_MAIL_DOMAINS};
+pub use event_ontology::{EventKind, SourceEventLabel};
+pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
+pub use identifiers::{
+    tag, AthleteId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId, TeamId,
+};
+pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
+pub use normalization::{flip_last_first, normalize_name, Counters};
+pub use provenance::{
+    Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
+};
+pub use school::CanonicalSchool;
 
 #[cfg(test)]
 #[path = "model_tests.rs"]

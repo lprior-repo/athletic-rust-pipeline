@@ -1,0 +1,31 @@
+[package]
+name = "census-review"
+version = "0.1.0"
+edition = "2021"
+description = "Local-model review lane: asks a small model about the findings the merge retained and keeps only the answers the store's own evidence can back."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[dependencies]
+census-domain = { path = "../census-domain" }
+# The lane reads the retained cases and writes its verdict rows through the store that owns both
+# tables, so it names `census-store` and never opens Fjall itself.
+census-store = { path = "../census-store" }
+# One pass fans out over the pending cases, so the stream combinators come from `futures`.
+futures = "0.3"
+# The lane talks to a local OpenAI-compatible server over loopback and nothing else, which is why
+# this crate — alone among the writers — reaches the network.
+reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls"] }
+# A model's reply is untrusted input: it is read field by field out of a JSON value and validated
+# against the family's rule, never deserialized straight into the row it proposes to produce.
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+
+[dev-dependencies]
+# The lane's tests drive it against a stub model server, so they need the runtime's test attribute and
+# nothing the crate itself does not already link.
+tokio = { version = "1", features = ["macros", "rt"] }
+tempfile = "3"

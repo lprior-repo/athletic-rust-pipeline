@@ -11,12 +11,12 @@
 
 use super::schools::Schools;
 use crate::sources::{AdapterContext, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, EventKind, Evidence, Gender, Grade, Mark, SchoolId, SchoolYear, SourceRef,
     Sport,
 };
+use census_store::Table;
 use std::collections::HashMap;
 
 /// The association slug the `ihsa` schools adapter mints its school identities under.

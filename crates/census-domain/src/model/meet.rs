@@ -47,7 +47,10 @@ pub const MEET_STATE_UNRESOLVED: &str = "??";
 /// The key is never omitted. `skip_serializing_if` would shrink an unplaced meet's row by one line,
 /// which is a silent wire change for every reader that counts keys and a visible one for the golden
 /// captures, so `None` is written as [`MEET_STATE_UNRESOLVED`] exactly as the free-form era wrote it.
-pub(super) fn serialize_meet_state<S>(state: &Option<UsJurisdiction>, serializer: S) -> Result<S::Ok, S::Error>
+pub(super) fn serialize_meet_state<S>(
+    state: &Option<UsJurisdiction>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -60,7 +63,9 @@ where
 /// `Option<UsJurisdiction>`, so no reader can mistake "never placed" for a jurisdiction named `??`,
 /// while a genuinely unknown code stays a decode error instead of a retained string. An absent key
 /// never reaches this function: the field's `default` supplies `None` for it.
-pub(super) fn deserialize_meet_state<'de, D>(deserializer: D) -> Result<Option<UsJurisdiction>, D::Error>
+pub(super) fn deserialize_meet_state<'de, D>(
+    deserializer: D,
+) -> Result<Option<UsJurisdiction>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -130,4 +135,3 @@ impl CanonicalMeet {
         }
     }
 }
-

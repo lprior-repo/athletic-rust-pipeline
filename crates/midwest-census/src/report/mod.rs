@@ -21,7 +21,7 @@ use std::path::Path;
 pub enum ReportError {
     /// The underlying store scan failed.
     #[error(transparent)]
-    Store(#[from] crate::store::StoreError),
+    Store(#[from] census_store::StoreError),
     /// A report or workbook file operation failed.
     #[error("i/o failed for {path}: {source}")]
     Io {
@@ -74,7 +74,7 @@ pub(crate) fn xlsx_error(path: &Path, source: rust_xlsxwriter::XlsxError) -> Rep
 // The verbatim `tests` module resolves `Store` and `Table` through `use super::*`, exactly as the
 // net split feeds its tests module from `mod.rs`.
 #[cfg(test)]
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 
 mod core_scope;
 mod coverage;

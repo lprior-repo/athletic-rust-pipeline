@@ -111,4 +111,3 @@ pub enum CompetitionLevel {
     National,
     Unknown,
 }
-

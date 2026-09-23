@@ -52,7 +52,7 @@ use census_domain::model::{
 use rust_xlsxwriter::Workbook as Xlsx;
 
 use super::verify::{run_verify, VerifyArgs};
-use midwest_census::store::{Store, Table};
+use census_store::{Store, Table};
 
 fn school(
     name: &str,

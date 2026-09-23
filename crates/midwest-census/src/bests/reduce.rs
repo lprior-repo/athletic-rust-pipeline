@@ -2,11 +2,11 @@
 
 use super::{is_relay, mark_text, sport_of, BestResult, Measure, Options};
 use crate::report::{retain_core, CoreScoped, Scope};
-use crate::store::{Entity, Store, StoreResult, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, EventKind,
 };
 use census_domain::MeetState;
+use census_store::{Entity, Store, StoreResult, Table};
 use std::collections::HashMap;
 
 /// Reduce the consolidated tables to one best mark per `(athlete, event)`.

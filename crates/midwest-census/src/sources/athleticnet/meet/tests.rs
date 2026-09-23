@@ -348,17 +348,16 @@ fn grades_are_read_only_where_the_payload_publishes_one() {
         0,
         "every stored row published a grade"
     );
-    let squads = walk
-        .accumulated
-        .athletes
-        .values()
-        .filter(|athlete| {
-            athlete
-                .observed_grades
-                .iter()
-                .any(|grade| grade.school_year == SchoolYear::new(2025).expect("2025 is a season"))
-        })
-        .count();
+    let squads =
+        walk.accumulated
+            .athletes
+            .values()
+            .filter(|athlete| {
+                athlete.observed_grades.iter().any(|grade| {
+                    grade.school_year == SchoolYear::new(2025).expect("2025 is a season")
+                })
+            })
+            .count();
     assert!(
         squads > 0,
         "the athletes carry the school year the meet's May date resolves to"

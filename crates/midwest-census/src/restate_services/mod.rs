@@ -28,15 +28,15 @@
 //! behaviour is testable without a Restate runtime.
 
 use crate::spawn::Spawner;
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
-use crate::clock::Clock;
 use crate::report::Scope;
+use census_store::clock::Clock;
 
 /// The workflow key one job run is addressed by: `<job>[:<part>…]:<unix seconds>`.
 ///
@@ -69,6 +69,7 @@ mod census;
 mod ingest;
 mod jobs;
 mod jurisdiction;
+mod limits;
 mod national;
 mod open_work;
 mod plan;
@@ -83,17 +84,19 @@ pub use wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ConsolidatedTable,
     EndpointObservation, IngestReply, IngestRequest, IngestState, JurisdictionOpen,
     JurisdictionReport, JurisdictionRequest, JurisdictionState, JurisdictionSummary,
-    NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest, ReportReply,
-    ReportRequest, SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen, StageOutcome,
-    StatusReply, SweepReport, SweepRequest, TableCount, WindowRequest, WorkbookReply,
-    WorkbookRequest,
+    NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest,
+    RefusedSource, ReportReply, ReportRequest, SealItem, SealRef, SealReply, SealRequest,
+    SourceObjectOpen, SourcePlan, StageOutcome, StatusReply, SweepReport, SweepRequest, TableCount,
+    WindowRequest, WorkbookReply, WorkbookRequest,
 };
 
 // ---------------------------------------------------------------- planning
 
 // The applicability-driven plan. Public because the planner is the layer's first consumer of
 // `sources::applicability` and its dispositions are what a jurisdiction report records.
-pub use plan::{owed, plan_sources, plan, sweepable, BrowserLaneState, PlannedUnit, Refusal, UnitDisposition};
+pub use plan::{
+    owed, plan, plan_sources, sweepable, BrowserLaneState, PlannedUnit, Refusal, UnitDisposition,
+};
 
 // ---------------------------------------------------------------- services
 
@@ -123,20 +126,11 @@ pub const STOP_SIGNAL: &str = "stop";
 /// endpoint (cursor advanced but totals not, or the reverse) cannot exist.
 const KEY_STATE: &str = "state";
 
-/// Ceiling on rows in one ingest request. Callers split larger batches: the bound keeps one
-/// invocation's memory and journal entry predictable.
-pub const MAX_ROWS_PER_REQUEST: usize = 50_000;
-/// Ceiling on windows one sweep may observe, so the durable loop is bounded by construction.
-pub const MAX_SWEEP_WINDOWS: u32 = 366;
-
-/// Ceiling on the endpoints one sweep may observe. Each endpoint costs a durable object call, so an
-/// unbounded list is an admission-control hole; a larger fleet is observed by successive sweeps.
-pub const MAX_SWEEP_ENDPOINTS: usize = 256;
-
-/// Ceiling on the rosters one jurisdiction's object walks in one run. The ceiling is admission
-/// control like the sweeps': a caller may ask for fewer, and a state with more teams than this is
-/// covered by successive runs rather than by one unbounded invocation.
-pub const MAX_LIMIT_PER_STATE: usize = 10_000;
+// The ceilings an invocation is bounded by. They stay reachable at this path because `Ingest`, the
+// sweeps and the jurisdiction object read them, and `limits` holds their explanations.
+pub use limits::{
+    MAX_LIMIT_PER_STATE, MAX_ROWS_PER_REQUEST, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS,
+};
 
 /// Resolve a requested table name. Unknown names are terminal: a retry cannot fix a typo, and
 /// silently creating a table nobody scans would hide the mistake.
@@ -260,7 +254,7 @@ pub(super) async fn journaled_today_workflow(
 /// so a shrunk service surface still leaves nothing running that the drain does not own.
 #[tracing::instrument(skip_all, fields(max_concurrent))]
 pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spawner>) -> Endpoint {
-    let clock: Arc<dyn Clock> = Arc::new(crate::clock::SystemClock);
+    let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
     Endpoint::builder()

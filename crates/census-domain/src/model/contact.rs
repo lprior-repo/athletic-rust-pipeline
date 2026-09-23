@@ -36,4 +36,3 @@ pub fn professional_email(address: &str) -> Option<String> {
     });
     (!consumer).then(|| address.to_string())
 }
-

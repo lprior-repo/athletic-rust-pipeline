@@ -257,7 +257,7 @@ fn write_merged_csv(
     args: &MergeCoachesArgs,
 ) -> Result<()> {
     let published = &args.out;
-    midwest_census::store::read::publish_atomically(published, |temporary| {
+    census_store::read::publish_atomically(published, |temporary| {
         write_merged_body(temporary, published, kept)
     })?;
     Ok(())
@@ -268,20 +268,20 @@ fn write_merged_body(
     temporary: &std::path::Path,
     published: &std::path::Path,
     kept: &BTreeMap<(String, String, String, String), Row>,
-) -> midwest_census::store::StoreResult<()> {
+) -> census_store::StoreResult<()> {
     let mut writer = csv::Writer::from_path(temporary)
-        .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
         .write_record(HEADER)
-        .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in kept.values() {
         writer
             .write_record(row.to_fields())
-            .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
+            .map_err(|error| census_store::read::csv_failure(published, error))?;
     }
     writer
         .flush()
-        .map_err(|source| midwest_census::store::StoreError::Io {
+        .map_err(|source| census_store::StoreError::Io {
             path: published.to_path_buf(),
             source,
         })

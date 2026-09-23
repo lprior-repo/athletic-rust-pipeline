@@ -1,0 +1,38 @@
+[package]
+name = "census-store"
+version = "0.1.0"
+edition = "2021"
+description = "Fjall system of record for the census: append-only observations, keyspaces, snapshots, backup/restore/integrity."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[features]
+# `loom` compiles the store's concurrency model for sequence allocation. The model lives behind
+# `cfg(all(feature = "loom", test))`, so a default build neither compiles the dependency nor the
+# model; run it with `cargo test -p census-store --features loom --lib`.
+loom = ["dep:loom"]
+
+[dependencies]
+census-domain = { path = "../census-domain" }
+# The snapshot reader reports a CSV failure by name (`read::csv_failure`), so the reader's error type
+# names the CSV parser.
+csv = "1"
+# The store stamps its observations through the clock capability, so the capability ships with the
+# writer. ARCHITECTURE.md §4 gives `census-domain` the final home; that move requires `Clock::now` to
+# stop returning `tokio::time::Instant` (the domain tree may not name tokio) and is tracked
+# separately, so the trait lives here until then.
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+fjall = "=3.1.10"
+loom = { version = "0.7", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+tokio = { version = "1", features = ["time"] }
+tracing = "0.1"
+
+[dev-dependencies]
+loom = "0.7"
+tempfile = "3"

@@ -12,7 +12,7 @@
 //! materialized at a time, so the peak is a sheet's worth of cells rather than the whole census.
 
 use crate::report::{ReportError, ReportResult, Scope};
-use crate::store::Store;
+use census_store::Store;
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 

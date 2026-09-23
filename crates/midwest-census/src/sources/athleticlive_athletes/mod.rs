@@ -37,9 +37,9 @@ use std::collections::{HashMap, VecDeque};
 use serde_json::{json, Value};
 
 use crate::sources::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use crate::store::Table;
 use census_domain::model::CanonicalMeet;
 use census_domain::UsJurisdiction;
+use census_store::Table;
 
 mod batches;
 mod map;

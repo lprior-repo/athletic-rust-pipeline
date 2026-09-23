@@ -20,15 +20,15 @@ use census_domain::model::{
     SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use criterion::{Criterion, Throughput};
 use midwest_census::school_index::SchoolIndex;
 use midwest_census::sources::wiaa_results::{artifact_format, parse_result_body, ArtifactFormat};
-use midwest_census::store::{Store, Table};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
 
-use self::fixtures::{performance_observations, fixture};
+use self::fixtures::{fixture, performance_observations};
 
 /// Group ids. Stable, and unique per bench: a reported id is `<group>/<bench>`.
 const RESULT_FILE_GROUP: &str = "pipeline/result_file";
@@ -237,5 +237,3 @@ fn bench_merge(criterion: &mut Criterion) -> Result<()> {
     group.finish();
     Ok(())
 }
-
-

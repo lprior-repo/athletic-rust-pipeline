@@ -5,9 +5,9 @@
 
 use crate::net::Fetcher;
 use crate::sources::milesplit::{Site, TeamRef};
-use crate::store::Store;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

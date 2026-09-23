@@ -106,9 +106,7 @@ fn a_stale_page_marker_is_cleared_so_the_page_can_be_republished() {
         rosters: Vec::new(),
     };
     let first = page("first capture", 1);
-    store
-        .put_rankings_page(&first)
-        .expect("first publication");
+    store.put_rankings_page(&first).expect("first publication");
     store
         .put_rankings_page(&first)
         .expect("identical replay is idempotent");
@@ -297,7 +295,9 @@ fn page(
             .enumerate()
             .map(|(index, id)| RankingSourceRow {
                 result_id: *id,
-                row_number: u64::try_from(index).expect("row position").saturating_add(1),
+                row_number: u64::try_from(index)
+                    .expect("row position")
+                    .saturating_add(1),
             })
             .collect(),
         candidates: athletes
@@ -430,7 +430,9 @@ fn crash_child_drops_the_page_marker_then_aborts() {
 #[test]
 fn malformed_reference_values_are_corruption_not_absence() {
     let (_dir, store) = open_store();
-    let collection = store.put_bytes(b"reference collection").expect("collection");
+    let collection = store
+        .put_bytes(b"reference collection")
+        .expect("collection");
     let index = page(&store, &collection, "a", &[7, 8]);
     store.put_rankings_page(&index).expect("publish the page");
 
@@ -494,10 +496,12 @@ fn malformed_reference_values_are_corruption_not_absence() {
 #[test]
 fn page_write_refuses_values_the_stats_decoders_call_corrupt() {
     let (_dir, store) = open_store();
-    let collection = store.put_bytes(b"validation collection").expect("collection");
+    let collection = store
+        .put_bytes(b"validation collection")
+        .expect("collection");
     let base = page(&store, &collection, "a", &[1, 2]);
-    let marker = super::rankings::keys::page_marker_key(&collection, "100m", 1)
-        .expect("page marker key");
+    let marker =
+        super::rankings::keys::page_marker_key(&collection, "100m", 1).expect("page marker key");
 
     let zero_result_id = {
         let mut index = base.clone();
@@ -584,7 +588,9 @@ fn page_write_refuses_values_the_stats_decoders_call_corrupt() {
 #[test]
 fn an_abandoned_capture_is_stored_but_invisible_to_every_reader() {
     let (_dir, store) = open_store();
-    let collection = store.put_bytes(b"republication collection").expect("collection");
+    let collection = store
+        .put_bytes(b"republication collection")
+        .expect("collection");
     let abandoned = {
         let mut index = page(&store, &collection, "a", &[100]);
         // Position 5 and a missing roster make every event statistic move if the

@@ -221,4 +221,3 @@ impl Confidence {
         self.0
     }
 }
-

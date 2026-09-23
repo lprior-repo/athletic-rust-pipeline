@@ -78,7 +78,7 @@ fn pct(num: usize, den: usize) -> f64 {
 /// Publication is atomic: the audit csv is replaced whole, so a reader holding `path` never
 /// observes a partial audit.
 pub fn write_audit_csv(path: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
-    crate::store::read::publish_atomically(path, |temporary| {
+    census_store::read::publish_atomically(path, |temporary| {
         write_audit_csv_body(temporary, path, outcomes)
     })?;
     Ok(())
@@ -89,10 +89,10 @@ fn write_audit_csv_body(
     temporary: &Path,
     published: &Path,
     outcomes: &[FragmentOutcome],
-) -> crate::store::StoreResult<()> {
+) -> census_store::StoreResult<()> {
     let mut writer = csv::WriterBuilder::new()
         .from_path(temporary)
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
         .write_record([
             "fragment",
@@ -105,7 +105,7 @@ fn write_audit_csv_body(
             "source_url",
             super::VERDICT_COLUMN,
         ])
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     for outcome in outcomes {
         for row in &outcome.rows {
             writer
@@ -120,13 +120,15 @@ fn write_audit_csv_body(
                     row.row.source_urls.join(" ").as_str(),
                     row.verdict.as_str(),
                 ])
-                .map_err(|error| crate::store::read::csv_failure(published, error))?;
+                .map_err(|error| census_store::read::csv_failure(published, error))?;
         }
     }
-    writer.flush().map_err(|source| crate::store::StoreError::Io {
-        path: published.to_path_buf(),
-        source,
-    })
+    writer
+        .flush()
+        .map_err(|source| census_store::StoreError::Io {
+            path: published.to_path_buf(),
+            source,
+        })
 }
 
 /// Group verified rows by state and write one `<ST>.csv` per state into `dir` — the shape
@@ -156,7 +158,7 @@ pub fn write_state_union(
             continue;
         }
         let path = dir.join(format!("{state}.csv"));
-        crate::store::read::publish_atomically(&path, |temporary| {
+        census_store::read::publish_atomically(&path, |temporary| {
             write_state_file_body(temporary, &path, &rows)
         })?;
         counts.insert(state, rows.len());
@@ -172,13 +174,13 @@ fn write_state_file_body(
     temporary: &Path,
     published: &Path,
     rows: &[&RowOutcome],
-) -> crate::store::StoreResult<()> {
+) -> census_store::StoreResult<()> {
     let mut writer = csv::WriterBuilder::new()
         .from_path(temporary)
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
         .write_record(super::FRAGMENT_COLUMNS)
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     for row in rows {
         writer
             .write_record([
@@ -194,12 +196,14 @@ fn write_state_file_body(
                 row.row.source_urls.join(" ").as_str(),
                 row.row.last_observed.as_str(),
             ])
-            .map_err(|error| crate::store::read::csv_failure(published, error))?;
+            .map_err(|error| census_store::read::csv_failure(published, error))?;
     }
-    writer.flush().map_err(|source| crate::store::StoreError::Io {
-        path: published.to_path_buf(),
-        source,
-    })
+    writer
+        .flush()
+        .map_err(|source| census_store::StoreError::Io {
+            path: published.to_path_buf(),
+            source,
+        })
 }
 
 /// Write the freeze manifest: the timestamp, one `sha256 <path>` line per input fragment, then one

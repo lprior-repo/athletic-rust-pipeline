@@ -24,9 +24,10 @@ pub(crate) fn is_test_file(path: &Path) -> bool {
         .file_name()
         .and_then(OsStr::to_str)
         .is_some_and(|name| name.contains("tests"));
-    let under_tests = path
-        .components()
-        .any(|part| part.as_os_str() == OsStr::new("tests"));
+    let under_tests = path.components().any(|part| {
+        let part = part.as_os_str();
+        part == OsStr::new("tests") || part.to_str().is_some_and(|name| name.ends_with("_tests"))
+    });
     named || under_tests
 }
 

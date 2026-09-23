@@ -90,10 +90,7 @@ fn a_plan_holds_no_source_twice_and_follows_bulk_first_order() {
             "{jurisdiction:?} plans a source more than once: {slugs:?}"
         );
 
-        let expected: Vec<&str> = bulk_first(&slugs)
-            .iter()
-            .map(|entry| entry.slug)
-            .collect();
+        let expected: Vec<&str> = bulk_first(&slugs).iter().map(|entry| entry.slug).collect();
         assert_eq!(
             slugs, expected,
             "{jurisdiction:?} is not planned in bulk_first order"
@@ -206,6 +203,10 @@ fn every_row_states_its_evidence_and_its_refusal() {
             "{} has no evidence",
             row.slug
         );
-        assert!(!row.refusal.trim().is_empty(), "{} has no refusal", row.slug);
+        assert!(
+            !row.refusal.trim().is_empty(),
+            "{} has no refusal",
+            row.slug
+        );
     }
 }

@@ -1,8 +1,8 @@
 //! Publication: `report*.json` and the flat `census-by-state*.csv` next to the logs.
 
 use super::{io_error, Census, ReportError, ReportResult, Scope, StateCensus};
-use crate::store::read::publish_atomically;
-use crate::store::{Store, StoreError, StoreResult};
+use census_store::read::publish_atomically;
+use census_store::{Store, StoreError, StoreResult};
 
 /// Write the census JSON and a flat per-state CSV next to the consolidated logs.
 ///

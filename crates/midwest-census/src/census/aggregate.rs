@@ -5,13 +5,13 @@
 //! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
 use crate::sources::CrawlResult;
-use crate::store::{Entity, Store, StoreError, StoreResult, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
     ReviewVerdictRecord, SourceAccessCondition,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Entity, Store, StoreError, StoreResult, Table};
 use std::path::Path;
 use tracing::info;
 

@@ -68,6 +68,7 @@ use census_domain::model::{
     GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use midwest_census::bests::{self, BestResult, Measure};
 use midwest_census::net::Fetcher;
 use midwest_census::report::{self, Census, Scope};
@@ -77,7 +78,6 @@ use midwest_census::sources::{
     athleticlive, athleticlive_athletes, hytek, milesplit, ohsaa, raceday, wiaa, wiaa_results,
     AdapterContext, AdapterReport,
 };
-use midwest_census::store::{Store, Table};
 use midwest_census::{census, workbook};
 use sha2::{Digest, Sha256};
 
@@ -702,9 +702,13 @@ fn expected_ids_for(
         wiaa_results::level_of(&meet.name),
     );
     expected.meets.insert(expected_meet.id.as_str().to_string());
-    let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year).with_context(
-        || format!("{} (archive {}) names no school season", meet.date, artifact.year),
-    )?;
+    let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year)
+        .with_context(|| {
+            format!(
+                "{} (archive {}) names no school season",
+                meet.date, artifact.year
+            )
+        })?;
     let stem = artifact
         .url
         .rsplit('/')

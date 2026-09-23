@@ -1,8 +1,8 @@
 //! The KSHSAA directory pass: fetch the directory, then append and journal each member school.
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
-use crate::store::Table;
 use census_domain::model::CanonicalCoach;
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use std::collections::HashSet;
 
 use super::parse::{parse_ad_coach, parse_school};

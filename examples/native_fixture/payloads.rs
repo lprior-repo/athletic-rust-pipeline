@@ -169,6 +169,30 @@ pub fn response(status: StatusCode, content_type: &'static str, body: Vec<u8>) -
     response
 }
 pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
+    let (team, first, last) = bio_identity(id, case, sport);
+    let reported_id = if case == Scenario::WrongBioId {
+        9999
+    } else {
+        id
+    };
+    let teams = bio_teams(team, case, sport, identity_context(case));
+    let seasons = bio_seasons(id, case, team);
+    let (results_tf, results_xc, events, distances) = bio_blocks(id, case, sport, team);
+    json!({
+        "athlete":{"IDAthlete":reported_id,"FirstName":first,"LastName":last},
+        "allSeasons":seasons,
+        "allTeams":teams,
+        "grades":{},
+        "meets":{"9":{"MeetName":"Synthetic Meet"}},
+        "eventsTF":events,
+        "distancesXC":distances,
+        "resultsTF":results_tf,
+        "resultsXC":results_xc
+    })
+    .to_string()
+}
+
+fn bio_identity(id: u64, case: Scenario, sport: &str) -> (u64, &'static str, &'static str) {
     let team = 500_u64.saturating_add(id.saturating_sub(1000));
     let team = if matches!(case, Scenario::SplitLocation) && sport == "xc" {
         612
@@ -182,13 +206,12 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
         (Scenario::RawIdentityConflict, "xc") => ("Jose", "Runner"),
         _ => (first, last),
     };
-    let reported_id = if case == Scenario::WrongBioId {
-        9999
-    } else {
-        id
-    };
-    let (school, city, region) = identity_context(case);
-    let teams = match (case, sport) {
+    (team, first, last)
+}
+
+fn bio_teams(team: u64, case: Scenario, sport: &str, identity: (&str, &str, &str)) -> Value {
+    let (school, city, region) = identity;
+    match (case, sport) {
         (Scenario::Match, _) | (Scenario::Duplicate | Scenario::SplitLocation, "tf") => {
             json!({team.to_string(): {"SchoolName": school, "City": city, "Level": 4}})
         }
@@ -198,8 +221,11 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
         _ => {
             json!({team.to_string(): {"SchoolName": school, "City": city, "State": region, "Level": 4}})
         }
-    };
-    let seasons = if id == 1015 || case == Scenario::MissingHtmlHint {
+    }
+}
+
+fn bio_seasons(id: u64, case: Scenario, team: u64) -> Value {
+    if id == 1015 || case == Scenario::MissingHtmlHint {
         let mut entries = (12018_u16..=12025)
             .map(|season| json!({"SchoolID":team,"IDSeason":season}))
             .collect::<Vec<_>>();
@@ -207,9 +233,12 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
         Value::Array(entries)
     } else {
         json!([{"SchoolID":team,"IDSeason":12025}])
-    };
-    let tf_results = json!([{"IDResult":id,"AthleteID":id,"Result":"10.72","SchoolID":team,"MeetID":9,"SeasonID":12025,"EventID":1,"EventTypeID":7,"PersonalBest":14,"SeasonBest":1,"FAT":1,"shortCode":format!("synthetic-tf-{id}") }]);
-    let xc_results = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5000,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
+    }
+}
+
+fn bio_blocks(id: u64, case: Scenario, sport: &str, team: u64) -> (Value, Value, Value, Value) {
+    let results_tf = json!([{"IDResult":id,"AthleteID":id,"Result":"10.72","SchoolID":team,"MeetID":9,"SeasonID":12025,"EventID":1,"EventTypeID":7,"PersonalBest":14,"SeasonBest":1,"FAT":1,"shortCode":format!("synthetic-tf-{id}") }]);
+    let results_xc = json!([{"IDResult":id.saturating_add(100_000),"AthleteID":id,"Result":"17:42","SchoolID":team,"MeetID":9,"SeasonID":12025,"Distance":5000,"PersonalBest":1,"SeasonBest":1,"shortCode":format!("synthetic-xc-{id}") }]);
     let events = json!([{"IDEvent":1,"IDEventType":7,"Event":"100 Meters","Type":"T","FieldMeasureType":"S","PersonalEvent":true}]);
     let distances = json!([{"Meters":5000,"Distance":5,"Units":"km"}]);
     // Public-API regression fixture: Match poisons metadata for the unselected sport.
@@ -218,18 +247,7 @@ pub fn bio_body(id: u64, case: Scenario, sport: &str) -> String {
         (Scenario::Match, "xc") => (json!({"malformed": true}), distances),
         _ => (events, distances),
     };
-    json!({
-        "athlete":{"IDAthlete":reported_id,"FirstName":first,"LastName":last},
-        "allSeasons":seasons,
-        "allTeams":teams,
-        "grades":{},
-        "meets":{"9":{"MeetName":"Synthetic Meet"}},
-        "eventsTF":events,
-        "distancesXC":distances,
-        "resultsTF":tf_results,
-        "resultsXC":xc_results
-    })
-    .to_string()
+    (results_tf, results_xc, events, distances)
 }
 pub fn team_body(id: u64, case: Scenario) -> String {
     let (name, city, region) = identity_context(case);

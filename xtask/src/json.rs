@@ -19,13 +19,6 @@ pub fn number(value: Option<&Value>) -> u64 {
     value.and_then(Value::as_u64).unwrap_or(0)
 }
 
-/// The length of a JSON array, or `0` when the key is absent or is not an array.
-pub fn array_len(value: Option<&Value>) -> u64 {
-    value
-        .and_then(Value::as_array)
-        .map_or(0, |items| count(items.len()))
-}
-
 /// Python truthiness, for the one place the deleted scripts branched on it (`if not allow and old`).
 pub fn truthy(value: &Value) -> bool {
     match value {

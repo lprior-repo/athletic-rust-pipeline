@@ -5,7 +5,7 @@ use census_domain::model::*;
 use census_domain::UsJurisdiction;
 
 use super::*;
-use crate::store::Entity;
+use census_store::Entity;
 
 /// A Wisconsin school with one MileSplit school identity.
 fn school() -> CanonicalSchool {
@@ -268,8 +268,14 @@ fn a_canonical_id_collision_reaches_the_conflict_queue() {
         .expect("an id two subjects were keyed under is a retained conflict, not a silent merge");
     assert_eq!(collision.subject_id, jane.id.as_str());
     let detail = collision.detail.to_lowercase();
-    assert!(detail.contains("jane"), "the kept side's material: {detail}");
-    assert!(detail.contains("marta"), "the other side's material: {detail}");
+    assert!(
+        detail.contains("jane"),
+        "the kept side's material: {detail}"
+    );
+    assert!(
+        detail.contains("marta"),
+        "the other side's material: {detail}"
+    );
     assert!(
         report.conflicts >= 1,
         "the pass counts the finding it wrote into the queue"

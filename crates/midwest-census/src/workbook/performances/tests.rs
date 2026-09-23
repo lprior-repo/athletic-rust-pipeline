@@ -3,7 +3,6 @@
 //! dropped.
 
 use super::*;
-use crate::store::Table;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
@@ -11,6 +10,7 @@ use census_domain::model::{
     SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
+use census_store::Table;
 
 const DAY: &str = "2026-09-21";
 const SOURCE: &str = "wiaa_results";

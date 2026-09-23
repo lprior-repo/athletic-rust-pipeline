@@ -8,7 +8,7 @@ use std::path::Path;
 
 /// Saturating counter bump.
 ///
-/// Counters cannot exceed the scanned row count, which [`crate::store::MAX_ROWS_PER_TABLE`] bounds,
+/// Counters cannot exceed the scanned row count, which [`census_store::MAX_ROWS_PER_TABLE`] bounds,
 /// so saturation is unreachable in practice; it is here so a change to that bound can never wrap a
 /// counter or trap the report.
 pub(super) fn bump(counter: &mut usize) {

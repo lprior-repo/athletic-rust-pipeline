@@ -2,8 +2,8 @@
 //! the pre-Fjall JSONL journals.
 
 use anyhow::{Context, Result};
+use census_store::{Store, Table};
 use clap::Args;
-use midwest_census::store::{Store, Table};
 use std::path::{Path, PathBuf};
 
 /// `<table>\t<observations>` for every table, then the store's own totals.

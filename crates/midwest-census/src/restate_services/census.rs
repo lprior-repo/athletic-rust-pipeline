@@ -4,9 +4,9 @@ use std::sync::Arc;
 use restate_sdk::prelude::*;
 
 use crate::census::seal::{self, JournalCounts, SealRequest as StoreSealRequest};
-use crate::clock::Clock;
 use crate::report::Scope;
-use crate::store::Store;
+use census_store::clock::Clock;
+use census_store::Store;
 
 use super::publish::Jobs;
 use super::wire::{

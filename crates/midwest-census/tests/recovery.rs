@@ -57,10 +57,10 @@ use census_domain::model::{
     GradYear, SourceRef,
 };
 use census_domain::UsJurisdiction;
+use census_store::{Store, Table};
 use midwest_census::census::CollectOptions;
 use midwest_census::net::Fetcher;
 use midwest_census::sources::{ks, milesplit, AdapterContext, AdapterReport};
-use midwest_census::store::{Store, Table};
 use midwest_census::{census, report};
 use sha2::{Digest, Sha256};
 

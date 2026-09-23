@@ -11,7 +11,7 @@ use crate::report::ReportError;
 use crate::sources::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
-use crate::store::StoreError;
+use census_store::StoreError;
 
 use super::*;
 
@@ -280,6 +280,7 @@ fn answered_report() -> JurisdictionReport {
     JurisdictionReport {
         identity: "jurisdiction:WI:2026-27:1".to_string(),
         jurisdiction: UsJurisdiction::Wisconsin,
+        plan: SourcePlan::of(&plan(UsJurisdiction::Wisconsin, BrowserLaneState::Absent)),
         stages_run: vec!["teams".to_string(), "rosters".to_string()],
         teams: 7,
         rosters: StateProgress {
@@ -311,7 +312,7 @@ fn a_state_that_did_not_answer_becomes_a_failure_row_and_the_run_keeps_its_summa
     let failed = national::classify(
         UsJurisdiction::Iowa,
         key,
-        Err(TerminalError::new("index host refused the walk").into()),
+        Err(TerminalError::new("index host refused the walk")),
     );
     let national::Completion::Unanswered(failure) = failed else {
         panic!("a failed call must classify as a failure row, not a summary");
@@ -412,7 +413,11 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
     let with_lane = plan_sources(&[&BROWSER_ONLY], BrowserLaneState::Configured);
 
     let refusals = owed(&without_lane);
-    assert_eq!(refusals.len(), 1, "one applicable source this machine cannot run, one refusal");
+    assert_eq!(
+        refusals.len(),
+        1,
+        "one applicable source this machine cannot run, one refusal"
+    );
     assert_eq!(
         refusals[0].slug, BROWSER_ONLY.slug,
         "the refusal must name the source it refuses"

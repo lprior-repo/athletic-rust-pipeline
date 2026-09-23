@@ -80,16 +80,28 @@ fn new_evidence_mints_a_new_case_and_leaves_the_decided_one_as_history() {
 
 #[test]
 fn evidence_normalization_ignores_order_case_and_whitespace() {
-    let ordered =
-        ReviewCase::pending("Athlete identity", "ath_a", "Jordan Smith", "ids: ath_a, ath_b");
-    let reordered =
-        ReviewCase::pending("Athlete identity", "ath_a", "jordan smith", "ids:  ATH_B,   ath_a ");
+    let ordered = ReviewCase::pending(
+        "Athlete identity",
+        "ath_a",
+        "Jordan Smith",
+        "ids: ath_a, ath_b",
+    );
+    let reordered = ReviewCase::pending(
+        "Athlete identity",
+        "ath_a",
+        "jordan smith",
+        "ids:  ATH_B,   ath_a ",
+    );
     assert_eq!(
         ordered.id, reordered.id,
         "the same facts in another order, case or spacing are the same evidence"
     );
 
-    let changed =
-        ReviewCase::pending("Athlete identity", "ath_a", "Jordan Smith", "ids: ath_a, ath_c");
+    let changed = ReviewCase::pending(
+        "Athlete identity",
+        "ath_a",
+        "Jordan Smith",
+        "ids: ath_a, ath_c",
+    );
     assert_ne!(ordered.id, changed.id, "one changed fact is new evidence");
 }

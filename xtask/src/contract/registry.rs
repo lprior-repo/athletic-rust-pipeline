@@ -148,7 +148,11 @@ pub(super) fn admissions() -> Result<Check> {
 /// see", and telling a new *adapter* apart from a new *reader* needs this list: `sources/` holds both
 /// kinds, and a reader has no origin to admit, no transport, and nothing a plan can ask for. The list
 /// is the reason the check can be written as an equality rather than as a search for suspicious names.
-const NON_ADAPTERS: [(&str, &str); 6] = [
+const NON_ADAPTERS: [(&str, &str); 7] = [
+    (
+        "applicability",
+        "the per-jurisdiction source table the planner reads: data, with no origin to admit",
+    ),
     ("compiled", "parses the `Compiled` timer export family"),
     ("hytek", "parses Hy-Tek Meet Manager result files"),
     ("raceday", "parses RaceDay Scoring result exports"),

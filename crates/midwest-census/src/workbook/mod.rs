@@ -32,7 +32,7 @@
 
 use crate::bests::{self, BestResult};
 use crate::report::{build_census, io_error, xlsx_error, Census, ReportResult, Scope};
-use crate::store::Store;
+use census_store::Store;
 use rust_xlsxwriter::Workbook;
 use std::path::{Path, PathBuf};
 

@@ -196,7 +196,10 @@ fn the_sheets_render_the_rows_the_store_retains() {
         );
         conflicted_coach.professional_email = Some(format!(
             "{}@abbotsford.test",
-            name.split_whitespace().next().unwrap_or_default().to_lowercase()
+            name.split_whitespace()
+                .next()
+                .unwrap_or_default()
+                .to_lowercase()
         ));
         conflicted_coach.evidence.push(evidence.clone());
         store.append(Table::Coaches, &conflicted_coach).unwrap();

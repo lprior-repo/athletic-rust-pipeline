@@ -19,9 +19,12 @@
 //! [`StoreRows`] snapshot, so the workbook scans each table once.
 
 use crate::bests::BestResult;
-use crate::store::{Store, Table};
 use crate::report::{in_run_scope, jurisdiction_of, school_state_index, Census, ReportResult};
-use census_domain::{JurisdictionBucket, model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool}};
+use census_domain::{
+    model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool},
+    JurisdictionBucket,
+};
+use census_store::{Store, Table};
 use rust_xlsxwriter::Workbook;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;

@@ -5,9 +5,9 @@
 //! the run itself (gather, consolidate, index) stays in the parent module.
 
 use anyhow::{Context, Result};
+use census_store::Store;
 use midwest_census::report;
 use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
-use midwest_census::store::Store;
 use midwest_census::{bests, workbook};
 
 use super::RunArgs;

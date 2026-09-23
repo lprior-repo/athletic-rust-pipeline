@@ -84,7 +84,10 @@ fn a_merge_row_keeps_both_sides_of_the_decision_it_records() {
         "both sides' material is kept: a bare id redirect cannot be reversed"
     );
     assert_eq!(merge.retired_sources, "milesplit_school:wi-madison-west");
-    assert_eq!(merge.rationale, "School identity: one state, one normalized name");
+    assert_eq!(
+        merge.rationale,
+        "School identity: one state, one normalized name"
+    );
     assert_eq!(
         CanonicalMerge::new("sch_a", "sch_c", SourceEntityKind::Schools).id,
         merge.id,

@@ -6,8 +6,8 @@ use super::super::parse::{parse_school_page, IndexEntry, SchoolPage};
 use super::super::{count, fetch_options, Options};
 use crate::net::{FetchError, FetchOptions, FetchOutcome};
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
-use crate::store::Table;
 use census_domain::model::normalize_name;
+use census_store::Table;
 use futures::stream::{self, StreamExt};
 use std::collections::HashSet;
 

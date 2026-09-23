@@ -27,8 +27,8 @@
 //! pass succeeded, so the benches cannot measure a dataset that lost rows — the discipline
 //! `crates/midwest-census/examples/bench_store.rs` applies to its own observation counts.
 
-mod verify;
 mod dataset;
+mod verify;
 
 use anyhow::{ensure, Context, Result};
 use athletic_rust_pipeline::{
@@ -51,7 +51,7 @@ use std::{
 };
 use tempfile::TempDir;
 
-use self::dataset::{Dataset, written_export};
+use self::dataset::{written_export, Dataset};
 
 /// Worksheet name of the synthetic source workbook.
 const SHEET: &str = "Prospects";
@@ -74,8 +74,6 @@ fn main() {
     bench_finish(&mut criterion, &dataset);
     criterion.final_summary();
 }
-
-
 
 /// `WorkbookExport::new`: per-file construction cost (source re-hash plus worksheet state).
 fn bench_new(criterion: &mut Criterion, dataset: &Dataset) {
@@ -180,19 +178,6 @@ fn bench_finish(criterion: &mut Criterion, dataset: &Dataset) {
     });
     group.finish();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /// A row count as the `u64` a criterion throughput declaration needs.
 fn row_count(rows: usize) -> u64 {

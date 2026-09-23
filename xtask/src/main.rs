@@ -60,8 +60,8 @@ enum Command {
     /// Assert the architectural constants other work relies on: one line per check, non-zero exit
     /// when any of the eight is violated.
     Contract,
-    /// Check every `crate::…` reference between the census crate's top-level modules against the
-    /// allowed-edge table; JSON on stdout, non-zero exit on a violation.
+    /// Check every `crate::…` module reference and every sibling-crate reference in production
+    /// code against the two allowed-edge tables; JSON on stdout, non-zero exit on a violation.
     Seams,
     /// List the type-integrity review candidates of the domain modules; JSON on stdout.
     Integrity,

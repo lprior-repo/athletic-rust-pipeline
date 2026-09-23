@@ -11,7 +11,7 @@ use anyhow::{bail, Context, Result};
 
 use super::{table_rows, CensusState};
 use crate::census::Phase;
-use crate::store::{Store, StoreStats, Table};
+use census_store::{Store, StoreStats, Table};
 
 /// Which phase the store's own artifacts put this census in.
 ///

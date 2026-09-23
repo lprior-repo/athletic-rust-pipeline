@@ -18,11 +18,11 @@ use anyhow::{bail, Result};
 use clap::Args;
 use restate_sdk::prelude::Json;
 
+use census_store::Store;
 use midwest_census::census::seal::{self, SealOutcome};
 use midwest_census::census::{RetainedFindings, SealCounts, SealedCensus};
 use midwest_census::report::Scope;
 use midwest_census::restate_services::{CensusIngressClient, SealReply, SealRequest};
-use midwest_census::store::Store;
 
 use super::ingress;
 use super::{Cli, Route};
@@ -67,7 +67,7 @@ pub(super) struct SealArgs {
 pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
         Route::Offline(root) => {
-            let store = Store::open(root.to_path_buf())?;
+            let store = Store::open(root)?;
             let outcome = seal::seal(&store, &store_request(args))?;
             present(&Ladder::of_outcome(&outcome))
         }
@@ -154,7 +154,7 @@ impl Ladder {
             sealed: outcome.sealed().map(seal_ref),
             open,
             refusal: outcome.refusal.clone(),
-            counts: outcome.evidence.counts.clone(),
+            counts: outcome.evidence.counts,
             retained: outcome.evidence.retained.clone(),
             wrote: outcome
                 .wrote
@@ -176,7 +176,7 @@ impl Ladder {
                 .map(|item| (item.item.clone(), item.detail.clone()))
                 .collect(),
             refusal: reply.refusal.clone(),
-            counts: reply.counts.clone(),
+            counts: reply.counts,
             retained: reply.retained.clone(),
             wrote: reply.wrote.clone(),
         }

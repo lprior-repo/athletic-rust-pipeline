@@ -6,7 +6,7 @@
 //! builds canonical meets from, which is why the two constants the build needs live here.
 
 use crate::replay::{ensure_rows, unmapped, Capture};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use midwest_census::sources::athleticlive;
 use midwest_census::sources::athleticlive_athletes::{AthleteHit, HitTeam};
 use std::collections::BTreeSet;

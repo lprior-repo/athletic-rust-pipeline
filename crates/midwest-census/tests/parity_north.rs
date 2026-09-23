@@ -28,6 +28,7 @@ use anyhow::{bail, ensure, Context, Result};
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, Gender, Grade, SchoolId, SchoolYear, SourceRef, Sport,
 };
+use census_store::{Store, Table};
 use midwest_census::net::Fetcher;
 use midwest_census::sources::mshsl::{
     self, SchoolDetail, SchoolListRow, COACH_API_PREFIX, TEAMS_VIEW_URL,
@@ -35,7 +36,6 @@ use midwest_census::sources::mshsl::{
 use midwest_census::sources::plain_names::{self, NsaaRow, NsaaSchool};
 use midwest_census::sources::result_file::ParsedMeet;
 use midwest_census::sources::{hytek, AdapterContext};
-use midwest_census::store::{Store, Table};
 use serde_json::{json, Value};
 
 /// Evidence date every case stamps, matching the adapters' own fixture-backed tests.

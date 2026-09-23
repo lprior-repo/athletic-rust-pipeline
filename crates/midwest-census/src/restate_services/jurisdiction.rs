@@ -34,9 +34,9 @@ use restate_sdk::prelude::*;
 use tokio::sync::Mutex;
 
 use crate::census::WorkflowIdentity;
-use crate::clock::Clock;
 use crate::net::Fetcher;
-use crate::store::Store;
+use census_store::clock::Clock;
+use census_store::Store;
 
 use super::jobs;
 use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
@@ -72,6 +72,10 @@ impl JurisdictionCensus {
     /// Which stages run is decided by durable state, not by the request: a retry after a crash
     /// resumes at the first stage with no recorded outcome, which is what makes a re-invocation
     /// finish work instead of repeating it.
+    ///
+    /// The run's source plan is recorded before the first stage. It is not a stage — nothing is
+    /// swept by it — so it never appears in the names answered; what it adds is the record of which
+    /// sources this machine may sweep and which it owes.
     async fn run_owed_stages(
         &self,
         ctx: &ObjectContext<'_>,
@@ -85,42 +89,23 @@ impl JurisdictionCensus {
         let options = self.options(request, &today)?;
         let mut stages_run: Vec<String> = Vec::new();
 
+        self.record_plan(ctx, request, identity, state, &today)
+            .await?;
+
         if state.teams.is_none() {
-            let fetcher = self.fetcher().await?;
-            let outcome = self
-                .teams_stage(ctx, fetcher, request.jurisdiction, request.refresh)
+            self.teams_owed(ctx, request, identity, state, &today)
                 .await?;
-            state.teams = Some(outcome);
-            state.identity = identity.as_str().to_string();
-            self.save(ctx, state, &today);
             stages_run.push("teams".to_string());
         }
 
         if state.rosters.is_none() {
-            let fetcher = self.fetcher().await?;
-            let progress = self
-                .rosters_stage(ctx, fetcher, options, request.jurisdiction)
+            self.rosters_owed(ctx, request, options, state, &today)
                 .await?;
-            state.rosters = Some(progress);
-            self.save(ctx, state, &today);
             stages_run.push("rosters".to_string());
         }
 
         if state.meets.is_none() {
-            // The season year reaches the results index as a query parameter, so a year the URL
-            // cannot carry is a request fault rather than a source condition.
-            let year = u16::try_from(request.season.get()).map_err(|_| {
-                TerminalError::new(format!(
-                    "season year {} is not a results-index year",
-                    request.season.get()
-                ))
-            })?;
-            let fetcher = self.fetcher().await?;
-            let census = self
-                .meets_stage(ctx, fetcher, request.jurisdiction, year, request.refresh)
-                .await?;
-            state.meets = Some(census);
-            self.save(ctx, state, &today);
+            self.meets_owed(ctx, request, state, &today).await?;
             stages_run.push("meets".to_string());
         }
 
@@ -139,6 +124,12 @@ fn report(
     stages_run: Vec<String>,
     completed_at: String,
 ) -> Result<JurisdictionReport, HandlerError> {
+    // The plan is recorded before the first stage, so a report without one means this function ran
+    // ahead of the sequence rather than that a source told us nothing.
+    let plan = state
+        .plan
+        .clone()
+        .ok_or_else(|| jobs::invariant("no source plan recorded before the stages ran"))?;
     let teams = state
         .teams
         .as_ref()
@@ -157,6 +148,7 @@ fn report(
     Ok(JurisdictionReport {
         identity: identity.as_str().to_string(),
         jurisdiction: request.jurisdiction,
+        plan,
         stages_run,
         teams: teams.records,
         rosters,

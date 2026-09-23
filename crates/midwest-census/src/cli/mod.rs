@@ -34,10 +34,10 @@ mod verify;
 mod verify_coaches;
 use anyhow::{Context, Result};
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use clap::Parser;
 use midwest_census::net::Fetcher;
 use midwest_census::report;
-use midwest_census::store::Store;
 use std::path::PathBuf;
 
 use command::Command;

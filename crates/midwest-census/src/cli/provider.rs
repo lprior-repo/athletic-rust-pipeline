@@ -6,8 +6,8 @@
 use anyhow::{bail, Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_store::Store;
 use clap::Args;
-use midwest_census::store::Store;
 
 use super::{build_fetcher, Cli};
 
@@ -80,7 +80,8 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         fetcher: &fetcher,
         store,
         refresh: args.refresh,
-        school_year: SchoolYear::new(2026),
+        school_year: SchoolYear::new(2026)
+            .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?,
         observed_on: observed_on.clone(),
     };
     let outcome = match args.name.as_str() {

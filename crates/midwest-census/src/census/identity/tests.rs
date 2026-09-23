@@ -1,9 +1,7 @@
 //! Identity behavior: the wire form, the purity that makes a retry reuse the same address, and the
 //! two bounds that keep a provider's id space from deciding how long an identity gets.
 
-use super::{
-    scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES,
-};
+use super::{scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
@@ -79,7 +77,10 @@ fn the_scope_digest_is_order_stable_over_a_set() {
         scope_digest(&reversed),
         "the order a caller names states in is not part of the census"
     );
-    assert_eq!(scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Iowa]), scope_digest(&[UsJurisdiction::Iowa]));
+    assert_eq!(
+        scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Iowa]),
+        scope_digest(&[UsJurisdiction::Iowa])
+    );
     assert_ne!(
         scope_digest(&forward),
         scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Wisconsin]),
@@ -99,9 +100,11 @@ fn the_scope_digest_is_order_stable_over_a_set() {
 /// can carry however many states a caller names.
 #[test]
 fn a_full_scope_identity_fits_the_ceiling() {
-    for jurisdictions in [UsJurisdiction::CENSUS_SCOPE.as_slice(), &[UsJurisdiction::Alaska]] {
-        let identity =
-            WorkflowIdentity::national(season(), Revision(u32::MAX), jurisdictions);
+    for jurisdictions in [
+        UsJurisdiction::CENSUS_SCOPE.as_slice(),
+        &[UsJurisdiction::Alaska],
+    ] {
+        let identity = WorkflowIdentity::national(season(), Revision(u32::MAX), jurisdictions);
         assert!(
             identity.as_str().len() <= MAX_IDENTITY_BYTES,
             "{} bytes over {} jurisdictions",

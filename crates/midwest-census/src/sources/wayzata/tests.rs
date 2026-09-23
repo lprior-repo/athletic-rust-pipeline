@@ -138,7 +138,7 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         XC_2026,
     );
 
-    let store = crate::store::Store::open(dir.path().join("store")).expect("store");
+    let store = census_store::Store::open(dir.path().join("store")).expect("store");
     let fetcher = crate::net::Fetcher::new(
         &cache,
         None,
@@ -261,7 +261,7 @@ async fn a_journaled_schedule_is_skipped_on_the_next_run() {
         &schedule_url(ScheduleSport::CrossCountry, 2026),
         XC_2026,
     );
-    let store = crate::store::Store::open(dir.path().join("store")).expect("store");
+    let store = census_store::Store::open(dir.path().join("store")).expect("store");
     let fetcher = crate::net::Fetcher::new(
         &cache,
         None,

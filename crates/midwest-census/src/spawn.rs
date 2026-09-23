@@ -25,8 +25,8 @@ use std::time::Duration;
 use tokio::sync::oneshot;
 use tokio::task::JoinSet;
 
-use crate::clock::{Clock, SystemClock};
 use crate::outcome::{DrainState, Outcome};
+use census_store::clock::{Clock, SystemClock};
 
 mod ledger;
 use ledger::Ledger;

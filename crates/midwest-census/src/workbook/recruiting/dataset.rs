@@ -7,13 +7,15 @@
 //! source text: a printed cell traces either to a stored entity field or to a rule over stored fields
 //! that the sheet module documents.
 
-use census_domain::JurisdictionBucket;
-use crate::report::{in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope};
-use crate::store::{Store, Table};
+use crate::report::{
+    in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope,
+};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool,
 };
+use census_domain::JurisdictionBucket;
+use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashSet};
 
 use super::contact::{contacts, SchoolContacts};
@@ -57,76 +59,10 @@ pub(super) struct Dataset {
 }
 
 impl Dataset {
-    /// Load the store into the recruiting read model.
-    ///
-    /// The scope filter is [`retain_core`], applied to athletes, meets, events and performances in the
-    /// same order `bests` applies it, so the core scope of this workbook is the core scope the
-    /// platform's best-mark reduction publishes.
-    ///
-    /// The run scope is also applied: athletes are placed by their school's jurisdiction
-    /// (the same rule the census report uses), and coaches are kept only for in-scope schools.
+    /// Load the store into the recruiting read model: one scoped read of the store, then the
+    /// sheet-facing indexes derived from it.
     pub(super) fn load(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
-        // Run-scope filter: schools first, so we can place athletes by their school's jurisdiction.
-        let mut schools_raw: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-        schools_raw.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
-        let school_state = school_state_index(&schools_raw);
-        let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-        athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
-        let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
-        meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
-        let mut events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
-        let mut performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
-        if scope == Scope::Core {
-            retain_core(&mut athletes);
-            retain_core(&mut meets);
-            retain_core(&mut events);
-            retain_core(&mut performances);
-        }
-        let store_athletes = athletes.len();
-        let scoped_athletes = athletes.len();
-        if let Some(year) = grad_year {
-            athletes.retain(|athlete| athlete.grad_year.get() == year);
-        }
-        let schools = school_index(&schools_raw);
-        let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-        let scoped_school_ids: HashSet<&str> = schools_raw.iter().map(|s| s.id.as_str()).collect();
-        let coaches: Vec<CanonicalCoach> = coaches
-            .into_iter()
-            .filter(|c| scoped_school_ids.contains(c.school.as_str()))
-            .collect();
-        let contacts = contacts(&coaches);
-        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
-        let kinds = kind_index(&events);
-        let meet_of = meet_index(meets);
-        let tallies = tally(&athletes, &performances, &kinds);
-        let prs = prs::reduce(
-            &athletes,
-            &performances,
-            &kinds,
-            &meet_of,
-            &school_facts(&schools),
-        );
-        let pr_index = pr_index(&prs);
-        let audit = Reconciliation {
-            store_athletes,
-            scoped_athletes,
-            cohort_athletes: athletes.len(),
-            pr_rows: prs.len(),
-            coach_rows: coaches.len(),
-            contact_conflicts,
-        };
-        Ok(Self {
-            scope,
-            grad_year,
-            athletes,
-            schools,
-            coaches,
-            contacts,
-            tallies,
-            prs,
-            pr_index,
-            audit,
-        })
+        Ok(ScopedTables::read(store, scope, grad_year)?.assemble())
     }
 
     pub(super) fn audit(&self) -> Reconciliation {
@@ -173,5 +109,128 @@ impl Dataset {
             .into_iter()
             .flatten()
             .filter_map(|index| self.prs.get(*index))
+    }
+}
+
+/// The store rows one recruiting read model is assembled from: every merged entity table after the
+/// evidence-scope, run-scope and cohort filters, plus the athlete counts the run audit reports.
+struct ScopedTables {
+    scope: Scope,
+    grad_year: Option<i16>,
+    /// School rows the run scope kept, in the store's own order.
+    schools: Vec<CanonicalSchool>,
+    /// Cohort athletes: the in-scope rows left after the graduating-class filter.
+    athletes: Vec<CanonicalAthlete>,
+    /// Coach rows of the in-scope schools.
+    coaches: Vec<CanonicalCoach>,
+    meets: Vec<CanonicalMeet>,
+    events: Vec<CanonicalEvent>,
+    performances: Vec<CanonicalPerformance>,
+    /// Merged athlete rows the store returned, before the scope and cohort filters.
+    store_athletes: usize,
+    /// Athlete rows left after the evidence-scope filter.
+    scoped_athletes: usize,
+}
+
+impl ScopedTables {
+    /// Read the store once and apply every filter the recruiting scope owes the sheets.
+    ///
+    /// The scope filter is [`retain_core`], applied to athletes, meets, events and performances in the
+    /// same order `bests` applies it, so the core scope of this workbook is the core scope the
+    /// platform's best-mark reduction publishes.
+    ///
+    /// The run scope is also applied: athletes are placed by their school's jurisdiction
+    /// (the same rule the census report uses), and coaches are kept only for in-scope schools.
+    fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
+        // Run-scope filter: schools first, so we can place athletes by their school's jurisdiction.
+        let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
+        schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
+        let school_state = school_state_index(&schools);
+        let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
+        athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
+        let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
+        meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
+        let mut events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
+        let mut performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+        if scope == Scope::Core {
+            retain_core(&mut athletes);
+            retain_core(&mut meets);
+            retain_core(&mut events);
+            retain_core(&mut performances);
+        }
+        let store_athletes = athletes.len();
+        let scoped_athletes = athletes.len();
+        if let Some(year) = grad_year {
+            athletes.retain(|athlete| athlete.grad_year.get() == year);
+        }
+        let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
+        let scoped_school_ids: HashSet<&str> = schools.iter().map(|s| s.id.as_str()).collect();
+        let coaches: Vec<CanonicalCoach> = coaches
+            .into_iter()
+            .filter(|c| scoped_school_ids.contains(c.school.as_str()))
+            .collect();
+        Ok(Self {
+            scope,
+            grad_year,
+            schools,
+            athletes,
+            coaches,
+            meets,
+            events,
+            performances,
+            store_athletes,
+            scoped_athletes,
+        })
+    }
+
+    /// Assemble the read model: the school index, the contact facts, the per-athlete tallies, the PR
+    /// reduction, and the reconciliation the sheets are audited against.
+    fn assemble(self) -> Dataset {
+        let Self {
+            scope,
+            grad_year,
+            schools: schools_raw,
+            athletes,
+            coaches,
+            meets,
+            events,
+            performances,
+            store_athletes,
+            scoped_athletes,
+        } = self;
+        let schools = school_index(&schools_raw);
+        let contacts = contacts(&coaches);
+        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
+        let kinds = kind_index(&events);
+        let meet_of = meet_index(meets);
+        let tallies = tally(&athletes, &performances, &kinds);
+        let prs = prs::reduce(
+            &athletes,
+            &performances,
+            &kinds,
+            &meet_of,
+            &school_facts(&schools),
+        );
+        let pr_index = pr_index(&prs);
+        let audit = Reconciliation {
+            store_athletes,
+            scoped_athletes,
+            cohort_athletes: athletes.len(),
+            pr_rows: prs.len(),
+            coach_rows: coaches.len(),
+            contact_conflicts,
+        };
+        Dataset {
+            scope,
+            grad_year,
+            athletes,
+            schools,
+            coaches,
+            contacts,
+            tallies,
+            prs,
+            pr_index,
+            audit,
+        }
     }
 }

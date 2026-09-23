@@ -91,7 +91,7 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
-| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
 
 The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
@@ -142,10 +142,12 @@ contract: a qualification run with a small limit and the exhaustive run that fol
 share a revision.
 
 **Stage boundary.** A jurisdiction object owns exactly three durable stages — `teams`, `rosters`,
-`meets` (`restate_services/jurisdiction.rs:69-121`). Result acquisition, coach collection and §47 gap
-classification are batch commands (`collect`, `provider`, `import-coaches`) or the separate
-acquisition pipeline; they are not stages of a durable jurisdiction run, so a `NationalReport` says
-what the walk covered and says nothing about coaches.
+`meets` (`restate_services/jurisdiction.rs:101-140`). The source plan is not a fourth: the object
+records it in the same state value before the first stage runs, as a disposition the run carries
+(what it may sweep, what it refuses by name), so `stages_run` still names only the three stages.
+Result acquisition, coach collection and §47 gap classification are batch commands (`collect`,
+`provider`, `import-coaches`) or the separate acquisition pipeline; they are not stages of a durable
+jurisdiction run, so a `NationalReport` says what the walk covered and says nothing about coaches.
 
 **Consolidation.** Merging a table reads every observation of it, so the merge is not a stage a
 jurisdiction can afford: with 49 jurisdictions each merging the whole corpus, the `athletes` table
@@ -343,8 +345,8 @@ clients use a 300 s timeout with retries and redirects disabled.
   `SourceResource` → `FetchOutcome`; `ReadinessRequest` / nothing → `BrowserStatus`.
 * Census: `StatusReply`, `Consolidate*`, `Report*`, `Bests*`, `Workbook*`, `IngestRequest` →
   `IngestReply`, `WindowRequest` → `IngestState`, `SweepRequest` → `SweepReport`,
-  `JurisdictionRequest` → `JurisdictionReport` (`JurisdictionState`, `JurisdictionSummary`),
-  `NationalRequest` → `NationalReport` (`NationalFailure`).
+  `JurisdictionRequest` → `JurisdictionReport` (`JurisdictionState`, `JurisdictionSummary`,
+  `SourcePlan`), `NationalRequest` → `NationalReport` (`NationalFailure`).
 * Counts on the wire are `u64`, not `usize` — "the wire shape must not change with the host pointer
   width" (`IngestReply`).
 
@@ -503,6 +505,15 @@ keeps a 26 h inactivity window because a challenge can legitimately be waiting o
   observes endpoints, writes its report, and returns `interrupted: true` with the windows it saw.
 * **Rankings pause**: `RankingsCollectionState::pause` writes `Paused(Manual)` and stops
   re-scheduling; `resume` bumps the generation and requires a `Ready` browser.
+* **Invocation pause at the retry ceiling**: a definition declared
+  `on_max_attempts = "pause"` suspends a failed invocation for a human instead of failing it forever
+  — the SDK's own words are "the invocation enters the paused state and can be manually resumed from
+  the CLI or UI" (`restate-sdk/src/endpoint/builder.rs:130-132`). One consequence belongs on the
+  record for the national fan-out: a parent awaiting a paused child stays in flight rather than
+  seeing an error, so a jurisdiction that exhausted its three attempts parks the run until an
+  operator resumes that child — the pause is deliberate (three attempts, then a human), and the
+  jurisdictions' shared `state` reads stay callable, so `open-work` still names the ones that owe a
+  stage.
 * **Process shutdown**: `serve_with_cancel` stops intake and lets in-flight work finish; the drain
   deadline then aborts and *counts* what is left (`cancelled`/`timed_out`/`aborted`). Cancellation is
   not a CLI verb: a run stops when its source components stop or block (sweep interrupt, rankings

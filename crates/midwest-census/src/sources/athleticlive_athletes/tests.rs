@@ -53,7 +53,10 @@ fn grade_is_interpreted_against_the_meet_school_year() {
     let fallback = SchoolYear::new(2026).expect("2026 is a season");
     // Grade 11 in a 2025-26 meet is class of 2027.
     let spring_2026 = school_year_for_date("2026-04-25", fallback);
-    assert_eq!(GradYear::of(Grade::new(11).unwrap(), spring_2026).get(), 2027);
+    assert_eq!(
+        GradYear::of(Grade::new(11).unwrap(), spring_2026).get(),
+        2027
+    );
     // Grade 12 in a 2026-27 meet is also class of 2027.
     let fall_2026 = school_year_for_date("2026-09-12", fallback);
     assert_eq!(GradYear::of(Grade::new(12).unwrap(), fall_2026).get(), 2027);

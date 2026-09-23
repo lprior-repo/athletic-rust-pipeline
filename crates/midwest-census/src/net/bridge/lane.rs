@@ -14,7 +14,7 @@
 
 use super::wire::{BrowserOutcome, RequestSpec};
 use crate::net::FetchError;
-use restate_sdk::ingress::{ClientError, ReqwestClient, RequestTarget};
+use restate_sdk::ingress::{ClientError, RequestTarget, ReqwestClient};
 use restate_sdk::prelude::Json;
 
 /// The object the pipeline registers for the one headed profile. One key, because one profile: the
@@ -45,7 +45,10 @@ impl BrowserLane {
     /// only the call's own transport failure — an ingress that is not running, a service the
     /// deployment does not have, a reply that is not this wire's JSON — and that is exactly the
     /// "applicable but cannot run" case whose row the caller records.
-    pub(in crate::net) async fn answer(&self, spec: &RequestSpec) -> Result<BrowserOutcome, FetchError> {
+    pub(in crate::net) async fn answer(
+        &self,
+        spec: &RequestSpec,
+    ) -> Result<BrowserOutcome, FetchError> {
         let response = self
             .client
             .request::<Json<RequestSpec>, Json<BrowserOutcome>>(

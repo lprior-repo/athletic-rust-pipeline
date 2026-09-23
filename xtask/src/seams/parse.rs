@@ -8,6 +8,8 @@
 //! a reference inside a string literal, skipped by quote parity, because the module resolver in a
 //! fixture path is not a dependency of anything.
 
+use std::collections::BTreeMap;
+
 /// `crate::` — the only prefix that points into this crate's own module tree.
 const PREFIX: [char; 7] = ['c', 'r', 'a', 't', 'e', ':', ':'];
 
@@ -36,6 +38,43 @@ pub(super) fn refs_in_line(line: &str) -> Vec<String> {
         }
     }
     targets
+}
+
+/// Every workspace crate the line names through one of its aliases (`census_store::Table`).
+///
+/// The same lexical bargain as [`refs_in_line`], and one more approximation in the same direction:
+/// the answer is the *package* the alias belongs to, because the crate table is about crates and not
+/// about the identifiers a manifest happens to give them. Matching is anchored at both ends of the
+/// identifier, so `census_store_x` and `my_census_store` name nothing, and the identifier has to be
+/// followed by `::` — the path root — so a field whose name repeats a crate does not either.
+pub(super) fn crates_in_line(line: &str, aliases: &BTreeMap<String, String>) -> Vec<String> {
+    if line.trim_start().starts_with("//") {
+        return Vec::new();
+    }
+    let chars: Vec<char> = line.chars().collect();
+    let mut targets = Vec::new();
+    for (alias, package) in aliases {
+        let needle: Vec<char> = alias.chars().collect();
+        let mut cursor = 0usize;
+        while let Some(position) = find_from(&chars, &needle, cursor) {
+            cursor = position.saturating_add(needle.len());
+            let starts = position == 0
+                || chars
+                    .get(position.saturating_sub(1))
+                    .is_some_and(|ch| !is_ident_char(*ch));
+            let roots = chars.get(cursor) == Some(&':')
+                && chars.get(cursor.saturating_add(1)) == Some(&':');
+            if starts && roots && !inside_string(&chars, position) {
+                targets.push(package.clone());
+            }
+        }
+    }
+    targets
+}
+
+/// Whether the character may sit inside an identifier.
+fn is_ident_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_'
 }
 
 /// The module names a brace group contributes: each item's first segment.

@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use crate::outcome::DrainState;
-use crate::store::StoreError;
+use census_store::StoreError;
 
 use super::USAGE;
 

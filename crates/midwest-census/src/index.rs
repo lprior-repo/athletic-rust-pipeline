@@ -25,7 +25,7 @@ use census_domain::model::{
 use std::collections::BTreeMap;
 
 use crate::report::{coverage_report, ReportResult};
-use crate::store::{Store, Table};
+use census_store::{Store, Table};
 
 /// What one derivation pass wrote, per table.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -152,7 +152,10 @@ fn canonical_pass(store: &Store) -> ReportResult<CanonicalPass> {
     absorb(&mut pass, store.scan::<CanonicalMeet>(Table::Meets)?);
     // Events and performances name no provider identity of their own — §31 carries an event's and a
     // performance's provider ids — so they contribute only the collisions their merges retained.
-    take_collisions(&mut pass, store.scan::<CanonicalEvent>(Table::Events)?.iter());
+    take_collisions(
+        &mut pass,
+        store.scan::<CanonicalEvent>(Table::Events)?.iter(),
+    );
     take_collisions(
         &mut pass,
         store

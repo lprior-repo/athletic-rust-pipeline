@@ -9,8 +9,8 @@ use crate::census::{self, CollectOptions, MeetCensus, StateProgress};
 use crate::net::Fetcher;
 use crate::report::{self, ReportError, ReportResult, Scope};
 use crate::sources::CrawlError;
-use crate::store::{Store, StoreError, StoreResult, Table};
 use crate::{bests, workbook};
+use census_store::{Store, StoreError, StoreResult, Table};
 
 use super::wire::ingest::SweepReport;
 use super::wire::{BestsReply, ConsolidatedTable, ReportReply, StageOutcome, WorkbookReply};

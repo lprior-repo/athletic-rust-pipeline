@@ -8,10 +8,10 @@
 //! be stopped.
 
 use anyhow::{Context, Result};
+use census_store::Store;
 use clap::Args;
 use midwest_census::report;
 use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
-use midwest_census::store::Store;
 use midwest_census::{bests, workbook};
 use std::path::PathBuf;
 

@@ -24,42 +24,22 @@ pub(super) async fn process_artifact(
 ) -> CrawlResult<()> {
     let extension = artifact.extension.as_str();
     if artifact_format(extension, None) == ArtifactFormat::Unparsed {
-        run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
-        let formats = run.stats.formats.entry(extension.to_string()).or_default();
-        *formats = formats.saturating_add(1);
-        ctx.store.journal_done(
-            "wiaa_results",
-            &artifact.url,
-            &json!({
-                "url": artifact.url,
-                "parser": PARSE_VERSION,
-                "format": "indexed_only",
-                "year": artifact.year,
-                "stem": artifact.stem
-            }),
-        )?;
-        return Ok(());
+        return index_unparsed(ctx, run, artifact, extension);
     }
-
-    let fetched = match ctx.fetcher.get(&artifact.url, &ctx.fetch_options()).await {
-        Ok(meta) => meta,
-        Err(error) => {
-            run.stats.artifacts_failed = run.stats.artifacts_failed.saturating_add(1);
-            report.note(format!("{}: {error}", artifact.url));
-            return Ok(());
-        }
+    let Some(fetched) = fetch_body(ctx, report, run, artifact, extension).await else {
+        return Ok(());
     };
-    let body = fetched.text();
-    let format = artifact_format(extension, Some(&body));
-    if format == ArtifactFormat::Unparsed {
-        run.stats.artifacts_unsupported = run.stats.artifacts_unsupported.saturating_add(1);
-        report.note(format!("{}: unrecognised result format", artifact.url));
-        return Ok(());
-    }
     let source = run.source.clone();
-    let Some(parsed) = parse_artifact(&fetched, &body, format, artifact, &source, run, report)
-    else {
-        note_unparsed(run, report, artifact, format);
+    let Some(parsed) = parse_artifact(
+        &fetched.outcome,
+        &fetched.body,
+        fetched.format,
+        artifact,
+        &source,
+        run,
+        report,
+    ) else {
+        note_unparsed(run, report, artifact, fetched.format);
         return Ok(());
     };
     record_parsed_artifact(
@@ -69,11 +49,80 @@ pub(super) async fn process_artifact(
         ReadArtifact {
             parsed: &parsed,
             artifact,
-            format,
+            format: fetched.format,
             sport,
             observed_on: &options.observed_on,
         },
     )
+}
+
+/// Index an artifact whose extension names no format this walk reads: counted, journalled, never
+/// fetched.
+///
+/// The journal entry is what keeps a later run from looking at the same bytes twice: the artifact is
+/// recorded as read at the version of the index that looked at it.
+fn index_unparsed(
+    ctx: &AdapterContext<'_>,
+    run: &mut ArtifactRun,
+    artifact: &ArchiveArtifact,
+    extension: &str,
+) -> CrawlResult<()> {
+    run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
+    let formats = run.stats.formats.entry(extension.to_string()).or_default();
+    *formats = formats.saturating_add(1);
+    ctx.store.journal_done(
+        "wiaa_results",
+        &artifact.url,
+        &json!({
+            "url": artifact.url,
+            "parser": PARSE_VERSION,
+            "format": "indexed_only",
+            "year": artifact.year,
+            "stem": artifact.stem
+        }),
+    )?;
+    Ok(())
+}
+
+/// Fetch an artifact's body and the format its bytes declare, or `None` when the walk skips it.
+///
+/// Both skips are counted and reported here rather than by the caller: a fetch that failed, and a
+/// body that neither its extension nor its own bytes place in a format this walk reads.
+async fn fetch_body(
+    ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
+    run: &mut ArtifactRun,
+    artifact: &ArchiveArtifact,
+    extension: &str,
+) -> Option<FetchedBody> {
+    let fetched = match ctx.fetcher.get(&artifact.url, &ctx.fetch_options()).await {
+        Ok(meta) => meta,
+        Err(error) => {
+            run.stats.artifacts_failed = run.stats.artifacts_failed.saturating_add(1);
+            report.note(format!("{}: {error}", artifact.url));
+            return None;
+        }
+    };
+    let body = fetched.text();
+    let format = artifact_format(extension, Some(&body));
+    if format == ArtifactFormat::Unparsed {
+        run.stats.artifacts_unsupported = run.stats.artifacts_unsupported.saturating_add(1);
+        report.note(format!("{}: unrecognised result format", artifact.url));
+        return None;
+    }
+    Some(FetchedBody {
+        outcome: fetched,
+        body,
+        format,
+    })
+}
+
+/// A fetched body with the format it declares: the bytes the parse reads, and the format the
+/// absorption journals.
+struct FetchedBody {
+    outcome: FetchOutcome,
+    body: String,
+    format: ArtifactFormat,
 }
 
 /// Note a body that yielded no meet: counted unless PDFs are already reported by their tool error.
@@ -190,7 +239,8 @@ fn record_parsed_artifact(
     // publishes no date, filed by the archive under such a year — is refused before anything is
     // counted as read, so no row is filed under a year no source published and a later parser
     // version retries the artifact instead of finding it journaled as read.
-    let Some(school_year) = school_year_for(&read.parsed.date, read.sport, read.artifact.year) else {
+    let Some(school_year) = school_year_for(&read.parsed.date, read.sport, read.artifact.year)
+    else {
         run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
         report.note(format!(
             "{}: date {:?} (archive year {}) is not a school year",

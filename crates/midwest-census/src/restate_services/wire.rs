@@ -20,6 +20,12 @@ pub(super) mod open;
 /// themselves are defined in the private `open` module.
 pub use open::{JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectOpen};
 
+pub(super) mod plan;
+
+/// The source-plan family, re-exported for the same reason as the families above. The types
+/// themselves are defined in the private `plan` module.
+pub use plan::{RefusedSource, SourcePlan};
+
 pub(super) mod seal;
 
 /// The seal family, re-exported for the same reason as the two families above: this module stays
@@ -176,6 +182,12 @@ pub struct JurisdictionState {
     /// The identity this state belongs to; empty before the first run.
     #[serde(default)]
     pub identity: String,
+    /// The sources this jurisdiction's run carries. Built once, before the first stage, and kept:
+    /// a re-invocation resumes the plan it started with rather than deriving a second one. Absent
+    /// on a state journaled before the plan existed, which is why the object computes it whenever
+    /// it is missing.
+    #[serde(default)]
+    pub plan: Option<SourcePlan>,
     #[serde(default)]
     pub teams: Option<StageOutcome>,
     /// The roster walk's measured outcome, including its cohort counts and per-team errors.
@@ -196,6 +208,11 @@ pub struct JurisdictionState {
 pub struct JurisdictionReport {
     pub identity: String,
     pub jurisdiction: UsJurisdiction,
+    /// The plan the run carried: the applicable sources this machine may sweep, and the ones it
+    /// refuses by name. Read beside `stages_run` — the plan is the declared work, the stages are
+    /// what ran.
+    #[serde(default)]
+    pub plan: SourcePlan,
     /// Stages executed now, in order. Empty means every stage was already complete.
     pub stages_run: Vec<String>,
     pub teams: usize,

@@ -75,4 +75,3 @@ pub type AthleteId = Id<tag::Athlete>;
 pub type MeetId = Id<tag::Meet>;
 pub type EventId = Id<tag::Event>;
 pub type PerformanceId = Id<tag::Performance>;
-

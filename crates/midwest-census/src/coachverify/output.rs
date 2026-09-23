@@ -42,7 +42,7 @@ pub fn read_fragment(path: &Path) -> anyhow::Result<Vec<FragmentRow>> {
 /// The rows are built under a temporary and renamed onto `path`, so a reader (or a concurrent
 /// fragment) never observes a half-written state file.
 pub fn write_fragment(path: &Path, outcomes: &[RowOutcome]) -> anyhow::Result<()> {
-    crate::store::read::publish_atomically(path, |temporary| {
+    census_store::read::publish_atomically(path, |temporary| {
         write_fragment_body(temporary, path, outcomes)
     })?;
     Ok(())
@@ -57,13 +57,13 @@ fn write_fragment_body(
     temporary: &Path,
     published: &Path,
     outcomes: &[RowOutcome],
-) -> crate::store::StoreResult<()> {
+) -> census_store::StoreResult<()> {
     let mut writer = csv::WriterBuilder::new()
         .from_path(temporary)
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     writer
         .write_record(super::FRAGMENT_COLUMNS)
-        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+        .map_err(|error| census_store::read::csv_failure(published, error))?;
     for outcome in outcomes.iter().filter(|outcome| outcome.verdict.shipped()) {
         let row = &outcome.row;
         writer
@@ -80,12 +80,14 @@ fn write_fragment_body(
                 row.source_urls.join(" ").as_str(),
                 row.last_observed.as_str(),
             ])
-            .map_err(|error| crate::store::read::csv_failure(published, error))?;
+            .map_err(|error| census_store::read::csv_failure(published, error))?;
     }
-    writer.flush().map_err(|source| crate::store::StoreError::Io {
-        path: published.to_path_buf(),
-        source,
-    })
+    writer
+        .flush()
+        .map_err(|source| census_store::StoreError::Io {
+            path: published.to_path_buf(),
+            source,
+        })
 }
 
 /// The name a verified fragment keeps: the input directory becomes a prefix, so the two coach

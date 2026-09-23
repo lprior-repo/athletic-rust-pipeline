@@ -63,7 +63,11 @@ impl SchoolYear {
     /// `i16::MIN` that a pre-August date would step back to: the caller either drops the observation
     /// or falls back to the season it is running, and neither path stores a year no source published.
     pub fn containing(year: i16, month: u8) -> Option<Self> {
-        let opening = if month >= 8 { year } else { year.checked_sub(1)? };
+        let opening = if month >= 8 {
+            year
+        } else {
+            year.checked_sub(1)?
+        };
         Self::new(opening)
     }
 }
@@ -166,4 +170,3 @@ impl ObservedGrade {
         GradYear::of(self.grade, self.school_year)
     }
 }
-

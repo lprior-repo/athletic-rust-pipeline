@@ -3,7 +3,7 @@
 //! continues where it stopped.
 //!
 //! One process owns the store at a time: the database takes an exclusive lock in
-//! [`Store::open`](midwest_census::store::Store::open), so a run either holds the store for its
+//! [`Store::open`](census_store::Store::open), so a run either holds the store for its
 //! whole life or fails with the reason instead of interleaving writes with another process.
 
 #![forbid(unsafe_code)]

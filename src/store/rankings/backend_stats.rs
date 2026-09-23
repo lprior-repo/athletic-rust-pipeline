@@ -49,7 +49,9 @@ fn decode_checkpoint_pair(key: &[u8], offset: usize) -> Result<(&[u8], u64, u64)
     let first_offset = after_checkpoint(offset)?;
     let separator = first_offset.checked_add(8).ok_or(StoreError::CorruptData)?;
     let second_offset = separator.checked_add(1).ok_or(StoreError::CorruptData)?;
-    let expected_len = second_offset.checked_add(8).ok_or(StoreError::CorruptData)?;
+    let expected_len = second_offset
+        .checked_add(8)
+        .ok_or(StoreError::CorruptData)?;
     if key.len() != expected_len || key.get(separator) != Some(&0) {
         return Err(StoreError::CorruptData);
     }

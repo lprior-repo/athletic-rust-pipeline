@@ -1161,7 +1161,7 @@ fn nsaa_malformed_input_yields_no_rows() {
 #[tokio::test]
 async fn collect_skips_providers_it_was_not_asked_for() {
     let dir = tempfile::tempdir().expect("temp dir");
-    let store = crate::store::Store::open(dir.path().join("store")).expect("store");
+    let store = census_store::Store::open(dir.path().join("store")).expect("store");
     let fetcher = crate::net::Fetcher::new(
         dir.path().join("http"),
         None,

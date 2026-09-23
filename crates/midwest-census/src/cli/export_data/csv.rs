@@ -1,8 +1,8 @@
 //! CSV writing utility.
 
-use midwest_census::store::read::{csv_failure, publish_atomically};
-use midwest_census::store::{StoreError, StoreResult};
 use anyhow::Result;
+use census_store::read::{csv_failure, publish_atomically};
+use census_store::{StoreError, StoreResult};
 use std::path::Path;
 
 /// Write a CSV file with the given header and rows.

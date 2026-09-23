@@ -61,7 +61,7 @@ impl Coordinates {
         }
     }
 
-    fn plan(&self, method: &str) -> FetchPlan<'_> {
+    fn plan<'a>(&'a self, method: &'a str) -> FetchPlan<'a> {
         FetchPlan {
             method,
             url: URL,
@@ -99,7 +99,13 @@ async fn a_challenge_capture_leaves_a_human_required_row_and_no_evidence() {
     let fetcher = fetcher_in(dir.path());
     let coordinates = Coordinates::for_get(&fetcher);
     let plan = coordinates.plan("GET");
-    let capture: BrowserCapture = serde_json::from_str(CAPTURE_FIXTURE).expect("fixture decodes");
+    // The fixture is the transport's whole answer, so it is read as one: the capture is the arm it
+    // carries, and reading it through the envelope is what keeps the tag part of the contract.
+    let capture: BrowserCapture =
+        match serde_json::from_str(CAPTURE_FIXTURE).expect("fixture decodes") {
+            BrowserOutcome::Captured(capture) => capture,
+            other => panic!("the capture fixture is a capture, got {other:?}"),
+        };
     assert!(
         capture.challenge,
         "the shared fixture is a challenge capture, which is the case this test is about"
@@ -345,7 +351,11 @@ async fn a_failure_is_graded_as_the_transport_graded_it() {
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0].kind, AccessBlockKind::BrowserUnavailable);
 
-    let failure: BrowserFailure = serde_json::from_str(FAILURE_FIXTURE).expect("fixture decodes");
+    let failure: BrowserFailure =
+        match serde_json::from_str(FAILURE_FIXTURE).expect("fixture decodes") {
+            BrowserOutcome::Failed(failure) => failure,
+            other => panic!("the failure fixture is a failure, got {other:?}"),
+        };
     assert_eq!(
         failure.verdict,
         Verdict::HumanRequired,

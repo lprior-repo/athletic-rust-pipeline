@@ -24,6 +24,11 @@
 //! * `Review Flag` is `yes` when the athlete's identity confidence is below
 //!   `Confidence::HIGH`, i.e. no grade observation agrees with the canonical cohort.
 //!
+//! `row_for` publishes those cells as the concatenation of its column groups — identity, the sport
+//! flags with the event list, headline and counts, the profile URLs, the school's coach columns, the
+//! athlete's audit columns, and the contact ladder's answer — so the published order is the order the
+//! groups are listed in.
+//!
 //! `Public Recruiting GPA` and `GPA Source` carry no cell: `census-domain` has no GPA observation
 //! entity, and objective §36 forbids inferring one, so the workbook states the absence rather than a
 //! number nothing in the store supports.
@@ -68,9 +73,10 @@ use super::super::cells::{cell, row, Cell};
 use super::columns::{
     conflicts, coverage_state, current_grade, event_list, headline, source_count,
 };
-use super::contact;
+use super::contact::{self, Named, Preferred, SchoolContacts};
 use super::dataset::Dataset;
-use super::profiles::profiles_of;
+use super::facts::AthleteTally;
+use super::profiles::{profiles_of, Profiles};
 use super::prs::PrRow;
 
 /// The worksheet name, as objective §50 publishes it.
@@ -140,7 +146,8 @@ pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
     Ok(rows)
 }
 
-/// One athlete's published row.
+/// One athlete's published row: the column groups below, each contributing its columns in published
+/// order.
 fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Cell>> {
     let school = athlete.school.as_str();
     let tally = dataset.tallies.get(athlete.id.as_str());
@@ -149,47 +156,88 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
     let contacts = dataset.contacts.get(school);
     let preferred = contact::preferred(contacts, athlete);
     let director = contacts.and_then(|contacts| contacts.director.as_ref());
-    Ok(row!(
+    let mut cells = identity_cells(dataset, athlete);
+    cells.extend(participation_cells(athlete, tally, &prs)?);
+    cells.extend(profile_cells(profiles));
+    cells.extend(school_cells(dataset, athlete, contacts, director));
+    cells.extend(audit_cells(dataset, athlete, tally, &prs)?);
+    cells.extend(contact_cells(contacts, director, preferred));
+    Ok(cells)
+}
+
+/// The identity columns: the athlete's stored id and canonical name, the school the run places them
+/// at, and the cohort year with its newest observed grade.
+fn identity_cells(dataset: &Dataset, athlete: &CanonicalAthlete) -> Vec<Cell> {
+    let school = athlete.school.as_str();
+    row!(
         Cell::text(athlete.id.as_str()),
         Cell::text(athlete.canonical_name.clone()),
         Cell::text(dataset.school_state(school)),
         Cell::text(dataset.school_name(school)),
         Cell::Number(f64::from(athlete.grad_year.get())),
         current_grade(athlete),
+    )
+}
+
+/// The participation and best-mark columns: the four sport flags, the event kinds the athlete has a
+/// stored mark in, the `PRs` sheet's own headline, and the athlete's performance and meet counts.
+fn participation_cells(
+    athlete: &CanonicalAthlete,
+    tally: Option<&AthleteTally>,
+    prs: &[&PrRow],
+) -> ReportResult<Vec<Cell>> {
+    Ok(row!(
         flag(plays_track(athlete)),
         flag(athlete.sports.contains(&Sport::CrossCountry)),
         flag(athlete.sports.contains(&Sport::IndoorTrack)),
         flag(athlete.sports.contains(&Sport::OutdoorTrack)),
         Cell::text(event_list(tally)),
-        Cell::text(headline(&prs)),
+        Cell::text(headline(prs)),
         Cell::number(tally.map_or(0, |tally| tally.performances))?,
         Cell::number(tally.map_or(0, |tally| tally.meets.len()))?,
-        Cell::text(profiles.athletic_net.unwrap_or_default()),
-        Cell::text(profiles.milesplit.unwrap_or_default()),
+    ))
+}
+
+/// The three profile-URL columns, in the order [`Profiles`] splits them.
+fn profile_cells(profiles: Profiles) -> Vec<Cell> {
+    row!(
+        published(profiles.athletic_net),
+        published(profiles.milesplit),
         Cell::text(profiles.other.join("; ")),
-        Cell::text(
-            contacts
-                .and_then(|contacts| contacts.head_track.clone())
-                .unwrap_or_default()
-        ),
-        Cell::text(
-            contacts
-                .and_then(|contacts| contacts.head_cross_country.clone())
-                .unwrap_or_default()
-        ),
-        Cell::text(
-            contacts
-                .and_then(|contacts| contacts.coach_email.clone())
-                .unwrap_or_default()
-        ),
-        Cell::text(
-            director
-                .map(|director| director.name.clone())
-                .unwrap_or_default()
-        ),
+    )
+}
+
+/// The school-level columns: the head coaches the sheet names, the address of each, the athletic
+/// director, the school's athletics page, and the two GPA columns the objective states as an absence
+/// rather than a number nothing in the store supports.
+fn school_cells(
+    dataset: &Dataset,
+    athlete: &CanonicalAthlete,
+    contacts: Option<&SchoolContacts>,
+    director: Option<&Named>,
+) -> Vec<Cell> {
+    let school = athlete.school.as_str();
+    row!(
+        published(contacts.and_then(|contacts| contacts.head_track.clone())),
+        published(contacts.and_then(|contacts| contacts.head_cross_country.clone())),
+        published(contacts.and_then(|contacts| contacts.coach_email.clone())),
+        published(director.map(|director| director.name.clone())),
         Cell::text(dataset.athletics_url(school)),
         Cell::Empty,
         Cell::Empty,
+    )
+}
+
+/// The athlete's audit columns — sources count, identity confidence, coverage state, and the conflict
+/// and review flags — then the school's city, the last school-level cell before the contact ladder.
+fn audit_cells(
+    dataset: &Dataset,
+    athlete: &CanonicalAthlete,
+    tally: Option<&AthleteTally>,
+    prs: &[&PrRow],
+) -> ReportResult<Vec<Cell>> {
+    let school = athlete.school.as_str();
+    Ok(row!(
         Cell::number(source_count(athlete))?,
         Cell::Number(f64::from(athlete.identity_confidence.get())),
         Cell::text(coverage_state(
@@ -199,26 +247,32 @@ fn row_for(dataset: &Dataset, athlete: &CanonicalAthlete) -> ReportResult<Vec<Ce
         flag(conflicts(athlete)),
         flag(athlete.identity_confidence < Confidence::HIGH),
         Cell::text(dataset.school_city(school)),
-        Cell::text(
-            contacts
-                .and_then(|contacts| contacts.head_track_email.clone())
-                .unwrap_or_default()
-        ),
-        Cell::text(
-            contacts
-                .and_then(|contacts| contacts.head_cross_country_email.clone())
-                .unwrap_or_default()
-        ),
-        Cell::text(
-            director
-                .and_then(|director| director.email.clone())
-                .unwrap_or_default()
-        ),
+    ))
+}
+
+/// The recruiter-facing contact columns: the school's published addresses, then [`contact`]'s answer
+/// for this athlete — who to write to, in which role, at which address, and the typed state that says
+/// whether the school published a contact at all.
+fn contact_cells(
+    contacts: Option<&SchoolContacts>,
+    director: Option<&Named>,
+    preferred: Preferred,
+) -> Vec<Cell> {
+    row!(
+        published(contacts.and_then(|contacts| contacts.head_track_email.clone())),
+        published(contacts.and_then(|contacts| contacts.head_cross_country_email.clone())),
+        published(director.and_then(|director| director.email.clone())),
         Cell::text(preferred.name),
         Cell::text(preferred.role),
         Cell::text(preferred.email),
         Cell::text(preferred.state.as_str()),
-    ))
+    )
+}
+
+/// One column whose value the store may not hold: the stored value, or the blank cell the sheet
+/// prints when it holds none. A blank is "not published", never a value derived from something else.
+fn published(value: Option<String>) -> Cell {
+    Cell::text(value.unwrap_or_default())
 }
 
 /// `yes` for a recorded fact, blank otherwise; a blank is "the store does not say", never "no".

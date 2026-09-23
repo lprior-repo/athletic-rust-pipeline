@@ -31,9 +31,7 @@ pub(in crate::store) struct AcceptedPages {
 impl AcceptedPages {
     /// Number of pages the resolved markers publish for one event.
     pub(in crate::store) fn pages_for(&self, event_short: &str) -> u64 {
-        self.events
-            .get(event_short)
-            .map_or(0, |event| event.pages)
+        self.events.get(event_short).map_or(0, |event| event.pages)
     }
 
     /// Reports whether a marker of the collection accepts `checkpoint`.
@@ -91,7 +89,10 @@ pub(in crate::store) fn accepted_pages(
         {
             return Err(StoreError::CorruptData);
         }
-        accepted.pages = accepted.pages.checked_add(1).ok_or(StoreError::CorruptData)?;
+        accepted.pages = accepted
+            .pages
+            .checked_add(1)
+            .ok_or(StoreError::CorruptData)?;
         let _ = checkpoints.insert(checkpoint.as_str().as_bytes().to_vec());
     }
 

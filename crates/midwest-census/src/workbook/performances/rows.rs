@@ -19,15 +19,17 @@
 //! Relay legs are included. They are deliberately not personal bests (see [`crate::bests`]), but §52
 //! asks for every performance, and a 4x400 leg is one.
 
-use crate::bests::{mark_text, sport_of, Measure};
-use crate::report::{in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope};
-use crate::store::{Store, Table};
 use super::super::cells::{cell, row, Cell};
+use crate::bests::{mark_text, sport_of, Measure};
+use crate::report::{
+    in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope,
+};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     Evidence, Mark, MEET_STATE_UNRESOLVED,
 };
 use census_domain::JurisdictionBucket;
+use census_store::{Store, Table};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 

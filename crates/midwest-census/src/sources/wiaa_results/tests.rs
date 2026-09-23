@@ -79,13 +79,13 @@ fn current_season_files_are_found_under_the_dated_upload_path() {
 #[test]
 fn school_year_follows_the_sport_boundary() {
     // Spring 2025 track is inside school year 2024-25: grade 11 there is class of 2026.
-    let spring = school_year_for("2025-06-06", Sport::OutdoorTrack, 2025)
-        .expect("2025-06 is a season");
+    let spring =
+        school_year_for("2025-06-06", Sport::OutdoorTrack, 2025).expect("2025-06 is a season");
     assert_eq!(spring.get(), 2024);
     assert_eq!(GradYear::of(Grade::new(11).unwrap(), spring).get(), 2026);
     // Fall 2025 cross country opens school year 2025-26: grade 11 there is class of 2027.
-    let fall = school_year_for("2025-10-25", Sport::CrossCountry, 2025)
-        .expect("2025-10 is a season");
+    let fall =
+        school_year_for("2025-10-25", Sport::CrossCountry, 2025).expect("2025-10 is a season");
     assert_eq!(fall.get(), 2025);
     assert_eq!(GradYear::of(Grade::new(11).unwrap(), fall).get(), 2027);
     // A year-only date (RaceDay) still lands in the right school year per sport.

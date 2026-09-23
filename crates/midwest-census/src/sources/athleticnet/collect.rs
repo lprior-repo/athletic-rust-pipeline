@@ -9,11 +9,11 @@ use super::map::{Accumulator, Stats};
 use super::{read_registry, Options, Target, BIO_ENDPOINT, PARSE_VERSION};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SchoolId, SourceRef,
 };
+use census_store::Table;
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -204,7 +204,7 @@ pub(super) fn consolidated_index(ctx: &AdapterContext<'_>) -> CrawlResult<School
     if !path.exists() {
         return Ok(SchoolIndex::from_schools(&[]));
     }
-    let schools: Vec<CanonicalSchool> = crate::store::read::read_rows(&path)?;
+    let schools: Vec<CanonicalSchool> = census_store::read::read_rows(&path)?;
     Ok(SchoolIndex::from_schools(&schools))
 }
 

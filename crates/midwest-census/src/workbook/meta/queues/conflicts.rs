@@ -14,8 +14,8 @@
 use census_domain::model::{CanonicalAthlete, CanonicalSchool, MEET_STATE_UNRESOLVED};
 use std::collections::{BTreeMap, HashMap};
 
-use crate::identity::athlete_flags::{key as athlete_key, IdentityKey};
 use crate::workbook::recruiting::{disagreements, Disagreement};
+use census_review::athlete_flags::{key as athlete_key, IdentityKey};
 
 use super::super::{school_of, subject_of, Family, QueueRow, StoreRows};
 use super::{
@@ -77,8 +77,7 @@ pub(super) fn contact_conflicts(rows: &StoreRows, names: &HashMap<&str, &str>) -
     let mut family = Family::new(CONTACT_CONFLICT);
     for disagreement in disagreements(&rows.coaches) {
         let subject = subject_of(
-            school_of(names, disagreement.school.as_str())
-                .unwrap_or(disagreement.school.as_str()),
+            school_of(names, disagreement.school.as_str()).unwrap_or(disagreement.school.as_str()),
             None,
         );
         family.push(queue_row(
@@ -112,7 +111,10 @@ pub(super) fn athlete_identity(rows: &StoreRows, names: &HashMap<&str, &str>) ->
     let mut family = Family::new(ATHLETE_IDENTITY);
     let mut groups: BTreeMap<IdentityKey, Vec<&CanonicalAthlete>> = BTreeMap::new();
     for athlete in class_of_2027(&rows.athletes) {
-        groups.entry(athlete_key(athlete)).or_default().push(athlete);
+        groups
+            .entry(athlete_key(athlete))
+            .or_default()
+            .push(athlete);
     }
     for ((_, _, _), group) in groups.iter().filter(|(_, group)| group.len() > 1) {
         let ids = group

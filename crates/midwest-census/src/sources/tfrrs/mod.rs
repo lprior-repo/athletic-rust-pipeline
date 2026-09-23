@@ -166,6 +166,6 @@ fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSc
     if !path.exists() {
         return Ok(Vec::new());
     }
-    let schools: Vec<CanonicalSchool> = crate::store::read::read_rows(&path)?;
+    let schools: Vec<CanonicalSchool> = census_store::read::read_rows(&path)?;
     Ok(schools)
 }

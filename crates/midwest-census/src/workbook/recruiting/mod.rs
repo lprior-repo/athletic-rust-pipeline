@@ -54,7 +54,7 @@
 
 use crate::bests;
 use crate::report::{ReportResult, Scope};
-use crate::store::Store;
+use census_store::Store;
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 

@@ -16,12 +16,12 @@ use super::report::EntityCounts;
 use super::{classify, source_id, Route, PHASE};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     CanonicalTeam, SourceRef,
 };
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use serde_json::json;
 use std::collections::HashSet;
 

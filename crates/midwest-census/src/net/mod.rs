@@ -196,6 +196,15 @@ impl Fetcher {
         self
     }
 
+    /// Whether a browser lane is installed on this fetcher.
+    ///
+    /// The run's plan reads this rather than a flag kept beside the transport: a plan that refuses
+    /// browser-transported sources has to be refusing exactly what this fetcher cannot acquire, and
+    /// two copies of that answer is how the two drift apart.
+    pub fn has_browser_lane(&self) -> bool {
+        self.lane.is_some()
+    }
+
     /// Record (or refresh) the access condition one host imposed, and return the row.
     ///
     /// Called from the fetch path the moment a blocking status is seen, so the whole run shares one

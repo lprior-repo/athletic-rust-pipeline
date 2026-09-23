@@ -9,9 +9,9 @@ use super::parse::{schedule_rows, schedule_url, MeetRow, ScheduleSport};
 use super::{stats_of, Options, ADAPTER_ID, BASE, PARSE_VERSION, PROVIDER};
 use crate::school_index::SchoolIndex;
 use crate::sources::{AdapterContext, AdapterReport, CrawlResult};
-use crate::store::Table;
 use census_domain::model::{CanonicalMeet, Evidence, SourceIdentity, SourceNamespace, SourceRef};
 use census_domain::UsJurisdiction;
+use census_store::Table;
 use serde_json::json;
 use std::collections::{BTreeMap, HashMap, HashSet};
 

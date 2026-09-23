@@ -55,7 +55,10 @@ fn an_access_condition_is_keyed_by_kind_and_host() {
         .id,
         "a rate limit and a refusal are different findings about one host"
     );
-    assert_eq!(AccessBlockKind::RobotsDisallowed.slug(), "robots_disallowed");
+    assert_eq!(
+        AccessBlockKind::RobotsDisallowed.slug(),
+        "robots_disallowed"
+    );
     assert_eq!(AccessBlockKind::Unavailable.slug(), "unavailable");
     assert_eq!(
         AccessBlockKind::BrowserUnavailable.slug(),

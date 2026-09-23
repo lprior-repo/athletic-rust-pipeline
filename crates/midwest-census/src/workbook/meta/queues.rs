@@ -23,8 +23,8 @@ use census_domain::model::{
 use std::collections::HashMap;
 
 use crate::report::ReportResult;
-use crate::store::Store;
 use crate::workbook::cells::{cell, row, Cell};
+use census_store::Store;
 
 use super::{school_name_index, Family, QueueRow, StoreRows};
 

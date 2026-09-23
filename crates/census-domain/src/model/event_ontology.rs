@@ -205,4 +205,3 @@ pub struct SourceEventLabel {
     pub source: SourceRef,
     pub label: String,
 }
-
