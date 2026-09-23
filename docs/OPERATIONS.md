@@ -118,7 +118,7 @@ immediately. Plan concurrent consumers so they do not exceed `tabs × 4` in stea
 A run is not finished when the workbook exists; it is finished when the census is sealed. The seal
 assembles §70's evidence from the store (cohort counts, coverage gaps, conflicts, exhausted
 retries), reads the exported workbook back, and either completes the census with a digest or refuses
-and names the acceptance item that blocked it (§17, ADR-007).
+and names the acceptance item that blocked it (§17, ADR-011).
 
     census-service workbook --grad-year 2027                    # build the export first
     census-service seal --grad-year 2027 --write                # certify the newest out/*.xlsx

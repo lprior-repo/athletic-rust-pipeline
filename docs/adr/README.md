@@ -187,3 +187,21 @@ own decision.
 
 **Consequences.** The store migration runs before the national wave, is verified by count
 reconciliation on both sides, and keeps the single-writer rule: nothing else writes while it runs.
+
+---
+
+## ADR-011 — A census is sealed, not declared
+
+**Decision.** `CensusState` is the phase ladder and `Complete` is unconstructible without
+`SealEvidence`: the seal assembles §70's items from the store, reads the exported workbook back, and
+either renders a digest over the counts and retained findings or refuses, naming the acceptance item
+that blocked it. The long record, with its implementation pointers, is
+[`ADR-011-census-seal.md`](ADR-011-census-seal.md).
+
+**Why.** A boolean an operator can set cannot tell a partial corpus presented as the census from a
+finished one; only evidence that travels *inside* the terminal state can, and a refusal that names
+what is missing keeps the pressure on the finding rather than on the label.
+
+**Consequences.** Findings — gaps, identified conflicts, exhausted retries — ride inside the seal
+instead of blocking it; unresolved work and an unverified export do block it. Sealing is idempotent,
+and the same census sealed on two days renders the same digest.

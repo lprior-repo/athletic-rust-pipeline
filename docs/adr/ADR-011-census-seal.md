@@ -1,4 +1,4 @@
-# ADR-007: A census is sealed, not declared
+# ADR-011: A census is sealed, not declared
 
 ## Status
 
