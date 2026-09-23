@@ -10,7 +10,7 @@ the planned workspace split — read `ARCHITECTURE.md` at the repository root. F
 
 ## 1. Crate map
 
-Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-store`, `crates/census-crawl`, `crates/census-review`, `crates/census-service`, `crates/g1-audit` and `xtask`.
+Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-crawl`, `crates/census-reconcile`, `crates/census-report`, `crates/census-review`, `crates/census-store`, `crates/census-service`, `crates/g1-audit` and `xtask`.
 
 | Crate / package | Path | What it is | Bins |
 |---|---|---|---|

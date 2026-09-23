@@ -149,7 +149,7 @@ pub(super) fn admissions() -> Result<Check> {
 /// see", and telling a new *adapter* apart from a new *reader* needs this list: `sources/` holds both
 /// kinds, and a reader has no origin to admit, no transport, and nothing a plan can ask for. The list
 /// is the reason the check can be written as an equality rather than as a search for suspicious names.
-const NON_ADAPTERS: [(&str, &str); 10] = [
+const NON_ADAPTERS: [(&str, &str); 12] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -168,6 +168,14 @@ const NON_ADAPTERS: [(&str, &str); 10] = [
     (
         "xc",
         "parses the cross-country result files WIAA's timers publish",
+    ),
+    (
+        "context",
+        "the per-pass context a crawl walk borrows: the row sink and the reader in one value, admitting no origin of its own",
+    ),
+    (
+        "recording",
+        "the row sink the walks write through: it records what a pass acquired so the caller can post it as the object's own acquisition, and admits no origin",
     ),
     (
         "registry",

@@ -21,6 +21,7 @@ use crate::census::{CollectOptions, MeetCensus, StateProgress};
 use census_crawl::net::Fetcher;
 
 use super::JurisdictionCensus;
+use crate::restate_services::ingest_post;
 use crate::restate_services::jobs;
 use crate::restate_services::wire::StageOutcome;
 
@@ -67,6 +68,13 @@ impl JurisdictionCensus {
     /// Enumerate the jurisdiction's meets for one season year. The count and per-page journal are
     /// durable, so a re-invocation that reaches this stage again resumes at the first page this
     /// season has not already recorded.
+    ///
+    /// Each planned source's walk runs with a recording as well as the store: its rows are written
+    /// where the run reads them, and posted through that source's `Ingest` object — rows first, then
+    /// the journal entries the walk produced — so the run's acquisition of the source is measurable
+    /// on a durable object instead of being inferred from a report. The object calls are journaled
+    /// like every other call this workflow makes: a replay re-reads their replies without appending
+    /// twice.
     pub(super) async fn meets_stage(
         &self,
         ctx: &ObjectContext<'_>,
@@ -78,12 +86,32 @@ impl JurisdictionCensus {
     ) -> Result<MeetCensus, HandlerError> {
         let store = Arc::clone(&self.store);
         let at = super::super::journaled_today(ctx, &self.clock).await?;
-        let Json(census) = ctx
+        // The window is read before the walk, so a date the calendar cannot read refuses the stage
+        // instead of leaving a run that acquired sources without a window to file them under.
+        let window = ingest_post::window_of(&at)?;
+        let Json(outcome) = ctx
             .run(move || {
                 jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
             })
             .retry_policy(jobs::no_run_retry())
             .await?;
-        Ok(census)
+        for source in &outcome.recorded {
+            let endpoint = ingest_post::endpoint_of(&source.slug, jurisdiction);
+            let posted = ingest_post::post(ctx, &endpoint, &window, &source.recorded.rows).await?;
+            let store = Arc::clone(&self.store);
+            let entries = source.recorded.journal.clone();
+            let Json(journaled) = ctx
+                .run(move || jobs::flush_journal(store, entries))
+                .retry_policy(jobs::no_run_retry())
+                .await?;
+            tracing::info!(
+                endpoint = endpoint.as_str(),
+                window = window.as_str(),
+                posted,
+                journaled,
+                "routed a source's acquisition through its ingest object"
+            );
+        }
+        Ok(outcome.census)
     }
 }

@@ -225,7 +225,7 @@ impl Walk {
         let meets: Vec<CanonicalMeet> = meets.into_values().collect();
         // The minted meets and the entries naming the pages they came from commit together, so a page
         // counts as read only once the meets its rows produced are durable.
-        let mut batch = ctx.store.write_batch();
+        let mut batch = ctx.write_batch();
         batch.append_many(Table::Meets, &meets)?;
         for (url, payload) in pending {
             batch.journal_done(ADAPTER_ID, &url, &payload)?;

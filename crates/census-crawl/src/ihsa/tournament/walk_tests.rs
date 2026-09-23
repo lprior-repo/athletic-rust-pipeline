@@ -135,6 +135,7 @@ impl Harness {
             refresh: false,
             school_year: SchoolYear::new(2025).expect("2025 is a season"),
             observed_on: OBSERVED_ON.to_string(),
+            recording: None,
         };
         collect(&ctx, options)
             .await

@@ -24,7 +24,8 @@
 
 use census_crawl::milesplit::{MeetRef, Season, Site};
 use census_crawl::net::Fetcher;
-use census_crawl::CrawlResult;
+use census_crawl::recording::RowSink;
+use census_crawl::{CrawlResult, Recording};
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
@@ -115,10 +116,18 @@ pub async fn collect_state_meets(
     year: u16,
     observed_on: &str,
     refresh: bool,
+    recording: Option<&Recording>,
 ) -> CrawlResult<MeetCensus> {
     let site = Site::for_jurisdiction(jurisdiction);
     let mut census = MeetCensus::default();
     let mut rows: BTreeMap<String, SourceMeetRef> = BTreeMap::new();
+    // The sink decides who writes: the store this walk holds on a run that owns its rows, or the
+    // caller's recording on a run whose acquisition is posted to an `Ingest` object. The walk itself
+    // is the same either way.
+    let sink = match recording {
+        Some(recording) => RowSink::Record(recording),
+        None => RowSink::Store(store),
+    };
     for season in Season::ALL {
         let reader = SeasonReader {
             site,
@@ -129,14 +138,17 @@ pub async fn collect_state_meets(
             refresh,
         };
         census.seasons = census.seasons.saturating_add(1);
-        let walk = walk_season(fetcher, store, &reader, &mut rows).await?;
+        let walk = walk_season(fetcher, store, &reader, &mut rows, &sink).await?;
         census.fold(&walk);
     }
     let rows: Vec<SourceMeetRef> = rows.into_values().collect();
     // Appended, not replaced: a row is an observation of a page, and the store is what keeps an
     // earlier observation when a later one disagrees. Same-id rows merge, so re-running a census
-    // never grows the table past one row per meet.
-    store.append_many(Table::SourceMeets, &rows)?;
+    // never grows the table past one row per meet. A routed run hands the rows to its recording
+    // instead — the store write then belongs to its caller, which posts them before the markers.
+    let mut batch = sink.write_batch();
+    batch.append_many(Table::SourceMeets, &rows)?;
+    batch.commit()?;
     census.rows = rows.len();
     info!(
         state = jurisdiction.code(),

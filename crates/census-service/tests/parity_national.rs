@@ -82,6 +82,7 @@ impl Harness {
             refresh: false,
             school_year: SCHOOL_YEAR,
             observed_on: OBSERVED_ON.to_string(),
+            recording: None,
         }
     }
 

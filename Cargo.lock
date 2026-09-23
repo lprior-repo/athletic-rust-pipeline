@@ -535,6 +535,7 @@ dependencies = [
  "census-report",
  "census-review",
  "census-store",
+ "chrono",
  "clap",
  "criterion",
  "csv",

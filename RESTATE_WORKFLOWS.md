@@ -224,6 +224,30 @@ updated endpoint (cursor advanced but totals not, or the reverse) cannot exist"
 `appended` is produced inside `ctx.run`, so a replay of an acknowledged step reuses the journaled
 count instead of re-appending.
 
+#### 3.1.1 The census's acquisition route
+
+The census reaches `Ingest` from the meet-index stage of the jurisdiction workflow
+(`restate_services/jurisdiction/stage_runs.rs`). Each planned source's walk runs with a *recording*
+instead of the store (`census_crawl::recording`), and what it recorded is posted:
+
+| Piece | Value | Site |
+|---|---|---|
+| endpoint key | `<planned slug>_<state>` (`wiaa_results_wi`, `wayzata_ia`) | `restate_services/ingest_post.rs::endpoint_of` |
+| window | the ISO week of the run day (`2026-W39`) | `ingest_post.rs::window_of` |
+| rows | the walk's entity batches, chunked to `MAX_ROWS_PER_REQUEST` | `ingest_post.rs::post` |
+| ordering | every batch posted, then the walk's journal entries written to the store | `stage_runs.rs`, `jobs::flush_journal` |
+
+Two consequences are worth naming. The endpoint is a *source* coordinate rather than a run
+coordinate — `wiaa_results_wi` outlives each run and the window says when it was read, which is what
+makes one endpoint's counters comparable across runs. And the route can append a batch twice if the
+append commits and its acknowledgement is lost, exactly as §7.5 records for `record` itself: the
+unit is re-read from cache and re-posted, and the journal entry is what the run writes once the rows
+are durable.
+
+The stages that still write their own store — the state's own results index, the team-index and the
+roster stages — keep doing so: their walks are unchanged, and routing them is the same seam applied
+to their append sites.
+
 ### 3.2 `RunCoordinator` — per-run progress and sealed pages (pipeline)
 
 The pipeline equivalent lives in the `global`-keyed `RunCoordinator`, spread over three slot families:

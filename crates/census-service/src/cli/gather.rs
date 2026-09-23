@@ -141,6 +141,7 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
                     args.year,
                     &observed_on,
                     args.refresh,
+                    None,
                 )
                 .await?;
                 println!(

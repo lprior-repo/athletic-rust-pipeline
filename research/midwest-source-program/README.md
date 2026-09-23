@@ -10,8 +10,8 @@ the reasoning the adapters implement is reviewable next to the code that impleme
 | --- | --- | --- |
 | `brief/` | 4 | the mission brief, the 30 agent assignments, the coach-lane brief, the consolidation brief |
 | `research/midwest/` | 58 | the 49 assignment reports plus their evidence notes (`evidence/gap-closure`, `evidence/gaps/**`) |
-| `synthesis/` | 17 | the executive summary, the nine acceptance answers, the state playbook, adapter ranking, canonical mapping, compliance and risks, source matrix, open questions, weekly-incremental design, both gap plans, the measured census, the live pipeline state, the acceptance audit, and the Athletic.net endpoint ground truth |
-| `data/` | 18 | the products under the 25 MB cap: adapter ranking, source-coverage matrix, school alias map, canonical schools/coaches/meets, DirectAthletics indexes, MileSplit coverage, coach contacts, the AthleticLIVE meet inventory and seeds |
+| `synthesis/` | 18 | the executive summary, the nine acceptance answers, the state playbook, adapter ranking, canonical mapping, compliance and risks, source matrix, open questions, weekly-incremental design, both gap plans, the measured census, the live pipeline state, the acceptance audit, the Athletic.net endpoint ground truth, and the routed-ingest and seal record |
+| `data/` | 22 | the products under the 25 MB cap: adapter ranking, source-coverage matrix, school alias map, canonical schools/coaches/meets, DirectAthletics indexes, MileSplit coverage, coach contacts, the AthleticLIVE meet inventory and seeds, the acceptance audit, the coach-merge report, and the Athletic.net id-field inventory |
 | `reports/` | 16 | the measured scopes, by-state CSVs, best results for the class of 2027, and the run reports |
 | `scripts/` | 1 | the fragment merge script the coach lane calls |
 | `out/` | — | the coach lane's outputs: per-state fragments, their verified re-derivations, the verified union, the merged contacts CSV, the freeze manifests and gate tables, and the acceptance-by-state note |
@@ -68,3 +68,21 @@ fetcher's policy then parks the host for six hours. That is why the adapters are
 the tier list in `crates/census-service/README.md` puts the association, MileSplit, vendor-artifact
 and timer surfaces ahead of the mirror, and why the whole-meet pass is ordered by expected yield
 (championship and qualifier meets first) rather than by list position.
+
+## The 2026-09-23 seal
+
+The census the lanes have been feeding is sealed in the store on 2026-09-23: digest
+`5ab49d85c232c26363e8c2e04695ab2c6394d84eb31590c70fed78ccba9ad233`, 50 jurisdictions, 2,225,091
+athletes, 579,732 in the class of 2027, 31,818 schools, 11,016 meets, 23,970 performances and
+31,488 coaches, with 113 gaps and 4,548 conflicts retained and no host refused or throttled.
+`synthesis/14-routed-ingest-and-seal-2026-09-23.md` records the wave that made it possible — the
+walks now post what they acquire back to their own Restate objects, which is what closes the second
+§70 item by measurement — along with the pass timings, the export counts, the workbook's sheet and
+column contract, and the row-level check: `census-service verify --store var/midwest-census
+--workbook var/midwest-census/out/census-service-2026-09-23.xlsx` passes (5000 of 579,732 athletes
+sampled, 5000 of 202,979 performances). Drop the `--store` flag and the same command reads the
+default store, a different census, and reports the workbook's first row as missing; the flag is the
+whole difference.
+
+The coach lane's provenance CSV (`research/midwest/47-coach-provenance.csv`) was synced in from the
+working corpus, so the 47th report's evidence is reviewable next to the report that cites it.

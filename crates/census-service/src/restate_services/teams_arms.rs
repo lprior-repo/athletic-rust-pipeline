@@ -113,7 +113,7 @@ async fn walk_wiaa(
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at);
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::wiaa::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -136,7 +136,7 @@ async fn walk_mshsl(
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at);
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::mshsl::collect(&context, &options)
         .await
         .map_err(collect_error)?;
@@ -160,7 +160,7 @@ async fn walk_plain_names(
         states: vec![jurisdiction],
         school_names: Vec::new(),
     };
-    let context = adapter_context(store, fetcher, season, refresh, at);
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::plain_names::collect(&context, &options)
         .await
         .map_err(collect_error)?;

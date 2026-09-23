@@ -244,6 +244,7 @@ fn context<'a>(fetcher: &'a Fetcher, store: &'a Store, observed_on: &str) -> Ada
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: observed_on.to_string(),
+        recording: None,
     }
 }
 

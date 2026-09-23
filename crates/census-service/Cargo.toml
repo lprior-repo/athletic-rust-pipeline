@@ -42,6 +42,9 @@ census-reconcile = { path = "../census-reconcile" }
 # seal verbs are its consumers here.
 census-report = { path = "../census-report" }
 census-store = { path = "../census-store" }
+# The run date's own calendar: the ingest route labels a window by the ISO week it was read in, so
+# the week arithmetic is the crate's, not an inference from the date string.
+chrono = { version = "0.4", default-features = false, features = ["std"] }
 clap = { version = "4.5", features = ["derive"] }
 csv = "1"
 futures = "0.3"

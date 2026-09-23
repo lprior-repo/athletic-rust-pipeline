@@ -8,14 +8,14 @@ use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
 use census_crawl::net::Fetcher;
-use census_crawl::{AdapterContext, AdapterReport, CrawlError};
+use census_crawl::{AdapterContext, AdapterReport, CrawlError, RecordedJournal, Recording};
 use census_report::report::{self, ReportError, ReportResult, Scope};
 use census_report::{bests, workbook};
 use census_store::{Store, StoreError, StoreResult, Table};
 
 use super::wire::ingest::SweepReport;
 use super::wire::{BestsReply, ConsolidatedTable, ReportReply, WorkbookReply};
-use super::{cohort_label, JobError, MAX_ROWS_PER_REQUEST};
+use super::{cohort_label, job_error, JobError, MAX_ROWS_PER_REQUEST};
 
 /// Append observations for one table. Every row must carry its canonical `id`; that is what the
 /// store keys the observation by.
@@ -136,6 +136,7 @@ pub(super) fn adapter_context<'a>(
     season: SchoolYear,
     refresh: bool,
     at: &str,
+    recording: Option<&'a Recording>,
 ) -> AdapterContext<'a> {
     AdapterContext {
         fetcher: fetcher.as_ref(),
@@ -143,7 +144,32 @@ pub(super) fn adapter_context<'a>(
         refresh,
         school_year: season,
         observed_on: at.to_string(),
+        recording,
     }
+}
+
+/// Write the journal entries a recorded walk produced, once its rows have been posted.
+///
+/// The entries are the walk's own markers — "this unit has been read" — and the store's batch writes
+/// them beside the rows when one walk writes both. A routed walk writes neither: the caller posts
+/// the rows to the source's `Ingest` object first and flushes the markers after, which keeps the
+/// store's rule — no unit journaled whose rows are missing — across two writers. A run that stops in
+/// between re-reads the unit from cache and posts it again: work, not loss.
+pub(super) async fn flush_journal(
+    store: Arc<Store>,
+    entries: Vec<RecordedJournal>,
+) -> Result<Json<u64>, HandlerError> {
+    let written = u64::try_from(entries.len()).map_err(|_| {
+        TerminalError::new(format!("{} journal entries do not fit u64", entries.len()))
+    })?;
+    let mut batch = store.write_batch();
+    for entry in &entries {
+        batch
+            .journal_done(&entry.phase, &entry.key, &entry.payload)
+            .map_err(|source| job_error(source.into()))?;
+    }
+    batch.commit().map_err(|source| job_error(source.into()))?;
+    Ok(Json(written))
 }
 
 /// A walk's row count as a stage reports it.
@@ -200,6 +226,10 @@ pub(super) fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
         CrawlError::Invariant { detail } => JobError::Terminal { message: detail },
+        // A row that cannot be encoded for the wire will not encode on a replay either.
+        error @ CrawlError::Encode { .. } => JobError::Terminal {
+            message: error.to_string(),
+        },
         other => JobError::Transient {
             message: other.to_string(),
         },

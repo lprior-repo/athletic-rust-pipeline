@@ -6,6 +6,7 @@
 
 use census_crawl::milesplit::{self, MeetRef, Season, Site};
 use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::recording::RowSink;
 use census_crawl::CrawlResult;
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
@@ -42,11 +43,16 @@ pub(super) struct SeasonReader<'a> {
 }
 
 /// Walk one season's index page by page, keeping each page's rows in `rows`.
+///
+/// `sink` is where the walk's journal markers go: the store it holds on a run that owns its rows, or
+/// the caller's recording on a run whose acquisition is posted to an `Ingest` object. The page read
+/// and the row building are the same either way; only the marker's destination changes.
 pub(super) async fn walk_season(
     fetcher: &Fetcher,
     store: &Store,
     reader: &SeasonReader<'_>,
     rows: &mut BTreeMap<String, SourceMeetRef>,
+    sink: &RowSink<'_>,
 ) -> CrawlResult<SeasonWalk> {
     let phase = meets_phase(reader.jurisdiction, reader.season, reader.year);
     let known = store.journal_keys(&phase)?;
@@ -54,7 +60,7 @@ pub(super) async fn walk_season(
     let mut page = 1_u32;
     let mut previous: Option<Vec<String>> = None;
     loop {
-        let read = read_season_page(fetcher, store, reader, &phase, page, &known).await?;
+        let read = read_season_page(fetcher, reader, &phase, page, &known, sink).await?;
         walk.pages = walk.pages.saturating_add(1);
         walk.fetched = walk.fetched.saturating_add(usize::from(!read.journaled));
         walk.seen = walk.seen.saturating_add(read.meets.len());
@@ -92,13 +98,16 @@ struct SeasonPage {
 }
 
 /// Read one index page, journaling that it was read.
+///
+/// The journal read that decides whether this page is known stays with the caller: the store is the
+/// only surface that holds the phase's keys, and the sink is only where the new marker goes.
 async fn read_season_page(
     fetcher: &Fetcher,
-    store: &Store,
     reader: &SeasonReader<'_>,
     phase: &str,
     page: u32,
     known: &HashSet<String>,
+    sink: &RowSink<'_>,
 ) -> CrawlResult<SeasonPage> {
     let key = page.to_string();
     let journaled = !reader.refresh && known.contains(&key);
@@ -116,7 +125,11 @@ async fn read_season_page(
     )
     .await?;
     if !journaled {
-        store.journal_done(phase, &key, &serde_json::json!({ "meets": meets.len() }))?;
+        // One batch per marker, committed on its own: the marker is the walk's own commit boundary,
+        // and a routed run must hold it until the rows it covers are posted.
+        let mut batch = sink.write_batch();
+        batch.journal_done(phase, &key, &serde_json::json!({ "meets": meets.len() }))?;
+        batch.commit()?;
     }
     Ok(SeasonPage {
         journaled,

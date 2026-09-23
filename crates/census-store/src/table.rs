@@ -7,7 +7,7 @@
 //! and merges them at read time, so a row type must state how a second observation folds into the
 //! first, and the contract rules are applied on the merged value rather than on each observation.
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Hard ceiling on the observations one table may hold. A batch that would take a table past it is
 /// refused: an appender by the sequence the batch would reach — the counter is the row count for an
@@ -64,7 +64,11 @@ impl StorageMode {
 }
 
 /// The store's sixteen collections.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+///
+/// `Serialize`/`Deserialize` spell a table exactly as [`Table::file`] does — the wire name an
+/// `Ingest` request carries — which `a_table_serializes_as_its_wire_name` holds to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Table {
     Schools,
     Teams,
@@ -193,5 +197,23 @@ pub trait Entity: Serialize + DeserializeOwned + Clone {
     /// writes the snapshot, so reporting the count never re-scans the table.
     fn withheld_mailboxes(&self) -> usize {
         0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The wire name a table serializes as is the name every other reader uses (`table.file()`, the
+    /// name an `Ingest` request and a sidecar file carry). A table whose serde spelling drifted would
+    /// be a second name for one collection, so this is held rather than assumed.
+    #[test]
+    fn a_table_serializes_as_its_wire_name() {
+        for table in Table::ALL {
+            let encoded = serde_json::to_string(&table).expect("a table encodes");
+            assert_eq!(encoded, format!("\"{}\"", table.file()));
+            let decoded: Table = serde_json::from_str(&encoded).expect("a table decodes");
+            assert_eq!(decoded, table);
+        }
     }
 }

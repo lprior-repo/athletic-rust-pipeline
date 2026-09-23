@@ -193,7 +193,7 @@ fn append_entities(
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
     // The five tables and the artifact entries commit in one page: an artifact counts as read only
     // once the entities its rows minted are durable, so a run that stopped in between re-reads it.
-    let mut batch = ctx.store.write_batch();
+    let mut batch = ctx.write_batch();
     batch.append_many(Table::Meets, &meets)?;
     batch.append_many(Table::Teams, &teams)?;
     batch.append_many(Table::Athletes, &athletes)?;

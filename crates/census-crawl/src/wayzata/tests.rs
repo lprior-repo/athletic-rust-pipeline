@@ -153,6 +153,7 @@ async fn collect_mints_core_meets_from_the_provider_schedule_without_touching_th
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
+        recording: None,
     };
     let options = Options {
         years: vec![2026],
@@ -276,6 +277,7 @@ async fn a_journaled_schedule_is_skipped_on_the_next_run() {
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
+        recording: None,
     };
     let options = Options {
         years: vec![2026],

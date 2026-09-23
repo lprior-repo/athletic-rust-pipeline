@@ -76,6 +76,7 @@ pub fn run_key(job: &str, parts: &[&str]) -> String {
 mod browser_session;
 mod census;
 mod ingest;
+mod ingest_post;
 mod jobs;
 mod jurisdiction;
 mod limits;

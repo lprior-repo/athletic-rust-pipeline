@@ -655,6 +655,7 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
+        recording: None,
     };
     let options = Options {
         limit: Some(1),

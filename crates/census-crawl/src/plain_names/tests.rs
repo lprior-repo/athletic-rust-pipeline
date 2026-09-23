@@ -1174,6 +1174,7 @@ async fn collect_skips_providers_it_was_not_asked_for() {
         refresh: false,
         school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
+        recording: None,
     };
 
     let options = Options {

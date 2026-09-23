@@ -357,7 +357,7 @@ neither is a component.
 | component | kind (site) | handlers | identity key today | who binds it (production) |
 |---|---|---|---|---|
 | `Census` | `#[service]` `census.rs:28,43` | `status` `:55`, `open_work` `:81`, `seal` `:102` (the job handlers `consolidate`/`report`/`bests`/`workbook` are the separate `Consolidate`/`Report`/`Bests`/`Workbook` workflows, `publish.rs:97,145,193,245`) | none (stateless service) | n/a |
-| `Ingest` | `#[object]` `ingest.rs:15,65` | `state` `:77`, `record` `:83`, `complete_window` `:131` | one object per **endpoint string**: `IngestState.endpoint` is "Object key this state belongs to" (`wire/ingest.rs:12-14`); `SweepRequest.endpoints: Vec<String>` (`wire/ingest.rs:54-56`) | no in-repo binder; the key is whatever the caller passes |
+| `Ingest` | `#[object]` `ingest.rs:15,65` | `state` `:77`, `record` `:83`, `complete_window` `:131` | one object per **endpoint string**: `IngestState.endpoint` is "Object key this state belongs to" (`wire/ingest.rs:12-14`); `SweepRequest.endpoints: Vec<String>` (`wire/ingest.rs:54-56`) | **partly bound**: the meet-index stage binds `<planned slug>_<state>` from the plan and posts each arm's recorded rows (`restate_services/ingest_post.rs::endpoint_of`, `jurisdiction/stage_runs.rs`); no other stage binds one, and the key is still not a §8 identity |
 | `Sweep` | `#[workflow]` `sweep.rs:18,36` | `run` `:56`, `wait_windows` `:113`, `observe_endpoints` `:147`, `interrupt` `:174` | not minted in-repo: the request carries endpoints, windows, window_seconds (`wire/ingest.rs:54-62`) | no production binder (`Sweep` reaches `IngestClient` by endpoint, `sweep.rs:155`) |
 | `JurisdictionCensus` | `#[object]` `jurisdiction.rs:48,180` | `state` `:194`, `run` `:209` (+ owed stages `:89`) | `jurisdiction:{state}:{season}:{revision}` (`census/identity.rs:99-108`); object key comes from the client | `cli/national/run.rs:125,136`, `cli/national/observe.rs:104-106`; identity echoed in state (`restate_services/jurisdiction/stages.rs:207,226`) and reported at `restate_services/jurisdiction.rs:168` |
 | `NationalCensus` | `#[workflow]` `national.rs:42,199` | `run` `:217`, `report` `:282` | `national:<season>:<scope>:<revision>` (`census/identity.rs:83-96`) | `cli/national/run.rs:84,99,162,164` |
@@ -382,7 +382,11 @@ a boundary (`census/identity/tests.rs:92-94`).
 ### 5.2 Restate gaps
 
 1. `Sweep` and `Ingest` are keyed by *endpoint strings*, not by source/state/season — §8's
-   `source-sweep:{source}:{state}:{season}:{revision}` has a constructor but no binder.
+   `source-sweep:{source}:{state}:{season}:{revision}` has a constructor but no binder. Partly
+   closed: the meet-index stage now derives each `Ingest` key from the plan (`<slug>_<state>`) and
+   posts the arms' rows through it, so the key is no longer "whatever the caller passes" — but the
+   run's own coordinates live in the window (an ISO week) rather than in the key, and `Sweep`
+   itself remains unbound.
 2. `national:<season>:<scope>:<revision>` is bound but has no §8 name (a root-identity vocabulary gap).
 3. Four of the seven constructors (`meet`, `athlete`, `school`, `review`) have zero production
    callers — they are the ADR-004 / review-workflow coordinates that later waves must bind.

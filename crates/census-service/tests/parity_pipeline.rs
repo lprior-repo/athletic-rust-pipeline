@@ -278,6 +278,7 @@ async fn run_pipeline(root: &Path) -> Result<Run> {
         refresh: false,
         school_year: SCHOOL_YEAR,
         observed_on: OBSERVED_ON.to_string(),
+        recording: None,
     };
 
     // The fixture-derived corpus, on its way into the store.

@@ -195,7 +195,7 @@ fn append(
         &athletes,
         &mut performances,
     );
-    let mut page = ctx.store.write_batch();
+    let mut page = ctx.write_batch();
     page.append_many(Table::Meets, &meets)?;
     page.append_many(Table::Events, &events)?;
     page.append_many(Table::Teams, &teams)?;

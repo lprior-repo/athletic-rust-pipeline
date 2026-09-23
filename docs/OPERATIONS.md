@@ -55,7 +55,14 @@ content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/
 `.timer` runs exactly this chain weekly, against the **staging** store: the canonical store is written
 only by an endpoint deployment, so a collector run can neither race the national run for the Fjall
 writer lock nor write past the journal. Routing acquisition through the `Ingest` service is the
-replacement for the staging hop; no CLI subcommand drives it yet.
+replacement for the staging hop, and the service drives it: the meet-index stage of a jurisdiction run
+runs each planned source's walk with a recording and posts what it recorded through that source's
+`Ingest` object, keyed `<slug>_<state>` and filed under the ISO week it was read (§3.1.1 of
+`RESTATE_WORKFLOWS.md`). The walk's rows are still written to the store the run holds, so the meets a
+later stage selects are the same rows they always were; the object is what makes the run's acquisition
+measurable and durable outside the store. Nothing in the batch chain above routes yet, and the stages
+that still write their own store — the state's own results index, the team-index and the roster
+stages — are the ones left to route.
 
 **Flag surface (critical):** The batch CLI uses `--store` (not `--data-dir`, which is the
 `census-serve` unit's flag). The `collect` subcommand uses `--school-year` (not `--grad-year`).
@@ -141,17 +148,26 @@ the store route, not a bug. A finished census seals through the deployment that 
 — the run it *was submitted under*, never a new one. `--source-object <key>` names an ingest object
 to read, repeatably, because an object key is the caller's to choose and the service cannot enumerate
 them: naming none leaves item 2 unmeasured rather than reporting it as zero, and naming a key whose
-acquisition never ran that way reads as an endpoint that never accepted an observation. Acquisition
-still writes the store through the CLI, so today an online seal measures item 1 and reports item 2
-as unmeasured until acquisition is routed through `Ingest` (see *Weekly incremental refresh*); the
-two routes otherwise assemble the same ladder, and an operator reads one vocabulary either way.
+acquisition never ran that way reads as an endpoint that never accepted an observation. The
+meet-index stage routes each planned source's acquisition through `<slug>_<state>`, so an online seal
+measures item 2 from the endpoints the operator names; a pass that ran before the route existed
+leaves the same object readable and empty, and naming it is what refuses the seal rather than
+certifying a count nobody took. The two routes otherwise assemble the same ladder, and an operator
+reads one vocabulary either way.
 
 `--write` records the sealed state in `out/seal.json`. What the seal checks: the phase ladder
 against the store's own artifacts, the cohort the workbook's `Run Metrics` sheet names against the
 store's count, the `Coverage` sheet's jurisdiction rows against the classifier, and the workbook's
-bytes (sha256). What it does not check: the cell contents of the multi-million-row performance
-sheets — that reconciliation belongs to the workbook verifier, and the seal records
-`workbook_rows: 0` rather than a count it did not take.
+bytes (sha256); it records the rows it read as `workbook_rows`. What it does not check: the cell
+contents of the multi-million-row performance sheets — that reconciliation belongs to the workbook
+verifier:
+
+    census-service verify --store var/midwest-census --workbook var/midwest-census/out/census-service-2026-09-23.xlsx
+
+Name the store the workbook was written from. Without `--store`, the verifier opens the default
+store (`var/census-service`, a different census) and reports the workbook's first row as missing —
+true of that store and nothing else. Because the verifier opens the store itself, the store must not
+be held: stop `census-serve` for the check, then start it again.
 
 A recorded seal is read by the next run, so a `seal.json` written by an older build is not inert:
 where a field the current build requires was added later, every later seal dies parsing the file

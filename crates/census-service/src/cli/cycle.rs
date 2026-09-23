@@ -174,6 +174,7 @@ async fn gather_athleticnet(
         refresh: args.refresh,
         school_year: season,
         observed_on: observed_on.clone(),
+        recording: None,
     };
     let report = census_crawl::athleticnet::collect(
         &context,

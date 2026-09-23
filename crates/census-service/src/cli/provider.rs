@@ -83,6 +83,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         school_year: SchoolYear::new(2026)
             .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?,
         observed_on: observed_on.clone(),
+        recording: None,
     };
     let outcome = match args.name.as_str() {
         "ks" => arms::ks_report(&context, args, observed_on).await,
