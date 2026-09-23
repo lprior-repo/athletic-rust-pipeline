@@ -50,8 +50,8 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalPerformance, EventKind, Gender, GradYear, Id, Mark,
     TeamId,
 };
-use rust_xlsxwriter::Workbook as Xlsx;
 use census_report::bests::mark_text;
+use rust_xlsxwriter::Workbook as Xlsx;
 
 use super::verify::{run_verify, VerifyArgs};
 use census_store::{Store, Table};

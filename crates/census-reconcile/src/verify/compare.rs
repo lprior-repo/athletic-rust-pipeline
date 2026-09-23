@@ -25,7 +25,11 @@ pub struct EntityCheck {
 }
 
 /// Extract a trimmed string field from a row via the column map.
-pub(super) fn field<'a>(col_map: &'a HashMap<&str, usize>, row: &'a [String], name: &str) -> &'a str {
+pub(super) fn field<'a>(
+    col_map: &'a HashMap<&str, usize>,
+    row: &'a [String],
+    name: &str,
+) -> &'a str {
     col_map
         .get(name)
         .and_then(|&i| row.get(i))
@@ -172,4 +176,3 @@ fn check_athlete_cohort(
         ),
     })
 }
-

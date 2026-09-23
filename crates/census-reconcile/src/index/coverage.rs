@@ -7,7 +7,9 @@
 
 use std::collections::BTreeMap;
 
-use census_domain::model::{CoverageRow, CoverageScope, GradYear, SourceNamespace, SourceObjectIdentity};
+use census_domain::model::{
+    CoverageRow, CoverageScope, GradYear, SourceNamespace, SourceObjectIdentity,
+};
 
 use census_report::report::{coverage_report, ReportResult};
 use census_store::Store;

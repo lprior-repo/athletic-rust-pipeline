@@ -6,7 +6,7 @@ use super::*;
 use crate::{Entity, Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Confidence, Gender, Grade, GradYear,
+    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Confidence, Gender, GradYear, Grade,
     ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
     CANONICAL_ID_COLLISION_FAMILY,
 };

@@ -54,13 +54,10 @@ pub fn verify_performances(
 
 /// Every event row's printed label, by event id: the sheet writes `kind.stable_key()`.
 fn event_labels(store: &Store) -> Result<HashMap<String, String>, Discrepancy> {
-    let events: Vec<CanonicalEvent> =
-        store
-            .scan(Table::Events)
-            .map_err(|source| Discrepancy {
-                row: 0,
-                message: format!("reading events from store: {source}"),
-            })?;
+    let events: Vec<CanonicalEvent> = store.scan(Table::Events).map_err(|source| Discrepancy {
+        row: 0,
+        message: format!("reading events from store: {source}"),
+    })?;
     Ok(events
         .into_iter()
         .map(|event| {

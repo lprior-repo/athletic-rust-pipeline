@@ -306,7 +306,11 @@ fn a_recorded_decision_survives_the_next_derivation() {
     derive(&store, "index", "2026-09-22").expect("first pass");
 
     let case = case_for(&store, meet.id.as_str());
-    assert_eq!(case.state, ReviewState::Pending, "the lane has asked nothing");
+    assert_eq!(
+        case.state,
+        ReviewState::Pending,
+        "the lane has asked nothing"
+    );
     let mut decided = case.clone();
     decided.state = ReviewState::Resolved;
     store
