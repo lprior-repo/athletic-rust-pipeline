@@ -16,7 +16,7 @@ members = [
     "crates/census-report",
     "crates/census-review",
     "crates/census-store",
-    "crates/midwest-census",
+    "crates/census-service",
     "crates/g1-audit",
     "xtask",
 ]

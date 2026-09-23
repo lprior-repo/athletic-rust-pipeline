@@ -16,7 +16,7 @@ use std::path::Path;
 
 #[test]
 fn top_modules_read_the_path_shape() {
-    let src = Path::new("/crates/midwest-census/src");
+    let src = Path::new("/crates/census-service/src");
     assert_eq!(top_module(src, &src.join("lib.rs")).as_deref(), Some("lib"));
     assert_eq!(
         top_module(src, &src.join("bootstrap/mod.rs")).as_deref(),
@@ -28,7 +28,7 @@ fn top_modules_read_the_path_shape() {
     );
     assert_eq!(top_module(src, &src.join("main.rs")), None);
     assert_eq!(top_module(src, &src.join("cli/mod.rs")), None);
-    assert_eq!(top_module(src, &src.join("bin/midwest-serve.rs")), None);
+    assert_eq!(top_module(src, &src.join("bin/census-serve.rs")), None);
 }
 
 #[test]

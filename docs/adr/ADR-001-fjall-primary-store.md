@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Implemented: census store `crates/midwest-census/src/store/` (keyspaces `entities`,
+Accepted. Implemented: census store `crates/census-service/src/store/` (keyspaces `entities`,
 `journal`, `meta`) and the root acquisition store (`src/store.rs`, `src/store/rankings/`). Two defects
 present today are named under Consequences, not described as future work.
 
@@ -26,7 +26,7 @@ events, performances), source identities and raw observations, and evidence, cov
 review outcomes.
 
 * The census crate opens three keyspaces — `entities`, `journal`, `meta`
-  (`crates/midwest-census/src/store/mod.rs:135-138`, created at `:241-249` with
+  (`crates/census-service/src/store/mod.rs:135-138`, created at `:241-249` with
   `KeyspaceCreateOptions::default`) — with the seven tables as prefixes inside `entities`
   (`store/mod.rs:140-179`), keyed `<table>\0<id>\0<sequence:u64 big-endian>` so a prefix scan reads
   one entity's history in write order (`store/mod.rs:9-13`; `docs/FJALL_SCHEMA.md:22-30`).
@@ -38,7 +38,7 @@ review outcomes.
   overwrites a prior observation — including school attribution after a transfer
   (`ARCHITECTURE.md:45-46`).
 * The workbook is a projection that must reconcile against the store before a run is sealed
-  (`crates/midwest-census/src/workbook/mod.rs:3-6`).
+  (`crates/census-service/src/workbook/mod.rs:3-6`).
 
 ## Consequences
 
@@ -66,8 +66,8 @@ review outcomes.
 
 ## Evidence
 
-Read directly: `ARCHITECTURE.md:36,38-41,45-46`; `crates/midwest-census/src/store/mod.rs:9-13,38,125,
-135-179,207-210,219-222,241-249`; `store/keys.rs`; `crates/midwest-census/src/workbook/mod.rs:3-6`;
+Read directly: `ARCHITECTURE.md:36,38-41,45-46`; `crates/census-service/src/store/mod.rs:9-13,38,125,
+135-179,207-210,219-222,241-249`; `store/keys.rs`; `crates/census-service/src/workbook/mod.rs:3-6`;
 `docs/adr/ADR-006-excel-recruiter-query-layer.md:27-34`; `RESTATE_WORKFLOWS.md:371-373`;
 `src/store.rs:141-146`.
 

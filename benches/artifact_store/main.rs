@@ -6,7 +6,7 @@
 //!
 //! **Which store this is.** The root `ArtifactStore` is the Fjall-backed `documents` /
 //! `source_index` pair that preserves source workbooks, retained documents and source rows; it is
-//! *not* the census store (`crates/midwest-census/src/store/**`). The two are separate databases
+//! *not* the census store (`crates/census-service/src/store/**`). The two are separate databases
 //! with separate metrics — read no number here as census "store ingest obs/s".
 //!
 //! **What is measured.** The three public entry points, on a temporary store:

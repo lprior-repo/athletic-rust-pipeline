@@ -237,7 +237,7 @@ problem; one-shot, no daemon). Baseline snapshot for all 13 hosts:
 - For a weekly refresh design, the sitemap replaces the "re-crawl everything" step entirely, but the
   collector must pull daily (and intra-batch for `www`/`oh`/`in`/`mo`) or it will silently miss changes.
 - **Pipeline fit (repo read-only observation):** the existing adapter
-  `crates/midwest-census/src/sources/milesplit.rs` exposes only `fetch_team_index` and `fetch_roster`
+  `crates/census-service/src/sources/milesplit.rs` exposes only `fetch_team_index` and `fetch_roster`
   over the 12 host constants, keyed by journal phases `milesplit_teams_<st>` / `milesplit_rosters_<st>` —
   there is no change feed today. A sitemap diff is the missing selector for "which rosters/profiles to
   re-pull", exactly the cadence report 16 proposes (full sweep per season, targeted re-pull on change).

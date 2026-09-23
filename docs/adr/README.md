@@ -101,7 +101,7 @@ and `Performances` partitions to respect Excel's row limit.
 
 ## ADR-007 — Crate cut and migration order
 
-**Decision.** `crates/midwest-census` is decomposed into `census-store`, `census-crawl`,
+**Decision.** `crates/census-service` is decomposed into `census-store`, `census-crawl`,
 `census-reconcile`, `census-report` and `census-service`; `census-domain` absorbs the pure types;
 `census-review` is new. Migration waves: contract → store → crawl → reconcile/review/report →
 service → national run. Each wave ends with the four gates green and a pushed commit.
@@ -152,17 +152,17 @@ forty-nine entries of `UsJurisdiction::CENSUS_SCOPE`
 disagree with it. An earlier amendment that narrowed the run to a Midwest subset was reversed the
 same day and survives nowhere: the scope is the 49 above. No code path narrows it —
 `require_census_scope` (`codes.rs:16`) refuses a jurisdiction outside the scope at the national run
-(`crates/midwest-census/src/restate_services/national.rs:73`) and at the CLI boundary
-(`crates/midwest-census/src/cli/mod.rs:261`), and the report path filters instead of assuming
-(`crates/midwest-census/src/report/projection.rs:111`).
+(`crates/census-service/src/restate_services/national.rs:73`) and at the CLI boundary
+(`crates/census-service/src/cli/mod.rs:261`), and the report path filters instead of assuming
+(`crates/census-service/src/report/projection.rs:111`).
 
 **The one jurisdiction default in the tree, and why it is not a scope.** A gather command given
 neither `--states` nor `--all-states` covers Wisconsin alone
-(`crates/midwest-census/src/cli/mod.rs:235`) — a one-state quick test, so a subcommand can be
+(`crates/census-service/src/cli/mod.rs:235`) — a one-state quick test, so a subcommand can be
 exercised without the scope's request load. It is a convenience, never the run scope: `--all-states`
 selects `CENSUS_SCOPE` (`cli/mod.rs:234`), an explicit `--states` list is validated against the scope
 (`cli/mod.rs:261`), and the operational path is the service, which opens every jurisdiction in the
-scope on its own (`crates/midwest-census/src/restate_services/open_work.rs:102` sets
+scope on its own (`crates/census-service/src/restate_services/open_work.rs:102` sets
 `scope = CENSUS_SCOPE`). Restriction flags have no default at all: an empty restriction stays empty
 (`cli/mod.rs:248`). Source expansion keeps its own ordering (Wave F of the audit patch program) —
 which states' sources are researched and added first — and that ordering is never the run scope.

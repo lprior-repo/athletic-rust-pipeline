@@ -7,17 +7,17 @@ door; it says only what is in the tree today and points at the document that own
 ## Workspace
 
 Workspace root `Cargo.toml` (package `athletic-rust-pipeline`) plus members `crates/census-domain`,
-`crates/midwest-census`, `crates/g1-audit`, `xtask`. `fuzz/` is a cargo-fuzz workspace of its own.
+`crates/census-service`, `crates/g1-audit`, `xtask`. `fuzz/` is a cargo-fuzz workspace of its own.
 
 | Path | What it is | Entry point |
 |---|---|---|
-| `crates/midwest-census/` | the census: polite fetcher (robots, per-host pacing, disk cache), Fjall observation store, one module per source adapter, orchestration, census report, best marks, workbook, Restate services | `crates/midwest-census/README.md`, `src/cli/mod.rs`; bins `midwest-census`, `midwest-serve` |
+| `crates/census-service/` | the census: polite fetcher (robots, per-host pacing, disk cache), Fjall observation store, one module per source adapter, orchestration, census report, best marks, workbook, Restate services | `crates/census-service/README.md`, `src/cli/mod.rs`; bins `census-service`, `census-serve` |
 | `crates/census-domain/` | pure domain types: canonical entities, `Id<T>`, `GradYear`/`ObservedGrade`, `Evidence`, `SourceNamespace`, `UsJurisdiction`; no async, no I/O | `src/lib.rs` |
 | `crates/g1-audit/` | read-only counted inventory of the retained athletic.net `/Search.aspx/runSearch` response bodies (G1 slice): digests, interstitial markers, id/href classes — the Rust port of the deleted `research/captures/g1/inventory-search-pages.py`, byte-identical on both retained corpora | `crates/g1-audit/src/main.rs`; bin `g1-audit`
 | root package `athletic-rust-pipeline` | the Athletic.net-faced acquisition pipeline and operator CLI: Restate worker, persistent Chromium transport, rankings collection, workbook export and verification | `src/main.rs`, `src/cli.rs`, `src/runtime/**` |
 | `xtask/` | developer commands and the gate's measurement layer (`scan`, `seams`, `integrity`, `domain-purity`, `quality-baseline`, `ratchet`) | `xtask/README.md`, `xtask/src/main.rs` |
 | `tools/` | `tools/gate.sh` — the one quality gate — and `tools/quality-baseline.json`, the debt ratchet | `tools/README.md` |
-| `benches/`, `crates/midwest-census/benches/`, `crates/midwest-census/examples/bench_*` | committed measurements; a performance claim may cite only these | `PERFORMANCE.md` |
+| `benches/`, `crates/census-service/benches/`, `crates/census-service/examples/bench_*` | committed measurements; a performance claim may cite only these | `PERFORMANCE.md` |
 | `fuzz/` | cargo-fuzz targets for the result-file parsers | `fuzz/fuzz_targets/`, seeds in `fuzz/corpus/` |
 | `research/` | source-research lanes, append-only captures (`research/sources/<lane>/`) | `research/README.md` |
 | `docs/` | hardening program, operations runbook, executed evidence, decomposition plan, ADRs | `docs/HARDENING-PROGRAM.md`, `docs/adr/` |
@@ -33,31 +33,31 @@ Workspace root `Cargo.toml` (package `athletic-rust-pipeline`) plus members `cra
   end-to-end evidence; history belongs there, not here.
 - `SOURCES_SURVEY.md`, `COLLECTOR_PATTERNS.md`, `PROFILE_REPLICATION.md` — dated source
   reconnaissance (research input).
-- `crates/midwest-census/README.md`, `xtask/README.md`, `tools/README.md` — the census crate, the
+- `crates/census-service/README.md`, `xtask/README.md`, `tools/README.md` — the census crate, the
   developer commands and the gate.
 
 ## Run it
 
 ```bash
-# Census pipeline (store defaults to var/midwest-census; the binary takes an exclusive Fjall lock)
-cargo run --release -p midwest-census --bin midwest-census -- teams   --states WI,MN --refresh
-cargo run --release -p midwest-census --bin midwest-census -- collect --states WI,MN
-cargo run --release -p midwest-census --bin midwest-census -- provider wiaa
-cargo run --release -p midwest-census --bin midwest-census -- consolidate
-cargo run --release -p midwest-census --bin midwest-census -- report --print
-cargo run --release -p midwest-census --bin midwest-census -- bests
-cargo run --release -p midwest-census --bin midwest-census -- workbook
-cargo run --release -p midwest-census --bin midwest-census -- run
+# Census pipeline (store defaults to var/census-service; the binary takes an exclusive Fjall lock)
+cargo run --release -p census-service --bin census-service -- teams   --states WI,MN --refresh
+cargo run --release -p census-service --bin census-service -- collect --states WI,MN
+cargo run --release -p census-service --bin census-service -- provider wiaa
+cargo run --release -p census-service --bin census-service -- consolidate
+cargo run --release -p census-service --bin census-service -- report --print
+cargo run --release -p census-service --bin census-service -- bests
+cargo run --release -p census-service --bin census-service -- workbook
+cargo run --release -p census-service --bin census-service -- run
 
 # Census reports and the workbook through the developer command wrapper.
 # Default: ask the running census (127.0.0.1:18095/). --store opens the store in process
-# instead, so it needs midwest-serve stopped.
+# instead, so it needs census-serve stopped.
 cargo xtask census-status                              # Census/status, counted by the service
 cargo xtask coverage                                   # Report/run, every source
 cargo xtask export                                     # Workbook/run into <store>/out/
-cargo xtask census-status --store var/midwest-census   # report --core, offline
+cargo xtask census-status --store var/census-service   # report --core, offline
 cargo xtask source-test   ks                           # one source's tests (alias: source-check)
-cargo xtask bench         -- parse                     # cargo bench -p midwest-census parse
+cargo xtask bench         -- parse                     # cargo bench -p census-service parse
 
 # Root acquisition pipeline / operator CLI
 cargo run --release -p athletic-rust-pipeline -- worker --config config.native.toml --bind 127.0.0.1:19181
@@ -82,6 +82,6 @@ cargo xtask gate
 ## Status
 
 `README.md` records no run results. End-to-end evidence, its scope and what remains unqualified live
-in `HANDOFF.md`, `docs/VERIFICATION-EVIDENCE.md` and `crates/midwest-census/README.md`; the current
+in `HANDOFF.md`, `docs/VERIFICATION-EVIDENCE.md` and `crates/census-service/README.md`; the current
 hardening program and its measured gaps live in `docs/HARDENING-PROGRAM.md`. The target workspace split
 described in `ARCHITECTURE.md` is a plan: of the proposed crates only `crates/census-domain` exists.

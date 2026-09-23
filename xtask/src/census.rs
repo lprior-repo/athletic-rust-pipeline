@@ -2,9 +2,9 @@
 //!
 //! Each has two modes:
 //!
-//! * `--store <dir>` runs the shipped `midwest-census` binary, which opens the store in process.
+//! * `--store <dir>` runs the shipped `census-service` binary, which opens the store in process.
 //!   That is the backup-drill and CI path — it is the only one that works with no server running —
-//!   and it needs the worker stopped, because the store is single-writer: a running `midwest-serve`
+//!   and it needs the worker stopped, because the store is single-writer: a running `census-serve`
 //!   holds it, and the second handle fails with `FjallError: Locked`.
 //! * no flag, or `--ingress <origin>`, submits the same work to the running deployment
 //!   (`Census/status`, `Report/run`, `Workbook/run`) and never opens the store. That is the
@@ -35,13 +35,13 @@ mod tests;
 /// Where a census subcommand reads from: the store directly, or the running deployment.
 ///
 /// `--store` selects the offline mode; without it the command submits to the running deployment, so
-/// the flag-free form works exactly while `midwest-serve` holds the store. The two are exclusive by
+/// the flag-free form works exactly while `census-serve` holds the store. The two are exclusive by
 /// construction: `--store` opens the store in process, which is only possible with the worker
 /// stopped, and the ingress asks the worker that holds it.
 #[derive(clap::Args, Debug)]
 #[group(multiple = false)]
 pub struct Target {
-    /// Store root (HTTP cache, journals, entity logs, output snapshots). Needs `midwest-serve`
+    /// Store root (HTTP cache, journals, entity logs, output snapshots). Needs `census-serve`
     /// stopped: the store is single-writer.
     #[arg(long, value_name = "DIR")]
     store: Option<PathBuf>,

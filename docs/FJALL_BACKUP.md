@@ -3,11 +3,11 @@
 Objective §60 asks for commands covering **consistent backup → restore → integrity verification → reopen
 → full census read**, and for an actual restore drill to be run before delivery. This document is that
 drill: every command line below was executed on this machine against a real store built from the
-pre-Fjall logs in this checkout (`var/midwest-census/`, gitignored runtime state - substitute your own
+pre-Fjall logs in this checkout (`var/census-service/`, gitignored runtime state - substitute your own
 root), and the output blocks are verbatim.
 
-The drill is enforced by [`crates/midwest-census/tests/backup_restore.rs`](../crates/midwest-census/tests/backup_restore.rs)
-(7 tests, offline, no network, no shared state), so it is re-run by `cargo test -p midwest-census
+The drill is enforced by [`crates/census-service/tests/backup_restore.rs`](../crates/census-service/tests/backup_restore.rs)
+(7 tests, offline, no network, no shared state), so it is re-run by `cargo test -p census-service
 --test backup_restore` rather than by hand. The shell sequence below exists so an operator can do the
 same thing against a production root (a `<store-dir>` on disk, not a `/tmp` drill).
 
@@ -17,7 +17,7 @@ Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store co
 
 ## 1. What a census store root contains
 
-`<store-dir>/` as created by the CLI (`crates/midwest-census/src/store/mod.rs`):
+`<store-dir>/` as created by the CLI (`crates/census-service/src/store/mod.rs`):
 
 | Path | Role | Needed in a backup? |
 |---|---|---|
@@ -74,7 +74,7 @@ Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
   ```console
   $ flock -n /tmp/census-backup-drill/live/fjall/lock -c 'sleep 3' &
   $ sleep 0.5
-  $ target/debug/midwest-census --store /tmp/census-backup-drill/live fjall-stats
+  $ target/debug/census-service --store /tmp/census-backup-drill/live fjall-stats
   Error: store open failed: FjallError: Locked
 
   Caused by:
@@ -84,7 +84,7 @@ Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
   ```
 
   The same lock covers the legacy import: `Store::open` imports pre-Fjall `entities/`/`journal/` logs
-  before handing the store back (`crates/midwest-census/src/store/mod.rs:261` →
+  before handing the store back (`crates/census-service/src/store/mod.rs:261` →
   `store/legacy.rs:21-45`), under the same locked handle, and the CLI's `import-legacy` command
   (`src/cli/store.rs:25-42`) merely reports on the already-open store. So an import can never race a
   root another process is serving - but it does mean **opening a copy that still carries legacy logs
@@ -103,18 +103,18 @@ Neither exists today, so the rest of this document is **cold backup only**.
 
 ## 3. The drill, command by command
 
-Store built from this checkout's raw logs (`var/midwest-census/`) so the drill carries real data
+Store built from this checkout's raw logs (`var/census-service/`) so the drill carries real data
 without touching the network: 200 schools + 100 coaches + 100 meets = **400 observations**, plus one
 journal phase.
 
 ```console
 $ DRILL=/tmp/census-backup-drill
 $ mkdir -p $DRILL/live/entities $DRILL/live/journal
-$ head -n 200 var/midwest-census/entities/schools.jsonl > $DRILL/live/entities/schools.jsonl
-$ head -n 100 var/midwest-census/entities/coaches.jsonl > $DRILL/live/entities/coaches.jsonl
-$ head -n 100 var/midwest-census/entities/meets.jsonl   > $DRILL/live/entities/meets.jsonl
-$ head -n 1   var/midwest-census/journal/kshsaa_schools.jsonl > $DRILL/live/journal/kshsaa_schools.jsonl
-$ target/debug/midwest-census --store $DRILL/live import-legacy
+$ head -n 200 var/census-service/entities/schools.jsonl > $DRILL/live/entities/schools.jsonl
+$ head -n 100 var/census-service/entities/coaches.jsonl > $DRILL/live/entities/coaches.jsonl
+$ head -n 100 var/census-service/entities/meets.jsonl   > $DRILL/live/entities/meets.jsonl
+$ head -n 1   var/census-service/journal/kshsaa_schools.jsonl > $DRILL/live/journal/kshsaa_schools.jsonl
+$ target/debug/census-service --store $DRILL/live import-legacy
 legacy	schools	89426 bytes	/tmp/census-backup-drill/live/entities/schools.jsonl
 legacy	teams	absent
 legacy	coaches	49163 bytes	/tmp/census-backup-drill/live/entities/coaches.jsonl
@@ -138,7 +138,7 @@ bytes_on_disk	0
 ### 3.1 Consistent backup - stop the unit, then copy
 
 ```console
-$ target/debug/midwest-census --store $DRILL/live fjall-stats
+$ target/debug/census-service --store $DRILL/live fjall-stats
 store	/tmp/census-backup-drill/live
 schools	200
 teams	0
@@ -182,7 +182,7 @@ of it - the preallocation is not sparse on this filesystem); one `fjall-stats` r
 was **196,402** bytes with a 101,301-byte journal:
 
 ```console
-$ target/debug/midwest-census --store $D import-legacy | tail -3
+$ target/debug/census-service --store $D import-legacy | tail -3
 observations	200
 bytes_on_disk	0
 store_bytes	67212350
@@ -190,7 +190,7 @@ $ ls -la $D/fjall/0.jnl
 -rw-r--r-- 1 lewis lewis 67108864 ... /tmp/census-backup-drill2/fjall/0.jnl
 $ du -sb $D/fjall
 67116338	/tmp/census-backup-drill2/fjall
-$ target/debug/midwest-census --store $D fjall-stats | tail -2
+$ target/debug/census-service --store $D fjall-stats | tail -2
 bytes_on_disk	0
 store_bytes	196402
 $ ls -la $D/fjall/0.jnl
@@ -216,7 +216,7 @@ RESTORED MANIFEST IDENTICAL
 missing, and has no restore subcommand - restoring is copying `fjall/` onto a fresh root. The fresh root
 must **not** contain the pre-Fjall `entities/`/`journal/` logs of the source root; if it does, the
 legacy import is marker-guarded per table (`imported:<table>` in the `meta` keyspace travels with the
-database, `crates/midwest-census/src/store/legacy.rs:12-45`), so the logs are not read a second time -
+database, `crates/census-service/src/store/legacy.rs:12-45`), so the logs are not read a second time -
 and if the marker were ever missing, a re-import appends at a freshly reserved sequence base instead of
 overwriting (`legacy.rs:48-91`). Do not restore a backup over a root that is
 being served - the lock (§2) will reject it, or worse, a running process holds an in-memory view of the
@@ -232,7 +232,7 @@ back and the journal is replayed; a damaged descriptor fails the open rather tha
 ### 3.4 Reopen and full census read
 
 ```console
-$ target/debug/midwest-census --store $DRILL/restored fjall-stats
+$ target/debug/census-service --store $DRILL/restored fjall-stats
 store	/tmp/census-backup-drill/restored
 schools	200
 teams	0
@@ -244,7 +244,7 @@ performances	0
 observations	400
 bytes_on_disk	0
 store_bytes	229232
-$ target/debug/midwest-census --store $DRILL/restored consolidate
+$ target/debug/census-service --store $DRILL/restored consolidate
 schools	199
 teams	0
 coaches	100
@@ -253,11 +253,11 @@ athletes	0
 meets	100
 events	0
 performances	0
-$ target/debug/midwest-census --store $DRILL/restored report
+$ target/debug/census-service --store $DRILL/restored report
 wrote /tmp/census-backup-drill/restored/out/report.json
 wrote /tmp/census-backup-drill/restored/out/census-by-state.csv
 scope=all_sources totals: schools=199 athletes=0 co2027=0 (boys=0 girls=0) profile_url=0 multisource=0 coaches=100
-$ target/debug/midwest-census --store $DRILL/live report
+$ target/debug/census-service --store $DRILL/live report
 wrote /tmp/census-backup-drill/live/out/report.json
 wrote /tmp/census-backup-drill/live/out/census-by-state.csv
 scope=all_sources totals: schools=199 athletes=0 co2027=0 (boys=0 girls=0) profile_url=0 multisource=0 coaches=100
@@ -298,7 +298,7 @@ the shape of a damaged restore is worth knowing before trusting either one:
 
 ```console
 $ rm -rf $DRILL/dmg-a && cp -a $DRILL/restored $DRILL/dmg-a && printf 'XXXX' > $DRILL/dmg-a/fjall/version
-$ target/debug/midwest-census --store $DRILL/dmg-a fjall-stats
+$ target/debug/census-service --store $DRILL/dmg-a fjall-stats
 Error: store open failed: FjallError: InvalidVersion(None)
 
 Caused by:
@@ -306,11 +306,11 @@ Caused by:
 $ echo $?
 1
 $ rm -rf $DRILL/dmg-c && cp -a $DRILL/restored $DRILL/dmg-c && truncate -s -100 $DRILL/dmg-c/fjall/0.jnl
-$ target/debug/midwest-census --store $DRILL/dmg-c fjall-stats | tail -3
+$ target/debug/census-service --store $DRILL/dmg-c fjall-stats | tail -3
 observations	400
 bytes_on_disk	0
 store_bytes	458251
-$ target/debug/midwest-census --store $DRILL/dmg-c consolidate >/dev/null && target/debug/midwest-census --store $DRILL/dmg-c report >/dev/null
+$ target/debug/census-service --store $DRILL/dmg-c consolidate >/dev/null && target/debug/census-service --store $DRILL/dmg-c report >/dev/null
 $ jq -S 'del(.store_dir,.generated_on)|.notes|=map(sub("from .*";"from <root>"))' $DRILL/dmg-c/out/report.json > $DRILL/dmg-c-norm.json
 $ diff $DRILL/restored-norm.json $DRILL/dmg-c-norm.json; echo "diff exit=$?"
 diff exit=0
@@ -343,7 +343,7 @@ expected-but-unverified, and prefer copying a *stopped* store over coping with a
 ## 4. The executable drill
 
 ```console
-$ cargo test -p midwest-census --test backup_restore
+$ cargo test -p census-service --test backup_restore
 ```
 
 The suite covers what the shell sequence cannot do deterministically: a copy taken from an open handle

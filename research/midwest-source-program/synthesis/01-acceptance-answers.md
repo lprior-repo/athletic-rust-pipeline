@@ -3,9 +3,9 @@
 Nine questions, each answered from the newest artifacts on disk. Supersedes the estimate-only version of this
 file: the numbers below are measured, not modelled, wherever a measurement exists.
 
-**Provenance rule.** Every number carries a bracketed source. Four generations of numbers exist and they are never averaged: **(1) research-phase estimates** — `research/midwest/01..46-*.md`, `data/adapter-ranking.csv`: per-source yields measured per source but never summed into a census; **(2) measured census 2026-09-20** — `synthesis/10-measured-census.md`, `reports/midwest-census-2026-09-20-*.csv`, `data/*.csv`: the first pipeline run (Python-era store); **(3) measured census 2026-09-21** — `reports/report.json`, `reports/report-core.json`, `reports/census-by-state{,-core}.csv`, `reports/midwest-census-2026-09-21.xlsx`, `reports/best-results-co2027.csv`: the Rust port's regeneration of the same store, what the answers below used until the 2026-09-22 refresh; **(4) measured census 2026-09-22** — `reports/report.json`, `reports/report-core.json`, `reports/census-by-state{,-core}.csv`, `reports/midwest-census-2026-09-22.xlsx`, `reports/best-results-co2027.csv`, `data/*.csv`: the coach-plane import (store coaches 29,294 → 31,488, 12-state coach rows 28,724 → 29,968) plus the merged AthleticLIVE side store, the newest measurement and what every coach figure below uses.
+**Provenance rule.** Every number carries a bracketed source. Four generations of numbers exist and they are never averaged: **(1) research-phase estimates** — `research/midwest/01..46-*.md`, `data/adapter-ranking.csv`: per-source yields measured per source but never summed into a census; **(2) measured census 2026-09-20** — `synthesis/10-measured-census.md`, `reports/census-service-2026-09-20-*.csv`, `data/*.csv`: the first pipeline run (Python-era store); **(3) measured census 2026-09-21** — `reports/report.json`, `reports/report-core.json`, `reports/census-by-state{,-core}.csv`, `reports/census-service-2026-09-21.xlsx`, `reports/best-results-co2027.csv`: the Rust port's regeneration of the same store, what the answers below used until the 2026-09-22 refresh; **(4) measured census 2026-09-22** — `reports/report.json`, `reports/report-core.json`, `reports/census-by-state{,-core}.csv`, `reports/census-service-2026-09-22.xlsx`, `reports/best-results-co2027.csv`, `data/*.csv`: the coach-plane import (store coaches 29,294 → 31,488, 12-state coach rows 28,724 → 29,968) plus the merged AthleticLIVE side store, the newest measurement and what every coach figure below uses.
 
-**Two scopes, both published, never merged** (`reports/midwest-census-2026-09-20-summary.csv` names them `Core (Athletic.net off)` and `All sources`). Core drops every athlete whose only evidence is the AthleticLIVE timer plane — measured from the store as **135,848** all-grade / **43,229** Class-of-2027 rows (`var/midwest-census/out/athletes.jsonl`, evidence source set `== {athleticlive_athletes}`) against **145,323** rows stated by `reports/report-core.json` `notes[]`. Both numbers are printed wherever they matter; 135,848 is the figure this file re-derived from the store.
+**Two scopes, both published, never merged** (`reports/census-service-2026-09-20-summary.csv` names them `Core (Athletic.net off)` and `All sources`). Core drops every athlete whose only evidence is the AthleticLIVE timer plane — measured from the store as **135,848** all-grade / **43,229** Class-of-2027 rows (`var/census-service/out/athletes.jsonl`, evidence source set `== {athleticlive_athletes}`) against **145,323** rows stated by `reports/report-core.json` `notes[]`. Both numbers are printed wherever they matter; 135,848 is the figure this file re-derived from the store.
 
 **Citation keys.** `[reports/…]`, `[data/…]`, `[research/midwest/…]` are paths under `~/Downloads/midwest-tfxc-source-research/`. `[lane: <name>]` is `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/research/sources/<name>/SOURCE_REPORT.md` with its `coverage.json`/`schema.json`. `[store: <path>]` is a file under `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/`. `[repo: <path>]` is a source file in the pipeline crate. `[INFERENCE]` marks reasoning; everything else was counted.
 
@@ -38,8 +38,8 @@ national totals moved:
 | coach rows / rows carrying an email (12-state) | 27,580 / 8,284 | 29,968 / 9,970 | 29,968 / 9,970 |
 | national store: coaches / with email, Co2027 / with coach email | 27,580 / 8,284 | 31,488 / 10,671, 625,899 / 58,260 | 31,488 / 10,671, 582,691 / 53,122 |
 
-The national-store row is re-measured after the post-merge rebuild, from `[store: var/midwest-census/out/report.json]`
-(all sources, `census.report --print` through `Report/run`) and `[store: var/midwest-census/out/report-core.json]`
+The national-store row is re-measured after the post-merge rebuild, from `[store: var/census-service/out/report.json]`
+(all sources, `census.report --print` through `Report/run`) and `[store: var/census-service/out/report-core.json]`
 (core, `census.report --core`); the workbook rebuilt from the same store carries the same figures on its
 `Run Metrics` sheet (core athletes 2,238,191 / Co2027 582,691, all sources 2,374,515 / 625,899), so the two
 surfaces agree rather than merely being copied.
@@ -51,7 +51,7 @@ between the two generations.
 The third column is `data/canonical-athletes-co2027.csv` + `data/recruiting-co2027.csv`, both 183,875 rows;
 its coach figures are a **different join** from the census's (see Q5). Where the export and the census differ,
 the census (`reports/`) is retained because it is the 2026-09-21 measurement and is re-derivable from
-`var/midwest-census/out/athletes.jsonl` / `coaches.jsonl`; the discrepancy itself is printed, not averaged.
+`var/census-service/out/athletes.jsonl` / `coaches.jsonl`; the discrepancy itself is printed, not averaged.
 
 ---
 
@@ -64,7 +64,7 @@ Athletic.net 0 rows** (the census made zero Athletic.net requests); the seven as
 (`ihsa`, `ks`, `mshsl`, `plain_names`, `ohsaa`, `wiaa`, `coach_contacts`) contribute schools and coaches but
 **zero** athletes, and the remaining crate modules are parsers.
 
-Counted from `[store: var/midwest-census/out/athletes.jsonl]` (787,584 lines; 190,087 with `grad_year == 2027`),
+Counted from `[store: var/census-service/out/athletes.jsonl]` (787,584 lines; 190,087 with `grad_year == 2027`),
 evidence source set per athlete:
 
 | evidence source (`evidence[].source.id`) | Co2027 athletes carrying it | grade-evidence rows (`report.json` → `providers.grade_evidence_sources`) | lane-side yield (source reports) |
@@ -97,7 +97,7 @@ research-phase Athletic.net rankings sweep measured 40,695 Co2027 in 12 states /
 Unverified:
 - The lane-side per-source yields are from separate capture windows (2026-09-19…22) than the census store (2026-09-20); no artifact reconciles a lane's sample yield with its census row count. Settling capture: a re-run of one lane inside the census's window, or a per-lane capture-window ledger.
 - `athleticlive_athletes` has no retained request ledger of its own inside the census store — its cost lives in the second store (Q7). The number of distinct *meets* the 108,174 rows came from is not counted anywhere on disk; `[lane: national-aggregators]` Open Q1 (athlete-level count for AthleticLIVE) is still open. Settling capture: an AthleticLIVE harvest ledger naming the meet doc behind each athlete-plane row.
-- ND and SD MileSplit yields are real (2,043 / 2,669), but `synthesis/05-compliance-and-risks.md` §6 records "ND and SD MileSplit `/teams` indexes (1 request each, HTTP 403) — recorded, never retried". The retained cache contradicts the *consequence*, not the event: `[store: var/midwest-census/http/]` holds **154 ND and 197 SD host responses, every one HTTP 200** — 153 + 196 of them `/teams/<id>-<slug>/roster` pages (one `/teams` index per state plus its rosters were all served), and the two sampled bodies carry 41 and 427 `athlete-row` blocks, each with a `column-grad-year` value (`nd.milesplit.com/teams/23515-beach-high-school/roster`, 114,699 B → 41; `sd.milesplit.com/teams/20920-aberdeen-central-high-school/roster`, 879,119 B → 427). Both the 403 note and the cache are printed; the cache is retained because it is the byte-countable artifact, and which request the 403 note refers to (the index page on a different client, later recovered) is not recorded on disk. Settling capture: the lane's request log for that 403, or the capture directory of the ND/SD `/teams` fetch.
+- ND and SD MileSplit yields are real (2,043 / 2,669), but `synthesis/05-compliance-and-risks.md` §6 records "ND and SD MileSplit `/teams` indexes (1 request each, HTTP 403) — recorded, never retried". The retained cache contradicts the *consequence*, not the event: `[store: var/census-service/http/]` holds **154 ND and 197 SD host responses, every one HTTP 200** — 153 + 196 of them `/teams/<id>-<slug>/roster` pages (one `/teams` index per state plus its rosters were all served), and the two sampled bodies carry 41 and 427 `athlete-row` blocks, each with a `column-grad-year` value (`nd.milesplit.com/teams/23515-beach-high-school/roster`, 114,699 B → 41; `sd.milesplit.com/teams/20920-aberdeen-central-high-school/roster`, 879,119 B → 427). Both the 403 note and the cache are printed; the cache is retained because it is the byte-countable artifact, and which request the 403 note refers to (the index page on a different client, later recovered) is not recorded on disk. Settling capture: the lane's request log for that 403, or the capture directory of the ND/SD `/teams` fetch.
 
 ## 2. How many unique athletes remain after deterministic reconciliation
 
@@ -114,7 +114,7 @@ document is the join vocabulary between the two id spaces: `[lane: athleticnet �
 `data/canonical-athletes-co2027.csv` carry *both* an Athletic.net and a MileSplit id (both re-verified from the
 CSVs here), with the same lane noting "name+school is not unique in Athletic.net (`synonyms[]` exists precisely
 because athletes get renamed/merged)". Id reuse measured on the 190,087 Co2027 rows
-(`[store: var/midwest-census/out/athletes.jsonl]`, `source_identities[].id`):
+(`[store: var/census-service/out/athletes.jsonl]`, `source_identities[].id`):
 
 | namespace | distinct ids | athlete rows holding an id | ids attached to >1 canonical athlete | extra rows | multiplicity histogram |
 |---|---:|---:|---:|---:|---|
@@ -170,7 +170,7 @@ The Athletic.net id is **published by AthleticLIVE's `a.ani` field**, not fetche
 same artifact as the handoff.
 
 Unverified:
-- The report publishes `athletic_net_urls_known` only at total level, not per state, so the per-state Athletic.net share in the table above is genuinely absent from the corpus — the capture that would settle it is a per-state breakdown in `reports/report.json` (`providers` has no state dimension) or a query over `var/midwest-census/out/athletes.jsonl` joined to `schools.jsonl` (this file answered the *other* questions that way but did not re-run the Athletic.net-URL join per state).
+- The report publishes `athletic_net_urls_known` only at total level, not per state, so the per-state Athletic.net share in the table above is genuinely absent from the corpus — the capture that would settle it is a per-state breakdown in `reports/report.json` (`providers` has no state dimension) or a query over `var/census-service/out/athletes.jsonl` joined to `schools.jsonl` (this file answered the *other* questions that way but did not re-run the Athletic.net-URL join per state).
 - Whether an Athletic.net profile URL *resolves* was never tested: the census made zero Athletic.net requests
   (`README.md` compliance section) and `[lane: athleticnet §18]` records that Cloudflare 403s plain curl. Settling capture: a browser-rendered profile fetch for a sample (a curl test is refused at the edge and is not evidence about the 93,619 URLs).
 - 1,617 athletes carry an Athletic.net id with no composable URL (Q2) — not resolvable from the artifacts on disk. Settling capture: the same store join without the `public_profile_urls` filter.
@@ -181,7 +181,7 @@ Unverified:
 least one evidence source other than AthleticLIVE — i.e. something other than Athletic.net's own live-results
 platform, which is exactly the Core scope; and 22.7 % (43,229) rest on AthleticLIVE alone with no second witness.**
 
-The five definitions, all measured on `[store: var/midwest-census/out/athletes.jsonl]`:
+The five definitions, all measured on `[store: var/census-service/out/athletes.jsonl]`:
 
 | definition | count | share | what it means |
 |---|---:|---:|---|
@@ -229,7 +229,7 @@ Unverified:
 **Answer (measured 2026-09-22, after the second coach wave): 30.0 % (57,115 of 190,087) in the All-sources
 scope; 34.3 % in Core — up from 22.7 % / 25.3 % on 2026-09-21.** The predicate is exact: the
 athlete's school has at least one coach whose sport is track or cross-country — `[repo:
-crates/midwest-census/src/report/rows.rs:97-112]` (`school_coach_index` skips `!coach.sport.is_some_and(is_track_or_xc)`
+crates/census-service/src/report/rows.rs:97-112]` (`school_coach_index` skips `!coach.sport.is_some_and(is_track_or_xc)`
 at :103 and records `professional_email.is_some()` at :107; the athlete-side bump is `:174`).
 
 | scope / artifact | Co2027 with an identified TF/XC coach | share |
@@ -285,7 +285,7 @@ The export/census split is a **different join, and it is explained**: `data/recr
 The ceiling is set by the directories: `[lane: coach-directories-national §Headline]` measured **51/51 jurisdictions covered, 22 tier-1 directories fetched and parsed, 8 jurisdictions naming XC/TF coaches at tier 1, and only 3 publishing a coach EMAIL at tier 1**.
 
 Unverified:
-- `report.json` `coach_sources` sums to **31,697 attributions** over **31,488** coach rows (2026-09-22, post-import); the 209-row surplus is `[INFERENCE]` double attribution (209 rows carrying two observations), not row inflation — `[store: var/midwest-census/out/coaches.jsonl]` holds 31,488 lines and the report's `by_state` sums match its `totals` exactly (31,488 coaches, 82,737 Co2027 with a coach). The earlier 09:42 run showed the opposite sign (histogram 28,532 < total 30,243) because that export predated the 09:36 import by 36 minutes; both runs' attributions are printed, never reconciled silently.
+- `report.json` `coach_sources` sums to **31,697 attributions** over **31,488** coach rows (2026-09-22, post-import); the 209-row surplus is `[INFERENCE]` double attribution (209 rows carrying two observations), not row inflation — `[store: var/census-service/out/coaches.jsonl]` holds 31,488 lines and the report's `by_state` sums match its `totals` exactly (31,488 coaches, 82,737 Co2027 with a coach). The earlier 09:42 run showed the opposite sign (histogram 28,532 < total 30,243) because that export predated the 09:36 import by 36 minutes; both runs' attributions are printed, never reconciled silently.
 - Whether a TF/XC coach row is *current* is not modelled: `[lane: coach-directories-national]` records "current
   only" for each directory, and no observed-on older than 2026-09-20 exists in the store. Settling capture: a second crawl window to diff against.
 
@@ -340,17 +340,17 @@ Unverified:
   `mhsaa` host branch) is not restated in any report; `[lane: state-assoc-greatlakes §7.4]` calls MI's first 6 rows "a
   *pipeline* fact, not a research estimate". MI now carries 112 rows / 78 emails, of which 51 emails come from the
   new school-site fragments. Settling capture: the coach-import log for the 09-22 run.
-  This file treats the figures as *coach-role* emails because `[repo: crates/midwest-census/src/report/rows.rs:103,107,174]`
+  This file treats the figures as *coach-role* emails because `[repo: crates/census-service/src/report/rows.rs:103,107,174]`
   requires `professional_email.is_some()` on a track/XC coach specifically.
 - The `professional_email` withholding rule (consumer mailbox domains dropped) publishes its count only as
-  `coaches_email_withheld` on the **consolidate step's stdout** (`[repo: crates/midwest-census/src/census/aggregate.rs:90]`,
+  `coaches_email_withheld` on the **consolidate step's stdout** (`[repo: crates/census-service/src/census/aggregate.rs:90]`,
   consumed by `tools/run_pipeline.sh:113` "the counts below report what it withheld"), and that stdout was not
   captured anywhere in the corpus — `README.md` points at `synthesis/05-compliance-and-risks.md` §2 and §6, but
   §2 lists the *exclusions* (MSHSL `Non-MSHSL Coach`/`MSHSL Sub-Coach` levels, KSHSAA `PrincipalCell/ADCell/PresCell`,
   Bound staff, DAT meet-director phone/fax, athlete height/weight) without a number, and §6's ledger has no such
   row. What can be measured: the store's `email_withheld` flag is **0** on every row of both
-  `[store: var/midwest-census/out/coaches.jsonl]` (29,294 rows, 9,187 with a professional email; export written
-  09:00, 36 min before the 09:36 import) and `[store: var/midwest-census/entities/coaches.jsonl]` (27,580 rows,
+  `[store: var/census-service/out/coaches.jsonl]` (29,294 rows, 9,187 with a professional email; export written
+  09:00, 36 min before the 09:36 import) and `[store: var/census-service/entities/coaches.jsonl]` (27,580 rows,
   8,284 with one; export written 07:38), so the 903-email difference between the two exports is the morning
   merge/dedupe step, not a visible withholding event — and neither export is the store state that `report`
   read at 09:42 (30,243 rows / 9,730 emails). Settling capture: the 09-22 consolidate log.
@@ -384,7 +384,7 @@ Two stores, both on disk, both countable by `http/*.meta.json` (the cache key in
 
 | store | responses | hosts | Athletic.net responses |
 |---|---:|---:|---:|
-| `[store: var/midwest-census/http/]` (census run, 2026-09-20T14:00–18:59Z) | **17,811** (17,808 distinct URLs; 200→17,720, 404→91) | 21 | **0** |
+| `[store: var/census-service/http/]` (census run, 2026-09-20T14:00–18:59Z) | **17,811** (17,808 distinct URLs; 200→17,720, 404→91) | 21 | **0** |
 | `[store: var/midwest-athletes/http/]` (AthleticLIVE athlete harvest, 2026-09-20T14:xxZ) | **613** (all `POST search.athletic.live/athlete_list/_search`) | 1 (`search.athletic.live`, already in the census store) | **0** |
 | **total** | **18,424** | 21 distinct | **0** |
 
@@ -422,7 +422,7 @@ Unverified:
   `[research/midwest/12-iowa-wayzata-results.md]`) are per-meet and were never summed; the census side has no
   per-meet request attribution, so the regular-season meet substitution is **not** in the 163,902–169,446 range.
   Settling capture: a per-meet request ledger from the AthleticLIVE meet harvest (the journal
-  `[store: var/midwest-census/journal/athleticlive_meets.jsonl]`, 1,009 KB, is the input list, not a ledger).
+  `[store: var/census-service/journal/athleticlive_meets.jsonl]`, 1,009 KB, is the input list, not a ledger).
 - The 613-request AthleticLIVE athlete harvest has no retained per-state/page ledger; whether 613 requests were
   the whole harvest or a resumed slice is not decidable from the cache (all 613 are timestamped in one hour). Settling capture: a per-page cursor ledger from that harvest.
 - The 17,811-response count includes 91 HTTP 404s on `www.wiaawi.org`; whether the completed run needed them or
@@ -440,11 +440,11 @@ Ranked by measured size:
 |---|---|---|---|---|
 | 1 | no coach-role data at all | **MI 22,073 + IN 16,931 + MO 15,168 + KS 10,077 = 64,249 Co2027 (33.8 %)** have `with_coach` = 0 (the research-phase estimate over its 40,695-athlete corpus was "6,302 athletes / 15.5 % sit in coach-less states" — MI+IN+MO only; superseded by the measured 64,249, which adds KS and the larger corpus) | MHSAA (robots `/DesktopModules/`), IHSAA/IN (no directory), MSHSAA (host-wide robots disallow), KSHSAA (AD-only) | `reports/census-by-state.csv`, `[lane: coach-directories-national §MI,§IN,§MO,§KS]`, `[lane: state-assoc-plains §0.3]`, `[research/midwest/30-cross-source-pareto.md]` §Q8 |
 | 2 | coach names but **zero emails** | NE 9,200 + ND 3,004 = **12,204 (6.4 %)** | NSAA publishes no email field; NDHSAA names only | `reports/census-by-state.csv`, `[lane: coach-directories-national §NE,§ND]` |
-| 3 | no independent corroboration | **43,229 rows (22.7 %)** AthleticLIVE-only; worst SD 45.2 %, IA 37.9 %, NE 35.6 %, ND 32.0 % | measured from the 2026 meet inventory: SD `live_results` 372/`dakota` 283/`athleticlive` 61 of 753 · IA `live_results` 1,007/`aatiming` 297/`athleticlive` 160/`dakota` 120/`wayzata` 119 of 2,015 · NE `live_results` 591/`athleticlive` 307/`blacksquirrel` 184 of 1,198 · ND `live_results` 162/`athleticlive` 110/`heros` 52 of 324 | Q4 table, `[data/athleticlive-midwest-2026-meets-all.csv]`, `[store: var/midwest-census/out/athletes.jsonl]` |
+| 3 | no independent corroboration | **43,229 rows (22.7 %)** AthleticLIVE-only; worst SD 45.2 %, IA 37.9 %, NE 35.6 %, ND 32.0 % | measured from the 2026 meet inventory: SD `live_results` 372/`dakota` 283/`athleticlive` 61 of 753 · IA `live_results` 1,007/`aatiming` 297/`athleticlive` 160/`dakota` 120/`wayzata` 119 of 2,015 · NE `live_results` 591/`athleticlive` 307/`blacksquirrel` 184 of 1,198 · ND `live_results` 162/`athleticlive` 110/`heros` 52 of 324 | Q4 table, `[data/athleticlive-midwest-2026-meets-all.csv]`, `[store: var/census-service/out/athletes.jsonl]` |
 | 4 | thin public-profile depth | WI 17,921/22,074 = 81.2 % · IA 11,347/14,076 = 80.6 % · NE 7,868/9,200 = 85.5 % · IN 14,758/16,931 = 87.2 % | MileSplit `wi`/`ia`/`ne`/`in` roster coverage; ND/SD/KS/MO ≥ 96 % | `reports/census-by-state.csv` |
 | 5 | no per-state Athletic.net-url figure | **unknown for all 12 states** | report.json has no state dimension for `athletic_net_urls_known` | Q3 Unverified |
 | 6 | meets without an Athletic.net id | 11,007 − 9,593 = **1,414** (1,532 core meets carry 0) | the timer indexes that publish no `ani` | `reports/report.json` `meets` |
-| 7 | meet venues that never resolved to a state | **442 of 11,007 (4.0 %)** filed under `??` (09-20 core scope: 537 Wayzata competition rows minted 536 meets and only 304 resolved to a state — 95 recurring sites, 209 schools; the two scopes are different runs and are not reconciled) | venue strings that match no state (Wayzata schedule rows and other timer calendars) | `reports/report.json` `meets.by_state`, `reports/midwest-census-2026-09-20-method-notes.csv` ("Unresolved venues", "Wayzata schedules") |
+| 7 | meet venues that never resolved to a state | **442 of 11,007 (4.0 %)** filed under `??` (09-20 core scope: 537 Wayzata competition rows minted 536 meets and only 304 resolved to a state — 95 recurring sites, 209 schools; the two scopes are different runs and are not reconciled) | venue strings that match no state (Wayzata schedule rows and other timer calendars) | `reports/report.json` `meets.by_state`, `reports/census-service-2026-09-20-method-notes.csv` ("Unresolved venues", "Wayzata schedules") |
 | 8 | unresolved identity rows in the reference corpus | **15,724** roster results with no athlete identity | AthleticLIVE/SCOPE corpus, not the census store | `[research/midwest/04-athletic-net-rankings-discovery.md]` evidence appendix |
 | 9 | no free state-level Co2027 denominator | **all 12 states** | no association publishes a junior count; `data/milesplit-coverage-matrix.csv` carries 3-team-sample *bands* only (e.g. OH 9,770–86,953; MI 895–895) with the file's own note "NOT a point estimate" | `data/milesplit-coverage-matrix.csv`, `[lane: state-assoc-greatlakes §0.3]` |
 | 10 | jurisdictions outside the 12 that the lanes reached but the census did not | CA 12,703 · NY 9,664 · PA 5,937 · TX 3,454 meet docs (all-time AthleticLIVE) | AthleticLIVE's non-Midwest tenants | `[lane: national-aggregators §3.2]` |
@@ -467,10 +467,10 @@ Unverified:
 - **ATHLETIC.NET-URL DEPTH PER STATE IS ABSENT**, not merely small: `reports/report.json` `providers` has no state
   dimension, so the per-state column in Q3's table is empty by construction. Settling capture: a `report` run
   emitting `athletic_net_urls_known` per `by_state` entry, or the equivalent join over
-  `var/midwest-census/out/athletes.jsonl` × `schools.jsonl`.
+  `var/census-service/out/athletes.jsonl` × `schools.jsonl`.
 - The 15,724 unresolved identity rows are quoted from the retained Athletic.net corpus, not re-measured here;
   whether any of them are in the 190,087 is not established. Settling capture: a join of those 15,724 rows' meet/team keys against the census store.
-- 442 `??` venues: `reports/midwest-census-2026-09-20-method-notes.csv` files them "rather than guessed", and no
+- 442 `??` venues: `reports/census-service-2026-09-20-method-notes.csv` files them "rather than guessed", and no
   later artifact resolved them. Settling capture: a venue-normalization pass over the 442 strings.
 - Whether ND's 43.8 % `with_coach` is a documentation limit or a sample limit: `[lane: state-assoc-plains §12]`
   carries the open question "ND state outdoor T&F tenant … unproven whether 2026 state XC (Oct 23-24) lands
@@ -492,8 +492,8 @@ Ranks 1–5 carry the census; ranks 6–10 are association/contact layers that n
 | 6 | **`sources/coach_contacts/`** (CSV import) | 10 states | **2,224 coach rows (2,229 observations), 604 with a professional email**; the research graph behind it is 2,298 rows / 874 schools / 10 states | 0 network requests (import) | cheapest coach layer; carries the 51 coach emails and 620 AD emails that no site publishes in bulk `[lane: coach-directories-national §Baseline]` |
 | 7 | **`sources/ks/`** (KSHSAA) | KS only | **526 coach rows in 1 request, 523 with email**; 526/526 AD name+email validated wholesale | **1** response | best single-request ratio measured anywhere in the study; carries no sport coach and no athlete `[lane: coach-directories-national §KS]`, `[lane: state-assoc-plains §10]` |
 | 8 | **`sources/plain_names/`** (nsaa + ndhsaa) | NE, ND | NE 1,589 evidence rows / ND 922 — **names only, 0 emails** | 313 + 170 responses (1 POST/GET per school) | closes 12,204 Co2027 rows' coach-identification gap with names; email-free by design `[lane: coach-directories-national §NE,§ND]` |
-| 9 | **`sources/coach_contacts/wire.rs` + `sources/wayzata/`** | MI (6 rows), MN (2 responses) | 6 MI AD rows; 2 Wayzata responses feeding 537 schedule rows / 536 core meets | 2 responses | the long tail that still contributes; both are single-purpose and cheap `[lane: state-assoc-greatlakes §7.4]`, `reports/midwest-census-2026-09-20-method-notes.csv` |
-| 10 | **format parsers `hytek/`, `compiled/`, `xc/`, `result_file.rs`** | all states | 96 parsed artifacts before the vendor layouts landed → **1,740** after (Compiled 763, cross-country 380, Hy-Tek 597); 834,254 result rows, 264,167 grade-bearing; the corpus added **4,323 WI Co2027 to the 09-20 core (14,958 → 19,281)** | bundled inside the families above | the leverage is in the format layer, not the source count: one Hy-Tek parser covers every timer that emits it `reports/midwest-census-2026-09-20-method-notes.csv` |
+| 9 | **`sources/coach_contacts/wire.rs` + `sources/wayzata/`** | MI (6 rows), MN (2 responses) | 6 MI AD rows; 2 Wayzata responses feeding 537 schedule rows / 536 core meets | 2 responses | the long tail that still contributes; both are single-purpose and cheap `[lane: state-assoc-greatlakes §7.4]`, `reports/census-service-2026-09-20-method-notes.csv` |
+| 10 | **format parsers `hytek/`, `compiled/`, `xc/`, `result_file.rs`** | all states | 96 parsed artifacts before the vendor layouts landed → **1,740** after (Compiled 763, cross-country 380, Hy-Tek 597); 834,254 result rows, 264,167 grade-bearing; the corpus added **4,323 WI Co2027 to the 09-20 core (14,958 → 19,281)** | bundled inside the families above | the leverage is in the format layer, not the source count: one Hy-Tek parser covers every timer that emits it `reports/census-service-2026-09-20-method-notes.csv` |
 
 **Deliberately not ranked** — `data/adapter-ranking.csv` (written before the 12 lanes and the census landed) ranks
 ten adapters, and this list regroups them by *measured census yield* instead of estimated yield. The sources that

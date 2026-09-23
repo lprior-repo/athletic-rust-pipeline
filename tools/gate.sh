@@ -133,7 +133,7 @@ lane_vet() { cargo vet --locked; }
 # should analyze removes the argv[0] dependence — the lane then measures dependencies, not PATH.
 lane_machete() { "$(command -v cargo-machete)" .; }
 lane_geiger() { cargo geiger --workspace --all-features --output-format Json > /dev/null; }
-# Every feature combination compiles: `loom` in midwest-census gates the concurrency models, and the
+# Every feature combination compiles: `loom` in census-service gates the concurrency models, and the
 # root crate's telemetry sinks are optional, so a combination that only breaks under one of them
 # would otherwise reach review.
 lane_hack() { cargo hack check --workspace --feature-powerset; }
@@ -149,7 +149,7 @@ lane_tests() {
   fi
 }
 lane_bench_presence() {
-  if [ -d benches ] || [ -d crates/midwest-census/benches ]; then
+  if [ -d benches ] || [ -d crates/census-service/benches ]; then
     cargo bench --workspace --no-run
   else
     printf 'no benchmark target exists yet: performance claims stay blocked until Phase 6 adds one\n'

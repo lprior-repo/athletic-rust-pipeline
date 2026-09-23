@@ -3,7 +3,7 @@
 > **Archived 2026-09-21.** The Python scripts this directory documented have been deleted — the
 > repository runs no Python (owner directive). The pipeline's outputs (the workbooks and CSVs under
 > `reports/`) and this README remain as the provenance record of the 2026-09-20 corpus build. The
-> acquisition it described now lives in the Rust pipeline (`crates/midwest-census` bio adapter;
+> acquisition it described now lives in the Rust pipeline (`crates/census-service` bio adapter;
 > endpoint contracts in `docs/API.md`).
 
 Tooling that turns the raw Athletic.net rankings projection

@@ -1,14 +1,14 @@
 # Collector patterns — what exists, what to steal, what is missing
 
 **Date:** 2026-09-20. **Reading scope:** read-only inventory of this tree at `c5c4c48` plus the
-**untracked** `crates/midwest-census/**` (in-flight work owned by another working session; its source
+**untracked** `crates/census-service/**` (in-flight work owned by another working session; its source
 was observed to change mid-inventory, so all line numbers are a snapshot). Companion documents:
 [`SOURCES_SURVEY.md`](SOURCES_SURVEY.md) (source inventory + the ≤2 RPS operating policy),
 [`PROFILE_REPLICATION.md`](PROFILE_REPLICATION.md) (cohort definition + phased plan).
 
-**Tree note (2026-09-21):** the in-flight work landed. `crates/midwest-census/**` and
+**Tree note (2026-09-21):** the in-flight work landed. `crates/census-service/**` and
 `crates/census-domain/**` are tracked in git now, the census domain types moved out of
-`crates/midwest-census/src/model.rs` into `crates/census-domain/src/{model,jurisdiction}.rs`, and
+`crates/census-service/src/model.rs` into `crates/census-domain/src/{model,jurisdiction}.rs`, and
 `crates/census-crawl/src/net/` was rewritten into a module directory with retries, conditional GET
 and robots counting. Line numbers below are the 2026-09-20 snapshot; §2 carries a status column with
 what was re-checked on 2026-09-21.
@@ -17,7 +17,7 @@ what was re-checked on 2026-09-21.
 this session; `[RECORDED]` = a value taken from files the collector itself wrote. No `cargo`
 build/test/lint was executed, so no behavioural claim below is an execution claim. The three claims
 that carry the most weight were re-verified directly (`[RUN]` grep over
-`crates/midwest-census/src`: zero matches for `retry|backoff|429|Retry-After|FetchError::Http`;
+`crates/census-service/src`: zero matches for `retry|backoff|429|Retry-After|FetchError::Http`;
 `net/execute.rs` contains `expect("host registered")`; `FetchStats` is only ever cloned into in-memory
 reports). **Both of the first two of those had already changed by 2026-09-21** — see §2.
 
@@ -29,7 +29,7 @@ Three bodies of work already exist, and none of them is the missing piece on its
 
 | Body | What it is | State |
 |---|---|---|
-| `crates/midwest-census/**` (untracked) | a **synchronous, dependency-light collector**: per-host paced fetch, robots, disk cache, journal-resume, canonical entity graph, 12 state adapters, coach/GPA-adjacent passes | **P1 essentially done for 12 midwest states** — 141,441 athletes, **31,657 Class-of-2027** with 100% profile-URL + grad-year evidence, 2,224 coaches, 611 with email `[RECORDED: var/midwest-census/out/report.json + census-by-state.csv]`. Performances/PRs/verification: **absent** |
+| `crates/census-service/**` (untracked) | a **synchronous, dependency-light collector**: per-host paced fetch, robots, disk cache, journal-resume, canonical entity graph, 12 state adapters, coach/GPA-adjacent passes | **P1 essentially done for 12 midwest states** — 141,441 athletes, **31,657 Class-of-2027** with 100% profile-URL + grad-year evidence, 2,224 coaches, 611 with email `[RECORDED: var/census-service/out/report.json + census-by-state.csv]`. Performances/PRs/verification: **absent** |
 | `src/**` (committed) | the **domain, verification and durability** machinery: exact mark parsers + event ontology, recompute-don't-trust verifiers, per-row evidence envelopes, durable local-model lane, Restate topology | mature, fixture-qualified; bound to one source origin and one workbook pipeline |
 | `SOURCES_SURVEY.md` §0/§14 + `PROFILE_REPLICATION.md` | the **recorded policy and plan**: 2 RPS/host ceiling, `HostPolicy` fields, backoff ladder, phased P0–P6 | written; P2–P5 unimplemented |
 
@@ -116,7 +116,7 @@ remain, and the main pipeline already contains working implementations of the *p
 
 ---
 
-## 2. Transport defects found in `crates/midwest-census` (each is small and blocking)
+## 2. Transport defects found in `crates/census-service` (each is small and blocking)
 
 **Status re-checked 2026-09-21** against the current tree (`net/` is now a module directory:
 `net/{mod,request,execute,execute/attempt,cache,robots,decode,client,tests}.rs`). The list below is
@@ -128,11 +128,11 @@ the 2026-09-20 snapshot; four of the nine are fixed and one is structurally diff
 | 2 | Conditional GET unreachable; 304 replays a cached error body | **Fixed.** A 304 goes to `replay_cached`, which publishes the cached body with refreshed timestamps and counts `stats.conditional_304` (`net/execute/attempt.rs:70,136`) |
 | 3 | Cache key is request-keyed, not content-addressed; no `body_sha256 → key` index | **Still true.** `Fetcher::key_for` still hashes `method ␟ url ␟ extra`, and `CacheMeta.sha256` is still the 16-byte body prefix (`net/cache.rs`) |
 | 4 | robots.txt fetches bypass pacing and counters and fail open on 5xx | **Still true.** `robots_for` calls `fetch_text_uncached`, which uses the raw client with no host gate and no `FetchStats`, and any non-200 (including 5xx) leaves `fetched: false`, i.e. allow-all (`net/robots.rs:45-79`) |
-| 5 | `hosts.get_mut(host).expect("host registered")` panic surface in the pacing path | **Fixed.** No `expect(`/`unwrap()` remains in `crates/midwest-census/src` outside `#[cfg(test)]` (the gate's scan records `expect = 0`, `unwrap = 0` for the crate) |
+| 5 | `hosts.get_mut(host).expect("host registered")` panic surface in the pacing path | **Fixed.** No `expect(`/`unwrap()` remains in `crates/census-service/src` outside `#[cfg(test)]` (the gate's scan records `expect = 0`, `unwrap = 0` for the crate) |
 | 6 | `FetchStats` never persisted; no run log | **Partly true.** Per-adapter stats now flow into `AdapterReport` (`sources/mshsl/collect/run.rs:235`, `sources/wiaa/collect.rs:96`) and are printed, but no `out/run-*.json` writer exists in the crate |
 | 7 | `let _ = store.journal_done(...)` discards the append result | **Fixed.** `record_roster` matches on the journal result and reports the failure (`census/sweep.rs:105-110`) |
 | 8 | Tail-tolerance inverted: append-log reader `bail!`s on the first bad line | **Structurally changed, not re-verified.** The JSONL path is now the one-time legacy import (`store/legacy.rs`, line-oriented `BufReader::lines()`); whether a crash-truncated tail still wedges it was not exercised |
-| 9 | No global concurrency bound and no signal drain for the batch CLI | **Still true for the batch CLI.** Fan-out is still `concurrency × state_concurrency` (`census/mod.rs`); the drain protocol belongs to the service (`bootstrap/stop.rs`, `drain.rs`), not to `midwest-census collect` |
+| 9 | No global concurrency bound and no signal drain for the batch CLI | **Still true for the batch CLI.** Fan-out is still `concurrency × state_concurrency` (`census/mod.rs`); the drain protocol belongs to the service (`bootstrap/stop.rs`, `drain.rs`), not to `census-service collect` |
 
 1. **429/5xx are returned as `Ok`.** `FetchError::Http` (net/mod.rs::FetchError) is never constructed `[RUN]`; a
    non-2xx is counted in `stats.errors` and `warn!`ed (net/execute.rs::fetch) and then handed back as a
@@ -181,12 +181,12 @@ the 2026-09-20 snapshot; four of the nine are fixed and one is structurally diff
 
 ## 3. Where the work should live
 
-- **Acquisition stays in `crates/midwest-census`.** It is synchronous, robots-aware, journal-resumable,
+- **Acquisition stays in `crates/census-service`.** It is synchronous, robots-aware, journal-resumable,
   and already 292 k athlete observations deep. Do **not** move it under Restate/Chromium: the
   recorded policy (`SOURCES_SURVEY.md` §0) is explicit that the 2 RPS collector is its own polite
   path, and the main pipeline's ingestion contract is workbook-shaped.
 - **Share the domain rather than re-deriving it.** Two low-risk options, in order:
-  1. `midwest-census` takes a **path dependency on the library crate** and uses
+  1. `census-service` takes a **path dependency on the library crate** and uses
      `domain::marks::{event, parser, compare}` directly — one line in `Cargo.toml`, zero duplication.
   2. Extract `domain/marks` (plus `performance_evidence`) into a `crates/athletic-domain` shared
      crate, moving its tests with it. More work, smaller dependency closure.

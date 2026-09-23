@@ -68,8 +68,8 @@ Class 1, then a `bests` re-run.
 
 ```bash
 python3 tools/merge_coach_fragments.py --fragments out/coach-fragments --out data/coach-contacts.csv
-./target/release/midwest-census import-coaches ~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv --observed-on 2026-09-22
-./target/release/midwest-census bests
-./target/release/midwest-census workbook --grad-year 2027
-./target/release/midwest-census seal --write
+./target/release/census-service import-coaches ~/Downloads/midwest-tfxc-source-research/data/coach-contacts.csv --observed-on 2026-09-22
+./target/release/census-service bests
+./target/release/census-service workbook --grad-year 2027
+./target/release/census-service seal --write
 ```

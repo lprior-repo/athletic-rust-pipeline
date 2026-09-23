@@ -13,7 +13,7 @@ set -euo pipefail
 
 STORE="${1:?Usage: tools/ops-backup-drill.sh <store-dir>}"
 DRILL_DIR="$(mktemp -d)"
-BINARY="${BINARY:-target/debug/midwest-census}"
+BINARY="${BINARY:-target/debug/census-service}"
 
 fail() { echo ""; echo "FAIL: $*"; cleanup; exit 1; }
 pass() { echo ""; echo "PASS: $*"; cleanup; exit 0; }

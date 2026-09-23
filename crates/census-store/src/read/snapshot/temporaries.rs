@@ -14,7 +14,7 @@ use super::io_failure;
 
 /// The temporary a snapshot is written to before it is published.
 ///
-/// Unique per call, not per process: several consolidations run inside one `midwest-serve`, so a
+/// Unique per call, not per process: several consolidations run inside one `census-serve`, so a
 /// name built from the process id alone would have two of them writing the same temporary.
 pub(super) fn temporary_path(path: &Path) -> PathBuf {
     use std::sync::atomic::{AtomicU64, Ordering};

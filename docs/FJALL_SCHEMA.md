@@ -1,8 +1,8 @@
 # FJALL_SCHEMA.md — Fjall store schema and operational behavior for the census crate
 
-The census crate (`crates/midwest-census`) uses Fjall 3.1.10 as its embedded store.
+The census crate (`crates/census-service`) uses Fjall 3.1.10 as its embedded store.
 This document describes the keyspaces, key format, durability, knobs, and sharp edges
-observed in `crates/midwest-census/src/store/`.
+observed in `crates/census-service/src/store/`.
 
 Design-side companion: [`FJALL_SCHEMA.md`](../FJALL_SCHEMA.md) — the full schema and lifecycle.
 

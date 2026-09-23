@@ -56,8 +56,8 @@ Three distinct MileSplit surfaces are involved and are **not** interchangeable:
      after two peer fetches requested from this agent — OH by `Gap45OH` (200, **107** orgs,
      2026-09-20T14:11:27Z, capture `research/midwest/evidence/gaps/45/peer-milesplit-timing.html`)
      and IN by `Main` (200, **79** orgs, 2026-09-20T14:13:53Z, sha256 `7d2a4f3e…`, body cached
-     under the pipeline repo's `var/midwest-census/http/`; fetched with a different UA —
-     `midwest-census/0.1` — so treat cross-state counts as same-route comparisons, not
+     under the pipeline repo's `var/census-service/http/`; fetched with a different UA —
+     `census-service/0.1` — so treat cross-state counts as same-route comparisons, not
      same-request-signature ones). Those peers' entries/timing *route* behaviour (per-meet
      `/entries`, `/meets/<id>/timing`) remains unmeasured for OH beyond the one page this agent
      probed, and unmeasured for IN entirely.
@@ -351,7 +351,7 @@ difference from report 27's richest measurements.
 - Two peer fetches were used to respect this agent's 80-request budget, both requested from this
   agent and both strictly `/timing` roots: peer `Gap45OH` (OH, 1 request, 200, 107 orgs, disclosed
   in that peer's appendix) and `Main` (IN, 1 request, 200, 79 orgs, 2026-09-20T14:13:53Z, body
-  cached in the pipeline repo's `var/midwest-census/http/`; its UA was `midwest-census/0.1`, not the
+  cached in the pipeline repo's `var/census-service/http/`; its UA was `census-service/0.1`, not the
   browser UA used by every other row here). Everything else in this report is this agent's own
   probe with the browser UA, including the OH **entries** page.
 

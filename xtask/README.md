@@ -17,7 +17,7 @@ cargo run -p xtask -- <command> [args]        # the same thing, spelled out
 gate lanes keep running against the same toolchain and flags with or without it.
 
 Children always execute with the repository root as their working directory, whatever directory
-`xtask` was invoked from — so a relative `--store var/midwest-census` means here exactly what
+`xtask` was invoked from — so a relative `--store var/census-service` means here exactly what
 `AGENTS.md` documents.
 
 Errors go to stderr as `xtask: <message>`, the exit status is `1`, and a child's own exit code is
@@ -34,12 +34,12 @@ named in the message; there is no stack trace.
 | `ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the debt baseline |
 | `domain-purity` | proves the `census-domain` tree carries no async/I/O package |
 | `seams` | checks every `crate::…` edge between the census crate's top-level modules against the allowed table; JSON on stdout, non-zero exit on a violation |
-| `source-test <source>` (alias `source-check`) | `cargo nextest run -p midwest-census -E 'test(<source>)'` |
+| `source-test <source>` (alias `source-check`) | `cargo nextest run -p census-service -E 'test(<source>)'` |
 | `source-fixture <source>` | reads `crates/census-crawl/tests/fixtures/<source>/` and lists it |
 | `replay <name>` | replays `crates/census-crawl/tests/fixtures/<name>/` offline: prints each capture's parse result, same bytes every run |
 | `census-status <--store <dir>\|--ingress [<origin>]>` | `Census/status` on the running deployment, or the binary's `report --core` offline |
 | `coverage <--store <dir>\|--ingress [<origin>]>` | `Report/run` on the running deployment, or the binary's `report` (no flag = every source) offline |
-| `bench [-- <filter>]` | `cargo bench -p midwest-census [<filter>]` |
+| `bench [-- <filter>]` | `cargo bench -p census-service [<filter>]` |
 | `export <--store <dir>\|--ingress [<origin>]> [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]` | `Workbook/run` on the running deployment, or the binary's `workbook` offline |
 | `new-source <name>` | writes the adapter scaffold described below |
 
@@ -65,7 +65,7 @@ cargo xtask seams          # the census crate's top-level module edges; fails ou
 ```
 
 `scan` and `integrity` write JSON to stdout and nothing else, which is how `tools/gate.sh` feeds them
-to `jq`. `scan` covers `src/` and `crates/midwest-census/src` — exactly the crates the debt baseline
+to `jq`. `scan` covers `src/` and `crates/census-service/src` — exactly the crates the debt baseline
 records — counts forbidden constructs in production-reachable code (a `#[cfg(test)]` that gates a
 module ends the region; test files are skipped throughout), and reports the size budgets
 (`files_over_300_lines`, `functions_over_60_lines`, `functions_over_25_logical_lines`).
@@ -74,7 +74,7 @@ module ends the region; test files are skipped throughout), and reports the size
 tree carries an async runtime, store engine, HTTP client, service framework or browser engine: normal
 edges only, so dev-dependencies and build scripts cannot taint the verdict either way.
 
-`seams` walks every production `.rs` file under `crates/midwest-census/src`, resolves each `crate::…`
+`seams` walks every production `.rs` file under `crates/census-service/src`, resolves each `crate::…`
 reference to its top-level module, and fails when the `(from, to)` pair is outside the allowed-edge
 table in `xtask/src/seams.rs`. The table is the ratchet: adding an edge is a deliberate edit, and
 deleting a row makes that edge a violation again, because the check fails closed. Comment lines and
@@ -100,7 +100,7 @@ is debt, a known path that grew is debt, and a known path that shrank prints as 
 cargo xtask source-test wiaa
 ```
 
-Nextest with a `test(<source>)` filter over the whole `midwest-census` package, which is how a
+Nextest with a `test(<source>)` filter over the whole `census-service` package, which is how a
 source's tests are selected by name. It runs whatever matches; it does not prove the fixture set is
 complete — `source-fixture` shows what exists, and the fixture directories are the coverage list.
 
@@ -124,12 +124,12 @@ Reads every capture under `crates/census-crawl/tests/fixtures/<name>/` and runs 
 the same parse entry point that source's fixture tests call, printing what the parser published -
 counts, route names, the published school or meet names. Nothing is fetched, no clock is read, no
 store is opened and no environment is consulted, so two runs over the same tree print the same bytes:
-that is what makes it the verb to reach for while `midwest-serve` holds the store, on a machine with
+that is what makes it the verb to reach for while `census-serve` holds the store, on a machine with
 no network, or when a capture has to be re-read without re-crawling its host.
 
 Two kinds of input a capture cannot state about itself come from the same place the harnesses get
 them: a result file's format is classified from its extension and body by the adapter's own function,
-and its archive year is read from the fixture's record under `crates/midwest-census/tests/golden/`.
+and its archive year is read from the fixture's record under `crates/census-service/tests/golden/`.
 
 Every capture is read this way: the arms reach the crate's published parse surface, the same
 functions the source's fixture tests call, and a capture or a source none of the arms claims is
@@ -148,13 +148,13 @@ deployment.
 ```bash
 cargo xtask census-status                                   # Census/status, project node (18095)
 cargo xtask census-status --ingress http://127.0.0.1:18095  # the same invocation, spelled out
-cargo xtask census-status --store var/midwest-census        # midwest-census report --core, worker stopped
+cargo xtask census-status --store var/census-service        # census-service report --core, worker stopped
 cargo xtask coverage                                        # Report/run, every source
-cargo xtask coverage      --store var/midwest-census        # midwest-census report, every source
+cargo xtask coverage      --store var/census-service        # census-service report, every source
 ```
 
 `--ingress` submits the handler the running deployment already owns and never opens the store, which
-is the mode that works *while* `midwest-serve` holds it. `--store` runs the shipped `midwest-census`
+is the mode that works *while* `census-serve` holds it. `--store` runs the shipped `census-service`
 binary, which opens the store in process: that is the backup-drill and CI path — the only one that
 works with no server running — and it needs the worker stopped, because the store is single-writer
 and a second handle fails with `FjallError: Locked`.
@@ -176,7 +176,7 @@ cargo xtask bench                 # every criterion benchmark target in the crat
 cargo xtask bench -- parser       # criterion's own name filter, forwarded after `--`
 ```
 
-Forwards to `cargo bench -p midwest-census`, so it needs the crate to build and the filter is a
+Forwards to `cargo bench -p census-service`, so it needs the crate to build and the filter is a
 substring match over criterion benchmark ids, not a target name. The `--` separator is required:
 a bare `cargo xtask bench parser` is a clap error, and the wrapper prints the exact command it runs
 so a surprising filter is visible.
@@ -185,11 +185,11 @@ so a surprising filter is visible.
 
 ```bash
 cargo xtask export --ingress --out out/census.xlsx --limit 5000
-cargo xtask export --store var/midwest-census --out out/census.xlsx --limit 5000
+cargo xtask export --store var/census-service --out out/census.xlsx --limit 5000
 ```
 
 Builds the census workbook from evidence the store already holds — no gathering, no network.
-`--grad-year` (default 2027), `--all-sources` and `--limit` are forwarded to `midwest-census workbook`
+`--grad-year` (default 2027), `--all-sources` and `--limit` are forwarded to `census-service workbook`
 offline and carried in the `Workbook/run` request through the ingress, and both modes print the
 path they wrote and the cohort's graduation year. It is the short stable name for the artifact the
 recruiting projection consumes; offline the child's exit status is this command's exit status, and
@@ -223,7 +223,7 @@ README, then fails as soon as a capture lands, until the real parser replaces th
 
 - No reimplementation: `gate`, `source-test`, `census-status`, `coverage`, `bench` and `export` are
   thin wrappers around the tools that own the behaviour — the census commands either run the
-  `midwest-census` binary or submit that deployment's own handlers (`Census/status`,
+  `census-service` binary or submit that deployment's own handlers (`Census/status`,
   `Report/run`, `Workbook/run`) through Restate's ingress. The measurement subcommands do
   implement the gate's measurements, because those measurements are this repository's own policy
   rather than another tool's job — they are the Rust replacements for the deleted `tools/*.py`

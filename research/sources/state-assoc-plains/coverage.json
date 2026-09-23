@@ -9,7 +9,7 @@
     "report_citation": "count as stated in a Midwest report (verbatim quote available at the cited line)"
   },
   "ADAPTER_STATUS_LEGEND": {
-    "implemented": "an adapter module exists in crates/midwest-census/src/sources/",
+    "implemented": "an adapter module exists in crates/census-service/src/sources/",
     "none": "no adapter module exists; the source is unscraped by the pipeline",
     "state_filter_today": "every existing adapter declares `pub states: Vec<String>`; the jurisdiction-typing lane converts these to Vec<UsJurisdiction>"
   },
@@ -50,7 +50,7 @@
       "timing_providers": ["Wayzata Timing (AthleticLIVE)", "dakotatiming.anet.live", "bwracingservices.anet.live", "aatiming.com", "resultscm.com", "results.blacksquirreltiming.com", "crosscountryratings.com", "results.truetimeracing.com"],
       "adapter": {
         "status": "none",
-        "verified_absent": "grep -rn 'iahsaa|ighsau' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "verified_absent": "grep -rn 'iahsaa|ighsau' over crates/census-service/src and the root package src returns zero Rust matches",
         "not_collected": "everything: schools, coaches, results",
         "recommendation": "DISCOVERY_SOURCE via Bound + AthleticLIVE timing chain; the association itself is a VALIDATION_SOURCE (classification lists only)"
       },
@@ -86,10 +86,10 @@
       "timing_providers": ["DirectAthletics (regular season)", "kshsaachamps (state)", "MileSplit (aggregator)"],
       "adapter": {
         "status": "implemented",
-        "module": "crates/midwest-census/src/sources/ks/",
+        "module": "crates/census-service/src/sources/ks/",
         "entry": "ks/collect.rs collect()",
         "endpoint": "https://kshsaa-api.kshsaa.org/directory/search/name/a/ (1 request per run)",
-        "state_filter_today": {"file": "crates/midwest-census/src/sources/ks/collect.rs", "lines": "22-23", "signature": "pub states: Vec<String>"},
+        "state_filter_today": {"file": "crates/census-service/src/sources/ks/collect.rs", "lines": "22-23", "signature": "pub states: Vec<String>"},
         "collects": "CanonicalSchool (city, class, enrollment, website, kshsaa source identity, evidence) + CanonicalCoach (AD, honorific-stripped)",
         "not_collected": ["PublicClassifications endpoint (class already present in the directory record)", "teams", "rosters", "athletes", "XC/TF participation", "kshsaachamps results", "assistant ADs", "non-AD coaches"],
         "recommendation": "PRIMARY for the AD/school layer; RESULT_SOURCE for kshsaachamps is separate work"
@@ -108,8 +108,8 @@
         {"count": 1328, "what": "roster targets if every school's XC + T&F team nodes are walked (664 x 2)", "evidence": "research/midwest/09-minnesota-mshsl.md:165 (arithmetic restated from the same line)", "kind": "report_citation"}
       ],
       "track_xc_participation": [
-        {"count": 39, "what": "team nodes for one large school (Wayzata) across all activities; 4 of them are T&F/XC", "evidence": "crates/midwest-census/tests/fixtures/mshsl/team_nodes_aitkin.json + research/midwest/09-minnesota-mshsl.md:130 (Wayzata 39 teams, nid 589000-589038)", "kind": "measured_repo"},
-        {"count": 291, "what": "example MSHSL classification enrollment (Aitkin HS)", "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_aitkin-high-school.html", "kind": "measured_repo"}
+        {"count": 39, "what": "team nodes for one large school (Wayzata) across all activities; 4 of them are T&F/XC", "evidence": "crates/census-service/tests/fixtures/mshsl/team_nodes_aitkin.json + research/midwest/09-minnesota-mshsl.md:130 (Wayzata 39 teams, nid 589000-589038)", "kind": "measured_repo"},
+        {"count": 291, "what": "example MSHSL classification enrollment (Aitkin HS)", "evidence": "crates/census-service/tests/fixtures/mshsl/school_detail_aitkin-high-school.html", "kind": "measured_repo"}
       ],
       "result_surfaces": [
         {"surface": "/api/team-data/scores/<schoolId>/<level>/<activityId> (score rows)", "evidence": "research/midwest/09-minnesota-mshsl.md:12", "kind": "report_citation"},
@@ -118,17 +118,17 @@
       ],
       "coach_directory": {
         "association_publishes": "head coach + assistant coach names, roles, and school-domain professional emails, per team node; plus AD rows on the school page",
-        "measured": {"school_page_admin_rows": "role + name + phone/email (cfemail-obfuscated)", "coach_records": "free per team node", "evidence": "crates/midwest-census/tests/fixtures/mshsl/*.html|json", "kind": "measured_repo"},
+        "measured": {"school_page_admin_rows": "role + name + phone/email (cfemail-obfuscated)", "coach_records": "free per team node", "evidence": "crates/census-service/tests/fixtures/mshsl/*.html|json", "kind": "measured_repo"},
         "deliberately_ignored": ["FieldWorkPhone in the coach record (mixes school extensions with personal mobile numbers)", "office roles parsed from the school page (principal, superintendent, trainer, advisors, Title IX officer)"]
       },
       "athletic_net_linkage": {"direct_links": "state T&F meet via the timer's AthleticLIVE page (meet/666673); MeetID also present in the schedule JSON", "join": "MeetID is the strongest per-meet join of the seven states", "evidence": "research/midwest/09-minnesota-mshsl.md:headline"},
       "timing_providers": ["AthleticLIVE (state meets, via MSHSL)", "Wayzata Timing", "various anet.live tenants"],
       "adapter": {
         "status": "implemented",
-        "module": "crates/midwest-census/src/sources/mshsl/",
+        "module": "crates/census-service/src/sources/mshsl/",
         "entry": "mshsl/collect.rs collect() + collect/run.rs",
         "flow": "per school: school page (facts + AD rows) -> /jsonapi/views/teams/list_school team nodes -> /api/coaches/<nid> per team",
-        "state_filter_today": {"file": "crates/midwest-census/src/sources/mshsl/mod.rs", "lines": "67-68", "signature": "pub states: Vec<String>"},
+        "state_filter_today": {"file": "crates/census-service/src/sources/mshsl/mod.rs", "lines": "67-68", "signature": "pub states: Vec<String>"},
         "collects": "CanonicalSchool (name, slug, group id, enrollment, website, address) + CanonicalCoach (AD + head/assistant coaches with school-domain emails)",
         "not_collected": ["/api/team-data/roster (in-season, per-athlete grade - the highest-value unimplemented surface)", "schedule/scores", "athletes", "results", "state-meet PDFs", "tournament brackets"],
         "recommendation": "PRIMARY for MN school + coach identity; roster endpoint CONDITIONAL (in-season only)"
@@ -165,7 +165,7 @@
       "timing_providers": ["PrimeTime Timing (state + many districts)", "DAK Timing", "AthleticLIVE tenants"],
       "adapter": {
         "status": "none",
-        "verified_absent": "grep -rn 'mshsaa' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "verified_absent": "grep -rn 'mshsaa' over crates/census-service/src and the root package src returns zero Rust matches",
         "not_collected": "everything: schools, coaches, results",
         "recommendation": "RESULT_SOURCE via PrimeTime (HTML/PDF) — CONDITIONAL because 92% of the 2026 corpus is PDF and some is image-only; the association itself is VALIDATION_SOURCE at best and its robots reads disallow-all"
       },
@@ -198,9 +198,9 @@
       "timing_providers": ["AthleticLIVE tenants (state meets stream there)"],
       "adapter": {
         "status": "implemented (ND half of plain_names)",
-        "module": "crates/midwest-census/src/sources/plain_names/",
+        "module": "crates/census-service/src/sources/plain_names/",
         "entry": "plain_names/mod.rs collect() -> nd_walk/nd_coaches (nd/nd_walk/nd_coaches submodules)",
-        "state_filter_today": {"file": "crates/midwest-census/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 163-170 (application: state == \"ND\")", "signature": "pub states: Vec<String>"},
+        "state_filter_today": {"file": "crates/census-service/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 163-170 (application: state == \"ND\")", "signature": "pub states: Vec<String>"},
         "collects": "CanonicalSchool (name, grades, enrollment, website, address) + CanonicalCoach from the AD/principal/superintendent rows and the per-sport coach table (names only)",
         "not_collected": ["athletes", "results", "AthleticLIVE meet enumeration", "co-op annotations", "classifications", "district Athletic.net meet ids"],
         "recommendation": "PRIMARY for ND school + coach identity; AthleticLIVE ES index is the DISCOVERY_SOURCE for ND meets"
@@ -217,7 +217,7 @@
       },
       "school_universe": [
         {"count": 312, "what": "schools offered by the directory form (314 <option> minus the 'Select a school to view...' prompt and the 'View all schools' bulk control)", "evidence": "samples/nsaa-directory-form-2026-09-22.html (fresh; 11,585 B, parsed by this lane)", "kind": "measured_fresh"},
-        {"count": 8, "what": "school blocks in the retained fixture (the adapter parses one page per school)", "evidence": "crates/midwest-census/tests/fixtures/plain_names/nsaa_directory_export.html", "kind": "measured_repo"}
+        {"count": 8, "what": "school blocks in the retained fixture (the adapter parses one page per school)", "evidence": "crates/census-service/tests/fixtures/plain_names/nsaa_directory_export.html", "kind": "measured_repo"}
       ],
       "track_xc_participation": [
         {"count": 8, "what": "district XC result files per season = 4 classes x 2 genders (Top 15 individuals per district + team scores, grade in parentheses)", "evidence": "research/midwest/24-nebraska-nsaa.md:243-246", "kind": "report_citation"},
@@ -235,9 +235,9 @@
       "timing_providers": ["Precision Race Results (onlineraceresults.com, id=37)"],
       "adapter": {
         "status": "implemented (NE half of plain_names)",
-        "module": "crates/midwest-census/src/sources/plain_names/",
+        "module": "crates/census-service/src/sources/plain_names/",
         "entry": "plain_names/mod.rs collect() -> nsaa_walk/nsaa_coaches (nsaa/nsaa_walk/nsaa_coaches submodules)",
-        "state_filter_today": {"file": "crates/midwest-census/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 170 (application: state == \"NE\")", "signature": "pub states: Vec<String>"},
+        "state_filter_today": {"file": "crates/census-service/src/sources/plain_names/mod.rs", "lines": "94-95 (declaration), 170 (application: state == \"NE\")", "signature": "pub states: Vec<String>"},
         "collects": "CanonicalSchool (address, conference, district, enrollment, mascot, colors, homepage) + CanonicalCoach from staff roles and per-sport coach rows (multi-name cells split per person)",
         "not_collected": ["athletes", "results", "AL meet enumeration", "classifications", "district AN meet ids"],
         "recommendation": "PRIMARY for NE school + coach identity (1,528 rows / 1,217 names); result layer separate"
@@ -273,7 +273,7 @@
       "timing_providers": ["AthleticLIVE tenants", "Bound (no results published for state T&F: empty Result column)"],
       "adapter": {
         "status": "none",
-        "verified_absent": "grep -rn 'sdhsaa' over crates/midwest-census/src and the root package src returns zero Rust matches",
+        "verified_absent": "grep -rn 'sdhsaa' over crates/census-service/src and the root package src returns zero Rust matches",
         "not_collected": "everything: schools, coaches, results",
         "recommendation": "DISCOVERY_SOURCE (sdhsaa.com region pages give free anet meet ids) + COACH_SOURCE via Bound; CONDITIONAL for results (yearbook PDFs, last season only)"
       },

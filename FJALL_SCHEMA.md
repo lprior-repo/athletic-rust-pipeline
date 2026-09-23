@@ -3,14 +3,14 @@
 Operational companion: [`docs/FJALL_SCHEMA.md`](docs/FJALL_SCHEMA.md) — durability knobs and the
 sharp-edge list with current line citations. This file is the design-side schema.
 
-What `midwest-census` actually writes to its embedded store: directories, keyspaces, key bytes,
+What `census-service` actually writes to its embedded store: directories, keyspaces, key bytes,
 values, the write and read paths, and the limits the code enforces. Derived from
-`crates/midwest-census/src/store/` (primary), `crates/midwest-census/src/cli/` (the `midwest-census`
+`crates/census-service/src/store/` (primary), `crates/census-service/src/cli/` (the `census-service`
 binary, a thin clap shell),
-`crates/midwest-census/src/bin/midwest-serve.rs`, `crates/midwest-census/src/bootstrap/`,
-`crates/midwest-census/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
+`crates/census-service/src/bin/census-serve.rs`, `crates/census-service/src/bootstrap/`,
+`crates/census-service/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
 dependency
-`fjall = "=3.1.10"` (`crates/midwest-census/Cargo.toml`). Dependency behaviour is cited from the
+`fjall = "=3.1.10"` (`crates/census-service/Cargo.toml`). Dependency behaviour is cited from the
 registry source of that version.
 
 Line numbers are from the tree at the time of writing and will drift while the crate is being
@@ -27,8 +27,8 @@ sorted tables (module doc, `store/mod.rs` header). The store is the system of re
 
 | Property | Value | Source |
 | --- | --- | --- |
-| Crate / version | `fjall = "=3.1.10"` (exact pin) | `crates/midwest-census/Cargo.toml` |
-| Store root | `--store` (CLI), `--data-dir` (serve), default `var/midwest-census` | `cli/`, `bootstrap/options.rs::ServeOptions` |
+| Crate / version | `fjall = "=3.1.10"` (exact pin) | `crates/census-service/Cargo.toml` |
+| Store root | `--store` (CLI), `--data-dir` (serve), default `var/census-service` | `cli/`, `bootstrap/options.rs::ServeOptions` |
 | Database directory | `<root>/fjall` (`const DB_DIR`) | `store/mod.rs` |
 | Unified cache | 256 MiB, set explicitly (`const CACHE_BYTES`) | `store/mod.rs`, `Store::open` |
 | Entities table cap | 20,000,000 observations per table (`MAX_ROWS_PER_TABLE`) | `store/mod.rs` |
@@ -55,7 +55,7 @@ Created by `Store::open` before the database is opened: `<root>/http` (fetcher c
   journal/<phase>.jsonl       # pre-Fjall resume ledger (import source only)
 ```
 
-The live root (`var/midwest-census`) matches this layout, including both `entities/` (e.g.
+The live root (`var/census-service`) matches this layout, including both `entities/` (e.g.
 `athletes.jsonl` at 1.0 GB) and `out/` (`athletes.jsonl` at 779 MB). It also holds
 `out.pre-rust/` and a `.merged-athleticlive` marker, which no store code creates; treat those as
 operator state.
@@ -69,7 +69,7 @@ configuration.
 
 ### Lifecycle
 
-| Step | CLI (`midwest-census`) | Service (`midwest-serve`) |
+| Step | CLI (`census-service`) | Service (`census-serve`) |
 | --- | --- | --- |
 | Open | `Store::open(&cli.store)` in `main` | `spawn_blocking(Store::open)` in `bootstrap::serve_until` |
 | Work | one subcommand | Restate handlers share `Arc<Store>` |
@@ -87,7 +87,7 @@ Opening the database takes an exclusive lock (`LockedFileGuard::try_acquire` on 
 fjall 3.1.10 `src/db.rs`), so a second **process** cannot open a store that a live writer holds —
 this is the rule stated in `main.rs` ("One process owns the store at a time"), `README.md`
 ("Never open a live Fjall directory from a second process") and `HANDOFF.md`. Inside one process
-the store is shared: `midwest-serve` hands `Arc<Store>` to every handler, and heavy jobs run on
+the store is shared: `census-serve` hands `Arc<Store>` to every handler, and heavy jobs run on
 `spawn_blocking` behind a semaphore (`--max-concurrent`, default 8). Concurrent writers are
 therefore normal in-process; cross-thread coordination is fjall's journal serialisation plus the
 per-table `AtomicU64` sequence counters.
@@ -351,12 +351,12 @@ u64 }`. Per-table counts are read from the in-memory sequence counters (`counter
 i.e. **observations ever appended to that table**, exact and monotone — not the LSM tree's estimate.
 `bytes_on_disk` is `self.entities.disk_space()`, the `entities` keyspace tree only.
 
-`midwest-census fjall-stats` (`Command::FjallStats` → `print_store_stats`) prints `store\t<root>`,
+`census-service fjall-stats` (`Command::FjallStats` → `print_store_stats`) prints `store\t<root>`,
 then one `<table>\t<observations>` line per table in `Table::ALL` order (`schools`, `teams`,
 `coaches`, `athletes`, `meets`, `events`, `performances`), then `observations\t<sum>` and
 `bytes_on_disk\t<entities keyspace bytes>` — tab-separated, no header.
 
-`midwest-census import-legacy` prints the same block after listing, per table, the legacy file size
+`census-service import-legacy` prints the same block after listing, per table, the legacy file size
 or `absent`, plus the `journal` directory path. The Restate `Census::status` reply carries the same
 numbers as `{table, rows}` pairs plus `observations`, `bytes_on_disk`, `today`.
 
@@ -371,7 +371,7 @@ numbers as `{table, rows}` pairs plus `observations`, `bytes_on_disk`, `today`.
   a live directory is never opened from a second process.
 * **Restore** is the same copy in reverse: the store has no restore code path. Because sequences are
   reseeded from stored keys at open, a restored directory behaves exactly like the original.
-* **Pre-Fjall migration** is the only schema migration: `midwest-census import-legacy` (and every
+* **Pre-Fjall migration** is the only schema migration: `census-service import-legacy` (and every
   other command, since the import runs in `Store::open`), guarded by the `meta` markers. Operators
   are told to keep the old journals until `report` matches the pre-migration numbers.
 * **Footprint measurement** is `bytes_on_disk` from `fjall-stats` / status. It reports the `entities`

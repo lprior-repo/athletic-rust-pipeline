@@ -94,7 +94,7 @@ pipeline's own census (`reports/census-by-state.csv`, `reports/report-core.json`
 
 ## 1. Coverage at a glance (measured)
 
-| State | Assoc. member HS | Sport sponsorship (measured) | Pipeline census, all sources (2026-09-21) | Pipeline census, core = AN off | Repo adapter in `crates/midwest-census/src/sources/` |
+| State | Assoc. member HS | Sport sponsorship (measured) | Pipeline census, all sources (2026-09-21) | Pipeline census, core = AN off | Repo adapter in `crates/census-service/src/sources/` |
 |---|---|---|---|---|---|
 | IL | 828 [13] — **re-derived here** from `gaps/38/il-schools.json` (828 rows, §0.3) | TRB 632 · TRG 624 · CCB 539 · CCG 507 [13] | schools 1,889 · athletes 92,973 · Co2027 26,488 | Co2027 19,392 · coaches 15,102/3,235 email | `ihsa/` |
 | IN | 413 (408 full + 5 provisional) [17] — **quoted, not re-derivable** (SPA shell, §0.3) | not published per sport; 391 declared sectional slots [17] | schools 1,108 · athletes 54,475 · Co2027 16,931 | Co2027 11,909 · coaches 0 | **none** |
@@ -104,7 +104,7 @@ pipeline's own census (`reports/census-by-state.csv`, `reports/report-core.json`
 
 Census columns read from `~/Downloads/midwest-tfxc-source-research/reports/census-by-state.csv`
 (all sources) and `.../reports/census-by-state-core.csv` / `report-core.json` (`"scope": "core"`,
-`~/Downloads/midwest-tfxc-source-research/reports/midwest-census-2026-09-20-summary.csv` documents
+`~/Downloads/midwest-tfxc-source-research/reports/census-service-2026-09-20-summary.csv` documents
 the two scopes: `Core (Athletic.net off)` vs `All sources`). MileSplit/DAT team-registry numbers, the
 per-state Athletic.net Grade-11 baseline, and coach-contact yields are tabulated per state in §2–§6.
 
@@ -320,12 +320,12 @@ the research verdict that no public Indiana coach directory exists.
 
 ### 7.2 Repo adapter status (snapshot 2026-09-21, sources read-only)
 
-Verified by directory enumeration of `crates/midwest-census/src/sources/` (26 entries) and a
+Verified by directory enumeration of `crates/census-service/src/sources/` (26 entries) and a
 repo-wide search for `mhsaa|ihsaa|tfrrs|directathletics`:
 
 | Jurisdiction | Adapter now in repo | Notes |
 |---|---|---|
-| IL | `src/sources/ihsa/` (`collect.rs`, `parse.rs`, `staff.rs`, `map.rs`, `tests.rs`) | fixtures `crates/midwest-census/tests/fixtures/ihsa/{v1_schools.json, staff2_coach_rich.json, staff2_office_only.json}` |
+| IL | `src/sources/ihsa/` (`collect.rs`, `parse.rs`, `staff.rs`, `map.rs`, `tests.rs`) | fixtures `crates/census-service/tests/fixtures/ihsa/{v1_schools.json, staff2_coach_rich.json, staff2_office_only.json}` |
 | OH | `src/sources/ohsaa/` (`collect.rs`, `parse.rs`, `pages.rs`, `map.rs`, `tests.rs`) | fixtures `.../fixtures/ohsaa/` (9 files) |
 | WI | `src/sources/wiaa/` + `src/sources/wiaa_results/` | fixtures `.../fixtures/wiaa/` (4), `.../fixtures/wiaa_results/` (6), `.../fixtures/milesplit/wi_roster_52649.html` |
 | IN | **none** — no `ihsaa`/`tfrrs` module anywhere in the crate | Hy-Tek PDFs can still be read by the generic `hytek/` format parser; `milesplit/` covers `in.milesplit.com` via `Site::for_jurisdiction(UsJurisdiction::Indiana)` |
@@ -343,9 +343,9 @@ python: csv.DictReader over ~/Downloads/midwest-tfxc-source-research/data/{schoo
   → per-state school/DAT-team/coach row counts and the 5-state source-role rows
 # byte sizes of cited captures
 bash: stat -c '%s %n' ... (evidence/ gaps/38, gaps/39, gaps/45, gaps/33, gaps/32, gap-closure,
-  crates/midwest-census/tests/fixtures/{wiaa,ihsa,ohsaa,mshsl,milesplit,wiaa_results})
+  crates/census-service/tests/fixtures/{wiaa,ihsa,ohsaa,mshsl,milesplit,wiaa_results})
 # adapter inventory
-read/glob: crates/midwest-census/src/sources listing + recursive **/mhsaa* **/tfrrs* glob (empty)
+read/glob: crates/census-service/src/sources listing + recursive **/mhsaa* **/tfrrs* glob (empty)
 grep: (?i)(tfrrs|ihsaa|mhsaa|directathletics) over the repo
 # 2026-09-21 re-derivation pass (csv.DictReader in the same kernel, no repo writes)
 python: data/coach-contacts.csv -> 2,298 rows / 874 distinct schools / 51 public_professional_email /
@@ -391,10 +391,10 @@ python: modal pipe-count per markdown table in SOURCE_REPORT.md and samples/CAPT
     SOURCE_REPORT.md, 3 in CAPTURES.md)
 python: json.load(schema.json), json.load(coverage.json) → both parse; coverage.json carries
   all five jurisdictions with adapter status, universes, ATN divListId, enumerates/excludes
-python: crates/midwest-census/tests/fixtures/ihsa/v1_schools.json → **3 rows**, i.e. a sample of
+python: crates/census-service/tests/fixtures/ihsa/v1_schools.json → **3 rows**, i.e. a sample of
   the 828-row payload, not the payload; §0.3 / §1 and the coverage.json provenances state this
   explicitly so no downstream report can mistake the fixture for the IL denominator
-grep: crates/midwest-census/{src,tests} for "mhsaa" → `src/sources/coach_contacts/wire.rs:64-65`
+grep: crates/census-service/{src,tests} for "mhsaa" → `src/sources/coach_contacts/wire.rs:64-65`
   (host→`mhsaa` mapping) + `tests/golden/coach_contacts__*` (`my.mhsaa.com` AD URLs, "state":"MI")
   — the only MHSAA touchpoints in the crate, as the §7.2 MI row claims
 ```

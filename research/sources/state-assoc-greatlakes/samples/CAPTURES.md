@@ -20,32 +20,32 @@ black box and nothing is duplicated.
 
 | Path (repo-relative) | Bytes | Backs |
 |---|---:|---|
-| `crates/midwest-census/tests/fixtures/ihsa/staff2_coach_rich.json` | 5387 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
-| `crates/midwest-census/tests/fixtures/ihsa/staff2_office_only.json` | 1347 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
-| `crates/midwest-census/tests/fixtures/ihsa/v1_schools.json` | 2019 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
-| `crates/midwest-census/tests/fixtures/ohsaa/ad_centerville.html` | 2594 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/ad_dublin_coffman.html` | 3275 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/ad_malformed.html` | 313 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/search_dublin_coffman.html` | 1112 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/search_duplicate_rows.html` | 2667 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/search_no_results.html` | 393 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/sports_centerville.html` | 13463 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/sports_dublin_coffman.html` | 14294 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/ohsaa/sports_malformed.html` | 342 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
-| `crates/midwest-census/tests/fixtures/wiaa/directory_letter_a.html` | 20565 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa/school_org135_gale_ettrick_trempealeau.html` | 54061 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa/school_org1_abbotsford.html` | 39262 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa/school_org5151_sails_charter.html` | 19393 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/d1boysstateresults-dash.htm` | 17337 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/d1boysstateresults-dash.txt` | 3972 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/d1boysstateresults-sections.htm` | 16143 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm` | 33560 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/seed-column-regional.htm` | 10176 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/wiaa_results/trackside-regional.htm` | 3286 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
-| `crates/midwest-census/tests/fixtures/milesplit/wi_roster_52649.html` | 47647 | MileSplit team index + roster page carrying `column-grad-year` (team 52649) - sections 2/6 |
-| `crates/midwest-census/tests/fixtures/milesplit/wi_teams_index.html` | 4801 | MileSplit team index + roster page carrying `column-grad-year` (team 52649) - sections 2/6 |
-| `crates/midwest-census/tests/fixtures/mshsl/**` (11 files) | 68672 | **MN, not one of this lane's five jurisdictions** - kept only because the section 7.3 ledger measured it; cited in none of the five state sections |
-| `crates/midwest-census/tests/fixtures/coach_contacts_sample.csv` | 2926 | coach-CSV importer fixture (shared, cross-lane) |
+| `crates/census-service/tests/fixtures/ihsa/staff2_coach_rich.json` | 5387 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
+| `crates/census-service/tests/fixtures/ihsa/staff2_office_only.json` | 1347 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
+| `crates/census-service/tests/fixtures/ihsa/v1_schools.json` | 2019 | IHSA API shape: `v1_schools.json` (828 member rows), `staff2_coach_rich.json` (role rows + `HasEmail`), `staff2_office_only.json` (office-only variant) - report section 2 |
+| `crates/census-service/tests/fixtures/ohsaa/ad_centerville.html` | 2594 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/ad_dublin_coffman.html` | 3275 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/ad_malformed.html` | 313 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/search_dublin_coffman.html` | 1112 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/search_duplicate_rows.html` | 2667 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/search_no_results.html` | 393 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/sports_centerville.html` | 13463 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/sports_dublin_coffman.html` | 14294 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/ohsaa/sports_malformed.html` | 342 | OH portal HTML shapes incl. the negative fixtures (`*_malformed.html`, `search_no_results.html`) - section 5 |
+| `crates/census-service/tests/fixtures/wiaa/directory_letter_a.html` | 20565 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
+| `crates/census-service/tests/fixtures/wiaa/school_org135_gale_ettrick_trempealeau.html` | 54061 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
+| `crates/census-service/tests/fixtures/wiaa/school_org1_abbotsford.html` | 39262 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
+| `crates/census-service/tests/fixtures/wiaa/school_org5151_sails_charter.html` | 19393 | WIAA directory letter + 3 `GetDirectorySchool` detail pages (orgID 1 / 135 / 5151) - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/d1boysstateresults-dash.htm` | 17337 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/d1boysstateresults-dash.txt` | 3972 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/d1boysstateresults-sections.htm` | 16143 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm` | 33560 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/seed-column-regional.htm` | 10176 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/wiaa_results/trackside-regional.htm` | 3286 | WIAA result-file formats: Hy-Tek `.htm`, HTML `.htm`, legacy `.txt`, seed column - section 6 |
+| `crates/census-service/tests/fixtures/milesplit/wi_roster_52649.html` | 47647 | MileSplit team index + roster page carrying `column-grad-year` (team 52649) - sections 2/6 |
+| `crates/census-service/tests/fixtures/milesplit/wi_teams_index.html` | 4801 | MileSplit team index + roster page carrying `column-grad-year` (team 52649) - sections 2/6 |
+| `crates/census-service/tests/fixtures/mshsl/**` (11 files) | 68672 | **MN, not one of this lane's five jurisdictions** - kept only because the section 7.3 ledger measured it; cited in none of the five state sections |
+| `crates/census-service/tests/fixtures/coach_contacts_sample.csv` | 2926 | coach-CSV importer fixture (shared, cross-lane) |
 
 ## B. Midwest-corpus captures retained on disk (bytes re-measured; provenance from wave manifests)
 

@@ -1,6 +1,6 @@
 # Module → crate migration map
 
-Read-only survey of `crates/census-domain`, `crates/midwest-census`, `crates/g1-audit` in
+Read-only survey of `crates/census-domain`, `crates/census-service`, `crates/g1-audit` in
 `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline`, mapped onto the crate layout of
 `ARCHITECTURE.md` §4 (`census-domain`, `census-store`, `census-crawl`, `census-reconcile`,
 `census-review`, `census-report`, `census-service`), the keyspaces of `ARCHITECTURE.md` §7 and the
@@ -9,15 +9,15 @@ workflow identities of `ARCHITECTURE.md` §8. The order (seal, then extract) is 
 
 **Basis of measurement.** HEAD `ea81c56` plus the working tree as read during this pass; `git status
 --porcelain` listed 11 modified files while the pass ran (`crates/census-domain/src/jurisdiction.rs`,
-`crates/midwest-census/src/{census/mod.rs,cli/gather.rs,cli/mod.rs,cli/national/run.rs,report/coverage.rs,report/coverage/classify.rs,report/coverage/tests.rs,report/projection.rs,restate_services/national.rs,restate_services/tests.rs}`), so line counts are a snapshot, not a constant. The tree kept moving during the pass: the same
-command at the end listed 15 modified files (adding `crates/midwest-census/src/bootstrap.rs`,
+`crates/census-service/src/{census/mod.rs,cli/gather.rs,cli/mod.rs,cli/national/run.rs,report/coverage.rs,report/coverage/classify.rs,report/coverage/tests.rs,report/projection.rs,restate_services/national.rs,restate_services/tests.rs}`), so line counts are a snapshot, not a constant. The tree kept moving during the pass: the same
+command at the end listed 15 modified files (adding `crates/census-service/src/bootstrap.rs`,
 `bootstrap/serve.rs`, `bootstrap/stop.rs`, `store/legacy.rs`) and one untracked file not covered by
-§1 (`crates/midwest-census/src/bootstrap/guard.rs`). Method: `read`,
+§1 (`crates/census-service/src/bootstrap/guard.rs`). Method: `read`,
 `find`, `wc -l`, `grep`, one Python pass over the same files (module-edge resolution). No build, no
 `cargo` command was run — `cargo xtask seams`, `seams.rs`'s `ALLOWED` table, is quoted from source,
 not executed. Totals below are exact for the three crates' `src` trees at this revision:
-`wc -l $(find crates/{census-domain,midwest-census,g1-audit}/src -name '*.rs')` = **73,209** lines
-(midwest-census 68,252 · census-domain 3,574 · g1-audit 1,383).
+`wc -l $(find crates/{census-domain,census-service,g1-audit}/src -name '*.rs')` = **73,209** lines
+(census-service 68,252 · census-domain 3,574 · g1-audit 1,383).
 
 **Anchor re-verification (2026-09-23).** The anchors in §5, §5.1 and §5.2 below were re-read against
 the working tree at HEAD `95e89e9` — three commits after `ea81c56`, with uncommitted changes present —
@@ -65,9 +65,9 @@ Plus `crates/census-domain/kani/` (4 files: `census_domain_wiring.rs`, `gradyear
 No tokio, fjall, reqwest, chromiumoxide, workbook writer, Restate or HTTP client: it reads
 `raw/`, `evidence/`, `parsed/` directories (`main.rs:20-30`). No tests, no benches in this crate.
 
-### 1.3 `midwest-census` top-level modules (387 files, 68,252 lines: 49,720 production / 18,532 test)
+### 1.3 `census-service` top-level modules (387 files, 68,252 lines: 49,720 production / 18,532 test)
 
-`crates/midwest-census/src/lib.rs:33-50` declares all 17 modules and re-exports
+`crates/census-service/src/lib.rs:33-50` declares all 17 modules and re-exports
 `census::{collect_milesplit, consolidate, CollectOptions, CollectReport}`, `net::{FetchOptions,
 Fetcher}`, `store::{Store, Table}`. `prod/test` is a snapshot split: production = lines before the
 first `#[cfg(test)]`; test = whole test files plus those tails.
@@ -93,15 +93,15 @@ first `#[cfg(test)]`; test = whole test files plus those tails.
 | `clock.rs` | 1 | 34 | 30 | 2 (`Clock`, `SystemClock`) | 0 | `tokio` (`clock.rs:15`, `:30-31`), `chrono` (`clock.rs:23`) |
 | `lib.rs` | 1 | 50 | 0 | 0 | 0 | — |
 | `main.rs` | 1 | 18 | 0 | 0 | 0 | `anyhow` (`main.rs:13`); `cli::run()` |
-| `bin/midwest-serve.rs` | 1 | 43 | 0 | 0 | 0 | `midwest_census::bootstrap::{serve, ServeOptions}` |
+| `bin/census-serve.rs` | 1 | 43 | 0 | 0 | 0 | `census_service::bootstrap::{serve, ServeOptions}` |
 
 `clock.rs` is the **only** module in the three crates whose *proposed* home is `census-domain`
-while carrying a banned dependency: `crates/midwest-census/src/clock.rs:15` declares
+while carrying a banned dependency: `crates/census-service/src/clock.rs:15` declares
 `fn now(&self) -> tokio::time::Instant` (impl at `clock.rs:30-31`), and `purity.rs:27-52` bans
 `tokio` in the domain tree.
 `chromiumoxide` belongs to the root package, not to these three crates: `Cargo.toml:35` declares it
 and `Cargo.toml:122` patches `chromiumoxide_cdp` onto `vendor/chromiumoxide_cdp`; no file under
-`crates/midwest-census/src` or `crates/census-domain/src` mentions it. The browser supervisor that
+`crates/census-service/src` or `crates/census-domain/src` mentions it. The browser supervisor that
 `ARCHITECTURE.md` §4 assigns to `census-crawl` therefore lives outside the three crates today.
 
 ### 1.4 `sources/` by family (190 files, 26,371 production lines, 469 public declarations)
@@ -135,8 +135,8 @@ call site; the shared parse kernel `result_file.rs` is imported by `compiled` an
 
 ### 1.5 `cli/` by subcommand (54 files, 6,487 production / 1,565 test lines)
 
-`Command` is defined in `crates/midwest-census/src/cli/command.rs` and dispatched in
-`crates/midwest-census/src/cli/dispatch.rs`.
+`Command` is defined in `crates/census-service/src/cli/command.rs` and dispatched in
+`crates/census-service/src/cli/dispatch.rs`.
 
 | subcommand(s) | module | files | lines (prod/test) | notable external crates |
 |---|---|---|---|---|
@@ -158,7 +158,7 @@ call site; the shared parse kernel `result_file.rs` is imported by `compiled` an
 | `VerifyCoaches` | `cli/verify_coaches/` | 2 | 351 / 0 | `futures` (`cli/verify_coaches/mod.rs:12`) |
 | envelope | `cli/mod.rs`, `cli/command.rs`, `cli/dispatch.rs`, `cli/ingress.rs`, `cli/tests.rs`, `cli/review_tests.rs` | 6 | 466 / 436 | `clap`, `restate_sdk` (`cli/ingress.rs:13`) |
 
-Dispatch mapping was read from `crates/midwest-census/src/cli/dispatch.rs:24-75` (e.g.
+Dispatch mapping was read from `crates/census-service/src/cli/dispatch.rs:24-75` (e.g.
 `Command::Sites => gather::run_sites()` at `:26`,
 `Command::NationalReport => national::run_national_report(args)` at `:67`); `VerifyCoaches` is
 rejected in `dispatch` (`cli/dispatch.rs:73-74`) because `cli::run` handles it before dispatch
@@ -193,7 +193,7 @@ in its proposed home; the required edit is named.
 | `bootstrap/` (528 prod) | **census-service** | Supervisor: cancel/drain/finalize, Restate endpoint binding. | high | n/a (restate-sdk, tokio) |
 | `restate_services/` (1,973 prod) | **census-service** | The workflow/object layer and its wire types. | high | n/a (restate-sdk) |
 | `cli/` (6,487 prod) | **census-service** | Composition root: clap surface, dispatch, every subcommand body; drives all six other crates. | high | n/a (calamine, restate-sdk) |
-| `lib.rs`, `main.rs`, `bin/midwest-serve.rs` | **census-service** (bins) | Umbrella re-exports die in the cutover (`lib.rs:48-50`); binaries are re-pointed per ADR-007. | high | n/a |
+| `lib.rs`, `main.rs`, `bin/census-serve.rs` | **census-service** (bins) | Umbrella re-exports die in the cutover (`lib.rs:48-50`); binaries are re-pointed per ADR-007. | high | n/a |
 | `g1-audit/src/main.rs` (1,383) | **no target crate** | Not one of the seven; it is a directory-reading audit gate over retained evidence, not a pipeline stage. Keep as its own tool binary (or fold into `xtask`). | medium | n/a |
 
 Direction rule the table obeys: `census-domain` ← everything; every other crate may depend on
@@ -252,7 +252,7 @@ sides are in the same target crate.
 
 Edges the survey expected but did **not** find: `restate_services → bests` / `→ workbook` (0 refs —
 the workbook and best results are rendered by `cli/publish.rs:7`, which imports
-`midwest_census::{bests, census, report, workbook}`); `spawn → store` (0); `bootstrap → net` (0).
+`census_service::{bests, census, report, workbook}`); `spawn → store` (0); `bootstrap → net` (0).
 
 ### 3.2 Risk register
 
@@ -349,7 +349,7 @@ the census jobs for every table (`restate_services/jobs.rs:186` passes `Table::A
 
 ## 5. Restate surface today
 
-Components bound in `crates/midwest-census/src/restate_services/mod.rs` (`build_endpoint`): service
+Components bound in `crates/census-service/src/restate_services/mod.rs` (`build_endpoint`): service
 `Census`, object `Ingest`, workflow `Sweep`, object `JurisdictionCensus`, workflow `NationalCensus`.
 `jobs.rs` is a helper module (report writing), `wire.rs` + `wire/ingest.rs` are `PureData` wire types —
 neither is a component.
@@ -393,13 +393,13 @@ a boundary (`census/identity/tests.rs:92-94`).
 
 | location | count | contents (what depends on it) |
 |---|---|---|
-| colocated test files under `crates/midwest-census/src` | 53 files named `tests.rs`/`*_tests.rs`; 58 files carry `#[cfg(test)]` blocks (59 hold `#[test]` fns) / 18,532 test lines | per-module unit tests; move with their module. Largest: `sources/plain_names/tests.rs` (1,203), `sources/mshsl/tests.rs` (799), `sources/athleticlive/results/tests.rs` (748), `workbook/recruiting/tests.rs` (630), `cli/merge_coaches/tests.rs` (599), `sources/ihsa/tournament/tests.rs` (545), `sources/athleticnet/meet/tests.rs` (542), `sources/milesplit/tests.rs` (535), `report/coverage/tests.rs` (510) |
+| colocated test files under `crates/census-service/src` | 53 files named `tests.rs`/`*_tests.rs`; 58 files carry `#[cfg(test)]` blocks (59 hold `#[test]` fns) / 18,532 test lines | per-module unit tests; move with their module. Largest: `sources/plain_names/tests.rs` (1,203), `sources/mshsl/tests.rs` (799), `sources/athleticlive/results/tests.rs` (748), `workbook/recruiting/tests.rs` (630), `cli/merge_coaches/tests.rs` (599), `sources/ihsa/tournament/tests.rs` (545), `sources/athleticnet/meet/tests.rs` (542), `sources/milesplit/tests.rs` (535), `report/coverage/tests.rs` (510) |
 | `crates/census-domain/src/*_tests.rs` | 4 files, 974 lines | `model_tests.rs`, `model/records_tests.rs`, `model/review_tests.rs`, `jurisdiction_tests.rs`, each wired by `#[cfg(test)] #[path = …] mod tests;` (`model.rs:1281`, `model/records.rs:375`, `model/review.rs:233`, `jurisdiction.rs:612`) |
-| `crates/midwest-census/tests/` | 21 files | integration layer that spans future crates: `fjall_restate_e2e.rs` (store+service), `backup_restore.rs`, `recovery.rs`, `parity_{mideast,national,north,pipeline,wisconsin}.rs`, `parser_roundtrip_properties.rs`, `merge_properties.rs`, `athleticnet_meet_parity.rs`, and 9 `*_parser_properties.rs` / `*_directory_properties.rs` / `wayzata_schedule_properties.rs` proptest files |
-| `crates/midwest-census/tests/fixtures/` | 72 files in 15 dirs | provider fixtures, e.g. `ihsa_tournament/` (11), `mshsl/` (11), `ohsaa/` (9), `milesplit/` (7), `plain_names/` (6), `wiaa_results/` (6), `athleticnet/` (4), `wiaa/` (4), `tfrrs/` (3), `ihsa/` (3), `athleticlive_results/` (2), `wayzata/` (2), `athleticlive/` (1), `athleticlive_athletes/` (1), `ks/` (1), plus `coach_contacts_sample.csv` |
-| `crates/midwest-census/benches/` | 6 files | `core.rs` + `core/{fixtures,labels,lcg,merge}.rs` and `pipeline.rs`; `[[bench]] name = "core"` and `name = "pipeline"`, both `harness = false` (`crates/midwest-census/Cargo.toml:60-66`); criterion 0.8 dev-dep; `xtask` runs them via its bench verb |
+| `crates/census-service/tests/` | 21 files | integration layer that spans future crates: `fjall_restate_e2e.rs` (store+service), `backup_restore.rs`, `recovery.rs`, `parity_{mideast,national,north,pipeline,wisconsin}.rs`, `parser_roundtrip_properties.rs`, `merge_properties.rs`, `athleticnet_meet_parity.rs`, and 9 `*_parser_properties.rs` / `*_directory_properties.rs` / `wayzata_schedule_properties.rs` proptest files |
+| `crates/census-service/tests/fixtures/` | 72 files in 15 dirs | provider fixtures, e.g. `ihsa_tournament/` (11), `mshsl/` (11), `ohsaa/` (9), `milesplit/` (7), `plain_names/` (6), `wiaa_results/` (6), `athleticnet/` (4), `wiaa/` (4), `tfrrs/` (3), `ihsa/` (3), `athleticlive_results/` (2), `wayzata/` (2), `athleticlive/` (1), `athleticlive_athletes/` (1), `ks/` (1), plus `coach_contacts_sample.csv` |
+| `crates/census-service/benches/` | 6 files | `core.rs` + `core/{fixtures,labels,lcg,merge}.rs` and `pipeline.rs`; `[[bench]] name = "core"` and `name = "pipeline"`, both `harness = false` (`crates/census-service/Cargo.toml:60-66`); criterion 0.8 dev-dep; `xtask` runs them via its bench verb |
 | dev-dependency-only lanes | 1 each | `loom = "0.7"` (feature `loom`) drives `store/loom_tests.rs` and `spawn/loom_tests.rs`; `proptest = "1"` drives the 9 property files above; `tokio` (`test-util`) drives `net/execute/tests.rs`, `spawn/tests.rs` |
-| formal harnesses | 7 files | `crates/census-domain/kani/{census_domain_wiring,gradyear,id_mint,publish}.rs` (wired by `lib.rs:19`), `crates/midwest-census/kani/{keys,merge,store_wiring}.rs` — the store harnesses must be re-pointed to `census-store` |
+| formal harnesses | 7 files | `crates/census-domain/kani/{census_domain_wiring,gradyear,id_mint,publish}.rs` (wired by `lib.rs:19`), `crates/census-service/kani/{keys,merge,store_wiring}.rs` — the store harnesses must be re-pointed to `census-store` |
 | outside the three crates but same gates | root `tests/` = 17 files | root package `tests/` + `tests/fixtures/` + `tests/native_parser_properties.proptest-regressions`, `benches/{artifact_store,blocking_fanout,workbook_export}.rs`, `fuzz/` (4 targets), `tools/gate.sh` + `tools/quality-baseline.json` |
 | gates that must be **updated**, not merely kept green | 6 xtask modules | `xtask/src/seams.rs` (module-edge `ALLOWED` table → crate-edge graph), `xtask/src/purity.rs` (domain tree), `xtask/src/scan.rs` + `xtask/src/baseline.rs` (line budgets), `xtask/src/integrity.rs`, `xtask/src/templates.rs` + `xtask/src/scaffold.rs` + `xtask/src/source_fixture.rs` (adapter scaffolding paths), `xtask/src/dump_sheet.rs` (workbook consumer) |
 

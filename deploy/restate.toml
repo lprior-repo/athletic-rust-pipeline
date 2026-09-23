@@ -1,19 +1,19 @@
 # The Midwest census Restate node: journal, metadata, ingress and admin on loopback only.
 #
 # Versioned here because it used to live only on the deployed machine, where nothing could review it
-# against the units that start it. Deploy it to /etc/midwest-census/restate.toml beside
+# against the units that start it. Deploy it to /etc/census-service/restate.toml beside
 # `restate-server.service`; the base-dir matches that unit's StateDirectory.
 #
 # Pinned to the 1.7.10 build the census lanes were qualified against. The SDK advertises protocol
 # versions 5..=7 and the live deployment reports HTTP/2 `BidiStream`, so v7 stays enabled while it is
 # experimental; the vqueue and scoped-virtual-object flags are the ones the census services depend on.
 roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
-node-name = "midwest-census"
-cluster-name = "midwest-census"
+node-name = "census-service"
+cluster-name = "census-service"
 auto-provision = true
 default-num-partitions = 24
 default-replication = 1
-base-dir = "/var/lib/midwest-census-restate"
+base-dir = "/var/lib/census-service-restate"
 listen-mode = "tcp"
 bind-ip = "127.0.0.1"
 bind-port = 15152

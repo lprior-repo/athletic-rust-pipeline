@@ -106,7 +106,7 @@ fn relays_are_not_personal_bests() {
     assert!(!is_relay(&EventKind::CrossCountry));
 }
 
-/// The sidecar is published by rename, never written in place: `midwest-serve` runs several best
+/// The sidecar is published by rename, never written in place: `census-serve` runs several best
 /// reductions while a reader — `report`, `workbook`, or an operator reading the file — may be
 /// reading the pass the previous one left. A reader holding the file open keeps the pass it opened,
 /// whole, and the name carries the next pass whole. This fails if the sidecar goes back to writing

@@ -4,7 +4,7 @@
 
 Partially implemented. The root runtime implements the decision in the `SourceGateway` workflow
 (`src/runtime/source/`); the census fetcher does **not** obey it yet, retrying inside the transport up
-to `MAX_RETRIES = 3` (`crates/midwest-census/src/net/mod.rs:57`). The `OperationTerminal` vocabulary
+to `MAX_RETRIES = 3` (`crates/census-service/src/net/mod.rs:57`). The `OperationTerminal` vocabulary
 quoted by `ARCHITECTURE.md:58-61` has no Rust definition in the tree.
 
 ## Context
@@ -54,7 +54,7 @@ already state the rule.
   cannot judge whether a retry is safe, and it compounds with the owner's retries — the 27× case.
 * **No retries; every failure pages an operator.** Rejected: transient store locks, session desyncs and
   rate limits are what a journaled retry repairs
-  (`crates/midwest-census/src/restate_services/support.rs:16-70`).
+  (`crates/census-service/src/restate_services/support.rs:16-70`).
 * **Unbounded exponential retry.** Rejected: `MAX_RETRY_DELAY = 86_400 s` and `MAX_ATTEMPTS = 4` bound
   the workflow (`src/runtime/source/retry.rs:6-7`), and a blocked service pauses for an operator
   (`RESTATE_WORKFLOWS.md:209-211`).

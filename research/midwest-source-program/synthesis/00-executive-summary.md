@@ -16,7 +16,7 @@ seeds and the canonical census exports), `synthesis/*` (this set, incl. **`10-me
 `tools/*` (runbooks + analysis scripts + raw capture evidence), `brief/*` (mission + consolidator
 contracts).
 
-**Then we built it.** `crates/midwest-census` runs the qualified adapters end to end: 707,933 canonical
+**Then we built it.** `crates/census-service` runs the qualified adapters end to end: 707,933 canonical
 athletes, 183,875 of them Class of 2027, 93,619 Athletic.net athlete ids and 9,593 Athletic.net meet ids
 obtained **without a single Athletic.net request**. Numbers and gaps: `10-measured-census.md`.
 

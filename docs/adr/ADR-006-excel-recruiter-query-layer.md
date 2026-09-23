@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted. Implemented: census workbook writer (`crates/midwest-census/src/workbook/`, `src/xlsx/**`),
-best-mark reduction (`crates/midwest-census/src/bests/`), census report (`.../report/`).
+Accepted. Implemented: census workbook writer (`crates/census-service/src/workbook/`, `src/xlsx/**`),
+best-mark reduction (`crates/census-service/src/bests/`), census report (`.../report/`).
 
 ## Context
 

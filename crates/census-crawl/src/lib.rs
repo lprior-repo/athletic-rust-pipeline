@@ -4,7 +4,7 @@
 //! Each adapter is a plain async function taking [`AdapterContext`]; there is no trait indirection
 //! because adapters differ in shape (single request, paginated index, artifact walk). The
 //! orchestration that calls them — the sweep, the meet walk, the CLI — is a *consumer* of this crate
-//! (`midwest-census`), which is what keeps a provider's shape from leaking into the run's shape.
+//! (`census-service`), which is what keeps a provider's shape from leaking into the run's shape.
 //!
 //! Two modules carry the crate's shared machinery:
 //!

@@ -7,7 +7,7 @@
 //! this walk would let the seam check and the budgets disagree about a file without either failing.
 //!
 //! `main.rs`, `cli/**` and `bin/**` are out of scope on top of that: every binary is its own crate
-//! root, so those files consume the library through its public API (`midwest_census::…`) and cannot
+//! root, so those files consume the library through its public API (`census_service::…`) and cannot
 //! form a library-internal seam.
 
 use anyhow::{Context, Result};
@@ -79,7 +79,7 @@ fn collect(
 /// `src/store/read.rs` and `src/store/mod.rs` are both `store`; a file directly under `src/`
 /// (`lib.rs`, `bootstrap.rs`) is its own stem. `main.rs`, `cli/**` and `bin/**` are excluded:
 /// every binary is its own crate root, so those files consume the library through its public
-/// API (`midwest_census::…`) and cannot form a lib-internal seam.
+/// API (`census_service::…`) and cannot form a lib-internal seam.
 pub(super) fn top_module(src: &Path, file: &Path) -> Option<String> {
     let relative = file.strip_prefix(src).ok()?;
     let mut components = relative.components();

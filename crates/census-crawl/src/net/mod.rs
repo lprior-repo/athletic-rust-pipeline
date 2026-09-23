@@ -54,7 +54,7 @@ use robots::RobotsRules;
 use robots::parse_robots;
 
 pub const DEFAULT_USER_AGENT: &str =
-    "midwest-census/0.1 (independent HS track & field research collector; polite; contact: repo owner)";
+    "census-service/0.1 (independent HS track & field research collector; polite; contact: repo owner)";
 
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
 const REQUEST_TIMEOUT_SECS: u64 = 45;
@@ -133,7 +133,7 @@ impl Fetcher {
     /// refuses every `*.milesplit.com` host at once, while the walk's per-host model holds one
     /// budget per state subdomain: the 2026-09-22 national fan-out therefore spent fifty-one
     /// independent budgets against one enforced one and was refused after ~127 rosters per state,
-    /// which is the observation recorded in `var/midwest-census/out/run-evidence/source-refusal.txt`.
+    /// which is the observation recorded in `var/census-service/out/run-evidence/source-refusal.txt`.
     /// A family entry replaces the per-host budget for its hosts, so the family shares one gate and
     /// one spacing no matter how many subdomains the run spreads across.
     pub fn with_family_budgets(mut self, families: HashMap<String, Duration>) -> Self {

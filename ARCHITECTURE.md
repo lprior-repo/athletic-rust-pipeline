@@ -231,7 +231,7 @@ wave. The **store** wave landed `crates/census-store` (Fjall keyspaces, journals
 backup/restore, and the clock capability) and `crates/census-review` (the local-model review lane);
 the **crawl** wave landed `crates/census-crawl` (the polite fetcher and browser bridge, one module per
 provider, the provider registry) together with `census-domain/src/school_index.rs` and
-`census-domain/src/core_scope.rs`. What remains in `crates/midwest-census` is the composition root:
+`census-domain/src/core_scope.rs`. What remains in `crates/census-service` is the composition root:
 the sweep and meet walk, the durable services, the reductions (`report`, `bests`, `workbook`), the
 CLI, the supervisor, and `crates/g1-audit` beside it. Deps already wired: fjall 3.1.10, restate-sdk
 0.12, reqwest 0.13, tokio, thiserror, serde. `xtask seams` enforces both graphs: the module table for

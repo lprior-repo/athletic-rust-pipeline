@@ -158,7 +158,7 @@ blocked or delegated (AL, MS, TX), and AR/KY hand over only MileSplit or Arbiter
 
 ### 1c. What the pipeline actually measured per target state — 2026-09-20 snapshot
 
-Source: `[synthesis/10-measured-census.md]` (built from `var/midwest-census/out/report.json` + `data/*.csv`),
+Source: `[synthesis/10-measured-census.md]` (built from `var/census-service/out/report.json` + `data/*.csv`),
 cross-checked against `[reports/census-by-state.csv]`. This is the **measured** column set; the research
 estimates live in `[synthesis/01-acceptance-answers.md]` and are order-of-magnitude bands.
 
@@ -475,4 +475,4 @@ headers, so a reader can re-derive any figure in §1-§6 without re-fetching any
 | `reports/census-by-state.csv` | 13 + header | per-state census — the only source of §1c |
 | `reports/best-results-co2027.csv` | 7,743 + header | best result per Co2027 athlete (1.5 MB; sibling `best-results-co2027.jsonl` 3.2 MB) |
 | `reports/report.json` / `report-core.json` | 12,719 B / 9,263 B | pipeline run outputs (`core` = Athletic.net off) |
-| `reports/midwest-census-2026-09-21.xlsx` | 662,980 B | spreadsheet export of the census |
+| `reports/census-service-2026-09-21.xlsx` | 662,980 B | spreadsheet export of the census |

@@ -5,7 +5,7 @@
 //! top-level modules. It is now being split into lanes, and each split moves an edge out of reach of
 //! the module table and into the crate table, so this measurer keeps both:
 //!
-//! * the module walk reads every production `.rs` file under `crates/midwest-census/src`, resolves
+//! * the module walk reads every production `.rs` file under `crates/census-service/src`, resolves
 //!   each `crate::…` reference to its top-level module, and compares the `(from, to)` pair against
 //!   [`ALLOWED`];
 //! * the crate walk ([`crates`]) reads every workspace package's production source, resolves each
@@ -36,7 +36,7 @@
 //!   "edges": [{"from": "sources", "to": "store", "refs": 24}, ...],
 //!   "violations": [{"from": "sources", "to": "report", "file": "...", "line": 283}, ...],
 //!   "crates": ["census-store", ...],
-//!   "crate_edges": [{"from": "midwest-census", "to": "census-store", "refs": 96}, ...],
+//!   "crate_edges": [{"from": "census-service", "to": "census-store", "refs": 96}, ...],
 //!   "crate_violations": [{"from": "census-store", "to": "census-report", "file": "...", "line": 4}]
 //! }
 //! ```
@@ -61,7 +61,7 @@ mod walk;
 #[path = "seams/tests.rs"]
 mod tests;
 
-/// Allowed edges between the modules still inside `crates/midwest-census/src`, as `(from, to)`.
+/// Allowed edges between the modules still inside `crates/census-service/src`, as `(from, to)`.
 ///
 /// The direction rule is `ARCHITECTURE.md`'s: a lane derives from the rows below it and names no lane
 /// back. The table is what a split leaves behind: the adapters, the fetcher, the store, the review lane
@@ -152,14 +152,14 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // the bootstrap options). `census-crawl` owns the *protocol* side of that lane and reaches the
     // ingress as a library, this crate owns the *host*, and the edge closes no loop: the lane crate
     // declares no workspace dependency at all, so the one-way property below still holds.
-    ("midwest-census", "athleticnet-browser"),
-    ("midwest-census", "census-crawl"),
+    ("census-service", "athleticnet-browser"),
+    ("census-service", "census-crawl"),
     // The reporting plane is the composition root's projection layer: the CLI's export and seal verbs
     // and the durable workbook service name it, and it names nothing back.
-    ("midwest-census", "census-report"),
-    ("midwest-census", "census-domain"),
-    ("midwest-census", "census-review"),
-    ("midwest-census", "census-store"),
+    ("census-service", "census-report"),
+    ("census-service", "census-domain"),
+    ("census-service", "census-review"),
+    ("census-service", "census-store"),
     // The harness reads the store for its status verb, drives the census services through their
     // ingress clients, replays a provider adapter against its capture, and crosses the report scope
     // when it resolves a run's artifact paths, so it names all four.
@@ -167,7 +167,7 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     ("xtask", "census-domain"),
     ("xtask", "census-report"),
     ("xtask", "census-store"),
-    ("xtask", "midwest-census"),
+    ("xtask", "census-service"),
 ];
 
 /// Scan the census source tree, print the report, and fail on any disallowed edge.

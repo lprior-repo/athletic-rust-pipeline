@@ -36,8 +36,8 @@ Four products exceed the 25 MB cap and stay in the working corpus:
 | --- | --- |
 | 188.1 MB | `data/canonical-athletes-co2027.csv` |
 | 114.2 MB | `data/recruiting-co2027.csv` |
-| 72.8 MB | `reports/midwest-census-2026-09-22.xlsx` |
-| 37.0 MB | `pipeline/midwest-census-2026-09-22.xlsx` (same run's workbook, committed instead as `report.json` + `report-core.json`) |
+| 72.8 MB | `reports/census-service-2026-09-22.xlsx` |
+| 37.0 MB | `pipeline/census-service-2026-09-22.xlsx` (same run's workbook, committed instead as `report.json` + `report-core.json`) |
 | 35.2 MB | `data/athleticnet-athlete-seeds.csv` |
 
 The raw asset trees are outside the repository for the same reason: `research/` assets (413 MB —
@@ -65,6 +65,6 @@ result endpoint. Measured 2026-09-22 with the pipeline's own fetcher, `provider 
 <ids>` reports `blocked www.athletic.net rate_limited` while `Meet/GetMeetData` still answers 200:
 the whole-meet route's second request (`Meet/GetAllResultsData`) is the one that returns 429, and the
 fetcher's policy then parks the host for six hours. That is why the adapters are ranked as they are —
-the tier list in `crates/midwest-census/README.md` puts the association, MileSplit, vendor-artifact
+the tier list in `crates/census-service/README.md` puts the association, MileSplit, vendor-artifact
 and timer surfaces ahead of the mirror, and why the whole-meet pass is ordered by expected yield
 (championship and qualifier meets first) rather than by list position.

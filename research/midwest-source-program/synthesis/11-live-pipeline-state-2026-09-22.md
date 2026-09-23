@@ -1,7 +1,7 @@
 # Live pipeline state — 2026-09-22
 
 Measured, not projected. Every number below comes from a command run today against
-`/home/lewis/src/ad-law-scrape/athletic-rust-pipeline`, store `var/midwest-census`.
+`/home/lewis/src/ad-law-scrape/athletic-rust-pipeline`, store `var/census-service`.
 
 ## 1. Census result (the acceptance question)
 
@@ -22,13 +22,13 @@ Read the pair, not either alone:
 - 27.8 % (59,269) already have independent corroboration from a non-Athletic.net source.
 - 13,483 schools and 27,580 coaches are attached to the same graph.
 
-Commands: `midwest-census report` and `midwest-census report --core`
+Commands: `census-service report` and `census-service report --core`
 (write `out/report.json`, `out/report-core.json`, `out/census-by-state.csv`,
 `out/census-by-state-core.csv`).
 
 ## 2. Store inventory
 
-`midwest-census fjall-stats`, before → after the index pass:
+`census-service fjall-stats`, before → after the index pass:
 
 | table | before | after |
 |---|---|---|
@@ -139,7 +139,7 @@ targeted lookup rather than a search.
 
 ## 6. The review lane: implemented, run against the store, and what it found
 
-`midwest-census review` (`crates/midwest-census/src/identity/`) asks the local model about the
+`census-service review` (`crates/census-service/src/identity/`) asks the local model about the
 cases the index retained, validates every answer against the store's own evidence, and records the
 verdict either way in the new `identity_verdicts` plane. What the index actually retains, measured
 today:

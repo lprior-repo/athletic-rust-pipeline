@@ -92,7 +92,7 @@ pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
     let path = options.out.clone().unwrap_or_else(|| {
         store
             .out_dir()
-            .join(format!("midwest-census-{}.xlsx", core.generated_on))
+            .join(format!("census-service-{}.xlsx", core.generated_on))
     });
     write_workbook(
         &path,

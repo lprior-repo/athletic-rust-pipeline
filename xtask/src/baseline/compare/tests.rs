@@ -36,8 +36,8 @@ fn an_oversized_file_swapped_for_another_is_a_raise() {
     // One file before and one after: counting the ledger would say the structure did not move, while
     // the file the baseline records stopped being measured.
     let raised = refusal(
-        json!(["midwest-census:crates/midwest-census/src/old.rs (412)"]),
-        json!(["midwest-census:crates/midwest-census/src/new.rs (398)"]),
+        json!(["census-service:crates/census-service/src/old.rs (412)"]),
+        json!(["census-service:crates/census-service/src/new.rs (398)"]),
     );
 
     assert_eq!(raised.len(), 1, "{raised:?}");
@@ -50,7 +50,7 @@ fn an_oversized_file_swapped_for_another_is_a_raise() {
 
 #[test]
 fn an_oversized_file_that_grew_is_a_raise_and_one_that_shrank_is_not() {
-    let path = "midwest-census:crates/midwest-census/src/store/mod.rs";
+    let path = "census-service:crates/census-service/src/store/mod.rs";
 
     let raised = refusal(
         json!([format!("{path} (312)")]),

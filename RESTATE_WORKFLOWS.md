@@ -9,12 +9,12 @@ Everything below is read from source. Where it comes from:
 | Path | Contents |
 |---|---|
 | `src/runtime/worker.rs`, `src/runtime/**` | Pipeline-worker endpoint and its 13 Restate definitions (`run/`, `row_worker/`, `rankings_collection/` hold submodules) |
-| `crates/midwest-census/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
-| `crates/midwest-census/src/bin/midwest-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`), `.../store/` | Census endpoint process, supervisor and store |
+| `crates/census-service/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
+| `crates/census-service/src/bin/census-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`), `.../store/` | Census endpoint process, supervisor and store |
 | `src/cli.rs`, `src/cli/{args,transport,flow_control}.rs`, `src/runtime/{protocol,run_protocol,row_protocol}.rs` | Operator surface (ingress clients, deployment, flow control) and retry/revision vocabulary |
 
 Two path notes. There is **no** `src/restate.rs` and no `src/restate_services.rs` in the root crate;
-the census registrations live at `crates/midwest-census/src/restate_services/mod.rs`. Line numbers
+the census registrations live at `crates/census-service/src/restate_services/mod.rs`. Line numbers
 are as read on 2026-09-21, and other agents edit this tree: when a number and a name disagree, trust
 the name.
 
@@ -32,11 +32,11 @@ Two processes serve two endpoints.
 | Process | Started by | Binds | Serves |
 |---|---|---|---|
 | **Pipeline worker** | `athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`) | default `127.0.0.1:19181` (`src/cli/args.rs:19-20`) | the 13 definitions in §2.1 |
-| **Census service** | `midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30` (`crates/midwest-census/src/bin/midwest-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/midwest-census/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
+| **Census service** | `census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurrent 8 --drain-timeout 30` (`crates/census-service/src/bin/census-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/census-service/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
 
-`midwest-census serve` is **not** a third server: it prints the `midwest-serve` argv built from
+`census-service serve` is **not** a third server: it prints the `census-serve` argv built from
 `ServeOptions::default()`, so the printed command cannot drift from what the binary parses
-(`crates/midwest-census/src/cli/serve.rs`).
+(`crates/census-service/src/cli/serve.rs`).
 
 Registration is an operator step, not a boot step:
 `athletic-rust-pipeline deploy --admin http://127.0.0.1:19070/ --endpoint http://127.0.0.1:19181/`
@@ -47,14 +47,14 @@ Both processes refuse a non-loopback bind: the worker with `bail!("worker must b
 address")` (`src/runtime/worker.rs:14-16`), the census endpoint because it "has no identity key
 configured, so it must not be reachable from another host" (`bootstrap/serve.rs:52`). The census side
 also holds the store exclusively (`Store::open` takes an exclusive lock,
-`crates/midwest-census/src/main.rs:5-7`), so `midwest-serve` cannot share a `--data-dir` with a batch
+`crates/census-service/src/main.rs:5-7`), so `census-serve` cannot share a `--data-dir` with a batch
 subcommand.
 
 ## 2. Service and object catalog
 
 Wire names come from struct names (`restate_services/mod.rs:1-10`). The e2e test asserts each of the
 historical names `["Census", "Ingest", "Sweep"]`
-(`crates/midwest-census/tests/fjall_restate_e2e.rs:40`) is advertised by `/discover` — a subset
+(`crates/census-service/tests/fjall_restate_e2e.rs:40`) is advertised by `/discover` — a subset
 check, so the endpoint may serve more definitions than the list (`build_endpoint` currently binds
 nine). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
 `#[handler(name = "...")]`.
@@ -91,7 +91,7 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
-| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/census-service/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<scope>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
 
 The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
@@ -101,19 +101,19 @@ They are workflows rather than service handlers because each one is a unit of co
 records the merge or the render as it happens, the completion is retained for 180 days, and a
 re-invocation under the same key attaches to that result instead of redoing months of work.
 
-**Qualified.** Both definitions are exercised by the census CLI (`crates/midwest-census/src/cli/national.rs`):
+**Qualified.** Both definitions are exercised by the census CLI (`crates/census-service/src/cli/national.rs`):
 
 ```bash
-midwest-census national --revision 2 [--states WI,...] [--limit-per-state N] [--concurrency N] [--detach]
-midwest-census national-report --revision 2          # the last report, without starting a run
-midwest-census jurisdiction --state WI --revision 2  # one state, when only one is owed
-midwest-census open-work --revision 2 --source-object milesplit_wi  # what the run still owes
+census-service national --revision 2 [--states WI,...] [--limit-per-state N] [--concurrency N] [--detach]
+census-service national-report --revision 2          # the last report, without starting a run
+census-service jurisdiction --state WI --revision 2  # one state, when only one is owed
+census-service open-work --revision 2 --source-object milesplit_wi  # what the run still owes
 ```
 
 `national` submits `NationalCensus/run` through the ingress, then observes it: every poll prints a
 per-jurisdiction table (`teams · rosters · skipped · athletes · co2027`) and the fold totals, and the
 command exits non-zero when any jurisdiction lands in `failures`. It opens no store of its own — the
-service owns the store — so it is safe to run beside `midwest-serve`. `national-report` reads
+service owns the store — so it is safe to run beside `census-serve`. `national-report` reads
 `NationalReport/run` (the shared handler) and never starts work; before the first fan-out drains
 it answers `has not completed a fan-out yet`, which is the difference between "in flight" and "failed"
 for an operator who was not watching. `open-work` reads `Census/open-work` — the run's own objects,
@@ -124,8 +124,8 @@ and a count nobody could take stays `unmeasured` rather than passing as a zero.
 
 **Live qualification (2026-09-22).** Revision 2 (all 51 jurisdictions, `--limit-per-state 25`,
 `--concurrency 4`, live MileSplit traffic) completed with `jurisdictions done 51 · failed 0`
-(`var/midwest-census/out/run-evidence/national-revision-2-qualification.txt`). Mid-run,
-`midwest-serve` was `SIGKILL`ed while jurisdictions were consolidating; the supervisor logged
+(`var/census-service/out/run-evidence/national-revision-2-qualification.txt`). Mid-run,
+`census-serve` was `SIGKILL`ed while jurisdictions were consolidating; the supervisor logged
 `exited with code 137; restarting in 1000ms`, Restate redelivered the interrupted invocations, and
 the same revision then reached terminal state for every jurisdiction. The re-invocation replayed
 each journaled stage from the store's journal, so the rosters already walked were reported as
@@ -153,7 +153,7 @@ sources is `DISPATCHED` (`restate_services/jurisdiction.rs:133`), and every othe
 is refused by name, for one of two reasons the refusal states: no stage sweeps it (a gap in this
 build — the source's walk is CLI-only or has no per-state form), or it arrives over a
 browser-session transport and no lane is configured (a gap in this machine). The reasons are asked
-in that order and carried into the record; `midwest-census national report` prints the owed slugs on
+in that order and carried into the record; `census-service national report` prints the owed slugs on
 every run (`cli/national/report.rs:144-154`), so an owed source cannot read as a swept one.
 
 The `teams` stage runs the plan rather than a list of its own: it takes the recorded plan's
@@ -175,7 +175,7 @@ roster walk covered — so coach coverage is read from the tables, not from that
 
 **Consolidation.** Merging a table reads every observation of it, so the merge is not a stage a
 jurisdiction can afford: with 49 jurisdictions each merging the whole corpus, the `athletes` table
-alone took `midwest-serve` to an 82 GB resident peak, and the supervisor's memory budget killed it.
+alone took `census-serve` to an 82 GB resident peak, and the supervisor's memory budget killed it.
 The merge is now one step of the national run — after the fan-out, before the report — invoked
 through `Consolidate/run`, so it is still a durable Restate call whose reply lands in the run's
 journal. The same athlete merge over the same corpus then runs in **18.5 s at a 5.8 GB peak**
@@ -184,7 +184,7 @@ rows out of 3,063,071 observations).
 
 **What is deliberately not a workflow.** Offline store tools — `import`, `consolidate`, `seal`,
 `fjall-stats`, the backup/restore drill — operate on a store the serving process is not holding,
-because a Fjall store is single-writer: they *require* `midwest-serve` to be stopped, so they cannot
+because a Fjall store is single-writer: they *require* `census-serve` to be stopped, so they cannot
 be Restate steps. Everything the live pipeline does — team index, roster walk, meet census, snapshot
 merge, report, bests, workbook — runs as a Restate handler or workflow step, and the CLI's pipeline
 commands submit invocations through the ingress instead of opening the store themselves.
@@ -274,7 +274,7 @@ Nothing in either process scans for in-flight work at start. Both open local sta
 and depend on the server to re-deliver open invocations; recovery is therefore two mechanisms —
 server-side journal/state, and content-addressed local artifacts.
 
-### 4.1 `midwest-serve` (`bootstrap::serve_until`)
+### 4.1 `census-serve` (`bootstrap::serve_until`)
 
 1. `init_tracing()` (idempotent: a second call is a no-op, not a panic).
 2. Open the store on the blocking pool — `create_dir_all(data_dir)`, then `Store::open`, because
@@ -284,7 +284,7 @@ server-side journal/state, and content-addressed local artifacts.
    `Store::open` is also where legacy recovery happens: pre-Fjall
    `entities/*.jsonl` and `journal/*.jsonl` are imported exactly once and marked under `meta`, and the
    sequence counter is "seeded from the last key present at open time"
-   (`crates/midwest-census/src/store/mod.rs:1-40`).
+   (`crates/census-service/src/store/mod.rs:1-40`).
 3. Reject a non-loopback `--listen`; bind the listener; install the stop future (SIGINT/SIGTERM or
    the caller's `shutdown`, recording a `StopReason`), then build the endpoint with
    `restate_services::build_endpoint(store, max_concurrent, region)` and spawn exactly one task —
@@ -295,7 +295,7 @@ server-side journal/state, and content-addressed local artifacts.
    not leaked). Then finalize: `store.flush()` (`PersistMode::SyncAll`) and drop the store — "after the
    region is empty: nothing can still be writing when the journal is synced".
 5. Return `DrainReport { accepted, completed, cancelled, timed_out, aborted, panicked, stop_reason }`
-   (`bootstrap/drain.rs`), which `midwest-serve` prints as one line before exiting.
+   (`bootstrap/drain.rs`), which `census-serve` prints as one line before exiting.
 
 ### 4.2 Pipeline worker (`runtime::worker::serve`)
 
@@ -330,11 +330,11 @@ re-delivery plus re-submission:
 ### 5.1 HTTP surface
 
 Both endpoints use `restate_sdk::http_server::HttpServer` (`restate-sdk = "=0.12.0"` with
-`http_server`, `aws_lc_rs`, `reqwest-client`: `Cargo.toml:29`, `crates/midwest-census/Cargo.toml:28`)
+`http_server`, `aws_lc_rs`, `reqwest-client`: `Cargo.toml:29`, `crates/census-service/Cargo.toml:28`)
 and shut down with `serve_with_cancel`, so a stop request stops intake and lets in-flight invocations
 finish. Discovery is served by the SDK — the e2e test notes it "routes any path whose last segment is
 `discover`" and asserts the manifest advertises `Census`, `Ingest`, `Sweep`
-(`crates/midwest-census/tests/fjall_restate_e2e.rs:1-30`, `:513-519`); no `/discover` assertion exists
+(`crates/census-service/tests/fjall_restate_e2e.rs:1-30`, `:513-519`); no `/discover` assertion exists
 for the pipeline worker in `src/` or `tests/`.
 
 Handler bodies take and return `Json<T>`; failures are `HandlerError`, where `TerminalError::new` (or
@@ -462,7 +462,7 @@ reports `Ready`.
 ### 6.2 Census endpoint
 
 1. Add the struct, wire types and a free function taking `&Store` in
-   `crates/midwest-census/src/restate_services/` (one file per definition, wire types in `wire.rs`);
+   `crates/census-service/src/restate_services/` (one file per definition, wire types in `wire.rs`);
    keep the
    handler thin — "Handler bodies stay thin; the work sits in free functions that take `&Store`, so
    the interesting behaviour is testable without a Restate runtime".
@@ -498,7 +498,7 @@ reports `Ready`.
   acknowledgement after this run, its kept stage may orphan" (`export_worker.rs`).
 * The census store is append-only: "appending the same entity twice writes two rows, and
   `Store::consolidate` merges them through `Entity::merge`"
-  (`crates/midwest-census/src/store/mod.rs`). A duplicate observation is
+  (`crates/census-service/src/store/mod.rs`). A duplicate observation is
   visible in `total_observations` and in raw scans until the next consolidation; it is not deduplicated
   at append time.
 
@@ -564,7 +564,7 @@ state and the artifact store. What exists is at-least-once delivery plus §7.2. 
 | Browser challenged / human required / cooling down | `await_ready` never reports `Ready` on a stale observation: it writes `status`, arms `challenge-started-ms`, issues at most one recovery (`recovery-issued`), and ends the wait with `HumanRequired` or a 408 after the deadline. `SourceGateway` returns `BrowserUnavailable` for rankings instead of waiting; `rankings_resume` fails 409 until a recover reports `Ready`. |
 | Local model blocked / unusable source row | `LocalReviewer::review` records `blocked` and returns `ReviewOutcome::Failed` with `request: None` on later calls instead of burning retries against a model that is down; `RowWorker::process` publishes a terminal `ReviewRequired` report for a row it cannot use (missing row, validation issue, empty query plan) instead of retrying |
 | Panic or cancel inside `blocking` | `JobError::Terminal` with `format!("job panicked: {join}")` / `format!("job cancelled: {join}")`; only an ordinary `Err` becomes `Transient`. `job_error` is deliberately a function, not a `From` impl, so a terminal failure cannot take the SDK's blanket `From<E: StdError>` path and become retryable. |
-| Census store held by another process | `Store::open` fails with the reason instead of interleaving writes; `midwest-serve` and batch commands must not share `--data-dir`. |
+| Census store held by another process | `Store::open` fails with the reason instead of interleaving writes; `census-serve` and batch commands must not share `--data-dir`. |
 | Bad or oversized input | Terminal immediately — a retry cannot fix a typo, and the messages enumerate the accepted values — and refused before touching store or journal: rows over `MAX_ROWS_PER_REQUEST`, sweeps over 366 windows / 256 endpoints, runs over 256 concurrency or `MAX_RUN_ROWS`, labels over 128 bytes, admin responses over 64 KiB. |
 
 ## Appendix: verification and limits of this document

@@ -46,7 +46,7 @@ pub fn write_snapshot_rows<T: Serialize>(path: &Path, rows: &[T]) -> StoreResult
 /// result durable.
 ///
 /// The destination is never written in place. Two writers can hold the same path at once — the
-/// durable national run consolidates one jurisdiction per object, `midwest-serve` runs several of
+/// durable national run consolidates one jurisdiction per object, `census-serve` runs several of
 /// those concurrently, and a re-consolidation replaces a table while a `report`, `bests` or
 /// `workbook` pass is reading it — so a temporary in the destination directory plus one rename is
 /// what makes every reader see one complete artifact or the other rather than a half-written one. The

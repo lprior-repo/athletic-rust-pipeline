@@ -427,7 +427,7 @@ The repo's services set their own retention (90 days journal, 180 days workflow 
 Single-node Restate stores everything in `base-dir` (default: `restate-data/` relative to the working directory). The repo's config sets:
 
 ```toml restate.toml
-base-dir = "/var/lib/midwest-census-restate"
+base-dir = "/var/lib/census-service-restate"
 ```
 
 The data directory contains RocksDB databases for:
@@ -440,9 +440,9 @@ The data directory contains RocksDB databases for:
 ```shell
 # Option 1: Stop the server, archive, restart
 systemctl stop restate-server
-tar -czf /backup/restate-$(date +%F).tar.gz /var/lib/midwest-census-restate
+tar -czf /backup/restate-$(date +%F).tar.gz /var/lib/census-service-restate
 # ... later ...
-tar -xzpf /backup/restate-2026-09-22.tar.gz -C /var/lib/midwest-census-restate
+tar -xzpf /backup/restate-2026-09-22.tar.gz -C /var/lib/census-service-restate
 # Ensure only one instance runs, then:
 systemctl start restate-server
 ```
@@ -501,12 +501,12 @@ The repo's config is at `deploy/restate.toml`. Below are the keys it uses plus r
 | Key | Value in repo | Default | Purpose |
 |---|---|---|---|
 | `roles` | `["http-ingress", "admin", "worker", "log-server", "metadata-server"]` | all five | Which roles this node runs |
-| `node-name` | `"midwest-census"` | hostname | Unique node identifier |
-| `cluster-name` | `"midwest-census"` | `"localcluster"` | Cluster membership key |
+| `node-name` | `"census-service"` | hostname | Unique node identifier |
+| `cluster-name` | `"census-service"` | `"localcluster"` | Cluster membership key |
 | `auto-provision` | `true` | `true` | Allow automatic cluster provisioning |
 | `default-num-partitions` | `24` | `24` | Partitions (fixed at cluster provision time) |
 | `default-replication` | `1` | `1` | Replication factor (log + partition) |
-| `base-dir` | `"/var/lib/midwest-census-restate"` | `"restate-data"` | Data directory |
+| `base-dir` | `"/var/lib/census-service-restate"` | `"restate-data"` | Data directory |
 | `bind-ip` | `"127.0.0.1"` | (auto) | Listen IP |
 | `bind-port` | `15152` | `5122` | Fabric port (node-to-node) |
 | `advertised-address` | `"http://127.0.0.1:15152/"` | (auto) | External address |

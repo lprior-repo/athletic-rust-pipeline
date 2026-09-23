@@ -13,7 +13,7 @@ Method: `tools/verify-coach-fragment.sh` (single fragment) driven by
 `tools/merge-verified-coaches.sh` rebuilds the importable CSV from the verified rows only;
 `tools/merged-vs-verified.py` reconciles the published artifact against the verified subset
 (it reports `merged rows with no verified counterpart`, which is the gate that matters).
-Those five scripts were retired when the gate became the `midwest-census verify-coaches`
+Those five scripts were retired when the gate became the `census-service verify-coaches`
 subcommand; *Second pass*, below, records the same re-derivation on the pipeline's own fetcher.
 
 ## What "verified" means here
@@ -106,9 +106,9 @@ them, which is why the artifact is rebuilt from verified rows on every import.
 ## Store behaviour after the gate (measured)
 
 `data/coach-contacts.csv` is what a consumer reads, and it is rebuilt from verified rows only. The
-Fjall census store is separate and **append-only**: `midwest-census import-coaches` upserts entities
+Fjall census store is separate and **append-only**: `census-service import-coaches` upserts entities
 and their evidence, and no `retract`/`purge` subcommand exists (checked against
-`midwest-census --help`), so a row that an earlier CSV revision imported stays observable in the
+`census-service --help`), so a row that an earlier CSV revision imported stays observable in the
 store after the gate excludes it. Measured from `out/coaches.jsonl`, the store's coach rows by
 evidence source:
 
@@ -178,7 +178,7 @@ duplicates of a verified key) and left 3,444.
 
 The table above gated the published artifact with `curl` — a browser user agent, no `robots.txt`. The
 same re-derivation now runs inside the pipeline, so the audit is reproducible with the fetcher the
-collectors themselves use. `midwest-census verify-coaches` (see *Reproduce*) writes, in one pass:
+collectors themselves use. `census-service verify-coaches` (see *Reproduce*) writes, in one pass:
 
 * one verified fragment per input, in the **input's own eleven-column shape** — `merge-coaches` reads
   that shape, so the per-row verdict moved to `--csv` instead of a twelfth column;
@@ -195,7 +195,7 @@ collectors themselves use. `midwest-census verify-coaches` (see *Reproduce*) wri
 | `robots.txt` | never read | fetched once per host, cached, honoured |
 | patterns | — | RFC 9309: `*` and `$`, longest pattern decides, `Allow` wins ties |
 | a host that refuses its `robots.txt` | walked anyway | closed for the run (a 401/403 is a refusal, not an absent file) |
-| identity | a browser user agent | `midwest-census/0.1` |
+| identity | a browser user agent | `census-service/0.1` |
 | pacing | 8 workers, no per-host lane | one lane per host, its delay, 2 rps ceiling for authorized hosts |
 | cache | a shared curl cache | the store's content-addressed HTTP cache (this pass: 15,945 cache hits, 14 requests) |
 
@@ -242,7 +242,7 @@ in this pass: OH 128, IA 47, WI 34, SD 26, MI 4, IN 2. Only two of those groups 
 email, 3,597 with a coach email, 1,058 AD rows), against 3,444 published. The difference is dominated
 by Wisconsin (3,166 merged rows — the WIAA coach-table rebuild, 706 → 5,172 verified rows) and by
 fragments added after the publish (TX). That merge was imported on 2026-09-22:
-`midwest-census import-coaches out/coach-contacts.merged.csv` reported `rows=6261`, `with_email=4532`,
+`census-service import-coaches out/coach-contacts.merged.csv` reported `rows=6261`, `with_email=4532`,
 `schools=1642`, `rows_without_coach_role=7`, `errors=0`; `data/coach-contacts.csv` is now the merged
 6,215-row file, and the runbook (`tools/run_pipeline.sh`) rebuilds the snapshots and data products on
 top of it.
@@ -256,9 +256,9 @@ top of it.
 |---|---:|---|
 | a29 build (`tools/a29-coach/build_csv.py`) | 2,298 | original research CSV, 10 states |
 | wave 6 merge (`tools/merge_coach_fragments.py`) | 2,480 | 16 lane fragments |
-| wave 7 merge (`midwest-census merge-coaches`) | 4,063 | 23 states + AD slices |
+| wave 7 merge (`census-service merge-coaches`) | 4,063 | 23 states + AD slices |
 | **wave 8 verified rebuild (this audit)** | **3,444** | every shipped row re-fetched, role corroborated, 0 unverified |
-| wave 8 gate re-run on the pipeline fetcher (`midwest-census verify-coaches`) | 6,215 | re-derivation + re-publish: the union merge above, imported the same day |
+| wave 8 gate re-run on the pipeline fetcher (`census-service verify-coaches`) | 6,215 | re-derivation + re-publish: the union merge above, imported the same day |
 
 Known open interaction (unchanged by this gate, tracked in `synthesis/03-adapter-ranking.md` Q6):
 seven of the artifact's source hosts (`api.ihsa.org`, `kshsaa-api.kshsaa.org`, `www.mshsl.org`,
@@ -275,7 +275,7 @@ cd ~/Downloads/midwest-tfxc-source-research
 #    Writes one verified fragment per input, the per-state union, the freeze log + manifest, the
 #    audit table, one verdict per row, and the reconciliation against the published artifact.
 FRAGS=$( { ls out/coach-fragments/*.csv | grep -v WI.rebuilt.csv; ls out/coach-fragments-ad/*.csv; } | paste -sd, - )
-~/src/ad-law-scrape/athletic-rust-pipeline/target/release/midwest-census verify-coaches \
+~/src/ad-law-scrape/athletic-rust-pipeline/target/release/census-service verify-coaches \
   --fragments "$FRAGS" \
   --out out/verified --union out/verified-union \
   --log out/coach-freeze-rust.log --manifest out/coach-freeze-rust-manifest.txt \
@@ -284,7 +284,7 @@ FRAGS=$( { ls out/coach-fragments/*.csv | grep -v WI.rebuilt.csv; ls out/coach-f
 
 # 2. the publish half. `merge-coaches` reads the union; nothing below writes the artifact until
 #    `import-coaches` runs.
-~/src/ad-law-scrape/athletic-rust-pipeline/target/release/midwest-census merge-coaches \
+~/src/ad-law-scrape/athletic-rust-pipeline/target/release/census-service merge-coaches \
   --fragments out/verified-union --out out/coach-contacts.merged.csv \
   --report out/coach-contacts.merge-report.md
 # then: import-coaches -> report / workbook / export-data

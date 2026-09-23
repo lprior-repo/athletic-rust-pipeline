@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted. Implemented: phase ladder and evidence gate (`crates/midwest-census/src/census/state.rs`,
-`.../census/state/evidence.rs`), the `seal` subcommand (`crates/midwest-census/src/cli/seal.rs`),
+Accepted. Implemented: phase ladder and evidence gate (`crates/census-service/src/census/state.rs`,
+`.../census/state/evidence.rs`), the `seal` subcommand (`crates/census-service/src/cli/seal.rs`),
 tests (`.../census/state/tests.rs`, `.../cli/seal/tests.rs`).
 
 ## Context
@@ -38,7 +38,7 @@ constructed without the evidence, and a refusal that names what is missing.
   one moved count, or one different workbook, renders a different seal.
 * **Sealing is idempotent.** Sealing an already sealed census returns the same seal rather than
   minting a second digest for the same census.
-* **The CLI derives the phase from artifacts, never from arguments.** `midwest-census seal` walks
+* **The CLI derives the phase from artifacts, never from arguments.** `census-service seal` walks
   the ladder only as far as the store's own artifacts allow — durable observations, consolidated
   snapshots, review cases or verdicts, a coverage classification, an exported workbook. A store
   missing one of them cannot reach the export phase, so the phase a seal is granted in is a

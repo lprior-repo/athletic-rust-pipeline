@@ -1,7 +1,7 @@
 //! The drain certificate: what a region accepted, and how every unit of it ended.
 //!
-//! Root counterpart of the census supervisor's report (`crates/midwest-census/src/bootstrap.rs`)
-//! and of its outcome lattice (`crates/midwest-census/src/outcome.rs`), so the two crates stay
+//! Root counterpart of the census supervisor's report (`crates/census-service/src/bootstrap.rs`)
+//! and of its outcome lattice (`crates/census-service/src/outcome.rs`), so the two crates stay
 //! comparable. The field set is frozen — `accepted`, `completed`, `cancelled`, `timed_out`,
 //! `aborted`, `panicked`, `remaining` — and deliberately has no `stop_reason`: the root's stop is
 //! the signal that already resolved `serve`'s `select!`.

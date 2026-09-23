@@ -1189,7 +1189,7 @@
     "hands_over": "AN MeetID (`ani`), AN athlete id (`ani` on athlete docs), AN team id (`t.ani`)",
     "measured_instances": [
      "4,586 documents with a non-null ani across the captured Elasticsearch extracts (evidence/gaps/36, /37, /39, /41, /42, /43)",
-     "crates/midwest-census/src/sources/athleticlive/meets.rs already builds /TrackAndField/meet/{an_id}/info from `ani`"
+     "crates/census-service/src/sources/athleticlive/meets.rs already builds /TrackAndField/meet/{an_id}/info from `ani`"
     ]
    },
    {
@@ -1334,10 +1334,10 @@
     }
    },
    "repo_adapter": {
-    "file": "crates/midwest-census/src/sources/athleticlive/meets.rs",
+    "file": "crates/census-service/src/sources/athleticlive/meets.rs",
     "line": 45,
     "builds": "https://www.athletic.net/TrackAndField/meet/{an_id}/info",
-    "fixture": "crates/midwest-census/src/sources/athleticlive/tests.rs:98 -> meet/259955/info"
+    "fixture": "crates/census-service/src/sources/athleticlive/tests.rs:98 -> meet/259955/info"
    }
   }
  },

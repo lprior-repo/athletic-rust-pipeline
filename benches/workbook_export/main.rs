@@ -25,7 +25,7 @@
 //! count), exports every row once, requires `ExportStats` to equal the manifest cardinality, and
 //! re-reads the published XLSX back to the same header/row shape. No rate is reported until that
 //! pass succeeded, so the benches cannot measure a dataset that lost rows — the discipline
-//! `crates/midwest-census/examples/bench_store.rs` applies to its own observation counts.
+//! `crates/census-service/examples/bench_store.rs` applies to its own observation counts.
 
 mod dataset;
 mod verify;

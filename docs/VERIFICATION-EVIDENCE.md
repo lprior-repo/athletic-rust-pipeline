@@ -109,7 +109,7 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
      symex time, while every loop reachable at the annotated bound has a constant trip count.
      Symbolic-input harnesses (observation keys, entity merge, the symbolic mailbox harness) run with
      unwinding checks left on.
-6. **Previous compile blockers are gone.** `crates/midwest-census` builds and the store harnesses run in
+6. **Previous compile blockers are gone.** `crates/census-service` builds and the store harnesses run in
    this tree (the `bootstrap.rs:287` / `bootstrap/error.rs:90` errors no longer reproduce). No kani
    file calls `DrainState::from_join` (`grep -rn from_join crates/*/kani/` returns nothing), so the
    signature change to `Result<(), tokio::task::JoinError>` needed no harness edit.
@@ -132,7 +132,7 @@ The provenance column cites the run, and each row's raw tail is reproduced under
 label in the last column:
 
 - **prev-pass** — executed by the previous verification pass against this same working tree; its logs
-  are `/tmp/kani-cd/*.log` (census-domain) and `/tmp/kani-mw/*.log` (midwest-census), and the wall
+  are `/tmp/kani-cd/*.log` (census-domain) and `/tmp/kani-mw/*.log` (census-service), and the wall
   times quoted are that pass's. The four gradyear results were declared reusable for this sweep; the
   rest were not re-run before the sweep window closed.
 - **this-window** — executed by this sweep; logs under `/tmp/kani-sweep2/`.
@@ -183,7 +183,7 @@ equality — so its Kani run adds no reach over that unit test; the CBMC attempt
    dying inside the same second with
 
    ```text
-   error: failed to parse manifest at `.../crates/midwest-census/Cargo.toml`
+   error: failed to parse manifest at `.../crates/census-service/Cargo.toml`
    Caused by:
      can't find `core` bench at `benches/core.rs` or `benches/core/main.rs`.
    ```
@@ -241,7 +241,7 @@ equality — so its Kani run adds no reach over that unit test; the CBMC attempt
 Read precisely: 4 harnesses have a complete-verification result, 7 ended in an environment or solver
 failure that says nothing about the code under test, 0 produced a `Failed Checks:` property line, and
 16 were never carried to any outcome. The three-state target for all 27 was **not** met: the sweep
-window closed on a wrap-up request after two midwest-census harnesses, so 14 of them were never
+window closed on a wrap-up request after two census-service harnesses, so 14 of them were never
 launched at all; the other two started and were killed before a verdict (`check_id_mint_format`, T11,
 and the `check_normalize_diacritics` probe whose output was not captured). Nothing was weakened to close a row: the harness set
 is byte-identical to the previous pass.
@@ -330,7 +330,7 @@ T8 — `check_observation_id_bounds`, `env-blocked (CBMC OOM)`, **this-window**
 `VmHWM` 21.0 GiB, one CBMC at a time, no other harness running):
 
 ```text
-$ cargo kani --manifest-path crates/midwest-census/Cargo.toml --harness check_observation_id_bounds
+$ cargo kani --manifest-path crates/census-service/Cargo.toml --harness check_observation_id_bounds
 CBMC failed
 VERIFICATION:- FAILED
 CBMC appears to have run out of memory. You may want to rerun your proof in an environment with additional memory or use stubbing to reduce the size of the code the verifier reasons about.
@@ -388,7 +388,7 @@ T12 — `check_observation_key_null_byte_id`, `env-blocked (budget)`, **this-win
 with peak sampled CBMC `VmHWM` 3.2 GiB and no verdict line; the log's last line):
 
 ```text
-$ cargo kani --manifest-path crates/midwest-census/Cargo.toml --harness check_observation_key_null_byte_id
+$ cargo kani --manifest-path crates/census-service/Cargo.toml --harness check_observation_key_null_byte_id
 …
 aborting path on assume(false) at file /home/runner/work/kani/kani/library/kani_core/src/models.rs line 176 column 17 function <usize as kani::rustc_intrinsics::ToISize>::to_isize thread 0
 ```
@@ -447,7 +447,7 @@ Fuzz crate layout: `fuzz/Cargo.toml` declares four `[[bin]]` targets — `hytek`
 ```text
 $ cargo fuzz build                     # run in fuzz/
    Compiling census-domain v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-domain)
-   Compiling midwest-census v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/midwest-census)
+   Compiling census-service v0.1.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/crates/census-service)
    Compiling fuzz v0.0.0 (/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/fuzz)
     Finished `release` profile [optimized + debuginfo] target(s) in 54.36s
 ```
@@ -535,18 +535,18 @@ boundary, `SourceNamespace::is_core`, `EventKind::from_source_label`, `Gender::p
 ## Census seal (2026-09-22)
 
 The terminal state is now a value, not a label (§17, §70, ADR-007): `CensusState` advances one phase
-at a time, `Complete` is unconstructible without `SealEvidence`, and `midwest-census seal` assembles
+at a time, `Complete` is unconstructible without `SealEvidence`, and `census-service seal` assembles
 that evidence from the store and the exported workbook — then either completes the census with a
 digest or refuses and names the acceptance item.
 
 Commands and results:
 
-    cargo test -p midwest-census --lib census::state      # 11 passed
-    cargo test -p midwest-census --bins                   # 22 passed (9 of them cli::seal)
-    cargo clippy -p midwest-census --all-targets --all-features -- -D warnings   # clean
-    cargo fmt -p midwest-census -- --check                # clean
-    cargo run --bin midwest-census -- --store /tmp/mc-seal-proof seal --grad-year 2027
-      # exit 1: "no workbook in /tmp/mc-seal-proof/out: run `midwest-census workbook …` before sealing"
+    cargo test -p census-service --lib census::state      # 11 passed
+    cargo test -p census-service --bins                   # 22 passed (9 of them cli::seal)
+    cargo clippy -p census-service --all-targets --all-features -- -D warnings   # clean
+    cargo fmt -p census-service -- --check                # clean
+    cargo run --bin census-service -- --store /tmp/mc-seal-proof seal --grad-year 2027
+      # exit 1: "no workbook in /tmp/mc-seal-proof/out: run `census-service workbook …` before sealing"
 
 **Defect found and fixed while reviewing this work:** the seal digest rendered `workbook_rows` but
 not the workbook's own sha256, so two different exports with the same row count would have shared one
@@ -554,7 +554,7 @@ seal. The digest now covers `workbook_rows`, `workbook_sheets` and the sorted se
 digests, and `census::state::tests::the_seal_binds_the_workbook_it_certifies` pins it.
 
 **Review claim rejected, with evidence:** an independent review reported that `school_coach_index`
-(`crates/midwest-census/src/report/rows.rs:74-89`) is non-deterministic because "HashMap iteration
+(`crates/census-service/src/report/rows.rs:74-89`) is non-deterministic because "HashMap iteration
 order" decides which coach wins at a school. The map is only read by key, the stored coach is the
 first in deterministic `scan` order, and the email flag is accumulated across every coach at the
 school (`entry.1 = true`), so no published number depends on map iteration. The same review's claim

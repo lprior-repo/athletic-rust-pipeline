@@ -65,7 +65,7 @@ directory (outputs as shown in the lane transcript):
 
 ## 3. Pre-existing captures referenced (NOT duplicated in this directory)
 
-### 3.1 Repository fixtures (`crates/midwest-census/tests/fixtures/`)
+### 3.1 Repository fixtures (`crates/census-service/tests/fixtures/`)
 
 | Path | Used for |
 |---|---|

@@ -1,6 +1,6 @@
 {
   "generated_on": "2026-09-22",
-  "store_dir": "/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/midwest-census",
+  "store_dir": "/home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/census-service",
   "scope": "core",
   "totals": {
     "state": "TOTAL",
@@ -1004,7 +1004,7 @@
   },
   "duplicate_school_names": 56,
   "notes": [
-    "scope=core schools=32100 athletes=2238090 coaches=31488 from /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/midwest-census/out",
+    "scope=core schools=32100 athletes=2238090 coaches=31488 from /home/lewis/src/ad-law-scrape/athletic-rust-pipeline/var/census-service/out",
     "core scope drops 145323 rows whose only evidence is athleticlive_athletes/athleticlive_meets_csv/athleticlive_results/athleticnet"
   ]
 }

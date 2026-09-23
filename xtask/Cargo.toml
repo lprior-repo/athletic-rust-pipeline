@@ -13,23 +13,23 @@ workspace = true
 anyhow = "1"
 calamine = "=0.36.1"
 # The replay cases drive a provider adapter directly, so the harness names the crate that owns them
-# rather than reaching them through `midwest-census`, which no longer re-exports its adapters.
+# rather than reaching them through `census-service`, which no longer re-exports its adapters.
 census-crawl = { path = "../crates/census-crawl" }
 # The result-file readers take `census_domain::model::SourceRef` (and the `replay` verb passes the
 # id and URL a capture's evidence is stamped with), so the crate that owns those types is a direct
-# edge rather than a type reached through `midwest-census`.
+# edge rather than a type reached through `census-service`.
 census-domain = { path = "../crates/census-domain" }
 # The status verb reads the store's own durable counters through the crate that owns them
-# (`census_store::Table`), not through `midwest-census`, which no longer re-exports them.
+# (`census_store::Table`), not through `census-service`, which no longer re-exports them.
 census-store = { path = "../crates/census-store" }
 # The status and coverage verbs resolve the report scope they print (core versus all sources) through
-# the crate that owns it, so the harness names the reporting plane rather than `midwest-census`.
+# the crate that owns it, so the harness names the reporting plane rather than `census-service`.
 census-report = { path = "../crates/census-report" }
 clap = { version = "4.5", features = ["derive"] }
 # The census services, their generated ingress clients and the wire types they take and return: the
 # mutating half of the harness submits invocations instead of opening the store, and the definitions
 # belong to the crate that owns the handlers. Same pinned restate-sdk and reqwest as the workspace.
-midwest-census = { path = "../crates/midwest-census" }
+census-service = { path = "../crates/census-service" }
 regex = "1.11"
 reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
 restate-sdk = { version = "=0.12.0", default-features = false, features = ["aws_lc_rs", "reqwest-client"] }

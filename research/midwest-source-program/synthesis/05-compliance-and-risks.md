@@ -63,7 +63,7 @@ Excluded at parse time (several agents explicitly dropped these):
 ## 5. Repo-side statement
 
 `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline` gained **one new workspace member** —
-`crates/midwest-census/` — plus the `Cargo.toml`/`Cargo.lock` lines that register it. That crate holds
+`crates/census-service/` — plus the `Cargo.toml`/`Cargo.lock` lines that register it. That crate holds
 the adapters and the store commands the census run used; nothing in `src/` was edited, no commit was
 made, and the working tree still shows the owner's own uncommitted edits to
 `src/runtime/rankings/page/parse/main.rs` and `tests/rankings_parser.rs` (mtime 2026-09-19 23:21 CDT),

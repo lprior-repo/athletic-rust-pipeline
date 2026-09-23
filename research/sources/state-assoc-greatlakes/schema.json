@@ -10,7 +10,7 @@
       "entities": {
         "school": {
           "route": "GET /v1/schools",
-          "evidence": "crates/midwest-census/tests/fixtures/ihsa/v1_schools.json (repo fixture, observed_on 2026-09-20); report [13]",
+          "evidence": "crates/census-service/tests/fixtures/ihsa/v1_schools.json (repo fixture, observed_on 2026-09-20); report [13]",
           "keys": [
             {"key": "data[].SchoolID", "example": "0101", "evidence": "fixture ihsa/v1_schools.json:4; report [13] (range 0101-7097)"},
             {"key": "data[].nameFormal", "example": "Abingdon-Avon High School", "evidence": "fixture ihsa/v1_schools.json:5"},
@@ -38,7 +38,7 @@
           "groups_observed": ["Administration", "Boys Athletics - Head Coaches", "Girls Athletics - Head Coaches", "Athletic Medical Staff", "Activities - ...", "Non-Competitive Activities - ..."],
           "keys": [
             {"key": "PersonID", "example": "96256", "evidence": "report [13] (email-reveal example route /v1/schools/0101/staff/96256/email)"},
-            {"key": "Name", "example": "Mr. Justin Rakestraw", "evidence": "crates/midwest-census/tests/fixtures/coach_contacts_sample.csv:16"},
+            {"key": "Name", "example": "Mr. Justin Rakestraw", "evidence": "crates/census-service/tests/fixtures/coach_contacts_sample.csv:16"},
             {"key": "DefaultTitle", "example": "Boys Track & Field Head Coach", "evidence": "fixture coach_contacts_sample.csv:16"},
             {"key": "HasEmail", "example": true, "evidence": "report [13] (477/482 records true; 49/49 track/XC head-coach rows true)"},
             {"key": "LastName", "example": "Rakestraw", "evidence": "report [13]"},
@@ -169,7 +169,7 @@
         ],
         "my_mhsaa_admin_api": {
           "route": "https://my.mhsaa.com/DesktopModules/MHSAA-Endpoint/API/School/AdministrationDirectory?SchoolId={SchoolID}",
-          "evidence": "crates/midwest-census/tests/golden/coach_contacts__coach_contacts_sample-import-schools.json:102; report [29]",
+          "evidence": "crates/census-service/tests/golden/coach_contacts__coach_contacts_sample-import-schools.json:102; report [29]",
           "keys": [
             {"key": "SchoolID", "example": "4351 (East Kentwood)", "evidence": "report [29]"},
             {"key": "VanityURL", "example": "eastkentwood", "evidence": "report [29]"},
@@ -193,7 +193,7 @@
           "route": "GET officials.myohsaa.org/Outside/SearchSchool?Name={school}",
           "keys": [
             {"key": "ohsaaId", "example": "972 (Mason)", "evidence": "report [19]"},
-            {"key": "duplicate rows", "example": "captured: crates/midwest-census/tests/fixtures/ohsaa/search_duplicate_rows.html", "evidence": "repo fixture; report [19]"}
+            {"key": "duplicate rows", "example": "captured: crates/census-service/tests/fixtures/ohsaa/search_duplicate_rows.html", "evidence": "repo fixture; report [19]"}
           ],
           "escape_hatches_captured": ["no results: fixtures/ohsaa/search_no_results.html", "malformed: fixtures/ohsaa/ad_malformed.html, sports_malformed.html"]
         },
@@ -252,7 +252,7 @@
           "keys": [
             {"key": "Administrator roles", "example": "Superintendent, Principal, Athletic Director, City-Wide Athletic Director, Assistant Athletic Director", "evidence": "report [06]"},
             {"key": "Head coach row", "example": "Girls Cross Country | Ginna Irwin | Head Coach", "evidence": "report [06] (orgID 222 Madison Memorial)"},
-            {"key": "Email", "example": "jknapmiller@abbotsford.k12.wi.us", "evidence": "crates/midwest-census/tests/fixtures/coach_contacts_sample.csv:2"},
+            {"key": "Email", "example": "jknapmiller@abbotsford.k12.wi.us", "evidence": "crates/census-service/tests/fixtures/coach_contacts_sample.csv:2"},
             {"key": "School identity fields", "example": "level, class, member type, enrollment size, conference, mascot, colors, address, phone, fax", "evidence": "report [06]"}
           ]
         },
@@ -349,7 +349,7 @@
           "example_header": "Name                    Year School                 Prelims  Wind H#",
           "example_row": "  1 Ben Lemirand              12 West De Pere             10.56Q  0.4  1",
           "example_relay_leg": "     1) Jamir Erving 11                 2) Sean O'Byrne 12",
-          "evidence": "crates/midwest-census/src/sources/hytek/mod.rs (module doc example, read-only)"
+          "evidence": "crates/census-service/src/sources/hytek/mod.rs (module doc example, read-only)"
         }
       }
     }
@@ -370,18 +370,18 @@
     "adapter_state_filter_surface": {
       "note": "Options structs still carrying `pub states: Vec<String>` at the time of this snapshot (in-flight jurisdiction-typing lanes own the conversion)",
       "files": [
-        "crates/midwest-census/src/sources/athleticlive.rs:41",
-        "crates/midwest-census/src/sources/athleticlive_athletes/mod.rs:72",
-        "crates/midwest-census/src/sources/athleticnet/mod.rs:79",
-        "crates/midwest-census/src/sources/ihsa/mod.rs:48",
-        "crates/midwest-census/src/sources/ks/collect.rs:23",
-        "crates/midwest-census/src/sources/mshsl/mod.rs:68",
-        "crates/midwest-census/src/sources/ohsaa/mod.rs:63",
-        "crates/midwest-census/src/sources/plain_names/mod.rs:95",
-        "crates/midwest-census/src/sources/wiaa/mod.rs:67",
-        "crates/midwest-census/src/sources/wiaa_results/mod.rs:73"
+        "crates/census-service/src/sources/athleticlive.rs:41",
+        "crates/census-service/src/sources/athleticlive_athletes/mod.rs:72",
+        "crates/census-service/src/sources/athleticnet/mod.rs:79",
+        "crates/census-service/src/sources/ihsa/mod.rs:48",
+        "crates/census-service/src/sources/ks/collect.rs:23",
+        "crates/census-service/src/sources/mshsl/mod.rs:68",
+        "crates/census-service/src/sources/ohsaa/mod.rs:63",
+        "crates/census-service/src/sources/plain_names/mod.rs:95",
+        "crates/census-service/src/sources/wiaa/mod.rs:67",
+        "crates/census-service/src/sources/wiaa_results/mod.rs:73"
       ],
-      "already_typed_example": "crates/midwest-census/src/sources/milesplit/wire.rs (Site::for_jurisdiction(UsJurisdiction); host = `<lowercased code>.milesplit.com`)"
+      "already_typed_example": "crates/census-service/src/sources/milesplit/wire.rs (Site::for_jurisdiction(UsJurisdiction); host = `<lowercased code>.milesplit.com`)"
     }
   },
   "pipeline_datasets": {

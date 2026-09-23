@@ -8,7 +8,7 @@ The **outdoor girls live chain completed 2026-09-21** on run `3b7c07fa4e1f80d95f
 
 ## Authorized Athletic.net source and the one-command cycle (2026-09-21)
 
-The owner authorized Athletic.net, and `crates/midwest-census` now carries both the authorization
+The owner authorized Athletic.net, and `crates/census-service` now carries both the authorization
 mechanism and its own Athletic.net adapter. Neither existed before this session.
 
 **Fetch authorization (`crates/census-crawl/src/net/`).** `Fetcher` records operator-authorized hosts
@@ -16,7 +16,7 @@ mechanism and its own Athletic.net adapter. Neither existed before this session.
 robots-blocked requests as `robots_authorized` instead of blocking them, still under the 2 rps
 per-host ceiling. An entry authorizes exactly the host it names plus anything below it — never the
 parent domain — so naming a narrow host cannot widen into a whole site. Evidence:
-`cargo test -p midwest-census --lib net::` → 9 passed.
+`cargo test -p census-service --lib net::` → 9 passed.
 
 **`crates/census-crawl/src/athleticnet/`** reads
 `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=<id>&sport=<tf|xc>&level=4` into canonical
@@ -35,7 +35,7 @@ bests → workbook — with each stage using the same code path as its own subco
 resumable. `--all-sources` selects the evidence scope for the best-mark reduction (core stays
 Athletic.net-free by design; see below).
 
-**Executed evidence** (`cargo run --bin midwest-census -- --store /tmp/an-run2 --delay-ms 700 run
+**Executed evidence** (`cargo run --bin census-service -- --store /tmp/an-run2 --delay-ms 700 run
 --input /tmp/an-registry.txt --all-sources`, two Alaska athletes):
 
 - gather: 2 athletes, 4 requests, 0 errors; 97 result rows seen, 89 absorbed, 8 no-mark tokens;
@@ -62,10 +62,10 @@ the explicit `write_record`, so a 5-row cohort shipped 7 lines (two identical he
 is now built with `has_headers(false)`, and `bests::tests::the_csv_carries_exactly_one_header_row`
 fails on the old writer and passes on the new one.
 
-**Gate state after this delivery:** `cargo test -p midwest-census` → 219 passed;
+**Gate state after this delivery:** `cargo test -p census-service` → 219 passed;
 `cargo test --workspace` → all suites green, including `result_verify` 14/14 (the obsolete-enum
 fixture recorded as failing in the previous handoff now passes);
-`cargo clippy -p midwest-census --all-targets` → clean.
+`cargo clippy -p census-service --all-targets` → clean.
 
 **Remaining, not claimed as done:**
 

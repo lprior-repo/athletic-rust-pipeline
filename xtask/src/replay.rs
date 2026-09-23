@@ -5,7 +5,7 @@
 //! surface the source's fixture tests drive, printing what the parser published: entity counts,
 //! route counts and the published names. Nothing is fetched, no clock is read, no store is opened
 //! and no environment is consulted, so the same tree prints the same bytes on every run - which is
-//! what makes this the verb to reach for while `midwest-serve` holds the store, on a machine with
+//! what makes this the verb to reach for while `census-serve` holds the store, on a machine with
 //! no network, or when a capture has to be re-read without re-crawling its host.
 //!
 //! The arms live in [`cases`]: one function per source, each selecting the parse entry point a
@@ -77,7 +77,7 @@ pub(super) struct Capture<'a> {
     /// Every capture of the same directory, by file name: a roster resolves its team through its
     /// site's index, a `/raw` body derives its URL from the meet's results page.
     corpus: &'a Captures,
-    /// `crates/midwest-census/tests/golden/`, where a fixture record carries the inputs its capture
+    /// `crates/census-service/tests/golden/`, where a fixture record carries the inputs its capture
     /// cannot state (a WIAA result file's archive year).
     golden: &'a Path,
 }

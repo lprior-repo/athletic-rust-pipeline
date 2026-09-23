@@ -10,7 +10,7 @@ the planned workspace split — read `ARCHITECTURE.md` at the repository root. F
 
 ## 1. Crate map
 
-Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-store`, `crates/census-crawl`, `crates/census-review`, `crates/midwest-census`, `crates/g1-audit` and `xtask`.
+Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-store`, `crates/census-crawl`, `crates/census-review`, `crates/census-service`, `crates/g1-audit` and `xtask`.
 
 | Crate / package | Path | What it is | Bins |
 |---|---|---|---|
@@ -19,7 +19,7 @@ Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`,
 | `census-store` | `crates/census-store/` | the Fjall system of record: keyspaces, append-only observations merged through the `Entity` rules, snapshots, backup/restore/integrity, the legacy import, and the clock capability | — |
 | `census-crawl` | `crates/census-crawl/` | the acquisition plane: robots-enforcing cache-first fetcher, the Restate-backed browser bridge, one module per provider, the provider registry | — |
 | `census-review` | `crates/census-review/` | the local-model identity-review lane: retained families, model packets, verdict records | — |
-| `midwest-census` | `crates/midwest-census/` | the composition root: the sweep and meet walk, orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`), CLI | `midwest-census`, `midwest-serve` |
+| `census-service` | `crates/census-service/` | the composition root: the sweep and meet walk, orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`), CLI | `census-service`, `census-serve` |
 | `xtask` | `xtask/` | developer commands: the gate wrapper, the gate's measurement layer, source fixtures/tests, census reports, adapter scaffolding | `xtask` |
 
 Not cargo members of this workspace:
@@ -30,20 +30,20 @@ Not cargo members of this workspace:
 | `benches/` | root-package measurement targets: `artifact_store`, `blocking_fanout`, `workbook_export` |
 | `tools/` | `tools/gate.sh` (the one quality gate) and `tools/quality-baseline.json` (the debt ratchet) |
 | `vendor/chromiumoxide_cdp/` | the one locally patched crate, wired through `[patch.crates-io]` in the root `Cargo.toml` |
-| `deploy/systemd/` | the census service units: `midwest-serve.service`, `restate-server.service`, `midwest-census-collect.{service,timer}` |
+| `deploy/systemd/` | the census service units: `census-serve.service`, `restate-server.service`, `census-service-collect.{service,timer}` |
 | `research/` | source reconnaissance lanes, append-only captures |
 
-Census measurement targets are `crates/midwest-census/benches/{core,pipeline}.rs`; the standalone
-harness binaries live in `crates/midwest-census/examples/bench_store.rs` and `bench_census.rs`.
+Census measurement targets are `crates/census-service/benches/{core,pipeline}.rs`; the standalone
+harness binaries live in `crates/census-service/examples/bench_store.rs` and `bench_census.rs`.
 
 ## 2. Acquisition phases
 
-The phase ladder is `Phase` in `crates/midwest-census/src/census/state.rs` — `Discovering`,
+The phase ladder is `Phase` in `crates/census-service/src/census/state.rs` — `Discovering`,
 `Acquiring`, `Reconciling`, `Reviewing`, `ResolvingGaps`, `Exporting`, `Complete` — entered one step
 at a time (`CensusState::advance` refuses anything but the immediate next phase), with `Complete`
 reachable only through `CensusState::seal`.
 
-`crates/midwest-census/src/cli/seal.rs` (`reached_phase`) reads the phase back out of the store's own
+`crates/census-service/src/cli/seal.rs` (`reached_phase`) reads the phase back out of the store's own
 artifacts, so the ladder is recorded progress rather than a caller's claim. The conditions are
 monotone: a later artifact cannot exist without the earlier ones.
 
@@ -57,20 +57,20 @@ monotone: a later artifact cannot exist without the earlier ones.
 | Exporting | a `*.xlsx` exists in `<store>/out/` | `workbook`, `export`, `run` |
 | Complete | `seal` returns `Ok` | `seal`, `seal --write` |
 
-The commands themselves are the clap surface in `crates/midwest-census/src/cli/mod.rs`; `run`
+The commands themselves are the clap surface in `crates/census-service/src/cli/mod.rs`; `run`
 parses, opens the store and dispatches. Four commands (`national`, `jurisdiction`, `national-report`,
 `open-work`) are dispatched *before* the store opens, because they drive Restate and never read
-it — and because opening the store takes the exclusive Fjall lock a live `midwest-serve` holds.
+it — and because opening the store takes the exclusive Fjall lock a live `census-serve` holds.
 
 `index` is what advances three phases in one pass: it writes `source_identities`, `conflicts`,
 `review_cases`, `coverage` (all through `Store::replace_many`) and the `snapshots` row
 (`src/index.rs`). The gap classes the ResolvingGaps phase publishes are `GapClass` in
-`crates/midwest-census/src/report/coverage/gaps.rs`, one row per class per jurisdiction, derived
+`crates/census-service/src/report/coverage/gaps.rs`, one row per class per jurisdiction, derived
 from the counts the coverage row measured.
 
 ## 3. Store
 
-Root default `var/midwest-census` (`--store`, global, in `cli/mod.rs`). `Store::open` creates `http/`
+Root default `var/census-service` (`--store`, global, in `cli/mod.rs`). `Store::open` creates `http/`
 and `out/` if absent, opens the Fjall database under `fjall/`, and sweeps temporary files a dead
 writer left behind (`read::sweep_stale_temporaries`).
 
@@ -83,7 +83,7 @@ writer left behind (`read::sweep_stale_temporaries`).
   journal/      pre-Fjall resume ledger — one-time import source
 ```
 
-Keys (`crates/midwest-census/src/store/keys.rs`):
+Keys (`crates/census-service/src/store/keys.rs`):
 
 ```text
 entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON
@@ -151,8 +151,8 @@ those counters, LSM bytes on disk, and the recursive store size.
 
 ## 4. Seal
 
-`midwest-census seal` is the one place the pipeline is allowed to call a census finished
-(`crates/midwest-census/src/cli/seal.rs`). It assembles its evidence from what the store, the
+`census-service seal` is the one place the pipeline is allowed to call a census finished
+(`crates/census-service/src/cli/seal.rs`). It assembles its evidence from what the store, the
 classifier and the exported workbook already hold — nothing is passed in as a claim.
 
 Scope is the core scope unless `--all-sources` is given; the cohort defaults to `--grad-year 2027`.
@@ -207,7 +207,7 @@ Renaming a required sheet, a jurisdiction missing from `Coverage`, or a cohort n
 One honest limit: the CLI seal carries what the store holds. `jurisdiction_sweeps` and
 `source_objects` are `None` — unmeasured, deliberately not `0` — because owed sweeps and un-terminal
 source objects live in the durable run's own objects, which a command holding the store's single
-writer cannot ask; `midwest-census open-work` is the read that does. `cohort_decisions` is measured
+writer cannot ask; `census-service open-work` is the read that does. `cohort_decisions` is measured
 here, from the store's retained cases: a case in a cohort family (`COHORT_UNVERIFIED_FAMILY`,
 `COHORT_IDENTITY_CONFIDENCE_FAMILY`) with no verdict is an open cohort decision, and `Retained` is a
 terminal one — the lane deciding the evidence does not decide still leaves the row in the workbook's
@@ -218,7 +218,7 @@ verdict, because the item is about the decision and only a verdict is one.
 
 The census stays a single crate with module seams (`docs/HARDENING-PROGRAM.md` §9), so the compiler
 seals items but cannot forbid an edge between top-level modules. `cargo xtask seams`
-(`xtask/src/seams.rs`) reads every production `.rs` file under `crates/midwest-census/src`, resolves
+(`xtask/src/seams.rs`) reads every production `.rs` file under `crates/census-service/src`, resolves
 each `crate::…` reference to its top-level module, and compares the `(from, to)` pair against the
 table in that file. The gate runs it as the "module seams" lane.
 
@@ -244,10 +244,10 @@ and their relatives. Normal edges only, so a dev-dependency cannot taint the ver
 
 | Question | Command | Reads |
 |---|---|---|
-| what does the store hold? | `midwest-census fjall-stats` | `Store::stats` |
-| what is the census? | `midwest-census report [--core] [--print]` | `report::build_census` |
+| what does the store hold? | `census-service fjall-stats` | `Store::stats` |
+| what is the census? | `census-service report [--core] [--print]` | `report::build_census` |
 | what is missing, per jurisdiction? | coverage rows + §47 gaps written by `index` | `report::coverage_report` |
-| is the export consistent with the store? | `midwest-census seal` | `cli/seal/workbook.rs` |
+| is the export consistent with the store? | `census-service seal` | `cli/seal/workbook.rs` |
 | is the tree inside its budgets? | `cargo xtask scan`, `cargo xtask ratchet` | `xtask/src/scan.rs`, `xtask/src/baseline.rs` |
 | are the module edges allowed? | `cargo xtask seams` | `xtask/src/seams.rs` |
 

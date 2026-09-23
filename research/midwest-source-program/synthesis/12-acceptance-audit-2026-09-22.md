@@ -3,7 +3,7 @@
 **Rebuild note (2026-09-22, after this audit was written).** The workbook below was rebuilt at 11:53 by
 `tools/run_pipeline.sh` after the coach-plane import and the verified fragment union
 (`data/coach-contacts.csv` 3,444 → 6,215 rows; store coaches 29,294 → 31,488): the on-disk
-`var/midwest-census/out/midwest-census-2026-09-22.xlsx` (and its copy in `reports/`) now digests
+`var/census-service/out/census-service-2026-09-22.xlsx` (and its copy in `reports/`) now digests
 `c63f7fb4f38f55167fc3019e722bff122bbac2fc156410552935d786c169da21`, so the `7b41a264` seal this audit
 measures is **no longer on disk**. The numbers below remain the audit of that earlier seal — the coach rows
 they report (43,201 Co2027 with a coach / 33,340 with a coach email) are the pre-import generation; the
@@ -11,7 +11,7 @@ current generation is in `synthesis/01-acceptance-answers.md` §Q5/§Q6 and `rep
 (57,115 / 46,185 on the 12-state filter).
 
 The brief's nine acceptance questions, answered from the sealed workbook
-`var/midwest-census/out/midwest-census-2026-09-22.xlsx` (digest
+`var/census-service/out/census-service-2026-09-22.xlsx` (digest
 `7b41a26465e24c2e3c21de1b22f3e66a4e5a139b815793c5a162497002fc2723`, every §70 item satisfied, all
 reconciliation rows `reconciled`).
 

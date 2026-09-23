@@ -34,8 +34,8 @@ per athlete — `sport=tf` and `sport=xc` are not redundant and neither is optio
   the discovered meets, source profile URL/seed ids, grade evidence, school history across transfers,
   the XC↔TF linkage, and identity resolution.
 * Cost is measured per run, not asserted: adapters report `requests`/`from_cache`
-  (`crates/midwest-census/src/sources/mod.rs:110-116`) and the orchestration report carries
-  `requests`, `cache_hits`, `errors` (`crates/midwest-census/src/census/mod.rs:73-83`).
+  (`crates/census-service/src/sources/mod.rs:110-116`) and the orchestration report carries
+  `requests`, `cache_hits`, `errors` (`crates/census-service/src/census/mod.rs:73-83`).
 * A meet payload's result rows are the strongest evidence of a performance; a source-reported PR is
   retained separately and never silently replaces the calculated PR (`ARCHITECTURE.md:86-87`).
 
@@ -71,7 +71,7 @@ Read directly: `sources/result_file.rs:1-6,12-61`; `sources/athleticlive/meets.r
 
 Planned, explicitly not implemented: `ARCHITECTURE.md:94-101` — "Target workspace split (not yet in
 place)"; per-jurisdiction, meet-first acquisition is the *scaling direction*, and the crate that will
-hold it is `census-crawl` (`ARCHITECTURE.md:94-95`). Today's home is `crates/midwest-census/src/census/`.
+hold it is `census-crawl` (`ARCHITECTURE.md:94-95`). Today's home is `crates/census-service/src/census/`.
 
 The objective's metric "verified useful records / physical request" does **not** exist in the tree;
 only raw request accounting does (`sources/mod.rs:110-116`; `census/mod.rs:73-83`). No benchmark here

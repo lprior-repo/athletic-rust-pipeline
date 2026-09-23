@@ -111,5 +111,5 @@ causes:
 Collapsing `RateLimited` or `SourceUnavailable`/`Unavailable` into "not found" is forbidden: it
 silently corrupts coverage reporting, which is the artifact the whole census is judged on. Where an
 outcome must cross an async boundary, keep the cause: `outcome::Outcome<T, E>`
-(`crates/midwest-census/src/outcome.rs`) separates `Ok`/`Err` from `Cancelled`/`Timeout`/`Panicked`,
+(`crates/census-service/src/outcome.rs`) separates `Ok`/`Err` from `Cancelled`/`Timeout`/`Panicked`,
 so panic and cancellation stay distinct from domain errors.

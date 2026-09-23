@@ -4,7 +4,7 @@
 **Date:** 2026-09-22
 **Agent:** GpuMileSplitGrade
 
-This is the decisive open question for the midwest-census: can MileSplit supply
+This is the decisive open question for the census-service: can MileSplit supply
 Class-of-2027 athlete identities without Athletic.net?  The following sections
 answer six sub-questions, each with raw evidence.
 

@@ -37,14 +37,14 @@ projection; the durable evidence system is the census.
 
 `census-status`, `coverage` and `export` default to the serving census: the flag-free form and
 `--ingress [<ORIGIN>]` (default `http://127.0.0.1:18095/`) submit the matching Restate handler and are
-safe to run beside `midwest-serve`; origins must be loopback HTTP with no path or credentials.
-`--store <DIR>` opens the store in-process instead, so it requires `midwest-serve` to be stopped — the
+safe to run beside `census-serve`; origins must be loopback HTTP with no path or credentials.
+`--store <DIR>` opens the store in-process instead, so it requires `census-serve` to be stopped — the
 store is single-writer, and the lock error it returns while the census serves is the correct answer,
 not a bug.
 
-Binary: `./target/release/midwest-census` today, renaming to `census-service` when the CLI crate is
+Binary: `./target/release/census-service` today, renaming to `census-service` when the CLI crate is
 extracted — address it through the shared constant, never by inlining the name. Store root:
-`var/midwest-census`. **The store is single-writer**; lanes that write must serialize.
+`var/census-service`. **The store is single-writer**; lanes that write must serialize.
 
 ## Crate ownership
 

@@ -1,6 +1,6 @@
 # 10. Measured census — what the pipeline actually collected
 
-Generated from `var/midwest-census/out` on 2026-09-22. Every figure below is read from `out/report.json`, `out/athletes.jsonl`, `out/meets.jsonl` or the CSVs in `data/`; research-phase estimates stay in `synthesis/01-acceptance-answers.md` and are labelled as estimates there. Where the two disagree, this file is the measurement.
+Generated from `var/census-service/out` on 2026-09-22. Every figure below is read from `out/report.json`, `out/athletes.jsonl`, `out/meets.jsonl` or the CSVs in `data/`; research-phase estimates stay in `synthesis/01-acceptance-answers.md` and are labelled as estimates there. Where the two disagree, this file is the measurement.
 
 ## Totals
 

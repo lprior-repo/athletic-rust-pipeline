@@ -10,7 +10,7 @@ Every number below is a command output, not an estimate. Commands are quoted ver
 claim rests on bytes, the bytes are retained under `research/captures/g1/`.
 
 Provenance of this work: HEAD `3af713ba2a9d9422cbec2788e75a4009370c534c`, working tree dirty with
-sibling edits in `crates/midwest-census/**` (not touched). This slice wrote only
+sibling edits in `crates/census-service/**` (not touched). This slice wrote only
 `research/G1-LIVE-SEARCH-CONTRACT.md` and `research/captures/g1/**`.
 
 ---

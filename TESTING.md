@@ -6,15 +6,15 @@ gate is the answer to "is it green"; `tools/gate.sh` prints it per lane.
 
 Nine workspace members (`Cargo.toml`): the root package `athletic-rust-pipeline` (`src/`),
 `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-crawl`,
-`crates/census-review`, `crates/census-store`, `crates/midwest-census`, `crates/g1-audit`, and
+`crates/census-review`, `crates/census-store`, `crates/census-service`, `crates/g1-audit`, and
 `xtask`. Test-bearing code lives in every one of them except `crates/g1-audit`. Tests are unit
 tests inside `#[cfg(test)]` modules, integration tests under `tests/`, and generated-at-runtime
 workbook fixtures assembled into `tempfile::tempdir()`.
 
 Counts below come from counting `#[test]` / `#[tokio::test]` attributes plus `proptest!` blocks under
-`src/**`, `crates/midwest-census/src/**`, `tests/**` and `crates/midwest-census/tests/**`, recounted
+`src/**`, `crates/census-service/src/**`, `tests/**` and `crates/census-service/tests/**`, recounted
 2026-09-21: **598 attributes + 8 `proptest!` blocks across 104 files** — root `src/` 178 (41 files),
-`crates/midwest-census/src/` 253 (33), root `tests/` 75 + 1 `proptest!` block (15), census `tests/`
+`crates/census-service/src/` 253 (33), root `tests/` 75 + 1 `proptest!` block (15), census `tests/`
 66 + 7 `proptest!` blocks (13). Per-area counts in §2 carry the same date and move with the tree too;
 names and locations are the durable part, and a rewrite of §2's numbers is not required to make this
 document true. To recount, count `#\[(test|tokio::test)` and `proptest!\s*\{` over those four roots.
@@ -30,13 +30,13 @@ document true. To recount, count `#\[(test|tokio::test)` and `proptest!\s*\{` ov
 | Same, explicitly accepting debt growth | `tools/gate.sh --update-baseline --allow-increase` |
 | All tests, both crates (nextest) | `cargo nextest run --workspace --all-features` |
 | All tests without nextest installed | `cargo test --workspace --all-features` |
-| One crate | `cargo nextest run -p midwest-census --all-features` |
+| One crate | `cargo nextest run -p census-service --all-features` |
 | Unit tests only (inline `#[cfg(test)]` modules) | `cargo test --lib` (or `cargo nextest run --lib`) |
 | One integration target | `cargo nextest run --test result_verify --all-features` |
-| Fixture-based adapter tests (captures are embedded at compile time, so no flags and no fixture server are needed) | `cargo nextest run -p midwest-census --all-features`, or one adapter: `cargo test -p midwest-census sources::mshsl::` |
+| Fixture-based adapter tests (captures are embedded at compile time, so no flags and no fixture server are needed) | `cargo nextest run -p census-service --all-features`, or one adapter: `cargo test -p census-service sources::mshsl::` |
 | One test by name (nextest expression) | `cargo nextest run -E 'test(=store_round_trip_merges_observations_and_reports_stats)'` |
 | One test by name (plain cargo) | `cargo test --test result_verify verifies_deterministic_positive` |
-| Census storage/service chain (in-process, no external server) | `cargo nextest run -p midwest-census --test fjall_restate_e2e` |
+| Census storage/service chain (in-process, no external server) | `cargo nextest run -p census-service --test fjall_restate_e2e` |
 | Operator CLI against a fake ingress | `cargo nextest run --test ingress_failure_surface` |
 | Opt-in CDP lane (2 ignored tests) | `cargo test --lib -- --ignored lane_smoke` |
 | Fixture origin + workbook for the lane | `cargo run --release --example native_fixture -- --bind 127.0.0.1:21045 --output-dir var/native-fixture` |
@@ -113,22 +113,22 @@ One row per area; "tests" is the 2026-09-21 attribute count, not a promise.
 | bounded HTML / merge properties | `tests/profile_html_bounds.rs`, `tests/profile_merge_bounds.rs`, `tests/search_html_bounds.rs` | 16 | Flat documents preserve facts without materializing nodes; an oversized unfinished attribute exhausts parser memory *explicitly* (the error text says so); deeply nested formatting tags are rejected; script rawtext is one DOM text node despite tag-like text; CDATA in foreign content stays extractable; malformed UTF-8 is rejected with `profile HTML is not UTF-8`; merges keep left-first order for distinct ids, ignore provenance for same-id equivalence while retaining conflicts, and keep duplicate evidence in stable order |
 | parser properties (proptest) | `tests/native_parser_properties.rs` (+ `native_parser_properties.proptest-regressions`) | 9 | Deterministic property tests: search envelopes preserve the numeric count and next offset; profile HTML keeps only the requested athlete cohort; track numeric best flags stay opaque; XC boolean best and foreign identity are not conflated; invalid serialized performance state is rejected; time and points keep distinct numeric domains; source-row keys round trip; malformed and sparse OOXML are rejected by *both* ingestion boundaries while a synthetic workbook preserves source-row identity and fields. Config is pinned: 64 cases, ChaCha, fixed seed `0x4E41544956455052`, with past failures replayed from the regressions file |
 
-### midwest-census
+### census-service
 
 | Area | Where | Tests | What the tests actually assert |
 |---|---|---|---|
 | `net/` — robots, authorization, pacing, cache | `crates/census-crawl/src/net/` | 14 (10 + 4) | No host is authorized by default; a bare domain authorizes its subdomains (case-insensitively) but not lookalikes (`notathletic.net`, `athletic.net.evil.com`); an exact host never widens into its parent domain; the authorized-host spacing is a *floor*, not a target (the test asserts `MIN_AUTHORIZED_DELAY >= 500 ms`, so a 1 ms configured delay is still raised); robots rules honour longest match with allow-on-tie, an absent or empty robots.txt allows everything, rules outside a group do not apply, and named-agent groups (`GPTBot`) are ignored; jittered delay grows with attempt and is capped at 10 s; and `Fetcher::key_for` is pinned to exact digests because the key *is* the on-disk layout (`{key}.body` + `{key}.meta.json`). The authorization tests construct a fetcher on a throwaway cache and never issue a request |
-| `store/` — Fjall round trip, streaming merge | `crates/census-store/src/` (`tests.rs` + `loom_tests.rs`), `crates/census-store/tests/bounded_memory.rs`, `crates/midwest-census/tests/fjall_restate_e2e.rs` | 14 (9 + 4 + 1) | Keys whose low sequence byte is zero still reopen (300 observations); consolidation merges evidence and source identities and fills an empty field; journal resume keys round trip; observations survive reopen without overwriting (one row, two evidence entries); legacy JSONL journals are imported exactly once — the e2e test proves the second `Store::open` is a no-op; oversized/empty ids are rejected before any write (stats stay 0); stats count observations per table and report every table; and the bounded-memory test streams a 3,200-observation table through `for_each_merged` and asserts that pass's resident growth stays at least half the collected rows' serialized size below the collecting scan's (each pass opens its own store, so the block cache cancels). The e2e test additionally drives `census::consolidate` → `report::build_census` (both scopes) → `bests::build` → `workbook::build` over a synthetic corpus, asserting counts at every step, one best mark per athlete resting on both performances, and that the published file is a complete zip container (`PK\x03\x04` … `PK\x05\x06`) |
+| `store/` — Fjall round trip, streaming merge | `crates/census-store/src/` (`tests.rs` + `loom_tests.rs`), `crates/census-store/tests/bounded_memory.rs`, `crates/census-service/tests/fjall_restate_e2e.rs` | 14 (9 + 4 + 1) | Keys whose low sequence byte is zero still reopen (300 observations); consolidation merges evidence and source identities and fills an empty field; journal resume keys round trip; observations survive reopen without overwriting (one row, two evidence entries); legacy JSONL journals are imported exactly once — the e2e test proves the second `Store::open` is a no-op; oversized/empty ids are rejected before any write (stats stay 0); stats count observations per table and report every table; and the bounded-memory test streams a 3,200-observation table through `for_each_merged` and asserts that pass's resident growth stays at least half the collected rows' serialized size below the collecting scan's (each pass opens its own store, so the block cache cancels). The e2e test additionally drives `census::consolidate` → `report::build_census` (both scopes) → `bests::build` → `workbook::build` over a synthetic corpus, asserting counts at every step, one best mark per athlete resting on both performances, and that the published file is a complete zip container (`PK\x03\x04` … `PK\x05\x06`) |
 | census model / domain types | `crates/census-domain/src/model.rs` + `src/jurisdiction.rs` (tests in `src/model_tests.rs`, `src/jurisdiction_tests.rs`) | 26 (20 + 8) | Consumer mailboxes (`gmail.com` and friends) are never professional contacts while school domains survive the filter; `GradYear::of(grade, school_year)` implements the cohort rule both ways (grade 11 in 2025 → CO2027, grade 12 in 2026 → CO2027); `ObservedGrade` retains its season (`2025-26`); ids are deterministic, prefixed (`sch_…`, 20 chars); athlete identity ignores provider ids; event labels map onto the ontology; name normalisation folds school suffixes and diacritics; roster names flip to natural order idempotently; meet identity is date+name scoped and a venue spelling difference does not fork it |
-| census reports, bests, index, supervisor, services | `crates/midwest-census/src/report/` (3), `…/bests/` (4), `…/school_index.rs` (5), `…/bootstrap/tests.rs` (7), `…/restate_services/tests.rs` (7) | 26 | Core scope keeps only non-Athletic.net evidence; census counts class-of-2027 with evidence and reads merged observations without consolidating; bests order times down and field marks up, print notation a reader expects (`4:41.23`), emit exactly one CSV header row, and never treat relays as personal bests; the school index resolves exact/abbreviated/truncated labels, refuses ambiguous labels, ignores relay squad letters and never matches across state lines; supervisor options parse every flag and reject unknown flags and zero concurrency, `StopReason` round trips through its wire byte, and drain reports count aborted tasks after the deadline vs completed tasks before it; service helpers resolve table names and scopes (omitted scope = all sources), label cohorts (`co2027`/`all`), refuse batches with rows lacking an id without touching the store, and classify job errors (`JobError::Transient` vs a panicking job) |
-| census workbook (golden output) | `crates/midwest-census/src/workbook/` | 1 | The workbook carries the expected sheets (`Goal & method`, `Summary`, `By state - core`, `By state - all sources`, `Athletic.net marginal`, `Best results`, `Meets`, `Evidence mix`, `Method notes`), the best-mark reduction picks the fastest 400 m (`48.55`) and longest jump (`6.42 m`), and the sheet is read back with `calamine` to assert the header row contains `Best mark` and `Profile URL`; the `Performances_00N` sheets stream their rows through a school-name spill, and the module's own tests assert that the spilled rows equal the collected ones across range seams and partition identically |
+| census reports, bests, index, supervisor, services | `crates/census-service/src/report/` (3), `…/bests/` (4), `…/school_index.rs` (5), `…/bootstrap/tests.rs` (7), `…/restate_services/tests.rs` (7) | 26 | Core scope keeps only non-Athletic.net evidence; census counts class-of-2027 with evidence and reads merged observations without consolidating; bests order times down and field marks up, print notation a reader expects (`4:41.23`), emit exactly one CSV header row, and never treat relays as personal bests; the school index resolves exact/abbreviated/truncated labels, refuses ambiguous labels, ignores relay squad letters and never matches across state lines; supervisor options parse every flag and reject unknown flags and zero concurrency, `StopReason` round trips through its wire byte, and drain reports count aborted tasks after the deadline vs completed tasks before it; service helpers resolve table names and scopes (omitted scope = all sources), label cohorts (`co2027`/`all`), refuse batches with rows lacking an id without touching the store, and classify job errors (`JobError::Transient` vs a panicking job) |
+| census workbook (golden output) | `crates/census-service/src/workbook/` | 1 | The workbook carries the expected sheets (`Goal & method`, `Summary`, `By state - core`, `By state - all sources`, `Athletic.net marginal`, `Best results`, `Meets`, `Evidence mix`, `Method notes`), the best-mark reduction picks the fastest 400 m (`48.55`) and longest jump (`6.42 m`), and the sheet is read back with `calamine` to assert the header row contains `Best mark` and `Profile URL`; the `Performances_00N` sheets stream their rows through a school-name spill, and the module's own tests assert that the spilled rows equal the collected ones across range seams and partition identically |
 | provider adapters | `crates/census-crawl/src/*` | 173 (18 files) | See the adapter table below |
-| census identity scoring | `crates/midwest-census/src/census/identity/tests.rs` | 8 | Identity scoring over candidate rows: see that file for the pinned rules |
-| census orchestration / adapter dispatch | `crates/midwest-census/src/census/` (except `identity/`) and `crates/census-crawl/src/mod.rs` | — | No unit tests of their own; `census::consolidate` is exercised by the e2e and parity-pipeline tests, and `sources::append_all` by the adapters' `collect` tests |
-| golden-corpus parity harnesses | `crates/midwest-census/tests/parity_{wisconsin,north,mideast,national,pipeline}.rs` + `tests/common/mod.rs`, goldens under `crates/midwest-census/tests/golden/` (107 files) | 26 | Every fixture of a covered source is parsed and compared byte-for-byte with a checked-in golden; per-source rollup digests fail when a fixture stops being walked. `GOLDEN_UPDATE=1` rewrites goldens (local seeding only; CI never sets it) |
-| merge algebra + parser-roundtrip properties | `crates/midwest-census/tests/merge_properties.rs` (+ `merge_properties/`), `crates/midwest-census/tests/parser_roundtrip_properties.rs` (+ `parser_roundtrip_properties/`) | 36 attributes + 7 `proptest!` blocks | Merge laws (idempotency, union commutativity, first-writer-wins, identity preservation) and the `wiaa_results` parse seam (dispatch agreement, prefix stability, totality) |
+| census identity scoring | `crates/census-service/src/census/identity/tests.rs` | 8 | Identity scoring over candidate rows: see that file for the pinned rules |
+| census orchestration / adapter dispatch | `crates/census-service/src/census/` (except `identity/`) and `crates/census-crawl/src/mod.rs` | — | No unit tests of their own; `census::consolidate` is exercised by the e2e and parity-pipeline tests, and `sources::append_all` by the adapters' `collect` tests |
+| golden-corpus parity harnesses | `crates/census-service/tests/parity_{wisconsin,north,mideast,national,pipeline}.rs` + `tests/common/mod.rs`, goldens under `crates/census-service/tests/golden/` (107 files) | 26 | Every fixture of a covered source is parsed and compared byte-for-byte with a checked-in golden; per-source rollup digests fail when a fixture stops being walked. `GOLDEN_UPDATE=1` rewrites goldens (local seeding only; CI never sets it) |
+| merge algebra + parser-roundtrip properties | `crates/census-service/tests/merge_properties.rs` (+ `merge_properties/`), `crates/census-service/tests/parser_roundtrip_properties.rs` (+ `parser_roundtrip_properties/`) | 36 attributes + 7 `proptest!` blocks | Merge laws (idempotency, union commutativity, first-writer-wins, identity preservation) and the `wiaa_results` parse seam (dispatch agreement, prefix stability, totality) |
 
-| census route, replay and recovery | `crates/midwest-census/tests/{athleticnet_meet_parity,athleticnet_bio_replay,recovery,restate_kill_restart,backup_restore}.rs` | 19 | The whole-meet pull spends its two requests and stores every storable row of capture 634313 (758 published rows, 72 relay squads, 288 legs, 903 performances), spends the third only when asked, and a second run resumes from the journal and spends nothing; the per-athlete bio route serves both scopes from the seeded cache, absorbs 53 performances for one athlete, and its second run reads nothing and appends nothing; recovery covers store resume, adapter resume and the kill/restart boundary (a resumed run must not replay a durable write); backup/restore round trips a live store's rows and refuses a store still in use |
+| census route, replay and recovery | `crates/census-service/tests/{athleticnet_meet_parity,athleticnet_bio_replay,recovery,restate_kill_restart,backup_restore}.rs` | 19 | The whole-meet pull spends its two requests and stores every storable row of capture 634313 (758 published rows, 72 relay squads, 288 legs, 903 performances), spends the third only when asked, and a second run resumes from the journal and spends nothing; the per-athlete bio route serves both scopes from the seeded cache, absorbs 53 performances for one athlete, and its second run reads nothing and appends nothing; recovery covers store resume, adapter resume and the kill/restart boundary (a resumed run must not replay a durable write); backup/restore round trips a live store's rows and refuses a store still in use |
 
 ### Provider adapters (all in `crates/census-crawl/src/`)
 
@@ -166,7 +166,7 @@ through `hytek::lines_from_pdf_text`; the other adapters read checked-in fixture
 |---|---|---|
 | `crates/census-crawl/tests/fixtures/` | 47 captured provider payloads across 11 provider directories: `mshsl/` (11), `ohsaa/` (9), `plain_names/` (6), `wiaa_results/` (6), `wiaa/` (4), `ihsa/` (3), `wayzata/` (2), `milesplit/` (2), `athleticlive/` (1 csv), `athleticlive_athletes/` (1 json), `ks/` (1 json), plus `coach_contacts_sample.csv` at the top level | `include_str!("../../tests/fixtures/<provider>/<file>")` inside the adapter's `mod tests`, or a tempdir write for the CSV |
 | `tests/fixtures/` (root) | `cdp/request_will_be_sent_extra_info.json`, `rankings/indoor-nav.json`, `rankings/indoor-girls-100m-p1.json` | `tests/cdp_frame_compat.rs` (`include_str!`) and `src/result_verify/rankings/` (`include_str!`), which also embeds `fuzz/fixtures/retained_results_jsonl/seed-valid-accepted.json` via `include_bytes!("../../fuzz/fixtures/…")` |
-| `crates/midwest-census/tests/golden/` | 107 checked-in golden JSON files: `<source>__<case>.json` per parity case plus `<source>__rollup` and `<source>__corpus` digests | the parity harnesses under `tests/parity_*.rs`; rewritten only by `GOLDEN_UPDATE=1`, which is a local seeding affordance and never set in CI |
+| `crates/census-service/tests/golden/` | 107 checked-in golden JSON files: `<source>__<case>.json` per parity case plus `<source>__rollup` and `<source>__corpus` digests | the parity harnesses under `tests/parity_*.rs`; rewritten only by `GOLDEN_UPDATE=1`, which is a local seeding affordance and never set in CI |
 | `fuzz/fixtures/retained_results_jsonl/` | 8 retained native-pipeline seeds plus `raw/<sha256>` bodies | `tests/result_verify.rs` and `src/result_verify/rankings/`; the directory name is historical — there is no fuzz target crate (see §4) |
 | generated at test time | xlsx workbooks, stores, caches | `tempfile::tempdir()` + `zip::ZipWriter` (`xlsx_scope_tests`, `xlsx_stream_tests`, `workbook_zip_layout`, `workbook_verify`) or `rust_xlsxwriter` (`workbook_zip_layout`, `workbook_verify`, `tests/bundle_verify.rs`) |
 
@@ -179,10 +179,10 @@ through `hytek::lines_from_pdf_text`; the other adapters read checked-in fixture
   census adapters, `MEET_DATE = "2026-05-02"` in `fjall_restate_e2e.rs`, `day = "2026-09-21"` in
   the census workbook test, fixed `fetched_at` in seeded cache metadata.
 - No test reads `var/` or `reports/`. Both directories exist at the repo root but only as pipeline
-  runtime output (the CLI's default data directory, e.g. `var/midwest-census/{http,journal,entities,out}`,
-  and exported reports, e.g. `reports/midwest-census-<date>.xlsx`); no fixture lives there and no test
+  runtime output (the CLI's default data directory, e.g. `var/census-service/{http,journal,entities,out}`,
+  and exported reports, e.g. `reports/census-service-<date>.xlsx`); no fixture lives there and no test
   references those paths — the only occurrences in code are production CLI defaults
-  (`crates/midwest-census/src/main.rs`, `sources/mod.rs`). Test stores and caches are created inside
+  (`crates/census-service/src/main.rs`, `sources/mod.rs`). Test stores and caches are created inside
   a tempdir.
 - Property tests are pinned: `tests/native_parser_properties.rs` fixes `cases: 64`, ChaCha and
   `rng_seed: RngSeed::Fixed(0x4E41544956455052)`, and failed cases are replayed from
@@ -196,7 +196,7 @@ through `hytek::lines_from_pdf_text`; the other adapters read checked-in fixture
 
 No test may make an outbound request. Three deliberate exceptions, all loopback-only:
 
-1. `crates/midwest-census/tests/fjall_restate_e2e.rs` binds an ephemeral `127.0.0.1` port for the
+1. `crates/census-service/tests/fjall_restate_e2e.rs` binds an ephemeral `127.0.0.1` port for the
    Restate endpoint it drives in-process (the `/discover` route is the SDK's own).
 2. `tests/ingress_failure_surface.rs` binds a throwaway `127.0.0.1:0` listener that answers 500 so
    the CLI's error relay can be asserted.
@@ -227,10 +227,10 @@ Stated plainly, from the tree as it stands:
   predicate are unit-tested; nothing drives a served challenge through the full browser recovery
   path except the ignored `challenge_response_revokes_the_gate_and_ends_pagination`.
 - **Benchmarks exist as of 2026-09-21 but nothing gates them.** `benches/` (root) holds
-  `artifact_store`, `blocking_fanout` and `workbook_export`; `crates/midwest-census/benches/core.rs`
+  `artifact_store`, `blocking_fanout` and `workbook_export`; `crates/census-service/benches/core.rs`
   holds the census groups `census/parse`, `census/school_index` and `census/merge`. The gate's
   bench-presence lane compiles them (`cargo bench --workspace --no-run`) and passes; no lane compares
-  their numbers to a threshold, so a regression is not caught. `crates/midwest-census/examples/`
+  their numbers to a threshold, so a regression is not caught. `crates/census-service/examples/`
   still holds the `bench_census` and `bench_store` harnesses.
 - **Verification harnesses exist but are not run by the gate.** Kani harnesses live in
   `crates/census-domain/kani/` and `crates/census-store/kani/`, wired with
@@ -238,8 +238,8 @@ Stated plainly, from the tree as it stands:
   (`Cargo.toml`, `[workspace.lints.rust] unexpected_cfgs`). Fuzz targets live in the standalone
   `fuzz/` workspace (`fuzz/fuzz_targets/{hytek,compiled,xc,raceday}.rs`, corpus under
   `fuzz/corpus/<target>/`). Loom models live in `crates/census-store/src/loom_tests.rs` and
-  `crates/midwest-census/src/spawn/loom_tests.rs`, each behind its own crate's `loom` feature
-  (`cargo test -p census-store --features loom --lib`, `cargo test -p midwest-census --features
+  `crates/census-service/src/spawn/loom_tests.rs`, each behind its own crate's `loom` feature
+  (`cargo test -p census-store --features loom --lib`, `cargo test -p census-service --features
   loom --lib`); a default `--all-features` gate run does test them, because `loom` is in each
   crate's dev-dependency set and the feature is enabled by `--all-features`. None of the Kani or fuzz lanes is invoked by `tools/gate.sh`. The root `fuzzing`
   feature only gates an entry point (`fuzz_parse_response` in `src/runtime/reviewer/model.rs`);
@@ -260,7 +260,7 @@ Stated plainly, from the tree as it stands:
   `src/store/backend.rs`, `src/runtime/browser/request.rs`,
   `src/runtime/browser/state.rs`, the two files under `src/runtime/run/`,
   `src/runtime/source/dispatch.rs`,
-  `src/runtime/source/admission.rs`, `crates/midwest-census/src/census/` except
+  `src/runtime/source/admission.rs`, `crates/census-service/src/census/` except
   `census/identity/tests.rs` (8 tests),
   `crates/census-crawl/src/result_file.rs`.
 - **No happy-path CLI test against a real Restate ingress.** The single CLI integration test asserts
@@ -285,7 +285,7 @@ Observed across both crates; follow the local file's idiom over anything written
   test. When the module gets large, the suite moves to a child file: `src/store/tests.rs`,
   `src/domain/marks/tests.rs`, `src/runtime/source/tests.rs`, `src/xlsx_scope_tests.rs` — the last
   two wired with `#[cfg(test)] #[path = "…"] mod tests;`. Cross-module and crate-boundary tests go
-  under `tests/<name>.rs` (root) or `crates/midwest-census/tests/` (census); both are separate
+  under `tests/<name>.rs` (root) or `crates/census-service/tests/` (census); both are separate
   binaries, so anything they use must be exported from `lib.rs`.
 - **Fixtures.** Provider captures go in `crates/census-crawl/tests/fixtures/<provider>/` and are
   pulled in with a `const NAME: &str = include_str!("../../tests/fixtures/<provider>/<file>")` plus a
@@ -339,7 +339,7 @@ runs even after one fails.
 | audit | `cargo audit --quiet` | `cargo audit --quiet` |
 | machete | unused dependencies | `cargo machete` |
 | geiger | unsafe-surface report (JSON to /dev/null) | `cargo geiger --workspace --all-features --output-format Json > /dev/null` |
-| bench presence | a benchmark target exists and compiles. `benches/` and `crates/midwest-census/benches/` both exist, so this lane runs `cargo bench --workspace --no-run`; the fallback message ("no benchmark target exists yet: …") only prints if both directories are gone | `cargo bench --workspace --no-run` |
+| bench presence | a benchmark target exists and compiles. `benches/` and `crates/census-service/benches/` both exist, so this lane runs `cargo bench --workspace --no-run`; the fallback message ("no benchmark target exists yet: …") only prints if both directories are gone | `cargo bench --workspace --no-run` |
 
 `LINT_SET` (exactly as defined in `tools/gate.sh`, with `-D` for each):
 `warnings`, `unsafe_code`, `clippy::unwrap_used`, `clippy::expect_used`, `clippy::panic`,

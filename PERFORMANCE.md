@@ -34,7 +34,7 @@ carry has burned down. Regenerate it with `tools/gate.sh --update-baseline` afte
 Production scan (`cargo xtask scan`; "production-reachable" = before the first `#[cfg(test)]` in a
 file, test files excluded), as recorded in the same baseline file:
 
-| Metric | root (`athletic-rust-pipeline`) | census (`midwest-census`) |
+| Metric | root (`athletic-rust-pipeline`) | census (`census-service`) |
 |---|---:|---:|
 | `production_lines` | 36,656 | 24,039 |
 | `files` | 305 | 160 |
@@ -56,7 +56,7 @@ those stops being zero.
 | Async inventory (§2.3) | `tokio::spawn` 0 census / 4 root; `spawn_blocking` 2/2; `buffer_unordered` 4/0; async fns with >3 `.await` "several"/"many"; tokio-console and OTLP absent; `tokio::time::pause`, loom, shuttle, turmoil absent |
 | Determinism evidence (§1) | rebuild reproduced 6 of 7 JSONL snapshots byte-identically; `coaches.jsonl` differs only in 917 withheld rows; the published workbook had 0 of 459 published numbers missing |
 | Build profile (§1, verified in `Cargo.toml`) | release: `lto = "thin"`, `codegen-units = 1`, `strip` |
-| Absent (§2.5) — *as measured at commit `4e5b828`* | no CI, no `benches/`, no criterion/divan, no fuzz targets. **Superseded since 2026-09-21:** CI (`.github/workflows/gate.yml`), criterion benches (`benches/`, `crates/midwest-census/benches/core.rs`), fuzz targets (`fuzz/`) and Kani/loom models all exist now — see §2 and §6 |
+| Absent (§2.5) — *as measured at commit `4e5b828`* | no CI, no `benches/`, no criterion/divan, no fuzz targets. **Superseded since 2026-09-21:** CI (`.github/workflows/gate.yml`), criterion benches (`benches/`, `crates/census-service/benches/core.rs`), fuzz targets (`fuzz/`) and Kani/loom models all exist now — see §2 and §6 |
 | Missing workstation tools (§1) | `cargo-fuzz`, `cargo-semver-checks`, `hyperfine` |
 
 The program's Phase 7 target — criterion benches under `benches/`, committed baselines, CI failing on
@@ -74,7 +74,7 @@ measurement the rest of the repository cites:
 cargo bench -p athletic-rust-pipeline --bench artifact_store    # root ArtifactStore: put_bytes/put_source_batch/get_bytes
 cargo bench -p athletic-rust-pipeline --bench blocking_fanout  # Runtime::blocking at cpu_workers 1/8/32
 cargo bench -p athletic-rust-pipeline --bench workbook_export  # WorkbookExport::{new,write,finish}
-cargo bench -p midwest-census --bench core                     # census/parse, census/school_index, census/merge
+cargo bench -p census-service --bench core                     # census/parse, census/school_index, census/merge
 ```
 
 Each target builds its own dataset and asserts it before reporting a rate — the root workbook bench
@@ -89,8 +89,8 @@ Run from the repository root (examples are auto-discovered; the census crate's m
 `[[example]]` sections):
 
 ```bash
-cargo run --release -p midwest-census --example bench_census -- --schools 500
-cargo run --release -p midwest-census --example bench_store -- --rows 200000 --batch 1000 --scan
+cargo run --release -p census-service --example bench_census -- --schools 500
+cargo run --release -p census-service --example bench_store -- --rows 200000 --batch 1000 --scan
 ```
 
 `--release` is required for a meaningful number; the workspace's release profile is the one under
@@ -209,7 +209,7 @@ headers) and 1 MiB of retained headers across the workbook. Header validation is
 through a `BTreeSet`, and cells in unnamed columns are rejected. Numeric cells are converted through
 `finite_number`, which rejects non-finite doubles rather than writing a bogus cell text.
 
-### 3.4 Workbook write (`crates/midwest-census/src/workbook/`, `src/xlsx/writer.rs`)
+### 3.4 Workbook write (`crates/census-service/src/workbook/`, `src/xlsx/writer.rs`)
 
 Census: `workbook::build` calls `rust_xlsxwriter::Workbook::new()` and saves cell-by-cell; both
 manifests pin `rust_xlsxwriter = "=0.99.1"` with `features = ["constant_memory"]`, so the writer
@@ -231,7 +231,7 @@ Root: `append_matches_sheet` streams the input archive entry-by-entry into a `Zi
 and the matches sheet; every other entry is copied with bounded reads. Output goes to a temporary
 path and is promoted with `fs::rename`; existing outputs are never overwritten.
 
-### 3.5 Census store writes (`crates/midwest-census/src/store/`)
+### 3.5 Census store writes (`crates/census-service/src/store/`)
 
 Append path: `append` is `append_many` of a single record. `append_many` serializes each record with
 `serde_json::to_vec`, borrows the id back out of the serialized bytes (a structural `Deserialize`
@@ -300,8 +300,8 @@ memory is bounded independently of document size.
 ## 4. Allocation and safety policy
 
 **Unsafe.** `#![forbid(unsafe_code)]` is on `src/lib.rs:1`, `src/main.rs:1`, `src/store.rs:1`, and in
-the census crates on `crates/midwest-census/src/lib.rs:27`, `crates/midwest-census/src/main.rs:9`,
-`crates/midwest-census/src/bin/midwest-serve.rs:10`, and `crates/census-domain/src/lib.rs:9`. The scan counts
+the census crates on `crates/census-service/src/lib.rs:27`, `crates/census-service/src/main.rs:9`,
+`crates/census-service/src/bin/census-serve.rs:10`, and `crates/census-domain/src/lib.rs:9`. The scan counts
 0 `unsafe` in both crates, and the gate runs `cargo geiger`. There is no unsafe waiver, and none is
 requested (program §6).
 
@@ -320,7 +320,7 @@ requested (program §6).
 Existing violations are frozen in the ratchet (§5), not waived per site.
 
 **Panic surface, as measured.** The gate's scan covers exactly two crates — `src` and
-`crates/midwest-census/src`, a deliberately closed set (`xtask/src/scan.rs:47`) — and the current
+`crates/census-service/src`, a deliberately closed set (`xtask/src/scan.rs:47`) — and the current
 baseline is zero in both: 0 `unwrap`, 0 `expect`, 0 panic macros, 0 assert-family, 0 `unsafe`,
 0 `indexing`, 0 `as_cast`, 0 `todo` (`tools/quality-baseline.json`). The earlier census reading of
 1 `unwrap` / 75 `expect` has been burned down to that zero; the ratchet only shrinks, so a
@@ -358,11 +358,11 @@ measured.
 | `MAX_ZIP_ENTRIES` | 4096 | `workbook_ingest/preflight.rs` |
 | `MAX_SHARED_STRINGS` / per-string / total | 2,000,000 / 4 MiB / 256 MiB | `src/xlsx.rs`, `parser.rs::load_shared_strings` |
 | `MAX_MATERIALIZED_ROW_BYTES` / `MAX_RETAINED_HEADER_BYTES` | 8 MiB per row / 1 MiB per workbook | `workbook_ingest/stream.rs` |
-| `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/midwest-census/src/store/` |
-| `MAX_ID_BYTES` | 512 bytes | `crates/midwest-census/src/store/` |
+| `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/census-service/src/store/` |
+| `MAX_ID_BYTES` | 512 bytes | `crates/census-service/src/store/` |
 | Census cache / root cache | 256 MiB / 32 MiB | `Database::builder(..).cache_size(..)` |
 | `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | `src/store.rs`, `backend.rs` |
-| `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/midwest-census/src/restate_services/` |
+| `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/census-service/src/restate_services/` |
 | `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | `src/html_bounds.rs` |
 | HTTP body cap | 32 MiB | `crates/census-crawl/src/net/` |
 
@@ -430,7 +430,7 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
 **Not wired.**
 
 - Criterion benches exist (`benches/artifact_store.rs`, `benches/blocking_fanout.rs`,
-  `benches/workbook_export.rs`, `crates/midwest-census/benches/core.rs`); there is still no
+  `benches/workbook_export.rs`, `crates/census-service/benches/core.rs`); there is still no
   flamegraph, pprof or hyperfine reference in `src/`, `tools/`, or either `Cargo.toml`. (Program §1
   notes `perf` is installed on the workstation; nothing in the repo calls it.)
 - No regression gate: `tools/gate.sh`'s bench-presence lane runs `cargo bench --workspace --no-run`,
@@ -448,7 +448,7 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
 
 **Top measurement candidates**, in descending order of expected information per unit of work:
 
-1. **Append batching and durability mode** (`crates/midwest-census/src/store/`): sweep `--batch`
+1. **Append batching and durability mode** (`crates/census-service/src/store/`): sweep `--batch`
    and compare `single_append` versus `batched_append`; the production knob equivalent is the batch
    size adapters pass to `append_many` and the per-batch `SyncData` commit. A group-commit policy is
    a design change, so measure first.

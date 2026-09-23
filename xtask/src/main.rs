@@ -1,14 +1,14 @@
 //! `xtask`: this repository's developer commands.
 //!
 //! Every subcommand either runs the real tool — `tools/gate.sh`, `cargo nextest`, the
-//! `midwest-census` binary, the scaffold generator — or measures the tree in process (`scan`,
+//! `census-service` binary, the scaffold generator — or measures the tree in process (`scan`,
 //! `integrity`, `domain-purity`), and prints the exact child command before running it, so a shell
 //! session and this harness cannot drift apart.
 //!
 //! Children run with the repository root as their working directory, whatever directory `xtask`
 //! itself was invoked from. The census subcommands ([`census`]) can submit the running deployment's
 //! own handlers instead of running the binary, which is the only mode that works while
-//! `midwest-serve` holds the store.
+//! `census-serve` holds the store.
 
 #![forbid(unsafe_code)]
 
@@ -88,7 +88,7 @@ enum Command {
     },
     /// Prove the `census-domain` dependency tree carries no async or I/O package.
     DomainPurity,
-    /// Run the midwest-census tests that cover one source (`cargo nextest -E 'test(<source>)'`).
+    /// Run the census-service tests that cover one source (`cargo nextest -E 'test(<source>)'`).
     #[command(visible_alias = "source-check")]
     SourceTest {
         /// Source name as it appears in test names, e.g. `wiaa`, `mshsl`, `wiaa_results`.
@@ -110,18 +110,18 @@ enum Command {
         name: String,
     },
     /// Print the core-scope census: the store's own counts from the running deployment
-    /// (`Census/status`), or a whole core report offline (`midwest-census report --core`).
+    /// (`Census/status`), or a whole core report offline (`census-service report --core`).
     CensusStatus {
         #[command(flatten)]
         target: census::Target,
     },
     /// Print the census over every source: `Report/run` on the running deployment, or
-    /// `midwest-census report` offline.
+    /// `census-service report` offline.
     Coverage {
         #[command(flatten)]
         target: census::Target,
     },
-    /// Run the pipeline benchmark (`cargo bench -p midwest-census`), with filters after `--`:
+    /// Run the pipeline benchmark (`cargo bench -p census-service`), with filters after `--`:
     /// `cargo xtask bench -- parser` runs only the parser benchmarks.
     Bench {
         /// Filter arguments forwarded to `cargo bench`, given after `--`.
@@ -129,11 +129,11 @@ enum Command {
         args: Vec<String>,
     },
     /// Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running
-    /// deployment, or `midwest-census workbook` offline.
+    /// deployment, or `census-service workbook` offline.
     Export {
         #[command(flatten)]
         target: census::Target,
-        /// Where to write the `.xlsx` (defaults to `<store>/out/midwest-census-<generated-on>.xlsx`).
+        /// Where to write the `.xlsx` (defaults to `<store>/out/census-service-<generated-on>.xlsx`).
         #[arg(long, value_name = "FILE")]
         out: Option<PathBuf>,
         /// Graduation year used for the cohort sheets (2027 = the class of 2027).
@@ -208,10 +208,10 @@ fn run() -> Result<()> {
     }
 }
 
-/// `cargo nextest run -p midwest-census -E 'test(<source>)'`: one source's tests, nothing else.
+/// `cargo nextest run -p census-service -E 'test(<source>)'`: one source's tests, nothing else.
 fn source_test(source: &str) -> Result<()> {
     Cmd::new("cargo")
-        .args(["nextest", "run", "-p", "midwest-census", "-E"])
+        .args(["nextest", "run", "-p", "census-service", "-E"])
         .arg(format!("test({source})"))
         .run()
 }
@@ -252,7 +252,7 @@ fn nextest_installed() -> bool {
 /// Run the criterion pipeline benchmark, filtered by whatever follows `--`.
 fn bench(args: &[String]) -> Result<()> {
     Cmd::new("cargo")
-        .args(["bench", "-p", "midwest-census"])
+        .args(["bench", "-p", "census-service"])
         .args(args)
         .run()
 }

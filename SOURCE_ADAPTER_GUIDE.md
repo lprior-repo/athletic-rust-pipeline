@@ -11,8 +11,8 @@ adapter author must satisfy; `DOMAIN.md` covers the types, `ARCHITECTURE.md` the
 crates/census-crawl/src/<name>.rs         module root (facade) when the adapter has parts
 crates/census-crawl/src/<name>/           the adapter's parts (collect + parse + map + tests)
 crates/census-crawl/src/lib.rs             `pub mod <name>;` in the alphabetical module list
-crates/midwest-census/src/cli/provider.rs           `<name>` arm in `run_provider` + `ProviderArgs` doc list
-crates/midwest-census/src/cli/mod.rs                the `Command::Provider` variant itself
+crates/census-service/src/cli/provider.rs           `<name>` arm in `run_provider` + `ProviderArgs` doc list
+crates/census-service/src/cli/mod.rs                the `Command::Provider` variant itself
 ```
 
 The worked example is `wiaa` (Wisconsin association directory), which has no flat file:
@@ -26,7 +26,7 @@ Registration is three edits, no more:
 
 1. `pub mod <name>;` in `crates/census-crawl/src/lib.rs` (keep the alphabetical block).
 2. A `"<name>" => <name>_report(&context, args, observed_on).await` arm in the `match` of
-   `run_provider` (`crates/midwest-census/src/cli/provider.rs`), plus the thin helper that maps the
+   `run_provider` (`crates/census-service/src/cli/provider.rs`), plus the thin helper that maps the
    shared `ProviderArgs` fields onto the adapter's own `Options`.
 3. Add `<name>` to the adapter-name doc comment on `ProviderArgs` (`cli/provider.rs`), which is also
    the list the `unknown adapter` error prints.
@@ -57,7 +57,7 @@ exists for import-style adapters whose subject list comes from a file (the Athle
 adapter reads an operator-supplied athlete registry, never a search endpoint).
 
 A state-shaped subject list is `census_domain::UsJurisdiction`, not `String`: the `teams`/`collect`
-CLI flags parse `Vec<UsJurisdiction>` (`crates/midwest-census/src/cli/gather.rs` accepts any USPS
+CLI flags parse `Vec<UsJurisdiction>` (`crates/census-service/src/cli/gather.rs` accepts any USPS
 code), and the `milesplit` adapter derives its per-state host from the jurisdiction code
 (`crates/census-crawl/src/milesplit/wire.rs: Site::for_jurisdiction`) instead of carrying a
 table of site strings. **Mid-refactor**: adapters that still declare a free-form
@@ -125,8 +125,8 @@ Re-running an adapter must be safe and must leave the store consistent:
 
 Return an `AdapterReport` with real counters (schools/meets/athletes/requests/errors as the
 adapter's shape implies) plus notes. The `provider` subcommand prints the whole report as pretty
-JSON (`crates/midwest-census/src/cli/provider.rs`), and the gather stages print the notes line by
-line for the operator (`crates/midwest-census/src/cli/cycle.rs`, `cli/gather.rs`); notes are the right
+JSON (`crates/census-service/src/cli/provider.rs`), and the gather stages print the notes line by
+line for the operator (`crates/census-service/src/cli/cycle.rs`, `cli/gather.rs`); notes are the right
 place for "artifact did not parse" style per-item failures so a parse failure is diagnosable
 rather than silently counted.
 

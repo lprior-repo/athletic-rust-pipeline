@@ -111,7 +111,7 @@
       "unstable_features": 0,
       "unwrap": 0
     },
-    "midwest-census": {
+    "census-service": {
       "as_cast": 0,
       "assert_family": 0,
       "dbg": 0,

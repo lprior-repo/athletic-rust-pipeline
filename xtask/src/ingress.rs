@@ -1,6 +1,6 @@
 //! The Restate ingress transport the census subcommands share.
 //!
-//! Same rules as the census binary's own transport (`crates/midwest-census/src/cli/ingress.rs`): the
+//! Same rules as the census binary's own transport (`crates/census-service/src/cli/ingress.rs`): the
 //! origin must be a loopback HTTP origin without credentials, a path or a query, redirects and
 //! proxies are off, and a terminal ingress failure is reported with Restate's own message — that
 //! message is what tells an operator which flag to change.
@@ -15,7 +15,7 @@ use std::future::Future;
 use std::time::Duration;
 use url::{Host, Url};
 
-/// The project node's ingress origin: the deployment `midwest-serve` registers with.
+/// The project node's ingress origin: the deployment `census-serve` registers with.
 pub const NODE_ORIGIN: &str = "http://127.0.0.1:18095/";
 
 #[derive(serde::Deserialize)]

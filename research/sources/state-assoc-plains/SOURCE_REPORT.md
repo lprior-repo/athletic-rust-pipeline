@@ -29,9 +29,9 @@ capture disagree, both numbers are given with their provenance (§0.3).
 - `…/data/source-coverage-matrix.csv` (67 rows), `adapter-ranking.csv`, `coach-contacts.csv` (2,298 rows)
 - `…/tools/iowa-11/bound-ihsaa-boystrack-teams-2025-26.csv`, `…/tools/ne/*` (29 files),
   `…/research/midwest/evidence/gaps/43/factsheet.txt`
-- Repo fixtures: `crates/midwest-census/tests/fixtures/{ks,mshsl,plain_names}/**`
-- Repo adapters: `crates/midwest-census/src/sources/{ks,mshsl,plain_names}/**`
-- Repo run output: `var/midwest-census/out/{census-by-state.csv,report.json,schools.jsonl}` (run dated 2026-09-21)
+- Repo fixtures: `crates/census-service/tests/fixtures/{ks,mshsl,plain_names}/**`
+- Repo adapters: `crates/census-service/src/sources/{ks,mshsl,plain_names}/**`
+- Repo run output: `var/census-service/out/{census-by-state.csv,report.json,schools.jsonl}` (run dated 2026-09-21)
 
 ### 0.2 First-hand re-verification (summary; commands + file-level detail in `samples/CAPTURES.md`)
 
@@ -139,7 +139,7 @@ enumeration common to all seven states; `/api/` and `/rankings` are robots-disal
 · competition platform Bound `https://gobound.com/ia/ihsaa/…` and `/ia/ighsau/…` · results from AthleticLIVE
 timers, led by Wayzata Timing.
 
-**Adapter status: none.** `ls crates/midwest-census/src/sources/` has 12 adapter modules; none is IA
+**Adapter status: none.** `ls crates/census-service/src/sources/` has 12 adapter modules; none is IA
 (`grep -rn "iahsaa\|ighsau" crates/ src/` → no matches `[V]`). In the 2026-09-21 store run, IA school rows come
 from `athleticlive_athletes` (792 schools), `milesplit_ia` (410) and `coach_contacts_csv` (5) — **there is no
 Iowa association adapter, and no Iowa coach directory**.
@@ -168,7 +168,7 @@ Iowa association adapter, and no Iowa coach directory**.
 | Estimated marginal coverage | 365 (B-TF) / 365 (G-TF) / 365 (B-XC) / 369 (G-XC) Bound programs 2025-26 `[C 11]`; ~8–11k boys T&F athletes per season `[I, from 2 observed rosters]`; 1,265 grade-11 athletes at the 2026 state T&F meet (AL) `[C 12]` |
 | Implementation recommendation | **PRIMARY** — Bound Iowa tenants for school/team/athlete/grade + results, seeded by the association member/classification lists. Secondary: RESULT_SOURCE = AthleticLIVE/Wayzata; COACH_SOURCE = school-district sites (association exposes none) |
 
-**Measured pipeline counts (repo run 2026-09-21, `var/midwest-census/out/census-by-state.csv`):** IA —
+**Measured pipeline counts (repo run 2026-09-21, `var/census-service/out/census-by-state.csv`):** IA —
 schools 913, athletes 62,201, Co2027 14,076 (7,906 boys / 6,108 girls), with-coach 105, with-coach-email 21,
 coaches 53 (4 emails). Grade evidence by source: `milesplit_ia` 8,738 athletes (`report.json.providers`).
 
@@ -180,7 +180,7 @@ only; no athlete ids anywhere; AthleticLIVE→Athletic.net meet mapping unverifi
 **Association / sources.** KSHSAA `https://www.kshsaa.org/` + public JSON API `https://kshsaa-api.kshsaa.org/`
 · championship results `https://www.kshsaachamps.org/` · timers: Midwest Timing (Supabase + PDFs), DirectAthletics.
 
-**Adapter status: implemented — `crates/midwest-census/src/sources/ks/`** (`collect.rs` entry `collect()`,
+**Adapter status: implemented — `crates/census-service/src/sources/ks/`** (`collect.rs` entry `collect()`,
 `wire.rs`, `parse.rs`, `tests.rs`). One request to
 `https://kshsaa-api.kshsaa.org/directory/search/name/a/` yields ~526 records; each becomes a
 `CanonicalSchool` (city, `classification`=Class, `enrollment`, website, association label `kshsaa`,
@@ -225,7 +225,7 @@ Fresh classification capture: 348 schools, 36/36/36/64/64/112 by `classId` 6→1
 · timers: Wayzata, Hero's, Fast Finish, GSE (partially absorbed) — four of six resolve to `*.anet.live`
 · archive: `raceberryjam.com` (XC 1991+).
 
-**Adapter status: implemented — `crates/midwest-census/src/sources/mshsl/`** (`collect.rs` + `collect/run.rs`,
+**Adapter status: implemented — `crates/census-service/src/sources/mshsl/`** (`collect.rs` + `collect/run.rs`,
 `teams.rs`, `map.rs`, `parse.rs`, `text.rs`). Per school: `/schools` listing row → `/schools/<slug>` (facts +
 AD/assistant-AD with Cloudflare-obfuscated email decoded locally) → JSON:API team view
 `/jsonapi/views/teams/list_school` (filtered to track/XC activities) → `/api/coaches/<nid>` per team (levels
@@ -304,7 +304,7 @@ grade evidence `milesplit_mo` 13,218. Fresh listing capture: 1,006 rows (316 HS 
 AthleticLIVE (`live.herostiming.com`, index `search.athletic.live/heros_meet_list`) · state results also on
 `live.athletic.net/meets/<id>`.
 
-**Adapter status: implemented — `crates/midwest-census/src/sources/plain_names/` (ND half:**
+**Adapter status: implemented — `crates/census-service/src/sources/plain_names/` (ND half:**
 `nd.rs`, `nd_walk.rs`, `nd_coaches.rs`; shared `mod.rs`). One request for the 169-school index, then one
 request per school for the staff block + `Sport/Activity Offering | Coaches` table. Sport-scoped rows carry
 `CoachRole::Unknown` (NDHSAA never says which name is head coach); office roles (secretary, principal,
@@ -346,7 +346,7 @@ with-coach-email 0, coaches 922 (0 emails). Grade evidence: `milesplit_nd` 2,043
 the S3 mirror `https://nsaa-static.s3.amazonaws.com/textfile/**`) · timers: Black Squirrel Timing
 (AthleticLIVE instance), Precision Race Results (`onlineraceresults.com`), Hy-Tek PDFs for state T&F.
 
-**Adapter status: implemented — `crates/midwest-census/src/sources/plain_names/` (NE half:**
+**Adapter status: implemented — `crates/census-service/src/sources/plain_names/` (NE half:**
 `nsaa.rs`, `nsaa_walk.rs`, `nsaa_coaches.rs`). One form GET for the 312-school `<option>` list, then one GET
 per school (`?session=&school=<name>`) for the full record (superintendent, principal, AD(s), one row per
 sport). Sport rows carry `CoachRole::HeadCoach` (NE publishes exactly one coach per sport); office roles are
@@ -424,7 +424,7 @@ with-coach-email 79, coaches 25 (5 emails). Grade evidence: `milesplit_sd` 2,669
 
 | ST | Module | Entry | Writes | Does NOT collect |
 |---|---|---|---|---|
-| KS | `crates/midwest-census/src/sources/ks/` | `collect()` (`ks/collect.rs`) → `kshsaa-api.kshsaa.org/directory/search/name/a/` | CanonicalSchool (city, class, enrollment, website, `kshsaa` identity) + CanonicalCoach (AD) | classifications endpoint, teams, participation, athletes, rosters, all results, assistant ADs, sport coaches |
+| KS | `crates/census-service/src/sources/ks/` | `collect()` (`ks/collect.rs`) → `kshsaa-api.kshsaa.org/directory/search/name/a/` | CanonicalSchool (city, class, enrollment, website, `kshsaa` identity) + CanonicalCoach (AD) | classifications endpoint, teams, participation, athletes, rosters, all results, assistant ADs, sport coaches |
 | MN | `…/sources/mshsl/` | `collect()` (`mshsl/collect.rs`) → school page → team view → `/api/coaches/<nid>` | CanonicalSchool + AD/assistant-AD coaches + per-team coaches (level-filtered, domain-checked email) | rosters/grades, schedules, scores, athletes, results, archive PDFs, `export/schools.csv` |
 | ND | `…/sources/plain_names/` (nd) | `collect()` (`plain_names/mod.rs`) → `ndhsaa.com/schools` + 1/school | CanonicalSchool + coach/AD rows (names only, role `Unknown` for sport rows) | athletes, results, ES meet enumeration, RTDB payloads, co-op sheet, state PDFs |
 | NE | `…/sources/plain_names/` (nsaa) | `collect()` → `secure.nsaahome.org/nsaaforms/direxportscreen.php` + 1/school | CanonicalSchool + AD/head-coach rows (names only) | athletes, results, district Athletic.net ids, S3 mirror, classifications |

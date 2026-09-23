@@ -81,7 +81,7 @@
  "adapter_status": {
   "IL": {
    "modules": [
-    "crates/midwest-census/src/sources/ihsa/ (collect.rs, parse.rs, staff.rs, map.rs, tests.rs)"
+    "crates/census-service/src/sources/ihsa/ (collect.rs, parse.rs, staff.rs, map.rs, tests.rs)"
    ],
    "fixtures": [
     "ihsa/v1_schools.json",
@@ -106,7 +106,7 @@
   },
   "OH": {
    "modules": [
-    "crates/midwest-census/src/sources/ohsaa/ (collect.rs, parse.rs, pages.rs, map.rs, tests.rs)"
+    "crates/census-service/src/sources/ohsaa/ (collect.rs, parse.rs, pages.rs, map.rs, tests.rs)"
    ],
    "fixtures": [
     "ohsaa/ (9 files incl. the negative fixtures)"
@@ -115,8 +115,8 @@
   },
   "WI": {
    "modules": [
-    "crates/midwest-census/src/sources/wiaa/",
-    "crates/midwest-census/src/sources/wiaa_results/"
+    "crates/census-service/src/sources/wiaa/",
+    "crates/census-service/src/sources/wiaa_results/"
    ],
    "fixtures": [
     "wiaa/ (4)",

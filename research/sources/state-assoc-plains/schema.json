@@ -6,7 +6,7 @@
     "example": "A real value observed in the cited evidence. null means the key was documented but no example value was retained; see the field's note.",
     "evidence_kind": {
       "fresh_capture": "fetched by this lane on 2026-09-22; file in research/sources/state-assoc-plains/samples/",
-      "repo_fixture": "retained capture in crates/midwest-census/tests/fixtures/",
+      "repo_fixture": "retained capture in crates/census-service/tests/fixtures/",
       "downloads_capture": "retained capture under ~/Downloads/midwest-tfxc-source-research/",
       "report_citation": "verbatim example from a Midwest report; no raw capture retained on this machine"
     },
@@ -17,7 +17,7 @@
       "jurisdiction": "KS",
       "surface": "GET https://kshsaa-api.kshsaa.org/directory/search/name/a/",
       "format": "json",
-      "evidence": "crates/midwest-census/tests/fixtures/ks/kshsaa_directory_a.json",
+      "evidence": "crates/census-service/tests/fixtures/ks/kshsaa_directory_a.json",
       "evidence_kind": "repo_fixture",
       "identifiers": {
         "Id": "KSHSAA internal integer, same space as schoolId in PublicClassifications (example 458 = Abilene HS)",
@@ -99,7 +99,7 @@
       "jurisdiction": "MN",
       "surface": "GET https://www.mshsl.org/schools/<slug>",
       "format": "html",
-      "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_aitkin-high-school.html",
+      "evidence": "crates/census-service/tests/fixtures/mshsl/school_detail_aitkin-high-school.html",
       "evidence_kind": "repo_fixture",
       "identifiers": {"group id": "numeric /group/<id>/ id (example 7 for Aitkin)", "slug": "aitkin-high-school"},
       "fields": {
@@ -123,7 +123,7 @@
       "jurisdiction": "MN",
       "surface": "GET https://www.mshsl.org/api/coaches/<team nid>",
       "format": "json",
-      "evidence": "crates/midwest-census/tests/fixtures/mshsl/coach_records_aitkin_track-and-field-boys.json",
+      "evidence": "crates/census-service/tests/fixtures/mshsl/coach_records_aitkin_track-and-field-boys.json",
       "evidence_kind": "repo_fixture",
       "fields": {
         "name": {"type": "string", "example": "Adam Carlson"},
@@ -140,7 +140,7 @@
       "jurisdiction": "MN",
       "surface": "GET https://www.mshsl.org/jsonapi/views/teams/list_school?views-argument[]=<schoolId>",
       "format": "json (JSON:API)",
-      "evidence": "crates/midwest-census/tests/fixtures/mshsl/team_nodes_aitkin.json",
+      "evidence": "crates/census-service/tests/fixtures/mshsl/team_nodes_aitkin.json",
       "evidence_kind": "repo_fixture",
       "fields": {
         "drupal_internal__nid": {"type": "integer", "example": 589034, "note": "the coach endpoint key; Wayzata example value"},
@@ -168,7 +168,7 @@
       "jurisdiction": "MN",
       "surface": "GET https://www.mshsl.org/api/team-data/schedule/<schoolId>/<level>/<activityId>",
       "format": "json",
-      "evidence": "crates/midwest-census/tests/fixtures/mshsl/school_detail_wayzata-high-school.html + report 09",
+      "evidence": "crates/census-service/tests/fixtures/mshsl/school_detail_wayzata-high-school.html + report 09",
       "evidence_kind": "repo_fixture",
       "fields": {
         "MeetID": {"type": "integer", "example": 666673, "note": "Athletic.net meet id for the 2026 state T&F meet, read from the schedule JSON"}
@@ -193,7 +193,7 @@
       "jurisdiction": "NE",
       "surface": "GET https://secure.nsaahome.org/nsaaforms/direxportscreen.php?session=&school=<name>",
       "format": "html",
-      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nsaa_directory_export.html",
+      "evidence": "crates/census-service/tests/fixtures/plain_names/nsaa_directory_export.html",
       "evidence_kind": "repo_fixture",
       "fields": {
         "school_name": {"type": "string", "example": "Adams Central"},
@@ -245,7 +245,7 @@
       "jurisdiction": "ND",
       "surface": "GET https://ndhsaa.com/schools/<id>/<slug>",
       "format": "html",
-      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nd_school_page.html",
+      "evidence": "crates/census-service/tests/fixtures/plain_names/nd_school_page.html",
       "evidence_kind": "repo_fixture",
       "identifiers": {"school id": "numeric (examples 7 Bismarck, 100 Maple Valley, 1045 West Fargo Sheyenne, 1378 Mandan Classical Academy)"},
       "fields": {
@@ -267,7 +267,7 @@
       "jurisdiction": "ND",
       "surface": "same page, `Sport/Activity Offering | Coaches` table",
       "format": "html table",
-      "evidence": "crates/midwest-census/tests/fixtures/plain_names/nd_school_page.html",
+      "evidence": "crates/census-service/tests/fixtures/plain_names/nd_school_page.html",
       "evidence_kind": "repo_fixture",
       "fields": {
         "offering": {"type": "string", "example": "Boys' Cross Country", "note": "HTML-escaped as Boys&#039; Cross Country"},

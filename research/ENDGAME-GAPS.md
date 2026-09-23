@@ -5,7 +5,7 @@ number was measured with the command shown beside it. Nothing here edits or buil
 
 **Provenance.** `git rev-parse HEAD` = `3af713ba2a9d9422cbec2788e75a4009370c534c`, working tree dirty
 with sibling edits in flight (`git status --porcelain` = 12 entries, including new
-`crates/midwest-census/src/workbook/performances.rs`, `.../workbook/recruiting/`,
+`crates/census-service/src/workbook/performances.rs`, `.../workbook/recruiting/`,
 `.../report/coverage.rs`). Findings about those files describe the tree at the minute I read them;
 line numbers in `src/cli/{gather,mod}.rs` and `src/report/mod.rs` are moving under sibling edits,
 so re-`grep` the symbol before relying on a line.
@@ -20,7 +20,7 @@ so re-`grep` the symbol before relying on a line.
 | The 120,716-row real workbook has only ever been answered by the synthetic search fixture: 0 accepted | `scale-v15/FINAL.json` → `coverage {selected: 5000, completed: 5000, deterministic: 0, local_review: 0, no_match: 1595, review_required: 3405}`; `jq` over `scale-2500.jsonl` (120,716 rows) → 115,716 `report: null`, 1,595 no-match, 3,405 review |
 | Real identities appear in exactly one retained run (2026-09-16 pilot): 0 accepted of 33 assessed | `golden-pilot-100-v1-partial-c.jsonl` (mtime 2026-09-16 22:49): 32 review, 1 no-match, every assessed row `candidates: []` |
 | Live runs since 2026-09-20 use synthetic people | `unzip -p lane-v14/live-input/athletic-grade11-boys-2026-indoor.xlsx xl/sharedStrings.xml` → "Avery Example", "100 Synthetic Avenue", "Exampleville", "North Example High School", `Fixture Extra` = "Preserve exact source cell 0/0: α & < > "" |
-| The census walk works: 12 states, 6,737 rosters, 35,622 cached responses, 2.2 GB | `wc -l var/midwest-census/journal/milesplit_rosters_*.jsonl` = 6,737; `ls var/midwest-census/http \| wc -l` = 35,622; `du -sh` |
+| The census walk works: 12 states, 6,737 rosters, 35,622 cached responses, 2.2 GB | `wc -l var/census-service/journal/milesplit_rosters_*.jsonl` = 6,737; `ls var/census-service/http \| wc -l` = 35,622; `du -sh` |
 | Six live run directories are empty (submitted, no artifact) | `ls -A lane-v14/out-live-{entitled,full,full-2,rankings,rankings3,girls-rankings}` → 0 files |
 
 ---
@@ -85,7 +85,7 @@ fiction.
 ## G3. No command and no durable owner runs the national census
 
 **Evidence.** `NationalCensus` fans out per jurisdiction and folds reports
-(`crates/midwest-census/src/restate_services/national.rs:158-200`), each jurisdiction runs exactly
+(`crates/census-service/src/restate_services/national.rs:158-200`), each jurisdiction runs exactly
 three stages — `teams`, `rosters`, `consolidate`
 (`restate_services/jurisdiction.rs:27-37`, runners at `jurisdiction/stages.rs:115,133,149`) — and
 nothing invokes it: the CLI has no `national` command (`src/cli/mod.rs:55-112`), the service tests
@@ -99,9 +99,9 @@ pages for 51 jurisdictions (linear extrapolation, not measured). **Objective.** 
 work durably owned), §46 A–M, §48. **Smallest change.** One CLI subcommand that submits
 `NationalCensus/run` through the ingress and reads back `NationalReport/run`, plus
 `--all-states` on `run` so walk and publish are one operation. **Proof.**
-`cargo run -p midwest-census -- national --season 2026 --revision national-v1` → prints a
+`cargo run -p census-service -- national --season 2026 --revision national-v1` → prints a
 `NationalReport` with 51 jurisdiction rows and any failures; today's nearest runnable probe is
-`cargo run -p midwest-census -- collect --all-states --limit-per-state 1 --state-concurrency 8`
+`cargo run -p census-service -- collect --all-states --limit-per-state 1 --state-concurrency 8`
 (51 live requests) → 51 lines, one per USPS code. **Risk.** A national walk that is not
 durably owned cannot be resumed, journaled, or reported per state, and a per-state failure has no
 home (§69).
@@ -109,7 +109,7 @@ home (§69).
 ## G4. §47 gap sweep and §48 completion lattice do not exist
 
 **Evidence.** `grep -rn "CensusState\|SealedCensus"` over the whole repository returns nothing;
-`grep -rn "seal\|gap"` over `crates/midwest-census/src/{census,report}` returns nothing (both run
+`grep -rn "seal\|gap"` over `crates/census-service/src/{census,report}` returns nothing (both run
 in this session). `NationalCensus::run` completes when its fan-out drains
 (`restate_services/national.rs:143-157`) — i.e. exactly the "HTTP queue empty" completion §48
 forbids. **Objective.** §47 (athletes without performances / without graduation evidence, schools
@@ -117,9 +117,9 @@ without coach data, unnormalized events, conflicts, source failures), §48 (stat
 direct `Acquiring → Complete`). **Smallest change.** A `CensusState` value on the jurisdiction
 object's durable state with the gap classes as a re-plan stage; note a sibling lane is landing
 §47 gap classes for the coverage report right now
-(`crates/midwest-census/src/report/coverage.rs:1-30`, untracked, 1 minute old when read), so the
+(`crates/census-service/src/report/coverage.rs:1-30`, untracked, 1 minute old when read), so the
 missing half is the *sealing* state, not the classification. **Proof.** After the change:
-`cargo run -p midwest-census -- national …` yields per-jurisdiction `state` that is not
+`cargo run -p census-service -- national …` yields per-jurisdiction `state` that is not
 `Complete` while its `gaps` list is non-empty; today the observable is the grep above returning
 zero matches. **Risk.** Without a lattice, any workbook built from the census crate is sealed on
 "queue empty" — the exact failure §70's 14 acceptance items exist to prevent.
@@ -192,7 +192,7 @@ all is silently absent from `report.json`, the "By state" sheets and the per-sta
 **Objective.** §49 ("Report exact denominators where known"; emptiness is a finding), §46 B
 (school universe), §70 item 11. **Smallest change.** Seed `by_state` with a default row for every
 `UsJurisdiction::ALL` entry (plus the existing `UNKNOWN` bucket) before the rollups run. **Proof.**
-`cargo run -p midwest-census -- --data-dir <store> report --print` over a one-state store → expect
+`cargo run -p census-service -- --data-dir <store> report --print` over a one-state store → expect
 51 USPS keys plus `UNKNOWN` (today: only the states present). **Risk.** An omitted state reads as
 "not covered" when it may mean "covered, empty"; §49's whole purpose is distinguishing those.
 
@@ -200,21 +200,21 @@ all is silently absent from `report.json`, the "By state" sheets and the per-sta
 
 **Evidence.** The workbook's asserted sheet set is nine aggregate sheets — "Goal & method",
 "Summary", "By state - core", "By state - all sources", "Athletic.net marginal", "Best results",
-"Meets", "Evidence mix", "Method notes" (`crates/midwest-census/src/workbook/tests.rs:97-107`).
+"Meets", "Evidence mix", "Method notes" (`crates/census-service/src/workbook/tests.rs:97-107`).
 There is no `Athletes`, `Performances`, `PRs`, `Coaches` or per-jurisdiction sheet, i.e. none of
 the objective's §50–§53 recruiter-facing tables; the in-flight frozen signatures
 (`workbook/performances.rs`, `workbook/meta.rs`, wired by peer `WbRecruiting`) are the first of
 them. **Objective.** §49–§54 columns and workbook surfaces, §22 (performances), §50 (athlete
 roster). **Smallest change.** Land the in-flight sheet modules and extend the crate's sheet-list
 test with the new names (the test is the contract; it fails until the sheets exist). **Proof.**
-`cargo test -p midwest-census workbook::tests` → the sheet-name assertion list contains the new
+`cargo test -p census-service workbook::tests` → the sheet-name assertion list contains the new
 names, and `unzip -p <out>.xlsx xl/workbook.xml \| grep -o 'name="[^"]*"'` lists them in the built
 file. **Risk.** Without them the census crate's export cannot serve the stated product (a
 recruiter-facing nationwide roster), only its own aggregate summary.
 
 ## G10. Capability coverage is national for discovery only: 1 state of bulk results, 7 of coach directories
 
-**Evidence.** The registry (`crates/midwest-census/src/sources/registry/table.rs:26-267`) declares
+**Evidence.** The registry (`crates/census-service/src/sources/registry/table.rs:26-267`) declares
 `bulk_results` for one adapter (`wiaa_results`, Wisconsin only), `meet_discovery` for three
 (`athleticlive` — an import artifact — `wiaa_results`, `wayzata`), `coach_directory` for seven
 jurisdictions (IHSA IL, KSHSAA KS, MSHSL MN, OHSAA OH, WIAA WI, NDHSAA ND / NSAA NE; the last two
@@ -225,9 +225,9 @@ one to seven jurisdictions outside MileSplit, while §46 E is national only thro
 **Objective.** §46 C/D/H, §5 (coach contacts), §49 (meets/coaches denominators), §68 (priority by
 new coverage per request). **Smallest change.** Adapters, in the measured order the sibling
 ranking lane is already executing; the missing *census-side* piece is a per-jurisdiction plan that
-runs the applicable registry rows per state (see G3). **Proof.** `cargo test -p midwest-census
+runs the applicable registry rows per state (see G3). **Proof.** `cargo test -p census-service
 sources::registry` → 13 slugs with their capability declarations; per-adapter live probe
-`cargo run -p midwest-census -- provider mshsl --states MN` → report with `with_email > 0`.
+`cargo run -p census-service -- provider mshsl --states MN` → report with `with_email > 0`.
 **Risk.** A "nationwide" claim rests on MileSplit alone: no meet inventory and no coach coverage
 for 44 jurisdictions, which is exactly the §49 column set the owner reads first.
 
@@ -258,7 +258,7 @@ denominator that counts matched athletes, and of any meaningful throughput measu
   evidence is retained as digests (`report.query_evidence` is `[]`). One captured `runSearch`
   response body settles mapper-vs-markup, and whether the pages are interstitials.
 - **Whether any national workflow run ever executed against a live Restate server.** No CLI, test
-  or script invokes it and the retained journals under `var/midwest-census/journal/` are produced
+  or script invokes it and the retained journals under `var/census-service/journal/` are produced
   by the CLI walks (`src/cli/gather.rs:108-113`), but both paths share the same store, so the
   journals cannot separate them. An ingress-call log or the object's durable state would.
 - **SCOPE.md:32 says `profile_artifacts`/`performance_evidence` "have stayed empty"; the retained

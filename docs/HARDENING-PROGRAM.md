@@ -22,7 +22,7 @@ Two crates, one workspace:
 | Crate | Role | Production lines | Files |
 |---|---|---|---|
 | `athletic-rust-pipeline` (root) | Athletic.net acquisition engine: HTTP + chromiumoxide browser runtime, rankings/search workers, XLSX matching/verification, CLI workflows | 33,608 | 182 |
-| `crates/midwest-census` | Census domain: canonical model, fjall observation store, 10 source adapters, Restate services, report/bests/workbook | 17,854 | 31 |
+| `crates/census-service` | Census domain: canonical model, fjall observation store, 10 source adapters, Restate services, report/bests/workbook | 17,854 | 31 |
 
 Already true (measured, good):
 
@@ -128,7 +128,7 @@ budgets audit for the browser session pool.
 - `crates/census-domain/src/model.rs` is already newtype-first (`SchoolId`, `AthleteId`, `MeetId`,
   `GradYear::new -> Option`, `ObservedGrade` separate from `GradYear`, `SourceNamespace`,
   deterministic id minting) — the spine exists. (Measured at the time of this program; Phase 3
-  moved it out of `crates/midwest-census` into the pure `census-domain` crate.)
+  moved it out of `crates/census-service` into the pure `census-domain` crate.)
 - Root already has an error taxonomy (`DomainError`, `StoreError`, `BrowserError`, `PageParseError`,
   `CatalogError`, `StepError`; 86 `thiserror` references).
 - **Census has no error taxonomy**: 38 `anyhow::` references, `thiserror` used in one place
@@ -372,7 +372,7 @@ Notes for the next phase:
 ## 9. Phase 3 as executed (partial, 2026-09-21)
 
 - **`crates/census-domain` extracted** (commit `beb6e01`): the canonical model moved out of
-  `midwest-census` into a new workspace crate whose *normal* dependency tree is `serde` + `sha2`
+  `census-service` into a new workspace crate whose *normal* dependency tree is `serde` + `sha2`
   and nothing else. The proof is a new `domain purity` lane in `tools/gate.sh`
   (`cargo tree -p census-domain --edges normal` against a banned-package list; cargo-deny's
   `wrappers` bans express the inverse relation, so the tree scan is the enforceable form).
@@ -479,7 +479,7 @@ Open items, recorded honestly rather than rounded up:
 - **Integrity review candidates** (7 `struct_with_many_options` sites across the two crates) are
   reported but not ratcheted yet — they are Phase 3/4 review material, not a gate failure.
 - **Geiger's stale-target failure mode recurred** in a new shape: a deleted scratch test
-  (`crates/midwest-census/tests/zz_scratch_repro.rs`) left a `target/debug` dep-info artifact that
+  (`crates/census-service/tests/zz_scratch_repro.rs`) left a `target/debug` dep-info artifact that
   the lane could not match. Deleting the artifact fixed it; a `cargo clean` is not required, and
   the lane now passes on the tree as it stands.
 
@@ -604,7 +604,7 @@ join from a provider's own ids to canonical rows, the conflict and review queues
 collection snapshot per pass — so that answering those questions is a scan of one table rather than
 a re-derivation of the whole store. What landed, all inside the census crate:
 
-- **`index::derive` (`crates/midwest-census/src/index.rs`).** One pass writes five things:
+- **`index::derive` (`crates/census-service/src/index.rs`).** One pass writes five things:
   `source_identities` (one row per provider identity per canonical table, carrying the provider id
   verbatim, the table it belongs to, the canonical id it joins to and the observed URL),
   `conflicts` and `review_cases` (the retained queues), `coverage` (one row per jurisdiction and one
@@ -619,8 +619,8 @@ a re-derivation of the whole store. What landed, all inside the census crate:
   reaches `MAX_ROWS_PER_TABLE` in days and then aborts every scan of the table. Measured on a real
   store: three consecutive `index` passes leave `source_identities`, `coverage` and `snapshots` at
   one row per key.
-- **CLI and cycle.** `midwest-census index` derives and prints the per-table counts;
-  `midwest-census run` derives between `consolidate` and the published scopes, so one command keeps
+- **CLI and cycle.** `census-service index` derives and prints the per-table counts;
+  `census-service run` derives between `consolidate` and the published scopes, so one command keeps
   the indexes current.
 - **`store/table.rs`.** The twelve-table vocabulary moved out of `store/mod.rs`, which had crossed
   the 300-line budget (319 → 225 lines); the module re-exports `Entity`, `Table` and both ceilings,
@@ -635,12 +635,12 @@ Verification:
 
 | Check | Result |
 | --- | --- |
-| `cargo nextest run --workspace --all-features` | **745 tests run: 745 passed, 2 skipped** — `cargo test -p midwest-census --lib` alone is **356 passed** (21 `index::tests`, 2 new `store::tests` for the replace path) and `cargo test -p census-domain` is **39 passed** |
+| `cargo nextest run --workspace --all-features` | **745 tests run: 745 passed, 2 skipped** — `cargo test -p census-service --lib` alone is **356 passed** (21 `index::tests`, 2 new `store::tests` for the replace path) and `cargo test -p census-domain` is **39 passed** |
 | Real-store smoke | `provider coach_contacts` → `index` → `fjall-stats`: 6 schools / 13 coaches imported; `source_identities=19 conflicts=0 reviews=0 coverage=58 snapshots=1`; three passes leave one row per key |
-| `midwest-census run` (offline) | `gather … skipped (no --input)` → `consolidate` → `index` → both report scopes → `bests` → `recruiting` → `workbook`; 0.23 s over the six-school store |
+| `census-service run` (offline) | `gather … skipped (no --input)` → `consolidate` → `index` → both report scopes → `bests` → `recruiting` → `workbook`; 0.23 s over the six-school store |
 | `cargo xtask seams` | 15 modules, `violations: []` — the three new `index` edges are declared with their reasons in the table |
 | `cargo xtask scan` | census 253 files / 39,909 production lines, every forbidden counter 0, **0 files > 300 lines**, 0 functions > 60 logical lines; root unchanged at 305 / 36,656 |
-| `tools/gate.sh` | **PASS** (debt ratchet holds) — after one **FAIL** that was worth having: `check`, `tests` and `bench presence` all broke on one stale call, `SourceObjectIdentity::row_id()` in `census-domain`'s test target, which `cargo test -p midwest-census --lib` never builds. Fixed, plus two test updates for the new table set, both inspected: the `Run Metrics` sheet golden (13872 → 13882 cells, all twelve tables, every other sheet byte-identical) and the backup drill's expected table vector (the five derived tables asserted empty there, because that chain never derives) |
+| `tools/gate.sh` | **PASS** (debt ratchet holds) — after one **FAIL** that was worth having: `check`, `tests` and `bench presence` all broke on one stale call, `SourceObjectIdentity::row_id()` in `census-domain`'s test target, which `cargo test -p census-service --lib` never builds. Fixed, plus two test updates for the new table set, both inspected: the `Run Metrics` sheet golden (13872 → 13882 cells, all twelve tables, every other sheet byte-identical) and the backup drill's expected table vector (the five derived tables asserted empty there, because that chain never derives) |
 
 ### 13.1 Deferred items (numbered)
 

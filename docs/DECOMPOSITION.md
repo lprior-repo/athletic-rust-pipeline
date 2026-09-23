@@ -70,7 +70,7 @@ Every step below is a **move**, never a rewrite:
 1. No public API changes. When a module becomes a directory, `mod.rs` re-exports what used to be
    public (`pub use parse::*;` / `pub use map::*;`), so `sources::<name>::parse_*` and the
    `sources/mod.rs` dispatch keep resolving unchanged.
-2. No behavior changes. The parity tests (`crates/midwest-census/tests/parity_*.rs`) compare pretty
+2. No behavior changes. The parity tests (`crates/census-service/tests/parity_*.rs`) compare pretty
    JSON of parsed entities against checked-in goldens; a moved line that changes an output, an
    ordering, or a default fails them.
 3. Tests move verbatim. A `#[cfg(test)] mod tests` block goes into `tests.rs` unchanged; if a test
@@ -79,9 +79,9 @@ Every step below is a **move**, never a rewrite:
 ## Required proof per pull request
 
 ```bash
-cargo nextest run -p midwest-census                      # full suite, must stay green
-cargo nextest run -p midwest-census --test parity_<group> # golden parity for the touched sources
-cargo clippy -p midwest-census --lib --bins --all-features -- -D warnings \
+cargo nextest run -p census-service                      # full suite, must stay green
+cargo nextest run -p census-service --test parity_<group> # golden parity for the touched sources
+cargo clippy -p census-service --lib --bins --all-features -- -D warnings \
   -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn \
   -D clippy::indexing_slicing -D clippy::string_slice -D clippy::as_conversions \
   -D clippy::arithmetic_side_effects -D clippy::let_underscore_must_use   # no new diagnostics

@@ -312,7 +312,7 @@ The invocation retry policy governs **what happens when the handler itself fails
 
 **Key insight for the census repo:** The repo's convention (ADR-002) is to set `max_attempts` on the service/object/workflow attribute (invocation-level retry), and set `ctx.run().retry_policy(RunRetryPolicy::new().max_attempts(1))` inside handlers so each journaled action is attempted exactly once. This prevents double retry budgets.
 
-**Source:** `crates/midwest-census/src/restate_services/jobs.rs:199-201` — `pub(super) fn no_run_retry() -> RunRetryPolicy { RunRetryPolicy::new().max_attempts(1) }`
+**Source:** `crates/census-service/src/restate_services/jobs.rs:199-201` — `pub(super) fn no_run_retry() -> RunRetryPolicy { RunRetryPolicy::new().max_attempts(1) }`
 
 ### What Retries Look Like on the Wire
 
@@ -543,7 +543,7 @@ while let Some((index, result)) = in_flight.next().await? {
 
 **Key insight:** The child workflow's failure is a `TerminalError` in the parent's `call()` result. The parent can catch it and record it as data rather than propagating. This is exactly what the `NationalCensus` does.
 
-**Source:** `crates/midwest-census/src/restate_services/national.rs:103-138` — `classify()` function classifies child completions into `Completion::Success` or `Completion::Failure`.
+**Source:** `crates/census-service/src/restate_services/national.rs:103-138` — `classify()` function classifies child completions into `Completion::Success` or `Completion::Failure`.
 
 ### `on_max_attempts = "pause"` — Parent Observing a Paused Child
 
@@ -702,12 +702,12 @@ The `restate.toml` is a **server-side** configuration file, not an SDK concern. 
 
 ```toml
 roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
-node-name = "midwest-census"
-cluster-name = "midwest-census"
+node-name = "census-service"
+cluster-name = "census-service"
 auto-provision = true
 default-num-partitions = 24
 default-replication = 1
-base-dir = "/var/lib/midwest-census-restate"
+base-dir = "/var/lib/census-service-restate"
 listen-mode = "tcp"
 bind-ip = "127.0.0.1"
 bind-port = 15152
@@ -851,7 +851,7 @@ The census repo pins: `restate-sdk = { version = "=0.12.0", default-features = f
 | `ctx.promise()` | Not used in repo | ⚠️ Available |
 | `Endpoint::builder().bind(T).build()` | Used in `mod.rs:build_endpoint` | ✅ Matches |
 | `HttpServer::new(endpoint).serve_with_cancel(...)` | Used in `bootstrap/serve.rs` | ✅ Matches |
-| `ReqwestClient::connect()` | Not used in repo (ingress is via `crates/midwest-census/src/ingress/`) | ⚠️ Available with `reqwest-client` feature |
+| `ReqwestClient::connect()` | Not used in repo (ingress is via `crates/census-service/src/ingress/`) | ⚠️ Available with `reqwest-client` feature |
 
 ---
 

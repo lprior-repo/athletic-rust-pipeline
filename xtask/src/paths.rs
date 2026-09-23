@@ -1,7 +1,7 @@
 //! Repository layout, resolved from this crate's own manifest directory.
 //!
 //! Resolution never depends on the caller's working directory, so every child process can be run
-//! from the repository root and a relative `--store var/midwest-census` resolves the same way here
+//! from the repository root and a relative `--store var/census-service` resolves the same way here
 //! as it does in `AGENTS.md`.
 
 use anyhow::{Context, Result};
@@ -17,9 +17,9 @@ pub fn repo_root() -> PathBuf {
         .map_or_else(|| manifest.to_path_buf(), Path::to_path_buf)
 }
 
-/// The `midwest-census` crate directory: the run crate, the composition root.
+/// The `census-service` crate directory: the run crate, the composition root.
 pub fn census_crate() -> PathBuf {
-    repo_root().join("crates").join("midwest-census")
+    repo_root().join("crates").join("census-service")
 }
 
 /// The `census-crawl` crate directory: the acquisition plane.

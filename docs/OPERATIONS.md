@@ -1,17 +1,17 @@
 # Operations runbook
 
-Three processes, and only one of them writes the canonical store. `midwest-census` is the batch CLI
-(acquisition, into the staging store); `midwest-serve` is the same adapters, store and reports exposed
+Three processes, and only one of them writes the canonical store. `census-service` is the batch CLI
+(acquisition, into the staging store); `census-serve` is the same adapters, store and reports exposed
 as a Restate endpoint; `restate-server` is the node that holds the journal, the ingress and the admin
 API. A crash of the endpoint resumes at the last recorded step because the journal lives in the node,
 not in the endpoint process: an endpoint that dies mid-run leaves the invocation durably recorded,
 and the restarted endpoint replays it instead of starting over.
 
 ```
-midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30
+census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurrent 8 --drain-timeout 30
 ```
 
-Everything lives under `--data-dir` (`var/midwest-census` by default): the Fjall store, the fetch
+Everything lives under `--data-dir` (`var/census-service` by default): the Fjall store, the fetch
 cache with its content hashes, the consolidated `out/*.jsonl` snapshots and the reports.
 
 ## Weekly incremental refresh
@@ -25,15 +25,15 @@ taken per state; the census does not filter meets by level, so a middle-school m
 costs its requests and yields no canonical athlete.
 
 ```
-midwest-census --store <dir> teams --all-states --refresh
-midwest-census --store <dir> meets --all-states --year 2026
-midwest-census --store <dir> provider milesplit_results --all-states --limit 200
-midwest-census --store <dir> collect --all-states --school-year 2027
-midwest-census --store <dir> consolidate
-midwest-census --store <dir> index
-midwest-census --store <dir> report --print
-midwest-census --store <dir> bests
-midwest-census --store <dir> workbook
+census-service --store <dir> teams --all-states --refresh
+census-service --store <dir> meets --all-states --year 2026
+census-service --store <dir> provider milesplit_results --all-states --limit 200
+census-service --store <dir> collect --all-states --school-year 2027
+census-service --store <dir> consolidate
+census-service --store <dir> index
+census-service --store <dir> report --print
+census-service --store <dir> bests
+census-service --store <dir> workbook
 ```
 
 `index` rewrites the derived index tables — source-object identities, retained conflicts and review
@@ -42,29 +42,29 @@ chain can run daily without growing them. `run` chains every step above in one c
 
 `teams --refresh` is the only step that re-reads association indexes; `collect` walks rosters and the
 current season's result pages. No step re-reads the full historical corpus: every fetch is
-content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/midwest-census-collect.service`
+content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/census-service-collect.service`
 `.timer` runs exactly this chain weekly, against the **staging** store: the canonical store is written
 only by an endpoint deployment, so a collector run can neither race the national run for the Fjall
 writer lock nor write past the journal. Routing acquisition through the `Ingest` service is the
 replacement for the staging hop; no CLI subcommand drives it yet.
 
 **Flag surface (critical):** The batch CLI uses `--store` (not `--data-dir`, which is the
-`midwest-serve` unit's flag). The `collect` subcommand uses `--school-year` (not `--grad-year`).
+`census-serve` unit's flag). The `collect` subcommand uses `--school-year` (not `--grad-year`).
 `--data-dir` and `--grad-year` are rejected by the batch CLI with exit code 2.
 
 **Jurisdiction default (critical):** with neither `--states` nor `--all-states`, the gather commands
-(`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/midwest-census/src/cli/mod.rs:235`,
-pinned by `crates/midwest-census/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
+(`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/census-service/src/cli/mod.rs:235`,
+pinned by `crates/census-service/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
 The run scope is the 49 jurisdictions of `UsJurisdiction::CENSUS_SCOPE` (ADR-009): `--all-states`
 selects it (`cli/mod.rs:234`), and the operational path is the service, which walks the whole scope on
-its own (`crates/midwest-census/src/restate_services/open_work.rs:102`; a request naming a
+its own (`crates/census-service/src/restate_services/open_work.rs:102`; a request naming a
 jurisdiction outside it is refused at `restate_services/national.rs:73`). The `provider` subcommands
 take the restriction form instead, where no flag means no restriction (`cli/mod.rs:248`, pinned at
 `cli/tests.rs:34`).
 
 ## Shutdown and the drain certificate
 
-`midwest-serve` drains on SIGTERM: it stops accepting work, finishes or cancels in-flight requests
+`census-serve` drains on SIGTERM: it stops accepting work, finishes or cancels in-flight requests
 within `--drain-timeout`, finalizes the store, and prints
 
 ```
@@ -111,9 +111,9 @@ assembles §70's evidence from the store (cohort counts, coverage gaps, conflict
 retries), reads the exported workbook back, and either completes the census with a digest or refuses
 and names the acceptance item that blocked it (§17, ADR-007).
 
-    midwest-census workbook --grad-year 2027                    # build the export first
-    midwest-census seal --grad-year 2027 --write                # certify the newest out/*.xlsx
-    midwest-census seal --grad-year 2027 --workbook out/midwest-census-2026-09-21.xlsx
+    census-service workbook --grad-year 2027                    # build the export first
+    census-service seal --grad-year 2027 --write                # certify the newest out/*.xlsx
+    census-service seal --grad-year 2027 --workbook out/census-service-2026-09-21.xlsx
 
 Exit code 0 prints the seal digest and what it covers; exit code 1 prints the unmet item and the
 numbers behind it, for example `Run Metrics cohort 307652 != store 307653`. Sealing a census whose
@@ -131,7 +131,7 @@ sheets — that reconciliation belongs to the workbook verifier, and the seal re
 
 Cold copy only: stop the unit (drain certificate printed), copy the whole `--data-dir`, start again.
 The store and the cache are a matched pair — a store copy without the cache only costs re-fetching,
-but a cache copy without the store is worthless. `midwest-census import-legacy` migrates pre-Fjall
+but a cache copy without the store is worthless. `census-service import-legacy` migrates pre-Fjall
 JSONL journals one time; keep the old journals until a `report` matches the pre-migration numbers.
 
 ### Backup drill
@@ -154,14 +154,14 @@ Five files ship in `deploy/`:
 
 | Unit / file | Purpose |
 |---|---|
-| `systemd/restate-server.service` | the Restate **node**: journal, metadata, ingress (18095) and admin (19095), loopback only, base-dir `/var/lib/midwest-census-restate` |
-| `restate.toml` | the node's config, deployed to `/etc/midwest-census/restate.toml`; the only file that knows the ports. It used to live only on the deployed machine, where nothing could review it |
-| `systemd/midwest-serve@.service` | the census **endpoint**, one instance per release: `midwest-serve@<release>` serves `releases/<release>/bin/midwest-serve` against `/var/lib/midwest-census/<release>` and logs to `/var/log/midwest-census/<release>/`. Two releases therefore never share a Fjall writer lock, and a release is identified by the commit it serves |
-| `endpoint.env.example` | the per-release environment file, deployed to `/etc/midwest-census/endpoint-<release>.env`; it carries `CENSUS_LISTEN`, the one value an instance cannot derive from its name |
-| `systemd/midwest-census-collect.{service,timer}` | weekly incremental acquisition into the **staging** store. The canonical store is written only by an endpoint deployment: a batch job writing it would race the national run for the same writer lock and bypass the journal |
+| `systemd/restate-server.service` | the Restate **node**: journal, metadata, ingress (18095) and admin (19095), loopback only, base-dir `/var/lib/census-service-restate` |
+| `restate.toml` | the node's config, deployed to `/etc/census-service/restate.toml`; the only file that knows the ports. It used to live only on the deployed machine, where nothing could review it |
+| `systemd/census-serve@.service` | the census **endpoint**, one instance per release: `census-serve@<release>` serves `releases/<release>/bin/census-serve` against `/var/lib/census-service/<release>` and logs to `/var/log/census-service/<release>/`. Two releases therefore never share a Fjall writer lock, and a release is identified by the commit it serves |
+| `endpoint.env.example` | the per-release environment file, deployed to `/etc/census-service/endpoint-<release>.env`; it carries `CENSUS_LISTEN`, the one value an instance cannot derive from its name |
+| `systemd/census-service-collect.{service,timer}` | weekly incremental acquisition into the **staging** store. The canonical store is written only by an endpoint deployment: a batch job writing it would race the national run for the same writer lock and bypass the journal |
 
 Install with `systemctl enable --now restate-server.service`, then
-`systemctl enable --now midwest-serve@<release>.service`, then register the endpoint with the node:
+`systemctl enable --now census-serve@<release>.service`, then register the endpoint with the node:
 
 ```
 curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json' \
@@ -172,7 +172,7 @@ Rolling forward is starting the new release's instance and retiring the old one.
 deployments in `curl http://127.0.0.1:19095/deployments`, and only the new one is redelivered to;
 this is also how a rollback happens, by starting the previous release's instance again.
 
-Every service declares its own retention in `crates/midwest-census/src/restate_services/*.rs`:
+Every service declares its own retention in `crates/census-service/src/restate_services/*.rs`:
 90 days of journal, 180 days of workflow completion, 30 days of idempotency. The server's own
 defaults are one day, which is shorter than a full census run can take.
 

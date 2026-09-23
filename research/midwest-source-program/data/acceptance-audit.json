@@ -1,7 +1,7 @@
 {
   "generated_on": "2026-09-22",
   "scope": "all_sources",
-  "store": "var/midwest-census",
+  "store": "var/census-service",
   "q1_source_discovery": {
     "athleticlive_grade_observations": 462875,
     "milesplit_grade_observations_total": 260144,

@@ -17,10 +17,10 @@ recorded because either alone can be made to match by accident.
 
 | area | path | files | combined digest (first 32) |
 |---|---|---|---|
-| legacy entity journals | `var/midwest-census/entities` | 53 | `b9a7901d9419194d222ff27a499034fc` |
-| published snapshots | `var/midwest-census/out` | 30 | `2fd6dae582a7b9ad296e0904192dcdd9` |
-| journal writes | `var/midwest-census/journal` | — | `349b072ba943a20569a174d87cfcbb14` |
-| parser goldens | `crates/midwest-census/tests/golden` | 112 | `db95f4b16f485a28a80b7b7f09aafdb1` → `bce0ffdf9fc36375951cf21009fc54ba` (2026-09-23) |
+| legacy entity journals | `var/census-service/entities` | 53 | `b9a7901d9419194d222ff27a499034fc` |
+| published snapshots | `var/census-service/out` | 30 | `2fd6dae582a7b9ad296e0904192dcdd9` |
+| journal writes | `var/census-service/journal` | — | `349b072ba943a20569a174d87cfcbb14` |
+| parser goldens | `crates/census-service/tests/golden` | 112 | `db95f4b16f485a28a80b7b7f09aafdb1` → `bce0ffdf9fc36375951cf21009fc54ba` (2026-09-23) |
 
 **Update 2026-09-23 — one golden, one row.** `pipeline__workbook-shape.json` moved with the
 `source_observations` carrier: the Run Metrics sheet prints one row per table's append counters
@@ -56,19 +56,19 @@ foreign sequence — item 1 under "Open checks" below.
 
 ## Open checks against this freeze
 
-1. **Derived-table import leak (pre-run gate).** `var/midwest-census/entities` holds journals for
+1. **Derived-table import leak (pre-run gate).** `var/census-service/entities` holds journals for
    all seven derived tables (`source_identities` 524 MB, `review_cases` 7.1 MB, `conflicts` 934 KB,
    `coverage` 40 KB, `snapshots`, `source_access`, `identity_verdicts`). If this root was opened
    before the derived-import gate landed, those rows sit at `seq > 0`, where `stage_derived` (which
    writes only the `DERIVED_SEQUENCE` key) and `drop_unnamed` (which drops only unnamed ids) can
    never displace them. Required before the run: `foreign_sequences == 0` on those seven tables,
    measured with `Store::walk_table`. The repair path is a self-heal in the derived write.
-   The instrument is `crates/midwest-census/tests/corpus_walk.rs` under
-   `WALK_ROOT=<root> cargo test -p midwest-census --test corpus_walk -- --ignored
+   The instrument is `crates/census-service/tests/corpus_walk.rs` under
+   `WALK_ROOT=<root> cargo test -p census-service --test corpus_walk -- --ignored
    --nocapture`; it is `#[ignore]`d because an unset `WALK_ROOT` is not a claim about the
    code.
 
-   **Measured 2026-09-22** against `var/midwest-census`, once the run above released the store
+   **Measured 2026-09-22** against `var/census-service`, once the run above released the store
    lock (the single-open rule refuses a second handle, so the reading has to wait for the
    writer): **every one of the seven derived tables walks clean** — `source_identities` 2,507,541
    rows, `review_cases` 27,967, `conflicts` 3,695, `coverage` 215, `snapshots` 2, `source_access`

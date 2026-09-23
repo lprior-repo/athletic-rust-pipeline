@@ -512,6 +512,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "census-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "athleticnet-browser",
+ "calamine",
+ "census-crawl",
+ "census-domain",
+ "census-report",
+ "census-review",
+ "census-store",
+ "clap",
+ "criterion",
+ "csv",
+ "fjall",
+ "futures",
+ "loom",
+ "proptest",
+ "regex",
+ "reqwest",
+ "restate-sdk",
+ "rust_xlsxwriter",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+]
+
+[[package]]
 name = "census-store"
 version = "0.1.0"
 dependencies = [
@@ -2069,40 +2103,6 @@ name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
-
-[[package]]
-name = "midwest-census"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "athleticnet-browser",
- "calamine",
- "census-crawl",
- "census-domain",
- "census-report",
- "census-review",
- "census-store",
- "clap",
- "criterion",
- "csv",
- "fjall",
- "futures",
- "loom",
- "proptest",
- "regex",
- "reqwest",
- "restate-sdk",
- "rust_xlsxwriter",
- "serde",
- "serde_json",
- "sha2 0.10.9",
- "tempfile",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
-]
 
 [[package]]
 name = "mime"
@@ -4431,9 +4431,9 @@ dependencies = [
  "census-crawl",
  "census-domain",
  "census-report",
+ "census-service",
  "census-store",
  "clap",
- "midwest-census",
  "regex",
  "reqwest",
  "restate-sdk",
