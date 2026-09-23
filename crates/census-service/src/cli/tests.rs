@@ -198,13 +198,16 @@ fn acceptance_agreement() {
             (
                 a1.id.as_str().to_string(),
                 "Alice Runner".to_string(),
-                school_id.as_str().to_string(),
+                // The sheet prints the school by *name* (`Dataset::school_name`); the raw id is
+                // only the fallback for a school the store holds no row for, and `verify` treats
+                // an id printed where a name exists as the disagreement it is.
+                school_rec.name.clone(),
                 "2027".to_string(),
             ),
             (
                 a2.id.as_str().to_string(),
                 "Bob Sprinter".to_string(),
-                school_id.as_str().to_string(),
+                school_rec.name.clone(),
                 "2027".to_string(),
             ),
         ],
@@ -274,6 +277,94 @@ fn acceptance_disagreement() {
         err.contains("Alice Wrong") || err.contains("not in store") || err.contains("not in store"),
         "error should mention the athlete row: {err}"
     );
+}
+
+/// The shape a run-scope leak published: the School cell carries the school's raw id where the
+/// store holds the row and therefore a name. The sheet prints names, so `verify` refuses it — the
+/// check that caught the 2026-09-23 export's out-of-scope rows.
+#[test]
+fn acceptance_school_id_where_the_store_has_a_name() {
+    let dir = tempfile::tempdir().unwrap();
+    let (school_rec, school_id) =
+        school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
+    let a1 = CanonicalAthlete::new(
+        &school_id,
+        "Alice Runner",
+        GradYear::new(2027).unwrap(),
+        Gender::Girls,
+    );
+
+    let store = Store::open(dir.path()).expect("open temp store");
+    store
+        .append(Table::Schools, &school_rec)
+        .expect("append school");
+    store.append(Table::Athletes, &a1).expect("append athlete");
+
+    let _ = write_test_workbook(
+        dir.path(),
+        &[(
+            a1.id.as_str().to_string(),
+            "Alice Runner".to_string(),
+            school_id.as_str().to_string(),
+            "2027".to_string(),
+        )],
+        &[],
+    );
+
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+        grad_year: 2027,
+    };
+    let result = run_verify(&store, &args);
+    let err = result
+        .expect_err("an id printed where the store holds a name is a disagreement")
+        .to_string();
+    assert!(
+        err.contains("Jefferson High"),
+        "the refusal should name the store's school: {err}"
+    );
+}
+
+/// The documented fallback: the store holds no row for the athlete's school id, so the sheet has no
+/// name to print and carries the id itself. `verify` accepts exactly that, and nothing wider.
+#[test]
+fn acceptance_school_id_with_no_store_row() {
+    let dir = tempfile::tempdir().unwrap();
+    let (school_rec, _) = school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
+    // The athlete names a school the store never scanned, so no name resolves for it.
+    let ghost_id: census_domain::model::SchoolId = Id::mint("school", &["Ghost High"]);
+    let a1 = CanonicalAthlete::new(
+        &ghost_id,
+        "Ghost Runner",
+        GradYear::new(2027).unwrap(),
+        Gender::Girls,
+    );
+
+    let store = Store::open(dir.path()).expect("open temp store");
+    store
+        .append(Table::Schools, &school_rec)
+        .expect("append school");
+    store.append(Table::Athletes, &a1).expect("append athlete");
+
+    let _ = write_test_workbook(
+        dir.path(),
+        &[(
+            a1.id.as_str().to_string(),
+            "Ghost Runner".to_string(),
+            ghost_id.as_str().to_string(),
+            "2027".to_string(),
+        )],
+        &[],
+    );
+
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+        grad_year: 2027,
+    };
+    let result = run_verify(&store, &args);
+    assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
 }
 
 /// Missing column: workbook Athletes sheet lacks Graduation Year → refused.
