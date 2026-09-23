@@ -19,16 +19,13 @@ use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 
 mod aggregate;
-mod identity;
 mod meets;
 mod scope;
 pub mod seal;
 mod state;
 mod sweep;
-pub mod verify;
 
 pub use aggregate::consolidate;
-pub use identity::{admitted_scope, Revision, WorkflowIdentity};
 pub use meets::{collect_state_meets, select_meets, MeetCensus, MeetSourceRows, SOURCE};
 pub use state::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
@@ -36,10 +33,6 @@ pub use state::{
     SealCounts, SealError, SealEvidence, SealedCensus, SourceObject, WorkbookCheck,
 };
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
-pub use verify::{
-    missing_columns, sample_indices, sheets_matching_prefix, verify_athletes, verify_performances,
-    ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
-};
 
 #[derive(Debug, Clone)]
 pub struct CollectOptions {
@@ -127,5 +120,3 @@ fn rosters_phase(jurisdiction: UsJurisdiction) -> String {
         jurisdiction.code().to_ascii_lowercase()
     )
 }
-#[cfg(test)]
-mod verify_tests;

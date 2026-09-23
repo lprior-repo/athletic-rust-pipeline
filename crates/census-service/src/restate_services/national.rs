@@ -27,7 +27,7 @@ use restate_sdk::prelude::*;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{admitted_scope, Revision, WorkflowIdentity};
+use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_store::clock::Clock;
 
 use super::jobs;

@@ -1,4 +1,4 @@
-use super::verify::{column_index, missing_columns, sample_indices};
+use crate::verify::{column_index, missing_columns, sample_indices};
 
 #[test]
 fn empty_table_returns_no_indices() {

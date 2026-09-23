@@ -13,6 +13,7 @@ members = [
     "crates/athleticnet-browser",
     "crates/census-domain",
     "crates/census-crawl",
+    "crates/census-reconcile",
     "crates/census-report",
     "crates/census-review",
     "crates/census-store",

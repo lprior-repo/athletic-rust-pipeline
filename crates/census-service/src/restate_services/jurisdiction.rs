@@ -33,7 +33,7 @@ use std::sync::Arc;
 use restate_sdk::prelude::*;
 use tokio::sync::Mutex;
 
-use crate::census::WorkflowIdentity;
+use census_reconcile::identity::WorkflowIdentity;
 use census_crawl::net::bridge::BrowserLane;
 use census_crawl::net::Fetcher;
 use census_store::clock::Clock;

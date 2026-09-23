@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use census_domain::model::{CanonicalAthlete, CanonicalPerformance};
+use census_domain::model::{CanonicalAthlete, CanonicalPerformance, CanonicalSchool};
 
 use census_store::{Store, Table};
 
@@ -47,9 +47,14 @@ pub fn verify_athletes(
             message: format!("reading athletes from store: {source}"),
         })?;
 
-    let school_ids: HashSet<String> = athletes
-        .iter()
-        .map(|a| a.school.as_str().to_string())
+    let school_names: HashMap<String, String> = store
+        .scan(Table::Schools)
+        .map_err(|source| Discrepancy {
+            row: 0,
+            message: format!("reading schools from store: {source}"),
+        })?
+        .into_iter()
+        .map(|school: CanonicalSchool| (school.id.as_str().to_string(), school.name))
         .collect();
 
     let mut passed: usize = 0;
@@ -59,7 +64,7 @@ pub fn verify_athletes(
             row: idx,
             message: "row index out of range".to_string(),
         })?;
-        check_athlete_row(idx, row, &athletes, &school_ids, col_map)?;
+        check_athlete_row(idx, row, &athletes, &school_names, col_map)?;
         passed = passed.saturating_add(1);
     }
 
@@ -75,7 +80,7 @@ fn check_athlete_row(
     idx: usize,
     row: &[String],
     athletes: &[CanonicalAthlete],
-    school_ids: &HashSet<String>,
+    school_names: &HashMap<String, String>,
     col_map: &HashMap<&str, usize>,
 ) -> Result<(), Discrepancy> {
     let aid = field(col_map, row, "Athlete ID");
@@ -102,11 +107,29 @@ fn check_athlete_row(
                     ),
                 });
             }
-            if !school_ids.contains(school) {
-                return Err(Discrepancy {
-                    row: idx,
-                    message: format!("athletes row {idx}: id {aid} school '{school}' not in store",),
-                });
+            // The workbook prints the athlete's school by *name* — that is the recruiter's view — so the
+            // check resolves that name back through the row the athlete names rather than comparing a
+            // printed name against a set of ids, which would fail every row. A school renamed in the
+            // store after the workbook was written is still a discrepancy, which is the point.
+            match school_names.get(store_athlete.school.as_str()) {
+                Some(store_school) if store_school == school => {}
+                Some(store_school) => {
+                    return Err(Discrepancy {
+                        row: idx,
+                        message: format!(
+                            "athletes row {idx}: id {aid} school '{school}' != store '{store_school}'",
+                        ),
+                    });
+                }
+                None => {
+                    return Err(Discrepancy {
+                        row: idx,
+                        message: format!(
+                            "athletes row {idx}: id {aid} school row '{}' not in store",
+                            store_athlete.school.as_str(),
+                        ),
+                    });
+                }
             }
             if grad_year != Some(2027) {
                 return Err(Discrepancy {

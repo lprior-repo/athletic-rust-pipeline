@@ -4,7 +4,7 @@
 use anyhow::{bail, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_service::census::{Revision, WorkflowIdentity};
+use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionReport, JurisdictionRequest, NationalReport,
 };

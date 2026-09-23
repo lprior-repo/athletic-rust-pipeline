@@ -1,0 +1,19 @@
+[package]
+name = "census-reconcile"
+version = "0.1.0"
+edition = "2021"
+description = "Reconciliation lane (§17): deterministic workflow identity and row-level verification of the published workbook against the store."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[dependencies]
+census-domain = { path = "../census-domain" }
+census-store = { path = "../census-store" }
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+
+[dev-dependencies]
+fjall = "=3.1.10"
+tempfile = "3"

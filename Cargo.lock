@@ -475,6 +475,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "census-reconcile"
+version = "0.1.0"
+dependencies = [
+ "census-domain",
+ "census-store",
+ "fjall",
+ "serde",
+ "sha2 0.10.9",
+ "tempfile",
+]
+
+[[package]]
 name = "census-report"
 version = "0.1.0"
 dependencies = [
@@ -520,6 +532,7 @@ dependencies = [
  "calamine",
  "census-crawl",
  "census-domain",
+ "census-reconcile",
  "census-report",
  "census-review",
  "census-store",

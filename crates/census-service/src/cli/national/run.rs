@@ -2,7 +2,7 @@
 //! identity, then observe it or detach.
 
 use anyhow::{Context, Result};
-use census_service::census::{admitted_scope, Revision, WorkflowIdentity};
+use census_reconcile::identity::{admitted_scope, Revision, WorkflowIdentity};
 use census_service::restate_services::{
     JurisdictionCensusIngressClient, JurisdictionRequest, NationalCensusIngressClient,
     NationalReport, NationalRequest,

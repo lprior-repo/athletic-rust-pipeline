@@ -35,6 +35,9 @@ census-domain = { path = "../census-domain" }
 # The review lane (retained families, model packets, verdict records) is its own crate now; the
 # workbook's conflict queue and the `review` verb are its two consumers here.
 census-review = { path = "../census-review" }
+# The reconciliation lane (deterministic workflow identity, row-level workbook verification) is its
+# own crate now; the durable services derive their identities from it and the `verify` verb runs it.
+census-reconcile = { path = "../census-reconcile" }
 # The reporting plane (coverage, bests, workbook export) is its own crate now; the CLI's export and
 # seal verbs are its consumers here.
 census-report = { path = "../census-report" }

@@ -116,6 +116,12 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // The review lane reads retained cases and writes verdicts through the store that owns both
     // tables; it never opens Fjall itself.
     ("census-review", "census-store"),
+    // The reconciliation lane: deterministic workflow identity, which is a pure function of explicit
+    // values, and the row-level check that holds the workbook against the store. It reads the domain
+    // and the store and names nothing back, so a projection's verdict cannot depend on the service
+    // that published it.
+    ("census-reconcile", "census-domain"),
+    ("census-reconcile", "census-store"),
     // The reporting plane: coverage, per-athlete bests and the workbook export. It reads the canonical
     // model and the store's read model, renders the review lane's retained families as its conflict and
     // review sheets, and names the acquisition plane only for the adapter surface the meta sheets print
@@ -154,6 +160,9 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // declares no workspace dependency at all, so the one-way property below still holds.
     ("census-service", "athleticnet-browser"),
     ("census-service", "census-crawl"),
+    // The reconciliation lane is named by the durable services, which derive each workflow's identity
+    // from it, and by the `verify` verb that runs its row-level check. It names nothing back.
+    ("census-service", "census-reconcile"),
     // The reporting plane is the composition root's projection layer: the CLI's export and seal verbs
     // and the durable workbook service name it, and it names nothing back.
     ("census-service", "census-report"),

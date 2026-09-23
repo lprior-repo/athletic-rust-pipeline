@@ -3,7 +3,8 @@ use census_domain::UsJurisdiction;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::census::{MeetCensus, Revision, StateProgress};
+use crate::census::{MeetCensus, StateProgress};
+use census_reconcile::identity::Revision;
 
 pub(super) mod ingest;
 

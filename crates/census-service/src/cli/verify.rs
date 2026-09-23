@@ -12,7 +12,7 @@ use calamine::Reader;
 use clap::Args;
 
 use census_store::Store;
-use census_service::census::verify::{
+use census_reconcile::verify::{
     self, column_index, missing_columns, sheets_matching_prefix, verify_athletes,
     verify_performances, ATHLETES_REQUIRED, PERFORMANCES_REQUIRED,
 };
@@ -96,7 +96,7 @@ fn verify_athletes_sheet(
     sheets: &HashMap<String, Vec<Vec<String>>>,
     store: &Store,
     sample_every: usize,
-) -> Result<(usize, census_service::census::verify::EntityCheck)> {
+) -> Result<(usize, census_reconcile::verify::EntityCheck)> {
     if !sheets.contains_key("Athletes") {
         bail!("workbook has no 'Athletes' sheet");
     }
@@ -140,7 +140,7 @@ fn verify_performances_sheets(
     sheets: &HashMap<String, Vec<Vec<String>>>,
     store: &Store,
     sample_every: usize,
-) -> Result<(usize, census_service::census::verify::EntityCheck)> {
+) -> Result<(usize, census_reconcile::verify::EntityCheck)> {
     let perf_rows = sheets_matching_prefix(sheets, "Performances_");
     let perf_headers = perf_rows
         .first()

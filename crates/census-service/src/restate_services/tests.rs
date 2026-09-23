@@ -4,9 +4,8 @@ use std::path::PathBuf;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{
-    owed_source_objects, MeetCensus, Revision, SourceObject, StateProgress, WorkflowIdentity,
-};
+use crate::census::{owed_source_objects, MeetCensus, SourceObject, StateProgress};
+use census_reconcile::identity::{Revision, WorkflowIdentity};
 use census_report::report::ReportError;
 use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,

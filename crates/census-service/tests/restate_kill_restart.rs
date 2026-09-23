@@ -46,7 +46,7 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
-use census_service::census::{Revision, WorkflowIdentity};
+use census_reconcile::identity::{Revision, WorkflowIdentity};
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};

@@ -13,10 +13,8 @@ use restate_sdk::prelude::*;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{
-    owed_jurisdictions, owed_source_objects, JurisdictionStages, Revision, SourceObject,
-    WorkflowIdentity,
-};
+use crate::census::{owed_jurisdictions, owed_source_objects, JurisdictionStages, SourceObject};
+use census_reconcile::identity::{Revision, WorkflowIdentity};
 
 use super::ingest::IngestClient;
 use super::jurisdiction::JurisdictionCensusClient;

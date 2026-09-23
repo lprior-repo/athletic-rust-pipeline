@@ -12,7 +12,7 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_service::census::Revision;
+use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
     run_key, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
