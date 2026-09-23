@@ -10,9 +10,7 @@
 //! matching [`OpenWork`](super::OpenWork) field `None`, which the seal reports as unmeasured rather
 //! than as a zero — a measurement nobody took is not a zero.
 
-use census_domain::model::{
-    ReviewCase, ReviewState, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
-};
+use census_domain::model::{ReviewCase, ReviewState, COHORT_DECISION_FAMILIES};
 use serde::{Deserialize, Serialize};
 
 /// The stages one jurisdiction's durable state records, and the rosters it left behind.
@@ -89,21 +87,16 @@ pub fn owed_source_objects(objects: &[SourceObject]) -> u64 {
     count(objects.iter().filter(|object| !object.terminal()).count())
 }
 
-/// The retained families whose case is a cohort decision: an athlete the census could not place in
-/// the class of 2027 with confidence, or placed without cohort evidence at all.
-///
-/// Both are questions about the cohort itself. The identity and jurisdiction families ask where a
-/// school, a meet or a name belongs instead, and the withheld-mailbox family is a collection
-/// decision, not a cohort one.
-const COHORT_DECISION_FAMILIES: [&str; 2] =
-    [COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY];
-
 /// Count the retained cases that ask a cohort question and have no terminal decision.
 ///
-/// `Pending` is the state that says no decision was recorded. `Resolved` and `Retained` are both
-/// terminal: the second is the lane deciding that the evidence does not decide, which still leaves
-/// the row visible in the workbook's queues. A case another lane owns is not a cohort decision and
-/// is counted by that lane's own item, if it has one.
+/// The families are the domain's own list ([`COHORT_DECISION_FAMILIES`]) rather than a second copy
+/// here: the mint rule decides which of their cases can start `Pending` at all, so a list this module
+/// spelled itself could count a family the mint rule had already retired, or miss one it had not.
+///
+/// `Pending` is the state that says no decision was recorded, and `Resolved`, `Retained` and
+/// `Superseded` are all terminal — the stored row stays visible in the workbook's queues whichever
+/// they are. A case another lane owns is not a cohort decision and is counted by that lane's own item,
+/// if it has one: the identity item below counts every family.
 pub fn owed_cohort_decisions(cases: &[ReviewCase]) -> u64 {
     count(
         cases

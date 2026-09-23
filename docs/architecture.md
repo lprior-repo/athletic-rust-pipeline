@@ -210,9 +210,12 @@ source objects live in the durable run's own objects, which a command holding th
 writer cannot ask; `census-service open-work` is the read that does. `cohort_decisions` is measured
 here, from the store's retained cases: a case in a cohort family (`COHORT_UNVERIFIED_FAMILY`,
 `COHORT_IDENTITY_CONFIDENCE_FAMILY`) with no verdict is an open cohort decision, and `Retained` is a
-terminal one — the lane deciding the evidence does not decide still leaves the row in the workbook's
-queues. `identity_candidates` is the same scan without the family filter: every retained case with no
-verdict, because the item is about the decision and only a verdict is one.
+terminal one. Both families are decided by the rule the row itself is read through — the row is
+published at the confidence its observations support — so `ReviewCase::minted` starts their cases
+`Retained` (`ReviewCase::decided_by_its_own_rules`) and the item only ever counts a case a lane left
+genuinely open. Evidence that arrives later closes the finding by deriving it away, which the next
+pass records as `Superseded`. `identity_candidates` is the same scan without the family filter: every
+retained case with no verdict, because the item is about the decision and only a verdict is one.
 
 ## 5. Module seams
 

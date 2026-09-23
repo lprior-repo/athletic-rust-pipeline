@@ -1,8 +1,8 @@
 //! The lattice's rules, on values only: no store, no network, no clock.
 
 use census_domain::model::{
-    ReviewCase, ReviewState, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
-    UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
+    ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, COHORT_IDENTITY_CONFIDENCE_FAMILY,
+    COHORT_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
 };
 
 use sha2::{Digest, Sha256};
@@ -615,8 +615,40 @@ fn a_source_object_is_owed_until_it_accepts_an_observation() {
     assert_eq!(owed_source_objects(&[written, silent]), 1);
 }
 
-/// A cohort decision is owed while its case has no verdict, whatever put the athlete in the queue:
-/// missing cohort evidence and identity confidence below the bar are both the same open question.
+/// The state a cohort case starts in is what makes this item attainable, so the item counts only the
+/// cases a later answer is actually owed for.
+///
+/// [`ReviewCase::minted`] is the pass's own constructor: every family the census's rules decide is
+/// minted terminal, and the cohort families are two of those. A case that starts `Pending` in a cohort
+/// family is therefore a decision the run genuinely owes, which is what this item is for.
+#[test]
+fn the_pass_mints_no_cohort_case_a_decision_is_owed_for() {
+    let minted: Vec<ReviewCase> = COHORT_DECISION_FAMILIES
+        .iter()
+        .enumerate()
+        .map(|(index, family)| {
+            ReviewCase::minted(
+                family,
+                format!("athlete:{index}"),
+                "A Runner (Somewhere High)",
+                "the finding",
+            )
+        })
+        .collect();
+    assert!(
+        minted
+            .iter()
+            .all(|case| case.state == ReviewState::Retained),
+        "the rule decides these rows, so their cases start terminal: {minted:?}"
+    );
+    assert_eq!(
+        owed_cohort_decisions(&minted),
+        0,
+        "a census whose cohort findings are all published at the bar their evidence supports owes no cohort decision"
+    );
+}
+
+/// A cohort decision is owed while its case has no verdict, whatever put the athlete in the queue.
 #[test]
 fn a_pending_cohort_case_is_owed_a_decision() {
     let unverified = ReviewCase::pending(

@@ -31,10 +31,10 @@ pub use records::{
     AccessBlockKind, CanonicalMerge, CollectionSnapshot, CoverageRow, CoverageScope,
     RetainedConflict, ReviewCase, ReviewState, SourceAccessCondition, SourceAthleteObservation,
     SourceEntityKind, SourceMeetRef, SourceObjectIdentity, SourceObservation,
-    SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_EVIDENCE_FAMILY,
-    COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
-    SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY, UNRESOLVED_VENUE_FAMILY,
-    WITHHELD_MAILBOX_FAMILY,
+    SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
+    COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
 };
 pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,

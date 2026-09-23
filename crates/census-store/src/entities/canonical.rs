@@ -169,8 +169,8 @@ impl Entity for CanonicalAthlete {
     /// A row written by one pass is never merged again, so deriving this only in
     /// [`merge`](Entity::merge) left an athlete whose single observation agrees with its cohort
     /// carrying the constructor's default — a row the workbook then reported as below the identity
-    /// bar and the review lane queued as an open cohort decision. Every read publishes, so the
-    /// derived value is the one the report, the workbook, the snapshot and the Restate handlers see.
+    /// bar and the review queue kept as a cohort finding. Every read publishes, so the derived value
+    /// is the one the report, the workbook, the snapshot and the Restate handlers see.
     fn publish(&mut self) {
         if let Some(confidence) = self.derived_identity_confidence() {
             self.identity_confidence = confidence;

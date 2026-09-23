@@ -137,3 +137,46 @@ fn a_contract_decided_family_is_minted_retained() {
     );
     assert_eq!(venue.state, ReviewState::Pending);
 }
+
+/// The cohort families are decided by the rule the row is read through, not by a later answer.
+#[test]
+fn a_cohort_claim_its_evidence_does_not_raise_is_minted_retained() {
+    for family in COHORT_DECISION_FAMILIES {
+        assert!(ReviewCase::decided_by_its_own_rules(family), "{family}");
+        let case = ReviewCase::minted(
+            family,
+            "athlete:1",
+            "A Runner",
+            "no grade observation retained",
+        );
+        assert_eq!(
+            case.state,
+            ReviewState::Retained,
+            "{family} is published at the bar its own evidence supports, so nothing is owed for it"
+        );
+        assert_eq!(
+            case.id,
+            ReviewCase::pending(
+                family,
+                "athlete:1",
+                "A Runner",
+                "no grade observation retained"
+            )
+            .id,
+            "the state is not part of the id for these either: the evidence keys the case"
+        );
+    }
+    // The families this store cannot answer for itself stay the lane's work.
+    for family in [
+        UNRESOLVED_SCHOOL_FAMILY,
+        UNRESOLVED_VENUE_FAMILY,
+        ATHLETE_IDENTITY_FAMILY,
+    ] {
+        assert!(!ReviewCase::decided_by_its_own_rules(family), "{family}");
+        assert_eq!(
+            ReviewCase::minted(family, "subject:1", "A Subject", "the finding").state,
+            ReviewState::Pending,
+            "{family} is a question only outside evidence settles"
+        );
+    }
+}

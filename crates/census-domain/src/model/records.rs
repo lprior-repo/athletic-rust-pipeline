@@ -204,14 +204,17 @@ impl ReviewCase {
 
     /// Mint one finding's case in the state its family starts in.
     ///
-    /// Every family but one starts `Pending`: a jurisdiction no source placed and a cohort with no
-    /// evidence are questions something outside this store has to answer, so the case is what the
-    /// lane, the operator or the gap sweep is for. A withheld mailbox is not such a question — §5
-    /// drops a personal address whichever adapter accepted one, so no evidence this store can hold
-    /// would move the finding, and a school that publishes a professional address stops being a
-    /// finding at all (the next pass closes that case as superseded). Minting it `Retained` keeps the
-    /// row visible in the workbook's queues without counting it as an open decision, which is the
-    /// state the lane itself leaves a finding it cannot decide.
+    /// A family starts `Pending` when outside evidence would settle its finding and no decision is
+    /// recorded yet: a jurisdiction no source placed and an identity the rows disagree about are
+    /// questions the lane, the operator or a sweep answers, and until one does the case is open work.
+    ///
+    /// A family starts `Retained` when the census's own rules already decided it, which is what
+    /// [`Self::decided_by_its_own_rules`] asks. A withheld mailbox is the first kind — §5 drops a
+    /// personal address whichever adapter accepted one, so no evidence this store can hold would move
+    /// the finding — and a cohort claim published without evidence that raises it to the high bar is
+    /// the second. Minting those `Retained` keeps the row visible in the workbook's queues, where a
+    /// reader goes to see it, without counting them as decisions nothing can take: the state is the one
+    /// the lane itself leaves a finding it cannot decide.
     pub fn minted(
         family: &str,
         subject_id: impl Into<String>,
@@ -219,10 +222,22 @@ impl ReviewCase {
         detail: impl Into<String>,
     ) -> Self {
         let mut case = Self::pending(family, subject_id, subject, detail);
-        if family == WITHHELD_MAILBOX_FAMILY {
+        if Self::decided_by_its_own_rules(family) {
             case.state = ReviewState::Retained;
         }
         case
+    }
+
+    /// Whether a family's finding is decided by the census's own rules rather than by a later answer.
+    ///
+    /// Two kinds qualify. The collection contract decides a withheld mailbox: a personal address is
+    /// dropped whichever adapter accepted one, and a school that publishes a professional address stops
+    /// being a finding at all. The evidence rule decides a cohort claim: `identity_confidence` is
+    /// derived from the row's observations, and a row without one that agrees is published at the bar
+    /// its evidence supports — which is the answer the finding asks for. Everything else in the queues
+    /// is a question this store cannot answer for itself.
+    pub fn decided_by_its_own_rules(family: &str) -> bool {
+        family == WITHHELD_MAILBOX_FAMILY || COHORT_DECISION_FAMILIES.contains(&family)
     }
 }
 
@@ -237,6 +252,23 @@ pub const ATHLETE_IDENTITY_FAMILY: &str = "Athlete identity";
 pub const SCHOOL_IDENTITY_FAMILY: &str = "School identity";
 pub const COHORT_UNVERIFIED_FAMILY: &str = "Class-of-2027 cohort unverified";
 pub const COHORT_IDENTITY_CONFIDENCE_FAMILY: &str = "Class-of-2027 identity confidence";
+
+/// The families whose finding is a cohort claim the census publishes without evidence that raises it
+/// to the high bar: an athlete in the cohort with no grade observation retained, and one whose
+/// observations disagree with the class the row is published under.
+///
+/// Both are decided by the rule the row is read through — [`CanonicalAthlete::derived_identity_confidence`]
+/// derives the confidence from the observations, and the row is published at the bar its evidence
+/// supports — so their cases start terminal the way a withheld mailbox does. The acquisition that
+/// would change the answer (a source that carries the grade level) removes the finding itself, and
+/// the pass that derives it away closes the case as superseded.
+///
+/// Kept here, with the family names, because two readers count these cases rather than render them:
+/// the seal's cohort item and the mint rule that decides what that item can ever see.
+///
+/// [`CanonicalAthlete::derived_identity_confidence`]: crate::model::CanonicalAthlete::derived_identity_confidence
+pub const COHORT_DECISION_FAMILIES: [&str; 2] =
+    [COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY];
 pub const WITHHELD_MAILBOX_FAMILY: &str = "Coach mailbox withheld";
 pub const UNRESOLVED_VENUE_FAMILY: &str = "Meet venue unresolved";
 pub const UNRESOLVED_SCHOOL_FAMILY: &str = "School jurisdiction unresolved";
