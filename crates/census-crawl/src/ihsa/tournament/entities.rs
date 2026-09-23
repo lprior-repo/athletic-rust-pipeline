@@ -128,6 +128,7 @@ impl<'a> Mapper<'a> {
             observed_grade: row.grade,
             evidence: vec![self.origin.evidence(url)],
             source_key: row.source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         };
         self.accumulated.performances.insert(key, performance);

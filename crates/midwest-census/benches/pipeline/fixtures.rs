@@ -5,7 +5,9 @@ use super::*;
 /// championship meet per jurisdiction so the batch covers the country instead of one state.
 pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     let mut batch = Vec::with_capacity(PERFORMANCES.saturating_mul(OBSERVATIONS_PER_PERFORMANCE));
-    let jurisdictions = UsJurisdiction::ALL.iter().cycle().copied();
+    // 49-state product scope (CENSUS_SCOPE): the merge bench feeds a synthetic batch of
+    // 5_000 performances across the jurisdictions the census run actually covers.
+    let jurisdictions = UsJurisdiction::CENSUS_SCOPE.iter().cycle().copied();
     for (index, jurisdiction) in (0..PERFORMANCES).zip(jurisdictions) {
         let name = format!("{SCHOOL_PREFIX} {} 000", jurisdiction.code());
         let school = CanonicalSchool::mint(jurisdiction, &name, &normalize_name(&name));
@@ -53,6 +55,7 @@ pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
                     format!("2025-06-{:02}", seen.saturating_add(6)),
                 )],
                 source_key: source_key.clone(),
+                source_athlete: None,
                 retained_conflicts: Vec::new(),
             });
         }

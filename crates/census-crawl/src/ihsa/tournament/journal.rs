@@ -31,6 +31,8 @@ const QUALIFIERS_KEY: &str = "qualifiers";
 pub(super) struct Journal {
     pub(super) meets: HashMap<String, Option<String>>,
     pub(super) qualifiers: HashSet<String>,
+    /// The entries this run has earned, committed with the entity tables its walk filled.
+    pending: Vec<(String, Value)>,
 }
 
 impl Journal {
@@ -60,36 +62,26 @@ impl Journal {
     }
 
     /// Record a meet's walk, and the change signal it was read at.
-    pub(super) fn meet(
-        &mut self,
-        ctx: &AdapterContext<'_>,
-        row: &MeetRow,
-        url: &str,
-        events: usize,
-    ) -> CrawlResult<()> {
+    ///
+    /// The entry is buffered, not written: it commits with the entity tables at the end of the walk,
+    /// so a meet is marked read only once the rows its walk filled are durable.
+    pub(super) fn meet(&mut self, row: &MeetRow, url: &str, events: usize) {
         let key = format!("{MEET_KEY}:{}", row.meet_id);
         let payload = json!({
-            "key": key,
+            "key": key.clone(),
             "url": url,
             "parser": PARSER,
             "parsed": true,
             "refreshed_at": row.last_refreshed_at,
             "events": events,
         });
-        ctx.store.journal_done(PHASE, &key, &payload)?;
+        self.pending.push((key, payload));
         self.meets
             .insert(row.meet_id.to_string(), row.last_refreshed_at.clone());
-        Ok(())
     }
 
-    /// Record a qualifier list as read.
-    pub(super) fn list(
-        &mut self,
-        ctx: &AdapterContext<'_>,
-        key: &str,
-        url: &str,
-        envelope: &QualifiersEnvelope,
-    ) -> CrawlResult<()> {
+    /// Record a qualifier list as read, in the same batch as the meet entries.
+    pub(super) fn list(&mut self, key: &str, url: &str, envelope: &QualifiersEnvelope) {
         let entry = format!("{QUALIFIERS_KEY}:{key}");
         let athletes: usize = envelope
             .team_qualifiers
@@ -98,14 +90,18 @@ impl Journal {
             .map(|qualifier| qualifier.athletes.len())
             .sum();
         let payload = json!({
-            "key": entry,
+            "key": entry.clone(),
             "url": url,
             "parser": PARSER,
             "parsed": true,
             "athletes": athletes,
         });
-        ctx.store.journal_done(PHASE, &entry, &payload)?;
+        self.pending.push((entry, payload));
         self.qualifiers.insert(key.to_string());
-        Ok(())
+    }
+
+    /// Take the entries this run earned, for the batch that carries the rows they name.
+    pub(super) fn take_pending(&mut self) -> Vec<(String, Value)> {
+        std::mem::take(&mut self.pending)
     }
 }

@@ -79,6 +79,7 @@ mod ingest;
 mod jobs;
 mod jurisdiction;
 mod limits;
+mod meets_arms;
 mod national;
 mod open_work;
 mod plan;
@@ -86,6 +87,7 @@ mod publish;
 mod resolve;
 mod support;
 mod sweep;
+mod teams_arms;
 mod wire;
 
 // ---------------------------------------------------------------- wire types
@@ -105,7 +107,8 @@ pub use wire::{
 // The applicability-driven plan. Public because the planner is the layer's first consumer of
 // `sources::applicability` and its dispositions are what a jurisdiction report records.
 pub use plan::{
-    owed, plan, plan_sources, sweepable, BrowserLaneState, PlannedUnit, Refusal, UnitDisposition,
+    owed, plan, plan_sources, sweepable, BrowserLaneState, Dispatch, PlannedUnit, Refusal,
+    UnitDisposition,
 };
 
 // ---------------------------------------------------------------- services

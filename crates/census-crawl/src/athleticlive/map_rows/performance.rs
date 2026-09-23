@@ -59,6 +59,7 @@ pub(super) fn write_performance(
             observed_grade: Some(facts.grade),
             evidence: vec![evidence],
             source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
 }

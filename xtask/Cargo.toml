@@ -22,6 +22,9 @@ census-domain = { path = "../crates/census-domain" }
 # The status verb reads the store's own durable counters through the crate that owns them
 # (`census_store::Table`), not through `midwest-census`, which no longer re-exports them.
 census-store = { path = "../crates/census-store" }
+# The status and coverage verbs resolve the report scope they print (core versus all sources) through
+# the crate that owns it, so the harness names the reporting plane rather than `midwest-census`.
+census-report = { path = "../crates/census-report" }
 clap = { version = "4.5", features = ["derive"] }
 # The census services, their generated ingress clients and the wire types they take and return: the
 # mutating half of the harness submits invocations instead of opening the store, and the definitions

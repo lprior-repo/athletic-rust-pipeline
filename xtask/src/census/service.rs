@@ -9,7 +9,7 @@
 
 use anyhow::{Context, Result};
 use census_store::Table;
-use midwest_census::report::Scope;
+use census_report::report::Scope;
 use midwest_census::restate_services::{
     run_key, CensusIngressClient, ReportIngressClient, ReportReply, ReportRequest, StatusReply,
     WorkbookIngressClient, WorkbookReply, WorkbookRequest,

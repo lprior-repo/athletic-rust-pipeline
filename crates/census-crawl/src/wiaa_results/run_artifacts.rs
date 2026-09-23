@@ -24,7 +24,7 @@ pub(super) async fn process_artifact(
 ) -> CrawlResult<()> {
     let extension = artifact.extension.as_str();
     if artifact_format(extension, None) == ArtifactFormat::Unparsed {
-        return index_unparsed(ctx, run, artifact, extension);
+        return index_unparsed(run, artifact, extension);
     }
     let Some(fetched) = fetch_body(ctx, report, run, artifact, extension).await else {
         return Ok(());
@@ -43,7 +43,6 @@ pub(super) async fn process_artifact(
         return Ok(());
     };
     record_parsed_artifact(
-        ctx,
         report,
         run,
         ReadArtifact {
@@ -62,7 +61,6 @@ pub(super) async fn process_artifact(
 /// The journal entry is what keeps a later run from looking at the same bytes twice: the artifact is
 /// recorded as read at the version of the index that looked at it.
 fn index_unparsed(
-    ctx: &AdapterContext<'_>,
     run: &mut ArtifactRun,
     artifact: &ArchiveArtifact,
     extension: &str,
@@ -70,17 +68,18 @@ fn index_unparsed(
     run.stats.artifacts_unparsed = run.stats.artifacts_unparsed.saturating_add(1);
     let formats = run.stats.formats.entry(extension.to_string()).or_default();
     *formats = formats.saturating_add(1);
-    ctx.store.journal_done(
-        "wiaa_results",
-        &artifact.url,
-        &json!({
+    // Buffered, not written: the entry commits with the entity tables at the end of the walk, so the
+    // artifact is marked read only once the rows this run minted are durable.
+    run.pending.push((
+        artifact.url.clone(),
+        json!({
             "url": artifact.url,
             "parser": PARSE_VERSION,
             "format": "indexed_only",
             "year": artifact.year,
             "stem": artifact.stem
         }),
-    )?;
+    ));
     Ok(())
 }
 
@@ -228,7 +227,6 @@ struct ReadArtifact<'a> {
 
 /// Count a parsed artifact, absorb its meet, and journal the body as read.
 fn record_parsed_artifact(
-    ctx: &AdapterContext<'_>,
     report: &mut AdapterReport,
     run: &mut ArtifactRun,
     read: ReadArtifact<'_>,
@@ -270,10 +268,11 @@ fn record_parsed_artifact(
             accumulator: &mut run.accumulated,
         },
     );
-    ctx.store.journal_done(
-        "wiaa_results",
-        &read.artifact.url,
-        &json!({
+    // Buffered, not written: the entry commits with the entity tables at the end of the walk, so the
+    // artifact is marked read only once the rows absorbed here are durable.
+    run.pending.push((
+        read.artifact.url.clone(),
+        json!({
             "url": read.artifact.url,
             "parser": PARSE_VERSION,
             "format": read.format.as_str(),
@@ -283,6 +282,6 @@ fn record_parsed_artifact(
             "date": read.parsed.date,
             "rows": rows,
         }),
-    )?;
+    ));
     Ok(())
 }

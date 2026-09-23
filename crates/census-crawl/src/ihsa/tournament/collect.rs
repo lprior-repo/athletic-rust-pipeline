@@ -159,7 +159,7 @@ impl<'a> Run<'a> {
         let meet = self.mapper.meet(row, &date, last.as_deref(), &url);
         let (events, complete) = self.walk_events(&envelope.data, &meet, &date, &url).await;
         if complete {
-            self.journal.meet(self.ctx, row, &url, events)?;
+            self.journal.meet(row, &url, events);
             self.walked = self.walked.saturating_add(1);
         }
         Ok(())
@@ -208,7 +208,8 @@ impl<'a> Run<'a> {
     /// Append what the run accumulated and report it.
     async fn finish(mut self) -> CrawlResult<AdapterReport> {
         let stats = self.mapper.stats();
-        let counts = self.mapper.store(self.ctx)?;
+        let entries = self.journal.take_pending();
+        let counts = self.mapper.store(self.ctx, entries)?;
         let after = self.ctx.fetcher.stats().await;
         self.report.requests = after.requests.saturating_sub(self.requests_before);
         self.report.from_cache = after.cache_hits.saturating_sub(self.cache_before);

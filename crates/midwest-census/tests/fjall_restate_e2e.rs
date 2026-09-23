@@ -26,8 +26,9 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, StoreStats, Table};
 use midwest_census::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
-use midwest_census::report::{self, Census, Scope};
-use midwest_census::{bests, census, workbook};
+use census_report::report::{self, Census, Scope};
+use census_report::{bests, workbook};
+use midwest_census::census;
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
@@ -195,6 +196,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).unwrap()),
             evidence: vec![evidence()],
             source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
     }

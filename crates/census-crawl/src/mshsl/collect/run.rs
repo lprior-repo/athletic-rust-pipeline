@@ -11,7 +11,7 @@ use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, SchoolId, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
-use census_store::Table;
+use census_store::{StoreBatch, Table};
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -156,10 +156,6 @@ impl<'a> MshslRun<'a> {
             .iter()
             .filter(|entry| ad_role(&entry.role).is_none());
         self.office_roles = self.office_roles.saturating_add(office.count());
-        self.ctx.store.append(Table::Schools, school)?;
-        self.ctx
-            .observe_school(&SourceNamespace::association_school(SOURCE_ID), school)?;
-        self.ctx.store.append_many(Table::Coaches, &ads)?;
         let (sport_coaches, notes) = match detail.school_id.as_deref() {
             Some(id) => {
                 collect_team_coaches(self.ctx, &self.fetch, id, school_id, &domains, observed_on)
@@ -172,18 +168,29 @@ impl<'a> MshslRun<'a> {
                 )],
             ),
         };
-        self.ctx.store.append_many(Table::Coaches, &sport_coaches)?;
+        // One page for the unit: the school, both coach sets and the two journal entries commit
+        // together, so the walk resumes on a school exactly when its rows are durable. The school
+        // observation stays a direct write, the way every school arm writes it.
+        let mut batch = self.ctx.store.write_batch();
+        batch.append_many(Table::Schools, std::slice::from_ref(school))?;
+        self.ctx
+            .observe_school(&SourceNamespace::association_school(SOURCE_ID), school)?;
+        batch.append_many(Table::Coaches, &ads)?;
+        batch.append_many(Table::Coaches, &sport_coaches)?;
         for note in notes {
             self.report.note(format!("{}: {note}", school.name));
         }
-        self.journal_school(row, detail, school, &ads, &sport_coaches)?;
+        self.journal_school(&mut batch, row, detail, school, &ads, &sport_coaches)?;
+        batch.commit()?;
         self.processed = self.processed.saturating_add(1);
         Ok(())
     }
 
-    /// Journal one emitted school under both the school and the coach journals.
+    /// Journal one emitted school under both the school and the coach journals, in the page that holds
+    /// its rows.
     fn journal_school(
         &mut self,
+        batch: &mut StoreBatch<'_>,
         row: &SchoolListRow,
         detail: &SchoolDetail,
         school: &CanonicalSchool,
@@ -201,7 +208,7 @@ impl<'a> MshslRun<'a> {
         self.ad_rows = self.ad_rows.saturating_add(ads.len());
         self.coach_rows = self.coach_rows.saturating_add(sport_coaches.len());
         self.with_email = self.with_email.saturating_add(count(with_email));
-        self.ctx.store.journal_done(
+        batch.journal_done(
             "mshsl_schools",
             &key,
             &json!({
@@ -215,7 +222,7 @@ impl<'a> MshslRun<'a> {
                 "observed_on": self.options.observed_on,
             }),
         )?;
-        self.ctx.store.journal_done(
+        batch.journal_done(
             "mshsl_coaches",
             &key,
             &json!({

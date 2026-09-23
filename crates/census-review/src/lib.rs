@@ -22,6 +22,8 @@
 //! came back, `records` turns it into durable rows and the report, and [`run`] drives one pass.
 
 mod ask;
+mod athlete_cluster_findings;
+mod athlete_clusters;
 /// Public because this module holds the one definition of the athlete group key: the census crate's
 /// workbook groups its conflict queue by it, so the queue and the lane cannot drift into two rules.
 pub mod athlete_flags;
@@ -43,6 +45,7 @@ use ask::{ask_case, Answer};
 use packets::{pending_cases, SubjectIndex};
 use records::record_case;
 
+pub use athlete_clusters::{reconcile_athletes, ReconcileReport, RULE_REVIEWER};
 pub use athlete_verdict::AthleteVerdict;
 pub use families::{ReviewFamily, ReviewOptions};
 pub use model::{ModelClient, ModelError, ModelOptions};

@@ -14,6 +14,10 @@
 //!   run selects them. It is the crate's outbound edge to nothing else (the net layer reads it to
 //!   name the adapter that made a request), which is why it lives here rather than in the run
 //!   crate's provider-selection code.
+//!
+//! The observation funnel is split by half rather than by kind: [`observe_schools_of`] below is the
+//! school half, and [`athlete_observations`] holds the athlete half in its own file to keep this one
+//! inside the repository's source-length budget.
 
 /// Shared concurrency bound for bounded fan-out across adapters.
 ///
@@ -21,6 +25,14 @@
 /// (HTTP requests, file walks, pagination batches) that any single adapter
 /// may run. Adapters that need a different bound may override it locally.
 pub const CONCURRENCY_BOUND: usize = 8;
+
+/// Units one store page covers: an adapter commits the rows a unit produced and the journal entry
+/// that names it together, and it commits every this many units.
+///
+/// The page is the unit of both durability and resumability: a run that stops between two pages
+/// re-reads at most one page's units, and no reader can see a journaled unit whose rows are
+/// missing.
+pub const FLUSH_UNITS: usize = 64;
 
 // ---------------------------------------------------------------------------
 // Error types
@@ -77,6 +89,7 @@ pub enum CrawlError {
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
 
 pub mod applicability;
+pub mod athlete_observations;
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod athleticnet;
@@ -108,7 +121,7 @@ pub use registry::{
 
 use crate::net::{FetchOptions, Fetcher};
 use census_domain::model::{
-    CanonicalSchool, SourceNamespace, SourceObservation, SourceSchoolObservation,
+    CanonicalAthlete, CanonicalSchool, SourceNamespace, SourceObservation, SourceSchoolObservation,
 };
 use census_store::{Store, Table};
 use serde::Serialize;
@@ -157,6 +170,27 @@ impl<'a> AdapterContext<'a> {
     ) -> CrawlResult<usize> {
         self.observe_schools(namespace, std::slice::from_ref(school))
     }
+
+    /// Record what a source itself published about an athlete, beside the canonical row the adapter
+    /// minted for them.
+    ///
+    /// The observation is keyed by the provider's own athlete id, so a canonical merge that turns out
+    /// to be wrong is re-decided by reading these rows instead of reading the provider again. A row
+    /// that carries no identity for `namespace` writes nothing and is not counted: an observation
+    /// filed under a key the source never published is worse than no observation at all.
+    ///
+    /// `schools` are the school rows the pass placed those athletes at, which is where the source's
+    /// own spelling of the school is, so an observation names the school as the source wrote it.
+    ///
+    /// Returns how many observations it wrote, so an adapter can state the figure rather than infer it.
+    pub fn observe_athletes<'s>(
+        &self,
+        namespace: &SourceNamespace,
+        athletes: &[CanonicalAthlete],
+        schools: impl IntoIterator<Item = &'s CanonicalSchool>,
+    ) -> CrawlResult<usize> {
+        observe_athletes_of(self.store, namespace, athletes, schools, &self.observed_on)
+    }
 }
 
 /// The funnel itself, for the callers that hold a store rather than an [`AdapterContext`].
@@ -178,6 +212,8 @@ pub fn observe_schools_of(
     store.append_many(Table::SourceObservations, &rows)?;
     Ok(rows.len())
 }
+
+pub use athlete_observations::{observe_athletes_of, stamp_source_athletes};
 
 /// What an adapter accomplished. Serialized into the journal and into the run report.
 #[derive(Debug, Clone, Serialize)]

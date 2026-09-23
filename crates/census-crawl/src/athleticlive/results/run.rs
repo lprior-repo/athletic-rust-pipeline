@@ -27,6 +27,9 @@ pub(super) struct Run {
     school_year: census_domain::model::SchoolYear,
     limit: Option<usize>,
     index: SchoolIndex,
+    /// The consolidated schools the labels resolve against, kept so the append can name the school
+    /// each athlete was observed at.
+    schools: Vec<CanonicalSchool>,
     resolved: HashMap<String, Option<SchoolId>>,
     stats: ResultStats,
     accumulator: Accumulator,
@@ -35,6 +38,8 @@ pub(super) struct Run {
     /// Captures a previous run already journaled, and the phase's own keys.
     done: HashSet<String>,
     resumed: usize,
+    /// The entries this walk has earned, committed with the rows they name by `append`.
+    pending: Vec<(String, Value)>,
     /// The events this run minted, keyed by the run key their standings are published under.
     by_run: BTreeMap<String, PublishedEvent>,
     /// The individual event ids the summary listed, and the ones the documents carried.
@@ -65,12 +70,14 @@ impl Run {
             school_year: school_year_for_date(&target.date, ctx.school_year),
             limit: options.limit,
             index: SchoolIndex::from_schools(&schools),
+            schools,
             resolved: HashMap::new(),
             stats: ResultStats::default(),
             accumulator,
             failures: Vec::new(),
             done: ctx.store.journal_keys(PHASE)?,
             resumed: 0,
+            pending: Vec::new(),
             by_run: BTreeMap::new(),
             listed: Vec::new(),
             read_documents: HashSet::new(),
@@ -94,13 +101,9 @@ impl Run {
 
     /// Read the summary, then the documents, then the standings, in that order: a standings capture
     /// can only be filed once the document that names its run key has been read.
-    pub(super) fn read_captures(
-        &mut self,
-        ctx: &AdapterContext<'_>,
-        options: &ResultOptions,
-    ) -> CrawlResult<()> {
+    pub(super) fn read_captures(&mut self, options: &ResultOptions) -> CrawlResult<()> {
         if let Some(path) = options.summary.as_deref() {
-            self.read_once(ctx, path, |run| {
+            self.read_once(path, |run| {
                 let body = read_capture(path)?;
                 let listed = {
                     let mut fold = run.fold();
@@ -121,10 +124,10 @@ impl Run {
             {
                 break;
             }
-            self.read_once(ctx, path, |run| run.read_document(path))?;
+            self.read_once(path, |run| run.read_document(path))?;
         }
         for capture in &options.standings {
-            self.read_once(ctx, &capture.path, |run| run.read_standings(capture))?;
+            self.read_once(&capture.path, |run| run.read_standings(capture))?;
         }
         let unfetched = self
             .listed
@@ -135,13 +138,13 @@ impl Run {
         Ok(())
     }
 
-    /// Read one capture unless an earlier run journaled it, then journal what it yielded.
+    /// Read one capture unless an earlier run journaled it, and buffer what it yielded.
     ///
     /// A capture that could not be folded yields `None` and is not journaled, so the next run reads
-    /// it again rather than treating the refusal as done.
+    /// it again rather than treating the refusal as done. The entry itself is not written here: the
+    /// walk writes nothing, and `append` commits every entry with the rows the captures produced.
     fn read_once(
         &mut self,
-        ctx: &AdapterContext<'_>,
         path: &str,
         read: impl FnOnce(&mut Self) -> CrawlResult<Option<Value>>,
     ) -> CrawlResult<()> {
@@ -150,7 +153,7 @@ impl Run {
             return Ok(());
         }
         if let Some(payload) = read(self)? {
-            ctx.store.journal_done(PHASE, path, &payload)?;
+            self.pending.push((path.to_string(), payload));
         }
         Ok(())
     }
@@ -192,12 +195,14 @@ impl Run {
         Ok(rows.map(|rows| json!({"role": "standings", "run": capture.run_id, "rows": rows})))
     }
 
-    /// Close the walk: hand back its entities, its refusals and its resume count.
+    /// Close the walk: hand back its entities, its entries, its refusals and its resume count.
     pub(super) fn close(mut self) -> WalkResult {
         WalkResult {
             entities: self
                 .accumulator
                 .into_entities(std::mem::take(&mut self.stats)),
+            schools: self.schools,
+            entries: std::mem::take(&mut self.pending),
             failures: std::mem::take(&mut self.failures),
             resumed: self.resumed,
         }

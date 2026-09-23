@@ -11,7 +11,7 @@ use restate_sdk::prelude::*;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::spawn::Spawner;
-use crate::{bests, workbook};
+use census_report::{bests, workbook};
 use census_store::Store;
 
 use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables};

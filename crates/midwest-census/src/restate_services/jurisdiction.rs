@@ -42,6 +42,7 @@ use census_store::Store;
 use super::jobs;
 use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
 
+mod stage_runs;
 mod stages;
 
 #[derive(Clone)]
@@ -122,6 +123,31 @@ impl JurisdictionCensus {
         Ok(stages_run)
     }
 }
+
+/// The sources this chain sweeps, by the registry slug each adapter registers under.
+///
+/// The stages below run one source's walks, and a plan that called any other applicable source
+/// sweepable would name work no stage performs: `plan` refuses the rest by name as owed. The slugs
+/// are the registry's spellings — what a plan and a refusal carry — and two tests hold them:
+/// `plan::tests::every_dispatched_slug_is_registered` checks each against the registry, so a rename
+/// cannot silently turn a swept source into a refused one, and
+/// `jurisdiction::tests::the_arms_are_the_dispatched_slugs` checks them against the union of the
+/// stage arm tables, so a slug planned here always has a walk to run it.
+///
+/// The association directory walks carry a whole state's school and coach universe and need no seed
+/// from another source, which is why they run in the first stage rather than after the roster walk.
+/// The meet walks are the ones whose own index *is* the meet list — a per-season result archive and
+/// a published schedule — so they need no seed either. A source that does need one — a school-name
+/// list, a meet id, an athlete profile — stays refused, and each of those stays owed until a stage
+/// can seed it.
+pub(super) const DISPATCHED: &[&str] = &[
+    crate::census::SOURCE,
+    "wiaa",
+    "mshsl",
+    "plain_names",
+    "wiaa_results",
+    "wayzata",
+];
 
 /// The report one completed run produces.
 ///

@@ -71,13 +71,17 @@ pub use wire::{
 };
 
 /// `GET /api/v1/Meet/GetMeetData?meetId=<id>&sport=tf` — the first request of a whole-meet pull.
-const MEET_ENDPOINT: &str = "https://www.athletic.net/api/v1/Meet/GetMeetData";
+///
+/// `pub(super)` because the adapter's own test asserts each acquisition endpoint is one the registry
+/// routes to the browser lane; the transport is the registry's decision, not the caller's.
+pub(super) const MEET_ENDPOINT: &str = "https://www.athletic.net/api/v1/Meet/GetMeetData";
 
 /// `GET /api/v1/Meet/GetAllResultsData?…` — the second, results-bearing request.
-const RESULTS_ENDPOINT: &str = "https://www.athletic.net/api/v1/Meet/GetAllResultsData";
+pub(super) const RESULTS_ENDPOINT: &str = "https://www.athletic.net/api/v1/Meet/GetAllResultsData";
 
 /// `GET /api/v1/Meet/GetEventDivisionData?…` — the optional third request.
-const METADATA_ENDPOINT: &str = "https://www.athletic.net/api/v1/Meet/GetEventDivisionData";
+pub(super) const METADATA_ENDPOINT: &str =
+    "https://www.athletic.net/api/v1/Meet/GetEventDivisionData";
 
 /// The two requests a whole-meet pull spends, in the order it spends them.
 pub fn meet_requests(meet_id: i64) -> [String; 2] {

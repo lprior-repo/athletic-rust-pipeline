@@ -96,7 +96,7 @@ async fn scan_index(
     let letters = letters_for(&options.school_names);
     // Collect (letter_index, result) pairs so we can process in submission order.
     let letter_results: Vec<(usize, Result<FetchOutcome, FetchError>)> =
-        stream::iter(letters.iter().enumerate())
+        stream::iter(letters.iter().copied().enumerate())
             .map(|(i, letter)| {
                 let url = format!("{HOST}{INDEX_PATH}?LetterBtn={letter}");
                 let opts = fetch_options(ctx, options);

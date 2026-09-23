@@ -56,7 +56,9 @@ pub struct MeetCensus {
     pub fetched: usize,
     /// Meets the pages published, before de-duplication.
     pub seen: usize,
-    /// Rows appended to `source_meets` after de-duplication.
+    /// Rows appended to `source_meets` after de-duplication, across every source the stage ran: the
+    /// state's own results index plus each armed source's walk. The index fields above describe the
+    /// index walk alone; this is the whole stage's output.
     pub rows: usize,
     /// Seasons the run read.
     pub seasons: usize,
@@ -68,6 +70,27 @@ pub struct MeetCensus {
     /// terminates: the last page keeps advertising a next one. A season that ends this way is
     /// complete for the site's own listing.
     pub repeated: usize,
+    /// What each source this stage ran wrote, in the plan's order: the state's own index first, then
+    /// every planned source whose arm publishes meets of its own.
+    ///
+    /// Defaulted on read: a state recorded before this field existed carries the counts without the
+    /// breakdown, and refusing to read it would turn a schema addition into a lost census.
+    #[serde(default)]
+    pub sources: Vec<MeetSourceRows>,
+}
+
+/// One source's share of a meet census: the slug the plan named and the `source_meets` rows that
+/// source's walk appended.
+///
+/// The stage reports per source rather than in aggregate because the count is the only record that
+/// a source was walked at all: an arm that found nothing and an arm that never ran would otherwise
+/// both leave the same trace.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MeetSourceRows {
+    /// The registry slug, the spelling a plan and a refusal carry.
+    pub slug: String,
+    /// Rows this source appended to `source_meets`.
+    pub rows: usize,
 }
 
 /// Enumerate one jurisdiction's meets for one season year, and write them as `source_meets` rows.

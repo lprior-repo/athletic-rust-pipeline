@@ -24,7 +24,7 @@ use census_domain::model::{
 };
 use std::collections::BTreeMap;
 
-use crate::report::{coverage_report, ReportResult};
+use census_report::report::{coverage_report, ReportResult};
 use census_store::{Store, Table};
 
 /// What one derivation pass wrote, per table.
@@ -55,7 +55,7 @@ impl IndexReport {
 /// per day holding the latest counts for it.
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
     let pass = canonical_pass(store)?;
-    let retained = crate::workbook::retained_records(store)?;
+    let retained = census_report::workbook::retained_records(store)?;
     let coverage = coverage_rows(store, &pass.identities)?;
 
     let mut conflicts: Vec<RetainedConflict> = retained

@@ -38,7 +38,7 @@ use census_domain::UsJurisdiction;
 use census_store::Store;
 use clap::Parser;
 use midwest_census::ingress;
-use midwest_census::report;
+use census_report::report;
 use std::path::PathBuf;
 
 use command::Command;

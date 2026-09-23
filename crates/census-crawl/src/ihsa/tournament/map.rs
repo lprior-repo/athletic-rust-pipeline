@@ -13,10 +13,9 @@ use super::schools::Schools;
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, EventKind, Evidence, Gender, Grade, Mark, SchoolId, SchoolYear, SourceNamespace,
-    SourceRef, Sport,
+    CanonicalTeam, EventKind, Evidence, Gender, Grade, Mark, SchoolId, SchoolYear, SourceRef,
+    Sport,
 };
-use census_store::Table;
 use std::collections::HashMap;
 
 /// The association slug the `ihsa` schools adapter mints its school identities under.
@@ -89,17 +88,6 @@ pub(super) struct Stats {
     pub(super) schools_minted: u64,
 }
 
-/// What one run appended, per table.
-#[derive(Debug, Default)]
-pub(super) struct EntityCounts {
-    pub(super) schools: usize,
-    pub(super) meets: usize,
-    pub(super) teams: usize,
-    pub(super) athletes: usize,
-    pub(super) events: usize,
-    pub(super) performances: usize,
-}
-
 /// One run's mapping sinks: the accumulator, the school resolver, the source and the counters.
 pub(super) struct Mapper<'a> {
     pub(super) accumulated: Accumulator,
@@ -131,33 +119,6 @@ impl<'a> Mapper<'a> {
         let mut stats = self.stats.clone();
         stats.schools_minted = self.schools.minted();
         stats
-    }
-
-    /// Append every table the run accumulated, in the order the neighbouring adapters write them.
-    ///
-    /// An empty table is skipped by `append_many` itself, so the calls stand unconditionally.
-    pub(super) fn store(mut self, ctx: &AdapterContext<'_>) -> CrawlResult<EntityCounts> {
-        let schools = drain(&mut self.accumulated.schools);
-        let meets = drain(&mut self.accumulated.meets);
-        let teams = drain(&mut self.accumulated.teams);
-        let athletes = drain(&mut self.accumulated.athletes);
-        let events = drain(&mut self.accumulated.events);
-        let performances = drain(&mut self.accumulated.performances);
-        ctx.store.append_many(Table::Schools, &schools)?;
-        ctx.observe_schools(&SourceNamespace::association_school(ASSOCIATION), &schools)?;
-        ctx.store.append_many(Table::Meets, &meets)?;
-        ctx.store.append_many(Table::Teams, &teams)?;
-        ctx.store.append_many(Table::Athletes, &athletes)?;
-        ctx.store.append_many(Table::Events, &events)?;
-        ctx.store.append_many(Table::Performances, &performances)?;
-        Ok(EntityCounts {
-            schools: schools.len(),
-            meets: meets.len(),
-            teams: teams.len(),
-            athletes: athletes.len(),
-            events: events.len(),
-            performances: performances.len(),
-        })
     }
 
     /// Count one event row the walk minted, and whether it publishes results.
@@ -259,11 +220,6 @@ pub(super) fn joined_name(first: Option<&str>, last: Option<&str>) -> Option<Str
     let joined = format!("{} {}", first.unwrap_or_default(), last.unwrap_or_default());
     let trimmed = joined.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_string())
-}
-
-/// Take a table's rows out of the accumulator.
-fn drain<T>(rows: &mut HashMap<String, T>) -> Vec<T> {
-    rows.drain().map(|(_, row)| row).collect()
 }
 
 /// The school year a published date falls in, on the domain's Aug 1 boundary.

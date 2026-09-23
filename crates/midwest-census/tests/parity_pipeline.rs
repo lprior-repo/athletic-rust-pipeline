@@ -76,9 +76,10 @@ use census_domain::model::{
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
-use midwest_census::bests::{self, BestResult, Measure};
-use midwest_census::report::{self, Census, Scope};
-use midwest_census::{census, workbook};
+use census_report::bests::{self, BestResult, Measure};
+use census_report::report::{self, Census, Scope};
+use census_report::workbook;
+use midwest_census::census;
 use sha2::{Digest, Sha256};
 
 /// Capture date the committed fixtures carry (the WIAA directory letter was taken 2026-09-19/20).

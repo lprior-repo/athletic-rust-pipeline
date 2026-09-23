@@ -81,6 +81,7 @@ mod rows;
 mod sequences;
 mod table;
 mod write;
+mod write_batch;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
 pub use error::{StoreError, StoreResult};
@@ -89,6 +90,7 @@ pub use table::{
     Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,
     MAX_ROWS_PER_TABLE,
 };
+pub use write_batch::StoreBatch;
 
 /// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
 /// collection contract withheld a consumer mailbox from.

@@ -20,7 +20,7 @@
 use std::collections::{BTreeSet, HashSet};
 use std::path::PathBuf;
 
-use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult, FLUSH_UNITS};
 use census_domain::model::{CanonicalMeet, EvidenceMethod};
 use census_domain::UsJurisdiction;
 
@@ -102,6 +102,10 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
 
 /// Write the harvest meets that are neither already journaled nor impossibly dated.
 ///
+/// Each meet's row and the entry that journals it reach the store in one commit, flushed every
+/// [`FLUSH_UNITS`] meets, so a resume can neither skip a meet whose row is missing nor re-read one
+/// the store already holds.
+///
 /// Returns how many were written and how many were refused for an impossible date.
 fn write_meets(
     ctx: &AdapterContext<'_>,
@@ -110,6 +114,8 @@ fn write_meets(
 ) -> CrawlResult<(usize, usize)> {
     let mut written = 0usize;
     let mut skipped_corrupt = 0usize;
+    let mut page = ctx.store.write_batch();
+    let mut units = 0usize;
     for meet in meets {
         if done.contains(meet.id.as_str()) {
             continue;
@@ -121,14 +127,21 @@ fn write_meets(
             skipped_corrupt = skipped_corrupt.saturating_add(1);
             continue;
         }
-        ctx.store.append(census_store::Table::Meets, &meet)?;
-        ctx.store.journal_done(
+        page.append_many(census_store::Table::Meets, std::slice::from_ref(&meet))?;
+        page.journal_done(
             "athleticlive_meets",
             meet.id.as_str(),
             &serde_json::json!({ "state": meet.state, "date": meet.date }),
         )?;
         written = written.saturating_add(1);
+        units = units.saturating_add(1);
+        if units >= FLUSH_UNITS {
+            page.commit()?;
+            page = ctx.store.write_batch();
+            units = 0;
+        }
     }
+    page.commit()?;
     Ok((written, skipped_corrupt))
 }
 

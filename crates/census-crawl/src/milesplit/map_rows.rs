@@ -148,6 +148,7 @@ fn record_performance(
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
 }

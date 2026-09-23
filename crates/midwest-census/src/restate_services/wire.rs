@@ -210,7 +210,7 @@ pub struct JurisdictionReport {
     pub jurisdiction: UsJurisdiction,
     /// The plan the run carried: the applicable sources this machine may sweep, and the ones it
     /// refuses by name. Read beside `stages_run` — the plan is the declared work, the stages are
-    /// what ran.
+    /// what ran — and note that nothing in this crate yet reconciles the two.
     #[serde(default)]
     pub plan: SourcePlan,
     /// Stages executed now, in order. Empty means every stage was already complete.

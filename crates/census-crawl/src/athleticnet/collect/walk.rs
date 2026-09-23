@@ -10,26 +10,26 @@ use crate::athleticnet::parse::Bio;
 use crate::athleticnet::{
     Options, Scope, Target, BIO_ENDPOINT, HIGH_SCHOOL_LEVEL, PARSE_VERSION, SCOPES,
 };
-use crate::{AdapterContext, CrawlResult};
+use crate::{AdapterContext, CrawlResult, FLUSH_UNITS};
 use census_domain::model::SourceRef;
 use census_domain::school_index::SchoolIndex;
 use serde_json::json;
 use std::collections::HashSet;
 
-/// Units one flush covers: a batch's rows are appended, then its units are journaled.
-const FLUSH_UNITS: usize = 64;
-
-/// Append the batch's rows, then journal its units: `append_many` commits at `SyncData` and a
-/// journal write commits separately, so a journal entry may only claim rows already appended.
+/// Append the batch's rows, then journal its units: the page commits once, and the journal entries
+/// ride in that same commit, so a re-run can neither see rows whose units it re-reads nor skip a unit
+/// whose rows are missing.
 pub(super) fn flush_batch(ctx: &AdapterContext<'_>, run: &mut RunState) -> CrawlResult<()> {
     if run.pending.is_empty() {
         return Ok(());
     }
-    let batch = store_accumulated(ctx, std::mem::take(&mut run.accumulated))?;
+    let mut page = ctx.store.write_batch();
+    let batch = store_accumulated(ctx, std::mem::take(&mut run.accumulated), &mut page)?;
     run.batches.push(batch);
     for (url, payload) in run.pending.drain(..) {
-        ctx.store.journal_done("athleticnet", &url, &payload)?;
+        page.journal_done("athleticnet", &url, &payload)?;
     }
+    page.commit()?;
     Ok(())
 }
 

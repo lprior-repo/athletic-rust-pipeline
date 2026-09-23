@@ -6,7 +6,7 @@ use census_domain::UsJurisdiction;
 use census_store::Store;
 use clap::Args;
 use midwest_census::census;
-use midwest_census::report;
+use census_report::report;
 use std::path::PathBuf;
 
 use super::live;

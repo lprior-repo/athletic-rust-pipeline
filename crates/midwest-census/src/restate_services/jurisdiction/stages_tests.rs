@@ -13,7 +13,42 @@ use census_store::Store;
 
 use super::JurisdictionCensus;
 use crate::ingress;
+use crate::restate_services::jurisdiction::DISPATCHED;
+use crate::restate_services::meets_arms::{arm_for as meets_arm_for, MEETS_ARMS};
 use crate::restate_services::plan::BrowserLaneState;
+use crate::restate_services::teams_arms::{arm_for, TEAMS_ARMS};
+
+/// The chain's dispatched slugs and the stage arm tables are one list told twice: the plan promises
+/// a stage runs every unit it calls sweepable, and the arms are what keeps that promise. A slug
+/// added to one list and not the other is either a refusal nothing explains or a walk nothing runs,
+/// so the union of the tables is held equal to the dispatched list here rather than reconciled at
+/// run time.
+#[test]
+fn the_arms_are_the_dispatched_slugs() {
+    let mut arms: Vec<&str> = TEAMS_ARMS.iter().map(|(slug, _)| *slug).collect();
+    arms.extend(MEETS_ARMS.iter().map(|(slug, _)| *slug));
+    assert_eq!(arms, DISPATCHED);
+    assert!(
+        arm_for("no-stage-runs-this").is_none(),
+        "an unknown slug has no arm, and the stage turns that into a terminal error"
+    );
+    assert!(
+        meets_arm_for("no-stage-runs-this").is_none(),
+        "an unknown slug has no arm, and the stage turns that into a terminal error"
+    );
+}
+
+/// The two arm tables are disjoint: a planned unit both stages armed would run twice under one plan
+/// entry, and the second walk's rows would be attributed to a source the first already wrote.
+#[test]
+fn no_slug_is_armed_by_two_stages() {
+    for (slug, _) in TEAMS_ARMS {
+        assert!(
+            meets_arm_for(slug).is_none(),
+            "{slug} is armed by the team-index stage and the meet-index stage"
+        );
+    }
+}
 
 /// A store the object can build its shared fetcher over. No network is touched: the fetcher's cache
 /// directory is the only thing construction reads.

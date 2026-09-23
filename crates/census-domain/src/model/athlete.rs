@@ -25,6 +25,16 @@ pub struct CanonicalAthlete {
 }
 
 impl CanonicalAthlete {
+    /// The identity this row carries for one source namespace: the provider's own athlete id, the
+    /// §31 key material a row minted from that source cites back. `None` when this athlete is not
+    /// known to that source, which is the honest answer for a row merged from sources that never
+    /// named it.
+    pub fn identity_in(&self, namespace: &SourceNamespace) -> Option<&SourceIdentity> {
+        self.source_identities
+            .iter()
+            .find(|identity| &identity.namespace == namespace)
+    }
+
     /// Mint an athlete from (school, normalized name, grad year, gender).
     ///
     /// Two sources that agree on those four facts produce the same canonical athlete without any

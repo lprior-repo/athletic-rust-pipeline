@@ -1,0 +1,33 @@
+[package]
+name = "census-report"
+version = "0.1.0"
+edition = "2021"
+description = "Census reporting plane (§17): coverage projection, per-athlete bests, and the workbook export."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[dependencies]
+# The reporting plane reads the canonical model and the store's read model; it never acquires.
+census-crawl = { path = "../census-crawl" }
+census-domain = { path = "../census-domain" }
+# The workbook's conflict queue and review sheet come from the review lane's retained families.
+census-review = { path = "../census-review" }
+census-store = { path = "../census-store" }
+# The seal command reads the exported workbook back, so the reader is a runtime dependency.
+calamine = "=0.36.1"
+anyhow = "1"
+csv = "1"
+rust_xlsxwriter = { version = "=0.99.1", features = ["constant_memory"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "fs", "signal"] }
+tracing = "0.1"
+
+[dev-dependencies]
+fjall = "=3.1.10"
+proptest = "1"
+tempfile = "3"
+tokio = { version = "1", features = ["test-util", "macros", "rt-multi-thread"] }

@@ -151,6 +151,26 @@ fn stable_key_spells_exactly_what_the_mint_hashed_before() {
             "gender spelling"
         );
     }
+    let timings = [TimingMethod::Fat, TimingMethod::Hand, TimingMethod::Unknown];
+    for timing in timings {
+        assert_eq!(
+            timing.stable_key(),
+            format!("{timing:?}"),
+            "timing method spelling"
+        );
+    }
+    // CanonicalEvent mint: the id is built from each input's stable key, so the spelling below is the
+    // persistence contract, and `stable_key` above is what those inputs must keep spelling.
+    let meet_id = CanonicalMeet::mint(None, "2026-06-01", "Invitational", None);
+    let event = CanonicalEvent::new(
+        &meet_id,
+        EventKind::Track800m,
+        Gender::Girls,
+        Some("D1"),
+        None,
+    );
+    let expected = Id::mint("evt", &[meet_id.as_str(), "Track800m", "f", "D1", ""]);
+    assert_eq!(event.id, expected, "CanonicalEvent mint parity");
     let roles = [
         CoachRole::HeadCoach,
         CoachRole::AssistantCoach,

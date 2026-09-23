@@ -122,7 +122,7 @@ pub fn flags(a: &CanonicalAthlete, b: &CanonicalAthlete) -> Vec<Flag> {
     if a.gender != b.gender {
         flags.push(Flag {
             kind: FlagKind::GenderDiffers,
-            detail: format!("{:?} vs {:?}", a.gender, b.gender),
+            detail: format!("{} vs {}", a.gender.stable_key(), b.gender.stable_key()),
         });
     }
     if key(a) == key(b) {

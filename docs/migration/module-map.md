@@ -19,6 +19,12 @@ not executed. Totals below are exact for the three crates' `src` trees at this r
 `wc -l $(find crates/{census-domain,midwest-census,g1-audit}/src -name '*.rs')` = **73,209** lines
 (midwest-census 68,252 · census-domain 3,574 · g1-audit 1,383).
 
+**Anchor re-verification (2026-09-23).** The anchors in §5, §5.1 and §5.2 below were re-read against
+the working tree at HEAD `95e89e9` — three commits after `ea81c56`, with uncommitted changes present —
+and corrected where they had drifted; the numbers here are that snapshot (`census/identity.rs` 265
+lines, `restate_services/{jurisdiction.rs 243, national.rs 292, census.rs 156, ingest.rs 147,
+sweep.rs 187}`). A file that moves invalidates them again.
+
 Terminology used throughout: **production** = a `.rs` file that is not `tests.rs`, is not under a
 `tests/` directory, and — for mixed files — only the lines before the first `#[cfg(test)]`, which is
 exactly `xtask/src/seams.rs`'s scope. **Test** = everything else.
@@ -350,34 +356,34 @@ neither is a component.
 
 | component | kind (site) | handlers | identity key today | who binds it (production) |
 |---|---|---|---|---|
-| `Census` | `#[service]` `census.rs:20,53` | `status` `:56`, `consolidate` `:76`, `report` `:99`, `bests` `:122`, `workbook` `:149` | none (stateless service) | n/a |
-| `Ingest` | `#[object]` `ingest.rs:15,63` | `state` `:66`, `record` `:72`, `complete_window` `:117` | one object per **endpoint string**: `IngestState.endpoint` is "Object key this state belongs to" (`wire/ingest.rs:12-14`); `SweepRequest.endpoints: Vec<String>` (`wire/ingest.rs:54-56`) | no in-repo binder; the key is whatever the caller passes |
-| `Sweep` | `#[workflow]` `sweep.rs:18,36` | `run` `:46`, `wait_windows` `:101`, `observe_endpoints` `:135`, `interrupt` `:162` | not minted in-repo: the request carries endpoints, windows, window_seconds (`wire/ingest.rs:54-62`) | no production binder (`Sweep` reaches `IngestClient` by endpoint, `sweep.rs:143-150`) |
-| `JurisdictionCensus` | `#[object]` `jurisdiction.rs:43,174` | `state` `:179`, `run` `:194` (+ owed stages `:75`) | `jurisdiction:{state}:{season}:{revision}` (`census/identity.rs:78-88`); object key comes from the client | `cli/national/run.rs:125,136`, `cli/national/observe.rs:104-106`; identity echoed in state (`restate_services/jurisdiction.rs:91,163`) |
-| `NationalCensus` | `#[workflow]` `national.rs:41,169` | `run` `:177`, `report` `:221` | `national:{season}:{revision}` (`census/identity.rs:73-75`) | `cli/national/run.rs:84,99,162,164` |
+| `Census` | `#[service]` `census.rs:28,43` | `status` `:55`, `open_work` `:81`, `seal` `:102` (the job handlers `consolidate`/`report`/`bests`/`workbook` are the separate `Consolidate`/`Report`/`Bests`/`Workbook` workflows, `publish.rs:97,145,193,245`) | none (stateless service) | n/a |
+| `Ingest` | `#[object]` `ingest.rs:15,65` | `state` `:77`, `record` `:83`, `complete_window` `:131` | one object per **endpoint string**: `IngestState.endpoint` is "Object key this state belongs to" (`wire/ingest.rs:12-14`); `SweepRequest.endpoints: Vec<String>` (`wire/ingest.rs:54-56`) | no in-repo binder; the key is whatever the caller passes |
+| `Sweep` | `#[workflow]` `sweep.rs:18,36` | `run` `:56`, `wait_windows` `:113`, `observe_endpoints` `:147`, `interrupt` `:174` | not minted in-repo: the request carries endpoints, windows, window_seconds (`wire/ingest.rs:54-62`) | no production binder (`Sweep` reaches `IngestClient` by endpoint, `sweep.rs:155`) |
+| `JurisdictionCensus` | `#[object]` `jurisdiction.rs:48,180` | `state` `:194`, `run` `:209` (+ owed stages `:89`) | `jurisdiction:{state}:{season}:{revision}` (`census/identity.rs:99-108`); object key comes from the client | `cli/national/run.rs:125,136`, `cli/national/observe.rs:104-106`; identity echoed in state (`restate_services/jurisdiction/stages.rs:207,226`) and reported at `restate_services/jurisdiction.rs:168` |
+| `NationalCensus` | `#[workflow]` `national.rs:42,199` | `run` `:217`, `report` `:282` | `national:<season>:<scope>:<revision>` (`census/identity.rs:83-96`) | `cli/national/run.rs:84,99,162,164` |
 
 ### 5.1 Identity mapping against §8
 
 | §8 target identity | constructor today | production binder | gap |
 |---|---|---|---|
-| `jurisdiction:{state}:{season}:{revision}` | `WorkflowIdentity::jurisdiction` (`census/identity.rs:78`) | `cli/national/run.rs:125`, `cli/national/observe.rs:104` | none |
-| `source-sweep:{source}:{state}:{season}:{revision}` | `WorkflowIdentity::source_sweep` (`identity.rs:90`) | **none** (only `census/identity/tests.rs:51-65`) | the `Sweep` workflow is not addressed by this identity today (R: sweep is endpoint-keyed) |
-| `meet:{source}:{source_meet_id}:{revision}` | `identity.rs:108` | **none** | ADR-004's per-meet workflow does not exist yet |
-| `athlete:{source}:{source_athlete_id}:{revision}` | `identity.rs:113` | **none** | same |
-| `school:{source}:{source_school_id}:{revision}` | `identity.rs:121` | **none** | same |
-| `review:{evidence_digest}:{policy_revision}` | `identity.rs:129` | **none** | the review lane runs as a batch command (`cli/review.rs:10` → `identity::run_lanes`), not as a workflow |
-| *(no §8 name)* `national:{season}:{revision}` | `identity.rs:73` | `cli/national/run.rs:84,162` | the root run's identity is outside the §8 list |
+| `jurisdiction:{state}:{season}:{revision}` | `WorkflowIdentity::jurisdiction` (`census/identity.rs:99`) | `cli/national/run.rs:125`, `cli/national/observe.rs:104` | none |
+| `source-sweep:{source}:{state}:{season}:{revision}` | `WorkflowIdentity::source_sweep` (`identity.rs:111`) | **none** (only `census/identity/tests.rs:51-65`) | the `Sweep` workflow is not addressed by this identity today (R: sweep is endpoint-keyed) |
+| `meet:{source}:{source_meet_id}:{revision}` | `identity.rs:129` | **none** | ADR-004's per-meet workflow does not exist yet |
+| `athlete:{source}:{source_athlete_id}:{revision}` | `identity.rs:134` | **none** | same |
+| `school:{source}:{source_school_id}:{revision}` | `identity.rs:142` | **none** | same |
+| `review:{evidence_digest}:{policy_revision}` | `identity.rs:150` | **none** | the review lane runs as a batch command (`cli/review.rs:10` → `identity::run_lanes`), not as a workflow |
+| *(no §8 name)* `national:<season>:<scope>:<revision>` | `identity.rs:83` | `cli/national/run.rs:84,162` | the root run's identity is outside the §8 list |
 
 Identity alphabet constraints that any new binder must respect: `MAX_IDENTITY_BYTES = 64`
 (`census/identity.rs:33`), `MAX_PART_BYTES = 32` (`census/identity.rs:37`), oversize or unsafe parts
-replaced by a digest (`census/identity.rs:134-158`); tests assert `:` inside a source id cannot forge
+replaced by a digest (`census/identity.rs:234-247`); tests assert `:` inside a source id cannot forge
 a boundary (`census/identity/tests.rs:92-94`).
 
 ### 5.2 Restate gaps
 
 1. `Sweep` and `Ingest` are keyed by *endpoint strings*, not by source/state/season — §8's
    `source-sweep:{source}:{state}:{season}:{revision}` has a constructor but no binder.
-2. `national:{season}:{revision}` is bound but has no §8 name (a root-identity vocabulary gap).
+2. `national:<season>:<scope>:<revision>` is bound but has no §8 name (a root-identity vocabulary gap).
 3. Four of the seven constructors (`meet`, `athlete`, `school`, `review`) have zero production
    callers — they are the ADR-004 / review-workflow coordinates that later waves must bind.
 

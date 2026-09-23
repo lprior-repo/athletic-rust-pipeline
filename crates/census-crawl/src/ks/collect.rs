@@ -160,16 +160,18 @@ fn collect_record(
     // Parse AD coach.
     let coach = parse_ad_coach(record, &school_id, url, observed_on);
 
-    // Append this record's rows, then journal it done.
-    ctx.store.append(Table::Schools, &school)?;
+    // This record's rows and the entry that journals it reach the store as one commit, so a resume
+    // can neither see a journaled school whose rows are missing nor re-read one it already holds.
+    let mut batch = ctx.store.write_batch();
+    batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
     ctx.observe_school(
         &SourceNamespace::association_school(super::ASSOCIATION),
         &school,
     )?;
     if let Some(row) = coach.as_ref() {
-        ctx.store.append(Table::Coaches, row)?;
+        batch.append_many(Table::Coaches, std::slice::from_ref(row))?;
     }
-    ctx.store.journal_done(
+    batch.journal_done(
         "kshsaa_schools",
         journal_key,
         &serde_json::json!({
@@ -177,5 +179,6 @@ fn collect_record(
             "school_name": record.school_name,
         }),
     )?;
+    batch.commit()?;
     Ok(KsRead::Read(coach))
 }

@@ -11,7 +11,7 @@ use super::{NSAA_COACHES_PHASE, NSAA_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalCoach, CanonicalSchool, CoachRole, SourceNamespace};
-use census_store::Table;
+use census_store::{StoreBatch, Table};
 
 /// The school block `name` names, or the page's only block.
 fn named_block<'a>(blocks: &'a [NsaaSchool], name: &str) -> Option<&'a NsaaSchool> {
@@ -34,19 +34,19 @@ fn coach_roles(coaches: &[CanonicalCoach]) -> (usize, usize) {
     (ad_rows, sport_rows)
 }
 
-/// Journal both NSAA phases for one walked school.
+/// Journal both NSAA phases for one walked school, in the page that holds its rows.
 fn journal_school(
-    ctx: &AdapterContext<'_>,
+    batch: &mut StoreBatch<'_>,
     key: &str,
     published_rows: usize,
     coach_count: usize,
 ) -> CrawlResult<()> {
-    ctx.store.journal_done(
+    batch.journal_done(
         NSAA_SCHOOLS_PHASE,
         key,
         &serde_json::json!({ "published_rows": published_rows }),
     )?;
-    ctx.store.journal_done(
+    batch.journal_done(
         NSAA_COACHES_PHASE,
         key,
         &serde_json::json!({ "coach_rows": coach_count }),
@@ -172,18 +172,26 @@ impl NsaaWalk {
         self.sport_rows = self.sport_rows.saturating_add(sport_rows);
         let coach_count = coaches.len();
 
-        // Append this school's rows, then journal it: both append batches commit at `SyncData` and
-        // the journal write commits separately, so the journal entry goes last.
-        ctx.store.append(Table::Schools, &school)?;
+        // One page: this school's rows and both journal entries commit together, so a resume cannot
+        // skip a school whose rows never landed. The school observation stays a direct write, the way
+        // every school arm writes it: it is re-derived from this row on every pass.
+        let mut batch = ctx.store.write_batch();
+        batch.append_many(Table::Schools, std::slice::from_ref(&school))?;
         ctx.observe_school(
             &SourceNamespace::association_school(super::NSAA_ADAPTER_ID),
             &school,
         )?;
-        ctx.store.append_many(Table::Coaches, &coaches)?;
+        batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coach_count);
 
-        journal_school(ctx, &format!("NE:{name}"), published_rows, coach_count)?;
+        journal_school(
+            &mut batch,
+            &format!("NE:{name}"),
+            published_rows,
+            coach_count,
+        )?;
+        batch.commit()?;
         self.processed = self.processed.saturating_add(1);
         Ok(())
     }

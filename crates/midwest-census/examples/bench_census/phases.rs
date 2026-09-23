@@ -7,8 +7,9 @@
 
 use anyhow::{Context, Result};
 use census_store::{Store, Table};
-use midwest_census::report::{self, Scope};
-use midwest_census::{bests, census, workbook};
+use census_report::report::{self, Scope};
+use census_report::{bests, workbook};
+use midwest_census::census;
 use serde::Serialize;
 use std::time::Instant;
 use tempfile::TempDir;

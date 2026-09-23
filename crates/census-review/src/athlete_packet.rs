@@ -125,7 +125,7 @@ fn side_facts(side: Side, row: &CanonicalAthlete) -> Vec<ReviewEvidenceFact> {
         fact(&field("name"), &row.canonical_name),
         fact(&field("school"), row.school.as_str()),
         fact(&field("grad_year"), &row.grad_year.to_string()),
-        fact(&field("gender"), &format!("{:?}", row.gender)),
+        fact(&field("gender"), row.gender.stable_key()),
     ];
     for observation in observations(row) {
         facts.push(fact(

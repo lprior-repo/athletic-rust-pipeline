@@ -61,7 +61,8 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use midwest_census::census::CollectOptions;
-use midwest_census::{census, report};
+use census_report::report;
+use midwest_census::census;
 use sha2::{Digest, Sha256};
 
 // -------------------------------------------------------------------------------------------------

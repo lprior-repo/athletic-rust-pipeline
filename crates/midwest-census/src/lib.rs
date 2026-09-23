@@ -14,11 +14,8 @@
 //! * [`census_store`] — Fjall-backed observation store: append-only observations per entity, merged at
 //!   read time, with materialized JSONL snapshots for the read model.
 //! * [`census`] — resumable orchestration.
-//! * [`report`] — measured census output (`report.json`, per-state CSV).
 //! * [`index`] — the durable derived indexes: source-object identities, retained conflicts and
 //!   review cases, coverage, and one snapshot per pass.
-//! * [`bests`] — per-athlete best marks reduced from the consolidated performance table.
-//! * [`workbook`] — the census as one spreadsheet.
 //! * [`restate_services`] — durable Restate services over the same adapters (survive crashes, retry
 //!   per step, resume from the journal).
 //! * [`spawn`] — the region-owned task spawner: every task a region starts joins back through one
@@ -28,16 +25,13 @@
 
 #![forbid(unsafe_code)]
 
-pub mod bests;
 pub mod bootstrap;
 pub mod census;
 pub mod coachverify;
 pub mod index;
 pub mod ingress;
 pub mod outcome;
-pub mod report;
 pub mod restate_services;
 pub mod spawn;
-pub mod workbook;
 
 pub use census::{collect_milesplit, consolidate, CollectOptions, CollectReport};

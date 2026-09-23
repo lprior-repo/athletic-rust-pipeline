@@ -25,8 +25,9 @@ use census_domain::model::{
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, StoreError, StoreStats, Table};
-use midwest_census::report::{self, Census, Scope};
-use midwest_census::{bests, census};
+use census_report::report::{self, Census, Scope};
+use census_report::bests;
+use midwest_census::census;
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
@@ -252,6 +253,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).expect("grade 11 is a school grade")),
             evidence: vec![observation(SOURCE, MEET_DATE)],
             source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
     }

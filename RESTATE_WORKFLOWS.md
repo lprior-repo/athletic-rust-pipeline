@@ -92,7 +92,7 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
 | `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
-| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
+| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<scope>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
 
 The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
 and the shell's region. Each job starts through the region and runs on the blocking pool under one
@@ -132,8 +132,11 @@ each journaled stage from the store's journal, so the rosters already walked wer
 `skipped` rather than re-fetched — the property the two-layer design exists to provide (Restate's
 journal for the stage, the store's journal for the phase's rows).
 
-**Identity and revisions.** A run's identity is `<season>:<revision>` alone, so Restate deduplicates
-a repeat submission: a second `national --revision 2` with different parameters attaches to the run
+**Identity and revisions.** A run's identity is `<season>:<scope>:<revision>` alone — the constructor
+`WorkflowIdentity::national` spells the pattern `national:<season>:<scope>:<revision>`
+(`census/identity.rs:70`), the scope being the digest of the states that run admits, by joining the
+season, that digest and the revision (`census/identity.rs:88-95`) — so Restate deduplicates a repeat
+submission: a second `national --revision 2` with different parameters attaches to the run
 that exists and changes nothing. The CLI detects this (`SendStatus::PreviouslyAccepted`) and prints
 it — *"a changed parameter was not applied; bump `--revision` to start a different run"* — because
 the alternative, silently reporting the old run's numbers for new parameters, is how an operator
@@ -142,12 +145,33 @@ contract: a qualification run with a small limit and the exhaustive run that fol
 share a revision.
 
 **Stage boundary.** A jurisdiction object owns exactly three durable stages — `teams`, `rosters`,
-`meets` (`restate_services/jurisdiction.rs:101-140`). The source plan is not a fourth: the object
+`meets` (`restate_services/jurisdiction.rs:89-130`). The source plan is not a fourth: the object
 records it in the same state value before the first stage runs, as a disposition the run carries
-(what it may sweep, what it refuses by name), so `stages_run` still names only the three stages.
-Result acquisition, coach collection and §47 gap classification are batch commands (`collect`,
-`provider`, `import-coaches`) or the separate acquisition pipeline; they are not stages of a durable
-jurisdiction run, so a `NationalReport` says what the walk covered and says nothing about coaches.
+(what it may sweep, what it refuses by name), so `stages_run` still names only the three stages. What
+the plan may call sweepable is exactly what those stages dispatch — the chain's own list of swept
+sources is `DISPATCHED` (`restate_services/jurisdiction.rs:133`), and every other applicable source
+is refused by name, for one of two reasons the refusal states: no stage sweeps it (a gap in this
+build — the source's walk is CLI-only or has no per-state form), or it arrives over a
+browser-session transport and no lane is configured (a gap in this machine). The reasons are asked
+in that order and carried into the record; `midwest-census national report` prints the owed slugs on
+every run (`cli/national/report.rs:144-154`), so an owed source cannot read as a swept one.
+
+The `teams` stage runs the plan rather than a list of its own: it takes the recorded plan's
+sweepable slugs, in plan order, and runs one arm per slug (`restate_services/jobs.rs`, `TEAMS_ARMS`)
+that publishes a school or team universe. Today that is the MileSplit state team index plus two state
+associations' own directories — the WIAA member-school directory and the MSHSL school listing, both
+of which carry the schools, their activities directors and their coaches and need no seed from another
+source, which is why they run in the first stage. A walk's rows are counted into the stage's one
+outcome, and every walk journals per unit, so an invocation that ends mid-walk resumes where it
+stopped instead of re-fetching. A slug the plan calls sweepable with no arm is a terminal error
+naming it, and `jurisdiction::tests::the_arms_are_the_dispatched_slugs` holds the two lists equal so
+that error stays unreachable in a build that compiles.
+Result acquisition, the researched coach-contact artifact and §47 gap classification are batch
+commands (`collect`, `provider`, `import-coaches`) or the separate acquisition pipeline; they are not
+stages of a durable jurisdiction run. Coach rows from the two association directories are the
+exception, because those walks *are* the state's school universe: they arrive with the `teams` stage.
+A `NationalReport`'s columns still say nothing about coaches — they report what the team index and the
+roster walk covered — so coach coverage is read from the tables, not from that report.
 
 **Consolidation.** Merging a table reads every observation of it, so the merge is not a stage a
 jurisdiction can afford: with 49 jurisdictions each merging the whole corpus, the `athletes` table

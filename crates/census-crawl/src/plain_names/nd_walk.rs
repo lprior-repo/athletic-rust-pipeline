@@ -13,7 +13,7 @@ use super::{ND_COACHES_PHASE, ND_SCHOOLS_PHASE};
 use crate::net::FetchOptions;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{CanonicalSchool, SchoolId, SourceNamespace};
-use census_store::Table;
+use census_store::{StoreBatch, Table};
 
 /// One parsed NDHSAA school page: its heading and the row sets the entity builders read.
 struct NdPage {
@@ -23,21 +23,21 @@ struct NdPage {
     offerings: Vec<NdOffering>,
 }
 
-/// Journal both NDHSAA phases for one walked school.
+/// Journal both NDHSAA phases for one walked school, in the page that holds its rows.
 fn journal_school(
-    ctx: &AdapterContext<'_>,
+    batch: &mut StoreBatch<'_>,
     key: &str,
     slug: &str,
     offerings: usize,
     coach_rows: usize,
     ad_rows: usize,
 ) -> CrawlResult<()> {
-    ctx.store.journal_done(
+    batch.journal_done(
         ND_SCHOOLS_PHASE,
         key,
         &serde_json::json!({ "slug": slug, "offerings": offerings }),
     )?;
-    ctx.store.journal_done(
+    batch.journal_done(
         ND_COACHES_PHASE,
         key,
         &serde_json::json!({ "coach_rows": coach_rows, "ad_rows": ad_rows }),
@@ -173,26 +173,29 @@ impl NdWalk {
         self.tally_offerings(&page.offerings);
         self.ad_rows = self.ad_rows.saturating_add(ad_count);
 
-        // Append this page's rows, then journal it: both append batches commit at `SyncData` and the
-        // journal write commits separately, so the journal entry goes last.
-        ctx.store.append(Table::Schools, &page.school)?;
+        // One page: this school's rows and both journal entries commit together, so a resume cannot
+        // skip a school whose rows never landed. The school observation stays a direct write, the way
+        // every school arm writes it: it is re-derived from this row on every pass.
+        let mut batch = ctx.store.write_batch();
+        batch.append_many(Table::Schools, std::slice::from_ref(&page.school))?;
         ctx.observe_school(
             &SourceNamespace::association_school(super::ND_ADAPTER_ID),
             &page.school,
         )?;
-        ctx.store.append_many(Table::Coaches, &coaches)?;
+        batch.append_many(Table::Coaches, &coaches)?;
         self.school_rows = self.school_rows.saturating_add(1);
         self.coach_rows = self.coach_rows.saturating_add(coaches.len());
 
         let key = format!("ND:{}", member.id);
         journal_school(
-            ctx,
+            &mut batch,
             &key,
             &member.slug,
             page.offerings.len(),
             coaches.len(),
             ad_count,
         )?;
+        batch.commit()?;
         self.processed = self.processed.saturating_add(1);
         Ok(())
     }

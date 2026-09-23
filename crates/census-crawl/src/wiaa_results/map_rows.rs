@@ -131,6 +131,7 @@ fn record_members(
                 observed_grade: Some(grade),
                 evidence: vec![evidence],
                 source_key,
+                source_athlete: None,
                 // A row this mapping just built has been merged with nothing, so it has retained no
                 // canonical-id collision: collisions are raised in the store's merge, not here.
                 retained_conflicts: Vec::new(),

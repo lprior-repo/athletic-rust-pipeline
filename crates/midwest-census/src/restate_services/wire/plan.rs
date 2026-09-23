@@ -16,8 +16,8 @@ use crate::restate_services::plan::{owed, sweepable, UnitDisposition};
 /// as this machine's gap instead of being reported as a source's failure.
 ///
 /// The plan is the *declared* work. Which stages a revision actually executes is
-/// [`super::JurisdictionReport::stages_run`]; recording both is what keeps a plan that outruns the
-/// stages from reading as work that was done.
+/// [`super::JurisdictionReport::stages_run`], recorded beside it, so a plan that outruns the stages
+/// is answerable from one report rather than inferred from two records.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SourcePlan {
     /// Planned unit slugs, in the applicability table's planning order.

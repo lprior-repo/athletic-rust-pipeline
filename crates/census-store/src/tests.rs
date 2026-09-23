@@ -1039,3 +1039,79 @@ fn a_store_without_an_entities_directory_sweeps_nothing() {
     let dir = tempfile::tempdir().unwrap();
     assert_eq!(sweep_stale_temporaries(dir.path()).unwrap(), 0);
 }
+
+#[test]
+fn a_page_of_work_commits_rows_across_tables_and_the_journal_together() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let meet = CanonicalMeet::new(
+        None,
+        "Batch Invitational",
+        "2026-06-01",
+        CompetitionLevel::Invitational,
+    );
+    let mut batch = store.write_batch();
+    batch
+        .append_many(Table::Schools, std::slice::from_ref(&school("Batch High")))
+        .unwrap();
+    batch
+        .append_many(Table::Meets, std::slice::from_ref(&meet))
+        .unwrap();
+    // A second page for a table already in the batch joins the first, so its rows share the table's
+    // mark rather than being written under a reservation of their own.
+    batch
+        .append_many(Table::Schools, &[school("Second High")])
+        .unwrap();
+    batch
+        .journal_done("unit", "batch-1", &serde_json::json!({ "rows": 3 }))
+        .unwrap();
+    assert!(!batch.is_empty(), "three rows and one entry are a page");
+    batch.commit().unwrap();
+
+    assert_eq!(rows_held(&store, Table::Schools), 2);
+    assert_eq!(rows_held(&store, Table::Meets), 1);
+    assert!(
+        store.journal_keys("unit").unwrap().contains("batch-1"),
+        "the entry the page named is in the journal"
+    );
+    drop(store);
+
+    // The whole page was one commit, so a reopen finds every table and the journal entry together.
+    let reopened = Store::open(dir.path()).unwrap();
+    assert_eq!(
+        reopened
+            .scan::<CanonicalSchool>(Table::Schools)
+            .unwrap()
+            .len(),
+        2
+    );
+    assert_eq!(
+        reopened.scan::<CanonicalMeet>(Table::Meets).unwrap().len(),
+        1
+    );
+    assert!(reopened.journal_keys("unit").unwrap().contains("batch-1"));
+}
+
+#[test]
+fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let before = sequence_pointer(&store, Table::Schools);
+    let mut batch = store.write_batch();
+    batch
+        .append_many(Table::Schools, &[school("Never Landed")])
+        .unwrap();
+    let refused = batch.journal_done("unit", "too-big", &"x".repeat(MAX_JOURNAL_VALUE_BYTES + 1));
+    assert!(refused.is_err(), "an entry past its ceiling is refused");
+    // The caller's `?` drops the batch here: the rows buffered before the refusal are never written,
+    // so the unit a resume re-runs cannot find half of itself.
+    drop(batch);
+
+    assert_eq!(
+        sequence_pointer(&store, Table::Schools),
+        before,
+        "no reservation moved"
+    );
+    assert_eq!(rows_held(&store, Table::Schools), 0);
+    assert!(store.journal_keys("unit").unwrap().is_empty());
+}

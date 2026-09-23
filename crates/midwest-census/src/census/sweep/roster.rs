@@ -6,7 +6,7 @@
 
 use census_crawl::milesplit::{self, Roster, Site, TeamRef};
 use census_crawl::net::{FetchOptions, Fetcher};
-use census_crawl::{observe_schools_of, CrawlResult};
+use census_crawl::{observe_athletes_of, observe_schools_of, CrawlResult};
 use census_domain::model::{SchoolYear, SourceNamespace};
 use census_store::{Store, Table};
 
@@ -40,6 +40,13 @@ pub(super) async fn fetch_and_store(
     }
     if !athletes.is_empty() {
         store.append_many(Table::Athletes, &athletes)?;
+        observe_athletes_of(
+            store,
+            &SourceNamespace::MilesplitAthlete,
+            &athletes,
+            std::slice::from_ref(&school),
+            observed_on,
+        )?;
     }
     Ok(roster)
 }

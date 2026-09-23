@@ -13,7 +13,7 @@ use census_domain::model::{
     CanonicalTeam, SchoolId, SourceNamespace, SourceRef,
 };
 use census_domain::school_index::SchoolIndex;
-use census_store::Table;
+use census_store::{StoreBatch, Table};
 use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 
@@ -92,13 +92,13 @@ struct RunState {
 }
 
 /// Canonical entities written by one run, per table.
-pub(super) struct EntityCounts {
-    pub(super) schools: usize,
-    pub(super) meets: usize,
-    pub(super) teams: usize,
-    pub(super) athletes: usize,
-    pub(super) events: usize,
-    pub(super) performances: usize,
+pub(in crate::athleticnet) struct EntityCounts {
+    pub(in crate::athleticnet) schools: usize,
+    pub(in crate::athleticnet) meets: usize,
+    pub(in crate::athleticnet) teams: usize,
+    pub(in crate::athleticnet) athletes: usize,
+    pub(in crate::athleticnet) events: usize,
+    pub(in crate::athleticnet) performances: usize,
 }
 
 /// Resolve the operator's registry into the run's targets, noting the ones that name no state.
@@ -115,8 +115,11 @@ fn registry_targets(options: &Options, report: &mut AdapterReport) -> CrawlResul
     Ok(targets)
 }
 
-/// Sum one table's counter over the run's flushes.
-fn appended_total(batches: &[EntityCounts], counter: fn(&EntityCounts) -> usize) -> usize {
+/// Sum one table's counter over a run's flushes.
+pub(in crate::athleticnet) fn appended_total(
+    batches: &[EntityCounts],
+    counter: fn(&EntityCounts) -> usize,
+) -> usize {
     batches.iter().map(counter).sum()
 }
 
@@ -134,9 +137,16 @@ pub(super) fn journaled_urls(ctx: &AdapterContext<'_>) -> CrawlResult<HashSet<St
 }
 
 /// Append every entity the run accumulated and count what was written.
+///
+/// The six tables go into the caller's page rather than into six commits: one page of a bio walk is
+/// sixty-four units' worth of rows, and a commit per table per unit spent most of the walk's time in
+/// `fdatasync` rather than in parsing. The observations the page's schools and athletes are also
+/// filed under stay direct writes — they are first derived from the rows in hand, so a page that never
+/// commits leaves nothing behind but observation rows a re-run rewrites.
 pub(super) fn store_accumulated(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
+    page: &mut StoreBatch<'_>,
 ) -> CrawlResult<EntityCounts> {
     let schools: Vec<CanonicalSchool> = accumulated.schools.into_values().collect();
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
@@ -144,13 +154,24 @@ pub(super) fn store_accumulated(
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
-    ctx.store.append_many(Table::Schools, &schools)?;
+    let mut performances = performances;
+    crate::stamp_source_athletes(
+        &SourceNamespace::athletic_net("athlete"),
+        &athletes,
+        &mut performances,
+    );
+    page.append_many(Table::Schools, &schools)?;
     ctx.observe_schools(&SourceNamespace::athletic_net(SCHOOL_KIND), &schools)?;
-    ctx.store.append_many(Table::Meets, &meets)?;
-    ctx.store.append_many(Table::Teams, &teams)?;
-    ctx.store.append_many(Table::Athletes, &athletes)?;
-    ctx.store.append_many(Table::Events, &events)?;
-    ctx.store.append_many(Table::Performances, &performances)?;
+    page.append_many(Table::Meets, &meets)?;
+    page.append_many(Table::Teams, &teams)?;
+    page.append_many(Table::Athletes, &athletes)?;
+    ctx.observe_athletes(
+        &SourceNamespace::athletic_net("athlete"),
+        &athletes,
+        &schools,
+    )?;
+    page.append_many(Table::Events, &events)?;
+    page.append_many(Table::Performances, &performances)?;
     Ok(EntityCounts {
         schools: schools.len(),
         meets: meets.len(),

@@ -9,7 +9,7 @@
 //! which is what keeps a shell session and this harness from drifting apart.
 
 use anyhow::Result;
-use midwest_census::report::Scope;
+use census_report::report::Scope;
 use std::path::Path;
 
 use crate::cmd::Cmd;

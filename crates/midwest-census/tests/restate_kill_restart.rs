@@ -549,6 +549,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).unwrap()),
             evidence: vec![evidence()],
             source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
     }

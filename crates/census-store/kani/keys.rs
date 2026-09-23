@@ -6,8 +6,8 @@
 //! round trip cover a NUL inside the id: only the *first* NUL (the one after the table name)
 //! separates the id, and the sequence is read positionally, never by searching for a NUL.
 
-use crate::store::keys::{observation_id, observation_key, split_observation_key};
-use crate::store::{MAX_ID_BYTES, Table};
+use crate::keys::{observation_id, observation_key, split_observation_key};
+use crate::{Table, MAX_ID_BYTES};
 
 /// Bound on the symbolic id.
 const ID_BYTES: usize = 8;

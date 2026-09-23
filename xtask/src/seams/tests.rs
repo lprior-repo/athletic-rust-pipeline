@@ -34,15 +34,15 @@ fn top_modules_read_the_path_shape() {
 #[test]
 fn references_resolve_to_top_level_modules() {
     assert_eq!(
-        refs_in_line("use crate::report::{Error, read_rows};"),
+        refs_in_line("use census_report::report::{Error, read_rows};"),
         vec!["report".to_string()]
     );
     assert_eq!(
         refs_in_line("use crate::{self as census_crate, workbook::Sheet};"),
         vec!["workbook".to_string()]
     );
-    assert!(refs_in_line("// crate::report::read_rows").is_empty());
-    assert!(refs_in_line("let s = \"crate::report::read_rows\";").is_empty());
+    assert!(refs_in_line("// census_report::report::read_rows").is_empty());
+    assert!(refs_in_line("let s = \"census_report::report::read_rows\";").is_empty());
     assert_eq!(
         refs_in_line("use crate::{report::Error, workbook::Sheet};"),
         vec!["report".to_string(), "workbook".to_string()]
@@ -59,7 +59,7 @@ fn a_cfg_test_module_ends_the_production_region_and_a_gated_use_does_not() {
         "fn production() {}",
         "#[cfg(test)]",
         "mod tests {",
-        "    use crate::report::read_rows;",
+        "    use census_report::report::read_rows;",
         "}",
     ]
     .iter()

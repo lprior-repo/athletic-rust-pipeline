@@ -58,6 +58,8 @@ pub(super) struct Walk {
     stats: Stats,
     meets: BTreeMap<String, CanonicalMeet>,
     venue_cache: HashMap<String, VenueResolution>,
+    /// The page entries this run has earned, committed in `finish` with the meets they minted.
+    pending: Vec<(String, serde_json::Value)>,
     report: AdapterReport,
 }
 
@@ -69,6 +71,7 @@ impl Walk {
             stats: Stats::default(),
             meets: BTreeMap::new(),
             venue_cache: HashMap::new(),
+            pending: Vec::new(),
             report: AdapterReport::new(ADAPTER_ID, "meet-schedule rows"),
         }
     }
@@ -106,17 +109,19 @@ impl Walk {
                     self.mint_meet(row, sport, state, month, &url);
                 }
 
-                ctx.store.journal_done(
-                    ADAPTER_ID,
-                    &url,
-                    &json!({
+                // The entry is buffered, not written: `finish` commits it in the same page as the meets
+                // these rows minted. Written here it would mark the page read before its meets are
+                // durable, and a run that stopped in between would skip the page with nothing stored.
+                self.pending.push((
+                    url.clone(),
+                    json!({
                         "url": url,
                         "parser": PARSE_VERSION,
                         "sport": sport.as_str(),
                         "year": year,
                         "rows": rows.len(),
                     }),
-                )?;
+                ));
             }
         }
         Ok(())
@@ -213,11 +218,19 @@ impl Walk {
         let Walk {
             stats,
             meets,
+            pending,
             mut report,
             ..
         } = self;
         let meets: Vec<CanonicalMeet> = meets.into_values().collect();
-        ctx.store.append_many(Table::Meets, &meets)?;
+        // The minted meets and the entries naming the pages they came from commit together, so a page
+        // counts as read only once the meets its rows produced are durable.
+        let mut batch = ctx.store.write_batch();
+        batch.append_many(Table::Meets, &meets)?;
+        for (url, payload) in pending {
+            batch.journal_done(ADAPTER_ID, &url, &payload)?;
+        }
+        batch.commit()?;
 
         let (requests_after, cache_after) = stats_of(ctx).await;
         report.rows = count(stats.rows);

@@ -46,7 +46,11 @@ pub(super) async fn plan_schools(
     };
 
     // Phase 1: identify eligible schools (skip already journaled, apply filter).
-    let eligible: Vec<(usize, &IndexEntry)> = index
+    //
+    // The entries are cloned into the list rather than borrowed from the index: a borrowed entry
+    // would tie this walk's future to the index's lifetime, and the future has to be `Send` for
+    // every lifetime to run inside a durable `ctx.run`.
+    let eligible: Vec<(usize, IndexEntry)> = index
         .iter()
         .enumerate()
         .filter(|(_, entry)| {
@@ -63,6 +67,7 @@ pub(super) async fn plan_schools(
             }
             true
         })
+        .map(|(index, entry)| (index, entry.clone()))
         .collect();
 
     // Phase 2: fetch all school pages in parallel (bounded concurrency, shared bound).
@@ -137,12 +142,17 @@ fn record_school(
     page: &SchoolPage,
     extract: SchoolExtract,
 ) -> CrawlResult<()> {
-    ctx.store.append(Table::Schools, &extract.school)?;
+    // One page: the school, its coach rows and both journal entries commit together, so a resume
+    // cannot skip this unit while the rows it names are missing. The school observation stays a
+    // direct write, the way every school arm writes it: it is re-derived from this row on every pass,
+    // so it is not what a resume decision reads.
+    let mut batch = ctx.store.write_batch();
+    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
     ctx.observe_school(
         &SourceNamespace::association_school(super::super::ASSOCIATION),
         &extract.school,
     )?;
-    ctx.store.append_many(Table::Coaches, &extract.coaches)?;
+    batch.append_many(Table::Coaches, &extract.coaches)?;
 
     let school_with_email = extract
         .coaches
@@ -169,8 +179,9 @@ fn record_school(
         "coaches": extract.coaches.len(),
         "coaches_with_email": school_with_email,
     });
-    ctx.store.journal_done("wiaa_schools", key, &payload)?;
-    ctx.store.journal_done("wiaa_coaches", key, &payload)?;
+    batch.journal_done("wiaa_schools", key, &payload)?;
+    batch.journal_done("wiaa_coaches", key, &payload)?;
+    batch.commit()?;
 
     tally.processed = tally.processed.saturating_add(1);
     Ok(())

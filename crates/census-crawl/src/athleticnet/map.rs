@@ -206,6 +206,7 @@ pub(super) fn store_performance(
             observed_grade: input.grade,
             evidence: vec![Evidence::parsed(source.clone(), observed_on)],
             source_key: input.source_key,
+            source_athlete: None,
             retained_conflicts: Vec::new(),
         });
 }

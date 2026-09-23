@@ -21,7 +21,7 @@ use restate_sdk::prelude::Json;
 use census_store::Store;
 use midwest_census::census::seal::{self, SealOutcome};
 use midwest_census::census::{RetainedFindings, SealCounts, SealedCensus};
-use midwest_census::report::Scope;
+use census_report::report::Scope;
 use midwest_census::restate_services::{CensusIngressClient, SealReply, SealRequest};
 
 use super::{Cli, Route};

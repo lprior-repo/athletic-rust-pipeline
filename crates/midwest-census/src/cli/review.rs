@@ -6,7 +6,9 @@
 //! every outcome including the ones that mean the model misbehaved (dropped, unanswered, failed).
 
 use anyhow::{bail, Context, Result};
-use census_review::{run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions};
+use census_review::{
+    reconcile_athletes, run_lanes, ModelClient, ModelOptions, ReviewFamily, ReviewOptions,
+};
 use census_store::Store;
 use clap::Args;
 
@@ -49,11 +51,20 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
         .observed_on
         .clone()
         .unwrap_or_else(census_crawl::net::today_iso);
+    // The deterministic pass goes first: it answers the findings the store's own evidence settles
+    // without spending a request, and files the ones it cannot. `--family` scopes it exactly as it
+    // scopes the lanes, so an operator asking about schools is not handed athlete cases.
+    let athlete_identity = families.contains(&ReviewFamily::AthleteIdentity);
     let options = ReviewOptions {
         families,
         limit: args.limit,
         dry_run: args.dry_run,
     };
+    if athlete_identity {
+        let reconciliation = reconcile_athletes(store, &observed_on, args.dry_run)
+            .context("reconciling the athlete rows the merge retained")?;
+        println!("{}", reconciliation.summary());
+    }
     let mut clients = Vec::new();
     for (endpoint, model) in lane_pairs(&args.endpoint, &args.model)? {
         let model_options = ModelOptions {

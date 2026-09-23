@@ -6,7 +6,8 @@
 //! A run that reads the whole 2026 season should report the measured order of magnitude — two meets,
 //! ~194 events, ~200 requests — or say where it stopped.
 
-use super::map::{EntityCounts, Stats};
+use super::map::Stats;
+use super::map_store::EntityCounts;
 use crate::AdapterReport;
 use census_domain::model::Gender;
 

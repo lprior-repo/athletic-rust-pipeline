@@ -120,12 +120,13 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         return Ok(report);
     }
     let (requests_before, cache_before) = stats_of(ctx).await;
-    let index = SchoolIndex::from_schools(&consolidated_schools(ctx)?);
+    let schools = consolidated_schools(ctx)?;
+    let index = SchoolIndex::from_schools(&schools);
     let mut run = Run::new(&index, ctx.store.journal_keys(PHASE)?);
     for url in options.urls.iter().take(limit_of(options)) {
         run.read(ctx, url).await;
     }
-    let counts = run.append(ctx)?;
+    let counts = run.append(ctx, &schools)?;
     run.journal(ctx);
     let (requests_after, cache_after) = stats_of(ctx).await;
     report.rows = run

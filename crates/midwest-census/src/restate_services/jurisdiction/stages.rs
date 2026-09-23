@@ -16,18 +16,14 @@ use std::time::Duration;
 
 use restate_sdk::prelude::*;
 
-use census_domain::UsJurisdiction;
-
-use crate::census::{CollectOptions, MeetCensus, StateProgress, WorkflowIdentity};
+use crate::census::{CollectOptions, WorkflowIdentity};
 use census_crawl::net::Fetcher;
 use census_crawl::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
 use crate::restate_services::plan::{plan as planned, BrowserLaneState};
-use crate::restate_services::wire::{
-    JurisdictionRequest, JurisdictionState, SourcePlan, StageOutcome,
-};
-use crate::restate_services::{jobs, KEY_STATE};
+use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, SourcePlan};
+use crate::restate_services::KEY_STATE;
 
 /// Delay between requests to one host when a workflow drives the walk. The CLI's default is the same
 /// second, and the fetcher's own ceiling (2 rps) is unchanged: this is the floor, not the limit.
@@ -130,61 +126,6 @@ impl JurisdictionCensus {
         );
     }
 
-    /// Enumerate the jurisdiction's team index. The count is journaled, so a re-invocation that
-    /// reaches this stage again replays the value instead of re-fetching the index.
-    pub(super) async fn teams_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-        fetcher: Arc<Fetcher>,
-        jurisdiction: UsJurisdiction,
-        refresh: bool,
-    ) -> Result<StageOutcome, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let at = super::super::journaled_today(ctx, &self.clock).await?;
-        let Json(outcome) = ctx
-            .run(move || jobs::teams_stage(store, fetcher, jurisdiction, refresh, at))
-            .retry_policy(jobs::no_run_retry())
-            .await?;
-        Ok(outcome)
-    }
-
-    /// Walk every roster in the jurisdiction. The team index is read back from the journaled cache,
-    /// so resuming costs a cache hit rather than a request.
-    pub(super) async fn rosters_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-        fetcher: Arc<Fetcher>,
-        options: CollectOptions,
-        jurisdiction: UsJurisdiction,
-    ) -> Result<StateProgress, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let Json(progress) = ctx
-            .run(move || jobs::rosters_stage(store, fetcher, options, jurisdiction))
-            .retry_policy(jobs::no_run_retry())
-            .await?;
-        Ok(progress)
-    }
-
-    /// Enumerate the jurisdiction's meets for one season year. The count and per-page journal are
-    /// durable, so a re-invocation that reaches this stage again resumes at the first page this
-    /// season has not already recorded.
-    pub(super) async fn meets_stage(
-        &self,
-        ctx: &ObjectContext<'_>,
-        fetcher: Arc<Fetcher>,
-        jurisdiction: UsJurisdiction,
-        year: u16,
-        refresh: bool,
-    ) -> Result<MeetCensus, HandlerError> {
-        let store = Arc::clone(&self.store);
-        let at = super::super::journaled_today(ctx, &self.clock).await?;
-        let Json(census) = ctx
-            .run(move || jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at))
-            .retry_policy(jobs::no_run_retry())
-            .await?;
-        Ok(census)
-    }
-
     /// Record the run's source plan, once per state.
     ///
     /// Before any adapter runs: this jurisdiction's sources, split into the units this machine can
@@ -218,9 +159,25 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
+        // The stage runs the plan, so a run that reached this point without one skipped the
+        // recording step; a list invented here would be the second opinion the plan prevents.
+        let Some(plan) = state.plan.as_ref() else {
+            return Err(TerminalError::new(
+                "the teams stage ran before the run recorded its source plan",
+            )
+            .into());
+        };
+        let sweepable = plan.sweepable.clone();
         let fetcher = self.fetcher().await?;
         let outcome = self
-            .teams_stage(ctx, fetcher, request.jurisdiction, request.refresh)
+            .teams_stage(
+                ctx,
+                fetcher,
+                request.jurisdiction,
+                request.season,
+                request.refresh,
+                sweepable,
+            )
             .await?;
         state.teams = Some(outcome);
         state.identity = identity.as_str().to_string();
@@ -262,9 +219,25 @@ impl JurisdictionCensus {
                 request.season.get()
             ))
         })?;
+        // The stage runs the plan for the same reason the team-index stage does: a source list
+        // invented here would be the second opinion the recorded plan exists to prevent.
+        let Some(plan) = state.plan.as_ref() else {
+            return Err(TerminalError::new(
+                "the meets stage ran before the run recorded its source plan",
+            )
+            .into());
+        };
+        let sweepable = plan.sweepable.clone();
         let fetcher = self.fetcher().await?;
         let census = self
-            .meets_stage(ctx, fetcher, request.jurisdiction, year, request.refresh)
+            .meets_stage(
+                ctx,
+                fetcher,
+                request.jurisdiction,
+                year,
+                request.refresh,
+                sweepable,
+            )
             .await?;
         state.meets = Some(census);
         self.save(ctx, state, today);

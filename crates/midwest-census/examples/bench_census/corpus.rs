@@ -215,6 +215,7 @@ fn performance_of(
         observed_grade: Some(grade(11)?),
         evidence: vec![evidence()],
         source_key,
+        source_athlete: None,
         retained_conflicts: Vec::new(),
     })
 }

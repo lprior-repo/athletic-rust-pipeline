@@ -17,7 +17,7 @@ use super::{classify, source_id, Route, PHASE};
 use crate::{AdapterContext, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, SourceRef,
+    CanonicalTeam, SourceNamespace, SourceRef,
 };
 use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
@@ -163,7 +163,11 @@ impl<'a> Run<'a> {
     ///
     /// The accumulator is taken rather than the run consumed: the report reads the run's counters
     /// after the append, and an `Accumulator` defaults to empty, so the take leaves it consistent.
-    pub(super) fn append(&mut self, ctx: &AdapterContext<'_>) -> CrawlResult<EntityCounts> {
+    pub(super) fn append(
+        &mut self,
+        ctx: &AdapterContext<'_>,
+        consolidated: &[CanonicalSchool],
+    ) -> CrawlResult<EntityCounts> {
         let accumulated = std::mem::take(&mut self.absorb.accumulator);
         let schools: Vec<CanonicalSchool> = accumulated.schools.into_values().collect();
         let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
@@ -172,10 +176,20 @@ impl<'a> Run<'a> {
         let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
         let performances: Vec<CanonicalPerformance> =
             accumulated.performances.into_values().collect();
+        let mut performances = performances;
+        crate::stamp_source_athletes(&SourceNamespace::TfrrsAthlete, &athletes, &mut performances);
         ctx.store.append_many(Table::Schools, &schools)?;
         ctx.store.append_many(Table::Meets, &meets)?;
         ctx.store.append_many(Table::Teams, &teams)?;
         ctx.store.append_many(Table::Athletes, &athletes)?;
+        // A school this page named either minted a row or resolved against the consolidated index, so
+        // both lists are handed over: the minted row carries the page's own spelling and wins, and the
+        // consolidated row names the school for an athlete whose label the index answered.
+        ctx.observe_athletes(
+            &SourceNamespace::TfrrsAthlete,
+            &athletes,
+            schools.iter().chain(consolidated.iter()),
+        )?;
         ctx.store.append_many(Table::Events, &events)?;
         ctx.store.append_many(Table::Performances, &performances)?;
         Ok(EntityCounts {

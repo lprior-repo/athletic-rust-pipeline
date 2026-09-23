@@ -216,6 +216,16 @@ manifests pin `rust_xlsxwriter = "=0.99.1"` with `features = ["constant_memory"]
 streams rows instead of holding the sheet in memory. The builder recomputes nothing: it copies the
 typed census from `report` and `bests`.
 
+The §52 `Performances_00N` sheets are the one sheet whose rows are not a table the report already
+holds, so the builder joins them itself (`workbook/performances/join.rs`): the performance table is
+read once, each row is joined against the canonical parents and spilled into a temp-dir range file
+chosen by school name (`…/spill.rs`), and the ranges are then read back in name order, sorted, and
+written one sheet at a time — each row into its worksheet as it arrives, through
+`cells.rs::SheetWriter`, so a sheet's cells are never materialized either. The resident set is one
+range's sorted rows plus the indexed parent tables, not the whole performance table; a range is
+250,000 rows and there are at most 256 ranges, so the spill is bounded at a few hundred megabytes
+rather than the table's size. The spill directory is removed when the row iterator drops.
+
 Root: `append_matches_sheet` streams the input archive entry-by-entry into a `ZipWriter` over a
 `BufWriter<File>`, replacing `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `[Content_Types].xml`
 and the matches sheet; every other entry is copied with bounded reads. Output goes to a temporary

@@ -13,7 +13,7 @@ use crate::census::{
     owed_cohort_decisions, owed_identity_candidates, GapTally, OpenWork, RetainedFindings,
     SealCounts, SealEvidence, WorkbookCheck,
 };
-use crate::report::{Census, CoverageReport};
+use census_report::report::{Census, CoverageReport};
 use census_store::{StoreStats, Table};
 
 /// Everything §70 asks the census to prove, from the store, the classifier and the run's journal.

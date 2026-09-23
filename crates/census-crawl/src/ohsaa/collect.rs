@@ -166,7 +166,12 @@ fn emit_school(
     tally: &mut Tally,
 ) -> CrawlResult<()> {
     let school_key = format!("OH:{}", sr.ohsaa_id);
-    ctx.store.append(Table::Schools, &extract.school)?;
+    // One page: the school, every coach row and every journal entry commit together. The coach rows go
+    // in one append rather than one call per coach, and the entries are buffered in the same page, so
+    // the unit is one durability boundary instead of one per row. The school observation stays a
+    // direct write, the way every school arm writes it.
+    let mut batch = ctx.store.write_batch();
+    batch.append_many(Table::Schools, std::slice::from_ref(&extract.school))?;
     ctx.observe_school(
         &SourceNamespace::association_school(ASSOCIATION),
         &extract.school,
@@ -174,15 +179,15 @@ fn emit_school(
     report.rows = report.rows.saturating_add(1);
     let mut coach_emails = 0u64;
     for coach in &extract.coaches {
-        ctx.store.append(Table::Coaches, coach)?;
         tally.coach_rows = tally.coach_rows.saturating_add(1);
         if coach.professional_email.is_some() {
             coach_emails = coach_emails.saturating_add(1);
         }
     }
+    batch.append_many(Table::Coaches, &extract.coaches)?;
     tally.with_email = tally.with_email.saturating_add(coach_emails);
 
-    ctx.store.journal_done(
+    batch.journal_done(
         "ohsaa_schools",
         &school_key,
         &serde_json::json!({
@@ -192,7 +197,7 @@ fn emit_school(
         }),
     )?;
     for coach in &extract.coaches {
-        ctx.store.journal_done(
+        batch.journal_done(
             "ohsaa_coaches",
             &school_key,
             &serde_json::json!({
@@ -204,5 +209,6 @@ fn emit_school(
             }),
         )?;
     }
+    batch.commit()?;
     Ok(())
 }

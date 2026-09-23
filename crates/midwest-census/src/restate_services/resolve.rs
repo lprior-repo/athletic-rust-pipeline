@@ -4,7 +4,7 @@
 //! Every unknown name here is terminal: a typo is a wrong request, and a table nobody scans would
 //! hide that mistake from every surface that reads the store afterwards.
 
-use crate::report::Scope;
+use census_report::report::Scope;
 use census_store::Table;
 use restate_sdk::prelude::TerminalError;
 

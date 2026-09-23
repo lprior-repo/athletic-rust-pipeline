@@ -80,6 +80,7 @@ mod collect;
 mod entities;
 mod journal;
 mod map;
+mod map_store;
 pub mod parse;
 mod report;
 mod requests;

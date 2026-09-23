@@ -13,7 +13,7 @@ use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use midwest_census::census::Revision;
-use midwest_census::report;
+use census_report::report;
 use midwest_census::restate_services::{
     run_key, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
     ConsolidateReply, ConsolidateRequest, ConsolidatedTable, JurisdictionReport,

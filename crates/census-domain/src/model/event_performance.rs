@@ -27,11 +27,12 @@ impl CanonicalEvent {
         division: Option<&str>,
         round: Option<&str>,
     ) -> Self {
+        let key = kind.stable_key();
         let id = Id::mint(
             "evt",
             &[
                 meet.as_str(),
-                &format!("{kind:?}"),
+                key.as_ref(),
                 match gender {
                     Gender::Boys => "m",
                     Gender::Girls => "f",
@@ -108,6 +109,13 @@ pub struct CanonicalPerformance {
     pub evidence: Vec<Evidence>,
     /// Provider-local result key, used for idempotent upserts.
     pub source_key: String,
+    /// The source's own athlete object this row was read from, when the adapter knew it: the §31 key
+    /// (`namespace`, provider athlete id) the athlete row carries for the pass that minted this
+    /// performance. Held here rather than looked up later because it is what makes this row's athlete
+    /// reversible — a canonical athlete that turns out to be two people is told apart from what each
+    /// source said, without reading the provider again.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_athlete: Option<SourceIdentity>,
     /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
     /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
     /// every row whose fields still state the id they minted, which is every row until one collides.
@@ -121,6 +129,20 @@ pub enum TimingMethod {
     Fat,
     Hand,
     Unknown,
+}
+
+impl TimingMethod {
+    /// The byte spelling of this method inside a persisted row; see [`Gender::stable_key`].
+    ///
+    /// The workbook and bests rows carry this text, so it is written here rather than taken from
+    /// `Debug`: renaming a variant would otherwise change a published cell.
+    pub const fn stable_key(self) -> &'static str {
+        match self {
+            Self::Fat => "Fat",
+            Self::Hand => "Hand",
+            Self::Unknown => "Unknown",
+        }
+    }
 }
 
 impl CanonicalPerformance {

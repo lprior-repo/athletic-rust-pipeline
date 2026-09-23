@@ -23,7 +23,7 @@ pub async fn collect(ctx: &AdapterContext<'_>, options: &Options) -> CrawlResult
         collect_archive(ctx, options, &mut report, &mut run, archive_url, sport).await?;
     }
 
-    let counts = append_entities(ctx, run.accumulated)?;
+    let counts = append_entities(ctx, run.accumulated, run.pending)?;
     finish_report(
         ctx,
         &mut report,
@@ -82,6 +82,8 @@ struct ArtifactRun {
     stats: Stats,
     accumulated: Accumulator,
     done: HashSet<String>,
+    /// The artifact entries this walk has earned, committed with the entity tables at the end.
+    pending: Vec<(String, serde_json::Value)>,
     reported_missing_tool: bool,
 }
 
@@ -95,6 +97,7 @@ impl ArtifactRun {
             stats: Stats::default(),
             accumulated: Accumulator::default(),
             done,
+            pending: Vec::new(),
             reported_missing_tool: false,
         }
     }
@@ -176,10 +179,11 @@ struct EntityCounts {
     performances: usize,
 }
 
-/// Append one batch per table and return what was written.
+/// Append one batch per table, journal the artifacts this run read, and return what was written.
 fn append_entities(
     ctx: &AdapterContext<'_>,
     accumulated: Accumulator,
+    pending: Vec<(String, serde_json::Value)>,
 ) -> CrawlResult<EntityCounts> {
     // One append per table keeps the entity logs tight and the run resumable.
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
@@ -187,11 +191,18 @@ fn append_entities(
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
-    ctx.store.append_many(Table::Meets, &meets)?;
-    ctx.store.append_many(Table::Teams, &teams)?;
-    ctx.store.append_many(Table::Athletes, &athletes)?;
-    ctx.store.append_many(Table::Events, &events)?;
-    ctx.store.append_many(Table::Performances, &performances)?;
+    // The five tables and the artifact entries commit in one page: an artifact counts as read only
+    // once the entities its rows minted are durable, so a run that stopped in between re-reads it.
+    let mut batch = ctx.store.write_batch();
+    batch.append_many(Table::Meets, &meets)?;
+    batch.append_many(Table::Teams, &teams)?;
+    batch.append_many(Table::Athletes, &athletes)?;
+    batch.append_many(Table::Events, &events)?;
+    batch.append_many(Table::Performances, &performances)?;
+    for (url, payload) in pending {
+        batch.journal_done("wiaa_results", &url, &payload)?;
+    }
+    batch.commit()?;
     Ok(EntityCounts {
         meets: meets.len(),
         events: events.len(),

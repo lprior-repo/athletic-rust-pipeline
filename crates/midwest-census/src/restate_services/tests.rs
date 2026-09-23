@@ -7,14 +7,15 @@ use census_domain::UsJurisdiction;
 use crate::census::{
     owed_source_objects, MeetCensus, Revision, SourceObject, StateProgress, WorkflowIdentity,
 };
-use crate::report::ReportError;
+use census_report::report::ReportError;
 use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
 use census_store::StoreError;
 
 use super::*;
-use crate::report::Scope;
+use census_report::report::Scope;
+use crate::restate_services::plan::classify_access;
 use census_store::Table;
 
 #[test]
@@ -411,8 +412,18 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
         "a browser transport on a non-artifact origin is a browser session"
     );
 
-    let without_lane = plan_sources(&[&BROWSER_ONLY], BrowserLaneState::Absent);
-    let with_lane = plan_sources(&[&BROWSER_ONLY], BrowserLaneState::Configured);
+    let without_lane = [classify_access(
+        BROWSER_ONLY.slug,
+        BROWSER_ONLY.access_class(),
+        Dispatch::Wired,
+        BrowserLaneState::Absent,
+    )];
+    let with_lane = [classify_access(
+        BROWSER_ONLY.slug,
+        BROWSER_ONLY.access_class(),
+        Dispatch::Wired,
+        BrowserLaneState::Configured,
+    )];
 
     let refusals = owed(&without_lane);
     assert_eq!(

@@ -10,9 +10,9 @@
 use anyhow::{Context, Result};
 use census_store::Store;
 use clap::Args;
-use midwest_census::report;
+use census_report::report;
 use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
-use midwest_census::{bests, workbook};
+use census_report::{bests, workbook};
 use std::path::PathBuf;
 
 use super::{cohort_label, live, school_year, scope_of, Cli, Route};

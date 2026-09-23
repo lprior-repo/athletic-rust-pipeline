@@ -9,7 +9,7 @@ use std::sync::Arc;
 use restate_sdk::prelude::*;
 
 use crate::outcome::Outcome;
-use crate::report::ReportError;
+use census_report::report::ReportError;
 use crate::spawn::Spawner;
 use census_store::StoreError;
 /// A job outcome Restate can act on: retrying a transient failure is worth it, retrying a terminal

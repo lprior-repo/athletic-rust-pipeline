@@ -6,9 +6,9 @@
 
 use anyhow::{Context, Result};
 use census_store::Store;
-use midwest_census::report;
+use census_report::report;
 use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
-use midwest_census::{bests, workbook};
+use census_report::{bests, workbook};
 
 use super::RunArgs;
 use crate::cli::cohort_label;

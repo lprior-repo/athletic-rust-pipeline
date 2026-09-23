@@ -13,6 +13,7 @@
 use super::map::{DocumentEntities, ResultStats, SOURCE_ID};
 use crate::athleticlive_athletes::MeetTarget;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
+use census_domain::model::{CanonicalSchool, SourceNamespace};
 use census_store::Table;
 
 mod absorb;
@@ -101,9 +102,16 @@ pub async fn collect(
     };
     let mut report = AdapterReport::new(SOURCE_ID, "result rows");
     let mut run = Run::new(ctx, target, options)?;
-    run.read_captures(ctx, options)?;
-    let walk = run.close();
-    let counts = append(ctx, &walk.entities)?;
+    run.read_captures(options)?;
+    let mut walk = run.close();
+    crate::stamp_source_athletes(
+        &SourceNamespace::LegacyAthleticNet {
+            kind: "athlete".to_string(),
+        },
+        &walk.entities.athletes,
+        &mut walk.entities.performances,
+    );
+    let counts = append(ctx, &walk.entities, &walk.schools, walk.entries)?;
     finish(
         &mut report,
         RunSummary {
@@ -116,22 +124,45 @@ pub async fn collect(
     Ok(report)
 }
 
-/// What a finished walk hands back: the entities it accumulated, what it refused, and how many
-/// captures an earlier run had already journaled.
+/// What a finished walk hands back: the entities it accumulated, the entries its captures earned,
+/// what it refused, and how many captures an earlier run had already journaled.
 pub(super) struct WalkResult {
     pub(super) entities: DocumentEntities,
+    /// The consolidated schools the walk resolved its labels against.
+    pub(super) schools: Vec<CanonicalSchool>,
+    /// One entry per capture read, keyed by the capture's path: `append` writes them.
+    pub(super) entries: Vec<(String, serde_json::Value)>,
     pub(super) failures: Vec<String>,
     pub(super) resumed: usize,
 }
 
-/// Append one batch per table and return what was written.
-fn append(ctx: &AdapterContext<'_>, entities: &DocumentEntities) -> CrawlResult<EntityCounts> {
-    ctx.store.append_many(Table::Meets, &entities.meets)?;
-    ctx.store.append_many(Table::Events, &entities.events)?;
-    ctx.store.append_many(Table::Teams, &entities.teams)?;
-    ctx.store.append_many(Table::Athletes, &entities.athletes)?;
-    ctx.store
-        .append_many(Table::Performances, &entities.performances)?;
+/// Append one batch: every table, the athlete observations, and the entries naming the captures
+/// they came from, in one commit.
+fn append(
+    ctx: &AdapterContext<'_>,
+    entities: &DocumentEntities,
+    schools: &[CanonicalSchool],
+    entries: Vec<(String, serde_json::Value)>,
+) -> CrawlResult<EntityCounts> {
+    let mut page = ctx.store.write_batch();
+    page.append_many(Table::Meets, &entities.meets)?;
+    page.append_many(Table::Events, &entities.events)?;
+    page.append_many(Table::Teams, &entities.teams)?;
+    page.append_many(Table::Athletes, &entities.athletes)?;
+    ctx.observe_athletes(
+        &SourceNamespace::LegacyAthleticNet {
+            kind: "athlete".to_string(),
+        },
+        &entities.athletes,
+        schools,
+    )?;
+    page.append_many(Table::Performances, &entities.performances)?;
+    // The entries commit with the rows their captures yielded: a capture counts as read only once
+    // every row it produced is durable.
+    for (path, payload) in &entries {
+        page.journal_done(PHASE, path, payload)?;
+    }
+    page.commit()?;
     Ok(EntityCounts {
         meets: entities.meets.len(),
         events: entities.events.len(),

@@ -239,6 +239,9 @@ impl Entity for CanonicalPerformance {
         if self.observed_grade.is_none() {
             self.observed_grade = other.observed_grade;
         }
+        if self.source_athlete.is_none() {
+            self.source_athlete = other.source_athlete;
+        }
         if self.timing.is_none() {
             self.timing = other.timing;
         }
@@ -249,3 +252,7 @@ impl Entity for CanonicalPerformance {
 #[cfg(test)]
 #[path = "canonical_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "canonical_performance_tests.rs"]
+mod performance_tests;

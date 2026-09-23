@@ -2,7 +2,8 @@
 
 use super::super::*;
 use crate::model::{
-    Gender, GradYear, Grade, ObservedGrade, SchoolYear, SourceNamespace, SourceRef,
+    CanonicalAthlete, Gender, GradYear, Grade, ObservedGrade, SchoolId, SchoolYear, SourceIdentity,
+    SourceNamespace, SourceRef,
 };
 
 #[test]
@@ -55,6 +56,75 @@ fn an_athlete_observation_keeps_what_its_source_published() {
         .gender,
         Gender::Unknown,
         "a source that published no gender states none rather than guessing one"
+    );
+}
+
+/// What the adapters' athlete write rests on: the observation is minted from the provider's own
+/// athlete id on the canonical row, so a row whose only name for its athlete is one this program
+/// decided files nothing.
+#[test]
+fn of_athlete_reads_the_providers_own_id_and_files_nothing_without_one() {
+    let school = SchoolId::mint("sch", &["WI", "Madison West"]);
+    let grad_year = GradYear::new(2028).expect("a class");
+    let mut athlete = CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls);
+    athlete.observed_grades.push(ObservedGrade {
+        grade: Grade::new(10).expect("a grade in 9..=12"),
+        school_year: SchoolYear::new(2025).expect("a season"),
+        source: SourceRef::new("milesplit_roster", None),
+    });
+    athlete
+        .public_profile_urls
+        .push("https://wi.milesplit.com/athletes/14399169-jordan-smith".to_string());
+    athlete.source_identities.push(SourceIdentity::new(
+        SourceNamespace::MilesplitAthlete,
+        "14399169",
+    ));
+
+    let observation = SourceAthleteObservation::of_athlete(
+        &SourceNamespace::MilesplitAthlete,
+        &athlete,
+        Some("Madison West".to_string()),
+        "2026-09-22",
+    )
+    .expect("the row carries the provider's own athlete id");
+    assert_eq!(observation.id, "milesplit_athlete:14399169");
+    assert_eq!(observation.source_athlete_id, "14399169");
+    assert_eq!(observation.observed_name, "Jordan Smith");
+    assert_eq!(observation.observed_school.as_deref(), Some("Madison West"));
+    assert_eq!(
+        observation.profile_url.as_deref(),
+        Some("https://wi.milesplit.com/athletes/14399169-jordan-smith")
+    );
+    assert_eq!(observation.gender, Gender::Girls);
+    assert_eq!(
+        observation
+            .observed_grade
+            .as_ref()
+            .map(ObservedGrade::grad_year),
+        Some(grad_year),
+        "the class the source's own grade observation implies"
+    );
+    assert_eq!(observation.observed_on, "2026-09-22");
+    assert_eq!(
+        SourceAthleteObservation::of_athlete(
+            &SourceNamespace::MilesplitAthlete,
+            &CanonicalAthlete::new(&school, "Jordan Smith", grad_year, Gender::Girls),
+            None,
+            "2026-09-22",
+        ),
+        None,
+        "a row with no provider identity files nothing: its canonical id is this program's, not the \
+         source's, and an observation keyed by it would outlive nothing"
+    );
+    assert_eq!(
+        SourceAthleteObservation::of_athlete(
+            &SourceNamespace::TfrrsAthlete,
+            &athlete,
+            Some("Madison West".to_string()),
+            "2026-09-22",
+        ),
+        None,
+        "an identity for another source is not this source's sighting of the athlete"
     );
 }
 

@@ -7,7 +7,7 @@
 use super::super::fetch::fetch_result_set;
 use super::super::map::absorb_result_set;
 use super::super::wire::ResultSetRef;
-use super::{Accumulator, Stats, PHASE};
+use super::{Accumulator, Stats};
 use crate::AdapterContext;
 use census_domain::model::SchoolId;
 use census_domain::school_index::SchoolIndex;
@@ -20,14 +20,18 @@ pub(super) struct Run {
     pub(super) stats: Stats,
     pub(super) accumulated: Accumulator,
     pub(super) done: HashSet<String>,
+    /// The entries this walk has earned, committed with the rows they name by `super::append`.
+    pub(super) pending: Vec<(String, serde_json::Value)>,
 }
 
 impl Run {
-    /// Read one result set: fetch, parse, absorb, then journal the unit of work.
+    /// Read one result set: fetch, parse, absorb, and buffer the unit of work.
     ///
-    /// A fetch or parse failure is recorded against the result set instead of ending the walk, and a
-    /// failed journal write is recorded instead of dropped: either way the unit stays unfinished, so
-    /// the next run repeats it.
+    /// A fetch or parse failure is recorded against the result set instead of ending the walk. The
+    /// entry is not written here: the walk writes nothing, and `super::append` commits every entry
+    /// with the rows its result sets produced, so a set counts as read only once those rows are
+    /// durable — a commit the store refuses ends the walk with the store's error rather than
+    /// leaving a set marked read whose rows never landed.
     pub(super) async fn read(&mut self, ctx: &AdapterContext<'_>, reference: &ResultSetRef) {
         let key = format!("{}/{}", reference.meet_id, reference.rsid);
         if self.done.contains(&key) {
@@ -66,11 +70,7 @@ impl Run {
             "rows": page.meet.rows_parsed,
             "skipped_lines": page.skipped.len(),
         });
-        if let Err(error) = ctx.store.journal_done(PHASE, &key, &payload) {
-            self.stats
-                .failures
-                .push(format!("{}: journal {error}", reference.url));
-        }
+        self.pending.push((key, payload));
     }
 
     /// Record an entry that is not a result-set URL; nothing is requested for it.

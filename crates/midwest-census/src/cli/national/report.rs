@@ -2,7 +2,9 @@
 //! that says whether the run finished clean.
 
 use anyhow::{bail, Result};
-use midwest_census::restate_services::{JurisdictionReport, JurisdictionSummary, NationalReport};
+use midwest_census::restate_services::{
+    JurisdictionReport, JurisdictionSummary, NationalReport, SourcePlan,
+};
 
 /// A cell for a value a report may predate: an unrecorded denominator is unknown, not zero.
 pub(crate) fn cell(value: Option<usize>) -> String {
@@ -10,6 +12,16 @@ pub(crate) fn cell(value: Option<usize>) -> String {
         Some(value) => value.to_string(),
         None => "?".to_string(),
     }
+}
+
+/// The owed sources of one run, in plan order: the slugs an operator has to see, because a plan
+/// that is recorded and never printed reads as a run that swept everything.
+pub(crate) fn owed_sources(plan: &SourcePlan) -> String {
+    plan.refused
+        .iter()
+        .map(|refusal| refusal.slug.as_str())
+        .collect::<Vec<&str>>()
+        .join(",")
 }
 
 /// The fold's owed total: unknown if any row is unknown, because a sum over known rows alone would
@@ -129,5 +141,48 @@ pub(crate) fn print_jurisdiction(report: &JurisdictionReport, json: bool) -> Res
     for error in &report.rosters.errors {
         println!("error {error}");
     }
+    // The plan's owed sources, printed on every run: a refusal is not a failure, so without this
+    // line a run that owed ten sources reads exactly like a run that swept them.
+    if !report.plan.refused.is_empty() {
+        // The plan's own counts: a refusal is not a failure, so the line names what a run owed.
+        let refused = report.plan.refused.len();
+        let sweepable = report.plan.sweepable.len();
+        let planned = refused.saturating_add(sweepable);
+        println!(
+            "sweepable {sweepable} · owed {refused} of {planned} planned · {}",
+            owed_sources(&report.plan)
+        );
+    }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The segment is built from the plan as the journal records it, so what an operator reads is
+    /// the run's own record — refusals in plan order, none dropped.
+    #[test]
+    fn owed_sources_are_the_plans_refusals_in_order() {
+        let plan: SourcePlan = serde_json::from_value(serde_json::json!({
+            "sweepable": ["milesplit"],
+            "refused": [
+                {"slug": "athleticnet", "reason": "no run stage sweeps this source per jurisdiction"},
+                {"slug": "wiaa", "reason": "no run stage sweeps this source per jurisdiction"}
+            ]
+        }))
+        .expect("a plan recorded by a run reads back");
+        assert_eq!(owed_sources(&plan), "athleticnet,wiaa");
+    }
+
+    /// A plan with nothing owed prints nothing at all, so a clean run stays one line.
+    #[test]
+    fn nothing_owed_is_an_empty_segment() {
+        let plan: SourcePlan = serde_json::from_value(serde_json::json!({
+            "sweepable": ["milesplit"],
+            "refused": []
+        }))
+        .expect("a plan recorded by a run reads back");
+        assert!(owed_sources(&plan).is_empty());
+    }
 }

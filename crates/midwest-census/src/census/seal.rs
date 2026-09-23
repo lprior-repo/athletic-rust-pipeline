@@ -17,7 +17,7 @@ use anyhow::{bail, Context, Result};
 use census_domain::model::{AccessBlockKind, ReviewCase, SourceAccessCondition};
 
 use super::{CensusState, SealEvidence, SealedCensus};
-use crate::report::{self, Scope};
+use census_report::report::{self, Scope};
 use census_store::{Store, StoreStats, Table};
 
 pub mod workbook;

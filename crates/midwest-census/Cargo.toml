@@ -35,6 +35,9 @@ census-domain = { path = "../census-domain" }
 # The review lane (retained families, model packets, verdict records) is its own crate now; the
 # workbook's conflict queue and the `review` verb are its two consumers here.
 census-review = { path = "../census-review" }
+# The reporting plane (coverage, bests, workbook export) is its own crate now; the CLI's export and
+# seal verbs are its consumers here.
+census-report = { path = "../census-report" }
 census-store = { path = "../census-store" }
 clap = { version = "4.5", features = ["derive"] }
 csv = "1"

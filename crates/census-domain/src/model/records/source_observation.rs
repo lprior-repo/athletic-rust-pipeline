@@ -16,7 +16,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::observation::{SourceAthleteObservation, SourceSchoolObservation};
-use crate::model::{CanonicalSchool, Gender, SourceNamespace};
+use crate::model::{CanonicalAthlete, CanonicalSchool, Gender, SourceNamespace};
 
 /// One source's own observation of one object, as one store row.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -124,6 +124,45 @@ impl SourceSchoolObservation {
 }
 
 impl SourceAthleteObservation {
+    /// The observation of one athlete: what the source published, read off the row the adapter minted
+    /// for them together with the identity that row carries for the source's own athlete object.
+    ///
+    /// `observed_school` is the school the source placed the athlete at. The canonical row names that
+    /// school by id, so the caller passes the spelling it holds beside the id — the school row the pass
+    /// minted or resolved — rather than this mint re-reading a page it never fetched.
+    ///
+    /// `None` when the row carries no identity in `namespace`. Without the provider's own athlete id
+    /// there is no key to file the observation under, and minting one from the canonical id would hand
+    /// the row the very thing it exists to outlive — the merge it makes reversible.
+    pub fn of_athlete(
+        namespace: &SourceNamespace,
+        athlete: &CanonicalAthlete,
+        observed_school: Option<String>,
+        observed_on: &str,
+    ) -> Option<Self> {
+        let identity = athlete
+            .source_identities
+            .iter()
+            .find(|identity| &identity.namespace == namespace)?;
+        let page = identity
+            .url
+            .clone()
+            .or_else(|| athlete.public_profile_urls.first().cloned());
+        Some(
+            Self::new(
+                namespace.clone(),
+                identity.id.clone(),
+                page.unwrap_or_default(),
+                athlete.canonical_name.clone(),
+                observed_on,
+            )
+            .with_school(observed_school)
+            .with_grade(athlete.observed_grades.last().cloned())
+            .with_gender(athlete.gender)
+            .with_profile_url(athlete.public_profile_urls.first().cloned()),
+        )
+    }
+
     /// Keep the first sighting's identity, let a later one complete it, and hold the earliest day the
     /// object was seen. A later roster fills a blank grade; it never overwrites the grade this row
     /// already carries, which is the one the reversal argument rests on.

@@ -131,10 +131,7 @@ async fn process_record(
 
     let coaches = emit_coaches(ctx, record, &staff, &school_id, &staff_url, run, report).await;
 
-    // Append this school's coach rows, then journal it: the append commits at `SyncData` and the
-    // journal write commits separately, so a journaled school never claims rows the store does not
-    // hold.
-    ctx.store.append_many(Table::Coaches, &coaches)?;
+    // This school's coach rows and the entry that journals it reach the store as one commit.
     journal_school(
         ctx,
         &journal_key,
@@ -142,6 +139,7 @@ async fn process_record(
             "school_id": record.school_id,
             "name": record.name_formal,
         }),
+        &coaches,
     )?;
 
     run.processed = run.processed.saturating_add(1);
@@ -214,15 +212,20 @@ async fn emit_coaches(
     coaches
 }
 
-/// Journal one school's progress on `ihsa_schools`.
+/// Journal one school's progress on `ihsa_schools`, with the coach rows it earned in the same
+/// commit — so a resume can neither skip a school whose coach rows are missing nor re-read one the
+/// store already holds. A school whose staff list could not be read journals with no rows.
 fn journal_school(
     ctx: &AdapterContext<'_>,
     journal_key: &str,
     details: &serde_json::Value,
+    coaches: &[CanonicalCoach],
 ) -> CrawlResult<()> {
-    Ok(ctx
-        .store
-        .journal_done("ihsa_schools", journal_key, details)?)
+    let mut batch = ctx.store.write_batch();
+    batch.append_many(Table::Coaches, coaches)?;
+    batch.journal_done("ihsa_schools", journal_key, details)?;
+    batch.commit()?;
+    Ok(())
 }
 
 /// Fetch and parse one school's staff list; `None` when either step failed and was journalled.
@@ -250,6 +253,7 @@ async fn fetch_staff(
                     "name": record.name_formal,
                     "error": e.to_string(),
                 }),
+                &[],
             )?;
             run.processed = run.processed.saturating_add(1);
             return Ok(None);
@@ -276,6 +280,7 @@ async fn fetch_staff(
                     "name": record.name_formal,
                     "parse_error": e.to_string(),
                 }),
+                &[],
             )?;
             run.processed = run.processed.saturating_add(1);
             return Ok(None);

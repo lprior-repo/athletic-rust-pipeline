@@ -20,7 +20,7 @@
 //! below, so an entry point's whole shape is visible in one screen.
 
 use anyhow::{bail, Result};
-use midwest_census::report::Scope;
+use census_report::report::Scope;
 use std::path::{Path, PathBuf};
 
 use crate::ingress;

@@ -1,19 +1,20 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use restate_sdk::prelude::{HandlerError, Json, RunRetryPolicy, TerminalError};
 use serde_json::Value;
 
-use crate::census::{self, CollectOptions, MeetCensus, StateProgress};
-use crate::report::{self, ReportError, ReportResult, Scope};
-use crate::{bests, workbook};
+use crate::census::{self, CollectOptions, StateProgress};
+use census_report::report::{self, ReportError, ReportResult, Scope};
+use census_report::{bests, workbook};
 use census_crawl::net::Fetcher;
-use census_crawl::CrawlError;
+use census_crawl::{AdapterContext, AdapterReport, CrawlError};
 use census_store::{Store, StoreError, StoreResult, Table};
 
 use super::wire::ingest::SweepReport;
-use super::wire::{BestsReply, ConsolidatedTable, ReportReply, StageOutcome, WorkbookReply};
+use super::wire::{BestsReply, ConsolidatedTable, ReportReply, WorkbookReply};
 use super::{cohort_label, JobError, MAX_ROWS_PER_REQUEST};
 
 /// Append observations for one table. Every row must carry its canonical `id`; that is what the
@@ -124,42 +125,55 @@ pub(super) fn write_sweep_report(
 
 // ------------------------------------------------------- jurisdiction census stages
 
-/// The team-index stage: enumerate one jurisdiction's teams and report how many the index lists.
-///
-/// The index itself stays where `collect_state_teams` put it — the store's observations and the
-/// fetch cache — because the roster stage re-reads it. Returning the count rather than the refs is
-/// what keeps the journal entry small on a state with thousands of teams.
-pub(super) async fn teams_stage(
-    store: Arc<Store>,
-    fetcher: Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
+pub(super) use super::meets_arms::meets_stage;
+pub(super) use super::teams_arms::teams_stage;
+
+/// The context a source walk runs under, built the way the `provider` subcommand builds it: one
+/// object's shared fetcher, the run's journaled date and the season the request asked for.
+pub(super) fn adapter_context<'a>(
+    store: &'a Arc<Store>,
+    fetcher: &'a Arc<Fetcher>,
+    season: SchoolYear,
     refresh: bool,
-    at: String,
-) -> Result<Json<StageOutcome>, HandlerError> {
-    let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, refresh)
-        .await
-        .map_err(collect_error)?;
-    Ok(Json(StageOutcome {
-        records: teams.len(),
-        at,
-    }))
+    at: &str,
+) -> AdapterContext<'a> {
+    AdapterContext {
+        fetcher: fetcher.as_ref(),
+        store: store.as_ref(),
+        refresh,
+        school_year: season,
+        observed_on: at.to_string(),
+    }
 }
 
-/// The meet census stage: enumerate the jurisdiction's published meets for one season year and
-/// write them as `source_meets` rows. Nothing here walks meet pages — the results index publishes
-/// fifty meets per response — so the stage costs a bounded number of index reads, journaled per page.
-pub(super) async fn meets_stage(
-    store: Arc<Store>,
-    fetcher: Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    year: u16,
-    refresh: bool,
-    at: String,
-) -> Result<Json<MeetCensus>, HandlerError> {
-    let census = census::collect_state_meets(&fetcher, &store, jurisdiction, year, &at, refresh)
-        .await
-        .map_err(collect_error)?;
-    Ok(Json(census))
+/// A walk's row count as a stage reports it.
+///
+/// The report counts `u64`; every count a stage reports fits a `usize` on the platforms it runs on,
+/// and a walk that claimed otherwise would be a bug worth naming rather than a number worth
+/// wrapping.
+pub(super) fn rows_written(report: &AdapterReport) -> Result<usize, HandlerError> {
+    usize::try_from(report.rows).map_err(|_| {
+        TerminalError::new(format!(
+            "{} reported {} rows, which this platform cannot count",
+            report.adapter, report.rows
+        ))
+        .into()
+    })
+}
+
+/// Whether some stage in the chain arms a planned slug.
+///
+/// Each stage runs its own arms, so a planned unit another stage owns is that stage's work rather
+/// than a missing arm here. A slug no stage arms is a build bug — the plan's list and the arm
+/// tables disagree — and is refused terminally rather than skipped in silence.
+pub(super) fn assert_some_stage_arms(slug: &str) -> Result<(), HandlerError> {
+    if super::jurisdiction::DISPATCHED.contains(&slug) {
+        return Ok(());
+    }
+    Err(TerminalError::new(format!(
+        "the plan calls {slug} sweepable and no stage in the chain arms it"
+    ))
+    .into())
 }
 
 /// The roster stage: walk every roster the jurisdiction's index lists, under one set of collection
@@ -182,7 +196,7 @@ pub(super) async fn rosters_stage(
 /// Classify a collection failure for retry. The store keeps its own classification, an invariant
 /// violation is terminal because replaying it cannot restore one, and everything else — a fetch, a
 /// schema mismatch, a poisoned page — is what a bounded retry is for.
-fn collect_error(error: CrawlError) -> JobError {
+pub(super) fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
         CrawlError::Invariant { detail } => JobError::Terminal { message: detail },

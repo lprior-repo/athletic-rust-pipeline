@@ -24,7 +24,7 @@ use super::wire::ResultSetRef;
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam,
+    CanonicalTeam, SourceNamespace,
 };
 use census_domain::school_index::SchoolIndex;
 use census_store::Table;
@@ -32,6 +32,8 @@ use std::collections::HashMap;
 
 mod report;
 mod run;
+#[cfg(test)]
+mod tests;
 
 use report::{note_entities, note_resolution, note_result_sets, note_rows};
 use run::Run;
@@ -96,6 +98,7 @@ pub async fn collect(
         stats: Stats::default(),
         accumulated: Accumulator::default(),
         done: ctx.store.journal_keys(PHASE)?,
+        pending: Vec::new(),
     };
     for entry in &options.urls {
         match ResultSetRef::parse(entry) {
@@ -103,7 +106,7 @@ pub async fn collect(
             None => run.reject(entry),
         }
     }
-    let counts = append(ctx, run.accumulated)?;
+    let counts = append(ctx, run.accumulated, run.pending)?;
     finish(
         ctx,
         &mut report,
@@ -174,18 +177,36 @@ fn consolidated_schools(ctx: &AdapterContext<'_>) -> CrawlResult<Vec<CanonicalSc
     Ok(schools)
 }
 
-/// Append one batch per table and return what was written.
-fn append(ctx: &AdapterContext<'_>, accumulated: Accumulator) -> CrawlResult<EntityCounts> {
+/// Append one batch: every table the run minted, and the entries naming the result sets it read,
+/// in one commit.
+fn append(
+    ctx: &AdapterContext<'_>,
+    accumulated: Accumulator,
+    entries: Vec<(String, serde_json::Value)>,
+) -> CrawlResult<EntityCounts> {
     let meets: Vec<CanonicalMeet> = accumulated.meets.into_values().collect();
     let events: Vec<CanonicalEvent> = accumulated.events.into_values().collect();
     let teams: Vec<CanonicalTeam> = accumulated.teams.into_values().collect();
     let athletes: Vec<CanonicalAthlete> = accumulated.athletes.into_values().collect();
     let performances: Vec<CanonicalPerformance> = accumulated.performances.into_values().collect();
-    ctx.store.append_many(Table::Meets, &meets)?;
-    ctx.store.append_many(Table::Events, &events)?;
-    ctx.store.append_many(Table::Teams, &teams)?;
-    ctx.store.append_many(Table::Athletes, &athletes)?;
-    ctx.store.append_many(Table::Performances, &performances)?;
+    let mut performances = performances;
+    crate::stamp_source_athletes(
+        &SourceNamespace::MilesplitAthlete,
+        &athletes,
+        &mut performances,
+    );
+    let mut page = ctx.store.write_batch();
+    page.append_many(Table::Meets, &meets)?;
+    page.append_many(Table::Events, &events)?;
+    page.append_many(Table::Teams, &teams)?;
+    page.append_many(Table::Athletes, &athletes)?;
+    page.append_many(Table::Performances, &performances)?;
+    // The entries commit with the rows their result sets yielded: a set counts as read only once
+    // every row it produced is durable.
+    for (key, payload) in &entries {
+        page.journal_done(PHASE, key, payload)?;
+    }
+    page.commit()?;
     Ok(EntityCounts {
         meets: meets.len(),
         events: events.len(),

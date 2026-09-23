@@ -31,10 +31,10 @@ bundled nightly (`nightly-2025-11-21`), so the active default toolchain does not
 | `crates/census-domain` | `kani/gradyear.rs` | 4 | `GradYear::of` cohort derivation and saturation, `ObservedGrade::grad_year` agreement, known cohort values |
 | `crates/census-domain` | `kani/publish.rs` | 8 | `professional_email` withholding (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency |
 | `crates/census-domain` | `kani/id_mint.rs` | 5 | `Id::mint` determinism, shape, tag prefixes, golden digest, `as_str`/`Display` agreement |
-| `crates/midwest-census` | `kani/keys.rs` | 5 | `observation_key`/`split_observation_key` round-trip, fixed-width tail, id bounds, null byte and max-sequence handling |
-| `crates/midwest-census` | `kani/merge.rs` | 5 | `Entity::merge` idempotency (School, Coach), `CanonicalCoach::publish` idempotency, consumer-mailbox withhold invariant, `withheld_mailboxes` consistency |
+| `crates/census-store` | `kani/keys.rs` | 5 | `observation_key`/`split_observation_key` round-trip, fixed-width tail, id bounds, null byte and max-sequence handling |
+| `crates/census-store` | `kani/merge.rs` | 5 | `Entity::merge` idempotency (School, Coach), `CanonicalCoach::publish` idempotency, consumer-mailbox withhold invariant, `withheld_mailboxes` consistency |
 
-Wiring: `crates/midwest-census/src/store/mod.rs` ends with
+Wiring: `crates/census-store/src/lib.rs` ends with
 
 ```rust
 #[cfg(kani)] include!("../kani/store_wiring.rs");
@@ -48,7 +48,7 @@ Commands (from the repository root), one harness per invocation:
 
 ```bash
 cargo kani --manifest-path crates/census-domain/Cargo.toml --harness <name>
-cargo kani --manifest-path crates/midwest-census/Cargo.toml --harness <name>
+cargo kani --manifest-path crates/census-store/Cargo.toml --harness <name>
 
 # the id_mint and merge harnesses additionally need Kani's stubbing feature:
 cargo kani -Z stubbing --manifest-path crates/census-domain/Cargo.toml --harness check_id_mint_format
@@ -109,7 +109,7 @@ error: Using the stub attribute requires activating the unstable `stubbing` feat
      symex time, while every loop reachable at the annotated bound has a constant trip count.
      Symbolic-input harnesses (observation keys, entity merge, the symbolic mailbox harness) run with
      unwinding checks left on.
-6. **Previous compile blockers are gone.** `crates/midwest-census` builds and its harnesses run in
+6. **Previous compile blockers are gone.** `crates/midwest-census` builds and the store harnesses run in
    this tree (the `bootstrap.rs:287` / `bootstrap/error.rs:90` errors no longer reproduce). No kani
    file calls `DrainState::from_join` (`grep -rn from_join crates/*/kani/` returns nothing), so the
    signature change to `Result<(), tokio::task::JoinError>` needed no harness edit.
@@ -144,7 +144,7 @@ started either finished on CBMC's own out-of-memory path or were cut off by the 
 groups were killed and re-checked before these tables were written.
 
 **No harness was edited in this sweep.** `git status --porcelain crates/census-domain/kani
-crates/midwest-census/kani` is empty, so `git diff` over both `kani/**` trees shows nothing at all —
+crates/census-store/kani` is empty, so `git diff` over both `kani/**` trees shows nothing at all —
 no format-message edit, no added `assume`, no deleted harness, no `#[kani::ignore]`. The one harness
 whose asserted property this lane believes is false on the current model
 (`check_normalize_idempotent_repeated_suffix`, whose doc comment predicts exactly that counterexample)
@@ -219,7 +219,7 @@ equality — so its Kani run adds no reach over that unit test; the CBMC attempt
 | 16 | `check_id_mint_golden_value` | `env-blocked (solver conversion: z3 CBMC map::at status 6; bitwuzla status 134/SIGABRT)` | prev-pass | T9 |
 | 17 | `check_id_as_str_consistent` | `no verdict (never started)` | — | — |
 
-### Verdict table — `crates/midwest-census` (10 harnesses)
+### Verdict table — `crates/census-store` (10 harnesses)
 
 | # | Harness | State | Provenance | Raw tail |
 |---|---|---|---|---|

@@ -9,6 +9,7 @@
 //! budget, so the standings tests write a payload to the shape `standings.rs` documents. What they
 //! prove is the pairing and the mark rules, not the capture.
 
+use super::run::Run;
 use super::{collect, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture};
 use crate::athleticlive::docs::{parse_event_document, parse_event_summary, EventDoc};
 use crate::athleticlive::map::SOURCE_ID;
@@ -18,10 +19,12 @@ use crate::net::Fetcher;
 use crate::{AdapterContext, AdapterReport};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, EventKind, GradYear, Grade, Mark, SchoolYear, SourceNamespace,
+    CanonicalSchool, EventKind, Gender, GradYear, Grade, Mark, SchoolYear,
+    SourceAthleteObservation, SourceNamespace, SourceObservation,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
+use std::collections::{BTreeMap, HashMap};
 
 const XC_STATE: &str =
     include_str!("../../../tests/fixtures/athleticlive_results/event-doc-2150205.json");
@@ -143,6 +146,11 @@ fn labels_of(schools: &[(UsJurisdiction, String)]) -> Vec<(UsJurisdiction, &str)
 
 fn joined(report: &AdapterReport) -> String {
     report.notes.join("\n")
+}
+
+/// The route's journal entries, as the store holds them.
+fn journal(store: &Store) -> std::collections::HashSet<String> {
+    store.journal_keys(super::PHASE).expect("journal keys")
 }
 
 #[test]
@@ -356,6 +364,165 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
     assert!(athletes
         .iter()
         .any(|athlete| athlete.grad_year == GradYear::new(2029).expect("2029 is a cohort")));
+
+    // Every performance whose athlete object published an Athletic.net id names that object, and the
+    // identity it names is one its athlete row holds: the §31 key that lets a mis-merged athlete be
+    // told apart from what the capture said, without reading the capture again. The capture's four
+    // rows whose athlete object published no id stay unnamed rather than borrowing a canonical id.
+    let by_id: HashMap<&str, &CanonicalAthlete> = athletes
+        .iter()
+        .map(|athlete| (athlete.id.as_str(), athlete))
+        .collect();
+    let named = performances
+        .iter()
+        .filter(|performance| performance.source_athlete.is_some())
+        .count();
+    assert_eq!(
+        named, 132,
+        "the {named} rows that name a source athlete are the capture's 132 that published one"
+    );
+    for performance in &performances {
+        let Some(identity) = performance.source_athlete.as_ref() else {
+            continue;
+        };
+        let athlete = by_id
+            .get(performance.athlete.as_str())
+            .unwrap_or_else(|| panic!("no athlete row for {}", performance.athlete.as_str()));
+        assert!(
+            athlete.source_identities.contains(identity),
+            "the stamped identity is the athlete's own: {identity:?}"
+        );
+        assert!(
+            !identity.id.is_empty(),
+            "the identity carries the provider's own athlete id"
+        );
+    }
+}
+
+/// What the athlete observation log is for: a result pass files what the capture itself published
+/// about each athlete — the provider's own athlete id, the name and the school beside it — next to
+/// the canonical rows the same pass mints, so a canonical merge can be re-decided from this pass.
+///
+/// Every assertion below is against the capture: the ids, names and schools come from the fixture's
+/// own `a` objects, and the assertions read the store's `SourceObservations` rows rather than any
+/// count this run reported about itself.
+#[tokio::test]
+async fn a_result_pass_files_one_observation_per_athlete_id_the_capture_published() {
+    let (dir, store, fetcher) = scratch();
+    let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE).expect("parses");
+    let labels = labelled_schools(&doc, UsJurisdiction::Iowa);
+    write_schools(&store, &labels_of(&labels));
+    let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE);
+    let options = ResultOptions {
+        documents: vec![path],
+        ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
+    };
+
+    let report = collect(&context(&store, &fetcher), &options)
+        .await
+        .expect("the run completes");
+    assert_eq!(report.errors, 0, "{}", joined(&report));
+
+    // The capture's own ledger: one entry per row that publishes an Athletic.net athlete id, holding
+    // the name, the school and the class token the capture printed beside that id.
+    let grade_number = |token: &str| match token {
+        "FR" => Some(9),
+        "SO" => Some(10),
+        "JR" => Some(11),
+        "SR" => Some(12),
+        other => other.parse::<u8>().ok(),
+    };
+    let published: BTreeMap<u64, (&str, &str, u8)> = doc
+        .rows
+        .iter()
+        .filter_map(|row| {
+            let athlete = row.athlete.as_ref()?;
+            let id = athlete
+                .an_athlete_id
+                .as_ref()
+                .and_then(|value| value.as_u64())?;
+            let name = athlete.name.as_deref()?;
+            let school = athlete.team.as_ref().and_then(|team| team.school_name())?;
+            let grade = athlete
+                .grade
+                .as_ref()
+                .and_then(|value| value.as_str())
+                .and_then(grade_number)?;
+            Some((id, (name, school, grade)))
+        })
+        .collect();
+    assert_eq!(
+        published.len(),
+        132,
+        "the capture publishes 132 rows each carrying its own athlete id"
+    );
+
+    let observations: Vec<SourceObservation> = store
+        .scan(Table::SourceObservations)
+        .expect("observation log");
+    let filed: BTreeMap<u64, &SourceAthleteObservation> = observations
+        .iter()
+        .filter_map(|row| match row {
+            SourceObservation::Athlete(athlete) => {
+                Some((athlete.source_athlete_id.parse().ok()?, athlete))
+            }
+            SourceObservation::School(_) => None,
+        })
+        .collect();
+    assert_eq!(
+        filed.keys().copied().collect::<Vec<_>>(),
+        published.keys().copied().collect::<Vec<_>>(),
+        "one observation per athlete id the capture published, keyed by the provider's own id"
+    );
+
+    let captured: Vec<&str> = labels.iter().map(|(_, name)| name.as_str()).collect();
+    for (id, (name, school, grade)) in &published {
+        let seen = filed.get(id).expect("every published id is filed");
+        assert_eq!(
+            seen.namespace,
+            SourceNamespace::LegacyAthleticNet {
+                kind: "athlete".to_string()
+            }
+        );
+        assert_eq!(seen.id, format!("legacy_athletic_net:athlete:{id}"));
+        assert_eq!(
+            seen.observed_name.as_str(),
+            *name,
+            "the name the capture spelled"
+        );
+        assert_eq!(
+            seen.observed_school.as_deref(),
+            Some(*school),
+            "the school the capture placed the athlete at"
+        );
+        assert!(
+            captured.contains(school),
+            "the observed school is one the capture published: {school}"
+        );
+        assert_eq!(
+            seen.observed_grade
+                .as_ref()
+                .map(|observed| observed.grade.get()),
+            Some(*grade),
+            "the class the capture's own token states"
+        );
+        assert_eq!(seen.gender, Gender::Girls);
+        assert_eq!(
+            seen.profile_url.as_deref(),
+            Some(format!("https://www.athletic.net/athlete/{id}/track-and-field").as_str()),
+            "the profile page Athletic.net's own athlete id derives"
+        );
+        assert_eq!(seen.observed_on, OBSERVED_ON);
+        assert!(
+            !seen.source_row_key.is_empty(),
+            "the row states where it was read"
+        );
+    }
+    let winner = filed
+        .get(&17_327_390)
+        .expect("the capture's first-placed row");
+    assert_eq!(winner.observed_name, "McKenna Montgomery");
+    assert_eq!(winner.observed_school.as_deref(), Some("Albia"));
 }
 
 #[tokio::test]
@@ -576,6 +743,64 @@ async fn a_second_run_resumes_the_capture_the_first_journaled() {
     let performances: Vec<CanonicalPerformance> =
         store.scan(Table::Performances).expect("performances read");
     assert_eq!(performances.len(), 136, "the tables are not appended twice");
+}
+
+/// The unit of work is the capture: its rows and the entry naming it commit together, so a walk that
+/// stops before the append leaves the capture unread and the next run reads it again. The
+/// discriminating assertions are the store's own rows: a run that resumed a capture whose rows never
+/// landed writes the meet it files under and nothing else, which is what the resumed-run test above
+/// expects of a capture that did land.
+#[tokio::test]
+async fn a_capture_whose_rows_never_landed_is_read_again_by_the_next_run() {
+    let (dir, store, fetcher) = scratch();
+    let doc = parse_event_document(&event_doc_url(2_150_205), XC_STATE).expect("parses");
+    write_schools(
+        &store,
+        &labels_of(&labelled_schools(&doc, UsJurisdiction::Iowa)),
+    );
+    let path = stage_capture(&dir, "event-doc-2150205.json", XC_STATE);
+    let options = ResultOptions {
+        documents: vec![path.clone()],
+        ..ResultOptions::for_meet(state_meet(), OBSERVED_ON)
+    };
+
+    // The interrupted walk: it reads its capture, then the run ends before the append.
+    let mut walk =
+        Run::new(&context(&store, &fetcher), &state_meet(), &options).expect("the walk opens");
+    walk.read_captures(&options).expect("the capture is read");
+    assert!(
+        journal(&store).is_empty(),
+        "the walk writes no entry of its own: {:?}",
+        journal(&store)
+    );
+    assert!(
+        store
+            .scan::<CanonicalPerformance>(Table::Performances)
+            .expect("performances read")
+            .is_empty(),
+        "the walk writes no row of its own"
+    );
+    drop(walk);
+
+    // The next run: the same capture, read again, with its rows and its entry landing together.
+    let report = collect(&context(&store, &fetcher), &options)
+        .await
+        .expect("the second run completes");
+    assert_eq!(report.rows, 136, "the capture is a document of 136 rows");
+    let performances: Vec<CanonicalPerformance> =
+        store.scan(Table::Performances).expect("performances read");
+    assert_eq!(
+        performances.len(),
+        136,
+        "the capture's rows land on the second run, not skipped as read"
+    );
+    let meets: Vec<CanonicalMeet> = store.scan(Table::Meets).expect("meets read");
+    assert_eq!(meets.len(), 1, "the meet the run files under");
+    assert_eq!(
+        journal(&store),
+        std::collections::HashSet::from([path]),
+        "one entry per capture read"
+    );
 }
 
 #[tokio::test]

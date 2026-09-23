@@ -96,7 +96,8 @@ impl Route<'_, '_> {
             school_year,
         };
         self.mapper.absorb_qualifiers(&envelope, &rows, &url);
-        self.journal.list(self.ctx, &key, &url, &envelope)
+        self.journal.list(&key, &url, &envelope);
+        Ok(())
     }
 }
 

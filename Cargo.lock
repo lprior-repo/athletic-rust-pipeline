@@ -475,6 +475,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "census-report"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "calamine",
+ "census-crawl",
+ "census-domain",
+ "census-review",
+ "census-store",
+ "csv",
+ "fjall",
+ "proptest",
+ "rust_xlsxwriter",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "census-review"
 version = "0.1.0"
 dependencies = [
@@ -2057,6 +2079,7 @@ dependencies = [
  "calamine",
  "census-crawl",
  "census-domain",
+ "census-report",
  "census-review",
  "census-store",
  "clap",
@@ -4407,6 +4430,7 @@ dependencies = [
  "calamine",
  "census-crawl",
  "census-domain",
+ "census-report",
  "census-store",
  "clap",
  "midwest-census",

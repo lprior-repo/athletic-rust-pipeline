@@ -7,11 +7,12 @@
 //! bounded byte array through `String::from_utf8_lossy`, since `kani::any::<String>()` has no
 //! `Arbitrary` impl.
 
+use census_domain::UsJurisdiction;
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity, SourceNamespace,
     SourceRef, Sport, professional_email,
 };
-use crate::store::Entity;
+use crate::Entity;
 
 /// Bound on the symbolic text fields.
 const TEXT_BYTES: usize = 6;
@@ -65,7 +66,8 @@ fn any_evidence() -> Vec<Evidence> {
 }
 
 fn any_school() -> CanonicalSchool {
-    let (mut school, _id) = CanonicalSchool::new("WI", "Test High School", "test high school");
+    let (mut school, _id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Test High School", "test high school");
     school.name = any_text();
     school.normalized_name = any_text();
     school.city = any_opt_text();
@@ -82,7 +84,7 @@ fn any_school() -> CanonicalSchool {
 }
 
 fn any_coach() -> CanonicalCoach {
-    let school_id = CanonicalSchool::mint("WI", "Test High School", "test high school");
+    let school_id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Test High School", "test high school");
     let mut coach = CanonicalCoach::new(
         &school_id,
         "John Coach",
@@ -176,7 +178,7 @@ fn check_coach_publish_no_consumer_mailbox() {
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
 fn check_coach_withheld_mailboxes_consistency() {
-    let school_id = CanonicalSchool::mint("WI", "Test High School", "test high school");
+    let school_id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Test High School", "test high school");
 
     let mut personal = CanonicalCoach::new(
         &school_id,

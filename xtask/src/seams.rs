@@ -67,34 +67,26 @@ mod tests;
 /// back. The table is what a split leaves behind: the adapters, the fetcher, the store, the review lane
 /// and the school index have each left for their own crate, so the edges that used to run to them are
 /// rows in [`ALLOWED_CRATES`] now (or, where both ends moved together, rules `xtask` no longer needs to
-/// state — `net`'s registry lookup lives inside `census-crawl`). What stays here is the composition
-/// root's own graph: the run (`census`), the durable services over it, the report, the workbook that
-/// prints it, and the small lanes they share.
+/// state — `net`'s registry lookup lives inside `census-crawl`). The reporting plane left the same way:
+/// `bests`, `report` and `workbook` are `census-report`'s modules now, so every row whose far end was
+/// one of them is a crate row in [`ALLOWED_CRATES`]. What stays here is the composition root's own
+/// graph: the run (`census`), the durable services over it, and the small lanes they share.
 ///
 /// A row is added when a module gains a dependency its design already argued for, never to silence a
 /// violation. Edges *inside* another crate are that crate's business and are not walked here.
 const ALLOWED: &[(&str, &str)] = &[
-    ("bests", "report"),
+    // The serving region: `bootstrap` binds the durable ingress endpoint, so it names the router it
+    // serves and drains here. That is composition-root wiring rather than a lane edge — `ingress`
+    // names nothing back — and the endpoint's own task and shutdown live in this module.
+    ("bootstrap", "ingress"),
     ("bootstrap", "outcome"),
     ("bootstrap", "restate_services"),
     ("bootstrap", "spawn"),
-    ("census", "report"),
-    ("index", "report"),
-    // §29-§31: the derived indexes are the workbook's other reader. The queues, coverage and
-    // snapshot rows the store keeps are the same findings the sheets print, so the index module
-    // composes the workbook's retained-record families rather than re-deriving them, and a store
-    // reader and a workbook reader cannot be shown different findings.
-    ("index", "workbook"),
     ("outcome", "restate_services"),
-    ("restate_services", "bests"),
     ("restate_services", "census"),
     ("restate_services", "outcome"),
-    ("restate_services", "report"),
     ("restate_services", "spawn"),
-    ("restate_services", "workbook"),
     ("spawn", "outcome"),
-    ("workbook", "bests"),
-    ("workbook", "report"),
 ];
 
 /// Allowed edges between workspace crates, as `(from, to)`.
@@ -124,6 +116,14 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // The review lane reads retained cases and writes verdicts through the store that owns both
     // tables; it never opens Fjall itself.
     ("census-review", "census-store"),
+    // The reporting plane: coverage, per-athlete bests and the workbook export. It reads the canonical
+    // model and the store's read model, renders the review lane's retained families as its conflict and
+    // review sheets, and names the acquisition plane only for the adapter surface the meta sheets print
+    // as data. It acquires nothing, so nothing above it can leak into a projection.
+    ("census-report", "census-crawl"),
+    ("census-report", "census-domain"),
+    ("census-report", "census-review"),
+    ("census-report", "census-store"),
     ("census-store", "census-domain"),
     // The composition root: it owns the sweep, the durable services and the published artifacts, and it
     // is the only crate that may name the acquisition plane, the review lane and the store together.
@@ -146,14 +146,26 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     //   its atomic-rename writer and its CSV failure type, so a reader never sees a half-written state
     //   file and one publication bug has one implementation. `bests`, `index`, `report` and the coach
     //   fragments all take that edge for the writer plumbing and read no row through it.
+    // The composition root also hosts the browser lane. The persistent headed session is a durable
+    // service — a Restate object owns the profile, so the process that serves it must be the one
+    // holding the lane (`restate_services/browser_session.rs`, its `mod.rs` clock, the CLI client and
+    // the bootstrap options). `census-crawl` owns the *protocol* side of that lane and reaches the
+    // ingress as a library, this crate owns the *host*, and the edge closes no loop: the lane crate
+    // declares no workspace dependency at all, so the one-way property below still holds.
+    ("midwest-census", "athleticnet-browser"),
     ("midwest-census", "census-crawl"),
+    // The reporting plane is the composition root's projection layer: the CLI's export and seal verbs
+    // and the durable workbook service name it, and it names nothing back.
+    ("midwest-census", "census-report"),
     ("midwest-census", "census-domain"),
     ("midwest-census", "census-review"),
     ("midwest-census", "census-store"),
     // The harness reads the store for its status verb, drives the census services through their
-    // ingress clients, and replays a provider adapter against its capture, so it names all three.
+    // ingress clients, replays a provider adapter against its capture, and crosses the report scope
+    // when it resolves a run's artifact paths, so it names all four.
     ("xtask", "census-crawl"),
     ("xtask", "census-domain"),
+    ("xtask", "census-report"),
     ("xtask", "census-store"),
     ("xtask", "midwest-census"),
 ];

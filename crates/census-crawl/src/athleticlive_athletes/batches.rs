@@ -1,12 +1,13 @@
 //! The batch walk: one query per batch of meet ids, its Elasticsearch pages, and the entities a
 //! batch contributes before it is journaled as done.
 
-use super::map::build_entities;
+use super::map::{build_entities, BatchEntities};
 use super::parse::AthleteHit;
 use super::targets::MeetTarget;
 use super::{batch_query, BatchStats, Options, ENDPOINT, PAGE_SIZE, RESULT_WINDOW};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
-use census_store::Table;
+use census_domain::model::SourceNamespace;
+use census_store::{StoreBatch, Table};
 use serde_json::{json, Value};
 use std::collections::{HashMap, VecDeque};
 
@@ -143,29 +144,25 @@ fn emit_batch<'t>(
     by_id: &HashMap<u64, &'t MeetTarget>,
     stats: &mut BatchStats,
 ) -> CrawlResult<()> {
+    let mut page = ctx.store.write_batch();
     if hits.is_empty() {
         for target in batch {
-            ctx.store.journal_done(
+            page.journal_done(
                 "athleticlive_rosters",
                 &target.athleticlive_meet_id.to_string(),
                 &json!({ "meet": target.name, "rows": 0 }),
             )?;
         }
+        page.commit()?;
         stats.meets = stats.meets.saturating_add(batch.len());
         return Ok(());
     }
 
-    let entities = build_entities(hits, by_id, &options.observed_on, ctx.school_year);
-    ctx.store.append_many(Table::Schools, &entities.schools)?;
-    ctx.store.append_many(Table::Teams, &entities.teams)?;
-    ctx.store.append_many(Table::Athletes, &entities.athletes)?;
-    for target in batch {
-        ctx.store.journal_done(
-            "athleticlive_rosters",
-            &target.athleticlive_meet_id.to_string(),
-            &json!({ "meet": target.name, "batch_rows": hits.len() }),
-        )?;
-    }
+    let entities = fill_page(ctx, options, batch, hits, by_id, &mut page)?;
+    // The batch's rows and the entries naming the meets it covered commit together: a meet is marked
+    // read only once every row the batch read is durable, and the whole batch is one durability
+    // boundary rather than one per table plus one per meet.
+    page.commit()?;
     stats.meets = stats.meets.saturating_add(batch.len());
     stats.rows = stats.rows.saturating_add(entities.rows);
     stats.athletes = stats.athletes.saturating_add(entities.athletes.len());
@@ -184,4 +181,35 @@ fn emit_batch<'t>(
         .rows_without_school
         .saturating_add(entities.rows_without_school);
     Ok(())
+}
+
+/// Fill one batch's page: its entities, the observations they are filed under, and the entries naming
+/// the meets it covered. Nothing reaches the store until the caller commits the page.
+fn fill_page<'t>(
+    ctx: &AdapterContext<'_>,
+    options: &Options,
+    batch: &[&'t MeetTarget],
+    hits: &[AthleteHit],
+    by_id: &HashMap<u64, &'t MeetTarget>,
+    page: &mut StoreBatch<'_>,
+) -> CrawlResult<BatchEntities> {
+    let entities = build_entities(hits, by_id, &options.observed_on, ctx.school_year);
+    page.append_many(Table::Schools, &entities.schools)?;
+    page.append_many(Table::Teams, &entities.teams)?;
+    page.append_many(Table::Athletes, &entities.athletes)?;
+    ctx.observe_athletes(
+        &SourceNamespace::LegacyAthleticNet {
+            kind: "athlete".to_string(),
+        },
+        &entities.athletes,
+        &entities.schools,
+    )?;
+    for target in batch {
+        page.journal_done(
+            "athleticlive_rosters",
+            &target.athleticlive_meet_id.to_string(),
+            &json!({ "meet": target.name, "batch_rows": hits.len() }),
+        )?;
+    }
+    Ok(entities)
 }
