@@ -14,10 +14,10 @@
 use anyhow::{anyhow, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use clap::Args;
 use census_reconcile::identity::Revision;
 #[cfg(test)]
 use census_service::restate_services::NationalReport;
+use clap::Args;
 use std::time::Duration;
 
 /// How long a waiting command sleeps between two observations of the run it submitted.

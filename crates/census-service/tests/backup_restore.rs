@@ -24,10 +24,10 @@ use census_domain::model::{
     Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
-use census_store::{Store, StoreError, StoreStats, Table};
-use census_report::report::{self, Census, Scope};
 use census_report::bests;
+use census_report::report::{self, Census, Scope};
 use census_service::census;
+use census_store::{Store, StoreError, StoreStats, Table};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;

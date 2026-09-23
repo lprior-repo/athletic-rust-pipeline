@@ -45,8 +45,8 @@ use census_domain::model::{
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
-use census_store::{Store, Table};
 use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_store::{Store, Table};
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};

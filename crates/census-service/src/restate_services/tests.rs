@@ -5,16 +5,16 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
 use crate::census::{owed_source_objects, MeetCensus, SourceObject, StateProgress};
-use census_reconcile::identity::{Revision, WorkflowIdentity};
-use census_report::report::ReportError;
 use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
+use census_reconcile::identity::{Revision, WorkflowIdentity};
+use census_report::report::ReportError;
 use census_store::StoreError;
 
 use super::*;
-use census_report::report::Scope;
 use crate::restate_services::plan::classify_access;
+use census_report::report::Scope;
 use census_store::Table;
 
 #[test]

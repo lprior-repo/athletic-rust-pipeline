@@ -20,8 +20,8 @@ use census_domain::model::{
     SourceObservation,
 };
 use census_domain::UsJurisdiction;
-use census_store::{Store, Table};
 use census_service::census::{self, CollectOptions};
+use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::path::Path;

@@ -5,10 +5,10 @@
 //! the run itself (gather, consolidate, index) stays in the parent module.
 
 use anyhow::{Context, Result};
-use census_store::Store;
 use census_report::report;
-use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
 use census_report::{bests, workbook};
+use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
+use census_store::Store;
 
 use super::RunArgs;
 use crate::cli::cohort_label;

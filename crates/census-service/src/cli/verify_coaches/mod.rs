@@ -9,9 +9,9 @@ mod write;
 
 use anyhow::{bail, Result};
 use census_crawl::net::Fetcher;
+use census_service::coachverify::{self, FragmentOutcome, GateOptions};
 use clap::Args;
 use futures::stream::{self, StreamExt};
-use census_service::coachverify::{self, FragmentOutcome, GateOptions};
 use std::path::PathBuf;
 use std::time::Duration;
 

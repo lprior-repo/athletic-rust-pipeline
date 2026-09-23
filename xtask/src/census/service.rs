@@ -8,12 +8,12 @@
 //! renamed field would read as an empty census.
 
 use anyhow::{Context, Result};
-use census_store::Table;
 use census_report::report::Scope;
 use census_service::restate_services::{
     run_key, CensusIngressClient, ReportIngressClient, ReportReply, ReportRequest, StatusReply,
     WorkbookIngressClient, WorkbookReply, WorkbookRequest,
 };
+use census_store::Table;
 use restate_sdk::prelude::*;
 use serde_json::Value;
 use std::path::Path;

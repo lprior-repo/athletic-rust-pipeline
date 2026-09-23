@@ -35,10 +35,10 @@ mod verify_coaches;
 use anyhow::{Context, Result};
 use census_crawl::net::Fetcher;
 use census_domain::UsJurisdiction;
+use census_report::report;
+use census_service::ingress;
 use census_store::Store;
 use clap::Parser;
-use census_service::ingress;
-use census_report::report;
 use std::path::PathBuf;
 
 use command::Command;

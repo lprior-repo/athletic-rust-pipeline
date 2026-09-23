@@ -24,11 +24,11 @@ use census_domain::model::{
     Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
-use census_store::{Store, StoreStats, Table};
-use census_service::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use census_report::report::{self, Census, Scope};
 use census_report::{bests, workbook};
+use census_service::bootstrap::{serve_until, DrainReport, ServeOptions, StopReason};
 use census_service::census;
+use census_store::{Store, StoreStats, Table};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
 use std::path::{Path, PathBuf};

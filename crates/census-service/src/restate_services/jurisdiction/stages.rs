@@ -17,9 +17,9 @@ use std::time::Duration;
 use restate_sdk::prelude::*;
 
 use crate::census::CollectOptions;
-use census_reconcile::identity::WorkflowIdentity;
 use census_crawl::net::Fetcher;
 use census_crawl::{default_family_delays, default_host_delays};
+use census_reconcile::identity::WorkflowIdentity;
 
 use super::JurisdictionCensus;
 use crate::restate_services::plan::{plan as planned, BrowserLaneState};

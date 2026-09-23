@@ -18,11 +18,11 @@ use anyhow::{bail, Result};
 use clap::Args;
 use restate_sdk::prelude::Json;
 
-use census_store::Store;
+use census_report::report::Scope;
 use census_service::census::seal::{self, SealOutcome};
 use census_service::census::{RetainedFindings, SealCounts, SealedCensus};
-use census_report::report::Scope;
 use census_service::restate_services::{CensusIngressClient, SealReply, SealRequest};
+use census_store::Store;
 
 use super::{Cli, Route};
 use census_service::ingress;

@@ -8,10 +8,10 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use census_store::Store;
-use clap::Args;
 use census_service::census;
 use census_service::restate_services::JurisdictionReport;
+use census_store::Store;
+use clap::Args;
 use std::path::Path;
 
 use super::live::{self, jurisdiction_request};

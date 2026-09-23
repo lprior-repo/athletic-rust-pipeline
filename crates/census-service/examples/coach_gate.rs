@@ -8,8 +8,8 @@
 
 use census_crawl as sources;
 use census_crawl::net::Fetcher;
-use futures::stream::{self, StreamExt};
 use census_service::coachverify::{self, FragmentOutcome, GateOptions};
+use futures::stream::{self, StreamExt};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Duration;

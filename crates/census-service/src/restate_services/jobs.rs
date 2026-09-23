@@ -7,10 +7,10 @@ use restate_sdk::prelude::{HandlerError, Json, RunRetryPolicy, TerminalError};
 use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
-use census_report::report::{self, ReportError, ReportResult, Scope};
-use census_report::{bests, workbook};
 use census_crawl::net::Fetcher;
 use census_crawl::{AdapterContext, AdapterReport, CrawlError};
+use census_report::report::{self, ReportError, ReportResult, Scope};
+use census_report::{bests, workbook};
 use census_store::{Store, StoreError, StoreResult, Table};
 
 use super::wire::ingest::SweepReport;

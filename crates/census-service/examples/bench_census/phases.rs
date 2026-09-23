@@ -6,10 +6,10 @@
 //! counts it produced against the corpus before its rate is trusted.
 
 use anyhow::{Context, Result};
-use census_store::{Store, Table};
 use census_report::report::{self, Scope};
 use census_report::{bests, workbook};
 use census_service::census;
+use census_store::{Store, Table};
 use serde::Serialize;
 use std::time::Instant;
 use tempfile::TempDir;

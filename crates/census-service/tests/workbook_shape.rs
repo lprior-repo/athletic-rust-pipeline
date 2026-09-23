@@ -14,8 +14,8 @@ use census_domain::UsJurisdiction;
 use census_report::bests;
 use census_report::report::Scope;
 use census_report::workbook::{build, Options};
-use census_store::{Store, Table};
 use census_service::consolidate;
+use census_store::{Store, Table};
 
 #[test]
 fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {

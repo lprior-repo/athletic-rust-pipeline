@@ -59,10 +59,10 @@ use census_domain::model::{
     GradYear, SourceRef,
 };
 use census_domain::UsJurisdiction;
-use census_store::{Store, Table};
-use census_service::census::CollectOptions;
 use census_report::report;
 use census_service::census;
+use census_service::census::CollectOptions;
+use census_store::{Store, Table};
 use sha2::{Digest, Sha256};
 
 // -------------------------------------------------------------------------------------------------
@@ -647,9 +647,7 @@ async fn poll_for_discovery(
             if let Some(mut handle) = child.stderr.take() {
                 let _ = handle.read_to_string(&mut stderr);
             }
-            panic!(
-                "census-serve exited before answering /discover: {status:?}\nstderr:\n{stderr}"
-            );
+            panic!("census-serve exited before answering /discover: {status:?}\nstderr:\n{stderr}");
         }
         tokio::time::sleep(DISCOVER_RETRY_DELAY).await;
     }

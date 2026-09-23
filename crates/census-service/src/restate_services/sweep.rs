@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use restate_sdk::prelude::*;
 
-use census_report::report::ReportResult;
 use crate::spawn::Spawner;
+use census_report::report::ReportResult;
 use census_store::clock::Clock;
 use census_store::Store;
 
