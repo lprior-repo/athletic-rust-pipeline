@@ -585,3 +585,45 @@ be run once that sweep releases the store.
   not a path to a wrong seal: the first cell after the label is the value cell the workbook writer
   fills, and a truncated read disagrees with the store's cohort count and is refused rather than
   sealed.
+
+## Workbook scope leak (2026-09-23)
+
+The 2026-09-23 workbook published athletes the run scope excludes. Detection, fix and the proof that
+the fix reached the artifact, in order:
+
+- `census-service verify` refused the workbook at `athletes row 521536: id ath_2dc7ef2516e8f7a6
+  school 'sch_051f545742ee9934' != store 'Chugiak High School'` — an Alaska school in a store whose
+  run scope is the 12-state census, and a cell holding an id where the sheet prints a name.
+- Cause: each workbook read model filtered the *schools* table to the run scope first and built the
+  school-id → jurisdiction index from what was left, so an athlete whose school the scope drops had
+  no jurisdiction to resolve; `in_run_scope` keeps the unplaced bucket, so the athlete survived and
+  `Dataset::school_name` fell back to printing the raw id. `503bb78` makes all three read models
+  reuse the report's own splitter, which keeps the excluded rows reachable for placement.
+- Whole-artifact proof, not a sample (`verify` samples at most 5 000 rows per sheet). The scan tool
+  ships with the research folder, not this repository; run both lines from the store root:
+
+      RESEARCH=~/Downloads/midwest-tfxc-source-research
+      python3 "$RESEARCH/tools/scan_school_column.py" \
+        var/midwest-census/out/superseded/midwest-census-2026-09-23.xlsx
+        [Athletes] rows=582691 raw_id_cells=2959
+      python3 "$RESEARCH/tools/scan_school_column.py" \
+        var/midwest-census/out/census-service-2026-09-23.xlsx
+        [Athletes] rows=579732 raw_id_cells=0
+
+  582 691 − 579 732 = 2 959: the leak published exactly the rows whose school it could not name, and
+  the rebuilt workbook drops exactly those and nothing else. The leaked build is kept, not deleted —
+  it is the only record of the defect's shape and the pre-fix binary cannot reproduce it — but it is
+  quarantined under `out/superseded/`, because `verify`, `seal` and the workbook glob all resolve
+  "the newest `out/*.xlsx`" and the leaked build has the *later* mtime.
+- The rebuilt workbook reconciles with the core report: its audit line reads `rows=579732
+  in_scope=2225091 store_athlete_rows=2225091` and `best_mark_rows=7809 consistent=true` against
+  `report-core.json`'s `athletes=2225091 class_of_2027=579732 coaches=31488`.
+- `verify` now holds the sheet to the rule the sheet implements (`Dataset::school_name`): an id
+  printed where the store *does* hold a row is a discrepancy, the id fallback for a school with no
+  store row is not. Two acceptance tests pin both directions; the agreement fixture wrote the id, so
+  it was measuring the weaker rule rather than the sheet.
+- The parity golden that had been red since `13c0590` is refreshed. Only the `Goal & method` sheet
+  moved, and only its five reproduce commands: reconstructing that sheet's 40 cells and rewriting
+  `-p census-service` back to `-p midwest-census` reproduces the committed digest `72e7bffb…`
+  exactly, so no published number was ever in that mismatch. `WORKBOOK_DUMP=1` now prints every
+  normalized cell the digest reads, in digest order, so a future mismatch names the cell.

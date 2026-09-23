@@ -47,9 +47,11 @@ fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
 use std::path::Path;
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalPerformance, EventKind, Gender, GradYear, Id, Mark, TeamId,
+    CanonicalAthlete, CanonicalEvent, CanonicalPerformance, EventKind, Gender, GradYear, Id, Mark,
+    TeamId,
 };
 use rust_xlsxwriter::Workbook as Xlsx;
+use census_report::bests::mark_text;
 
 use super::verify::{run_verify, VerifyArgs};
 use census_store::{Store, Table};
@@ -123,18 +125,24 @@ fn write_test_workbook(
     path
 }
 
+/// The event a test's performances share: the store holds this row, so the sheet prints its label.
+fn make_event(kind: EventKind, gender: Gender) -> CanonicalEvent {
+    let meet_id = Id::mint("meet", &["test-meet"]);
+    CanonicalEvent::new(&meet_id, kind, gender, None, None)
+}
+
+/// A performance in `event`: the fixture references the event row the store holds, so the sheet's
+/// Event cell and the store's key state the same fact.
 fn make_perf(
     athlete_id: &census_domain::model::AthleteId,
     team_id: &TeamId,
-    event_kind: EventKind,
+    event: &CanonicalEvent,
     time_seconds: u32,
 ) -> CanonicalPerformance {
-    let event_id = Id::mint("evt", &["track", &format!("{event_kind:?}")]);
-    let meet_id = Id::mint("meet", &["test-meet"]);
     let perf_id = CanonicalPerformance::mint(
         athlete_id,
-        &meet_id,
-        &event_kind,
+        &event.meet,
+        &event.kind,
         "2027-04-15",
         "test-source",
     );
@@ -142,8 +150,8 @@ fn make_perf(
         id: perf_id,
         athlete: athlete_id.clone(),
         team: team_id.clone(),
-        event: event_id,
-        meet: meet_id,
+        event: event.id.clone(),
+        meet: event.meet.clone(),
         date: "2027-04-15".to_string(),
         mark: Mark::TimeSeconds(time_seconds as f64),
         wind_mps: None,
@@ -180,8 +188,10 @@ fn acceptance_agreement() {
         Gender::Boys,
     );
 
-    let p1 = make_perf(&a1.id, &team, EventKind::Track200m, 26);
-    let p2 = make_perf(&a2.id, &team, EventKind::Track100m, 11);
+    let e1 = make_event(EventKind::Track200m, Gender::Girls);
+    let e2 = make_event(EventKind::Track100m, Gender::Boys);
+    let p1 = make_perf(&a1.id, &team, &e1, 26);
+    let p2 = make_perf(&a2.id, &team, &e2, 11);
 
     let store = Store::open(dir.path()).expect("open temp store");
     store
@@ -189,6 +199,8 @@ fn acceptance_agreement() {
         .expect("append school");
     store.append(Table::Athletes, &a1).expect("append athlete");
     store.append(Table::Athletes, &a2).expect("append athlete");
+    store.append(Table::Events, &e1).expect("append event");
+    store.append(Table::Events, &e2).expect("append event");
     store.append(Table::Performances, &p1).expect("append perf");
     store.append(Table::Performances, &p2).expect("append perf");
 
@@ -214,15 +226,125 @@ fn acceptance_agreement() {
         &[
             (
                 a1.id.as_str().to_string(),
-                p1.event.as_str().to_string(),
-                "26".to_string(),
+                // The sheet prints the event by the label its kind mints and the mark in the
+                // published notation (`mark_text`); the store holds both event rows, so the labels
+                // are what `verify` must resolve.
+                e1.kind.stable_key().to_string(),
+                mark_text(&p1.mark),
             ),
             (
                 a2.id.as_str().to_string(),
-                p2.event.as_str().to_string(),
-                "11".to_string(),
+                e2.kind.stable_key().to_string(),
+                mark_text(&p2.mark),
             ),
         ],
+    );
+
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+        grad_year: 2027,
+    };
+    let result = run_verify(&store, &args);
+    assert!(result.is_ok(), "verify should succeed: {:?}", result.err());
+}
+
+/// The performances sheet's version of the school-id leak: the Event cell carries the event's raw
+/// id where the store holds the row and therefore a label. The sheet prints labels, so `verify`
+/// refuses it.
+#[test]
+fn acceptance_event_id_where_the_store_has_a_label() {
+    let dir = tempfile::tempdir().unwrap();
+    let (school_rec, school_id) =
+        school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
+    let team = team_id("Jefferson High", "track", "girls");
+
+    let a1 = CanonicalAthlete::new(
+        &school_id,
+        "Alice Runner",
+        GradYear::new(2027).unwrap(),
+        Gender::Girls,
+    );
+    let e1 = make_event(EventKind::Track200m, Gender::Girls);
+    let p1 = make_perf(&a1.id, &team, &e1, 26);
+
+    let store = Store::open(dir.path()).expect("open temp store");
+    store
+        .append(Table::Schools, &school_rec)
+        .expect("append school");
+    store.append(Table::Athletes, &a1).expect("append athlete");
+    store.append(Table::Events, &e1).expect("append event");
+    store.append(Table::Performances, &p1).expect("append perf");
+
+    let _ = write_test_workbook(
+        dir.path(),
+        &[(
+            a1.id.as_str().to_string(),
+            "Alice Runner".to_string(),
+            school_rec.name.clone(),
+            "2027".to_string(),
+        )],
+        &[(
+            a1.id.as_str().to_string(),
+            p1.event.as_str().to_string(),
+            mark_text(&p1.mark),
+        )],
+    );
+
+    let args = VerifyArgs {
+        workbook: Some(dir.path().join("verify-test.xlsx")),
+        sample_every: 1,
+        grad_year: 2027,
+    };
+    let result = run_verify(&store, &args);
+    let err = result
+        .expect_err("an id printed where the store holds a label is a disagreement")
+        .to_string();
+    assert!(
+        err.contains(EventKind::Track200m.stable_key().as_ref()),
+        "the refusal should name the store's event label: {err}"
+    );
+}
+
+/// The documented fallback: the store holds no event row, so the sheet has no label to print and
+/// leaves the Event cell empty. `verify` accepts exactly that, and nothing wider.
+#[test]
+fn acceptance_empty_event_cell_with_no_store_row() {
+    let dir = tempfile::tempdir().unwrap();
+    let (school_rec, school_id) =
+        school("Jefferson High", census_domain::UsJurisdiction::Wisconsin);
+    let team = team_id("Jefferson High", "track", "girls");
+
+    let a1 = CanonicalAthlete::new(
+        &school_id,
+        "Alice Runner",
+        GradYear::new(2027).unwrap(),
+        Gender::Girls,
+    );
+    // The event names a row the store never got, so the sheet has no label for it.
+    let e1 = make_event(EventKind::Track200m, Gender::Girls);
+    let p1 = make_perf(&a1.id, &team, &e1, 26);
+
+    let store = Store::open(dir.path()).expect("open temp store");
+    store
+        .append(Table::Schools, &school_rec)
+        .expect("append school");
+    store.append(Table::Athletes, &a1).expect("append athlete");
+    store.append(Table::Performances, &p1).expect("append perf");
+
+    let _ = write_test_workbook(
+        dir.path(),
+        &[(
+            a1.id.as_str().to_string(),
+            "Alice Runner".to_string(),
+            school_rec.name.clone(),
+            "2027".to_string(),
+        )],
+        &[(
+            a1.id.as_str().to_string(),
+            String::new(),
+            mark_text(&p1.mark),
+        )],
     );
 
     let args = VerifyArgs {

@@ -41,8 +41,10 @@ echo "$FJALL_CPY"
 echo ""
 
 # Compare observation counts
-SRC_OBS=$(echo "$FJALL_SRC" | awk '/observations\t/{print $2}')
-CPY_OBS=$(echo "$FJALL_CPY" | awk '/observations\t/{print $2}')
+# Anchor the key: `source_observations` also ends in `observations`, and matching both made
+# `SRC_OBS` a two-line value, which turned every count comparison below into a vacuous pass.
+SRC_OBS=$(echo "$FJALL_SRC" | awk -F'\t' '$1 == "observations" {print $2}')
+CPY_OBS=$(echo "$FJALL_CPY" | awk -F'\t' '$1 == "observations" {print $2}')
 if [ "$SRC_OBS" != "$CPY_OBS" ]; then
     fail "observation count mismatch: source=$SRC_OBS copy=$CPY_OBS"
 fi

@@ -33,10 +33,9 @@ fn top_modules_read_the_path_shape() {
 
 #[test]
 fn references_resolve_to_top_level_modules() {
-    assert_eq!(
-        refs_in_line("use census_report::report::{Error, read_rows};"),
-        vec!["report".to_string()]
-    );
+    // A `use` whose root is another crate is a *crate* edge, judged by `crates_in_line` against
+    // `ALLOWED_CRATES`; the module walk judges only `crate::` paths, so this names no module here.
+    assert!(refs_in_line("use census_report::report::{Error, read_rows};").is_empty());
     assert_eq!(
         refs_in_line("use crate::{self as census_crate, workbook::Sheet};"),
         vec!["workbook".to_string()]

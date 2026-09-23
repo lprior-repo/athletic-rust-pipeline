@@ -1,8 +1,8 @@
 //! Row-level comparison against the store's canonical records.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-use census_domain::model::{CanonicalAthlete, CanonicalPerformance, CanonicalSchool};
+use census_domain::model::{CanonicalAthlete, CanonicalSchool};
 
 use census_store::{Store, Table};
 
@@ -25,7 +25,7 @@ pub struct EntityCheck {
 }
 
 /// Extract a trimmed string field from a row via the column map.
-fn field<'a>(col_map: &'a HashMap<&str, usize>, row: &'a [String], name: &str) -> &'a str {
+pub(super) fn field<'a>(col_map: &'a HashMap<&str, usize>, row: &'a [String], name: &str) -> &'a str {
     col_map
         .get(name)
         .and_then(|&i| row.get(i))
@@ -173,75 +173,3 @@ fn check_athlete_cohort(
     })
 }
 
-/// Verify performances: every sampled row's (athlete id, event, mark) must exist in the store.
-pub fn verify_performances(
-    store: &Store,
-    rows: &[Vec<String>],
-    sampled: &[usize],
-    col_map: &HashMap<&str, usize>,
-) -> Result<EntityCheck, Discrepancy> {
-    let performances: Vec<CanonicalPerformance> =
-        store
-            .scan(Table::Performances)
-            .map_err(|source| Discrepancy {
-                row: 0,
-                message: format!("reading performances from store: {source}"),
-            })?;
-
-    // Build a lookup of (athlete_id, event_id, mark) for fast matching.
-    let mut lookup: HashSet<(String, String, String)> = HashSet::new();
-    for perf in &performances {
-        let mark_str = match &perf.mark {
-            census_domain::model::Mark::TimeSeconds(t) => format!("{t}"),
-            census_domain::model::Mark::DistanceMetres(d) => format!("{d}"),
-            census_domain::model::Mark::FieldImperial { feet_mark, .. } => feet_mark.clone(),
-            census_domain::model::Mark::Points(p) => format!("{p}"),
-            census_domain::model::Mark::Raw(r) => r.clone(),
-        };
-        lookup.insert((
-            perf.athlete.as_str().to_string(),
-            perf.event.as_str().to_string(),
-            mark_str,
-        ));
-    }
-
-    let mut passed: usize = 0;
-
-    for &idx in sampled {
-        let row = rows.get(idx).ok_or_else(|| Discrepancy {
-            row: idx,
-            message: "row index out of range".to_string(),
-        })?;
-        check_performance_row(idx, row, &lookup, col_map)?;
-        passed = passed.saturating_add(1);
-    }
-
-    Ok(EntityCheck {
-        total_rows: rows.len(),
-        passed,
-        sampled_indices: sampled.to_vec(),
-    })
-}
-
-/// Check one sampled performance row against the store lookup.
-fn check_performance_row(
-    idx: usize,
-    row: &[String],
-    lookup: &HashSet<(String, String, String)>,
-    col_map: &HashMap<&str, usize>,
-) -> Result<(), Discrepancy> {
-    let aid = field(col_map, row, "Athlete ID");
-    let event = field(col_map, row, "Event");
-    let mark = field(col_map, row, "Mark");
-
-    let key = (aid.to_string(), event.to_string(), mark.to_string());
-    if !lookup.contains(&key) {
-        return Err(Discrepancy {
-            row: idx,
-            message: format!(
-                "performances row {idx}: id {aid} event '{event}' mark '{mark}' not in store"
-            ),
-        });
-    }
-    Ok(())
-}
