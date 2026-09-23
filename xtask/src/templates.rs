@@ -9,10 +9,10 @@ pub(crate) fn adapter_module(name: &str) -> String {
     format!(
         r#"//! `{name}` source adapter (scaffold).
 //!
-//! Fixtures: `crates/midwest-census/tests/fixtures/{name}/`.
+//! Fixtures: `crates/census-crawl/tests/fixtures/{name}/`.
 //! This adapter's tests: `cargo xtask source-test {name}` (see `xtask/README.md`).
 
-use crate::sources::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
+use census_crawl::{{AdapterContext, AdapterReport, CrawlError, CrawlResult}};
 
 pub mod map;
 pub mod parse;
@@ -141,7 +141,7 @@ shown in `docs/DECOMPOSITION.md`; the scaffold starts with the fixture-driven te
 
 ## Fixtures
 
-Captured documents live in `crates/midwest-census/tests/fixtures/{name}/`; that directory's README
+Captured documents live in `crates/census-crawl/tests/fixtures/{name}/`; that directory's README
 says what to capture and how to name it. Tests must run offline from those files.
 
 ## Commands
@@ -205,8 +205,8 @@ mod tests {
     ///
     /// The template once emitted `anyhow::Result<AdapterReport>`, so a scaffolded source compiled
     /// only after its author rewrote the signature the scaffold exists to settle. The assertion is
-    /// on the rendered text because xtask cannot compile a generated adapter (its `crate::sources`
-    /// imports need the census crate); the text is therefore the contract of record.
+    /// on the rendered text because xtask cannot compile a generated adapter (its `crate::`
+    /// imports need the crawl crate); the text is therefore the contract of record.
     #[test]
     fn the_adapter_template_declares_the_canonical_collect_shape() {
         let module = adapter_module("example_source");

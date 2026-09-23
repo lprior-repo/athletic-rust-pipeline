@@ -1,9 +1,11 @@
 //! The report's scope: which rows count toward the platform's core.
 //!
 //! [`Scope`] names the two views the report publishes, and [`CoreScoped`] with [`retain_core`] is the
-//! filter that produces the core view. Kept out of `mod.rs` so the scope contract reads on its own,
-//! away from the census document it selects rows for.
+//! filter that produces the core view. Which adapter ids are outside the core is the domain's answer
+//! ([`census_domain::core_scope`]); this module is the one that applies it to report rows. Kept out of
+//! `mod.rs` so the scope contract reads on its own, away from the census document it selects rows for.
 
+use census_domain::is_core_source;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, Evidence,
 };
@@ -39,20 +41,6 @@ impl Scope {
     }
 }
 
-/// Adapter ids whose evidence does not count toward the core census.
-///
-/// `athleticlive_*` is the Athletic.net mirror — its meet index, its athlete rows and its result
-/// plane — and `athleticnet` is the host itself, read through the owner-authorized athlete-bio
-/// adapter. A core entity must be reachable without any of them, so their evidence is ignored while
-/// the core filter runs. Deleting one of these ids silently promotes a mirror's evidence into the
-/// core census, which is why the registry comment and this list name the same slugs.
-pub const NON_CORE_SOURCE_IDS: [&str; 4] = [
-    "athleticlive_athletes",
-    "athleticlive_meets_csv",
-    "athleticlive_results",
-    "athleticnet",
-];
-
 /// Entity tables a non-core adapter can populate.
 pub trait CoreScoped {
     fn evidence(&self) -> &[Evidence];
@@ -64,11 +52,6 @@ pub trait CoreScoped {
 
     /// Drop identities minted from a non-core namespace. No-op where a table has none.
     fn drop_non_core_identities(&mut self) {}
-}
-
-/// True when `id` is an adapter that belongs to the platform's own core.
-pub fn is_core_source(id: &str) -> bool {
-    !NON_CORE_SOURCE_IDS.contains(&id)
 }
 
 impl CoreScoped for CanonicalAthlete {

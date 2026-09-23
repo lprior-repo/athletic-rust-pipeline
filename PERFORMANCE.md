@@ -79,7 +79,7 @@ cargo bench -p midwest-census --bench core                     # census/parse, c
 
 Each target builds its own dataset and asserts it before reporting a rate — the root workbook bench
 round-trips its synthetic XLSX through `calamine`, the census bench reads its corpus from
-`crates/midwest-census/tests/fixtures/**`, and the census merge group appends to a temporary store —
+`crates/census-crawl/tests/fixtures/**`, and the census merge group appends to a temporary store —
 so a rate can never describe a corpus that lost rows.
 
 **Example harnesses** (clap-based, whole-pipeline and substrate throughput). They are examples, not
@@ -270,7 +270,7 @@ abort all jobs, release every slot, revoke the gate, reject pending. Concurrency
 validated `tabs` count (1..=8 in `BrowserSettings::validate`), not by origin; per-origin admission
 lives in the fetcher.
 
-### 3.8 Adapter fan-out and HTTP fetch (`crates/midwest-census/src/sources/mod.rs`, `net/`)
+### 3.8 Adapter fan-out and HTTP fetch (`crates/census-crawl/src/mod.rs`, `net/`)
 
 `sources::CONCURRENCY_BOUND = 8` is the default ceiling on concurrent async operations per adapter
 (overridable locally); adapters are plain async functions over `AdapterContext`, called directly
@@ -354,7 +354,7 @@ measured.
 | `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | `src/store.rs`, `backend.rs` |
 | `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/midwest-census/src/restate_services/` |
 | `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | `src/html_bounds.rs` |
-| HTTP body cap | 32 MiB | `crates/midwest-census/src/net/` |
+| HTTP body cap | 32 MiB | `crates/census-crawl/src/net/` |
 
 Storage placement still open: Fjall KV separation is **not** configured (both stores use
 `KeyspaceCreateOptions::default`), partition/compaction settings are untouched, and the observation

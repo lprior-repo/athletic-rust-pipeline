@@ -2,7 +2,7 @@
 //! named refusal for any of them this machine cannot acquire.
 //!
 //! Why a plan and not a list: the sources that apply to a state are the research corpus's conclusion
-//! ([`crate::sources::applicability`]), and whether one can *run here* is a fact about this machine —
+//! ([`census_crawl::applicability`]), and whether one can *run here* is a fact about this machine —
 //! a browser-session source needs a lane to be configured. Those are two different dispositions and
 //! the run has to carry both, so the plan is built once, before any adapter runs, and every unit
 //! leaves it either sweepable or refused **by name**.
@@ -11,9 +11,9 @@
 //! must not reach the invocation retry: a source that cannot run is not a source that failed, and
 //! spending three attempts on a missing lane would report a machine's gap as a source's fault.
 
-use crate::net::Fetcher;
-use crate::sources::applicability::applicable_sources;
-use crate::sources::registry::{AccessClass, SourceDescriptor};
+use census_crawl::applicability::applicable_sources;
+use census_crawl::net::Fetcher;
+use census_crawl::registry::{AccessClass, SourceDescriptor};
 use census_domain::UsJurisdiction;
 
 /// Whether this machine can serve a browser-session source at plan time.

@@ -220,7 +220,7 @@ pub fn write_manifest(
             .with_context(|| format!("create manifest dir {parent:?}"))?;
     }
     let mut manifest = String::new();
-    manifest.push_str(&crate::net::now_iso8601());
+    manifest.push_str(&census_crawl::net::now_iso8601());
     manifest.push('\n');
     let mut sorted: Vec<&PathBuf> = files.iter().collect();
     sorted.sort();

@@ -34,23 +34,22 @@ fn top_modules_read_the_path_shape() {
 #[test]
 fn references_resolve_to_top_level_modules() {
     assert_eq!(
-        refs_in_line("use crate::store::{Store, Table};"),
-        vec!["store".to_string()]
+        refs_in_line("use crate::report::{Error, read_rows};"),
+        vec!["report".to_string()]
     );
     assert_eq!(
-        refs_in_line("let now = crate::net::now_iso8601();"),
-        vec!["net".to_string()]
+        refs_in_line("use crate::{self as census_crate, workbook::Sheet};"),
+        vec!["workbook".to_string()]
     );
-    assert_eq!(
-        refs_in_line("use crate::{self as census_crate, store::Store};"),
-        vec!["store".to_string()]
-    );
-    assert!(refs_in_line("// crate::store::Store").is_empty());
+    assert!(refs_in_line("// crate::report::read_rows").is_empty());
     assert!(refs_in_line("let s = \"crate::report::read_rows\";").is_empty());
     assert_eq!(
-        refs_in_line("use crate::{report::Error, sources::AdapterReport};"),
-        vec!["report".to_string(), "sources".to_string()]
+        refs_in_line("use crate::{report::Error, workbook::Sheet};"),
+        vec!["report".to_string(), "workbook".to_string()]
     );
+    // A path into another crate is that crate's business: the module walk judges this crate's own
+    // tree, so the crawl crate's `net` is a crate reference, not a module one.
+    assert!(refs_in_line("let now = census_crawl::net::now_iso8601();").is_empty());
 }
 
 #[test]

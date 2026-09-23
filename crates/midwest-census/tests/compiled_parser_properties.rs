@@ -1,6 +1,6 @@
 //! Property tests for the two-block Compiled export seam.
 //!
-//! `midwest_census::sources::compiled::parse` reads the export WIAA posts for regional, sectional and
+//! `census_crawl::compiled::parse` reads the export WIAA posts for regional, sectional and
 //! state track meets when no Hy-Tek report exists: two event blocks printed side by side on one page,
 //! each with its own column header, each row read out of its own block's slice of the line. Track is a
 //! class-of-2027 source here because the right-hand heat prints every athlete's `Yr`, and the
@@ -20,12 +20,12 @@
 //!
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
 //! `0x434F_4D50_494C_4544`. The bodies below are synthetic pages in the published layout; the
-//! committed capture for the same layout is documented in `src/sources/compiled/tests.rs`.
+//! committed capture for the same layout is documented in `crates/census-crawl/src/compiled/tests.rs`.
 #![forbid(unsafe_code)]
 
+use census_crawl::compiled::{parse, ParsedMeet, ParsedRow};
+use census_crawl::hytek::lines_from_pdf_text;
 use census_domain::model::SourceRef;
-use midwest_census::sources::compiled::{parse, ParsedMeet, ParsedRow};
-use midwest_census::sources::hytek::lines_from_pdf_text;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 

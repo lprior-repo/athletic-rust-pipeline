@@ -3,8 +3,8 @@
 //!
 //! Split out of `sweep.rs` so that file stays inside the one-page budget.
 
-use crate::net::Fetcher;
-use crate::sources::milesplit::{Site, TeamRef};
+use census_crawl::milesplit::{Site, TeamRef};
+use census_crawl::net::Fetcher;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use census_store::Store;

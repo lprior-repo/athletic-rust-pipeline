@@ -94,7 +94,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_ec51ca2f94139e1d",
@@ -122,7 +123,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     }
   ],
   "paid_reveal_names": [

@@ -110,7 +110,7 @@ pub fn fragment_file_name(path: &Path) -> String {
 
 /// Run the whole gate over one fragment and write its verified copy.
 pub async fn verify_fragment(
-    fetcher: &crate::net::Fetcher,
+    fetcher: &census_crawl::net::Fetcher,
     path: &Path,
     out_dir: &Path,
     options: &super::GateOptions,

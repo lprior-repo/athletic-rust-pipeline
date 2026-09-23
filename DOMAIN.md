@@ -103,9 +103,9 @@ causes:
   `PayloadLimit`, `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect`;
   `BrowserError` (`src/runtime/browser.rs`), including `HumanRequired`, `Unavailable`,
   `TaskPanicked`, `Shutdown`; and `DomainError` (`src/domain/error.rs`) for pure validation.
-- census crate: `FetchError` (`crates/midwest-census/src/net/mod.rs`) for the transport
+- census crate: `FetchError` (`crates/census-crawl/src/net/mod.rs`) for the transport
   (`Robots`, `Http{status}`, `RateLimited{retry_after_secs}`, `TooLarge`, `Transport`, `Cache`,
-  `Timeout`, …) and `CrawlError` (`crates/midwest-census/src/sources/mod.rs`) for the adapter
+  `Timeout`, …) and `CrawlError` (`crates/census-crawl/src/lib.rs`) for the adapter
   layer.
 
 Collapsing `RateLimited` or `SourceUnavailable`/`Unavailable` into "not found" is forbidden: it

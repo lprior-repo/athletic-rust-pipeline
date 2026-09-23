@@ -61,91 +61,40 @@ mod walk;
 #[path = "seams/tests.rs"]
 mod tests;
 
-/// Allowed edges between top-level modules of `crates/midwest-census/src`, as `(from, to)`.
+/// Allowed edges between the modules still inside `crates/midwest-census/src`, as `(from, to)`.
 ///
-/// The direction rule is `ARCHITECTURE.md`'s: adapters and workflows depend on domain types and
-/// on the store, never the reverse; `net` and `school_index` are leaves, with the one recorded
-/// exception below for the transport the registry declares; `store` and `report` may not reach into
-/// `net` (the clock lives in `clock`).
+/// The direction rule is `ARCHITECTURE.md`'s: a lane derives from the rows below it and names no lane
+/// back. The table is what a split leaves behind: the adapters, the fetcher, the store, the review lane
+/// and the school index have each left for their own crate, so the edges that used to run to them are
+/// rows in [`ALLOWED_CRATES`] now (or, where both ends moved together, rules `xtask` no longer needs to
+/// state — `net`'s registry lookup lives inside `census-crawl`). What stays here is the composition
+/// root's own graph: the run (`census`), the durable services over it, the report, the workbook that
+/// prints it, and the small lanes they share.
+///
+/// A row is added when a module gains a dependency its design already argued for, never to silence a
+/// violation. Edges *inside* another crate are that crate's business and are not walked here.
 const ALLOWED: &[(&str, &str)] = &[
     ("bests", "report"),
-    ("bests", "store"),
-    ("bootstrap", "clock"),
     ("bootstrap", "outcome"),
     ("bootstrap", "restate_services"),
     ("bootstrap", "spawn"),
-    ("bootstrap", "store"),
-    ("census", "clock"),
-    ("census", "net"),
     ("census", "report"),
-    ("census", "school_index"),
-    ("census", "sources"),
-    ("census", "store"),
-    // The provenance gate is a fetching adapter over the fragment CSVs: it re-derives every shipped
-    // coach row from the page that row cites, through the same polite fetcher the sources use (three
-    // passes, one shared on-disk cache) and stamps its manifest with that fetcher's clock. `net` is
-    // the one module it needs beyond the standard library and the CSV reader.
-    ("coachverify", "net"),
-    // The verified fragment is published the way every other derived artifact is: through the store's
-    // atomic-rename writer and its CSV failure type, so a reader never sees a half-written state file
-    // and one publication bug has one implementation. The lane reads no canonical row and writes none:
-    // the edge is the writer plumbing, exactly as it is for `index` and `bests`.
-    ("coachverify", "store"),
     ("index", "report"),
-    ("index", "store"),
     // §29-§31: the derived indexes are the workbook's other reader. The queues, coverage and
     // snapshot rows the store keeps are the same findings the sheets print, so the index module
     // composes the workbook's retained-record families rather than re-deriving them, and a store
     // reader and a workbook reader cannot be shown different findings.
     ("index", "workbook"),
-    // The review lane is a reader of retained findings and a writer of verdicts: it asks about the
-    // cases the store kept (`ReviewCases`) and the canonical rows behind them, and writes back only
-    // `IdentityVerdicts` and the cases' own state. It never edits a canonical row, and `store` never
-    // names `identity`, so the edge runs the direction ARCHITECTURE.md sets — a lane over the store,
-    // not the store over a lane.
-    ("identity", "store"),
-    ("net", "clock"),
-    // The recorded exception to `net` being a leaf: which transport carries a host — HTTP or the
-    // browser lane — is the source registry's declaration, not the caller's request, so the executor
-    // asks the registry rather than inferring a transport from the hostname. The dependency is one
-    // lookup of a declared fact (`transport_for_host`), never a fetch and never a descriptor walk.
-    ("net", "sources"),
     ("outcome", "restate_services"),
-    ("report", "clock"),
-    ("report", "store"),
     ("restate_services", "bests"),
     ("restate_services", "census"),
-    ("restate_services", "clock"),
-    // ARCHITECTURE.md §1: the batch path and the durable path share the adapters, the store and the
-    // reports, and differ only in who owns the journal. The workflow layer therefore names the
-    // adapter error type it classifies into the durable retry policy (`jobs::collect_error`) and the
-    // polite fetcher the jurisdiction object holds for the whole process, which is also what keeps
-    // one remote origin drawing from one admission budget (§3).
-    ("restate_services", "net"),
-    ("restate_services", "sources"),
     ("restate_services", "outcome"),
     ("restate_services", "report"),
     ("restate_services", "spawn"),
-    ("restate_services", "store"),
     ("restate_services", "workbook"),
-    ("sources", "net"),
-    ("sources", "school_index"),
-    ("sources", "store"),
-    ("spawn", "clock"),
     ("spawn", "outcome"),
-    ("store", "clock"),
-    // The athlete key (`school, normalized name, cohort`) has one definition, in the identity lane's
-    // flags, and the conflict queue groups by that same function rather than stating a second copy of
-    // the key that could drift from the flags the review lane states to a model. Nothing else of the
-    // identity lane is named: the queue reads the key and the store's rows.
-    ("workbook", "identity"),
     ("workbook", "bests"),
     ("workbook", "report"),
-    // The meta sheets render the adapter surface itself — slug, transport, declared capabilities
-    // and the per-origin request cost — so the workbook reads the registry table as data. It never
-    // calls an adapter and never fetches.
-    ("workbook", "sources"),
-    ("workbook", "store"),
 ];
 
 /// Allowed edges between workspace crates, as `(from, to)`.
@@ -159,17 +108,51 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // The original tree, carried over: the root binary drives a persistent Chromium session through
     // the browser crate, which knows nothing about the census.
     ("athletic-rust-pipeline", "athleticnet-browser"),
+    // The acquisition plane: the polite fetcher, the browser bridge, one module per provider and the
+    // provider registry. It is below the run — it maps provider data onto domain rows and writes them
+    // through the store — and names nothing above it, so the run's shape and the durable layer's shape
+    // cannot leak back into an adapter. `net`'s one recorded exception, reading the registry to learn
+    // which transport carries a host, is now a lookup inside this crate rather than an edge between
+    // two: the browser bridge's `lane.rs` reaches the Restate ingress client as a library, not as the
+    // workspace's service definitions, which is why the SDK appears here as a dependency and the
+    // service crate does not.
+    ("census-crawl", "census-domain"),
+    // The fetch cache, the request-evidence tables and the clock the net layer stamps a crawl with.
+    ("census-crawl", "census-store"),
     // The bottom of the graph: types and their rules, no store, no network, no runtime.
     ("census-review", "census-domain"),
     // The review lane reads retained cases and writes verdicts through the store that owns both
     // tables; it never opens Fjall itself.
     ("census-review", "census-store"),
     ("census-store", "census-domain"),
+    // The composition root: it owns the sweep, the durable services and the published artifacts, and it
+    // is the only crate that may name the acquisition plane, the review lane and the store together.
+    //
+    // The three edges carry the contracts that used to be module rows:
+    //
+    // * `census-crawl` — ARCHITECTURE.md §1: the batch path and the durable path share the adapters and
+    //   differ only in who owns the journal, so the workflow layer names the adapter error type it
+    //   classifies into the durable retry policy (`jobs::collect_error`) and the polite fetcher the
+    //   jurisdiction object holds for the whole process (§3, one origin drawing from one admission
+    //   budget). The workbook's meta sheets render the adapter surface itself — slug, transport,
+    //   declared capabilities, per-origin cost — so they read the registry table as data and never
+    //   call an adapter. The provenance gate (`coachverify`) fetches cited pages through the same
+    //   fetcher, three passes over one shared cache.
+    // * `census-review` — the athlete key (`school, normalized name, cohort`) has one definition, in
+    //   the review lane's flags, and the conflict queue groups by that same function rather than
+    //   stating a second copy that could drift from the flags the lane states to a model. Nothing else
+    //   of the lane is named: the queue reads the key and the store's rows.
+    // * `census-store` — every derived artifact is published the way the store publishes one: through
+    //   its atomic-rename writer and its CSV failure type, so a reader never sees a half-written state
+    //   file and one publication bug has one implementation. `bests`, `index`, `report` and the coach
+    //   fragments all take that edge for the writer plumbing and read no row through it.
+    ("midwest-census", "census-crawl"),
     ("midwest-census", "census-domain"),
     ("midwest-census", "census-review"),
     ("midwest-census", "census-store"),
-    // The harness reads the store for its status verb and drives the census services through their
-    // ingress clients, so it names both.
+    // The harness reads the store for its status verb, drives the census services through their
+    // ingress clients, and replays a provider adapter against its capture, so it names all three.
+    ("xtask", "census-crawl"),
     ("xtask", "census-domain"),
     ("xtask", "census-store"),
     ("xtask", "midwest-census"),

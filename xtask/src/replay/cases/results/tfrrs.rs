@@ -8,7 +8,7 @@
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
-use midwest_census::sources::tfrrs;
+use census_crawl::tfrrs;
 use std::collections::BTreeSet;
 
 /// A TFRRS capture: a performance-list page, a team page with its roster, or the instance home page.

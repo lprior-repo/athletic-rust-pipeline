@@ -14,7 +14,8 @@
 //!
 //! Then it kills the endpoint with SIGKILL in the middle of a `Consolidate` run — the corpus is
 //! large enough that the table scan and snapshot write are still running when the signal lands —
-//! starts the endpoint again on the same port and data-dir, and asserts three things:
+//! starts the endpoint again on the same port and data-dir, resumes the paused invocation, and
+//! asserts three things:
 //!
 //! 1. the invocation is not lost: the killed run resumes and finishes its merge;
 //! 2. it does not start a second execution: re-submitting the same run identity is refused as an
@@ -22,6 +23,12 @@
 //! 3. nothing was written twice: the store's observation count still equals the corpus appended, and
 //!    a replayed append would have doubled it. (Observations, not merged entities: `stats` counts
 //!    the rows the store received, which is precisely what a replayed durable write would duplicate.)
+//!
+//! The resume is an explicit step because the node does not perform one: a killed endpoint's
+//! invocation fails, backs off, and is **paused** once the retry policy is spent, and the operator's
+//! recovery is `PATCH /invocations/{id}/resume` for each paused row (`HANDOFF.md` §"Evidence and
+//! remaining work"). Restarting the endpoint alone leaves the run parked, so a test that only
+//! restarted it would be asserting a redelivery the node never makes.
 //!
 //! `Consolidate` is the run this proves against because it is the one heavy job that touches only
 //! the store: a jurisdiction census walks the source sites, so a kill mid-census would make this
@@ -318,6 +325,63 @@ async fn wait_for_node(client: &reqwest::Client, node: &Node) -> Result<(), Stri
     Err(format!("node admin API never came up: {last}"))
 }
 
+/// The invocation the kill left behind, read from the admin's `sys_invocation` table.
+///
+/// The node's retry policy spends its attempts against the closed socket and then **pauses** the
+/// invocation — the same `on_max_attempts = "pause"` policy the live node runs, which `HANDOFF.md`
+/// §"Evidence and remaining work" records as a paused run rather than a resumed one. The operator's
+/// recovery enumerates those rows and resumes each, so the id comes from the same place here.
+async fn paused_invocation(client: &reqwest::Client, node: &Node) -> Result<String, String> {
+    let response = client
+        .post(format!("{}query", node.admin))
+        .header("accept", "application/json")
+        .json(&serde_json::json!({
+            "query": "SELECT id, status FROM sys_invocation \
+                      WHERE target_service_name = 'Consolidate' ORDER BY created_at DESC;"
+        }))
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
+    let status = response.status();
+    let text = response.text().await.unwrap_or_default();
+    if !status.is_success() {
+        return Err(format!("the admin query answered {status}: {text}"));
+    }
+    let body: serde_json::Value =
+        serde_json::from_str(&text).map_err(|error| format!("{error}: {text}"))?;
+    // Column names are fixed; the envelope around them is not (this build answers a `rows` object,
+    // others a bare array), and there is exactly one `Consolidate` invocation on this node, so the
+    // id is read by looking for the row rather than by pinning the wrapper.
+    let id = find_key(&body, "id").and_then(|value| value.as_str().map(str::to_string));
+    id.ok_or_else(|| format!("no invocation id in the admin's answer: {text}"))
+}
+
+/// The first value under `key` anywhere in `value`, depth first.
+fn find_key<'a>(value: &'a serde_json::Value, key: &str) -> Option<&'a serde_json::Value> {
+    match value {
+        serde_json::Value::Object(map) => map
+            .get(key)
+            .or_else(|| map.values().find_map(|child| find_key(child, key))),
+        serde_json::Value::Array(items) => items.iter().find_map(|child| find_key(child, key)),
+        _ => None,
+    }
+}
+
+/// Resume a paused invocation. `PATCH` is the verb the admin API takes; `POST` answers `405`.
+async fn resume(client: &reqwest::Client, node: &Node, invocation: &str) -> Result<(), String> {
+    let response = client
+        .patch(format!("{}invocations/{invocation}/resume", node.admin))
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
+    let status = response.status();
+    if status.is_success() {
+        return Ok(());
+    }
+    let text = response.text().await.unwrap_or_default();
+    Err(format!("the admin answered {status} to the resume: {text}"))
+}
+
 /// POST a handler and return the raw body, distinguishing transport failure from a handler reply.
 ///
 /// The body is optional because a shared handler takes no input: Restate's ingress rejects a request
@@ -578,16 +642,23 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     // The merge's own output is the completion signal this test reads (step 6), and the count taken
     // here is what makes it a proof rather than a coincidence: taken immediately after the signal,
     // before anything could resume, it says how far the merge got before it was killed.
-    let snapshot_dir = data_dir.join("entities");
+    //
+    // The publish location is `<store>/out/<table>.jsonl` — the job's own destination, the one the
+    // CLI consolidates to and every reader opens. `Store::table_path` is the pre-Fjall journal the
+    // one-time import reads, not a snapshot output, so counting under `entities/` counted nothing
+    // (0 of 15, every run) after the job moved here.
+    let snapshot_dir = data_dir.join("out");
+    // One `stat` per table, not per `.jsonl` in the directory: `out/` also holds the run's other
+    // artifacts (bests, seal, sweep), and one of them landing must not read as a merged table.
     let snapshots_written = || {
-        std::fs::read_dir(&snapshot_dir)
-            .map(|entries| {
-                entries
-                    .flatten()
-                    .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "jsonl"))
-                    .count()
+        Table::ALL
+            .into_iter()
+            .filter(|table| {
+                snapshot_dir
+                    .join(format!("{}.jsonl", table.file()))
+                    .is_file()
             })
-            .unwrap_or(0)
+            .count()
     };
     let at_kill = snapshots_written();
     assert!(
@@ -624,6 +695,20 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
         Err(_) => panic!("the repeat never answered"),
     }
     eprintln!("note: the repeat was refused as an existing invocation, so nothing forked");
+
+    // 5b. The node does not redeliver on its own. Its retry policy spends the attempts a closed
+    //     socket allows and then pauses the invocation, which is exactly the state the live node
+    //     leaves a run in (`HANDOFF.md` §"Evidence and remaining work": recovery is
+    //     `PATCH /invocations/{id}/resume` per paused row, never a fresh submission). Resuming it
+    //     is the operator's recovery step, and without it this test would be asserting a
+    //     redelivery the node never performs.
+    let invocation = paused_invocation(&client, &node_guard)
+        .await
+        .expect("the admin names the paused invocation");
+    resume(&client, &node_guard, &invocation)
+        .await
+        .expect("the paused invocation resumes");
+    eprintln!("note: the paused invocation {invocation} was resumed");
 
     // 6. The resume proof. This deployment registers no read handler for a consolidate run — a
     //    workflow is answered by the invocation that owns it — so the merge's own output is the
@@ -662,7 +747,7 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
 
     // And the merge landed: an invocation that resumed into a no-op would satisfy the count above
     // while merging nothing at all.
-    let athletes_snapshot = data_dir.join("entities").join("athletes.jsonl");
+    let athletes_snapshot = data_dir.join("out").join("athletes.jsonl");
     let rows = std::fs::read_to_string(&athletes_snapshot)
         .expect("the consolidate snapshot for athletes")
         .lines()

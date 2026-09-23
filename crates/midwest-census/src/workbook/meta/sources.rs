@@ -9,7 +9,7 @@
 //! that declares capabilities and left no evidence behind is therefore visible as exactly that.
 
 use crate::report::{Census, ReportResult};
-use crate::sources::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
+use census_crawl::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
 use std::collections::BTreeMap;
 
 use crate::workbook::cells::{cell, row, Cell};

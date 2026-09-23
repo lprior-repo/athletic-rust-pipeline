@@ -14,10 +14,10 @@
 //! column's padding glued to it.
 
 use super::{parse_lines, rendered_rows, seam_config, ACCURACE, STATE, TABLE};
-use midwest_census::sources::hytek::{lines_from_pdf_text, lines_from_text};
+use census_crawl::hytek::{lines_from_pdf_text, lines_from_text};
 use proptest::prelude::*;
 
-/// The committed captures of this seam's three layouts, as `src/sources/xc/tests.rs` parses them.
+/// The committed captures of this seam's three layouts, as `crates/census-crawl/src/xc/tests.rs` parses them.
 const CAPTURES: [(&str, &str); 3] = [
     ("team blocks (state meet)", STATE),
     ("padded grade table (sectional)", TABLE),

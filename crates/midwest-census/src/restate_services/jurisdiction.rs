@@ -34,7 +34,8 @@ use restate_sdk::prelude::*;
 use tokio::sync::Mutex;
 
 use crate::census::WorkflowIdentity;
-use crate::net::Fetcher;
+use census_crawl::net::bridge::BrowserLane;
+use census_crawl::net::Fetcher;
 use census_store::clock::Clock;
 use census_store::Store;
 
@@ -47,6 +48,14 @@ mod stages;
 pub struct JurisdictionCensus {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
+    /// The browser lane this process acquires browser-transported hosts through, when the deployment
+    /// has one.
+    ///
+    /// It is handed in rather than built here because the ingress origin it talks to is a deployment
+    /// fact. `None` is the ordinary deployment without a lane, and it is not an error: the fetcher
+    /// installs what it was given, and the plan refuses a source that needs a lane by name
+    /// ([`BrowserLaneState`](super::plan::BrowserLaneState)) instead of spending attempts on it.
+    lane: Option<BrowserLane>,
     /// The polite fetcher, built once per process and shared by every jurisdiction.
     ///
     /// Shared on purpose: the fetcher owns the per-host gates and the request counters, and those are
@@ -58,10 +67,11 @@ pub struct JurisdictionCensus {
 }
 
 impl JurisdictionCensus {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>) -> Self {
+    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, lane: Option<BrowserLane>) -> Self {
         Self {
             store,
             clock,
+            lane,
             fetcher: Arc::new(Mutex::new(None)),
         }
     }

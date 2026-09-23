@@ -4,6 +4,7 @@
       "city": "Hastings",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -22,6 +23,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -40,6 +42,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -59,6 +62,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -78,6 +82,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -97,6 +102,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -387,6 +393,7 @@
       "city": "Ainsworth",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -405,6 +412,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -424,6 +432,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -443,6 +452,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -462,6 +472,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -481,6 +492,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -500,6 +512,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -714,6 +727,7 @@
       "city": "Allen",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -732,6 +746,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -751,6 +766,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -770,6 +786,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -789,6 +806,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1017,6 +1035,7 @@
       "city": "Alliance",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1035,6 +1054,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1054,6 +1074,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1073,6 +1094,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1092,6 +1114,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1356,6 +1379,7 @@
       "city": "Alma",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1374,6 +1398,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1393,6 +1418,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1412,6 +1438,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1431,6 +1458,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1665,6 +1693,7 @@
       "city": "Amherst",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1683,6 +1712,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1702,6 +1732,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1721,6 +1752,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1740,6 +1772,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -1992,6 +2025,7 @@
       "city": "Merna",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2010,6 +2044,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2029,6 +2064,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2237,6 +2273,7 @@
       "city": "Ansley",
       "coaches": [
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2255,6 +2292,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2273,6 +2311,7 @@
           "source_identities": []
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2292,6 +2331,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2311,6 +2351,7 @@
           "sport": "cross_country"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -2330,6 +2371,7 @@
           "sport": "outdoor_track"
         },
         {
+          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",

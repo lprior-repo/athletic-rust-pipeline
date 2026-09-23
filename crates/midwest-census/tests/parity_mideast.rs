@@ -26,16 +26,16 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{bail, Context, Result};
+use census_crawl::compiled;
+use census_crawl::hytek;
+use census_crawl::net::Fetcher;
+use census_crawl::wayzata::{self, ScheduleSport};
+use census_crawl::{ihsa, ks, ohsaa, AdapterContext, AdapterReport};
 use census_domain::model::{
     CanonicalCoach, CanonicalMeet, CanonicalSchool, CompetitionLevel, EventKind, Gender, Grade,
     Mark, SchoolId, SchoolYear, SourceRef, Sport,
 };
 use census_store::{Store, Table};
-use midwest_census::net::Fetcher;
-use midwest_census::sources::compiled;
-use midwest_census::sources::hytek;
-use midwest_census::sources::wayzata::{self, ScheduleSport};
-use midwest_census::sources::{ihsa, ks, ohsaa, AdapterContext, AdapterReport};
 use serde::Serialize;
 
 /// Evidence date stamped into every entity a seeded run mints. Fixed so the goldens are stable.

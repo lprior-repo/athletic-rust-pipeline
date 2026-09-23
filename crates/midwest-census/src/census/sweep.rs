@@ -11,9 +11,9 @@
 //! One roster unit's work — the skip a blocked state earns, and the fetch-and-store step every other
 //! unit runs — lives in `units`, so this file stays inside the one-page budget.
 
-use crate::net::{FetchOptions, Fetcher};
-use crate::sources::milesplit::{self, Roster, Site, TeamRef};
-use crate::sources::{CrawlError, CrawlResult};
+use census_crawl::milesplit::{self, Roster, Site, TeamRef};
+use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::{CrawlError, CrawlResult};
 use census_domain::model::Gender;
 use census_domain::UsJurisdiction;
 use census_store::clock::{Clock, SystemClock};

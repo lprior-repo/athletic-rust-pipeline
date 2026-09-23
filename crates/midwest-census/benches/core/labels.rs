@@ -14,8 +14,8 @@
 
 use anyhow::{ensure, Result};
 use census_domain::model::{normalize_name, CanonicalSchool, SchoolId};
+use census_domain::school_index::{SchoolIndex, SchoolMatch};
 use census_domain::UsJurisdiction;
-use midwest_census::school_index::{SchoolIndex, SchoolMatch};
 use std::collections::BTreeMap;
 
 use super::lcg::Lcg;

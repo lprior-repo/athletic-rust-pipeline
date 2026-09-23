@@ -124,6 +124,7 @@
   "school_id": "sch_923bf42605772b4c",
   "sport_coaches": [
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -143,6 +144,7 @@
       "sport": "cross_country"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",

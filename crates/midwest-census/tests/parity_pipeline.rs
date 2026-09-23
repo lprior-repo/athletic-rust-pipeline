@@ -12,7 +12,7 @@
 //!
 //! * `store_dir` — and the note and workbook cells that quote it — is the store's own path, which
 //!   is a tempdir here and an operator's directory in production.
-//! * `generated_on` is [`midwest_census::net::today_iso`], the wall clock.
+//! * `generated_on` is [`census_crawl::net::today_iso`], the wall clock.
 //!
 //! Everything else — every count, bucket, ordering, mark, CSV field and cell — is compared exactly:
 //! the workbook's raw bytes, part CRC by part CRC, are required to be identical outside
@@ -62,22 +62,22 @@ use std::time::Duration;
 
 use anyhow::{bail, ensure, Context, Result};
 use calamine::{open_workbook_auto, Data, Reader};
+use census_crawl::net::Fetcher;
+use census_crawl::result_file::ParsedMeet;
+use census_crawl::{
+    athleticlive, athleticlive_athletes, hytek, milesplit, ohsaa, raceday, wiaa, wiaa_results,
+    AdapterContext, AdapterReport,
+};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
     CanonicalPerformance, CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence,
     GradYear, Grade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
+use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use midwest_census::bests::{self, BestResult, Measure};
-use midwest_census::net::Fetcher;
 use midwest_census::report::{self, Census, Scope};
-use midwest_census::school_index::SchoolIndex;
-use midwest_census::sources::result_file::ParsedMeet;
-use midwest_census::sources::{
-    athleticlive, athleticlive_athletes, hytek, milesplit, ohsaa, raceday, wiaa, wiaa_results,
-    AdapterContext, AdapterReport,
-};
 use midwest_census::{census, workbook};
 use sha2::{Digest, Sha256};
 

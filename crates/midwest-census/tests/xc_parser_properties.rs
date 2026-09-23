@@ -1,6 +1,6 @@
 //! Property tests for the cross-country result seam.
 //!
-//! `midwest_census::sources::xc::parse` reads the layouts WIAA's timers publish for cross-country —
+//! `census_crawl::xc::parse` reads the layouts WIAA's timers publish for cross-country —
 //! Hy-Tek team blocks, the padded grade table and AccuRace's rule-lined table — and cross-country is
 //! a class-of-2027 source rather than only a results source because every one of those layouts
 //! prints the runner's grade. These properties pin what the census is allowed to assume about that
@@ -21,14 +21,14 @@
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
 //! `0x5843_5052_4F50_5331`, so a failing case is reproducible from the seed alone. The bodies below
 //! are synthetic pages in the published layouts; the committed captures for the same layouts, and
-//! the layout documentation they came from, live in `src/sources/xc/tests.rs`.
+//! the layout documentation they came from, live in `crates/census-crawl/src/xc/tests.rs`.
 
 #![forbid(unsafe_code)]
 
+use census_crawl::hytek::lines_from_text;
+use census_crawl::result_file::{ParsedMeet, ParsedRow};
+use census_crawl::xc::parse;
 use census_domain::model::{Gender, SourceRef};
-use midwest_census::sources::hytek::lines_from_text;
-use midwest_census::sources::result_file::{ParsedMeet, ParsedRow};
-use midwest_census::sources::xc::parse;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 

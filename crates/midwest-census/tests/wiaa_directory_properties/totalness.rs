@@ -8,7 +8,7 @@
 //! bookkeeping keys off these reads.
 
 use super::seam_config;
-use midwest_census::sources::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
+use census_crawl::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
 use proptest::prelude::*;
 
 /// Tokens from the committed captures, in the order a scrambled or half-rendered page might carry

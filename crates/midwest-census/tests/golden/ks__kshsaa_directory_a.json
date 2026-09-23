@@ -253,7 +253,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_8fdaf57585932ff3",
@@ -272,7 +273,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_7f7cfe3c912979a1",
@@ -291,7 +293,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_6ecea1d9293bd62b",
@@ -310,7 +313,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_b2a15192c3b0243e",
@@ -329,7 +333,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     }
   ]
 }

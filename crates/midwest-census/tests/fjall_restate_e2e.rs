@@ -7,13 +7,17 @@
 //! 3. [`report_bests_and_workbook_chain_over_synthetic_entities`] — consolidate → census (both
 //!    scopes) → best marks → workbook over a synthetic corpus, with counts asserted at every step.
 //! 4. [`restate_endpoint_advertises_services_and_drains_on_request`] — the supervisor's endpoint
-//!    answers `/discover` with the five services the workflow is built from and returns a drain
+//!    answers `/discover` with the nine services the workflow is built from and returns a drain
 //!    report on request.
+//! 5. [`restate_endpoint_advertises_the_lane_when_it_serves_one`] — the same manifest with the
+//!    headed lane configured: a deployment that serves the profile advertises `BrowserSession`, and
+//!    still drains on request.
 //!
 //! `/discover` is answered by the SDK's own endpoint (see `restate-sdk`'s `endpoint::mod`, which
 //! routes any path whose last segment is `discover`), so discovery is driven directly here: no
 //! external Restate server is needed, and no network traffic leaves the machine.
 
+use athleticnet_browser::BrowserSettings;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
@@ -26,9 +30,10 @@ use midwest_census::report::{self, Census, Scope};
 use midwest_census::{bests, census, workbook};
 use std::collections::HashSet;
 use std::net::{SocketAddr, TcpListener};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::task::JoinSet;
+use url::Url;
 
 /// A core adapter id: never one of `report::NON_CORE_SOURCE_IDS`, so `Scope::Core` keeps every
 /// synthetic row.
@@ -534,6 +539,9 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
         data_dir: data_dir.clone(),
         max_concurrent: 4,
         drain_timeout: Duration::from_secs(5),
+        // No lane: this endpoint is proved without a browser, which is the deployment shape that
+        // serves the nine store-backed services only.
+        lane: None,
     };
 
     // The shutdown future is the supervisor's "request" stage. The sender stays alive until the
@@ -578,6 +586,56 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
     assert_eq!(reopened.stats().unwrap().tables.len(), Table::ALL.len());
 }
 
+/// A deployment that serves a lane advertises it. The manifest is what a client is bound against, so
+/// a `BrowserSession` that is bound and not advertised is a lane no census can address. No browser
+/// is launched: the object is constructed here and launches one only when an operator calls `start`.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn restate_endpoint_advertises_the_lane_when_it_serves_one() {
+    let dir = tempfile::tempdir().unwrap();
+    let listen = free_local_address();
+    let options = ServeOptions {
+        listen,
+        data_dir: dir.path().join("data"),
+        max_concurrent: 4,
+        drain_timeout: Duration::from_secs(5),
+        lane: Some(BrowserSettings {
+            cdp_endpoint: None,
+            executable: PathBuf::from("/nonexistent/chromium"),
+            profile_dir: dir.path().join("profile"),
+            source_origin: Url::parse("https://www.athletic.net/").unwrap(),
+            tabs: 1,
+            request_timeout: Duration::from_secs(30),
+            challenge_wait: Duration::from_secs(5),
+            headed: true,
+        }),
+    };
+
+    let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+    let mut tasks: JoinSet<anyhow::Result<DrainReport>> = JoinSet::new();
+    tasks.spawn(async move {
+        serve_until(options, async move {
+            let _ = shutdown_rx.await;
+        })
+        .await
+    });
+
+    let url = format!("http://{listen}/discover");
+    let client = discovery_client();
+    let names = discover_service_names(&client, &url).await;
+    assert!(
+        names.iter().any(|name| name == "BrowserSession"),
+        "the discovery manifest {names:?} does not advertise the lane"
+    );
+    assert_eq!(
+        names.len(),
+        EXPECTED_SERVICES.len() + 1,
+        "the endpoint advertises its services and the lane, nothing more: {names:?}"
+    );
+
+    let report = drain_after_shutdown(&mut tasks, shutdown_tx).await;
+    assert_eq!(report.stop_reason, StopReason::Requested);
+}
+
 /// The drain deadline bounds the reap after a stop request, never the wait for one: an endpoint
 /// that has been given no signal and no shutdown keeps serving past `drain_timeout`, and a stop
 /// that does arrive still drains inside the deadline instead of timing out.
@@ -590,6 +648,7 @@ async fn an_unrequested_stop_does_not_end_the_endpoint_at_the_drain_deadline() {
         data_dir: dir.path().join("data"),
         max_concurrent: 4,
         drain_timeout: Duration::from_millis(250),
+        lane: None,
     };
 
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();

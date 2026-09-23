@@ -96,7 +96,11 @@ pub use projection::build_census;
 pub(crate) use projection::in_run_scope;
 pub use writer::write_census;
 
-pub use core_scope::{is_core_source, retain_core, CoreScoped, Scope, NON_CORE_SOURCE_IDS};
+/// The core-scope predicate and its id list are the domain's (`census_domain::core_scope`), re-exported
+/// here because a reader of the report names them with the report's own scope: the report is the crate
+/// that filters rows with them.
+pub use census_domain::core_scope::{is_core_source, NON_CORE_SOURCE_IDS};
+pub use core_scope::{retain_core, CoreScoped, Scope};
 
 /// The label one published row prints: where it is bucketed, or the grand total.
 ///

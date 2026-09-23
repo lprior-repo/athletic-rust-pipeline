@@ -13,8 +13,8 @@ use restate_sdk::prelude::Json;
 
 use midwest_census::restate_services::{CensusIngressClient, OpenWorkReply, OpenWorkRequest};
 
-use super::ingress;
 use super::Cli;
+use midwest_census::ingress;
 
 /// `midwest-census open-work`
 #[derive(Debug, Args)]

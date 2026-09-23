@@ -7,9 +7,9 @@ date the census crate has landed adapters for MileSplit rosters and the associat
 (`milesplit`, `wiaa`, `wiaa_results`, `mshsl`, `ihsa`, `ohsaa`, `ks`, `plain_names`, `wayzata`,
 `coach_contacts`), the national lanes this survey ranked (`tfrrs`, `athleticlive`,
 `athleticlive_athletes`, `athleticnet`), and vendor result-file parsers for the HY-TEK / RunData /
-XC / RaceDay artifacts (`src/sources/{hytek,compiled,xc,raceday}`, dispatched by
-`src/sources/result_file.rs`) — the tree is the current state; this file is the reconnaissance input
-that chose them. `src/sources/registry/table.rs` is the authoritative slug list.
+XC / RaceDay artifacts (`crates/census-crawl/src/{hytek,compiled,xc,raceday}`, dispatched by
+`crates/census-crawl/src/result_file.rs`) — the tree is the current state; this file is the reconnaissance input
+that chose them. `crates/census-crawl/src/registry/table.rs` is the authoritative slug list.
 **Method note:** `web_search` was unavailable at the provider level during this survey (provider errors), and the HTML search engines it fell back to were captcha-gated or empty (DuckDuckGo 202/no links, Mojeek captcha, Bing empty). All discovery therefore ran through platform APIs (GitHub, Kaggle, HuggingFace, Zenodo, Figshare, data.gov CKAN, archive.org) plus direct page fetches.
 
 ---
@@ -22,7 +22,7 @@ that chose them. `src/sources/registry/table.rs` is the authoritative slug list.
 and the only relaxation is an operator naming a host on `--authorized-host`.)*
 
 1. **robots.txt is enforced in code; this file only records it.** The fetcher
-   (`crates/midwest-census/src/net/mod.rs`) returns `FetchError::Robots` for a disallowed path and
+   (`crates/census-crawl/src/net/mod.rs`) returns `FetchError::Robots` for a disallowed path and
    counts it in `FetchStats::robots_blocked`. The one relaxation is an operator naming a host on
    `--authorized-host`: the rule is then counted as `robots_authorized` and the request proceeds
    under the 2 rps ceiling. ToS and crawl-delay entries below are survey observations for the

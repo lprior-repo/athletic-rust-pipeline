@@ -2,14 +2,17 @@
 //! four facts the repair is judged by, beside the ledger count the store keeps for the same table.
 //!
 //! Run with the root named, against a copy or the live root:
-//! `WALK_ROOT=<dir> cargo test -p midwest-census --test corpus_walk -- --nocapture`
+//! `WALK_ROOT=<dir> cargo test -p midwest-census --test corpus_walk -- --ignored --nocapture`
 //!
-//! Deleted once the before/after numbers are recorded; nothing else imports it.
+//! Ignored by default: it is an operator instrument over a root the operator names, and an unset
+//! `WALK_ROOT` is not a failing claim about the code. Deleted once the before/after numbers are
+//! recorded; nothing else imports it.
 
 use census_store::{StorageMode, Store, Table};
 use std::collections::HashMap;
 
 #[test]
+#[ignore = "operator instrument: needs WALK_ROOT naming a store root"]
 fn walk_derived_tables() {
     let root = std::env::var("WALK_ROOT").expect("WALK_ROOT must name a store root");
     let store = Store::open(std::path::Path::new(&root)).expect("opening the store root");

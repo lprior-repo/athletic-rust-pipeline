@@ -17,20 +17,29 @@ pub fn repo_root() -> PathBuf {
         .map_or_else(|| manifest.to_path_buf(), Path::to_path_buf)
 }
 
-/// The `midwest-census` crate directory.
+/// The `midwest-census` crate directory: the run crate, the composition root.
 pub fn census_crate() -> PathBuf {
     repo_root().join("crates").join("midwest-census")
 }
 
-/// The crate's source adapters (one flat module per adapter today, one directory module per adapter
-/// once the decomposition lands).
-pub fn sources_dir() -> PathBuf {
-    census_crate().join("src").join("sources")
+/// The `census-crawl` crate directory: the acquisition plane.
+pub fn crawl_crate() -> PathBuf {
+    repo_root().join("crates").join("census-crawl")
 }
 
-/// The crate's captured fixtures, one directory per source.
+/// The acquisition plane's source root: one file — or one directory — per provider, the shared
+/// kernels, the `net` layer, and the crate root that declares them (`lib.rs`).
+///
+/// Adapters were modules of the run crate (`src/sources/<name>`) until the crawl wave of ADR-007, so
+/// an adapter is a top-level module here rather than a child of one.
+pub fn adapters_dir() -> PathBuf {
+    crawl_crate().join("src")
+}
+
+/// The crawl crate's captured fixtures, one directory per source. They travel with the adapters that
+/// read them; the run crate's parity tests are their second consumer.
 pub fn fixtures_dir() -> PathBuf {
-    census_crate().join("tests").join("fixtures")
+    crawl_crate().join("tests").join("fixtures")
 }
 
 /// `path` relative to the repository root when it is inside it, for messages that read like the

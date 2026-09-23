@@ -9,7 +9,7 @@
 //! role at all.
 
 use super::seam_config;
-use midwest_census::sources::ohsaa::parse_ad_page;
+use census_crawl::ohsaa::parse_ad_page;
 use proptest::prelude::*;
 
 /// The label rows the capture prints, and the canonical role each one is published under.

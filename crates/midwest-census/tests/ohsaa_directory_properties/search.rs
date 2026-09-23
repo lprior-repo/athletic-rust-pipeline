@@ -8,8 +8,8 @@
 //! spaced — resolves to the school whose row printed it.
 
 use super::seam_config;
+use census_crawl::ohsaa::{parse_search, resolve_school_name};
 use census_domain::model::normalize_name;
-use midwest_census::sources::ohsaa::{parse_search, resolve_school_name};
 use proptest::prelude::*;
 
 /// School names as the search page publishes them, and the cities they are listed under.

@@ -12,6 +12,7 @@ workspace = true
 members = [
     "crates/athleticnet-browser",
     "crates/census-domain",
+    "crates/census-crawl",
     "crates/census-review",
     "crates/census-store",
     "crates/midwest-census",

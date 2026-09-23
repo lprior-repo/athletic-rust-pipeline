@@ -8,7 +8,7 @@
 //! with an address that could have been printed on the page — never a half-decoded string.
 
 use super::seam_config;
-use midwest_census::sources::wiaa::decode_cfemail;
+use census_crawl::wiaa::decode_cfemail;
 use proptest::prelude::*;
 
 /// Lowers of the hex alphabet the provider writes payloads in.

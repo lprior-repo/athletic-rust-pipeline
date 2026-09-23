@@ -6,7 +6,7 @@
 //! bytes must always read the same way — the walker keys off these reads.
 
 use super::seam_config;
-use midwest_census::sources::ohsaa::{
+use census_crawl::ohsaa::{
     parse_ad_page, parse_coach_cell, parse_search, parse_sport_label, parse_sports_table,
 };
 use proptest::prelude::*;

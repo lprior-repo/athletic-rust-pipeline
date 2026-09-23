@@ -7,7 +7,7 @@
 //! off these reads.
 
 use super::seam_config;
-use midwest_census::sources::mshsl::{
+use census_crawl::mshsl::{
     parse_admin_entries, parse_next_listing_page, parse_school_detail, parse_school_list,
 };
 use proptest::prelude::*;

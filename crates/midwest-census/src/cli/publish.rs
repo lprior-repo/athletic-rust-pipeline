@@ -211,7 +211,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
 
 /// Derive the durable indexes and report what the pass appended.
 pub(super) fn run_index(store: &Store) -> Result<()> {
-    let finished_on = midwest_census::net::today_iso();
+    let finished_on = census_crawl::net::today_iso();
     let report = midwest_census::index::derive(store, "index", &finished_on)
         .context("deriving the durable indexes")?;
     println!(

@@ -7,8 +7,8 @@
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{Context, Result};
-use midwest_census::sources::athleticlive;
-use midwest_census::sources::athleticlive_athletes::{AthleteHit, HitTeam};
+use census_crawl::athleticlive;
+use census_crawl::athleticlive_athletes::{AthleteHit, HitTeam};
 use std::collections::BTreeSet;
 
 /// The capture date the corpus's harnesses stamp rows with (`parity_*::OBSERVED_ON`).

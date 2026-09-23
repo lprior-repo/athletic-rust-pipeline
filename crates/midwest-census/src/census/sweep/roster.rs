@@ -4,10 +4,10 @@
 //! budget; the request itself is unchanged, so the entity appends and the resume contract (a unit
 //! counts as done only once its journal entry lands) stay exactly where they were.
 
-use crate::net::{FetchOptions, Fetcher};
-use crate::sources::milesplit::{self, Roster, Site, TeamRef};
-use crate::sources::CrawlResult;
-use census_domain::model::SchoolYear;
+use census_crawl::milesplit::{self, Roster, Site, TeamRef};
+use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::{observe_schools_of, CrawlResult};
+use census_domain::model::{SchoolYear, SourceNamespace};
 use census_store::{Store, Table};
 
 /// Fetch one roster and append its school, teams and athletes.
@@ -29,6 +29,12 @@ pub(super) async fn fetch_and_store(
     let (school, athletes, teams) =
         milesplit::roster_entities(&roster, school_year, observed_on, site);
     store.append(Table::Schools, &school)?;
+    observe_schools_of(
+        store,
+        &SourceNamespace::MilesplitSchool,
+        std::slice::from_ref(&school),
+        observed_on,
+    )?;
     if !teams.is_empty() {
         store.append_many(Table::Teams, &teams)?;
     }

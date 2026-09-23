@@ -12,7 +12,7 @@ use restate_sdk::ingress::{InvocationHandle, Output, ReqwestClient, SendStatus};
 use restate_sdk::prelude::*;
 
 use super::{POLL, PROGRESS_EVERY};
-use crate::cli::ingress;
+use midwest_census::ingress;
 
 /// The pieces a waiting national command needs to observe one run. The invocation handle carries
 /// the ingress client the output reads go through, so it is the only transport needed here.

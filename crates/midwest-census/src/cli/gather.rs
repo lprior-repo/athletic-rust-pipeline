@@ -132,7 +132,7 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
         Route::Offline(root) => {
             let store = Store::open(root)?;
             let fetcher = build_fetcher(cli, &store)?;
-            let observed_on = midwest_census::net::today_iso();
+            let observed_on = census_crawl::net::today_iso();
             for jurisdiction in &jurisdictions {
                 let census = census::collect_state_meets(
                     &fetcher,
@@ -220,7 +220,7 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         observed_on: args
             .observed_on
             .clone()
-            .unwrap_or_else(midwest_census::net::today_iso),
+            .unwrap_or_else(census_crawl::net::today_iso),
     })
 }
 
@@ -274,8 +274,8 @@ pub(super) fn run_import_coaches(
 ) -> Result<()> {
     let observed_on = observed_on
         .clone()
-        .unwrap_or_else(midwest_census::net::today_iso);
-    let report = midwest_census::sources::coach_contacts::import_csv(store, csv, &observed_on)?;
+        .unwrap_or_else(census_crawl::net::today_iso);
+    let report = census_crawl::coach_contacts::import_csv(store, csv, &observed_on)?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }

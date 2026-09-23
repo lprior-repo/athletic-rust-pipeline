@@ -6,8 +6,8 @@
 
 use tracing::warn;
 
-use crate::net::{FetchError, Fetcher};
-use crate::sources::CrawlError;
+use census_crawl::net::{FetchError, Fetcher};
+use census_crawl::CrawlError;
 use census_domain::model::SourceAccessCondition;
 use census_store::{Store, Table};
 
@@ -44,7 +44,7 @@ pub(super) struct Observed {
 pub(super) async fn observed(fetcher: &Fetcher, store: &Store) -> Observed {
     let conditions = fetcher.access_conditions().await;
     let blocked_hosts = fetcher
-        .blocked_hosts(crate::net::now_iso8601().as_str())
+        .blocked_hosts(census_crawl::net::now_iso8601().as_str())
         .await;
     let mut failures = 0_u64;
     if let Err(error) = store.replace_many(Table::SourceAccess, &conditions) {

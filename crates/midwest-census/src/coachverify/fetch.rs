@@ -1,4 +1,4 @@
-use crate::net::{FetchError, FetchOptions, Fetcher};
+use census_crawl::net::{FetchError, FetchOptions, Fetcher};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 /// Everything the gate needs beyond the fetcher itself.

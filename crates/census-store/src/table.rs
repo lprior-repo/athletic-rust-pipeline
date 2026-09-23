@@ -63,7 +63,7 @@ impl StorageMode {
     }
 }
 
-/// The store's thirteen collections.
+/// The store's sixteen collections.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Table {
     Schools,
@@ -92,6 +92,11 @@ pub enum Table {
     IdentityVerdicts,
     /// Meets a source enumerated, before their results were read (§30 `source_meets`).
     SourceMeets,
+    /// What a source itself published about the school and athlete objects it owns, keyed by the
+    /// provider's own object id (§30 `source_observations`). Evidence, not derived state: a source
+    /// read again on a later day appends a second sighting, and a canonical merge that turns out to
+    /// be wrong is re-decided from these rows without reading the provider again.
+    SourceObservations,
 }
 
 impl Table {
@@ -112,10 +117,11 @@ impl Table {
             Table::SourceAccess => "source_access",
             Table::IdentityVerdicts => "identity_verdicts",
             Table::SourceMeets => "source_meets",
+            Table::SourceObservations => "source_observations",
         }
     }
 
-    pub const ALL: [Table; 15] = [
+    pub const ALL: [Table; 16] = [
         Table::Schools,
         Table::Teams,
         Table::Coaches,
@@ -131,6 +137,7 @@ impl Table {
         Table::SourceAccess,
         Table::IdentityVerdicts,
         Table::SourceMeets,
+        Table::SourceObservations,
     ];
 
     /// Parse a wire name (`"schools"`) back into a table. Unknown names are rejected so a typo in an
@@ -158,7 +165,8 @@ impl Table {
             | Table::Meets
             | Table::Events
             | Table::Performances
-            | Table::SourceMeets => StorageMode::ObservationLog,
+            | Table::SourceMeets
+            | Table::SourceObservations => StorageMode::ObservationLog,
             Table::SourceIdentities | Table::Conflicts | Table::Coverage => {
                 StorageMode::DerivedSnapshot
             }

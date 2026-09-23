@@ -19,8 +19,8 @@ use restate_sdk::prelude::*;
 use census_domain::UsJurisdiction;
 
 use crate::census::{CollectOptions, MeetCensus, StateProgress, WorkflowIdentity};
-use crate::net::Fetcher;
-use crate::sources::{default_family_delays, default_host_delays};
+use census_crawl::net::Fetcher;
+use census_crawl::{default_family_delays, default_host_delays};
 
 use super::JurisdictionCensus;
 use crate::restate_services::plan::{plan as planned, BrowserLaneState};
@@ -56,6 +56,13 @@ impl JurisdictionCensus {
             )))
         })?
         .with_family_budgets(default_family_delays());
+        // The lane is a deployment fact this process was handed. Installing it is what makes a
+        // browser-transported source sweepable: the plan asks this fetcher, so a deployment without
+        // a lane refuses that source by name instead of failing requests against it.
+        let built = match &self.lane {
+            Some(lane) => built.with_browser_lane(lane.clone()),
+            None => built,
+        };
         let shared = Arc::new(built);
         *slot = Some(Arc::clone(&shared));
         Ok(shared)
@@ -264,3 +271,7 @@ impl JurisdictionCensus {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "stages_tests.rs"]
+mod tests;

@@ -10,6 +10,7 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,
     ReviewVerdictRecord, SourceAccessCondition, SourceMeetRef, SourceObjectIdentity,
+    SourceObservation,
 };
 use fjall::Keyspace;
 use std::collections::HashSet;
@@ -188,6 +189,7 @@ impl Store {
             Table::SourceAccess => self.consolidate::<SourceAccessCondition>(table, out_path),
             Table::IdentityVerdicts => self.consolidate::<ReviewVerdictRecord>(table, out_path),
             Table::SourceMeets => self.consolidate::<SourceMeetRef>(table, out_path),
+            Table::SourceObservations => self.consolidate::<SourceObservation>(table, out_path),
         }
     }
 

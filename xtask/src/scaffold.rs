@@ -33,8 +33,8 @@ impl Layout {
     /// Resolve every path for `name`.
     fn resolve(name: String) -> Self {
         Self {
-            adapter: paths::sources_dir().join(&name),
-            flat_module: paths::sources_dir().join(format!("{name}.rs")),
+            adapter: paths::adapters_dir().join(&name),
+            flat_module: paths::adapters_dir().join(format!("{name}.rs")),
             fixtures: paths::fixtures_dir().join(&name),
             name,
         }
@@ -83,7 +83,7 @@ pub fn new_source(requested: &str) -> Result<()> {
     if let Err(error) = register_module(&name) {
         return Err(error.context(format!(
             "the {} file(s) listed above were created; add `pub mod {name};` to \
-             crates/midwest-census/src/sources/mod.rs by hand, or remove them",
+             crates/census-crawl/src/lib.rs by hand, or remove them",
             created.len()
         )));
     }
@@ -148,10 +148,10 @@ fn write_one(path: &Path, body: &str) -> Result<()> {
     fs::write(path, body).with_context(|| format!("writing {}", paths::relative(path)))
 }
 
-/// Append `pub mod <name>;` after the last declaration in the source module list, unless it is
+/// Append `pub mod <name>;` after the last declaration in the crawl crate's module list, unless it is
 /// already declared. Returns whether the file changed.
 fn register_module(name: &str) -> Result<bool> {
-    let path = paths::sources_dir().join("mod.rs");
+    let path = paths::adapters_dir().join("lib.rs");
     let text =
         fs::read_to_string(&path).with_context(|| format!("reading {}", paths::relative(&path)))?;
     let declaration = format!("pub mod {name};");

@@ -48,7 +48,7 @@ pub(super) async fn run_review(store: &Store, args: &ReviewArgs) -> Result<()> {
     let observed_on = args
         .observed_on
         .clone()
-        .unwrap_or_else(midwest_census::net::today_iso);
+        .unwrap_or_else(census_crawl::net::today_iso);
     let options = ReviewOptions {
         families,
         limit: args.limit,

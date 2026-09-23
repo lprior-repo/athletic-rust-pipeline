@@ -1,0 +1,40 @@
+[package]
+name = "census-crawl"
+version = "0.1.0"
+edition = "2021"
+description = "Acquisition plane for the census: robots-enforcing fetcher, per-provider adapters, provider registry."
+license = "MIT"
+
+[lints]
+workspace = true
+
+[dependencies]
+base64 = "0.22"
+census-domain = { path = "../census-domain" }
+census-store = { path = "../census-store" }
+# The coach-contact importer reads and writes the association's own CSV export.
+csv = "1"
+# `RobotsRecord` stamps the crawl date it was fetched for, and the net layer ages a record by it.
+chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+futures = "0.3"
+regex = "1.11"
+reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
+# The browser lane is a Restate service reached over the ingress client: a page a plain fetch cannot
+# render is requested through it, and the lane's own retry/queueing semantics come from Restate. This
+# crate therefore names the SDK as a *client*; the service definitions themselves live in the service
+# crate, which depends on this one.
+restate-sdk = { version = "=0.12.0", default-features = false, features = ["http_server", "aws_lc_rs", "reqwest-client"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "fs", "signal"] }
+tracing = "0.1"
+url = { version = "2.5", features = ["serde"] }
+
+[dev-dependencies]
+anyhow = "1"
+tempfile = "3"
+# The net layer's tests drive paused-time deadlines (`tokio::time::advance`), which needs the test
+# clock the runtime only exposes behind this feature.
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "test-util"] }

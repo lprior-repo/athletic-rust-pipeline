@@ -12,6 +12,9 @@ workspace = true
 [dependencies]
 anyhow = "1"
 calamine = "=0.36.1"
+# The replay cases drive a provider adapter directly, so the harness names the crate that owns them
+# rather than reaching them through `midwest-census`, which no longer re-exports its adapters.
+census-crawl = { path = "../crates/census-crawl" }
 # The result-file readers take `census_domain::model::SourceRef` (and the `replay` verb passes the
 # id and URL a capture's evidence is stamped with), so the crate that owns those types is a direct
 # edge rather than a type reached through `midwest-census`.

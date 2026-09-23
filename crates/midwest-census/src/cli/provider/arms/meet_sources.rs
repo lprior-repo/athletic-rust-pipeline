@@ -3,9 +3,9 @@
 //! [`ProviderArgs`] into its adapter's `Options`.
 
 use anyhow::{Context, Result};
+use census_crawl::{self as providers, AdapterContext, AdapterReport};
 use census_domain::model::{SchoolYear, SourceMeetRef};
 use midwest_census::census;
-use midwest_census::sources::{self as providers, AdapterContext, AdapterReport};
 
 use super::super::ProviderArgs;
 use super::DEFAULT_COLLECT_CONCURRENCY;

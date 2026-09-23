@@ -101,7 +101,7 @@ the ratchet prints those with `(context)` and `(target, not a budget)` and does 
 An adapter with more than one responsibility becomes a directory module:
 
 ```text
-crates/midwest-census/src/sources/<name>/
+crates/census-crawl/src/<name>/
     mod.rs      module doc, constants, Options, re-exports, collect orchestration (+ its private phases)
     parse.rs    pure parsing: string primitives, published row shapes, parse_* functions. No I/O.
     map.rs      parsed rows -> canonical entities (schools, coaches, athletes, meets, performances)

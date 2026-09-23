@@ -6,7 +6,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use midwest_census::sources::raceday;
+use census_crawl::raceday;
 use census_domain::model::SourceRef;
 
 fuzz_target!(|data: &[u8]| {

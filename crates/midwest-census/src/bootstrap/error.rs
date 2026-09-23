@@ -102,4 +102,24 @@ pub enum BootstrapError {
     /// A drain counter did not fit its report field.
     #[error("task count does not fit u64")]
     TaskCountOverflow,
+    /// `--browser-profile` enables the headed lane, whose origin - the source its profile reads -
+    /// is compiled in; a build that cannot parse it cannot serve the lane.
+    #[error("the browser lane's origin {origin} is not a URL: {source}")]
+    LaneOriginUnusable {
+        origin: String,
+        source: url::ParseError,
+    },
+    /// `--browser-executable` or `--browser-headless` was given without `--browser-profile`, which
+    /// is what enables the lane: a deployment that configures a lane it does not serve has a typo.
+    #[error("{flag} configures the browser lane, which --browser-profile enables")]
+    LaneFlagWithoutProfile { flag: String },
+    /// The lane needs an absolute browser. Neither `--browser-executable` nor a `PATH` entry named
+    /// one: the default is a program name, and a program name is only meaningful against `PATH`.
+    #[error("{program} is on no PATH entry: name the browser with --browser-executable")]
+    LaneBrowserNotOnPath { program: String },
+    /// The census's client for the deployment's browser lane could not be built. The origin is this
+    /// build's own constant, so the failure is a build or environment fault rather than a source's:
+    /// an endpoint whose services cannot reach the lane cannot sweep a browser-transported source.
+    #[error("building the browser lane's client for {origin} failed: {detail}")]
+    LaneIngressUnusable { origin: String, detail: String },
 }

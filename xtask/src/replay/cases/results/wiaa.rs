@@ -7,8 +7,8 @@
 
 use crate::replay::Capture;
 use anyhow::{bail, Context, Result};
+use census_crawl::wiaa_results;
 use census_domain::model::SourceRef;
-use midwest_census::sources::wiaa_results;
 
 /// One WIAA result file: the format from its extension and body, the season from its fixture
 /// record, and the body through `wiaa_results::parse_result_body` - the call the crate's own tests

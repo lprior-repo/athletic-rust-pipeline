@@ -75,8 +75,8 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
     let observed_on = args
         .observed_on
         .clone()
-        .unwrap_or_else(midwest_census::net::today_iso);
-    let context = midwest_census::sources::AdapterContext {
+        .unwrap_or_else(census_crawl::net::today_iso);
+    let context = census_crawl::AdapterContext {
         fetcher: &fetcher,
         store,
         refresh: args.refresh,

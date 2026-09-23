@@ -1,6 +1,6 @@
 //! Property tests for the RaceDay Scoring export seam.
 //!
-//! `midwest_census::sources::raceday::parse` reads the finish-list pages WIAA posts for
+//! `census_crawl::raceday::parse` reads the finish-list pages WIAA posts for
 //! cross-country sectionals and state meets: one `<h3>` naming the race and one or more
 //! `data-display` grids whose rows are the athletes. Cross-country feeds the class-of-2027 census
 //! because every grid row prints the runner's `Year`, and the provider publishes no mark beyond the
@@ -25,10 +25,10 @@
 //! `DECLINED_ROW` is the shape of a grid row the layout cannot read.
 #![forbid(unsafe_code)]
 
+use census_crawl::raceday::parse;
+use census_crawl::result_file::{ParsedMeet, ParsedRow};
+use census_crawl::CrawlResult;
 use census_domain::model::SourceRef;
-use midwest_census::sources::raceday::parse;
-use midwest_census::sources::result_file::{ParsedMeet, ParsedRow};
-use midwest_census::sources::CrawlResult;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
@@ -44,7 +44,8 @@ mod totalness;
 /// Verbatim `<h3>` + finish-list table from
 /// `https://www.wiaawi.org/Portals/0/PDF/Results/Cross_Country/2023/racinesectionalb.htm`
 /// (WIAA Division 2 Racine sectional, boys race, 2023).
-const CAPTURE: &str = include_str!("fixtures/wiaa_results/racinesectionalb-finish-list.htm");
+const CAPTURE: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
 
 /// A one-table export whose second row carries no athlete name: a grid row the layout cannot read as
 /// a performance, beside one it can.

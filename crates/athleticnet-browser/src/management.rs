@@ -216,7 +216,6 @@ impl Actor {
                 .ok_or_else(|| anyhow::anyhow!("browser page missing"))?
                 .page
                 .clone();
-            let generation_snapshot = self.gate.snapshot();
             let observer = navigation::start_observer(
                 page.clone(),
                 self.observer_stop.clone(),
@@ -233,17 +232,22 @@ impl Actor {
                 &page,
                 &self.settings.source_origin,
                 self.settings.request_timeout,
+                self.settings.challenge_wait,
                 self.gate.clone(),
                 self.clock.as_ref(),
             )
             .await
             .map_err(|_| anyhow::anyhow!("browser bootstrap failed"))?;
+            let is_ready = matches!(outcome, NavigationOutcome::Ready);
             self.apply_navigation(outcome);
-            if self.gate.try_open(generation_snapshot.generation) {
-                self.challenge_latched = false;
-            } else {
+            // The generation is observed after the navigation and the compare-and-set still guards
+            // the window between observing and opening. Observing it *before* the navigation would
+            // count the challenge this navigation settled as a concurrent revocation, which is the
+            // one revocation its own settling sample has already answered.
+            if !is_ready || !self.gate.try_open(self.gate.snapshot().generation) {
                 break;
             }
+            self.challenge_latched = false;
         }
         Ok(())
     }

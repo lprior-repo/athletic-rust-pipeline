@@ -52,6 +52,8 @@ use std::path::Path;
 use std::process::{Child, Command, Output, Stdio};
 use std::time::{Duration, Instant};
 
+use census_crawl::net::Fetcher;
+use census_crawl::{ks, milesplit, AdapterContext, AdapterReport};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, Evidence,
     GradYear, SourceRef,
@@ -59,8 +61,6 @@ use census_domain::model::{
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use midwest_census::census::CollectOptions;
-use midwest_census::net::Fetcher;
-use midwest_census::sources::{ks, milesplit, AdapterContext, AdapterReport};
 use midwest_census::{census, report};
 use sha2::{Digest, Sha256};
 
@@ -78,12 +78,16 @@ const UNIT_PHASE: &str = "recovery_units";
 /// Capture date the fixtures carry; every `observed_on` here is that date.
 const OBSERVED_ON: &str = "2026-09-20";
 
-const KS_DIRECTORY_FIXTURE: &str = include_str!("fixtures/ks/kshsaa_directory_a.json");
-const ATHLETICLIVE_FIXTURE: &str = include_str!("fixtures/athleticlive/meets-sample.csv");
+const KS_DIRECTORY_FIXTURE: &str =
+    include_str!("../../census-crawl/tests/fixtures/ks/kshsaa_directory_a.json");
+const ATHLETICLIVE_FIXTURE: &str =
+    include_str!("../../census-crawl/tests/fixtures/athleticlive/meets-sample.csv");
 /// The MileSplit pair captured together: the WI team index and the roster of the team that index
 /// lists first (`Site::teams_url()`, and `<that team's url>/roster` off the parsed index).
-const WI_TEAMS_FIXTURE: &str = include_str!("fixtures/milesplit/wi_teams_index.html");
-const WI_ROSTER_FIXTURE: &str = include_str!("fixtures/milesplit/wi_roster_52649.html");
+const WI_TEAMS_FIXTURE: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/wi_teams_index.html");
+const WI_ROSTER_FIXTURE: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/wi_roster_52649.html");
 /// The two resume-journal phases the jurisdiction walk writes (`census::teams_phase` /
 /// `census::rosters_phase`): a state's team index, and `<state>:<team id>` per finished roster.
 const WI_TEAMS_PHASE: &str = "milesplit_teams_wi";
@@ -1982,7 +1986,7 @@ struct Walk {
     index_journal: BTreeSet<String>,
     roster_journal: BTreeSet<String>,
     counts: BTreeMap<String, u64>,
-    stats: midwest_census::net::FetchStats,
+    stats: census_crawl::net::FetchStats,
     /// Class-of-2027 athletes on one roster page: the per-pass cohort counters are this times the
     /// rosters the pass walked.
     per_roster: usize,

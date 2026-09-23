@@ -1,9 +1,10 @@
 //! Restate service surface: durable handlers over the same [`Store`] the batch CLI drives.
 //!
-//! Nine definitions, one per durability need. Restate derives the service names from the struct
+//! Ten definitions, one per durability need. Restate derives the service names from the struct
 //! names, so these are the wire names: **`Census`**, **`Consolidate`**, **`Report`**, **`Bests`**,
-//! **`Workbook`**, **`Ingest`**, **`Sweep`**, **`JurisdictionCensus`**, **`NationalCensus`**.
-//! Renaming a struct is a breaking API change; add a `#[handler(name = "...")]` instead.
+//! **`Workbook`**, **`Ingest`**, **`Sweep`**, **`JurisdictionCensus`**, **`NationalCensus`**,
+//! **`BrowserSession`**. Renaming a struct is a breaking API change; add a
+//! `#[handler(name = "...")]` instead.
 //!
 //! * `Census` — request/response over the store: `status`.
 //! * `Consolidate`, `Report`, `Bests`, `Workbook` — one workflow per heavy job, each addressed by a
@@ -23,19 +24,26 @@
 //! * `NationalCensus` — the root workflow (`national:<season>:<revision>`). It fans out one
 //!   `JurisdictionCensus` call per state and folds the reports into one national report, listing
 //!   failed states as rows instead of failing the run.
+//! * `BrowserSession` — the one headed profile, keyed [`SESSION_KEY`]: `fetch` posts a single page
+//!   request to the engine and answers with its classification. It is bound only when the
+//!   deployment was started with `--browser-profile`, because one process owns the profile: a
+//!   second manager would be a corruption path rather than a second lane.
 //!
 //! Handler bodies stay thin; the work sits in free functions that take `&Store`, so the interesting
 //! behaviour is testable without a Restate runtime.
 
+use athleticnet_browser::clock::SystemClock;
+use athleticnet_browser::BrowserSettings;
+
 use crate::spawn::Spawner;
-use census_store::{Store, Table};
+use census_crawl::net::bridge::BrowserLane;
+use census_store::Store;
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
-use crate::report::Scope;
 use census_store::clock::Clock;
 
 /// The workflow key one job run is addressed by: `<job>[:<part>…]:<unix seconds>`.
@@ -65,6 +73,7 @@ pub fn run_key(job: &str, parts: &[&str]) -> String {
     key
 }
 
+mod browser_session;
 mod census;
 mod ingest;
 mod jobs;
@@ -74,6 +83,7 @@ mod national;
 mod open_work;
 mod plan;
 mod publish;
+mod resolve;
 mod support;
 mod sweep;
 mod wire;
@@ -106,6 +116,12 @@ pub use plan::{
 pub use support::JobError;
 use support::{blocking, job_error};
 
+pub(super) use resolve::{cohort_label, resolve_scope, resolve_table, resolve_tables};
+
+pub use browser_session::{
+    BrowserSession, BrowserSessionClient, BrowserSessionDrain, BrowserSessionIngressClient,
+    BrowserSessionStatus, DrainCounts, SESSION_KEY,
+};
 pub use census::{Census, CensusClient, CensusIngressClient};
 pub use ingest::{Ingest, IngestClient, IngestIngressClient};
 pub use jobs::append_observations;
@@ -131,51 +147,6 @@ const KEY_STATE: &str = "state";
 pub use limits::{
     MAX_LIMIT_PER_STATE, MAX_ROWS_PER_REQUEST, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS,
 };
-
-/// Resolve a requested table name. Unknown names are terminal: a retry cannot fix a typo, and
-/// silently creating a table nobody scans would hide the mistake.
-fn resolve_table(name: &str) -> Result<Table, TerminalError> {
-    Table::from_wire(name).ok_or_else(|| {
-        TerminalError::new(format!(
-            "unknown table {name}; expected one of {:?}",
-            Table::ALL.map(Table::file)
-        ))
-    })
-}
-
-/// Resolve a requested table list; an empty list means every table, in [`Table::ALL`] order.
-fn resolve_tables(names: &[String]) -> Result<Vec<Table>, TerminalError> {
-    let mut tables = Vec::with_capacity(names.len());
-    for name in names {
-        let table = resolve_table(name)?;
-        if !tables.contains(&table) {
-            tables.push(table);
-        }
-    }
-    if tables.is_empty() {
-        return Ok(Table::ALL.to_vec());
-    }
-    Ok(tables)
-}
-
-/// Resolve the scope selector used by the report, bests, and workbook surfaces.
-fn resolve_scope(name: Option<&str>) -> Result<Scope, TerminalError> {
-    // An omitted scope means the CLI's default scope, which is every source: the two entry points
-    // must not disagree about what a default report contains.
-    match name {
-        None | Some("all_sources") => Ok(Scope::AllSources),
-        Some("core") => Ok(Scope::Core),
-        Some(other) => Err(TerminalError::new(format!(
-            "unknown scope {other}; expected core or all_sources"
-        ))),
-    }
-}
-
-fn cohort_label(grad_year: Option<i16>) -> String {
-    grad_year
-        .map(|year| format!("co{year}"))
-        .unwrap_or_else(|| "all".to_string())
-}
 
 /// The collection options one jurisdiction's walk runs under.
 ///
@@ -248,16 +219,31 @@ pub(super) async fn journaled_today_workflow(
 
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,
 /// `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`,
-/// `NationalCensus`.
+/// `NationalCensus`, and - when the deployment serves one - `BrowserSession`.
 ///
 /// The `region` is the shell's spawner: every blocking job these services run is started through it,
 /// so a shrunk service surface still leaves nothing running that the drain does not own.
+///
+/// `serves_lane` is the headed profile this endpoint serves. `None` binds no `BrowserSession`, and a
+/// census client that calls it anyway reads Restate's own "service not found" rather than opening a
+/// second browser: who owns the profile is a deployment decision, never a fallback.
+///
+/// `uses_lane` is the client the census reaches that profile through, and it exists only when the
+/// deployment has a lane at all. Installing it on the census fetcher is what makes a
+/// browser-transported source ordinary work: the plan asks the fetcher
+/// ([`BrowserLaneState::of`]), so without it the source is refused by name instead of swept.
 #[tracing::instrument(skip_all, fields(max_concurrent))]
-pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spawner>) -> Endpoint {
+pub fn build_endpoint(
+    store: Arc<Store>,
+    max_concurrent: usize,
+    region: Arc<Spawner>,
+    serves_lane: Option<BrowserSettings>,
+    uses_lane: Option<BrowserLane>,
+) -> Endpoint {
     let clock: Arc<dyn Clock> = Arc::new(census_store::clock::SystemClock);
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
-    Endpoint::builder()
+    let mut builder = Endpoint::builder()
         .bind(Census::new(
             Arc::clone(&store),
             Arc::clone(&clock),
@@ -280,9 +266,13 @@ pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spaw
         .bind(JurisdictionCensus::new(
             Arc::clone(&store),
             Arc::clone(&clock),
+            uses_lane,
         ))
-        .bind(NationalCensus::new(clock))
-        .build()
+        .bind(NationalCensus::new(clock));
+    if let Some(settings) = serves_lane {
+        builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
+    }
+    builder.build()
 }
 
 #[cfg(test)]

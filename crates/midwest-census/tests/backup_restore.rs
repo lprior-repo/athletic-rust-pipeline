@@ -534,6 +534,9 @@ fn expected_observations(corpus: &Corpus) -> Vec<(String, u64)> {
         Table::IdentityVerdicts,
         // No meet census runs in this fixture, so the table that stage writes is empty here.
         Table::SourceMeets,
+        // The fixture builds canonical rows directly instead of walking an adapter, so no provider
+        // sighting is filed — the table the walks write is empty here too.
+        Table::SourceObservations,
     ]
     .into_iter()
     .map(|table| row(table, 0));

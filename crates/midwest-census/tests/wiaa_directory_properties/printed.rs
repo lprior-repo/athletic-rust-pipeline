@@ -9,7 +9,7 @@
 //! facts a page publishes are the facts it printed.
 
 use super::seam_config;
-use midwest_census::sources::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
+use census_crawl::wiaa::{parse_directory_letter, parse_enrollment, parse_school_page};
 use proptest::prelude::*;
 
 /// Names, levels and cities taken from the committed letter fragment.

@@ -13,8 +13,8 @@ use restate_sdk::prelude::*;
 use super::observe::{observe, observe_jurisdiction, Watch};
 use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{named_season, JurisdictionArgs, NationalArgs, NationalReportArgs};
-use crate::cli::ingress;
 use crate::cli::Cli;
+use midwest_census::ingress;
 
 /// The handle for a run that already exists under `identity`.
 ///

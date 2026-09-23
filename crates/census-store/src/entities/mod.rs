@@ -2,11 +2,12 @@
 //! absorbed at read time.
 //!
 //! `canonical` holds the seven rows the merge materializes; `derived` holds the observations, cases
-//! and queues the census keeps about its own findings. `union_vec` is the one merge helper both
-//! halves share.
+//! and queues the census keeps about its own findings; `observations` holds what a source said about
+//! its own school and athlete objects. `union_vec` is the one merge helper all three share.
 
 mod canonical;
 mod derived;
+mod observations;
 
 fn union_vec<T: PartialEq + Clone>(left: &mut Vec<T>, right: &[T]) {
     for item in right {

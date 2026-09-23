@@ -8,9 +8,7 @@
 //! coach, not two.
 
 use super::seam_config;
-use midwest_census::sources::wiaa::{
-    parse_admin_role, parse_coach_role, parse_sport_label, strip_honorific,
-};
+use census_crawl::wiaa::{parse_admin_role, parse_coach_role, parse_sport_label, strip_honorific};
 use proptest::prelude::*;
 
 /// Labels the directory actually publishes, one family per mapping: sports from `#tblCoachList`,

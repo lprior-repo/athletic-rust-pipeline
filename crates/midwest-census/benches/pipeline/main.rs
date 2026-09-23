@@ -14,16 +14,16 @@
 mod fixtures;
 
 use anyhow::{ensure, Context, Result};
+use census_crawl::wiaa_results::{artifact_format, parse_result_body, ArtifactFormat};
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, EventKind, Evidence, Gender, GradYear, Grade, Mark, SchoolId,
     SchoolYear, SourceRef, Sport, TimingMethod,
 };
+use census_domain::school_index::SchoolIndex;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use criterion::{Criterion, Throughput};
-use midwest_census::school_index::SchoolIndex;
-use midwest_census::sources::wiaa_results::{artifact_format, parse_result_body, ArtifactFormat};
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;

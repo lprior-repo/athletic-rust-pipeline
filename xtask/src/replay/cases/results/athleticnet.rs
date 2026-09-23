@@ -6,7 +6,7 @@
 
 use crate::replay::{unmapped, Capture};
 use anyhow::{Context, Result};
-use midwest_census::sources::athleticnet::{AllResults, EventDivisions, MeetData};
+use census_crawl::athleticnet::{AllResults, EventDivisions, MeetData};
 
 /// An Athletic.net document, decoded with the adapter's own published wire types - the read
 /// `athleticnet_meet_parity` makes of these captures.

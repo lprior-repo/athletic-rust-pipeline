@@ -19,8 +19,8 @@
 
 #![forbid(unsafe_code)]
 
+use census_crawl::athleticnet::{meet_requests, metadata_request, parse_mark};
 use census_domain::model::Mark;
-use midwest_census::sources::athleticnet::{meet_requests, metadata_request, parse_mark};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 

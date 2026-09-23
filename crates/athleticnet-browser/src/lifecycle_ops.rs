@@ -84,8 +84,6 @@ impl Actor {
             .page
             .clone();
         let target = self.recovery_target();
-        // Capture generation before async navigation.
-        let generation_snapshot = self.gate.snapshot();
         // Compute active cooldown BEFORE try_open.
         if has_active_cooldown(self.clock.as_ref(), &self.cooldown_until) {
             return Ok(self.status());
@@ -93,8 +91,10 @@ impl Actor {
         let outcome = self.navigate_for_recovery(&page, &target).await?;
         let is_ready = matches!(outcome, NavigationOutcome::Ready);
         self.apply_navigation(outcome);
-        // Only open the gate when the outcome is Ready and no concurrent revocation occurred.
-        if !is_ready || !self.gate.try_open(generation_snapshot.generation) {
+        // Only open the gate when the outcome is Ready and no concurrent revocation occurred. The
+        // generation is observed after the navigation: a navigation that settled on Ready is the
+        // verification, and the challenge it waited out is the revocation it has already answered.
+        if !is_ready || !self.gate.try_open(self.gate.snapshot().generation) {
             return Ok(self.status());
         }
         // CAS successful — gate is now open, reset challenge_latched for next cycle.
@@ -139,6 +139,7 @@ impl Actor {
                 page,
                 target,
                 self.settings.request_timeout,
+                self.settings.challenge_wait,
                 self.gate.clone(),
                 self.clock.as_ref(),
             )

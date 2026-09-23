@@ -10,13 +10,13 @@
 //! other, and a command that has only one of them refuses the flag that would have asked for the
 //! other.
 
+mod browser_session;
 mod census_doc;
 mod command;
 mod cycle;
 mod dispatch;
 mod export_data;
 mod gather;
-mod ingress;
 mod live;
 mod merge_coaches;
 mod national;
@@ -33,10 +33,11 @@ mod store;
 mod verify;
 mod verify_coaches;
 use anyhow::{Context, Result};
+use census_crawl::net::Fetcher;
 use census_domain::UsJurisdiction;
 use census_store::Store;
 use clap::Parser;
-use midwest_census::net::Fetcher;
+use midwest_census::ingress;
 use midwest_census::report;
 use std::path::PathBuf;
 
@@ -144,10 +145,10 @@ pub(super) fn build_fetcher_authorizing(
         store.http_cache_dir(),
         cli.user_agent.clone(),
         std::time::Duration::from_millis(cli.delay_ms),
-        midwest_census::sources::default_host_delays(),
+        census_crawl::default_host_delays(),
         hosts,
     )?
-    .with_family_budgets(midwest_census::sources::default_family_delays()))
+    .with_family_budgets(census_crawl::default_family_delays()))
 }
 
 /// Parse the arguments and run the subcommand.
@@ -165,6 +166,9 @@ pub(super) async fn run() -> Result<()> {
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
         Command::NationalReport(args) => national::run_national_report(&cli, args).await,
         Command::OpenWork(args) => open_work::run_open_work(&cli, args).await,
+        // The lane is the running endpoint's process state, so this never opens a store either: it
+        // submits through the ingress like the commands above it.
+        Command::BrowserSession(args) => browser_session::run_browser_session(&cli, args).await,
         // The seal runs either way, so it is matched here: `--store` opens the store in-process and
         // `--ingress` submits through the service, which is the only route that can measure the
         // run's own open work.

@@ -13,8 +13,8 @@
 //! published row count is what the bench reports throughput against.
 
 use anyhow::{bail, ensure, Context, Result};
+use census_crawl::{hytek, milesplit, plain_names, raceday, wiaa_results};
 use census_domain::model::SourceRef;
-use midwest_census::sources::{hytek, milesplit, plain_names, raceday, wiaa_results};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -252,11 +252,9 @@ fn archive() -> Result<Vec<(String, String)>> {
         .collect()
 }
 
-/// `<crate>/tests/fixtures`.
+/// `<crawl crate>/tests/fixtures`: the corpus lives with the adapters that read it.
 fn fixtures_root() -> Result<PathBuf> {
-    Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures"))
+    Ok(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../census-crawl/tests/fixtures"))
 }
 
 /// `<crate>/tests/fixtures/<dir>/<file>`, read as UTF-8.

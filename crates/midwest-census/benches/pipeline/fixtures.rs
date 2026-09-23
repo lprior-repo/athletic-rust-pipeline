@@ -60,12 +60,11 @@ pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
     Ok(batch)
 }
 
-/// `<crate>/tests/fixtures/<dir>/<file>`, read as UTF-8: the path resolution `benches/core.rs`
+/// `<crawl crate>/tests/fixtures/<dir>/<file>`, read as UTF-8: the path resolution `benches/core.rs`
 /// uses, from the manifest directory at compile time.
 pub(super) fn fixture(dir: &str, file: &str) -> Result<String> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
+        .join("../census-crawl/tests/fixtures")
         .join(dir)
         .join(file);
     fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))

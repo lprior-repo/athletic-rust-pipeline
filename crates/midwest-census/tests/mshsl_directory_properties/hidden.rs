@@ -8,7 +8,7 @@
 //! once even when a page hides it twice, and the two forms hide the same addresses.
 
 use super::seam_config;
-use midwest_census::sources::mshsl::{decode_cfemail, decode_cfemail_fragment};
+use census_crawl::mshsl::{decode_cfemail, decode_cfemail_fragment};
 use proptest::prelude::*;
 
 /// Characters a published local part carries.

@@ -1,7 +1,7 @@
 //! `source-fixture`: what is captured for one source.
 //!
 //! This command only reads: it lists the fixture files under
-//! `crates/midwest-census/tests/fixtures/<source>/`, so a test author can see the coverage a source
+//! `crates/census-crawl/tests/fixtures/<source>/`, so a test author can see the coverage a source
 //! already has before adding a case, and so a missing source is refused instead of silently
 //! reported as empty.
 

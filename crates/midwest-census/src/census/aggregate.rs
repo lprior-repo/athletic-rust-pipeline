@@ -4,7 +4,7 @@
 //! caller keeps its journal and re-runs, so a partial walk is reported rather than discarded — and
 //! `consolidate` merges the append logs into the `out/*.jsonl` read model, counting what it wrote.
 
-use crate::sources::CrawlResult;
+use census_crawl::CrawlResult;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, RetainedConflict, ReviewCase,

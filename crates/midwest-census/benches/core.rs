@@ -55,8 +55,8 @@ mod lcg;
 mod merge;
 
 use census_domain::model::normalize_name;
+use census_domain::school_index::SchoolIndex;
 use criterion::{Criterion, Throughput};
-use midwest_census::school_index::SchoolIndex;
 
 /// Group ids. Stable, and unique per bench: a reported id is `<group>/<bench>`.
 const PARSE_GROUP: &str = "census/parse";

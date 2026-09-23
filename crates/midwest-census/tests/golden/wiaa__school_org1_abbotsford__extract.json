@@ -53,7 +53,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_6475782dda0ce83d",
@@ -73,7 +74,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_7111b7979c9fb377",
@@ -93,7 +95,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_5372f3ac1deccf5f",
@@ -113,7 +116,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     }
   ],
   "skipped_admin_roles": [

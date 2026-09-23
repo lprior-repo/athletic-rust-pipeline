@@ -5,10 +5,10 @@
 //! host for the census live in [`super::gather`].
 
 use anyhow::Result;
+use census_crawl::milesplit::Site;
+use census_crawl::net::{FetchOptions, Fetcher};
 use census_domain::UsJurisdiction;
 use census_store::Store;
-use midwest_census::net::{FetchOptions, Fetcher};
-use midwest_census::sources::milesplit::Site;
 
 use super::{build_fetcher, Cli};
 
@@ -49,7 +49,7 @@ pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool
 /// the host that refused it. A blocked host is printed even when no kind is attached to it.
 pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) {
     let conditions = fetcher.access_conditions().await;
-    let now = midwest_census::net::now_iso8601();
+    let now = census_crawl::net::now_iso8601();
     for host in fetcher.blocked_hosts(now.as_str()).await {
         match conditions.iter().find(|condition| condition.host == host) {
             Some(condition) => println!("blocked\t{host}\t{}", condition.kind.slug()),

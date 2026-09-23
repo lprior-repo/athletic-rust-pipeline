@@ -1,7 +1,7 @@
 //! `replay`: the deterministic offline parser replay `AGENTS.md` documents.
 //!
 //! For one source, read every capture committed under
-//! `crates/midwest-census/tests/fixtures/<name>/` and run each body through the same public parse
+//! `crates/census-crawl/tests/fixtures/<name>/` and run each body through the same public parse
 //! surface the source's fixture tests drive, printing what the parser published: entity counts,
 //! route counts and the published names. Nothing is fetched, no clock is read, no store is opened
 //! and no environment is consulted, so the same tree prints the same bytes on every run - which is

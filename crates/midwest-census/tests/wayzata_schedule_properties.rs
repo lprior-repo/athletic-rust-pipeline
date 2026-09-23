@@ -1,6 +1,6 @@
 //! Property tests for the Wayzata Results schedule seam.
 //!
-//! `midwest_census::sources::wayzata::schedule_rows` reads the provider's published schedules — the
+//! `census_crawl::wayzata::schedule_rows` reads the provider's published schedules — the
 //! page a weekly collector walks to find meets it has not seen. The only date evidence the provider
 //! states is a season page URL carrying the year plus a month heading and a day cell per row, and the
 //! only key a row carries is the provider's own `/links/<slug>` target, so both facts matter to the
@@ -22,11 +22,11 @@
 //!
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed
 //! `0x5741_595A_4154_4131`. The pages below are the committed captures the walk was qualified
-//! against; the collector's own tests exercise them end to end in `src/sources/wayzata/tests.rs`.
+//! against; the collector's own tests exercise them end to end in `crates/census-crawl/src/wayzata/tests.rs`.
 #![forbid(unsafe_code)]
 
-use midwest_census::sources::wayzata::{schedule_rows, MeetRow};
-use midwest_census::sources::CrawlResult;
+use census_crawl::wayzata::{schedule_rows, MeetRow};
+use census_crawl::CrawlResult;
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
@@ -40,10 +40,12 @@ mod spacing;
 mod totalness;
 
 /// The 2026 track schedule: opens in the indoor season and runs into the outdoor one.
-const TRACK_2026: &str = include_str!("fixtures/wayzata/track_2026_schedule.html");
+const TRACK_2026: &str =
+    include_str!("../../census-crawl/tests/fixtures/wayzata/track_2026_schedule.html");
 
 /// The 2026 cross-country schedule.
-const XC_2026: &str = include_str!("fixtures/wayzata/xc_2026_schedule.html");
+const XC_2026: &str =
+    include_str!("../../census-crawl/tests/fixtures/wayzata/xc_2026_schedule.html");
 
 /// The pages this seam's laws are stated over.
 const PAGES: [(&str, &str); 2] = [

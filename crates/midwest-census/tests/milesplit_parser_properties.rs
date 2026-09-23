@@ -19,8 +19,8 @@
 
 #![forbid(unsafe_code)]
 
-use midwest_census::sources::milesplit::ResultSetRef;
-use midwest_census::sources::milesplit::{
+use census_crawl::milesplit::ResultSetRef;
+use census_crawl::milesplit::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_raw,
 };
 use proptest::prelude::*;
@@ -38,11 +38,14 @@ mod totalness;
 // ---------------------------------------------------------------------------
 
 /// The Ohio results index as served on 2026-09-22: fifty meet rows and the pager beside them.
-const OH_INDEX: &str = include_str!("fixtures/milesplit/oh_results_index.html");
+const OH_INDEX: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/oh_results_index.html");
 /// One meet's results page: the list of every result file the meet publishes.
-const OH_FILE_LIST: &str = include_str!("fixtures/milesplit/oh_meet_770621_results.html");
+const OH_FILE_LIST: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/oh_meet_770621_results.html");
 /// One result file's `/raw` body: the same meet's first result set, fixed-width rows in a `<pre>`.
-const OH_RAW: &str = include_str!("fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
+const OH_RAW: &str =
+    include_str!("../../census-crawl/tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
 
 /// The `/raw` URL the capture above was served from.
 const OH_RAW_URL: &str =

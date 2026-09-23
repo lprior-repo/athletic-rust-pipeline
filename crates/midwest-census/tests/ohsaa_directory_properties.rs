@@ -30,7 +30,7 @@
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed below,
 //! so a failing case is reproducible from the seed alone.
 
-use midwest_census::sources::ohsaa::{parse_ad_page, parse_search, resolve_school_name};
+use census_crawl::ohsaa::{parse_ad_page, parse_search, resolve_school_name};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
@@ -44,9 +44,11 @@ mod sports;
 mod totalness;
 
 /// The two committed captures that pin the search and athletic-department shapes.
-const SEARCH: &str = include_str!("fixtures/ohsaa/search_dublin_coffman.html");
-const AD: &str = include_str!("fixtures/ohsaa/ad_dublin_coffman.html");
-const SPORTS: &str = include_str!("fixtures/ohsaa/sports_dublin_coffman.html");
+const SEARCH: &str =
+    include_str!("../../census-crawl/tests/fixtures/ohsaa/search_dublin_coffman.html");
+const AD: &str = include_str!("../../census-crawl/tests/fixtures/ohsaa/ad_dublin_coffman.html");
+const SPORTS: &str =
+    include_str!("../../census-crawl/tests/fixtures/ohsaa/sports_dublin_coffman.html");
 
 /// 64 cases per property, ChaCha, fixed seed: reproducible and cheap enough for the normal suite.
 fn seam_config() -> ProptestConfig {
@@ -80,5 +82,5 @@ fn the_committed_captures_read_the_same_way_twice() {
         format!("{:?}", parse_ad_page(AD))
     );
     assert!(parse_ad_page(AD).director.is_some());
-    assert!(!midwest_census::sources::ohsaa::parse_sports_table(SPORTS).is_empty());
+    assert!(!census_crawl::ohsaa::parse_sports_table(SPORTS).is_empty());
 }

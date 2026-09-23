@@ -28,7 +28,7 @@
 //! Deterministic by construction: [`seam_config`] pins 64 cases on ChaCha with the fixed seed below,
 //! so a failing case is reproducible from the seed alone.
 
-use midwest_census::sources::wiaa::{parse_directory_letter, parse_school_page};
+use census_crawl::wiaa::{parse_directory_letter, parse_school_page};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
@@ -42,8 +42,10 @@ mod printed;
 mod totalness;
 
 /// The two committed captures that pin the index and school-page shapes.
-const DIRECTORY_A: &str = include_str!("fixtures/wiaa/directory_letter_a.html");
-const ABBOTSFORD: &str = include_str!("fixtures/wiaa/school_org1_abbotsford.html");
+const DIRECTORY_A: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa/directory_letter_a.html");
+const ABBOTSFORD: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa/school_org1_abbotsford.html");
 
 /// 64 cases per property, ChaCha, fixed seed: reproducible and cheap enough for the normal suite.
 fn seam_config() -> ProptestConfig {

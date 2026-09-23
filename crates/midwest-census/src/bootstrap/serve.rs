@@ -9,9 +9,11 @@ use std::sync::Arc;
 use anyhow::Result;
 use restate_sdk::http_server::HttpServer;
 
+use crate::ingress;
 use crate::outcome::{DrainState, Outcome};
 use crate::restate_services;
 use crate::spawn::Spawner;
+use census_crawl::net::bridge::BrowserLane;
 use census_store::Store;
 
 use super::drain::{count_error, DrainReport};
@@ -51,10 +53,11 @@ pub(super) async fn supervise(
     let region = Arc::new(Spawner::new());
     let store = open_store(&region, options.data_dir.clone()).await?;
     let (listener, bound) = bind_listener(&options).await?;
+    let lane = lane_client(&options)?;
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
     let over_budget = Arc::new(tokio::sync::Notify::new());
-    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener);
+    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener, lane);
     // The budget watcher reads /proc and has to keep watching while the region drains — a drain can
     // take the whole timeout, and a swap during it is still the operator's problem. So it runs
     // outside the region: the drain owns writers, and a watchdog that only returns when the budget
@@ -93,6 +96,25 @@ pub(super) async fn supervise(
     finalized.map_err(|source| BootstrapError::StoreFlush { source })?;
     tracing::info!(?report, "census service stopped");
     Ok(report)
+}
+
+/// The browser lane this process acquires browser-transported hosts through, when it serves one.
+///
+/// One process owns the headed profile and it is this one, so the census reaches its own
+/// `BrowserSession` object through the deployment's ingress — the same node every CLI command
+/// addresses. A deployment that serves no lane gets no client, and that is deliberate: a fetcher
+/// holding a client for a lane nobody serves would fail every browser-transported request instead of
+/// refusing that source by name before spending anything on it.
+fn lane_client(options: &ServeOptions) -> Result<Option<BrowserLane>, BootstrapError> {
+    if options.lane.is_none() {
+        return Ok(None);
+    }
+    let origin = ingress::DEFAULT_ORIGIN;
+    let client = ingress::client(origin).map_err(|error| BootstrapError::LaneIngressUnusable {
+        origin: origin.to_string(),
+        detail: error.to_string(),
+    })?;
+    Ok(Some(BrowserLane::over(client)))
 }
 
 /// Wait for whatever stops this process first, and record the reason.
@@ -158,6 +180,7 @@ fn spawn_endpoint(
     store: &Arc<Store>,
     options: &ServeOptions,
     listener: tokio::net::TcpListener,
+    lane: Option<BrowserLane>,
 ) -> (
     tokio::sync::oneshot::Sender<()>,
     tokio::sync::oneshot::Receiver<()>,
@@ -168,8 +191,13 @@ fn spawn_endpoint(
         // The stop future only has to observe the cancel; a dropped sender ends it too.
         cancelled.await.ok();
     };
-    let endpoint =
-        restate_services::build_endpoint(store.clone(), options.max_concurrent, Arc::clone(region));
+    let endpoint = restate_services::build_endpoint(
+        store.clone(),
+        options.max_concurrent,
+        Arc::clone(region),
+        options.lane.clone(),
+        lane,
+    );
     region.spawn(async move {
         HttpServer::new(endpoint)
             .serve_with_cancel(listener, stop)
@@ -244,3 +272,7 @@ pub fn init_tracing() {
         tracing::debug!("tracing already installed");
     }
 }
+
+#[cfg(test)]
+#[path = "serve_tests.rs"]
+mod tests;

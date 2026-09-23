@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -33,8 +34,17 @@ pub(crate) enum NavigationOutcome {
     Pending,
 }
 
+/// How often a settling wait re-samples a challenged tab. One sample costs two evaluations in the
+/// tab, so the interval is what keeps a wait measured in tens of seconds cheap.
+const CHALLENGE_POLL: Duration = Duration::from_millis(250);
+
 /// Bootstrap a page to the target origin. Collects events, captures body,
 /// classifies outcome, and signals challenge via gate.revoke().
+///
+/// A challenged classification is not yet a verdict: a managed interstitial usually clears itself
+/// by running its platform script, which mints the clearance cookie and reloads the tab.
+/// `challenge_wait` is the budget for that settlement, so what this returns is the page's answer
+/// after waiting rather than the first interstitial that happened to be served.
 ///
 /// Does NOT call gate.try_open — that is the actor's sole responsibility.
 /// Does NOT store observation — the observer handles all observation persistence.
@@ -43,6 +53,7 @@ pub(crate) async fn bootstrap(
     page: &Page,
     target: &Url,
     timeout: Duration,
+    challenge_wait: Duration,
     gate: Arc<ProfileGate>,
     clock: &dyn Clock,
 ) -> Result<NavigationOutcome, BrowserError> {
@@ -58,7 +69,50 @@ pub(crate) async fn bootstrap(
     };
     let mut state = DocumentState::new(target.to_string());
     loop_context.run(&mut events, &mut state).await?;
-    classify_observation(state.into_observation(), &gate, clock)
+    let outcome = classify_observation(state.into_observation(), &gate, clock)?;
+    if !matches!(outcome, NavigationOutcome::Challenged) {
+        return Ok(outcome);
+    }
+    settle(clock, challenge_wait, || {
+        inspect(page, target, gate.clone(), clock)
+    })
+    .await
+}
+
+/// Re-sample a challenged tab until it stops reporting a challenge, or the budget runs out.
+///
+/// The sample is [`inspect`], which reads the document the tab is showing *now*: the observer
+/// replaces a page's observation when the tab loads another document, so a challenge that its own
+/// script cleared reads here as the page it became. A challenge that outlasts the budget is
+/// reported as challenged, which is the latch that asks a human for the step.
+///
+/// The injected clock supplies the deadline and tokio's timer the waits, so a paused test drives
+/// the whole budget without real time passing.
+async fn settle<F, Fut>(
+    clock: &dyn Clock,
+    budget: Duration,
+    mut sample: F,
+) -> Result<NavigationOutcome, BrowserError>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<NavigationOutcome, BrowserError>>,
+{
+    // A budget the platform clock cannot represent is no budget: the profile is reported as
+    // challenged rather than pinned to a deadline that cannot exist.
+    let Some(deadline) = clock.now_instant().checked_add(budget) else {
+        return Ok(NavigationOutcome::Challenged);
+    };
+    loop {
+        match sample().await? {
+            NavigationOutcome::Challenged | NavigationOutcome::Pending => {}
+            settled => return Ok(settled),
+        }
+        let remaining = deadline.saturating_duration_since(clock.now_instant());
+        if remaining.is_zero() {
+            return Ok(NavigationOutcome::Challenged);
+        }
+        tokio::time::sleep(CHALLENGE_POLL.min(remaining)).await;
+    }
 }
 
 /// Resolve the frame every captured event is judged against.
@@ -230,3 +284,6 @@ fn retry_after(clock: &dyn Clock, headers: &HeaderMap) -> Result<Duration, Brows
     }
     Ok(delay)
 }
+
+#[cfg(test)]
+mod tests;

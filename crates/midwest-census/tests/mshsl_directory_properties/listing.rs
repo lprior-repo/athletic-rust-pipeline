@@ -8,7 +8,7 @@
 //! links to it.
 
 use super::seam_config;
-use midwest_census::sources::mshsl::{parse_next_listing_page, parse_school_list, school_page_url};
+use census_crawl::mshsl::{parse_next_listing_page, parse_school_list, school_page_url};
 use proptest::prelude::*;
 
 /// Slugs, names and cities taken from the committed listing capture.

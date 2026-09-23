@@ -8,7 +8,7 @@
 use super::{
     arbitrary_body, parse_body, seam_config, shaped_body, ARCHIVE_YEAR, DECLINED_ROW, NO_GRID,
 };
-use midwest_census::sources::CrawlError;
+use census_crawl::CrawlError;
 use proptest::prelude::*;
 
 /// A page the layout cannot read is a typed refusal, never a quiet empty meet: the collector journals

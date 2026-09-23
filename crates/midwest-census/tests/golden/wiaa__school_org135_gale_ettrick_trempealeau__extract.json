@@ -53,7 +53,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_fb9770327e41e347",
@@ -73,7 +74,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_c7d68d22d85ef487",
@@ -93,7 +95,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_74fe8fd1f95ee443",
@@ -113,7 +116,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     },
     {
       "id": "coa_9352a2c8164a4cb0",
@@ -133,7 +137,8 @@
           "method": "parsed",
           "observed_on": "2026-09-20"
         }
-      ]
+      ],
+      "email_withheld": false
     }
   ],
   "skipped_admin_roles": [

@@ -86,7 +86,7 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
     let observed_on = args
         .observed_on
         .clone()
-        .unwrap_or_else(midwest_census::net::today_iso);
+        .unwrap_or_else(census_crawl::net::today_iso);
     let grad_year = school_year(args.grad_year)?;
     let scope = scope_of(args.all_sources);
 
@@ -168,16 +168,16 @@ async fn gather_athleticnet(
     // value the domain would refuse cannot be constructed anywhere else in the tree.
     let season =
         SchoolYear::new(2026).ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
-    let context = midwest_census::sources::AdapterContext {
+    let context = census_crawl::AdapterContext {
         fetcher: &fetcher,
         store,
         refresh: args.refresh,
         school_year: season,
         observed_on: observed_on.clone(),
     };
-    let report = midwest_census::sources::athleticnet::collect(
+    let report = census_crawl::athleticnet::collect(
         &context,
-        &midwest_census::sources::athleticnet::Options {
+        &census_crawl::athleticnet::Options {
             input: args.input.clone(),
             limit: args.limit,
             refresh: args.refresh,

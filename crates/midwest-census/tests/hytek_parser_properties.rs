@@ -18,8 +18,8 @@
 
 #![forbid(unsafe_code)]
 
+use census_crawl::hytek::{parse_field_mark, parse_time};
 use census_domain::model::Mark;
-use midwest_census::sources::hytek::{parse_field_mark, parse_time};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 

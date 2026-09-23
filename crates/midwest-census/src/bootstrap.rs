@@ -59,7 +59,8 @@ pub use stop::StopReason;
 // The usage text stays in the facade because `error` prints it from three flag messages through
 // `super::USAGE`; the parser that produces those flags lives in `options`.
 const USAGE: &str = "midwest-serve [--listen ADDR] [--data-dir DIR] \
-                     [--max-concurrent N] [--drain-timeout SECONDS] [--help]";
+                     [--max-concurrent N] [--drain-timeout SECONDS] \
+                     [--browser-profile DIR] [--browser-executable PATH] [--browser-headless] [--help]";
 
 // The verbatim `tests` module resolves the supervisor, the drain entry point and the two tokio
 // types through `use super::*`, exactly as the net split feeds its tests module from `mod.rs`.

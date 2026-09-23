@@ -22,3 +22,7 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time"
 tokio-util = { version = "0.7", features = ["rt"] }
 tracing = "0.1"
 url = { version = "2.5", features = ["serde"] }
+
+[dev-dependencies]
+# `start_paused` drives the settling wait's budget without real time passing.
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "test-util"] }

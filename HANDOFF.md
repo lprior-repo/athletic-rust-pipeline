@@ -11,14 +11,14 @@ The **outdoor girls live chain completed 2026-09-21** on run `3b7c07fa4e1f80d95f
 The owner authorized Athletic.net, and `crates/midwest-census` now carries both the authorization
 mechanism and its own Athletic.net adapter. Neither existed before this session.
 
-**Fetch authorization (`src/net/`).** `Fetcher` records operator-authorized hosts
+**Fetch authorization (`crates/census-crawl/src/net/`).** `Fetcher` records operator-authorized hosts
 (`--authorized-host`, repeatable, a bare domain covering its subdomains) and counts their
 robots-blocked requests as `robots_authorized` instead of blocking them, still under the 2 rps
 per-host ceiling. An entry authorizes exactly the host it names plus anything below it — never the
 parent domain — so naming a narrow host cannot widen into a whole site. Evidence:
 `cargo test -p midwest-census --lib net::` → 9 passed.
 
-**`src/sources/athleticnet/`** reads
+**`crates/census-crawl/src/athleticnet/`** reads
 `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId=<id>&sport=<tf|xc>&level=4` into canonical
 schools, meets, teams, athletes, events and performances. Verified contract (live responses,
 2026-09-21): the two `sport` calls are **not** interchangeable — an athlete with 40 track results

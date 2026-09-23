@@ -8,8 +8,8 @@ edition = "2021"
 cargo-fuzz = true
 
 [dependencies]
+census-crawl = { path = "../crates/census-crawl" }
 census-domain = { path = "../crates/census-domain" }
-midwest-census = { path = "../crates/midwest-census" }
 libfuzzer-sys = "0.4"
 
 [[bin]]

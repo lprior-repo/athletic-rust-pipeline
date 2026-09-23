@@ -20,7 +20,7 @@
 //! The RaceDay and cross-country cases are direct: the RaceDay finish list is read through
 //! `raceday::parse`, the three cross-country layouts through `xc::parse`. The repository ships no
 //! cross-country file under `tests/fixtures/` (`xc`'s own tests carry their captures inline), so
-//! those three captures are transcribed verbatim from `src/sources/xc.rs` into the constants below
+//! those three captures are transcribed verbatim from `crates/census-crawl/src/xc.rs` into the constants below
 //! and their parsed output is pinned exactly like a file-backed fixture.
 //!
 //! Seeding: `GOLDEN_UPDATE=1 cargo nextest run -p midwest-census --test parity_wisconsin`, then
@@ -29,11 +29,11 @@
 mod common;
 
 use anyhow::{bail, ensure, Context, Result};
+use census_crawl::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
+use census_crawl::{hytek, raceday, wiaa, wiaa_results, xc};
 use census_domain::model::{
     CanonicalCoach, CanonicalSchool, EventKind, Gender, Grade, Mark, SourceRef,
 };
-use midwest_census::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow, RelayLeg};
-use midwest_census::sources::{hytek, raceday, wiaa, wiaa_results, xc};
 use serde::Serialize;
 
 /// Date stamped into canonical evidence; the capture date the module's own tests use.
@@ -573,7 +573,7 @@ fn xc_declines_every_archive_fixture() -> Result<()> {
 }
 
 // -------------------------------------------------------------------------------------------------
-// Cross-country captures, transcribed verbatim from `src/sources/xc.rs`
+// Cross-country captures, transcribed verbatim from `crates/census-crawl/src/xc.rs`
 //
 // The repository has no cross-country result file under `tests/fixtures/`: the parser's own tests
 // carry these three captures inline. They are reproduced byte for byte so the goldens pin what the

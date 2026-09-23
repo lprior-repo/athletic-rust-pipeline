@@ -442,6 +442,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "census-crawl"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "census-domain",
+ "census-store",
+ "chrono",
+ "csv",
+ "futures",
+ "regex",
+ "reqwest",
+ "restate-sdk",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "census-domain"
 version = "0.1.0"
 dependencies = [
@@ -2029,12 +2053,12 @@ name = "midwest-census"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64",
+ "athleticnet-browser",
  "calamine",
+ "census-crawl",
  "census-domain",
  "census-review",
  "census-store",
- "chrono",
  "clap",
  "criterion",
  "csv",
@@ -4381,6 +4405,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "calamine",
+ "census-crawl",
  "census-domain",
  "census-store",
  "clap",

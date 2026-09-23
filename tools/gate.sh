@@ -166,6 +166,12 @@ lane_bench_presence() {
 # input fail this function instead of quietly emitting nothing.
 measure_clippy() {
   local raw="$1"
+  # Cargo replays no diagnostics for units it did not recompile, so a warm target directory measures
+  # only whatever this invocation happened to rebuild: the tally would then depend on the cache, and
+  # a fresh one — CI, another machine, after `cargo clean` — would report more debt than the baseline
+  # records and fail the ratchet for no code change. Touching every tracked source forces each
+  # workspace unit to be re-checked, which is what makes the tally a measurement of the tree.
+  git ls-files -z '*.rs' | xargs -0 touch
   cargo -Zallow-features="$FEATURE_ALLOWLIST" clippy --workspace --lib --bins --examples --all-features \
     --message-format=json -- "${LINT_SET[@]}" 2>/dev/null > "$raw"
   if ! grep -q '"reason":"build-finished"' "$raw"; then

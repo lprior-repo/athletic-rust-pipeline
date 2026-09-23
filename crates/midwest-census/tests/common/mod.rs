@@ -23,9 +23,23 @@ fn tests_dir() -> Result<PathBuf> {
     Ok(dir)
 }
 
-/// `<crate>/tests/fixtures`.
+/// The fixture corpus: `<crawl crate>/tests/fixtures`.
+///
+/// The captures live with the adapters that read them, and this crate's parity tests are their
+/// second consumer — resolving them through the crawl crate's manifest keeps one copy of the
+/// corpus instead of a duplicate that could silently drift from the adapter's own tests.
 pub fn fixtures_dir() -> Result<PathBuf> {
-    Ok(tests_dir()?.join("fixtures"))
+    Ok(crawl_crate_dir()?.join("tests").join("fixtures"))
+}
+
+/// `<repo>/crates/census-crawl`, resolved from this crate's manifest.
+fn crawl_crate_dir() -> Result<PathBuf> {
+    let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let dir = manifest.join("../census-crawl");
+    if !dir.is_dir() {
+        bail!("missing crawl crate at {}", dir.display());
+    }
+    Ok(dir)
 }
 
 /// `<crate>/tests/golden`.

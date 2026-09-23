@@ -22,8 +22,8 @@ use midwest_census::restate_services::{
 };
 use restate_sdk::prelude::*;
 
-use super::ingress;
 use super::national::{drive_jurisdiction, WorkflowFlags};
+use midwest_census::ingress;
 
 /// The `Consolidate` workflow's ingress client for `origin`, under today's key.
 fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<reqwest::Client>> {

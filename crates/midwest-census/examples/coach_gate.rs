@@ -6,10 +6,10 @@
 //! Env: AUTHORIZED_HOSTS (comma-separated), RECONCILE (published csv), LOG (freeze log), REPORT (md),
 //!      CSV (per-row verdicts), DELAY_MS, REFRESH=1.
 
+use census_crawl as sources;
+use census_crawl::net::Fetcher;
 use futures::stream::{self, StreamExt};
 use midwest_census::coachverify::{self, FragmentOutcome, GateOptions};
-use midwest_census::net::Fetcher;
-use midwest_census::sources;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::Duration;

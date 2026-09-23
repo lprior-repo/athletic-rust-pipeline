@@ -9,10 +9,10 @@
 //!
 //! * [`census_domain::model`] — canonical entities with locally minted deterministic ids, grad-year
 //!   cohorts and `ObservedGrade` evidence instead of mutable grade fields.
-//! * [`net`] — robots-enforcing, cache-first, per-host-rate-limited fetcher with request evidence.
+//! * [`census_crawl`] — the acquisition plane: robots-enforcing, cache-first fetcher, one module per
+//!   provider, and the provider registry the run selects from.
 //! * [`census_store`] — Fjall-backed observation store: append-only observations per entity, merged at
 //!   read time, with materialized JSONL snapshots for the read model.
-//! * [`sources`] — one module per provider (MileSplit first, then associations/timers).
 //! * [`census`] — resumable orchestration.
 //! * [`report`] — measured census output (`report.json`, per-state CSV).
 //! * [`index`] — the durable derived indexes: source-object identities, retained conflicts and
@@ -33,14 +33,11 @@ pub mod bootstrap;
 pub mod census;
 pub mod coachverify;
 pub mod index;
-pub mod net;
+pub mod ingress;
 pub mod outcome;
 pub mod report;
 pub mod restate_services;
-pub mod school_index;
-pub mod sources;
 pub mod spawn;
 pub mod workbook;
 
 pub use census::{collect_milesplit, consolidate, CollectOptions, CollectReport};
-pub use net::{FetchOptions, Fetcher};

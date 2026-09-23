@@ -24,9 +24,12 @@ const INNER_CEILING: u64 = 1;
 /// Columbia.
 const MODELLED: usize = 51;
 
+/// One check: the number it prints under, the name it prints, and the function that measures it.
+type Entry = (usize, &'static str, fn() -> Result<Check>);
+
 /// Every check, numbered as the module documentation orders them.
 pub(super) fn all() -> Vec<Check> {
-    let table: [(usize, &'static str, fn() -> Result<Check>); 8] = [
+    let table: [Entry; 8] = [
         (1, "census scope", census_scope),
         (2, "athleticnet transport", registry::athleticnet_transport),
         (3, "retry ceilings", retry_ceilings),

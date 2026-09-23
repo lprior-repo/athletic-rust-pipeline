@@ -10,14 +10,16 @@ the planned workspace split — read `ARCHITECTURE.md` at the repository root. F
 
 ## 1. Crate map
 
-Workspace members come from the root `Cargo.toml` (`members = ["crates/census-domain",
-"crates/midwest-census", "xtask"]`).
+Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-store`, `crates/census-crawl`, `crates/census-review`, `crates/midwest-census`, `crates/g1-audit` and `xtask`.
 
 | Crate / package | Path | What it is | Bins |
 |---|---|---|---|
 | `athletic-rust-pipeline` | `src/` (root package) | the Athletic.net-facing acquisition pipeline and operator CLI: Restate worker, browser session supervisor, rankings collection, workbook export/verify | `athletic-rust-pipeline` |
-| `census-domain` | `crates/census-domain/` | pure domain model: canonical entities, deterministic ids, cohort identity; normal dependency tree carries no async runtime, store engine, HTTP client, service framework or browser engine | — |
-| `midwest-census` | `crates/midwest-census/` | the census: polite fetcher (`src/net/`), Fjall store (`src/store/`), one module per source adapter (`src/sources/`), orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/school_index.rs`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`) | `midwest-census`, `midwest-serve` |
+| `census-domain` | `crates/census-domain/` | pure domain model: canonical entities, deterministic ids, cohort identity, the school-name index and the core-scope predicate; normal dependency tree carries no async runtime, store engine, HTTP client, service framework or browser engine | — |
+| `census-store` | `crates/census-store/` | the Fjall system of record: keyspaces, append-only observations merged through the `Entity` rules, snapshots, backup/restore/integrity, the legacy import, and the clock capability | — |
+| `census-crawl` | `crates/census-crawl/` | the acquisition plane: robots-enforcing cache-first fetcher, the Restate-backed browser bridge, one module per provider, the provider registry | — |
+| `census-review` | `crates/census-review/` | the local-model identity-review lane: retained families, model packets, verdict records | — |
+| `midwest-census` | `crates/midwest-census/` | the composition root: the sweep and meet walk, orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`), CLI | `midwest-census`, `midwest-serve` |
 | `xtask` | `xtask/` | developer commands: the gate wrapper, the gate's measurement layer, source fixtures/tests, census reports, adapter scaffolding | `xtask` |
 
 Not cargo members of this workspace:

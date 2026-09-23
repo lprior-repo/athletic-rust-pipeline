@@ -6,6 +6,7 @@
   ],
   "entities": [
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -42,6 +43,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -77,6 +79,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -112,6 +115,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -147,6 +151,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -183,6 +188,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -218,6 +224,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -253,6 +260,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -288,6 +296,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -323,6 +332,7 @@
       "sport": "outdoor_track"
     },
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",

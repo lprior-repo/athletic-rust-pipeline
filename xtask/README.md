@@ -35,8 +35,8 @@ named in the message; there is no stack trace.
 | `domain-purity` | proves the `census-domain` tree carries no async/I/O package |
 | `seams` | checks every `crate::…` edge between the census crate's top-level modules against the allowed table; JSON on stdout, non-zero exit on a violation |
 | `source-test <source>` (alias `source-check`) | `cargo nextest run -p midwest-census -E 'test(<source>)'` |
-| `source-fixture <source>` | reads `crates/midwest-census/tests/fixtures/<source>/` and lists it |
-| `replay <name>` | replays `crates/midwest-census/tests/fixtures/<name>/` offline: prints each capture's parse result, same bytes every run |
+| `source-fixture <source>` | reads `crates/census-crawl/tests/fixtures/<source>/` and lists it |
+| `replay <name>` | replays `crates/census-crawl/tests/fixtures/<name>/` offline: prints each capture's parse result, same bytes every run |
 | `census-status <--store <dir>\|--ingress [<origin>]>` | `Census/status` on the running deployment, or the binary's `report --core` offline |
 | `coverage <--store <dir>\|--ingress [<origin>]>` | `Report/run` on the running deployment, or the binary's `report` (no flag = every source) offline |
 | `bench [-- <filter>]` | `cargo bench -p midwest-census [<filter>]` |
@@ -120,7 +120,7 @@ exist, not an empty listing.
 cargo xtask replay wiaa_results
 ```
 
-Reads every capture under `crates/midwest-census/tests/fixtures/<name>/` and runs each body through
+Reads every capture under `crates/census-crawl/tests/fixtures/<name>/` and runs each body through
 the same parse entry point that source's fixture tests call, printing what the parser published -
 counts, route names, the published school or meet names. Nothing is fetched, no clock is read, no
 store is opened and no environment is consulted, so two runs over the same tree print the same bytes:
@@ -204,12 +204,12 @@ cargo xtask new-source sondre-land   # names the module sondre_land
 Writes the decomposition-target layout and registers the module:
 
 ```
-crates/midwest-census/src/sources/<name>/mod.rs      module doc, SOURCE_ID, Options, collect (bails)
-crates/midwest-census/src/sources/<name>/parse.rs    pure parsing placeholder + fixture-driven test
-crates/midwest-census/src/sources/<name>/map.rs      canonical mapping placeholder
-crates/midwest-census/src/sources/<name>/README.md   purpose, entry points, fixtures, commands
-crates/midwest-census/tests/fixtures/<name>/README.md what to capture, form, naming
-crates/midwest-census/src/sources/mod.rs             one appended `pub mod <name>;` line
+crates/census-crawl/src/<name>/mod.rs      module doc, SOURCE_ID, Options, collect (bails)
+crates/census-crawl/src/<name>/parse.rs    pure parsing placeholder + fixture-driven test
+crates/census-crawl/src/<name>/map.rs      canonical mapping placeholder
+crates/census-crawl/src/<name>/README.md   purpose, entry points, fixtures, commands
+crates/census-crawl/tests/fixtures/<name>/README.md what to capture, form, naming
+crates/census-crawl/src/mod.rs             one appended `pub mod <name>;` line
 ```
 
 Hyphens become underscores (a module name is a Rust identifier); everything else is refused: names

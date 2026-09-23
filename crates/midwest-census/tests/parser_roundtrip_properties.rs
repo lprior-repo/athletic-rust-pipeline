@@ -1,6 +1,6 @@
 //! Property tests for the `wiaa_results` parse seam.
 //!
-//! `midwest_census::sources::wiaa_results::parse_result_body` is the one entry point every artifact
+//! `census_crawl::wiaa_results::parse_result_body` is the one entry point every artifact
 //! (HTML release, plain-text report, RaceDay export, PDF, unknown extension) goes through. These
 //! properties pin what the census is allowed to rely on:
 //!
@@ -20,9 +20,9 @@
 
 #![forbid(unsafe_code)]
 
+use census_crawl::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
+use census_crawl::wiaa_results::{artifact_format, parse_result_body, ArtifactFormat};
 use census_domain::model::{EventKind, SourceRef};
-use midwest_census::sources::result_file::{ParsedEvent, ParsedMeet, ParsedRow};
-use midwest_census::sources::wiaa_results::{artifact_format, parse_result_body, ArtifactFormat};
 use proptest::prelude::*;
 use proptest::test_runner::{RngAlgorithm, RngSeed};
 
@@ -37,12 +37,18 @@ mod shapes;
 // Fixtures
 // ---------------------------------------------------------------------------
 
-const DASH_HTML: &str = include_str!("fixtures/wiaa_results/d1boysstateresults-dash.htm");
-const DASH_TEXT: &str = include_str!("fixtures/wiaa_results/d1boysstateresults-dash.txt");
-const SECTIONS_HTML: &str = include_str!("fixtures/wiaa_results/d1boysstateresults-sections.htm");
-const SEED_HTML: &str = include_str!("fixtures/wiaa_results/seed-column-regional.htm");
-const TRACKSIDE_HTML: &str = include_str!("fixtures/wiaa_results/trackside-regional.htm");
-const RACEDAY_HTML: &str = include_str!("fixtures/wiaa_results/racinesectionalb-finish-list.htm");
+const DASH_HTML: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/d1boysstateresults-dash.htm");
+const DASH_TEXT: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/d1boysstateresults-dash.txt");
+const SECTIONS_HTML: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/d1boysstateresults-sections.htm");
+const SEED_HTML: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/seed-column-regional.htm");
+const TRACKSIDE_HTML: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/trackside-regional.htm");
+const RACEDAY_HTML: &str =
+    include_str!("../../census-crawl/tests/fixtures/wiaa_results/racinesectionalb-finish-list.htm");
 /// A page from the same archive that is not a result file: link markup, no meet.
 const ARCHIVE_HTML: &str = "<html><body><h3>2025 Track &amp; Field State Results</h3>\
      <ul><li>Division 1 - <a href=\"/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm\">Boys</a>\

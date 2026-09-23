@@ -19,7 +19,7 @@
 //!   `roster_entities`, plus `fetch_team_index` / `fetch_roster` served from the seeded cache.
 //! * `tests/fixtures/coach_contacts_sample.csv` — the fixtures root's `coach_contacts*` captures,
 //!   through `row_entities` and `import_csv`.
-//! * `src/sources/athleticnet.rs` — no fixture directory exists for this adapter, so its cases
+//! * `crates/census-crawl/src/athleticnet.rs` — no fixture directory exists for this adapter, so its cases
 //!   replay the registry, mark tokens and bio payloads its own `#[cfg(test)]` module captures
 //!   inline. No fixture file is invented for it.
 //!
@@ -29,16 +29,14 @@
 mod common;
 
 use anyhow::{bail, Context, Result};
+use census_crawl::athleticlive_athletes::{self, AthleteHit, MeetTarget};
+use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::{athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext};
 use census_domain::model::{
     CanonicalMeet, CompetitionLevel, EventKind, SchoolYear, SourceIdentity, SourceNamespace,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
-use midwest_census::net::{FetchOptions, Fetcher};
-use midwest_census::sources::athleticlive_athletes::{self, AthleteHit, MeetTarget};
-use midwest_census::sources::{
-    athleticlive, athleticnet, coach_contacts, milesplit, AdapterContext,
-};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashMap};

@@ -6,6 +6,7 @@
   ],
   "entities": [
     {
+      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",

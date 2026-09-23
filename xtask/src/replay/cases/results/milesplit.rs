@@ -8,7 +8,7 @@
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{Context, Result};
-use midwest_census::sources::milesplit;
+use census_crawl::milesplit;
 
 /// A MileSplit capture: a site's team index, a state results index, a roster (resolved through its
 /// site's index), a meet's result-file page, or a `/raw` body.

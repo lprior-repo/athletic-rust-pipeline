@@ -8,10 +8,10 @@
 mod write;
 
 use anyhow::{bail, Result};
+use census_crawl::net::Fetcher;
 use clap::Args;
 use futures::stream::{self, StreamExt};
 use midwest_census::coachverify::{self, FragmentOutcome, GateOptions};
-use midwest_census::net::Fetcher;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -129,10 +129,10 @@ pub(super) async fn run_verify_coaches(args: &VerifyCoachesArgs) -> Result<()> {
         &args.cache_dir,
         args.user_agent.clone(),
         Duration::from_millis(args.delay_ms),
-        midwest_census::sources::default_host_delays(),
+        census_crawl::default_host_delays(),
         authorized,
     )?
-    .with_family_budgets(midwest_census::sources::default_family_delays());
+    .with_family_budgets(census_crawl::default_family_delays());
     let out_dir = args.out.clone();
     let jobs = args.jobs.max(1);
     let results: Vec<Result<FragmentOutcome>> = stream::iter(files.iter().cloned())

@@ -8,12 +8,14 @@ use crate::census::{
     owed_source_objects, MeetCensus, Revision, SourceObject, StateProgress, WorkflowIdentity,
 };
 use crate::report::ReportError;
-use crate::sources::registry::{
+use census_crawl::registry::{
     AccessClass, SourceAdmission, SourceCapabilities, SourceDescriptor, TransportKind,
 };
 use census_store::StoreError;
 
 use super::*;
+use crate::report::Scope;
+use census_store::Table;
 
 #[test]
 fn table_names_resolve_and_reject_typos() {

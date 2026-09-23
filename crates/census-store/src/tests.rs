@@ -864,6 +864,7 @@ fn the_storage_mode_follows_the_writer_that_owns_each_table() {
             "events",
             "performances",
             "source_meets",
+            "source_observations",
         ]
     );
 

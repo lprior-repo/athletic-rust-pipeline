@@ -64,7 +64,7 @@ impl Default for CollectOptions {
             state_concurrency: 4,
             refresh: false,
             school_year: SchoolYear::DEFAULT,
-            observed_on: crate::net::today_iso(),
+            observed_on: census_crawl::net::today_iso(),
         }
     }
 }

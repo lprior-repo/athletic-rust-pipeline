@@ -6,7 +6,7 @@
 //! construction, the `anettokens` header path, the journal, the walk, and the store append —
 //! rather than the mapper alone. The fixture bodies are the anonymous captures of
 //! `research/sources/athleticnet/samples/anon-{meetdata,allresults,eventdiv}-634313.json`, whose
-//! measured shape is pinned in `src/sources/athleticnet/meet/tests.rs` and in that module's doc:
+//! measured shape is pinned in `crates/census-crawl/src/athleticnet/meet/tests.rs` and in that module's doc:
 //! 758 published rows, 72 relay squads, 288 legs, 903 storable performances.
 //!
 //! Both routes are exercised: the registry route is *not* reached, because `Options.meets` is set,
@@ -22,21 +22,21 @@ use std::path::Path;
 use std::time::Duration;
 
 use anyhow::{ensure, Context, Result};
+use census_crawl::athleticnet::{self, meet_requests, metadata_request, Options};
+use census_crawl::net::Fetcher;
+use census_crawl::AdapterContext;
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, SchoolYear, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
-use midwest_census::net::Fetcher;
-use midwest_census::sources::athleticnet::{self, meet_requests, metadata_request, Options};
-use midwest_census::sources::AdapterContext;
 use serde_json::json;
 
-/// Reads `tests/fixtures/<source>/<file>` without linking the golden-corpus harness: this test
-/// needs one fixture per request and none of `common`'s golden machinery.
+/// Reads `<crawl crate>/tests/fixtures/<source>/<file>` without linking the golden-corpus harness:
+/// this test needs one fixture per request and none of `common`'s golden machinery.
 fn fixture(source: &str, file: &str) -> Result<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("tests/fixtures")
+        .join("../census-crawl/tests/fixtures")
         .join(source)
         .join(file);
     fs::read_to_string(&path).with_context(|| format!("reading fixture {}", path.display()))
@@ -134,7 +134,7 @@ impl Harness {
         }
     }
 
-    async fn run(&self, options: &Options) -> Result<midwest_census::sources::AdapterReport> {
+    async fn run(&self, options: &Options) -> Result<census_crawl::AdapterReport> {
         let ctx = AdapterContext {
             fetcher: &self.fetcher,
             store: &self.store,

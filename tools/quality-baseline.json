@@ -1,6 +1,8 @@
 {
   "clippy": {
-    "midwest_census\tclippy::indexing_slicing": 2
+    "bench_census\tclippy::expect_used": 2,
+    "xtask\tclippy::neg_cmp_op_on_partial_ord": 1,
+    "xtask\tclippy::type_complexity": 1
   },
   "note": "Debt baseline for tools/gate.sh. Numbers may only shrink; refresh with tools/gate.sh --update-baseline after a burndown.",
   "scan": {
@@ -9,13 +11,104 @@
       "assert_family": 0,
       "dbg": 0,
       "expect": 0,
-      "files": 305,
+      "files": 285,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 36656,
+      "production_lines": 31912,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "athleticnet-browser": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 47,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 5658,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "census-crawl": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 182,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 29407,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "census-domain": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 36,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 3901,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "census-review": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 12,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 1646,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "census-store": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 32,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 4268,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "g1-audit": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 17,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 2084,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
       "unwrap": 0
     },
     "midwest-census": {
@@ -23,20 +116,37 @@
       "assert_family": 0,
       "dbg": 0,
       "expect": 0,
-      "files": 167,
+      "files": 171,
       "indexing": 0,
       "panic": 0,
-      "production_lines": 25574,
+      "production_lines": 23346,
       "todo": 0,
       "unreachable": 0,
       "unsafe": 0,
+      "unstable_features": 0,
+      "unwrap": 0
+    },
+    "xtask": {
+      "as_cast": 0,
+      "assert_family": 0,
+      "dbg": 0,
+      "expect": 0,
+      "files": 42,
+      "indexing": 0,
+      "panic": 0,
+      "production_lines": 5686,
+      "todo": 0,
+      "unreachable": 0,
+      "unsafe": 0,
+      "unstable_features": 0,
       "unwrap": 0
     }
   },
   "structure": {
     "files_over_300_lines": [],
-    "functions_over_25_logical_lines": 557,
+    "functions_over_25_logical_lines": 908,
     "functions_over_60_lines": 0,
-    "functions_over_60_sites": []
+    "functions_over_60_sites": [],
+    "unstable_feature_sites": []
   }
 }

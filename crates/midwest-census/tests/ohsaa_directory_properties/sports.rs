@@ -9,7 +9,7 @@
 //! TF/XC rows that print a coach.
 
 use super::seam_config;
-use midwest_census::sources::ohsaa::{parse_coach_cell, parse_sport_label, parse_sports_table};
+use census_crawl::ohsaa::{parse_coach_cell, parse_sport_label, parse_sports_table};
 use proptest::prelude::*;
 
 /// Sport cells as the table prints them (the association writes `&amp;` for its ampersand) and the
@@ -159,7 +159,7 @@ proptest! {
         let projected: Vec<(String, Option<usize>, Option<usize>)> = published
             .iter()
             .map(|(label, boys, girls)| {
-                let index = |entry: &Option<midwest_census::sources::ohsaa::CoachEntry>| {
+                let index = |entry: &Option<census_crawl::ohsaa::CoachEntry>| {
                     entry
                         .as_ref()
                         .and_then(|entry| PUBLISHED.iter().position(|name| *name == entry.name))

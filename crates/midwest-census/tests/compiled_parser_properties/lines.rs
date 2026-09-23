@@ -13,10 +13,10 @@
 //! claim about the columns it anchors, not only about the bytes it holds.
 
 use super::{lines, parse_body, parse_lines, rendered_reading, seam_config, LAYOUTS, REGIONAL};
-use midwest_census::sources::hytek::{lines_from_pdf_text, lines_from_text};
+use census_crawl::hytek::{lines_from_pdf_text, lines_from_text};
 use proptest::prelude::*;
 
-/// The two committed layouts of this seam, as `src/sources/compiled/tests.rs` parses them.
+/// The two committed layouts of this seam, as `crates/census-crawl/src/compiled/tests.rs` parses them.
 const CAPTURES: [(&str, &str); 2] = LAYOUTS;
 
 /// What a timer pads a line's tail with: blanks, a tab, and the no-break space in both the escaped and

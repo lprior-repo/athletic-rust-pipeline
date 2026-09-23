@@ -9,7 +9,7 @@ was observed to change mid-inventory, so all line numbers are a snapshot). Compa
 **Tree note (2026-09-21):** the in-flight work landed. `crates/midwest-census/**` and
 `crates/census-domain/**` are tracked in git now, the census domain types moved out of
 `crates/midwest-census/src/model.rs` into `crates/census-domain/src/{model,jurisdiction}.rs`, and
-`crates/midwest-census/src/net/` was rewritten into a module directory with retries, conditional GET
+`crates/census-crawl/src/net/` was rewritten into a module directory with retries, conditional GET
 and robots counting. Line numbers below are the 2026-09-20 snapshot; §2 carries a status column with
 what was re-checked on 2026-09-21.
 

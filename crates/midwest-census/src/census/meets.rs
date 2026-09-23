@@ -22,9 +22,9 @@
 //! The page walk itself lives in `walk`: it owns the journal reads, the per-page counters and the row
 //! writes, and this module folds what it returns into a census and writes the table.
 
-use crate::net::Fetcher;
-use crate::sources::milesplit::{MeetRef, Season, Site};
-use crate::sources::CrawlResult;
+use census_crawl::milesplit::{MeetRef, Season, Site};
+use census_crawl::net::Fetcher;
+use census_crawl::CrawlResult;
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};

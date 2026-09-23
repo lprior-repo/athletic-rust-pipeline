@@ -4,9 +4,9 @@
 //! journal reads, the per-page counters and the row writes; `meets.rs` folds what it returns
 //! into the census and writes the table.
 
-use crate::net::{FetchOptions, Fetcher};
-use crate::sources::milesplit::{self, MeetRef, Season, Site};
-use crate::sources::CrawlResult;
+use census_crawl::milesplit::{self, MeetRef, Season, Site};
+use census_crawl::net::{FetchOptions, Fetcher};
+use census_crawl::CrawlResult;
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 use census_store::Store;

@@ -17,8 +17,8 @@
 mod origin;
 
 use anyhow::{Context, Result};
-use midwest_census::sources::registry::{descriptor, descriptors};
-use midwest_census::sources::TransportKind;
+use census_crawl::registry::{descriptor, descriptors};
+use census_crawl::TransportKind;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::fs;
@@ -109,7 +109,8 @@ pub(super) fn admissions() -> Result<Check> {
                 source.slug, admission.origin
             ));
         }
-        if !(admission.target_requests_per_second > 0.0) {
+        let rate = admission.target_requests_per_second;
+        if rate.is_nan() || rate <= 0.0 {
             failures.push(format!(
                 "{}: target_requests_per_second is {}, which is not a positive rate ({})",
                 source.slug, admission.target_requests_per_second, admission.origin
@@ -148,7 +149,7 @@ pub(super) fn admissions() -> Result<Check> {
 /// see", and telling a new *adapter* apart from a new *reader* needs this list: `sources/` holds both
 /// kinds, and a reader has no origin to admit, no transport, and nothing a plan can ask for. The list
 /// is the reason the check can be written as an equality rather than as a search for suspicious names.
-const NON_ADAPTERS: [(&str, &str); 7] = [
+const NON_ADAPTERS: [(&str, &str); 9] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -168,10 +169,18 @@ const NON_ADAPTERS: [(&str, &str); 7] = [
         "registry",
         "the capability registry the adapters are declared in",
     ),
+    (
+        "net",
+        "the polite fetcher and the browser bridge every adapter draws on",
+    ),
+    (
+        "lib",
+        "the crate root: the module list itself, not an adapter",
+    ),
 ];
 
-/// Check 8: every adapter module under `sources/` is a registered source, and every registered source
-/// is a module.
+/// Check 8: every adapter module in the crawl crate is a registered source, and every registered
+/// source is a module.
 ///
 /// Both directions are violations of one claim: the registry and the module tree describe the same set
 /// of sources. An unregistered adapter is a source no plan can reach; a descriptor with no module is
@@ -193,21 +202,21 @@ pub(super) fn adapter_registration() -> Result<Check> {
             continue;
         }
         failures.push(format!(
-            "`sources/{module}` is a module with no registered descriptor: either an adapter the planner cannot see, or a reader that belongs in the non-adapter list"
+            "`{module}` is a module in the crawl crate with no registered descriptor: either an adapter the planner cannot see, or a reader that belongs in the non-adapter list"
         ));
     }
     for slug in &registered {
         if !modules.contains(*slug) {
             failures.push(format!(
-                "the descriptor `{slug}` has no `sources/{slug}` module to dispatch to"
+                "the descriptor `{slug}` has no `{slug}` module in the crawl crate to dispatch to"
             ));
         }
     }
     if modules.is_empty() {
-        failures.push("the sources directory listed no module at all".to_string());
+        failures.push("the crawl crate's source root listed no module at all".to_string());
     }
     let detail = format!(
-        "{matched} of {} modules under sources/ are registered sources; {readers} readers (or the registry), {} descriptors",
+        "{matched} of {} modules in the crawl crate are registered sources; {readers} readers (or the registry), {} descriptors",
         modules.len(),
         registered.len()
     );
@@ -217,12 +226,12 @@ pub(super) fn adapter_registration() -> Result<Check> {
     Ok(Check::violated(8, NAME, detail, failures))
 }
 
-/// Every module name under the crate's `sources/` directory: a file's stem or a directory's name.
+/// Every module name in the crawl crate's source root: a file's stem or a directory's name.
 ///
 /// A module is a `.rs` file or a directory of them; `mod` and a bare `tests` directory name no
 /// adapter either way.
 fn source_modules() -> Result<BTreeSet<String>> {
-    let directory = paths::sources_dir();
+    let directory = paths::adapters_dir();
     let listing = fs::read_dir(&directory)
         .with_context(|| format!("listing {}", paths::relative(&directory)))?;
     let mut names: BTreeSet<String> = BTreeSet::new();

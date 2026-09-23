@@ -225,10 +225,16 @@ Fjall with a passing final export verification.
 
 ## 13. Current state and migration
 
-The code today lives in `crates/midwest-census` (a single crate holding the store, the source
-adapters, the identity lane, the report/workbook writers, the CLI and the Restate services) plus
-`crates/census-domain` and `crates/g1-audit`. Deps already wired: fjall 3.1.10, restate-sdk 0.12,
-reqwest 0.13, tokio, thiserror, serde. The migration onto §4 proceeds in waves — contract and
-inventory, store, crawl, reconcile/review/report, service, then the national run — with the gates
-green and a pushed commit at the end of every wave. `docs/migration/module-map.md` holds the
-file-level cut; `docs/adr/README.md` holds the decisions frozen so far.
+The migration onto §4 proceeds in waves — contract and inventory, store, crawl, reconcile/review/
+report, service, then the national run — with the gates green and a pushed commit at the end of every
+wave. The **store** wave landed `crates/census-store` (Fjall keyspaces, journals, snapshots,
+backup/restore, and the clock capability) and `crates/census-review` (the local-model review lane);
+the **crawl** wave landed `crates/census-crawl` (the polite fetcher and browser bridge, one module per
+provider, the provider registry) together with `census-domain/src/school_index.rs` and
+`census-domain/src/core_scope.rs`. What remains in `crates/midwest-census` is the composition root:
+the sweep and meet walk, the durable services, the reductions (`report`, `bests`, `workbook`), the
+CLI, the supervisor, and `crates/g1-audit` beside it. Deps already wired: fjall 3.1.10, restate-sdk
+0.12, reqwest 0.13, tokio, thiserror, serde. `xtask seams` enforces both graphs: the module table for
+what is left and the crate table for the edges that crossed a boundary, so a wave cannot quietly
+reintroduce a direction the layout forbids. `docs/migration/module-map.md` holds the file-level cut;
+`docs/adr/README.md` holds the decisions frozen so far.

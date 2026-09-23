@@ -24,14 +24,18 @@ path = "src/bin/midwest-serve.rs"
 loom = ["dep:loom"]
 
 [dependencies]
+# The headed browser lane's engine: the endpoint serves it as `BrowserSession`, and the census
+# reaches it over the ingress client rather than linking it.
+athleticnet-browser = { path = "../athleticnet-browser" }
 anyhow = "1"
-base64 = "0.22"
+# The acquisition plane (fetcher, provider adapters, provider registry) is its own crate now; the
+# sweep, the meet walk and the CLI here are its consumers.
+census-crawl = { path = "../census-crawl" }
 census-domain = { path = "../census-domain" }
 # The review lane (retained families, model packets, verdict records) is its own crate now; the
 # workbook's conflict queue and the `review` verb are its two consumers here.
 census-review = { path = "../census-review" }
 census-store = { path = "../census-store" }
-chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap = { version = "4.5", features = ["derive"] }
 csv = "1"
 futures = "0.3"

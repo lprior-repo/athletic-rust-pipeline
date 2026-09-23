@@ -1,6 +1,6 @@
 use anyhow::{bail, Context, Result};
+use census_crawl::net::FetchStats;
 use midwest_census::coachverify::{self, FragmentOutcome};
-use midwest_census::net::FetchStats;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
@@ -35,7 +35,7 @@ pub async fn print_results(
     args: &super::VerifyCoachesArgs,
     outcomes: &[FragmentOutcome],
     files: &[PathBuf],
-    fetcher: &midwest_census::net::Fetcher,
+    fetcher: &census_crawl::net::Fetcher,
     failures: &[anyhow::Error],
     out_dir: &Path,
 ) -> Result<()> {

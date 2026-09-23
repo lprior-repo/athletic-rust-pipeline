@@ -24,8 +24,8 @@ use midwest_census::census::{RetainedFindings, SealCounts, SealedCensus};
 use midwest_census::report::Scope;
 use midwest_census::restate_services::{CensusIngressClient, SealReply, SealRequest};
 
-use super::ingress;
 use super::{Cli, Route};
+use midwest_census::ingress;
 
 /// `midwest-census seal`
 ///

@@ -15,9 +15,7 @@ mod results;
 
 use crate::replay::{ensure_rows, unmapped, Capture};
 use anyhow::{bail, Result};
-use midwest_census::sources::{
-    ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa,
-};
+use census_crawl::{ihsa, ihsa::tournament, ks, mshsl, ohsaa, plain_names, wayzata, wiaa};
 use std::collections::BTreeSet;
 
 /// Replay one capture, returning the line the verb prints for it.

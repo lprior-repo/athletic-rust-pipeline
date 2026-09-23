@@ -3,6 +3,7 @@
 
 use clap::Subcommand;
 
+use super::browser_session::BrowserSessionArgs;
 use super::census_doc::CensusDocArgs;
 use super::cycle::RunArgs;
 use super::export_data::ExportDataArgs;
@@ -106,4 +107,8 @@ pub(super) enum Command {
     /// Read the durable run's open work: the jurisdiction sweeps that still owe stages, and the
     /// source objects that have accepted nothing. Reads the running service, never the store.
     OpenWork(OpenWorkArgs),
+    /// Drive the headed browser lane the `midwest-serve` endpoint owns: `start` launches the one
+    /// persistent profile, `status` reads it, `stop` drains it, and `fetch` posts one request
+    /// through it. Requires an endpoint started with `--browser-profile`; opens no store.
+    BrowserSession(BrowserSessionArgs),
 }

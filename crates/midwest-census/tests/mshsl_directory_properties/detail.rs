@@ -7,7 +7,7 @@
 //! administration row the page prints is published once, in document order.
 
 use super::seam_config;
-use midwest_census::sources::mshsl::parse_school_detail;
+use census_crawl::mshsl::parse_school_detail;
 use proptest::prelude::*;
 
 /// Names and roles taken from the committed school-page captures.

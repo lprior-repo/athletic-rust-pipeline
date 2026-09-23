@@ -138,6 +138,23 @@ impl SourceNamespace {
             SourceNamespace::LegacyAthleticNet { .. } | SourceNamespace::AthleticNet { .. }
         )
     }
+
+    /// The namespace a state association's own directory pages file a school under.
+    ///
+    /// One constructor so every adapter that reads an association's members names it the same way:
+    /// two spellings of one association would split its schools across two unrelated namespaces.
+    pub fn association_school(association: &str) -> Self {
+        Self::AssociationSchool {
+            association: association.trim().to_ascii_lowercase(),
+        }
+    }
+
+    /// The namespace an Athletic.net page kind files an object under (`school`, `team`, …).
+    pub fn athletic_net(kind: &str) -> Self {
+        Self::AthleticNet {
+            kind: kind.trim().to_ascii_lowercase(),
+        }
+    }
 }
 
 impl fmt::Display for SourceNamespace {
