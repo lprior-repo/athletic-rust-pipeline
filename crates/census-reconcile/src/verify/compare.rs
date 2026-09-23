@@ -75,7 +75,8 @@ pub fn verify_athletes(
     })
 }
 
-/// Check one sampled athlete row against the store.
+/// Check one sampled athlete row against the store: the id must exist, the name must match, the
+/// School cell must resolve the way the sheet prints it, and the row must be the published cohort.
 fn check_athlete_row(
     idx: usize,
     row: &[String],
@@ -85,72 +86,91 @@ fn check_athlete_row(
 ) -> Result<(), Discrepancy> {
     let aid = field(col_map, row, "Athlete ID");
     let name = field(col_map, row, "Name");
-    let school = field(col_map, row, "School");
+    let store_athlete = athletes
+        .iter()
+        .find(|a| a.id.as_str() == aid)
+        .ok_or_else(|| Discrepancy {
+            row: idx,
+            message: format!("athletes row {idx}: id {aid} not in store"),
+        })?;
+
+    if store_athlete.canonical_name != name {
+        return Err(Discrepancy {
+            row: idx,
+            message: format!(
+                "athletes row {idx}: id {aid} name '{name}' != store '{}'",
+                store_athlete.canonical_name,
+            ),
+        });
+    }
+    check_athlete_school(
+        idx,
+        aid,
+        field(col_map, row, "School"),
+        store_athlete,
+        school_names,
+    )?;
+    check_athlete_cohort(idx, aid, row, col_map)
+}
+
+/// The Athletes sheet prints the athlete's school by *name* — that is the recruiter's view — so the
+/// check resolves that name through the row the athlete names rather than comparing a printed name
+/// against a set of ids, which would fail every row. A school renamed in the store after the
+/// workbook was written is still a discrepancy, which is the point.
+///
+/// The store holds no row for some school ids, so there is no name to print and the sheet carries
+/// the id itself — the recruiting read model's documented fallback (`Dataset::school_name`). The
+/// check holds the workbook to that and to nothing else: an id printed where the store *does* hold
+/// a row is still a discrepancy, which is what catches an athlete published with its school
+/// filtered out of the sheet's own index.
+fn check_athlete_school(
+    idx: usize,
+    aid: &str,
+    school: &str,
+    store_athlete: &CanonicalAthlete,
+    school_names: &HashMap<String, String>,
+) -> Result<(), Discrepancy> {
+    let school_id = store_athlete.school.as_str();
+    match school_names.get(school_id) {
+        Some(store_school) if store_school == school => Ok(()),
+        Some(store_school) => Err(Discrepancy {
+            row: idx,
+            message: format!(
+                "athletes row {idx}: id {aid} school '{school}' != store '{store_school}'"
+            ),
+        }),
+        None if school == school_id => Ok(()),
+        None => Err(Discrepancy {
+            row: idx,
+            message: format!(
+                "athletes row {idx}: id {aid} school row '{school_id}' not in store, and the sheet \
+                 prints '{school}'"
+            ),
+        }),
+    }
+}
+
+/// The Graduation Year cell must name the cohort the run published.
+fn check_athlete_cohort(
+    idx: usize,
+    aid: &str,
+    row: &[String],
+    col_map: &HashMap<&str, usize>,
+) -> Result<(), Discrepancy> {
     let grad_year = col_map
         .get("Graduation Year")
         .and_then(|&i| row.get(i))
         .and_then(|s| s.trim().parse::<i16>().ok());
-
-    match athletes.iter().find(|a| a.id.as_str() == aid) {
-        None => Err(Discrepancy {
-            row: idx,
-            message: format!("athletes row {idx}: id {aid} not in store"),
-        }),
-        Some(store_athlete) => {
-            if store_athlete.canonical_name != name {
-                return Err(Discrepancy {
-                    row: idx,
-                    message: format!(
-                        "athletes row {idx}: id {aid} name '{workbook}' != store '{store}'",
-                        workbook = name,
-                        store = store_athlete.canonical_name,
-                    ),
-                });
-            }
-            // The workbook prints the athlete's school by *name* — that is the recruiter's view — so the
-            // check resolves that name back through the row the athlete names rather than comparing a
-            // printed name against a set of ids, which would fail every row. A school renamed in the
-            // store after the workbook was written is still a discrepancy, which is the point.
-            match school_names.get(store_athlete.school.as_str()) {
-                Some(store_school) if store_school == school => {}
-                Some(store_school) => {
-                    return Err(Discrepancy {
-                        row: idx,
-                        message: format!(
-                            "athletes row {idx}: id {aid} school '{school}' != store '{store_school}'",
-                        ),
-                    });
-                }
-                // The store holds no row for this school id, so there is no name to print and the
-                // sheet prints the id itself — the recruiting read model's documented fallback
-                // (`Dataset::school_name`). The check holds the workbook to that and to nothing
-                // else: an id where the store *does* hold a row is still a discrepancy, which is
-                // what catches an athlete published with its school filtered out of the sheet's own
-                // index.
-                None if school == store_athlete.school.as_str() => {}
-                None => {
-                    return Err(Discrepancy {
-                        row: idx,
-                        message: format!(
-                            "athletes row {idx}: id {aid} school row '{}' not in store, and the \
-                             sheet prints '{school}'",
-                            store_athlete.school.as_str(),
-                        ),
-                    });
-                }
-            }
-            if grad_year != Some(2027) {
-                return Err(Discrepancy {
-                    row: idx,
-                    message: format!(
-                        "athletes row {idx}: id {aid} grad_year {} != 2027",
-                        grad_year.map_or("?".to_string(), |y| y.to_string()),
-                    ),
-                });
-            }
-            Ok(())
-        }
+    if grad_year == Some(2027) {
+        return Ok(());
     }
+    Err(Discrepancy {
+        row: idx,
+        message: format!(
+            "athletes row {idx}: id {aid} grad_year {} != 2027",
+            grad_year.map_or("?".to_string(), |y| y.to_string()),
+        ),
+    })
 }
 
 /// Verify performances: every sampled row's (athlete id, event, mark) must exist in the store.
