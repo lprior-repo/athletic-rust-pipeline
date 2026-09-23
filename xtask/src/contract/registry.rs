@@ -149,7 +149,7 @@ pub(super) fn admissions() -> Result<Check> {
 /// see", and telling a new *adapter* apart from a new *reader* needs this list: `sources/` holds both
 /// kinds, and a reader has no origin to admit, no transport, and nothing a plan can ask for. The list
 /// is the reason the check can be written as an equality rather than as a search for suspicious names.
-const NON_ADAPTERS: [(&str, &str); 9] = [
+const NON_ADAPTERS: [(&str, &str); 10] = [
     (
         "applicability",
         "the per-jurisdiction source table the planner reads: data, with no origin to admit",
@@ -160,6 +160,10 @@ const NON_ADAPTERS: [(&str, &str); 9] = [
     (
         "result_file",
         "the result-file domain model every vendor parser shares",
+    ),
+    (
+        "athlete_observations",
+        "the athlete half of the observation funnel: it appends `SourceObservations` rows for the athletes a pass read, through whatever adapter read them, and admits no origin of its own",
     ),
     (
         "xc",
