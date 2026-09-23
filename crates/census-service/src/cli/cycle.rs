@@ -3,10 +3,10 @@
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_report::report;
+use census_service::census;
 use census_store::Store;
 use clap::Args;
-use census_service::census;
-use census_report::report;
 use std::path::PathBuf;
 
 use super::live;
@@ -109,7 +109,7 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
             .join(" ")
     );
 
-    let index = census_service::index::derive(store, "run", &observed_on)
+    let index = census_reconcile::index::derive(store, "run", &observed_on)
         .context("deriving the durable indexes")?;
     println!(
         "index\tsource_identities={} conflicts={} reviews={} coverage={}",

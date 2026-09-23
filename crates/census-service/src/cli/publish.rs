@@ -8,11 +8,11 @@
 //! be stopped.
 
 use anyhow::{Context, Result};
+use census_report::report;
+use census_report::{bests, workbook};
+use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
 use census_store::Store;
 use clap::Args;
-use census_report::report;
-use census_service::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
-use census_report::{bests, workbook};
 use std::path::PathBuf;
 
 use super::{cohort_label, live, school_year, scope_of, Cli, Route};
@@ -212,7 +212,7 @@ pub(super) async fn run_workbook(cli: &Cli, args: &WorkbookArgs) -> Result<()> {
 /// Derive the durable indexes and report what the pass appended.
 pub(super) fn run_index(store: &Store) -> Result<()> {
     let finished_on = census_crawl::net::today_iso();
-    let report = census_service::index::derive(store, "index", &finished_on)
+    let report = census_reconcile::index::derive(store, "index", &finished_on)
         .context("deriving the durable indexes")?;
     println!(
         "index\tsource_identities={} conflicts={} reviews={} coverage={} snapshots={}",

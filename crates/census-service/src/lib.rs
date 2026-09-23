@@ -14,8 +14,9 @@
 //! * [`census_store`] — Fjall-backed observation store: append-only observations per entity, merged at
 //!   read time, with materialized JSONL snapshots for the read model.
 //! * [`census`] — resumable orchestration.
-//! * [`index`] — the durable derived indexes: source-object identities, retained conflicts and
-//!   review cases, coverage, and one snapshot per pass.
+//! * [`census_reconcile`] — the reconciliation lane: deterministic workflow identity, the durable
+//!   derived indexes (`index`) this crate's `index` and `consolidate` verbs drive, and the row-level
+//!   check that holds the published workbook against the store.
 //! * [`restate_services`] — durable Restate services over the same adapters (survive crashes, retry
 //!   per step, resume from the journal).
 //! * [`spawn`] — the region-owned task spawner: every task a region starts joins back through one
@@ -28,7 +29,6 @@
 pub mod bootstrap;
 pub mod census;
 pub mod coachverify;
-pub mod index;
 pub mod ingress;
 pub mod outcome;
 pub mod restate_services;

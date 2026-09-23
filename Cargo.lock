@@ -479,6 +479,7 @@ name = "census-reconcile"
 version = "0.1.0"
 dependencies = [
  "census-domain",
+ "census-report",
  "census-store",
  "fjall",
  "serde",

@@ -10,6 +10,10 @@ workspace = true
 
 [dependencies]
 census-domain = { path = "../census-domain" }
+# The derive pass reuses the reporting plane's own rendering — the coverage report and the families
+# the workbook sheets print — so a reader of the store and a reader of the workbook cannot be shown
+# different findings.
+census-report = { path = "../census-report" }
 census-store = { path = "../census-store" }
 serde = { version = "1", features = ["derive"] }
 sha2 = "0.10"

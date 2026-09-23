@@ -116,11 +116,15 @@ const ALLOWED_CRATES: &[(&str, &str)] = &[
     // The review lane reads retained cases and writes verdicts through the store that owns both
     // tables; it never opens Fjall itself.
     ("census-review", "census-store"),
-    // The reconciliation lane: deterministic workflow identity, which is a pure function of explicit
-    // values, and the row-level check that holds the workbook against the store. It reads the domain
-    // and the store and names nothing back, so a projection's verdict cannot depend on the service
-    // that published it.
+    // The reconciliation lane: the derive pass, deterministic workflow identity, which is a pure
+    // function of explicit values, and the row-level check that holds the workbook against the store.
+    // It reads the domain and the store and names nothing back, so a projection's verdict cannot
+    // depend on the service that published it. Its one outward edge is the reporting plane's own
+    // rendering — the coverage report and the families the workbook sheets print — reused *because*
+    // the derived tables and the workbook must not be shown two different findings; it is one-way,
+    // because the reporting plane names no reconciliation module.
     ("census-reconcile", "census-domain"),
+    ("census-reconcile", "census-report"),
     ("census-reconcile", "census-store"),
     // The reporting plane: coverage, per-athlete bests and the workbook export. It reads the canonical
     // model and the store's read model, renders the review lane's retained families as its conflict and
