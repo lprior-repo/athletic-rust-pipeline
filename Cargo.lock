@@ -491,7 +491,6 @@ dependencies = [
 name = "census-report"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "calamine",
  "census-crawl",
  "census-domain",
@@ -505,7 +504,6 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
- "tokio",
  "tracing",
 ]
 
