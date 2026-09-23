@@ -753,7 +753,15 @@ whose acquisition never ran that way would be a claim about it that nothing back
 item the run cannot evidence; item 2 becomes a forward obligation for the first census whose
 acquisition routes through `Ingest`.
 
-The offline route, re-run after the lane, lists exactly the same one item (its other two lines are
-the `not measured` pair of item 1 and item 2 by construction), and it exports the workbook first,
-so reaching the item list at all re-establishes the workbook check:
-`var/midwest-census/out/census-service-2026-09-23.xlsx`.
+`seal` now runs on the online route: with the deployment holding the store, the offline form cannot
+open it (the single-writer rule; `seal --store var/midwest-census` →
+
+    Error: store open failed: FjallError: Locked
+
+), and `seal --grad-year 2027` prints the same item list as
+`seal --ingress http://127.0.0.1:18095/`. Each route exports the workbook before the gate, so
+reaching the item list at all re-establishes the workbook check against
+`var/midwest-census/out/census-service-2026-09-23.xlsx`. Naming no key leaves item 2 in the
+`not measured` form quoted above; naming one leaves it in the counted form quoted above. Both are
+refusals, and the difference between the two readings is the whole point of the field: `unmeasured`
+is "nobody looked", `owed` is "looked, and the endpoint has accepted nothing".
