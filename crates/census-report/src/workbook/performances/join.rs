@@ -15,7 +15,8 @@
 use super::rows::PerformanceRow;
 use crate::bests::{mark_text, sport_of, Measure};
 use crate::report::{
-    in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope,
+    exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, school_state_index,
+    ReportResult, Scope,
 };
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
@@ -45,10 +46,13 @@ impl Parents {
             retain_core(&mut events);
         }
         // Run-scope filter: exclude jurisdictions outside CENSUS_SCOPE (ADR-009). Athlete
-        // jurisdiction comes from school state (the report's rule).
+        // jurisdiction comes from school state (the report's rule), and the placement index carries
+        // the excluded school rows too — so an athlete whose school the run scope leaves out is
+        // excluded with it rather than read as unplaced and then cited with a raw school id.
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-        schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
-        let school_state = school_state_index(&schools);
+        let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
+        let mut school_state = school_state_index(&schools);
+        school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
         Ok(Self {

@@ -121,11 +121,19 @@ fn check_athlete_row(
                         ),
                     });
                 }
+                // The store holds no row for this school id, so there is no name to print and the
+                // sheet prints the id itself — the recruiting read model's documented fallback
+                // (`Dataset::school_name`). The check holds the workbook to that and to nothing
+                // else: an id where the store *does* hold a row is still a discrepancy, which is
+                // what catches an athlete published with its school filtered out of the sheet's own
+                // index.
+                None if school == store_athlete.school.as_str() => {}
                 None => {
                     return Err(Discrepancy {
                         row: idx,
                         message: format!(
-                            "athletes row {idx}: id {aid} school row '{}' not in store",
+                            "athletes row {idx}: id {aid} school row '{}' not in store, and the \
+                             sheet prints '{school}'",
                             store_athlete.school.as_str(),
                         ),
                     });

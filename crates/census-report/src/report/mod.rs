@@ -93,7 +93,7 @@ pub use projection::build_census;
 /// The run-scope predicate every consumer of a store row shares: `true` for the jurisdictions
 /// `UsJurisdiction::CENSUS_SCOPE` names and for the unplaced row, `false` for every other
 /// jurisdiction a store may still hold rows for.
-pub(crate) use projection::in_run_scope;
+pub(crate) use projection::{exclude_out_of_scope, in_run_scope};
 pub use writer::write_census;
 
 /// The core-scope predicate and its id list are the domain's (`census_domain::core_scope`), re-exported

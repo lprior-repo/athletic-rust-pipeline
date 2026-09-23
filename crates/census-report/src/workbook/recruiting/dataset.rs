@@ -8,7 +8,8 @@
 //! that the sheet module documents.
 
 use crate::report::{
-    in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope,
+    exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, school_state_index,
+    ReportResult, Scope,
 };
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -69,7 +70,11 @@ impl Dataset {
         self.audit
     }
 
-    /// The school's display name, or its canonical id when the school table has no row for it.
+    /// The school's display name — what the sheets print — or its canonical id when the school
+    /// table has no row for that id.
+    ///
+    /// The fallback is the id rather than a blank on purpose: the reader can still tell one unnamed
+    /// school from another, and `verify` holds the sheet to exactly that value.
     pub(super) fn school_name(&self, school: &str) -> String {
         self.schools
             .get(school)
@@ -143,9 +148,14 @@ impl ScopedTables {
     /// (the same rule the census report uses), and coaches are kept only for in-scope schools.
     fn read(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
         // Run-scope filter: schools first, so we can place athletes by their school's jurisdiction.
+        // The placement index then carries the excluded rows too, exactly as the census report's
+        // does: an athlete whose school the run scope leaves out is placed by that school's
+        // jurisdiction and excluded with it, rather than reading as unplaced — which published an
+        // out-of-scope athlete with its raw school id printed where a school name belongs.
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-        schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
-        let school_state = school_state_index(&schools);
+        let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
+        let mut school_state = school_state_index(&schools);
+        school_state.extend(school_state_index(&outside_schools));
         let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;

@@ -19,7 +19,9 @@
 //! [`StoreRows`] snapshot, so the workbook scans each table once.
 
 use crate::bests::BestResult;
-use crate::report::{in_run_scope, jurisdiction_of, school_state_index, Census, ReportResult};
+use crate::report::{
+    exclude_out_of_scope, in_run_scope, jurisdiction_of, school_state_index, Census, ReportResult,
+};
 use census_domain::{
     model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool},
     JurisdictionBucket,
@@ -104,12 +106,16 @@ impl StoreRows {
     /// (ADR-009) matches the census totals computed by the same predicate.
     fn read(store: &Store) -> ReportResult<Self> {
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-        schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
+        // The placement index carries the excluded school rows too, so an athlete or coach whose
+        // school the run scope leaves out is placed by that school's jurisdiction and excluded with
+        // it, instead of reading as unplaced and inflating the counts this block reconciles.
+        let outside_schools = exclude_out_of_scope(&mut schools, |school| school.state.into());
         let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
         meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
         let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
         // Athlete jurisdiction comes from school state (the report's placement rule).
-        let school_state = school_state_index(&schools);
+        let mut school_state = school_state_index(&schools);
+        school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         let mut coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
         // Coach jurisdiction also comes from school state.

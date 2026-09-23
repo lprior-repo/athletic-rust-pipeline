@@ -113,7 +113,14 @@ pub(crate) fn in_run_scope(bucket: JurisdictionBucket) -> bool {
 
 /// Split one scanned table by the run scope: `rows` keeps what a run publishes, and the rows the
 /// scope leaves out are returned in the order the table held them.
-fn exclude_out_of_scope<T>(rows: &mut Vec<T>, place: impl Fn(&T) -> JurisdictionBucket) -> Vec<T> {
+///
+/// The excluded rows stay reachable because the run-scope split of one table is what *places* a row
+/// of another: schools are split here so their ids can name a jurisdiction for the athletes, coaches
+/// and meets that point at them, whether or not the school itself publishes.
+pub(crate) fn exclude_out_of_scope<T>(
+    rows: &mut Vec<T>,
+    place: impl Fn(&T) -> JurisdictionBucket,
+) -> Vec<T> {
     let (kept, excluded): (Vec<T>, Vec<T>) =
         rows.drain(..).partition(|row| in_run_scope(place(row)));
     *rows = kept;
