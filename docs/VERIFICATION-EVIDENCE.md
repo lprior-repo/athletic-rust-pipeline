@@ -534,7 +534,7 @@ boundary, `SourceNamespace::is_core`, `EventKind::from_source_label`, `Gender::p
 
 ## Census seal (2026-09-22)
 
-The terminal state is now a value, not a label (§17, §70, ADR-007): `CensusState` advances one phase
+The terminal state is now a value, not a label (§17, §70, ADR-011): `CensusState` advances one phase
 at a time, `Complete` is unconstructible without `SealEvidence`, and `census-service seal` assembles
 that evidence from the store and the exported workbook — then either completes the census with a
 digest or refuses and names the acceptance item.
@@ -573,7 +573,7 @@ be run once that sweep releases the store.
 **Second review, also local, also rejected with evidence** (`cli/seal.rs`, `census/state/**`):
 
 - *"`open_items()` never checks `ConflictsRetained`/`RetriesRepresented`"* — correct, and intended:
-  those two §70 items are satisfied by retention, which ADR-007 states. Both variants now carry that
+  those two §70 items are satisfied by retention, which ADR-011 states. Both variants now carry that
   in their own doc comments so a reader of the enum does not have to infer it.
 - *"`SealEvidence.open` is not in the digest"* — cannot matter: `seal()` refuses unless
   `open_items()` is empty, which requires every open-work count to be zero, so the field is always
@@ -702,3 +702,58 @@ the 9 005 are re-derivable from the same athlete rows — but the review-stage s
 for a census that ran its review stage, and closing it means ~15 h of local-model time (extrapolated
 from the smoke: 30.4 s for two cases *including* the reconciliation). That is exactly why `review`
 documents itself as an operator action with a small default limit rather than a pipeline stage.
+
+### Online seal: item 1 measured, item 2 refused by name (2026-09-23)
+
+The deployment route the ADR-011 note above leaves open was then run end to end: `census-serve`
+over `var/midwest-census` on `127.0.0.1:9080`, registered with the local Restate ingress (the
+deployment the national run already used), and the seal asked through it.
+
+    national --detach
+      # note: national:2026-27:51472a0f63b82f0d:1 already had a run — restate deduplicated
+      # invocation inv_13LIoGM6LB600EGmJ5iU9yGQmEPr4dHTGp
+    national --json
+      # teams_total 26264 · rosters_done 0 · rosters_skipped = teams · rosters_owed 0
+      # failures [] · athletes_total 0 · class_of_2027_total 0
+    open-work
+      # jurisdiction sweeps owed: 0 of 49
+    seal --grad-year 2027 --source-object … (38 journal stems)
+      # acceptance: source objects are terminal unmet - 38 source objects have no terminal state
+
+Three things this establishes:
+
+- **§70 item 1 is measured terminal.** `jurisdiction sweeps owed: 0 of 49` is the online read the
+  offline route cannot take ("this seal does not read the workflow journal"), and the national
+  run's own report agrees: the fan-out is complete, nothing is owed, no jurisdiction failed.
+- **The identity item closed.** The review lane resolved all 442 pending meet-jurisdiction cases
+  (`asked=442 accepted=233 rejected=0 insufficient=209 unanswered=0 dropped=0 failed=0`, 7m01s,
+  one request in flight per model lane). An `insufficient` verdict is a decision — the store's own
+  evidence could not back a state — so the cases are terminal and neither the seal's
+  `identity candidates are terminal` item nor `open-work` names them again.
+- **Item 2 is refused by name, and the count is honest in both readings.** `SourceObject::terminal()`
+  is `observations > 0` (`census/state/open.rs:70-77`) and an endpoint's observations are what
+  `Ingest::record` (`restate_services/ingest.rs:83`) appends. Nothing in this build calls it: the
+  CLI chain and the service's jurisdiction stages both write observations straight to the store, and
+  `docs/migration/module-map.md` §5.2.1 records the same gap from the identity side —
+  `WorkflowIdentity::source_sweep` "has a constructor but no binder". Every key an operator can
+  name reads `observations 0 windows 0`: the 38 journal stems (`milesplit_rosters_wi`, …) and the
+  endpoint spellings (`milesplit_wi`, `athleticnet_wi`, `wiaa_wi`, `wayzata_wi`, `meets_wi`, `wiaa`,
+  `wiaa_results`, `milesplit`, `milesplit_results_wi`, `athleticlive_wi`, `athleticlive_athletes_wi`,
+  `plain_names`, `ohsaa_oh`, `ihsa_il`, `tfrrs`, `coach_contacts_wi`). Naming none leaves the count
+  `unmeasured`; naming any leaves it owed. Both refuse, and that is the designed answer.
+
+A terminal endpoint has to *accept* an observation, so a run whose stages all skip — this one:
+every roster `skipped` because the store already holds it — records none, however it is addressed.
+Item 2 is therefore satisfiable only by a census whose acquisition runs *through* `Ingest`
+(OPERATIONS.md §Seal: "Routing acquisition through the `Ingest` service is the replacement for the
+staging hop; no CLI subcommand drives it yet") **and** that acquires something new. Rebuilding this
+store's corpus to manufacture observations is what the program's §1 forbids, and naming an endpoint
+whose acquisition never ran that way would be a claim about it that nothing backs. So the
+2026-09-23 census stays refused — **by name**, over item 2 alone — which is §70's outcome for an
+item the run cannot evidence; item 2 becomes a forward obligation for the first census whose
+acquisition routes through `Ingest`.
+
+The offline route, re-run after the lane, lists exactly the same one item (its other two lines are
+the `not measured` pair of item 1 and item 2 by construction), and it exports the workbook first,
+so reaching the item list at all re-establishes the workbook check:
+`var/midwest-census/out/census-service-2026-09-23.xlsx`.
