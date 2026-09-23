@@ -32,7 +32,7 @@ impl RosterAthlete {
     ) -> Option<ObservedGrade> {
         // 13 - (grad_year - school_year_start): both steps are checked so an out-of-range year
         // pair can only yield `None`, never a wrapped or panicking grade.
-        let years_to_graduation = self.grad_year.get().checked_sub(school_year.start_year())?;
+        let years_to_graduation = self.grad_year.get().checked_sub(school_year.get())?;
         let grade_number = 13_i16.checked_sub(years_to_graduation)?;
         Grade::new(u8::try_from(grade_number).ok()?).map(|grade| ObservedGrade {
             grade,
@@ -169,6 +169,7 @@ fn roster_teams(
                 )
                 .with_url(team.url.clone())],
                 evidence: vec![Evidence::parsed(source.clone(), observed_on.to_string())],
+                retained_conflicts: Vec::new(),
             }
         })
         .collect()

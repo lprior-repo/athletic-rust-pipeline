@@ -1,7 +1,7 @@
 //! Durable-over-physical status projection and the session key guard.
 
-use super::super::browser::{BrowserState, BrowserStatus};
 use super::BROWSER_SESSION_KEY;
+use athleticnet_browser::{BrowserState, BrowserStatus};
 use restate_sdk::prelude::*;
 
 /// Merge the durable status over the physical one.

@@ -25,6 +25,7 @@ loom = ["dep:loom"]
 
 [dependencies]
 anyhow = "1"
+base64 = "0.22"
 census-domain = { path = "../census-domain" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 clap = { version = "4.5", features = ["derive"] }

@@ -673,8 +673,10 @@ required for the objective's §29-§31 deliverable; all of them are real.
 37. **`journal_payloads` clones every payload** (`store/read.rs`) instead of borrowing the stored
     bytes.
 38. **One malformed row aborts a whole table scan** (`StoreError::Decode`, `store/read.rs`): no
-    quarantine path and no tolerance precedent, unlike `report::read_rows`, which tolerates one bad
-    line.
+    quarantine path and no tolerance precedent anywhere — the tolerant `report::read_rows` this
+    item used to cite was removed, and the published-snapshot reader is strict
+    (`store/read/snapshot.rs:179`, `StoreError::SnapshotRow`, covered for bad-middle and bad-last
+    rows).
 39. **No `#[instrument]` on the three production spawn sites** (`bootstrap.rs` ×2,
     `restate_services/mod.rs`), so a stuck task in a live run has no span to point at.
 40. **Neither the pipeline golden nor the backup drill exercises the derived index tables.**

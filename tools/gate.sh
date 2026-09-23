@@ -14,12 +14,21 @@
 #   tools/gate.sh                  run every lane, compare debt against the baseline
 #   tools/gate.sh --full           add the slow lane (mutation testing) that a pre-release pass
 #                                  needs but a per-commit one cannot afford
+#   tools/gate.sh --release        the pre-release pass: every lane runs, `--full`'s heavy lanes
+#                                  included, and a missing tool is a FAILURE instead of a SKIP
 #   tools/gate.sh --update-baseline   rewrite the baseline from current measurements
 #                                     (refuses to raise a number unless --allow-increase)
 #
+# Two modes, one lane list. The default run is the per-edit pass: a lane whose cargo subcommand is
+# not installed prints SKIP and returns, so the gate stays usable on a machine that has not
+# `cargo install`ed every tool, and the lanes that need no tool always run. `--release` is the pass
+# a release is signed off on: a SKIP there would be a claim that a lane's coverage was not needed,
+# and a release cannot make that claim, so an absent tool is a FAILURE and the heavy lanes run
+# without `--full` being spelled out as well.
+#
 # Lanes: fmt, check, doc, tests, strict clippy (source targets), production scan + size budgets,
-#        debt ratchet, deny, audit, vet, machete, geiger, feature powerset, bench presence;
-#        --full adds mutants.
+#        domain integrity, debt ratchet, deny, audit, vet, machete, geiger, feature powerset, bench
+#        presence; --full adds mutants.
 #
 # The toolchain is the pinned nightly from rust-toolchain.toml, and the check and clippy lanes pass
 # `-Zallow-features=portable_simd,try_blocks`: the nightly feature allowlist is part of the source
@@ -37,11 +46,13 @@ BASELINE=tools/quality-baseline.json
 UPDATE=0
 ALLOW_INCREASE=0
 FULL=0
+RELEASE=0
 for arg in "$@"; do
   case "$arg" in
     --update-baseline) UPDATE=1 ;;
     --allow-increase) ALLOW_INCREASE=1 ;;
     --full) FULL=1 ;;
+    --release) RELEASE=1; FULL=1 ;;
     *) printf 'unknown argument: %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
@@ -88,10 +99,19 @@ run_lane() {
 }
 
 # Lanes that need a cargo subcommand: absent locally prints SKIP so the gate stays usable on any
-# machine; install the tools listed in the SKIP lines to make those lanes real.
+# machine; install the tools listed in the SKIP lines to make those lanes real. Under `--release` a
+# missing tool is a FAILURE: the release pass exists to prove every lane ran, and an uninstalled tool
+# proves the opposite. `lane_mutants` is reached through here too, so `--release` without `--full`
+# still fails on a missing cargo-mutants.
 run_tool_lane() {
   local tool="$1" name="$2"; shift 2
   if ! command -v "$tool" > /dev/null 2>&1; then
+    if [ "$RELEASE" = 1 ]; then
+      printf '\n=== %s ===\nFAIL: %s is not installed (cargo install %s), and a release pass runs every lane\n' \
+        "$name" "$tool" "$tool"
+      FAILURES+=("$name")
+      return 1
+    fi
     printf '\n=== %s ===\nSKIP: %s is not installed (cargo install %s)\n' "$name" "$tool" "$tool"
     return 0
   fi
@@ -212,7 +232,20 @@ main() {
   fi
 
   printf '\n=== domain type integrity (review candidates, ratcheted in the DDD phase) ===\n'
-  cargo run -q -p xtask -- integrity | jq -r 'to_entries[] | "  \(.key): bool_sigs=\(.value.bool_in_signature | length) primitive_ids=\(.value.primitive_id_param | length) many_option_structs=\(.value.struct_with_many_options | length)"'
+  # The lane used to discard the command's status, so a scan that failed read as a scan of zero
+  # candidates — and this report is the ratchet's input, so a missing report must never look like a
+  # clean one. The status is checked, and the report has to carry `ok: true`: `xtask integrity` sets
+  # it false when a domain root it declares yields no production file at all.
+  local integrity_rows='to_entries[] | select(.key != "ok") | "  \(.key): bool_sigs=\(.value.bool_in_signature | length) primitive_ids=\(.value.primitive_id_param | length) many_option_structs=\(.value.struct_with_many_options | length)"'
+  if cargo run -q -p xtask -- integrity > "$tmp/integrity.json" \
+    && jq -e '.ok == true' "$tmp/integrity.json" > /dev/null 2>&1; then
+    jq -r "$integrity_rows" "$tmp/integrity.json"
+    printf -- '--- domain type integrity: PASS\n'
+  else
+    jq -r "$integrity_rows" "$tmp/integrity.json" 2> /dev/null
+    printf -- '--- domain type integrity: FAIL\n'
+    FAILURES+=("domain integrity")
+  fi
 
   printf '\n=== domain purity (census-domain normal tree) ===\n'
   if cargo run -q -p xtask -- domain-purity; then

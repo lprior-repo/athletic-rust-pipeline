@@ -88,7 +88,12 @@ pub use coverage::{
     coverage_report, CoverageGap, CoverageReport, CoverageTotals, GapClass, JurisdictionCoverage,
     UNKNOWN_JURISDICTION,
 };
+pub(crate) use coverage::{jurisdiction_of, school_state_index};
 pub use projection::build_census;
+/// The run-scope predicate every consumer of a store row shares: `true` for the jurisdictions
+/// `UsJurisdiction::CENSUS_SCOPE` names and for the unplaced row, `false` for every other
+/// jurisdiction a store may still hold rows for.
+pub(crate) use projection::in_run_scope;
 pub use writer::write_census;
 
 pub use core_scope::{is_core_source, retain_core, CoreScoped, Scope, NON_CORE_SOURCE_IDS};

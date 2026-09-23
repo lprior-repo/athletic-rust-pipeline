@@ -1,5 +1,5 @@
 use crate::domain::identity::EvidenceDigest;
-use crate::runtime::protocol::RankingsCapture;
+use athleticnet_browser::protocol::RankingsCapture;
 use serde::{Deserialize, Serialize};
 
 /// A complete rankings collection plan covering all requested

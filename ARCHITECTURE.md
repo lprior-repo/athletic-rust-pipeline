@@ -5,8 +5,9 @@ commit messages reference them, so edit a section's content without renumbering 
 
 ## 1. Mission
 
-Build the richest defensible nationwide recruiting census of U.S. Class-of-2027 high-school Track &
-Field and Cross Country athletes: discover them across all qualified sources, reconcile duplicate
+Build the richest defensible recruiting census of U.S. Class-of-2027 high-school Track &
+Field and Cross Country athletes over the run scope of §2: discover them across all qualified
+sources, reconcile duplicate
 identities, collect their available athletic histories, calculate comparable PRs, identify every
 event they contest, resolve their current high school and its public professional coaching contacts,
 retain source profiles, and export a recruiter-friendly workbook with auditable evidence.
@@ -16,12 +17,20 @@ bounded, idempotent, observable, decomposable into independent work, ergonomic f
 capable of retaining partial progress indefinitely. A crash, reboot, browser failure, source outage,
 429, model outage, parser defect, or machine restart must not force the census to start over.
 
+**The architectural rule.** Restate owns what work must happen. Fjall owns what was observed.
+Deterministic Rust owns what the evidence means. AI may advise only where deterministic evidence is
+genuinely ambiguous. Excel is a projection of that truth, never the truth itself.
+
+**The identity rule.** No canonical identity decision may destroy source identity or provenance
+required to reverse that decision later.
+
 ## 2. Scope
 
 - **Geography (§2)**: all 50 states plus the District of Columbia are valid
-  `UsJurisdiction` values. The census run covers the **48 continental states plus D.C.; Alaska,
-  Hawaii and the territories exist as values but are never run or counted**. Territories are added
-  later as explicit jurisdictions, never silently.
+  `UsJurisdiction` values. The census run covers the **48 contiguous states plus D.C. — forty-nine
+  jurisdictions (ADR-009); Alaska and Hawaii exist as values but are never run or counted**.
+  Territories and freely associated states are not modelled at all: `"PR"` fails to parse rather than
+  widening coverage, and adding one is an explicit domain change, never a silent one.
 - **Cohort (§3)**: `GraduationYear(2027)` is the durable target, never "junior". Grade is
   time-scoped evidence (`GradeObservation { grade, academic_year, source }`) — `2025-2026 → Grade 11`
   and `2026-2027 → Grade 12` both support the same canonical cohort. No source-specific query

@@ -1,4 +1,4 @@
-//! `NationalCensus`: the root workflow, one run per season and revision (objective §7).
+//! `NationalCensus`: the root workflow, one run per season, run scope and revision (objective §7).
 //!
 //! # Shape
 //!
@@ -27,7 +27,7 @@ use restate_sdk::prelude::*;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{Revision, WorkflowIdentity};
+use crate::census::{admitted_scope, Revision, WorkflowIdentity};
 use crate::clock::Clock;
 
 use super::jobs;
@@ -51,7 +51,8 @@ impl NationalCensus {
 
 /// The jurisdictions one national run covers, each with the object key its census is addressed by:
 /// the request's order when it names one, otherwise the census run scope — the 48 continental states
-/// plus the District of Columbia (ADR-009) — in declaration order.
+/// plus the District of Columbia (ADR-009) — in declaration order. Which set that is comes from
+/// [`admitted_scope`], one rule shared with the callers that derive this run's identity.
 ///
 /// A jurisdiction outside the run scope is terminal: Alaska and Hawaii are modelled but never
 /// acquired, and admitting one here would put it in every denominator afterwards.
@@ -65,11 +66,7 @@ impl NationalCensus {
 pub(super) fn targets(
     request: &NationalRequest,
 ) -> Result<Vec<(UsJurisdiction, String)>, HandlerError> {
-    let jurisdictions: Vec<UsJurisdiction> = if request.jurisdictions.is_empty() {
-        UsJurisdiction::CENSUS_SCOPE.to_vec()
-    } else {
-        request.jurisdictions.clone()
-    };
+    let jurisdictions = admitted_scope(&request.jurisdictions);
     let mut seen: Vec<UsJurisdiction> = Vec::with_capacity(jurisdictions.len());
     let mut targets = Vec::with_capacity(jurisdictions.len());
     for jurisdiction in jurisdictions {
@@ -94,6 +91,52 @@ pub(super) fn targets(
     Ok(targets)
 }
 
+/// One completion of the fan-out, classified against the state it belongs to.
+///
+/// The two arms are the report's two row sets. A failure is a *row*, not an abort: §69 asks for the
+/// states that did not answer to be listed, so one state's outage never abandons the states whose
+/// calls are still in flight.
+pub(super) enum Completion {
+    /// The state answered: its summary.
+    Answered(JurisdictionSummary),
+    /// The state did not: the row that names it and why.
+    Unanswered(NationalFailure),
+}
+
+/// Classify one completion for `jurisdiction`, addressed by the identity `key`.
+///
+/// A free function, like [`targets`]: this is all the fan-out's per-state logic, and it is worth
+/// testing without a Restate context, a target list, or a live fan-out.
+pub(super) fn classify(
+    jurisdiction: UsJurisdiction,
+    key: &str,
+    outcome: Result<Json<JurisdictionReport>, TerminalError>,
+) -> Completion {
+    match outcome {
+        Ok(Json(report)) => Completion::Answered(JurisdictionSummary {
+            jurisdiction,
+            identity: report.identity,
+            teams: report.teams,
+            rosters_done: report.rosters.rosters_done,
+            rosters_skipped: report.rosters.rosters_skipped,
+            rosters_owed: Some(
+                report
+                    .teams
+                    .saturating_sub(report.rosters.rosters_done)
+                    .saturating_sub(report.rosters.rosters_skipped),
+            ),
+            blocked: Some(report.rosters.blocked),
+            athletes: report.rosters.athletes,
+            class_of_2027: report.rosters.class_of_2027,
+        }),
+        Err(error) => Completion::Unanswered(NationalFailure {
+            jurisdiction,
+            identity: key.to_string(),
+            error: error.to_string(),
+        }),
+    }
+}
+
 /// Drain the fan-out into the report's two row sets: one summary per state that answered, one failure
 /// row per state that did not.
 ///
@@ -111,28 +154,9 @@ async fn collect_outcomes(
                 "the fan-out reported an index it never pushed",
             ));
         };
-        match outcome {
-            Ok(Json(report)) => summaries.push(JurisdictionSummary {
-                jurisdiction: *jurisdiction,
-                identity: report.identity,
-                teams: report.teams,
-                rosters_done: report.rosters.rosters_done,
-                rosters_skipped: report.rosters.rosters_skipped,
-                rosters_owed: Some(
-                    report
-                        .teams
-                        .saturating_sub(report.rosters.rosters_done)
-                        .saturating_sub(report.rosters.rosters_skipped),
-                ),
-                blocked: Some(report.rosters.blocked),
-                athletes: report.rosters.athletes,
-                class_of_2027: report.rosters.class_of_2027,
-            }),
-            Err(error) => failures.push(NationalFailure {
-                jurisdiction: *jurisdiction,
-                identity: key.clone(),
-                error: error.to_string(),
-            }),
+        match classify(*jurisdiction, key, outcome) {
+            Completion::Answered(summary) => summaries.push(summary),
+            Completion::Unanswered(failure) => failures.push(failure),
         }
     }
     Ok((summaries, failures))
@@ -179,7 +203,7 @@ fn assemble(
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]
@@ -195,10 +219,11 @@ impl NationalCensus {
         ctx: WorkflowContext<'_>,
         Json(request): Json<NationalRequest>,
     ) -> Result<Json<NationalReport>, HandlerError> {
-        let identity = WorkflowIdentity::national(request.season, request.revision);
-        // The workflow id is the identity. A run addressed by one id but carrying another's season or
-        // revision would fold a second season's states into this run, and no retry can route it
-        // correctly, so the mismatch is terminal.
+        let identity =
+            WorkflowIdentity::national(request.season, request.revision, &request.jurisdictions);
+        // The workflow id is the identity. A run addressed by one id but carrying another's season, run
+        // scope or revision would fold a different set of states into this run than its id names, and no
+        // retry can route it correctly, so the mismatch is terminal.
         if ctx.key() != identity.as_str() {
             return Err(TerminalError::new(format!(
                 "request identity {} does not match workflow id {}",

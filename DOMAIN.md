@@ -20,10 +20,13 @@ Consequences:
 - Two providers that disagree stay disagreeing and visible; the merge does not average them.
 
 A state is not a string either: `UsJurisdiction` (`crates/census-domain/src/jurisdiction.rs`)
-declares the 50 states plus the District of Columbia, and `UsJurisdiction::ALL` is the census
-denominator. Territories and freely associated states are deliberately absent, so `"PR"` *fails to
-parse* instead of silently widening coverage; every source id, journal phase, report row and
-workflow identity that needs a state formats it as the USPS code (`Display` writes the code).
+declares the 50 states plus the District of Columbia. `UsJurisdiction::ALL` is the *modelled*
+universe; `UsJurisdiction::CENSUS_SCOPE` — every one of them except Alaska and Hawaii — is what
+every coverage denominator is decided over, so a jurisdiction in `ALL` but outside the scope is a
+valid value that no run and no published row ever counts. Territories and freely associated states
+are deliberately absent, so `"PR"` *fails to parse* instead of silently widening coverage; every
+source id, journal phase, report row and workflow identity that needs a state formats it as the
+USPS code (`Display` writes the code).
 
 ## 2. Cohort is a graduation year; grade is time-scoped evidence
 

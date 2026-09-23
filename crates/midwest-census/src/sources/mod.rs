@@ -63,6 +63,7 @@ pub enum CrawlError {
 /// Result alias for adapter code.
 pub type CrawlResult<T> = std::result::Result<T, CrawlError>;
 
+pub mod applicability;
 pub mod athleticlive;
 pub mod athleticlive_athletes;
 pub mod athleticnet;
@@ -87,8 +88,8 @@ pub mod xc;
 // The source capability registry (§10/§11): what each adapter can be asked for, what a request to it
 // costs its origin, and the bulk-meet-first ordering a plan starts from.
 pub use registry::{
-    bulk_first, descriptor, descriptors, SourceAdmission, SourceCapabilities, SourceDescriptor,
-    TransportKind,
+    bulk_first, descriptor, descriptors, AccessClass, SourceAdmission, SourceCapabilities,
+    SourceDescriptor, TransportKind,
 };
 
 use crate::net::{FetchOptions, Fetcher};

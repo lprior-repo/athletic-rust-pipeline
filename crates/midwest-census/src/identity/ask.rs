@@ -4,7 +4,7 @@ use census_domain::model::{ReviewCase, ReviewVerdict};
 
 use super::model::{ModelClient, ModelError};
 use super::packets::SubjectIndex;
-use super::verdicts::{triage, Admitted};
+use super::verdicts::{triage, Adjudication};
 use super::ReviewFamily;
 
 /// What asking one retained case produced.
@@ -13,9 +13,10 @@ pub(super) enum Answer {
     NoSubject,
     /// The model request failed outright.
     Failed(ModelError),
-    /// The model answered: the verdicts worth keeping, and how many the batch dropped.
+    /// The model answered: the verdicts worth keeping, each with what validation made of it, and how
+    /// many the batch dropped.
     Answered {
-        verdicts: Vec<(ReviewVerdict, Option<Admitted>)>,
+        verdicts: Vec<(ReviewVerdict, Adjudication)>,
         dropped: usize,
     },
 }

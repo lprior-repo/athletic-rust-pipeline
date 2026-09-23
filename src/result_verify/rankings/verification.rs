@@ -2,7 +2,7 @@ use crate::{
     domain::identity::EvidenceDigest,
     runtime::{
         identity::fingerprint,
-        protocol::{DocumentReceipt, FetchOutcome, RankingsCapture, SourceResource},
+        protocol::{DocumentReceipt, FetchOutcome, SourceResource},
         rankings::RankingsPlan,
         rankings_collection::{
             collection_fingerprint, CollectionFinalSnapshot, RankingCollectionRef,
@@ -12,6 +12,7 @@ use crate::{
     store::ArtifactStore,
 };
 use anyhow::{bail, Context, Result};
+use athleticnet_browser::protocol::RankingsCapture;
 use serde::{de::DeserializeOwned, Serialize};
 use url::Url;
 

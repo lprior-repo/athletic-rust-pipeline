@@ -165,6 +165,10 @@ pub(super) async fn run() -> Result<()> {
         Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
         Command::NationalReport(args) => national::run_national_report(&cli, args).await,
         Command::OpenWork(args) => open_work::run_open_work(&cli, args).await,
+        // The seal runs either way, so it is matched here: `--store` opens the store in-process and
+        // `--ingress` submits through the service, which is the only route that can measure the
+        // run's own open work.
+        Command::Seal(args) => seal::run_seal(&cli, args).await,
         Command::Teams(args) => gather::run_teams(&cli, args).await,
         Command::Meets(args) => gather::run_meets(&cli, args).await,
         Command::Collect(args) => gather::run_collect(&cli, args).await,
@@ -176,6 +180,9 @@ pub(super) async fn run() -> Result<()> {
         Command::MergeCoaches(args) => merge_coaches::run_merge_coaches(args),
         Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
         Command::CensusDoc(args) => census_doc::run_census_doc(args),
+        // A backup is a cold copy and refuses an open store, so it is matched here: opening the store
+        // first would hold the very lock the backup has to find free.
+        Command::StoreBackup(args) => store::run_backup(&cli.store_root(), args),
         Command::Serve => serve::run_serve(&cli),
         // Offline tools: open the store in-process, which requires `midwest-serve` stopped.
         _ => {

@@ -14,7 +14,8 @@
     ]
   },
   "field_measure_type": "S/L controls display format; not a physical unit",
-  "field_metadata_source": "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=26158261&sport=tf&level=0",
+  "field_metadata_source": "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=26158261&sport=tf&level=4",
+  "field_metadata_source_provenance": "Records the request shape this project sends, not the research capture as it was first written: the census asks GetAthleteBioData with level=4 (crates/midwest-census/src/sources/athleticnet/mod.rs:91, applied at collect/walk.rs:54), while the 2026-09-19 research pass first wrote level=0. The field metadata cited above (the IDEvent/IDEventType joins and the isPR/isSR flags) is level-independent, which is why one entry serves both readings.",
   "search_multisport_observation": {
     "endpoint": "https://www.athletic.net/Search.aspx/runSearch",
     "query": {

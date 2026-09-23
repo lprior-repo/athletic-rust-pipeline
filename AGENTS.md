@@ -5,7 +5,8 @@ Primary instruction document for any person or coding agent working here. Read t
 
 ## What this repository is
 
-A nationwide Class-of-2027 high-school Track & Field / Cross Country recruiting census. A qualified
+A Class-of-2027 high-school Track & Field / Cross Country recruiting census over the run scope of
+ADR-009: the 48 contiguous states plus D.C. A qualified
 source graph feeds durable acquisition, acquisition produces evidence, evidence lands in Fjall, a
 deterministic merge proposes canonical identities, the local Qwen lane adjudicates only what Rust
 cannot, and the result is projected into an Excel workbook a recruiter can filter. The workbook is a

@@ -1,23 +1,21 @@
-//! Source request construction: action/body wire shapes and bounded URL validation.
+//! Source request construction: the `SourceResource` mapping onto bounded request specs.
 //!
-//! Each item below was previously declared in `request.rs`; every path that resolved there
-//! (`request::RequestSpec`, `request::MAX_START`, ...) still resolves through this module.
+//! The wire shapes (`RequestSpec`, `RequestAction`, the bodies) and the rankings spec the transport
+//! rebuilds per page live in `athleticnet-browser::request`; what stays here is the producer that
+//! needs this crate's source vocabulary and the domain's profile URLs.
 
-mod action;
-mod body;
 mod build;
 
-pub(crate) use self::action::{RankingsAction, RequestAction, RequestSpec, SearchBody};
-pub(crate) use self::body::{RankingsQParamsInner, RankingsQuery, RequestBody};
-pub(crate) use self::build::{build, rankings_spec};
-
+pub(crate) use self::build::build;
 pub(crate) const MAX_START: u32 = 1_000_000;
 pub(crate) const MAX_QUERY_BYTES: usize = 2_048;
 
 #[cfg(test)]
 use crate::domain::identity::ProfileUrl;
 #[cfg(test)]
-use crate::runtime::protocol::{RankingsCapture, SourceResource};
+use crate::runtime::protocol::SourceResource;
+#[cfg(test)]
+use athleticnet_browser::protocol::RankingsCapture;
 #[cfg(test)]
 use url::Url;
 

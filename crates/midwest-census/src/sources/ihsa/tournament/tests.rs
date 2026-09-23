@@ -1,13 +1,14 @@
 //! Fixture tests for the tournament decoders. Every fixture is a genuine response copied byte for
 //! byte from the lane's captures; each constant names the URL, the capture and the measured row
 //! counts the test pins.
+use super::map::school_year_of;
 use super::parse::{
     class_token, date_part, event_date_range, finisher_grade, member_grade, newest_term,
     parse_error, parse_events, parse_grade, parse_mark, parse_meets, parse_qualifiers,
     parse_summary,
 };
 use super::wire::{EventSummary, QualifierAthlete, QualifiersEnvelope};
-use census_domain::model::{Grade, Mark};
+use census_domain::model::{Grade, Mark, SchoolYear};
 
 /// Provenance: `GET https://api.ihsa.org/v1/track-field/meets`, fetched 2026-09-19 23:15.
 /// Capture: `tools/a13-ihsa/p_track-field_meets.json` (1,088 B). Measured: `count: 2`.
@@ -542,4 +543,18 @@ fn captain_summaries_are_distinct_events() {
     assert_ne!(hj.event_id, relay.event_id);
     assert!(hj.event_name.contains("High Jump"));
     assert!(relay.event_name.contains("4x800m Relay"));
+}
+
+// ── School years ───────────────────────────────────────────────────────
+
+/// A published date is placed on the domain's Aug 1 boundary, and a date that names a year no
+/// season may open in is read as the run's own school year (the domain's documented fallback)
+/// rather than panicking or storing 1800.
+#[test]
+fn unplaceable_dates_fall_back_to_the_runs_school_year() {
+    let fallback = SchoolYear::new(2025).expect("2025 is a season");
+    assert_eq!(school_year_of("2025-05-30", fallback).get(), 2024);
+    assert_eq!(school_year_of("2025-09-12", fallback).get(), 2025);
+    assert_eq!(school_year_of("1801-06-06", fallback), fallback);
+    assert_eq!(school_year_of("", fallback), fallback);
 }

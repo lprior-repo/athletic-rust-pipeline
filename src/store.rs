@@ -87,6 +87,11 @@ pub use rankings::{
 impl ArtifactStore {
     /// Clear a page marker left by a publication that did not complete, so a
     /// retried page step can publish its fresh capture of the same page.
+    ///
+    /// The abandoned capture's index keys stay stored and stay invisible: every
+    /// reader keeps only the keys of the checkpoint the page marker names. The
+    /// clearance is durable (a database batch, not a bare keyspace write) and is
+    /// refused with `RankingConflict` on a sealed collection.
     pub fn drop_rankings_page(
         &self,
         collection: &EvidenceDigest,
@@ -96,6 +101,12 @@ impl ArtifactStore {
         rankings::backend::drop_rankings_page(&self.inner, collection, event_short, page)
     }
 
+    /// Publish one page's index and marker in a single durable batch.
+    ///
+    /// Values the statistics readers would later refuse (a zero result id or row
+    /// number, a candidate or roster result outside the page, two candidates of
+    /// the same kind and record index) are refused here, and a sealed collection
+    /// or a published page with other evidence is `RankingConflict`.
     pub fn put_rankings_page(&self, index: &RankingPageIndex) -> Result<()> {
         rankings::backend::put_rankings_page(&self.inner, index)
     }

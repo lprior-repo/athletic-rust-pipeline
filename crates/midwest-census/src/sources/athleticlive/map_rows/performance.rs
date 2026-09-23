@@ -59,6 +59,7 @@ pub(super) fn write_performance(
             observed_grade: Some(facts.grade),
             evidence: vec![evidence],
             source_key,
+            retained_conflicts: Vec::new(),
         });
 }
 
@@ -70,7 +71,7 @@ fn performance_evidence(context: &RowContext<'_>, facts: &PerformanceFacts) -> E
         context.event_key,
         facts.row,
         facts.grade,
-        context.school_year.start_year()
+        context.school_year.get()
     ));
     evidence
 }

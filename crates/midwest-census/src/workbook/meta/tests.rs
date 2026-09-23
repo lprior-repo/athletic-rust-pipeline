@@ -8,7 +8,7 @@ use crate::report::{self, Scope};
 use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachRole, CompetitionLevel, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SourceNamespace, Sport,
+    Grade, ObservedGrade, SchoolYear, SourceNamespace, Sport,
 };
 use census_domain::model::{CanonicalMeet, SourceRef};
 use census_domain::UsJurisdiction;
@@ -102,10 +102,14 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     assert_eq!(sheet(&path, "Schools").len(), 1);
     assert_eq!(sheet(&path, "Meets").len(), 1);
     let conflicts = sheet(&path, "Conflicts");
-    assert_eq!(conflicts.len(), 6, "{conflicts:?}");
-    for row in conflicts.iter().skip(1).take(3) {
+    assert_eq!(conflicts.len(), 7, "{conflicts:?}");
+    for row in conflicts.iter().skip(1).take(4) {
         assert_eq!(row.get(1).map(String::as_str), Some("0"), "{row:?}");
     }
+    assert!(
+        carries(&conflicts, 0, "Recruiting contact conflict"),
+        "the contact family is declared even when no school disagrees: {conflicts:?}"
+    );
     let review = sheet(&path, "Review");
     assert_eq!(review.len(), 8, "{review:?}");
     for row in review.iter().skip(1).take(5) {
@@ -155,7 +159,7 @@ fn the_sheets_render_the_rows_the_store_retains() {
     for (grade, year) in [(11_u8, 2025_i16), (10, 2025)] {
         conflicted.observed_grades.push(ObservedGrade {
             grade: Grade::new(grade).unwrap(),
-            school_year: census_domain::model::SchoolYear(year),
+            school_year: SchoolYear::new(year).expect("the fixture season is a school year"),
             source: SourceRef::id("wiaa_results"),
         });
     }
@@ -179,6 +183,24 @@ fn the_sheets_render_the_rows_the_store_retains() {
     coach.professional_email = Some("dana.whitfield@gmail.com".to_string());
     let coach_id = coach.id.clone();
     store.append(Table::Coaches, &coach).unwrap();
+
+    // Two head coaches of the same program and side, both with a professional address, both observed
+    // on the same day: nothing evidenced picks one, so the bucket is a retained contact conflict.
+    for name in ["Renata Falk", "Sofia Meier"] {
+        let mut conflicted_coach = CanonicalCoach::new(
+            &school_id,
+            name,
+            Some(Sport::OutdoorTrack),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+        );
+        conflicted_coach.professional_email = Some(format!(
+            "{}@abbotsford.test",
+            name.split_whitespace().next().unwrap_or_default().to_lowercase()
+        ));
+        conflicted_coach.evidence.push(evidence.clone());
+        store.append(Table::Coaches, &conflicted_coach).unwrap();
+    }
 
     // One placed meet that names its Athletic.net counterpart, and one whose venue was never placed.
     let mut placed = CanonicalMeet::new(
@@ -257,6 +279,20 @@ fn the_sheets_render_the_rows_the_store_retains() {
     assert!(
         carries(&conflicts, 1, conflicted_id.as_str()),
         "{conflicts:?}"
+    );
+    assert!(
+        carries(&conflicts, 0, "Recruiting contact conflict"),
+        "{conflicts:?}"
+    );
+    assert!(
+        carries(&conflicts, 1, school_id.as_str()),
+        "the contact conflict names the school as its subject: {conflicts:?}"
+    );
+    assert!(
+        conflicts.iter().any(|row| row
+            .get(3)
+            .is_some_and(|detail| detail.contains("no evidenced order picks one"))),
+        "the conflict row says the rows cannot be separated: {conflicts:?}"
     );
 
     let review = sheet(&path, "Review");

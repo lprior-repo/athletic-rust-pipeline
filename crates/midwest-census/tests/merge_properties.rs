@@ -94,11 +94,11 @@ fn grade() -> impl Strategy<Value = Grade> {
 }
 
 fn school_year() -> impl Strategy<Value = SchoolYear> {
-    (2015i16..=2030).prop_map(SchoolYear)
+    (2015i16..=2030).prop_filter_map("a school year starts in 2015..=2030", SchoolYear::new)
 }
 
 fn grad_year() -> impl Strategy<Value = GradYear> {
-    (2020i16..=2040).prop_map(GradYear)
+    (2020i16..=2040).prop_filter_map("a graduation year is 2020..=2040", GradYear::new)
 }
 
 fn level() -> impl Strategy<Value = CompetitionLevel> {
@@ -161,6 +161,7 @@ fn team() -> impl Strategy<Value = CanonicalTeam> {
             level,
             source_identities: Vec::new(),
             evidence: Vec::new(),
+            retained_conflicts: Vec::new(),
         })
 }
 

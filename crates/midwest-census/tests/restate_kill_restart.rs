@@ -51,7 +51,7 @@ const SERVER_ENV: &str = "RESTATE_SERVER_BIN";
 /// synthetic row.
 const SOURCE_ID: &str = "mshsl_results";
 const MEET_DATE: &str = "2026-05-02";
-const SEASON: SchoolYear = SchoolYear(2025);
+const SEASON: SchoolYear = SchoolYear::new(2025).expect("2025 is a season");
 const REVISION: Revision = Revision(1);
 
 /// Big enough that the `Consolidate` merge is still working when the kill lands. 300 schools × 40
@@ -413,6 +413,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
+        retained_conflicts: Vec::new(),
     };
     let team_id = team.id.clone();
     let mut meet = CanonicalMeet::new(
@@ -484,6 +485,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).unwrap()),
             evidence: vec![evidence()],
             source_key,
+            retained_conflicts: Vec::new(),
         });
     }
 }
@@ -536,7 +538,11 @@ async fn a_killed_endpoint_resumes_its_run_and_repeats_no_durable_write() {
     // The consolidate run's identity: one national run per season and revision, which is the run
     // whose merge must not be repeated. The key names the job instance; an empty table list means
     // every table.
-    let key = WorkflowIdentity::national(SEASON, REVISION);
+    let key = WorkflowIdentity::national(
+        SEASON,
+        REVISION,
+        census_domain::UsJurisdiction::CENSUS_SCOPE,
+    );
     let key = key.as_str().to_string();
     let path_run = format!("Consolidate/{key}/run");
     let request = serde_json::json!({ "tables": [] });

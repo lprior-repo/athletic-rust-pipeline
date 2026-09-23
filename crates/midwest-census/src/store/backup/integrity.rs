@@ -3,44 +3,54 @@
 use std::fs;
 
 use super::{IntegrityReport, IntegrityTable};
-use crate::store::{Store, StoreError, StoreResult, Table};
+use crate::store::{StorageMode, Store, StoreError, StoreResult, Table, TableWalk};
 
 impl Store {
     /// Check the store's own integrity.
     ///
-    /// For every table, counts rows in the Fjall entities keyspace and
-    /// compares against the sequence counter.  Checks journal files
-    /// are readable.  Reports unreadable entity logs.  Returns ok
-    /// only when the mismatch list is empty.
+    /// Every table is walked once and then held to the invariant its own write mode states. Each
+    /// table's ledger count — the number its writers keep, stored in the same batch as the rows it
+    /// counts — must equal the rows its keyspace holds; a walk that disagrees is drift, and drift is
+    /// what the count is kept for. An append-only table's sequence mark may stand *in front* of its
+    /// keys, which is exactly what a batch that reserved and never committed leaves, but never behind
+    /// them: a reopen would then hand out a sequence the keyspace already holds, and the observation
+    /// written under it would overwrite the one already there. A derived table holds one row per id,
+    /// every row keyed under sequence zero — a foreign sequence is a copy a read merges *under* the row
+    /// that should have replaced it, and a repeated id is a second key a read folds into one entity.
+    ///
+    /// Checks journal files are readable. Reports unreadable entity logs. Returns ok only when no table
+    /// contradicts itself and no such file exists.
     pub fn integrity(&self) -> StoreResult<IntegrityReport> {
         let mut tables = Vec::with_capacity(Table::ALL.len());
         let mut unreadable_journals = Vec::new();
         let mut unreadable_entity_logs = Vec::new();
         self.check_table_integrity(&mut tables, &mut unreadable_entity_logs)?;
         self.check_journal_integrity(&mut unreadable_journals)?;
-        let mismatches: Vec<_> = tables.iter().filter(|t| t.expected != t.actual).collect();
+        let ok = tables
+            .iter()
+            .all(|table| table.expected == table.actual && table.details.is_empty());
         Ok(IntegrityReport {
-            ok: mismatches.is_empty()
-                && unreadable_journals.is_empty()
-                && unreadable_entity_logs.is_empty(),
+            ok: ok && unreadable_journals.is_empty() && unreadable_entity_logs.is_empty(),
             tables,
             unreadable_journals,
             unreadable_entity_logs,
         })
     }
 
+    /// Every table once: its ledger count against the rows its keyspace holds, and its mode's own
+    /// invariant as [`Store::walk_table`] reads it.
     fn check_table_integrity(
         &self,
         tables: &mut Vec<IntegrityTable>,
         _unreadable: &mut Vec<String>,
     ) -> StoreResult<()> {
         for table in Table::ALL {
-            let expected = self.sequences.appended(table);
-            let actual = self.fjall_row_count(table)?;
+            let walk = self.walk_table(table)?;
             tables.push(IntegrityTable {
                 table: table.file().to_string(),
-                expected,
-                actual,
+                expected: self.count(table)?,
+                actual: walk.rows,
+                details: mode_details(self, table, walk),
             });
         }
         Ok(())
@@ -70,23 +80,41 @@ impl Store {
         }
         Ok(())
     }
-
-    /// Count rows in the Fjall entities keyspace for a table.
-    fn fjall_row_count(&self, table: Table) -> StoreResult<u64> {
-        let prefix = table_prefix(table);
-        let mut count: u64 = 0;
-        for guard in self.entities.prefix(&prefix) {
-            let _ = guard.key().map_err(|source| StoreError::Read { source })?;
-            count = count.saturating_add(1);
-        }
-        Ok(count)
-    }
 }
 
-/// Build the prefix bytes for one table's entity key prefix.
-fn table_prefix(table: Table) -> Vec<u8> {
-    let mut out = Vec::with_capacity(table.file().len().saturating_add(1));
-    out.extend_from_slice(table.file().as_bytes());
-    out.push(0);
-    out
+/// The mode-specific facts a count cannot express, in the words the report prints them in.
+///
+/// A derived table's two facts come from the same walk that counts its rows, so a table is only read
+/// once: the counts are the check that its writers kept the ledger, and these are the check that its
+/// keys are the shape its mode says they are.
+fn mode_details(store: &Store, table: Table, walk: TableWalk) -> Vec<String> {
+    let mut details = Vec::new();
+    match table.storage_mode() {
+        StorageMode::ObservationLog => {
+            let keys = walk
+                .highest_sequence
+                .map_or(0, |highest| highest.saturating_add(1));
+            let mark = store.sequences.next_sequence(table);
+            if mark < keys {
+                details.push(format!(
+                    "sequence mark {mark} is behind the highest key stored ({keys})"
+                ));
+            }
+        }
+        StorageMode::DerivedSnapshot | StorageMode::DerivedMap => {
+            if walk.foreign_sequences > 0 {
+                details.push(format!(
+                    "{} rows are keyed under a sequence other than zero",
+                    walk.foreign_sequences
+                ));
+            }
+            if walk.repeated_ids > 0 {
+                details.push(format!(
+                    "{} ids own more than one row",
+                    walk.repeated_ids
+                ));
+            }
+        }
+    }
+    details
 }

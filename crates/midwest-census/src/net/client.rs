@@ -57,6 +57,10 @@ impl Fetcher {
             stats: Mutex::new(FetchStats::default()),
             source: super::DEFAULT_SOURCE.to_string(),
             blocks: Mutex::new(HashMap::new()),
+            // The lane is installed by the run, never by the constructor: every fetcher in a test
+            // and every fetcher in an HTTP-only command is built without one, and a host that needs
+            // one is refused by name rather than fetched over HTTP instead.
+            lane: None,
         })
     }
 }

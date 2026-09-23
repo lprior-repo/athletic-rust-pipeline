@@ -1,7 +1,7 @@
 use super::division::{SeasonKind, SEASON_YEAR};
 use super::types::{is_excluded, NavEvent, RankedEvent, RankingsPlan};
 use crate::domain::identity::EvidenceDigest;
-use crate::runtime::protocol::RankingsCapture;
+use athleticnet_browser::protocol::RankingsCapture;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 /// A catalog of all observed event families from GetNavInfo,

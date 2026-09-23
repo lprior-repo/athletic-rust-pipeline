@@ -3,7 +3,7 @@ use crate::{
     domain::identity::{EvidenceDigest, SourceRowKey, WorkbookDigest},
     runtime::{
         acquisition::ACQUISITION_REVISION,
-        protocol::{DocumentReceipt, FetchOutcome, RankingPageObservation, RankingsCapture},
+        protocol::{DocumentReceipt, FetchOutcome},
         rankings::{
             parse_page_response, EventCatalog, ExpectedPageContext, PageObservation, RankingsScope,
             SeasonKind,
@@ -14,7 +14,6 @@ use crate::{
         },
         row_protocol::{DiscoverySummary, RankingDiscoveryEvidence, RowJob},
         run_protocol::SourceSnapshot,
-        source::request::{rankings_spec, RankingsAction, RequestSpec},
     },
     store::{
         ArtifactStore, RankingCandidateEntry, RankingCandidateKind, RankingPageIndex,
@@ -22,6 +21,8 @@ use crate::{
     },
 };
 use anyhow::Context;
+use athleticnet_browser::protocol::{RankingPageObservation, RankingsCapture};
+use athleticnet_browser::request::{rankings_spec, RankingsAction, RequestSpec};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::BTreeSet;

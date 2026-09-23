@@ -256,17 +256,35 @@ fn write_merged_csv(
     kept: &BTreeMap<(String, String, String, String), Row>,
     args: &MergeCoachesArgs,
 ) -> Result<()> {
-    let mut writer = csv::Writer::from_path(&args.out).with_context(|| "opening output CSV")?;
+    let published = &args.out;
+    midwest_census::store::read::publish_atomically(published, |temporary| {
+        write_merged_body(temporary, published, kept)
+    })?;
+    Ok(())
+}
+
+/// Encode the merged rows into `temporary`, the file the publication renames to `published`.
+fn write_merged_body(
+    temporary: &std::path::Path,
+    published: &std::path::Path,
+    kept: &BTreeMap<(String, String, String, String), Row>,
+) -> midwest_census::store::StoreResult<()> {
+    let mut writer = csv::Writer::from_path(temporary)
+        .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
     writer
         .write_record(HEADER)
-        .with_context(|| "writing CSV header")?;
+        .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
     for row in kept.values() {
         writer
             .write_record(row.to_fields())
-            .with_context(|| "writing CSV row")?;
+            .map_err(|error| midwest_census::store::read::csv_failure(published, error))?;
     }
-    writer.flush().with_context(|| "flushing CSV")?;
-    Ok(())
+    writer
+        .flush()
+        .map_err(|source| midwest_census::store::StoreError::Io {
+            path: published.to_path_buf(),
+            source,
+        })
 }
 
 #[cfg(test)]

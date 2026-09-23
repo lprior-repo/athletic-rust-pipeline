@@ -69,6 +69,32 @@ impl Cmd {
             None => bail!("`{rendered}` was killed by a signal"),
         }
     }
+
+    /// Run the command with its stdout captured, and return it.
+    ///
+    /// The command line goes to stderr rather than stdout: the verbs that capture a child use the
+    /// child's stdout as their measurement (`cargo metadata`'s JSON, for one), and a banner printed
+    /// into that stream would have to be stripped before it could be parsed. A non-zero exit is an
+    /// error naming the status and the child's own stderr, which is where a toolchain explains itself.
+    pub fn output(&self) -> Result<String> {
+        let rendered = self.render();
+        eprintln!("+ {rendered}");
+        let output = Command::new(&self.program)
+            .args(&self.args)
+            .current_dir(paths::repo_root())
+            .output()
+            .with_context(|| format!("running `{rendered}`"))?;
+        if !output.status.success() {
+            let detail = String::from_utf8_lossy(&output.stderr);
+            let detail = detail.trim();
+            match output.status.code() {
+                Some(code) => bail!("`{rendered}` exited with status {code}: {detail}"),
+                None => bail!("`{rendered}` was killed by a signal: {detail}"),
+            }
+        }
+        String::from_utf8(output.stdout)
+            .with_context(|| format!("`{rendered}` wrote output that is not UTF-8"))
+    }
 }
 
 /// Quote one argument the way a POSIX shell needs it; arguments that are already plain stay bare.

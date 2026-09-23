@@ -9,7 +9,13 @@ license = "MIT"
 workspace = true
 
 [workspace]
-members = ["crates/census-domain", "crates/midwest-census", "crates/g1-audit", "xtask"]
+members = [
+    "crates/athleticnet-browser",
+    "crates/census-domain",
+    "crates/midwest-census",
+    "crates/g1-audit",
+    "xtask",
+]
 
 [features]
 default = []
@@ -31,8 +37,8 @@ tokio-console = ["dep:console-subscriber", "tokio/tracing"]
 
 [dependencies]
 anyhow = "1"
+athleticnet-browser = { path = "crates/athleticnet-browser" }
 base64 = "0.22"
-chromiumoxide = "=0.9.1"
 clap = { version = "4.5", features = ["derive"] }
 fjall = "=3.1.10"
 futures = "0.3"
@@ -72,6 +78,9 @@ tracing-opentelemetry = { version = "0.33", optional = true }
 [dev-dependencies]
 http = "1"
 axum = "0.8"
+# The CDP frame-compatibility guard (tests/cdp_frame_compat.rs) pins one vendored model struct, so
+# the guard names the client directly while the transport crate owns the runtime dependency.
+chromiumoxide = "=0.9.1"
 proptest = "1"
 mockito = "1"
 tokio = { version = "1", features = ["test-util"] }

@@ -1,6 +1,6 @@
-//! Extract distinct, trimmed school names for a given state from the entities JSONL.
+//! Extract distinct, trimmed school names for a given state from the consolidated schools snapshot.
 //!
-//! Input : `<store>/entities/schools.jsonl`
+//! Input : `<store>/out/schools.jsonl` (the consolidated snapshot)
 //! Output: a sorted, deduplicated, newline-delimited list of school names.
 //!
 //! Usage: `midwest-census <global-args> school-names --state <ST> --out <PATH>`
@@ -12,7 +12,7 @@ use anyhow::{Context, Result};
 use clap::Args;
 use serde_json::Value;
 use std::collections::BTreeSet;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::PathBuf;
 
@@ -33,7 +33,7 @@ pub(super) fn run_school_names(
     store: &midwest_census::store::Store,
     args: &SchoolNamesArgs,
 ) -> Result<()> {
-    let schools_path = store.root().join("entities").join("schools.jsonl");
+    let schools_path = store.out_dir().join("schools.jsonl");
     let p = schools_path.display();
 
     let mut names: BTreeSet<String> = BTreeSet::new();
@@ -61,20 +61,27 @@ pub(super) fn run_school_names(
     }
 
     let names_count = names.len();
-    let out_dir = args
-        .out
-        .parent()
-        .map(PathBuf::from)
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or_else(|| PathBuf::from("."));
-    let od = out_dir.display();
-    fs::create_dir_all(&out_dir).with_context(|| format!("creating output dir {od}"))?;
 
-    let mut out = File::create(&args.out)
-        .with_context(|| format!("creating output file {}", args.out.display()))?;
-    for name in &names {
-        writeln!(out, "{name}")?;
-    }
+    // `publish_atomically` creates the destination's directory itself (`store/read/snapshot.rs`), so
+    // the place that writes the file is the one place that creates what it needs.
+    midwest_census::store::read::publish_atomically(&args.out, |temporary| {
+        let mut out =
+            File::create(temporary).map_err(|source| midwest_census::store::StoreError::Io {
+                path: args.out.clone(),
+                source,
+            })?;
+        for name in &names {
+            writeln!(out, "{name}").map_err(|source| midwest_census::store::StoreError::Io {
+                path: args.out.clone(),
+                source,
+            })?;
+        }
+        out.flush()
+            .map_err(|source| midwest_census::store::StoreError::Io {
+                path: args.out.clone(),
+                source,
+            })
+    })?;
 
     println!(
         "wrote {names_count} {} names to {}",

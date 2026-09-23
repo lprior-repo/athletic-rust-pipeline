@@ -1,10 +1,10 @@
 use super::model::{build_request, ChatRequest};
-use crate::runtime::clock::Clock;
 use crate::runtime::{
     protocol::{DocumentReceipt, ReviewInput, ReviewJob, MAX_REVIEW_INPUT_BYTES},
     Runtime,
 };
 use anyhow::{anyhow, bail, Result};
+use athleticnet_browser::clock::Clock;
 use std::sync::Arc;
 
 pub struct PreparedReview {

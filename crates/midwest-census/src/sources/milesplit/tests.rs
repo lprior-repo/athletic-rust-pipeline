@@ -53,8 +53,12 @@ fn roster_entities_are_canonical_and_source_independent() {
     let teams = parse_team_index(TEAMS).unwrap();
     let roster = parse_roster(ROSTER, teams[0].clone()).unwrap();
     let site = Site::for_jurisdiction(UsJurisdiction::Wisconsin);
-    let (school, athletes, teams_out) =
-        roster_entities(&roster, SchoolYear(2026), "2026-09-20", &site);
+    let (school, athletes, teams_out) = roster_entities(
+        &roster,
+        SchoolYear::new(2026).expect("2026 is a season"),
+        "2026-09-20",
+        &site,
+    );
     assert_eq!(school.name, "Abbotsford");
     assert_eq!(school.city.as_deref(), Some("Abbotsford"));
     assert!(!athletes.is_empty());
@@ -174,7 +178,7 @@ fn raw_result_set_body_pins_80_rows_in_two_sections() {
     assert_eq!(page.meet.end_date.as_deref(), Some("2026-09-19"));
     assert_eq!(page.sport, Some(Sport::CrossCountry));
     assert_eq!(page.region.as_deref(), Some("OH"));
-    assert_eq!(page.school_year, SchoolYear(2026));
+    assert_eq!(page.school_year, SchoolYear::new(2026).expect("2026 is a season"));
     assert_eq!(page.meet.events.len(), 2);
     let boys = &page.meet.events[0];
     assert_eq!(boys.label, "Boys Middle School 3000 Meter");
@@ -276,7 +280,7 @@ fn a_high_school_grade_is_carried_as_dated_evidence() {
         .expect("the first section's winner");
     let observation = athlete.observed_grades.first().expect("grade evidence");
     assert_eq!(observation.grade.get(), 10);
-    assert_eq!(observation.school_year, SchoolYear(2026));
+    assert_eq!(observation.school_year, SchoolYear::new(2026).expect("2026 is a season"));
     assert_eq!(observation.source.id, "milesplit_oh");
     assert_eq!(observation.source.url.as_deref(), Some(OH_RAW_URL));
     // Grade 10 in 2026-27 graduates in 2029: the projection of the two evidence fields, not a year

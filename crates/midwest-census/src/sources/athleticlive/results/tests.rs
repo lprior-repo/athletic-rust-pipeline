@@ -93,7 +93,7 @@ fn context<'a>(store: &'a Store, fetcher: &'a Fetcher) -> AdapterContext<'a> {
         fetcher,
         store,
         refresh: false,
-        school_year: SchoolYear(2026),
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     }
 }
@@ -344,15 +344,15 @@ async fn collect_maps_a_captured_state_final_into_the_canonical_tables() {
     assert_eq!(athletes.len(), 136);
     // The meet is a fall one, so the school year is 2025-26: a senior is the class of 2026.
     assert_eq!(
-        school_year_for_date(&meets[0].date, SchoolYear(2026)),
-        SchoolYear::containing(2025, 10)
+        school_year_for_date(&meets[0].date, SchoolYear::new(2026).expect("2026 is a season")),
+        SchoolYear::containing(2025, 10).expect("2025-10 is a season")
     );
     assert!(athletes
         .iter()
-        .any(|athlete| athlete.grad_year == GradYear(2026)));
+        .any(|athlete| athlete.grad_year == GradYear::new(2026).expect("2026 is a cohort")));
     assert!(athletes
         .iter()
-        .any(|athlete| athlete.grad_year == GradYear(2029)));
+        .any(|athlete| athlete.grad_year == GradYear::new(2029).expect("2029 is a cohort")));
 }
 
 #[tokio::test]

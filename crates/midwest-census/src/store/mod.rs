@@ -12,13 +12,28 @@
 //! entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON
 //! journal:  <phase>\0<key>                                    -> {key, at, payload}
 //! meta:     <name>                                            -> small JSON/scalar
+//! meta:     sequence:<table>                                  -> next observation sequence
 //! ```
 //!
 //! Observations are append-only: appending the same entity twice writes two rows, and
 //! [`Store::consolidate`] merges them through [`Entity::merge`], which is exactly the guarantee the
 //! JSONL journals used to provide. The sequence component is **big-endian** so byte order is
-//! numerical order, and it is seeded from the last key present at open time, so reopening a database
-//! never reuses a sequence number and never overwrites an observation.
+//! numerical order, and it is seeded from the table's *mark* — the `sequence:<table>` row its last
+//! append committed in the same batch as the observations that spent the sequences — so reopening a
+//! database never reuses a sequence number, never overwrites an observation, and never walks a table
+//! to find out where to resume.
+//!
+//! # Marks
+//!
+//! A table's mark is the sequence its next append will use, so it is also the number a reopen seeds
+//! that table's counter from. It is written by the batch it accounts for, which is what keeps the two
+//! from disagreeing, and the writers that advance it commit in reservation order (see
+//! `Store::lock_appends`), which is what keeps it from ever moving backwards.
+//!
+//! A database written before marks existed holds none. The open that misses one derives it with the
+//! one scan this store has always done, commits the result in one durable batch, and is the last open
+//! that reads that table: see [`sequences::Counters::seeded`]. A mark that is present but unreadable
+//! fails the open with [`StoreError::Invariant`] rather than being guessed at.
 //!
 //! # Durability
 //!
@@ -31,85 +46,19 @@
 //! # Legacy journals
 //!
 //! Databases created before the Fjall substrate keep their rows in `<store>/entities/*.jsonl` and
-//! their resume ledger in `<store>/journal/*.jsonl`. [`Store::open`] imports both exactly once
-//! (recorded under `meta`), skipping the import when the marker is present, so a partially imported
-//! database finishes importing on the next open without duplicating observations.
+//! their resume ledger in `<store>/journal/*.jsonl`. [`Store::import_legacy`] imports both exactly
+//! once (recorded under `meta`), skipping the import when the marker is present, so a partially
+//! imported database finishes importing with the next call without duplicating observations.
+//!
+//! Opening a store does not import: [`Store::open`] is a read, so a verb that only measures a legacy
+//! root — a status, an integrity check, a backup — does not migrate the corpus as a side effect. The
+//! paths that have decided to migrate call [`Store::import_legacy`] themselves: the offline census
+//! run, the `import-legacy` verb, and the service bootstrap that owns the store for the live route.
 
 use fjall::{Database, Keyspace, KeyspaceCreateOptions, PersistMode};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
-
-// ---------------------------------------------------------------------------
-// Error types
-// ---------------------------------------------------------------------------
-
-/// Store failures: fjall, row encoding, journal bounds, counters and sidecar I/O.
-#[derive(Debug, thiserror::Error)]
-pub enum StoreError {
-    /// The database or a keyspace could not be opened.
-    #[error("store open failed: {source}")]
-    Open {
-        #[source]
-        source: fjall::Error,
-    },
-    /// The write-ahead journal could not be flushed.
-    #[error("store flush failed: {source}")]
-    Flush {
-        #[source]
-        source: fjall::Error,
-    },
-    /// A read or range scan failed.
-    #[error("store read failed: {source}")]
-    Read {
-        #[source]
-        source: fjall::Error,
-    },
-    /// An append or batch commit failed.
-    #[error("store write failed: {source}")]
-    Write {
-        #[source]
-        source: fjall::Error,
-    },
-    /// A stored row is not valid JSON.
-    #[error("row {key} is not valid json: {source}")]
-    Decode {
-        key: String,
-        #[source]
-        source: serde_json::Error,
-    },
-    /// A row did not encode to JSON, or unkeyed bytes did not decode: `detail` names what failed.
-    #[error("{detail}: {source}")]
-    Json {
-        detail: String,
-        #[source]
-        source: serde_json::Error,
-    },
-    /// A key, counter or row id violated an invariant the store's writer maintains.
-    #[error("{detail}")]
-    Invariant { detail: String },
-    /// One scan would exceed the configured row ceiling.
-    #[error("table {table} would exceed {max} rows in one scan")]
-    TooManyRows { table: String, max: usize },
-    /// The resume journal exceeded its byte ceiling.
-    #[error("resume journal exceeds {max} bytes")]
-    JournalTooLarge { max: usize },
-    /// The sequence counter at the end of its range.
-    #[error("sequence counter overflow")]
-    CounterOverflow,
-    /// A sidecar or artifact file operation failed.
-    #[error("i/o failed for {path}: {source}")]
-    Io {
-        path: std::path::PathBuf,
-        #[source]
-        source: std::io::Error,
-    },
-    /// The one-time legacy journal import failed.
-    #[error("legacy import failed: {detail}")]
-    Legacy { detail: String },
-}
-
-/// Result alias for store code.
-pub type StoreResult<T> = std::result::Result<T, StoreError>;
+use std::sync::Mutex;
 
 /// Unified cache for the LSM tree. Bounded on purpose: the default is sized to the machine, and this
 /// process is expected to share the machine with a browser and a text editor.
@@ -121,16 +70,24 @@ const JOURNAL: &str = "journal";
 const META: &str = "meta";
 
 mod backup;
+mod batch;
+mod error;
 mod entities;
 mod keys;
 mod legacy;
 pub mod read;
+mod rows;
 mod sequences;
 mod table;
 mod write;
 
 pub use backup::{BackupReport, IntegrityReport, IntegrityTable, RestoreReport};
-pub use table::{Entity, Table, MAX_ID_BYTES, MAX_ROWS_PER_TABLE};
+pub use error::{StoreError, StoreResult};
+pub use rows::TableWalk;
+pub use table::{
+    Entity, StorageMode, Table, MAX_ID_BYTES, MAX_JOURNAL_KEY_BYTES, MAX_JOURNAL_VALUE_BYTES,
+    MAX_ROWS_PER_TABLE,
+};
 
 /// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
 /// collection contract withheld a consumer mailbox from.
@@ -140,15 +97,22 @@ pub struct Consolidated {
     pub withheld: usize,
 }
 
-/// Per-table row counts and the database's on-disk footprint. The counts are the store's own
-/// per-table sequence counters — exact figures rather than LSM `approximate_len` estimates — so a
-/// status command reports what the store holds without scanning millions of rows. For an appended
-/// table the counter is the number of observations ever appended; for a derived table written
-/// through [`Store::replace_many`] it is the number of rows, since a replaced row reserves no
-/// sequence.
+/// Per-table rows and the database's on-disk footprint. The figures come from the store's own durable
+/// ledger — exact counts rather than LSM `approximate_len` estimates — so a status command reports
+/// what the store holds without scanning millions of rows.
+///
+/// `tables` counts rows: for an append-only table the observations it has committed, for a derived
+/// table the rows it currently materializes. `appended` counts observations alone, so it is zero for
+/// every derived table, and `observations` sums it — evidence the store holds, never state it derived.
+/// None of the three is the sequence pointer, which a batch that reserved and failed to commit leaves
+/// ahead of the rows the store holds.
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreStats {
+    /// Rows each table holds, in [`Table::ALL`] order.
     pub tables: Vec<(String, u64)>,
+    /// Observations each table has appended; zero for a table that derives its rows instead.
+    pub appended: Vec<(String, u64)>,
+    /// Observations the append-only tables hold: the sum of `appended`.
     pub observations: u64,
     /// LSM-tree level sizes as fjall reports them: SST files only, no write-ahead journal.
     pub bytes_on_disk: u64,
@@ -162,8 +126,11 @@ pub struct Store {
     entities: Keyspace,
     journal: Keyspace,
     meta: Keyspace,
-    /// Next observation sequence per table; seeded from the last key found at open.
+    /// Next observation sequence per table; seeded from each table's durable mark at open.
     sequences: sequences::Counters,
+    /// Orders the batches that advance a table's mark, so the mark no batch can be overtaken by one
+    /// that reserved later. See [`Store::lock_appends`].
+    appends: Mutex<()>,
 }
 
 impl Store {
@@ -190,7 +157,7 @@ impl Store {
             .keyspace(META, KeyspaceCreateOptions::default)
             .map_err(|source| StoreError::Open { source })?;
 
-        let sequences = sequences::Counters::seeded(&entities)?;
+        let sequences = sequences::Counters::seeded(&db, &entities, &meta)?;
 
         // Reclaim what a dead writer left behind. The lock above is exclusive, so any temporary
         // still on disk belongs to a process that is no longer running.
@@ -203,8 +170,20 @@ impl Store {
             journal,
             meta,
             sequences,
+            appends: Mutex::new(()),
         };
-        store.import_legacy()?;
+        // Opening a store is a read, and the one-time import of a pre-Fjall corpus is a write: it is
+        // [`Store::import_legacy`], and the paths that have decided to migrate call it — the offline
+        // census run, the `import-legacy` verb, and the service bootstrap that owns the store for the
+        // live route. Importing here made every open a writer, so an operator running a verb that
+        // only measures a legacy root — integrity, backup, the restore drill — moved the corpus as a
+        // side effect of looking at it.
+        //
+        // The row-count ledger is still seeded here, because it is a count of the rows this store
+        // already holds rather than a migration of rows: a store written before the ledger existed
+        // has no counts, and a count is only knowable by walking the table. It writes `rows:<table>`
+        // for a table that has none, once, and nothing else.
+        store.seed_row_marks()?;
         Ok(store)
     }
 
@@ -239,6 +218,10 @@ impl Store {
 mod backup_tests;
 #[cfg(all(feature = "loom", test))]
 mod loom_tests;
+#[cfg(test)]
+mod legacy_tests;
+#[cfg(test)]
+mod marks_tests;
 #[cfg(test)]
 mod tests;
 #[cfg(kani)]

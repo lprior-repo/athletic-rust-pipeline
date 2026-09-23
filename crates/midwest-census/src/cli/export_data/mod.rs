@@ -22,6 +22,8 @@ use clap::Args;
 use std::fs;
 use std::path::PathBuf;
 
+use midwest_census::store::read::read_rows;
+
 /// Arguments for the `export-data` subcommand.
 #[derive(Debug, Args)]
 pub(super) struct ExportDataArgs {
@@ -91,10 +93,10 @@ pub(super) fn run_export_data(args: &ExportDataArgs) -> Result<()> {
 
     fs::create_dir_all(data).with_context(|| format!("creating data dir {}", data.display()))?;
 
-    let schools = helpers::load(&store_out.join("schools.jsonl"))?;
-    let athletes = helpers::load(&store_out.join("athletes.jsonl"))?;
-    let coaches = helpers::load(&store_out.join("coaches.jsonl"))?;
-    let meets = helpers::load(&store_out.join("meets.jsonl"))?;
+    let schools = read_rows::<serde_json::Value>(&store_out.join("schools.jsonl"))?;
+    let athletes = read_rows::<serde_json::Value>(&store_out.join("athletes.jsonl"))?;
+    let coaches = read_rows::<serde_json::Value>(&store_out.join("coaches.jsonl"))?;
+    let meets = read_rows::<serde_json::Value>(&store_out.join("meets.jsonl"))?;
     let by_school: std::collections::HashMap<&str, &serde_json::Value> = schools
         .iter()
         .filter_map(|s| s.get("id").and_then(|id| id.as_str()).map(|id| (id, s)))
@@ -136,3 +138,6 @@ pub(super) fn run_export_data(args: &ExportDataArgs) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

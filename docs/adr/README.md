@@ -132,18 +132,45 @@ the research stays outside the repository as a read-only cache.
 
 ---
 
-## ADR-009 — Run scope: 48 continental states plus D.C.
+## ADR-009 — Run scope: the 48 contiguous states plus D.C.
 
-**Decision.** `UsJurisdiction` models every state and D.C. The census run requires the 48 continental
-states plus D.C. Alaska, Hawaii and the territories are valid values that are never run, never
-required, and never silently counted in coverage.
+**Decision.** `UsJurisdiction` models every state and D.C. The census run requires the 48 contiguous
+states plus the District of Columbia — forty-nine jurisdictions. Alaska and Hawaii are valid values
+that the run never requires: every value outside the run scope is representable, never run, and never
+silently counted in coverage. Territories and freely associated states are not modelled at all, so
+`"PR"` fails to parse instead of widening coverage; adding one is an explicit domain change.
 
-**Why.** The recruiting market for this census is continental; a model that silently omits values is
-worse than one that carries them and states the run scope, because coverage denominators stay
-defensible.
+**Why.** The census is a national Class-of-2027 recruiting product, and a model that silently omits
+values is worse than one that carries them and states the run scope, because coverage denominators
+stay defensible.
+
+**Ruling, 2026-09-22 — the run scope is the 49, and no code path narrows it.** The scope is the
+forty-nine entries of `UsJurisdiction::CENSUS_SCOPE`
+(`crates/census-domain/src/jurisdiction/table.rs:126`, length asserted in
+`.../jurisdiction/tests.rs:59`), and `is_in_census_scope` derives from that same constant
+(`crates/census-domain/src/jurisdiction/codes.rs:26`), so no second, driftable excluded-list can
+disagree with it. An earlier amendment that narrowed the run to a Midwest subset was reversed the
+same day and survives nowhere: the scope is the 49 above. No code path narrows it —
+`require_census_scope` (`codes.rs:16`) refuses a jurisdiction outside the scope at the national run
+(`crates/midwest-census/src/restate_services/national.rs:73`) and at the CLI boundary
+(`crates/midwest-census/src/cli/mod.rs:261`), and the report path filters instead of assuming
+(`crates/midwest-census/src/report/projection.rs:111`).
+
+**The one jurisdiction default in the tree, and why it is not a scope.** A gather command given
+neither `--states` nor `--all-states` covers Wisconsin alone
+(`crates/midwest-census/src/cli/mod.rs:235`) — a one-state quick test, so a subcommand can be
+exercised without the scope's request load. It is a convenience, never the run scope: `--all-states`
+selects `CENSUS_SCOPE` (`cli/mod.rs:234`), an explicit `--states` list is validated against the scope
+(`cli/mod.rs:261`), and the operational path is the service, which opens every jurisdiction in the
+scope on its own (`crates/midwest-census/src/restate_services/open_work.rs:102` sets
+`scope = CENSUS_SCOPE`). Restriction flags have no default at all: an empty restriction stays empty
+(`cli/mod.rs:248`). Source expansion keeps its own ordering (Wave F of the audit patch program) —
+which states' sources are researched and added first — and that ordering is never the run scope.
 
 **Consequences.** Coverage reports name their denominator and their run scope; adding a jurisdiction
-means flipping it into the run set, not editing the type.
+means flipping it into the run set, not editing the type. A census built under a different run scope
+publishes fewer rows and must be re-exported before it can seal, because the seal compares
+the workbook's own coverage sheet against the classifier's rows.
 
 ---
 

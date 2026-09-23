@@ -115,7 +115,7 @@ fn context<'a>(fetcher: &'a Fetcher, store: &'a Store) -> AdapterContext<'a> {
         fetcher,
         store,
         refresh: false,
-        school_year: SchoolYear(SEASON),
+        school_year: SchoolYear::new(SEASON).expect("SEASON is a season"),
         observed_on: OBSERVED_ON.to_string(),
     }
 }

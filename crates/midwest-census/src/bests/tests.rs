@@ -1,5 +1,36 @@
 use super::*;
 
+/// One published row, as the reduction hands it to the writer.
+fn best_row(athlete_id: &str, name: &str) -> BestResult {
+    BestResult {
+        athlete_id: athlete_id.to_string(),
+        name: name.to_string(),
+        school: "sch_0000000000000001".to_string(),
+        state: census_domain::MeetState::Placed(census_domain::UsJurisdiction::Wisconsin),
+        grad_year: 2027,
+        gender: "Girls".to_string(),
+        sport: "CrossCountry".to_string(),
+        event: "CrossCountry".to_string(),
+        best_mark: "15:40.12".to_string(),
+        best_value: 940.12,
+        measure: "Time".to_string(),
+        date: "2023-09-09".to_string(),
+        meet: "Fixture Invitational".to_string(),
+        place: Some(1),
+        wind_mps: None,
+        timing: Some("FAT".to_string()),
+        marks_in_event: 1,
+        profile_url: None,
+    }
+}
+
+/// The bytes a published sidecar carries: one JSON object per row, newline-terminated.
+fn jsonl_bytes(rows: &[BestResult]) -> String {
+    rows.iter()
+        .map(|row| format!("{}\n", serde_json::to_string(row).unwrap()))
+        .collect()
+}
+
 /// The sidecar CSV declares its own header. `csv::Writer` defaults to `has_headers(true)`, which
 /// makes the first `serialize` emit a second, derived header, so every consumer saw the header
 /// twice. This fails if that default is restored.
@@ -73,4 +104,33 @@ fn relays_are_not_personal_bests() {
     assert!(is_relay(&EventKind::SprintMedley));
     assert!(!is_relay(&EventKind::Track400m));
     assert!(!is_relay(&EventKind::CrossCountry));
+}
+
+/// The sidecar is published by rename, never written in place: `midwest-serve` runs several best
+/// reductions while a reader — `report`, `workbook`, or an operator reading the file — may be
+/// reading the pass the previous one left. A reader holding the file open keeps the pass it opened,
+/// whole, and the name carries the next pass whole. This fails if the sidecar goes back to writing
+/// in place, which truncates the file under that reader and leaves nobody a complete pass.
+#[test]
+fn a_reader_holding_the_sidecar_keeps_the_pass_it_opened() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    let first = vec![best_row("ath_0000000000000001", "Ada Fixture")];
+    let (jsonl, _csv) = write(&store, &first, "co2027").unwrap();
+    let mut held = std::fs::File::open(&jsonl).unwrap();
+
+    let second = vec![
+        best_row("ath_0000000000000001", "Ada Fixture"),
+        best_row("ath_0000000000000002", "Bo Fixture"),
+    ];
+    write(&store, &second, "co2027").unwrap();
+
+    let mut held_text = String::new();
+    std::io::Read::read_to_string(&mut held, &mut held_text).unwrap();
+    assert_eq!(held_text, jsonl_bytes(&first), "the opened pass, complete");
+    assert_eq!(
+        std::fs::read_to_string(&jsonl).unwrap(),
+        jsonl_bytes(&second),
+        "the name carries the pass just written"
+    );
 }

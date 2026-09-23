@@ -40,7 +40,7 @@ impl Sweep {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]

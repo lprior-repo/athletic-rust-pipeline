@@ -3,13 +3,14 @@ use crate::{
     domain::identity::EvidenceDigest,
     result_verify::source_receipts,
     runtime::{
-        protocol::{RankingPageObservation, RankingsCapture, SourceResource},
+        protocol::SourceResource,
         rankings::{EventCatalog, RankingsPlan, RankingsScope},
         rankings_collection::{CollectionFinalSnapshot, RankingCollectionRef},
     },
     store::ArtifactStore,
 };
 use anyhow::{bail, Context, Result};
+use athleticnet_browser::protocol::{RankingPageObservation, RankingsCapture};
 use url::Url;
 
 pub(super) fn verify_navigation(

@@ -80,7 +80,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         fetcher: &fetcher,
         store,
         refresh: args.refresh,
-        school_year: SchoolYear(2026),
+        school_year: SchoolYear::new(2026),
         observed_on: observed_on.clone(),
     };
     let outcome = match args.name.as_str() {

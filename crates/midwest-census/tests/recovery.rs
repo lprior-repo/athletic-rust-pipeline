@@ -237,7 +237,7 @@ fn context<'a>(fetcher: &'a Fetcher, store: &'a Store, observed_on: &str) -> Ada
         fetcher,
         store,
         refresh: false,
-        school_year: census_domain::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: observed_on.to_string(),
     }
 }
@@ -301,7 +301,7 @@ fn wi_options(limit_per_state: Option<usize>) -> CollectOptions {
         concurrency: 2,
         state_concurrency: 1,
         refresh: false,
-        school_year: census_domain::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     }
 }

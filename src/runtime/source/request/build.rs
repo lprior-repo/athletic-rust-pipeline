@@ -1,7 +1,11 @@
-use super::{RankingsAction, RequestAction, RequestSpec, SearchBody, MAX_QUERY_BYTES, MAX_START};
+use super::{MAX_QUERY_BYTES, MAX_START};
 use crate::domain::identity::ProfileUrl;
 use crate::runtime::protocol::SourceResource;
 use anyhow::{bail, Result};
+use athleticnet_browser::request::{
+    endpoint, rankings_spec, safe, safe_text, RankingsAction, RequestAction, RequestSpec,
+    SearchBody,
+};
 use url::Url;
 
 pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSpec> {
@@ -16,6 +20,11 @@ pub(crate) fn build(origin: &Url, resource: &SourceResource) -> Result<RequestSp
             url.query_pairs_mut()
                 .append_pair("athleteId", &athlete_id.get().to_string())
                 .append_pair("sport", sport.api_code())
+                // The pipeline's own bio receipts were taken at `level=0`; the census reads this same
+                // endpoint at `level=4` (its `HIGH_SCHOOL_LEVEL`) and verified its bio parser and
+                // meet-level assertions against those responses. The two are not harmonized: each
+                // caller keeps the level its evidence was taken at, because unifying them would move
+                // the census onto a response shape no census capture covers.
                 .append_pair("level", "0");
             safe(url, RequestAction::Fetch { body: None })
         }
@@ -91,67 +100,4 @@ fn team(
         .append_pair("sport", sport.api_code())
         .append_pair("season", &season.to_string());
     safe(url, RequestAction::Fetch { body: None })
-}
-
-/// Build the request for one rankings page. The physical `url` is the site's own
-/// rankings API endpoint while `semantic_url` stays the legacy listing URL, so
-/// cache keys, checkpoints, and receipts keep their established identity.
-pub(crate) fn rankings_spec(origin: &Url, action: RankingsAction) -> Result<RequestSpec> {
-    if action.list_id == 0 {
-        bail!("rankings list_id must be nonzero");
-    }
-    if !safe_text(&action.event_short, 64) || action.page == 0 {
-        bail!("rankings event and page must be bounded");
-    }
-    let path = format!(
-        "/TrackAndField/rankings/list/{}/{}/{}/",
-        action.list_id, action.gender, action.event_short
-    );
-    // Build semantic_url: legacy UI path + query params
-    let mut semantic_url = endpoint(origin, &path)?;
-    semantic_url
-        .query_pairs_mut()
-        .append_pair("page", &action.page.to_string());
-    if let Some(grade) = action.grade {
-        semantic_url
-            .query_pairs_mut()
-            .append_pair("grades", &grade.to_string());
-    }
-    // Physical url: API endpoint, no query string
-    let url = endpoint(origin, "/api/v1/tfRankings/GetRankings")?;
-    if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
-        bail!("source URL contains forbidden authority data");
-    }
-    Ok(RequestSpec {
-        semantic_url: semantic_url.to_string(),
-        url,
-        action: RequestAction::Rankings(action),
-    })
-}
-
-fn endpoint(origin: &Url, path: &str) -> Result<Url> {
-    if !path.starts_with('/') || path.contains("..") || path.contains(['?', '#', '\\']) {
-        bail!("source endpoint path is unsafe");
-    }
-    let url = origin.join(path)?;
-    if url.scheme() != origin.scheme() || url.host() != origin.host() || url.port() != origin.port()
-    {
-        bail!("source endpoint escaped configured origin");
-    }
-    Ok(url)
-}
-
-fn safe(url: Url, action: RequestAction) -> Result<RequestSpec> {
-    if !url.username().is_empty() || url.password().is_some() || url.fragment().is_some() {
-        bail!("source URL contains forbidden authority data");
-    }
-    Ok(RequestSpec {
-        semantic_url: url.to_string(),
-        url,
-        action,
-    })
-}
-
-fn safe_text(value: &str, limit: usize) -> bool {
-    !value.trim().is_empty() && value.len() <= limit && !value.chars().any(char::is_control)
 }

@@ -13,7 +13,8 @@ use midwest_census::store::Store;
 /// What `review` was asked to do.
 #[derive(Args, Debug)]
 pub(super) struct ReviewArgs {
-    /// Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`. Default: both.
+    /// Family to ask about (repeatable): `school-jurisdiction`, `meet-jurisdiction`,
+    /// `athlete-identity`. Default: every family the lane asks about.
     #[arg(long = "family", value_name = "FAMILY")]
     family: Vec<String>,
     /// Ask about at most this many cases.
@@ -108,7 +109,10 @@ pub(super) fn families_of(names: &[String]) -> Result<Vec<ReviewFamily>> {
     let mut families: Vec<ReviewFamily> = Vec::with_capacity(names.len());
     for name in names {
         let Some(family) = ReviewFamily::parse(name) else {
-            bail!("unknown review family {name:?}; known: school-jurisdiction, meet-jurisdiction");
+            bail!(
+                "unknown review family {name:?}; known: school-jurisdiction, meet-jurisdiction, \
+                 athlete-identity"
+            );
         };
         if !families.contains(&family) {
             families.push(family);

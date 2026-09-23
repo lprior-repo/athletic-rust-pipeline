@@ -148,9 +148,14 @@ fn grade_observations(bio: &Bio, source: &SourceRef) -> Vec<ObservedGrade> {
         let Some(grade) = Grade::new(grade) else {
             continue;
         };
+        // A season the domain will not place is dropped rather than recorded as the year a grade was
+        // observed in: the observation is evidence, and no source published that year.
+        let Some(school_year) = SchoolYear::containing(season, 5) else {
+            continue;
+        };
         observed.push(ObservedGrade {
             grade,
-            school_year: SchoolYear::containing(season, 5),
+            school_year,
             source: source.clone(),
         });
     }

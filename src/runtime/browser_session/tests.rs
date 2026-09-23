@@ -1,5 +1,5 @@
 use super::readiness::can_escalate;
-use crate::runtime::browser::BrowserState;
+use athleticnet_browser::BrowserState;
 
 #[test]
 fn stalls_and_challenges_escalate_while_settled_states_do_not() {

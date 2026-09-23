@@ -205,6 +205,7 @@ pub(super) fn store_performance(
             observed_grade: input.grade,
             evidence: vec![Evidence::parsed(source.clone(), observed_on)],
             source_key: input.source_key,
+            retained_conflicts: Vec::new(),
         });
 }
 
@@ -228,6 +229,7 @@ pub(super) fn ensure_team(
                 level: Some("high_school".to_string()),
                 source_identities: Vec::new(),
                 evidence: vec![Evidence::parsed(source.clone(), observed_on)],
+                retained_conflicts: Vec::new(),
             },
         );
     }

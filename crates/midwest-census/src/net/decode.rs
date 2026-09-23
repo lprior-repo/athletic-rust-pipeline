@@ -2,6 +2,7 @@
 
 use super::cache::{sha256_prefix16, write_cache, CacheMeta};
 use super::{now_iso8601, FetchError, FetchOptions, FetchOutcome, FetchStats, MAX_BODY_BYTES};
+use futures::StreamExt;
 use sha2::{Digest, Sha256};
 use std::path::Path;
 use tracing::warn;
@@ -86,6 +87,10 @@ fn header_strings(
 }
 
 /// Read the response body inside the size cap, and hash what was read.
+///
+/// Streams the body chunk-by-chunk so that no single allocation can exceed
+/// `MAX_BODY_BYTES` by more than one chunk. The declared-length pre-check is
+/// kept as an early-out for well-behaved servers.
 async fn read_checked_body(
     response: reqwest::Response,
     url: &str,
@@ -100,20 +105,27 @@ async fn read_checked_body(
             url: url.to_string(),
         });
     }
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?;
-    if bytes.len() > MAX_BODY_BYTES {
-        return Err(FetchError::TooLarge {
-            url: url.to_string(),
-        });
-    }
-    let body = bytes.to_vec();
+    let mut body = Vec::with_capacity(declared.unwrap_or(8 * 1024));
     let mut hasher = Sha256::new();
-    hasher.update(&body);
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) =
+        stream
+            .next()
+            .await
+            .transpose()
+            .map_err(|source| FetchError::Transport {
+                url: url.to_string(),
+                source,
+            })?
+    {
+        let chunk_len = chunk.len();
+        if body.len().saturating_add(chunk_len) > MAX_BODY_BYTES {
+            return Err(FetchError::TooLarge {
+                url: url.to_string(),
+            });
+        }
+        hasher.update(&chunk);
+        body.extend_from_slice(&chunk);
+    }
     Ok((body, sha256_prefix16(hasher)))
 }

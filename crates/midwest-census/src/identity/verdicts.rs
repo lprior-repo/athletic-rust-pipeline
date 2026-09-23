@@ -1,11 +1,15 @@
 //! Validation: what a proposal has to satisfy before a pass records it.
 //!
 //! The rule a family's answer must pass is local and checkable — no model, no network — so a model
-//! can be wrong without being able to move a row.
+//! can be wrong without being able to move a row. Every family answers its own kind of question, so
+//! the rule is per family: the jurisdiction families ask for a value, the athlete family asks for a
+//! decision, and [`Adjudication`] is the shape both produce. A refusal is never a silence: it is
+//! returned with the reason, and the caller keeps the answer the model gave.
 
 use census_domain::model::{ReviewPacket, ReviewVerdict, ReviewVerdictKind, VerdictBatch};
 
-use super::ReviewFamily;
+use super::families::IDENTITY_FIELD;
+use super::{athlete_verdict, ReviewFamily};
 
 /// A proposal validation admitted: the field and the value that may be recorded.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -23,71 +27,108 @@ pub enum Refusal {
     InvalidValue,
     /// The subject already carries a value for the field, so nothing needed proposing.
     AlreadyResolved,
+    /// The verdict does not name a case the packet asks about, so it decides nothing.
+    UnnamedCase,
 }
 
-/// Admit a proposal for a family's field, or say why not.
-///
-/// The rule is local and checkable: a jurisdiction proposal must name a state this census covers —
-/// as a code or spelled out — and the packet must not already carry one, because a subject with a
-/// jurisdiction is not the subject this family retained.
-pub fn validate(
-    family: ReviewFamily,
-    verdict: &ReviewVerdict,
-    packet: &ReviewPacket,
-) -> Result<Admitted, Refusal> {
-    let field = verdict
-        .field
-        .as_deref()
-        .map(str::trim)
-        .filter(|field| !field.is_empty())
-        .ok_or(Refusal::WrongField)?;
-    if field != family.field() {
-        return Err(Refusal::WrongField);
-    }
-    let value = verdict
-        .value
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .ok_or(Refusal::InvalidValue)?;
-    match family {
-        ReviewFamily::SchoolJurisdiction | ReviewFamily::MeetJurisdiction => {
-            // Both families retain a subject with no jurisdiction at all, so a packet that already
-            // carries one is not this case; a code and a spelled-out name are both answers.
-            let Some(jurisdiction) = census_domain::UsJurisdiction::parse(value) else {
-                return Err(Refusal::InvalidValue);
-            };
-            let already = packet
-                .evidence
-                .iter()
-                .any(|fact| fact.field == "state" && !fact.value.trim().is_empty());
-            if already {
-                return Err(Refusal::AlreadyResolved);
-            }
-            Ok(Admitted {
-                field: "state".to_string(),
-                value: jurisdiction.code().to_string(),
-            })
+/// What validating one proposal produced.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Adjudication {
+    /// A decision, and the value that may be recorded for it.
+    Decided(Admitted),
+    /// The answer was not a decision: the lane declined, so there is no value to record and the case
+    /// is not closed by this verdict.
+    Undecided,
+    /// The proposal was refused, and why. The case stays for an operator, and the answer is kept as
+    /// the model gave it rather than dropped.
+    Refused(Refusal),
+}
+
+impl Adjudication {
+    /// The value validation admitted, when it admitted one.
+    pub const fn admitted(&self) -> Option<&Admitted> {
+        match self {
+            Self::Decided(admitted) => Some(admitted),
+            Self::Undecided | Self::Refused(_) => None,
         }
     }
 }
 
-/// Read one batch into verdicts worth keeping: safe verdicts, each with the admitted proposal when
-/// there is one, plus how many the reader dropped.
+/// Adjudicate one proposal against its family's own rule.
+pub fn validate(
+    family: ReviewFamily,
+    verdict: &ReviewVerdict,
+    packet: &ReviewPacket,
+) -> Adjudication {
+    match family {
+        // The athlete family answers with a decision rather than a value, so it has its own reader
+        // and never reaches the jurisdiction rule below.
+        ReviewFamily::AthleteIdentity => match athlete_verdict::read(verdict, packet) {
+            Ok(answer) if answer.decides() => Adjudication::Decided(Admitted {
+                field: IDENTITY_FIELD.to_string(),
+                value: answer.slug().to_string(),
+            }),
+            Ok(_) => Adjudication::Undecided,
+            Err(reason) => Adjudication::Refused(reason),
+        },
+        ReviewFamily::SchoolJurisdiction | ReviewFamily::MeetJurisdiction => {
+            jurisdiction(verdict, packet, family.field())
+        }
+    }
+}
+
+/// The jurisdiction rule: a proposal must answer `state` with a jurisdiction this census covers.
+///
+/// Both jurisdiction families retain a subject with no jurisdiction at all, so a packet that already
+/// carries one is not this case; a code and a spelled-out name are both answers.
+fn jurisdiction(verdict: &ReviewVerdict, packet: &ReviewPacket, field: &str) -> Adjudication {
+    if named(&verdict.field) != Some(field) {
+        return Adjudication::Refused(Refusal::WrongField);
+    }
+    let Some(value) = named(&verdict.value) else {
+        return Adjudication::Refused(Refusal::InvalidValue);
+    };
+    let Some(jurisdiction) = census_domain::UsJurisdiction::parse(value) else {
+        return Adjudication::Refused(Refusal::InvalidValue);
+    };
+    let already = packet
+        .evidence
+        .iter()
+        .any(|fact| fact.field == field && !fact.value.trim().is_empty());
+    if already {
+        return Adjudication::Refused(Refusal::AlreadyResolved);
+    }
+    Adjudication::Decided(Admitted {
+        field: field.to_string(),
+        value: jurisdiction.code().to_string(),
+    })
+}
+
+/// A slot's text, when the model filled it in.
+fn named(slot: &Option<String>) -> Option<&str> {
+    slot.as_deref()
+        .map(str::trim)
+        .filter(|text| !text.is_empty())
+}
+
+/// Read one batch into adjudications worth keeping, plus how many the reader dropped.
+///
+/// Only a proposal is validated: a verdict that declined carries nothing to check, and the caller
+/// reads that as the case not being closed.
 pub fn triage(
     packet: &ReviewPacket,
     family: ReviewFamily,
     batch: VerdictBatch,
-) -> (Vec<(ReviewVerdict, Option<Admitted>)>, usize) {
+) -> (Vec<(ReviewVerdict, Adjudication)>, usize) {
     let (safe, dropped) = batch.sanitize(packet);
     let triaged = safe
         .into_iter()
         .map(|verdict| {
-            let admitted = match verdict.kind {
-                ReviewVerdictKind::ValueProposed => validate(family, &verdict, packet).ok(),
-                ReviewVerdictKind::InsufficientEvidence => None,
+            let adjudication = match verdict.kind {
+                ReviewVerdictKind::ValueProposed => validate(family, &verdict, packet),
+                ReviewVerdictKind::InsufficientEvidence => Adjudication::Undecided,
             };
-            (verdict, admitted)
+            (verdict, adjudication)
         })
         .collect();
     (triaged, dropped)

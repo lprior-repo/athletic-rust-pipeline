@@ -2,24 +2,31 @@
 //! the store's own evidence can back.
 //!
 //! The retained families are findings with an unresolved *field* — a school no source placed in a
-//! jurisdiction, a meet whose venue nobody named. Each is a question a small local model can answer
-//! from the row's own text, and each answer is checkable: this module asks, validates, and records.
+//! jurisdiction, a meet whose venue nobody named, two athlete rows the merge kept apart under one
+//! key. Each is a question a small local model can answer from the row's own text, and each answer is
+//! checkable: this module asks, validates, and records.
 //!
 //! Three rules shape the code:
 //!
 //! * **The lane asks about what the store retained.** Packets are built from `ReviewCase` rows and
 //!   the subject's own canonical fields; the model never sees a question this store did not ask.
-//! * **Validation is local.** A proposal is admitted only when it satisfies the field's own rule —
+//! * **Validation is local.** A proposal is admitted only when it satisfies the family's own rule —
 //!   see [`validate`] — so a model can be wrong without being able to move a row.
 //! * **A verdict is evidence, not an edit.** The pass writes the verdict and moves the case out of
 //!   `pending`; it never rewrites a canonical row. Canonical data belongs to the merge, which is the
 //!   only component that owns those tables.
 //!
 //! Layout: `families` states what a pass asks about and how it is configured, `packets` builds each
-//! question out of the store, `ask` makes the request, `verdicts` validates what came back,
-//! `records` turns it into durable rows and the report, and [`run`] drives one pass.
+//! question out of the store, `athlete_packet` builds the one question that compares two rows,
+//! `athlete_verdict` holds that family's answers, `ask` makes the request, `verdicts` validates what
+//! came back, `records` turns it into durable rows and the report, and [`run`] drives one pass.
 
 mod ask;
+/// Crate-visible because this module holds the one definition of the athlete group key: the workbook's
+/// conflict queue groups by it, so the queue and the lane cannot drift into two rules.
+pub(crate) mod athlete_flags;
+mod athlete_packet;
+mod athlete_verdict;
 mod families;
 mod model;
 mod packets;
@@ -36,10 +43,11 @@ use ask::{ask_case, Answer};
 use packets::{pending_cases, SubjectIndex};
 use records::record_case;
 
+pub use athlete_verdict::AthleteVerdict;
 pub use families::{ReviewFamily, ReviewOptions};
 pub use model::{ModelClient, ModelError, ModelOptions};
 pub use records::ReviewReport;
-pub use verdicts::{triage, validate, Admitted, Refusal};
+pub use verdicts::{triage, validate, Adjudication, Admitted, Refusal};
 
 /// Run one pass: ask each retained case's subject, validate the answer, record the verdict.
 ///
@@ -93,7 +101,7 @@ fn process_answers(
     let mut verdicts = Vec::new();
     let mut closed = Vec::new();
     for (index, reviewer, answer) in asked {
-        let Some((case, _family)) = pending.get(index) else {
+        let Some((case, family)) = pending.get(index) else {
             continue;
         };
         match answer {
@@ -110,7 +118,8 @@ fn process_answers(
                 dropped,
             } => {
                 report.dropped = report.dropped.saturating_add(dropped);
-                let (rows, states, tally) = record_case(case, triaged, reviewer, observed_at);
+                let (rows, states, tally) =
+                    record_case(case, *family, triaged, reviewer, observed_at);
                 report.absorb(tally);
                 verdicts.extend(rows);
                 closed.extend(states);
@@ -130,7 +139,7 @@ fn process_answers(
 pub async fn run_lanes(
     store: &Store,
     clients: &[ModelClient],
-    #[allow(unused_variables)] options: &ReviewOptions,
+    options: &ReviewOptions,
     observed_at: &str,
 ) -> StoreResult<ReviewReport> {
     let mut report = ReviewReport::default();
@@ -161,3 +170,7 @@ fn should_write(dry_run: bool, minted: usize) -> bool {
 #[cfg(test)]
 #[path = "tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "athlete_tests.rs"]
+mod athlete_tests;

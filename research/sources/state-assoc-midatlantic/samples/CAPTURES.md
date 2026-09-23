@@ -10,7 +10,10 @@ python3 /tmp/cap.py samples /tmp/cap.log \
   "<file>:<url>" ...
 ```
 
-Helper (`/tmp/cap.py`) fetches with urllib, follows redirects, writes bytes verbatim, and logs `file<TAB>status<TAB>bytes<TAB>utc_ts<TAB>content_type<TAB>url_effective<TAB>url_requested<TAB>error`.
+Helper (`/tmp/cap.py`) fetched with urllib, followed redirects, wrote bytes verbatim, and logged `file<TAB>status<TAB>bytes<TAB>utc_ts<TAB>content_type<TAB>url_effective<TAB>url_requested<TAB>error`.
+
+That helper lived in `/tmp` and no longer exists, and the repository carries no Python; the command above
+records how these bytes were fetched, not a re-runnable recipe (provenance rule in `research/README.md`).
 
 | file | HTTP status | bytes | UTC timestamp | URL requested | effective URL |
 |---|---|---|---|---|---|

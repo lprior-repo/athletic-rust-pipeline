@@ -4,13 +4,12 @@
 //! validation admitted it, while the canonical tables stay the merge's. Two records for one case
 //! never merge — the stored row is the one an operator already read.
 
-use census_domain::model::{
-    ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictKind, ReviewVerdictRecord,
-};
+use census_domain::model::{ReviewCase, ReviewState, ReviewVerdict, ReviewVerdictRecord};
 
 use crate::store::Entity;
 
-use super::verdicts::Admitted;
+use super::verdicts::{Adjudication, Admitted};
+use super::ReviewFamily;
 
 /// A verdict is evidence, so two records for one case never merge: the stored row is the one an
 /// operator already read.
@@ -119,43 +118,49 @@ impl ReviewReport {
 /// Build one asked case's durable rows, the states its case moves to, and the tally they contribute.
 ///
 /// The caller owns the tables: this reads only what the case and its verdicts say.
+///
+/// Only a decision closes a case. An answer that decided nothing leaves the athlete family's case
+/// pending — the store's own evidence already said "undecided", and a decision about the two rows is
+/// the one thing this family exists to produce — while a jurisdiction case the lane could not fill
+/// stays retained for the operator's queue. A refusal is a finding about the model, so it is retained
+/// as well, with the answer the model gave rather than nothing.
 pub(super) fn record_case(
     case: &ReviewCase,
-    verdicts: Vec<(ReviewVerdict, Option<Admitted>)>,
+    family: ReviewFamily,
+    verdicts: Vec<(ReviewVerdict, Adjudication)>,
     reviewer: &str,
     observed_at: &str,
 ) -> (Vec<ReviewVerdictRecord>, Vec<ReviewCase>, CaseTally) {
     let mut rows = Vec::new();
     let mut closed = Vec::new();
     let mut tally = CaseTally::default();
-    for (verdict, admitted) in verdicts {
+    for (verdict, adjudication) in verdicts {
         tally.answered = true;
-        match verdict.kind {
-            ReviewVerdictKind::ValueProposed if admitted.is_some() => {
-                tally.accepted = tally.accepted.saturating_add(1);
-            }
-            ReviewVerdictKind::ValueProposed => {
-                tally.rejected = tally.rejected.saturating_add(1);
-            }
-            ReviewVerdictKind::InsufficientEvidence => {
-                tally.insufficient = tally.insufficient.saturating_add(1);
-            }
+        match &adjudication {
+            Adjudication::Decided(_) => tally.accepted = tally.accepted.saturating_add(1),
+            Adjudication::Undecided => tally.insufficient = tally.insufficient.saturating_add(1),
+            Adjudication::Refused(_) => tally.rejected = tally.rejected.saturating_add(1),
         }
         rows.push(verdict_record(
             &case.subject_id,
             &case.family,
             &verdict,
-            admitted.as_ref(),
+            adjudication.admitted(),
             reviewer,
             observed_at,
         ));
         let mut closed_case = case.clone();
-        closed_case.state = if admitted.is_some() {
-            ReviewState::Resolved
-        } else {
-            ReviewState::Retained
-        };
+        closed_case.state = state_after(family, &adjudication);
         closed.push(closed_case);
     }
     (rows, closed, tally)
+}
+
+/// The state one answer moves its case to.
+fn state_after(family: ReviewFamily, adjudication: &Adjudication) -> ReviewState {
+    match (family, adjudication) {
+        (_, Adjudication::Decided(_)) => ReviewState::Resolved,
+        (ReviewFamily::AthleteIdentity, Adjudication::Undecided) => ReviewState::Pending,
+        (_, Adjudication::Undecided | Adjudication::Refused(_)) => ReviewState::Retained,
+    }
 }

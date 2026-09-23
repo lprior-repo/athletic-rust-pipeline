@@ -2,13 +2,19 @@
 
 All live requests in this directory were made from this workstation on **2026-09-21/22 (UTC)** at
 **>=1.2 s spacing (<=1 req/s/host)**, with a desktop-Chrome user agent and no cookie reuse across
-samples. Tokens and cookies are redacted in place (`redact-samples.py`); never persisted.
+samples. Tokens and cookies are redacted in place; never persisted.
+
+The `python3 <script>.py` commands in the tables are **provenance, not a reproduction recipe**: this
+lane's Python probes (`build-schema.py`, `checks-enum-crosscheck.py`, `extract-har-samples.py`,
+`gen-captures.py`, `probe-anon-meet.py`, `redact-samples.py`) were deleted from the tree by the
+contract commit `ea81c56` ("Land the workspace contract and delete Python from the repository"). The
+byte-exact captures and the derived `.tsv`/`.txt` files they produced remain and are the evidence.
 
 Two provenance classes: **live** (this lane's own requests) and **copied** (retained corpus captures,
 re-used instead of re-fetched; the original path is given per file).
 
 The **Bytes** column is the on-disk size (tokens already redacted); the un-redacted HTTP body is
-larger by the redaction delta, which `probe-anon-meet.py` prints as `bytes` in
+larger by the redaction delta, which the (since removed) `probe-anon-meet.py` printed as `bytes` in
 `anon-meet-probe-report.json` (e.g. GetMeetData: 16,644 B over the wire vs 16,403 B on disk, delta =
 the 255-char `jwtMeet` replaced by a fixed placeholder). Where a byte count is quoted in
 `../SOURCE_REPORT.md`, the wire value is used and the sample it came from is named.
@@ -76,17 +82,20 @@ the 255-char `jwtMeet` replaced by a fixed placeholder). Where a byte count is q
 
 ## Scripts and derived files
 
+Rows marked **removed** are scripts the contract commit `ea81c56` deleted from the tree: the row says
+what the script did, not what the directory holds. The derived `.tsv`/`.txt` output beside them stays.
+
 | File | Purpose |
 |---|---|
-| `build-schema.py` | generates ../schema.json from the sample bytes |
-| `checks-enum-crosscheck.py` | asserts the 51 nav state nodes map to census-domain's UsJurisdiction enum; writes checks-state-divs.tsv |
+| `build-schema.py` **removed** | generated ../schema.json from the sample bytes |
+| `checks-enum-crosscheck.py` **removed** | asserted the 51 nav state nodes map to census-domain's UsJurisdiction enum; wrote checks-state-divs.tsv |
 | `checks-enum-crosscheck.txt` | console output of checks-enum-crosscheck.py (51/51 enum match, Overseas out of scope) |
 | `checks-state-divs.tsv` | output of checks-enum-crosscheck.py (52 rows) |
-| `extract-har-samples.py` | extracts the HTTP Archive entries into har1-*/har2-* files; writes har-atn-request-log.tsv |
-| `gen-captures.py` | generates this file (CAPTURES.md) from the bytes actually present |
+| `extract-har-samples.py` **removed** | extracted the HTTP Archive entries into har1-*/har2-* files; wrote har-atn-request-log.tsv |
+| `gen-captures.py` **removed** | generated this file (CAPTURES.md) from the bytes actually present |
 | `har-atn-request-log.tsv` | URL + status + timestamp for every request in the two retained HARs |
-| `probe-anon-meet.py` | the 3-request anonymous whole-meet probe |
-| `redact-samples.py` | redacts jwtMeet/jwtTFTopReport/cookie values from every sample in place |
+| `probe-anon-meet.py` **removed** | the 3-request anonymous whole-meet probe |
+| `redact-samples.py` **removed** | redacted jwtMeet/jwtTFTopReport/cookie values from every sample in place |
 | `refetch.sh` | the exact curl command for every live sample (verified byte-identical on re-run, see below) |
 
 ## Reproduction check (run 2026-09-21 23:11-23:12 UTC)
@@ -107,9 +116,10 @@ The scratch directory holding the un-redacted re-fetch was deleted immediately (
 ## Request ledger
 
 The reproduction check issued exactly **14** live requests (11 from `refetch.sh` + 3 from
-`probe-anon-meet.py`). This directory holds 58 files (plus a `__pycache__/` bytecode dir): **17 live response bodies + 9 header files**
+`probe-anon-meet.py`). This directory held 58 files when this ledger was written — 52 today, since the
+6 `samples/*.py` probes were deleted from the tree (`ea81c56`; see the note at the top). **17 live response bodies + 9 header files**
 (`anon-*`, `atn-probe-*`, `atn-robots.*`), **13 HAR extracts + 1 request log**, **8 copies** of the
-retained corpus captures, **7 scripts**, and 3 derived files (`CAPTURES.md`, `checks-state-divs.tsv`,
+retained corpus captures, **1 script** (`refetch.sh`), and 3 derived files (`CAPTURES.md`, `checks-state-divs.tsv`,
 `checks-enum-crosscheck.txt`). No 429, no `Retry-After`, no CAPTCHA, no login. `robots.txt` was read
 before the first request in every session.
 

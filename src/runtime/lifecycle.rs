@@ -6,10 +6,10 @@
 //! plain accessors stay in `runtime.rs`; everything that can hold a resource across an `.await`
 //! lives here, where the lock discipline is visible in one place.
 
-use super::browser::{BrowserManager, BrowserSettings};
-use super::drain::{DrainReport, Outcome, DRAIN_TIMEOUT};
 use super::Runtime;
 use anyhow::Result;
+use athleticnet_browser::drain::{DrainReport, Outcome, DRAIN_TIMEOUT};
+use athleticnet_browser::{BrowserManager, BrowserSettings};
 use std::sync::Arc;
 use std::time::Duration;
 

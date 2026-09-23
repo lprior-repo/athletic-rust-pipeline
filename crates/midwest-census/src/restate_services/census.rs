@@ -1,30 +1,42 @@
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
 
+use crate::census::seal::{self, JournalCounts, SealRequest as StoreSealRequest};
 use crate::clock::Clock;
+use crate::report::Scope;
 use crate::store::Store;
 
-use super::wire::{OpenWorkReply, OpenWorkRequest, StatusReply, TableCount};
+use super::publish::Jobs;
+use super::wire::{
+    OpenWorkReply, OpenWorkRequest, SealReply, SealRequest, StatusReply, TableCount,
+};
+use super::JobError;
 
-/// `Census`: the operator's read surface over the store.
+/// `Census`: the operator's read surface over the store, and the seal over both the store and the run.
 ///
-/// Only the read lives here. Each of the four heavy jobs is a workflow of its own — see
-/// [`Jobs`](super::publish::Jobs) — because a job is worth finishing: its journal and completion are
-/// retained, so a caller that repeats the job attaches to the result instead of running months of
-/// work again.
+/// The four heavy jobs are workflows of their own — see [`Jobs`](super::publish::Jobs) — because a
+/// job is worth finishing: its journal and completion are retained, so a caller that repeats the job
+/// attaches to the result instead of running months of work again.
 ///
 /// A read has no such need. It answers from the store in milliseconds, and retaining an invocation
-/// per status check would be retention with nothing behind it.
+/// per status check would be retention with nothing behind it. The seal is the exception that earns
+/// its place here: it *is* a read of the store, but only a context inside the service can read the
+/// run's own objects, and §70 asks about both in one breath.
 #[derive(Clone)]
 pub struct Census {
     store: Arc<Store>,
     clock: Arc<dyn Clock>,
+    /// The heavy-job region and permit. The seal reads the whole store, so it is started through the
+    /// same spawner and capped by the same semaphore as the four jobs: nothing this service begins
+    /// outlives the drain, and a seal cannot run beside four merges and starve them.
+    jobs: Jobs,
 }
 
 impl Census {
-    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>) -> Self {
-        Self { store, clock }
+    pub fn new(store: Arc<Store>, clock: Arc<dyn Clock>, jobs: Jobs) -> Self {
+        Self { store, clock, jobs }
     }
 }
 
@@ -34,7 +46,7 @@ impl Census {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]
@@ -72,5 +84,73 @@ impl Census {
         Json(request): Json<OpenWorkRequest>,
     ) -> Result<Json<OpenWorkReply>, HandlerError> {
         Ok(Json(super::open_work::measure(&ctx, &request).await?))
+    }
+
+    /// The §70 seal, assembled where both the store and the run's journal can be read.
+    ///
+    /// The offline seal holds the store and cannot read the journal: a jurisdiction's stages and a
+    /// source object's accepted observations are recorded in the run's own objects, and only a
+    /// context inside the service can address them. Assembled here, those two counts are *measured*
+    /// instead of absent, which is what lets §70's first two items be certified at all — and the
+    /// store-side counts stay where they were, because the store is the authority on its own rows.
+    ///
+    /// Idempotent: the evidence is a function of the store, the workbook and the journal, so the same
+    /// census seals to the same digest, and a repeated `--write` writes the same bytes. Heavy — it
+    /// walks the whole store — so it runs on the blocking pool under the shared load permit.
+    #[handler]
+    #[tracing::instrument(skip_all, fields(grad_year = request.grad_year))]
+    async fn seal(
+        &self,
+        ctx: Context<'_>,
+        Json(request): Json<SealRequest>,
+    ) -> Result<Json<SealReply>, HandlerError> {
+        let journal = super::open_work::measure(&ctx, &run_request(&request)).await?;
+        let store = Arc::clone(self.jobs.store());
+        let region = Arc::clone(self.jobs.region());
+        let permit = self.jobs.permit().await?;
+        let request = store_request(&request, &journal);
+        let reply = super::blocking(region, move || {
+            let _permit = permit;
+            // A seal that cannot read the store or find a workbook will not read them on a retry:
+            // the evidence is a function of what is already there, so a failure is terminal.
+            seal::seal(&store, &request).map_err(|error| JobError::Terminal {
+                message: error.to_string(),
+            })
+        })
+        .await
+        .map(|outcome| Json(SealReply::of(&outcome)))
+        .map_err(super::job_error)?;
+        Ok(reply)
+    }
+}
+
+/// The run whose journal supplies the two counts the store cannot answer, by its own identity.
+fn run_request(request: &SealRequest) -> OpenWorkRequest {
+    OpenWorkRequest {
+        season: request.season,
+        revision: request.revision,
+        source_objects: request.source_objects.clone(),
+    }
+}
+
+/// The store-side seal request, carrying what the journal could measure and nothing it could not.
+///
+/// `source_failures` stays unmeasured: the journal reports the objects that accepted nothing, which
+/// is what §70 asks for, and the per-attempt failure count is not a row either side keeps.
+fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealRequest {
+    StoreSealRequest {
+        grad_year: request.grad_year,
+        scope: if request.all_sources {
+            Scope::AllSources
+        } else {
+            Scope::Core
+        },
+        workbook: request.workbook.as_ref().map(PathBuf::from),
+        write: request.write,
+        journal: Some(JournalCounts {
+            jurisdiction_sweeps: journal.jurisdiction_sweeps,
+            source_objects: journal.source_objects,
+        }),
+        source_failures: None,
     }
 }

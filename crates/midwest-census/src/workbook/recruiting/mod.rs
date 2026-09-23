@@ -63,12 +63,20 @@ use dataset::Dataset;
 
 mod athletes;
 mod coaches;
+mod columns;
+mod contact;
 mod dataset;
 mod facts;
+mod profiles;
 mod prs;
 
 #[cfg(test)]
 mod tests;
+
+/// The contact disagreements the retained conflict queue renders as rows: the same buckets the
+/// `Athletes` sheet's contact ladder resolves, so the sheet that prints the state and the sheet that
+/// prints the disagreement can never name different findings.
+pub(in crate::workbook) use contact::{disagreements, Disagreement};
 
 /// The three recruiting sheets, built once from one read of the store.
 pub(super) struct Recruiting {
@@ -129,6 +137,10 @@ impl Recruiting {
     /// under the same scope and cohort and reports how many `(athlete, event)` rows it publishes. Two
     /// independent implementations of one rule that agree on the count is the strongest check the
     /// workbook can print about itself.
+    ///
+    /// The `Athletes` line carries `contact_conflicts`: how many `(slot, side)` head-coach buckets
+    /// hold rows that disagree about the school's contact — the same buckets the retained
+    /// `Conflicts` sheet prints one row per disagreement for, so the count and the sheet agree.
     pub(super) fn reconcile(&self, store: &Store) -> ReportResult<()> {
         let audit = self.dataset.audit();
         let canonical = bests::build(
@@ -145,11 +157,12 @@ impl Recruiting {
             .grad_year
             .map_or_else(|| "all".to_string(), |year| year.to_string());
         println!(
-            "recruiting\t{}\trows={} in_scope={} store_athlete_rows={} scope={scope} cohort={cohort}",
+            "recruiting\t{}\trows={} in_scope={} store_athlete_rows={} contact_conflicts={} scope={scope} cohort={cohort}",
             athletes::TITLE,
             audit.cohort_athletes,
             audit.scoped_athletes,
             audit.store_athletes,
+            audit.contact_conflicts,
         );
         println!(
             "recruiting\t{}\trows={} best_mark_rows={} consistent={} scope={scope} cohort={cohort}",

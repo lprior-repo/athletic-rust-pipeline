@@ -1,9 +1,14 @@
 //! Publication: `report*.json` and the flat `census-by-state*.csv` next to the logs.
 
 use super::{io_error, Census, ReportError, ReportResult, Scope, StateCensus};
-use crate::store::Store;
+use crate::store::read::publish_atomically;
+use crate::store::{Store, StoreError, StoreResult};
 
 /// Write the census JSON and a flat per-state CSV next to the consolidated logs.
+///
+/// Both are published by rename: the body is staged in a temporary beside the destination and the
+/// rename is the publication, so a reader that opens either name sees the artifact this run wrote or
+/// the one before it, never the truncated file an interrupted in-place write leaves.
 pub fn write_census(
     store: &Store,
     census: &Census,
@@ -15,11 +20,29 @@ pub fn write_census(
     let json = serde_json::to_vec_pretty(census).map_err(|source| ReportError::Invariant {
         detail: format!("the census is not valid json: {source}"),
     })?;
-    std::fs::write(&json_path, json).map_err(|source| io_error(&json_path, source))?;
+    publish_atomically(&json_path, |temporary| {
+        write_body(temporary, &json_path, &json)
+    })?;
     let csv_path = out.join(format!("census-by-state{}.csv", scope.file_suffix()));
     let csv = census_csv(census);
-    std::fs::write(&csv_path, csv).map_err(|source| io_error(&csv_path, source))?;
+    publish_atomically(&csv_path, |temporary| {
+        write_body(temporary, &csv_path, csv.as_bytes())
+    })?;
     Ok((json_path, csv_path))
+}
+
+/// Write `bytes` into `temporary`, the file [`publish_atomically`] renames to `published`: the body
+/// stages beside the destination, so the rename is the publication and a refused body leaves the
+/// published artifact exactly as it was.
+fn write_body(
+    temporary: &std::path::Path,
+    published: &std::path::Path,
+    bytes: &[u8],
+) -> StoreResult<()> {
+    std::fs::write(temporary, bytes).map_err(|source| StoreError::Io {
+        path: published.to_path_buf(),
+        source,
+    })
 }
 
 /// The flat per-state CSV: the header, one line per jurisdiction, and the `TOTAL` line.

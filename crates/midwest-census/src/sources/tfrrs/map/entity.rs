@@ -55,6 +55,7 @@ impl<'a> Absorb<'a> {
                 level: Some("high_school".to_string()),
                 source_identities: Vec::new(),
                 evidence: vec![Evidence::parsed(page.source.clone(), page.observed_on)],
+                retained_conflicts: Vec::new(),
             });
         if let Some(slug) = facts.slug {
             push_identity(

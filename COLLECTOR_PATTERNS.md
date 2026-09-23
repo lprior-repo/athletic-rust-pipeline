@@ -163,11 +163,15 @@ the 2026-09-20 snapshot; four of the nine are fixed and one is structurally diff
 7. **Resume can silently repeat work.** `let _ = store.journal_done(...)` in the roster loop
    (census/sweep.rs::record_roster) discards the append result, and `source_key`'s documented upsert has no
    implementation. Fix: propagate the journal error; wire or delete `source_key`.
-8. **Tail-tolerance is inverted.** `report::read_rows` (20-45) tolerates one unparseable row in the
-   *consolidated* snapshot, while `store::consolidate` (119-164) `bail!`s on the first bad line of the
-   *append logs* — the only files a crash can truncate mid-line. A crash during collection can
-   therefore wedge consolidation permanently. Fix: skip a single trailing partial line in the
-   append-log reader and fail on interior corruption.
+8. **Tail-tolerance is no longer inverted** (closed by the Fjall substrate). This item described
+   `report::read_rows` tolerating one unparseable line in the *consolidated* snapshot while
+   `store::consolidate` `bail!`ed on the first bad line of the *append logs* — the files a crash could
+   truncate mid-line. Both halves are gone. The snapshot reader is strict (`store/read/snapshot.rs`,
+   `StoreError::SnapshotRow`, bad middle and bad last row each covered by a test that says why), and
+   consolidation merges rows out of Fjall (`store/read/mod.rs`) rather than reading append logs. The
+   one remaining JSONL read is the one-time legacy import, which commits a chunk's rows together with
+   the byte offset that follows them, so an interrupted import resumes at its last commit instead of
+   restarting from the file's head (`store/legacy.rs`).
 9. **No global concurrency bound and no signal drain.** Fan-out comes only from
    `concurrency × state_concurrency` (census/mod.rs); `main` runs to completion with no SIGINT
    drain, which matters for multi-hour walks. Fix: bound total in-flight requests and drain the

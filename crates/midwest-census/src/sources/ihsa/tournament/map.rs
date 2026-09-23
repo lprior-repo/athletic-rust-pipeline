@@ -267,13 +267,14 @@ fn drain<T>(rows: &mut HashMap<String, T>) -> Vec<T> {
 
 /// The school year a published date falls in, on the domain's Aug 1 boundary.
 ///
-/// A date the adapter cannot read falls back to the run's own school year rather than to a guess.
+/// A date the adapter cannot read — or one that names a year no season may open in — falls back to
+/// the run's own school year rather than to a guess.
 pub(super) fn school_year_of(date: &str, fallback: SchoolYear) -> SchoolYear {
     let year = date.get(..4).and_then(|part| part.parse::<i16>().ok());
     let month = date.get(5..7).and_then(|part| part.parse::<u8>().ok());
     match (year, month) {
         (Some(year), Some(month)) if (1..=12).contains(&month) => {
-            SchoolYear::containing(year, month)
+            SchoolYear::containing(year, month).unwrap_or(fallback)
         }
         _ => fallback,
     }
@@ -282,5 +283,5 @@ pub(super) fn school_year_of(date: &str, fallback: SchoolYear) -> SchoolYear {
 /// The school year a published term names (`"2025-26"` -> the year that opened in August 2025).
 pub(super) fn school_year_of_term(term: &str) -> Option<SchoolYear> {
     let start = term.get(..4)?.parse::<i16>().ok()?;
-    Some(SchoolYear(start))
+    SchoolYear::new(start)
 }

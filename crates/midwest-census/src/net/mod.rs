@@ -32,6 +32,8 @@ use tokio::sync::Mutex;
 
 use census_domain::model::{AccessBlockKind, SourceAccessCondition};
 
+pub mod bridge;
+
 mod cache;
 mod client;
 mod decode;
@@ -41,8 +43,8 @@ mod robots;
 mod types;
 
 pub use types::{
-    cooldown_until_iso8601, now_iso8601, today_iso, FetchError, FetchOptions, FetchOutcome,
-    FetchStats,
+    cooldown_until_iso8601, instant_iso8601, now_iso8601, today_iso, FetchError, FetchOptions,
+    FetchOutcome, FetchStats,
 };
 
 use client::HostState;
@@ -103,6 +105,12 @@ pub struct Fetcher {
     /// Access conditions observed in this run, keyed by row id, so a repeated block refreshes one
     /// row instead of minting a second.
     blocks: Mutex<HashMap<String, SourceAccessCondition>>,
+    /// The browser lane this deployment talks to, when one is installed.
+    ///
+    /// `None` is not "fetch it over HTTP instead": a host the registry declares browser-transported
+    /// is refused by name when there is no lane (`execute::browser`), because attempting the other
+    /// transport quietly is the thing §69 exists to prevent.
+    lane: Option<bridge::BrowserLane>,
 }
 
 impl Fetcher {
@@ -177,11 +185,27 @@ impl Fetcher {
         self
     }
 
+    /// Install the browser lane this run acquires browser-transported hosts through.
+    ///
+    /// The lane is the one component allowed to drive the headed profile, and it lives outside this
+    /// crate: installing it here is what makes `get` hand a browser-transported host to it instead of
+    /// making the request itself. Built by the run (see [`bridge::BrowserLane::new`]), because the
+    /// ingress origin it talks to is a deployment fact the library does not know.
+    pub fn with_browser_lane(mut self, lane: bridge::BrowserLane) -> Self {
+        self.lane = Some(lane);
+        self
+    }
+
     /// Record (or refresh) the access condition one host imposed, and return the row.
     ///
     /// Called from the fetch path the moment a blocking status is seen, so the whole run shares one
     /// answer to "is this host refusing us?" instead of re-discovering it request by request. §69:
     /// the observation is what a lane stops on and what a later run reads before spending anything.
+    ///
+    /// The kind decides whether the row expires on its own: `HumanRequired` carries no cooldown,
+    /// because a profile that wants a person is cleared by a person and by nothing else. Every other
+    /// kind is bounded by the source's own `Retry-After`, or by the lane's default when it published
+    /// none.
     pub async fn record_access_condition(
         &self,
         host: &str,
@@ -191,6 +215,12 @@ impl Fetcher {
         detail: impl Into<String>,
     ) -> SourceAccessCondition {
         let host = host.trim().to_ascii_lowercase();
+        let cooldown_until = match kind {
+            AccessBlockKind::HumanRequired => None,
+            _ => Some(cooldown_until_iso8601(
+                retry_after_seconds.unwrap_or(BLOCK_COOLDOWN_SECONDS),
+            )),
+        };
         let condition = SourceAccessCondition::new(
             self.source.clone(),
             host,
@@ -200,9 +230,7 @@ impl Fetcher {
             detail,
         )
         .with_retry_after(retry_after_seconds)
-        .with_cooldown_until(Some(cooldown_until_iso8601(
-            retry_after_seconds.unwrap_or(BLOCK_COOLDOWN_SECONDS),
-        )));
+        .with_cooldown_until(cooldown_until);
         let mut blocks = self.blocks.lock().await;
         blocks.insert(condition.id.clone(), condition.clone());
         condition

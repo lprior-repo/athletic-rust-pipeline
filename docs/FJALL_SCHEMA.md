@@ -168,7 +168,9 @@ this window; the module doc comment at `store/mod.rs:33-36` overstates idempoten
 10. **Journal payloads clone per row**: `journal_payloads` (`store/read.rs:151-169`)
     allocates a fresh `Vec` and clones each payload — no `try_reserve`.
 11. **Poison row aborts scan**: a single malformed JSON row in `scan` aborts the entire
-    table scan (`store/read.rs:51-57` → `StoreError::Decode`). No tolerance precedent
-    exists in census (unlike `report/mod.rs:read_rows` which tolerates one bad line).
+    table scan (`store/read.rs:51-57` → `StoreError::Decode`), and there is no tolerant
+    reader anywhere in census to appeal to: the published-snapshot reader is strict as well
+    (`store/read/snapshot.rs:179`, `StoreError::SnapshotRow`, tested for a bad middle row and
+    a bad last row), so corruption fails loudly on every read path rather than being skipped.
 12. **No `#[instrument]` on spawn**: zero `.instrument(…)` calls on any of the three
     production spawn sites (`bootstrap.rs:160,180`, `restate_services/support.rs:84`).

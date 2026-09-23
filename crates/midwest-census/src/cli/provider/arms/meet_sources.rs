@@ -28,7 +28,8 @@ pub(crate) async fn milesplit_report(
         concurrency: DEFAULT_COLLECT_CONCURRENCY,
         state_concurrency: DEFAULT_COLLECT_CONCURRENCY,
         refresh: args.refresh,
-        school_year: SchoolYear(2026),
+        school_year: SchoolYear::new(2026)
+            .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?,
         observed_on,
     };
     let report = census::collect_milesplit(context.fetcher, context.store, &options)

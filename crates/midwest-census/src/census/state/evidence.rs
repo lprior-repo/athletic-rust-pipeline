@@ -6,6 +6,10 @@
 
 use serde::{Deserialize, Serialize};
 
+mod recorded;
+
+pub use recorded::{GapTally, OpenWork, RetainedFindings, SealCounts, WorkbookCheck};
+
 /// The acceptance items of §70, in the order that list states them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -24,7 +28,10 @@ pub enum AcceptanceItem {
     /// [`SealEvidence::open_items`]: a seal refused over a kept finding teaches operators to hide
     /// findings.
     ConflictsRetained,
-    /// Every retry-exhausted operation is represented. Retained like [`Self::ConflictsRetained`].
+    /// Every retry-exhausted operation is represented. What the store can represent of that is the
+    /// access condition that stopped the lane, which [`RetainedFindings::access_conditions`] counts and
+    /// splits; the exhaustion itself is an invocation state, not a stored row. Retained like
+    /// [`Self::ConflictsRetained`].
     RetriesRepresented,
     /// Successful evidence is durable.
     EvidenceDurable,
@@ -78,67 +85,6 @@ impl AcceptanceItem {
             AcceptanceItem::ExportVerified => "final export verification passes",
         }
     }
-}
-
-/// What a seal certifies: the numbers a reader of the workbook sees.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SealCounts {
-    pub jurisdictions: u64,
-    pub schools: u64,
-    pub meets: u64,
-    pub athletes: u64,
-    pub class_of_2027: u64,
-    pub performances: u64,
-    pub coaches: u64,
-}
-
-/// Work that has not reached a terminal decision. Every field is a count that must be zero.
-///
-/// `None` means **unmeasured**, deliberately not `0`: a caller that does not read the workflow
-/// journal — the store path of `midwest-census seal` is one — must say so, and `Default` is `None`
-/// so a forgotten field refuses instead of sealing.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct OpenWork {
-    pub jurisdiction_sweeps: Option<u64>,
-    pub source_objects: Option<u64>,
-    pub cohort_decisions: Option<u64>,
-    pub identity_candidates: Option<u64>,
-}
-
-/// Findings a seal keeps rather than refuses: gaps, conflicts, exhausted retries, source outages.
-///
-/// `source_failures` is `None` when the caller cannot count them, like [`OpenWork`]'s fields: a zero
-/// that was never measured is a false claim, and this one lands in the digest.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RetainedFindings {
-    pub gaps: Vec<GapTally>,
-    pub conflicts: u64,
-    pub retry_exhausted: u64,
-    pub source_failures: Option<u64>,
-    pub observations: u64,
-    pub calculations: u64,
-}
-
-/// One gap class's count, retained in the seal so a reader can see what the census knows it lacks.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct GapTally {
-    pub class: String,
-    pub unit: String,
-    pub count: u64,
-}
-
-/// The workbook a recruiter opens, and the verdict that it reconciles with the store.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WorkbookCheck {
-    pub sheets: u64,
-    pub rows: u64,
-    pub digests: Vec<String>,
-    pub mapped_athletes: u64,
-    pub counts_reconciled: bool,
-    pub coverage_reconciled: bool,
-    pub metrics_reconciled: bool,
-    pub export_verified: bool,
-    pub discrepancies: Vec<String>,
 }
 
 /// Everything §70 asks a census to prove about itself before it may be sealed.
@@ -232,12 +178,12 @@ impl SealEvidence {
             AcceptanceItem::ConflictsRetained => {
                 format!("{} retained conflicts", self.retained.conflicts)
             }
-            AcceptanceItem::RetriesRepresented => {
-                format!(
-                    "{} retry-exhausted operations",
-                    self.retained.retry_exhausted
-                )
-            }
+            AcceptanceItem::RetriesRepresented => format!(
+                "{} source access conditions retained: {} hosts refused, {} throttled",
+                self.retained.access_conditions,
+                self.retained.blocked_hosts,
+                self.retained.throttled_hosts
+            ),
             AcceptanceItem::EvidenceDurable => format!(
                 "{} durable observations for {} athletes",
                 self.retained.observations, self.counts.athletes

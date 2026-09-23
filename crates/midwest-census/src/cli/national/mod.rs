@@ -3,13 +3,15 @@
 //! A census run does not belong to the shell that starts it. These commands submit durable work to
 //! the local Restate server and observe it: killing one cancels nothing, and rerunning the same
 //! command reattaches to the invocation already in flight. The run is identified by its workflow
-//! identity (`national:<season>:<revision>`, `jurisdiction:<state>:<season>:<revision>`), so a retry
-//! reuses the logical job instead of manufacturing a second one (§8).
+//! identity (`national:<season>:<scope>:<revision>`, the scope being a digest of the jurisdictions the
+//! run admits, and `jurisdiction:<state>:<season>:<revision>`), so a retry reuses the logical job
+//! instead of manufacturing a second one (§8) while a changed jurisdiction set derives its own run.
 //!
 //! None of them opens the Fjall store. The census runs inside `midwest-serve`, which holds that lock
 //! for the life of the process, so a command that opened the store would refuse the very run it is
 //! asking for; `cli::run` therefore dispatches these before it opens anything.
 
+use anyhow::{anyhow, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use clap::Args;
@@ -31,9 +33,10 @@ pub(super) struct WorkflowFlags {
     /// Ingress origin of the local Restate server. The local census deployment when omitted.
     #[arg(long, value_name = "ORIGIN")]
     pub(super) ingress: Option<String>,
-    /// Run revision. A run's identity is `<kind>:<season>:<revision>` — a run that already exists is
-    /// reattached to, and changing a run *parameter* needs the revision bumped instead of a second
-    /// submission under the same identity.
+    /// Run revision. A run that already exists is reattached to, and this is the deliberate way to
+    /// invalidate completed work: the identity a run is addressed by carries the season, the run scope
+    /// the parameters admit and this revision, so the same parameters reproduce their run while a
+    /// changed jurisdiction set derives an identity of its own instead of re-attaching to another scope.
     #[arg(long, default_value_t = 1)]
     pub(super) revision: u32,
     /// Seconds to observe the run before returning. The run itself continues either way.
@@ -51,7 +54,7 @@ impl WorkflowFlags {
 }
 
 /// The flags the workflow-driving commands share: [`WorkflowFlags`] plus the season, which together
-/// with the revision is the run's identity, and how the report prints.
+/// with the run scope and the revision is a national run's identity, and how the report prints.
 #[derive(Args, Debug, Clone)]
 pub(super) struct RunFlags {
     #[command(flatten)]
@@ -65,8 +68,9 @@ pub(super) struct RunFlags {
 }
 
 impl RunFlags {
-    fn season(&self) -> SchoolYear {
-        SchoolYear(self.season)
+    /// The season this run covers, or the refusal to census a year that is not one.
+    fn season(&self) -> Result<SchoolYear> {
+        named_season(self.season)
     }
 
     fn revision(&self) -> Revision {
@@ -82,6 +86,22 @@ impl RunFlags {
     fn rounds(&self) -> u64 {
         self.workflow.rounds()
     }
+}
+
+/// The season `--season` names, or the reason it names none.
+///
+/// [`SchoolYear::new`] is the only way in from a bare number and it refuses a year outside the window a
+/// season can carry. An out-of-window `--season` is therefore a request fault to report, never a
+/// default to substitute for: a run that silently censused another season would file its results under
+/// the operator's own revision, and nothing downstream could tell the two apart.
+fn named_season(year: i16) -> Result<SchoolYear> {
+    SchoolYear::new(year).ok_or_else(|| {
+        anyhow!(
+            "--season {year} is not a school year ({}..={})",
+            SchoolYear::MIN_START_YEAR,
+            SchoolYear::MAX_START_YEAR
+        )
+    })
 }
 
 /// `national`: the root run, fanned out over every jurisdiction.
@@ -139,6 +159,12 @@ pub(super) struct NationalReportArgs {
     /// Run revision.
     #[arg(long, default_value_t = 1)]
     revision: u32,
+    /// Jurisdictions the run covered. Absent means all fifty states and the District of Columbia.
+    ///
+    /// The set is part of the run's identity, so the report of a run submitted with `--states` is only
+    /// reachable with the same list.
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
     /// Print the report as JSON.
     #[arg(long)]
     json: bool,

@@ -653,7 +653,7 @@ async fn collect_fetches_parses_appends_journals_and_reports_from_a_warm_cache()
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: census_domain::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = Options {

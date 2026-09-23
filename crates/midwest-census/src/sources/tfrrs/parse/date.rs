@@ -22,8 +22,10 @@ pub struct PublishedDate {
 }
 
 impl PublishedDate {
-    /// The school year this date falls in.
-    pub fn school_year(&self) -> SchoolYear {
+    /// The school year this date falls in, or `None` when the published year is outside the window a
+    /// season may open in: [`published_date`] admits four-digit years the domain does not, and such a
+    /// date is dropped rather than filed under a year no source published.
+    pub fn school_year(&self) -> Option<SchoolYear> {
         SchoolYear::containing(self.year, self.month)
     }
 }

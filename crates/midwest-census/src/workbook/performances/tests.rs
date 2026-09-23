@@ -136,7 +136,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
             &school_id,
             Sport::OutdoorTrack,
             Gender::Boys,
-            SchoolYear(2026),
+            SchoolYear::new(2026).expect("2026 is a season"),
         ),
         event: event_id,
         meet: meet_id,
@@ -150,6 +150,7 @@ fn seed(store: &Store, fixture: &Fixture) -> String {
         observed_grade: None,
         evidence: vec![observation()],
         source_key,
+        retained_conflicts: Vec::new(),
     };
     store.append(Table::Performances, &performance).unwrap();
     performance.id.as_str().to_string()
@@ -391,7 +392,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
             &school_id,
             Sport::OutdoorTrack,
             Gender::Boys,
-            SchoolYear(2026),
+            SchoolYear::new(2026).expect("2026 is a season"),
         ),
         event: CanonicalEvent::new(&meet, EventKind::Track800m, Gender::Boys, None, None).id,
         meet: meet.clone(),
@@ -405,6 +406,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         observed_grade: None,
         evidence: vec![observation()],
         source_key: "test:orphan".to_string(),
+        retained_conflicts: Vec::new(),
     };
     store.append(Table::Performances, &performance).unwrap();
 

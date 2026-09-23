@@ -104,7 +104,10 @@ impl Fetcher {
 
     /// Count the request once. Bodies are counted inside `process_response`; every status that
     /// never reaches it (304, 5xx, 429) is counted here instead.
-    async fn count_request(&self, host: &str, status: u16) {
+    ///
+    /// The browser lane's seat counts through the same call: one request, counted once, whichever
+    /// transport carried it.
+    pub(super) async fn count_request(&self, host: &str, status: u16) {
         if status == 200 || status == 404 {
             return;
         }
@@ -153,7 +156,11 @@ impl Fetcher {
     }
 
     /// Non-200/404/304: record the error and return it for the durable layer to classify.
-    async fn status_error(&self, status: u16, plan: &FetchPlan<'_>) -> FetchError {
+    ///
+    /// The browser lane's seat reaches this for exactly the same statuses, so a refusal that
+    /// arrives inside a capture (403, 5xx) is graded once, by this policy, whichever transport
+    /// carried it.
+    pub(super) async fn status_error(&self, status: u16, plan: &FetchPlan<'_>) -> FetchError {
         {
             let mut stats = self.stats.lock().await;
             stats.errors = stats.errors.saturating_add(1);
@@ -175,7 +182,10 @@ impl Fetcher {
 /// `403` is the source refusing a path its own robots rules allow, and `429` is the source asking for
 /// less traffic. Both are observations about the host, which is why they are recorded against it
 /// rather than against the URL that happened to be in flight.
-fn blocking_kind(status: u16) -> Option<AccessBlockKind> {
+///
+/// A capture the browser lane carries states the same two the same way: the status travels on the
+/// capture, so the reading is shared rather than restated.
+pub(super) fn blocking_kind(status: u16) -> Option<AccessBlockKind> {
     match status {
         403 => Some(AccessBlockKind::Forbidden),
         429 => Some(AccessBlockKind::RateLimited),

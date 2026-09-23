@@ -148,6 +148,7 @@ fn record_performance(
             observed_grade: Some(shape.grade),
             evidence: vec![evidence],
             source_key,
+            retained_conflicts: Vec::new(),
         });
 }
 
@@ -252,7 +253,7 @@ fn performance_evidence(context: &MeetContext<'_>, grade: Grade, row_index: usiz
          year {}",
         context.rsid,
         grade.get(),
-        context.school_year.start_year()
+        context.school_year.get()
     ));
     evidence
 }
@@ -270,7 +271,7 @@ fn team_for(
     let key = format!(
         "{}:{sport:?}:{gender:?}:{}",
         school.as_str(),
-        school_year.start_year()
+        school_year.get()
     );
     teams
         .entry(key)
@@ -285,6 +286,7 @@ fn team_for(
                 level: Some("high_school".to_string()),
                 source_identities: Vec::new(),
                 evidence: vec![evidence.clone()],
+                retained_conflicts: Vec::new(),
             }
         })
         .id

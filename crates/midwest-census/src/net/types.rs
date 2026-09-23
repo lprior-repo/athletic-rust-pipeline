@@ -45,6 +45,19 @@ pub enum FetchError {
     },
     #[error("request timed out for {url} after {timeout_secs}s")]
     Timeout { url: String, timeout_secs: u64 },
+    /// The browser lane did not hand back a capture.
+    ///
+    /// One variant rather than one per verdict: the lane's own words travel in `detail`, and
+    /// `retryable` is the verdict *it* carried — the transport classified the failure, so the census
+    /// does not re-derive a classification from it. The access-condition row the refusal recorded is
+    /// the authority on why (§69): `browser_unavailable:{host}` for a lane that is not there,
+    /// `human_required:{host}` for a profile that wants a person.
+    #[error("browser lane refused {url}: {detail}")]
+    BrowserLane {
+        url: String,
+        detail: String,
+        retryable: bool,
+    },
     /// A request URL could not be parsed into its host, origin and path.
     #[error("invalid url {url}: {source}")]
     InvalidUrl {
@@ -91,6 +104,7 @@ impl FetchError {
     pub fn retryable(&self) -> bool {
         match self {
             Self::Transport { .. } | Self::Timeout { .. } | Self::RateLimited { .. } => true,
+            Self::BrowserLane { retryable, .. } => *retryable,
             Self::Http { status, .. } => *status >= 500 || *status == 429,
             Self::Robots(_)
             | Self::TooLarge { .. }
@@ -191,4 +205,16 @@ pub fn cooldown_until_iso8601(seconds: u64) -> String {
         .checked_add_signed(chrono::Duration::seconds(seconds))
         .unwrap_or(chrono::DateTime::<chrono::Utc>::MAX_UTC)
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+}
+
+/// One instant read from unix milliseconds (RFC 3339 UTC, `Z`), when it is one this clock can state.
+///
+/// The browser lane's capture carries the instant it was taken as milliseconds, and the evidence
+/// written from it wants the same shape the HTTP path writes: the format is [`now_iso8601`]'s, so a
+/// receipt does not say which transport produced it. `None` for a value that is not an instant —
+/// absence is then the caller's decision, the same way an absent `Retry-After` is.
+pub fn instant_iso8601(millis: u64) -> Option<String> {
+    let millis = i64::try_from(millis).ok()?;
+    chrono::DateTime::from_timestamp_millis(millis)
+        .map(|instant| instant.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
 }

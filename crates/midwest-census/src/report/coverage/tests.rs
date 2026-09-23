@@ -200,7 +200,7 @@ fn evidence(source: &str) -> Evidence {
 fn observed_grade(grade: u8, school_year: i16, source: &str) -> ObservedGrade {
     ObservedGrade {
         grade: Grade::new(grade).unwrap(),
-        school_year: SchoolYear(school_year),
+        school_year: SchoolYear::new(school_year).expect("the fixture's season is in range"),
         source: SourceRef::new(source, None),
     }
 }
@@ -219,7 +219,12 @@ fn performance(
     CanonicalPerformance {
         id: CanonicalPerformance::mint(athlete, meet, &kind, "2026-05-01", source_key),
         athlete: athlete.clone(),
-        team: CanonicalTeam::mint(school, Sport::OutdoorTrack, Gender::Boys, SchoolYear(2026)),
+        team: CanonicalTeam::mint(
+            school,
+            Sport::OutdoorTrack,
+            Gender::Boys,
+            SchoolYear::new(2026).expect("2026 is a season"),
+        ),
         event: event.clone(),
         meet: meet.clone(),
         date: "2026-05-01".to_string(),
@@ -232,6 +237,8 @@ fn performance(
         observed_grade: None,
         evidence: vec![evidence(source)],
         source_key: source_key.to_string(),
+        // The fixture mints the id from its own fields and merges nothing, so no id ever collided.
+        retained_conflicts: Vec::new(),
     }
 }
 

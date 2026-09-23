@@ -292,8 +292,8 @@ command set is `worker`, `deploy`, `start`, `status`, `browser-start`, `browser-
 re-delivery plus re-submission:
 
 * an open invocation is retried by the server under the definition's
-  `invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")`;
-  after four attempts it is **paused** for an operator, not failed forever;
+  `invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")`;
+  after three attempts it is **paused** for an operator, not failed forever;
 * an operator-visible run is reattached by re-running the same command, which carries the same
   idempotency key and therefore rejoins the existing invocation;
 * `start --output <file>` journals `RunCoordinator::run` and then `ExportWorker::publish` inside one
@@ -354,12 +354,12 @@ Definition attributes (omitted option = not declared, so the SDK/server default 
 
 | Definitions | Attributes |
 |---|---|
-| `PipelineControl`, `WorkbookImport`, `RunCoordinator`, `ExportWorker`, `RowWorker`, `QueryWorker`, `ProfileWorker`, `ReviewCase` | `inactivity_timeout = "2h"`, `journal_retention = "30 days"`, `idempotency_retention = "30 days"`, retry `1s / 4 attempts / pause` (`SourceGateway` is identical minus `idempotency_retention`) |
+| `PipelineControl`, `WorkbookImport`, `RunCoordinator`, `ExportWorker`, `RowWorker`, `QueryWorker`, `ProfileWorker`, `ReviewCase` | `inactivity_timeout = "2h"`, `journal_retention = "30 days"`, `idempotency_retention = "30 days"`, retry `1s / 3 attempts / pause` (`SourceGateway` is identical minus `idempotency_retention`) |
 | `RankingsCollectionState` | `inactivity_timeout = "2h"`, both retentions `"30 days"`, **no** `invocation_retry_policy` |
-| `SourceCache` | `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 4, on_max_attempts = "pause"`) |
-| `BrowserSession` | `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 4 / pause` (a human may be clearing a challenge) |
-| `LocalReviewer` | `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 4 / pause` |
-| `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` | SDK/server defaults (bare macros) |
+| `SourceCache` | `lazy_state`; no `inactivity_timeout`; both retentions `"30 days"`; retry declared without `initial_interval` (`max_attempts = 3, on_max_attempts = "pause"`) |
+| `BrowserSession` | `inactivity_timeout = "26h"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` (a human may be clearing a challenge) |
+| `LocalReviewer` | `inactivity_timeout = "10m"`, `journal_retention = "30 days"`, no `idempotency_retention`, retry `1s / 3 / pause` |
+| `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` | `invocation_retry_policy` with `max_attempts = 3` (one retry owner, §9), otherwise SDK/server defaults |
 
 Handler-internal bounds:
 
@@ -425,8 +425,9 @@ reports `Ready`.
    `BrowserSession` requires `BROWSER_SESSION_KEY`, `LocalReviewer` the lane key) and fail terminally
    on a mismatch. Keys are `identity::fingerprint(...)` (sha256 over the JSON encoding) or
    `identity::scoped_key(scope, value)` = `<scope>:<fingerprint>`.
-5. Keep effects inside `ctx.run(...)`, pick `.retry_policy(...)` per effect (`max_attempts(1)` for
-   irreversible or observation-only steps, `4` for staged publications), and read/write state with
+5. Keep effects inside `ctx.run(...)`, pick `.retry_policy(...)` per effect (`max_attempts(1)`
+   everywhere: an effect the SDK re-issues is a second retry owner, and the handler's three attempts
+   already own the retry, §9), and read/write state with
    `ctx.get`/`ctx.set`; check the result slot first when re-entrant.
 6. Bind it in `src/runtime/worker.rs`'s `Endpoint::builder()` chain — an unbound definition is simply
    not served, and nothing else in the tree will tell you. Unit-test the free functions that take

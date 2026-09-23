@@ -154,6 +154,7 @@ fn make_perf(
         observed_grade: None,
         evidence: Vec::new(),
         source_key: "test".to_string(),
+        retained_conflicts: Vec::new(),
     }
 }
 

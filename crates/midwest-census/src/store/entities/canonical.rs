@@ -2,12 +2,37 @@
 //! cross-source reconciliation stamps on them.
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam,
+    id_collision, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, NaturalKey, RetainedConflict,
 };
 
 use super::super::Entity;
 use super::union_vec;
+
+/// The finding for one merge of two rows that share a canonical id, or `None` when the two rows state
+/// the same natural key and are therefore one subject.
+///
+/// Two natural keys that minted one id are a collision, not a match: an id is the first 64 bits of a
+/// SHA-256, and the merge keys on the id alone, so absorbing the other row would merge two subjects
+/// into a third one that is neither. The row already there therefore keeps every field it holds, and
+/// the finding names the id, both sides' material and both sides' sources for an operator to resolve.
+///
+/// The test is the cheap one: already-decoded fields compared, no hashing, and nothing formatted or
+/// allocated unless it fails.
+fn collision<T: NaturalKey>(id: &str, kept: &T, dropped: &T) -> Option<RetainedConflict> {
+    if kept.same_natural_key(dropped) {
+        return None;
+    }
+    Some(id_collision(id, kept, dropped))
+}
+
+/// Take one finding onto a row, unless a previous read already took it: the store re-merges a row on
+/// every read of the table it lives in, so one collision stays one row in the findings table.
+fn record(conflicts: &mut Vec<RetainedConflict>, conflict: RetainedConflict) {
+    if !conflicts.contains(&conflict) {
+        conflicts.push(conflict);
+    }
+}
 
 impl Entity for CanonicalSchool {
     fn entity_id(&self) -> &str {
@@ -15,6 +40,10 @@ impl Entity for CanonicalSchool {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         if self.city.is_none() {
             self.city = other.city;
         }
@@ -50,6 +79,10 @@ impl Entity for CanonicalTeam {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         if self.level.is_none() {
             self.level = other.level;
         }
@@ -64,23 +97,37 @@ impl Entity for CanonicalCoach {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         if self.professional_email.is_none() {
             self.professional_email = other.professional_email;
         }
         if self.phone.is_none() {
             self.phone = other.phone;
         }
+        // Mailboxes do not merge - the row already there keeps its own - but the withheld fact does:
+        // for a row whose mailbox was dropped, the flag is the only surviving evidence that one was
+        // ever observed, and the copy that recorded it is not necessarily the one that survived.
+        self.email_withheld |= other.email_withheld;
         union_vec(&mut self.source_identities, &other.source_identities);
         union_vec(&mut self.evidence, &other.evidence);
     }
 
     fn publish(&mut self) {
         let Some(email) = self.professional_email.as_deref() else {
+            // Nothing is left to derive from: the mailbox was dropped, so the flag the row was read
+            // with is what says whether one was dropped or never observed at all.
             return;
         };
         match census_domain::model::professional_email(email) {
-            Some(published) if published == email => {}
-            Some(published) => self.professional_email = Some(published),
+            Some(published) => {
+                // A mailbox that ships settles the flag whichever way the row was read: a withheld
+                // marking a file carries never keeps a public mailbox off the wire.
+                self.professional_email = Some(published);
+                self.email_withheld = false;
+            }
             None => {
                 // A personal mailbox never ships, whichever adapter accepted one.
                 self.professional_email = None;
@@ -100,6 +147,10 @@ impl Entity for CanonicalAthlete {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         union_vec(&mut self.known_names, &other.known_names);
         union_vec(&mut self.sports, &other.sports);
         union_vec(&mut self.public_profile_urls, &other.public_profile_urls);
@@ -134,6 +185,10 @@ impl Entity for CanonicalMeet {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         if self.location.is_none() {
             self.location = other.location;
         }
@@ -156,6 +211,10 @@ impl Entity for CanonicalEvent {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         union_vec(&mut self.source_labels, &other.source_labels);
         union_vec(&mut self.evidence, &other.evidence);
     }
@@ -167,6 +226,10 @@ impl Entity for CanonicalPerformance {
     }
 
     fn merge(&mut self, other: Self) {
+        if let Some(conflict) = collision(self.id.as_str(), self, &other) {
+            record(&mut self.retained_conflicts, conflict);
+            return;
+        }
         if self.wind_mps.is_none() {
             self.wind_mps = other.wind_mps;
         }
@@ -182,3 +245,7 @@ impl Entity for CanonicalPerformance {
         union_vec(&mut self.evidence, &other.evidence);
     }
 }
+
+#[cfg(test)]
+#[path = "canonical_tests.rs"]
+mod tests;

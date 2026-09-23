@@ -89,7 +89,10 @@ impl<'a> Ctx<'a> {
             return None;
         };
         let school = self.canonical_school(&row.school_id.unwrap_or_default().to_string())?;
-        let school_year = SchoolYear::containing(season_id, 5);
+        let Some(school_year) = SchoolYear::containing(season_id, 5) else {
+            self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
+            return None;
+        };
         Some(ResolvedRow {
             kind,
             sport,
@@ -131,7 +134,10 @@ impl<'a> Ctx<'a> {
         let school = self.canonical_school(&row.school_id.unwrap_or_default().to_string())?;
         // A cross-country season is a fall season, so its school year starts in the same
         // calendar year the season is named for.
-        let school_year = SchoolYear::containing(season_id, 9);
+        let Some(school_year) = SchoolYear::containing(season_id, 9) else {
+            self.stats.rows_no_season = self.stats.rows_no_season.saturating_add(1);
+            return None;
+        };
         Some(ResolvedRow {
             kind,
             sport: Sport::CrossCountry,

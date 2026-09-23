@@ -1,4 +1,6 @@
-use super::{browser::BrowserStatus, browser_readiness, Runtime};
+use super::{browser_readiness, Runtime};
+use athleticnet_browser::request::RequestSpec;
+use athleticnet_browser::{BrowserOutcome, BrowserStatus};
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -32,7 +34,7 @@ pub struct BrowserSession {
 #[restate_sdk::object(
     inactivity_timeout = "26h",
     journal_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl BrowserSession {
     /// Restate, not the browser driver, owns challenge and human-wait policy.
@@ -114,6 +116,36 @@ impl BrowserSession {
             .await?
             .0;
         Ok(Json(status))
+    }
+
+    /// Serve one request through the headed profile.
+    ///
+    /// The lane's contract is one attempt and one typed answer: the transport classifies the attempt
+    /// — the challenge verdict, the `Retry-After` reading, the failure reason and its verdict — and
+    /// this handler hands that classification on, so a caller reads a verdict instead of reaching one
+    /// from the same bytes. There is no second attempt here: the step sits under a durable boundary
+    /// because a browser act must, and ADR-002's invocation policy owns what happens after it.
+    #[handler]
+    pub async fn fetch(
+        &self,
+        ctx: SharedObjectContext<'_>,
+        spec: Json<RequestSpec>,
+    ) -> Result<Json<BrowserOutcome>, HandlerError> {
+        validate_key(ctx.key())?;
+        let runtime = self.runtime.clone();
+        let outcome = ctx
+            .run(move || async move {
+                let browser = runtime
+                    .ensure_browser()
+                    .await
+                    .map_err(|error| TerminalError::new(error.to_string()))?;
+                Ok::<_, HandlerError>(Json(browser.fetch(spec.0).await))
+            })
+            .name("browser lane fetch")
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
+            .await?
+            .0;
+        Ok(Json(outcome))
     }
 
     /// Explicit shared-operator recovery with cooldown preservation.

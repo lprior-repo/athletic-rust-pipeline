@@ -44,6 +44,7 @@ impl<'a> Mapper<'a> {
             level: Some(HIGH_SCHOOL.to_string()),
             source_identities: identities,
             evidence: vec![evidence],
+            retained_conflicts: Vec::new(),
         };
         self.accumulated.teams.insert(key, team);
         id
@@ -127,6 +128,7 @@ impl<'a> Mapper<'a> {
             observed_grade: row.grade,
             evidence: vec![self.origin.evidence(url)],
             source_key: row.source_key,
+            retained_conflicts: Vec::new(),
         };
         self.accumulated.performances.insert(key, performance);
         self.stats.performances = self.stats.performances.saturating_add(1);

@@ -1,7 +1,7 @@
 //! Failure-classification tests for the reviewer transport.
 
 use super::*;
-use crate::runtime::source::retry::retry_after;
+use athleticnet_browser::retry::retry_after;
 use reqwest::header::{HeaderMap, HeaderValue, RETRY_AFTER};
 use std::time::SystemTime;
 

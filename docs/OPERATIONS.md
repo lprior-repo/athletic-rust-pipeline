@@ -25,10 +25,10 @@ taken per state; the census does not filter meets by level, so a middle-school m
 costs its requests and yields no canonical athlete.
 
 ```
-midwest-census --store <dir> teams --states WI,MN,... --refresh
-midwest-census --store <dir> meets --states WI,MN,... --year 2026
-midwest-census --store <dir> provider milesplit_results --states WI,MN,... --limit 200
-midwest-census --store <dir> collect --states WI,MN,... --school-year 2027
+midwest-census --store <dir> teams --all-states --refresh
+midwest-census --store <dir> meets --all-states --year 2026
+midwest-census --store <dir> provider milesplit_results --all-states --limit 200
+midwest-census --store <dir> collect --all-states --school-year 2027
 midwest-census --store <dir> consolidate
 midwest-census --store <dir> index
 midwest-census --store <dir> report --print
@@ -51,6 +51,16 @@ replacement for the staging hop; no CLI subcommand drives it yet.
 **Flag surface (critical):** The batch CLI uses `--store` (not `--data-dir`, which is the
 `midwest-serve` unit's flag). The `collect` subcommand uses `--school-year` (not `--grad-year`).
 `--data-dir` and `--grad-year` are rejected by the batch CLI with exit code 2.
+
+**Jurisdiction default (critical):** with neither `--states` nor `--all-states`, the gather commands
+(`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/midwest-census/src/cli/mod.rs:235`,
+pinned by `crates/midwest-census/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
+The run scope is the 49 jurisdictions of `UsJurisdiction::CENSUS_SCOPE` (ADR-009): `--all-states`
+selects it (`cli/mod.rs:234`), and the operational path is the service, which walks the whole scope on
+its own (`crates/midwest-census/src/restate_services/open_work.rs:102`; a request naming a
+jurisdiction outside it is refused at `restate_services/national.rs:73`). The `provider` subcommands
+take the restriction form instead, where no flag means no restriction (`cli/mod.rs:248`, pinned at
+`cli/tests.rs:34`).
 
 ## Shutdown and the drain certificate
 
@@ -164,7 +174,7 @@ this is also how a rollback happens, by starting the previous release's instance
 
 Every service declares its own retention in `crates/midwest-census/src/restate_services/*.rs`:
 90 days of journal, 180 days of workflow completion, 30 days of idempotency. The server's own
-defaults are one day, which is shorter than a national census can run.
+defaults are one day, which is shorter than a full census run can take.
 
 ## Quality gates
 

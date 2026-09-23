@@ -4,9 +4,9 @@
 //! latched in `HumanRequired`, asks the browser for one `Restart`. Internal waiters never reach
 //! here, so a stall only clears when an operator re-runs readiness.
 
-use super::super::browser::BrowserState;
 use super::super::browser_readiness::{self, BrowserAction};
 use super::super::Runtime;
+use athleticnet_browser::BrowserState;
 use restate_sdk::prelude::*;
 use std::sync::Arc;
 

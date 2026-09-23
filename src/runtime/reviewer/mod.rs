@@ -36,7 +36,7 @@ struct FinalizedReview {
     ingress_private = true,
     inactivity_timeout = "10m",
     journal_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl LocalReviewer {
     #[handler]
@@ -91,7 +91,7 @@ impl LocalReviewer {
                 .map(Json)
             })
             .name("local-review-http-evidence-finalization")
-            .retry_policy(RunRetryPolicy::new().max_attempts(4))
+            .retry_policy(RunRetryPolicy::new().max_attempts(1))
             .await;
         match finalized {
             Ok(value) => Ok(value.0),

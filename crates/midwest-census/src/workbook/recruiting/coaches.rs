@@ -73,7 +73,10 @@ fn sort_key(dataset: &Dataset, coach: &CanonicalCoach) -> SortKey {
 
 /// One coach's published row.
 fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
-    let contacts = dataset.contacts.get(coach.school.as_str());
+    let director = dataset
+        .contacts
+        .get(coach.school.as_str())
+        .and_then(|contacts| contacts.director.as_ref());
     row!(
         Cell::text(coach.school.as_str()),
         Cell::text(dataset.school_name(coach.school.as_str())),
@@ -83,13 +86,13 @@ fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
         Cell::text(role_label(coach)),
         Cell::text(coach.professional_email.clone().unwrap_or_default()),
         Cell::text(
-            contacts
-                .and_then(|contacts| contacts.director.clone())
+            director
+                .map(|director| director.name.clone())
                 .unwrap_or_default()
         ),
         Cell::text(
-            contacts
-                .and_then(|contacts| contacts.director_email.clone())
+            director
+                .and_then(|director| director.email.clone())
                 .unwrap_or_default()
         ),
         Cell::text(official_url(coach)),

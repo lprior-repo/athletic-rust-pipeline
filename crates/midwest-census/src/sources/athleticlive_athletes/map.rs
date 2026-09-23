@@ -221,6 +221,7 @@ fn row_team<'a>(
             level: Some("high_school".to_string()),
             source_identities: Vec::new(),
             evidence: vec![row.evidence.clone()],
+            retained_conflicts: Vec::new(),
         }
     })
 }

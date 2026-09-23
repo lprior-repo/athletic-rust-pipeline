@@ -74,12 +74,22 @@ fn a_family_is_looked_up_by_the_label_the_store_retained() {
         "the workbook's label for the meet family is the venue wording"
     );
     assert_eq!(
+        ReviewFamily::from_label("Athlete identity"),
+        Some(ReviewFamily::AthleteIdentity),
+        "the merge's conflict label is the label this family is asked under"
+    );
+    assert_eq!(
         ReviewFamily::from_label("Class-of-2027 cohort unverified"),
         None,
         "a family this lane does not ask about stays with the operator"
     );
     assert_eq!(ReviewFamily::SchoolJurisdiction.field(), "state");
     assert_eq!(ReviewFamily::MeetJurisdiction.field(), "state");
+    assert_eq!(
+        ReviewFamily::AthleteIdentity.field(),
+        "identity",
+        "the athlete family answers a decision, not a jurisdiction"
+    );
 }
 
 #[test]
@@ -96,42 +106,64 @@ fn a_family_parses_from_the_cli_spelling() {
         ReviewFamily::parse("Meet Venue Unresolved"),
         Some(ReviewFamily::MeetJurisdiction)
     );
+    assert_eq!(
+        ReviewFamily::parse("athlete-identity"),
+        Some(ReviewFamily::AthleteIdentity)
+    );
+    assert_eq!(
+        ReviewFamily::parse("athlete_identity"),
+        Some(ReviewFamily::AthleteIdentity)
+    );
     assert_eq!(ReviewFamily::parse("cohort"), None);
-    assert_eq!(ReviewFamily::askable().len(), 2);
+    assert_eq!(ReviewFamily::askable().len(), 3);
+    assert!(
+        ReviewFamily::askable().contains(&ReviewFamily::AthleteIdentity),
+        "the lane must offer the athlete family, or it is asked about by nobody"
+    );
+}
+
+/// The decision a value admits.
+fn decided(field: &str, value: &str) -> Adjudication {
+    Adjudication::Decided(Admitted {
+        field: field.to_string(),
+        value: value.to_string(),
+    })
 }
 
 #[test]
 fn a_covered_state_is_admitted_as_a_code_and_normalized_from_a_name() {
     let packet = school_packet(None);
-    let admitted = validate(
-        ReviewFamily::SchoolJurisdiction,
-        &school_proposal("state", "wi"),
-        &packet,
-    )
-    .expect("WI is a jurisdiction this census covers");
-    assert_eq!(admitted.field, "state");
-    assert_eq!(admitted.value, "WI");
-
-    let spelled = validate(
-        ReviewFamily::SchoolJurisdiction,
-        &school_proposal("state", "Wisconsin"),
-        &packet,
-    )
-    .expect("a spelled-out state is the same answer");
-    assert_eq!(spelled.value, "WI");
+    assert_eq!(
+        validate(
+            ReviewFamily::SchoolJurisdiction,
+            &school_proposal("state", "wi"),
+            &packet
+        ),
+        decided("state", "WI"),
+        "WI is a jurisdiction this census covers"
+    );
+    assert_eq!(
+        validate(
+            ReviewFamily::SchoolJurisdiction,
+            &school_proposal("state", "Wisconsin"),
+            &packet
+        ),
+        decided("state", "WI"),
+        "a spelled-out state is the same answer"
+    );
 }
 
 #[test]
 fn a_meets_jurisdiction_is_admitted_the_same_way() {
-    let packet = meet_packet(None);
-    let admitted = validate(
-        ReviewFamily::MeetJurisdiction,
-        &meet_proposal("state", "MN"),
-        &packet,
-    )
-    .expect("the case asks for the state the meet was never filed under");
-    assert_eq!(admitted.field, "state");
-    assert_eq!(admitted.value, "MN");
+    assert_eq!(
+        validate(
+            ReviewFamily::MeetJurisdiction,
+            &meet_proposal("state", "MN"),
+            &meet_packet(None)
+        ),
+        decided("state", "MN"),
+        "the case asks for the state the meet was never filed under"
+    );
 }
 
 #[test]
@@ -143,7 +175,7 @@ fn a_state_that_is_not_a_jurisdiction_is_refused() {
             &school_proposal("state", "Westconsin"),
             &packet
         ),
-        Err(Refusal::InvalidValue)
+        Adjudication::Refused(Refusal::InvalidValue)
     );
     assert_eq!(
         validate(
@@ -151,7 +183,7 @@ fn a_state_that_is_not_a_jurisdiction_is_refused() {
             &meet_proposal("state", "North Minnesota"),
             &meet_packet(None)
         ),
-        Err(Refusal::InvalidValue)
+        Adjudication::Refused(Refusal::InvalidValue)
     );
 }
 
@@ -164,7 +196,7 @@ fn a_proposal_for_a_field_no_family_asks_about_is_refused() {
             &school_proposal("location", "Coon Rapids HS"),
             &packet
         ),
-        Err(Refusal::WrongField)
+        Adjudication::Refused(Refusal::WrongField)
     );
     assert_eq!(
         validate(
@@ -172,13 +204,13 @@ fn a_proposal_for_a_field_no_family_asks_about_is_refused() {
             &meet_proposal("grad_year", "2027"),
             &meet_packet(None)
         ),
-        Err(Refusal::WrongField)
+        Adjudication::Refused(Refusal::WrongField)
     );
     let mut unnamed = school_proposal("state", "WI");
     unnamed.field = Some("  ".to_string());
     assert_eq!(
         validate(ReviewFamily::SchoolJurisdiction, &unnamed, &packet),
-        Err(Refusal::WrongField)
+        Adjudication::Refused(Refusal::WrongField)
     );
 }
 
@@ -191,7 +223,7 @@ fn a_subject_that_already_carries_a_jurisdiction_is_not_re_proposed() {
             &school_proposal("state", "WI"),
             &packet
         ),
-        Err(Refusal::AlreadyResolved)
+        Adjudication::Refused(Refusal::AlreadyResolved)
     );
     let meet = meet_packet(Some("MN"));
     assert_eq!(
@@ -200,7 +232,7 @@ fn a_subject_that_already_carries_a_jurisdiction_is_not_re_proposed() {
             &meet_proposal("state", "MN"),
             &meet
         ),
-        Err(Refusal::AlreadyResolved)
+        Adjudication::Refused(Refusal::AlreadyResolved)
     );
 }
 
@@ -214,10 +246,11 @@ fn triage_keeps_a_refused_proposal_as_a_verdict_without_a_value() {
     let (triaged, dropped) = triage(&packet, ReviewFamily::SchoolJurisdiction, batch);
     assert_eq!(dropped, 0);
     assert_eq!(triaged.len(), 1);
-    let (verdict, admitted) = &triaged[0];
+    let (verdict, adjudication) = &triaged[0];
     assert_eq!(verdict.kind, ReviewVerdictKind::ValueProposed);
-    assert!(
-        admitted.is_none(),
+    assert_eq!(
+        adjudication,
+        &Adjudication::Refused(Refusal::InvalidValue),
         "the refused proposal is recorded without a value"
     );
 }

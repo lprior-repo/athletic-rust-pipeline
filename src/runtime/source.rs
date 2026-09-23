@@ -1,8 +1,8 @@
 //! Bounded source gateway: the handlers that turn one `SourceResource` into one `FetchOutcome`.
 //!
 //! The object impl here owns the ingress surface only — scope check, request build, and the
-//! admission/observation delegations. The retry workflow lives in [`workflow`], one journaled
-//! attempt in `attempt`, and pacing in `admission`/`dispatch`.
+//! admission/observation delegations. The source workflow lives in [`workflow`], one journaled
+//! attempt in `attempt`, and the admission pacing in `admission`/`dispatch`.
 
 mod admission;
 mod attempt;
@@ -26,12 +26,10 @@ pub use admission::{AdmissionDecision, AdmissionFeedback};
 use attempt::run_step;
 use workflow::{execute, StepError, WorkflowStep};
 
-// `source/tests.rs` reaches both through `use super::*`: nothing in the production region reads
-// `receiptless_transport` directly, and `Duration` is only needed to build retry-delay fixtures.
+// `source/tests.rs` reaches this through `use super::*`: nothing in the production region reads
+// `receiptless_transport` directly.
 #[cfg(test)]
 use attempt::receiptless_transport;
-#[cfg(test)]
-use std::time::Duration;
 
 pub const SOURCE_SCOPE: &str = "athletic-source";
 pub const SOURCE_CONCURRENCY: u32 = 16;
@@ -46,7 +44,7 @@ pub struct SourceGateway {
     ingress_private = true,
     inactivity_timeout = "2h",
     journal_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl SourceGateway {
     #[handler]
@@ -101,8 +99,8 @@ impl SourceGateway {
                 // Rankings: one-shot readiness check via capture_ready.
                 // Only BrowserState::Ready permits proceeding.
                 // If not Ready, return blocked to collection immediately.
-                use crate::runtime::browser::BrowserState;
                 use crate::runtime::browser_session::{BrowserSessionClient, BROWSER_SESSION_KEY};
+                use athleticnet_browser::BrowserState;
                 let status = ctx
                     .object_client::<BrowserSessionClient>(BROWSER_SESSION_KEY)
                     .capture_ready()

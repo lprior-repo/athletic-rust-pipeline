@@ -190,12 +190,27 @@ async fn open_store(region: &Spawner, data_dir: PathBuf) -> Result<Arc<Store>, B
                 path: data_dir.clone(),
                 source,
             })?;
-            Store::open(&data_dir)
-                .map(Arc::new)
+            let store = Store::open(&data_dir).map_err(|source| BootstrapError::StoreOpen {
+                path: data_dir.clone(),
+                source,
+            })?;
+            // The service owns the store for the live route, so it is one of the paths that migrate: a
+            // pre-Fjall corpus reaches the census only because the open that owns it imported it.
+            // Opening a store is otherwise a read, so a verb that only measures one no longer writes.
+            let imported = store
+                .import_legacy()
                 .map_err(|source| BootstrapError::StoreOpen {
                     path: data_dir,
                     source,
-                })
+                })?;
+            if imported.observations > 0 || imported.skipped > 0 {
+                tracing::info!(
+                    observations = imported.observations,
+                    skipped = imported.skipped,
+                    "imported the pre-Fjall journals"
+                );
+            }
+            Ok(Arc::new(store))
         })
         .await;
     match outcome {

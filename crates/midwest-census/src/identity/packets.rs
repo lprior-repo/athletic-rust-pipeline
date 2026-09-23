@@ -6,23 +6,50 @@
 use std::collections::HashMap;
 
 use census_domain::model::{
-    CanonicalMeet, CanonicalSchool, ReviewCase, ReviewCaseFact, ReviewEvidenceFact, ReviewPacket,
-    ReviewState,
+    CanonicalAthlete, CanonicalMeet, CanonicalSchool, RetainedConflict, ReviewCase, ReviewCaseFact,
+    ReviewEvidenceFact, ReviewPacket, ReviewState,
 };
 
 use crate::store::{Store, StoreResult, Table};
 
+use super::athlete_packet::{self, AthleteIndex};
 use super::{ReviewFamily, ReviewOptions};
 
 /// The retained cases this pass asks about, each with the family that retained it.
+///
+/// Two tables can hold a finding: the review cases a previous pass wrote, and the conflicts the merge
+/// retained. A conflict carries no state because nothing has ever adjudicated it, so the lane reads
+/// it as pending — which is how the athlete family reaches this lane at all, since the merge writes
+/// those findings beside the cohort and school conflicts. A finding held by both tables is one case:
+/// the ids are the same, and the pass asks about it once.
 pub(super) fn pending_cases(
     store: &Store,
     options: &ReviewOptions,
 ) -> StoreResult<Vec<(ReviewCase, ReviewFamily)>> {
-    let cases = store.scan::<ReviewCase>(Table::ReviewCases)?;
-    Ok(cases
+    let mut pending: Vec<ReviewCase> = store
+        .scan::<ReviewCase>(Table::ReviewCases)?
         .into_iter()
         .filter(|case| case.state == ReviewState::Pending)
+        .collect();
+    pending.extend(
+        store
+            .scan::<RetainedConflict>(Table::Conflicts)?
+            .into_iter()
+            .map(|conflict| {
+                ReviewCase::pending(
+                    &conflict.family,
+                    conflict.subject_id.as_str(),
+                    conflict.subject.as_str(),
+                    conflict.detail.as_str(),
+                )
+            }),
+    );
+    // One order for both sources, and the review table wins a duplicate: it is the row a pass wrote
+    // last, and its state is the one an operator reads.
+    pending.sort_by(|a, b| a.id.cmp(&b.id));
+    pending.dedup_by(|a, b| a.id == b.id);
+    Ok(pending
+        .into_iter()
         .filter_map(|case| {
             ReviewFamily::from_label(&case.family)
                 .filter(|family| options.families.contains(family))
@@ -36,6 +63,7 @@ pub(super) fn pending_cases(
 pub(super) struct SubjectIndex {
     schools: HashMap<String, CanonicalSchool>,
     meets: HashMap<String, CanonicalMeet>,
+    athletes: AthleteIndex,
 }
 
 impl SubjectIndex {
@@ -47,6 +75,9 @@ impl SubjectIndex {
         let wants_meets = pending
             .iter()
             .any(|(_, family)| *family == ReviewFamily::MeetJurisdiction);
+        let wants_athletes = pending
+            .iter()
+            .any(|(_, family)| *family == ReviewFamily::AthleteIdentity);
         let schools = if wants_schools {
             index_by_id(store.scan::<CanonicalSchool>(Table::Schools)?, |school| {
                 school.id.to_string()
@@ -61,7 +92,18 @@ impl SubjectIndex {
         } else {
             HashMap::new()
         };
-        Ok(Self { schools, meets })
+        // An athlete case compares two rows, so the whole table is read: the group a case belongs to
+        // is a property of the rows, not of the case.
+        let athletes = if wants_athletes {
+            AthleteIndex::read(store.scan::<CanonicalAthlete>(Table::Athletes)?)
+        } else {
+            AthleteIndex::default()
+        };
+        Ok(Self {
+            schools,
+            meets,
+            athletes,
+        })
     }
 
     /// The packet for one case, or `None` when the store does not hold its subject.
@@ -102,6 +144,10 @@ impl SubjectIndex {
                 }
                 Some(packet)
             }
+            ReviewFamily::AthleteIdentity => {
+                let (subject, other, group) = self.athletes.compare(&subject_id)?;
+                Some(athlete_packet::packet(case, subject, other, group))
+            }
         }
     }
 }
@@ -121,7 +167,7 @@ pub(super) fn case_fact(case: &ReviewCase) -> ReviewCaseFact {
 }
 
 /// Index rows by their own id, keeping the first row for an id.
-fn index_by_id<T>(rows: Vec<T>, id: impl Fn(&T) -> String) -> HashMap<String, T> {
+pub(super) fn index_by_id<T>(rows: Vec<T>, id: impl Fn(&T) -> String) -> HashMap<String, T> {
     let mut index: HashMap<String, T> = HashMap::with_capacity(rows.len());
     for row in rows {
         index.entry(id(&row)).or_insert(row);

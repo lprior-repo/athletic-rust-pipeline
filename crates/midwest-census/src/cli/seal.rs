@@ -1,24 +1,31 @@
 //! Seal the census, or refuse and name the §70 item that blocked it.
 //!
-//! The seal is the one place the pipeline is allowed to call a census finished. Everything that
-//! decision rests on is assembled here from what the store, the classifier and the exported
-//! workbook already hold — nothing is passed in as a claim.
+//! The seal is the one place the pipeline is allowed to call a census finished, and it may only
+//! certify what it read. Every count it rests on comes from the store, the coverage classifier or
+//! the workbook's own bytes — with two exceptions: jurisdiction sweeps that still owe a stage, and
+//! source objects that have accepted nothing. Those are properties of the durable run, recorded in
+//! the run's own objects, so only the service can measure them.
+//!
+//! That is the whole difference between the two ways to run this command, and it is not a
+//! preference. Offline, the store is opened here and those two counts come back *unmeasured*, which
+//! keeps their items open: the seal refuses over them rather than certifying a completion it never
+//! checked. Through `--ingress`, `Census/seal` reads the run's objects as well, and a census whose
+//! work is finished is one that can actually seal.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Result};
 use clap::Args;
+use restate_sdk::prelude::Json;
 
-use midwest_census::census::{
-    CensusState, GapTally, OpenWork, Phase, RetainedFindings, SealCounts, SealEvidence,
-    SealedCensus, WorkbookCheck,
-};
-use midwest_census::report::{self, Census, CoverageReport, Scope};
-use midwest_census::store::{Store, StoreStats, Table};
+use midwest_census::census::seal::{self, SealOutcome};
+use midwest_census::census::{RetainedFindings, SealCounts, SealedCensus};
+use midwest_census::report::Scope;
+use midwest_census::restate_services::{CensusIngressClient, SealReply, SealRequest};
+use midwest_census::store::Store;
 
-mod workbook;
-
-use workbook::inspect_workbook;
+use super::ingress;
+use super::{Cli, Route};
 
 /// `midwest-census seal`
 ///
@@ -39,252 +46,217 @@ pub(super) struct SealArgs {
     /// Write the seal to `out/seal.json` so a later run reads it instead of re-deriving it.
     #[arg(long)]
     write: bool,
+    /// Drive the running service instead of opening the store here: the only route that measures the
+    /// run's own open work, and therefore the only one a finished census can seal through.
+    #[arg(long, value_name = "ORIGIN")]
+    ingress: Option<String>,
+    /// Season start year of the run whose journal supplies those counts. Online only.
+    #[arg(long, default_value_t = 2026)]
+    season: i16,
+    /// Run revision of that run: the one it was submitted under, not a new one. Online only.
+    #[arg(long, default_value_t = 1)]
+    revision: u32,
+    /// Ingest object key to read, e.g. `milesplit_wi`. Repeatable, because an object key is the
+    /// caller's to choose and the service cannot enumerate them: naming none leaves §70 item 2
+    /// unmeasured rather than reporting it as zero. Online only.
+    #[arg(long = "source-object", value_name = "KEY")]
+    source_objects: Vec<String>,
 }
 
-pub(super) fn run_seal(store: &Store, args: &SealArgs) -> Result<()> {
-    let scope = if args.all_sources {
+#[tracing::instrument(skip_all, fields(command = "seal"))]
+pub(super) async fn run_seal(cli: &Cli, args: &SealArgs) -> Result<()> {
+    match cli.route(args.ingress.as_deref())? {
+        Route::Offline(root) => {
+            let store = Store::open(root.to_path_buf())?;
+            let outcome = seal::seal(&store, &store_request(args))?;
+            present(&Ladder::of_outcome(&outcome))
+        }
+        Route::Ingress(origin) => {
+            let reply = CensusIngressClient::from_client(ingress::client(origin)?)
+                .seal(Json(wire_request(args)))
+                .call()
+                .await
+                .map_err(ingress::error)?
+                .into_body()
+                .map_err(ingress::error)?
+                .0;
+            present(&Ladder::of_reply(&reply))
+        }
+    }
+}
+
+/// The store-side request: what the store holds, and no journal counts, because this route never
+/// reads the run's objects.
+fn store_request(args: &SealArgs) -> seal::SealRequest {
+    seal::SealRequest {
+        grad_year: args.grad_year,
+        scope: scope_of(args.all_sources),
+        workbook: args.workbook.clone(),
+        write: args.write,
+        journal: None,
+        source_failures: None,
+    }
+}
+
+/// The same run, addressed over the wire: the service measures what only it can read.
+fn wire_request(args: &SealArgs) -> SealRequest {
+    SealRequest {
+        grad_year: args.grad_year,
+        all_sources: args.all_sources,
+        workbook: args
+            .workbook
+            .as_ref()
+            .map(|path| path.display().to_string()),
+        write: args.write,
+        season: args.season,
+        revision: args.revision,
+        source_objects: args.source_objects.clone(),
+    }
+}
+
+/// The scope a `--all-sources` flag selects.
+fn scope_of(all_sources: bool) -> Scope {
+    if all_sources {
         Scope::AllSources
     } else {
         Scope::Core
-    };
-    let coverage = report::coverage_report(store, Some(args.grad_year))?;
-    let census = report::build_census(store, scope)?;
-    let stats = store.stats()?;
-
-    let Some(path) = workbook_path(store, args)? else {
-        bail!(
-            "no workbook in {}: run `midwest-census workbook --grad-year {}` before sealing",
-            store.out_dir().display(),
-            args.grad_year
-        );
-    };
-    let workbook = inspect_workbook(
-        &path,
-        count(census.totals.class_of_2027),
-        count(coverage.jurisdictions.len()),
-    )?;
-    let evidence = assemble(&coverage, &census, &stats, workbook);
-
-    let mut state = reached_phase(&stats, &path)?;
-    // A previous `--write` is reported, never trusted: this run's evidence still has to agree with
-    // it, and a difference is printed rather than silently resolved in either direction.
-    let recorded = recorded_seal(store)?;
-    if let Some(seal) = &recorded {
-        println!("recorded seal: {} on {}", seal.digest, seal.sealed_on);
     }
-    print_ladder(&state, &path, &evidence);
-    if let Err(refusal) = state.seal(evidence) {
+}
+
+/// The ladder as an operator reads it, from whichever side assembled it.
+///
+/// The two routes produce one shape on purpose: a seal that refused offline and a seal that refused
+/// over the wire must print the same names, or an operator has to learn two vocabularies for one
+/// census.
+struct Ladder {
+    recorded: Option<(String, String)>,
+    phase: String,
+    workbook: String,
+    sealed: Option<(String, String)>,
+    open: Vec<(String, String)>,
+    refusal: Option<String>,
+    counts: SealCounts,
+    retained: RetainedFindings,
+    wrote: Option<String>,
+}
+
+impl Ladder {
+    /// The shape of an assembly this process ran.
+    fn of_outcome(outcome: &SealOutcome) -> Self {
+        let mut open = Vec::with_capacity(outcome.evidence.open_items().len());
+        for item in outcome.evidence.open_items() {
+            open.push((item.as_str().to_string(), outcome.evidence.detail(item)));
+        }
+        Self {
+            recorded: outcome.recorded.as_ref().map(seal_ref),
+            phase: outcome.state.phase().as_str().to_string(),
+            workbook: outcome.workbook.display().to_string(),
+            sealed: outcome.sealed().map(seal_ref),
+            open,
+            refusal: outcome.refusal.clone(),
+            counts: outcome.evidence.counts.clone(),
+            retained: outcome.evidence.retained.clone(),
+            wrote: outcome
+                .wrote
+                .as_ref()
+                .map(|path| path.display().to_string()),
+        }
+    }
+
+    /// The shape of an assembly the service ran and sent back.
+    fn of_reply(reply: &SealReply) -> Self {
+        Self {
+            recorded: reply.recorded.as_ref().map(wire_ref),
+            phase: reply.phase.clone(),
+            workbook: reply.workbook.clone(),
+            sealed: reply.sealed.as_ref().map(wire_ref),
+            open: reply
+                .open
+                .iter()
+                .map(|item| (item.item.clone(), item.detail.clone()))
+                .collect(),
+            refusal: reply.refusal.clone(),
+            counts: reply.counts.clone(),
+            retained: reply.retained.clone(),
+            wrote: reply.wrote.clone(),
+        }
+    }
+}
+
+fn seal_ref(seal: &SealedCensus) -> (String, String) {
+    (seal.digest.clone(), seal.sealed_on.clone())
+}
+
+fn wire_ref(seal: &midwest_census::restate_services::SealRef) -> (String, String) {
+    (seal.digest.clone(), seal.sealed_on.clone())
+}
+
+/// Print what the seal certified, or refuse the run naming the item that stopped it.
+///
+/// The refusal is printed before the exit status is set: an operator reads the item that blocked the
+/// seal, not a stack trace.
+fn present(ladder: &Ladder) -> Result<()> {
+    if let Some((digest, day)) = &ladder.recorded {
+        println!("recorded seal: {digest} on {day}");
+    }
+    println!("phase: {}", ladder.phase);
+    println!("workbook: {}", ladder.workbook);
+    if let Some((digest, _)) = &ladder.sealed {
+        println!("already sealed: {digest}");
+    }
+    report_open(&ladder.open);
+    if let Some(refusal) = &ladder.refusal {
         println!("refused: {refusal}");
         bail!("seal refused: {refusal}");
     }
-    report_seal(&state, recorded.as_ref())?;
-    if args.write {
-        write_seal(store, &state)?;
+    let Some((digest, day)) = &ladder.sealed else {
+        bail!("the seal reported no evidence and no refusal: nothing was certified");
+    };
+    println!("sealed {digest} on {day}");
+    if let Some((recorded, _)) = &ladder.recorded {
+        if recorded != digest {
+            println!("note: the recorded seal {recorded} no longer matches this census");
+        }
+    }
+    report_certified(ladder);
+    if let Some(path) = &ladder.wrote {
+        println!("wrote {path}");
     }
     Ok(())
 }
 
-/// Print what the seal certified, and flag a recorded seal this run no longer matches.
-fn report_seal(state: &CensusState, recorded: Option<&SealedCensus>) -> Result<()> {
-    let seal = state.sealed().context("a sealed state carries its seal")?;
-    println!("sealed {} on {}", seal.digest, seal.sealed_on);
-    if let Some(previous) = recorded {
-        if previous.digest != seal.digest {
-            println!(
-                "note: the recorded seal {} no longer matches this census",
-                previous.digest
-            );
-        }
+/// Every §70 item still unmet, in ladder order.
+fn report_open(open: &[(String, String)]) {
+    if open.is_empty() {
+        println!("acceptance: every §70 item is satisfied");
+        return;
     }
+    for (item, detail) in open {
+        println!("acceptance: {item} unmet — {detail}");
+    }
+}
+
+/// The counts the seal certified, and what the census retains without resolving.
+fn report_certified(ladder: &Ladder) {
     println!(
         "  cohort {} of {} athletes, {} schools, {} meets, {} performances, {} coaches",
-        seal.counts.class_of_2027,
-        seal.counts.athletes,
-        seal.counts.schools,
-        seal.counts.meets,
-        seal.counts.performances,
-        seal.counts.coaches,
+        ladder.counts.class_of_2027,
+        ladder.counts.athletes,
+        ladder.counts.schools,
+        ladder.counts.meets,
+        ladder.counts.performances,
+        ladder.counts.coaches,
     );
     println!(
-        "  retained: {} gaps, {} conflicts, {} exhausted retries, {} source failures",
-        seal.retained.gaps.len(),
-        seal.retained.conflicts,
-        seal.retained.retry_exhausted,
-        seal.retained
+        "  retained: {} gaps, {} conflicts, {} access conditions ({} hosts refused, {} throttled), {} source failures",
+        ladder.retained.gaps.len(),
+        ladder.retained.conflicts,
+        ladder.retained.access_conditions,
+        ladder.retained.blocked_hosts,
+        ladder.retained.throttled_hosts,
+        ladder
+            .retained
             .source_failures
             .map_or_else(|| "unmeasured".to_string(), |count| count.to_string()),
     );
-    Ok(())
 }
-
-/// Persist the sealed state, so a later run reads the seal instead of re-deriving it.
-fn write_seal(store: &Store, state: &CensusState) -> Result<()> {
-    let out = store.out_dir().join("seal.json");
-    std::fs::write(&out, serde_json::to_vec_pretty(state)?)
-        .with_context(|| format!("writing {}", out.display()))?;
-    println!("wrote {}", out.display());
-    Ok(())
-}
-
-/// Which phase the store's own artifacts put this census in.
-///
-/// Each step is entered only when the artifact that phase produces exists, so the ladder a seal
-/// walks is the pipeline's recorded progress and not a caller's claim. The conditions are monotone:
-/// a later artifact cannot exist without the earlier ones, so the walk cannot skip a phase.
-fn reached_phase(stats: &StoreStats, workbook: &Path) -> Result<CensusState> {
-    let steps = [
-        (Phase::Acquiring, stats.observations > 0),
-        (Phase::Reconciling, table_rows(stats, Table::Snapshots) > 0),
-        (
-            Phase::Reviewing,
-            table_rows(stats, Table::ReviewCases) > 0
-                || table_rows(stats, Table::IdentityVerdicts) > 0,
-        ),
-        (Phase::ResolvingGaps, table_rows(stats, Table::Coverage) > 0),
-        (Phase::Exporting, workbook.exists()),
-    ];
-    let mut state = CensusState::Discovering;
-    for (phase, reached) in steps {
-        if !reached {
-            break;
-        }
-        state
-            .advance(phase)
-            .with_context(|| format!("walking the census ladder into {phase:?}"))?;
-    }
-    Ok(state)
-}
-
-/// One table's row count, from the store's own sequence counters: exact, and cheap enough to ask
-/// for every table on every seal. A table the stats do not name reads as zero, which can only hold
-/// a seal back, never let one through.
-fn table_rows(stats: &StoreStats, table: Table) -> u64 {
-    stats
-        .tables
-        .iter()
-        .find(|(name, _)| name == table.file())
-        .map(|(_, rows)| *rows)
-        .unwrap_or(0)
-}
-
-fn print_ladder(state: &CensusState, workbook: &Path, evidence: &SealEvidence) {
-    println!("phase: {}", state.phase().as_str());
-    println!("workbook: {}", workbook.display());
-    if let Some(sealed) = state.sealed() {
-        println!("already sealed: {}", sealed.digest);
-    }
-    let open = evidence.open_items();
-    if open.is_empty() {
-        println!("acceptance: every §70 item is satisfied");
-    } else {
-        for item in open {
-            println!(
-                "acceptance: {} unmet — {}",
-                item.as_str(),
-                evidence.detail(item)
-            );
-        }
-    }
-}
-
-/// Everything §70 asks the census to prove, read from the store and the coverage classifier.
-fn assemble(
-    coverage: &CoverageReport,
-    census: &Census,
-    stats: &StoreStats,
-    workbook: WorkbookCheck,
-) -> SealEvidence {
-    let open_reviews = table_rows(stats, Table::ReviewCases)
-        .saturating_sub(table_rows(stats, Table::IdentityVerdicts));
-
-    SealEvidence {
-        open: OpenWork {
-            // Owed jurisdiction sweeps and un-terminal source objects live in the workflow journal,
-            // which this command does not read. They are `None` - unmeasured - not `0`: this seal
-            // must not certify §70 items it never checked, and `None` keeps those items open, so a
-            // store-only seal refuses rather than claiming a completion it cannot back.
-            jurisdiction_sweeps: None,
-            source_objects: None,
-            cohort_decisions: None,
-            identity_candidates: Some(open_reviews),
-        },
-        counts: SealCounts {
-            jurisdictions: count(census.by_state.len()),
-            schools: count(coverage.read.schools),
-            meets: count(coverage.read.meets),
-            athletes: count(census.totals.athletes),
-            class_of_2027: count(census.totals.class_of_2027),
-            performances: count(coverage.read.performances),
-            coaches: count(census.totals.coaches),
-        },
-        retained: RetainedFindings {
-            gaps: coverage
-                .gaps
-                .iter()
-                .map(|gap| GapTally {
-                    class: gap.class.to_string(),
-                    unit: gap.unit.to_string(),
-                    count: count(gap.count),
-                })
-                .collect(),
-            conflicts: table_rows(stats, Table::Conflicts),
-            retry_exhausted: table_rows(stats, Table::SourceAccess),
-            // Source *failures* are not the same row as a blocked `(kind, host)`: a failure is a
-            // terminal outcome of one attempt, and the store keeps access conditions, not attempts.
-            // Unmeasured, for the same reason the open-work fields above are.
-            source_failures: None,
-            observations: stats.observations,
-            calculations: count(coverage.read.performances),
-        },
-        workbook,
-        observed_on: census.generated_on.clone(),
-    }
-}
-
-/// The seal a previous `--write` recorded, if the store holds one.
-fn recorded_seal(store: &Store) -> Result<Option<SealedCensus>> {
-    let path = store.out_dir().join("seal.json");
-    if !path.exists() {
-        return Ok(None);
-    }
-    let raw = std::fs::read(&path).with_context(|| format!("reading {}", path.display()))?;
-    let state: CensusState =
-        serde_json::from_slice(&raw).with_context(|| format!("parsing {}", path.display()))?;
-    Ok(state.sealed().cloned())
-}
-
-/// `usize` counts become the `u64` the seal records. Saturating: a count that cannot be represented
-/// is not a count this census may claim.
-pub(super) fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
-}
-
-/// The workbook this run certifies: the named path, or the newest export in the store's out dir.
-fn workbook_path(store: &Store, args: &SealArgs) -> Result<Option<PathBuf>> {
-    if let Some(path) = &args.workbook {
-        if !path.exists() {
-            bail!("{} does not exist", path.display());
-        }
-        return Ok(Some(path.clone()));
-    }
-    let out = store.out_dir();
-    let mut newest: Option<(std::time::SystemTime, PathBuf)> = None;
-    for entry in std::fs::read_dir(&out).with_context(|| format!("reading {}", out.display()))? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.extension().is_none_or(|ext| ext != "xlsx") {
-            continue;
-        }
-        let modified = entry
-            .metadata()
-            .and_then(|meta| meta.modified())
-            .unwrap_or(std::time::UNIX_EPOCH);
-        if newest.as_ref().is_none_or(|(seen, _)| modified > *seen) {
-            newest = Some((modified, path));
-        }
-    }
-    Ok(newest.map(|(_, path)| path))
-}
-
-#[cfg(test)]
-mod tests;

@@ -1,8 +1,6 @@
-use super::{
-    browser::{BrowserError, BrowserManager, BrowserState, BrowserStatus},
-    clock::{self, Clock},
-    Runtime,
-};
+use super::{clock, Runtime};
+use athleticnet_browser::clock::Clock;
+use athleticnet_browser::{BrowserError, BrowserManager, BrowserState, BrowserStatus};
 use restate_sdk::prelude::*;
 use std::sync::Arc;
 

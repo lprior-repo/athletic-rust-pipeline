@@ -29,7 +29,7 @@ pub struct ProfileWorker {
     inactivity_timeout = "2h",
     journal_retention = "30 days",
     idempotency_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl ProfileWorker {
     #[handler]

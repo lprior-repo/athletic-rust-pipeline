@@ -109,10 +109,10 @@ impl JurisdictionCensus {
         if state.meets.is_none() {
             // The season year reaches the results index as a query parameter, so a year the URL
             // cannot carry is a request fault rather than a source condition.
-            let year = u16::try_from(request.season.start_year()).map_err(|_| {
+            let year = u16::try_from(request.season.get()).map_err(|_| {
                 TerminalError::new(format!(
                     "season year {} is not a results-index year",
-                    request.season.start_year()
+                    request.season.get()
                 ))
             })?;
             let fetcher = self.fetcher().await?;
@@ -172,7 +172,7 @@ fn report(
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]

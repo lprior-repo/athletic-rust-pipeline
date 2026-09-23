@@ -47,7 +47,7 @@ use std::time::Duration;
 
 /// Observation date and school year the adapters are driven with; every golden below encodes them.
 const OBSERVED_ON: &str = "2026-09-20";
-const SCHOOL_YEAR: SchoolYear = SchoolYear(2026);
+const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
 
 // -------------------------------------------------------------------------------------------------
 // Harness

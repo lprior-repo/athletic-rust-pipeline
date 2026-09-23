@@ -1,4 +1,4 @@
-use super::{level_of, school_year_for, Accumulator, ArchiveArtifact, Stats};
+use super::{level_of, Accumulator, ArchiveArtifact, Stats};
 use crate::school_index::SchoolIndex;
 use crate::sources::result_file::{ParsedEvent, ParsedMeet};
 use census_domain::model::{
@@ -13,25 +13,29 @@ mod map_rows;
 
 use map_rows::record_row;
 
-#[allow(clippy::too_many_arguments)]
-pub(super) fn absorb(
-    parsed: &ParsedMeet,
-    artifact: &ArchiveArtifact,
-    sport: Sport,
-    observed_on: &str,
-    index: &SchoolIndex,
-    resolved: &mut HashMap<String, Option<SchoolId>>,
-    stats: &mut Stats,
-    accumulator: &mut Accumulator,
-) -> usize {
+/// One parsed meet and the run facts its rows are filed under: the artifact it came from, the sport
+/// the walk is reading, the school year admission accepted, and the day the body was observed.
+///
+/// Bundled rather than passed one by one because `sport` sits next to `school_year` at every call
+/// site and they mean entirely different things: the field names carry a distinction the argument
+/// order cannot.
+pub(super) struct AbsorbedMeet<'a> {
+    pub(super) parsed: &'a ParsedMeet,
+    pub(super) artifact: &'a ArchiveArtifact,
+    pub(super) sport: Sport,
+    pub(super) school_year: SchoolYear,
+    pub(super) observed_on: &'a str,
+}
+
+pub(super) fn absorb(read: AbsorbedMeet<'_>, mut writer: RowWriter<'_>) -> usize {
+    let AbsorbedMeet {
+        parsed,
+        artifact,
+        sport,
+        school_year,
+        observed_on,
+    } = read;
     let (meet, meet_evidence, timing) = meet_for(parsed, artifact, sport, observed_on);
-    let school_year = school_year_for(&parsed.date, sport, artifact.year);
-    let mut writer = RowWriter {
-        index,
-        resolved,
-        stats,
-        accumulator,
-    };
 
     let mut athlete_rows = 0usize;
     for parsed_event in &parsed.events {
@@ -57,11 +61,14 @@ pub(super) fn absorb(
 }
 
 /// The run-level aggregates one meet's rows are written into.
-struct RowWriter<'a> {
-    index: &'a SchoolIndex,
-    resolved: &'a mut HashMap<String, Option<SchoolId>>,
-    stats: &'a mut Stats,
-    accumulator: &'a mut Accumulator,
+///
+/// The caller builds this from the four disjoint borrows of the run it already holds, so the four
+/// writes `absorb` performs are named at the call site instead of being counted positionally.
+pub(super) struct RowWriter<'a> {
+    pub(super) index: &'a SchoolIndex,
+    pub(super) resolved: &'a mut HashMap<String, Option<SchoolId>>,
+    pub(super) stats: &'a mut Stats,
+    pub(super) accumulator: &'a mut Accumulator,
 }
 
 /// One (meet, event) pair the row helpers write against.

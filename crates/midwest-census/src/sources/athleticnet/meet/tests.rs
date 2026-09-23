@@ -356,7 +356,7 @@ fn grades_are_read_only_where_the_payload_publishes_one() {
             athlete
                 .observed_grades
                 .iter()
-                .any(|grade| grade.school_year == SchoolYear(2025))
+                .any(|grade| grade.school_year == SchoolYear::new(2025).expect("2025 is a season"))
         })
         .count();
     assert!(

@@ -188,6 +188,7 @@ pub(super) fn store(
                 observed_grade: input.grade,
                 evidence: vec![evidence],
                 source_key: input.source_key,
+                retained_conflicts: Vec::new(),
             }
         });
 }

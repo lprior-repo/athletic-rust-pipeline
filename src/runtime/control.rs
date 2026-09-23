@@ -46,7 +46,7 @@ pub struct PipelineControl {
     inactivity_timeout = "2h",
     journal_retention = "30 days",
     idempotency_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl PipelineControl {
     #[handler]
@@ -164,7 +164,7 @@ impl PipelineControl {
             .call()
             .await?
             .0;
-        if status.state != super::browser::BrowserState::Ready {
+        if status.state != athleticnet_browser::BrowserState::Ready {
             return Err(TerminalError::new_with_code(
                 409,
                 "browser is not ready; collection remains paused",

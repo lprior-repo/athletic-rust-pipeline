@@ -1174,7 +1174,7 @@ async fn collect_skips_providers_it_was_not_asked_for() {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: census_domain::model::SchoolYear(2026),
+        school_year: census_domain::model::SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     };
 

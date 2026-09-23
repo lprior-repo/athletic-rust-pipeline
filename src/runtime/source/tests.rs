@@ -19,38 +19,6 @@ fn team_route_retains_indoor_season_identifier() {
 }
 
 #[test]
-fn valid_retry_after_overrides_fallback() {
-    let attempt = http::AttemptResult {
-        receipt: None,
-        code: Some(FailureCode::RateLimited),
-        status: Some(429),
-        message: String::new(),
-        retryable: true,
-        retry_after_ms: 1_000,
-    };
-    assert_eq!(
-        retry::next_delay(0, &attempt, Duration::from_secs(90)),
-        Ok(Duration::from_secs(1))
-    );
-}
-
-#[test]
-fn absent_retry_after_uses_bounded_rate_limit_fallback() {
-    let attempt = http::AttemptResult {
-        receipt: None,
-        code: Some(FailureCode::RateLimited),
-        status: Some(429),
-        message: String::new(),
-        retryable: true,
-        retry_after_ms: 0,
-    };
-    assert_eq!(
-        retry::next_delay(1, &attempt, Duration::from_secs(1)),
-        Ok(Duration::from_secs(120))
-    );
-}
-
-#[test]
 fn receiptless_transport_fault_is_retryable_for_rankings() {
     // The browser client lost the command response: no receipt exists, nothing
     // was observed, and the session re-arm makes the retry meaningful.

@@ -59,6 +59,12 @@ pub(in crate::sources::athleticnet) fn absorb_meet(
         counts.meets_without_season = counts.meets_without_season.saturating_add(1);
         return (0, counts);
     };
+    // A published season the domain will not place is refused exactly as an absent one: the meet's
+    // rows are not filed under a year no source published.
+    let Some(school_year) = SchoolYear::containing(season, 5) else {
+        counts.meets_without_season = counts.meets_without_season.saturating_add(1);
+        return (0, counts);
+    };
     let sport = sport_of(meet.sport2.as_deref());
     let divisions: HashMap<i64, &str> = meet
         .divisions
@@ -78,7 +84,7 @@ pub(in crate::sources::athleticnet) fn absorb_meet(
         metadata,
         state,
         sport,
-        school_year: SchoolYear::containing(season, 5),
+        school_year,
         date,
         meet: row,
         school_names: results

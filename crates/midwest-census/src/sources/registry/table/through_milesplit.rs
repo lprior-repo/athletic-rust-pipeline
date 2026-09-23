@@ -63,7 +63,14 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 7] = [
     SourceDescriptor {
         slug: "athleticnet",
         provider: "Athletic.net athlete bio API and whole-meet pull",
-        transport: TransportKind::StructuredApi,
+        // The source policy's own lane (AGENTS.md, Source policy): Athletic.net is acquired through
+        // the headed persistent-profile browser lane, with a `HumanRequired` handoff when a challenge
+        // appears. The addresses are the ones the adapter names; what the browser changes is who
+        // carries them — the one process that owns the profile, whose session a challenge belongs to
+        // rather than to a fresh HTTP request the run cannot clear. A browser-transported source is
+        // also what makes the plan's `BrowserSession` class reachable: `access_class` reads this
+        // field, and a run with no lane configured defers the source instead of failing it.
+        transport: TransportKind::Browser,
         // athlete_profile: `BIO_ENDPOINT` (GetAthleteBioData) answers one athlete per call, and
         // `collect` spends two calls per athlete because `sport=tf` and `sport=xc` return disjoint
         // results. bulk_results: one meet is a 2-request pull (`meet::meet_requests`), and

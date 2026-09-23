@@ -1,5 +1,6 @@
-use super::{browser::BrowserSettings, browser_config::RawBrowserConfig};
+use super::browser_config::RawBrowserConfig;
 use anyhow::{bail, Context, Result};
+use athleticnet_browser::BrowserSettings;
 use serde::{Deserialize, Serialize};
 use std::{
     io::Read,

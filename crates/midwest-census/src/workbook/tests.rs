@@ -46,7 +46,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         &school_id,
         Sport::OutdoorTrack,
         Gender::Boys,
-        SchoolYear(2026),
+        SchoolYear::new(2026).expect("2026 is a season"),
     );
 
     for (kind, marks) in [
@@ -82,6 +82,7 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
                 observed_grade: None,
                 evidence: vec![Evidence::parsed(SourceRef::new("wiaa_results", None), day)],
                 source_key,
+                retained_conflicts: Vec::new(),
             };
             store.append(Table::Performances, &performance).unwrap();
         }

@@ -1,5 +1,12 @@
 //! The lattice's rules, on values only: no store, no network, no clock.
 
+use census_domain::model::{
+    ReviewCase, ReviewState, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
+};
+
+use sha2::{Digest, Sha256};
+
 use super::*;
 
 /// Evidence that satisfies every §70 item: 51 jurisdictions, a workbook that carries the cohort, and
@@ -38,7 +45,9 @@ fn evidence() -> SealEvidence {
                 },
             ],
             conflicts: 11_342,
-            retry_exhausted: 96,
+            access_conditions: 96,
+            blocked_hosts: 60,
+            throttled_hosts: 36,
             source_failures: Some(4),
             observations: 9_800_000,
             calculations: 4_060_000,
@@ -383,7 +392,7 @@ fn the_workbook_must_carry_every_cohort_athlete() {
 fn retained_findings_do_not_block_a_seal_and_travel_inside_it() {
     let packet = evidence();
     assert!(packet.retained.gaps.iter().any(|gap| gap.count > 0));
-    assert!(packet.retained.conflicts > 0 && packet.retained.retry_exhausted > 0);
+    assert!(packet.retained.conflicts > 0 && packet.retained.access_conditions > 0);
     let sealed = seal_from_export(packet.clone()).expect("findings never block a seal");
     let seal = sealed.sealed().expect("the state is complete");
 
@@ -424,6 +433,55 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
     assert_ne!(
         moved.sealed().map(|seal| seal.digest.clone()),
         Some(a.digest.clone())
+    );
+}
+
+/// The digest body is a wire format, not an implementation detail: a stored digest is re-rendered
+/// from the same evidence and compared, so every field's name, order and separator is a promise to
+/// the seals already written. The body below is `seal_digest.rs`'s format string transcribed field
+/// by field, so a field that is moved, renamed or dropped fails here with both strings side by side
+/// instead of as one opaque hash that cannot say which field moved.
+#[test]
+fn the_digest_is_pinned_field_by_field() {
+    let body = "census-seal-v3\n\
+         jurisdictions=51\n\
+         schools=18047\n\
+         meets=11007\n\
+         athletes=1226212\n\
+         co2027=307653\n\
+         performances=4100000\n\
+         coaches=27580\n\
+         conflicts=11342\n\
+         access_conditions=96\n\
+         blocked_hosts=60\n\
+         throttled_hosts=36\n\
+         source_failures=4\n\
+         observations=9800000\n\
+         calculations=4060000\n\
+         workbook_rows=4407653\n\
+         workbook_sheets=24\n\
+         workbook_sha256=0f1e\n\
+         gaps=missing_coach:athletes:264452|missing_profile:athletes:13202\n";
+    let mut hasher = Sha256::new();
+    hasher.update(body.as_bytes());
+    assert_eq!(
+        super::seal_digest::render(&evidence()),
+        format!("{:x}", hasher.finalize()),
+        "the rendered digest is the sha256 of exactly that body"
+    );
+    assert_eq!(
+        digest_of(&seal_from_export(evidence()).expect("seals")),
+        "a05889c00d29e669e5341c46620a789c2ce81bb9ea7f41f913cbe6bc5f32311f",
+        "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
+    );
+
+    // The tri-state is part of the wire: a count nobody took must not digest as a measured zero.
+    let mut unmeasured = evidence();
+    unmeasured.retained.source_failures = None;
+    assert_ne!(
+        super::seal_digest::render(&unmeasured),
+        super::seal_digest::render(&evidence()),
+        "an unmeasured count has its own spelling in the digest"
     );
 }
 
@@ -555,4 +613,83 @@ fn a_source_object_is_owed_until_it_accepts_an_observation() {
     assert!(written.terminal());
     assert!(!silent.terminal());
     assert_eq!(owed_source_objects(&[written, silent]), 1);
+}
+
+/// A cohort decision is owed while its case has no verdict, whatever put the athlete in the queue:
+/// missing cohort evidence and identity confidence below the bar are both the same open question.
+#[test]
+fn a_pending_cohort_case_is_owed_a_decision() {
+    let unverified = ReviewCase::pending(
+        COHORT_UNVERIFIED_FAMILY,
+        "athlete:1",
+        "A Runner (Somewhere High)",
+        "no cohort evidence",
+    );
+    let low_confidence = ReviewCase::pending(
+        COHORT_IDENTITY_CONFIDENCE_FAMILY,
+        "athlete:2",
+        "B Runner (Somewhere High)",
+        "identity confidence 65 below the high bar of 85",
+    );
+    assert_eq!(owed_cohort_decisions(&[unverified, low_confidence]), 2);
+}
+
+/// A verdict is the decision, including the one that declines to decide: `Retained` is the lane
+/// saying the evidence does not settle it, and the case stays visible in the workbook either way.
+#[test]
+fn a_decided_cohort_case_is_not_owed_again() {
+    let mut resolved = ReviewCase::pending(
+        COHORT_UNVERIFIED_FAMILY,
+        "athlete:1",
+        "A Runner (Somewhere High)",
+        "no cohort evidence",
+    );
+    resolved.state = ReviewState::Resolved;
+    let mut retained = ReviewCase::pending(
+        COHORT_IDENTITY_CONFIDENCE_FAMILY,
+        "athlete:2",
+        "B Runner (Somewhere High)",
+        "identity confidence 65 below the high bar of 85",
+    );
+    retained.state = ReviewState::Retained;
+    assert_eq!(owed_cohort_decisions(&[resolved, retained]), 0);
+}
+
+/// Every retained case without a verdict is an open identity candidate, whichever family kept it:
+/// the item is about the decision, and only a verdict is one.
+#[test]
+fn every_pending_case_is_an_open_identity_candidate() {
+    let pending = ReviewCase::pending(
+        WITHHELD_MAILBOX_FAMILY,
+        "coach:1",
+        "A Coach (Somewhere High)",
+        "only a personal mailbox was published",
+    );
+    let mut decided = ReviewCase::pending(
+        UNRESOLVED_VENUE_FAMILY,
+        "meet:1",
+        "Some Invitational",
+        "no evidence placed the venue in a jurisdiction",
+    );
+    decided.state = ReviewState::Retained;
+    assert_eq!(owed_identity_candidates(&[pending, decided]), 1);
+}
+
+/// Another lane's open case is that lane's work, not a cohort decision: the seal counts a
+/// jurisdiction question once, under the item that owns it.
+#[test]
+fn another_lanes_pending_case_is_not_a_cohort_decision() {
+    let venue = ReviewCase::pending(
+        UNRESOLVED_VENUE_FAMILY,
+        "meet:1",
+        "Some Invitational",
+        "no evidence placed the venue in a jurisdiction",
+    );
+    let mailbox = ReviewCase::pending(
+        WITHHELD_MAILBOX_FAMILY,
+        "coach:1",
+        "A Coach (Somewhere High)",
+        "only a personal mailbox was published",
+    );
+    assert_eq!(owed_cohort_decisions(&[venue, mailbox]), 0);
 }

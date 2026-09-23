@@ -162,3 +162,74 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     assert!(csv.contains("WY,1,0,"), "{csv}");
     assert!(csv.contains("UNKNOWN,"), "{csv}");
 }
+
+#[test]
+fn out_of_scope_jurisdiction_is_named_in_notes_not_counted() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+
+    // Wisconsin is a jurisdiction a census run covers; Hawaii is modelled, never acquired, and a
+    // store can still hold rows for it.
+    let (in_scope, in_scope_id) =
+        CanonicalSchool::new(UsJurisdiction::Wisconsin, "Abbotsford", "abbotsford");
+    let (out_of_scope, out_of_scope_id) =
+        CanonicalSchool::new(UsJurisdiction::Hawaii, "Honolulu Prep", "honolulu-prep");
+    store.append(Table::Schools, &in_scope).unwrap();
+    store.append(Table::Schools, &out_of_scope).unwrap();
+    let in_scope_athlete =
+        CanonicalAthlete::new(&in_scope_id, "In Scope", GradYear::CO2027, Gender::Boys);
+    let out_of_scope_athlete = CanonicalAthlete::new(
+        &out_of_scope_id,
+        "Out Of Scope",
+        GradYear::CO2027,
+        Gender::Boys,
+    );
+    store.append(Table::Athletes, &in_scope_athlete).unwrap();
+    store
+        .append(Table::Athletes, &out_of_scope_athlete)
+        .unwrap();
+
+    let census = build_census(&store, Scope::AllSources).unwrap();
+
+    // The run scope decides which jurisdictions publish at all: one row per run-scope jurisdiction
+    // plus the unplaced row, and no row for the jurisdiction the run does not cover.
+    assert_eq!(
+        census.by_state.len(),
+        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
+    );
+    assert!(!census
+        .by_state
+        .contains_key(&JurisdictionBucket::from(UsJurisdiction::Hawaii)));
+    // Nothing the out-of-scope side holds reaches a row or a total.
+    assert_eq!(census.totals.schools, 1);
+    assert_eq!(census.totals.athletes, 1);
+    assert_eq!(census.totals.class_of_2027, 1);
+    let wisconsin = census
+        .by_state
+        .get(&JurisdictionBucket::from(UsJurisdiction::Wisconsin));
+    assert_eq!(wisconsin.map(|row| row.schools), Some(1));
+    assert_eq!(wisconsin.map(|row| row.class_of_2027), Some(1));
+
+    // The work is named rather than dropped: a note carries the jurisdiction and the row it would
+    // have contributed.
+    let note = census
+        .notes
+        .iter()
+        .find(|note| note.contains("Hawaii"))
+        .expect("a note names the jurisdiction the run scope leaves out");
+    assert!(
+        note.contains("Hawaii (HI) is outside the census run scope"),
+        "{note}"
+    );
+    assert!(note.contains("schools=1"), "{note}");
+    assert!(note.contains("athletes=1"), "{note}");
+    assert!(note.contains("class_of_2027=1"), "{note}");
+
+    // The evidence scope never changes which jurisdictions publish: a core report and an all-sources
+    // report differ only in the rows they admit.
+    let core = build_census(&store, Scope::Core).unwrap();
+    assert_eq!(
+        core.by_state.keys().collect::<Vec<_>>(),
+        census.by_state.keys().collect::<Vec<_>>()
+    );
+}

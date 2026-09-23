@@ -32,7 +32,7 @@ pub struct ExportWorker {
     inactivity_timeout = "2h",
     journal_retention = "30 days",
     idempotency_retention = "30 days",
-    invocation_retry_policy(initial_interval = "1s", max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(initial_interval = "1s", max_attempts = 3, on_max_attempts = "pause")
 )]
 impl ExportWorker {
     #[handler]
@@ -117,7 +117,7 @@ async fn acquire_stage(
                 .map_err(terminal)
         })
         .name("stage verified export bundle")
-        .retry_policy(RunRetryPolicy::new().max_attempts(4))
+        .retry_policy(RunRetryPolicy::new().max_attempts(1))
         .await?;
     // If the SDK loses the acknowledgement after this run, its kept stage may orphan.
     ctx.set(
@@ -144,7 +144,7 @@ async fn publish_stage(
                 .map_err(terminal)
         })
         .name("publish verified export bundle")
-        .retry_policy(RunRetryPolicy::new().max_attempts(4))
+        .retry_policy(RunRetryPolicy::new().max_attempts(1))
         .await?;
     ctx.set(
         RESULT_STATE,

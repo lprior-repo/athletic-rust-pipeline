@@ -29,7 +29,12 @@ pub(super) async fn measure(
     ctx: &Context<'_>,
     request: &OpenWorkRequest,
 ) -> Result<OpenWorkReply, HandlerError> {
-    let season = SchoolYear(request.season);
+    let season = SchoolYear::new(request.season).ok_or_else(|| {
+        TerminalError::new(format!(
+            "season year {} is not a school year",
+            request.season
+        ))
+    })?;
     let revision = Revision(request.revision);
     let jurisdictions = read_jurisdictions(ctx, season, revision).await;
     let endpoints = read_source_objects(ctx, &request.source_objects).await;

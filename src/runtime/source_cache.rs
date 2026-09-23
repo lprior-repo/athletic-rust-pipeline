@@ -34,7 +34,7 @@ pub struct SourceCache;
     lazy_state = true,
     journal_retention = "30 days",
     idempotency_retention = "30 days",
-    invocation_retry_policy(max_attempts = 4, on_max_attempts = "pause")
+    invocation_retry_policy(max_attempts = 3, on_max_attempts = "pause")
 )]
 impl SourceCache {
     #[handler]

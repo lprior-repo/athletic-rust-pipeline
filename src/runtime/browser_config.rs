@@ -1,5 +1,6 @@
-use super::{browser::BrowserSettings, ExecutionMode};
+use super::ExecutionMode;
 use anyhow::{bail, Result};
+use athleticnet_browser::BrowserSettings;
 use serde::Deserialize;
 use std::{
     path::{Component, Path, PathBuf},

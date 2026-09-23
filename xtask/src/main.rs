@@ -15,6 +15,7 @@
 mod baseline;
 mod census;
 mod cmd;
+mod contract;
 mod dump_sheet;
 mod ingress;
 mod integrity;
@@ -22,6 +23,7 @@ mod json;
 mod paths;
 mod purity;
 mod replay;
+mod retry;
 mod scaffold;
 mod scan;
 mod seams;
@@ -55,6 +57,9 @@ enum Command {
     },
     /// Count forbidden constructs and size-budget overruns in production code; JSON on stdout.
     Scan,
+    /// Assert the architectural constants other work relies on: one line per check, non-zero exit
+    /// when any of the eight is violated.
+    Contract,
     /// Check every `crate::…` reference between the census crate's top-level modules against the
     /// allowed-edge table; JSON on stdout, non-zero exit on a violation.
     Seams,
@@ -169,6 +174,7 @@ fn run() -> Result<()> {
     match Cli::parse().command {
         Command::Gate { args } => Cmd::new("bash").arg("tools/gate.sh").args(args).run(),
         Command::Scan => scan::run(),
+        Command::Contract => contract::run(),
         Command::Seams => seams::run(),
         Command::Integrity => integrity::run(),
         Command::QualityBaseline {

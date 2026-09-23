@@ -6,6 +6,7 @@ weakened checks. Existing debt is recorded in `tools/quality-baseline.json` and 
 ```bash
 tools/gate.sh                     # every lane, then compare the measurements with the baseline
 tools/gate.sh --full              # ... plus the mutation-testing lane (pre-release only, it is slow)
+tools/gate.sh --release           # the pre-release pass: every lane, every tool required, heavy lanes on
 tools/gate.sh --update-baseline   # rewrite the baseline from current measurements
 tools/gate.sh --update-baseline --allow-increase   # ... accepting a number that grew
 cargo xtask gate                  # the same script, through the developer command
@@ -14,6 +15,17 @@ cargo xtask gate                  # the same script, through the developer comma
 The script exits `0` on `gate: PASS` and `1` on `gate: FAIL -> <lanes>`; the summary names every
 lane that failed. Every lane's output is printed as it runs, so a failure is readable without a
 re-run.
+
+Two modes, and the difference is what a missing tool means:
+
+* **dev** (default) — the pass for an edit. A tool that is not installed makes its lane print `SKIP`
+  and return success, so a laptop without `cargo-audit` still runs everything else. `--full` adds the
+  `mutants` lane.
+* **`--release`** — the pass a release is signed off on. It implies `--full`, and a missing tool is a
+  **failure**: a `SKIP` there would be a claim that a lane's coverage was not needed, and a release
+  cannot make that claim. Install the whole set (`cargo-audit`, `cargo-vet`, `cargo-machete`,
+  `cargo-geiger`, `cargo-hack`, `cargo-mutants`) before invoking it. `cargo-deny` is never skipped in
+  either mode: its scorecard is a pass/fail lane, not an advisory one.
 
 The check and strict-clippy lanes run through the pinned nightly with
 `-Zallow-features=portable_simd,try_blocks`. That is the source-policy allowlist: a `#![feature(..)]`
@@ -35,13 +47,13 @@ silently dropping the check.
 | baseline update | `cargo xtask quality-baseline` | only with `--update-baseline`; refuses to raise a number without `--allow-increase` |
 | debt ratchet | `cargo xtask ratchet` | any metric grew against the baseline |
 | deny | `cargo deny check` | a dependency policy violation (needs `cargo-deny`; a missing tool fails this lane) |
-| audit | `cargo audit --quiet` | an advisory covers a locked crate (prints `SKIP` when `cargo-audit` is absent) |
-| vet | `cargo vet --locked` | a locked crate is neither audited nor exempted in `supply-chain/` (prints `SKIP` when `cargo-vet` is absent) |
-| machete | `cargo machete` | an unused dependency is declared (prints `SKIP` when `cargo-machete` is absent) |
-| geiger | `cargo geiger --workspace --all-features --output-format Json` | unsafe code appears (prints `SKIP` when `cargo-geiger` is absent) |
-| feature powerset | `cargo hack check --workspace --feature-powerset` | a feature combination does not compile (prints `SKIP` when `cargo-hack` is absent) |
+| audit | `cargo audit --quiet` | an advisory covers a locked crate (a missing `cargo-audit` SKIPs in dev and fails `--release`) |
+| vet | `cargo vet --locked` | a locked crate is neither audited nor exempted in `supply-chain/` (a missing `cargo-vet` SKIPs in dev and fails `--release`) |
+| machete | `cargo machete` | an unused dependency is declared (a missing `cargo-machete` SKIPs in dev and fails `--release`) |
+| geiger | `cargo geiger --workspace --all-features --output-format Json` | unsafe code appears (a missing `cargo-geiger` SKIPs in dev and fails `--release`) |
+| feature powerset | `cargo hack check --workspace --feature-powerset` | a feature combination does not compile (a missing `cargo-hack` SKIPs in dev and fails `--release`) |
 | bench presence | `cargo bench --workspace --no-run` | a benchmark target exists and does not build; with no `benches/` yet it prints why and passes |
-| mutants | `cargo mutants --workspace --in-place` | a mutant survives the test suite (only with `--full`; prints `SKIP` when `cargo-mutants` is absent) |
+| mutants | `cargo mutants --workspace --in-place` | a mutant survives the test suite (only with `--full`, which `--release` implies; a missing `cargo-mutants` SKIPs in dev and fails `--release`) |
 
 ## Supply chain
 
@@ -78,12 +90,20 @@ gate prints are the same numbers `cargo xtask <command>` prints by hand.
 | `cargo xtask scan` | the forbidden-construct and size-budget report, as JSON on stdout |
 | `cargo xtask integrity` | the domain type-integrity candidates, as JSON on stdout |
 | `cargo xtask domain-purity` | the `census-domain` normal dependency tree; fails on a banned package |
+| `cargo xtask contract` | the seven architectural constants agents rely on (census scope, the source transports, handler ceilings, Python artifacts, descriptor admission, scanned-package parity, the front-door documents); one line per violated check |
 | `cargo xtask quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the baseline |
 | `cargo xtask ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the baseline |
 
-The scan covers `src/` and `crates/midwest-census/src` — the crates the baseline records. Adding a
-crate to the scan is a baseline change (`tools/gate.sh --update-baseline`), not a scan change: a
-crate with no baseline entry reads as new debt for every count it contributes.
+The scan covers **every workspace member**, not a hand-kept list: it asks `cargo metadata --no-deps`
+for the packages, prints the list it covered, and reads each member's production roots (`src`, and
+`benches`, `kani`, `fuzz/fuzz_targets` where they exist). Adding a member cannot escape it —
+`cargo xtask contract` check 6 fails when the scanned set and the workspace's own set differ — and a
+new member is therefore a baseline change (`tools/gate.sh --update-baseline`), because a crate with no
+baseline entry reads as new debt for every count it contributes.
+
+The size budgets apply to every scanned member too: a crate that enters the scan with files over 300
+lines reports them as `files_over_300_lines` entries, and the ratchet holds them. That is debt, not a
+number to record — `--update-baseline` is not the way to make a red structure lane green.
 
 ## `tools/athletic-net-pr-population/`
 

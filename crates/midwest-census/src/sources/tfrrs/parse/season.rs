@@ -25,14 +25,14 @@ impl Season {
     /// this file only picks the month.
     pub fn school_year(self) -> Option<SchoolYear> {
         if self.school_year_label {
-            return Some(SchoolYear::containing(self.year, 10));
+            return SchoolYear::containing(self.year, 10);
         }
         let month = match self.sport? {
             Sport::CrossCountry => 10,
             Sport::IndoorTrack => 3,
             Sport::OutdoorTrack => 5,
         };
-        Some(SchoolYear::containing(self.year, month))
+        SchoolYear::containing(self.year, month)
     }
 
     /// This season with a route's sport filled in when the page's own label names none.

@@ -6,13 +6,17 @@ use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::census;
 use midwest_census::report;
-use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
 use midwest_census::store::Store;
-use midwest_census::{bests, workbook};
 use std::path::PathBuf;
 
 use super::live;
-use super::{build_fetcher, cohort_label, school_year, scope_of, Cli, Route};
+
+mod publish;
+use publish::{
+    publish_bests_and_workbook, publish_bests_and_workbook_live, publish_scope,
+    publish_scope_live,
+};
+use super::{build_fetcher, school_year, scope_of, Cli, Route};
 
 #[derive(Args, Debug)]
 pub(super) struct RunArgs {
@@ -67,7 +71,13 @@ pub(super) struct RunArgs {
 /// the only way they can run while `midwest-serve` holds the store.
 pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
     match cli.route(args.ingress.as_deref())? {
-        Route::Offline(root) => run_offline(cli, &Store::open(root)?, args).await,
+        Route::Offline(root) => {
+            let store = Store::open(root)?;
+            // Opening a store is a read; the census run is one of the paths that migrates, so it
+            // imports the pre-Fjall corpus here, before its first stage reads a row.
+            store.import_legacy()?;
+            run_offline(cli, &store, args).await
+        }
         Route::Ingress(origin) => run_live(origin, args).await,
     }
 }
@@ -155,11 +165,15 @@ async fn gather_athleticnet(
     observed_on: String,
 ) -> Result<()> {
     let fetcher = build_fetcher(cli, store)?;
+    // A literal year, still passed through the domain's own constructor: the field is private so a
+    // value the domain would refuse cannot be constructed anywhere else in the tree.
+    let season = SchoolYear::new(2026)
+        .ok_or_else(|| anyhow::anyhow!("2026 is not a valid school year"))?;
     let context = midwest_census::sources::AdapterContext {
         fetcher: &fetcher,
         store,
         refresh: args.refresh,
-        school_year: SchoolYear(2026),
+        school_year: season,
         observed_on: observed_on.clone(),
     };
     let report = midwest_census::sources::athleticnet::collect(
@@ -192,102 +206,3 @@ async fn gather_athleticnet(
     Ok(())
 }
 
-/// Build one scope's census, write its JSON and CSV, and print the stage's lines.
-fn publish_scope(store: &Store, scope: report::Scope) -> Result<()> {
-    let census = report::build_census(store, scope).context("building the census")?;
-    let (json_path, csv_path) = report::write_census(store, &census, scope)?;
-    println!(
-        "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
-        json_path.display(),
-        census.scope,
-        census.totals.schools,
-        census.totals.athletes,
-        census.totals.class_of_2027_with_profile_url,
-        census.totals.class_of_2027_multisource
-    );
-    println!("\t{}", csv_path.display());
-    Ok(())
-}
-
-/// Reduce the best marks, write them with their workbook, and print the stage's lines.
-fn publish_bests_and_workbook(
-    store: &Store,
-    args: &RunArgs,
-    scope: report::Scope,
-    grad_year: i16,
-) -> Result<()> {
-    let bests = bests::Options {
-        scope,
-        grad_year: Some(grad_year),
-        limit: args.limit,
-    };
-    let rows = bests::build(store, &bests).context("reducing the best marks")?;
-    let cohort = cohort_label(Some(grad_year));
-    let (jsonl, csv) = bests::write(store, &rows, &cohort).context("writing the best marks")?;
-    println!(
-        "bests\tcohort={cohort} rows={} scope={}\t{}",
-        rows.len(),
-        if args.all_sources { "all" } else { "core" },
-        jsonl.display()
-    );
-    println!("\t{}", csv.display());
-
-    let workbook = workbook::Options {
-        grad_year: Some(grad_year),
-        out: args.out.clone(),
-        limit: args.limit,
-        scope,
-    };
-    let path = workbook::build(store, &workbook).context("building the census workbook")?;
-    println!("workbook\t{}", path.display());
-    Ok(())
-}
-
-/// Build one scope's census in the running service and print the stage's lines.
-async fn publish_scope_live(origin: &str, scope: report::Scope) -> Result<()> {
-    let summary = live::report(Some(origin), scope).await?;
-    println!(
-        "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
-        summary.json_path,
-        summary.scope,
-        summary.total("schools")?,
-        summary.total("athletes")?,
-        summary.total("class_of_2027_with_profile_url")?,
-        summary.total("class_of_2027_multisource")?
-    );
-    println!("\t{}", summary.csv_path);
-    Ok(())
-}
-
-/// Reduce the best marks, write them with their workbook, and print the stage's lines.
-async fn publish_bests_and_workbook_live(
-    origin: &str,
-    args: &RunArgs,
-    scope: report::Scope,
-    grad_year: i16,
-) -> Result<()> {
-    let BestsReply {
-        cohort,
-        rows,
-        jsonl,
-        csv,
-    } = live::bests(Some(origin), scope, Some(grad_year), args.limit).await?;
-    println!(
-        "bests\tcohort={cohort} rows={rows} scope={}\t{jsonl}",
-        if args.all_sources { "all" } else { "core" }
-    );
-    println!("\t{csv}");
-
-    let workbook = WorkbookRequest {
-        grad_year: Some(grad_year),
-        out: args
-            .out
-            .as_ref()
-            .map(|path| path.to_string_lossy().into_owned()),
-        limit: args.limit,
-        scope: Some(scope.as_str().to_string()),
-    };
-    let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook).await?;
-    println!("workbook\t{path}");
-    Ok(())
-}

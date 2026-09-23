@@ -149,14 +149,14 @@ was fetched first and is preserved verbatim in this directory (see the per-state
 | file | command |
 |---|---|
 | `al-milesplit-teams-ids.txt` | `grep -o -E 'href="https://al\.milesplit\.com/teams/[0-9]+-[^"]+"' al-milesplit-teams.html | sed 's/.*teams\///; s/"//' | sort -u` |
-| `ky-schools-arbiterlive.tsv` | `python3 - <<'PY' (regex over ky-member-school-directory.html: arbiterlive.com/Teams?entityId=N) — see tools/extract_ky.py` |
+| `ky-schools-arbiterlive.tsv` | `python3 - <<'PY' (regex over ky-member-school-directory.html: arbiterlive.com/Teams?entityId=N) — see tools/extract_ky.py, removed by ea81c56; this lane has no tools/ directory` |
 | `la-2026-state-champ-results.txt` | `pdftotext -layout la-2026-state-champ-results.pdf la-2026-state-champ-results.txt  (source of the 1749 result rows / 306 distinct school tokens in ../coverage.json LA.enumeration)` |
 | `la-coaches-directory-2025-26.txt` | `pdftotext -layout la-coaches-directory-2025-26.pdf la-coaches-directory-2025-26.txt` |
 | `la-milesplit-teams-ids.txt` | `grep -o -E 'href="https://la\.milesplit\.com/teams/[0-9]+-[^"]+"' la-milesplit-teams.html | sed 's/.*teams\///; s/"//' | sort -u` |
 | `ms-milesplit-teams-ids.txt` | `grep -o -E 'href="https://ms\.milesplit\.com/teams/[0-9]+-[^"]+"' ms-milesplit-teams.html | sed 's/.*teams\///; s/"//' | sort -u` |
 | `ok-memberschools-2025-26.txt` | `pdftotext -layout ok-memberschools-2025-26.pdf ok-memberschools-2025-26.txt` |
 | `tn-champ-result-2025-d1aaa.pdf` | `cp tn-champ-result-2025-d1aaa.cfm tn-champ-result-2025-d1aaa.pdf  (the .cfm response body is a PDF)` |
-| `tn-schools-extracted.tsv` | `python3 - <<'PY' (regex over tn-portal-directory.html: source:[{id:'N',name:'X'}]) — see tools/extract_tn.py` |
+| `tn-schools-extracted.tsv` | `python3 - <<'PY' (regex over tn-portal-directory.html: source:[{id:'N',name:'X'}]) — see tools/extract_tn.py, removed by ea81c56; this lane has no tools/ directory` |
 | `tx-alignment-26-28-alpha.txt` | `pdftotext -layout tx-alignment-26-28-alpha.pdf tx-alignment-26-28-alpha.txt` |
 | `tx-alignment-26-28-rank.txt` | `pdftotext -layout tx-alignment-26-28-rank.pdf tx-alignment-26-28-rank.txt` |
 | `tx-tf-school-codes-2026.txt` | `pdftotext -layout tx-tf-school-codes-2026.pdf tx-tf-school-codes-2026.txt` |

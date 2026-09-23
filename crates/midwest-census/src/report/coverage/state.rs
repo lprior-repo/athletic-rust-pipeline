@@ -66,7 +66,7 @@ pub(super) fn bucket_mut(buckets: &mut BucketMap, bucket: JurisdictionBucket) ->
 }
 
 /// The jurisdiction one school id publishes in: its school row's state, else the unplaced row.
-pub(in crate::report) fn jurisdiction_of(
+pub(crate) fn jurisdiction_of(
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
     school: &str,
 ) -> JurisdictionBucket {
@@ -75,7 +75,7 @@ pub(in crate::report) fn jurisdiction_of(
 
 /// School id to the jurisdiction of its school row, `None` when the row carries none. A school id
 /// that is absent is a missing school, which the gap rows count separately.
-pub(in crate::report) fn school_state_index(
+pub(crate) fn school_state_index(
     schools: &[CanonicalSchool],
 ) -> HashMap<&str, Option<UsJurisdiction>> {
     schools

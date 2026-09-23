@@ -20,16 +20,16 @@
 //! asks for every performance, and a 4x400 leg is one.
 
 use crate::bests::{mark_text, sport_of, Measure};
-use crate::report::{retain_core, ReportResult, Scope};
+use crate::report::{in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope};
 use crate::store::{Store, Table};
+use super::super::cells::{cell, row, Cell};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
     Evidence, Mark, MEET_STATE_UNRESOLVED,
 };
+use census_domain::JurisdictionBucket;
 use std::cmp::Ordering;
 use std::collections::HashMap;
-
-use super::super::cells::{cell, row, Cell};
 
 /// The §52 rows, in sheet order.
 pub(super) fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<PerformanceRow>> {
@@ -43,7 +43,14 @@ pub(super) fn performance_rows(store: &Store, scope: Scope) -> ReportResult<Vec<
         retain_core(&mut meets);
         retain_core(&mut events);
     }
-    let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
+    // Run-scope filter: exclude jurisdictions outside CENSUS_SCOPE (ADR-009).
+    // Athlete jurisdiction comes from school state (the report's rule).
+    // Performances stay: the cohort join in accumulate() already drops out-of-cohort athletes.
+    let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
+    schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
+    let school_state = school_state_index(&schools);
+    athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
+    meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
     let lookups = Lookups::of(&athletes, &schools, &meets, &events);
     let mut rows: Vec<PerformanceRow> = performances
         .iter()

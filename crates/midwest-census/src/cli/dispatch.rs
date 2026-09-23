@@ -15,7 +15,6 @@ use super::publish;
 use super::qa_reports;
 use super::review;
 use super::school_names;
-use super::seal;
 use super::source;
 use super::store;
 use super::verify;
@@ -33,11 +32,9 @@ pub(super) async fn dispatch(cli: &Cli, store: &Store) -> Result<()> {
         Command::Consolidate => publish::run_consolidate(store)?,
         Command::Review(args) => review::run_review(store, args).await?,
         Command::Index => publish::run_index(store)?,
-        Command::Seal(args) => seal::run_seal(store, args)?,
         Command::Verify(args) => verify::run_verify(store, args)?,
         Command::FjallStats => store::print_store_stats(store)?,
         Command::ImportLegacy => store::run_legacy_import(store)?,
-        Command::StoreBackup(args) => store::run_backup(store, args)?,
         Command::StoreRestore(args) => store::run_restore(args)?,
         Command::StoreIntegrity => store::run_integrity(store)?,
         Command::ExportData(args) => export_data::run_export_data(args)?,

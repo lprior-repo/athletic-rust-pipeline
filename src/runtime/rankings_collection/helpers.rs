@@ -1,8 +1,9 @@
 use super::*;
 use crate::runtime::{
-    protocol::{FetchOutcome, RankingsCapture, SourceResource},
+    protocol::{FetchOutcome, SourceResource},
     source_cache::{SourceCacheClient, SourceRequest},
 };
+use athleticnet_browser::protocol::RankingsCapture;
 
 pub(super) fn terminal(error: impl std::fmt::Display) -> HandlerError {
     TerminalError::new(error.to_string()).into()

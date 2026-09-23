@@ -48,6 +48,11 @@ Implementation recommendation
 
 - A number without a capture file behind it does not exist. Cite `samples/<file>` or the command that
   produced it, inline, next to the number.
+- The exact command recorded in a lane's `samples/CAPTURES.md` is **provenance, not a reproduction
+  recipe**. Research tooling the tree no longer carries — the lane probes removed by the contract
+  commit `ea81c56` ("Land the workspace contract and delete Python from the repository") — is named
+  there so a capture can be traced to how it was made; a lane must not present removed tooling as
+  available, runnable, or fixable in a later cycle.
 - Reasoning that was not observed is marked `[INFERENCE]` where it appears.
 - Never bypass authentication, a CAPTCHA, a paywall or an access control. Record the block as a finding.
 - Check and record `robots.txt` before fetching a host; keep to one request per second per host.

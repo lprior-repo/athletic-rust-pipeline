@@ -29,7 +29,7 @@ pub(super) async fn run_attempt(
             .initial_delay(Duration::from_secs(1))
             .exponentiation_factor(2.0)
             .max_delay(Duration::from_secs(4))
-            .max_attempts(4),
+            .max_attempts(1),
     )
     .await
 }

@@ -5,10 +5,11 @@
 //! keeps an acceptance item open and no seal can carry one; and the workbook's own sha256 is
 //! included, so two exports with the same row count cannot share a seal.
 //!
-//! The version prefix is `v2`: v1 hashed `source_failures` as a bare integer, and the field is now
-//! tri-state. A digest written by an older, store-only seal cannot be compared with a `v2` one, and
-//! the prefix is what makes that visible instead of silently producing a different number for the
-//! same evidence.
+//! The version prefix is `v3`: v2 hashed the access-condition count of a blocked or throttled host
+//! under the name `retry_exhausted`, which said it counted per-attempt exhaustion; v1 hashed
+//! `source_failures` as a bare integer, and that field is now tri-state. A digest written by an older
+//! seal cannot be compared with a current one, and the prefix is what makes that visible instead of
+//! silently producing a different number for the same evidence.
 
 use sha2::{Digest, Sha256};
 
@@ -36,7 +37,7 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         None => "unmeasured".to_string(),
     };
     let rendered = format!(
-            "census-seal-v2\njurisdictions={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\nperformances={}\ncoaches={}\nconflicts={}\nretry_exhausted={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
+            "census-seal-v3\njurisdictions={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\nperformances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
             counts.jurisdictions,
             counts.schools,
             counts.meets,
@@ -45,7 +46,9 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
             counts.performances,
             counts.coaches,
             evidence.retained.conflicts,
-            evidence.retained.retry_exhausted,
+            evidence.retained.access_conditions,
+            evidence.retained.blocked_hosts,
+            evidence.retained.throttled_hosts,
             evidence.retained.observations,
             evidence.retained.calculations,
             evidence.workbook.rows,

@@ -1,31 +1,8 @@
-//! Helper functions for loading, parsing, and extracting data from JSONL records.
+//! Field extraction from the JSONL records the export projects: namespaces, identities, evidence
+//! sources and sports. The rows themselves come from the store's snapshot reader.
 
-use anyhow::{Context, Result};
 use serde_json::Value;
 use std::collections::BTreeSet;
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-
-/// Load all records from a JSONL file; returns empty vec if file is absent.
-pub fn load(path: &std::path::Path) -> Result<Vec<Value>> {
-    if !path.exists() {
-        return Ok(Vec::new());
-    }
-    let p = path.display();
-    let file = File::open(path).with_context(|| format!("opening {p}"))?;
-    let reader = BufReader::new(file);
-    let mut rows = Vec::new();
-    for line in reader.lines() {
-        let line = line.with_context(|| format!("reading line from {p}"))?;
-        let line = line.trim().to_string();
-        if !line.is_empty() {
-            let value: Value = serde_json::from_str(&line)
-                .with_context(|| format!("parsing jsonl line from {p}"))?;
-            rows.push(value);
-        }
-    }
-    Ok(rows)
-}
 
 /// `legacy_athletic_net:athlete` identity key from a namespace value.
 /// `{legacy_athletic_net: {kind: athlete}}` -> `legacy_athletic_net:athlete`.

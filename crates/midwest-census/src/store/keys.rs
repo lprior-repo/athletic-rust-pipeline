@@ -24,11 +24,22 @@ pub(super) fn table_prefix(table: Table) -> Vec<u8> {
     out
 }
 
-/// `<table>\0<id>\0<sequence:u64 big-endian>`.
-pub(super) fn observation_key(table: Table, id: &str, sequence: u64) -> Vec<u8> {
+/// The sequence a derived row is keyed under. Derived state keeps exactly one row per entity id, so the
+/// sequence is a constant rather than a reserved observation number — and a derived row a read merges
+/// against an observation-legacy row therefore sorts below every one of them.
+pub(super) const DERIVED_SEQUENCE: u64 = 0;
+
+/// `<table>\0<id>\0` — the prefix that isolates one id's rows inside a table.
+pub(super) fn id_prefix(table: Table, id: &str) -> Vec<u8> {
     let mut out = table_prefix(table);
     out.extend_from_slice(id.as_bytes());
     out.push(0);
+    out
+}
+
+/// `<table>\0<id>\0<sequence:u64 big-endian>`.
+pub(super) fn observation_key(table: Table, id: &str, sequence: u64) -> Vec<u8> {
+    let mut out = id_prefix(table, id);
     out.extend_from_slice(&sequence.to_be_bytes());
     out
 }

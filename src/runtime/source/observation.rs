@@ -1,4 +1,5 @@
-use super::{http::AttemptResult, request::RequestSpec};
+use super::http::AttemptResult;
+use athleticnet_browser::request::RequestSpec;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

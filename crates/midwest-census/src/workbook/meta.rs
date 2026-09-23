@@ -19,9 +19,9 @@
 //! [`StoreRows`] snapshot, so the workbook scans each table once.
 
 use crate::bests::BestResult;
-use crate::report::{Census, ReportResult};
 use crate::store::{Store, Table};
-use census_domain::model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool};
+use crate::report::{in_run_scope, jurisdiction_of, school_state_index, Census, ReportResult};
+use census_domain::{JurisdictionBucket, model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool}};
 use rust_xlsxwriter::Workbook;
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
@@ -95,15 +95,27 @@ struct StoreRows {
     athletes: Vec<CanonicalAthlete>,
     coaches: Vec<CanonicalCoach>,
 }
-
 impl StoreRows {
-    /// Read the four entity tables the operational sheets render.
+    /// Read the four entity tables the operational sheets render, scoped to the run's
+    /// jurisdictions (`CENSUS_SCOPE` + unplaced) so the workbook reconciliation block
+    /// (ADR-009) matches the census totals computed by the same predicate.
     fn read(store: &Store) -> ReportResult<Self> {
+        let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
+        schools.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
+        let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
+        meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
+        let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
+        // Athlete jurisdiction comes from school state (the report's placement rule).
+        let school_state = school_state_index(&schools);
+        athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
+        let mut coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
+        // Coach jurisdiction also comes from school state.
+        coaches.retain(|c| in_run_scope(jurisdiction_of(&school_state, c.school.as_str())));
         Ok(Self {
-            schools: store.scan(Table::Schools)?,
-            meets: store.scan(Table::Meets)?,
-            athletes: store.scan(Table::Athletes)?,
-            coaches: store.scan(Table::Coaches)?,
+            schools,
+            meets,
+            athletes,
+            coaches,
         })
     }
 }

@@ -43,7 +43,11 @@ pub(super) fn consolidate_tables(
 ) -> StoreResult<Vec<ConsolidatedTable>> {
     let mut out = Vec::with_capacity(tables.len());
     for table in tables {
-        let path = store.table_path(*table);
+        // The same location the CLI consolidates to and every reader opens: `<store>/out/<table>.jsonl`.
+        // `Store::table_path` is the pre-Fjall journal the one-time import reads, not a snapshot
+        // output, so publishing there left the read model this run is supposed to refresh unreachable
+        // to `report`, `bests`, the workbook and every adapter.
+        let path = store.out_dir().join(format!("{}.jsonl", table.file()));
         let consolidated = store.consolidate_table(*table, &path)?;
         // Same rule as the CLI: the count comes out of the merge that wrote the snapshot.
         let emails_withheld = (*table == Table::Coaches).then_some(consolidated.withheld);

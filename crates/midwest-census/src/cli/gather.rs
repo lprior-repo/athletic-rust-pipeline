@@ -21,8 +21,8 @@ use super::{build_fetcher, resolve_states, school_year, Cli, Route};
 
 #[derive(Args, Debug)]
 pub(super) struct TeamsArgs {
-    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
-    /// code). Default: WI.
+    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
+    /// Default: WI.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
     /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
@@ -41,8 +41,8 @@ pub(super) struct TeamsArgs {
 
 #[derive(Args, Debug)]
 pub(super) struct MeetsArgs {
-    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
-    /// code). Default: WI.
+    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
+    /// Default: WI.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
     /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
@@ -109,7 +109,9 @@ pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
             Ok(())
         }
         Route::Ingress(origin) => {
-            let season = SchoolYear(args.season);
+            let season = SchoolYear::new(args.season).ok_or_else(|| {
+                anyhow::anyhow!("--season {} is not a school year", args.season)
+            })?;
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
@@ -157,7 +159,9 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
             Ok(())
         }
         Route::Ingress(origin) => {
-            let season = SchoolYear(school_year(args.year)?);
+            let season = SchoolYear::new(school_year(args.year)?).ok_or_else(|| {
+                anyhow::anyhow!("--year {} is not a school year", args.year)
+            })?;
             let requests = jurisdictions
                 .iter()
                 .map(|jurisdiction| {
@@ -174,7 +178,7 @@ pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
 
 #[derive(Args, Debug)]
 pub(super) struct CollectArgs {
-    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS code).
+    /// Comma-separated state codes (`WI,MN` is one example; every USPS code is accepted).
     /// Default: WI.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
@@ -212,7 +216,7 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
         concurrency: args.concurrency,
         state_concurrency: args.state_concurrency,
         refresh: args.refresh,
-        school_year: SchoolYear(args.school_year),
+        school_year: SchoolYear::new(args.school_year),
         observed_on: args
             .observed_on
             .clone()

@@ -1,15 +1,12 @@
-pub(crate) mod challenge;
-
-use super::{
-    request::{RequestAction, RequestSpec},
-    retry,
-};
-use crate::runtime::browser::BrowserError;
-use crate::runtime::rankings::RankingPageObservation;
+use super::retry;
 use crate::runtime::{
     protocol::{DocumentReceipt, FailureCode},
     Runtime,
 };
+use athleticnet_browser::protocol::RankingPageObservation;
+use athleticnet_browser::request::{RequestAction, RequestSpec};
+use athleticnet_browser::retry::retry_after_now;
+use athleticnet_browser::{BrowserError, BrowserFailure, BrowserOutcome};
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
     StatusCode,
@@ -50,15 +47,18 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
             );
         }
     };
-    let response = match browser.fetch(request.clone()).await {
-        Ok(response) => response,
-        Err(error) => return browser_failure(error),
+    let capture = match browser.fetch(request.clone()).await {
+        BrowserOutcome::Captured(capture) => *capture,
+        BrowserOutcome::Failed(failure) => return browser_failure(failure),
     };
+    // The challenge verdict is the transport's own classification, read here rather than recomposed
+    // from the same headers and body: the gate the transport applied and this receipt are then one
+    // decision instead of two readings of one response that can disagree.
+    let challenged = capture.challenge;
+    let response = capture.response;
     let status = response.status;
-    let backoff = retry::retry_after_now(clock.as_ref(), &response.headers);
+    let backoff = retry_after_now(clock.as_ref(), &response.headers);
     let media_type = media_type(&response.headers);
-    let challenged = challenge::cf_header_challenge(&response.headers)
-        || challenge::html_body_challenge(&media_type, &response.body);
     let data = ReceiptData {
         source_url: request.semantic_url.clone(),
         status,
@@ -73,18 +73,26 @@ pub(crate) async fn perform(runtime: Arc<Runtime>, request: &RequestSpec) -> Att
     }
 }
 
-fn browser_failure(error: BrowserError) -> AttemptResult {
-    let (code, retryable) = match error {
+fn browser_failure(stopped: BrowserFailure) -> AttemptResult {
+    // The failure code stays this crate's vocabulary; whether another invocation is worth making is
+    // the transport's verdict, so the report and the transport cannot drift apart.
+    let code = match stopped.error {
         BrowserError::HumanRequired | BrowserError::Unavailable | BrowserError::TaskPanicked => {
-            (FailureCode::BrowserUnavailable, false)
+            FailureCode::BrowserUnavailable
         }
-        BrowserError::PayloadLimit => (FailureCode::PayloadLimit, false),
-        BrowserError::Redirect => (FailureCode::HttpFailure, false),
-        BrowserError::Protocol => (FailureCode::MalformedResponse, false),
-        BrowserError::Shutdown => (FailureCode::Transport, false),
-        BrowserError::Transport | BrowserError::Timeout => (FailureCode::Transport, true),
+        BrowserError::PayloadLimit => FailureCode::PayloadLimit,
+        BrowserError::Redirect => FailureCode::HttpFailure,
+        BrowserError::Protocol => FailureCode::MalformedResponse,
+        BrowserError::Shutdown | BrowserError::Transport | BrowserError::Timeout => {
+            FailureCode::Transport
+        }
     };
-    failure(code, None, error.to_string(), retryable)
+    failure(
+        code,
+        None,
+        stopped.error.to_string(),
+        stopped.verdict.retryable(),
+    )
 }
 
 async fn receipt(

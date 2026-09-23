@@ -74,43 +74,59 @@ fn pct(num: usize, den: usize) -> f64 {
 }
 
 /// Write the per-row verdict CSV (one row per fragment row, verdict included).
+///
+/// Publication is atomic: the audit csv is replaced whole, so a reader holding `path` never
+/// observes a partial audit.
 pub fn write_audit_csv(path: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Result<()> {
-    use anyhow::Context;
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .with_context(|| format!("create audit csv dir {parent:?}"))?;
-    }
+    crate::store::read::publish_atomically(path, |temporary| {
+        write_audit_csv_body(temporary, path, outcomes)
+    })?;
+    Ok(())
+}
+
+/// Write the audit rows to `temporary`; publication renames it onto `published`.
+fn write_audit_csv_body(
+    temporary: &Path,
+    published: &Path,
+    outcomes: &[FragmentOutcome],
+) -> crate::store::StoreResult<()> {
     let mut writer = csv::WriterBuilder::new()
-        .from_path(path)
-        .with_context(|| format!("open audit csv {path:?} for writing"))?;
-    writer.write_record([
-        "fragment",
-        "state",
-        "sport",
-        "role",
-        "school",
-        "coach_name",
-        "ad_name",
-        "source_url",
-        super::VERDICT_COLUMN,
-    ])?;
+        .from_path(temporary)
+        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+    writer
+        .write_record([
+            "fragment",
+            "state",
+            "sport",
+            "role",
+            "school",
+            "coach_name",
+            "ad_name",
+            "source_url",
+            super::VERDICT_COLUMN,
+        ])
+        .map_err(|error| crate::store::read::csv_failure(published, error))?;
     for outcome in outcomes {
         for row in &outcome.rows {
-            writer.write_record([
-                outcome.file.as_str(),
-                row.row.state.as_str(),
-                row.row.sport.as_str(),
-                row.row.role.as_str(),
-                row.row.school.as_str(),
-                row.row.coach_name.as_str(),
-                row.row.ad_name.as_str(),
-                row.row.source_urls.join(" ").as_str(),
-                row.verdict.as_str(),
-            ])?;
+            writer
+                .write_record([
+                    outcome.file.as_str(),
+                    row.row.state.as_str(),
+                    row.row.sport.as_str(),
+                    row.row.role.as_str(),
+                    row.row.school.as_str(),
+                    row.row.coach_name.as_str(),
+                    row.row.ad_name.as_str(),
+                    row.row.source_urls.join(" ").as_str(),
+                    row.verdict.as_str(),
+                ])
+                .map_err(|error| crate::store::read::csv_failure(published, error))?;
         }
     }
-    writer.flush()?;
-    Ok(())
+    writer.flush().map_err(|source| crate::store::StoreError::Io {
+        path: published.to_path_buf(),
+        source,
+    })
 }
 
 /// Group verified rows by state and write one `<ST>.csv` per state into `dir` — the shape
@@ -140,33 +156,50 @@ pub fn write_state_union(
             continue;
         }
         let path = dir.join(format!("{state}.csv"));
-        let mut writer = csv::WriterBuilder::new()
-            .from_path(&path)
-            .with_context(|| format!("open staged fragment {path:?}"))?;
-        // `merge-coaches` reads `<ST>.csv` by these eleven columns; a twelfth column makes it reject
-        // the whole state as unusable.
-        writer.write_record(super::FRAGMENT_COLUMNS)?;
-        for row in &rows {
-            let outcome = row;
-            let row = &outcome.row;
-            writer.write_record([
-                row.school.as_str(),
-                row.city.as_str(),
-                row.state.as_str(),
-                row.sport.as_str(),
-                row.role.as_str(),
-                row.coach_name.as_str(),
-                row.public_professional_email.as_str(),
-                row.ad_name.as_str(),
-                row.ad_email.as_str(),
-                row.source_urls.join(" ").as_str(),
-                row.last_observed.as_str(),
-            ])?;
-        }
-        writer.flush()?;
+        crate::store::read::publish_atomically(&path, |temporary| {
+            write_state_file_body(temporary, &path, &rows)
+        })?;
         counts.insert(state, rows.len());
     }
     Ok(counts)
+}
+
+/// Write one state's staged fragment to `temporary`; publication renames it onto `published`.
+///
+/// `merge-coaches` reads `<ST>.csv` by these eleven columns; a twelfth column makes it reject the
+/// whole state as unusable.
+fn write_state_file_body(
+    temporary: &Path,
+    published: &Path,
+    rows: &[&RowOutcome],
+) -> crate::store::StoreResult<()> {
+    let mut writer = csv::WriterBuilder::new()
+        .from_path(temporary)
+        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+    writer
+        .write_record(super::FRAGMENT_COLUMNS)
+        .map_err(|error| crate::store::read::csv_failure(published, error))?;
+    for row in rows {
+        writer
+            .write_record([
+                row.row.school.as_str(),
+                row.row.city.as_str(),
+                row.row.state.as_str(),
+                row.row.sport.as_str(),
+                row.row.role.as_str(),
+                row.row.coach_name.as_str(),
+                row.row.public_professional_email.as_str(),
+                row.row.ad_name.as_str(),
+                row.row.ad_email.as_str(),
+                row.row.source_urls.join(" ").as_str(),
+                row.row.last_observed.as_str(),
+            ])
+            .map_err(|error| crate::store::read::csv_failure(published, error))?;
+    }
+    writer.flush().map_err(|source| crate::store::StoreError::Io {
+        path: published.to_path_buf(),
+        source,
+    })
 }
 
 /// Write the freeze manifest: the timestamp, one `sha256 <path>` line per input fragment, then one

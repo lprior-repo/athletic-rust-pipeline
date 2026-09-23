@@ -67,11 +67,32 @@ impl fmt::Display for Revision {
 pub struct WorkflowIdentity(String);
 
 impl WorkflowIdentity {
-    /// `national:<season>:<revision>` — the root run that fans out one jurisdiction census per
-    /// state. One national run per season and revision: restarting it resumes that run instead of
-    /// starting a second fan-out over the same work.
-    pub fn national(season: SchoolYear, revision: Revision) -> Self {
-        Self::join("national", &[&season.short(), &revision.to_string()])
+    /// `national:<season>:<scope>:<revision>` — the root run that fans out one jurisdiction census per
+    /// state, over the scope that run admits.
+    ///
+    /// The scope is part of the identity because an existing run is *re-attached to*, not replaced:
+    /// submitting the same revision over a different jurisdiction set would observe the old fan-out
+    /// instead of the states the scope now admits, and the census would quietly cover the wrong set.
+    /// Deriving the field from the set — rather than remembering to bump the revision — makes that a
+    /// mechanism instead of a promise: the same jurisdictions reproduce this identity byte for byte, so
+    /// a retry attaches to its run, while a changed set cannot address one.
+    ///
+    /// The per-jurisdiction objects are deliberately *not* scope-keyed: two runs that both cover Iowa
+    /// share that state's census, which is what makes the second run replay that state instead of
+    /// walking it twice.
+    pub fn national(
+        season: SchoolYear,
+        revision: Revision,
+        jurisdictions: &[UsJurisdiction],
+    ) -> Self {
+        Self::join(
+            "national",
+            &[
+                &season.short(),
+                &scope_digest(jurisdictions),
+                &revision.to_string(),
+            ],
+        )
     }
 
     /// `jurisdiction:<state>:<season>:<revision>` — one jurisdiction's census for one season.
@@ -150,6 +171,63 @@ impl fmt::Display for WorkflowIdentity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(&self.0)
     }
+}
+
+/// The jurisdictions one national run admits: the ones the caller named, or the census run scope when
+/// it names none (ADR-009).
+///
+/// One rule in one place, because a run's identity is a function of the set it admits: a caller that
+/// derives an identity has to admit the same states the workflow will, or it addresses a run nobody
+/// starts.
+pub fn admitted_scope(jurisdictions: &[UsJurisdiction]) -> Vec<UsJurisdiction> {
+    if jurisdictions.is_empty() {
+        UsJurisdiction::CENSUS_SCOPE.to_vec()
+    } else {
+        jurisdictions.to_vec()
+    }
+}
+
+/// The run scope as one identity field: a digest over the admitted set, taken in `CENSUS_SCOPE` order.
+///
+/// Order is the caller's business and must not be part of the identity — `--states WI,IA` and
+/// `--states IA,WI` cover one census and are one run. Ordering by [`UsJurisdiction::CENSUS_SCOPE`], the
+/// order the census itself defines coverage in, makes the field a function of the set alone: reordering
+/// an argument, a declaration or an unrelated list cannot move an existing run to a new identity.
+///
+/// Every state is folded in exactly once, and a state outside the run scope is appended in code order
+/// rather than dropped. Admission is what refuses such a set (`national::targets`,
+/// `cli::within_census_scope`), and until it is refused the set still earns an identity no admissible
+/// set shares — a digest that silently discarded Alaska would be the identity of a different run.
+pub fn scope_digest(jurisdictions: &[UsJurisdiction]) -> String {
+    let admitted = admitted_scope(jurisdictions);
+    let mut ordered: Vec<UsJurisdiction> = UsJurisdiction::CENSUS_SCOPE
+        .iter()
+        .copied()
+        .filter(|state| admitted.contains(state))
+        .collect();
+    let mut outside: Vec<UsJurisdiction> = admitted
+        .iter()
+        .copied()
+        .filter(|state| !ordered.contains(state))
+        .collect();
+    outside.sort_by_key(|state| state.code());
+    outside.dedup();
+    ordered.extend(outside);
+
+    let mut hasher = Sha256::new();
+    for state in &ordered {
+        hasher.update(state.code().as_bytes());
+        // A separator, so the field cannot depend on how codes happen to abut once a longer code
+        // exists; codes are two bytes today and the digest must not rely on that.
+        hasher.update(b"\n");
+    }
+    let sum = hasher.finalize();
+    let mut digest = String::with_capacity(DIGEST_BYTES.saturating_mul(2));
+    for byte in sum.iter().take(DIGEST_BYTES) {
+        digest.push(hex_digit(byte >> 4));
+        digest.push(hex_digit(byte & 0x0f));
+    }
+    digest
 }
 
 /// Append one field, digesting anything that would make the identity ambiguous or unbounded.

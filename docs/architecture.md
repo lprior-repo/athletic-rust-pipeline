@@ -165,9 +165,12 @@ run's evidence*, never trusted — a difference is reported, not resolved in eit
 ### 4.2 What it retains
 
 Findings are not blockers. `RetainedFindings` carries `gaps` (one `GapTally` of `class`, `unit`,
-`count` per §47 class), `conflicts`, `retry_exhausted` (the `source_access` rows),
-`source_failures`, `observations` and `calculations`. A non-zero gap tally seals fine and stays
-visible inside the seal.
+`count` per §47 class), `conflicts`, `access_conditions` (the `source_access` rows: the store's own
+count of hosts that blocked or throttled a lane, which is **not** §70's *retry-exhausted operation* —
+that is an invocation state on the durable side and no store row records it), `source_failures`,
+`observations` and `calculations`. A non-zero gap tally seals fine and stays visible inside the
+seal. The field carried the name `retry_exhausted` until the two were told apart; the digest prefix
+moved to `census-seal-v3` with the rename so a `v2` digest cannot be read as this one.
 
 ### 4.3 What it refuses
 
@@ -180,7 +183,7 @@ the item and its detail, then exits non-zero.
 | `JurisdictionSweepsTerminal` | `open.jurisdiction_sweeps > 0` |
 | `SourceObjectsTerminal` | `open.source_objects > 0` |
 | `CohortDecisionsTerminal` | `open.cohort_decisions > 0` |
-| `IdentityCandidatesTerminal` | `open.identity_candidates > 0` (open cases = `review_cases` − `identity_verdicts`) |
+| `IdentityCandidatesTerminal` | `open.identity_candidates > 0` (retained cases with no verdict, counted from the rows) |
 | `EvidenceDurable` | `observations == 0` while `athletes > 0` |
 | `CalculationsReproducible` | `calculations == 0` while `performances > 0` |
 | `WorkbookMapped` | `mapped_athletes < class_of_2027` |
@@ -199,10 +202,15 @@ workbook holds a million rows per sheet, so cell-level counting is deliberately 
 Renaming a required sheet, a jurisdiction missing from `Coverage`, or a cohort number the
 `Run Metrics` row does not match all come back as a named discrepancy.
 
-One honest limit: the CLI seal carries the store-visible decisions only. `assemble` sets
-`jurisdiction_sweeps`, `source_objects` and `cohort_decisions` to zero and derives
-`identity_candidates` from the store's own review tables, because owed sweeps and un-terminal source
-objects live in the workflow journal, which this command does not read.
+One honest limit: the CLI seal carries what the store holds. `jurisdiction_sweeps` and
+`source_objects` are `None` — unmeasured, deliberately not `0` — because owed sweeps and un-terminal
+source objects live in the durable run's own objects, which a command holding the store's single
+writer cannot ask; `midwest-census open-work` is the read that does. `cohort_decisions` is measured
+here, from the store's retained cases: a case in a cohort family (`COHORT_UNVERIFIED_FAMILY`,
+`COHORT_IDENTITY_CONFIDENCE_FAMILY`) with no verdict is an open cohort decision, and `Retained` is a
+terminal one — the lane deciding the evidence does not decide still leaves the row in the workbook's
+queues. `identity_candidates` is the same scan without the family filter: every retained case with no
+verdict, because the item is about the decision and only a verdict is one.
 
 ## 5. Module seams
 

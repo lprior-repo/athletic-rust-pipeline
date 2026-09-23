@@ -84,7 +84,10 @@ use sha2::{Digest, Sha256};
 /// Capture date the committed fixtures carry (the WIAA directory letter was taken 2026-09-19/20).
 const OBSERVED_ON: &str = "2026-09-20";
 /// School year the MileSplit roster capture belongs to (2026-27).
-const SCHOOL_YEAR: SchoolYear = SchoolYear(2026);
+///
+/// `new` is const, so an out-of-range season is a compile error (E0080) rather than a test-time
+/// panic.
+const SCHOOL_YEAR: SchoolYear = SchoolYear::new(2026).expect("2026 is a season");
 /// The cohort the best-mark reduction and the workbook are published for.
 const COHORT: i16 = 2027;
 const COHORT_LABEL: &str = "co2027";
@@ -699,7 +702,9 @@ fn expected_ids_for(
         wiaa_results::level_of(&meet.name),
     );
     expected.meets.insert(expected_meet.id.as_str().to_string());
-    let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year);
+    let school_year = wiaa_results::school_year_for(&meet.date, sport, artifact.year).with_context(
+        || format!("{} (archive {}) names no school season", meet.date, artifact.year),
+    )?;
     let stem = artifact
         .url
         .rsplit('/')

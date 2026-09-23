@@ -131,6 +131,9 @@ fn record_members(
                 observed_grade: Some(grade),
                 evidence: vec![evidence],
                 source_key,
+                // A row this mapping just built has been merged with nothing, so it has retained no
+                // canonical-id collision: collisions are raised in the store's merge, not here.
+                retained_conflicts: Vec::new(),
             });
     }
     athlete_rows
@@ -234,7 +237,7 @@ fn team_for(
     let key = format!(
         "{}:{sport:?}:{gender:?}:{}",
         school.as_str(),
-        school_year.start_year()
+        school_year.get()
     );
     teams
         .entry(key)
@@ -249,6 +252,7 @@ fn team_for(
                 level: Some("high_school".to_string()),
                 source_identities: Vec::new(),
                 evidence: vec![evidence.clone()],
+                retained_conflicts: Vec::new(),
             }
         })
         .id

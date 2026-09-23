@@ -7,17 +7,18 @@
 //! source text: a printed cell traces either to a stored entity field or to a rule over stored fields
 //! that the sheet module documents.
 
-use crate::report::{retain_core, ReportResult, Scope};
+use census_domain::JurisdictionBucket;
+use crate::report::{in_run_scope, jurisdiction_of, retain_core, school_state_index, ReportResult, Scope};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool,
 };
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 
+use super::contact::{contacts, SchoolContacts};
 use super::facts::{
-    contacts, kind_index, meet_index, pr_index, school_facts, school_index, tally, AthleteTally,
-    SchoolContacts,
+    kind_index, meet_index, pr_index, school_facts, school_index, tally, AthleteTally,
 };
 use super::prs::{self, PrRow};
 
@@ -34,6 +35,8 @@ pub(super) struct Reconciliation {
     pub(super) pr_rows: usize,
     /// Coach rows the `Coaches` sheet publishes.
     pub(super) coach_rows: usize,
+    /// `(slot, side)` head-coach buckets whose rows publish two or more different addresses.
+    pub(super) contact_conflicts: usize,
 }
 
 /// Everything the recruiting sheets read, loaded once per workbook run.
@@ -59,10 +62,18 @@ impl Dataset {
     /// The scope filter is [`retain_core`], applied to athletes, meets, events and performances in the
     /// same order `bests` applies it, so the core scope of this workbook is the core scope the
     /// platform's best-mark reduction publishes.
+    ///
+    /// The run scope is also applied: athletes are placed by their school's jurisdiction
+    /// (the same rule the census report uses), and coaches are kept only for in-scope schools.
     pub(super) fn load(store: &Store, scope: Scope, grad_year: Option<i16>) -> ReportResult<Self> {
+        // Run-scope filter: schools first, so we can place athletes by their school's jurisdiction.
+        let mut schools_raw: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
+        schools_raw.retain(|s| in_run_scope(JurisdictionBucket::from(s.state)));
+        let school_state = school_state_index(&schools_raw);
         let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-        let store_athletes = athletes.len();
+        athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
         let mut meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
+        meets.retain(|m| in_run_scope(JurisdictionBucket::from(m.state)));
         let mut events: Vec<CanonicalEvent> = store.scan(Table::Events)?;
         let mut performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
         if scope == Scope::Core {
@@ -71,13 +82,20 @@ impl Dataset {
             retain_core(&mut events);
             retain_core(&mut performances);
         }
+        let store_athletes = athletes.len();
         let scoped_athletes = athletes.len();
         if let Some(year) = grad_year {
             athletes.retain(|athlete| athlete.grad_year.get() == year);
         }
-        let schools = school_index(&store.scan(Table::Schools)?);
+        let schools = school_index(&schools_raw);
         let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
+        let scoped_school_ids: HashSet<&str> = schools_raw.iter().map(|s| s.id.as_str()).collect();
+        let coaches: Vec<CanonicalCoach> = coaches
+            .into_iter()
+            .filter(|c| scoped_school_ids.contains(c.school.as_str()))
+            .collect();
         let contacts = contacts(&coaches);
+        let contact_conflicts: usize = contacts.values().map(|facts| facts.heads.conflicts()).sum();
         let kinds = kind_index(&events);
         let meet_of = meet_index(meets);
         let tallies = tally(&athletes, &performances, &kinds);
@@ -95,6 +113,7 @@ impl Dataset {
             cohort_athletes: athletes.len(),
             pr_rows: prs.len(),
             coach_rows: coaches.len(),
+            contact_conflicts,
         };
         Ok(Self {
             scope,
@@ -129,6 +148,14 @@ impl Dataset {
             .get(school)
             .and_then(|school| school.state)
             .map_or("UNKNOWN".to_string(), |state| state.code().to_string())
+    }
+
+    /// The school's city, or empty string when the school table carries none.
+    pub(super) fn school_city(&self, school: &str) -> String {
+        self.schools
+            .get(school)
+            .and_then(|s| s.city.clone())
+            .unwrap_or_default()
     }
 
     /// The school's athletics website, when the school table carries one.

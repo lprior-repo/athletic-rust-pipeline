@@ -14,7 +14,12 @@
 //! 2027 (the cohort the census document counts); school and meet rows cover the whole table, because
 //! neither carries a cohort.
 
-use census_domain::model::{CanonicalAthlete, GradYear};
+use census_domain::model::{
+    CanonicalAthlete, GradYear, ATHLETE_IDENTITY_FAMILY, COHORT_EVIDENCE_FAMILY,
+    COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
+    SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY, UNRESOLVED_VENUE_FAMILY,
+    WITHHELD_MAILBOX_FAMILY,
+};
 use std::collections::HashMap;
 
 use crate::report::ReportResult;
@@ -26,7 +31,7 @@ use super::{school_name_index, Family, QueueRow, StoreRows};
 mod conflicts;
 mod review;
 
-use conflicts::{athlete_identity, cohort_evidence, school_identity};
+use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
 use review::{
     cohort_unverified, low_confidence, unresolved_schools, unresolved_venues, withheld_mailboxes,
 };
@@ -35,14 +40,19 @@ use review::{
 pub(super) const QUEUE_WIDTHS: [u16; 4] = [30, 16, 34, 96];
 
 /// Family labels, shared with the reconciliation block on `Run Metrics`.
-pub(super) const COHORT_EVIDENCE: &str = "Class-of-2027 cohort evidence";
-pub(super) const ATHLETE_IDENTITY: &str = "Athlete identity";
-pub(super) const SCHOOL_IDENTITY: &str = "School identity";
-pub(super) const COHORT_UNVERIFIED: &str = "Class-of-2027 cohort unverified";
-pub(super) const LOW_CONFIDENCE: &str = "Class-of-2027 identity confidence";
-pub(super) const WITHHELD_MAILBOX: &str = "Coach mailbox withheld";
-pub(super) const UNRESOLVED_VENUE: &str = "Meet venue unresolved";
-pub(super) const UNRESOLVED_SCHOOL: &str = "School jurisdiction unresolved";
+///
+/// The names themselves live with the record they label (`census_domain::model`), so the lane that
+/// matches a retained case by name, the workbook that prints it and the seal that counts it cannot
+/// drift apart.
+pub(super) const COHORT_EVIDENCE: &str = COHORT_EVIDENCE_FAMILY;
+pub(super) const ATHLETE_IDENTITY: &str = ATHLETE_IDENTITY_FAMILY;
+pub(super) const SCHOOL_IDENTITY: &str = SCHOOL_IDENTITY_FAMILY;
+pub(super) const CONTACT_CONFLICT: &str = CONTACT_CONFLICT_FAMILY;
+pub(super) const COHORT_UNVERIFIED: &str = COHORT_UNVERIFIED_FAMILY;
+pub(super) const LOW_CONFIDENCE: &str = COHORT_IDENTITY_CONFIDENCE_FAMILY;
+pub(super) const WITHHELD_MAILBOX: &str = WITHHELD_MAILBOX_FAMILY;
+pub(super) const UNRESOLVED_VENUE: &str = UNRESOLVED_VENUE_FAMILY;
+pub(super) const UNRESOLVED_SCHOOL: &str = UNRESOLVED_SCHOOL_FAMILY;
 
 /// Every conflict family the store retains.
 pub(super) fn conflict_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> Vec<Family> {
@@ -50,6 +60,7 @@ pub(super) fn conflict_families(rows: &StoreRows, names: &HashMap<&str, &str>) -
         cohort_evidence(rows, names),
         athlete_identity(rows, names),
         school_identity(&rows.schools),
+        contact_conflicts(rows, names),
     ]
 }
 

@@ -6,10 +6,15 @@ use super::common::{
 use crate::domain::identity::{AthleteId, EvidenceDigest};
 use crate::store::StoreError;
 
-/// Build presence key for an event-level athlete: rk\0re\0<collection>\0<event>\0<athlete(8B BE)>.
-pub(super) fn presence_event_athlete(
+/// Bytes every page-derived presence key spends on the checkpoint segment and
+/// its trailing separator.
+const CHECKPOINT_SEGMENT_BYTES: usize = DIGEST_BYTES.saturating_add(1);
+
+/// Build presence key for an event-level athlete: rk\0re\0<collection>\0<event>\0<checkpoint>\0<athlete(8B BE)>.
+pub(in crate::store) fn presence_event_athlete(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     athlete: AthleteId,
 ) -> Result<Vec<u8>, StoreError> {
     validate_event_short(event_short)?;
@@ -20,7 +25,7 @@ pub(super) fn presence_event_athlete(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
@@ -29,14 +34,17 @@ pub(super) fn presence_event_athlete(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&athlete.get().to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for an event source result: rk\0rs\0<collection>\0<event>\0<result(8B BE)>.
-pub(super) fn presence_source_result(
+/// Build presence key for an event source result: rk\0rs\0<collection>\0<event>\0<checkpoint>\0<result(8B BE)>.
+pub(in crate::store) fn presence_source_result(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
 ) -> Result<Vec<u8>, StoreError> {
     validate_event_short(event_short)?;
@@ -47,7 +55,7 @@ pub(super) fn presence_source_result(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
@@ -56,14 +64,17 @@ pub(super) fn presence_source_result(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for an event row position: rk\0rr\0<collection>\0<event>\0<result(8B)>\0<position(8B)>.
-pub(super) fn presence_row_position(
+/// Build presence key for an event row position: rk\0rr\0<collection>\0<event>\0<checkpoint>\0<result(8B)>\0<position(8B)>.
+pub(in crate::store) fn presence_row_position(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
     row_number: u64,
 ) -> Result<Vec<u8>, StoreError> {
@@ -75,7 +86,7 @@ pub(super) fn presence_row_position(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8)
         .saturating_add(1)
         .saturating_add(8);
@@ -86,16 +97,19 @@ pub(super) fn presence_row_position(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     key.push(b'\0');
     key.extend_from_slice(&row_number.to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for eligible individual: rk\0ri\0<collection>\0<event>\0<result(8B)>\0<athlete(8B)>.
-pub(super) fn presence_eligible_individual(
+/// Build presence key for eligible individual: rk\0ri\0<collection>\0<event>\0<checkpoint>\0<result(8B)>\0<athlete(8B)>.
+pub(in crate::store) fn presence_eligible_individual(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
     athlete_id: AthleteId,
 ) -> Result<Vec<u8>, StoreError> {
@@ -107,7 +121,7 @@ pub(super) fn presence_eligible_individual(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8)
         .saturating_add(1)
         .saturating_add(8);
@@ -118,16 +132,19 @@ pub(super) fn presence_eligible_individual(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     key.push(b'\0');
     key.extend_from_slice(&athlete_id.get().to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for eligible relay member: rk\0rm\0<collection>\0<event>\0<result(8B)>\0<athlete(8B)>.
-pub(super) fn presence_eligible_relay_member(
+/// Build presence key for eligible relay member: rk\0rm\0<collection>\0<event>\0<checkpoint>\0<result(8B)>\0<athlete(8B)>.
+pub(in crate::store) fn presence_eligible_relay_member(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
     athlete_id: AthleteId,
 ) -> Result<Vec<u8>, StoreError> {
@@ -139,7 +156,7 @@ pub(super) fn presence_eligible_relay_member(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8)
         .saturating_add(1)
         .saturating_add(8);
@@ -150,16 +167,19 @@ pub(super) fn presence_eligible_relay_member(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     key.push(b'\0');
     key.extend_from_slice(&athlete_id.get().to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for event roster missing: rk\0rmr\0<collection>\0<event>\0<result(8B)>.
-pub(super) fn presence_roster_missing(
+/// Build presence key for event roster missing: rk\0rmr\0<collection>\0<event>\0<checkpoint>\0<result(8B)>.
+pub(in crate::store) fn presence_roster_missing(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
 ) -> Result<Vec<u8>, StoreError> {
     validate_event_short(event_short)?;
@@ -170,7 +190,7 @@ pub(super) fn presence_roster_missing(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
@@ -179,14 +199,17 @@ pub(super) fn presence_roster_missing(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     Ok(key)
 }
 
-/// Build presence key for event roster present: rk\0rpz\0<collection>\0<event>\0<result(8B)>.
-pub(super) fn presence_roster_present(
+/// Build presence key for event roster present: rk\0rpz\0<collection>\0<event>\0<checkpoint>\0<result(8B)>.
+pub(in crate::store) fn presence_roster_present(
     collection: &EvidenceDigest,
     event_short: &str,
+    checkpoint: &EvidenceDigest,
     result_id: u64,
 ) -> Result<Vec<u8>, StoreError> {
     validate_event_short(event_short)?;
@@ -197,7 +220,7 @@ pub(super) fn presence_roster_present(
         .saturating_add(DIGEST_BYTES)
         .saturating_add(1)
         .saturating_add(event_short.len())
-        .saturating_add(1)
+        .saturating_add(CHECKPOINT_SEGMENT_BYTES)
         .saturating_add(8);
     let mut key = Vec::with_capacity(capacity);
     key.extend_from_slice(COLLECTION_PREFIX);
@@ -206,12 +229,14 @@ pub(super) fn presence_roster_present(
     key.push(b'\0');
     key.extend_from_slice(event_short.as_bytes());
     key.push(b'\0');
+    key.extend_from_slice(checkpoint.as_str().as_bytes());
+    key.push(b'\0');
     key.extend_from_slice(&result_id.to_be_bytes());
     Ok(key)
 }
 
 /// Build seal key: rk\0sl\0<collection>.
-pub(super) fn seal_key(collection: &EvidenceDigest) -> Vec<u8> {
+pub(in crate::store) fn seal_key(collection: &EvidenceDigest) -> Vec<u8> {
     let mut key = Vec::with_capacity(
         COLLECTION_PREFIX
             .len()

@@ -3,6 +3,9 @@ name = "g1-audit"
 version = "0.1.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [[bin]]
 name = "g1-audit"
 path = "src/main.rs"

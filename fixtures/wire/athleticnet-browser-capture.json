@@ -1,0 +1,29 @@
+{
+  "outcome": "captured",
+  "response": {
+    "status": 403,
+    "headers": [
+      [
+        "content-type",
+        "text/html; charset=utf-8"
+      ],
+      [
+        "retry-after",
+        "30"
+      ],
+      [
+        "set-cookie",
+        "session=abc; Path=/"
+      ],
+      [
+        "set-cookie",
+        "cf_clearance=def; Path=/"
+      ]
+    ],
+    "body": "PGh0bWw+PGhlYWQ+PHRpdGxlPkp1c3QgYSBtb21lbnQuLi48L3RpdGxlPjwvaGVhZD48Ym9keT48c2NyaXB0IHNyYz0iL2Nkbi1jZ2kvY2hhbGxlbmdlLXBsYXRmb3JtL2gvYiI+PC9zY3JpcHQ+PC9ib2R5PjwvaHRtbD4=",
+    "rankings": null
+  },
+  "challenge": true,
+  "retry_after_ms": 30000,
+  "fetched_at_ms": 1758542400000
+}

@@ -239,7 +239,7 @@ fn append_athlete(
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
         grade: grade(11)?,
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         source: SourceRef::id(SOURCE_ID),
     });
     athlete.evidence.push(evidence());
@@ -274,6 +274,7 @@ fn append_athlete(
             observed_grade: Some(grade(11)?),
             evidence: vec![evidence()],
             source_key,
+            retained_conflicts: Vec::new(),
         });
     }
     corpus.events.push(event);
@@ -488,10 +489,11 @@ fn team_of(school_id: &SchoolId, index: usize) -> CanonicalTeam {
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
+        retained_conflicts: Vec::new(),
     }
 }
 

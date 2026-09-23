@@ -1,13 +1,11 @@
 pub mod acquisition;
 mod artifacts;
-pub mod browser;
 mod browser_config;
 mod browser_readiness;
 pub mod browser_session;
 pub(crate) mod clock;
 pub(crate) mod config;
 pub mod control;
-pub mod drain;
 pub mod export;
 pub mod export_worker;
 mod http_audit;
@@ -30,12 +28,12 @@ pub mod rankings {
     pub mod division;
     pub mod page;
     pub mod types;
-    pub use super::protocol::{RankingPageObservation, RankingsCapture};
     pub use crate::store::rankings::{
         RankingCandidateEntry, RankingCandidateKind, RankingCollectionStats, RankingEventStats,
         RankingLookup, RankingPageIndex, RankingRecordRef, RankingRosterObservation,
         RankingSourceRow,
     };
+    pub use athleticnet_browser::protocol::{RankingPageObservation, RankingsCapture};
     pub use catalog::{EventCatalog, RequestedFamily};
     pub use division::{expected_revision, season_list_id, SeasonKind, SEASON_YEAR};
     pub use page::parse::{parse_page_response, PageParseError};
@@ -54,8 +52,8 @@ pub use config::{ExecutionMode, ModelLane, WorkerConfig};
 
 use crate::store::ArtifactStore;
 use anyhow::{Context, Result};
-use clock::{Clock, SystemClock};
-use drain::DrainCounts;
+use athleticnet_browser::clock::{Clock, SystemClock};
+use athleticnet_browser::drain::DrainCounts;
 use std::{path::Path, sync::Arc};
 use tokio::sync::Semaphore;
 use tokio_util::task::TaskTracker;
@@ -64,7 +62,7 @@ pub struct Runtime {
     pub config: WorkerConfig,
     pub store: ArtifactStore,
     pub http: reqwest::Client,
-    browser: tokio::sync::RwLock<Option<Arc<browser::BrowserManager>>>,
+    browser: tokio::sync::RwLock<Option<Arc<athleticnet_browser::BrowserManager>>>,
     cpu: Arc<Semaphore>,
     tasks: TaskTracker,
     drain_counts: Arc<DrainCounts>,
@@ -105,7 +103,7 @@ impl Runtime {
         self.clock.clone()
     }
 
-    pub(crate) async fn browser(&self) -> Option<Arc<browser::BrowserManager>> {
+    pub(crate) async fn browser(&self) -> Option<Arc<athleticnet_browser::BrowserManager>> {
         self.browser.read().await.clone()
     }
 }
@@ -113,7 +111,7 @@ impl Runtime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::drain::DrainReport;
+    use athleticnet_browser::drain::DrainReport;
     use std::time::Duration;
     use tempfile::tempdir;
 

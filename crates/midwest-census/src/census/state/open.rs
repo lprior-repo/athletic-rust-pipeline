@@ -1,15 +1,18 @@
-//! The open work only the durable run knows: which jurisdiction sweeps owe stages, and which source
-//! objects have never accepted an observation.
+//! The open work a census still owes, and the rule for each count that says whether it is owed.
 //!
-//! Every other §70 count comes from a store artifact. These two are properties of the workflow, so
-//! measuring them means reading the durable state of the objects that do the work — the part of the
-//! reading that is worth testing without a service lives here: given the states, which rows are
-//! still owed.
+//! Three counts, from two surfaces. Owed jurisdiction sweeps and un-terminal source objects are
+//! properties of the durable run, so they are read from the objects that did the work; owed cohort
+//! decisions are retained store cases, read from the store like every other §70 count. This module
+//! holds the part worth testing without either surface: given the states and the cases, which rows
+//! are still owed.
 //!
 //! Nothing here counts a state it did not read. A caller that could not reach the objects leaves the
 //! matching [`OpenWork`](super::OpenWork) field `None`, which the seal reports as unmeasured rather
 //! than as a zero — a measurement nobody took is not a zero.
 
+use census_domain::model::{
+    ReviewCase, ReviewState, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+};
 use serde::{Deserialize, Serialize};
 
 /// The stages one jurisdiction's durable state records, and the rosters it left behind.
@@ -84,6 +87,46 @@ pub fn owed_jurisdictions(stages: &[JurisdictionStages]) -> u64 {
 /// Count the source objects that have never accepted an observation.
 pub fn owed_source_objects(objects: &[SourceObject]) -> u64 {
     count(objects.iter().filter(|object| !object.terminal()).count())
+}
+
+/// The retained families whose case is a cohort decision: an athlete the census could not place in
+/// the class of 2027 with confidence, or placed without cohort evidence at all.
+///
+/// Both are questions about the cohort itself. The identity and jurisdiction families ask where a
+/// school, a meet or a name belongs instead, and the withheld-mailbox family is a collection
+/// decision, not a cohort one.
+const COHORT_DECISION_FAMILIES: [&str; 2] =
+    [COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY];
+
+/// Count the retained cases that ask a cohort question and have no terminal decision.
+///
+/// `Pending` is the state that says no decision was recorded. `Resolved` and `Retained` are both
+/// terminal: the second is the lane deciding that the evidence does not decide, which still leaves
+/// the row visible in the workbook's queues. A case another lane owns is not a cohort decision and
+/// is counted by that lane's own item, if it has one.
+pub fn owed_cohort_decisions(cases: &[ReviewCase]) -> u64 {
+    count(
+        cases
+            .iter()
+            .filter(|case| case.state == ReviewState::Pending)
+            .filter(|case| COHORT_DECISION_FAMILIES.contains(&case.family.as_str()))
+            .count(),
+    )
+}
+
+/// Count the retained cases no lane has decided, whatever family they belong to.
+///
+/// This is the identity item's own definition — every candidate the store retained has a terminal
+/// deterministic or model-assisted decision — counted from the rows, because the row count is the
+/// claim: the store's sequence counters report *appends*, and a table written wholesale appends once,
+/// so a case count read from them says one while the table holds thousands.
+pub fn owed_identity_candidates(cases: &[ReviewCase]) -> u64 {
+    count(
+        cases
+            .iter()
+            .filter(|case| case.state == ReviewState::Pending)
+            .count(),
+    )
 }
 
 /// A count that cannot be represented is not a count this census may claim.

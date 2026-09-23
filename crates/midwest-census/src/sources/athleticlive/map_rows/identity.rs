@@ -169,7 +169,7 @@ fn team_for<'a>(
         "{}:{:?}:{gender:?}:{}",
         school.as_str(),
         context.sport,
-        context.school_year.start_year()
+        context.school_year.get()
     );
     teams.entry(key).or_insert_with(|| CanonicalTeam {
         id: CanonicalTeam::mint(school, context.sport, gender, context.school_year),
@@ -180,5 +180,6 @@ fn team_for<'a>(
         level: Some("high_school".to_string()),
         source_identities: Vec::new(),
         evidence: vec![context.evidence.clone()],
+        retained_conflicts: Vec::new(),
     })
 }

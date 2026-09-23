@@ -79,21 +79,44 @@ fn current_season_files_are_found_under_the_dated_upload_path() {
 #[test]
 fn school_year_follows_the_sport_boundary() {
     // Spring 2025 track is inside school year 2024-25: grade 11 there is class of 2026.
-    let spring = school_year_for("2025-06-06", Sport::OutdoorTrack, 2025);
-    assert_eq!(spring.start_year(), 2024);
-    assert_eq!(GradYear::of(Grade::new(11).unwrap(), spring).0, 2026);
+    let spring = school_year_for("2025-06-06", Sport::OutdoorTrack, 2025)
+        .expect("2025-06 is a season");
+    assert_eq!(spring.get(), 2024);
+    assert_eq!(GradYear::of(Grade::new(11).unwrap(), spring).get(), 2026);
     // Fall 2025 cross country opens school year 2025-26: grade 11 there is class of 2027.
-    let fall = school_year_for("2025-10-25", Sport::CrossCountry, 2025);
-    assert_eq!(fall.start_year(), 2025);
-    assert_eq!(GradYear::of(Grade::new(11).unwrap(), fall).0, 2027);
+    let fall = school_year_for("2025-10-25", Sport::CrossCountry, 2025)
+        .expect("2025-10 is a season");
+    assert_eq!(fall.get(), 2025);
+    assert_eq!(GradYear::of(Grade::new(11).unwrap(), fall).get(), 2027);
     // A year-only date (RaceDay) still lands in the right school year per sport.
     assert_eq!(
-        school_year_for("2023", Sport::CrossCountry, 2023).start_year(),
+        school_year_for("2023", Sport::CrossCountry, 2023)
+            .expect("2023 is a season")
+            .get(),
         2023
     );
     assert_eq!(
-        school_year_for("2023", Sport::OutdoorTrack, 2023).start_year(),
+        school_year_for("2023", Sport::OutdoorTrack, 2023)
+            .expect("2023 is a season")
+            .get(),
         2022
+    );
+}
+
+#[test]
+fn years_no_season_may_open_in_are_refused() {
+    // The domain bounds the years a season may open in, so a file dated outside the window - or,
+    // when it publishes no date, filed by the archive under such a year - is refused by the adapter
+    // rather than filed under a year no source published.
+    assert_eq!(
+        school_year_for("1801-06-06", Sport::OutdoorTrack, 1801),
+        None,
+        "a June 1801 track meet opens the 1800-01 season, which no season may open in"
+    );
+    assert_eq!(
+        school_year_for("no date published", Sport::CrossCountry, 1799),
+        None,
+        "a date-less cross-country file falls back to its archive year, which is out of window"
     );
 }
 

@@ -59,7 +59,10 @@ impl<'a> Absorb<'a> {
             self.stats.rows_without_grade = self.stats.rows_without_grade.saturating_add(1);
             return;
         };
-        let school_year = facts.date.school_year();
+        let Some(school_year) = facts.date.school_year() else {
+            self.stats.rows_without_season = self.stats.rows_without_season.saturating_add(1);
+            return;
+        };
         let gender = self.gender_of(facts.team, section);
         let Some(school) = self.school_for(context.page, &facts.team.name) else {
             return;
@@ -190,6 +193,7 @@ impl<'a> Absorb<'a> {
             observed_grade: Some(grade),
             evidence: row_evidence(context, row),
             source_key,
+            retained_conflicts: Vec::new(),
         };
         self.accumulator
             .performances

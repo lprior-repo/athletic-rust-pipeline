@@ -3,7 +3,7 @@ mod projection;
 use super::*;
 use crate::{
     runtime::{
-        protocol::{DocumentReceipt, FetchOutcome, RankingsCapture},
+        protocol::{DocumentReceipt, FetchOutcome},
         rankings::{
             parse_page_response, EventCatalog, ExpectedPageContext, PageObservation, RankingsScope,
         },
@@ -14,6 +14,7 @@ use crate::{
     },
 };
 use anyhow::{bail, Context};
+use athleticnet_browser::protocol::RankingsCapture;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct CatalogPublication {

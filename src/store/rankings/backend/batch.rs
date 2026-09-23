@@ -1,10 +1,9 @@
 //! Batch staging: stage the presence keys and reference pointers one page writes.
 use super::super::keys::{
     athlete_ref_key, name_ref_key, presence_eligible_individual, presence_eligible_relay_member,
-    presence_roster_missing, presence_roster_present, presence_row_position,
-    presence_source_result,
+    presence_event_athlete, presence_roster_missing, presence_roster_present,
+    presence_row_position, presence_source_result,
 };
-use super::super::presence_keys::presence_event_athlete;
 use super::super::types::{
     RankingCandidateEntry, RankingCandidateKind, RankingPageIndex, RankingRecordRef,
 };
@@ -14,6 +13,10 @@ use crate::store::StoreError;
 use fjall::OwnedWriteBatch;
 
 /// Inserts the source-result and row-position presence keys for one page.
+///
+/// Every key carries the page's checkpoint, so a later capture of the same page
+/// writes beside this one instead of overwriting it, and only the capture its
+/// marker accepts is counted.
 pub(super) fn insert_row_presence(
     store: &StoreInner,
     index: &RankingPageIndex,
@@ -21,17 +24,18 @@ pub(super) fn insert_row_presence(
     total_batch_bytes: &mut usize,
 ) -> Result<(), StoreError> {
     let mut source_results: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut max_row_position: u64 = 0;
 
     for row in &index.rows {
         let _ = source_results.insert(row.result_id);
-        if row.row_number > max_row_position {
-            max_row_position = row.row_number;
-        }
     }
 
     for result_id in &source_results {
-        let key = presence_source_result(&index.collection, &index.event_short, *result_id)?;
+        let key = presence_source_result(
+            &index.collection,
+            &index.event_short,
+            &index.checkpoint,
+            *result_id,
+        )?;
         *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
         batch.insert(&store.rankings, key, []);
     }
@@ -40,6 +44,7 @@ pub(super) fn insert_row_presence(
         let key = presence_row_position(
             &index.collection,
             &index.event_short,
+            &index.checkpoint,
             row.result_id,
             row.row_number,
         )?;
@@ -58,9 +63,6 @@ pub(super) fn insert_candidate_presence(
 ) -> Result<std::collections::BTreeSet<u64>, StoreError> {
     // Event-level athlete presence keys (were missing, causing zero unique counters).
     let mut event_athletes: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut grade11_individual: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut grade11_relay: std::collections::BTreeSet<(u64, u64)> =
-        std::collections::BTreeSet::new();
 
     for entry in &index.candidates {
         insert_candidate_refs(store, index, entry, batch, total_batch_bytes)?;
@@ -70,10 +72,10 @@ pub(super) fn insert_candidate_presence(
 
         match entry.kind {
             RankingCandidateKind::Individual => {
-                let _ = grade11_individual.insert(entry.result_id);
                 let key = presence_eligible_individual(
                     &index.collection,
                     &index.event_short,
+                    &index.checkpoint,
                     entry.result_id,
                     entry.athlete_id,
                 )?;
@@ -81,10 +83,10 @@ pub(super) fn insert_candidate_presence(
                 batch.insert(&store.rankings, key, []);
             }
             RankingCandidateKind::RelayMember => {
-                let _ = grade11_relay.insert((entry.result_id, entry.athlete_id.get()));
                 let key = presence_eligible_relay_member(
                     &index.collection,
                     &index.event_short,
+                    &index.checkpoint,
                     entry.result_id,
                     entry.athlete_id,
                 )?;
@@ -141,23 +143,24 @@ pub(super) fn insert_roster_presence(
     batch: &mut OwnedWriteBatch,
     total_batch_bytes: &mut usize,
 ) -> Result<(), StoreError> {
-    let mut roster_missing: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-    let mut roster_present: std::collections::BTreeSet<u64> = std::collections::BTreeSet::new();
-
     for roster in &index.rosters {
-        if roster.present {
-            let _ = roster_present.insert(roster.result_id);
-            let key =
-                presence_roster_present(&index.collection, &index.event_short, roster.result_id)?;
-            *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
-            batch.insert(&store.rankings, key, []);
+        let key = if roster.present {
+            presence_roster_present(
+                &index.collection,
+                &index.event_short,
+                &index.checkpoint,
+                roster.result_id,
+            )?
         } else {
-            let _ = roster_missing.insert(roster.result_id);
-            let key =
-                presence_roster_missing(&index.collection, &index.event_short, roster.result_id)?;
-            *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
-            batch.insert(&store.rankings, key, []);
-        }
+            presence_roster_missing(
+                &index.collection,
+                &index.event_short,
+                &index.checkpoint,
+                roster.result_id,
+            )?
+        };
+        *total_batch_bytes = total_batch_bytes.saturating_add(key.len());
+        batch.insert(&store.rankings, key, []);
     }
     Ok(())
 }
@@ -174,6 +177,7 @@ pub(super) fn insert_event_athletes(
         let key = presence_event_athlete(
             &index.collection,
             &index.event_short,
+            &index.checkpoint,
             AthleteId::try_from(*athlete_id).map_err(|_| StoreError::InvalidRankingInput)?,
         )?;
         *total_batch_bytes = total_batch_bytes.saturating_add(key.len());

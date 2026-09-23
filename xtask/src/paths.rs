@@ -44,19 +44,30 @@ pub fn relative(path: &Path) -> String {
 
 /// Every `.rs` file under `dir`, recursively, sorted by path.
 ///
-/// Directory symlinks are not descended into and symlinked `.rs` files are listed, which is what
-/// `pathlib.Path.rglob("*.rs")` did for the deleted Python scans. A directory that cannot be read is
-/// an error rather than an empty list: a scan that silently measured zero files would report debt as
-/// burnt down.
+/// [`files`] with no skip list, filtered to Rust sources: the traversal rules below hold for both.
 pub fn rust_files(dir: &Path) -> Result<Vec<PathBuf>> {
+    Ok(files(dir, &[])?
+        .into_iter()
+        .filter(|path| path.extension() == Some(OsStr::new("rs")))
+        .collect())
+}
+
+/// Every file under `dir`, recursively, sorted by path, staying out of the subtrees named in `skip`.
+///
+/// A skipped name is matched at any depth (`target`, `.git`, `var`): a nested build directory is as
+/// much build output as the top-level one. Directory symlinks are not descended into and symlinked
+/// files are listed, which is what `pathlib.Path.rglob("*")` did for the deleted Python scans. A
+/// directory that cannot be read is an error rather than an empty list: a scan that silently measured
+/// zero files would report debt as burnt down.
+pub fn files(dir: &Path, skip: &[&str]) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
-    collect_rust_files(dir, &mut files)?;
+    collect_files(dir, skip, &mut files)?;
     files.sort();
     Ok(files)
 }
 
-/// Depth-first collection behind [`rust_files`].
-fn collect_rust_files(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
+/// Depth-first collection behind [`files`], staying out of the subtrees [`skipped`] names.
+fn collect_files(dir: &Path, skip: &[&str], files: &mut Vec<PathBuf>) -> Result<()> {
     let entries = fs::read_dir(dir).with_context(|| format!("listing {}", relative(dir)))?;
     for entry in entries {
         let entry = entry.with_context(|| format!("listing {}", relative(dir)))?;
@@ -64,11 +75,18 @@ fn collect_rust_files(dir: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
         let kind = entry
             .file_type()
             .with_context(|| format!("reading the type of {}", relative(&path)))?;
-        if kind.is_dir() {
-            collect_rust_files(&path, files)?;
-        } else if path.extension() == Some(OsStr::new("rs")) {
+        if !kind.is_dir() {
             files.push(path);
+        } else if !skipped(&path, skip) {
+            collect_files(&path, skip, files)?;
         }
     }
     Ok(())
+}
+
+/// Whether a directory's own name is one the walk stays out of.
+fn skipped(dir: &Path, skip: &[&str]) -> bool {
+    dir.file_name()
+        .and_then(OsStr::to_str)
+        .is_some_and(|name| skip.contains(&name))
 }

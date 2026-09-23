@@ -1,12 +1,12 @@
 //! Distinct Athletic.net ids the external sources published, straight off the snapshots.
 
 use std::collections::BTreeSet;
-use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result};
 
 use super::ns_key::ns_key;
+use midwest_census::store::read::read_rows;
 
 /// Data extracted from the athlete and meet JSONL snapshots.
 pub(crate) struct Seeds {
@@ -16,20 +16,20 @@ pub(crate) struct Seeds {
     pub(super) distinct_athletic_net_meet_ids: usize,
 }
 
-/// Read a JSONL file and return the parsed rows.
-fn read_jsonl(path: &Path) -> Result<Vec<serde_json::Value>> {
-    let bytes = fs::read_to_string(path).with_context(|| format!("reading {path:?}"))?;
-    let mut rows = Vec::new();
-    for line in bytes.lines() {
-        let line = line.trim();
-        if line.is_empty() {
-            continue;
-        }
-        let row: serde_json::Value =
-            serde_json::from_str(line).with_context(|| format!("parsing {path:?} line: {line}"))?;
-        rows.push(row);
+/// The rows of one snapshot the census document counts.
+///
+/// An absent file is an error here rather than an empty table: [`read_rows`] treats a snapshot that
+/// has never been published as no rows, which is what an adapter wants before `consolidate` has run,
+/// while this document is written after one. Counting a missing `athletes.jsonl` as zero athletes
+/// would publish a number that contradicts the report sitting beside it.
+fn snapshot_rows(path: &Path) -> Result<Vec<serde_json::Value>> {
+    if !path.exists() {
+        anyhow::bail!(
+            "no snapshot at {}: consolidate the store before this document",
+            path.display()
+        );
     }
-    Ok(rows)
+    read_rows(path).with_context(|| format!("reading {}", path.display()))
 }
 
 /// Process athlete rows: count total athletes, distinct AN athlete IDs, and multisource count.
@@ -86,11 +86,11 @@ fn count_meet_ids(rows: &[serde_json::Value]) -> usize {
 
 pub(super) fn counted_seeds(store_out: &Path) -> Result<Seeds> {
     let athletes_path = store_out.join("athletes.jsonl");
-    let athletes_rows = read_jsonl(&athletes_path)?;
+    let athletes_rows = snapshot_rows(&athletes_path)?;
     let (athletes, multisource, distinct_athletic_net_athlete_ids) = count_athletes(&athletes_rows);
 
     let meets_path = store_out.join("meets.jsonl");
-    let meets_rows = read_jsonl(&meets_path)?;
+    let meets_rows = snapshot_rows(&meets_path)?;
     let distinct_athletic_net_meet_ids = count_meet_ids(&meets_rows);
 
     Ok(Seeds {
@@ -100,3 +100,6 @@ pub(super) fn counted_seeds(store_out: &Path) -> Result<Seeds> {
         distinct_athletic_net_meet_ids,
     })
 }
+
+#[cfg(test)]
+mod tests;

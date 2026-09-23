@@ -5,15 +5,13 @@ use crate::{
         config::{validate_source, validated_origin},
         protocol::{DocumentReceipt, FailureCode, RetryEvidence, SourceResource},
         run_protocol::SourceSnapshot,
-        source::{
-            observation::CapturedAttempt,
-            request::{self, RequestSpec},
-        },
+        source::{observation::CapturedAttempt, request},
         ExecutionMode,
     },
     store::ArtifactStore,
 };
 use anyhow::{bail, Context, Result};
+use athleticnet_browser::request::{RequestAction, RequestSpec};
 use url::Url;
 
 pub(super) fn source_origin(snapshot: &EvidenceDigest, store: &ArtifactStore) -> Result<Url> {
@@ -209,7 +207,7 @@ fn validate_attempt(attempt: &CapturedAttempt, origin: &Url) -> Result<()> {
         bail!("captured source request differs from its frozen origin");
     }
     if semantic.as_str() != attempt.request.url.as_str()
-        && !matches!(attempt.request.action, request::RequestAction::Rankings(_))
+        && !matches!(attempt.request.action, RequestAction::Rankings(_))
     {
         bail!("captured source request rewrites a non-rankings endpoint");
     }

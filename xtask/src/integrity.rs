@@ -9,16 +9,16 @@
 //! These are review candidates, not verdicts: each hit must be either converted or justified. The
 //! counts are printed by `tools/gate.sh` and ratcheted in the DDD phase.
 //!
-//! Emits JSON on stdout, one object per domain root, keyed `root-domain` -> `src/domain` and
-//! `census-domain` -> `crates/census-domain/src`.
+//! Emits JSON on stdout: one object per domain root, keyed `root-domain` -> `src/domain` and
+//! `census-domain` -> `crates/census-domain/src`, plus `ok`, which is true only when every declared
+//! root produced at least one production file to measure.
 
 use crate::json::count;
 use crate::paths;
-use crate::scan::compile;
+use crate::scan::{compile, is_test_file};
 use anyhow::{Context, Result};
 use regex::Regex;
 use serde_json::{Map, Value};
-use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -46,20 +46,33 @@ const PUB_STRUCT: &str = r"^\s*pub\s+struct\s+([A-Za-z0-9_]+)";
 const OPTION_FIELD: &str = r":\s*Option<";
 
 /// Scan both domain roots and write the report to stdout.
+///
+/// The report carries `ok`, which is true only when every declared domain root produced at least one
+/// production file. It is the difference between a scan of zero candidates and a scan of nothing:
+/// `tools/gate.sh` fails the lane on `ok: false`, because a root that moved (or a filter that widened)
+/// would otherwise read as a clean burndown.
 pub fn run() -> Result<()> {
     let rules = Rules::compile()?;
     let root = paths::repo_root();
     let mut report: Map<String, Value> = Map::new();
+    let mut healthy = true;
     for (name, relative_root) in DOMAINS {
         let mut hits = Hits::default();
+        let mut files = 0usize;
         for path in domain_files(&root.join(relative_root))? {
             if is_test_file(&path) || !path.exists() {
                 continue;
             }
+            files = files.saturating_add(1);
             hits.measure(&path, &rules)?;
+        }
+        if files == 0 {
+            healthy = false;
+            eprintln!("integrity: {name} ({relative_root}) yielded no production file to measure");
         }
         report.insert(name.to_string(), Value::Object(hits.into_json()));
     }
+    report.insert("ok".to_string(), Value::Bool(healthy));
     println!("{}", serde_json::to_string_pretty(&Value::Object(report))?);
     Ok(())
 }
@@ -168,19 +181,6 @@ fn domain_files(root: &Path) -> Result<Vec<PathBuf>> {
         return Ok(vec![root.to_path_buf()]);
     }
     paths::rust_files(root)
-}
-
-/// Files whose name or directory marks them as test code, skipped the way the deleted script skipped
-/// them.
-fn is_test_file(path: &Path) -> bool {
-    let named = path
-        .file_name()
-        .and_then(OsStr::to_str)
-        .is_some_and(|name| name.contains("tests"));
-    let under_tests = path
-        .components()
-        .any(|part| part.as_os_str() == OsStr::new("tests"));
-    named || under_tests
 }
 
 /// The file name alone, which is how the report names a hit.

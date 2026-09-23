@@ -36,10 +36,11 @@ fn evidence(source: &str, url: Option<&str>) -> Vec<Evidence> {
     )]
 }
 
-/// A school with an athletics site, appended once.
+/// A school with an athletics site and a city, appended once.
 fn school(store: &Store, state: UsJurisdiction, name: &str) -> SchoolId {
     let (mut school, id) = CanonicalSchool::new(state, name, normalize_name(name));
     school.athletics_website = Some(format!("https://{}.test/athletics", name.to_lowercase()));
+    school.city = Some(name.to_string());
     school.evidence = evidence("wiaa_results", Some("https://wiaa.test/schools"));
     store.append(Table::Schools, &school).unwrap();
     id
@@ -53,7 +54,7 @@ fn julian(store: &Store, school: &SchoolId) -> AthleteId {
             CanonicalAthlete::new(school, "Julian Aguilera", GradYear::CO2027, Gender::Boys);
         athlete.observed_grades.push(ObservedGrade {
             grade: Grade::new(11).unwrap(),
-            school_year: SchoolYear(2025),
+            school_year: SchoolYear::new(2025).expect("2025 is a season"),
             source: SourceRef::new("wiaa_results", None),
         });
         athlete.sports = vec![Sport::OutdoorTrack, Sport::CrossCountry];
@@ -87,7 +88,12 @@ fn nadia(store: &Store, school: &SchoolId) -> AthleteId {
 
 /// An athlete one class below the cohort: no recruiting sheet may publish this row.
 fn younger(store: &Store, school: &SchoolId) {
-    let mut athlete = CanonicalAthlete::new(school, "Owen Clarke", GradYear(2028), Gender::Boys);
+    let mut athlete = CanonicalAthlete::new(
+        school,
+        "Owen Clarke",
+        GradYear::new(2028).expect("2028 is a class"),
+        Gender::Boys,
+    );
     athlete.evidence = evidence("wiaa_results", None);
     store.append(Table::Athletes, &athlete).unwrap();
 }
@@ -121,7 +127,7 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
         context.school,
         Sport::OutdoorTrack,
         Gender::Boys,
-        SchoolYear(2026),
+        SchoolYear::new(2026).expect("2026 is a season"),
     );
     let source_key = format!("{source}:{}:{}", context.date, mark.raw());
     store
@@ -149,6 +155,7 @@ fn performance(store: &Store, context: &PerformanceRow<'_>, mark: Mark, source: 
                 observed_grade: None,
                 evidence: evidence(source, Some(url)),
                 source_key,
+                retained_conflicts: Vec::new(),
             },
         )
         .unwrap();
@@ -448,6 +455,18 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
         "",
         "confidence at HIGH needs no review"
     );
+    assert_eq!(text(&range, row, 29), "Abbotsford", "the school row's city");
+    assert_eq!(text(&range, row, 30), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 31), "kruiz@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 32), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(
+        text(&range, row, 33),
+        "Dana Voss",
+        "the athlete's own sport picks the slot: track and field wins over cross country"
+    );
+    assert_eq!(text(&range, row, 34), "Head TF Coach");
+    assert_eq!(text(&range, row, 35), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 36), "professional_coach_email");
 }
 
 /// The three profile URL columns follow the evidence scope: the Athletic.net identity is only
@@ -486,6 +505,18 @@ fn an_athlete_without_a_performance_is_published_as_identity_only() {
         text(&range, row, 28),
         "yes",
         "no grade observation agrees with the cohort, so the row asks for review"
+    );
+    assert_eq!(text(&range, row, 29), "Ada-Borup");
+    assert_eq!(
+        text(&range, row, 30),
+        "",
+        "the school has no stored coach row"
+    );
+    assert_eq!(text(&range, row, 33), "", "nothing is named");
+    assert_eq!(
+        text(&range, row, 36),
+        "contact_source_not_attempted",
+        "no coach row for the school means no contact source reached it"
     );
 }
 
@@ -626,5 +657,549 @@ fn the_run_audits_every_sheet_against_the_store_counts_behind_it() {
         every_cohort.dataset.audit().cohort_athletes,
         3,
         "no cohort filter publishes every in-scope athlete"
+    );
+}
+
+/// A coach row built directly, with one evidence observation: the contact tests below never need a
+/// store, and every choice the ladder makes is asserted on the values it publishes.
+fn coach_row(
+    school: &SchoolId,
+    name: &str,
+    sport: Option<Sport>,
+    side: Gender,
+    role: CoachRole,
+    email: Option<&str>,
+    observed: &str,
+) -> CanonicalCoach {
+    let mut coach = CanonicalCoach::new(school, name, sport, side, role);
+    coach.professional_email = email.map(str::to_string);
+    coach.evidence = vec![Evidence::parsed(
+        SourceRef::new("coach_contacts_csv", None),
+        observed,
+    )];
+    coach
+}
+
+/// A school id minted the way the school table mints it.
+fn school_id(state: UsJurisdiction, name: &str) -> SchoolId {
+    CanonicalSchool::new(state, name, normalize_name(name)).1
+}
+
+/// An athlete with the given sport evidence and side of the team.
+fn athlete_of(school: &SchoolId, sports: &[Sport], side: Gender) -> CanonicalAthlete {
+    let mut athlete =
+        CanonicalAthlete::new(school, "Preferred Contact Athlete", GradYear::CO2027, side);
+    athlete.sports = sports.to_vec();
+    athlete
+}
+
+/// The four cells the preferred-contact block publishes, in header order: contact, role, email,
+/// state.
+fn contact_cells(preferred: &contact::Preferred) -> [String; 4] {
+    [
+        preferred.name.clone(),
+        preferred.role.clone(),
+        preferred.email.clone(),
+        preferred.state.as_str().to_string(),
+    ]
+}
+
+/// One school's contact facts, resolved from the coach rows exactly as the load pass resolves them.
+fn school_contacts(coaches: &[CanonicalCoach], school: &SchoolId) -> contact::SchoolContacts {
+    let mut index = contact::contacts(coaches);
+    index
+        .remove(school.as_str())
+        .expect("the fixture school carries coach rows")
+}
+
+/// The evidence-bearing sport picks the slot: track and field for a dual athlete, cross country for
+/// an athlete whose only stored sport is cross country.
+#[test]
+fn the_preferred_contact_follows_the_evidence_bearing_sport() {
+    let school = school_id(UsJurisdiction::Wisconsin, "Sport High");
+    let coaches = vec![
+        coach_row(
+            &school,
+            "Dana Voss",
+            Some(Sport::OutdoorTrack),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+            Some("dvoss@school.test"),
+            "2026-09-20",
+        ),
+        coach_row(
+            &school,
+            "Kim Ruiz",
+            Some(Sport::CrossCountry),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+            Some("kruiz@school.test"),
+            "2026-09-20",
+        ),
+    ];
+    let contacts = school_contacts(&coaches, &school);
+
+    let dual = contact::preferred(
+        Some(&contacts),
+        &athlete_of(
+            &school,
+            &[Sport::OutdoorTrack, Sport::IndoorTrack, Sport::CrossCountry],
+            Gender::Boys,
+        ),
+    );
+    assert_eq!(
+        contact_cells(&dual),
+        [
+            "Dana Voss",
+            "Head TF Coach",
+            "dvoss@school.test",
+            "professional_coach_email"
+        ],
+        "an athlete with both sports prefers the track and field coach"
+    );
+
+    let cross_country = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::CrossCountry], Gender::Girls),
+    );
+    assert_eq!(
+        contact_cells(&cross_country),
+        [
+            "Kim Ruiz",
+            "Head XC Coach",
+            "kruiz@school.test",
+            "professional_coach_email"
+        ]
+    );
+
+    let indoor = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::IndoorTrack], Gender::Girls),
+    );
+    assert_eq!(
+        contact_cells(&indoor)[0],
+        "Dana Voss",
+        "indoor track is track"
+    );
+}
+
+/// A head coach's published address beats the athletic director's; the director's address is the
+/// fallback; a named contact with no address anywhere is named and flagged as such.
+#[test]
+fn a_head_coach_address_wins_over_the_athletic_director() {
+    let school = school_id(UsJurisdiction::Minnesota, "Fallback High");
+    let coach = coach_row(
+        &school,
+        "Dana Voss",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+        Some("dvoss@school.test"),
+        "2026-09-20",
+    );
+    let director = coach_row(
+        &school,
+        "Lee Adams",
+        None,
+        Gender::Mixed,
+        CoachRole::AthleticDirector,
+        Some("ladams@school.test"),
+        "2026-09-20",
+    );
+    let athlete = athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys);
+
+    let both = school_contacts(&[coach.clone(), director.clone()], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&both), &athlete)),
+        [
+            "Dana Voss",
+            "Head TF Coach",
+            "dvoss@school.test",
+            "professional_coach_email"
+        ],
+        "the coach's public address wins over the director's"
+    );
+
+    let mut silent_coach = coach.clone();
+    silent_coach.professional_email = None;
+    let director_only = school_contacts(&[silent_coach.clone(), director.clone()], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&director_only), &athlete)),
+        [
+            "Lee Adams",
+            "Athletic Director",
+            "ladams@school.test",
+            "professional_ad_email"
+        ],
+        "no public coach address falls back to the director's"
+    );
+
+    let mut silent_director = director.clone();
+    silent_director.professional_email = None;
+    let named_only = school_contacts(&[silent_coach, silent_director], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&named_only), &athlete)),
+        ["Dana Voss", "Head TF Coach", "", "coach_name_only"],
+        "a named coach with no public address anywhere is named, with no address"
+    );
+}
+
+/// A newer head coach who published no address never shadows an older one who did: otherwise the
+/// ladder would fall through to the athletic director and lose the coach's own address.
+#[test]
+fn a_published_address_outranks_a_newer_row_without_one() {
+    let school = school_id(UsJurisdiction::Illinois, "Address High");
+    let coaches = vec![
+        coach_row(
+            &school,
+            "Older Address",
+            Some(Sport::CrossCountry),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+            Some("older@school.test"),
+            "2026-09-01",
+        ),
+        coach_row(
+            &school,
+            "Newer Silent",
+            Some(Sport::CrossCountry),
+            Gender::Mixed,
+            CoachRole::HeadCoach,
+            None,
+            "2026-09-25",
+        ),
+        coach_row(
+            &school,
+            "Lee Adams",
+            None,
+            Gender::Mixed,
+            CoachRole::AthleticDirector,
+            Some("ladams@school.test"),
+            "2026-09-20",
+        ),
+    ];
+    let contacts = school_contacts(&coaches, &school);
+    let athlete = athlete_of(&school, &[Sport::CrossCountry], Gender::Girls);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        [
+            "Older Address",
+            "Head XC Coach",
+            "older@school.test",
+            "professional_coach_email"
+        ]
+    );
+}
+
+/// Two head coaches of one sport and one side publishing different addresses: the newest evidence
+/// decides, and an equal observation date falls to the coach's name, so two runs agree.
+#[test]
+fn the_newest_evidence_resolves_two_head_coaches_of_one_sport() {
+    let school = school_id(UsJurisdiction::Wisconsin, "Twin High");
+    let older = coach_row(
+        &school,
+        "Alex Older",
+        Some(Sport::OutdoorTrack),
+        Gender::Boys,
+        CoachRole::HeadCoach,
+        Some("aolder@school.test"),
+        "2026-09-01",
+    );
+    let newer = coach_row(
+        &school,
+        "Blair Newer",
+        Some(Sport::OutdoorTrack),
+        Gender::Boys,
+        CoachRole::HeadCoach,
+        Some("bnewer@school.test"),
+        "2026-09-20",
+    );
+    let athlete = athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys);
+
+    let contacts = school_contacts(&[older.clone(), newer.clone()], &school);
+    assert_eq!(
+        contacts.heads.conflicts(),
+        1,
+        "two addresses in one bucket is the disagreement the rule resolves"
+    );
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        [
+            "Blair Newer",
+            "Head TF Coach (boys)",
+            "bnewer@school.test",
+            "professional_coach_email"
+        ],
+        "the newest observation wins"
+    );
+
+    // The disagreement precedence settled is still retained for a human: one row naming the school,
+    // the slot it is about, and every row the rule had to choose from.
+    let recorded = disagreements(&[older.clone(), newer]);
+    let disagreement = recorded.first().expect("one bucket disagreed");
+    assert!(disagreement.decided, "the newest observation separated the rows");
+    assert_eq!(disagreement.school, school.as_str());
+    assert_eq!(disagreement.role, "Head TF Coach (boys)");
+    assert_eq!(
+        disagreement.rows,
+        [
+            "Alex Older: aolder@school.test (observed 2026-09-01)",
+            "Blair Newer: bnewer@school.test (observed 2026-09-20)"
+        ],
+        "both rows, with the address and the observation that dates them"
+    );
+
+    // Two rows sharing the newest observation: neither the address nor the observation picks one, so
+    // the cell says the contact is unresolved instead of a coin toss between names.
+    let tied = coach_row(
+        &school,
+        "Blair Newer",
+        Some(Sport::OutdoorTrack),
+        Gender::Boys,
+        CoachRole::HeadCoach,
+        Some("bnewer@school.test"),
+        "2026-09-01",
+    );
+    let tied_contacts = school_contacts(&[older.clone(), tied.clone()], &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&tied_contacts), &athlete)),
+        ["", "", "", "contact_conflict"],
+        "an equal observation date leaves the bucket unresolved"
+    );
+    let recorded = disagreements(&[older, tied]);
+    assert!(
+        recorded.first().is_some_and(|row| !row.decided),
+        "the undecidable bucket is retained too: {recorded:?}"
+    );
+}
+
+/// A school that publishes a boys' and a girls' head coach of one sport: the athlete's own side of
+/// the team picks the coach, and the role cell names the side.
+#[test]
+fn the_athletes_side_of_the_team_picks_the_head_coach() {
+    let school = school_id(UsJurisdiction::Minnesota, "Sides High");
+    let coaches = vec![
+        coach_row(
+            &school,
+            "Jeremy Lee",
+            Some(Sport::OutdoorTrack),
+            Gender::Boys,
+            CoachRole::HeadCoach,
+            Some("jlee@school.test"),
+            "2026-09-20",
+        ),
+        coach_row(
+            &school,
+            "Kelsey Daines",
+            Some(Sport::OutdoorTrack),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+            Some("kdaines@school.test"),
+            "2026-09-20",
+        ),
+    ];
+    let contacts = school_contacts(&coaches, &school);
+
+    let girls = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::OutdoorTrack], Gender::Girls),
+    );
+    assert_eq!(
+        contact_cells(&girls),
+        [
+            "Kelsey Daines",
+            "Head TF Coach (girls)",
+            "kdaines@school.test",
+            "professional_coach_email"
+        ]
+    );
+    let boys = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys),
+    );
+    assert_eq!(
+        contact_cells(&boys),
+        [
+            "Jeremy Lee",
+            "Head TF Coach (boys)",
+            "jlee@school.test",
+            "professional_coach_email"
+        ]
+    );
+    assert_eq!(
+        contacts.heads.conflicts(),
+        0,
+        "one address per side of the team is not a disagreement"
+    );
+}
+
+/// A head coach whose row carries no sport binding is reached after both sport slots are empty, and
+/// an athlete that stores no sport at all still resolves through the ladder.
+#[test]
+fn a_school_wide_head_coach_is_the_last_coach_rung() {
+    let school = school_id(UsJurisdiction::Illinois, "Wide High");
+    let coaches = vec![coach_row(
+        &school,
+        "Robin Wide",
+        None,
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+        Some("rwide@school.test"),
+        "2026-09-20",
+    )];
+    let contacts = school_contacts(&coaches, &school);
+
+    let cross_country = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::CrossCountry], Gender::Girls),
+    );
+    assert_eq!(
+        contact_cells(&cross_country),
+        [
+            "Robin Wide",
+            "Head Coach",
+            "rwide@school.test",
+            "professional_coach_email"
+        ]
+    );
+
+    let no_sport = contact::preferred(Some(&contacts), &athlete_of(&school, &[], Gender::Girls));
+    assert_eq!(contact_cells(&no_sport)[0], "Robin Wide");
+}
+
+/// The states that say what was looked at: no coach row for the school at all is
+/// `contact_source_not_attempted`, rows that name no head coach and no director are
+/// `no_public_contact_found`.
+#[test]
+fn the_contact_state_separates_looking_from_finding_nothing() {
+    let school = school_id(UsJurisdiction::Wisconsin, "Quiet High");
+    let athlete = athlete_of(&school, &[Sport::CrossCountry], Gender::Girls);
+
+    let unattempted = contact::preferred(None, &athlete);
+    assert_eq!(
+        contact_cells(&unattempted),
+        ["", "", "", "contact_source_not_attempted"],
+        "a school the coach table never reached answers that nothing was looked at"
+    );
+
+    let assistants = vec![coach_row(
+        &school,
+        "Pat Nolan",
+        Some(Sport::OutdoorTrack),
+        Gender::Mixed,
+        CoachRole::AssistantCoach,
+        Some("pnolan@school.test"),
+        "2026-09-20",
+    )];
+    let contacts = school_contacts(&assistants, &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        ["", "", "", "no_public_contact_found"],
+        "a contact source reached the school and published no contact"
+    );
+}
+/// Two head coaches of one slot with no published address at all: nothing dates them apart, so
+/// `coach_name_only` would be an alphabetical accident and the state says the bucket is unresolved.
+#[test]
+fn two_named_coaches_without_an_address_are_a_contact_conflict() {
+    let school = school_id(UsJurisdiction::Minnesota, "Names High");
+    let coaches = vec![
+        coach_row(
+            &school,
+            "Alex Nolan",
+            Some(Sport::CrossCountry),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+            None,
+            "2026-09-20",
+        ),
+        coach_row(
+            &school,
+            "Blair Ortiz",
+            Some(Sport::CrossCountry),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+            None,
+            "2026-09-20",
+        ),
+    ];
+    let athlete = athlete_of(&school, &[Sport::CrossCountry], Gender::Girls);
+    let contacts = school_contacts(&coaches, &school);
+    assert_eq!(
+        contact_cells(&contact::preferred(Some(&contacts), &athlete)),
+        ["", "", "", "contact_conflict"],
+        "two names and no address is a disagreement, not an unpublished contact"
+    );
+    let recorded = disagreements(&coaches);
+    assert!(
+        recorded
+            .first()
+            .is_some_and(|row| !row.decided && row.role == "Head XC Coach (girls)"),
+        "the name-only bucket is retained as an undecided disagreement: {recorded:?}"
+    );
+}
+
+/// A bucket is the unit, not the school: a cross-country bucket two coaches disagree about leaves the
+/// track athlete's own contact alone and reaches only the athlete whose slot is that bucket.
+#[test]
+fn a_conflicting_slot_does_not_deny_another_slots_athlete() {
+    let school = school_id(UsJurisdiction::Illinois, "Scoped High");
+    let coaches = vec![
+        coach_row(
+            &school,
+            "Dana Voss",
+            Some(Sport::OutdoorTrack),
+            Gender::Boys,
+            CoachRole::HeadCoach,
+            Some("dvoss@school.test"),
+            "2026-09-20",
+        ),
+        coach_row(
+            &school,
+            "Kim Ruiz",
+            Some(Sport::CrossCountry),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+            Some("kruiz@school.test"),
+            "2026-09-20",
+        ),
+        coach_row(
+            &school,
+            "Lee Sato",
+            Some(Sport::CrossCountry),
+            Gender::Girls,
+            CoachRole::HeadCoach,
+            Some("lsato@school.test"),
+            "2026-09-20",
+        ),
+    ];
+    let contacts = school_contacts(&coaches, &school);
+    assert_eq!(
+        contacts.heads.conflicts(),
+        1,
+        "only the cross-country girls bucket disagrees"
+    );
+    let track = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::OutdoorTrack], Gender::Boys),
+    );
+    assert_eq!(
+        contact_cells(&track),
+        [
+            "Dana Voss",
+            "Head TF Coach (boys)",
+            "dvoss@school.test",
+            "professional_coach_email"
+        ],
+        "the track bucket resolved, so its athlete still has a contact"
+    );
+    let cross_country = contact::preferred(
+        Some(&contacts),
+        &athlete_of(&school, &[Sport::CrossCountry], Gender::Girls),
+    );
+    assert_eq!(
+        contact_cells(&cross_country),
+        ["", "", "", "contact_conflict"],
+        "the athlete whose own bucket disagrees gets the conflict state"
     );
 }

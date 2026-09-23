@@ -1,24 +1,114 @@
 //! Identity behavior: the wire form, the purity that makes a retry reuse the same address, and the
 //! two bounds that keep a provider's id space from deciding how long an identity gets.
 
-use super::{Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES};
+use super::{
+    scope_digest, Revision, WorkflowIdentity, MAX_IDENTITY_BYTES, MAX_PART_BYTES,
+};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
 /// The season the 2026-2027 census runs in, as the objective's `{season}` field spells it.
 fn season() -> SchoolYear {
-    SchoolYear(2026)
+    SchoolYear::new(2026).expect("2026 is a season")
 }
 
 #[test]
 fn national_identity_matches_the_documented_form() {
-    let identity = WorkflowIdentity::national(season(), Revision(1));
-    assert_eq!(identity.as_str(), "national:2026-27:1");
+    let wisconsin = [UsJurisdiction::Wisconsin];
+    let identity = WorkflowIdentity::national(season(), Revision(1), &wisconsin);
+    assert_eq!(identity.as_str(), "national:2026-27:8ee4f7269711dd03:1");
+    assert_eq!(
+        identity.as_str().matches(':').count(),
+        3,
+        "season, run scope and revision are three fields"
+    );
     assert_ne!(
         identity,
-        WorkflowIdentity::national(season(), Revision(2)),
+        WorkflowIdentity::national(season(), Revision(2), &wisconsin),
         "a revision bump must address a different national run"
     );
+    assert_ne!(
+        identity,
+        WorkflowIdentity::national(season(), Revision(1), &[UsJurisdiction::Iowa]),
+        "another state is another run"
+    );
+}
+
+/// The scope is what a re-submission is checked against, so it has to be *in* the identity rather than
+/// in an operator's memory: a revision already journalled under one jurisdiction set must not absorb a
+/// submission naming another, and the same set must reproduce its identity byte for byte, which is what
+/// lets a retry attach instead of duplicating a fan-out.
+#[test]
+fn a_changed_scope_is_a_changed_run_and_the_same_scope_reproduces_its_identity() {
+    let both = [UsJurisdiction::Iowa, UsJurisdiction::Wisconsin];
+    let scoped = WorkflowIdentity::national(season(), Revision(1), &both);
+
+    assert_ne!(
+        scoped,
+        WorkflowIdentity::national(season(), Revision(1), &[UsJurisdiction::Wisconsin]),
+        "a run over two states is not the run over one of them"
+    );
+    assert_eq!(
+        scoped.as_str(),
+        WorkflowIdentity::national(season(), Revision(1), &both).as_str(),
+        "the same scope must reproduce the same run byte for byte"
+    );
+    // The CLI passes the states it was given, the workflow passes the request's list, and neither
+    // spells the default out: an unnamed scope has to be one identity, whichever side derives it.
+    assert_eq!(
+        WorkflowIdentity::national(season(), Revision(1), &[]).as_str(),
+        WorkflowIdentity::national(season(), Revision(1), &UsJurisdiction::CENSUS_SCOPE).as_str(),
+        "an unnamed scope is the census run scope, spelled either way"
+    );
+}
+
+/// The digest is taken in `CENSUS_SCOPE` order, over the set: naming the same states in another order
+/// cannot move an existing run to a new identity, while adding, removing or replacing a state must.
+#[test]
+fn the_scope_digest_is_order_stable_over_a_set() {
+    let forward = [
+        UsJurisdiction::Iowa,
+        UsJurisdiction::Wisconsin,
+        UsJurisdiction::Ohio,
+    ];
+    let mut reversed = forward;
+    reversed.reverse();
+
+    assert_eq!(
+        scope_digest(&forward),
+        scope_digest(&reversed),
+        "the order a caller names states in is not part of the census"
+    );
+    assert_eq!(scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Iowa]), scope_digest(&[UsJurisdiction::Iowa]));
+    assert_ne!(
+        scope_digest(&forward),
+        scope_digest(&[UsJurisdiction::Iowa, UsJurisdiction::Wisconsin]),
+        "a set with a state removed is a different set"
+    );
+    // A state outside the census run scope is refused by admission (`national::targets`,
+    // `cli::within_census_scope`), and until it is refused it must not digest as a scope that does not
+    // name it — an identity is not the place to lose a state.
+    assert_ne!(
+        scope_digest(&[UsJurisdiction::Alaska]),
+        scope_digest(&[]),
+        "an inadmissible set does not collapse onto the run scope"
+    );
+}
+
+/// The scope field is a fixed-width digest, so the whole identity stays inside the ceiling a store key
+/// can carry however many states a caller names.
+#[test]
+fn a_full_scope_identity_fits_the_ceiling() {
+    for jurisdictions in [UsJurisdiction::CENSUS_SCOPE.as_slice(), &[UsJurisdiction::Alaska]] {
+        let identity =
+            WorkflowIdentity::national(season(), Revision(u32::MAX), jurisdictions);
+        assert!(
+            identity.as_str().len() <= MAX_IDENTITY_BYTES,
+            "{} bytes over {} jurisdictions",
+            identity.as_str().len(),
+            jurisdictions.len()
+        );
+    }
 }
 
 #[test]
@@ -41,8 +131,11 @@ fn identity_is_a_pure_function_of_its_fields() {
         "a revision bump must address different work, or the operator cannot invalidate a run"
     );
 
-    let next_season =
-        WorkflowIdentity::jurisdiction(UsJurisdiction::Alabama, SchoolYear(2027), Revision(1));
+    let next_season = WorkflowIdentity::jurisdiction(
+        UsJurisdiction::Alabama,
+        SchoolYear::new(2027).expect("2027 is a season"),
+        Revision(1),
+    );
     assert_ne!(first, next_season);
 }
 

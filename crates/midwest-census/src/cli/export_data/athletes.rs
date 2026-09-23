@@ -1,7 +1,7 @@
 //! Athletes CSV export: canonical-athletes-co2027.csv and athleticnet-athlete-seeds.csv.
 
+use crate::cli::export_data::csv::write_csv;
 use crate::cli::export_data::helpers::*;
-use anyhow::Context;
 use serde_json::Value;
 use std::collections::{BTreeSet, HashMap};
 
@@ -74,28 +74,9 @@ fn get_school<'a>(by_school: &'a HashMap<&str, &'a Value>, school_id: &str) -> &
     by_school.get(school_id).copied().unwrap_or(&Value::Null)
 }
 
-/// Write a CSV file from header and rows.
-fn write_csv_file(
-    path: &std::path::Path,
-    header: &[&str],
-    rows: &[Vec<String>],
-) -> anyhow::Result<()> {
-    let p = path.display();
-    let mut writer = csv::WriterBuilder::new()
-        .terminator(csv::Terminator::CRLF)
-        .from_path(path)
-        .with_context(|| format!("creating csv at {p}"))?;
-    writer.write_record(header)?;
-    for row in rows {
-        writer.write_record(row)?;
-    }
-    writer.flush()?;
-    Ok(())
-}
-
 /// Write the seeds CSV file.
 fn write_seeds_csv(path: &std::path::Path, rows: &[Vec<String>]) -> anyhow::Result<()> {
-    write_csv_file(
+    write_csv(
         path,
         &[
             "athleticnet_athlete_id",
@@ -291,7 +272,7 @@ pub fn write_athletes(
         );
         co2027_rows.push(build_co2027_row(a, sch, p));
     }
-    write_csv_file(&co2027_path, &header, &co2027_rows)?;
+    write_csv(&co2027_path, &header, &co2027_rows)?;
     write_seeds_csv(&seeds_path, &seeds_rows)?;
     Ok((co27, multi))
 }

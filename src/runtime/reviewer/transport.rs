@@ -5,9 +5,10 @@ use super::{
 };
 use crate::runtime::{
     protocol::{FailureCode, ReviewInput, MAX_REVIEW_RESPONSE_BYTES},
-    source::retry::{retry_after_now, retryable_status},
+    source::retry::retryable_status,
 };
 use anyhow::{anyhow, Result};
+use athleticnet_browser::retry::retry_after_now;
 use futures::TryStreamExt;
 use reqwest::{header::CONTENT_TYPE, StatusCode};
 use restate_sdk::prelude::*;

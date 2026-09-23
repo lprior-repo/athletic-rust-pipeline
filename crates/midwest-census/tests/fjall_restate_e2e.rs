@@ -112,7 +112,7 @@ fn add_school(corpus: &mut Corpus, index: usize, athletes_per_school: usize) {
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
@@ -156,7 +156,7 @@ fn add_athlete(
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).unwrap(),
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         source: SourceRef::id(SOURCE_ID),
     });
     athlete.evidence.push(evidence());
@@ -189,6 +189,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).unwrap()),
             evidence: vec![evidence()],
             source_key,
+            retained_conflicts: Vec::new(),
         });
     }
     corpus.events.push(event);

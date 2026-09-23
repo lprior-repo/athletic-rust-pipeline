@@ -50,7 +50,7 @@ fn source_object_identities_keep_provider_ids_verbatim_and_name_their_table() {
         .append(Table::Athletes, &athlete(&school))
         .expect("athlete");
 
-    let rows = source_object_identities(&store).expect("identities");
+    let rows = canonical_pass(&store).expect("identities").identities;
     let ids: Vec<&str> = rows.iter().map(|row| row.id.as_str()).collect();
     assert!(ids.contains(&"milesplit_school:schools:1234"), "{ids:?}");
     assert!(
@@ -84,7 +84,7 @@ fn the_jurisdiction_row_carries_its_measured_denominators() {
         .append(Table::Athletes, &athlete(&school))
         .expect("athlete");
 
-    let identities = source_object_identities(&store).expect("identities");
+    let identities = canonical_pass(&store).expect("identities").identities;
     let rows = coverage_rows(&store, &identities).expect("coverage");
     let wisconsin = rows
         .iter()
@@ -112,7 +112,7 @@ fn source_rows_count_what_each_namespace_contributes_per_table() {
         .append(Table::Athletes, &athlete(&school))
         .expect("athlete");
 
-    let identities = source_object_identities(&store).expect("identities");
+    let identities = canonical_pass(&store).expect("identities").identities;
     let rows = source_coverage(&identities);
 
     let milesplit = rows
@@ -237,4 +237,41 @@ fn a_review_decision_survives_the_next_derivation() {
         "still no venue",
     ));
     assert_eq!(pending.state, ReviewState::Pending);
+}
+
+/// A second subject whose fields sit under `id`: what a canonical-id collision looks like in a store.
+fn other_subject_under_one_id(school: &CanonicalSchool, id: &AthleteId) -> CanonicalAthlete {
+    let mut row = CanonicalAthlete::new(&school.id, "Marta Reyes", GradYear::CO2027, Gender::Girls);
+    row.id = id.clone();
+    row
+}
+
+#[test]
+fn a_canonical_id_collision_reaches_the_conflict_queue() {
+    let dir = tempfile::tempdir().expect("temp store");
+    let store = Store::open(dir.path()).expect("store");
+    let school = school();
+    store.append(Table::Schools, &school).expect("school");
+    let jane = athlete(&school);
+    let marta = other_subject_under_one_id(&school, &jane.id);
+    store.append(Table::Athletes, &jane).expect("athlete");
+    store
+        .append(Table::Athletes, &marta)
+        .expect("the other subject keyed under the same id");
+
+    let report = derive(&store, "index", "2026-09-22").expect("derive");
+
+    let conflicts: Vec<RetainedConflict> = store.scan(Table::Conflicts).expect("conflicts");
+    let collision = conflicts
+        .iter()
+        .find(|row| row.family == CANONICAL_ID_COLLISION_FAMILY)
+        .expect("an id two subjects were keyed under is a retained conflict, not a silent merge");
+    assert_eq!(collision.subject_id, jane.id.as_str());
+    let detail = collision.detail.to_lowercase();
+    assert!(detail.contains("jane"), "the kept side's material: {detail}");
+    assert!(detail.contains("marta"), "the other side's material: {detail}");
+    assert!(
+        report.conflicts >= 1,
+        "the pass counts the finding it wrote into the queue"
+    );
 }

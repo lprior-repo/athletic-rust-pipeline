@@ -20,13 +20,17 @@ Environment=RUST_LOG=info
 # `collect` walks rosters and result pages, `index` rebuilds the derived index tables, then the
 # reducers republish. No step re-fetches the full historical corpus; every fetch honours per-host
 # pacing and the on-disk cache.
+#
+# Every acquiring step walks the census `--all-states` run scope — the 48 contiguous states plus the
+# District of Columbia (ADR-009) — never a named subset: a state list here would narrow the weekly
+# census to those states while every report still calls itself national.
 ExecStart=/bin/sh -c 'set -eu; \
   bin=target/release/midwest-census; \
   out=/var/lib/midwest-census-staging; \
-  "$bin" --store "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
-  "$bin" --store "$out" meets --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --year 2026; \
-  "$bin" --store "$out" provider milesplit_results --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --limit 200; \
-  "$bin" --store "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --school-year 2027; \
+  "$bin" --store "$out" teams --all-states --refresh; \
+  "$bin" --store "$out" meets --all-states --year 2026; \
+  "$bin" --store "$out" provider milesplit_results --all-states --limit 200; \
+  "$bin" --store "$out" collect --all-states --school-year 2027; \
   "$bin" --store "$out" consolidate; \
   "$bin" --store "$out" index; \
   "$bin" --store "$out" report --print; \

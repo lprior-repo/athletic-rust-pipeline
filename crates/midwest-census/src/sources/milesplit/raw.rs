@@ -146,7 +146,7 @@ fn iso_day(date: &str) -> Option<&str> {
 fn school_year_of(day: &str) -> Option<SchoolYear> {
     let year: i16 = day.get(..4)?.parse().ok()?;
     let month: u8 = day.get(5..7)?.parse().ok()?;
-    Some(SchoolYear::containing(year, month))
+    SchoolYear::containing(year, month)
 }
 
 /// A shape error tagged with the URL the body was fetched from.

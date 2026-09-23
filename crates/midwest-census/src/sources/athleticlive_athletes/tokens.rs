@@ -22,13 +22,14 @@ pub fn grade_from_token(token: &str) -> Option<Grade> {
     cleaned.parse::<u8>().ok().and_then(Grade::new)
 }
 
-/// Grade year for a row's meet date. Unparseable dates fall back to the caller's school year.
+/// Grade year for a row's meet date. A date the adapter cannot place — unreadable, or carrying a
+/// year no season may open in — falls back to the caller's school year rather than to a guess.
 pub fn school_year_for_date(date: &str, fallback: SchoolYear) -> SchoolYear {
     let year = date.get(..4).and_then(|y| y.parse::<i16>().ok());
     let month = date.get(5..7).and_then(|m| m.parse::<u8>().ok());
     match (year, month) {
         (Some(year), Some(month)) if (1..=12).contains(&month) => {
-            SchoolYear::containing(year, month)
+            SchoolYear::containing(year, month).unwrap_or(fallback)
         }
         _ => fallback,
     }

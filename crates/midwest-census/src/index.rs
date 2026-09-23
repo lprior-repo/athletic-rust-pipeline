@@ -17,9 +17,10 @@
 //! absent rather than invented, and a table the store holds nothing in contributes no rows.
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, CanonicalTeam,
-    CollectionSnapshot, CoverageRow, CoverageScope, GradYear, RetainedConflict, ReviewCase,
-    SourceEntityKind, SourceIdentity, SourceNamespace, SourceObjectIdentity,
+    CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
+    CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, CoverageScope, GradYear,
+    NaturalKey, RetainedConflict, ReviewCase, SourceEntityKind, SourceIdentity, SourceNamespace,
+    SourceObjectIdentity,
 };
 use std::collections::BTreeMap;
 
@@ -53,17 +54,21 @@ impl IndexReport {
 /// the date it finished; together they key the snapshot, so a store carries one snapshot per phase
 /// per day holding the latest counts for it.
 pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<IndexReport> {
-    let identities = source_object_identities(store)?;
+    let pass = canonical_pass(store)?;
     let retained = crate::workbook::retained_records(store)?;
-    let coverage = coverage_rows(store, &identities)?;
+    let coverage = coverage_rows(store, &pass.identities)?;
 
-    let conflicts: Vec<RetainedConflict> = retained
+    let mut conflicts: Vec<RetainedConflict> = retained
         .conflicts
         .iter()
         .map(|(family, row)| {
             RetainedConflict::new(family, &row.subject_id, &row.subject, &row.detail)
         })
         .collect();
+    // The collisions the canonical rows' own merges retained join the same queue: a canonical id two
+    // natural keys minted is a retained conflict like any other, and it has to reach a reader of the
+    // store, not only a reader of the row that kept it.
+    conflicts.extend(pass.collisions);
     let reviews: Vec<ReviewCase> = retained
         .reviews
         .iter()
@@ -74,7 +79,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
 
     // Derived tables are replaced rather than appended: their ids are functions of the findings they
     // name, so a repeated pass overwrites the row it wrote before instead of adding another copy.
-    store.replace_many(Table::SourceIdentities, &identities)?;
+    store.replace_many(Table::SourceIdentities, &pass.identities)?;
     store.replace_many(Table::Conflicts, &conflicts)?;
     store.replace_many(Table::ReviewCases, &reviews)?;
     store.replace_many(Table::Coverage, &coverage)?;
@@ -85,7 +90,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
     store.replace(Table::Snapshots, &snapshot_row(store, phase, finished_at)?)?;
 
     Ok(IndexReport {
-        source_identities: identities.len(),
+        source_identities: pass.identities.len(),
         conflicts: conflicts.len(),
         reviews: reviews.len(),
         coverage: coverage.len(),
@@ -122,23 +127,44 @@ identity_bearing!(CanonicalCoach, SourceEntityKind::Coaches);
 identity_bearing!(CanonicalAthlete, SourceEntityKind::Athletes);
 identity_bearing!(CanonicalMeet, SourceEntityKind::Meets);
 
-/// Every source object the canonical tables name, as one row per `(namespace, kind, source id)`.
+/// What one pass over the canonical tables yields: the provider identities the rows name, and the
+/// canonical-id collisions their own merges retained.
+///
+/// Both answers come from the same scan of each table, because a collision is only ever visible on
+/// the row that survived it: the merge that raised the finding is the merge that produced the row, so
+/// asking twice would decode the whole store a second time to answer a question only these rows know.
+#[derive(Default)]
+struct CanonicalPass {
+    identities: Vec<SourceObjectIdentity>,
+    collisions: Vec<RetainedConflict>,
+}
+
+/// Read every canonical table once: §31's join rows and the collisions the rows retained.
 ///
 /// Rows are written in table order and then by canonical id, so two stores holding the same entities
 /// derive the same batch whatever order their observation keys were appended in.
-fn source_object_identities(store: &Store) -> ReportResult<Vec<SourceObjectIdentity>> {
-    let mut rows = Vec::new();
-    identities_of(store.scan::<CanonicalSchool>(Table::Schools)?, &mut rows);
-    identities_of(store.scan::<CanonicalTeam>(Table::Teams)?, &mut rows);
-    identities_of(store.scan::<CanonicalCoach>(Table::Coaches)?, &mut rows);
-    identities_of(store.scan::<CanonicalAthlete>(Table::Athletes)?, &mut rows);
-    identities_of(store.scan::<CanonicalMeet>(Table::Meets)?, &mut rows);
-    Ok(rows)
+fn canonical_pass(store: &Store) -> ReportResult<CanonicalPass> {
+    let mut pass = CanonicalPass::default();
+    absorb(&mut pass, store.scan::<CanonicalSchool>(Table::Schools)?);
+    absorb(&mut pass, store.scan::<CanonicalTeam>(Table::Teams)?);
+    absorb(&mut pass, store.scan::<CanonicalCoach>(Table::Coaches)?);
+    absorb(&mut pass, store.scan::<CanonicalAthlete>(Table::Athletes)?);
+    absorb(&mut pass, store.scan::<CanonicalMeet>(Table::Meets)?);
+    // Events and performances name no provider identity of their own — §31 carries an event's and a
+    // performance's provider ids — so they contribute only the collisions their merges retained.
+    take_collisions(&mut pass, store.scan::<CanonicalEvent>(Table::Events)?.iter());
+    take_collisions(
+        &mut pass,
+        store
+            .scan::<CanonicalPerformance>(Table::Performances)?
+            .iter(),
+    );
+    Ok(pass)
 }
 
-/// Append one table's identities to `rows`.
-fn identities_of<T: IdentityBearing>(entities: Vec<T>, rows: &mut Vec<SourceObjectIdentity>) {
-    for entity in entities {
+/// Append one table's provider identities to a pass, and take the collisions its rows retained.
+fn absorb<T: IdentityBearing + NaturalKey>(pass: &mut CanonicalPass, entities: Vec<T>) {
+    for entity in &entities {
         for identity in entity.source_identities() {
             let mut row = SourceObjectIdentity::new(
                 identity.namespace.clone(),
@@ -149,8 +175,20 @@ fn identities_of<T: IdentityBearing>(entities: Vec<T>, rows: &mut Vec<SourceObje
             if let Some(url) = identity.url.clone() {
                 row = row.with_url(url);
             }
-            rows.push(row);
+            pass.identities.push(row);
         }
+    }
+    take_collisions(pass, entities.iter());
+}
+
+/// Take every collision one table's merged rows retained, in row order.
+fn take_collisions<'a, T: NaturalKey + 'a>(
+    pass: &mut CanonicalPass,
+    entities: impl IntoIterator<Item = &'a T>,
+) {
+    for entity in entities {
+        pass.collisions
+            .extend(entity.retained_conflicts().iter().cloned());
     }
 }
 
@@ -236,7 +274,7 @@ fn bump(metrics: &mut BTreeMap<String, u64>, metric: &str) {
 fn snapshot_row(store: &Store, phase: &str, finished_at: &str) -> ReportResult<CollectionSnapshot> {
     let stats = store.stats()?;
     let mut snapshot = CollectionSnapshot::new(phase, finished_at);
-    for (table, observations) in stats.tables {
+    for (table, observations) in stats.appended {
         snapshot.observations.insert(table, observations);
     }
     Ok(snapshot)

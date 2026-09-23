@@ -1,4 +1,5 @@
-use super::{admission, request, run_step, SourceGateway, StepError, WorkflowStep};
+use super::{admission, run_step, SourceGateway, StepError, WorkflowStep};
+use athleticnet_browser::request::{RequestAction, RequestSpec};
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -15,10 +16,10 @@ pub enum ReadinessPolicy {
 
 impl ReadinessPolicy {
     /// Derive the readiness policy from a request spec.
-    pub(super) fn from_request(request: &request::RequestSpec) -> Self {
+    pub(super) fn from_request(request: &RequestSpec) -> Self {
         match request.action {
-            request::RequestAction::Rankings(_) => Self::Rankings,
-            request::RequestAction::Fetch { .. } => Self::Legacy,
+            RequestAction::Rankings(_) => Self::Rankings,
+            RequestAction::Fetch { .. } => Self::Legacy,
         }
     }
 }
@@ -61,10 +62,8 @@ pub(super) async fn await_browser(ctx: &ObjectContext<'_>) -> Result<(), Handler
 async fn attempt_once(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
-    request: &request::RequestSpec,
+    request: &RequestSpec,
     operation: &crate::domain::identity::EvidenceDigest,
-    interval: Duration,
-    attempt_index: usize,
     policy: ReadinessPolicy,
 ) -> Result<Option<WorkflowStep>, StepError> {
     if let Some(failure) = admission::acquire(ctx, policy)
@@ -73,16 +72,9 @@ async fn attempt_once(
     {
         return Ok(Some(WorkflowStep::Blocked { failure }));
     }
-    let step = run_step(
-        gateway,
-        ctx,
-        request.clone(),
-        operation.clone(),
-        interval,
-        attempt_index,
-    )
-    .await
-    .map_err(StepError::Effect)?;
+    let step = run_step(gateway, ctx, request.clone(), operation.clone())
+        .await
+        .map_err(StepError::Effect)?;
     match step {
         WorkflowStep::Deferred if policy == ReadinessPolicy::Rankings => {
             Ok(Some(WorkflowStep::Blocked {
@@ -109,24 +101,12 @@ async fn attempt_once(
 pub(super) async fn admitted_step(
     gateway: &SourceGateway,
     ctx: &SharedObjectContext<'_>,
-    request: &request::RequestSpec,
+    request: &RequestSpec,
     operation: &crate::domain::identity::EvidenceDigest,
-    interval: Duration,
-    attempt_index: usize,
     policy: ReadinessPolicy,
 ) -> Result<WorkflowStep, StepError> {
     let steps = futures::stream::iter(0..64)
-        .then(|_| {
-            attempt_once(
-                gateway,
-                ctx,
-                request,
-                operation,
-                interval,
-                attempt_index,
-                policy,
-            )
-        })
+        .then(|_| attempt_once(gateway, ctx, request, operation, policy))
         .try_filter_map(|step| async { Ok(step) });
     futures::pin_mut!(steps);
     steps.try_next().await?.ok_or_else(|| {

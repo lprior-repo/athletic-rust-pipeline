@@ -5,14 +5,18 @@ source. Every number below is either re-derived from a file in `samples/` (byte-
 `samples/CAPTURES.md`) or explicitly marked `[INFERENCE]` / `[CITED]`. `[CITED]` means the value comes from
 the retained research corpus under `~/Downloads/midwest-tfxc-source-research/` and was not re-measured here.
 
-Reproduce the derived numbers and identifier examples: `python3 samples/build-schema.py` (fails loudly if a
-sample no longer matches this document). Re-derive the 52 state rows: `python3 samples/checks-enum-crosscheck.py`.
+The derived numbers and identifier examples were produced by `python3 samples/build-schema.py` (it failed
+loudly if a sample no longer matched this document); the 52 state rows by
+`python3 samples/checks-enum-crosscheck.py`. Both scripts, and every other `samples/*.py` probe this report
+names, were deleted from the tree by the contract commit `ea81c56` — the commands are provenance, not a
+reproduction recipe. What remains runnable here is the retained evidence: `samples/`, `schema.json` and
+`coverage.json`.
 
 | Field | Value |
 |---|---|
 | **Lane** | `research/sources/athleticnet` |
 | **Generated** | 2026-09-21 (probe captures 2026-09-22 UTC) |
-| **Samples** | 58 files, 2.12 MiB total (17 live response bodies + 9 header files, 13 HAR extracts + request log, 8 copies of retained corpus captures, 7 scripts, 3 derived); every one listed in `samples/CAPTURES.md` |
+| **Samples** | 52 files on disk, 2.07 MiB (58 at capture time; the 6 `samples/*.py` probes were deleted by `ea81c56`) — 17 live response bodies + 9 header files, 13 HAR extracts + request log, 8 copies of retained corpus captures, `refetch.sh`, 3 derived; every one listed in `samples/CAPTURES.md` |
 | **Machine-readable** | `schema.json` (76 verified identifier examples), `coverage.json` (52 state rows + accounting + entitlement + request model + handoffs) |
 | **Credentials** | none persisted; `jwtTFTopReport` values and `set-cookie` lines are masked by `samples/redact-samples.py` (idempotent, verified by hash) |
 

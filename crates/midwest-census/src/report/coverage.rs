@@ -1,9 +1,9 @@
 //! §49 coverage reporting: exact per-jurisdiction denominators, read from the store's merged entity
 //! tables.
 //!
-//! One row per configured jurisdiction — every state and DC in `UsJurisdiction::CENSUS_SCOPE` order
-//! (the 48 continental states plus DC; Alaska and Hawaii are modelled but never run, ADR-009), with the
-//! row for everything no school placed ([`UNKNOWN_JURISDICTION`]) last — plus one row per gap class
+//! One row per configured jurisdiction — every state in `UsJurisdiction::CENSUS_SCOPE` order (the
+//! 48 contiguous states plus D.C. this run covers, ADR-009), with the row for everything no school
+//! placed ([`UNKNOWN_JURISDICTION`]) last — plus one row per gap class
 //! per jurisdiction ([`CoverageGap`], §47). Four rules shape the report:
 //!
 //! * **Denominators, never claims.** Every column is a row count from a table the census already
@@ -11,10 +11,11 @@
 //!   2027 athletes does this state hold" is answerable from the store alone.
 //! * **Emptiness is reported, not omitted.** A jurisdiction with no data publishes a row of zeros
 //!   *and* an `EmptyJurisdiction` gap: a missing state is the one finding coverage may not swallow.
-//! * **A jurisdiction outside the run scope is no denominator.** A national all-sources wave can
-//!   still leave Alaska and Hawaii rows behind, and they publish in no row: counting them in the
-//!   store totals would make the reconciliation fail for a jurisdiction this report never covers.
-//!   They are read, and then recorded in [`CoverageReport::notes`] rather than dropped silently.
+//! * **A jurisdiction outside the run scope is no denominator.** Sources that carry national
+//!   directories can still leave other states' rows behind, and they publish in no row: counting
+//!   them in the store totals would make the reconciliation fail for a jurisdiction this report
+//!   never covers. They are read, and then recorded in [`CoverageReport::notes`] rather than dropped
+//!   silently.
 //! * **Core and all-sources are both measured.** `core_share_pct` prints how much of a jurisdiction
 //!   the platform's own [`Core`](super::Scope) evidence reaches, which is the number §49's "never
 //!   describe this as complete coverage" rule needs before anyone calls a state finished.
@@ -42,7 +43,7 @@ mod reads;
 mod state;
 
 // The typed jurisdiction helpers the report module's rollups bucket by.
-pub(in crate::report) use state::{jurisdiction_of, school_state_index};
+pub(crate) use state::{jurisdiction_of, school_state_index};
 
 pub use gaps::{CoverageGap, GapClass};
 

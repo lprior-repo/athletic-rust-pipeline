@@ -5,7 +5,7 @@
 //! properties fails here. Each test names the property it holds, because the point is to catch a
 //! broken table, not to restate its contents.
 
-use super::{bulk_first, descriptor, descriptors, TransportKind};
+use super::{bulk_first, descriptor, descriptors, transport_for_host, AccessClass, TransportKind};
 
 /// The vocabulary a plan can choose from: one slug per adapter that fetches or parses external
 /// source material, which is also the name the provider dispatch accepts (§11). Spelled out
@@ -167,6 +167,46 @@ fn artifact_adapters_declare_no_fetchable_host() {
     }
 }
 
+/// The derived acquisition class a plan records in its journal: the two artifact adapters cost a
+/// plan no request, and every other registered adapter is an open fetch — the table registers no
+/// browser-rendered surface today, and one would appear here as its own class rather than as a
+/// silent `Open`.
+#[test]
+fn access_class_separates_artifact_reads_from_host_fetches() {
+    for slug in ["athleticlive", "coach_contacts"] {
+        assert_eq!(
+            descriptor(slug).map(|entry| entry.access_class()),
+            Some(AccessClass::Artifact),
+            "{slug} reads an artifact and costs no request"
+        );
+    }
+    let fetched: Vec<&str> = descriptors()
+        .filter(|entry| entry.access_class() != AccessClass::Artifact)
+        .map(|entry| entry.slug)
+        .collect();
+    assert_eq!(
+        fetched.len(),
+        descriptors().count() - 2,
+        "only the two artifact adapters may skip the fetch route: {fetched:?}"
+    );
+    for slug in fetched {
+        assert_eq!(
+            descriptor(slug).map(|entry| entry.access_class()),
+            Some(AccessClass::Open),
+            "{slug} is neither an artifact read nor a browser session"
+        );
+    }
+}
+
+/// The class names are what a durable plan field carries, so they are part of the contract rather
+/// than an implementation detail of `Debug`.
+#[test]
+fn access_class_names_are_stable() {
+    assert_eq!(AccessClass::Open.as_str(), "open");
+    assert_eq!(AccessClass::Artifact.as_str(), "artifact");
+    assert_eq!(AccessClass::BrowserSession.as_str(), "browser_session");
+}
+
 /// ADR-004's preference in one assertion: a payload that carries many performances comes before a
 /// source that only names athletes, whatever order the caller listed the two in.
 ///
@@ -270,4 +310,44 @@ fn one_origin_has_one_declared_policy() {
             entry.slug, admission.origin
         );
     }
+}
+
+/// One origin is acquired one way. A transport that drifted on one entry of a shared origin would
+/// otherwise show up as a run that half-uses the browser lane, and [`transport_for_host`] answers
+/// from the first entry it finds, so this is the property that makes its answer well defined.
+#[test]
+fn one_origin_has_one_transport() {
+    let mut seen: Vec<(&str, TransportKind)> = Vec::new();
+    for entry in descriptors() {
+        let origin = entry.admission.origin;
+        match seen.iter().find(|(seen_origin, _)| *seen_origin == origin) {
+            Some((_, seen_transport)) => assert_eq!(
+                *seen_transport, entry.transport,
+                "{} declares a different transport than another entry for {origin}",
+                entry.slug
+            ),
+            None => seen.push((origin, entry.transport)),
+        }
+    }
+}
+
+/// The transport lookup answers for a registered origin, ignores case the way host names do, and
+/// declines a host no descriptor claims instead of choosing a default for it.
+#[test]
+fn the_transport_lookup_reads_the_table() {
+    assert_eq!(
+        transport_for_host("www.athletic.net"),
+        Some(TransportKind::Browser),
+        "Athletic.net is the source policy's browser-lane source"
+    );
+    assert_eq!(
+        transport_for_host("WWW.Athletic.NET"),
+        Some(TransportKind::Browser),
+        "a URL's host and the row's origin need not be spelled the same way"
+    );
+    assert_eq!(
+        transport_for_host("example.invalid"),
+        None,
+        "a host no descriptor claims is not this table's to route"
+    );
 }

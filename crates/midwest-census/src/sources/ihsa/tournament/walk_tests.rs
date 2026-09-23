@@ -134,7 +134,7 @@ impl Harness {
             fetcher: &fetcher,
             store: &self.store,
             refresh: false,
-            school_year: SchoolYear(2025),
+            school_year: SchoolYear::new(2025).expect("2025 is a season"),
             observed_on: OBSERVED_ON.to_string(),
         };
         collect(&ctx, options)
@@ -336,7 +336,7 @@ async fn mapped_ids_are_athleticnet_and_ihsa_identity_rows() {
             .iter()
             .any(
                 |observation| observation.grade == Grade::new(11).expect("grade 11")
-                    && observation.school_year == SchoolYear(2025)
+                    && observation.school_year == SchoolYear::new(2025).expect("2025 is a season")
             ),
         "grade 11 observed in 2025-26: {:?}",
         winner.observed_grades

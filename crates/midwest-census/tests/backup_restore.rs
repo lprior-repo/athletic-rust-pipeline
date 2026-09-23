@@ -159,10 +159,11 @@ fn add_school(
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         level: None,
         source_identities: Vec::new(),
         evidence: vec![observation(SOURCE, FIRST_DATE)],
+        retained_conflicts: Vec::new(),
     };
     let team_id = team.id.clone();
     let mut coach = CanonicalCoach::new(
@@ -216,7 +217,7 @@ fn add_athlete(
     athlete.sports.push(Sport::OutdoorTrack);
     athlete.observed_grades.push(ObservedGrade {
         grade: Grade::new(11).expect("grade 11 is a school grade"),
-        school_year: SchoolYear(2025),
+        school_year: SchoolYear::new(2025).expect("2025 is a season"),
         source: SourceRef::id(SOURCE),
     });
     athlete.evidence.push(observation(SOURCE, MEET_DATE));
@@ -251,6 +252,7 @@ fn add_athlete(
             observed_grade: Some(Grade::new(11).expect("grade 11 is a school grade")),
             evidence: vec![observation(SOURCE, MEET_DATE)],
             source_key,
+            retained_conflicts: Vec::new(),
         });
     }
     corpus.events.push(event);
@@ -984,8 +986,10 @@ fn a_second_open_of_a_live_store_is_refused() {
 fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
     // A whole-root backup carries `entities/*.jsonl` and `journal/*.jsonl` next to the database, and
     // the import markers live in the `meta` keyspace. A restore that loses the markers re-imports
-    // every legacy observation on the next open, doubling the counts in exactly the tables that
-    // still have a log.
+    // every legacy observation on the next import, doubling the counts in exactly the tables that
+    // still have a log. Opening a store is a read, so the import is called explicitly here — the
+    // same call the `import-legacy` verb and the offline census run make — which is what makes a
+    // restore that lost the markers observable rather than theoretical.
     let dir = tempfile::tempdir().expect("a temporary drill directory");
     let live = dir.path().join("live");
     let backup = dir.path().join("backup");
@@ -993,7 +997,15 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
     write_legacy_journals(&live);
 
     let (tables, observations, keys) = {
-        let store = Store::open(&live).expect("importing the legacy journals");
+        let store = Store::open(&live).expect("opening the live store");
+        // Opening is a read; the one-time migration is the caller's decision, so the drill makes it
+        // and then asserts what it imported.
+        let imported = store.import_legacy().expect("importing the legacy journals");
+        assert_eq!(
+            imported.observations, 2,
+            "two school observations are imported"
+        );
+        assert_eq!(imported.skipped, 0, "no derived table's journal is present");
         let stats = store.stats().expect("store stats");
         let keys = store
             .journal_keys("drill_phase")
@@ -1016,6 +1028,14 @@ fn the_restored_store_does_not_re_import_the_legacy_journals_it_carries() {
     for attempt in 1..=2 {
         let store = Store::open(&restored)
             .unwrap_or_else(|error| panic!("restored open {attempt} failed: {error}"));
+        // The markers rode the copy, so asking for the same migration again must do nothing at all:
+        // a restore that lost them would double every count in the tables that still have a log.
+        let reimported = store.import_legacy().expect("re-importing after restore");
+        assert_eq!(
+            (reimported.observations, reimported.skipped),
+            (0, 0),
+            "restored open {attempt}: the copied `meta` markers must stop the import"
+        );
         let stats = store.stats().expect("restored store stats");
         assert_eq!(
             stats.tables, tables,

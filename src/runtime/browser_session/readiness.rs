@@ -9,9 +9,9 @@
 //! threaded as `now` through every guard below: a second read would add a second journal entry and
 //! could observe a different millisecond than the deadline check it belongs to.
 
-use super::super::browser::{BrowserState, BrowserStatus};
 use super::super::browser_readiness::{self, BrowserAction};
 use super::super::Runtime;
+use athleticnet_browser::{BrowserState, BrowserStatus};
 use restate_sdk::prelude::*;
 use std::{sync::Arc, time::Duration};
 

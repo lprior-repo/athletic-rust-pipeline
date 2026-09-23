@@ -34,7 +34,7 @@ fn blocked_summary(jurisdiction: UsJurisdiction, teams: usize) -> JurisdictionSu
 
 fn report(failures: Vec<NationalFailure>) -> NationalReport {
     NationalReport {
-        season: SchoolYear(2026),
+        season: SchoolYear::DEFAULT,
         revision: Revision(1),
         jurisdictions: vec![summary(UsJurisdiction::Wisconsin, 7)],
         failures,

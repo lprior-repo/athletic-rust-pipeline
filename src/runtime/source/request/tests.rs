@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain::evidence::Sport;
-use crate::domain::identity::AthleteId;
+use crate::domain::identity::{AthleteId, EvidenceDigest};
+use athleticnet_browser::request::{rankings_spec, RankingsAction, RequestBody, RequestSpec};
 
 #[test]
 fn search_body_is_exact_and_encoded() {
@@ -179,6 +180,38 @@ fn rankings_physical_url_is_api_endpoint_empty_query() {
         "http://127.0.0.1:8080/api/v1/tfRankings/GetRankings"
     );
     assert!(request.url.query().is_none());
+}
+
+/// A rankings receipt cites the UI listing URL as its identity: that is the page the lane
+/// navigates, and the API call that produces the data is issued by that page itself (`385f28b`).
+/// The physical address stays the rankings API POST, which carries no query and no page state.
+/// The tests above pin that split on the spec builder; this one pins the `SourceResource`
+/// producer, because a producer that reaches for the single-URL helper sets `semantic_url` equal
+/// to `url` and silently re-keys every receipt, cache entry, and checkpoint.
+#[test]
+fn resource_rankings_keeps_ui_identity_over_api_transport() {
+    let origin = Url::parse("http://127.0.0.1:8080/").expect("origin");
+    let request = build(
+        &origin,
+        &SourceResource::Rankings {
+            collection: EvidenceDigest::parse(&"a".repeat(64)).expect("digest"),
+            list_id: 168416,
+            gender: "m".to_owned(),
+            grade: Some(11),
+            event_short: "100m".to_owned(),
+            page: 3,
+            capture: RankingsCapture::Navigation,
+        },
+    )
+    .expect("request");
+    assert_eq!(
+        request.semantic_url,
+        "http://127.0.0.1:8080/TrackAndField/rankings/list/168416/m/100m/?page=3&grades=11"
+    );
+    assert_eq!(
+        request.url.as_str(),
+        "http://127.0.0.1:8080/api/v1/tfRankings/GetRankings"
+    );
 }
 
 #[test]

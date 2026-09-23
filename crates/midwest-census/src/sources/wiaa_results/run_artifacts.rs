@@ -1,9 +1,11 @@
 //! The per-artifact stage of the WIAA results walk: fetch one artifact, read the format it
 //! declares, and absorb what it yields.
 
-use super::super::map::absorb;
+use super::super::map::{absorb, AbsorbedMeet, RowWriter};
 use super::super::parse::{parse_pdf, pdftotext};
-use super::super::{artifact_format, ArchiveArtifact, ArtifactFormat, Options, PARSE_VERSION};
+use super::super::{
+    artifact_format, school_year_for, ArchiveArtifact, ArtifactFormat, Options, PARSE_VERSION,
+};
 use super::ArtifactRun;
 use crate::net::FetchOutcome;
 use crate::sources::result_file::ParsedMeet;
@@ -62,12 +64,15 @@ pub(super) async fn process_artifact(
     };
     record_parsed_artifact(
         ctx,
+        report,
         run,
-        &parsed,
-        artifact,
-        format,
-        sport,
-        &options.observed_on,
+        ReadArtifact {
+            parsed: &parsed,
+            artifact,
+            format,
+            sport,
+            observed_on: &options.observed_on,
+        },
     )
 }
 
@@ -164,46 +169,70 @@ fn parse_pdf_artifact(
     }
 }
 
+/// One artifact body that parsed, with the run facts its absorption needs: the sport the walk is
+/// reading, the day it observed the body, and the format that produced the meet.
+struct ReadArtifact<'a> {
+    parsed: &'a ParsedMeet,
+    artifact: &'a ArchiveArtifact,
+    format: ArtifactFormat,
+    sport: Sport,
+    observed_on: &'a str,
+}
+
 /// Count a parsed artifact, absorb its meet, and journal the body as read.
 fn record_parsed_artifact(
     ctx: &AdapterContext<'_>,
+    report: &mut AdapterReport,
     run: &mut ArtifactRun,
-    parsed: &ParsedMeet,
-    artifact: &ArchiveArtifact,
-    format: ArtifactFormat,
-    sport: Sport,
-    observed_on: &str,
+    read: ReadArtifact<'_>,
 ) -> CrawlResult<()> {
+    // The domain bounds the years a season may open in. A file dated outside them — or, when it
+    // publishes no date, filed by the archive under such a year — is refused before anything is
+    // counted as read, so no row is filed under a year no source published and a later parser
+    // version retries the artifact instead of finding it journaled as read.
+    let Some(school_year) = school_year_for(&read.parsed.date, read.sport, read.artifact.year) else {
+        run.stats.artifacts_parse_failed = run.stats.artifacts_parse_failed.saturating_add(1);
+        report.note(format!(
+            "{}: date {:?} (archive year {}) is not a school year",
+            read.artifact.url, read.parsed.date, read.artifact.year
+        ));
+        return Ok(());
+    };
     run.stats.artifacts_parsed = run.stats.artifacts_parsed.saturating_add(1);
     let parsed_formats = run
         .stats
         .formats
-        .entry(format.as_str().to_string())
+        .entry(read.format.as_str().to_string())
         .or_default();
     *parsed_formats = parsed_formats.saturating_add(1);
-    let seasons = run.stats.seasons.entry(artifact.year).or_default();
+    let seasons = run.stats.seasons.entry(read.artifact.year).or_default();
     *seasons = seasons.saturating_add(1);
     let rows = absorb(
-        parsed,
-        artifact,
-        sport,
-        observed_on,
-        &run.index,
-        &mut run.resolved,
-        &mut run.stats,
-        &mut run.accumulated,
+        AbsorbedMeet {
+            parsed: read.parsed,
+            artifact: read.artifact,
+            sport: read.sport,
+            school_year,
+            observed_on: read.observed_on,
+        },
+        RowWriter {
+            index: &run.index,
+            resolved: &mut run.resolved,
+            stats: &mut run.stats,
+            accumulator: &mut run.accumulated,
+        },
     );
     ctx.store.journal_done(
         "wiaa_results",
-        &artifact.url,
+        &read.artifact.url,
         &json!({
-            "url": artifact.url,
+            "url": read.artifact.url,
             "parser": PARSE_VERSION,
-            "format": format.as_str(),
-            "year": artifact.year,
+            "format": read.format.as_str(),
+            "year": read.artifact.year,
             "parsed": true,
-            "meet": parsed.name,
-            "date": parsed.date,
+            "meet": read.parsed.name,
+            "date": read.parsed.date,
             "rows": rows,
         }),
     )?;

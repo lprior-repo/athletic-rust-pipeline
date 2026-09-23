@@ -143,12 +143,67 @@ pub struct SourceDescriptor {
     pub admission: SourceAdmission,
 }
 
+/// What a planned source costs to acquire, which is not the same question as its wire format: an
+/// adapter that reads a checked-in artifact issues no request at all, a browser-rendered surface
+/// needs a session, and everything else is an open fetch under the descriptor's admission.
+///
+/// Derived from [`SourceDescriptor::transport`] and the declared origin rather than stored as a
+/// field beside them: two declarations of one fact can disagree, and a planner believes the one it
+/// reads.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AccessClass {
+    /// An open fetch, under the admission the descriptor declares.
+    Open,
+    /// Reads a checked-in artifact: no host is contacted, so it costs no request.
+    Artifact,
+    /// A surface that only renders under a browser session.
+    BrowserSession,
+}
+
+impl AccessClass {
+    /// The class's stable name, for a plan recorded durably (a journal field, a report cell).
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::Artifact => "artifact",
+            Self::BrowserSession => "browser_session",
+        }
+    }
+}
+
+impl SourceDescriptor {
+    /// How a run acquires this source's bytes: see [`AccessClass`].
+    pub fn access_class(&self) -> AccessClass {
+        if self.admission.origin == policy::ARTIFACT_ORIGIN {
+            AccessClass::Artifact
+        } else if self.transport == TransportKind::Browser {
+            AccessClass::BrowserSession
+        } else {
+            AccessClass::Open
+        }
+    }
+}
+
 /// The registered descriptor for one adapter module, or `None` when the slug names no source.
 ///
 /// A linear scan of the static table: no allocation, and no second index to keep in step with
 /// [`descriptors`].
 pub fn descriptor(slug: &str) -> Option<&'static SourceDescriptor> {
     descriptors().find(|entry| entry.slug == slug)
+}
+
+/// The transport the table declares for `host`, when the table registers that host at all.
+///
+/// The lookup a transport decision reads: a host is acquired the way its descriptor says, and a host
+/// no descriptor claims is not this table's to route. Comparison ignores case, as host names do, so a
+/// URL's host and the row's origin need not be spelled the same way. A host the table declared twice
+/// under one transport is answered the same way whichever row is found first, and a host declared
+/// under two is a table contradiction; `tests::no_host_is_acquired_two_ways` holds the table to one
+/// transport per host.
+pub fn transport_for_host(host: &str) -> Option<TransportKind> {
+    descriptors()
+        .find(|entry| entry.admission.origin.eq_ignore_ascii_case(host))
+        .map(|entry| entry.transport)
 }
 
 /// The planning order for a candidate list (§11, ADR-004): payloads that carry whole meets first,

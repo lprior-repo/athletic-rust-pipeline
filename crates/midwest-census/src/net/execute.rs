@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
 mod attempt;
+mod browser;
 
 use attempt::FetchPlan;
 
@@ -172,7 +173,15 @@ impl Fetcher {
             options,
             timeout_secs,
         };
-        self.fetch_once(gate, &plan).await
+        // Which transport carries the request is the registry's declaration, not the caller's
+        // request: a registered host whose table entry says `Browser` is the one place that fact
+        // lives, and a host no descriptor claims keeps the HTTP path it has always had.
+        match crate::sources::registry::transport_for_host(&host) {
+            Some(crate::sources::registry::TransportKind::Browser) => {
+                self.fetch_browser(gate, &plan).await
+            }
+            _ => self.fetch_once(gate, &plan).await,
+        }
     }
 
     /// Serve the request from the cache when a usable body is already on disk.

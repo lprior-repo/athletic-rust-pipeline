@@ -48,8 +48,19 @@ impl Jobs {
         }
     }
 
+    /// The store the heavy jobs serve. The seal reads it under the same region and permit, so a
+    /// service read that grew into a store-wide job is still a job the drain owns.
+    pub(super) fn store(&self) -> &Arc<Store> {
+        &self.store
+    }
+
+    /// The spawner every blocking job is started through.
+    pub(super) fn region(&self) -> &Arc<Spawner> {
+        &self.region
+    }
+
     /// Cap concurrent heavy jobs; a closed semaphore means the service is shutting down.
-    async fn permit(&self) -> Result<OwnedSemaphorePermit, TerminalError> {
+    pub(super) async fn permit(&self) -> Result<OwnedSemaphorePermit, TerminalError> {
         Arc::clone(&self.load)
             .acquire_owned()
             .await
@@ -76,7 +87,7 @@ impl Consolidate {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]
@@ -124,7 +135,7 @@ impl Report {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]
@@ -172,7 +183,7 @@ impl Bests {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]
@@ -224,7 +235,7 @@ impl Workbook {
     invocation_retry_policy(
         initial_interval = "500ms",
         max_interval = "1m",
-        max_attempts = 70,
+        max_attempts = 3,
         on_max_attempts = "pause"
     )
 )]

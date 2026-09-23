@@ -1,19 +1,26 @@
 //! The conflict families: rows the merge kept separate and left to a human to reconcile.
 //!
-//! Three families, each one a *stored* disagreement rather than a heuristic dislike. Duplicate school
+//! Four families, each one a *stored* disagreement rather than a heuristic dislike. Duplicate school
 //! names are the same `(state, normalized name)` key `report` counts as `duplicate_school_names`; the
-//! athlete family is the same `(school, name, cohort)` key the identity consolidation groups by, which
-//! only ever holds more than one row when the two ids differ in the gender component; the cohort
-//! family is every athlete whose own grade observations disagree about the graduating class — in both
-//! directions, two implied classes or one implied class other than the canonical one.
+//! athlete family groups by [`athlete_key`], the one definition of the `(school, normalized name,
+//! cohort)` key — the identity lane states the same function to a model as its
+//! `name_school_cohort_agree` flag — and a group only ever holds more than one row when the two ids
+//! differ in the gender component; the cohort family is every athlete whose own grade observations
+//! disagree about the graduating class — in both directions, two implied classes or one implied class
+//! other than the canonical one; and the contact family is every school whose head-coach rows for one
+//! slot and side disagree about who the coach is, which is the same bucket the athletes' `Contact
+//! Coverage State` column resolves (`contact`).
 
-use census_domain::model::{
-    normalize_name, CanonicalAthlete, CanonicalSchool, MEET_STATE_UNRESOLVED,
-};
+use census_domain::model::{CanonicalAthlete, CanonicalSchool, MEET_STATE_UNRESOLVED};
 use std::collections::{BTreeMap, HashMap};
 
+use crate::identity::athlete_flags::{key as athlete_key, IdentityKey};
+use crate::workbook::recruiting::{disagreements, Disagreement};
+
 use super::super::{school_of, subject_of, Family, QueueRow, StoreRows};
-use super::{class_of_2027, queue_row, ATHLETE_IDENTITY, COHORT_EVIDENCE, SCHOOL_IDENTITY};
+use super::{
+    class_of_2027, queue_row, ATHLETE_IDENTITY, COHORT_EVIDENCE, CONTACT_CONFLICT, SCHOOL_IDENTITY,
+};
 
 /// Athletes whose own grade observations disagree about the graduating class.
 pub(super) fn cohort_evidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
@@ -61,18 +68,51 @@ fn cohort_conflict(athlete: &CanonicalAthlete) -> Option<String> {
     })
 }
 
+/// Schools whose head-coach rows for one slot and side disagree about who the coach is: the bucket
+/// the athletes' preferred-contact ladder resolves, printed so neither a decided nor an undecided
+/// disagreement stays invisible. A decided bucket is one the newest-observation precedence settled;
+/// an undecided one is a bucket those rows cannot settle, and the `Athletes` sheet publishes
+/// `contact_conflict` for the athletes it touches.
+pub(super) fn contact_conflicts(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
+    let mut family = Family::new(CONTACT_CONFLICT);
+    for disagreement in disagreements(&rows.coaches) {
+        let subject = subject_of(
+            school_of(names, disagreement.school.as_str())
+                .unwrap_or(disagreement.school.as_str()),
+            None,
+        );
+        family.push(queue_row(
+            disagreement.school.as_str(),
+            subject,
+            disagreement_detail(&disagreement),
+        ));
+    }
+    family
+}
+
+/// Why one bucket is retained: the role the rows disagree about, whether the precedence order
+/// separated them, and every row it had to choose from.
+fn disagreement_detail(disagreement: &Disagreement) -> String {
+    let resolution = if disagreement.decided {
+        "newest observation wins"
+    } else {
+        "rows share the newest observation, so no evidenced order picks one"
+    };
+    format!(
+        "{}: {}; rows: {}",
+        disagreement.role,
+        resolution,
+        disagreement.rows.join("; ")
+    )
+}
+
 /// Athletes the merge kept twice for one `(school, name, cohort)` key: the two ids differ only in
 /// the gender component, so which row is the athlete is unresolved.
 pub(super) fn athlete_identity(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
     let mut family = Family::new(ATHLETE_IDENTITY);
-    let mut groups: BTreeMap<(String, String, i16), Vec<&CanonicalAthlete>> = BTreeMap::new();
+    let mut groups: BTreeMap<IdentityKey, Vec<&CanonicalAthlete>> = BTreeMap::new();
     for athlete in class_of_2027(&rows.athletes) {
-        let key = (
-            athlete.school.as_str().to_string(),
-            normalize_name(&athlete.canonical_name),
-            athlete.grad_year.get(),
-        );
-        groups.entry(key).or_default().push(athlete);
+        groups.entry(athlete_key(athlete)).or_default().push(athlete);
     }
     for ((_, _, _), group) in groups.iter().filter(|(_, group)| group.len() > 1) {
         let ids = group
@@ -147,3 +187,7 @@ fn school_identity_rows(
         })
         .collect()
 }
+
+#[cfg(test)]
+#[path = "conflicts/tests.rs"]
+mod tests;

@@ -60,8 +60,8 @@ pub(super) fn low_confidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> F
             subject,
             format!(
                 "identity confidence {} below the high bar of {}",
-                athlete.identity_confidence.0,
-                Confidence::HIGH.0
+                athlete.identity_confidence.get(),
+                Confidence::HIGH.get()
             ),
         ));
     }

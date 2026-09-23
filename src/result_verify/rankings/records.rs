@@ -2,13 +2,14 @@ use super::verification::{load, outcome};
 use crate::{
     domain::{identity::EvidenceDigest, name::CanonicalName},
     runtime::{
-        protocol::{FetchOutcome, RankingsCapture, SourceResource},
+        protocol::{FetchOutcome, SourceResource},
         rankings::{parse_page_response, ExpectedPageContext, PageObservation, RankingsPlan},
         rankings_collection::{CollectionFinalSnapshot, RankingsPageCheckpoint},
     },
     store::{ArtifactStore, RankingCandidateKind, RankingRecordRef},
 };
 use anyhow::{bail, Context, Result};
+use athleticnet_browser::protocol::RankingsCapture;
 use serde_json::Value;
 use std::collections::HashMap;
 use url::Url;

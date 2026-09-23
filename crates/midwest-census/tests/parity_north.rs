@@ -415,7 +415,7 @@ async fn mshsl_collect_matches_golden() -> Result<()> {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: SchoolYear(2026),
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = mshsl::Options {
@@ -660,7 +660,7 @@ async fn plain_names_collect_matches_golden() -> Result<()> {
         fetcher: &fetcher,
         store: &store,
         refresh: false,
-        school_year: SchoolYear(2026),
+        school_year: SchoolYear::new(2026).expect("2026 is a season"),
         observed_on: OBSERVED_ON.to_string(),
     };
     let options = plain_names::Options {

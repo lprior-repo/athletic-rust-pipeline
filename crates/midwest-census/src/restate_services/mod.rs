@@ -71,6 +71,7 @@ mod jobs;
 mod jurisdiction;
 mod national;
 mod open_work;
+mod plan;
 mod publish;
 mod support;
 mod sweep;
@@ -83,9 +84,16 @@ pub use wire::{
     EndpointObservation, IngestReply, IngestRequest, IngestState, JurisdictionOpen,
     JurisdictionReport, JurisdictionRequest, JurisdictionState, JurisdictionSummary,
     NationalFailure, NationalReport, NationalRequest, OpenWorkReply, OpenWorkRequest, ReportReply,
-    ReportRequest, SourceObjectOpen, StageOutcome, StatusReply, SweepReport, SweepRequest,
-    TableCount, WindowRequest, WorkbookReply, WorkbookRequest,
+    ReportRequest, SealItem, SealRef, SealReply, SealRequest, SourceObjectOpen, StageOutcome,
+    StatusReply, SweepReport, SweepRequest, TableCount, WindowRequest, WorkbookReply,
+    WorkbookRequest,
 };
+
+// ---------------------------------------------------------------- planning
+
+// The applicability-driven plan. Public because the planner is the layer's first consumer of
+// `sources::applicability` and its dispositions are what a jurisdiction report records.
+pub use plan::{owed, plan_sources, plan, sweepable, BrowserLaneState, PlannedUnit, Refusal, UnitDisposition};
 
 // ---------------------------------------------------------------- services
 
@@ -256,7 +264,11 @@ pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spaw
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
     Endpoint::builder()
-        .bind(Census::new(Arc::clone(&store), Arc::clone(&clock)))
+        .bind(Census::new(
+            Arc::clone(&store),
+            Arc::clone(&clock),
+            jobs.clone(),
+        ))
         .bind(Consolidate::new(jobs.clone()))
         .bind(Report::new(jobs.clone()))
         .bind(Bests::new(jobs.clone()))
@@ -278,6 +290,12 @@ pub fn build_endpoint(store: Arc<Store>, max_concurrent: usize, region: Arc<Spaw
         .bind(NationalCensus::new(clock))
         .build()
 }
+
+#[cfg(test)]
+mod retry_policy_tests;
+
+#[cfg(test)]
+mod retry_policy_transport_tests;
 
 #[cfg(test)]
 mod tests;

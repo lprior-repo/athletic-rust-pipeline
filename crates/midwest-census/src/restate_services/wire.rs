@@ -20,6 +20,12 @@ pub(super) mod open;
 /// themselves are defined in the private `open` module.
 pub use open::{JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectOpen};
 
+pub(super) mod seal;
+
+/// The seal family, re-exported for the same reason as the two families above: this module stays
+/// the one wire-protocol surface to import from.
+pub use seal::{SealItem, SealRef, SealReply, SealRequest};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableCount {
     pub table: String,

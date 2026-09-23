@@ -19,11 +19,19 @@ pub(super) fn print_store_stats(store: &Store) -> Result<()> {
     Ok(())
 }
 
-/// [`Store::open`] performs the one-time pre-Fjall JSONL import before a command sees the store, so
-/// this reports the import source it read, then the resulting store. A table is marked imported in
-/// the store's `meta` keyspace and is never imported twice; the JSONL files are left in place as the
-/// record of what the database was built from.
+/// The `import-legacy` verb: import the pre-Fjall JSONL journals, then report the import source and
+/// the resulting store.
+///
+/// Opening a store is a read, so this verb is where an operator migrates a root by hand: it calls
+/// [`Store::import_legacy`], which writes nothing when the `meta` markers say the one-time import is
+/// finished. A table is marked imported in the store's `meta` keyspace and is never imported twice;
+/// the JSONL files are left in place as the record of what the database was built from.
 pub(super) fn run_legacy_import(store: &Store) -> Result<()> {
+    let imported = store
+        .import_legacy()
+        .context("importing the pre-Fjall JSONL journals")?;
+    println!("imported\t{}\tobservations", imported.observations);
+    println!("skipped\t{}\tderived journals", imported.skipped);
     for table in Table::ALL {
         let path = store.table_path(table);
         match legacy_journal_bytes(&path)? {
@@ -71,8 +79,13 @@ pub(super) struct RestoreArgs {
 }
 
 /// Backup the store to a directory.
-pub(super) fn run_backup(store: &Store, args: &BackupArgs) -> Result<()> {
-    let report = store.backup(&args.to).context("backing up the store")?;
+///
+/// A backup is a cold copy, so this takes the store *root* rather than an open store:
+/// [`Store::backup`] refuses a root whose database lock is held, and a caller that had already opened
+/// the store would only be handing it the lock it holds itself. `run` therefore routes this verb
+/// before it opens the store.
+pub(super) fn run_backup(root: &Path, args: &BackupArgs) -> Result<()> {
+    let report = Store::backup(root, &args.to).context("backing up the store")?;
     println!("backup\t{}", report.to);
     println!("files\t{}", report.files);
     println!("bytes\t{}", report.bytes);
@@ -100,7 +113,10 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
     let report = store.integrity().context("checking store integrity")?;
     println!("ok\t{}", report.ok);
     for t in &report.tables {
-        let status = if t.expected == t.actual {
+        // A table is `ok` when its ledger agrees with its keyspace *and* its write mode's own
+        // invariant holds: the counts can agree while a derived table holds a row keyed under a
+        // foreign sequence, which is a finding this command exists to surface.
+        let status = if t.expected == t.actual && t.details.is_empty() {
             "ok"
         } else {
             "mismatch"
@@ -109,6 +125,11 @@ pub(super) fn run_integrity(store: &Store) -> Result<()> {
             "table\t{}\texpected={}\tactual={}\t{status}",
             t.table, t.expected, t.actual
         );
+        // One greppable line per finding, beneath the table's own line: the existing columns keep
+        // their shape, and `store-integrity | grep '^detail'` is the gate's answer.
+        for detail in &t.details {
+            println!("detail\t{}\t{detail}", t.table);
+        }
     }
     for j in &report.unreadable_journals {
         println!("unreadable_journal\t{j}");

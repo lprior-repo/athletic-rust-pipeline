@@ -45,7 +45,10 @@ pub fn artifact_format(extension: &str, body: Option<&str>) -> ArtifactFormat {
 /// A track season runs inside one school year (`2025-06-06` → 2024-25); a cross-country season opens
 /// the next one (`2025-10-25` → 2025-26). Files that publish no date at all fall back to the archive
 /// year with the sport's start month, which is why that fallback is documented rather than hidden.
-pub fn school_year_for(date: &str, sport: Sport, archive_year: i16) -> SchoolYear {
+///
+/// `None` when that year is one no season may open in: the domain bounds them, so a caller refuses
+/// the file instead of filing its rows under a year no source published.
+pub fn school_year_for(date: &str, sport: Sport, archive_year: i16) -> Option<SchoolYear> {
     let year = date
         .get(..4)
         .and_then(|value| value.parse::<i16>().ok())

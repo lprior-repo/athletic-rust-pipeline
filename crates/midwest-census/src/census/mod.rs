@@ -22,17 +22,18 @@ mod aggregate;
 mod identity;
 mod meets;
 mod scope;
+pub mod seal;
 mod state;
 mod sweep;
 pub mod verify;
 
 pub use aggregate::consolidate;
-pub use identity::{Revision, WorkflowIdentity};
+pub use identity::{admitted_scope, Revision, WorkflowIdentity};
 pub use meets::{collect_state_meets, select_meets, MeetCensus};
 pub use state::{
-    owed_jurisdictions, owed_source_objects, AcceptanceItem, CensusState, GapTally,
-    JurisdictionStages, OpenWork, Phase, RetainedFindings, SealCounts, SealError, SealEvidence,
-    SealedCensus, SourceObject, WorkbookCheck,
+    owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
+    AcceptanceItem, CensusState, GapTally, JurisdictionStages, OpenWork, Phase, RetainedFindings,
+    SealCounts, SealError, SealEvidence, SealedCensus, SourceObject, WorkbookCheck,
 };
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 pub use verify::{
@@ -62,7 +63,7 @@ impl Default for CollectOptions {
             concurrency: 4,
             state_concurrency: 4,
             refresh: false,
-            school_year: SchoolYear(2026),
+            school_year: SchoolYear::DEFAULT,
             observed_on: crate::net::today_iso(),
         }
     }

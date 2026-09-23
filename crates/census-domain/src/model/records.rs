@@ -1,101 +1,34 @@
-//! Derived rows the census keeps beside its canonical entities: source-object identities, the
-//! retained conflict and review queues, coverage measurements, and one row per finished pass.
+//! Derived rows the census keeps beside its canonical entities: the retained conflict and review
+//! queues, the source-to-canonical joins, what a source observed, the merges it decided, and the
+//! measurements of a pass.
 //!
 //! These are [values](crate::model), not tables. They carry no clock, no store handle and no JSON
 //! value, so the domain crate stays pure and the store decides how a row is keyed and durable. Every
 //! id here is a deterministic function of the row's own facts, which is what lets the same finding be
 //! re-derived on a later run without minting a second case.
+//!
+//! The rows are grouped by what they are evidence of, one module each: [`source`] holds the §31
+//! `source object -> canonical row` join and the enumerated meets, [`observation`] holds what a source
+//! published about a school or an athlete before any canonical decision, [`merge`] holds the merges
+//! this program decided so one can be reversed, and [`measure`] holds coverage, snapshots and access
+//! conditions. The queues this module keeps itself are the two findings a pass acts on: the conflict
+//! the merge retained, and the review case the lane asks about.
+
+mod measure;
+mod merge;
+mod observation;
+mod source;
+
+pub use measure::{
+    AccessBlockKind, CollectionSnapshot, CoverageRow, CoverageScope, SourceAccessCondition,
+};
+pub use merge::CanonicalMerge;
+pub use observation::{SourceAthleteObservation, SourceSchoolObservation};
+pub use source::{SourceEntityKind, SourceMeetRef, SourceObjectIdentity};
 
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-
-use super::SourceNamespace;
-use crate::UsJurisdiction;
-
-/// The canonical table a source object resolved to.
-///
-/// Half of the §31 join key `SourceSystem | SourceObjectId -> CanonicalId`; the other half is the
-/// provider's own id, which rides verbatim.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum SourceEntityKind {
-    Athletes,
-    Schools,
-    Coaches,
-    Teams,
-    Meets,
-    Events,
-    Performances,
-}
-
-impl SourceEntityKind {
-    /// Every kind, in table order.
-    pub const ALL: [Self; 7] = [
-        Self::Athletes,
-        Self::Schools,
-        Self::Coaches,
-        Self::Teams,
-        Self::Meets,
-        Self::Events,
-        Self::Performances,
-    ];
-
-    /// The kind's slug: the name of the canonical table it points at.
-    pub const fn slug(self) -> &'static str {
-        match self {
-            Self::Athletes => "athletes",
-            Self::Schools => "schools",
-            Self::Coaches => "coaches",
-            Self::Teams => "teams",
-            Self::Meets => "meets",
-            Self::Events => "events",
-            Self::Performances => "performances",
-        }
-    }
-}
-
-/// One source object observed for one canonical row.
-///
-/// The row is evidence, not an index into a source: it records that a provider's own id resolved to
-/// a canonical id, with the URL it was read from when one exists. A provider that renumbers or
-/// re-points an id writes a *new* row, so the earlier join stays visible.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SourceObjectIdentity {
-    /// The store row id: one row per source object, whatever canonical row it joined.
-    pub id: String,
-    pub namespace: SourceNamespace,
-    pub entity: SourceEntityKind,
-    pub source_id: String,
-    pub canonical_id: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub url: Option<String>,
-}
-
-impl SourceObjectIdentity {
-    /// Mint the identity of one source object.
-    pub fn new(
-        namespace: SourceNamespace,
-        entity: SourceEntityKind,
-        source_id: impl Into<String>,
-        canonical_id: impl Into<String>,
-    ) -> Self {
-        let source_id = source_id.into();
-        Self {
-            id: format!("{}:{}:{source_id}", namespace, entity.slug()),
-            namespace,
-            entity,
-            source_id,
-            canonical_id: canonical_id.into(),
-            url: None,
-        }
-    }
-
-    /// Carry the URL the object was read from.
-    pub fn with_url(mut self, url: impl Into<String>) -> Self {
-        self.url = Some(url.into());
-        self
-    }
-}
+use sha2::{Digest, Sha256};
+use std::collections::BTreeSet;
 
 /// A conflict the merge kept: two canonical rows a stored key says are the same subject.
 ///
@@ -147,10 +80,81 @@ pub enum ReviewState {
     Retained,
 }
 
+/// The revision of the review policy a case was minted under.
+///
+/// A case id binds the revision, so bumping this re-asks every retained finding under the rules as
+/// they stand now, instead of letting a decision taken under rules this program no longer applies be
+/// read as a decision taken under these.
+pub const REVIEW_POLICY_REVISION: u32 = 1;
+
+/// What one case's evidence is, normalized into the digest its id carries.
+///
+/// A case is a question about a package of evidence, so the id binds the package: each statement the
+/// finding rests on is folded to one fact, and the digest is over those facts. A finding re-derived
+/// from the same statements — listed in another order, cased or spaced another way — mints the same
+/// case, so a repeated derivation never asks the model about the same package twice; a fact that
+/// changed at all is new evidence, which mints a new case rather than borrowing an answer given about
+/// evidence the model never saw.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CaseEvidence {
+    /// One normalized fact per statement the finding rests on.
+    facts: BTreeSet<String>,
+}
+
+impl CaseEvidence {
+    /// The evidence of one finding, as its own statements give it.
+    pub fn of<'a>(facts: impl IntoIterator<Item = &'a str>) -> Self {
+        Self {
+            facts: facts.into_iter().map(normalize_fact).collect(),
+        }
+    }
+
+    /// The digest the case id carries: the first 64 bits of the facts' hash, as hex.
+    pub fn digest(&self) -> String {
+        let mut hasher = Sha256::new();
+        for fact in &self.facts {
+            hasher.update(fact.as_bytes());
+            hasher.update([0x1f]);
+        }
+        let mut digest = String::with_capacity(16);
+        // SHA-256 always yields 32 bytes; `take(8)` keeps the 64-bit identity the canonical ids use.
+        for byte in hasher.finalize().iter().take(8) {
+            digest.push_str(&format!("{byte:02x}"));
+        }
+        digest
+    }
+}
+
+/// One evidence fact as the digest reads it: ASCII-case-folded, tokens free of surrounding
+/// punctuation, whitespace collapsed, tokens sorted.
+///
+/// Sorting the tokens is what makes the digest a bag of facts rather than a sentence: a writer that
+/// lists the same facts in another order — the ids of a retained group, say — re-mints no case. The
+/// surrounding punctuation has to go with it, because a list renders as `ath_a, ath_b` and permuting
+/// it moves the comma onto another token; a token that is nothing but punctuation carries no fact and
+/// is dropped.
+fn normalize_fact(fact: &str) -> String {
+    let mut tokens: Vec<String> = fact
+        .split_whitespace()
+        .map(|token| {
+            token
+                .trim_matches(|c: char| !c.is_alphanumeric())
+                .to_ascii_lowercase()
+        })
+        .filter(|token| !token.is_empty())
+        .collect();
+    tokens.sort();
+    tokens.join(" ")
+}
+
 /// One case the review lane owns (§32).
 ///
-/// The id binds the finding, not the run: identical evidence reuses one case, so a repeated
-/// derivation never asks the model about the same package twice.
+/// The id binds the finding *and its evidence version*: the family and subject say what the case is
+/// about, the policy revision and the evidence digest say which reading of that subject it is a
+/// question about. The same finding re-derived from the same evidence therefore reuses one case, while
+/// evidence that changed mints a new one — the earlier case keeps the state it was left in, and the
+/// verdicts recorded under its id stay readable beside it, so a decision is never read as a decision
+/// about evidence it never saw.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReviewCase {
     pub id: String,
@@ -162,7 +166,11 @@ pub struct ReviewCase {
 }
 
 impl ReviewCase {
-    /// Mint a pending case for one finding.
+    /// Mint a pending case for one finding, under the current policy revision.
+    ///
+    /// The evidence is what the finding states about itself: the subject line and the detail the merge
+    /// retained. Callers that hold more of it — the observed rows, the provider ids — state it in the
+    /// detail, because that text is what the id binds.
     pub fn pending(
         family: &str,
         subject_id: impl Into<String>,
@@ -170,249 +178,40 @@ impl ReviewCase {
         detail: impl Into<String>,
     ) -> Self {
         let subject_id = subject_id.into();
+        let subject = subject.into();
+        let detail = detail.into();
+        let evidence = CaseEvidence::of([subject.as_str(), detail.as_str()]);
         Self {
-            id: format!("{family}:{subject_id}"),
+            id: format!(
+                "{family}:{subject_id}:p{REVIEW_POLICY_REVISION}:{}",
+                evidence.digest()
+            ),
             family: family.to_string(),
             subject_id,
-            subject: subject.into(),
-            detail: detail.into(),
+            subject,
+            detail,
             state: ReviewState::Pending,
         }
     }
 }
 
-/// What one coverage row measures: a place or a provider.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CoverageScope {
-    /// A jurisdiction: the USPS code, or the unplaced label.
-    Jurisdiction,
-    /// A source namespace (`milesplit_athlete`, `timer_meet:wayzata`, …).
-    Source,
-}
-
-impl CoverageScope {
-    pub const fn slug(self) -> &'static str {
-        match self {
-            Self::Jurisdiction => "jurisdiction",
-            Self::Source => "source",
-        }
-    }
-}
-
-/// One coverage row: the §31 key `scope | subject -> measurements`, with named metrics rather than
-/// positional columns, so a later pass can add a denominator without rewriting the readers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CoverageRow {
-    /// The store row id: one row per subject, because coverage is a state rather than a history.
-    pub id: String,
-    pub scope: CoverageScope,
-    pub subject: String,
-    pub metrics: BTreeMap<String, u64>,
-}
-
-impl CoverageRow {
-    /// Mint a coverage row for one subject.
-    pub fn new(scope: CoverageScope, subject: impl Into<String>) -> Self {
-        let subject = subject.into();
-        Self {
-            id: format!("{}:{subject}", scope.slug()),
-            scope,
-            subject,
-            metrics: BTreeMap::new(),
-        }
-    }
-
-    /// Set one measurement.
-    pub fn with(mut self, metric: &str, value: u64) -> Self {
-        self.metrics.insert(metric.to_string(), value);
-        self
-    }
-}
-
-/// One finished pass over the store: what it saw and when it stopped (§29 collection snapshots).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct CollectionSnapshot {
-    pub id: String,
-    /// The pass that wrote the row (`derive`, `collect:<source>`, …).
-    pub phase: String,
-    /// The offset the pass finished at.
-    pub finished_at: String,
-    /// Appended-observation count per canonical table at that moment, keyed by table name. The
-    /// counters track *appends*: the derived tables (`source_identities`, `conflicts`,
-    /// `review_cases`, `coverage`, `snapshots`) replace their rows instead, so they stay at zero
-    /// however many derivation passes have run. `consolidate` reports the merged row counts.
-    pub observations: BTreeMap<String, u64>,
-}
-
-impl CollectionSnapshot {
-    /// Mint the snapshot of one pass.
-    pub fn new(phase: impl Into<String>, finished_at: impl Into<String>) -> Self {
-        let phase = phase.into();
-        let finished_at = finished_at.into();
-        Self {
-            id: format!("{phase}:{finished_at}"),
-            phase,
-            finished_at,
-            observations: BTreeMap::new(),
-        }
-    }
-
-    /// Record one table's appended-observation count.
-    pub fn with_observations(mut self, table: &str, observations: u64) -> Self {
-        self.observations.insert(table.to_string(), observations);
-        self
-    }
-}
-
-/// What kind of access condition a source imposed on this client (§69).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum AccessBlockKind {
-    /// The source answered 403 for a path its own robots rules allow.
-    Forbidden,
-    /// The source asked this client to slow down: 429, or a published limit it enforced.
-    RateLimited,
-    /// The source's robots rules disallow the path and the host is not operator-authorized.
-    RobotsDisallowed,
-    /// Requests to the host timed out often enough that the lane stopped.
-    Timeout,
-    /// The host could not be reached at all.
-    Unavailable,
-}
-
-impl AccessBlockKind {
-    /// The slug the row id is keyed by and the report prints.
-    pub const fn slug(self) -> &'static str {
-        match self {
-            Self::Forbidden => "forbidden",
-            Self::RateLimited => "rate_limited",
-            Self::RobotsDisallowed => "robots_disallowed",
-            Self::Timeout => "timeout",
-            Self::Unavailable => "unavailable",
-        }
-    }
-}
-
-/// One access condition a source imposed: the row that stops a lane paying for the same block twice.
+/// The family names a retained finding carries, as they are stored in the `family` column.
 ///
-/// The id binds the kind and the host, so a second observation refreshes the row instead of minting
-/// a second one. `cooldown_until` is supplied by the caller — the collection layer is the only place
-/// a clock exists — so the domain stores an instant without ever reading one.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SourceAccessCondition {
-    /// The store row id: `{kind.slug()}:{host}`.
-    pub id: String,
-    /// The adapter slug that observed the condition (`milesplit`, `wiaa_results`, …).
-    pub source: String,
-    pub host: String,
-    pub kind: AccessBlockKind,
-    /// The HTTP status that produced the row; `0` when the condition is not an HTTP status.
-    pub status: u16,
-    /// When the condition was observed (RFC 3339 UTC, `Z`).
-    pub observed_at: String,
-    pub detail: String,
-    /// The source's own `Retry-After`, when it published one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub retry_after_seconds: Option<u64>,
-    /// When the block stops applying (RFC 3339 UTC, `Z`). `None` means it does not expire on its own,
-    /// so the row keeps blocking until an operator re-derives it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cooldown_until: Option<String>,
-}
-
-impl SourceAccessCondition {
-    /// Mint the condition for one host.
-    pub fn new(
-        source: impl Into<String>,
-        host: impl Into<String>,
-        kind: AccessBlockKind,
-        status: u16,
-        observed_at: impl Into<String>,
-        detail: impl Into<String>,
-    ) -> Self {
-        let host = host.into();
-        Self {
-            id: format!("{}:{host}", kind.slug()),
-            source: source.into(),
-            host,
-            kind,
-            status,
-            observed_at: observed_at.into(),
-            detail: detail.into(),
-            retry_after_seconds: None,
-            cooldown_until: None,
-        }
-    }
-
-    /// Carry the `Retry-After` the source published, when it published one.
-    pub fn with_retry_after(mut self, seconds: Option<u64>) -> Self {
-        self.retry_after_seconds = seconds;
-        self
-    }
-
-    /// Carry the instant the block stops applying.
-    pub fn with_cooldown_until(mut self, until: Option<String>) -> Self {
-        self.cooldown_until = until;
-        self
-    }
-
-    /// Whether this condition still blocks work at `now_iso8601`.
-    ///
-    /// Both sides are RFC 3339 UTC with a `Z` suffix, so the comparison is lexicographic on purpose:
-    /// same shape, same zone, most-significant field first. A condition with no cooldown never
-    /// expires on its own and therefore always blocks.
-    pub fn is_blocking(&self, now_iso8601: &str) -> bool {
-        match self.cooldown_until.as_deref() {
-            Some(until) => until > now_iso8601,
-            None => true,
-        }
-    }
-}
+/// They live with the record rather than with the sheet or the lane that renders them, because a
+/// reader that matches a name it spelled itself stops matching the moment a writer renames one:
+/// the identity lane would quietly ask about no cases, and a seal would count cohort decisions that
+/// no longer arrive under the name it looks for. One definition, every reader.
+pub const COHORT_EVIDENCE_FAMILY: &str = "Class-of-2027 cohort evidence";
+pub const ATHLETE_IDENTITY_FAMILY: &str = "Athlete identity";
+pub const SCHOOL_IDENTITY_FAMILY: &str = "School identity";
+pub const COHORT_UNVERIFIED_FAMILY: &str = "Class-of-2027 cohort unverified";
+pub const COHORT_IDENTITY_CONFIDENCE_FAMILY: &str = "Class-of-2027 identity confidence";
+pub const WITHHELD_MAILBOX_FAMILY: &str = "Coach mailbox withheld";
+pub const UNRESOLVED_VENUE_FAMILY: &str = "Meet venue unresolved";
+pub const UNRESOLVED_SCHOOL_FAMILY: &str = "School jurisdiction unresolved";
+/// A school whose coach rows disagree about the address to publish.
+pub const CONTACT_CONFLICT_FAMILY: &str = "Recruiting contact conflict";
 
 #[cfg(test)]
 #[path = "records_tests.rs"]
 mod tests;
-
-/// One meet a source enumerated but whose results this program has not necessarily read: the §30
-/// `source_meets` row, and the meet census's durable output.
-///
-/// Every field but `id` is what the enumerating page said. `observed_on` is the day the row was
-/// first seen, and the merge rule keeps the earliest sighting while filling any field a later
-/// sighting publishes and this one does not — a meet's name and venue are properties of the meet, so
-/// a re-crawl may complete the row but may not rewrite its identity.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct SourceMeetRef {
-    /// `{source}:{source_meet_id}` — the §31 key from the provider's own id to this meet.
-    pub id: String,
-    pub source: String,
-    pub source_meet_id: String,
-    pub jurisdiction: UsJurisdiction,
-    /// The season selector the enumeration used: `cc`, `indoor` or `outdoor`.
-    pub season: String,
-    /// The season's start year, matching [`SchoolYear`](crate::model::SchoolYear)'s convention.
-    pub year: u16,
-    pub name: String,
-    /// `yyyy-mm-dd` when the enumerating row published both a month and a day, else `None`.
-    pub date: Option<String>,
-    pub venue: String,
-    /// The source page a results pull would read.
-    pub results_url: String,
-    /// The day this row was first observed, `yyyy-mm-dd`.
-    pub observed_on: String,
-}
-
-impl SourceMeetRef {
-    /// The row id for one source object.
-    pub fn row_id(source: &str, source_meet_id: &str) -> String {
-        format!("{source}:{source_meet_id}")
-    }
-
-    /// The season as the typed value, when the row's own string names one.
-    pub fn season_of(&self) -> Option<&str> {
-        match self.season.as_str() {
-            "cc" | "indoor" | "outdoor" => Some(self.season.as_str()),
-            _ => None,
-        }
-    }
-}

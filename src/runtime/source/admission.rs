@@ -1,8 +1,9 @@
 use super::{
     dispatch::ReadinessPolicy, SourceGatewayClient, SOURCE_ADMISSION_SCOPE, SOURCE_CONTROL_SCOPE,
 };
-use crate::runtime::clock::{self, Clock};
+use crate::runtime::clock;
 use crate::runtime::protocol::OperationFailure;
+use athleticnet_browser::clock::Clock;
 use futures::{StreamExt, TryStreamExt};
 use restate_sdk::prelude::*;
 use serde::{Deserialize, Serialize};

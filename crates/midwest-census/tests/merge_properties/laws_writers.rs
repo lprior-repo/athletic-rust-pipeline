@@ -220,11 +220,14 @@ proptest! {
     #[test]
     fn a_silent_observation_leaves_confidence_alone(confidence in 0u8..=100, base in athlete()) {
         let mut first = base.clone();
-        first.identity_confidence = Confidence(confidence);
+        first.identity_confidence = Confidence::new(confidence).expect("0..=100 is a confidence");
         let mut merged = first.clone();
         merged.merge(base);
 
-        prop_assert_eq!(merged.identity_confidence, Confidence(confidence));
+        prop_assert_eq!(
+            merged.identity_confidence,
+            Confidence::new(confidence).expect("0..=100 is a confidence")
+        );
         prop_assert!(merged.observed_grades.is_empty());
     }
 }
