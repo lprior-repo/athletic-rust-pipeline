@@ -8,7 +8,7 @@ use crate::census::{MeetCensus, Revision, StateProgress};
 pub(super) mod ingest;
 
 /// The ingest family, re-exported so this module remains the one wire-protocol surface to import
-/// from. The types themselves are defined in [`ingest`].
+/// from. The types themselves are defined in the private `ingest` module.
 pub use ingest::{
     EndpointObservation, IngestReply, IngestRequest, IngestState, SweepReport, SweepRequest,
     WindowRequest,
@@ -17,7 +17,7 @@ pub use ingest::{
 pub(super) mod open;
 
 /// The open-work family, re-exported for the same reason as the ingest family above. The types
-/// themselves are defined in [`open`].
+/// themselves are defined in the private `open` module.
 pub use open::{JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectOpen};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -32,9 +32,9 @@
 //! # Requests
 //!
 //! One request per supplied URL, spaced by the fetcher's own per-host gate (the crate's default
-//! is one request per second per host), journaled per URL under [`PHASE`] so a re-run resumes
-//! instead of re-reading. Nothing here discovers URLs: the operator supplies each list or team
-//! page, which is what keeps the crawl to the pages an operator asked for.
+//! is one request per second per host), journaled per URL under the private `PHASE` key so a re-run
+//! resumes instead of re-reading. Nothing here discovers URLs: the operator supplies each list or
+//! team page, which is what keeps the crawl to the pages an operator asked for.
 //!
 //! # Layout
 //!

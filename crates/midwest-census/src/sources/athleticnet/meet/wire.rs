@@ -85,7 +85,7 @@ pub struct FlatEvent {
     pub gender: String,
     #[serde(rename = "DivId", default)]
     pub division_id: Option<i64>,
-    /// `"Varsity"`; [`PublishedDivision`] is the fallback when a block omits it.
+    /// `"Varsity"`; the private `PublishedDivision` is the fallback when a block omits it.
     #[serde(rename = "Division", default)]
     pub division: Option<String>,
     /// `"F"` final, `"P"` prelim.

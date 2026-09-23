@@ -60,15 +60,15 @@
 //! Implemented here, and exercised against the captures in `tests/fixtures/ihsa_tournament/`:
 //!
 //! * the wire shapes ([`wire`]) for all five payloads;
-//! * the pure decoders ([`parse`]), fixture-pinned in [`tests`];
+//! * the pure decoders ([`parse`]), fixture-pinned in the module's own tests;
 //! * the walk ([`collect`]): the meets index, one summary per event with results, then `/v1/terms`
 //!   and the six `cc-qualifiers` lists;
-//! * the canonical mapping ([`map`] and its row modules): a finisher's `athleticNetId` and
-//!   `athleticLiveId` become `SourceIdentity` rows under the `AthleticNet` namespace (the same id
-//!   space the `athleticnet` adapter reads), the team's ids become the team's, `ihsaSchoolId`
-//!   resolves the school through the association identities the `ihsa` schools adapter minted, and
-//!   `finishers[].year` / `athletes[].yearInSchool` become the athlete's observed grade and the
-//!   performance's `observed_grade`.
+//! * the canonical mapping (the private `map` module and its row modules): a finisher's
+//!   `athleticNetId` and `athleticLiveId` become `SourceIdentity` rows under the `AthleticNet`
+//!   namespace (the same id space the `athleticnet` adapter reads), the team's ids become the
+//!   team's, `ihsaSchoolId` resolves the school through the association identities the `ihsa`
+//!   schools adapter minted, and `finishers[].year` / `athletes[].yearInSchool` become the
+//!   athlete's observed grade and the performance's `observed_grade`.
 //!
 //! What a run refuses to invent: a finisher row with no published mark stores no performance; a row
 //! with no published grade mints no athlete (the graduating class is part of the athlete's natural

@@ -60,7 +60,7 @@ pub struct MeetCensus {
     pub rows: usize,
     /// Seasons the run read.
     pub seasons: usize,
-    /// Seasons whose walk stopped at [`MAX_PAGES_PER_SEASON`] while the pager still offered a next
+    /// Seasons whose walk stopped at `MAX_PAGES_PER_SEASON` while the pager still offered a next
     /// page. Non-zero means an unbounded crawl was cut short, so the census is missing meets rather
     /// than complete — the one condition this stage must never report silently.
     pub truncated: usize,

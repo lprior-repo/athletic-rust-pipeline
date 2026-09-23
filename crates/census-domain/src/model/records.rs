@@ -378,7 +378,7 @@ mod tests;
 /// `source_meets` row, and the meet census's durable output.
 ///
 /// Every field but `id` is what the enumerating page said. `observed_on` is the day the row was
-/// first seen, and [`Entity::merge`] keeps the earliest sighting while filling any field a later
+/// first seen, and the merge rule keeps the earliest sighting while filling any field a later
 /// sighting publishes and this one does not — a meet's name and venue are properties of the meet, so
 /// a re-crawl may complete the row but may not rewrite its identity.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -390,7 +390,7 @@ pub struct SourceMeetRef {
     pub jurisdiction: UsJurisdiction,
     /// The season selector the enumeration used: `cc`, `indoor` or `outdoor`.
     pub season: String,
-    /// The season's start year, matching [`AcademicYear`]'s convention.
+    /// The season's start year, matching [`SchoolYear`](crate::model::SchoolYear)'s convention.
     pub year: u16,
     pub name: String,
     /// `yyyy-mm-dd` when the enumerating row published both a month and a day, else `None`.

@@ -22,7 +22,7 @@ use std::collections::BTreeMap;
 // Report types
 // ---------------------------------------------------------------------------
 
-/// What one [`Store::backup`] call produced.
+/// What one [`Store::backup`](crate::store::Store::backup) call produced.
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct BackupReport {
@@ -32,13 +32,14 @@ pub struct BackupReport {
     pub files: u64,
     /// Total bytes copied.
     pub bytes: u64,
-    /// Per-table row counts, the same sequence counters [`Store::stats`] reads.
+    /// Per-table row counts, the same sequence counters [`Store::stats`](crate::store::Store::stats)
+    /// reads.
     pub tables: BTreeMap<String, u64>,
     /// How long the backup took.
     pub elapsed_ms: u64,
 }
 
-/// What one [`Store::restore`] call produced.
+/// What one [`Store::restore`](crate::store::Store::restore) call produced.
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct RestoreReport {
@@ -54,7 +55,7 @@ pub struct RestoreReport {
     pub tables: BTreeMap<String, u64>,
 }
 
-/// What one [`Store::integrity`] call found.
+/// What one [`Store::integrity`](crate::store::Store::integrity) call found.
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct IntegrityReport {

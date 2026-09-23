@@ -43,8 +43,8 @@
 //!
 //! The third request is not needed for results — every one of the probe's 49 block labels maps to a
 //! platform kind — but it is the only way to read the marks of an event whose label does not
-//! (see [`meet`]). Whole meets are pulled when the operator lists them (`--meets`); the registry
-//! route is untouched by that.
+//! (see the private `meet` module). Whole meets are pulled when the operator lists them
+//! (`--meets`); the registry route is untouched by that.
 //!
 //! # What this adapter refuses to guess
 //!

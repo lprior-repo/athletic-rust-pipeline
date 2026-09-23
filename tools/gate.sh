@@ -106,7 +106,12 @@ lane_doc() { cargo doc --workspace --all-features --no-deps; }
 lane_deny() { cargo deny check; }
 lane_audit() { cargo audit --quiet; }
 lane_vet() { cargo vet --locked; }
-lane_machete() { cargo machete; }
+# `cargo machete` hands the tool the subcommand token as `argv[1]`, and cargo-machete 0.9.2 strips
+# that token only when `argv[0]` is a path: resolved through the mise shim (`argv[0]` =
+# `cargo-machete`) the token is read as a directory and the lane dies with
+# `IO error for operation on machete`. Calling the resolved binary by path with the directory it
+# should analyze removes the argv[0] dependence — the lane then measures dependencies, not PATH.
+lane_machete() { "$(command -v cargo-machete)" .; }
 lane_geiger() { cargo geiger --workspace --all-features --output-format Json > /dev/null; }
 # Every feature combination compiles: `loom` in midwest-census gates the concurrency models, and the
 # root crate's telemetry sinks are optional, so a combination that only breaks under one of them
