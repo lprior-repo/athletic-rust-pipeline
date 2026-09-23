@@ -1,7 +1,11 @@
 # Operations runbook
 
-Two processes, one store. `midwest-census` is the batch CLI; `midwest-serve` is the same adapters,
-store and reports exposed as a Restate endpoint so a crash resumes at the last recorded step.
+Three processes, and only one of them writes the canonical store. `midwest-census` is the batch CLI
+(acquisition, into the staging store); `midwest-serve` is the same adapters, store and reports exposed
+as a Restate endpoint; `restate-server` is the node that holds the journal, the ingress and the admin
+API. A crash of the endpoint resumes at the last recorded step because the journal lives in the node,
+not in the endpoint process: an endpoint that dies mid-run leaves the invocation durably recorded,
+and the restarted endpoint replays it instead of starting over.
 
 ```
 midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30
@@ -38,8 +42,11 @@ chain can run daily without growing them. `run` chains every step above in one c
 
 `teams --refresh` is the only step that re-reads association indexes; `collect` walks rosters and the
 current season's result pages. No step re-reads the full historical corpus: every fetch is
-content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/*.service`
-`.timer` runs exactly this chain weekly.
+content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/midwest-census-collect.service`
+`.timer` runs exactly this chain weekly, against the **staging** store: the canonical store is written
+only by an endpoint deployment, so a collector run can neither race the national run for the Fjall
+writer lock nor write past the journal. Routing acquisition through the `Ingest` service is the
+replacement for the staging hop; no CLI subcommand drives it yet.
 
 **Flag surface (critical):** The batch CLI uses `--store` (not `--data-dir`, which is the
 `midwest-serve` unit's flag). The `collect` subcommand uses `--school-year` (not `--grad-year`).
@@ -133,15 +140,31 @@ Emits `PASS: backup drill completed successfully` on success or `FAIL: <reason>`
 
 ## Deploy artifacts
 
-Three systemd units ship in `deploy/systemd/`:
+Five files ship in `deploy/`:
 
-| Unit | Purpose |
+| Unit / file | Purpose |
 |---|---|
-| `midwest-serve.service` | Restate endpoint (loopback-only HTTP) |
-| `restate-server.service` | Alias — same as `midwest-serve.service`; the Restate state machine runs inside midwest-serve |
-| `midwest-census-collect.service` + `.timer` | Weekly incremental refresh (oneshot, runs weekly) |
+| `systemd/restate-server.service` | the Restate **node**: journal, metadata, ingress (18095) and admin (19095), loopback only, base-dir `/var/lib/midwest-census-restate` |
+| `restate.toml` | the node's config, deployed to `/etc/midwest-census/restate.toml`; the only file that knows the ports. It used to live only on the deployed machine, where nothing could review it |
+| `systemd/midwest-serve@.service` | the census **endpoint**, one instance per release: `midwest-serve@<release>` serves `releases/<release>/bin/midwest-serve` against `/var/lib/midwest-census/<release>` and logs to `/var/log/midwest-census/<release>/`. Two releases therefore never share a Fjall writer lock, and a release is identified by the commit it serves |
+| `endpoint.env.example` | the per-release environment file, deployed to `/etc/midwest-census/endpoint-<release>.env`; it carries `CENSUS_LISTEN`, the one value an instance cannot derive from its name |
+| `systemd/midwest-census-collect.{service,timer}` | weekly incremental acquisition into the **staging** store. The canonical store is written only by an endpoint deployment: a batch job writing it would race the national run for the same writer lock and bypass the journal |
 
-Install with `systemctl enable --now <unit>` after building `target/release` binaries.
+Install with `systemctl enable --now restate-server.service`, then
+`systemctl enable --now midwest-serve@<release>.service`, then register the endpoint with the node:
+
+```
+curl -X POST http://127.0.0.1:19095/deployments -H 'content-type: application/json' \
+  -d '{"uri":"http://127.0.0.1:9080/"}'
+```
+
+Rolling forward is starting the new release's instance and retiring the old one. Both are separate
+deployments in `curl http://127.0.0.1:19095/deployments`, and only the new one is redelivered to;
+this is also how a rollback happens, by starting the previous release's instance again.
+
+Every service declares its own retention in `crates/midwest-census/src/restate_services/*.rs`:
+90 days of journal, 180 days of workflow completion, 30 days of idempotency. The server's own
+defaults are one day, which is shorter than a national census can run.
 
 ## Quality gates
 

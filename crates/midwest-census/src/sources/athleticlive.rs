@@ -33,11 +33,15 @@ mod results;
 mod standings;
 mod wire;
 
+// The event-document reader and the URL it requires: `xtask replay` hands both to the committed
+// captures, and `results/tests.rs` reads the same two through these same paths.
+pub use docs::parse_event_document;
 pub use meets::build_meets;
 pub use parse::{implausible_year, infer_level, parse_meets_csv, MeetRow};
 pub use results::{
     collect as collect_results, collect_manifest, ManifestOptions, ResultOptions, StandingsCapture,
 };
+pub use wire::event_doc_url;
 
 /// Adapter options (uniform across provider adapters plus `input`).
 #[derive(Debug, Clone, Default)]

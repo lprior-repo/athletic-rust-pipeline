@@ -9,7 +9,9 @@ use census_domain::UsJurisdiction;
 use std::collections::{BTreeSet, HashMap, HashSet};
 
 /// The athlete pass: cohort filtering, the identity and sport columns, and the two gap counts that
-/// need the school and coach tables. Returns `(athletes read, athletes outside the cohort)`.
+/// need the school and coach tables. Returns the athletes the cohort filter left out, which publish
+/// as [`super::CoverageReport::off_cohort_athletes`] rather than as a row; the read side of the
+/// reconciliation is counted independently in [`super::reads`].
 pub(super) fn classify<'a>(
     athletes: &'a [CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -17,15 +19,13 @@ pub(super) fn classify<'a>(
     grad_year: Option<i16>,
     buckets: &mut BucketMap,
     with_athletes: &mut BTreeSet<&'a str>,
-) -> (usize, usize) {
-    let mut read = 0_usize;
+) -> usize {
     let mut off_cohort = 0_usize;
     for athlete in athletes {
         if !in_cohort(athlete, grad_year) {
             bump(&mut off_cohort);
             continue;
         }
-        bump(&mut read);
         let school = athlete.school.as_str();
         with_athletes.insert(school);
         let bucket = bucket_mut(buckets, jurisdiction_of(school_state, school));
@@ -37,7 +37,7 @@ pub(super) fn classify<'a>(
             bump(&mut bucket.gaps.missing_coach);
         }
     }
-    (read, off_cohort)
+    off_cohort
 }
 
 /// One athlete into one row.
@@ -140,7 +140,8 @@ fn has_conflicting_grade(athlete: &CanonicalAthlete) -> bool {
 }
 
 /// The performance pass: one tally per athlete id, plus the tally for rows whose athlete is not in
-/// the athlete table (they cannot be cohort-filtered, so they publish in [`UNKNOWN_JURISDICTION`]).
+/// the athlete table (they cannot be cohort-filtered, so they publish in
+/// [`UNKNOWN_JURISDICTION`](super::UNKNOWN_JURISDICTION)).
 pub(super) fn tally_performances<'a>(
     performances: &'a [CanonicalPerformance],
     athlete_ids: &HashSet<&str>,
@@ -165,8 +166,9 @@ pub(super) fn tally_performances<'a>(
     (tallies, orphan)
 }
 
-/// Attach the performance tallies to the jurisdiction each published athlete publishes in. Returns
-/// the performances the rows then carry.
+/// Attach the performance tallies to the jurisdiction each published athlete publishes in. A tally
+/// whose athlete sits outside the run scope lands in a bucket no row publishes and is dropped with
+/// it; the read side that counts those rows is [`super::reads`], not this pass.
 pub(super) fn classify_performances(
     athletes: &[CanonicalAthlete],
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -174,8 +176,7 @@ pub(super) fn classify_performances(
     orphan: &PerfTally,
     grad_year: Option<i16>,
     buckets: &mut BucketMap,
-) -> usize {
-    let mut read = 0_usize;
+) {
     // The orphan bucket holds rows whose athlete was never stored: they publish as performances and
     // gap counts, never as athletes, because no athlete row exists for those columns to describe.
     {
@@ -185,7 +186,6 @@ pub(super) fn classify_performances(
             .gaps
             .missing_event_context
             .saturating_add(orphan.missing_event_context);
-        read = read.saturating_add(orphan.rows);
     }
     for athlete in athletes {
         if !in_cohort(athlete, grad_year) {
@@ -195,14 +195,12 @@ pub(super) fn classify_performances(
             continue;
         };
         let bucket = jurisdiction_of(school_state, athlete.school.as_str());
-        add_perf(bucket_mut(buckets, bucket), tally, &mut read);
+        add_perf(bucket_mut(buckets, bucket), tally);
     }
-    read
 }
 
-/// One published athlete's tally into that athlete's row, accumulating the performances it carried
-/// into `read` — the same rows the published totals then sum back.
-fn add_perf(bucket: &mut Bucket, tally: &PerfTally, read: &mut usize) {
+/// One published athlete's tally into that athlete's row.
+fn add_perf(bucket: &mut Bucket, tally: &PerfTally) {
     let row = &mut bucket.row;
     if tally.rows > 0 {
         bump(&mut row.with_performance);
@@ -215,7 +213,6 @@ fn add_perf(bucket: &mut Bucket, tally: &PerfTally, read: &mut usize) {
     gaps.missing_event_context = gaps
         .missing_event_context
         .saturating_add(tally.missing_event_context);
-    *read = read.saturating_add(tally.rows);
 }
 
 /// Saturating counter bump. The crate's report helpers are `pub(super)` to `report`, so this part

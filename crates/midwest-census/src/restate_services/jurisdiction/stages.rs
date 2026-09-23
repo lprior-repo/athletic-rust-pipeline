@@ -3,8 +3,8 @@
 //! [`JurisdictionCensus`]'s endpoint surface lives in `jurisdiction.rs`; what lives here is what the
 //! endpoints drive: load and save of the object's single durable state value, the shared fetcher, and
 //! one runner per stage. Each runner wraps its [`jobs`] body in a durable `run` and keeps the retry
-//! policy at `no_run_retry`, because the polite fetcher already performs the three bounded attempts
-//! ADR-002 allows per external operation and a retrying `run` around a fetch would square that count.
+//! policy at `no_run_retry`: ADR-002 makes Restate the owner of retries, and the one it owns is the
+//! invocation retry declared on the handler. A retrying `run` would be a second, in-process budget.
 //!
 //! The methods are `pub(super)` because the endpoint surface in `jurisdiction.rs` is the parent
 //! module; the struct's fields stay private to [`super`], which this child module may reach.
@@ -56,12 +56,17 @@ impl JurisdictionCensus {
         Ok(shared)
     }
 
-    /// The collection options one jurisdiction's walk runs under, at the service's current date.
+    /// The collection options one jurisdiction's walk runs under, at the given journaled date.
+    ///
+    /// The date is the caller's, journaled once per run rather than read here: a replay must build
+    /// the same options the first attempt did, and one journaled date per run keeps every stage in
+    /// a run describing the same day.
     pub(super) fn options(
         &self,
         request: &JurisdictionRequest,
+        today: &str,
     ) -> Result<CollectOptions, HandlerError> {
-        crate::restate_services::options_for_request(request, &self.clock.today())
+        crate::restate_services::options_for_request(request, today)
     }
 
     /// The object's durable state. A jurisdiction that has never run reads as empty rather than as an
@@ -99,11 +104,15 @@ impl JurisdictionCensus {
 
     /// Record the state after a stage. One value, written whole: a jurisdiction with teams counted
     /// but rosters unrecorded must not exist.
-    pub(super) fn save(&self, ctx: &ObjectContext<'_>, state: &JurisdictionState) {
+    ///
+    /// `today` is the caller's journaled date. Reading the clock here would put a value into durable
+    /// state that a replayed write cannot reproduce, which is a journal mismatch rather than a
+    /// replay.
+    pub(super) fn save(&self, ctx: &ObjectContext<'_>, state: &JurisdictionState, today: &str) {
         ctx.set(
             KEY_STATE,
             Json(JurisdictionState {
-                updated_at: Some(self.clock.today()),
+                updated_at: Some(today.to_string()),
                 ..state.clone()
             }),
         );
@@ -119,7 +128,7 @@ impl JurisdictionCensus {
         refresh: bool,
     ) -> Result<StageOutcome, HandlerError> {
         let store = Arc::clone(&self.store);
-        let at = self.clock.today();
+        let at = super::super::journaled_today(ctx, &self.clock).await?;
         let Json(outcome) = ctx
             .run(move || jobs::teams_stage(store, fetcher, jurisdiction, refresh, at))
             .retry_policy(jobs::no_run_retry())
@@ -156,7 +165,7 @@ impl JurisdictionCensus {
         refresh: bool,
     ) -> Result<MeetCensus, HandlerError> {
         let store = Arc::clone(&self.store);
-        let at = self.clock.today();
+        let at = super::super::journaled_today(ctx, &self.clock).await?;
         let Json(census) = ctx
             .run(move || jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at))
             .retry_policy(jobs::no_run_retry())

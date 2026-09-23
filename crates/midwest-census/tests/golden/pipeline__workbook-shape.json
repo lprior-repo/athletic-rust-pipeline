@@ -1,6 +1,6 @@
 {
-  "cells": 13888,
-  "content_digest": "d324b99eef1ee2209613c0c9beba27e74be51d39e9de0c8d03e420f22f409176",
+  "cells": 13746,
+  "content_digest": "247d2480e38163e208093cbc6b01ae8b882d4fa3a6a0bb1e06f72451a26a6baf",
   "parts": [
     "[Content_Types].xml",
     "_rels/.rels",
@@ -68,8 +68,8 @@
       "name": "Sources"
     },
     {
-      "cells": 1716,
-      "digest": "b757510415948d9e7aacb57d1aad0a1fdf694d2ea62104853102985f56940bc8",
+      "cells": 1652,
+      "digest": "0715e22e3ac4d40349ceb41d8af08f30a2e3f34699f2e0d88bc36126b30a56f9",
       "name": "Coverage"
     },
     {
@@ -84,7 +84,7 @@
     },
     {
       "cells": 126,
-      "digest": "cc5c2aef691ab5c0e571e9c0728964e45186946ecf4f5114079fb628b3378a33",
+      "digest": "eb0f68d88234e8a8e0b631f0ea0ec770b0f318e9651c7587a9e2ffe533831975",
       "name": "Run Metrics"
     },
     {
@@ -98,18 +98,18 @@
       "name": "Summary"
     },
     {
-      "cells": 864,
-      "digest": "9c30ec9954916ddcf30812e7d3c6aee9c3f9b48d333e9d1c6baa09dde48e4d94",
+      "cells": 832,
+      "digest": "2dfc52ee37a5aa9ffe61832af3f9a59d99252d511a3f674c12d40deacc828afc",
       "name": "By state - core"
     },
     {
-      "cells": 864,
-      "digest": "2400c1211ef4232360cb4a1289e7f21b3b2b3cccacf69f0cfb5976abefae39fd",
+      "cells": 832,
+      "digest": "cb98ed9679ccde638a436c9a316a6885cbe84de2df4358a2173412a762280b07",
       "name": "By state - all sources"
     },
     {
-      "cells": 378,
-      "digest": "e8fb5e3a62637b236abf966f07303ab382ae39ad042e679d06636439db9e9f98",
+      "cells": 364,
+      "digest": "274c8dd99f275ef952b8332b7044bf19e9f1d8f359a4d6d9c119dd5666ca7724",
       "name": "Athletic.net marginal"
     },
     {

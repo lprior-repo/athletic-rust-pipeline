@@ -1,8 +1,14 @@
 //! Argument definitions and per-subcommand bodies for the `midwest-census` binary.
 //!
-//! [`Cli`] and [`Command`] are the clap surface; [`run`] parses the arguments, opens the
-//! store and dispatches to the module that owns each subcommand. The global flags stay here
-//! because every subcommand reads them.
+//! [`Cli`] and [`Command`] are the clap surface; [`run`] parses the arguments and dispatches to the
+//! module that owns each subcommand. The global flags stay here because every subcommand reads them.
+//!
+//! Two paths, and `--store` is the switch between them. Naming a store root selects the offline path:
+//! the command opens the store in-process, so `midwest-serve` — the process that holds the store's
+//! single writer — must be stopped. Leaving the flag out selects the live path: the command submits
+//! its work through the Restate ingress and never opens the store. Neither path falls back to the
+//! other, and a command that has only one of them refuses the flag that would have asked for the
+//! other.
 
 mod census_doc;
 mod command;
@@ -11,8 +17,10 @@ mod dispatch;
 mod export_data;
 mod gather;
 mod ingress;
+mod live;
 mod merge_coaches;
 mod national;
+mod open_work;
 mod provider;
 mod publish;
 mod qa_reports;
@@ -20,6 +28,7 @@ mod review;
 mod school_names;
 mod seal;
 mod serve;
+mod source;
 mod store;
 mod verify;
 mod verify_coaches;
@@ -33,15 +42,22 @@ use std::path::PathBuf;
 
 use command::Command;
 
+/// The store root an offline command opens when `--store` does not name one. It is the root the flag
+/// used to default to, so a command that never named a directory keeps resolving to the same store.
+pub(super) const DEFAULT_STORE_ROOT: &str = "var/midwest-census";
+
 #[derive(Parser, Debug)]
 #[command(
     name = "midwest-census",
     about = "Independent Midwest HS TF/XC recruiting census (MileSplit discovery, no broad Athletic.net crawling)"
 )]
 pub(super) struct Cli {
-    /// Store root (HTTP cache, journals, entity logs, output snapshots).
-    #[arg(long, global = true, default_value = "var/midwest-census")]
-    store: PathBuf,
+    /// Store root (HTTP cache, journals, entity logs, output snapshots). Naming it selects the
+    /// offline path: this command opens the store itself, which requires `midwest-serve` stopped,
+    /// because a Fjall store has one writer. Omitted, a pipeline command submits its work to the
+    /// running service through the Restate ingress instead and opens nothing.
+    #[arg(long, global = true, value_name = "DIR")]
+    store: Option<PathBuf>,
     /// Default per-host delay between requests, milliseconds.
     #[arg(long, global = true, default_value_t = 1000)]
     delay_ms: u64,
@@ -55,6 +71,57 @@ pub(super) struct Cli {
     authorized_hosts: Vec<String>,
     #[command(subcommand)]
     command: Command,
+}
+
+/// The path a command that has both takes.
+pub(super) enum Route<'a> {
+    /// The store root the operator named: the command opens it in-process.
+    Offline(&'a std::path::Path),
+    /// The ingress origin to drive the running census service through.
+    Ingress(&'a str),
+}
+
+impl Cli {
+    /// The store root an offline command opens: the one `--store` named, or the default root.
+    pub(super) fn store_root(&self) -> PathBuf {
+        self.store
+            .clone()
+            .unwrap_or_else(|| PathBuf::from(DEFAULT_STORE_ROOT))
+    }
+
+    /// The route a command that can run either way takes, given the `--ingress` value it carries.
+    ///
+    /// Naming both flags is refused rather than silently preferring one: the two paths publish the
+    /// same artifacts through different owners, so an operator who asked for both has to be told
+    /// which one would have run.
+    pub(super) fn route<'a>(&'a self, ingress: Option<&'a str>) -> Result<Route<'a>> {
+        match (self.store.as_deref(), ingress) {
+            (Some(store), None) => Ok(Route::Offline(store)),
+            (None, given) => Ok(Route::Ingress(ingress::origin(given))),
+            (Some(_), Some(_)) => anyhow::bail!(
+                "--store selects the offline path and --ingress the live one: give one of the two"
+            ),
+        }
+    }
+
+    /// The origin a command that only drives the service reads, refusing `--store`: a store this
+    /// command never opens is a run the operator thinks they started and did not, so the flag is
+    /// refused by name instead of ignored.
+    pub(super) fn service_origin<'a>(
+        &self,
+        command: &str,
+        ingress: Option<&'a str>,
+    ) -> Result<&'a str> {
+        if self.store.is_some() {
+            anyhow::bail!(
+                "`{command}` drives the census pipeline, and a pipeline command never opens the \
+                 store: drop --store and let it submit through --ingress, which defaults to \
+                 {}",
+                ingress::DEFAULT_ORIGIN
+            );
+        }
+        Ok(ingress::origin(ingress))
+    }
 }
 
 pub(super) fn build_fetcher(cli: &Cli, store: &Store) -> Result<Fetcher> {
@@ -83,20 +150,39 @@ pub(super) fn build_fetcher_authorizing(
     .with_family_budgets(midwest_census::sources::default_family_delays()))
 }
 
-/// Parse the arguments, open the store and dispatch the subcommand.
+/// Parse the arguments and run the subcommand.
+///
+/// The pipeline commands come first, because each of them decides for itself whether it opens a store:
+/// dispatching them through the offline path would open one for a command the operator asked to run
+/// live, and `midwest-serve` holds that store for the life of the process — the open would refuse the
+/// very run the command was asking for. Everything after them is an offline tool: it always opens the
+/// store, at `--store` or at the default root.
 pub(super) async fn run() -> Result<()> {
     init_tracing();
     let cli = Cli::parse();
     match &cli.command {
-        Command::National(args) => return national::run_national(args).await,
-        Command::Jurisdiction(args) => return national::run_jurisdiction(args).await,
-        Command::MergeCoaches(args) => return merge_coaches::run_merge_coaches(args),
-        Command::VerifyCoaches(args) => return verify_coaches::run_verify_coaches(args).await,
-        Command::CensusDoc(args) => return census_doc::run_census_doc(args),
-        _ => {}
+        Command::National(args) => national::run_national(&cli, args).await,
+        Command::Jurisdiction(args) => national::run_jurisdiction(&cli, args).await,
+        Command::NationalReport(args) => national::run_national_report(&cli, args).await,
+        Command::OpenWork(args) => open_work::run_open_work(&cli, args).await,
+        Command::Teams(args) => gather::run_teams(&cli, args).await,
+        Command::Meets(args) => gather::run_meets(&cli, args).await,
+        Command::Collect(args) => gather::run_collect(&cli, args).await,
+        Command::Report(args) => publish::run_census_report(&cli, args).await,
+        Command::Bests(args) => publish::run_bests(&cli, args).await,
+        Command::Workbook(args) => publish::run_workbook(&cli, args).await,
+        Command::Run(args) => cycle::run_cycle(&cli, args).await,
+        // These write their own files and never touch the store either.
+        Command::MergeCoaches(args) => merge_coaches::run_merge_coaches(args),
+        Command::VerifyCoaches(args) => verify_coaches::run_verify_coaches(args).await,
+        Command::CensusDoc(args) => census_doc::run_census_doc(args),
+        Command::Serve => serve::run_serve(&cli),
+        // Offline tools: open the store in-process, which requires `midwest-serve` stopped.
+        _ => {
+            let store = Store::open(cli.store_root())?;
+            dispatch::dispatch(&cli, &store).await
+        }
     }
-    let store = Store::open(&cli.store)?;
-    dispatch::dispatch(&cli, &store).await
 }
 
 /// Install the tracing subscriber: `RUST_LOG` when it is set, `info` otherwise.
@@ -111,6 +197,10 @@ fn init_tracing() {
 }
 
 /// `bests::write` and `workbook` agree on this label: `co2027` for one class, `all` for every cohort.
+pub(super) fn cohort_label(grad_year: Option<i16>) -> String {
+    grad_year.map_or_else(|| "all".to_string(), |year| format!("co{year}"))
+}
+
 /// The scope a `--all-sources` flag selects.
 pub(super) fn scope_of(all_sources: bool) -> report::Scope {
     if all_sources {
@@ -118,10 +208,6 @@ pub(super) fn scope_of(all_sources: bool) -> report::Scope {
     } else {
         report::Scope::Core
     }
-}
-
-pub(super) fn cohort_label(grad_year: Option<i16>) -> String {
-    grad_year.map_or_else(|| "all".to_string(), |year| format!("co{year}"))
 }
 
 /// Cohort fields are `i16`; the CLI takes `u16` so a negative year is a parse error, and rejects the
@@ -138,9 +224,9 @@ pub(super) fn resolve_states(
 ) -> Result<Vec<UsJurisdiction>> {
     match (all_states, states.is_empty()) {
         (true, false) => anyhow::bail!("--all-states cannot be combined with --states"),
-        (true, true) => Ok(UsJurisdiction::ALL.to_vec()),
+        (true, true) => Ok(UsJurisdiction::CENSUS_SCOPE.to_vec()),
         (false, true) => Ok(vec![UsJurisdiction::Wisconsin]),
-        (false, false) => Ok(states.to_vec()),
+        (false, false) => within_census_scope(states),
     }
 }
 
@@ -151,9 +237,23 @@ pub(super) fn resolve_restriction(
 ) -> Result<Vec<UsJurisdiction>> {
     match (all_states, states.is_empty()) {
         (true, false) => anyhow::bail!("--all-states cannot be combined with --states"),
-        (true, true) => Ok(UsJurisdiction::ALL.to_vec()),
-        (false, _) => Ok(states.to_vec()),
+        (true, true) => Ok(UsJurisdiction::CENSUS_SCOPE.to_vec()),
+        (false, _) => within_census_scope(states),
     }
+}
+
+/// Keep only the jurisdictions a census run covers (ADR-009).
+///
+/// The rule and its wording live in `census_domain` ([`UsJurisdiction::require_census_scope`]); this
+/// only lifts the typed error into the CLI's `anyhow` boundary, so no second copy of the rule can
+/// drift from the first.
+pub(crate) fn within_census_scope(states: &[UsJurisdiction]) -> Result<Vec<UsJurisdiction>> {
+    states
+        .iter()
+        .copied()
+        .map(UsJurisdiction::require_census_scope)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(Into::into)
 }
 
 #[cfg(test)]

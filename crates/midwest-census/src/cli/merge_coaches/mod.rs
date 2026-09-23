@@ -188,10 +188,10 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
         }
         for (line_no, mut row) in rows {
             let counts = pass.per_state.entry(state.clone()).or_default();
-            counts.rows += 1;
+            counts.rows = counts.rows.saturating_add(1);
             row.normalize();
             if let Some(reason) = Row::judge(&row, &state) {
-                counts.rejected += 1;
+                counts.rejected = counts.rejected.saturating_add(1);
                 pass.rejects.push(Rejection {
                     state: state.clone(),
                     line_no,
@@ -206,9 +206,9 @@ fn process_files(csv_files: &[PathBuf]) -> Result<MergePass> {
             let key = row.dedupe_key();
             if !pass.kept.contains_key(&key) {
                 pass.kept.insert(key, row);
-                counts.kept += 1;
+                counts.kept = counts.kept.saturating_add(1);
             } else {
-                counts.duplicates += 1;
+                counts.duplicates = counts.duplicates.saturating_add(1);
                 if let Some(existing) = pass.kept.get(&key) {
                     if pick_richer(&row, existing) {
                         pass.kept.insert(key, row);

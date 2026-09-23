@@ -4,7 +4,7 @@ One binary that runs the repository's real tools, and prints the exact child com
 it, so a terminal session and this harness cannot drift apart. The measurement subcommands — `scan`,
 `integrity`, `domain-purity`, `seams`, `quality-baseline`, `ratchet` — are the exception: they are
 the gate's measurement layer, which used to be a set of Python scripts under `tools/`. Everything
-else shells out or writes files.
+else shells out, submits an invocation to the running Restate deployment, or writes files.
 
 ## Running it
 
@@ -36,10 +36,11 @@ named in the message; there is no stack trace.
 | `seams` | checks every `crate::…` edge between the census crate's top-level modules against the allowed table; JSON on stdout, non-zero exit on a violation |
 | `source-test <source>` (alias `source-check`) | `cargo nextest run -p midwest-census -E 'test(<source>)'` |
 | `source-fixture <source>` | reads `crates/midwest-census/tests/fixtures/<source>/` and lists it |
-| `census-status --store <dir>` | `cargo run -q -p midwest-census --bin midwest-census -- --store <dir> report --core` |
-| `coverage --store <dir>` | same binary: `report` (no flag = every source) |
+| `replay <name>` | replays `crates/midwest-census/tests/fixtures/<name>/` offline: prints each capture's parse result, same bytes every run |
+| `census-status <--store <dir>\|--ingress [<origin>]>` | `Census/status` on the running deployment, or the binary's `report --core` offline |
+| `coverage <--store <dir>\|--ingress [<origin>]>` | `Report/run` on the running deployment, or the binary's `report` (no flag = every source) offline |
 | `bench [-- <filter>]` | `cargo bench -p midwest-census [<filter>]` |
-| `export --store <dir> [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]` | same binary: `workbook` on a store that already holds evidence |
+| `export <--store <dir>\|--ingress [<origin>]> [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]` | `Workbook/run` on the running deployment, or the binary's `workbook` offline |
 | `new-source <name>` | writes the adapter scaffold described below |
 
 ### `gate`
@@ -113,16 +114,60 @@ Lists every regular file under the source's fixture directory, recursively, sort
 The directory has to exist: a missing source is an error naming the fixture directories that do
 exist, not an empty listing.
 
-### `census-status --store <dir>` and `coverage --store <dir>`
+### `replay <name>`
 
 ```bash
-cargo xtask census-status --store var/midwest-census   # report --core
-cargo xtask coverage      --store var/midwest-census   # report, every source
+cargo xtask replay wiaa_results
 ```
 
-Both run the shipped `midwest-census` binary, so both need the crate to build, and both write the
-census JSON/CSV into `<store>/out/`. The CLI has no `--scope` and no `--out` flag: core scope is
-`--core` and every source is the default, and this command does not pretend otherwise.
+Reads every capture under `crates/midwest-census/tests/fixtures/<name>/` and runs each body through
+the same parse entry point that source's fixture tests call, printing what the parser published -
+counts, route names, the published school or meet names. Nothing is fetched, no clock is read, no
+store is opened and no environment is consulted, so two runs over the same tree print the same bytes:
+that is what makes it the verb to reach for while `midwest-serve` holds the store, on a machine with
+no network, or when a capture has to be re-read without re-crawling its host.
+
+Two kinds of input a capture cannot state about itself come from the same place the harnesses get
+them: a result file's format is classified from its extension and body by the adapter's own function,
+and its archive year is read from the fixture's record under `crates/midwest-census/tests/golden/`.
+
+Every capture is read this way: the arms reach the crate's published parse surface, the same
+functions the source's fixture tests call, and a capture or a source none of the arms claims is
+refused by name rather than skipped. Otherwise it is an error: `xtask: <message>` on stderr, exit 1,
+never a panic and never a missing capture reported as an empty parse. A missing fixture directory, an
+empty one, a capture no arm claims, an unreadable fixture record and a body whose parser refuses it
+each fail that way.
+
+### `census-status`, `coverage` and `export`
+
+All three default to the running deployment. The flag-free form and `--ingress [<origin>]` submit the
+matching handler to the census node; `--store <dir>` selects the offline path instead. Giving both is
+a usage error naming both. The origin defaults to the project node, so `--ingress` alone is the local
+deployment.
+
+```bash
+cargo xtask census-status                                   # Census/status, project node (18095)
+cargo xtask census-status --ingress http://127.0.0.1:18095  # the same invocation, spelled out
+cargo xtask census-status --store var/midwest-census        # midwest-census report --core, worker stopped
+cargo xtask coverage                                        # Report/run, every source
+cargo xtask coverage      --store var/midwest-census        # midwest-census report, every source
+```
+
+`--ingress` submits the handler the running deployment already owns and never opens the store, which
+is the mode that works *while* `midwest-serve` holds it. `--store` runs the shipped `midwest-census`
+binary, which opens the store in process: that is the backup-drill and CI path — the only one that
+works with no server running — and it needs the worker stopped, because the store is single-writer
+and a second handle fails with `FjallError: Locked`.
+
+Both modes report the same numbers under the same labels. `census-status` prints a `schools=` /
+`athletes=` line either way: offline it is the core report's totals plus the JSON/CSV paths it wrote,
+and through the ingress it is the store's own status — those two tables as `Census/status` counts
+them, with the observation count, on-disk footprint and date. `coverage` prints the every-source
+totals and the written paths in both modes.
+
+The offline paths forward no scope flag beyond the one the subcommand means — `census-status` is
+`--core` and `coverage` is every source — because the CLI has no `--scope` and no `--out` flag, and
+this command does not pretend otherwise. The ingress paths send the same scope as the wire value.
 
 ### `bench [-- <filter>]`
 
@@ -136,16 +181,19 @@ substring match over criterion benchmark ids, not a target name. The `--` separa
 a bare `cargo xtask bench parser` is a clap error, and the wrapper prints the exact command it runs
 so a surprising filter is visible.
 
-### `export --store <dir> [--out <file>]`
+### `export [--out <file>] [--grad-year <year>] [--all-sources] [--limit <n>]`
 
 ```bash
+cargo xtask export --ingress --out out/census.xlsx --limit 5000
 cargo xtask export --store var/midwest-census --out out/census.xlsx --limit 5000
 ```
 
-Builds the census workbook from a store that already holds evidence — no gathering, no network — by
-running `midwest-census workbook` with `--grad-year` (default 2027), `--all-sources` and `--limit`
-forwarded. It is the short stable name for the artifact the recruiting projection consumes, and the
-child's exit status is this command's exit status.
+Builds the census workbook from evidence the store already holds — no gathering, no network.
+`--grad-year` (default 2027), `--all-sources` and `--limit` are forwarded to `midwest-census workbook`
+offline and carried in the `Workbook/run` request through the ingress, and both modes print the
+path they wrote and the cohort's graduation year. It is the short stable name for the artifact the
+recruiting projection consumes; offline the child's exit status is this command's exit status, and
+through the ingress a refused or failed invocation is a non-zero exit with Restate's own message.
 
 ### `new-source <name>`
 
@@ -174,9 +222,12 @@ README, then fails as soon as a capture lands, until the real parser replaces th
 ## What it does not do
 
 - No reimplementation: `gate`, `source-test`, `census-status`, `coverage`, `bench` and `export` are
-  thin wrappers around the tools that own the behaviour. The measurement subcommands do implement
-  the gate's measurements, because those measurements are this repository's own policy rather than
-  another tool's job — they are the Rust replacements for the deleted `tools/*.py` scripts.
+  thin wrappers around the tools that own the behaviour — the census commands either run the
+  `midwest-census` binary or submit that deployment's own handlers (`Census/status`,
+  `Report/run`, `Workbook/run`) through Restate's ingress. The measurement subcommands do
+  implement the gate's measurements, because those measurements are this repository's own policy
+  rather than another tool's job — they are the Rust replacements for the deleted `tools/*.py`
+  scripts.
 - No shell interpretation: arguments are passed as an argument vector, so an argument with spaces or
   quotes is never re-split. `--` separates this binary's flags from the child's.
 - No project-wide validation by itself: `new-source` writes files and prints paths, it does not run

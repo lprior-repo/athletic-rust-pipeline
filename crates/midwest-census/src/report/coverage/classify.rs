@@ -1,14 +1,16 @@
 //! The store reads and the rows they classify: seeding, schools, coaches, meets, the core count and
 //! publication. Each pass fills one row's columns from one table, so the whole report is seven scans
-//! of already-merged tables and no derived cache.
+//! of already-merged tables and no derived cache. The other half of the contract — what those scans
+//! held for the rows this report publishes — is counted beside the passes in [`super::reads`].
 
 use super::super::{retain_core, ReportResult};
 use super::gaps;
+use super::reads::{self, Published, Tables};
 use super::state::{
     bucket_mut, in_cohort, jurisdiction_of, school_state_index, Bucket, BucketMap, Outcome,
     SchoolSets,
 };
-use super::{athletes, CoverageGap, CoverageTotals, JurisdictionCoverage};
+use super::{athletes, CoverageGap, JurisdictionCoverage};
 use crate::store::{Store, Table};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
@@ -17,37 +19,81 @@ use census_domain::model::{
 use census_domain::{JurisdictionBucket, UsJurisdiction};
 use std::collections::{HashMap, HashSet};
 
-/// §49 coverage for the store's merged tables. See [`super::coverage_report`] for the contract this
-/// fills, including the cohort filter it applies to the athlete-derived columns.
-pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome> {
-    let schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
-    let coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
-    let meets: Vec<CanonicalMeet> = store.scan(Table::Meets)?;
-    let event_ids: HashSet<String> = store
-        .scan::<CanonicalEvent>(Table::Events)?
-        .into_iter()
-        .map(|event| event.id.as_str().to_string())
-        .collect();
-    let mut athletes: Vec<CanonicalAthlete> = store.scan(Table::Athletes)?;
-    let performances: Vec<CanonicalPerformance> = store.scan(Table::Performances)?;
+/// The merged tables one coverage pass reads, plus the event ids its performance tallies join to.
+/// Scanned once so the passes and the read side describe the same store.
+struct Scanned {
+    schools: Vec<CanonicalSchool>,
+    coaches: Vec<CanonicalCoach>,
+    meets: Vec<CanonicalMeet>,
+    athletes: Vec<CanonicalAthlete>,
+    performances: Vec<CanonicalPerformance>,
+    event_ids: HashSet<String>,
+}
 
-    let school_state = school_state_index(&schools);
-    let coach_schools: HashSet<&str> = coaches.iter().map(|coach| coach.school.as_str()).collect();
+impl Scanned {
+    /// Scan every merged table the report reads.
+    fn read(store: &Store) -> ReportResult<Self> {
+        Ok(Self {
+            schools: store.scan(Table::Schools)?,
+            coaches: store.scan(Table::Coaches)?,
+            meets: store.scan(Table::Meets)?,
+            athletes: store.scan(Table::Athletes)?,
+            performances: store.scan(Table::Performances)?,
+            event_ids: store
+                .scan::<CanonicalEvent>(Table::Events)?
+                .into_iter()
+                .map(|event| event.id.as_str().to_string())
+                .collect(),
+        })
+    }
+
+    /// The read side's view of this scan: the entities, without the event ids it never joins to.
+    fn tables(&self) -> Tables<'_> {
+        Tables {
+            schools: &self.schools,
+            athletes: &self.athletes,
+            coaches: &self.coaches,
+            meets: &self.meets,
+            performances: &self.performances,
+        }
+    }
+}
+
+/// §49 coverage for the store's merged tables. See [`super::coverage_report`] for the contract this
+/// fills: the cohort filter it applies to the athlete-derived columns, and the run-scope universe
+/// ([`Published`]) every row and every read counter is scoped by.
+pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome> {
+    let mut scanned = Scanned::read(store)?;
+    let school_state = school_state_index(&scanned.schools);
+    let universe = Published::new(jurisdiction_buckets());
+    // The read side is counted from the tables before a column is filled, so no pass below can move
+    // it: a row a pass loses or invents stays visible to the reconciliation.
+    let reads = reads::totals(&scanned.tables(), &school_state, &universe, grad_year);
+
+    let coach_schools: HashSet<&str> = scanned
+        .coaches
+        .iter()
+        .map(|coach| coach.school.as_str())
+        .collect();
     let mut sets = SchoolSets::default();
     let mut buckets = seed_buckets();
-    let (athletes_read, off_cohort_athletes) = athletes::classify(
-        &athletes,
+    let off_cohort_athletes = athletes::classify(
+        &scanned.athletes,
         &school_state,
         &coach_schools,
         grad_year,
         &mut buckets,
         &mut sets.with_athletes,
     );
-    let athlete_ids: HashSet<&str> = athletes.iter().map(|athlete| athlete.id.as_str()).collect();
+    let athlete_ids: HashSet<&str> = scanned
+        .athletes
+        .iter()
+        .map(|athlete| athlete.id.as_str())
+        .collect();
     let (perf_tallies, orphan_performances) =
-        athletes::tally_performances(&performances, &athlete_ids, &event_ids);
-    let performances_read = athletes::classify_performances(
-        &athletes,
+        athletes::tally_performances(&scanned.performances, &athlete_ids, &scanned.event_ids);
+    athletes::classify_performances(
+        &scanned.athletes,
         &school_state,
         &perf_tallies,
         &orphan_performances,
@@ -55,23 +101,23 @@ pub(super) fn run(store: &Store, grad_year: Option<i16>) -> ReportResult<Outcome
         &mut buckets,
     );
     // Coaches before schools: the school pass counts the sets the coach pass fills.
-    classify_coaches(&coaches, &school_state, &mut buckets, &mut sets);
-    classify_schools(&schools, &sets, &mut buckets);
-    classify_meets(&meets, &mut buckets);
+    classify_coaches(&scanned.coaches, &school_state, &mut buckets, &mut sets);
+    classify_schools(&scanned.schools, &sets, &mut buckets);
+    classify_meets(&scanned.meets, &mut buckets);
     // Last: `retain_core` deletes exactly the non-core evidence every column above counted.
-    count_core(&mut athletes, &school_state, grad_year, &mut buckets);
+    count_core(
+        &mut scanned.athletes,
+        &school_state,
+        grad_year,
+        &mut buckets,
+    );
     let (jurisdictions, gaps) = publish(buckets);
 
     Ok(Outcome {
         jurisdictions,
         gaps,
-        read: CoverageTotals {
-            schools: schools.len(),
-            athletes: athletes_read,
-            coaches: coaches.len(),
-            meets: meets.len(),
-            performances: performances_read,
-        },
+        read: reads.published,
+        outside_scope: reads.outside,
         off_cohort_athletes,
     })
 }
@@ -86,10 +132,14 @@ fn seed_buckets() -> BucketMap {
     buckets
 }
 
-/// Every published row's bucket, in publication order: [`UsJurisdiction::ALL`], then the unplaced
-/// row.
+/// Every published row's bucket, in publication order: [`UsJurisdiction::CENSUS_SCOPE`], then the
+/// unplaced row.
+///
+/// This one iterator defines the report's universe: the rows come from it, and [`Published::new`]
+/// builds the read side's scope from it, so a read counter and a published row cannot disagree about
+/// which jurisdictions exist.
 fn jurisdiction_buckets() -> impl Iterator<Item = JurisdictionBucket> {
-    UsJurisdiction::ALL
+    UsJurisdiction::CENSUS_SCOPE
         .iter()
         .copied()
         .map(JurisdictionBucket::from)
@@ -164,7 +214,8 @@ fn classify_meets(meets: &[CanonicalMeet], buckets: &mut BucketMap) {
     }
 }
 
-/// The core column, counted after every all-sources column is filled.
+/// The core column, counted after every all-sources column is filled: `athletes_core` is a sub-column
+/// of `athletes`, so `retain_core` narrows it and never the totals the reconciliation compares.
 fn count_core(
     athletes: &mut Vec<CanonicalAthlete>,
     school_state: &HashMap<&str, Option<UsJurisdiction>>,
@@ -181,10 +232,15 @@ fn count_core(
     }
 }
 
-/// The published rows in [`UsJurisdiction::ALL`] order with the unplaceable row last, plus the gap
-/// rows each one produced.
+/// The published rows in [`UsJurisdiction::CENSUS_SCOPE`] order with the unplaceable row last, plus
+/// the gap rows each one produced.
+///
+/// An accumulator outside that universe — a mirror's Alaska or Hawaii rows, which no run covers
+/// (ADR-009) — is dropped here rather than published, and [`super::reads`] counts it on the read
+/// side's outside split so the drop is recorded instead of silent.
 fn publish(mut buckets: BucketMap) -> (Vec<JurisdictionCoverage>, Vec<CoverageGap>) {
-    let mut jurisdictions = Vec::with_capacity(UsJurisdiction::ALL.len().saturating_add(1));
+    let mut jurisdictions =
+        Vec::with_capacity(UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1));
     let mut gap_rows = Vec::new();
     for bucket in jurisdiction_buckets() {
         // A missing accumulator still publishes a row of zeros: an omitted jurisdiction is the one

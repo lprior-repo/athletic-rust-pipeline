@@ -101,10 +101,15 @@ const DISCOVER_ATTEMPTS: usize = 200;
 const DISCOVER_RETRY_DELAY: Duration = Duration::from_millis(25);
 /// The discovery accept header, the same one `tests/fjall_restate_e2e.rs` asks with.
 const DISCOVERY_ACCEPT: &str = "application/vnd.restate.endpointmanifest.v4+json";
-/// The services the endpoint advertises (wire names, from `restate_services`): the three sweep
-/// surfaces plus the two objects the durable workflow is built from.
-const EXPECTED_SERVICES: [&str; 5] = [
+/// The services the endpoint advertises (wire names, from `restate_services`): the operator's read
+/// surface, the four heavy jobs it shares, the ingest object, and the sweeps and workflows that
+/// drive them.
+const EXPECTED_SERVICES: [&str; 9] = [
     "Census",
+    "Consolidate",
+    "Report",
+    "Bests",
+    "Workbook",
     "Ingest",
     "Sweep",
     "JurisdictionCensus",

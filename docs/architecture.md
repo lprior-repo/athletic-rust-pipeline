@@ -56,8 +56,8 @@ monotone: a later artifact cannot exist without the earlier ones.
 | Complete | `seal` returns `Ok` | `seal`, `seal --write` |
 
 The commands themselves are the clap surface in `crates/midwest-census/src/cli/mod.rs`; `run`
-parses, opens the store and dispatches. Three commands (`national`, `jurisdiction`,
-`national-report`) are dispatched *before* the store opens, because they drive Restate and never read
+parses, opens the store and dispatches. Four commands (`national`, `jurisdiction`, `national-report`,
+`open-work`) are dispatched *before* the store opens, because they drive Restate and never read
 it — and because opening the store takes the exclusive Fjall lock a live `midwest-serve` holds.
 
 `index` is what advances three phases in one pass: it writes `source_identities`, `conflicts`,

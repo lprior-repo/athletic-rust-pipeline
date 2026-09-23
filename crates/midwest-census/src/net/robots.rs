@@ -37,7 +37,7 @@ impl Rule {
             None => (pattern, false),
         };
         // Escape the literal pattern first, then widen the one metacharacter robots.txt defines.
-        let mut source = String::with_capacity(core.len() + 4);
+        let mut source = String::with_capacity(core.len().saturating_add(4));
         source.push('^');
         source.push_str(&regex::escape(core).replace(r"\*", ".*"));
         if anchored {

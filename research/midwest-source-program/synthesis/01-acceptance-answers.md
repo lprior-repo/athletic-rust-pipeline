@@ -26,7 +26,7 @@ file: the numbers below are measured, not modelled, wherever a measurement exist
 | meets / meets carrying an Athletic.net id | 11,007 / 9,593 | 1,532 / 0 | 9,667 / 9,593 |
 
 **2026-09-22 refresh (12-state filter; `reports/census-by-state{,-core}.csv`, `reports/report{,-core}.json`).**
-The athlete and school plane is unchanged inside the twelve states — the store's growth is national (2,373,938
+The athlete and school plane is unchanged inside the twelve states — the store's growth is national (2,374,515
 all-grade athletes over 52 jurisdictions against 787,584 in the twelve) — so only the coach plane and the
 national totals moved:
 
@@ -36,7 +36,13 @@ national totals moved:
 | Co2027 with an identified TF/XC coach (12-state) | 43,201 (22.7 %) | **57,115 (30.0 %)** | 50,318 (34.3 %) |
 | Co2027 with a professional coach email (12-state) | 33,340 (17.5 %) | **46,185 (24.3 %)** | 41,026 (27.9 %) |
 | coach rows / rows carrying an email (12-state) | 27,580 / 8,284 | 29,968 / 9,970 | 29,968 / 9,970 |
-| national store: coaches / with email, Co2027 / with coach email | 27,580 / 8,284 | 31,488 / 10,671, 625,899 / 58,260 | 31,488 / 10,671, 582,670 / 53,101 |
+| national store: coaches / with email, Co2027 / with coach email | 27,580 / 8,284 | 31,488 / 10,671, 625,899 / 58,260 | 31,488 / 10,671, 582,691 / 53,122 |
+
+The national-store row is re-measured after the post-merge rebuild, from `[store: var/midwest-census/out/report.json]`
+(all sources, `census.report --print` through `Report/run`) and `[store: var/midwest-census/out/report-core.json]`
+(core, `census.report --core`); the workbook rebuilt from the same store carries the same figures on its
+`Run Metrics` sheet (core athletes 2,238,191 / Co2027 582,691, all sources 2,374,515 / 625,899), so the two
+surfaces agree rather than merely being copied.
 
 The 12-state coach-email gain of +735 rows sits entirely in Wisconsin (`reports/census-by-state.csv`: WI coach
 rows 2,719 → 3,963, WI rows with an email 2,302 → 3,242); every other state's coach columns are byte-identical

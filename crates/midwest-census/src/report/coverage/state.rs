@@ -53,6 +53,9 @@ pub(super) struct Outcome {
     pub(super) jurisdictions: Vec<JurisdictionCoverage>,
     pub(super) gaps: Vec<CoverageGap>,
     pub(super) read: CoverageTotals,
+    /// What the census run scope left outside every published row: the read side's sibling count,
+    /// which publishes as a provenance note instead of disappearing.
+    pub(super) outside_scope: CoverageTotals,
     pub(super) off_cohort_athletes: usize,
 }
 

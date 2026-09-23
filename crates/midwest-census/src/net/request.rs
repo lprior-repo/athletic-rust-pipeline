@@ -1,10 +1,7 @@
-//! Request construction (verbs, bodies, conditional GET) and the retry backoff policy.
+//! Request construction: verbs, bodies, and the conditional-GET headers.
 
 use super::cache::CacheMeta;
-use super::{
-    FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS, RETRY_BASE_DELAY_MS,
-};
-use std::time::Duration;
+use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, REQUEST_TIMEOUT_SECS};
 
 /// Request payload for POSTs: a pre-serialized body, plus the content type it must be sent with.
 #[derive(Debug, Clone)]
@@ -123,54 +120,4 @@ pub(super) fn build_request<'a>(
         }
     }
     Ok(request)
-}
-
-/// Backoff for a retry: 500 ms doubling per attempt, capped at ten seconds, plus deterministic
-/// ±25% jitter so parallel fetchers do not retry in lockstep.
-///
-/// The jitter is a splitmix64 mix of the attempt number: no random source, no allocation, and the
-/// same attempt always yields the same delay, which keeps tests and replays repeatable.
-pub(super) fn jittered_delay(attempt: u32) -> Duration {
-    let step = attempt.saturating_sub(1).min(4);
-    let cap_ms: u64 = 10_000;
-    // Doubling per attempt, capped: `saturating_pow` cannot overflow and `step` is at most 4.
-    let base_ms = RETRY_BASE_DELAY_MS
-        .saturating_mul(2_u64.saturating_pow(step))
-        .min(cap_ms);
-    let spread = base_ms / 2;
-    if spread == 0 {
-        return Duration::from_millis(base_ms);
-    }
-    // The jitter is a value in `0..spread` pulled back by half a spread, so the delay lands
-    // within ±25% of `base` and never leaves `0..=cap`. Subtracting the shortfall and adding the
-    // excess of that shift keeps the whole calculation unsigned and saturating: nothing can
-    // overflow, and the shortfall saturates at zero exactly where the old clamp did.
-    let half = spread / 2;
-    // `spread` is non-zero here, so the remainder is always defined; the fallback keeps the
-    // calculation total without a panic path.
-    let jitter = mix_attempt(attempt).checked_rem(spread).unwrap_or(0);
-    let delay_ms = base_ms
-        .saturating_sub(half.saturating_sub(jitter))
-        .saturating_add(jitter.saturating_sub(half))
-        .min(cap_ms);
-    Duration::from_millis(delay_ms)
-}
-
-/// Wait out one retry's backoff, and report the delay it consumed.
-///
-/// The schedule ([`jittered_delay`]) and the wait live in one module so a retrying loop cannot wait
-/// something other than what it logged, and a paused-clock test can assert both halves of the
-/// policy: the delay is the schedule's, and the clock moved by exactly it.
-pub(super) async fn wait_backoff(attempt: u32) -> Duration {
-    let delay = jittered_delay(attempt);
-    tokio::time::sleep(delay).await;
-    delay
-}
-
-/// splitmix64 over one counter: cheap, deterministic, and dependency-free.
-fn mix_attempt(attempt: u32) -> u64 {
-    let mut z = u64::from(attempt).wrapping_add(0x9E37_79B9_7F4A_7C15);
-    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-    z ^ (z >> 31)
 }

@@ -4326,9 +4326,16 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "calamine",
+ "census-domain",
  "clap",
+ "midwest-census",
  "regex",
+ "reqwest",
+ "restate-sdk",
+ "serde",
  "serde_json",
+ "tokio",
+ "url",
 ]
 
 [[package]]

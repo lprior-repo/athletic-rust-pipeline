@@ -27,7 +27,8 @@ pub(super) struct ProviderArgs {
     /// coverage, and the list must include that state or the run reports the mismatch.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
+    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
+    /// combined with `--states`.
     #[arg(long)]
     all_states: bool,
     /// Restrict to these archive years (result-archive adapters only).
@@ -109,7 +110,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
     };
     // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads
     // like a clean one — including when the adapter fails after the block.
-    super::gather::print_blocked_hosts(&fetcher).await;
+    super::source::print_blocked_hosts(&fetcher).await;
     let report = outcome.with_context(|| format!("adapter {}", args.name))?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())

@@ -112,29 +112,6 @@ fn robots_named_agent_groups_are_ignored() {
 }
 
 #[test]
-fn jittered_delay_increases_with_attempt() {
-    let d1 = jittered_delay(1);
-    let d2 = jittered_delay(2);
-    let d3 = jittered_delay(3);
-    // Jitter adds noise, so strict ordering isn't guaranteed.
-    // But the expected value increases.
-    assert!(d1 <= d2);
-    assert!(d2 <= d3);
-    assert!(d3 <= Duration::from_secs(10));
-}
-
-#[test]
-fn jittered_delay_respects_cap() {
-    for attempt in 1..=10 {
-        let d = jittered_delay(attempt);
-        assert!(
-            d <= Duration::from_secs(10),
-            "delay for attempt {attempt} exceeds 10s cap"
-        );
-    }
-}
-
-#[test]
 fn cache_key_pins_the_on_disk_cache_layout() {
     // Cached bodies live at `{key}.body` / `{key}.meta.json`, so the key derivation is part
     // of the on-disk layout: `GET`-with-no-body and `POST`-with-a-body must keep the same

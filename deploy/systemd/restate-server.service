@@ -1,8 +1,9 @@
 [Unit]
-Description=Midwest census Restate server (state machine endpoint)
+Description=Midwest census Restate server (journal, ingress, admin)
 Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
 After=network-online.target
 Wants=network-online.target
+Before=midwest-serve@.service
 
 [Service]
 Type=simple
@@ -10,23 +11,25 @@ User=midwest
 Group=midwest
 WorkingDirectory=/opt/athletic-rust-pipeline
 Environment=RUST_LOG=info
-# The Restate server hosts the state machine that drives census/ingest/sweep.
-# It shares the same --data-dir store as the batch CLI. Ingress is loopback-only
-# (see OPERATIONS.md §Ingress posture) until owner decision 4 lands.
-ExecStart=/opt/athletic-rust-pipeline/target/release/midwest-serve \
-  --listen 127.0.0.1:9080 \
-  --data-dir /var/lib/midwest-census \
-  --max-concurrent 8 \
-  --drain-timeout 30
+# The journal, the metadata store and the ingress live here. This unit used to run `midwest-serve`
+# under the name of the server it never started: the deployment had no journal at all, and two units
+# contended for one Fjall store. It now runs the pinned 1.7.10 build the census lanes are qualified
+# against, with `deploy/restate.toml` deployed to /etc/midwest-census/restate.toml as the only file
+# that knows the ports.
+ExecStart=/opt/athletic-rust-pipeline/vendor/restate-server-1.7.10/restate-server \
+  --no-logo \
+  --config-file /etc/midwest-census/restate.toml
 Restart=on-failure
 RestartSec=5
 KillSignal=SIGTERM
-TimeoutStopSec=60
+# The node flushes the bifrost log on shutdown; this must exceed its own shutdown-timeout.
+TimeoutStopSec=120
+StateDirectory=midwest-census-restate
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/midwest-census
+ReadWritePaths=/var/lib/midwest-census-restate
 LimitNOFILE=65536
 
 [Install]

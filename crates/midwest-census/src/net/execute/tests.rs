@@ -1,19 +1,20 @@
-//! Pause-time tests for the fetch loop's two timers: the per-host pacing and the retry backoff.
+//! Pause-time tests for the fetch loop's timer: the per-host pacing.
 //!
-//! Both run on the clock capability, so a paused clock makes them deterministic: the assertions are
-//! about the virtual-time deltas themselves rather than "it eventually returned", and nothing here
-//! sleeps in real time. The pacing and the backoff are driven through the same functions the fetch
-//! loop calls — [`Fetcher::host_gate`] and [`Fetcher::wait_turn`] for the spacing,
-//! [`crate::net::request::wait_backoff`] for the retry — so what is asserted is the loop's own
-//! timing, not a model of it.
+//! It runs on the clock capability, so a paused clock makes the test deterministic: the assertions
+//! are about the virtual-time deltas themselves rather than "it eventually returned", and nothing
+//! here sleeps in real time. The pacing is driven through the same functions the fetch loop calls —
+//! [`Fetcher::host_gate`] and [`Fetcher::wait_turn`] — so what is asserted is the loop's own timing,
+//! not a model of it.
+//!
+//! Retry timing is deliberately absent: the durable layer owns retries (ADR-002), so there is no
+//! in-process backoff schedule left to assert.
 //!
 //! No test here performs IO: with a paused clock, a real socket wait parks the runtime and the
 //! clock auto-advances to the next timer (the client's request timeout), which is real-time
 //! dependent and therefore not an assertion that could be deterministic.
 
 use super::*;
-use crate::net::request::wait_backoff;
-use crate::net::{jittered_delay, Fetcher};
+use crate::net::Fetcher;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -118,45 +119,6 @@ async fn an_authorized_host_is_never_paced_faster_than_the_policy_ceiling() {
         MIN_AUTHORIZED_DELAY,
         "an authorized host's spacing must stay at the policy ceiling"
     );
-}
-
-#[tokio::test(start_paused = true)]
-async fn a_retry_backoff_advances_by_exactly_the_schedule() {
-    let dir = tempfile::tempdir().expect("temp dir");
-    let _fetcher = fetcher_in(dir.path(), Duration::from_millis(1), Vec::new());
-    let start = tokio::time::Instant::now();
-    let mut scheduled = Duration::ZERO;
-
-    for attempt in 1..=3 {
-        let waited_from = tokio::time::Instant::now();
-        let waited = wait_backoff(attempt).await;
-        assert_eq!(
-            waited,
-            jittered_delay(attempt),
-            "attempt {attempt} must wait the schedule's delay"
-        );
-        assert_eq!(
-            tokio::time::Instant::now().duration_since(waited_from),
-            waited,
-            "attempt {attempt} must consume exactly the delay it waited"
-        );
-        scheduled += waited;
-        assert_eq!(
-            tokio::time::Instant::now().duration_since(start),
-            scheduled,
-            "attempt {attempt} must resume from the previous backoff, not restart it"
-        );
-    }
-
-    // The schedule this measured is the documented one: 500 ms doubling per attempt, ±25% jitter.
-    // Without that, an exact delta would only prove that a sleep slept.
-    for (attempt, low, high) in [(1_u32, 375_u64, 625_u64), (2, 750, 1250), (3, 1500, 2500)] {
-        let delay = jittered_delay(attempt).as_millis();
-        assert!(
-            delay >= u128::from(low) && delay <= u128::from(high),
-            "attempt {attempt} left its band: {delay} ms not in {low}..={high} ms"
-        );
-    }
 }
 
 #[tokio::test(start_paused = true)]

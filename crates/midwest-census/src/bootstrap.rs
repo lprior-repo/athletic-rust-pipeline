@@ -33,6 +33,7 @@ use std::time::Duration;
 
 mod drain;
 mod error;
+mod guard;
 mod options;
 mod serve;
 mod stop;
@@ -43,6 +44,10 @@ pub use error::BootstrapError;
 pub const DEFAULT_MAX_CONCURRENT: usize = 8;
 /// Default deadline for in-flight work after a stop request.
 pub const DEFAULT_DRAIN_TIMEOUT: Duration = Duration::from_secs(30);
+/// Default process memory ceiling: past this the region drains and exits rather than swap the
+/// machine out from under its operator. It bounds the *process*, not the run — Restate replays
+/// whatever the drain left unfinished, so the next start resumes where this stopped.
+pub const DEFAULT_MEMORY_BUDGET_BYTES: u64 = 48 * 1024 * 1024 * 1024;
 
 pub use crate::clock::{Clock, SystemClock};
 

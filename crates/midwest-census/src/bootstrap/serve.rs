@@ -1,6 +1,7 @@
 //! The region itself: open the store, bind, own the endpoint task, drain, finalize.
 
 use std::future::Future;
+use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Arc;
@@ -49,30 +50,33 @@ pub(super) async fn supervise(
     // started and finalize cannot race a writer the region had forgotten.
     let region = Arc::new(Spawner::new());
     let store = open_store(&region, options.data_dir.clone()).await?;
-    if !options.listen.ip().is_loopback() {
-        // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
-        return Err(BootstrapError::NonLoopbackListen {
-            listen: options.listen,
-        });
-    }
-    let listener = tokio::net::TcpListener::bind(options.listen)
-        .await
-        .map_err(|source| BootstrapError::Bind {
-            listen: options.listen,
-            source,
-        })?;
-    let bound = listener
-        .local_addr()
-        .map_err(|source| BootstrapError::BoundAddress { source })?;
+    let (listener, bound) = bind_listener(&options).await?;
 
     let reason = Arc::new(AtomicU8::new(StopReason::ServerExit.to_raw()));
-    let cancel = spawn_endpoint(&region, &store, &options, listener);
-    tracing::info!(%bound, max_concurrent = options.max_concurrent, "census service listening");
+    let over_budget = Arc::new(tokio::sync::Notify::new());
+    let (cancel, endpoint_done) = spawn_endpoint(&region, &store, &options, listener);
+    // The budget watcher reads /proc and has to keep watching while the region drains — a drain can
+    // take the whole timeout, and a swap during it is still the operator's problem. So it runs
+    // outside the region: the drain owns writers, and a watchdog that only returns when the budget
+    // trips would otherwise leave every stop report with one task `timed_out`.
+    let _watcher = tokio::spawn(super::guard::watch_memory(
+        super::DEFAULT_MEMORY_BUDGET_BYTES,
+        Arc::clone(&over_budget),
+    ));
+    tracing::info!(
+        %bound,
+        max_concurrent = options.max_concurrent,
+        memory_budget_gib = super::DEFAULT_MEMORY_BUDGET_BYTES / (1024 * 1024 * 1024),
+        "census service listening"
+    );
 
-    // The deadline bounds the reap *after* a stop request, never the wait for one. Draining before
-    // the watch resolves would abort a healthy endpoint at the deadline and report `ServerExit`,
-    // which is exactly the fault this ordering exists to keep visible.
-    stop_watch(Arc::clone(&reason), shutdown).await;
+    await_stop(
+        Arc::clone(&reason),
+        Arc::clone(&over_budget),
+        shutdown,
+        endpoint_done,
+    )
+    .await;
     // A failed send means the endpoint's own watch is already gone; the drain below is what matters.
     cancel.send(()).ok();
     let counted = region
@@ -91,7 +95,60 @@ pub(super) async fn supervise(
     Ok(report)
 }
 
-/// Spawn the region-owned endpoint task and return the sender that cancels it.
+/// Wait for whatever stops this process first, and record the reason.
+///
+/// The deadline bounds the reap *after* a stop request, never the wait for one: draining before the
+/// watch resolves would abort a healthy endpoint at the deadline and report `ServerExit`, which is
+/// exactly the fault this ordering exists to keep visible.
+///
+/// The endpoint's task ending is a stop request too. Its HTTP server returned — a panic, or an
+/// accept loop that gave up — so nothing is serving the port while the process still holds the
+/// store's exclusive lock. Swallowing that is what let a dead endpoint look like a healthy one.
+async fn await_stop(
+    reason: Arc<AtomicU8>,
+    over_budget: Arc<tokio::sync::Notify>,
+    shutdown: impl Future<Output = ()> + Send + 'static,
+    endpoint_done: impl Future + Send,
+) {
+    tokio::select! {
+        () = stop_watch(Arc::clone(&reason), shutdown) => {}
+        () = over_budget.notified() => {
+            reason.store(StopReason::MemoryBudget.to_raw(), Ordering::SeqCst);
+        }
+        _ = endpoint_done => {
+            reason.store(StopReason::ServerExit.to_raw(), Ordering::SeqCst);
+        }
+    }
+}
+
+/// Bind the service listener, refusing anything but a loopback address and reporting the address the
+/// kernel actually bound (a configured port 0 asks it to pick one).
+async fn bind_listener(
+    options: &ServeOptions,
+) -> Result<(tokio::net::TcpListener, SocketAddr), BootstrapError> {
+    if !options.listen.ip().is_loopback() {
+        // The endpoint carries no request-identity key, so the SDK's verifier accepts every caller.
+        return Err(BootstrapError::NonLoopbackListen {
+            listen: options.listen,
+        });
+    }
+    let listener = tokio::net::TcpListener::bind(options.listen)
+        .await
+        .map_err(|source| BootstrapError::Bind {
+            listen: options.listen,
+            source,
+        })?;
+    let bound = listener
+        .local_addr()
+        .map_err(|source| BootstrapError::BoundAddress { source })?;
+    Ok((listener, bound))
+}
+
+/// Spawn the region-owned endpoint task.
+///
+/// Returns the sender that cancels it, and a receiver that fires if the task ends on its own. That
+/// second half is not optional: the cancel signal is the supervisor's, but a returned HTTP server is
+/// the endpoint's own event, and a supervisor that cannot see it cannot report or recover from it.
 ///
 /// The cancel signal is the supervisor's, not the stop watch: the supervisor has to observe the stop
 /// request itself to know when the region may be drained, so the watch and the endpoint's cancel are
@@ -101,8 +158,12 @@ fn spawn_endpoint(
     store: &Arc<Store>,
     options: &ServeOptions,
     listener: tokio::net::TcpListener,
-) -> tokio::sync::oneshot::Sender<()> {
+) -> (
+    tokio::sync::oneshot::Sender<()>,
+    tokio::sync::oneshot::Receiver<()>,
+) {
     let (cancel, cancelled) = tokio::sync::oneshot::channel::<()>();
+    let (ended, endpoint_done) = tokio::sync::oneshot::channel::<()>();
     let stop = async move {
         // The stop future only has to observe the cancel; a dropped sender ends it too.
         cancelled.await.ok();
@@ -113,8 +174,11 @@ fn spawn_endpoint(
         HttpServer::new(endpoint)
             .serve_with_cancel(listener, stop)
             .await;
+        // Fires on both exits: the supervisor may already be draining, in which case the send is a
+        // no-op, but an exit *without* a cancel is what the supervisor is waiting to hear about.
+        ended.send(()).ok();
     });
-    cancel
+    (cancel, endpoint_done)
 }
 
 /// Open (creating if needed) the store as a region task on the blocking pool.

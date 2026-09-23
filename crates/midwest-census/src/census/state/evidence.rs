@@ -1,8 +1,8 @@
 //! What a census must prove about itself before §48 lets it complete.
 //!
 //! One value per acceptance item of §70, plus the numbers the seal certifies. Nothing here reads a
-//! store or a report: the evidence is assembled by the caller that holds those, so the acceptance
-//! rules stay testable on their own values.
+//! store or a report: the caller that holds those assembles the evidence, keeping these rules
+//! testable on their own values.
 
 use serde::{Deserialize, Serialize};
 
@@ -20,9 +20,9 @@ pub enum AcceptanceItem {
     IdentityCandidatesTerminal,
     /// Every unresolved conflict is retained.
     ///
-    /// Satisfied by the seal *recording* the count, not by refusing over it, so it never appears in
-    /// [`SealEvidence::open_items`]: §70 asks that conflicts be kept, and a seal refused over a kept
-    /// finding would push an operator to hide one.
+    /// Satisfied by *recording* the count, never by refusing over it, so it never appears in
+    /// [`SealEvidence::open_items`]: a seal refused over a kept finding teaches operators to hide
+    /// findings.
     ConflictsRetained,
     /// Every retry-exhausted operation is represented. Retained like [`Self::ConflictsRetained`].
     RetriesRepresented,
@@ -93,21 +93,28 @@ pub struct SealCounts {
 }
 
 /// Work that has not reached a terminal decision. Every field is a count that must be zero.
+///
+/// `None` means **unmeasured**, deliberately not `0`: a caller that does not read the workflow
+/// journal — the store path of `midwest-census seal` is one — must say so, and `Default` is `None`
+/// so a forgotten field refuses instead of sealing.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct OpenWork {
-    pub jurisdiction_sweeps: u64,
-    pub source_objects: u64,
-    pub cohort_decisions: u64,
-    pub identity_candidates: u64,
+    pub jurisdiction_sweeps: Option<u64>,
+    pub source_objects: Option<u64>,
+    pub cohort_decisions: Option<u64>,
+    pub identity_candidates: Option<u64>,
 }
 
 /// Findings a seal keeps rather than refuses: gaps, conflicts, exhausted retries, source outages.
+///
+/// `source_failures` is `None` when the caller cannot count them, like [`OpenWork`]'s fields: a zero
+/// that was never measured is a false claim, and this one lands in the digest.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RetainedFindings {
     pub gaps: Vec<GapTally>,
     pub conflicts: u64,
     pub retry_exhausted: u64,
-    pub source_failures: u64,
+    pub source_failures: Option<u64>,
     pub observations: u64,
     pub calculations: u64,
 }
@@ -145,26 +152,33 @@ pub struct SealEvidence {
 }
 
 impl SealEvidence {
-    /// The §70 items this evidence does not satisfy, in declaration order.
-    ///
-    /// Retained findings are deliberately absent from the result: a gap tally, a conflict count or
-    /// an exhausted retry is a *finding* §70 wants kept, and refusing a seal over one would push an
-    /// operator to hide it. The two items that appear here conditionally —
-    /// [`AcceptanceItem::EvidenceDurable`] and [`AcceptanceItem::CalculationsReproducible`] — demand
-    /// a non-zero measured count, because a census that claims athletes but holds no observations
-    /// or no reproducible calculation has proved nothing.
+    /// One open-work measurement, or the statement that the caller could not take it: a refusal has
+    /// to name a number, and "not measured" is the honest answer when there is none.
+    fn outstanding_of(count: Option<u64>, message: &str) -> String {
+        match count {
+            Some(count) => format!("{count} {message}"),
+            None => {
+                format!("{message}: not measured - this seal does not read the workflow journal")
+            }
+        }
+    }
+
+    /// The §70 items this evidence does not satisfy, in declaration order. Retained findings are
+    /// deliberately absent: refusing a seal over a kept one would push an operator to hide it.
     pub fn open_items(&self) -> Vec<AcceptanceItem> {
         let mut open = Vec::new();
-        if self.open.jurisdiction_sweeps > 0 {
+        // `Some(0)` is terminal, `Some(n)` is n outstanding, `None` is unmeasured — and unmeasured
+        // stays open, so a missing measurement can never pass as a zero.
+        if self.open.jurisdiction_sweeps != Some(0) {
             open.push(AcceptanceItem::JurisdictionSweepsTerminal);
         }
-        if self.open.source_objects > 0 {
+        if self.open.source_objects != Some(0) {
             open.push(AcceptanceItem::SourceObjectsTerminal);
         }
-        if self.open.cohort_decisions > 0 {
+        if self.open.cohort_decisions != Some(0) {
             open.push(AcceptanceItem::CohortDecisionsTerminal);
         }
-        if self.open.identity_candidates > 0 {
+        if self.open.identity_candidates != Some(0) {
             open.push(AcceptanceItem::IdentityCandidatesTerminal);
         }
         if self.retained.observations == 0 && self.counts.athletes > 0 {
@@ -199,30 +213,22 @@ impl SealEvidence {
             | AcceptanceItem::CoverageReportReconciles
             | AcceptanceItem::RunMetricsReconcile
             | AcceptanceItem::ExportVerified => self.workbook_detail(item),
-            AcceptanceItem::JurisdictionSweepsTerminal => {
-                format!(
-                    "{} jurisdiction sweeps are not terminal",
-                    self.open.jurisdiction_sweeps
-                )
-            }
-            AcceptanceItem::SourceObjectsTerminal => {
-                format!(
-                    "{} source objects have no terminal state",
-                    self.open.source_objects
-                )
-            }
-            AcceptanceItem::CohortDecisionsTerminal => {
-                format!(
-                    "{} cohort decisions are unresolved",
-                    self.open.cohort_decisions
-                )
-            }
-            AcceptanceItem::IdentityCandidatesTerminal => {
-                format!(
-                    "{} identity candidates are undecided",
-                    self.open.identity_candidates
-                )
-            }
+            AcceptanceItem::JurisdictionSweepsTerminal => Self::outstanding_of(
+                self.open.jurisdiction_sweeps,
+                "jurisdiction sweeps are not terminal",
+            ),
+            AcceptanceItem::SourceObjectsTerminal => Self::outstanding_of(
+                self.open.source_objects,
+                "source objects have no terminal state",
+            ),
+            AcceptanceItem::CohortDecisionsTerminal => Self::outstanding_of(
+                self.open.cohort_decisions,
+                "cohort decisions are unresolved",
+            ),
+            AcceptanceItem::IdentityCandidatesTerminal => Self::outstanding_of(
+                self.open.identity_candidates,
+                "identity candidates are undecided",
+            ),
             AcceptanceItem::ConflictsRetained => {
                 format!("{} retained conflicts", self.retained.conflicts)
             }
@@ -244,9 +250,7 @@ impl SealEvidence {
     }
 
     /// The measurements the workbook check supplies: what the exported bytes did or did not show.
-    ///
-    /// Reached only for the five items `detail` sends here; every other item is measured from the
-    /// seal's own counts above.
+    /// Reached only for the five items `detail` sends here; every other item is measured above.
     fn workbook_detail(&self, item: AcceptanceItem) -> String {
         match item {
             AcceptanceItem::WorkbookMapped => format!(

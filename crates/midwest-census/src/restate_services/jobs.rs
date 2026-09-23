@@ -188,8 +188,10 @@ fn collect_error(error: CrawlError) -> JobError {
     }
 }
 
-/// One attempt per `run` over a fetch-bearing stage: the fetcher owns the three attempts ADR-002
-/// allows per external operation, and a retrying `run` around a fetch would multiply them.
+/// One attempt per `run` inside a handler: ADR-002 makes Restate the owner of retries, and the
+/// retry it owns is the *invocation* retry declared on the handler. A `run`-level retry would be a
+/// second, in-process budget the journal cannot account for, so every `run` attempts once and a
+/// failure leaves the handler for the invocation policy to replay.
 pub(super) fn no_run_retry() -> RunRetryPolicy {
     RunRetryPolicy::new().max_attempts(1)
 }

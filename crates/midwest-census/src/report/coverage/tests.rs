@@ -263,7 +263,7 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
     // not produce, so an empty store still publishes the full set.
     assert_eq!(
         report.jurisdictions.len(),
-        UsJurisdiction::ALL.len().saturating_add(1)
+        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
     );
     assert_eq!(
         report.jurisdictions.last().unwrap().jurisdiction.code(),
@@ -279,17 +279,26 @@ fn an_empty_store_publishes_every_jurisdiction_with_a_gap() {
         .any(|row| row.jurisdiction.code() == "WI" && row.schools == 0));
 
     // ... and an explicit gap class for every row, the unplaceable one included, so emptiness is
-    // findable rather than inferred from an absent key.
+    // findable rather than inferred from an absent key. A jurisdiction outside the run scope has no
+    // row to carry a gap: its absence is ADR-009, not a finding.
     assert_eq!(
         report.gaps.len(),
-        UsJurisdiction::ALL.len().saturating_add(1)
+        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1)
     );
+    assert!(report.gaps.iter().all(|gap| gap
+        .jurisdiction
+        .jurisdiction()
+        .is_none_or(|jurisdiction| jurisdiction.is_in_census_scope())));
     assert!(report.gaps.iter().all(|gap| {
         gap.class == GapClass::EmptyJurisdiction && gap.count == 0 && gap.unit == "schools"
     }));
 
     assert_eq!(report.read, CoverageTotals::default());
     assert_eq!(report.off_cohort_athletes, 0);
+    assert!(report
+        .notes
+        .iter()
+        .all(|note| !note.contains("outside the census run scope")));
     report.reconcile().unwrap();
 }
 
@@ -496,8 +505,140 @@ fn a_mirror_result_plane_row_is_counted_but_never_core() {
     assert_eq!(core.totals.athletes, 1);
 }
 
+/// A national all-sources wave leaves rows behind for a jurisdiction a census run never covers
+/// (ADR-009): the live store's Alaska and Hawaii rows are what unbalanced the reconciliation. They
+/// publish no coverage row, so the read side has to stop at the same scope the rows stop at — and
+/// the exclusion is recorded as a note rather than disappearing.
 #[test]
-fn reconcile_refuses_a_report_whose_rows_lost_a_row() {
+fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+
+    // OH: one athlete the platform's own evidence reaches and one the mirror carries, so both sides
+    // of the core split stay measured while the reconciliation balances.
+    let (school, school_id) =
+        CanonicalSchool::new(UsJurisdiction::Ohio, "Dublin Coffman", "dublin coffman");
+    store.append(Table::Schools, &school).unwrap();
+    let mut core_athlete =
+        CanonicalAthlete::new(&school_id, "Core Runner", GradYear::CO2027, Gender::Boys);
+    core_athlete.evidence.push(evidence("ohsaa_results"));
+    store.append(Table::Athletes, &core_athlete).unwrap();
+    let mut mirror_athlete =
+        CanonicalAthlete::new(&school_id, "Mirror Runner", GradYear::CO2027, Gender::Girls);
+    mirror_athlete
+        .evidence
+        .push(evidence("athleticlive_results"));
+    store.append(Table::Athletes, &mirror_athlete).unwrap();
+
+    // AK: the same wave left a school, a cohort athlete, a coach, a meet and a result behind.
+    let (ak_school, ak_school_id) =
+        CanonicalSchool::new(UsJurisdiction::Alaska, "Service High", "service high");
+    store.append(Table::Schools, &ak_school).unwrap();
+    let mut ak_athlete = CanonicalAthlete::new(
+        &ak_school_id,
+        "Denali Runner",
+        GradYear::CO2027,
+        Gender::Boys,
+    );
+    ak_athlete.evidence.push(evidence("athleticlive_athletes"));
+    store.append(Table::Athletes, &ak_athlete).unwrap();
+    let ak_coach = CanonicalCoach::new(
+        &ak_school_id,
+        "Aurora Coach",
+        Some(Sport::CrossCountry),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    store.append(Table::Coaches, &ak_coach).unwrap();
+    let ak_meet = CanonicalMeet::new(
+        Some(UsJurisdiction::Alaska),
+        "Service Invite",
+        "2026-05-01",
+        CompetitionLevel::Invitational,
+    );
+    store.append(Table::Meets, &ak_meet).unwrap();
+    let ak_event = CanonicalEvent::new(&ak_meet.id, EventKind::Track100m, Gender::Boys, None, None);
+    store.append(Table::Events, &ak_event).unwrap();
+    let ak_result = performance(
+        &ak_athlete.id,
+        &ak_event.id,
+        &ak_meet.id,
+        &ak_school_id,
+        EventKind::Track100m,
+        Mark::TimeSeconds(11.42),
+        "athleticlive_results",
+        "ak-1",
+    );
+    store.append(Table::Performances, &ak_result).unwrap();
+
+    let report = coverage_report(&store, Some(2027)).unwrap();
+
+    // The published universe is the census run scope: no row for Alaska, while the state that is in
+    // scope keeps measuring both source scopes.
+    assert!(report
+        .jurisdictions
+        .iter()
+        .all(|published| published.jurisdiction.code() != "AK"));
+    let ohio = row(&report, "OH");
+    assert_eq!(ohio.athletes, 2);
+    assert_eq!(ohio.athletes_core, 1);
+
+    // Every read counter stops where the rows stop, and the cohort filter is not what stopped it.
+    assert_eq!(report.off_cohort_athletes, 0);
+    assert_eq!(report.read, report.published_totals());
+    assert_eq!(report.read.schools, 1);
+    assert_eq!(report.read.athletes, 2);
+    assert_eq!(report.read.coaches, 0);
+    assert_eq!(report.read.meets, 0);
+    assert_eq!(report.read.performances, 0);
+    report.reconcile().unwrap();
+
+    // What the run scope left out is published as a note carrying the counters that were left out.
+    let scope_note = report
+        .notes
+        .iter()
+        .find(|note| note.contains("outside the census run scope"));
+    let scope_note = scope_note.unwrap_or_else(|| panic!("no scope note in {:?}", report.notes));
+    assert!(
+        scope_note.contains("schools=1 athletes=1 coaches=1 meets=1 performances=1"),
+        "{scope_note}"
+    );
+}
+
+/// The published side is what the reconciliation guards: a row dropped from a complete report leaves
+/// the read side holding a row no row publishes, and a row invented out of nothing publishes a row
+/// nothing read. Both fail, naming the counters that disagree.
+#[test]
+fn reconcile_refuses_a_report_whose_rows_lost_or_invented_a_row() {
+    let (_dir, store) = fixture_store();
+    let report = coverage_report(&store, Some(2027)).unwrap();
+
+    // Lost: the unplaced row carries a cohort athlete and its orphan performance.
+    let mut lost = report.clone();
+    lost.jurisdictions.pop();
+    let error = lost.reconcile().unwrap_err().to_string();
+    assert!(error.contains("coverage reconciliation failed"), "{error}");
+    assert!(
+        error.contains("rows publish schools=4 athletes=4"),
+        "{error}"
+    );
+
+    // Invented: a second copy of the unplaced row publishes an athlete nothing read.
+    let mut invented = report.clone();
+    invented.jurisdictions.push(row(&report, "UNKNOWN").clone());
+    let error = invented.reconcile().unwrap_err().to_string();
+    assert!(error.contains("coverage reconciliation failed"), "{error}");
+    assert!(
+        error.contains("rows publish schools=4 athletes=6"),
+        "{error}"
+    );
+}
+
+/// The read side is counted from the store, not summed from the rows: a read count that drifts ahead
+/// of what the rows publish (the store's own shape moving under a fresh scan, the failure the live
+/// store hit) fails the reconciliation instead of quietly agreeing.
+#[test]
+fn reconcile_refuses_a_read_count_the_rows_do_not_publish() {
     let (_dir, store) = fixture_store();
     let mut report = coverage_report(&store, Some(2027)).unwrap();
 

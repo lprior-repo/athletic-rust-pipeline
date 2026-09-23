@@ -121,8 +121,9 @@ fn inflate_pdf(binary: &str, body: &[u8]) -> Option<String> {
         }
         std::fs::read_to_string(&text).ok()
     })();
-    let _ = std::fs::remove_file(&raw);
-    let _ = std::fs::remove_file(&text);
+    // Scratch cleanup is best effort: a leftover PDF is not the gate's answer.
+    std::fs::remove_file(&raw).ok();
+    std::fs::remove_file(&text).ok();
     result
 }
 
@@ -188,7 +189,7 @@ pub(super) async fn verify_one_fragment(
         let evidence = run_passes(fetcher, &row, options).await;
         let verdict = evidence.verdict();
         if let Some(slot) = counts.get_mut(verdict.as_str()) {
-            *slot += 1;
+            *slot = slot.saturating_add(1);
         }
         outcomes.push(super::RowOutcome { row, verdict });
     }

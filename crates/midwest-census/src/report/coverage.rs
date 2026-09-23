@@ -1,27 +1,33 @@
 //! §49 coverage reporting: exact per-jurisdiction denominators, read from the store's merged entity
 //! tables.
 //!
-//! One row per configured jurisdiction — every state and DC in `UsJurisdiction::ALL` order, with the
+//! One row per configured jurisdiction — every state and DC in `UsJurisdiction::CENSUS_SCOPE` order
+//! (the 48 continental states plus DC; Alaska and Hawaii are modelled but never run, ADR-009), with the
 //! row for everything no school placed ([`UNKNOWN_JURISDICTION`]) last — plus one row per gap class
-//! per jurisdiction ([`CoverageGap`], §47). Three rules shape the report:
+//! per jurisdiction ([`CoverageGap`], §47). Four rules shape the report:
 //!
 //! * **Denominators, never claims.** Every column is a row count from a table the census already
 //!   consolidated (`schools`, `athletes`, `coaches`, `meets`, `performances`), so "how many Class of
 //!   2027 athletes does this state hold" is answerable from the store alone.
 //! * **Emptiness is reported, not omitted.** A jurisdiction with no data publishes a row of zeros
 //!   *and* an `EmptyJurisdiction` gap: a missing state is the one finding coverage may not swallow.
+//! * **A jurisdiction outside the run scope is no denominator.** A national all-sources wave can
+//!   still leave Alaska and Hawaii rows behind, and they publish in no row: counting them in the
+//!   store totals would make the reconciliation fail for a jurisdiction this report never covers.
+//!   They are read, and then recorded in [`CoverageReport::notes`] rather than dropped silently.
 //! * **Core and all-sources are both measured.** `core_share_pct` prints how much of a jurisdiction
 //!   the platform's own [`Core`](super::Scope) evidence reaches, which is the number §49's "never
 //!   describe this as complete coverage" rule needs before anyone calls a state finished.
 //!
-//! The report reconciles itself: [`CoverageReport::read`] is what the scans produced,
-//! [`CoverageReport::published_totals`] is what the rows sum to, and [`coverage_report`] returns an
-//! error instead of a report when the two disagree — the §70 items 11-12 duty, kept here rather than
-//! in the caller so no path can publish an unreconciled coverage report.
+//! Both sides of the reconciliation are counted under the same two filters — the run scope above and
+//! the requested cohort — and each is computed from the tables: [`CoverageReport::read`] by
+//! [`reads`], the published rows by the passes in [`classify`]. [`coverage_report`] returns an error
+//! instead of a report when the two disagree — the §70 items 11-12 duty, kept here rather than in the
+//! caller so no path can publish an unreconciled coverage report.
 //!
 //! The passes live in the sibling parts: [`classify`] reads the store and fills the jurisdiction
 //! rows, [`athletes`] owns the athlete and performance columns, [`gaps`] turns the measurements into
-//! §47 classes, and `state` holds the accumulators they share.
+//! §47 classes, [`reads`] counts the read side, and `state` holds the accumulators they share.
 
 use super::{ReportError, ReportResult};
 use crate::store::Store;
@@ -32,6 +38,7 @@ use std::collections::BTreeMap;
 mod athletes;
 mod classify;
 mod gaps;
+mod reads;
 mod state;
 
 // The typed jurisdiction helpers the report module's rollups bucket by.
@@ -48,6 +55,9 @@ mod tests;
 pub const UNKNOWN_JURISDICTION: &str = JurisdictionBucket::UNPLACED_CODE;
 
 /// Row counts the report read from the store, and the totals its rows must sum back to.
+///
+/// Both sides count under the same two filters: the census run scope (a row from a jurisdiction a run
+/// never covers publishes in no row, see `reads::Published`) and the requested cohort.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
 pub struct CoverageTotals {
     pub schools: usize,
@@ -121,7 +131,8 @@ pub struct CoverageReport {
     pub grad_year: Option<i16>,
     pub jurisdictions: Vec<JurisdictionCoverage>,
     pub gaps: Vec<CoverageGap>,
-    /// What the store held for the rows this report classified.
+    /// What the scans hold for the rows this report publishes. Counted from the merged tables under
+    /// the same run scope and cohort the rows count under, never summed from the rows themselves.
     pub read: CoverageTotals,
     /// Stored athletes the cohort filter left out: read, and never published as if in cohort.
     pub off_cohort_athletes: usize,
@@ -186,10 +197,14 @@ impl CoverageReport {
 /// §49 coverage for the stored census, optionally restricted to one graduation year.
 ///
 /// Every row comes from [`Store::scan`], which merges the append-only observations of a table into
-/// one entity per id, so the report needs no consolidated snapshot. The cohort filter narrows which
-/// athletes, performances and schools the rows count; jurisdictions, coaches and meets are read
-/// whole, and the athletes a filter excludes are published as
-/// [`CoverageReport::off_cohort_athletes`] rather than silently dropped.
+/// one entity per id, so the report needs no consolidated snapshot. The report covers every source —
+/// the core-only view is the `athletes_core` column, not a separate report — under two filters it
+/// shares with [`CoverageReport::read`]: the census run scope (Alaska and Hawaii are modelled but
+/// never run, ADR-009) and the requested cohort. The cohort filter narrows which athletes,
+/// performances and schools the rows count; jurisdictions, coaches and meets are read whole, and the
+/// athletes a filter excludes are published as [`CoverageReport::off_cohort_athletes`], while the rows
+/// the run scope excludes are named in [`CoverageReport::notes`], rather than either being silently
+/// dropped.
 pub fn coverage_report(store: &Store, grad_year: Option<i16>) -> ReportResult<CoverageReport> {
     let outcome = classify::run(store, grad_year)?;
     let report = CoverageReport {
@@ -236,6 +251,13 @@ fn coverage_notes(store: &Store, grad_year: Option<i16>, outcome: &Outcome) -> V
         notes.push(format!(
             "{} stored athletes are outside grad_year={cohort} and publish as off_cohort_athletes",
             outcome.off_cohort_athletes
+        ));
+    }
+    if outcome.outside_scope != CoverageTotals::default() {
+        notes.push(format!(
+            "stored rows outside the census run scope (the 48 continental states plus DC, ADR-009) \
+             are excluded from `coverage read` and published in no row: {}",
+            totals_text(&outcome.outside_scope)
         ));
     }
     let unplaceable = outcome

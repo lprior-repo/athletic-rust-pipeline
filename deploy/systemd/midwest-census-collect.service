@@ -1,5 +1,5 @@
 [Unit]
-Description=Midwest census weekly incremental refresh
+Description=Midwest census weekly incremental refresh (staged corpus)
 Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
 After=network-online.target
 Wants=network-online.target
@@ -10,14 +10,22 @@ User=midwest
 Group=midwest
 WorkingDirectory=/opt/athletic-rust-pipeline
 Environment=RUST_LOG=info
+# Acquisition is the one leg that does not go through the endpoint: no CLI subcommand drives the
+# `Ingest` service yet. Until one does, this chain writes a *staging* store, never the canonical one:
+# the canonical store is written only by a deployment of `midwest-serve`, and a batch job that wrote
+# it behind the state machine's back would race the national run for the same Fjall writer lock and
+# would bypass the journal that is supposed to make its writes resumable.
+#
 # Incremental only: `teams --refresh` re-reads state association team indexes (cheap, changes rarely),
-# `collect` walks rosters and result pages, `index` rebuilds the derived index tables (source
-# identities, conflicts, review cases, coverage, snapshot), then the reducers republish. No step
-# re-fetches the full historical corpus; every fetch honours per-host pacing and the on-disk cache.
+# `collect` walks rosters and result pages, `index` rebuilds the derived index tables, then the
+# reducers republish. No step re-fetches the full historical corpus; every fetch honours per-host
+# pacing and the on-disk cache.
 ExecStart=/bin/sh -c 'set -eu; \
   bin=target/release/midwest-census; \
-  out=/var/lib/midwest-census; \
+  out=/var/lib/midwest-census-staging; \
   "$bin" --store "$out" teams --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --refresh; \
+  "$bin" --store "$out" meets --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --year 2026; \
+  "$bin" --store "$out" provider milesplit_results --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --limit 200; \
   "$bin" --store "$out" collect --states WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD --school-year 2027; \
   "$bin" --store "$out" consolidate; \
   "$bin" --store "$out" index; \
@@ -28,8 +36,9 @@ ExecStart=/bin/sh -c 'set -eu; \
 Restart=on-failure
 RestartSec=300
 TimeoutStartSec=3600
+StateDirectory=midwest-census-staging
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/midwest-census
+ReadWritePaths=/var/lib/midwest-census-staging

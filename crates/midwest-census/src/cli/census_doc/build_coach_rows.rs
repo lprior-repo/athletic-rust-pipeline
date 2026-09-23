@@ -8,12 +8,14 @@ pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {
 
     for coach in coaches {
         let st = coach.get("school_state").cloned().unwrap_or_default();
-        *coach_by_state.entry(st.clone()).or_default() += 1;
+        let state_count = coach_by_state.entry(st.clone()).or_default();
+        *state_count = state_count.saturating_add(1);
         if coach
             .get("professional_email")
             .is_some_and(|e| !e.is_empty())
         {
-            *coach_email_by_state.entry(st).or_default() += 1;
+            let email_count = coach_email_by_state.entry(st).or_default();
+            *email_count = email_count.saturating_add(1);
         }
     }
 

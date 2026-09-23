@@ -6,9 +6,9 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use midwest_census::census::{Revision, WorkflowIdentity};
 use midwest_census::restate_services::{
-    JurisdictionCensusIngressClient, JurisdictionReport, NationalReport,
+    JurisdictionCensusIngressClient, JurisdictionReport, JurisdictionRequest, NationalReport,
 };
-use restate_sdk::ingress::{InvocationHandle, Output, ReqwestClient};
+use restate_sdk::ingress::{InvocationHandle, Output, ReqwestClient, SendStatus};
 use restate_sdk::prelude::*;
 
 use super::{POLL, PROGRESS_EVERY};
@@ -60,6 +60,40 @@ pub(crate) async fn observe(watch: Watch<'_>) -> Result<NationalReport> {
         watch.rounds.saturating_mul(POLL.as_secs()),
         watch.handle.invocation_id()
     )
+}
+
+/// Submit one jurisdiction's durable run and wait for its report.
+///
+/// Shared by the commands that drive a state's census in one submission: the object's key is the
+/// jurisdiction identity, so a repeat submission joins the run that already holds it instead of
+/// starting a second one. The submission line prints for every state, including the ones Restate
+/// deduplicated, because "your submission was not applied" is a fact the operator has to read.
+pub(crate) async fn drive_jurisdiction(
+    ingestion: &ReqwestClient,
+    request: JurisdictionRequest,
+    rounds: u64,
+) -> Result<JurisdictionReport> {
+    let identity =
+        WorkflowIdentity::jurisdiction(request.jurisdiction, request.season, request.revision);
+    let object = JurisdictionCensusIngressClient::from_client(ingestion.clone(), identity.as_str());
+    let submitted = object
+        .run(Json(request))
+        .send()
+        .await
+        .map_err(ingress::error)?;
+    let handle = submitted.invocation_handle();
+    println!(
+        "{} submitted as invocation {}",
+        identity.as_str(),
+        handle.invocation_id()
+    );
+    if matches!(submitted.send_status(), SendStatus::PreviouslyAccepted) {
+        println!(
+            "note: {} already had a run — restate deduplicated this submission",
+            identity.as_str()
+        );
+    }
+    observe_jurisdiction(&handle, rounds).await
 }
 
 /// Wait for one jurisdiction's run the same way the national command waits for the fan-out.

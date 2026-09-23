@@ -6,11 +6,12 @@ use clap::Subcommand;
 use super::census_doc::CensusDocArgs;
 use super::cycle::RunArgs;
 use super::export_data::ExportDataArgs;
-use super::gather::CollectArgs;
+use super::gather::{CollectArgs, MeetsArgs, TeamsArgs};
 use super::merge_coaches::MergeCoachesArgs;
 use super::national::{JurisdictionArgs, NationalArgs, NationalReportArgs};
+use super::open_work::OpenWorkArgs;
 use super::provider::ProviderArgs;
-use super::publish::{BestsArgs, WorkbookArgs};
+use super::publish::{BestsArgs, ReportArgs, WorkbookArgs};
 use super::qa_reports::QaReportsArgs;
 use super::review::ReviewArgs;
 use super::school_names::SchoolNamesArgs;
@@ -18,7 +19,6 @@ use super::seal::SealArgs;
 use super::store::{BackupArgs, RestoreArgs};
 use super::verify::VerifyArgs;
 use super::verify_coaches::VerifyCoachesArgs;
-use census_domain::UsJurisdiction;
 use std::path::PathBuf;
 
 #[derive(Subcommand, Debug)]
@@ -33,33 +33,9 @@ pub(super) enum Command {
     /// List the registered MileSplit state sites.
     Sites,
     /// Fetch (and cache) team indexes for the given states.
-    Teams {
-        /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
-        /// code). Default: WI.
-        #[arg(long, value_delimiter = ',')]
-        states: Vec<UsJurisdiction>,
-        /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
-        #[arg(long)]
-        all_states: bool,
-        #[arg(long)]
-        refresh: bool,
-    },
+    Teams(TeamsArgs),
     /// Enumerate the meets a state's results index publishes, as `source_meets` rows.
-    Meets {
-        /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
-        /// code). Default: WI.
-        #[arg(long, value_delimiter = ',')]
-        states: Vec<UsJurisdiction>,
-        /// Cover every jurisdiction (50 states + DC). Cannot be combined with `--states`.
-        #[arg(long)]
-        all_states: bool,
-        /// Season start year, the same convention as `--school-year` (2026 = the 2026-27 season).
-        #[arg(long, default_value_t = 2026)]
-        year: u16,
-        /// Ignore caches and re-read every page (robots still enforced).
-        #[arg(long)]
-        refresh: bool,
-    },
+    Meets(MeetsArgs),
     /// Walk rosters and emit canonical entities for the given states.
     Collect(CollectArgs),
     /// Import the researched official coach-contact CSV into canonical entities.
@@ -78,15 +54,7 @@ pub(super) enum Command {
     /// review cases, coverage, and a snapshot of the pass.
     Index,
     /// Compute the measured census from the store.
-    Report {
-        /// Print the census JSON to stdout as well as writing files.
-        #[arg(long)]
-        print: bool,
-        /// Restrict the census to core evidence: Athletic.net and the AthleticLIVE derivative are
-        /// excluded, exactly as they are when those adapters are never registered.
-        #[arg(long)]
-        core: bool,
-    },
+    Report(ReportArgs),
     /// Reduce the consolidated tables to one best mark per athlete and event.
     Bests(BestsArgs),
     /// Build the census workbook (`.xlsx`) and its text sidecars.
@@ -135,4 +103,7 @@ pub(super) enum Command {
     SchoolNames(SchoolNamesArgs),
     /// Render `synthesis/10-measured-census.md` from the pipeline's snapshots.
     CensusDoc(CensusDocArgs),
+    /// Read the durable run's open work: the jurisdiction sweeps that still owe stages, and the
+    /// source objects that have accepted nothing. Reads the running service, never the store.
+    OpenWork(OpenWorkArgs),
 }

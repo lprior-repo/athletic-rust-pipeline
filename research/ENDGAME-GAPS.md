@@ -97,7 +97,7 @@ command `run` gathers an Athletic.net registry only (`src/cli/cycle.rs:15-66`). 
 the national walk: 12 states = 6,737 roster pages and 35,622 cached responses ⇒ ≈28.6k roster
 pages for 51 jurisdictions (linear extrapolation, not measured). **Objective.** §7 (every unit of
 work durably owned), §46 A–M, §48. **Smallest change.** One CLI subcommand that submits
-`NationalCensus/run` through the ingress and reads back `NationalCensus/report`, plus
+`NationalCensus/run` through the ingress and reads back `NationalReport/run`, plus
 `--all-states` on `run` so walk and publish are one operation. **Proof.**
 `cargo run -p midwest-census -- national --season 2026 --revision national-v1` → prints a
 `NationalReport` with 51 jurisdiction rows and any failures; today's nearest runnable probe is

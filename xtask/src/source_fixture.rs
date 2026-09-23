@@ -38,7 +38,10 @@ pub fn list(source: &str) -> Result<()> {
 }
 
 /// Why the source has no fixture directory, and which ones do exist.
-fn absent(source: &str, dir: &Path) -> Result<()> {
+///
+/// [`crate::replay`] refuses an absent source with this same message, so `source-fixture` and
+/// `replay` name the directories that exist identically.
+pub fn absent(source: &str, dir: &Path) -> Result<()> {
     let mut known = fixture_sources();
     known.sort();
     let hint = if known.is_empty() {
@@ -74,7 +77,10 @@ fn fixture_sources() -> Vec<String> {
 }
 
 /// Every regular file under `dir`, recursively, sorted by path.
-fn files_under(dir: &Path) -> Result<Vec<PathBuf>> {
+///
+/// [`crate::replay`] walks a fixture directory with this same function, so the two commands sort and
+/// filter the corpus identically.
+pub fn files_under(dir: &Path) -> Result<Vec<PathBuf>> {
     let mut files = Vec::new();
     let mut pending = vec![dir.to_path_buf()];
     while let Some(next) = pending.pop() {

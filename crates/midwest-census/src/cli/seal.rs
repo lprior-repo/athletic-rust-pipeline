@@ -110,7 +110,9 @@ fn report_seal(state: &CensusState, recorded: Option<&SealedCensus>) -> Result<(
         seal.retained.gaps.len(),
         seal.retained.conflicts,
         seal.retained.retry_exhausted,
-        seal.retained.source_failures,
+        seal.retained
+            .source_failures
+            .map_or_else(|| "unmeasured".to_string(), |count| count.to_string()),
     );
     Ok(())
 }
@@ -198,11 +200,13 @@ fn assemble(
     SealEvidence {
         open: OpenWork {
             // Owed jurisdiction sweeps and un-terminal source objects live in the workflow journal,
-            // which this command does not read; a CLI seal carries the store-visible decisions only.
-            jurisdiction_sweeps: 0,
-            source_objects: 0,
-            cohort_decisions: 0,
-            identity_candidates: open_reviews,
+            // which this command does not read. They are `None` - unmeasured - not `0`: this seal
+            // must not certify §70 items it never checked, and `None` keeps those items open, so a
+            // store-only seal refuses rather than claiming a completion it cannot back.
+            jurisdiction_sweeps: None,
+            source_objects: None,
+            cohort_decisions: None,
+            identity_candidates: Some(open_reviews),
         },
         counts: SealCounts {
             jurisdictions: count(census.by_state.len()),
@@ -225,7 +229,10 @@ fn assemble(
                 .collect(),
             conflicts: table_rows(stats, Table::Conflicts),
             retry_exhausted: table_rows(stats, Table::SourceAccess),
-            source_failures: 0,
+            // Source *failures* are not the same row as a blocked `(kind, host)`: a failure is a
+            // terminal outcome of one attempt, and the store keeps access conditions, not attempts.
+            // Unmeasured, for the same reason the open-work fields above are.
+            source_failures: None,
             observations: stats.observations,
             calculations: count(coverage.read.performances),
         },

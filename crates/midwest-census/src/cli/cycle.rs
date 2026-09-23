@@ -4,11 +4,15 @@ use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use clap::Args;
+use midwest_census::census;
+use midwest_census::report;
+use midwest_census::restate_services::{BestsReply, WorkbookReply, WorkbookRequest};
 use midwest_census::store::Store;
-use midwest_census::{bests, census, report, workbook};
+use midwest_census::{bests, workbook};
 use std::path::PathBuf;
 
-use super::{build_fetcher, cohort_label, school_year, scope_of, Cli};
+use super::live;
+use super::{build_fetcher, cohort_label, school_year, scope_of, Cli, Route};
 
 #[derive(Args, Debug)]
 pub(super) struct RunArgs {
@@ -49,14 +53,27 @@ pub(super) struct RunArgs {
     /// Workbook path (defaults to the store's own `out/` path).
     #[arg(long)]
     out: Option<PathBuf>,
+    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(long, value_name = "ORIGIN")]
+    ingress: Option<String>,
 }
 
 /// The whole cycle in one command: gather (when a registry is given), consolidate, publish both
 /// census scopes, reduce best marks, and write the workbook.
 ///
 /// Each stage is the same code path its own subcommand uses, and every stage is resumable, so a run
-/// that fails half way is continued by re-running it rather than restarted.
-pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
+/// that fails half way is continued by re-running it rather than restarted. `--store` runs every
+/// stage in-process; without it the publishing stages are submitted to the running service, which is
+/// the only way they can run while `midwest-serve` holds the store.
+pub(super) async fn run_cycle(cli: &Cli, args: &RunArgs) -> Result<()> {
+    match cli.route(args.ingress.as_deref())? {
+        Route::Offline(root) => run_offline(cli, &Store::open(root)?, args).await,
+        Route::Ingress(origin) => run_live(origin, args).await,
+    }
+}
+
+/// The offline cycle: every stage against the store this command opened.
+async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
     let observed_on = args
         .observed_on
         .clone()
@@ -95,6 +112,38 @@ pub(super) async fn run_cycle(cli: &Cli, store: &Store, args: &RunArgs) -> Resul
     }
 
     publish_bests_and_workbook(store, args, scope, grad_year)
+}
+
+/// The live cycle: every stage that has a service handler submitted to the running service.
+///
+/// Two stages cannot run this way, and are named rather than faked: the gather stage writes the
+/// store's own cache and journals, and the index pass has no handler on the `Census` service. Both
+/// are offline work that requires `--store` and a stopped `midwest-serve`.
+async fn run_live(origin: &str, args: &RunArgs) -> Result<()> {
+    if args.input.is_some() || !args.meets.is_empty() {
+        anyhow::bail!(
+            "the gather stage writes the store the running service holds: --input and --meets need --store"
+        );
+    }
+    println!("gather\tathleticnet\tskipped (no --input): publishing what the store holds");
+    let grad_year = school_year(args.grad_year)?;
+    let scope = scope_of(args.all_sources);
+    let tables = live::consolidate(Some(origin)).await?;
+    println!(
+        "consolidate\t{}",
+        tables
+            .iter()
+            .map(|table| format!("{}={}", table.table, table.rows))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+    println!("index\tskipped (offline stage: `index --store <dir>` with midwest-serve stopped)");
+
+    for scope in [report::Scope::AllSources, report::Scope::Core] {
+        publish_scope_live(origin, scope).await?;
+    }
+
+    publish_bests_and_workbook_live(origin, args, scope, grad_year).await
 }
 
 /// Gather the Athletic.net rows the args name - the registry `--input`, whole meets `--meets`, or
@@ -191,5 +240,54 @@ fn publish_bests_and_workbook(
     };
     let path = workbook::build(store, &workbook).context("building the census workbook")?;
     println!("workbook\t{}", path.display());
+    Ok(())
+}
+
+/// Build one scope's census in the running service and print the stage's lines.
+async fn publish_scope_live(origin: &str, scope: report::Scope) -> Result<()> {
+    let summary = live::report(Some(origin), scope).await?;
+    println!(
+        "report\t{}\tscope={} schools={} athletes={} profile_url={} multisource={}",
+        summary.json_path,
+        summary.scope,
+        summary.total("schools")?,
+        summary.total("athletes")?,
+        summary.total("class_of_2027_with_profile_url")?,
+        summary.total("class_of_2027_multisource")?
+    );
+    println!("\t{}", summary.csv_path);
+    Ok(())
+}
+
+/// Reduce the best marks, write them with their workbook, and print the stage's lines.
+async fn publish_bests_and_workbook_live(
+    origin: &str,
+    args: &RunArgs,
+    scope: report::Scope,
+    grad_year: i16,
+) -> Result<()> {
+    let BestsReply {
+        cohort,
+        rows,
+        jsonl,
+        csv,
+    } = live::bests(Some(origin), scope, Some(grad_year), args.limit).await?;
+    println!(
+        "bests\tcohort={cohort} rows={rows} scope={}\t{jsonl}",
+        if args.all_sources { "all" } else { "core" }
+    );
+    println!("\t{csv}");
+
+    let workbook = WorkbookRequest {
+        grad_year: Some(grad_year),
+        out: args
+            .out
+            .as_ref()
+            .map(|path| path.to_string_lossy().into_owned()),
+        limit: args.limit,
+        scope: Some(scope.as_str().to_string()),
+    };
+    let WorkbookReply { path, .. } = live::workbook(Some(origin), workbook).await?;
+    println!("workbook\t{path}");
     Ok(())
 }

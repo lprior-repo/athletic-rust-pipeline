@@ -24,15 +24,22 @@ projection; the durable evidence system is the census.
 | Command | Purpose |
 | --- | --- |
 | `cargo xtask gate` | the four build gates (§55) plus the line-budget scan, in order, stopping at the first failure |
-| `cargo xtask census-status` | current store state from `var/midwest-census/snapshots.jsonl` and the CLI's status surface |
-| `cargo xtask coverage` | coverage summary (§49 fields) |
-| `cargo xtask export` | workbook export |
+| `cargo xtask census-status [--ingress [<ORIGIN>] \| --store <DIR>]` | current store state, counted by the serving census (`Census/status`) or read from the store directly |
+| `cargo xtask coverage [--ingress [<ORIGIN>] \| --store <DIR>]` | coverage summary (§49 fields) |
+| `cargo xtask export [--ingress [<ORIGIN>] \| --store <DIR>]` | workbook export (`Workbook/run`) |
 | `cargo xtask source-check <name>` | adapter layout and fixture presence |
 | `cargo xtask source-fixture <name>` | fixture set integrity |
 | `cargo xtask source-test <name>` | offline fixture test for one source |
 | `cargo xtask replay <name>` | deterministic offline parser replay |
 | `cargo xtask new-source <name>` | scaffold a new adapter |
 | `cargo xtask bench parser` | parser benchmarks |
+
+`census-status`, `coverage` and `export` default to the serving census: the flag-free form and
+`--ingress [<ORIGIN>]` (default `http://127.0.0.1:18095/`) submit the matching Restate handler and are
+safe to run beside `midwest-serve`; origins must be loopback HTTP with no path or credentials.
+`--store <DIR>` opens the store in-process instead, so it requires `midwest-serve` to be stopped — the
+store is single-writer, and the lock error it returns while the census serves is the correct answer,
+not a bug.
 
 Binary: `./target/release/midwest-census` today, renaming to `census-service` when the CLI crate is
 extracted — address it through the shared constant, never by inlining the name. Store root:

@@ -243,10 +243,10 @@ pub fn write_recruiting(
         let coaches = lookup_coaches(coach_index, sid);
 
         if coaches.has_email {
-            with_email += 1;
+            with_email = with_email.saturating_add(1);
         }
         if coaches.has_coach {
-            with_coach += 1;
+            with_coach = with_coach.saturating_add(1);
         }
 
         rec_rows.push(build_recruit_row(a, sch, &coaches));

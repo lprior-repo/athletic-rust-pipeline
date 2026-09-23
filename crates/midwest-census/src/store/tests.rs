@@ -170,6 +170,71 @@ fn legacy_journals_are_imported_once() {
 }
 
 #[test]
+fn an_interrupted_import_resumes_at_its_committed_offset() {
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().to_path_buf();
+    std::fs::create_dir_all(root.join("entities")).unwrap();
+
+    // A store that has never seen the journal, so the fixture decides what a killed import left.
+    let store = Store::open(&root).unwrap();
+    store.meta.remove("imported:schools").unwrap();
+
+    let first = school("Abbotsford");
+    let second = school("Adams-Friendship");
+    let mut journal = serde_json::to_string(&first).unwrap();
+    journal.push('\n');
+    let committed = journal.len() as u64;
+    journal.push_str(&serde_json::to_string(&second).unwrap());
+    journal.push('\n');
+    std::fs::write(root.join("entities/schools.jsonl"), &journal).unwrap();
+
+    // Exactly what a kill after the first chunk leaves behind: that chunk's row is in the store and
+    // its offset is in `meta`, because the offset travels in the same batch as the rows.
+    store.append(Table::Schools, &first).unwrap();
+    store
+        .meta
+        .insert("import_offset:schools", committed.to_string().as_bytes())
+        .unwrap();
+
+    store.import_legacy().unwrap();
+
+    // The resume re-read the tail only: the row the store already held keeps one observation.
+    let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
+    assert_eq!(rows.len(), 2);
+    assert_eq!(store.stats().unwrap().observations, 2);
+    assert!(store.meta.contains_key("imported:schools").unwrap());
+}
+
+#[test]
+fn legacy_lines_are_trimmed_before_they_are_parsed() {
+    // The importer trims each journal line in place before it parses, so blank separators and
+    // hand-padded rows are ordinary input: a whitespace-only line is skipped, and a row wrapped in
+    // spaces or tabs is still that row. An off-by-one on either edge would instead drop a row or
+    // abort the import on one, so both edges are pinned here.
+    let dir = tempfile::tempdir().unwrap();
+    let root = dir.path().to_path_buf();
+    std::fs::create_dir_all(root.join("entities")).unwrap();
+
+    let first = school("Abbotsford");
+    let second = school("Adams-Friendship");
+    let journal = format!(
+        "\n \t \n  {}\t\n\t{}\n",
+        serde_json::to_string(&first).unwrap(),
+        serde_json::to_string(&second).unwrap()
+    );
+    std::fs::write(root.join("entities/schools.jsonl"), &journal).unwrap();
+
+    let store = Store::open(&root).unwrap();
+    let rows = store.scan::<CanonicalSchool>(Table::Schools).unwrap();
+    assert_eq!(
+        rows.len(),
+        2,
+        "blank lines are separators, padded rows are rows"
+    );
+    assert_eq!(store.stats().unwrap().observations, 2);
+}
+
+#[test]
 fn oversized_and_empty_ids_are_rejected_before_any_write() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();

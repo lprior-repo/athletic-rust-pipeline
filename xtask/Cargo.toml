@@ -12,6 +12,19 @@ workspace = true
 [dependencies]
 anyhow = "1"
 calamine = "=0.36.1"
+# The result-file readers take `census_domain::model::SourceRef` (and the `replay` verb passes the
+# id and URL a capture's evidence is stamped with), so the crate that owns those types is a direct
+# edge rather than a type reached through `midwest-census`.
+census-domain = { path = "../crates/census-domain" }
 clap = { version = "4.5", features = ["derive"] }
+# The census services, their generated ingress clients and the wire types they take and return: the
+# mutating half of the harness submits invocations instead of opening the store, and the definitions
+# belong to the crate that owns the handlers. Same pinned restate-sdk and reqwest as the workspace.
+midwest-census = { path = "../crates/midwest-census" }
 regex = "1.11"
+reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
+restate-sdk = { version = "=0.12.0", default-features = false, features = ["aws_lc_rs", "reqwest-client"] }
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tokio = { version = "1", features = ["rt", "net", "time"] }
+url = "2.5"

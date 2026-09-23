@@ -67,7 +67,7 @@ async fn ask_lanes<'a>(
     let roster: Vec<&ModelClient> = pending
         .iter()
         .enumerate()
-        .filter_map(|(index, _)| clients.get(index % lanes))
+        .filter_map(|(index, _)| clients.get(index.checked_rem(lanes)?))
         .collect();
     stream::iter(pending.iter().zip(roster))
         .enumerate()

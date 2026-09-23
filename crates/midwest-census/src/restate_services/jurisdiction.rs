@@ -22,10 +22,11 @@
 //!
 //! # Attempts
 //!
-//! Stages that fetch declare a single `run` attempt. The polite fetcher already performs the three
-//! bounded attempts ADR-002 allows per external operation, and it is the owner of that count; a
-//! retrying `run` wrapped around a fetch would square it (§9). Store-only stages keep the default
-//! policy, because replaying a store job after a lock or a compaction is exactly what it is for.
+//! ADR-002 makes Restate the owner of retries: the transport performs one attempt per request, and
+//! an invocation that loses its endpoint is replayed by the node until it completes. The policy
+//! declared on the handler is therefore the only retry budget that exists, and fetches and store
+//! writes alike are retried by it — a lock contention or a compaction is exactly what a replay is
+//! for.
 
 use std::sync::Arc;
 
@@ -78,7 +79,10 @@ impl JurisdictionCensus {
         identity: &WorkflowIdentity,
         state: &mut JurisdictionState,
     ) -> Result<Vec<String>, HandlerError> {
-        let options = self.options(request)?;
+        // Journaled once for the whole run: the options, every stage's `at` and the saved state all
+        // carry this date, so a replay — even one that crosses midnight — sees one consistent day.
+        let today = super::journaled_today(ctx, &self.clock).await?;
+        let options = self.options(request, &today)?;
         let mut stages_run: Vec<String> = Vec::new();
 
         if state.teams.is_none() {
@@ -88,7 +92,7 @@ impl JurisdictionCensus {
                 .await?;
             state.teams = Some(outcome);
             state.identity = identity.as_str().to_string();
-            self.save(ctx, state);
+            self.save(ctx, state, &today);
             stages_run.push("teams".to_string());
         }
 
@@ -98,7 +102,7 @@ impl JurisdictionCensus {
                 .rosters_stage(ctx, fetcher, options, request.jurisdiction)
                 .await?;
             state.rosters = Some(progress);
-            self.save(ctx, state);
+            self.save(ctx, state, &today);
             stages_run.push("rosters".to_string());
         }
 
@@ -116,7 +120,7 @@ impl JurisdictionCensus {
                 .meets_stage(ctx, fetcher, request.jurisdiction, year, request.refresh)
                 .await?;
             state.meets = Some(census);
-            self.save(ctx, state);
+            self.save(ctx, state, &today);
             stages_run.push("meets".to_string());
         }
 
@@ -162,7 +166,16 @@ fn report(
     })
 }
 
-#[object]
+#[object(
+    journal_retention = "90 days",
+    idempotency_retention = "30 days",
+    invocation_retry_policy(
+        initial_interval = "500ms",
+        max_interval = "1m",
+        max_attempts = 70,
+        on_max_attempts = "pause"
+    )
+)]
 impl JurisdictionCensus {
     /// Read the durable state without starting work: an operator resuming a national run asks what a
     /// jurisdiction already completed before deciding to run it again.
@@ -205,12 +218,15 @@ impl JurisdictionCensus {
         let stages_run = self
             .run_owed_stages(&ctx, &request, &identity, &mut state)
             .await?;
+        // Journaled for the same reason the stages journal theirs: this date becomes part of the
+        // report the national run folds into its own durable state.
+        let observed_on = super::journaled_today(&ctx, &self.clock).await?;
         Ok(Json(report(
             &request,
             &identity,
             &state,
             stages_run,
-            self.clock.today(),
+            observed_on,
         )?))
     }
 }

@@ -229,9 +229,10 @@ pub fn reconcile(published: &Path, outcomes: &[FragmentOutcome]) -> anyhow::Resu
             source_urls: cell(9).split_whitespace().map(str::to_string).collect(),
             last_observed: cell(10),
         };
-        report.published += 1;
+        report.published = report.published.saturating_add(1);
         if !verified.contains(&row.identity()) {
-            *report.unmatched.entry(row.state.clone()).or_insert(0) += 1;
+            let slot = report.unmatched.entry(row.state.clone()).or_insert(0);
+            *slot = slot.saturating_add(1);
         }
     }
     Ok(report)

@@ -118,7 +118,7 @@ budgets audit for the browser session pool.
 | Check | census (measured now) | root (measured now) |
 |---|---|---|
 | `tokio::spawn` | 0 (bare; `JoinSet::spawn` at `bootstrap.rs:160`) | 4 |
-| `spawn_blocking` | 2 (production: `bootstrap.rs:180`, `restate_services/mod.rs:137`) | 2 |
+| `spawn_blocking` | 2 (production: `bootstrap.rs:180`, `restate_services/support.rs:84`) | 2 |
 | `#[instrument]` | 6 (`census/sweep.rs:24,131,239`, `net/mod.rs:260`, `net/request.rs:17,28`) | 0 |
 | `println!`/`eprintln!` in production | 38 (7 files, all `cli/`/`bin/`; 0 in library paths) | — |
 | ambient clock (`SystemTime::now` / `Instant::now`) | 0 / 3 production (`tokio::Instant` at `bootstrap.rs:261`; `std::Instant` at `net/execute.rs:49`, `census/sweep.rs:245`) — also 3 `chrono::Utc::now()` sites reaching durable journal (`store/write.rs:73`) and published artifacts (`report/projection.rs:112`) | 9 / 14 |

@@ -5,6 +5,9 @@ use census_domain::UsJurisdiction;
 
 use crate::census::{Revision, WorkflowIdentity};
 
+use crate::report::ReportError;
+use crate::store::StoreError;
+
 use super::*;
 
 #[test]
@@ -144,11 +147,11 @@ fn national_request(jurisdictions: Vec<UsJurisdiction>) -> NationalRequest {
 }
 
 #[test]
-fn an_empty_jurisdiction_list_covers_every_state_in_declaration_order() {
+fn an_empty_jurisdiction_list_covers_the_census_scope_in_declaration_order() {
     let targets = national::targets(&national_request(Vec::new())).unwrap();
-    assert_eq!(targets.len(), UsJurisdiction::ALL.len());
+    assert_eq!(targets.len(), UsJurisdiction::CENSUS_SCOPE.len());
     let jurisdictions: Vec<UsJurisdiction> = targets.iter().map(|row| row.0).collect();
-    assert_eq!(jurisdictions, UsJurisdiction::ALL.to_vec());
+    assert_eq!(jurisdictions, UsJurisdiction::CENSUS_SCOPE.to_vec());
     // Each state is addressed by the identity of its own census, not by the position it was pushed.
     for (jurisdiction, key) in &targets {
         assert_eq!(

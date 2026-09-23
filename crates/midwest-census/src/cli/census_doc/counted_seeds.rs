@@ -39,7 +39,7 @@ fn count_athletes(rows: &[serde_json::Value]) -> (usize, usize, usize) {
     let mut multisource = 0usize;
 
     for row in rows {
-        athletes += 1;
+        athletes = athletes.saturating_add(1);
         let mut namespaces = BTreeSet::new();
         if let Some(idents) = row.get("source_identities").and_then(|v| v.as_array()) {
             for identity in idents {
@@ -56,7 +56,7 @@ fn count_athletes(rows: &[serde_json::Value]) -> (usize, usize, usize) {
             }
         }
         if namespaces.len() > 1 {
-            multisource += 1;
+            multisource = multisource.saturating_add(1);
         }
     }
 

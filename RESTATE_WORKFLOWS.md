@@ -9,7 +9,7 @@ Everything below is read from source. Where it comes from:
 | Path | Contents |
 |---|---|
 | `src/runtime/worker.rs`, `src/runtime/**` | Pipeline-worker endpoint and its 13 Restate definitions (`run/`, `row_worker/`, `rankings_collection/` hold submodules) |
-| `crates/midwest-census/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
+| `crates/midwest-census/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
 | `crates/midwest-census/src/bin/midwest-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`), `.../store/` | Census endpoint process, supervisor and store |
 | `src/cli.rs`, `src/cli/{args,transport,flow_control}.rs`, `src/runtime/{protocol,run_protocol,row_protocol}.rs` | Operator surface (ingress clients, deployment, flow control) and retry/revision vocabulary |
 
@@ -32,7 +32,7 @@ Two processes serve two endpoints.
 | Process | Started by | Binds | Serves |
 |---|---|---|---|
 | **Pipeline worker** | `athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`) | default `127.0.0.1:19181` (`src/cli/args.rs:19-20`) | the 13 definitions in §2.1 |
-| **Census service** | `midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30` (`crates/midwest-census/src/bin/midwest-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/midwest-census/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
+| **Census service** | `midwest-serve --listen 127.0.0.1:9080 --data-dir var/midwest-census --max-concurrent 8 --drain-timeout 30` (`crates/midwest-census/src/bin/midwest-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/midwest-census/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
 
 `midwest-census serve` is **not** a third server: it prints the `midwest-serve` argv built from
 `ServeOptions::default()`, so the printed command cannot drift from what the binary parses
@@ -56,7 +56,7 @@ Wire names come from struct names (`restate_services/mod.rs:1-10`). The e2e test
 historical names `["Census", "Ingest", "Sweep"]`
 (`crates/midwest-census/tests/fjall_restate_e2e.rs:40`) is advertised by `/discover` — a subset
 check, so the endpoint may serve more definitions than the list (`build_endpoint` currently binds
-five). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
+nine). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
 `#[handler(name = "...")]`.
 
 ### 2.1 Pipeline worker (`src/runtime/worker.rs:23-60`)
@@ -84,11 +84,22 @@ everything invoked only by a sibling handler is `ingress_private`.
 
 | Definition | Kind | Handlers | Notes |
 |---|---|---|---|
-| `Census` | service | `status`, `consolidate`, `report`, `bests`, `workbook` | Holds the concurrency semaphore (`self.permit()`); every heavy step goes through `blocking(...)` |
+| `Census` | service | `status` | The operator's read surface, and nothing else: a status read answers from the store in milliseconds, so retaining an invocation per check would be retention with nothing behind it |
+| `Consolidate` | workflow | `run` | Merges the per-jurisdiction tables into the serving store's canonical tables. Key = `<national identity>:consolidate`, so the national run's replay attaches to the merge it already performed |
+| `Report` | workflow | `run` | Renders one scope's recruiting report. Key = `report:<scope>:<date>` |
+| `Bests` | workflow | `run` | Ranks the best marks in one scope and cohort. Key = `bests:<scope>:<grad year or all>:<limit or all>:<date>` — a different cohort or limit is a different answer, not a resubmission |
+| `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
 | `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/midwest-census/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes |
-| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through `Census/consolidate` before it assembles the report |
+| `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
+
+The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
+and the shell's region. Each job starts through the region and runs on the blocking pool under one
+permit, so an aborted invocation leaves the work owned by the region rather than running unattached.
+They are workflows rather than service handlers because each one is a unit of completion: the journal
+records the merge or the render as it happens, the completion is retained for 180 days, and a
+re-invocation under the same key attaches to that result instead of redoing months of work.
 
 **Qualified.** Both definitions are exercised by the census CLI (`crates/midwest-census/src/cli/national.rs`):
 
@@ -96,15 +107,20 @@ everything invoked only by a sibling handler is `ingress_private`.
 midwest-census national --revision 2 [--states WI,...] [--limit-per-state N] [--concurrency N] [--detach]
 midwest-census national-report --revision 2          # the last report, without starting a run
 midwest-census jurisdiction --state WI --revision 2  # one state, when only one is owed
+midwest-census open-work --revision 2 --source-object milesplit_wi  # what the run still owes
 ```
 
 `national` submits `NationalCensus/run` through the ingress, then observes it: every poll prints a
 per-jurisdiction table (`teams · rosters · skipped · athletes · co2027`) and the fold totals, and the
 command exits non-zero when any jurisdiction lands in `failures`. It opens no store of its own — the
 service owns the store — so it is safe to run beside `midwest-serve`. `national-report` reads
-`NationalCensus/report` (the shared handler) and never starts work; before the first fan-out drains
+`NationalReport/run` (the shared handler) and never starts work; before the first fan-out drains
 it answers `has not completed a fan-out yet`, which is the difference between "in flight" and "failed"
-for an operator who was not watching.
+for an operator who was not watching. `open-work` reads `Census/open-work` — the run's own objects,
+one `JurisdictionCensus/state` per jurisdiction plus one `Ingest/state` per named source object —
+and prints the sweeps that still owe a stage and the endpoints that have accepted nothing. It starts
+no work and takes no store lock; its two counts are the ones the seal's §70 open-work items need,
+and a count nobody could take stays `unmeasured` rather than passing as a zero.
 
 **Live qualification (2026-09-22).** Revision 2 (all 51 jurisdictions, `--limit-per-state 25`,
 `--concurrency 4`, live MileSplit traffic) completed with `jurisdictions done 51 · failed 0`
@@ -135,10 +151,17 @@ what the walk covered and says nothing about coaches.
 jurisdiction can afford: with 49 jurisdictions each merging the whole corpus, the `athletes` table
 alone took `midwest-serve` to an 82 GB resident peak, and the supervisor's memory budget killed it.
 The merge is now one step of the national run — after the fan-out, before the report — invoked
-through `Census/consolidate`, so it is still a durable Restate call whose reply lands in the run's
+through `Consolidate/run`, so it is still a durable Restate call whose reply lands in the run's
 journal. The same athlete merge over the same corpus then runs in **18.5 s at a 5.8 GB peak**
 (measured 2026-09-22 on the serving process; the run's own reply counted 2,374,515 merged athlete
 rows out of 3,063,071 observations).
+
+**What is deliberately not a workflow.** Offline store tools — `import`, `consolidate`, `seal`,
+`fjall-stats`, the backup/restore drill — operate on a store the serving process is not holding,
+because a Fjall store is single-writer: they *require* `midwest-serve` to be stopped, so they cannot
+be Restate steps. Everything the live pipeline does — team index, roster walk, meet census, snapshot
+merge, report, bests, workbook — runs as a Restate handler or workflow step, and the CLI's pipeline
+commands submit invocations through the ingress instead of opening the store themselves.
 
 **Snapshot publication.** Consolidation writes the shared `out/*.jsonl` snapshots, and `Store`'s
 snapshot writer publishes by `rename` from a private temporary (`.name.pid.seq.part`), never by

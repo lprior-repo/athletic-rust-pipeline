@@ -14,6 +14,12 @@ pub use ingest::{
     WindowRequest,
 };
 
+pub(super) mod open;
+
+/// The open-work family, re-exported for the same reason as the ingest family above. The types
+/// themselves are defined in [`open`].
+pub use open::{JurisdictionOpen, OpenWorkReply, OpenWorkRequest, SourceObjectOpen};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableCount {
     pub table: String,

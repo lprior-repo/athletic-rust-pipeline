@@ -1,98 +1,175 @@
-//! Commands that talk to a source host: the polite-fetcher probe, the state site list,
-//! cached team indexes, the MileSplit roster walk and the coach-contact CSV import.
+//! The census stages that walk a source host: cached team indexes, the MileSplit meet index and the
+//! roster walk, plus the coach-contact CSV import.
+//!
+//! Each stage runs two ways. Offline it walks the host in-process and owns the store; live it submits
+//! the state's own jurisdiction object through the ingress, so the walk runs against the store the
+//! running service already holds.
 
 use anyhow::{Context, Result};
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 use clap::Args;
 use midwest_census::census;
-use midwest_census::net::{FetchOptions, Fetcher};
-use midwest_census::sources::milesplit::Site;
+use midwest_census::restate_services::JurisdictionReport;
 use midwest_census::store::Store;
 use std::path::Path;
 
-use super::{build_fetcher, Cli};
+use super::live::{self, jurisdiction_request};
+use super::national::WorkflowFlags;
+use super::source::print_blocked_hosts;
+use super::{build_fetcher, resolve_states, school_year, Cli, Route};
 
-/// List the registered MileSplit state sites.
-pub(super) fn run_sites() -> Result<()> {
-    for jurisdiction in UsJurisdiction::ALL {
-        let site = Site::for_jurisdiction(jurisdiction);
-        println!("{}\t{}", site.code(), site.host());
-    }
-    Ok(())
-}
-
-/// Fetch a single URL through the polite fetcher (robots-enforced, cached).
-pub(super) async fn run_fetch(cli: &Cli, store: &Store, url: &str, refresh: bool) -> Result<()> {
-    let fetcher = build_fetcher(cli, store)?;
-    let outcome = fetcher
-        .get(
-            url,
-            &FetchOptions {
-                refresh,
-                ..Default::default()
-            },
-        )
-        .await?;
-    println!(
-        "status={} bytes={} from_cache={} sha256={} fetched_at={}",
-        outcome.status, outcome.bytes, outcome.from_cache, outcome.sha256, outcome.fetched_at
-    );
-    println!("url={}", outcome.url);
-    Ok(())
-}
-
-/// Fetch (and cache) team indexes for the given jurisdictions.
-pub(super) async fn run_teams(
-    cli: &Cli,
-    store: &Store,
-    states: &[UsJurisdiction],
+#[derive(Args, Debug)]
+pub(super) struct TeamsArgs {
+    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
+    /// code). Default: WI.
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
+    /// combined with `--states`.
+    #[arg(long)]
+    all_states: bool,
+    /// Season start year: 2026 is the 2026-27 season, the same convention as `--school-year`.
+    #[arg(long, default_value_t = 2026)]
+    season: i16,
+    /// Ignore caches and re-read every page (robots still enforced).
+    #[arg(long)]
     refresh: bool,
-) -> Result<()> {
-    let fetcher = build_fetcher(cli, store)?;
-    for jurisdiction in states {
-        let teams = census::collect_state_teams(&fetcher, store, *jurisdiction, refresh).await?;
-        println!("{}\tteams={}", jurisdiction.code(), teams.len());
-        for team in teams.iter().take(3) {
-            println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+    #[command(flatten)]
+    flags: WorkflowFlags,
+}
+
+#[derive(Args, Debug)]
+pub(super) struct MeetsArgs {
+    /// Comma-separated state codes (WI,MN,IA,IL,MI,IN,OH,MO,KS,NE,ND,SD, or any other USPS
+    /// code). Default: WI.
+    #[arg(long, value_delimiter = ',')]
+    states: Vec<UsJurisdiction>,
+    /// Cover the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
+    /// combined with `--states`.
+    #[arg(long)]
+    all_states: bool,
+    /// Season start year, the same convention as `--school-year` (2026 = the 2026-27 season).
+    #[arg(long, default_value_t = 2026)]
+    year: u16,
+    /// Ignore caches and re-read every page (robots still enforced).
+    #[arg(long)]
+    refresh: bool,
+    #[command(flatten)]
+    flags: WorkflowFlags,
+}
+
+/// One state's line for `teams`: the counts its own stage wrote.
+fn teams_line(report: &JurisdictionReport) -> String {
+    format!(
+        "{}\tteams={} rosters={} meets={} co2027={}",
+        report.jurisdiction.code(),
+        report.teams,
+        report.rosters.athletes,
+        report.meets.rows,
+        report.rosters.class_of_2027
+    )
+}
+
+/// One state's line for `meets`: the counts its own stage wrote.
+fn meets_line(report: &JurisdictionReport) -> String {
+    let meets = &report.meets;
+    format!(
+        "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
+        report.jurisdiction.code(),
+        meets.pages,
+        meets.fetched,
+        meets.seen,
+        meets.rows,
+        meets.seasons,
+        meets.repeated,
+        meets.truncated
+    )
+}
+
+/// Fetch (and cache) team indexes for the given states.
+///
+/// Offline it walks each state's index in-process; live it asks that state's own jurisdiction object,
+/// which runs the same stage through the store the service already holds.
+pub(super) async fn run_teams(cli: &Cli, args: &TeamsArgs) -> Result<()> {
+    let jurisdictions = resolve_states(args.all_states, &args.states)?;
+    match cli.route(args.flags.ingress.as_deref())? {
+        Route::Offline(root) => {
+            let store = Store::open(root)?;
+            let fetcher = build_fetcher(cli, &store)?;
+            for jurisdiction in &jurisdictions {
+                let teams =
+                    census::collect_state_teams(&fetcher, &store, *jurisdiction, args.refresh)
+                        .await?;
+                println!("{}\tteams={}", jurisdiction.code(), teams.len());
+                for team in teams.iter().take(3) {
+                    println!("  {}\t{}\t{}", team.id, team.name, team.city_state);
+                }
+            }
+            Ok(())
+        }
+        Route::Ingress(origin) => {
+            let season = SchoolYear(args.season);
+            let requests = jurisdictions
+                .iter()
+                .map(|jurisdiction| {
+                    jurisdiction_request(*jurisdiction, season, &args.flags, args.refresh, None, 4)
+                })
+                .collect();
+            live::drive_states(origin, requests, args.flags.rounds(), |report| {
+                Ok(teams_line(report))
+            })
+            .await
         }
     }
-    Ok(())
 }
 
 /// Enumerate every published meet in each state's results index and store the rows.
-pub(super) async fn run_meets(
-    cli: &Cli,
-    store: &Store,
-    states: &[UsJurisdiction],
-    year: u16,
-    refresh: bool,
-) -> Result<()> {
-    let fetcher = build_fetcher(cli, store)?;
-    let observed_on = midwest_census::net::today_iso();
-    for jurisdiction in states {
-        let census = census::collect_state_meets(
-            &fetcher,
-            store,
-            *jurisdiction,
-            year,
-            &observed_on,
-            refresh,
-        )
-        .await?;
-        println!(
-            "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
-            jurisdiction.code(),
-            census.pages,
-            census.fetched,
-            census.seen,
-            census.rows,
-            census.seasons,
-            census.repeated,
-            census.truncated
-        );
+pub(super) async fn run_meets(cli: &Cli, args: &MeetsArgs) -> Result<()> {
+    let jurisdictions = resolve_states(args.all_states, &args.states)?;
+    match cli.route(args.flags.ingress.as_deref())? {
+        Route::Offline(root) => {
+            let store = Store::open(root)?;
+            let fetcher = build_fetcher(cli, &store)?;
+            let observed_on = midwest_census::net::today_iso();
+            for jurisdiction in &jurisdictions {
+                let census = census::collect_state_meets(
+                    &fetcher,
+                    &store,
+                    *jurisdiction,
+                    args.year,
+                    &observed_on,
+                    args.refresh,
+                )
+                .await?;
+                println!(
+                    "{}\tpages={}\tfetched={}\tseen={}\trows={}\tseasons={}\trepeated={}\ttruncated={}",
+                    jurisdiction.code(),
+                    census.pages,
+                    census.fetched,
+                    census.seen,
+                    census.rows,
+                    census.seasons,
+                    census.repeated,
+                    census.truncated
+                );
+            }
+            Ok(())
+        }
+        Route::Ingress(origin) => {
+            let season = SchoolYear(school_year(args.year)?);
+            let requests = jurisdictions
+                .iter()
+                .map(|jurisdiction| {
+                    jurisdiction_request(*jurisdiction, season, &args.flags, args.refresh, None, 4)
+                })
+                .collect();
+            live::drive_states(origin, requests, args.flags.rounds(), |report| {
+                Ok(meets_line(report))
+            })
+            .await
+        }
     }
-    Ok(())
 }
 
 #[derive(Args, Debug)]
@@ -101,7 +178,8 @@ pub(super) struct CollectArgs {
     /// Default: WI.
     #[arg(long, value_delimiter = ',')]
     states: Vec<UsJurisdiction>,
-    /// Walk every jurisdiction (50 states + DC). Cannot be combined with `--states`.
+    /// Walk the census run scope: the 48 continental states plus DC (ADR-009). Cannot be
+    /// combined with `--states`.
     #[arg(long)]
     all_states: bool,
     /// Cap the number of rosters fetched per state (for smoke runs).
@@ -122,12 +200,14 @@ pub(super) struct CollectArgs {
     /// ISO date stamped into evidence (defaults to today).
     #[arg(long)]
     observed_on: Option<String>,
+    #[command(flatten)]
+    flags: WorkflowFlags,
 }
 
 /// Build the census options: the codes are already validated by clap's parser.
 fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
     Ok(census::CollectOptions {
-        jurisdictions: super::resolve_states(args.all_states, &args.states)?,
+        jurisdictions: resolve_states(args.all_states, &args.states)?,
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
         state_concurrency: args.state_concurrency,
@@ -141,31 +221,43 @@ fn collect_options(args: &CollectArgs) -> Result<census::CollectOptions> {
 }
 
 /// Walk rosters and emit canonical entities for the given states.
-pub(super) async fn run_collect(cli: &Cli, store: &Store, args: &CollectArgs) -> Result<()> {
-    let options = collect_options(args)?;
-    let fetcher = build_fetcher(cli, store)?.with_source("milesplit");
-    let outcome = census::collect_milesplit(&fetcher, store, &options).await;
-    // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads
-    // like a complete one — whatever the walk itself returned.
-    print_blocked_hosts(&fetcher).await;
-    let report = outcome.context("milesplit collection")?;
-    println!("{}", serde_json::to_string_pretty(&report)?);
-    Ok(())
-}
-
-/// Print one `\t`-separated line per blocked host, named with the kind of condition that stopped the
-/// walk (§69).
 ///
-/// Plain text on purpose — the machine-readable copy is the report's own `access_conditions` — and
-/// read off the fetcher rather than the report so a walk that failed *after* the block still names
-/// the host that refused it. A blocked host is printed even when no kind is attached to it.
-pub(super) async fn print_blocked_hosts(fetcher: &Fetcher) {
-    let conditions = fetcher.access_conditions().await;
-    let now = midwest_census::net::now_iso8601();
-    for host in fetcher.blocked_hosts(now.as_str()).await {
-        match conditions.iter().find(|condition| condition.host == host) {
-            Some(condition) => println!("blocked\t{host}\t{}", condition.kind.slug()),
-            None => println!("blocked\t{host}"),
+/// Offline it drives the walk in-process; live it asks each state's own jurisdiction object, which
+/// runs the same roster stage through the store the service already holds. Both paths read the same
+/// [`census::CollectOptions`], so the two cannot disagree about which states a run covers.
+pub(super) async fn run_collect(cli: &Cli, args: &CollectArgs) -> Result<()> {
+    let options = collect_options(args)?;
+    match cli.route(args.flags.ingress.as_deref())? {
+        Route::Offline(root) => {
+            let store = Store::open(root)?;
+            let fetcher = build_fetcher(cli, &store)?.with_source("milesplit");
+            let outcome = census::collect_milesplit(&fetcher, &store, &options).await;
+            // §69: the blocked hosts are named before the report, so a run that hit a hard block never
+            // reads like a complete one — whatever the walk itself returned.
+            print_blocked_hosts(&fetcher).await;
+            let report = outcome.context("milesplit collection")?;
+            println!("{}", serde_json::to_string_pretty(&report)?);
+            Ok(())
+        }
+        Route::Ingress(origin) => {
+            let requests = options
+                .jurisdictions
+                .iter()
+                .map(|jurisdiction| {
+                    jurisdiction_request(
+                        *jurisdiction,
+                        options.school_year,
+                        &args.flags,
+                        options.refresh,
+                        options.limit_per_state,
+                        options.concurrency,
+                    )
+                })
+                .collect();
+            live::drive_states(origin, requests, args.flags.rounds(), |report| {
+                serde_json::to_string_pretty(report).context("encoding one state's report")
+            })
+            .await
         }
     }
 }

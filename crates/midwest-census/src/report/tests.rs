@@ -135,7 +135,7 @@ fn every_jurisdiction_publishes_a_by_state_row() {
     // An empty store still names every configured jurisdiction, plus the bucket for rows no school
     // placed: an omitted state reads as one nobody looked at.
     let empty = build_census(&store, Scope::AllSources).unwrap();
-    let expected = UsJurisdiction::ALL.len().saturating_add(1);
+    let expected = UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1);
     assert_eq!(empty.by_state.len(), expected);
     assert!(empty.by_state.contains_key(&JurisdictionBucket::Unplaced));
     assert!(empty

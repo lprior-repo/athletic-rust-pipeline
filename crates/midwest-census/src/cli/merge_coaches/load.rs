@@ -83,7 +83,7 @@ pub(super) fn load_rows(path: &Path, expected_state: &str) -> (Vec<(usize, Row)>
     let mut records: Vec<(usize, Row)> = Vec::new();
     let mut header_found = false;
     for (idx, result) in reader.records().enumerate() {
-        let line_no = idx + 1;
+        let line_no = idx.saturating_add(1);
         let record = match result {
             Ok(r) => r,
             Err(e) => {

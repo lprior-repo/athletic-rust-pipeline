@@ -19,22 +19,6 @@
     "coaches_with_email": 18
   },
   "by_state": {
-    "AK": {
-      "state": "AK",
-      "schools": 0,
-      "athletes": 0,
-      "class_of_2027": 0,
-      "class_of_2027_boys": 0,
-      "class_of_2027_girls": 0,
-      "class_of_2027_unknown_gender": 0,
-      "class_of_2027_with_profile_url": 0,
-      "class_of_2027_with_grad_year_evidence": 0,
-      "class_of_2027_multisource": 0,
-      "class_of_2027_with_coach": 0,
-      "class_of_2027_with_coach_email": 0,
-      "coaches": 0,
-      "coaches_with_email": 0
-    },
     "AL": {
       "state": "AL",
       "schools": 0,
@@ -181,22 +165,6 @@
     },
     "GA": {
       "state": "GA",
-      "schools": 0,
-      "athletes": 0,
-      "class_of_2027": 0,
-      "class_of_2027_boys": 0,
-      "class_of_2027_girls": 0,
-      "class_of_2027_unknown_gender": 0,
-      "class_of_2027_with_profile_url": 0,
-      "class_of_2027_with_grad_year_evidence": 0,
-      "class_of_2027_multisource": 0,
-      "class_of_2027_with_coach": 0,
-      "class_of_2027_with_coach_email": 0,
-      "coaches": 0,
-      "coaches_with_email": 0
-    },
-    "HI": {
-      "state": "HI",
       "schools": 0,
       "athletes": 0,
       "class_of_2027": 0,

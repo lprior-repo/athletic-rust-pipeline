@@ -272,7 +272,7 @@ pub fn write_athletes(
     for a in athletes {
         let p = process_athlete(a);
         if p.multi {
-            multi += 1;
+            multi = multi.saturating_add(1);
         }
         if !p.an_id.is_empty() {
             let sch = get_school(
@@ -284,7 +284,7 @@ pub fn write_athletes(
         if !p.is_co27 {
             continue;
         }
-        co27 += 1;
+        co27 = co27.saturating_add(1);
         let sch = get_school(
             by_school,
             a.get("school").and_then(|v| v.as_str()).unwrap_or(""),

@@ -79,7 +79,30 @@ pub enum UsJurisdiction {
     DistrictOfColumbia,
 }
 
+/// The typed failure of [`UsJurisdiction::require_census_scope`]: a jurisdiction a census run never
+/// covers (ADR-009).
+///
+/// One type carrying one message, so the CLI, the workflow fan-out and the report all reject the
+/// same set with the same words instead of each re-deriving the rule and the sentence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+#[error(
+    "{} is outside the census run scope: the 48 continental states plus the District of Columbia \
+     (ADR-009)",
+    .0.code()
+)]
+pub struct OutsideCensusScope(pub UsJurisdiction);
+
 impl UsJurisdiction {
+    /// Accept a jurisdiction only if a census run may cover it (ADR-009), returning it so a caller
+    /// can map a slice through this and collect the survivors.
+    pub fn require_census_scope(self) -> Result<Self, OutsideCensusScope> {
+        if self.is_in_census_scope() {
+            Ok(self)
+        } else {
+            Err(OutsideCensusScope(self))
+        }
+    }
+
     /// Every jurisdiction the census covers, in declaration order.
     pub const ALL: [Self; 51] = [
         Self::Alabama,
@@ -134,6 +157,74 @@ impl UsJurisdiction {
         Self::Wyoming,
         Self::DistrictOfColumbia,
     ];
+
+    /// The jurisdictions a census **run** covers: the 48 continental states plus the District of
+    /// Columbia (ADR-009).
+    ///
+    /// [`Self::ALL`] is what the domain *models*; this is what a run may touch. Alaska and Hawaii
+    /// are declared above, are never acquired, and never appear in a coverage denominator — a run
+    /// set that admits them has to be written as an explicit edit here, which is the point.
+    pub const CENSUS_SCOPE: [Self; 49] = [
+        Self::Alabama,
+        Self::Arizona,
+        Self::Arkansas,
+        Self::California,
+        Self::Colorado,
+        Self::Connecticut,
+        Self::Delaware,
+        Self::Florida,
+        Self::Georgia,
+        Self::Idaho,
+        Self::Illinois,
+        Self::Indiana,
+        Self::Iowa,
+        Self::Kansas,
+        Self::Kentucky,
+        Self::Louisiana,
+        Self::Maine,
+        Self::Maryland,
+        Self::Massachusetts,
+        Self::Michigan,
+        Self::Minnesota,
+        Self::Mississippi,
+        Self::Missouri,
+        Self::Montana,
+        Self::Nebraska,
+        Self::Nevada,
+        Self::NewHampshire,
+        Self::NewJersey,
+        Self::NewMexico,
+        Self::NewYork,
+        Self::NorthCarolina,
+        Self::NorthDakota,
+        Self::Ohio,
+        Self::Oklahoma,
+        Self::Oregon,
+        Self::Pennsylvania,
+        Self::RhodeIsland,
+        Self::SouthCarolina,
+        Self::SouthDakota,
+        Self::Tennessee,
+        Self::Texas,
+        Self::Utah,
+        Self::Vermont,
+        Self::Virginia,
+        Self::Washington,
+        Self::WestVirginia,
+        Self::Wisconsin,
+        Self::Wyoming,
+        Self::DistrictOfColumbia,
+    ];
+
+    /// The modelled jurisdictions a census run never covers, named so reports, tests and the
+    /// workflow's admission check can all assert the same rule.
+    pub const EXCLUDED_FROM_CENSUS: [Self; 2] = [Self::Alaska, Self::Hawaii];
+
+    /// Whether a census run may cover this jurisdiction: the rule [`Self::CENSUS_SCOPE`] encodes,
+    /// in one place so no caller has to re-derive it.
+    pub const fn is_in_census_scope(self) -> bool {
+        !matches!(self, Self::Alaska | Self::Hawaii)
+    }
 
     /// The USPS two-letter code — the jurisdiction's stable key form.
     pub const fn code(self) -> &'static str {

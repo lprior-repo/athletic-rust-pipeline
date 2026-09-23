@@ -89,7 +89,7 @@ fn apply_coach_states(
 /// same labels the rollups already mint, so a state with data overwrites its own zero row instead of
 /// gaining a second one.
 fn seed_states(by_state: &mut BTreeMap<JurisdictionBucket, StateCensus>) {
-    for jurisdiction in UsJurisdiction::ALL {
+    for jurisdiction in UsJurisdiction::CENSUS_SCOPE {
         state_entry(by_state, jurisdiction.into());
     }
     state_entry(by_state, JurisdictionBucket::Unplaced);

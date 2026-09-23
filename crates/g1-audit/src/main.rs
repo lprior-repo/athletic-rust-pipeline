@@ -151,6 +151,40 @@ fn py_repr_tuple(elements: &[(&str, bool)]) -> String {
     format!("({})", parts.join(", "))
 }
 
+/// Add `by` to a counter slot, saturating instead of wrapping.
+///
+/// Every counter here is a census of things that exist in memory at that moment (pages, rows, links
+/// of the retained fixtures), so saturation is unreachable for a real corpus; the wrap-around it
+/// replaces is not a value any caller of this report can use.
+fn bump(slot: &mut usize, by: usize) {
+    *slot = slot.saturating_add(by);
+}
+
+/// The envelope's `count` — an `i64` as the site reports it — read in the `usize` domain the page's
+/// rows are measured in.
+///
+/// A negative `i64` is not a row count; it saturates to `usize::MAX` so it still compares as larger
+/// than any page, which is the branch outcome the pre-repair cast produced for every negative value.
+fn count_len(count: i64) -> usize {
+    usize::try_from(count).unwrap_or(usize::MAX)
+}
+
+/// A `usize` length — a row or candidate count — read in the envelope's `i64` domain.
+///
+/// A length above `i64::MAX` would need that many live elements; saturating to `i64::MAX` keeps the
+/// comparison against an envelope count total rather than wrapping into a negative.
+fn len_count(len: usize) -> i64 {
+    i64::try_from(len).unwrap_or(i64::MAX)
+}
+
+/// The leading 12 bytes of a digest, for the display lines that shorten one.
+///
+/// Digests are `sha256_hex` output: 64 ASCII bytes, so the cut is always on a boundary. A shorter or
+/// non-boundary string is returned whole instead of panicking.
+fn digest_head(digest: &str) -> &str {
+    digest.split_at_checked(12).map_or(digest, |(head, _)| head)
+}
+
 // ── Core IO ────────────────────────────────────────────────────────────
 
 fn read_dir(pattern_dirs: &[String]) -> Vec<(String, String)> {
@@ -182,7 +216,11 @@ fn path_of(href: &str) -> &str {
     let mut value = href;
     for prefix in ABS_PREFIXES {
         if value.to_lowercase().starts_with(prefix) {
-            value = &value[prefix.len()..];
+            // `to_lowercase` is not length-preserving for every code point, so `prefix.len()` is only
+            // a candidate boundary: a URL that does not cut there is left whole instead of panicking.
+            if let Some(tail) = value.get(prefix.len()..) {
+                value = tail;
+            }
             break;
         }
     }
@@ -290,7 +328,7 @@ fn analyse_row(row_html: &str, sport: Option<&str>, re: &RowRegexes<'_>) -> RowA
         .map(|g| g.as_str().trim().to_string())
         .collect();
 
-    if identity && selected && !name_matches.is_empty() && name_matches[0].is_empty() {
+    if identity && selected && name_matches.first().is_some_and(|name| name.is_empty()) {
         issues.push("athlete display name is absent or exceeds bound".to_string());
     }
 
@@ -348,9 +386,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
 
         if let Some(cv) = rec.get("complete") {
-            *record_complete
-                .entry(json_bool_to_str(cv).to_string())
-                .or_insert(0) += 1;
+            bump(
+                record_complete
+                    .entry(json_bool_to_str(cv).to_string())
+                    .or_insert(0),
+                1,
+            );
         }
 
         if let Some(failures_arr) = rec.get("failures") {
@@ -375,9 +416,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             status.join(",")
                         };
                         let key = format!("{}: {}  [http={}]", code, message, status_str);
-                        *failures.entry(key).or_insert(0) += 1;
+                        bump(failures.entry(key).or_insert(0), 1);
                     } else {
-                        *failures.entry(format!("{}", failure)).or_insert(0) += 1;
+                        bump(failures.entry(format!("{}", failure)).or_insert(0), 1);
                     }
                 }
             }
@@ -557,7 +598,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .clone()
                     .unwrap_or_else(|| "unknown/ambiguous".to_string()),
             )
-            .and_modify(|c| *c += 1)
+            .and_modify(|c| bump(c, 1))
             .or_insert(1);
 
         // Interstitial markers
@@ -565,7 +606,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let lower = text.to_lowercase();
         for marker in INTERSTITIAL_MARKERS {
             if lower.contains(marker) {
-                *interstitials.entry(marker.to_string()).or_insert(0) += 1;
+                bump(interstitials.entry(marker.to_string()).or_insert(0), 1);
             }
         }
 
@@ -573,18 +614,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let envelope: Value = match serde_json::from_str(&text) {
             Ok(v) => v,
             Err(_) => {
-                *verdict_totals
-                    .entry("envelope_unparseable".to_string())
-                    .or_insert(0) += 1;
+                bump(
+                    verdict_totals
+                        .entry("envelope_unparseable".to_string())
+                        .or_insert(0),
+                    1,
+                );
                 continue;
             }
         };
 
         let d = envelope.get("d").and_then(|v| v.as_object());
         if d.is_none() {
-            *verdict_totals
-                .entry("envelope_missing_d".to_string())
-                .or_insert(0) += 1;
+            bump(
+                verdict_totals
+                    .entry("envelope_missing_d".to_string())
+                    .or_insert(0),
+                1,
+            );
             continue;
         }
         let Some(d) = d else { continue };
@@ -627,64 +674,102 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .flat_map(|a| &a.sported)
             .filter(|s| *s == "xc")
             .count();
-        *link_totals.entry("rows_total".to_string()).or_default() += rows.len();
-        *link_totals
-            .entry("rows_with_athlete_href".to_string())
-            .or_default() += row_analyses
-            .iter()
-            .filter(|a| !a.athlete_hrefs.is_empty())
-            .count();
-        *link_totals
-            .entry("rows_without_athlete_href".to_string())
-            .or_default() += row_analyses
-            .iter()
-            .filter(|a| a.athlete_hrefs.is_empty())
-            .count();
-        *link_totals
-            .entry("athlete_hrefs_total".to_string())
-            .or_default() += row_analyses
-            .iter()
-            .map(|a| a.athlete_hrefs.len())
-            .sum::<usize>();
-        *link_totals
-            .entry("athlete_hrefs_sported_tf".to_string())
-            .or_default() += tf_hrefs;
-        *link_totals
-            .entry("athlete_hrefs_sported_xc".to_string())
-            .or_default() += xc_hrefs;
-        *link_totals
-            .entry("athlete_hrefs_noncanonical".to_string())
-            .or_default() += noncanonical_total;
-        *link_totals
-            .entry("rows_multi_athlete_href".to_string())
-            .or_default() += row_analyses
-            .iter()
-            .filter(|a| a.athlete_hrefs.len() > 1)
-            .count();
-        *link_totals
-            .entry("rows_candidate_predicted".to_string())
-            .or_default() += candidates.len();
+        bump(
+            link_totals.entry("rows_total".to_string()).or_default(),
+            rows.len(),
+        );
+        bump(
+            link_totals
+                .entry("rows_with_athlete_href".to_string())
+                .or_default(),
+            row_analyses
+                .iter()
+                .filter(|a| !a.athlete_hrefs.is_empty())
+                .count(),
+        );
+        bump(
+            link_totals
+                .entry("rows_without_athlete_href".to_string())
+                .or_default(),
+            row_analyses
+                .iter()
+                .filter(|a| a.athlete_hrefs.is_empty())
+                .count(),
+        );
+        bump(
+            link_totals
+                .entry("athlete_hrefs_total".to_string())
+                .or_default(),
+            row_analyses
+                .iter()
+                .map(|a| a.athlete_hrefs.len())
+                .sum::<usize>(),
+        );
+        bump(
+            link_totals
+                .entry("athlete_hrefs_sported_tf".to_string())
+                .or_default(),
+            tf_hrefs,
+        );
+        bump(
+            link_totals
+                .entry("athlete_hrefs_sported_xc".to_string())
+                .or_default(),
+            xc_hrefs,
+        );
+        bump(
+            link_totals
+                .entry("athlete_hrefs_noncanonical".to_string())
+                .or_default(),
+            noncanonical_total,
+        );
+        bump(
+            link_totals
+                .entry("rows_multi_athlete_href".to_string())
+                .or_default(),
+            row_analyses
+                .iter()
+                .filter(|a| a.athlete_hrefs.len() > 1)
+                .count(),
+        );
+        bump(
+            link_totals
+                .entry("rows_candidate_predicted".to_string())
+                .or_default(),
+            candidates.len(),
+        );
 
         // Count vs rows
         if count.is_none() {
-            *count_vs_rows.entry("count_absent".to_string()).or_insert(0) += 1;
+            bump(
+                count_vs_rows.entry("count_absent".to_string()).or_insert(0),
+                1,
+            );
         } else if let Some(c) = count {
-            let c = c as usize;
-            match c.cmp(&rows.len()) {
+            match count_len(c).cmp(&rows.len()) {
                 std::cmp::Ordering::Equal => {
-                    *count_vs_rows
-                        .entry("count_eq_rows".to_string())
-                        .or_insert(0) += 1;
+                    bump(
+                        count_vs_rows
+                            .entry("count_eq_rows".to_string())
+                            .or_insert(0),
+                        1,
+                    );
                 }
                 std::cmp::Ordering::Greater => {
-                    *count_vs_rows
-                        .entry("count_gt_rows".to_string())
-                        .or_insert(0) += 1;
+                    bump(
+                        count_vs_rows
+                            .entry("count_gt_rows".to_string())
+                            .or_insert(0),
+                        1,
+                    );
                 }
                 std::cmp::Ordering::Less => {
-                    *count_vs_rows
-                        .entry("count_lt_rows".to_string())
-                        .or_insert(0) += 1;
+                    bump(
+                        count_vs_rows
+                            .entry("count_lt_rows".to_string())
+                            .or_insert(0),
+                        1,
+                    );
                 }
             }
         }
@@ -700,7 +785,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .collect();
         let mut row_issues_map: IndexMap<String, usize> = IndexMap::new();
         for issue in &row_issues_flat {
-            *row_issues_map.entry(issue.clone()).or_insert(0) += 1;
+            bump(row_issues_map.entry(issue.clone()).or_insert(0), 1);
         }
 
         // Parsed digests join
@@ -724,7 +809,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(arr) = parser.get("issues").and_then(|v| v.as_array()) {
                     for issue in arr {
                         if let Some(msg) = issue.get("message").and_then(|v| v.as_str()) {
-                            *parser_issues.entry(msg.to_string()).or_insert(0) += 1;
+                            bump(parser_issues.entry(msg.to_string()).or_insert(0), 1);
                         }
                     }
                 }
@@ -759,9 +844,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .get("candidates")
                         .and_then(|v| v.as_array())
                         .map_or(0, |a| a.len());
-                    if pc > cand as i64 && pn.is_none() {
+                    let cand = len_count(cand);
+                    if pc > cand && pn.is_none() {
                         parser_verdicts.push("short_page".to_string());
-                    } else if pc == cand as i64 && pn.is_none() {
+                    } else if pc == cand && pn.is_none() {
                         parser_verdicts.push("clean_full".to_string());
                     } else {
                         parser_verdicts.push("paginated".to_string());
@@ -811,22 +897,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         if let Some(c) = count {
-            if c as usize > rows.len() {
+            if count_len(c) > rows.len() {
                 let samples = class_samples
                     .entry("count_gt_rows".to_string())
                     .or_default();
                 if samples.len() < args.samples {
                     let pager_text = pager.to_string();
+                    let pager_head = if pager_text.len() > 200 {
+                        match pager_text.split_at_checked(200) {
+                            Some((head, _)) => head.to_string(),
+                            None => pager_text.clone(),
+                        }
+                    } else {
+                        pager_text
+                    };
                     samples.push(SampleEntry::CountGtRows(
                         digest.clone(),
                         sport.clone(),
                         c,
                         rows.len(),
-                        if pager_text.len() > 200 {
-                            pager_text[..200].to_string()
-                        } else {
-                            pager_text
-                        },
+                        pager_head,
                     ));
                 }
             }
@@ -860,33 +950,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .any(|m| m.contains("ended before the advertised"));
 
         if !failed {
-            *records_crosscheck
-                .entry("complete".to_string())
-                .or_insert(0) += 1;
+            bump(
+                records_crosscheck
+                    .entry("complete".to_string())
+                    .or_insert(0),
+                1,
+            );
         } else {
-            *records_crosscheck.entry("failed".to_string()).or_insert(0) += 1;
+            bump(
+                records_crosscheck.entry("failed".to_string()).or_insert(0),
+                1,
+            );
         }
-        *records_crosscheck
-            .entry(format!(
-                "  {}:own_parse_has_row_issues={}",
-                if !failed { "complete" } else { "failed" },
-                if has_issue { "True" } else { "False" }
-            ))
-            .or_insert(0) += 1;
+        bump(
+            records_crosscheck
+                .entry(format!(
+                    "  {}:own_parse_has_row_issues={}",
+                    if !failed { "complete" } else { "failed" },
+                    if has_issue { "True" } else { "False" }
+                ))
+                .or_insert(0),
+            1,
+        );
 
         if failed {
-            *records_crosscheck
-                .entry(format!(
-                    "  failed:row_issue_failure={}",
-                    if row_issue_failure { "True" } else { "False" }
-                ))
-                .or_insert(0) += 1;
-            *records_crosscheck
-                .entry(format!(
-                    "  failed:short_failure={}",
-                    if short_failure { "True" } else { "False" }
-                ))
-                .or_insert(0) += 1;
+            bump(
+                records_crosscheck
+                    .entry(format!(
+                        "  failed:row_issue_failure={}",
+                        if row_issue_failure { "True" } else { "False" }
+                    ))
+                    .or_insert(0),
+                1,
+            );
+            bump(
+                records_crosscheck
+                    .entry(format!(
+                        "  failed:short_failure={}",
+                        if short_failure { "True" } else { "False" }
+                    ))
+                    .or_insert(0),
+                1,
+            );
 
             let exceed = rec
                 .failure_messages
@@ -902,7 +1007,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if exceed {
                 classes.push("advertised_count_exceeds");
             }
-            *failure_classes.entry(classes.join("+")).or_insert(0) += 1;
+            bump(failure_classes.entry(classes.join("+")).or_insert(0), 1);
         }
         if !failed && has_issue {
             unexplained.push((
@@ -914,9 +1019,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ));
         }
         if failed && !has_issue && !row_issue_failure {
-            *records_crosscheck
-                .entry("  FAILED_WITHOUT_ROW_ISSUES".to_string())
-                .or_insert(0) += 1;
+            bump(
+                records_crosscheck
+                    .entry("  FAILED_WITHOUT_ROW_ISSUES".to_string())
+                    .or_insert(0),
+                1,
+            );
             unexplained.push((
                 rec.name.clone(),
                 failed,
@@ -964,18 +1072,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .filter(|p| {
             p.count
-                .map(|c| c as usize > p.rows && !p.has_next)
+                .map(|c| count_len(c) > p.rows && !p.has_next)
                 .unwrap_or(false)
         })
         .count();
     let count_lt_rows: usize = per_page
         .iter()
-        .filter(|p| p.count.map(|c| (c as usize) < p.rows).unwrap_or(false))
+        .filter(|p| p.count.map(|c| count_len(c) < p.rows).unwrap_or(false))
         .count();
     let clean_full: usize = per_page
         .iter()
         .filter(|p| {
-            p.count.map(|c| c as usize == p.rows).unwrap_or(false)
+            p.count.map(|c| count_len(c) == p.rows).unwrap_or(false)
                 && p.row_issues.values().sum::<usize>() == 0
         })
         .count();
@@ -1084,39 +1192,57 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|p| p.parser_verdicts.contains(&"short_page".to_string()))
         .count();
     if parser_clean_pages_set > 0 {
-        *verdict_totals
-            .entry("parser_page:clean_full".to_string())
-            .or_insert(0) += parser_clean_pages_set;
+        bump(
+            verdict_totals
+                .entry("parser_page:clean_full".to_string())
+                .or_insert(0),
+            parser_clean_pages_set,
+        );
     }
     if parser_paginated_set > 0 {
-        *verdict_totals
-            .entry("parser_page:paginated".to_string())
-            .or_insert(0) += parser_paginated_set;
+        bump(
+            verdict_totals
+                .entry("parser_page:paginated".to_string())
+                .or_insert(0),
+            parser_paginated_set,
+        );
     }
     if parser_short_pages_set > 0 {
-        *verdict_totals
-            .entry("parser_page:short_page".to_string())
-            .or_insert(0) += parser_short_pages_set;
+        bump(
+            verdict_totals
+                .entry("parser_page:short_page".to_string())
+                .or_insert(0),
+            parser_short_pages_set,
+        );
     }
     if parser_issue_pages > 0 {
-        *verdict_totals
-            .entry("parser_page:row_issues".to_string())
-            .or_insert(0) += parser_issue_pages;
+        bump(
+            verdict_totals
+                .entry("parser_page:row_issues".to_string())
+                .or_insert(0),
+            parser_issue_pages,
+        );
     }
     for page in &per_page {
         for (issue_msg, count) in &page.row_issues {
-            *verdict_totals
-                .entry(format!("row_issue:{}", issue_msg))
-                .or_insert(0) += count;
+            bump(
+                verdict_totals
+                    .entry(format!("row_issue:{}", issue_msg))
+                    .or_insert(0),
+                *count,
+            );
         }
         // ambiguous_parser_verdict: pages where parser_verdicts has multiple distinct verdicts
         let mut v = page.parser_verdicts.clone();
         v.sort();
         v.dedup();
         if v.len() > 1 {
-            *verdict_totals
-                .entry("ambiguous_parser_verdict".to_string())
-                .or_insert(0) += 1;
+            bump(
+                verdict_totals
+                    .entry("ambiguous_parser_verdict".to_string())
+                    .or_insert(0),
+                1,
+            );
         }
     }
 
@@ -1184,7 +1310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|p| {
             !p.parser_issues.is_empty()
                 && p.parser_next.is_none()
-                && (p.parser_count.unwrap_or(0)) > (p.parser_candidates.unwrap_or(0) as i64)
+                && (p.parser_count.unwrap_or(0)) > len_count(p.parser_candidates.unwrap_or(0))
         })
         .count();
     println!("  if other-sport rows became skips instead of issues:");
@@ -1226,13 +1352,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     for (name, failed, has_issue, has_short, msgs) in unexplained.iter().take(4) {
-        let short_name = if name.len() > 12 { &name[..12] } else { name };
-        let msg_str = if msgs.len() >= 2 {
-            format!("['{}', '{}']", msgs[0], msgs[1])
-        } else if msgs.len() == 1 {
-            format!("['{}']", msgs[0])
-        } else {
-            "[]".to_string()
+        let short_name = name
+            .split_at_checked(12)
+            .map_or(name.as_str(), |(head, _)| head);
+        let msg_str = match (msgs.first(), msgs.get(1)) {
+            (Some(first), Some(second)) => format!("['{}', '{}']", first, second),
+            (Some(first), None) => format!("['{}']", first),
+            (None, _) => "[]".to_string(),
         };
         println!(
             "    unexplained {} failed={} page_issues={} page_short={} {}",
@@ -1282,12 +1408,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         byte_mismatch.len()
     );
     for (digest, sha) in &digest_mismatch {
-        println!("  sha mismatch {} -> {}", &digest[..12], &sha[..12]);
+        println!(
+            "  sha mismatch {} -> {}",
+            digest_head(digest),
+            digest_head(sha)
+        );
     }
     for (digest, claimed, actual) in &byte_mismatch {
         println!(
             "  bytes mismatch {} claimed={} actual={}",
-            &digest[..12],
+            digest_head(digest),
             claimed,
             actual
         );
@@ -1297,12 +1427,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for value in values {
             match value {
                 SampleEntry::Noncanonical(digest, href) => {
-                    let d = &digest[..12];
+                    let d = digest_head(digest);
                     let elements: Vec<_> = vec![(d, false), (href.as_str(), false)];
                     println!("  [{}] {}", name, py_repr_tuple(&elements));
                 }
                 SampleEntry::CountGtRows(digest, sport, count, rows, pager) => {
-                    let d = &digest[..12];
+                    let d = digest_head(digest);
                     let sport_str = sport.as_deref().unwrap_or("None");
                     let e1 = d;
                     let e2 = sport_str;
@@ -1356,14 +1486,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut queries_sorted: Vec<&str> = page.queries.iter().map(|s| &**s).collect();
         queries_sorted.sort();
         let queries_str = queries_sorted.join(",");
-        let queries_trunc = if queries_str.len() > 60 {
-            queries_str[..60].to_string()
-        } else {
-            queries_str.clone()
-        };
+        let queries_trunc = queries_str
+            .split_at_checked(60)
+            .map_or(queries_str.as_str(), |(head, _)| head)
+            .to_string();
         println!(
             "  {} {} count={} rows={:3} tf={:3} xc={:3} noncanon={:2} next={} pred_issues=[{}] cand={} parser_cand={} parser_issues=[{}] q={}",
-            &digest[..12],
+            digest_head(digest),
             sport_fmt,
             count_fmt,
             page.rows,

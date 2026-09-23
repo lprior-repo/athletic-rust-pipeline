@@ -171,4 +171,4 @@ this window; the module doc comment at `store/mod.rs:33-36` overstates idempoten
     table scan (`store/read.rs:51-57` → `StoreError::Decode`). No tolerance precedent
     exists in census (unlike `report/mod.rs:read_rows` which tolerates one bad line).
 12. **No `#[instrument]` on spawn**: zero `.instrument(…)` calls on any of the three
-    production spawn sites (`bootstrap.rs:160,180`, `restate_services/mod.rs:137`).
+    production spawn sites (`bootstrap.rs:160,180`, `restate_services/support.rs:84`).

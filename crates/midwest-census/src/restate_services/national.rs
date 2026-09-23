@@ -36,7 +36,7 @@ use super::wire::{
     ConsolidateRequest, JurisdictionReport, JurisdictionSummary, NationalFailure, NationalReport,
     NationalRequest,
 };
-use super::{census::CensusClient, KEY_STATE};
+use super::{publish::ConsolidateClient, KEY_STATE};
 
 #[derive(Clone)]
 pub struct NationalCensus {
@@ -167,7 +167,22 @@ fn assemble(
     }
 }
 
-#[workflow]
+// A national census can run for days. The server's default journal retention is one day, which
+// would garbage-collect the journal of an invocation that is still fanning out, and the default
+// invocation retry policy would park a long run behind a transient endpoint failure. Both are
+// pinned here: the journal outlives the run by months, and exhausted retries pause for an operator
+// instead of silently burning attempts.
+#[workflow(
+    journal_retention = "90 days",
+    workflow_completion_retention = "180 days",
+    idempotency_retention = "30 days",
+    invocation_retry_policy(
+        initial_interval = "500ms",
+        max_interval = "1m",
+        max_attempts = 70,
+        on_max_attempts = "pause"
+    )
+)]
 impl NationalCensus {
     /// Fan out one jurisdiction census per state and fold the results into one report.
     #[handler]
@@ -205,14 +220,15 @@ impl NationalCensus {
         }
         let (jurisdictions, failures) = collect_outcomes(&mut in_flight, &targets).await?;
 
-        // One snapshot merge for the whole run, after every jurisdiction has appended, and through
-        // the `Census` service so it is as durable as the fan-out itself. Merging a table reads
-        // every observation of it, so the per-jurisdiction merge this replaces re-read the whole
-        // corpus once per state: tens of gigabytes resident for a snapshot that does not depend on
-        // which state walked last.
+        // One snapshot merge for the whole run, after every jurisdiction has appended, and as a
+        // workflow keyed by this run so it is as durable as the fan-out itself: the journal records
+        // the merge, and a replay of the fan-out attaches to the merge this run already performed
+        // rather than merging the corpus again. Merging a table reads every observation of it, so
+        // the per-jurisdiction merge this replaces re-read the whole corpus once per state: tens of
+        // gigabytes resident for a snapshot that does not depend on which state walked last.
         let Json(consolidated) = ctx
-            .service_client::<CensusClient>()
-            .consolidate(Json(ConsolidateRequest { tables: Vec::new() }))
+            .workflow_client::<ConsolidateClient>(format!("{}:consolidate", identity.as_str()))
+            .run(Json(ConsolidateRequest { tables: Vec::new() }))
             .call()
             .await?;
         tracing::info!(
@@ -220,12 +236,15 @@ impl NationalCensus {
             "merged table snapshots for the run"
         );
 
+        // Journaled: the fan-out above can span days, and `ctx.set` compares payloads on replay, so
+        // a wall-clock read would turn a legitimate replay into a journal mismatch.
+        let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let report = assemble(
             request.season,
             request.revision,
             jurisdictions,
             failures,
-            self.clock.today(),
+            today,
         );
         ctx.set(KEY_STATE, Json(report.clone()));
         Ok(Json(report))

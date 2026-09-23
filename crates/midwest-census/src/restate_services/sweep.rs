@@ -33,7 +33,17 @@ impl Sweep {
     }
 }
 
-#[workflow]
+#[workflow(
+    journal_retention = "90 days",
+    workflow_completion_retention = "180 days",
+    idempotency_retention = "30 days",
+    invocation_retry_policy(
+        initial_interval = "500ms",
+        max_interval = "1m",
+        max_attempts = 70,
+        on_max_attempts = "pause"
+    )
+)]
 impl Sweep {
     #[handler]
     #[tracing::instrument(
@@ -62,7 +72,9 @@ impl Sweep {
             ))
             .into());
         }
-        let today = self.clock.today();
+        // Journaled: the date names the report file and travels inside the report the handler returns,
+        // so a replay must reproduce it rather than re-read the clock.
+        let today = super::journaled_today_workflow(&ctx, &self.clock).await?;
         let (windows_observed, interrupted) =
             Self::wait_windows(&ctx, request.windows, request.window_seconds).await?;
         let (endpoints, stale) = Self::observe_endpoints(&ctx, &request.endpoints).await?;

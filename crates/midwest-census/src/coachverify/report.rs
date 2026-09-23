@@ -16,11 +16,12 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
             outcome.counts.get(verdict.as_str()).copied().unwrap_or(0)
         };
         let total = outcome.rows.len();
-        let shipped =
-            count(super::verdict::Verdict::Ok) + count(super::verdict::Verdict::OkRoleContext);
-        rows_total += total;
+        let shipped = count(super::verdict::Verdict::Ok)
+            .saturating_add(count(super::verdict::Verdict::OkRoleContext));
+        rows_total = rows_total.saturating_add(total);
         for verdict in super::verdict::Verdict::ALL {
-            *totals.entry(verdict.as_str()).or_insert(0) += count(*verdict);
+            let slot = totals.entry(verdict.as_str()).or_insert(0);
+            *slot = slot.saturating_add(count(*verdict));
         }
         let share = pct(shipped, total);
         table.push_str(&format!(
@@ -38,8 +39,11 @@ pub fn audit_table(outcomes: &[FragmentOutcome]) -> String {
             share
         ));
     }
-    let shipped_total = totals.get("ok").copied().unwrap_or(0)
-        + totals.get("ok_role_context").copied().unwrap_or(0);
+    let shipped_total = totals
+        .get("ok")
+        .copied()
+        .unwrap_or(0)
+        .saturating_add(totals.get("ok_role_context").copied().unwrap_or(0));
     let share = pct(shipped_total, rows_total);
     table.push_str(&format!(
         "| **total ({})** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{}** | **{:.1} %** |\n",

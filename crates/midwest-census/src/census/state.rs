@@ -18,6 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 mod evidence;
+mod open;
 mod seal_digest;
 #[cfg(test)]
 mod tests;
@@ -26,6 +27,7 @@ pub use evidence::{
     AcceptanceItem, GapTally, OpenWork, RetainedFindings, SealCounts, SealEvidence, SealedCensus,
     WorkbookCheck,
 };
+pub use open::{owed_jurisdictions, owed_source_objects, JurisdictionStages, SourceObject};
 
 /// The phases §48 names, in the only order they may be entered.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

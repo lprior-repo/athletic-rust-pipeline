@@ -49,10 +49,13 @@ cargo run --release -p midwest-census --bin midwest-census -- bests
 cargo run --release -p midwest-census --bin midwest-census -- workbook
 cargo run --release -p midwest-census --bin midwest-census -- run
 
-# Census reports and the workbook through the developer command wrapper
-cargo xtask census-status --store var/midwest-census   # report --core
-cargo xtask coverage      --store var/midwest-census   # report, every source
-cargo xtask export        --store var/midwest-census   # workbook into <store>/out/
+# Census reports and the workbook through the developer command wrapper.
+# Default: ask the running census (127.0.0.1:18095/). --store opens the store in process
+# instead, so it needs midwest-serve stopped.
+cargo xtask census-status                              # Census/status, counted by the service
+cargo xtask coverage                                   # Report/run, every source
+cargo xtask export                                     # Workbook/run into <store>/out/
+cargo xtask census-status --store var/midwest-census   # report --core, offline
 cargo xtask source-test   ks                           # one source's tests (alias: source-check)
 cargo xtask bench         -- parse                     # cargo bench -p midwest-census parse
 

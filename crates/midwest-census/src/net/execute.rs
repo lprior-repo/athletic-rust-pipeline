@@ -172,7 +172,7 @@ impl Fetcher {
             options,
             timeout_secs,
         };
-        self.retry_loop(gate, &plan).await
+        self.fetch_once(gate, &plan).await
     }
 
     /// Serve the request from the cache when a usable body is already on disk.

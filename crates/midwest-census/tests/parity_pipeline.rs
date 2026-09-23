@@ -1617,7 +1617,9 @@ fn volatile_cell(label: &str, column: usize, text: String, root: &Path) -> Strin
         return text;
     }
     match label {
-        "Core report generated" => "<date>".to_string(),
+        // Both meta sheets name the day the run wrote them; that day is the wall clock, so it is
+        // replaced on both rather than pinned to the day the golden was captured.
+        "Core report generated" | "Workbook generated on" => "<date>".to_string(),
         // The store root is the run's own temp path; the coverage notes quote it the way the
         // `Store` row does, so the same substitution applies to every row that can carry it.
         "Store" | "Core note" | "Note" => text.replace(&root.display().to_string(), "<store>"),

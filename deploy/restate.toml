@@ -1,0 +1,42 @@
+# The Midwest census Restate node: journal, metadata, ingress and admin on loopback only.
+#
+# Versioned here because it used to live only on the deployed machine, where nothing could review it
+# against the units that start it. Deploy it to /etc/midwest-census/restate.toml beside
+# `restate-server.service`; the base-dir matches that unit's StateDirectory.
+#
+# Pinned to the 1.7.10 build the census lanes were qualified against. The SDK advertises protocol
+# versions 5..=7 and the live deployment reports HTTP/2 `BidiStream`, so v7 stays enabled while it is
+# experimental; the vqueue and scoped-virtual-object flags are the ones the census services depend on.
+roles = ["http-ingress", "admin", "worker", "log-server", "metadata-server"]
+node-name = "midwest-census"
+cluster-name = "midwest-census"
+auto-provision = true
+default-num-partitions = 24
+default-replication = 1
+base-dir = "/var/lib/midwest-census-restate"
+listen-mode = "tcp"
+bind-ip = "127.0.0.1"
+bind-port = 15152
+advertised-address = "http://127.0.0.1:15152/"
+shutdown-timeout = "1m"
+disable-telemetry = true
+# Journal retention is *not* set here: the server's default is one day, which is shorter than a
+# national census can run, so every service declares its own (see `restate_services/*.rs` - 90 days
+# of journal, 180 days of workflow completion). This config deliberately leaves the server default
+# alone rather than inventing a key; the services are the ones that must be right.
+experimental-enable-protocol-v7 = true
+experimental-enable-vqueues = true
+experimental-enable-scoped-virtual-objects = true
+
+[bifrost]
+default-provider = "replicated"
+
+[worker]
+durability-mode = "replica-set-only"
+
+[admin]
+bind-port = 19095
+advertised-address = "http://127.0.0.1:19095/"
+
+[ingress]
+bind-port = 18095

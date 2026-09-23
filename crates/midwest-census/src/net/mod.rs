@@ -49,8 +49,6 @@ use client::HostState;
 use robots::RobotsRules;
 
 #[cfg(test)]
-use request::jittered_delay;
-#[cfg(test)]
 use robots::parse_robots;
 
 pub const DEFAULT_USER_AGENT: &str =
@@ -58,8 +56,6 @@ pub const DEFAULT_USER_AGENT: &str =
 
 const MAX_BODY_BYTES: usize = 32 * 1024 * 1024;
 const REQUEST_TIMEOUT_SECS: u64 = 45;
-const MAX_RETRIES: u32 = 3;
-const RETRY_BASE_DELAY_MS: u64 = 500;
 
 /// Hard pacing ceiling for an explicitly authorized host: 2 requests/second.
 ///

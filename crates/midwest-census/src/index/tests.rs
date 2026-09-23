@@ -97,8 +97,8 @@ fn the_jurisdiction_row_carries_its_measured_denominators() {
         rows.iter()
             .filter(|row| row.id.starts_with("jurisdiction:"))
             .count(),
-        UsJurisdiction::ALL.len().saturating_add(1),
-        "every jurisdiction and the unplaced row publish a denominator"
+        UsJurisdiction::CENSUS_SCOPE.len().saturating_add(1),
+        "every jurisdiction in the run scope and the unplaced row publish a denominator"
     );
 }
 

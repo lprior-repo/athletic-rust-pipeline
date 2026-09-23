@@ -54,7 +54,7 @@ already state the rule.
   cannot judge whether a retry is safe, and it compounds with the owner's retries — the 27× case.
 * **No retries; every failure pages an operator.** Rejected: transient store locks, session desyncs and
   rate limits are what a journaled retry repairs
-  (`crates/midwest-census/src/restate_services/mod.rs:84-87`).
+  (`crates/midwest-census/src/restate_services/support.rs:16-70`).
 * **Unbounded exponential retry.** Rejected: `MAX_RETRY_DELAY = 86_400 s` and `MAX_ATTEMPTS = 4` bound
   the workflow (`src/runtime/source/retry.rs:6-7`), and a blocked service pauses for an operator
   (`RESTATE_WORKFLOWS.md:209-211`).

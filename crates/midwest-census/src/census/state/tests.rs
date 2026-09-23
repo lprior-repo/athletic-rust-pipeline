@@ -6,7 +6,15 @@ use super::*;
 /// retained findings that are non-zero on purpose (findings never block a seal).
 fn evidence() -> SealEvidence {
     SealEvidence {
-        open: OpenWork::default(),
+        // Every open-work field is measured and terminal. `Some(0)` is not the same claim as
+        // `None`: this fixture is the evidence of a census that read the journal and found nothing
+        // outstanding, which is what a seal requires.
+        open: OpenWork {
+            jurisdiction_sweeps: Some(0),
+            source_objects: Some(0),
+            cohort_decisions: Some(0),
+            identity_candidates: Some(0),
+        },
         counts: SealCounts {
             jurisdictions: 51,
             schools: 18_047,
@@ -31,7 +39,7 @@ fn evidence() -> SealEvidence {
             ],
             conflicts: 11_342,
             retry_exhausted: 96,
-            source_failures: 4,
+            source_failures: Some(4),
             observations: 9_800_000,
             calculations: 4_060_000,
         },
@@ -152,29 +160,37 @@ fn every_open_decision_refuses_the_seal_by_name() {
     let cases = [
         (
             OpenWork {
-                jurisdiction_sweeps: 3,
-                ..OpenWork::default()
+                jurisdiction_sweeps: Some(3),
+                source_objects: Some(0),
+                cohort_decisions: Some(0),
+                identity_candidates: Some(0),
             },
             AcceptanceItem::JurisdictionSweepsTerminal,
         ),
         (
             OpenWork {
-                source_objects: 41,
-                ..OpenWork::default()
+                jurisdiction_sweeps: Some(0),
+                source_objects: Some(41),
+                cohort_decisions: Some(0),
+                identity_candidates: Some(0),
             },
             AcceptanceItem::SourceObjectsTerminal,
         ),
         (
             OpenWork {
-                cohort_decisions: 7,
-                ..OpenWork::default()
+                jurisdiction_sweeps: Some(0),
+                source_objects: Some(0),
+                cohort_decisions: Some(7),
+                identity_candidates: Some(0),
             },
             AcceptanceItem::CohortDecisionsTerminal,
         ),
         (
             OpenWork {
-                identity_candidates: 2,
-                ..OpenWork::default()
+                jurisdiction_sweeps: Some(0),
+                source_objects: Some(0),
+                cohort_decisions: Some(0),
+                identity_candidates: Some(2),
             },
             AcceptanceItem::IdentityCandidatesTerminal,
         ),
@@ -189,6 +205,85 @@ fn every_open_decision_refuses_the_seal_by_name() {
             "the refusal must name {item:?}"
         );
     }
+}
+
+/// A measurement nobody took is not a zero.
+///
+/// The store path of `midwest-census seal` cannot read the workflow journal, so it reports those
+/// fields as `None`. It used to report `0`, and the seal certified §70 items it had never checked -
+/// the exact failure this rule exists to make impossible.
+#[test]
+fn unmeasured_open_work_refuses_the_seal_by_name() {
+    let cases = [
+        (
+            OpenWork {
+                jurisdiction_sweeps: None,
+                source_objects: Some(0),
+                cohort_decisions: Some(0),
+                identity_candidates: Some(0),
+            },
+            AcceptanceItem::JurisdictionSweepsTerminal,
+        ),
+        (
+            OpenWork {
+                jurisdiction_sweeps: Some(0),
+                source_objects: None,
+                cohort_decisions: Some(0),
+                identity_candidates: Some(0),
+            },
+            AcceptanceItem::SourceObjectsTerminal,
+        ),
+        (
+            OpenWork {
+                jurisdiction_sweeps: Some(0),
+                source_objects: Some(0),
+                cohort_decisions: None,
+                identity_candidates: Some(0),
+            },
+            AcceptanceItem::CohortDecisionsTerminal,
+        ),
+        (
+            OpenWork {
+                jurisdiction_sweeps: Some(0),
+                source_objects: Some(0),
+                cohort_decisions: Some(0),
+                identity_candidates: None,
+            },
+            AcceptanceItem::IdentityCandidatesTerminal,
+        ),
+    ];
+    for (open, item) in cases {
+        let mut packet = evidence();
+        packet.open = open;
+        assert_eq!(packet.open_items(), vec![item]);
+        assert!(
+            packet.detail(item).contains("not measured"),
+            "an unmeasured refusal must say so rather than print a number: {}",
+            packet.detail(item)
+        );
+        let refused = seal_from_export(packet);
+        assert!(
+            matches!(refused, Err(SealError::ItemUnmet { item: named, .. }) if named == item),
+            "the refusal must name {item:?}"
+        );
+    }
+}
+
+/// The default is *unmeasured*, not terminal: a caller that forgets a field gets a refusal instead
+/// of a seal, and all four items are named at once.
+#[test]
+fn the_default_open_work_is_unmeasured_and_refuses() {
+    let mut packet = evidence();
+    packet.open = OpenWork::default();
+    assert_eq!(
+        packet.open_items().len(),
+        4,
+        "every field of the default is unmeasured, so every open-work item stays open"
+    );
+    assert!(
+        seal_from_export(packet).is_err(),
+        "an unmeasured seal must not be granted"
+    );
 }
 
 #[test]
@@ -374,4 +469,90 @@ fn the_seal_binds_the_workbook_it_certifies() {
         digest_of(&seal_from_export(sorted).expect("seals")),
         "the digest is over the set of workbook bytes, not their order"
     );
+}
+
+/// A jurisdiction that recorded every stage and left no roster behind is terminal; one that is
+/// missing a stage, or that owes rosters a host refused, is not.
+#[test]
+fn a_jurisdiction_is_terminal_only_when_every_stage_ran() {
+    let complete = JurisdictionStages {
+        teams: true,
+        rosters: true,
+        meets: true,
+        owed_rosters: 0,
+    };
+    assert!(complete.terminal());
+    for partial in [
+        JurisdictionStages {
+            teams: false,
+            ..complete
+        },
+        JurisdictionStages {
+            rosters: false,
+            ..complete
+        },
+        JurisdictionStages {
+            meets: false,
+            ..complete
+        },
+        JurisdictionStages {
+            owed_rosters: 12,
+            ..complete
+        },
+    ] {
+        assert!(!partial.terminal(), "{partial:?} still owes work");
+    }
+}
+
+/// The names an operator reads are the pieces the object has no outcome for, in the order it runs
+/// them — so `open-work` says what the next run would do, not merely that something is owed.
+#[test]
+fn owing_names_each_unfinished_piece_in_run_order() {
+    assert_eq!(
+        JurisdictionStages::default().owing(),
+        vec!["teams", "rosters", "meets"]
+    );
+    let blocked = JurisdictionStages {
+        teams: true,
+        rosters: true,
+        meets: true,
+        owed_rosters: 3,
+    };
+    assert_eq!(blocked.owing(), vec!["blocked rosters"]);
+}
+
+/// A read that failed is not a sweep that finished, and an object that never ran is not one that
+/// owes nothing: both carry a record with no stage outcome, and both count.
+#[test]
+fn unread_jurisdictions_count_as_owing() {
+    let terminal = JurisdictionStages {
+        teams: true,
+        rosters: true,
+        meets: true,
+        owed_rosters: 0,
+    };
+    assert_eq!(owed_jurisdictions(&[terminal]), 0);
+    assert_eq!(
+        owed_jurisdictions(&[terminal, JurisdictionStages::default(), terminal]),
+        1
+    );
+}
+
+/// A source object is owed until it has accepted one observation — the sweep's own rule for a stale
+/// endpoint, so the seal and the sweep cannot disagree about which endpoints are owed.
+#[test]
+fn a_source_object_is_owed_until_it_accepts_an_observation() {
+    let written = SourceObject {
+        endpoint: "milesplit_wi".to_string(),
+        observations: 1,
+        windows: 0,
+    };
+    let silent = SourceObject {
+        endpoint: "wiaa_results".to_string(),
+        observations: 0,
+        windows: 3,
+    };
+    assert!(written.terminal());
+    assert!(!silent.terminal());
+    assert_eq!(owed_source_objects(&[written, silent]), 1);
 }

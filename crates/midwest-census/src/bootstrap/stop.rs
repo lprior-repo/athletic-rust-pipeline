@@ -18,6 +18,8 @@ pub enum StopReason {
     /// The endpoint task ended on its own — a fault, not an operator action.
     #[default]
     ServerExit = 2,
+    /// The process passed its memory budget and drained itself before the machine swapped.
+    MemoryBudget = 3,
 }
 
 impl StopReason {
@@ -25,6 +27,7 @@ impl StopReason {
         match raw {
             0 => StopReason::Signal,
             1 => StopReason::Requested,
+            3 => StopReason::MemoryBudget,
             _ => StopReason::ServerExit,
         }
     }
@@ -35,6 +38,7 @@ impl StopReason {
             StopReason::Signal => 0,
             StopReason::Requested => 1,
             StopReason::ServerExit => 2,
+            StopReason::MemoryBudget => 3,
         }
     }
 }

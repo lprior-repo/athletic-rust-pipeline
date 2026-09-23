@@ -6,17 +6,22 @@
 //! session and this harness cannot drift apart.
 //!
 //! Children run with the repository root as their working directory, whatever directory `xtask`
-//! itself was invoked from.
+//! itself was invoked from. The census subcommands ([`census`]) can submit the running deployment's
+//! own handlers instead of running the binary, which is the only mode that works while
+//! `midwest-serve` holds the store.
 
 #![forbid(unsafe_code)]
 
 mod baseline;
+mod census;
 mod cmd;
 mod dump_sheet;
+mod ingress;
 mod integrity;
 mod json;
 mod paths;
 mod purity;
+mod replay;
 mod scaffold;
 mod scan;
 mod seams;
@@ -26,7 +31,7 @@ mod templates;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use cmd::Cmd;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 #[derive(Parser, Debug)]
@@ -92,17 +97,24 @@ enum Command {
         /// Fixture directory under the crate's `tests/fixtures/`.
         source: String,
     },
-    /// Print the core-scope census of a store (`midwest-census report --core`).
-    CensusStatus {
-        /// Store root (HTTP cache, journals, entity logs, output snapshots).
-        #[arg(long, value_name = "DIR")]
-        store: PathBuf,
+    /// Replay one source's committed fixture captures through the same parse path its fixture tests
+    /// use: offline, deterministically, with no network, no store and no clock, so two runs over the
+    /// same tree print the same bytes.
+    Replay {
+        /// Fixture directory under the crate's `tests/fixtures/`, e.g. `wiaa`, `mshsl`, `wiaa_results`.
+        name: String,
     },
-    /// Print the census over every source in a store (`midwest-census report`).
+    /// Print the core-scope census: the store's own counts from the running deployment
+    /// (`Census/status`), or a whole core report offline (`midwest-census report --core`).
+    CensusStatus {
+        #[command(flatten)]
+        target: census::Target,
+    },
+    /// Print the census over every source: `Report/run` on the running deployment, or
+    /// `midwest-census report` offline.
     Coverage {
-        /// Store root (HTTP cache, journals, entity logs, output snapshots).
-        #[arg(long, value_name = "DIR")]
-        store: PathBuf,
+        #[command(flatten)]
+        target: census::Target,
     },
     /// Run the pipeline benchmark (`cargo bench -p midwest-census`), with filters after `--`:
     /// `cargo xtask bench -- parser` runs only the parser benchmarks.
@@ -111,11 +123,11 @@ enum Command {
         #[arg(last = true, value_name = "BENCH_ARG")]
         args: Vec<String>,
     },
-    /// Build the census workbook (`.xlsx`) and its text sidecars from an existing store.
+    /// Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running
+    /// deployment, or `midwest-census workbook` offline.
     Export {
-        /// Store root (HTTP cache, journals, entity logs, output snapshots).
-        #[arg(long, value_name = "DIR")]
-        store: PathBuf,
+        #[command(flatten)]
+        target: census::Target,
         /// Where to write the `.xlsx` (defaults to `<store>/out/midwest-census-<generated-on>.xlsx`).
         #[arg(long, value_name = "FILE")]
         out: Option<PathBuf>,
@@ -174,31 +186,20 @@ fn run() -> Result<()> {
         Command::SourceTest { source } => source_test(&source),
         Command::SourceTests => source_tests(),
         Command::SourceFixture { source } => source_fixture::list(&source),
-        Command::CensusStatus { store } => census_report(&store, Scope::Core),
-        Command::Coverage { store } => census_report(&store, Scope::AllSources),
+        Command::Replay { name } => replay::run(&name),
+        Command::CensusStatus { target } => census::status(target),
+        Command::Coverage { target } => census::coverage(target),
         Command::Bench { args } => bench(&args),
         Command::Export {
-            store,
+            target,
             out,
             grad_year,
             all_sources,
             limit,
-        } => export(&store, out.as_deref(), grad_year, all_sources, limit),
+        } => census::export(target, out.as_deref(), grad_year, all_sources, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
     }
-}
-
-/// Which census scope a report covers.
-///
-/// The shipped CLI spells the core scope `--core` and defaults to every source; there is no
-/// `--scope` flag, and `report` writes into `<store>/out/` rather than to a `--out` directory.
-#[derive(Clone, Copy, Debug)]
-enum Scope {
-    /// Core evidence only: Athletic.net and the AthleticLIVE derivative excluded.
-    Core,
-    /// Every registered source.
-    AllSources,
 }
 
 /// `cargo nextest run -p midwest-census -E 'test(<source>)'`: one source's tests, nothing else.
@@ -242,67 +243,10 @@ fn nextest_installed() -> bool {
         .is_ok_and(|status| status.success())
 }
 
-/// The census for one store, in the scope the caller asked for.
-fn census_report(store: &Path, scope: Scope) -> Result<()> {
-    let mut cmd = Cmd::new("cargo")
-        .args([
-            "run",
-            "-q",
-            "-p",
-            "midwest-census",
-            "--bin",
-            "midwest-census",
-            "--",
-            "--store",
-        ])
-        .arg(store.display().to_string())
-        .arg("report");
-    if let Scope::Core = scope {
-        cmd = cmd.arg("--core");
-    }
-    cmd.run()
-}
-
 /// Run the criterion pipeline benchmark, filtered by whatever follows `--`.
 fn bench(args: &[String]) -> Result<()> {
     Cmd::new("cargo")
         .args(["bench", "-p", "midwest-census"])
         .args(args)
         .run()
-}
-
-/// `midwest-census workbook`: the recruiting workbook built from an existing store.
-///
-/// The census binary owns the workbook; this is the short stable name the objective asks for, and
-/// it is also what an agent that already has a store needs — no gather, no network.
-fn export(
-    store: &Path,
-    out: Option<&Path>,
-    grad_year: i32,
-    all_sources: bool,
-    limit: Option<usize>,
-) -> Result<()> {
-    let mut cmd = Cmd::new("cargo")
-        .args([
-            "run",
-            "-q",
-            "-p",
-            "midwest-census",
-            "--bin",
-            "midwest-census",
-            "--",
-            "--store",
-        ])
-        .arg(store.display().to_string())
-        .args(["workbook", "--grad-year", &grad_year.to_string()]);
-    if let Some(out) = out {
-        cmd = cmd.arg("--out").arg(out.display().to_string());
-    }
-    if all_sources {
-        cmd = cmd.arg("--all-sources");
-    }
-    if let Some(limit) = limit {
-        cmd = cmd.args(["--limit", &limit.to_string()]);
-    }
-    cmd.run()
 }

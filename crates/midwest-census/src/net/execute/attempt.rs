@@ -2,14 +2,14 @@
 
 use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::decode::process_response;
-use crate::net::request::{build_request, wait_backoff, RequestBody};
-use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher, MAX_RETRIES};
+use crate::net::request::{build_request, RequestBody};
+use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher};
 use census_domain::model::AccessBlockKind;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
-use tracing::{debug, warn};
+use tracing::warn;
 
 /// Everything an attempt needs: the request's coordinates plus the cache paths it reads and writes.
 pub(super) struct FetchPlan<'a> {
@@ -24,51 +24,24 @@ pub(super) struct FetchPlan<'a> {
     pub(super) timeout_secs: u64,
 }
 
-/// What one attempt concluded.
-enum Step {
-    /// Publish this outcome.
-    Publish(FetchOutcome),
-    /// Record the error and take the next attempt.
-    Retry(FetchError),
-    /// Record the error and end the loop.
-    Stop(FetchError),
-    /// Fail the fetch with this error.
-    Fail(FetchError),
-}
-
 impl Fetcher {
-    /// Retry with bounded exponential backoff + jitter until an attempt publishes or the attempt
-    /// budget runs out.
-    pub(super) async fn retry_loop(
+    /// Send one request. The durable layer owns retries (ADR-002): a failure returns an error, and
+    /// Restate replays the step under a policy the journal can account for. An in-process retry loop
+    /// here would spend a second budget no operator can see, and the backoff would be lost on any
+    /// restart — so the transport attempts exactly once, as the ADR's Decision states.
+    pub(super) async fn fetch_once(
         &self,
         gate: Arc<Mutex<()>>,
         plan: &FetchPlan<'_>,
     ) -> Result<FetchOutcome, FetchError> {
-        let mut last_err: Option<FetchError> = None;
-        for attempt in 1..=MAX_RETRIES {
-            let _permit = gate.lock().await;
-            self.wait_turn(plan.host).await;
-            match self.attempt_once(plan, attempt).await? {
-                Step::Publish(outcome) => return Ok(outcome),
-                Step::Retry(error) => last_err = Some(error),
-                Step::Stop(error) => {
-                    last_err = Some(error);
-                    break;
-                }
-                Step::Fail(error) => return Err(error),
-            }
-        }
-        // All retries exhausted.
-        let err = last_err.unwrap_or_else(|| FetchError::Timeout {
-            url: plan.url.to_string(),
-            timeout_secs: plan.timeout_secs,
-        });
-        Err(err)
+        let _permit = gate.lock().await;
+        self.wait_turn(plan.host).await;
+        self.attempt_once(plan).await
     }
 
     /// One attempt: send the request, count it, record what the host said about access, and read the
     /// response's verdict.
-    async fn attempt_once(&self, plan: &FetchPlan<'_>, attempt: u32) -> Result<Step, FetchError> {
+    async fn attempt_once(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         let response = self.dispatch(plan).await?;
         let status = response.status().as_u16();
         self.count_request(plan.host, status).await;
@@ -98,10 +71,10 @@ impl Fetcher {
                     &mut *self.stats.lock().await,
                 )
                 .await?;
-                Ok(Step::Publish(outcome))
+                Ok(outcome)
             }
-            304 => self.replay_cached(plan, attempt).await,
-            _ => Ok(self.status_verdict(status, plan, attempt).await),
+            304 => self.replay_cached(plan).await,
+            _ => Err(self.status_error(status, plan).await),
         }
     }
 
@@ -141,8 +114,12 @@ impl Fetcher {
         *per_host = per_host.saturating_add(1);
     }
 
-    /// Conditional GET: publish the cached body with refreshed timestamps, or re-fetch.
-    async fn replay_cached(&self, plan: &FetchPlan<'_>, attempt: u32) -> Result<Step, FetchError> {
+    /// Conditional GET: publish the cached body with refreshed timestamps.
+    ///
+    /// A 304 whose body has vanished from disk is an error, not a re-fetch: there is nothing to
+    /// publish, and whether to send the request again is the durable policy's call, not this
+    /// function's.
+    async fn replay_cached(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         if let Some(meta) = plan.cached {
             if let Ok(bytes) = std::fs::read(plan.body_path) {
                 let mut refreshed = meta.clone();
@@ -152,7 +129,7 @@ impl Fetcher {
                     let mut stats = self.stats.lock().await;
                     stats.conditional_304 = stats.conditional_304.saturating_add(1);
                 }
-                return Ok(Step::Publish(FetchOutcome {
+                return Ok(FetchOutcome {
                     url: plan.url.to_string(),
                     method: plan.method.to_string(),
                     status: meta.status,
@@ -162,59 +139,34 @@ impl Fetcher {
                     from_cache: false,
                     content_type: meta.content_type.clone(),
                     body: bytes,
-                }));
+                });
             }
         }
-        // The cache body disappeared — fall through to re-fetch.
-        let error = FetchError::Http {
-            status: 304,
-            url: plan.url.to_string(),
-        };
-        if attempt < MAX_RETRIES {
-            let delay = wait_backoff(attempt).await;
-            debug!(
-                attempt,
-                delay_ms = delay.as_millis(),
-                "retrying after backoff"
-            );
-            return Ok(Step::Retry(error));
-        }
+        // The cache body disappeared: there is nothing to publish, so the fetch fails and the
+        // durable layer decides whether to send it again.
         let mut stats = self.stats.lock().await;
         stats.errors = stats.errors.saturating_add(1);
-        Ok(Step::Fail(error))
+        Err(FetchError::Http {
+            status: 304,
+            url: plan.url.to_string(),
+        })
     }
 
-    /// Non-200/404/304: record the error, and back off on the statuses that are worth retrying.
-    async fn status_verdict(&self, status: u16, plan: &FetchPlan<'_>, attempt: u32) -> Step {
+    /// Non-200/404/304: record the error and return it for the durable layer to classify.
+    async fn status_error(&self, status: u16, plan: &FetchPlan<'_>) -> FetchError {
         {
             let mut stats = self.stats.lock().await;
             stats.errors = stats.errors.saturating_add(1);
         }
         let url = plan.url;
         warn!(status, url, "non-success response");
-        let error = FetchError::Http {
+        // Every status here is either a host observation (403/429, already recorded against the host)
+        // or a fault the durable retry policy exists to absorb. The transport's job is to report it;
+        // grading it as retryable or terminal belonged to the loop that no longer runs here.
+        FetchError::Http {
             status,
             url: plan.url.to_string(),
-        };
-        // Retry the statuses [`FetchError::retryable`] classifies as transient: server errors
-        // (5xx) and client errors (429 rate-limit).
-        if error.retryable() {
-            if attempt < MAX_RETRIES {
-                let delay = wait_backoff(attempt).await;
-                debug!(
-                    attempt,
-                    status,
-                    delay_ms = delay.as_millis(),
-                    "retrying on server error"
-                );
-                return Step::Retry(error);
-            }
-        } else if status == 404 && !plan.options.allow_not_found {
-            // 404 is not retried — it's a terminal result.
-            return Step::Fail(error);
         }
-        // Other errors (4xx except 429/404) are not retried.
-        Step::Stop(error)
     }
 }
 

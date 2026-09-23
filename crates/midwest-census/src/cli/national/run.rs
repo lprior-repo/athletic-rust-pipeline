@@ -16,6 +16,7 @@ use super::observe::{observe, observe_jurisdiction, Watch};
 use super::report::{failure_exit, print_jurisdiction, print_national};
 use super::{JurisdictionArgs, NationalArgs, NationalReportArgs};
 use crate::cli::ingress;
+use crate::cli::Cli;
 
 /// The handle for a run that already exists under `identity`.
 ///
@@ -79,14 +80,16 @@ pub(crate) async fn submit_national(
 }
 
 #[tracing::instrument(skip_all, fields(command = "national"))]
-pub(crate) async fn run_national(args: &NationalArgs) -> Result<()> {
+pub(crate) async fn run_national(cli: &Cli, args: &NationalArgs) -> Result<()> {
     let (season, revision) = (args.flags.season(), args.flags.revision());
     let identity = WorkflowIdentity::national(season, revision);
-    let ingestion = ingress::client(&args.flags.ingress)?;
+    let jurisdictions = crate::cli::within_census_scope(&args.states)?;
+    let origin = cli.service_origin("national", args.flags.ingress())?;
+    let ingestion = ingress::client(origin)?;
     let request = NationalRequest {
         season,
         revision,
-        jurisdictions: args.states.clone(),
+        jurisdictions: jurisdictions.clone(),
         refresh: args.refresh,
         limit_per_state: args.limit_per_state,
         concurrency: args.concurrency,
@@ -101,15 +104,15 @@ pub(crate) async fn run_national(args: &NationalArgs) -> Result<()> {
     if args.detach {
         return Ok(());
     }
-    let jurisdictions = if args.states.is_empty() {
-        UsJurisdiction::ALL.to_vec()
+    let watched = if jurisdictions.is_empty() {
+        UsJurisdiction::CENSUS_SCOPE.to_vec()
     } else {
-        args.states.clone()
+        jurisdictions
     };
     let report = observe(Watch {
         handle: &handle,
         ingestion: &ingestion,
-        jurisdictions: &jurisdictions,
+        jurisdictions: &watched,
         season,
         revision,
         rounds: args.flags.rounds(),
@@ -119,10 +122,11 @@ pub(crate) async fn run_national(args: &NationalArgs) -> Result<()> {
     failure_exit(&report)
 }
 #[tracing::instrument(skip_all, fields(command = "jurisdiction"))]
-pub(crate) async fn run_jurisdiction(args: &JurisdictionArgs) -> Result<()> {
+pub(crate) async fn run_jurisdiction(cli: &Cli, args: &JurisdictionArgs) -> Result<()> {
     let (season, revision) = (args.flags.season(), args.flags.revision());
     let identity = WorkflowIdentity::jurisdiction(args.jurisdiction, season, revision);
-    let ingestion = ingress::client(&args.flags.ingress)?;
+    let origin = cli.service_origin("jurisdiction", args.flags.ingress())?;
+    let ingestion = ingress::client(origin)?;
     let request = JurisdictionRequest {
         jurisdiction: args.jurisdiction,
         season,
@@ -155,11 +159,12 @@ pub(crate) async fn run_jurisdiction(args: &JurisdictionArgs) -> Result<()> {
 }
 
 #[tracing::instrument(skip_all, fields(command = "national-report"))]
-pub(crate) async fn run_national_report(args: &NationalReportArgs) -> Result<()> {
+pub(crate) async fn run_national_report(cli: &Cli, args: &NationalReportArgs) -> Result<()> {
     let season = SchoolYear(args.season);
     let revision = Revision(args.revision);
     let identity = WorkflowIdentity::national(season, revision);
-    let ingestion = ingress::client(&args.ingress)?;
+    let origin = cli.service_origin("national-report", args.ingress.as_deref())?;
+    let ingestion = ingress::client(origin)?;
     let national = NationalCensusIngressClient::from_client(ingestion, identity.as_str());
     let last = national
         .report()

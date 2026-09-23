@@ -24,26 +24,44 @@ const POLL: Duration = Duration::from_secs(10);
 /// Polls between two progress lines: one minute at [`POLL`].
 const PROGRESS_EVERY: u64 = 6;
 
-/// The flags every workflow-driving command shares.
+/// The flags every command that submits a run shares: which deployment to address, which revision of
+/// the run it belongs to, and how long to observe it.
 #[derive(Args, Debug, Clone)]
-pub(super) struct RunFlags {
-    /// Ingress origin of the local Restate server.
-    #[arg(long, default_value = "http://127.0.0.1:18080/")]
-    ingress: String,
-    /// Season start year: 2026 is the 2026-27 school year.
-    #[arg(long, default_value_t = 2026)]
-    season: i16,
-    /// Run revision. The identity is `national:<season>:<revision>` — a run that already exists is
+pub(super) struct WorkflowFlags {
+    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(long, value_name = "ORIGIN")]
+    pub(super) ingress: Option<String>,
+    /// Run revision. A run's identity is `<kind>:<season>:<revision>` — a run that already exists is
     /// reattached to, and changing a run *parameter* needs the revision bumped instead of a second
     /// submission under the same identity.
     #[arg(long, default_value_t = 1)]
-    revision: u32,
+    pub(super) revision: u32,
     /// Seconds to observe the run before returning. The run itself continues either way.
     #[arg(long, default_value_t = 172_800)]
-    timeout_seconds: u64,
+    pub(super) timeout_seconds: u64,
+}
+
+impl WorkflowFlags {
+    /// Observation rounds the timeout buys. A zero timeout means "submit and do not observe".
+    pub(super) fn rounds(&self) -> u64 {
+        self.timeout_seconds
+            .checked_div(POLL.as_secs())
+            .unwrap_or(0)
+    }
+}
+
+/// The flags the workflow-driving commands share: [`WorkflowFlags`] plus the season, which together
+/// with the revision is the run's identity, and how the report prints.
+#[derive(Args, Debug, Clone)]
+pub(super) struct RunFlags {
+    #[command(flatten)]
+    workflow: WorkflowFlags,
+    /// Season start year: 2026 is the 2026-27 school year.
+    #[arg(long, default_value_t = 2026)]
+    season: i16,
     /// Print the run's report as JSON instead of a table.
     #[arg(long)]
-    json: bool,
+    pub(super) json: bool,
 }
 
 impl RunFlags {
@@ -52,14 +70,17 @@ impl RunFlags {
     }
 
     fn revision(&self) -> Revision {
-        Revision(self.revision)
+        Revision(self.workflow.revision)
+    }
+
+    /// The `--ingress` value as given: `None` means the local deployment.
+    fn ingress(&self) -> Option<&str> {
+        self.workflow.ingress.as_deref()
     }
 
     /// Observation rounds the timeout buys. A zero timeout means "submit and do not observe".
     fn rounds(&self) -> u64 {
-        self.timeout_seconds
-            .checked_div(POLL.as_secs())
-            .unwrap_or(0)
+        self.workflow.rounds()
     }
 }
 
@@ -109,9 +130,9 @@ pub(super) struct JurisdictionArgs {
 /// `national-report`: the last report a national run wrote, without starting one.
 #[derive(Args, Debug, Clone)]
 pub(super) struct NationalReportArgs {
-    /// Ingress origin of the local Restate server.
-    #[arg(long, default_value = "http://127.0.0.1:18080/")]
-    ingress: String,
+    /// Ingress origin of the local Restate server. The local census deployment when omitted.
+    #[arg(long, value_name = "ORIGIN")]
+    ingress: Option<String>,
     /// Season start year: 2026 is the 2026-27 school year.
     #[arg(long, default_value_t = 2026)]
     season: i16,
@@ -127,6 +148,7 @@ mod observe;
 mod report;
 mod run;
 
+pub(super) use observe::drive_jurisdiction;
 #[cfg(test)]
 use report::{blocked_count, cell, failure_exit, owed_total};
 pub(super) use run::{run_jurisdiction, run_national, run_national_report};

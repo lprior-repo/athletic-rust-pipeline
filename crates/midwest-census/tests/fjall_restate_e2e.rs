@@ -39,9 +39,14 @@ const DISCOVERY_ACCEPT: &str = "application/vnd.restate.endpointmanifest.v4+json
 const DISCOVERY_ATTEMPTS: usize = 50;
 const DISCOVERY_RETRY_DELAY: Duration = Duration::from_millis(100);
 /// Wire names come from Restate struct names, so they are PascalCase (see `restate_services` docs):
-/// the three sweep surfaces plus the jurisdiction object and the national workflow that drive them.
-const EXPECTED_SERVICES: [&str; 5] = [
+/// the operator's read surface, the four heavy jobs it shares, the ingest object, and the sweeps and
+/// workflows that drive them.
+const EXPECTED_SERVICES: [&str; 9] = [
     "Census",
+    "Consolidate",
+    "Report",
+    "Bests",
+    "Workbook",
     "Ingest",
     "Sweep",
     "JurisdictionCensus",

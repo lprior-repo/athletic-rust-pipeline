@@ -60,7 +60,18 @@ impl Ingest {
     }
 }
 
-#[object]
+// Ingest is a state machine keyed by acquisition run: `record` advances it and `complete_window`
+// closes the window. It holds no completion of its own, so no workflow-completion retention.
+#[object(
+    journal_retention = "90 days",
+    idempotency_retention = "30 days",
+    invocation_retry_policy(
+        initial_interval = "500ms",
+        max_interval = "1m",
+        max_attempts = 70,
+        on_max_attempts = "pause"
+    )
+)]
 impl Ingest {
     #[handler]
     async fn state(&self, ctx: SharedObjectContext<'_>) -> Result<Json<IngestState>, HandlerError> {
@@ -78,7 +89,10 @@ impl Ingest {
         let store = Arc::clone(&self.store);
         let region = Arc::clone(&self.region);
         let rows = request.rows;
-        let today = self.clock.today();
+        // The date is journaled, not read: `ctx.set` below compares the serialized payload on
+        // replay, so a wall-clock read that has moved on to the next day would fail the invocation
+        // with a journal mismatch instead of replaying it.
+        let today = super::journaled_today(&ctx, &self.clock).await?;
         let appended = ctx
             .run(move || async move {
                 blocking(region, move || append_observations(&store, table, &rows))

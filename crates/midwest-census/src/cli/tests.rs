@@ -3,10 +3,13 @@
 use super::{resolve_restriction, resolve_states};
 use census_domain::UsJurisdiction;
 
+/// `--all-states` is the census *run* scope (ADR-009), not every jurisdiction the domain models:
+/// Alaska and Hawaii are valid values a run never acquires, so the flag must not admit them.
 #[test]
-fn all_states_selects_every_jurisdiction() {
+fn all_states_selects_the_census_run_scope() {
     let states = resolve_states(true, &[]).expect("--all-states resolves");
-    assert_eq!(states, UsJurisdiction::ALL);
+    assert_eq!(states, UsJurisdiction::CENSUS_SCOPE);
+    assert!(!states.contains(&UsJurisdiction::Alaska));
 }
 
 #[test]
@@ -34,7 +37,7 @@ fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
     let states = resolve_restriction(false, &[]).expect("no restriction");
     assert!(states.is_empty());
     let all = resolve_restriction(true, &[]).expect("--all-states resolves");
-    assert_eq!(all, UsJurisdiction::ALL);
+    assert_eq!(all, UsJurisdiction::CENSUS_SCOPE);
     let explicit = resolve_restriction(false, &[UsJurisdiction::Ohio]).expect("explicit");
     assert_eq!(explicit, vec![UsJurisdiction::Ohio]);
     assert!(resolve_restriction(true, &[UsJurisdiction::Ohio]).is_err());

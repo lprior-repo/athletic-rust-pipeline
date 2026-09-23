@@ -71,7 +71,7 @@ pub(super) fn run_qa_reports(args: &QaReportsArgs) -> Result<()> {
         ) {
             let text = std::fs::read_to_string(&path)
                 .unwrap_or_else(|e| format!("error reading {}: {e}", path.display()));
-            ok_count += 1;
+            ok_count = ok_count.saturating_add(1);
             println!("OK {:02} {:<55} {:>7} chars", num, fname, text.len());
         }
     }

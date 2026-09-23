@@ -30,8 +30,9 @@ pub use aggregate::consolidate;
 pub use identity::{Revision, WorkflowIdentity};
 pub use meets::{collect_state_meets, select_meets, MeetCensus};
 pub use state::{
-    AcceptanceItem, CensusState, GapTally, OpenWork, Phase, RetainedFindings, SealCounts,
-    SealError, SealEvidence, SealedCensus, WorkbookCheck,
+    owed_jurisdictions, owed_source_objects, AcceptanceItem, CensusState, GapTally,
+    JurisdictionStages, OpenWork, Phase, RetainedFindings, SealCounts, SealError, SealEvidence,
+    SealedCensus, SourceObject, WorkbookCheck,
 };
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 pub use verify::{
@@ -56,7 +57,7 @@ pub struct CollectOptions {
 impl Default for CollectOptions {
     fn default() -> Self {
         Self {
-            jurisdictions: UsJurisdiction::ALL.to_vec(),
+            jurisdictions: UsJurisdiction::CENSUS_SCOPE.to_vec(),
             limit_per_state: None,
             concurrency: 4,
             state_concurrency: 4,

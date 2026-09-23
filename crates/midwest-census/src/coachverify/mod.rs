@@ -224,7 +224,7 @@ fn boundary_at(text: &str, mut index: usize) -> usize {
         index = len;
     }
     while index < len && !text.is_char_boundary(index) {
-        index += 1;
+        index = index.saturating_add(1);
     }
     index
 }
