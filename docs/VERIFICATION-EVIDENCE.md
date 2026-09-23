@@ -627,3 +627,78 @@ the fix reached the artifact, in order:
   `-p census-service` back to `-p midwest-census` reproduces the committed digest `72e7bffb…`
   exactly, so no published number was ever in that mismatch. `WORKBOOK_DUMP=1` now prints every
   normalized cell the digest reads, in digest order, so a future mismatch names the cell.
+
+## Census seal (2026-09-23)
+
+The 2026-09-23 census could not be sealed at all until a schema-stale artifact was moved out of the
+way, and how it failed is the part worth recording: `out/seal.json` was written by a build that
+predated the access-conditions work, and every seal reads it (`recorded_seal`) before it can report
+anything, so the run died on the *file* rather than on the census.
+
+    sha256 2b27837d…   var/midwest-census/out/seal.json
+    jq                 {"sealed_on":"2026-09-22","phase":"complete","athletes":2238090}
+    seal --grad-year 2027 --workbook out/census-service-2026-09-23.xlsx
+      # Error: parsing var/midwest-census/out/seal.json / missing field `access_conditions`
+
+A recorded seal is not inert: it is read by the next run and it certifies a store that has since
+moved. It is quarantined rather than deleted — `out/superseded/seal-2026-09-22-pre-access-conditions.json`,
+same rule as the leaked workbook above: the bytes are the only record of the artifact's shape, and
+the globs that resolve "the newest `out/*`" must not see it. (The remedy is an operator's, because
+"quietly repair it" is the failure mode the ADR exists to prevent; a seal that cannot read its own
+predecessor has to say so.)
+
+With that moved, the offline route reports (20 s, store route, no `--write`):
+
+    phase: exporting
+    workbook: var/midwest-census/out/census-service-2026-09-23.xlsx
+    acceptance: jurisdiction sweeps are terminal unmet — not measured — this seal does not read the workflow journal
+    acceptance: source objects are terminal unmet — not measured — this seal does not read the workflow journal
+    acceptance: identity candidates are terminal unmet — 442 identity candidates are undecided
+    refused: census cannot be sealed: jurisdiction sweeps are terminal is unmet (…)
+
+Three things this run establishes rather than assumes:
+
+- **The workbook check passes.** `inspect_workbook` runs before the acceptance gate, so reaching the
+  item list at all means the 2026-09-23 export reconciles with the store's cohort — the 2 959-row
+  scope leak is fixed in the artifact the seal was pointed at, not only in the source.
+- **Items 1 and 2 read `not measured` offline *by construction*, and the message says why**: the
+  store route reads no workflow journal. They are neither failures nor zeros — §70's own distinction,
+  now observed instead of inferred. Only the online route (`seal --ingress <origin>`) measures them.
+- **Every other §70 item is satisfied**: the item list prints only what is unmet.
+
+### The review lane, and what it costs
+
+The two lanes were identified from the running servers and the config that pairs them:
+
+    config.native.toml   q5_url = http://127.0.0.1:11000/  q5_model = …UD-Q5_K_XL.gguf
+                         q4_url = http://127.0.0.1:11001/  q4_model = …UD-Q4_K_XL.gguf
+    ps                   llama-server … -np 1 … -c 200000 … --port 11000    (pid 1510152)
+                         llama-server … -np 1 … -c 131072 … --port 11001    (pid 1623)
+
+`-np 1` is why `ask_lanes` keeps exactly one request in flight per lane (`.buffered(lanes)`): a pass
+costs `ceil(cases / 2) × latency`, not `cases × latency / slots`.
+
+Smoke run — two cases, 30.4 s wall, `review --limit 2`, both lanes:
+
+    2374515 athlete rows, 2330330 provider objects, 51835 cases filed (42830 decided, 9005 pending),
+    6626 rows holding several objects of one provider, 0 findings left to a standing decision
+    asked=2 accepted=0 rejected=0 insufficient=1 unanswered=1 dropped=0 failed=0
+
+The second line is the model's half, and `insufficient=1` is the module working as specified: an
+answer the store's own evidence cannot back is not recorded as a verdict. The first line is the
+deterministic half, and it is the one that changes the seal: `reconcile_athletes` **files 51 835
+athlete-identity cases, 9 005 of them pending** — none of which the seal had counted a minute
+earlier, when it read 442. Both numbers are true of different states of the same store:
+
+- the **weekly chain** (teams → … → index → report → bests → workbook) leaves the review table
+  holding the merge's own conflicts: 1 359 cases, 442 undecided;
+- the **review stage**, run on top, replaces that with its reconciliation of every athlete row:
+  51 835 cases, 9 448 undecided.
+
+The index pass is what defines the standing rows of a *derived* table (`table_rows`'s own rule: a
+derived table's count is the rows its newest write left standing), so `index` restores the chain's
+state and the review stage can be re-run whenever an operator wants it. Nothing is lost either way —
+the 9 005 are re-derivable from the same athlete rows — but the review-stage state is the honest one
+for a census that ran its review stage, and closing it means ~15 h of local-model time (extrapolated
+from the smoke: 30.4 s for two cases *including* the reconciliation). That is exactly why `review`
+documents itself as an operator action with a small default limit rather than a pipeline stage.

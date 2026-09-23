@@ -40,6 +40,15 @@ census-service --store <dir> workbook
 cases, coverage, and one snapshot of the pass — replacing their rows rather than appending, so the
 chain can run daily without growing them. `run` chains every step above in one command.
 
+Because the review table is one of those derived tables, the case state a seal reads is the state the
+last stage left, and the two states are not close in size: the weekly chain leaves its own retained
+conflicts (1 359 cases, 442 undecided on the 2026-09-23 store), while the review lane on top of it
+files its reconciliation of every athlete row as well (51 835 cases, 9 448 undecided — the larger
+number includes 9 005 athlete-identity cases the lane then has to ask about). Verdicts live in their
+own table and survive an `index` pass, so a re-run re-mints cases but does not lose decisions; what
+an operator chooses is how much of the review stage the census they seal claims. Nothing here is a
+repair path — `index` re-deriving the table from the same rows *is* what keeps it bounded.
+
 `teams --refresh` is the only step that re-reads association indexes; `collect` walks rosters and the
 current season's result pages. No step re-reads the full historical corpus: every fetch is
 content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/census-service-collect.service`
@@ -143,6 +152,13 @@ store's count, the `Coverage` sheet's jurisdiction rows against the classifier, 
 bytes (sha256). What it does not check: the cell contents of the multi-million-row performance
 sheets — that reconciliation belongs to the workbook verifier, and the seal records
 `workbook_rows: 0` rather than a count it did not take.
+
+A recorded seal is read by the next run, so a `seal.json` written by an older build is not inert:
+where a field the current build requires was added later, every later seal dies parsing the file
+rather than measuring the census (`Error: parsing out/seal.json / missing field access_conditions`,
+2026-09-23). The remedy is an operator's — quietly repairing or ignoring the store's own record is
+exactly what the seal exists to prevent — so move it aside rather than edit it: `out/superseded/` is
+where this store keeps artifacts that must not be read as current, and the seal then runs.
 
 ## Backups
 
