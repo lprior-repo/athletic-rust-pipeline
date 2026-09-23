@@ -120,6 +120,23 @@ numbers behind it, for example `Run Metrics cohort 307652 != store 307653`. Seal
 phase ladder has not reached `exporting` is refused rather than granted: a store with no workbook,
 no coverage classification or no consolidated snapshots cannot be sealed at all.
 
+**Two of §70's items only the run's own objects can answer** — owed jurisdiction sweeps (§70 item 1)
+and source objects that have accepted nothing (item 2) — and the store holds neither. The command
+above therefore reads them as *unmeasured* and stays refused over them; that is the honest answer for
+the store route, not a bug. A finished census seals through the deployment that ran it:
+
+    census-service open-work                                    # what the run still owes, online
+    census-service seal --ingress http://127.0.0.1:18095/ --write
+
+`--season` and `--revision` name the run being certified (defaults: the 2026-27 season, revision 1)
+— the run it *was submitted under*, never a new one. `--source-object <key>` names an ingest object
+to read, repeatably, because an object key is the caller's to choose and the service cannot enumerate
+them: naming none leaves item 2 unmeasured rather than reporting it as zero, and naming a key whose
+acquisition never ran that way reads as an endpoint that never accepted an observation. Acquisition
+still writes the store through the CLI, so today an online seal measures item 1 and reports item 2
+as unmeasured until acquisition is routed through `Ingest` (see *Weekly incremental refresh*); the
+two routes otherwise assemble the same ladder, and an operator reads one vocabulary either way.
+
 `--write` records the sealed state in `out/seal.json`. What the seal checks: the phase ladder
 against the store's own artifacts, the cohort the workbook's `Run Metrics` sheet names against the
 store's count, the `Coverage` sheet's jurisdiction rows against the classifier, and the workbook's
