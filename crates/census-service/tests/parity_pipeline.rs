@@ -1580,6 +1580,14 @@ impl Workbook {
                 !sheet_cells.is_empty(),
                 "the workbook's {name} sheet carries no cell"
             );
+            // A per-sheet digest names the sheet a mismatch moved, not the cell. `WORKBOOK_DUMP=1`
+            // prints every normalized cell the digest reads, in digest order, so the cell can be
+            // named too; it changes nothing about what is compared.
+            if std::env::var_os("WORKBOOK_DUMP").is_some() {
+                for cell in &sheet_cells {
+                    eprintln!("workbook-cell\t{cell}");
+                }
+            }
             cells.extend(sheet_cells.iter().cloned());
             sheets.push(serde_json::json!({
                 "name": name,
