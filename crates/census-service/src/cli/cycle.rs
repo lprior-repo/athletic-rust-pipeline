@@ -112,8 +112,8 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
     let index = census_reconcile::index::derive(store, "run", &observed_on)
         .context("deriving the durable indexes")?;
     println!(
-        "index\tsource_identities={} conflicts={} reviews={} coverage={}",
-        index.source_identities, index.conflicts, index.reviews, index.coverage
+        "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={}",
+        index.source_identities, index.conflicts, index.reviews, index.superseded, index.coverage
     );
 
     for scope in [report::Scope::AllSources, report::Scope::Core] {

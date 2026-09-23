@@ -18,14 +18,17 @@
 
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CollectionSnapshot, CoverageRow, CoverageScope, GradYear,
-    NaturalKey, RetainedConflict, ReviewCase, SourceEntityKind, SourceIdentity, SourceNamespace,
-    SourceObjectIdentity,
+    CanonicalSchool, CanonicalTeam, CollectionSnapshot, NaturalKey, RetainedConflict, ReviewCase,
+    ReviewState, SourceEntityKind, SourceIdentity, SourceObjectIdentity,
 };
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
-use census_report::report::{coverage_report, ReportResult};
-use census_store::{Store, Table};
+use census_report::report::ReportResult;
+use census_store::{Entity, Store, Table};
+
+mod coverage;
+
+use coverage::coverage_rows;
 
 /// What one derivation pass wrote, per table.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -35,6 +38,8 @@ pub struct IndexReport {
     pub reviews: usize,
     pub coverage: usize,
     pub snapshots: usize,
+    /// Cases this pass closed because the finding they named is not one of the findings it reached.
+    pub superseded: usize,
 }
 
 impl IndexReport {
@@ -46,6 +51,63 @@ impl IndexReport {
             .saturating_add(self.coverage)
             .saturating_add(self.snapshots)
     }
+}
+
+/// The cases the store holds, by id.
+///
+/// A case id binds the family, the subject and the evidence its finding rests on, so a stored row
+/// under an id this pass derives again is the *same question* about the same reading of the same rows
+/// — which is what lets a pass keep the decision that row was left in. An id the map does not hold is
+/// a case this pass is the first to name.
+fn stored_cases(store: &Store) -> ReportResult<HashMap<String, ReviewCase>> {
+    Ok(store
+        .scan::<ReviewCase>(Table::ReviewCases)?
+        .into_iter()
+        .map(|case| (case.id.clone(), case))
+        .collect())
+}
+
+/// The case this pass derives, as the store already knows it: a decided row keeps its decision.
+///
+/// The stored row is history and the minted one is the finding as it stands now, so the merge is the
+/// entity's own: a verdict is never reset by the pass that derives the finding again.
+fn carried(stored: &HashMap<String, ReviewCase>, minted: ReviewCase) -> ReviewCase {
+    match stored.get(&minted.id) {
+        Some(case) => {
+            let mut case = case.clone();
+            case.merge(minted);
+            case
+        }
+        None => minted,
+    }
+}
+
+/// Close the pending cases this pass did not derive again.
+///
+/// A finding whose evidence changed mints a new case and leaves the reading it replaced behind: that
+/// case names rows that no longer say what it says, so no decision is owed for it, and leaving it
+/// `Pending` would hold §70's cohort and identity items open for work nothing can do. A case a lane
+/// already decided is left standing — its verdict is the record of what was decided about the
+/// evidence of its time — so the sweep closes only what no decision ever claimed.
+fn supersede(
+    store: &Store,
+    stored: &HashMap<String, ReviewCase>,
+    current: &[ReviewCase],
+) -> census_store::StoreResult<usize> {
+    let live: std::collections::HashSet<&str> =
+        current.iter().map(|case| case.id.as_str()).collect();
+    let stale: Vec<ReviewCase> = stored
+        .values()
+        .filter(|case| case.state == ReviewState::Pending && !live.contains(case.id.as_str()))
+        .cloned()
+        .map(|mut case| {
+            case.state = ReviewState::Superseded;
+            case
+        })
+        .collect();
+    let closed = stale.len();
+    store.replace_many(Table::ReviewCases, &stale)?;
+    Ok(closed)
 }
 
 /// Derive every index from the merged rows and append it.
@@ -69,11 +131,16 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
     // natural keys minted is a retained conflict like any other, and it has to reach a reader of the
     // store, not only a reader of the row that kept it.
     conflicts.extend(pass.collisions);
+    // A case is minted in the state its family starts in and then merged with the row the store
+    // holds for the same question: a decision an earlier pass recorded is what that row says, and a
+    // finding has to be derived again for its case to be written again at all.
+    let stored = stored_cases(store)?;
     let reviews: Vec<ReviewCase> = retained
         .reviews
         .iter()
         .map(|(family, row)| {
-            ReviewCase::pending(family, &row.subject_id, &row.subject, &row.detail)
+            let minted = ReviewCase::minted(family, &row.subject_id, &row.subject, &row.detail);
+            carried(&stored, minted)
         })
         .collect();
 
@@ -83,6 +150,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
     store.replace_many(Table::Conflicts, &conflicts)?;
     store.replace_many(Table::ReviewCases, &reviews)?;
     store.replace_many(Table::Coverage, &coverage)?;
+    let superseded = supersede(store, &stored, &reviews)?;
 
     // The snapshot is taken after every append above: the counters it records are the store's
     // cumulative appended-observation totals once this pass finished, which is what a later reader
@@ -95,6 +163,7 @@ pub fn derive(store: &Store, phase: &str, finished_at: &str) -> ReportResult<Ind
         reviews: reviews.len(),
         coverage: coverage.len(),
         snapshots: 1,
+        superseded,
     })
 }
 
@@ -195,83 +264,6 @@ fn take_collisions<'a, T: NaturalKey + 'a>(
     }
 }
 
-/// Coverage rows: one per jurisdiction from the reconciled coverage report, one per source namespace
-/// from the identities this pass read.
-fn coverage_rows(
-    store: &Store,
-    identities: &[SourceObjectIdentity],
-) -> ReportResult<Vec<CoverageRow>> {
-    let report = coverage_report(store, Some(GradYear::CO2027.get()))?;
-    let mut rows = Vec::with_capacity(report.jurisdictions.len().saturating_add(identities.len()));
-    for jurisdiction in &report.jurisdictions {
-        rows.push(
-            CoverageRow::new(
-                CoverageScope::Jurisdiction,
-                jurisdiction.jurisdiction.to_string(),
-            )
-            .with("schools", count(jurisdiction.schools))
-            .with(
-                "schools_with_athletes",
-                count(jurisdiction.schools_with_athletes),
-            )
-            .with("cohort_athletes", count(jurisdiction.athletes))
-            .with("boys", count(jurisdiction.boys))
-            .with("girls", count(jurisdiction.girls))
-            .with("grad_verified", count(jurisdiction.grad_verified))
-            .with("grad_unresolved", count(jurisdiction.grad_unresolved))
-            .with("multisource", count(jurisdiction.multisource))
-            .with("with_performance", count(jurisdiction.with_performance))
-            .with("with_profile_url", count(jurisdiction.with_profile_url))
-            .with(
-                "schools_with_tf_coach",
-                count(jurisdiction.schools_with_tf_coach),
-            )
-            .with(
-                "schools_with_xc_coach",
-                count(jurisdiction.schools_with_xc_coach),
-            )
-            .with(
-                "schools_with_coach_email",
-                count(jurisdiction.schools_with_coach_email),
-            )
-            .with("meets", count(jurisdiction.meets))
-            .with("coaches", count(jurisdiction.coaches))
-            .with("coaches_with_email", count(jurisdiction.coaches_with_email)),
-        );
-    }
-    rows.extend(source_coverage(identities));
-    Ok(rows)
-}
-
-/// One coverage row per source namespace: how many source objects it contributes, per canonical
-/// table.
-fn source_coverage(identities: &[SourceObjectIdentity]) -> Vec<CoverageRow> {
-    let mut by_source: BTreeMap<&SourceNamespace, BTreeMap<String, u64>> = BTreeMap::new();
-    for identity in identities {
-        let metrics = by_source.entry(&identity.namespace).or_default();
-        bump(metrics, "identities");
-        bump(metrics, identity.entity.slug());
-    }
-    by_source
-        .into_iter()
-        .map(|(namespace, metrics)| {
-            let source = namespace.to_string();
-            CoverageRow {
-                id: format!("source:{source}"),
-                scope: CoverageScope::Source,
-                subject: source,
-                metrics,
-            }
-        })
-        .collect()
-}
-
-/// Count one occurrence, saturating rather than wrapping.
-fn bump(metrics: &mut BTreeMap<String, u64>, metric: &str) {
-    let slot = metrics.entry(metric.to_string()).or_default();
-    *slot = slot.saturating_add(1);
-}
-
 /// The snapshot of this pass: every table's exact appended-observation counter, read once the pass
 /// has appended its rows, so the row states the store's cumulative total at the end of the pass.
 fn snapshot_row(store: &Store, phase: &str, finished_at: &str) -> ReportResult<CollectionSnapshot> {
@@ -281,12 +273,6 @@ fn snapshot_row(store: &Store, phase: &str, finished_at: &str) -> ReportResult<C
         snapshot.observations.insert(table, observations);
     }
     Ok(snapshot)
-}
-
-/// A count as the store publishes it. A `usize` larger than `u64` cannot exist on a 64-bit target;
-/// where it could, the measurement saturates instead of wrapping into a smaller number.
-fn count(value: usize) -> u64 {
-    u64::try_from(value).unwrap_or(u64::MAX)
 }
 
 #[cfg(test)]

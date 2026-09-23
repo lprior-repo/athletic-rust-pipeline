@@ -113,7 +113,7 @@ fn source_rows_count_what_each_namespace_contributes_per_table() {
         .expect("athlete");
 
     let identities = canonical_pass(&store).expect("identities").identities;
-    let rows = source_coverage(&identities);
+    let rows = super::coverage::source_coverage(&identities);
 
     let milesplit = rows
         .iter()
@@ -280,4 +280,115 @@ fn a_canonical_id_collision_reaches_the_conflict_queue() {
         report.conflicts >= 1,
         "the pass counts the finding it wrote into the queue"
     );
+}
+
+/// The one case stored for `subject`, whatever family kept it.
+fn case_for(store: &Store, subject: &str) -> ReviewCase {
+    store
+        .scan::<ReviewCase>(Table::ReviewCases)
+        .expect("cases")
+        .into_iter()
+        .find(|case| case.subject_id == subject)
+        .expect("the subject's case")
+}
+
+/// A recorded decision is not reset by the pass that derives the same finding again.
+///
+/// The pass writes the findings it reached, and a case is keyed on its own evidence, so re-deriving an
+/// unchanged finding writes the same id: the row it writes has to carry the state back, or every
+/// verdict a lane recorded goes back in the queue the next time the census derives its indexes.
+#[test]
+fn a_recorded_decision_survives_the_next_derivation() {
+    let dir = tempfile::tempdir().expect("temp store");
+    let store = Store::open(dir.path()).expect("store");
+    let meet = unplaced_meet();
+    store.append(Table::Meets, &meet).expect("meet");
+    derive(&store, "index", "2026-09-22").expect("first pass");
+
+    let case = case_for(&store, meet.id.as_str());
+    assert_eq!(case.state, ReviewState::Pending, "the lane has asked nothing");
+    let mut decided = case.clone();
+    decided.state = ReviewState::Resolved;
+    store
+        .replace(Table::ReviewCases, &decided)
+        .expect("the verdict's state");
+
+    let report = derive(&store, "index", "2026-09-22").expect("second pass");
+
+    assert_eq!(
+        case_for(&store, meet.id.as_str()).state,
+        ReviewState::Resolved,
+        "the second pass re-derives the finding without putting the decision back in the queue"
+    );
+    assert_eq!(
+        report.superseded, 0,
+        "a case this pass derives again is not superseded"
+    );
+}
+
+/// A pending case this pass does not derive again is closed, because the finding it named is not one
+/// of the findings the pass reached.
+#[test]
+fn a_pending_case_whose_finding_is_gone_is_superseded() {
+    let dir = tempfile::tempdir().expect("temp store");
+    let store = Store::open(dir.path()).expect("store");
+    let ghost = ReviewCase::pending(
+        UNRESOLVED_VENUE_FAMILY,
+        "meet:ghost",
+        "Ghost Invitational",
+        "no evidence placed the venue in a jurisdiction",
+    );
+    store
+        .replace(Table::ReviewCases, &ghost)
+        .expect("a case an earlier pass wrote");
+    let live = unplaced_meet();
+    store.append(Table::Meets, &live).expect("meet");
+
+    let report = derive(&store, "index", "2026-09-22").expect("pass");
+
+    assert_eq!(report.superseded, 1);
+    assert_eq!(
+        case_for(&store, "meet:ghost").state,
+        ReviewState::Superseded,
+        "the reading that no longer stands is closed rather than left owing a decision"
+    );
+    assert_eq!(
+        case_for(&store, live.id.as_str()).state,
+        ReviewState::Pending,
+        "the finding this pass did reach is still the lane's work"
+    );
+}
+
+/// A family the collection contract decided is stored already retained, and the row still reaches the
+/// queue a reader sees.
+#[test]
+fn a_withheld_mailbox_is_stored_retained() {
+    let dir = tempfile::tempdir().expect("temp store");
+    let store = Store::open(dir.path()).expect("store");
+    let school = school();
+    store.append(Table::Schools, &school).expect("school");
+    let mut coach = CanonicalCoach::new(
+        &school.id,
+        "Dana Reed",
+        None,
+        Gender::Girls,
+        CoachRole::HeadCoach,
+    );
+    coach.professional_email = Some("dana.reed@gmail.com".to_string());
+    store.append(Table::Coaches, &coach).expect("coach");
+
+    derive(&store, "index", "2026-09-22").expect("pass");
+
+    let mailbox = store
+        .scan::<ReviewCase>(Table::ReviewCases)
+        .expect("cases")
+        .into_iter()
+        .find(|case| case.family == WITHHELD_MAILBOX_FAMILY)
+        .expect("a coach whose only address was a personal mailbox is a retained finding");
+    assert_eq!(
+        mailbox.state,
+        ReviewState::Retained,
+        "the contract decided it, so it is not a question the lane is holding open"
+    );
+    assert_eq!(mailbox.subject_id, coach.id.as_str());
 }

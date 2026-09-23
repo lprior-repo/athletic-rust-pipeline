@@ -105,3 +105,35 @@ fn evidence_normalization_ignores_order_case_and_whitespace() {
     );
     assert_ne!(ordered.id, changed.id, "one changed fact is new evidence");
 }
+
+/// A family the census's own rules decide is minted decided: the case is not a question anyone is
+/// holding open, and the row still reaches the workbook's queues.
+#[test]
+fn a_contract_decided_family_is_minted_retained() {
+    let mailbox = ReviewCase::minted(
+        WITHHELD_MAILBOX_FAMILY,
+        "coach:1",
+        "A Coach (Somewhere High)",
+        "only a personal mailbox was published",
+    );
+    assert_eq!(mailbox.state, ReviewState::Retained);
+    assert_eq!(
+        mailbox.id,
+        ReviewCase::pending(
+            WITHHELD_MAILBOX_FAMILY,
+            "coach:1",
+            "A Coach (Somewhere High)",
+            "only a personal mailbox was published",
+        )
+        .id,
+        "the state is not part of the id: the evidence is what a case is keyed on"
+    );
+
+    let venue = ReviewCase::minted(
+        UNRESOLVED_VENUE_FAMILY,
+        "meet:1",
+        "Some Invitational",
+        "no evidence placed the venue in a jurisdiction",
+    );
+    assert_eq!(venue.state, ReviewState::Pending);
+}

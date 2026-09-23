@@ -3,11 +3,12 @@
 //! mailbox travels with the row it was dropped from.
 
 use super::*;
-use crate::{Store, Table};
+use crate::{Entity, Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
-    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Gender, GradYear, SchoolId,
-    SourceIdentity, SourceNamespace, CANONICAL_ID_COLLISION_FAMILY,
+    AthleteId, CanonicalAthlete, CanonicalCoach, CoachRole, Confidence, Gender, Grade, GradYear,
+    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    CANONICAL_ID_COLLISION_FAMILY,
 };
 
 /// The school every fixture is keyed at.
@@ -293,4 +294,125 @@ fn two_same_named_athletes_from_different_schools_stay_two_rows() {
             "two schools under one name is not a collision: nothing was retained"
         );
     }
+}
+
+/// One grade observation of `row`, dated by the season the source saw it in: grade 11 in the 2025
+/// season is the class of 2027.
+fn observing(row: &mut CanonicalAthlete, grade: u8, season: i16) {
+    row.observed_grades.push(ObservedGrade {
+        grade: Grade::new(grade).expect("9..=12 is a grade"),
+        school_year: SchoolYear::new(season).expect("a season"),
+        source: SourceRef::new("milesplit_athlete", None),
+    });
+}
+
+/// A row one pass wrote is published like any other: the confidence its own observation implies.
+#[test]
+fn one_agreeing_observation_publishes_the_high_bar() {
+    let id = CanonicalAthlete::mint(&school(), "Diego Ramos", GradYear::CO2027, Gender::Boys);
+    let mut row = athlete(
+        &id,
+        "Diego Ramos",
+        Gender::Boys,
+        SourceNamespace::MilesplitAthlete,
+        "111",
+    );
+    observing(&mut row, 11, 2025);
+    assert_eq!(
+        row.identity_confidence,
+        Confidence::MEDIUM,
+        "the constructor's default is what the row carries until it is published"
+    );
+
+    row.publish();
+
+    assert_eq!(
+        row.identity_confidence,
+        Confidence::HIGH,
+        "a grade level that implies the published cohort verifies it, whether or not a second \
+         observation ever arrives"
+    );
+}
+
+/// An observation that disagrees lowers the bar instead of rewriting the cohort.
+#[test]
+fn an_observation_that_disagrees_publishes_the_low_bar() {
+    let id = CanonicalAthlete::mint(&school(), "Diego Ramos", GradYear::CO2027, Gender::Boys);
+    let mut row = athlete(
+        &id,
+        "Diego Ramos",
+        Gender::Boys,
+        SourceNamespace::MilesplitAthlete,
+        "111",
+    );
+    observing(&mut row, 11, 2024);
+
+    row.publish();
+
+    assert_eq!(row.identity_confidence, Confidence::LOW);
+    assert_eq!(
+        row.grad_year,
+        GradYear::CO2027,
+        "the cohort is what the row was minted with; the observation is what gets doubted"
+    );
+}
+
+/// A row that names no grade level states no derivation: the confidence it carries is its own claim.
+#[test]
+fn a_row_with_no_grade_observation_keeps_the_confidence_it_states() {
+    let id = CanonicalAthlete::mint(&school(), "Diego Ramos", GradYear::CO2027, Gender::Boys);
+    for stated in [Confidence::MEDIUM, Confidence::HIGH] {
+        let mut row = athlete(
+            &id,
+            "Diego Ramos",
+            Gender::Boys,
+            SourceNamespace::MilesplitAthlete,
+            "111",
+        );
+        row.identity_confidence = stated;
+
+        row.publish();
+
+        assert_eq!(
+            row.identity_confidence, stated,
+            "a source that places an athlete in the cohort without naming a grade level is not \
+             contradicted by the absence of one"
+        );
+    }
+}
+
+/// The regression this rule is published for: a row written by a single pass — never merged again —
+/// reads back at the confidence its evidence implies instead of the constructor's default.
+#[test]
+fn an_athlete_observed_once_reads_back_at_the_confidence_its_evidence_implies() {
+    let Ok(dir) = tempfile::tempdir() else {
+        panic!("a temporary store directory has to exist");
+    };
+    let Ok(store) = Store::open(dir.path()) else {
+        panic!("the store has to open");
+    };
+    let id = CanonicalAthlete::mint(&school(), "Diego Ramos", GradYear::CO2027, Gender::Boys);
+    let mut row = athlete(
+        &id,
+        "Diego Ramos",
+        Gender::Boys,
+        SourceNamespace::MilesplitAthlete,
+        "111",
+    );
+    observing(&mut row, 11, 2025);
+    let Ok(()) = store.append_many(Table::Athletes, &[row]) else {
+        panic!("one athlete observation has to append");
+    };
+
+    let Ok(rows) = store.scan::<CanonicalAthlete>(Table::Athletes) else {
+        panic!("the athlete table has to scan");
+    };
+
+    assert_eq!(rows.len(), 1, "one observation of one athlete is one row");
+    assert_eq!(
+        rows[0].identity_confidence,
+        Confidence::HIGH,
+        "the read derives the confidence, so a row that was never merged twice is not reported \
+         below the identity bar"
+    );
 }

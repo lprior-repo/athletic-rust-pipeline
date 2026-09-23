@@ -79,4 +79,31 @@ impl CanonicalAthlete {
             retained_conflicts: Vec::new(),
         }
     }
+
+    /// The identity confidence this row's own grade observations imply.
+    ///
+    /// An observation that disagrees with the published cohort lowers it instead of silently
+    /// rewriting the athlete's graduating class, and one that agrees raises it to the high bar. A row
+    /// carrying no observation states no derivation and keeps the confidence it was built with, which
+    /// is what lets a source that knows the cohort without naming a grade level say so.
+    ///
+    /// [`None`] is that last case: the rule has nothing to say about the row, so the field it was
+    /// given is the row's own claim rather than a value this derivation overwrites.
+    pub fn derived_identity_confidence(&self) -> Option<Confidence> {
+        if self
+            .observed_grades
+            .iter()
+            .any(|observation| observation.grad_year() != self.grad_year)
+        {
+            Some(Confidence::LOW)
+        } else if self
+            .observed_grades
+            .iter()
+            .any(|observation| observation.grad_year() == self.grad_year)
+        {
+            Some(Confidence::HIGH)
+        } else {
+            None
+        }
+    }
 }

@@ -161,20 +161,19 @@ impl Entity for CanonicalAthlete {
                 self.observed_grades.push(observation);
             }
         }
-        // Any observation that disagrees with the cohort lowers confidence instead of silently
-        // rewriting the athlete's graduating class.
-        if self
-            .observed_grades
-            .iter()
-            .any(|observation| observation.grad_year() != self.grad_year)
-        {
-            self.identity_confidence = census_domain::model::Confidence::LOW;
-        } else if self
-            .observed_grades
-            .iter()
-            .any(|observation| observation.grad_year() == self.grad_year)
-        {
-            self.identity_confidence = census_domain::model::Confidence::HIGH;
+        self.publish();
+    }
+
+    /// Derive the identity confidence from the row's own grade observations.
+    ///
+    /// A row written by one pass is never merged again, so deriving this only in
+    /// [`merge`](Entity::merge) left an athlete whose single observation agrees with its cohort
+    /// carrying the constructor's default — a row the workbook then reported as below the identity
+    /// bar and the review lane queued as an open cohort decision. Every read publishes, so the
+    /// derived value is the one the report, the workbook, the snapshot and the Restate handlers see.
+    fn publish(&mut self) {
+        if let Some(confidence) = self.derived_identity_confidence() {
+            self.identity_confidence = confidence;
         }
     }
 }

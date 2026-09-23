@@ -81,6 +81,11 @@ pub enum ReviewState {
     Resolved,
     /// The lane looked and left it: the evidence does not decide, so the row stays visible.
     Retained,
+    /// The finding no longer stands: a later pass derived the subject's rows again and this reading of
+    /// them is not among the findings it reached, so no decision is owed. A decision already recorded
+    /// is never moved here — the verdict is history about the evidence of its time — and the case that
+    /// replaced this one carries the state this one was left in.
+    Superseded,
 }
 
 /// The revision of the review policy a case was minted under.
@@ -195,6 +200,29 @@ impl ReviewCase {
             detail,
             state: ReviewState::Pending,
         }
+    }
+
+    /// Mint one finding's case in the state its family starts in.
+    ///
+    /// Every family but one starts `Pending`: a jurisdiction no source placed and a cohort with no
+    /// evidence are questions something outside this store has to answer, so the case is what the
+    /// lane, the operator or the gap sweep is for. A withheld mailbox is not such a question — §5
+    /// drops a personal address whichever adapter accepted one, so no evidence this store can hold
+    /// would move the finding, and a school that publishes a professional address stops being a
+    /// finding at all (the next pass closes that case as superseded). Minting it `Retained` keeps the
+    /// row visible in the workbook's queues without counting it as an open decision, which is the
+    /// state the lane itself leaves a finding it cannot decide.
+    pub fn minted(
+        family: &str,
+        subject_id: impl Into<String>,
+        subject: impl Into<String>,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut case = Self::pending(family, subject_id, subject, detail);
+        if family == WITHHELD_MAILBOX_FAMILY {
+            case.state = ReviewState::Retained;
+        }
+        case
     }
 }
 

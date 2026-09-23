@@ -215,10 +215,11 @@ pub(super) fn run_index(store: &Store) -> Result<()> {
     let report = census_reconcile::index::derive(store, "index", &finished_on)
         .context("deriving the durable indexes")?;
     println!(
-        "index\tsource_identities={} conflicts={} reviews={} coverage={} snapshots={}",
+        "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={} snapshots={}",
         report.source_identities,
         report.conflicts,
         report.reviews,
+        report.superseded,
         report.coverage,
         report.snapshots
     );
