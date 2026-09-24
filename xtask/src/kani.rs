@@ -32,43 +32,47 @@ fn mandatory_harnesses() -> &'static [&'static str] {
     ]
 }
 
+/// Resolve which harnesses to run: all mandatory ones, or validate user-provided names.
+fn resolve_targets(user_harnesses: &[String]) -> Vec<&'static str> {
+    let all = mandatory_harnesses();
+    if user_harnesses.is_empty() {
+        return all.to_vec();
+    }
+
+    let mut found = Vec::new();
+    for name in user_harnesses {
+        if let Some(&h) = all.iter().find(|&&h| h == name.as_str()) {
+            found.push(h);
+        } else {
+            eprintln!(
+                "unknown harness: {name} (expected one of: {})",
+                all.join(", ")
+            );
+            for h in all {
+                eprintln!("  {h}");
+            }
+            std::process::exit(1);
+        }
+    }
+    if found.is_empty() {
+        std::process::exit(1);
+    }
+    found
+}
+
 /// Run `cargo kani` and parse its output.
 ///
 /// `cargo kani --harness <name>` compiles the harness to CBMC, verifies invariants, and prints
 /// results. Each harness either passes (all checks verified), fails (assertion violated), or
 /// times out (CBMC search exhausted).
 pub fn run(harnesses: &[String]) -> Result<()> {
-    let all = mandatory_harnesses();
-    let targets: Vec<&str> = if harnesses.is_empty() {
-        all.to_vec()
-    } else {
-        let mut found = Vec::new();
-        for name in harnesses {
-            if all.contains(&name.as_str()) {
-                found.push(name.as_str());
-            } else {
-                eprintln!(
-                    "unknown harness: {name} (expected one of: {})",
-                    all.join(", ")
-                );
-                for h in all {
-                    eprintln!("  {h}");
-                }
-                std::process::exit(1);
-            }
-        }
-        if found.is_empty() {
-            bail!("no valid harness names provided");
-        }
-        found
-    };
+    let targets = resolve_targets(harnesses);
+
+    println!("cargo kani: {} harness(es)", targets.len());
 
     let mut passed = 0u32;
     let mut failed = 0u32;
     let mut timed_out = 0u32;
-    let total = targets.len();
-
-    println!("cargo kani: {} harness(es)", total);
 
     for harness in &targets {
         print!("  {harness}... ");

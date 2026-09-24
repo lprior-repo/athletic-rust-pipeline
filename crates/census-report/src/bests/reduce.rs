@@ -43,7 +43,18 @@ pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
         );
         Ok(())
     })?;
-
+    let mut rows = order_rows(bests, counts);
+    if let Some(limit) = options.limit {
+        rows.truncate(limit);
+    }
+    Ok(rows)
+}
+/// Sort bests into the published order: state → event → value (asc for times, desc otherwise)
+/// → name → athlete, with marks-in-event attached from counts.
+fn order_rows(
+    bests: HashMap<(String, String), BestResult>,
+    counts: HashMap<(String, String), usize>,
+) -> Vec<BestResult> {
     let mut rows: Vec<BestResult> = bests
         .into_iter()
         .map(|(key, mut row)| {
@@ -51,7 +62,6 @@ pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
             row
         })
         .collect();
-    // Best first inside each event; times ascend, everything else descends.
     rows.sort_by(|left, right| {
         left.state
             .cmp(&right.state)
@@ -66,10 +76,7 @@ pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
             .then_with(|| left.name.cmp(&right.name))
             .then_with(|| left.athlete_id.cmp(&right.athlete_id))
     });
-    if let Some(limit) = options.limit {
-        rows.truncate(limit);
-    }
-    Ok(rows)
+    rows
 }
 
 /// Scan one table, keeping only the core scope's rows when that scope was asked for.

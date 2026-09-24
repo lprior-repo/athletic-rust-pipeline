@@ -46,6 +46,7 @@ use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
 
 mod stage_runs;
 mod stages;
+mod pipeline;
 
 #[derive(Clone)]
 pub struct JurisdictionCensus {

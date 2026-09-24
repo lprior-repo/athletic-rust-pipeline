@@ -1,11 +1,13 @@
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
+use serde_json::Value;
 
 use restate_sdk::prelude::*;
 
 use crate::spawn::Spawner;
 use census_store::clock::Clock;
 use census_store::Store;
+use census_store::Table;
 
 use super::jobs::append_observations;
 use super::wire::ingest::{IngestReply, IngestRequest, IngestState, WindowRequest};
@@ -95,12 +97,45 @@ impl Ingest {
         // with a journal mismatch instead of replaying it.
         let today = super::journaled_today(&ctx, &self.clock).await?;
         let mut state = self.load_object(&ctx).await?;
-        // Idempotency: derive a deterministic operation id from the content being recorded, then
-        // check the store-side receipt before appending. Same operation id + same payload → no-op.
-        // Same operation id + different payload → terminal (data integrity violation).
+        // Idempotency: derive a receipt from table + rows, then check store-side before appending.
+        if let Some(receipt) =
+            self.check_idempotency(table, &state, &rows, &today)?
+        {
+            let appended = self
+                .do_append(&ctx, store, region, table, rows)
+                .await?;
+            Ingest::update_ingest_state(&mut state, appended, receipt, request.cursor.clone(), today, &ctx);
+            return Ok(Json(IngestReply {
+                endpoint: state.endpoint,
+                appended,
+                total_observations: state.total_observations,
+                cursor: state.cursor,
+                last_appended_at: state.last_appended_at,
+            }));
+        }
+
+        // Receipt was None — operation already seen; return current state as no-op.
+        Ok(Json(IngestReply {
+            endpoint: state.endpoint,
+            appended: 0,
+            total_observations: state.total_observations,
+            cursor: state.cursor,
+            last_appended_at: state.last_appended_at,
+        }))
+    }
+
+    /// Derive an idempotency receipt from table + rows. Returns `Some(receipt)` when the
+    /// operation is new and can be appended, or `None` when it's already been seen.
+    fn check_idempotency(
+        &self,
+        table: Table,
+        state: &IngestState,
+        rows: &[Value],
+        today: &str,
+    ) -> Result<Option<String>, HandlerError> {
         let mut hasher = Sha256::new();
         hasher.update(table.file().as_bytes());
-        for row in &rows {
+        for row in rows {
             hasher.update(
                 serde_json::to_vec(row).map_err(|source| JobError::Terminal {
                     message: format!("serializing observation row for idempotency hash: {source}"),
@@ -118,45 +153,50 @@ impl Ingest {
                 endpoint = state.endpoint.as_str(),
                 "idempotent replay of recorded content; no-op"
             );
-            return Ok(Json(IngestReply {
-                endpoint: state.endpoint.clone(),
-                appended: 0,
-                total_observations: state.total_observations,
-                cursor: state.cursor.clone(),
-                last_appended_at: state.last_appended_at,
-            }));
+            return Ok(None);
         }
-        let appended = ctx
-            .run(move || async move {
-                blocking(region, move || append_observations(&store, table, &rows))
-                    .await
-                    // The accepted count reaches the wire as `u64`. A host where it does not fit is
-                    // a hard failure: a clamped "appended" figure would be a fabricated total.
-                    .and_then(|count| {
-                        u64::try_from(count).map_err(|_| JobError::Terminal {
-                            message: format!("appended row count {count} does not fit u64"),
-                        })
+        Ok(Some(receipt))
+    }
+
+    /// Append rows to the store and return the count. State update is done by [`Self::update_ingest_state`].
+    async fn do_append(
+        &self,
+        ctx: &ObjectContext<'_>,
+        store: Arc<Store>,
+        region: Arc<Spawner>,
+        table: Table,
+        rows: Vec<Value>,
+    ) -> Result<u64, HandlerError> {
+        ctx.run(move || async move {
+            blocking(region, move || append_observations(&store, table, &rows))
+                .await
+                .and_then(|count| {
+                    u64::try_from(count).map_err(|_| JobError::Terminal {
+                        message: format!("appended row count {count} does not fit u64"),
                     })
-                    .map_err(job_error)
-            })
-            .await?;
+                })
+                .map_err(job_error)
+        })
+        .await
+        .map_err(HandlerError::from)
+    }
+
+    /// Update ingest state: counters, cursor, receipt, timestamp. Must follow do_append.
+    fn update_ingest_state(
+        state: &mut IngestState,
+        appended: u64,
+        receipt: String,
+        cursor: Option<String>,
+        today: String,
+        ctx: &ObjectContext<'_>,
+    ) {
         state.total_observations = state.total_observations.saturating_add(appended);
         state.seen_operations.push(receipt);
-        if request.cursor.is_some() {
-            state.cursor = request.cursor.clone();
+        if cursor.is_some() {
+            state.cursor = cursor;
         }
         state.last_appended_at = Some(today);
-
-        // One write, not four: the cursor, the totals, and the timestamp can never disagree.
         ctx.set(KEY_STATE, Json(state.clone()));
-
-        Ok(Json(IngestReply {
-            endpoint: state.endpoint,
-            appended,
-            total_observations: state.total_observations,
-            cursor: state.cursor,
-            last_appended_at: state.last_appended_at,
-        }))
     }
 
     #[handler]

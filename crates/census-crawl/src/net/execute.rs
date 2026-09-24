@@ -12,6 +12,9 @@ use tokio::sync::Mutex;
 use tracing::{debug, warn};
 
 mod attempt;
+mod attempt_helper;
+mod body_reader;
+mod cache_writer;
 mod browser;
 
 use attempt::FetchPlan;

@@ -1,12 +1,9 @@
-//! The jurisdiction object's durable-state plumbing and its stage runners.
+//! The jurisdiction object's durable-state plumbing.
 //!
 //! [`JurisdictionCensus`]'s endpoint surface lives in `jurisdiction.rs`; what lives here is what the
-//! endpoints drive: load and save of the object's single durable state value, the shared fetcher, the
-//! source plan, and one runner per stage. A stage has two halves — the `*_stage` method that wraps
-//! its [`jobs`] body in a durable `run`, and the `*_owed` method the endpoint's sequence calls,
-//! which records the outcome in the state value. Both stay at the `no_run_retry` policy: ADR-002
-//! makes Restate the owner of retries, and the one it owns is the invocation retry declared on the
-//! handler. A retrying `run` would be a second, in-process budget.
+//! endpoints drive: load and save of the object's single durable state value, the shared fetcher,
+//! and the source plan. The stage orchestration (`*_owed` methods) lives in [`super::pipeline`];
+//! the stage runners themselves (`*_stage` methods) live in [`super::stage_runs`].
 //!
 //! The methods are `pub(super)` because the endpoint surface in `jurisdiction.rs` is the parent
 //! module; the struct's fields stay private to [`super`], which this child module may reach.
@@ -166,142 +163,6 @@ impl JurisdictionCensus {
             fingerprint,
         ));
         state.identity = identity.as_str().to_string();
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    /// Run the team-index stage and record its outcome.
-    pub(super) async fn teams_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        identity: &WorkflowIdentity,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        // The stage runs the plan, so a run that reached this point without one skipped the
-        // recording step; a list invented here would be the second opinion the plan prevents.
-        let Some(plan) = state.plan.as_ref() else {
-            return Err(TerminalError::new(
-                "the teams stage ran before the run recorded its source plan",
-            )
-            .into());
-        };
-        let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher().await?;
-        let outcome = self
-            .teams_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                request.season,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.teams = Some(outcome);
-        state.identity = identity.as_str().to_string();
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    /// Walk the jurisdiction's rosters and record the walk's outcome.
-    pub(super) async fn rosters_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        options: CollectOptions,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        let fetcher = self.fetcher().await?;
-        let progress = self
-            .rosters_stage(ctx, fetcher, options, request.jurisdiction)
-            .await?;
-        state.rosters = Some(progress);
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    /// Enumerate the season's published meets and record the census.
-    pub(super) async fn meets_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        // The season year reaches the results index as a query parameter, so a year the URL cannot
-        // carry is a request fault rather than a source condition.
-        let year = u16::try_from(request.season.get()).map_err(|_| {
-            TerminalError::new(format!(
-                "season year {} is not a results-index year",
-                request.season.get()
-            ))
-        })?;
-        // The stage runs the plan for the same reason the team-index stage does: a source list
-        // invented here would be the second opinion the recorded plan exists to prevent.
-        let Some(plan) = state.plan.as_ref() else {
-            return Err(TerminalError::new(
-                "the meets stage ran before the run recorded its source plan",
-            )
-            .into());
-        };
-        let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher().await?;
-        let census = self
-            .meets_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                year,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.meets = Some(census);
-        self.save(ctx, state, today);
-        Ok(())
-    }
-
-    /// Pull the meets this run enumerated and record what the result sources read.
-    ///
-    /// The seed is the run's own `source_meets` rows, read inside the stage, so a state whose
-    /// enumerating stages are already complete still pulls the meets they enumerated rather than
-    /// depending on a second list. The year rule and the recorded-plan guard are the meet-index
-    /// stage's, because both stages learn the same two facts from the same request.
-    pub(super) async fn results_owed(
-        &self,
-        ctx: &ObjectContext<'_>,
-        request: &JurisdictionRequest,
-        state: &mut JurisdictionState,
-        today: &str,
-    ) -> Result<(), HandlerError> {
-        let year = u16::try_from(request.season.get()).map_err(|_| {
-            TerminalError::new(format!(
-                "season year {} is not a results-index year",
-                request.season.get()
-            ))
-        })?;
-        let Some(plan) = state.plan.as_ref() else {
-            return Err(TerminalError::new(
-                "the results stage ran before the run recorded its source plan",
-            )
-            .into());
-        };
-        let sweepable = plan.sweepable.clone();
-        let fetcher = self.fetcher().await?;
-        let outcome = self
-            .results_stage(
-                ctx,
-                fetcher,
-                request.jurisdiction,
-                year,
-                request.refresh,
-                sweepable,
-            )
-            .await?;
-        state.results = Some(outcome);
         self.save(ctx, state, today);
         Ok(())
     }
