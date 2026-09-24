@@ -11,10 +11,10 @@ use crate::net::bridge::{BrowserFailure, BrowserResponse};
 use crate::net::cache::read_cache;
 use crate::net::cache::sha256_prefix16;
 use crate::net::FetchOptions;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 use base64::Engine as _;
 use sha2::Digest;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 /// The transport's own challenge capture. The relative path climbs from this file's directory

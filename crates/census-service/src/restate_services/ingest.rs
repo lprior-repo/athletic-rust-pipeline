@@ -1,6 +1,6 @@
+use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
-use serde_json::Value;
 
 use restate_sdk::prelude::*;
 
@@ -98,13 +98,16 @@ impl Ingest {
         let today = super::journaled_today(&ctx, &self.clock).await?;
         let mut state = self.load_object(&ctx).await?;
         // Idempotency: derive a receipt from table + rows, then check store-side before appending.
-        if let Some(receipt) =
-            self.check_idempotency(table, &state, &rows, &today)?
-        {
-            let appended = self
-                .do_append(&ctx, store, region, table, rows)
-                .await?;
-            Ingest::update_ingest_state(&mut state, appended, receipt, request.cursor.clone(), today, &ctx);
+        if let Some(receipt) = self.check_idempotency(table, &state, &rows, &today)? {
+            let appended = self.do_append(&ctx, store, region, table, rows).await?;
+            Ingest::update_ingest_state(
+                &mut state,
+                appended,
+                receipt,
+                request.cursor.clone(),
+                today,
+                &ctx,
+            );
             return Ok(Json(IngestReply {
                 endpoint: state.endpoint,
                 appended,

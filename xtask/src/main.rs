@@ -28,8 +28,8 @@ mod purity;
 mod replay;
 mod retry;
 mod scaffold;
-mod seams;
 mod scan;
+mod seams;
 mod source_fixture;
 mod templates;
 

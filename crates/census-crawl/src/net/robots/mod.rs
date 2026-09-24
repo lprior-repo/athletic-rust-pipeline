@@ -292,6 +292,5 @@ fn bounded_crawl_delay(seconds: f64) -> Option<Duration> {
     )
 }
 
-
 #[cfg(test)]
 mod tests;

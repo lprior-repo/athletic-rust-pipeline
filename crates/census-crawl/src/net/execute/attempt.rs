@@ -1,15 +1,15 @@
 //! One attempt of the fetch loop: the plan it runs from, and the verdict its response earns.
 
-use crate::net::cache::{content_digest, write_cache, CacheMeta};
+pub(super) use super::attempt_helper::blocking_kind;
 use super::attempt_helper::retry_after_secs;
 use super::cache_writer::cache_and_record;
+use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::request::RequestBody;
 use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing::warn;
-pub(super) use super::attempt_helper::blocking_kind;
 
 /// Everything an attempt needs: the request's coordinates plus the cache paths it reads and writes.
 pub(super) struct FetchPlan<'a> {

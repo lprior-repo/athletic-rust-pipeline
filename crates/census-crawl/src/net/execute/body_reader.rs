@@ -4,8 +4,8 @@
 //! `MAX_BODY_BYTES` by more than one chunk. The declared-length pre-check is
 //! kept as an early-out for well-behaved servers.
 
-use crate::net::MAX_BODY_BYTES;
 use crate::net::FetchError;
+use crate::net::MAX_BODY_BYTES;
 use futures::StreamExt;
 use sha2::{Digest, Sha256};
 
@@ -29,14 +29,15 @@ pub(super) async fn read_checked_body(
     let mut body = Vec::with_capacity(declared.unwrap_or(8 * 1024));
     let mut hasher = Sha256::new();
     let mut stream = response.bytes_stream();
-    while let Some(chunk) = stream
-        .next()
-        .await
-        .transpose()
-        .map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?
+    while let Some(chunk) =
+        stream
+            .next()
+            .await
+            .transpose()
+            .map_err(|source| FetchError::Transport {
+                url: url.to_string(),
+                source,
+            })?
     {
         let chunk_len = chunk.len();
         if body.len().saturating_add(chunk_len) > MAX_BODY_BYTES {

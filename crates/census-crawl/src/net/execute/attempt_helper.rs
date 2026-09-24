@@ -6,8 +6,8 @@
 use crate::net::request::build_request;
 use crate::net::{FetchError, Fetcher};
 use census_domain::model::AccessBlockKind;
-use tracing::warn;
 use std::time::Duration;
+use tracing::warn;
 
 /// The access condition one HTTP status states, when it states one.
 ///
@@ -46,7 +46,10 @@ use crate::net::execute::attempt::FetchPlan;
 
 impl Fetcher {
     /// Build the HTTP request and send it under the per-request timeout.
-pub(super) async fn dispatch(&self, plan: &FetchPlan<'_>) -> Result<reqwest::Response, FetchError> {
+    pub(super) async fn dispatch(
+        &self,
+        plan: &FetchPlan<'_>,
+    ) -> Result<reqwest::Response, FetchError> {
         let request = build_request(
             &self.client,
             plan.method,

@@ -55,10 +55,7 @@ pub(super) async fn cache_and_record(
 }
 
 /// Record request counts in the stats.
-pub(super) async fn record_request_stats(
-    stats: &Mutex<FetchStats>,
-    host: &str,
-) {
+pub(super) async fn record_request_stats(stats: &Mutex<FetchStats>, host: &str) {
     let mut stats = stats.lock().await;
     stats.requests = stats.requests.saturating_add(1);
     let per_host_entry = stats.per_host.entry(host.to_string()).or_insert(0);

@@ -1,7 +1,7 @@
 //! Comparison logic: environment compatibility and throughput regression detection.
 
-use super::{GroupMeasurement, PerfBaseline};
 use super::env;
+use super::{GroupMeasurement, PerfBaseline};
 use anyhow::{bail, Result};
 use std::collections::BTreeMap;
 

@@ -111,7 +111,8 @@ impl Sweep {
                 report,
                 today.clone(),
             )
-            .await.map_err(job_error)
+            .await
+            .map_err(job_error)
         })
         .await?;
         Ok(written)

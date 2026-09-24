@@ -44,9 +44,9 @@ use census_store::Store;
 use super::jobs;
 use super::wire::{JurisdictionReport, JurisdictionRequest, JurisdictionState};
 
+mod pipeline;
 mod stage_runs;
 mod stages;
-mod pipeline;
 
 #[derive(Clone)]
 pub struct JurisdictionCensus {
