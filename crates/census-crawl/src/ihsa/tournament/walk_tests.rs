@@ -22,11 +22,11 @@
 use super::collect;
 use crate::ihsa::Options;
 use crate::{AdapterContext, AdapterReport};
+use census_domain::model::CentiMetres;
 use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, Grade, Mark,
     SchoolYear, SourceNamespace,
 };
-use census_domain::model::CentiMetres;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 

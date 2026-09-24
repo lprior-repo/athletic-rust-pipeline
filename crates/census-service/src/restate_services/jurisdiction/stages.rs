@@ -147,12 +147,8 @@ impl JurisdictionCensus {
     ) -> Result<(), HandlerError> {
         let fetcher = self.fetcher().await?;
         let lane = BrowserLaneState::of(&fetcher);
-        let fingerprint = compute_plan_fingerprint(
-            request.jurisdiction,
-            request.season,
-            request.revision,
-            lane,
-        );
+        let fingerprint =
+            compute_plan_fingerprint(request.jurisdiction, request.season, request.revision, lane);
         if let Some(existing) = &state.plan {
             if existing.fingerprint != fingerprint {
                 return Err(TerminalError::new(format!(
@@ -165,7 +161,10 @@ impl JurisdictionCensus {
             }
             return Ok(());
         }
-        state.plan = Some(SourcePlan::of(&planned(request.jurisdiction, lane), fingerprint));
+        state.plan = Some(SourcePlan::of(
+            &planned(request.jurisdiction, lane),
+            fingerprint,
+        ));
         state.identity = identity.as_str().to_string();
         self.save(ctx, state, today);
         Ok(())

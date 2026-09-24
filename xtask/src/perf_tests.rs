@@ -8,8 +8,11 @@ use std::collections::BTreeMap;
 /// The default tolerance must be a non-negative fraction (5%).
 #[test]
 fn default_tolerance_is_non_negative() {
-    assert!(DEFAULT_TOLERANCE >= 0.0);
-    assert!(DEFAULT_TOLERANCE <= 1.0);
+    #[allow(clippy::assertions_on_constants)]
+    {
+        assert!(DEFAULT_TOLERANCE >= 0.0);
+        assert!(DEFAULT_TOLERANCE <= 1.0);
+    }
 }
 
 /// Baseline groups should round-trip through JSON serialization.
@@ -21,13 +24,13 @@ fn group_measurement_roundtrips_json() {
     let gm = GroupMeasurement {
         throughput: Some(12345.6),
         peak_rss_kib: Some(50000),
-        wall_time_seconds: 3.14,
+        wall_time_seconds: 3.15,
     };
     let json = serde_json::to_string(&gm).unwrap();
     let roundtripped: GroupMeasurement = serde_json::from_str(&json).unwrap();
     assert_eq!(roundtripped.throughput, Some(12345.6));
     assert_eq!(roundtripped.peak_rss_kib, Some(50000));
-    assert_eq!(roundtripped.wall_time_seconds, 3.14);
+    assert_eq!(roundtripped.wall_time_seconds, 3.15);
 }
 
 /// A group measurement without throughput serializes with null (or omits the field).
@@ -93,9 +96,15 @@ fn baseline_groups_preserves_order() {
 
     let json = serde_json::to_string(&baseline).unwrap();
     // BTreeMap iterates in key order, so "a" should appear before "b" before "c"
-    let a_pos = json.find("a").unwrap();
-    let b_pos = json.find("b").unwrap();
-    let c_pos = json.find("c").unwrap();
-    assert!(a_pos < b_pos);
-    assert!(b_pos < c_pos);
+    let a_pos = json.find(r#""a":"#).unwrap();
+    let b_pos = json.find(r#""b":"#).unwrap();
+    let c_pos = json.find(r#""c":"#).unwrap();
+    assert!(
+        a_pos < b_pos,
+        "a should appear before b in serialized BTreeMap"
+    );
+    assert!(
+        b_pos < c_pos,
+        "b should appear before c in serialized BTreeMap"
+    );
 }

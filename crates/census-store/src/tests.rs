@@ -1175,7 +1175,9 @@ impl<'de> serde::de::Deserialize<'de> for FlakyRecord {
                     match key {
                         "id" => id = Some(map.next_value()?),
                         "value" => value = Some(map.next_value()?),
-                        _ => { drop(map.next_value::<serde_json::Value>()); }
+                        _ => {
+                            drop(map.next_value::<serde_json::Value>());
+                        }
                     }
                 }
                 Ok(FlakyRecord {
@@ -1218,9 +1220,18 @@ fn a_store_batch_encode_failure_commits_nothing() {
     let before_rows = rows_held(&store, Table::Schools);
 
     let mut batch = store.write_batch();
-    let r0 = FlakyRecord { id: "r0".to_string(), value: 0 };
-    let r1 = FlakyRecord { id: "r1".to_string(), value: 1 };
-    let r2 = FlakyRecord { id: "r2".to_string(), value: 2 };
+    let r0 = FlakyRecord {
+        id: "r0".to_string(),
+        value: 0,
+    };
+    let r1 = FlakyRecord {
+        id: "r1".to_string(),
+        value: 1,
+    };
+    let r2 = FlakyRecord {
+        id: "r2".to_string(),
+        value: 2,
+    };
     // The journal entry is buffered before the records, so the abandoned batch already holds
     // real work when the append refuses: the entry cannot escape on its own either.
     batch
@@ -1257,7 +1268,10 @@ fn a_store_batch_encode_failure_commits_nothing() {
         "no journal entry should exist"
     );
     assert!(
-        reopened.scan::<FlakyRecord>(Table::Schools).unwrap().is_empty(),
+        reopened
+            .scan::<FlakyRecord>(Table::Schools)
+            .unwrap()
+            .is_empty(),
         "no rows should have landed"
     );
 }

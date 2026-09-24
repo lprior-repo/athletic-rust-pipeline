@@ -5,8 +5,8 @@
 //! options and the recording it hands back. Both arms take the same seven arguments, so the stage
 //! builds one [`Walk`] and asks it to run an arm instead of naming that list at two call sites.
 
-use std::sync::Arc;
 use crate::restate_services::job_error;
+use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -125,7 +125,7 @@ pub(super) async fn walk_index(
     .await
     .map_err(|error| job_error(collect_error(error)))?;
     let mut recorded = Vec::new();
-    take_recorded(store, census::SOURCE, index.drain(), &mut recorded)?;
+    take_recorded(census::SOURCE, index.drain(), &mut recorded);
     Ok((census, recorded.pop()))
 }
 

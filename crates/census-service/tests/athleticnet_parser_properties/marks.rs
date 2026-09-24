@@ -4,7 +4,7 @@
 //! that decide whether a stored mark is the mark the page printed.
 
 use super::{number_of, parse_mark, seam_config};
-use census_domain::model::{EventKind, Mark};
+use census_domain::model::{CentiSeconds, EventKind, Mark};
 use proptest::prelude::*;
 
 /// Centiseconds published in the notation both parsers read, plus the seconds they mean.
@@ -36,7 +36,7 @@ proptest! {
         let (mark, auto) = parse_mark(&RUN, &text)
             .unwrap_or_else(|| panic!("{text} (from {centis}) was refused"));
         prop_assert!(!auto, "a bare mark is not marked automatic: {text}");
-        prop_assert_eq!(mark, Mark::TimeSeconds(expected));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)));
     }
 
     /// The same token, published with the automatic-timing suffix, is the same mark.
@@ -46,7 +46,7 @@ proptest! {
         let (mark, auto) = parse_mark(&RUN, &format!("{text}a"))
             .unwrap_or_else(|| panic!("{text}a was refused"));
         prop_assert!(auto, "the `a` suffix is the automatic flag: {text}a");
-        prop_assert_eq!(mark, Mark::TimeSeconds(expected));
+        prop_assert_eq!(mark, Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)));
     }
 }
 
@@ -61,7 +61,11 @@ fn the_notation_table_holds_and_defers_to_one_time_parser() {
         ("1:05:12.34", 3912.34),
     ] {
         let (mark, _) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} was refused"));
-        assert_eq!(mark, Mark::TimeSeconds(expected), "{text}");
+        assert_eq!(
+            mark,
+            Mark::TimeSeconds(CentiSeconds::from_seconds_f64(expected)),
+            "{text}"
+        );
     }
 }
 
@@ -77,7 +81,11 @@ fn a_qualifier_is_stripped_rather_than_read_as_part_of_the_mark() {
         ("12.34A", true),
     ] {
         let (mark, got_auto) = parse_mark(&RUN, text).unwrap_or_else(|| panic!("{text} refused"));
-        assert_eq!(mark, Mark::TimeSeconds(12.34), "{text}");
+        assert_eq!(
+            mark,
+            Mark::TimeSeconds(CentiSeconds::from_seconds_f64(12.34)),
+            "{text}"
+        );
         assert_eq!(got_auto, auto, "{text}");
     }
 }
@@ -109,7 +117,10 @@ fn a_metric_field_mark_is_a_distance_and_never_a_time() {
             .0;
         match mark {
             Mark::DistanceMetres(metres) => {
-                assert!((metres - 12.34).abs() < 1e-9, "{kind:?} read {metres}");
+                assert!(
+                    (metres.as_metres_f64() - 12.34).abs() < 1e-9,
+                    "{kind:?} read {metres}"
+                );
             }
             other => panic!("{kind:?} read a metric field mark as {other:?}"),
         }

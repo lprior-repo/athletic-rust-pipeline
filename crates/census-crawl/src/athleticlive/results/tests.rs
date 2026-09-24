@@ -17,16 +17,16 @@ use crate::athleticlive::wire::{event_doc_url, event_summary_url};
 use crate::athleticlive_athletes::{school_year_for_date, MeetTarget};
 use crate::net::Fetcher;
 use crate::{AdapterContext, AdapterReport};
+use census_domain::model::CentiMetres;
+use census_domain::model::CentiSeconds;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, EventKind, Gender, GradYear, Grade, Mark, SchoolYear,
     SourceAthleteObservation, SourceNamespace, SourceObservation,
 };
-use census_domain::model::CentiSeconds;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 use std::collections::{BTreeMap, HashMap};
-use census_domain::model::CentiMetres;
 
 const XC_STATE: &str =
     include_str!("../../../tests/fixtures/athleticlive_results/event-doc-2150205.json");

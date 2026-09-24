@@ -1,6 +1,6 @@
 use super::*;
-use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 use census_domain::model::CentiSeconds;
+use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
 
 /// Verbatim slices of
 /// `https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm`

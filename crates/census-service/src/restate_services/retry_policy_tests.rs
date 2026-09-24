@@ -250,7 +250,7 @@ pub(super) fn rust_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<(), Str
             if name == "retry_policy_tests.rs"
                 || name == "retry_policy_transport_tests.rs"
                 || name == "tests.rs"
-                || name.starts_with("_")
+                || name.to_string_lossy().starts_with("_")
             {
                 continue;
             }
@@ -374,4 +374,3 @@ fn a_ceiling_the_scan_cannot_read_fails_instead_of_being_skipped() {
     let text = format!("    {KEY} = \"pause\",\n");
     let _ = sites_in(Path::new("sample.rs"), &text).expect("read the sample ceiling");
 }
-

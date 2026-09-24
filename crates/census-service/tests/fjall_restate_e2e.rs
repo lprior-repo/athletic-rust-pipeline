@@ -20,8 +20,8 @@
 use athleticnet_browser::BrowserSettings;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
-    Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
+    GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_report::report::{self, Census, Scope};
@@ -187,7 +187,7 @@ fn add_athlete(
             event: event.id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(seconds),
+            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(seconds)),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).unwrap()),
             heat: None,

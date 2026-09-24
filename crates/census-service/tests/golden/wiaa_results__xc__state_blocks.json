@@ -17,7 +17,7 @@
           "grade": 12,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 950.2
+            "TimeSeconds": 95020
           },
           "wind_mps": null,
           "heat": null,
@@ -30,7 +30,7 @@
           "grade": 12,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 993.6
+            "TimeSeconds": 99360
           },
           "wind_mps": null,
           "heat": null,
@@ -43,7 +43,7 @@
           "grade": 10,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 959.9
+            "TimeSeconds": 95990
           },
           "wind_mps": null,
           "heat": null,
@@ -56,7 +56,7 @@
           "grade": 11,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 1001.3
+            "TimeSeconds": 100130
           },
           "wind_mps": null,
           "heat": null,
@@ -69,7 +69,7 @@
           "grade": 9,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 963.1
+            "TimeSeconds": 96310
           },
           "wind_mps": null,
           "heat": null,
@@ -82,7 +82,7 @@
           "grade": 12,
           "school": "SPASH",
           "mark": {
-            "TimeSeconds": 1026.6
+            "TimeSeconds": 102660
           },
           "wind_mps": null,
           "heat": null,

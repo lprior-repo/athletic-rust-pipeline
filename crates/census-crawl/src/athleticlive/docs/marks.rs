@@ -7,8 +7,8 @@
 use serde_json::Value;
 
 use super::value_u64;
-use census_domain::model::{EventKind, Mark};
 use census_domain::model::{CentiMetres, CentiSeconds};
+use census_domain::model::{EventKind, Mark};
 
 /// The canonical mark of one row from both published channels.
 ///
@@ -34,11 +34,13 @@ pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark>
     if micros == 0 {
         return None;
     }
-    Some(if kind.is_field() {
-        // micrometres → centimetres
-        Mark::DistanceMetres(CentiMetres(((micros + 5_000) / 10_000) as i32))
+    if kind.is_field() {
+        // micrometres → centimetres (÷10,000); overflow on absurd inputs returns None
+        let cm = ((micros + 5_000) / 10_000).try_into().ok()?;
+        Some(Mark::DistanceMetres(CentiMetres(cm)))
     } else {
-        // milliseconds → centiseconds
-        Mark::TimeSeconds(CentiSeconds(((micros + 5) / 10) as i32))
-    })
+        // milliseconds → centiseconds (÷10); overflow on absurd inputs returns None
+        let cs = ((micros + 5) / 10).try_into().ok()?;
+        Some(Mark::TimeSeconds(CentiSeconds(cs)))
+    }
 }

@@ -9,8 +9,8 @@
 use anyhow::Result;
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, EventKind, Gender, GradYear, Mark, MeetId, SchoolId,
-    SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear, Mark, MeetId,
+    SchoolId, SourceIdentity, SourceNamespace, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use std::collections::HashSet;
@@ -197,7 +197,7 @@ fn performance_of(
     rng: &mut Lcg,
 ) -> Result<CanonicalPerformance> {
     let id = CanonicalPerformance::mint(&athlete.id, meet_id, kind, MEET_DATE, &source_key);
-    let mark = Mark::TimeSeconds(base_seconds(kind, rng));
+    let mark = Mark::TimeSeconds(CentiSeconds::from_seconds_f64(base_seconds(kind, rng)));
     let place = place_of(rng.next())?;
     Ok(CanonicalPerformance {
         id,

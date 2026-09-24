@@ -1,22 +1,22 @@
 [
   {
-    "digest": "6233f167da8f093fccc4dd1329a9e246fc996a0a7ddeec886623e2e37d81ac87",
+    "digest": "17d1feb1f3e6c1e5c3bf11f8a8e89fc7bf6c471b70c798f56e25f039e29334b8",
     "fixture": "d1boysstateresults-dash.htm"
   },
   {
-    "digest": "b7f5c3777a0503b74b1635e9c35b81d6215730af1f9b765c98cfb36047423d9e",
+    "digest": "b8b036c9875f223e11fcd9efa4dec1896a01c77ed3054b90365259592be38b37",
     "fixture": "d1boysstateresults-sections.htm"
   },
   {
-    "digest": "251b80420ee289b0e5e72fe9309353f409781546e1d95148575c8ca34d9ffd9e",
+    "digest": "9edad2616120437941faa42f0ad9fc2c7deaa685cf713d768b8b15ad8247ceca",
     "fixture": "d1boysstateresults-dash.txt"
   },
   {
-    "digest": "913d9c70866dedf5e2bdecbfc78429a203650459a3b2eb3af9665de1fe566bd2",
+    "digest": "f540cc79e09cc5ca2b8cb0b7ed43e2b555bdabe1419d18fb146294af573750fc",
     "fixture": "trackside-regional.htm"
   },
   {
-    "digest": "6e177a10240721d42d5ae3bbd8724c263b65f558436432d3017034acabc7590a",
+    "digest": "587aa8a304133ee599e1d5cd1eed0675f3957369d56802e226fb18c632bb2245",
     "fixture": "seed-column-regional.htm"
   }
 ]

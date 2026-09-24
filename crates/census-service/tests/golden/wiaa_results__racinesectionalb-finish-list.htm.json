@@ -22,7 +22,7 @@
             "grade": 11,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1033.69
+              "TimeSeconds": 103369
             },
             "wind_mps": null,
             "heat": "1",
@@ -35,7 +35,7 @@
             "grade": 12,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1042.54
+              "TimeSeconds": 104254
             },
             "wind_mps": null,
             "heat": "1",
@@ -48,7 +48,7 @@
             "grade": 12,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1045.27
+              "TimeSeconds": 104527
             },
             "wind_mps": null,
             "heat": "1",
@@ -61,7 +61,7 @@
             "grade": 12,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1067.32
+              "TimeSeconds": 106732
             },
             "wind_mps": null,
             "heat": "2",
@@ -74,7 +74,7 @@
             "grade": 11,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1069.72
+              "TimeSeconds": 106972
             },
             "wind_mps": null,
             "heat": "1",
@@ -87,7 +87,7 @@
             "grade": 9,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1071.19
+              "TimeSeconds": 107119
             },
             "wind_mps": null,
             "heat": "1",
@@ -100,7 +100,7 @@
             "grade": 11,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1072.42
+              "TimeSeconds": 107242
             },
             "wind_mps": null,
             "heat": "3",
@@ -113,7 +113,7 @@
             "grade": 11,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1077.64
+              "TimeSeconds": 107764
             },
             "wind_mps": null,
             "heat": "1",
@@ -126,7 +126,7 @@
             "grade": 11,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1086.19
+              "TimeSeconds": 108619
             },
             "wind_mps": null,
             "heat": "2",
@@ -139,7 +139,7 @@
             "grade": 11,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1096.78
+              "TimeSeconds": 109678
             },
             "wind_mps": null,
             "heat": "4",
@@ -152,7 +152,7 @@
             "grade": 11,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1099.84
+              "TimeSeconds": 109984
             },
             "wind_mps": null,
             "heat": "3",
@@ -165,7 +165,7 @@
             "grade": 10,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1104.34
+              "TimeSeconds": 110434
             },
             "wind_mps": null,
             "heat": "1",
@@ -178,7 +178,7 @@
             "grade": 12,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1107.67
+              "TimeSeconds": 110767
             },
             "wind_mps": null,
             "heat": "1",
@@ -191,7 +191,7 @@
             "grade": 12,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1113.61
+              "TimeSeconds": 111361
             },
             "wind_mps": null,
             "heat": "2",
@@ -204,7 +204,7 @@
             "grade": 9,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1117.9
+              "TimeSeconds": 111790
             },
             "wind_mps": null,
             "heat": "2",
@@ -217,7 +217,7 @@
             "grade": 10,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1125.91
+              "TimeSeconds": 112591
             },
             "wind_mps": null,
             "heat": "3",
@@ -230,7 +230,7 @@
             "grade": 11,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1132.24
+              "TimeSeconds": 113224
             },
             "wind_mps": null,
             "heat": "4",
@@ -243,7 +243,7 @@
             "grade": 10,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1136.41
+              "TimeSeconds": 113641
             },
             "wind_mps": null,
             "heat": "3",
@@ -256,7 +256,7 @@
             "grade": 10,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1139.32
+              "TimeSeconds": 113932
             },
             "wind_mps": null,
             "heat": "1",
@@ -269,7 +269,7 @@
             "grade": 10,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1142.96
+              "TimeSeconds": 114296
             },
             "wind_mps": null,
             "heat": "4",
@@ -282,7 +282,7 @@
             "grade": 9,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1151.17
+              "TimeSeconds": 115117
             },
             "wind_mps": null,
             "heat": "2",
@@ -295,7 +295,7 @@
             "grade": 10,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1152.94
+              "TimeSeconds": 115294
             },
             "wind_mps": null,
             "heat": "2",
@@ -308,7 +308,7 @@
             "grade": 10,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1154.56
+              "TimeSeconds": 115456
             },
             "wind_mps": null,
             "heat": "3",
@@ -321,7 +321,7 @@
             "grade": 9,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1154.62
+              "TimeSeconds": 115462
             },
             "wind_mps": null,
             "heat": "5",
@@ -334,7 +334,7 @@
             "grade": 11,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1156.84
+              "TimeSeconds": 115684
             },
             "wind_mps": null,
             "heat": "5",
@@ -347,7 +347,7 @@
             "grade": 12,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1160.26
+              "TimeSeconds": 116026
             },
             "wind_mps": null,
             "heat": "2",
@@ -360,7 +360,7 @@
             "grade": 10,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1161.1
+              "TimeSeconds": 116110
             },
             "wind_mps": null,
             "heat": "4",
@@ -373,7 +373,7 @@
             "grade": 10,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1162.78
+              "TimeSeconds": 116278
             },
             "wind_mps": null,
             "heat": "1",
@@ -386,7 +386,7 @@
             "grade": 12,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1163.98
+              "TimeSeconds": 116398
             },
             "wind_mps": null,
             "heat": "4",
@@ -399,7 +399,7 @@
             "grade": 10,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1164.82
+              "TimeSeconds": 116482
             },
             "wind_mps": null,
             "heat": "5",
@@ -412,7 +412,7 @@
             "grade": 11,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1165.06
+              "TimeSeconds": 116506
             },
             "wind_mps": null,
             "heat": "3",
@@ -425,7 +425,7 @@
             "grade": 12,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1165.12
+              "TimeSeconds": 116512
             },
             "wind_mps": null,
             "heat": "2",
@@ -438,7 +438,7 @@
             "grade": 9,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1166.56
+              "TimeSeconds": 116656
             },
             "wind_mps": null,
             "heat": "4",
@@ -451,7 +451,7 @@
             "grade": 12,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1172.35
+              "TimeSeconds": 117235
             },
             "wind_mps": null,
             "heat": "5",
@@ -464,7 +464,7 @@
             "grade": 9,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1174.9
+              "TimeSeconds": 117490
             },
             "wind_mps": null,
             "heat": "5",
@@ -477,7 +477,7 @@
             "grade": 9,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1182.59
+              "TimeSeconds": 118259
             },
             "wind_mps": null,
             "heat": "6",
@@ -490,7 +490,7 @@
             "grade": 10,
             "school": "Racine St. Catherine&#x27;s",
             "mark": {
-              "TimeSeconds": 1185.4
+              "TimeSeconds": 118540
             },
             "wind_mps": null,
             "heat": "1",
@@ -503,7 +503,7 @@
             "grade": 11,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1186.93
+              "TimeSeconds": 118693
             },
             "wind_mps": null,
             "heat": "3",
@@ -516,7 +516,7 @@
             "grade": 10,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1188.85
+              "TimeSeconds": 118885
             },
             "wind_mps": null,
             "heat": "2",
@@ -529,7 +529,7 @@
             "grade": 12,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1189.51
+              "TimeSeconds": 118951
             },
             "wind_mps": null,
             "heat": "6",
@@ -542,7 +542,7 @@
             "grade": 9,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1192.78
+              "TimeSeconds": 119278
             },
             "wind_mps": null,
             "heat": "5",
@@ -555,7 +555,7 @@
             "grade": 10,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1195.93
+              "TimeSeconds": 119593
             },
             "wind_mps": null,
             "heat": "4",
@@ -568,7 +568,7 @@
             "grade": 9,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1196.17
+              "TimeSeconds": 119617
             },
             "wind_mps": null,
             "heat": "6",
@@ -581,7 +581,7 @@
             "grade": 11,
             "school": "Delavan-Darien",
             "mark": {
-              "TimeSeconds": 1202.5
+              "TimeSeconds": 120250
             },
             "wind_mps": null,
             "heat": "7",
@@ -594,7 +594,7 @@
             "grade": 9,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1202.53
+              "TimeSeconds": 120253
             },
             "wind_mps": null,
             "heat": "5",
@@ -607,7 +607,7 @@
             "grade": 9,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1203.1
+              "TimeSeconds": 120310
             },
             "wind_mps": null,
             "heat": "3",
@@ -620,7 +620,7 @@
             "grade": 11,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1204.18
+              "TimeSeconds": 120418
             },
             "wind_mps": null,
             "heat": "6",
@@ -633,7 +633,7 @@
             "grade": 9,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1215.25
+              "TimeSeconds": 121525
             },
             "wind_mps": null,
             "heat": "3",
@@ -646,7 +646,7 @@
             "grade": 9,
             "school": "Whitnall",
             "mark": {
-              "TimeSeconds": 1217.29
+              "TimeSeconds": 121729
             },
             "wind_mps": null,
             "heat": "7",
@@ -659,7 +659,7 @@
             "grade": 11,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1219.36
+              "TimeSeconds": 121936
             },
             "wind_mps": null,
             "heat": "6",
@@ -672,7 +672,7 @@
             "grade": 9,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1232.26
+              "TimeSeconds": 123226
             },
             "wind_mps": null,
             "heat": "4",
@@ -685,7 +685,7 @@
             "grade": 12,
             "school": "Saint Anthony",
             "mark": {
-              "TimeSeconds": 1234.63
+              "TimeSeconds": 123463
             },
             "wind_mps": null,
             "heat": "1",
@@ -698,7 +698,7 @@
             "grade": 9,
             "school": "Jefferson",
             "mark": {
-              "TimeSeconds": 1235.59
+              "TimeSeconds": 123559
             },
             "wind_mps": null,
             "heat": "7",
@@ -711,7 +711,7 @@
             "grade": 10,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1244.71
+              "TimeSeconds": 124471
             },
             "wind_mps": null,
             "heat": "6",
@@ -724,7 +724,7 @@
             "grade": 12,
             "school": "St. Augustine Preparatory Academ",
             "mark": {
-              "TimeSeconds": 1249.27
+              "TimeSeconds": 124927
             },
             "wind_mps": null,
             "heat": "1",
@@ -737,7 +737,7 @@
             "grade": 9,
             "school": "Shoreland Lutheran",
             "mark": {
-              "TimeSeconds": 1253.89
+              "TimeSeconds": 125389
             },
             "wind_mps": null,
             "heat": "7",
@@ -750,7 +750,7 @@
             "grade": 10,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1255.51
+              "TimeSeconds": 125551
             },
             "wind_mps": null,
             "heat": "2",
@@ -763,7 +763,7 @@
             "grade": 9,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1265.05
+              "TimeSeconds": 126505
             },
             "wind_mps": null,
             "heat": "5",
@@ -776,7 +776,7 @@
             "grade": 11,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1266.76
+              "TimeSeconds": 126676
             },
             "wind_mps": null,
             "heat": "6",
@@ -789,7 +789,7 @@
             "grade": 9,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1283.83
+              "TimeSeconds": 128383
             },
             "wind_mps": null,
             "heat": "6",
@@ -802,7 +802,7 @@
             "grade": 11,
             "school": "Saint Thomas More",
             "mark": {
-              "TimeSeconds": 1296.76
+              "TimeSeconds": 129676
             },
             "wind_mps": null,
             "heat": "7",
@@ -815,7 +815,7 @@
             "grade": 11,
             "school": "Whitewater",
             "mark": {
-              "TimeSeconds": 1302.96
+              "TimeSeconds": 130296
             },
             "wind_mps": null,
             "heat": "7",
@@ -828,7 +828,7 @@
             "grade": 9,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1309.75
+              "TimeSeconds": 130975
             },
             "wind_mps": null,
             "heat": "4",
@@ -841,7 +841,7 @@
             "grade": 9,
             "school": "Clinton",
             "mark": {
-              "TimeSeconds": 1312.99
+              "TimeSeconds": 131299
             },
             "wind_mps": null,
             "heat": "7",
@@ -854,7 +854,7 @@
             "grade": 12,
             "school": "Big Foot/Williams Bay",
             "mark": {
-              "TimeSeconds": 1327.6
+              "TimeSeconds": 132760
             },
             "wind_mps": null,
             "heat": "7",
@@ -867,7 +867,7 @@
             "grade": 11,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1330.09
+              "TimeSeconds": 133009
             },
             "wind_mps": null,
             "heat": "1",
@@ -880,7 +880,7 @@
             "grade": 9,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1335.28
+              "TimeSeconds": 133528
             },
             "wind_mps": null,
             "heat": "3",
@@ -893,7 +893,7 @@
             "grade": 9,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1346.32
+              "TimeSeconds": 134632
             },
             "wind_mps": null,
             "heat": "5",
@@ -906,7 +906,7 @@
             "grade": 9,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1346.38
+              "TimeSeconds": 134638
             },
             "wind_mps": null,
             "heat": "6",
@@ -919,7 +919,7 @@
             "grade": 10,
             "school": "St. Augustine Preparatory Academ",
             "mark": {
-              "TimeSeconds": 1364.59
+              "TimeSeconds": 136459
             },
             "wind_mps": null,
             "heat": "2",
@@ -932,7 +932,7 @@
             "grade": 9,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1371.22
+              "TimeSeconds": 137122
             },
             "wind_mps": null,
             "heat": "4",
@@ -945,7 +945,7 @@
             "grade": 9,
             "school": "St. Augustine Preparatory Academ",
             "mark": {
-              "TimeSeconds": 1437.73
+              "TimeSeconds": 143773
             },
             "wind_mps": null,
             "heat": "3",
@@ -958,7 +958,7 @@
             "grade": 12,
             "school": "East Troy",
             "mark": {
-              "TimeSeconds": 1441.84
+              "TimeSeconds": 144184
             },
             "wind_mps": null,
             "heat": "7",
@@ -971,7 +971,7 @@
             "grade": 12,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1446.52
+              "TimeSeconds": 144652
             },
             "wind_mps": null,
             "heat": "2",
@@ -984,7 +984,7 @@
             "grade": 10,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1585.39
+              "TimeSeconds": 158539
             },
             "wind_mps": null,
             "heat": "3",
@@ -997,7 +997,7 @@
             "grade": 10,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1625.02
+              "TimeSeconds": 162502
             },
             "wind_mps": null,
             "heat": "4",
@@ -1010,7 +1010,7 @@
             "grade": 12,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1682.35
+              "TimeSeconds": 168235
             },
             "wind_mps": null,
             "heat": "5",
@@ -1023,7 +1023,7 @@
             "grade": 12,
             "school": "Cristo Rey Jesuit",
             "mark": {
-              "TimeSeconds": 1799.74
+              "TimeSeconds": 179974
             },
             "wind_mps": null,
             "heat": "6",
@@ -1036,7 +1036,7 @@
             "grade": 9,
             "school": "St. Augustine Preparatory Academ",
             "mark": {
-              "TimeSeconds": 1805.77
+              "TimeSeconds": 180577
             },
             "wind_mps": null,
             "heat": "4",
@@ -1049,7 +1049,7 @@
             "grade": 11,
             "school": "Saint Anthony",
             "mark": {
-              "TimeSeconds": 1807.69
+              "TimeSeconds": 180769
             },
             "wind_mps": null,
             "heat": "2",
@@ -1062,7 +1062,7 @@
             "grade": 11,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1807.84
+              "TimeSeconds": 180784
             },
             "wind_mps": null,
             "heat": "5",
@@ -1075,7 +1075,7 @@
             "grade": 10,
             "school": "Martin Luther",
             "mark": {
-              "TimeSeconds": 1808.57
+              "TimeSeconds": 180857
             },
             "wind_mps": null,
             "heat": "6",

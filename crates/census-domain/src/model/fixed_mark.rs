@@ -9,7 +9,9 @@
 use serde::{Deserialize, Serialize};
 
 /// Centiseconds (hundredths of a second).  Range: ±214 748 364s (~60h).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 #[serde(transparent)]
 pub struct CentiSeconds(pub i32);
 
@@ -25,19 +27,16 @@ impl CentiSeconds {
     }
 }
 
-impl Default for CentiSeconds {
-    fn default() -> Self {
-        Self(0)
-    }
-}
-
 impl std::fmt::Display for CentiSeconds {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{:02}", self.0 / 100, (self.0 % 100).abs())
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// Centimetres (hundredths of a metre).  Range: ±21 474 836m.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 #[serde(transparent)]
 pub struct CentiMetres(pub i32);
 
@@ -53,12 +52,6 @@ impl CentiMetres {
     }
 }
 
-impl Default for CentiMetres {
-    fn default() -> Self {
-        Self(0)
-    }
-}
-
 impl std::fmt::Display for CentiMetres {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}.{:02}", self.0 / 100, (self.0 % 100).abs())
@@ -66,7 +59,9 @@ impl std::fmt::Display for CentiMetres {
 }
 
 /// Centi-points (hundredths of a point).  Range: ±21 474 836pts.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 #[serde(transparent)]
 pub struct CentiPoints(pub i32);
 
@@ -81,13 +76,6 @@ impl CentiPoints {
         self.0 as f64 / 100.0
     }
 }
-
-impl Default for CentiPoints {
-    fn default() -> Self {
-        Self(0)
-    }
-}
-
 
 #[cfg(test)]
 #[path = "fixed_mark_tests.rs"]

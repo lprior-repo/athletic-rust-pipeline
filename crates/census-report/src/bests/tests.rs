@@ -86,8 +86,14 @@ fn times_run_down_and_field_marks_run_up() {
 #[test]
 fn marks_print_in_the_notation_a_reader_expects() {
     assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(1094))), "10.94");
-    assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(28123))), "4:41.23");
-    assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(30410))), "5:04.10");
+    assert_eq!(
+        mark_text(&Mark::TimeSeconds(CentiSeconds(28123))),
+        "4:41.23"
+    );
+    assert_eq!(
+        mark_text(&Mark::TimeSeconds(CentiSeconds(30410))),
+        "5:04.10"
+    );
     assert_eq!(mark_text(&Mark::DistanceMetres(CentiMetres(642))), "6.42 m");
     assert_eq!(
         mark_text(&Mark::FieldImperial {
@@ -262,4 +268,3 @@ fn athleticlive_rounds_not_truncates() {
     assert_eq!(rounded_cm, 158, "rounding gives 158");
     assert_eq!(truncated_cm, 157, "truncation gives 157 (wrong)");
 }
-

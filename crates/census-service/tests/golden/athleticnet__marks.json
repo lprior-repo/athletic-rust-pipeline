@@ -4,7 +4,7 @@
       "event": "Track800m",
       "mark": [
         {
-          "TimeSeconds": 77.8
+          "TimeSeconds": 7780
         },
         true
       ],
@@ -14,7 +14,7 @@
       "event": "Track3200m",
       "mark": [
         {
-          "TimeSeconds": 581.23
+          "TimeSeconds": 58123
         },
         false
       ],
@@ -24,7 +24,7 @@
       "event": "Track100m",
       "mark": [
         {
-          "TimeSeconds": 11.32
+          "TimeSeconds": 1132
         },
         false
       ],
@@ -36,7 +36,7 @@
         {
           "FieldImperial": {
             "feet_mark": "5-04.25",
-            "metres": 1.63195
+            "metres": 163
           }
         },
         false
@@ -47,7 +47,7 @@
       "event": "ShotPut",
       "mark": [
         {
-          "DistanceMetres": 12.34
+          "DistanceMetres": 1234
         },
         false
       ],
@@ -57,7 +57,7 @@
       "event": "Decathlon",
       "mark": [
         {
-          "Points": 3456.0
+          "Points": 345600
         },
         false
       ],

@@ -367,14 +367,14 @@ fn fingerprint_is_deterministic() {
 
     let fp1 = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026),
-        Revision::new(1),
+        SchoolYear::new(2026).unwrap(),
+        Revision(1),
         BrowserLaneState::Absent,
     );
     let fp2 = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026),
-        Revision::new(1),
+        SchoolYear::new(2026).unwrap(),
+        Revision(1),
         BrowserLaneState::Absent,
     );
     assert_eq!(fp1, fp2);
@@ -391,15 +391,15 @@ fn fingerprint_changes_with_different_inputs() {
 
     let base = compute_plan_fingerprint(
         UsJurisdiction::Wisconsin,
-        SchoolYear::new(2026),
-        Revision::new(1),
+        SchoolYear::new(2026).unwrap(),
+        Revision(1),
         BrowserLaneState::Absent,
     );
     assert_ne!(
         compute_plan_fingerprint(
             UsJurisdiction::Minnesota, // different jurisdiction
-            SchoolYear::new(2026),
-            Revision::new(1),
+            SchoolYear::new(2026).unwrap(),
+            Revision(1),
             BrowserLaneState::Absent,
         ),
         base
@@ -407,8 +407,8 @@ fn fingerprint_changes_with_different_inputs() {
     assert_ne!(
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2025), // different season
-            Revision::new(1),
+            SchoolYear::new(2025).unwrap(), // different season
+            Revision(1),
             BrowserLaneState::Absent,
         ),
         base
@@ -416,8 +416,8 @@ fn fingerprint_changes_with_different_inputs() {
     assert_ne!(
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2026),
-            Revision::new(2), // different revision
+            SchoolYear::new(2026).unwrap(),
+            Revision(2), // different revision
             BrowserLaneState::Absent,
         ),
         base
@@ -425,8 +425,8 @@ fn fingerprint_changes_with_different_inputs() {
     assert_ne!(
         compute_plan_fingerprint(
             UsJurisdiction::Wisconsin,
-            SchoolYear::new(2026),
-            Revision::new(1),
+            SchoolYear::new(2026).unwrap(),
+            Revision(1),
             BrowserLaneState::Configured, // different lane state
         ),
         base

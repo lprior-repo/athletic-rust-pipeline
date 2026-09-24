@@ -9,8 +9,8 @@ use census_store::clock::Clock;
 use census_store::Store;
 
 use super::ingest::IngestClient;
-use super::jobs::write_sweep_report;
 use super::jobs::run_once;
+use super::jobs::write_sweep_report;
 use super::wire::ingest::{EndpointObservation, SweepReport, SweepRequest};
 use super::{blocking, job_error, MAX_SWEEP_ENDPOINTS, MAX_SWEEP_WINDOWS, STOP_SIGNAL};
 
@@ -117,7 +117,6 @@ impl Sweep {
             .await
             .map_err(job_error)
         })
-
         .await?;
         Ok(written)
     }
@@ -241,7 +240,10 @@ mod wait_windows_tests {
         let (observed, interrupted) = Sweep::wait_windows_with(&waits, 3, 0).await;
 
         assert_eq!(observed, 3, "all three windows are observed");
-        assert!(!interrupted, "no signal arrived, so nothing was interrupted");
+        assert!(
+            !interrupted,
+            "no signal arrived, so nothing was interrupted"
+        );
         assert_eq!(
             waits.windows_waited(),
             vec![0, 0, 0],

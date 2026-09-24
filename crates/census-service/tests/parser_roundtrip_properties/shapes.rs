@@ -1,7 +1,7 @@
 //! What a well-formed fixture must parse into: identities and marks, front-end agreement.
 
 use super::*;
-use census_domain::model::{EventKind, Gender, Grade, Mark};
+use census_domain::model::{CentiSeconds, EventKind, Gender, Grade, Mark};
 
 #[test]
 fn known_identities_and_marks_survive_the_seam() {
@@ -14,7 +14,10 @@ fn known_identities_and_marks_survive_the_seam() {
     assert_eq!(winner.name, "Ben Lemirand");
     assert_eq!(winner.grade.map(Grade::get), Some(12));
     assert_eq!(winner.school, "West De Pere");
-    assert_eq!(winner.mark, Mark::TimeSeconds(10.56));
+    assert_eq!(
+        winner.mark,
+        Mark::TimeSeconds(CentiSeconds::from_seconds_f64(10.56))
+    );
     assert_eq!(winner.wind_mps, Some(0.4));
 
     let sections =
@@ -31,7 +34,10 @@ fn known_identities_and_marks_survive_the_seam() {
                 feet_mark, "61-03.50",
                 "a field mark keeps the published notation through the seam"
             );
-            assert!((metres - 18.68).abs() < 0.01, "feet convert once: {metres}");
+            assert!(
+                (metres.as_metres_f64() - 18.68).abs() < 0.01,
+                "feet convert once: {metres}"
+            );
         }
         other => panic!("expected an imperial field mark, got {other:?}"),
     }
@@ -41,7 +47,10 @@ fn known_identities_and_marks_survive_the_seam() {
     let finisher = &raceday.events[0].rows[0];
     assert_eq!(finisher.name, "Jack Hefty");
     assert_eq!(finisher.school, "Whitewater");
-    assert_eq!(finisher.mark, Mark::TimeSeconds(1033.69));
+    assert_eq!(
+        finisher.mark,
+        Mark::TimeSeconds(CentiSeconds::from_seconds_f64(1033.69))
+    );
 }
 
 #[test]

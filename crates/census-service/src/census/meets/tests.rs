@@ -207,8 +207,12 @@ fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
     assert_eq!(ids, vec!["w10", "w11"]);
 
     // Non-existent year yields nothing.
-    let selected =
-        select_meets(rows.clone(), &[UsJurisdiction::Wisconsin], SeasonScope::Year(2024), None);
+    let selected = select_meets(
+        rows.clone(),
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::Year(2024),
+        None,
+    );
     assert!(selected.is_empty());
 }
 
@@ -232,8 +236,7 @@ fn all_seasons_selects_every_year() {
     assert_eq!(selected.len(), 3);
 
     // All seasons, no jurisdiction filter — picks up Ohio too.
-    let selected =
-        select_meets(rows.clone(), &[], SeasonScope::All, None);
+    let selected = select_meets(rows.clone(), &[], SeasonScope::All, None);
     assert_eq!(selected.len(), 4);
 }
 

@@ -1464,7 +1464,7 @@ fn assert_best_reduction(rows: &[BestResult], store: &Store, scope: Scope) -> Re
         .map(|event| (event.id.as_str(), &event.kind))
         .collect();
 
-    let mut expected: BTreeMap<(String, String), (f64, usize)> = BTreeMap::new();
+    let mut expected: BTreeMap<(String, String), (i32, usize)> = BTreeMap::new();
     for performance in &performances {
         let Some(kind) = kinds.get(performance.event.as_str()) else {
             continue;
@@ -1478,6 +1478,14 @@ fn assert_best_reduction(rows: &[BestResult], store: &Store, scope: Scope) -> Re
         let Some(value) = measure.value(&performance.mark) else {
             continue;
         };
+        let event_label = kind.stable_key().into_owned();
+        let key = (performance.athlete.as_str().to_string(), event_label);
+        let entry = expected.entry(key).or_insert((0, 0));
+        let better = entry.0 == 0 || measure.better(value, entry.0);
+        if better {
+            entry.0 = value;
+        }
+        entry.1 += 1;
     }
     ensure!(
         !expected.is_empty(),

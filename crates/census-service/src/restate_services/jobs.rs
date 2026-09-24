@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
-use restate_sdk::prelude::{HandlerError, Json, RunRetryPolicy, TerminalError};
+use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 use serde_json::Value;
 
 use crate::census::{self, CollectOptions, StateProgress};
@@ -236,7 +236,7 @@ pub(super) async fn rosters_stage(
 /// the crawl's read-only artifact). The different classification is intentional: a crawl fixture
 /// read that fails on one machine will fail identically everywhere, while a store WAL flush that
 /// fails due to disk pressure may recover once the pressure eases.
-pub(super) fn collect_error(error: CrawlError) -> JobError {
+pub fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
         CrawlError::Invariant { detail } => JobError::Terminal { message: detail },
@@ -264,13 +264,6 @@ pub(super) fn collect_error(error: CrawlError) -> JobError {
             message: e.to_string(),
         },
     }
-}
-/// One attempt per `run` inside a handler: ADR-002 makes Restate the owner of retries, and the
-/// retry it owns is the *invocation* retry declared on the handler. A `run`-level retry would be a
-/// second, in-process budget the journal cannot account for, so every `run` attempts once and a
-/// failure leaves the handler for the invocation policy to replay.
-pub(super) fn no_run_retry() -> RunRetryPolicy {
-    RunRetryPolicy::new().max_attempts(1)
 }
 
 /// A closure that is total and cannot fail needs no policy; the `ctx.run` it wraps is pure

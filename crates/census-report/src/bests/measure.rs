@@ -36,7 +36,9 @@ impl Measure {
         match (self, mark) {
             (Measure::Time, Mark::TimeSeconds(cs)) => Some(cs.0),
             (Measure::Distance, Mark::DistanceMetres(cm)) => Some(cm.0),
-            (Measure::Field, Mark::FieldImperial { feet_mark, .. }) => parse_field_imperial(feet_mark),
+            (Measure::Field, Mark::FieldImperial { feet_mark, .. }) => {
+                parse_field_imperial(feet_mark)
+            }
             (Measure::Points, Mark::Points(cp)) => Some(cp.0),
             _ => None,
         }
@@ -86,7 +88,11 @@ fn parse_hundredths(s: &str) -> Option<i64> {
     let frac = if frac.len() == 1 {
         format!("{frac}0")
     } else if frac.len() >= 2 {
-        format!("{}{}", frac.chars().next().unwrap(), frac.chars().nth(1).unwrap())
+        format!(
+            "{}{}",
+            frac.chars().next().unwrap(),
+            frac.chars().nth(1).unwrap()
+        )
     } else {
         "00".to_string()
     };

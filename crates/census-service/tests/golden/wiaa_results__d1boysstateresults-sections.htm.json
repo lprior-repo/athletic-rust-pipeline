@@ -30,7 +30,7 @@
             "grade": null,
             "school": "Homestead",
             "mark": {
-              "TimeSeconds": 41.61
+              "TimeSeconds": 4161
             },
             "wind_mps": null,
             "heat": "1",
@@ -74,7 +74,7 @@
             "grade": null,
             "school": "Arrowhead",
             "mark": {
-              "TimeSeconds": 41.86
+              "TimeSeconds": 4186
             },
             "wind_mps": null,
             "heat": "3",
@@ -118,7 +118,7 @@
             "grade": null,
             "school": "Monona Grove",
             "mark": {
-              "TimeSeconds": 42.07
+              "TimeSeconds": 4207
             },
             "wind_mps": null,
             "heat": "2",
@@ -162,7 +162,7 @@
             "grade": null,
             "school": "Oshkosh North",
             "mark": {
-              "TimeSeconds": 41.89
+              "TimeSeconds": 4189
             },
             "wind_mps": null,
             "heat": "3",
@@ -206,7 +206,7 @@
             "grade": null,
             "school": "Oak Creek",
             "mark": {
-              "TimeSeconds": 42.03
+              "TimeSeconds": 4203
             },
             "wind_mps": null,
             "heat": "1",
@@ -254,7 +254,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "61-03.50",
-                "metres": 18.6817
+                "metres": 1868
               }
             },
             "wind_mps": null,
@@ -270,7 +270,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "60-10.00",
-                "metres": 18.541999999999998
+                "metres": 1854
               }
             },
             "wind_mps": null,
@@ -286,7 +286,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "57-06.50",
-                "metres": 17.5387
+                "metres": 1754
               }
             },
             "wind_mps": null,
@@ -302,7 +302,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "56-05.00",
-                "metres": 17.1958
+                "metres": 1720
               }
             },
             "wind_mps": null,
@@ -318,7 +318,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "55-07.50",
-                "metres": 16.9545
+                "metres": 1695
               }
             },
             "wind_mps": null,
@@ -334,7 +334,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "55-00.50",
-                "metres": 16.776699999999998
+                "metres": 1678
               }
             },
             "wind_mps": null,
@@ -350,7 +350,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "54-10.50",
-                "metres": 16.7259
+                "metres": 1673
               }
             },
             "wind_mps": null,
@@ -366,7 +366,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "54-02.50",
-                "metres": 16.5227
+                "metres": 1652
               }
             },
             "wind_mps": null,
@@ -382,7 +382,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "53-05.25",
-                "metres": 16.28775
+                "metres": 1629
               }
             },
             "wind_mps": null,
@@ -398,7 +398,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "53-03.75",
-                "metres": 16.24965
+                "metres": 1625
               }
             },
             "wind_mps": null,
@@ -414,7 +414,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "52-07.75",
-                "metres": 16.04645
+                "metres": 1605
               }
             },
             "wind_mps": null,
@@ -430,7 +430,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "52-06.50",
-                "metres": 16.014699999999998
+                "metres": 1601
               }
             },
             "wind_mps": null,
@@ -446,7 +446,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "52-04.50",
-                "metres": 15.963899999999999
+                "metres": 1596
               }
             },
             "wind_mps": null,
@@ -462,7 +462,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "52-01.25",
-                "metres": 15.88135
+                "metres": 1588
               }
             },
             "wind_mps": null,
@@ -478,7 +478,7 @@
             "mark": {
               "FieldImperial": {
                 "feet_mark": "52-00.50",
-                "metres": 15.8623
+                "metres": 1586
               }
             },
             "wind_mps": null,

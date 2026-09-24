@@ -19,7 +19,7 @@
           "grade": null,
           "school": "HORTONVILLE",
           "mark": {
-            "TimeSeconds": 595.11
+            "TimeSeconds": 59511
           },
           "wind_mps": null,
           "heat": null,
@@ -53,7 +53,7 @@
           "grade": null,
           "school": "APPLETON NORTH",
           "mark": {
-            "TimeSeconds": 596.5
+            "TimeSeconds": 59650
           },
           "wind_mps": null,
           "heat": null,
@@ -87,7 +87,7 @@
           "grade": null,
           "school": "KIMBERLY",
           "mark": {
-            "TimeSeconds": 603.38
+            "TimeSeconds": 60338
           },
           "wind_mps": null,
           "heat": null,
@@ -109,7 +109,7 @@
           "grade": 11,
           "school": "APPLETON NOR…",
           "mark": {
-            "TimeSeconds": 12.3
+            "TimeSeconds": 1230
           },
           "wind_mps": null,
           "heat": null,
@@ -122,7 +122,7 @@
           "grade": 12,
           "school": "APPLETON NOR…",
           "mark": {
-            "TimeSeconds": 12.74
+            "TimeSeconds": 1274
           },
           "wind_mps": null,
           "heat": null,
@@ -135,7 +135,7 @@
           "grade": 11,
           "school": "HORTONVILLE",
           "mark": {
-            "TimeSeconds": 12.83
+            "TimeSeconds": 1283
           },
           "wind_mps": null,
           "heat": null,
@@ -148,7 +148,7 @@
           "grade": 12,
           "school": "WEST DE PERE",
           "mark": {
-            "TimeSeconds": 13.12
+            "TimeSeconds": 1312
           },
           "wind_mps": null,
           "heat": null,
@@ -161,7 +161,7 @@
           "grade": 10,
           "school": "WEST DE PERE",
           "mark": {
-            "TimeSeconds": 13.38
+            "TimeSeconds": 1338
           },
           "wind_mps": null,
           "heat": null,
@@ -174,7 +174,7 @@
           "grade": 9,
           "school": "APPLETON WEST",
           "mark": {
-            "TimeSeconds": 13.39
+            "TimeSeconds": 1339
           },
           "wind_mps": null,
           "heat": null,
@@ -187,7 +187,7 @@
           "grade": 9,
           "school": "KAUKAUNA",
           "mark": {
-            "TimeSeconds": 13.44
+            "TimeSeconds": 1344
           },
           "wind_mps": null,
           "heat": null,
@@ -200,7 +200,7 @@
           "grade": 12,
           "school": "APPLETON EAST",
           "mark": {
-            "TimeSeconds": 13.55
+            "TimeSeconds": 1355
           },
           "wind_mps": null,
           "heat": null,

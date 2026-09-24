@@ -20,6 +20,7 @@ mod dump_sheet;
 mod ingress;
 mod integrity;
 mod json;
+mod kani;
 mod paths;
 mod perf;
 mod purity;
@@ -186,6 +187,14 @@ enum Command {
         /// Sheet names to dump.
         sheets: Vec<String>,
     },
+    /// Verify `census-domain` invariants via `cargo kani`: fixed-point bounds, PR comparison
+    /// laws, identity contradiction, redirect cycle, retry limits, terminal state,
+    /// StoreBatch arithmetic, and `CENSUS_SCOPE` scope size.
+    Kani {
+        /// Harness names to verify; when omitted, all mandatory harnesses are run.
+        #[arg(last = true, value_name = "HARNESS")]
+        harnesses: Vec<String>,
+    },
 }
 
 fn main() -> ExitCode {
@@ -238,6 +247,7 @@ fn run() -> Result<()> {
         } => census::export(target, out.as_deref(), grad_year, all_sources, limit),
         Command::NewSource { name } => scaffold::new_source(&name),
         Command::DumpSheet { workbook, sheets } => dump_sheet::run(&workbook, &sheets),
+        Command::Kani { harnesses } => kani::run(&harnesses),
     }
 }
 

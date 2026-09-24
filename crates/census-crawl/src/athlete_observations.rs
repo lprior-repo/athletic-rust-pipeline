@@ -90,8 +90,8 @@ pub fn observe_athletes_of<'a>(
 mod tests {
     use super::*;
     use census_domain::model::{
-        CanonicalEvent, CanonicalMeet, CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear, Mark,
-        SchoolYear, Sport, TimingMethod,
+        CanonicalEvent, CanonicalMeet, CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear,
+        Mark, SchoolYear, Sport, TimingMethod,
     };
     use census_domain::UsJurisdiction;
 

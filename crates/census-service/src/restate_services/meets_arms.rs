@@ -21,12 +21,11 @@ use restate_sdk::prelude::{HandlerError, Json, TerminalError};
 
 use crate::census::{self, MeetCensus, MeetSourceRows};
 use census_crawl::net::Fetcher;
-use census_crawl::{Recorded, RecordedBatch, Recording};
+use census_crawl::{Recorded, Recording};
 use census_store::Store;
 use serde::{Deserialize, Serialize};
 
-use super::jobs::{append_observations, assert_some_stage_arms};
-use super::{job_error, JobError, MAX_ROWS_PER_REQUEST};
+use super::jobs::assert_some_stage_arms;
 use walks::{walk_index, Walk};
 
 /// The walks the meet-index stage can run, one per planned source.
@@ -90,10 +89,10 @@ pub(super) fn arm_for(slug: &str) -> Option<MeetsArm> {
 /// that runs again resumes instead of re-fetching, and the per-source rows are what tells an arm
 /// that found nothing apart from an arm that never ran.
 ///
-/// Every walk here is routed: the index's and each arm's rows are recorded, written to the store this
-/// run holds, and handed to the caller to post through that source's `Ingest` object. The index walk
-/// is the one source the stage does not look up in the plan — it *is* the plan's first entry
-/// ([`census::SOURCE`]), and it runs whether or not anything else is armed.
+/// Every walk here is routed: the index's and each arm's rows are recorded and handed to the
+/// caller to post through that source's `Ingest` object, which is the single durability authority.
+/// The index walk is the one source the stage does not look up in the plan — it *is* the plan's
+/// first entry ([`census::SOURCE`]), and it runs whether or not anything else is armed.
 pub(super) async fn meets_stage(
     store: Arc<Store>,
     fetcher: Arc<Fetcher>,
@@ -121,10 +120,10 @@ pub(super) async fn meets_stage(
             continue;
         };
         let recording = Recording::new();
-        // The arm's sink: `Some` holds the rows for the caller to post, `None` writes them into the
-        // store the walk holds. The walk itself is the same either way.
+        // The arm's sink: `Some` holds the rows for the caller to post through the source's
+        // `Ingest` object. The walk itself is the same either way.
         let rows = walk.armed(arm, &recording).await?;
-        take_recorded(&store, slug, recording.drain(), &mut recorded)?;
+        take_recorded(slug, recording.drain(), &mut recorded);
         sources.push(MeetSourceRows {
             slug: slug.clone(),
             rows,
@@ -134,33 +133,21 @@ pub(super) async fn meets_stage(
     census.sources = sources;
     Ok(Json(MeetsStageOutcome { census, recorded }))
 }
-
-/// Take one routed walk's recording: write its rows to the store this run holds, and keep them for
-/// the caller to post.
+/// Take one routed walk's recording: keep the rows for the caller to post through the source's
+/// `Ingest` object.
 ///
-/// Both destinations, deliberately. Written, because this run's own store is where the meets a later
-/// stage selects are read from — the handoff is not allowed to move rows out of the table the run
-/// already consumes them from. Recorded, because the caller posts them to the source's `Ingest`
-/// object and only then writes the journal entries the walk produced: no unit is marked read before
-/// the rows it produced are durable, in either place. A row that lands in both is one row by id, so
-/// the handoff cannot double-write.
-fn take_recorded(
-    store: &Store,
-    slug: &str,
-    walked: Recorded,
-    recorded: &mut Vec<RecordedSource>,
-) -> Result<(), HandlerError> {
+/// The Ingest object is the single durability authority: it persists the recording, and the store
+/// appends only through the `record` handler. The caller posts recorded rows to the source's
+/// Ingest object and only then writes the journal entries the walk produced, so no unit is marked
+/// read before the rows it produced are durable.
+fn take_recorded(slug: &str, walked: Recorded, recorded: &mut Vec<RecordedSource>) {
     if walked.is_empty() {
-        return Ok(());
-    }
-    for batch in &walked.rows {
-        append_recorded(store, batch)?;
+        return;
     }
     recorded.push(RecordedSource {
         slug: slug.to_string(),
         recorded: walked,
     });
-    Ok(())
 }
 
 /// The season the request asked for, as the walks carry it. A year the season constructor rejects
@@ -176,19 +163,4 @@ pub(super) fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
 /// The terminal error a year outside the season window earns.
 pub(super) fn not_a_season(year: u16) -> HandlerError {
     TerminalError::new(format!("season year {year} is not a school year")).into()
-}
-
-/// Write one recorded batch into the store this run holds, in request-sized chunks.
-///
-/// The batch the walk committed is the unit its journal entry covers, and it is written here for the
-/// same reason the walk would have written it: a later stage selects meets from this table. The
-/// per-request ceiling is the object route's, so a batch larger than one request is split rather than
-/// refused — the rows are the walk's, not a caller's, and refusing them would fail a run over the
-/// shape of a source page.
-fn append_recorded(store: &Store, batch: &RecordedBatch) -> Result<(), HandlerError> {
-    for chunk in batch.rows.chunks(MAX_ROWS_PER_REQUEST) {
-        append_observations(store, batch.table, chunk)
-            .map_err(|error| job_error(JobError::from(error)))?;
-    }
-    Ok(())
 }

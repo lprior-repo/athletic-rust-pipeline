@@ -8,9 +8,9 @@ use super::parse::{
     parse_summary,
 };
 use super::wire::{EventSummary, QualifierAthlete, QualifiersEnvelope};
-use census_domain::model::{Grade, Mark, SchoolYear};
 use census_domain::model::CentiMetres;
 use census_domain::model::CentiSeconds;
+use census_domain::model::{Grade, Mark, SchoolYear};
 
 /// Provenance: `GET https://api.ihsa.org/v1/track-field/meets`, fetched 2026-09-19 23:15.
 /// Capture: `tools/a13-ihsa/p_track-field_meets.json` (1,088 B). Measured: `count: 2`.
@@ -436,12 +436,30 @@ fn terms_pin_the_newest_completed_school_year() {
 
 #[test]
 fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
-    assert_eq!(parse_mark("2.02m"), Some(Mark::DistanceMetres(CentiMetres(202))));
-    assert_eq!(parse_mark("1.88mq"), Some(Mark::DistanceMetres(CentiMetres(188))));
-    assert_eq!(parse_mark("7:51.37"), Some(Mark::TimeSeconds(CentiSeconds(47137))));
-    assert_eq!(parse_mark("10.94"), Some(Mark::TimeSeconds(CentiSeconds(1094))));
-    assert_eq!(parse_mark("10.94Q"), Some(Mark::TimeSeconds(CentiSeconds(1094))));
-    assert_eq!(parse_mark("  2.02m "), Some(Mark::DistanceMetres(CentiMetres(202))));
+    assert_eq!(
+        parse_mark("2.02m"),
+        Some(Mark::DistanceMetres(CentiMetres(202)))
+    );
+    assert_eq!(
+        parse_mark("1.88mq"),
+        Some(Mark::DistanceMetres(CentiMetres(188)))
+    );
+    assert_eq!(
+        parse_mark("7:51.37"),
+        Some(Mark::TimeSeconds(CentiSeconds(47137)))
+    );
+    assert_eq!(
+        parse_mark("10.94"),
+        Some(Mark::TimeSeconds(CentiSeconds(1094)))
+    );
+    assert_eq!(
+        parse_mark("10.94Q"),
+        Some(Mark::TimeSeconds(CentiSeconds(1094)))
+    );
+    assert_eq!(
+        parse_mark("  2.02m "),
+        Some(Mark::DistanceMetres(CentiMetres(202)))
+    );
 
     assert_eq!(parse_mark(""), None, "an absent mark is never invented");
     assert_eq!(parse_mark("NH"), None, "no height");

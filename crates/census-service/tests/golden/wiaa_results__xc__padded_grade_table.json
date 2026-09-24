@@ -17,7 +17,7 @@
           "grade": 12,
           "school": "Poynette",
           "mark": {
-            "TimeSeconds": 1004.1
+            "TimeSeconds": 100410
           },
           "wind_mps": null,
           "heat": null,
@@ -30,7 +30,7 @@
           "grade": 11,
           "school": "Ozaukee",
           "mark": {
-            "TimeSeconds": 1015.5
+            "TimeSeconds": 101550
           },
           "wind_mps": null,
           "heat": null,
@@ -43,7 +43,7 @@
           "grade": 10,
           "school": "Sheboygan Area Lutheran",
           "mark": {
-            "TimeSeconds": 1020.7
+            "TimeSeconds": 102070
           },
           "wind_mps": null,
           "heat": null,
@@ -56,7 +56,7 @@
           "grade": 10,
           "school": "Poynette",
           "mark": {
-            "TimeSeconds": 1038.1
+            "TimeSeconds": 103810
           },
           "wind_mps": null,
           "heat": null,

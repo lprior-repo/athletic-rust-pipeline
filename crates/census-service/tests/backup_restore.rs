@@ -19,9 +19,9 @@
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventKind,
-    Evidence, Gender, GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef,
-    Sport, TeamId, TimingMethod,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole,
+    CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade, Id, Mark, ObservedGrade,
+    SchoolId, SchoolYear, SourceRef, Sport, TeamId, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -240,11 +240,11 @@ fn add_athlete(
             event: event.id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(
+            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
                 130.0
                     + f64::from(u32::try_from(index + slot).expect("small"))
                     + f64::from(u32::try_from(attempt).expect("small")),
-            ),
+            )),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).expect("two attempts fit u16")),
             heat: None,

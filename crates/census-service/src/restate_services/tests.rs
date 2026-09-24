@@ -620,8 +620,6 @@ fn fetch_error_nonretryable_variants_become_terminal() {
 /// terminal because reading the same bytes again does not make them less wrong.
 #[test]
 fn non_fetch_crawl_errors_are_terminal() {
-    use census_crawl::net::FetchError;
-
     let schema = collect_error(CrawlError::Schema {
         url: "https://example.com".to_string(),
         detail: "missing field".to_string(),
@@ -652,7 +650,7 @@ fn non_fetch_crawl_errors_are_terminal() {
 
     let encode = collect_error(CrawlError::Encode {
         table: "schools".to_string(),
-        source: serde_json::to_vec(&serde_json::Value::Null).unwrap_err(),
+        source: serde_json::Error::io(std::io::Error::from(std::io::ErrorKind::Other)),
     });
     assert!(matches!(encode, JobError::Terminal { .. }));
 }

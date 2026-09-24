@@ -4,9 +4,9 @@
 //! Every token here arrives as prose — `11.83a`, `5-06`, `1:52.4c` — so each reader answers with
 //! `None` or an error rather than a guess, and the caller decides what an unreadable mark means.
 
-use census_domain::model::{EventKind, Mark};
-use census_domain::model::CentiSeconds;
 use census_domain::model::CentiMetres;
+use census_domain::model::CentiSeconds;
+use census_domain::model::{EventKind, Mark};
 
 use super::super::NO_MARK;
 use super::mark_token_regex;
@@ -77,7 +77,7 @@ pub fn parse_time(token: &str) -> Option<CentiSeconds> {
                 && (0.0..60.0).contains(&minutes)
                 && (0.0..60.0).contains(&seconds)
                 && total.is_finite())
-                .then_some(CentiSeconds::from_seconds_f64(total))
+            .then_some(CentiSeconds::from_seconds_f64(total))
         }
         _ => None,
     }

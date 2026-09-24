@@ -1,10 +1,10 @@
 use super::*;
 use crate::registry::{transport_for_host, TransportKind};
 use census_domain::core_scope::is_core_source;
-use census_domain::model::{EventKind, Mark, SourceNamespace};
-use census_domain::model::CentiPoints;
 use census_domain::model::CentiMetres;
+use census_domain::model::CentiPoints;
 use census_domain::model::CentiSeconds;
+use census_domain::model::{EventKind, Mark, SourceNamespace};
 
 fn payload(body: &str) -> Bio {
     serde_json::from_str(body).expect("a payload this adapter reads")

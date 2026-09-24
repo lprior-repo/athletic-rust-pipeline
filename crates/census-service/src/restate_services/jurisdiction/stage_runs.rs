@@ -123,9 +123,7 @@ impl JurisdictionCensus {
             let posted = ingest_post::post(ctx, &endpoint, &window, &source.recorded.rows).await?;
             let store = Arc::clone(&self.store);
             let entries = source.recorded.journal.clone();
-            let Json(journaled) = ctx
-                .run(move || jobs::flush_journal(store, entries))
-                .await?;
+            let Json(journaled) = ctx.run(move || jobs::flush_journal(store, entries)).await?;
             tracing::info!(
                 endpoint = endpoint.as_str(),
                 window = window.as_str(),

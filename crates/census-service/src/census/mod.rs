@@ -26,7 +26,9 @@ mod state;
 mod sweep;
 
 pub use aggregate::consolidate;
-pub use meets::{collect_state_meets, select_meets, MeetCensus, MeetSourceRows, SeasonScope, SOURCE};
+pub use meets::{
+    collect_state_meets, select_meets, MeetCensus, MeetSourceRows, SeasonScope, SOURCE,
+};
 pub use state::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
     AcceptanceItem, CensusState, GapTally, JurisdictionStages, OpenWork, Phase, RetainedFindings,

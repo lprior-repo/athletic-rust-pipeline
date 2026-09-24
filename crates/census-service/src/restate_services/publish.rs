@@ -96,7 +96,7 @@ impl Consolidate {
     #[tracing::instrument(skip_all, fields(tables = request.tables.len()))]
     async fn run(
         &self,
-        ctx: WorkflowContext<'_>,
+        _ctx: WorkflowContext<'_>,
         Json(request): Json<ConsolidateRequest>,
     ) -> Result<Json<ConsolidateReply>, HandlerError> {
         let tables = resolve_tables(&request.tables)?;
@@ -143,7 +143,7 @@ impl Report {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        ctx: WorkflowContext<'_>,
+        _ctx: WorkflowContext<'_>,
         Json(request): Json<ReportRequest>,
     ) -> Result<Json<ReportReply>, HandlerError> {
         let scope = resolve_scope(request.scope.as_deref())?;
@@ -190,7 +190,7 @@ impl Bests {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        ctx: WorkflowContext<'_>,
+        _ctx: WorkflowContext<'_>,
         Json(request): Json<BestsRequest>,
     ) -> Result<Json<BestsReply>, HandlerError> {
         let options = bests::Options {
@@ -241,7 +241,7 @@ impl Workbook {
     #[tracing::instrument(skip_all)]
     async fn run(
         &self,
-        ctx: WorkflowContext<'_>,
+        _ctx: WorkflowContext<'_>,
         Json(request): Json<WorkbookRequest>,
     ) -> Result<Json<WorkbookReply>, HandlerError> {
         let options = workbook::Options {

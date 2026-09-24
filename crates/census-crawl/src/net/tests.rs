@@ -147,7 +147,7 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
     let (body_path, meta_path) = fetcher.cache_paths(&key);
 
     let body = b"valid body";
-    use super::cache::{write_cache, content_digest};
+    use super::cache::{content_digest, write_cache};
     let meta = super::cache::CacheMeta {
         url: "https://example.com/teams".to_string(),
         method: "GET".to_string(),
@@ -163,8 +163,9 @@ async fn a_corrupted_cache_body_is_rejected_not_served() {
     write_cache(&body_path, &meta_path, body, &meta).expect("write");
 
     // A valid body is served.
-    let (cached_meta, cached_body) =
-        super::cache::read_cache(&body_path, &meta_path).expect("read").expect("cache hit");
+    let (cached_meta, cached_body) = super::cache::read_cache(&body_path, &meta_path)
+        .expect("read")
+        .expect("cache hit");
     assert_eq!(cached_body, body);
     assert_eq!(cached_meta.bytes, body.len());
 
@@ -197,9 +198,6 @@ fn an_empty_robots_body_is_fetched_but_has_no_rules() {
 #[test]
 fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
     let rules = parse_robots("# just a comment\n  \n# nothing useful\n");
-    assert!(
-        rules.was_fetched(),
-        "a comment-only body is still fetched"
-    );
+    assert!(rules.was_fetched(), "a comment-only body is still fetched");
     // no directives parsed from comments — parsed rules are empty when no user-agent groups exist
 }

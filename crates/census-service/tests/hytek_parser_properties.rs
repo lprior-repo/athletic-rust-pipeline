@@ -71,8 +71,8 @@ fn shaped_token() -> impl Strategy<Value = String> {
 /// The metric reading of a mark, whichever variant it arrived as.
 fn metres_of(mark: &Mark) -> f64 {
     match mark {
-        Mark::FieldImperial { metres, .. } => *metres,
-        Mark::DistanceMetres(metres) => *metres,
+        Mark::FieldImperial { metres, .. } => metres.as_metres_f64(),
+        Mark::DistanceMetres(metres) => metres.as_metres_f64(),
         other => panic!("{other:?} is not a distance mark"),
     }
 }

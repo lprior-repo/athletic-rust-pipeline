@@ -15,10 +15,10 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
-    run_key, DEFAULT_GENERATION, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
+    run_key, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
     ConsolidateReply, ConsolidateRequest, ConsolidatedTable, JurisdictionReport,
     JurisdictionRequest, ReportIngressClient, ReportReply, ReportRequest, WorkbookIngressClient,
-    WorkbookReply, WorkbookRequest,
+    WorkbookReply, WorkbookRequest, DEFAULT_GENERATION,
 };
 use restate_sdk::prelude::*;
 
@@ -58,7 +58,11 @@ fn bests_client(
     let limit = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
     Ok(BestsIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("bests", &[scope.as_str(), &year, &limit], DEFAULT_GENERATION),
+        run_key(
+            "bests",
+            &[scope.as_str(), &year, &limit],
+            DEFAULT_GENERATION,
+        ),
     ))
 }
 
@@ -76,7 +80,9 @@ fn workbook_client(
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
     let scope = request.scope.as_deref().unwrap_or("all");
-    let limit = request.limit.map_or_else(|| "all".to_string(), |l| l.to_string());
+    let limit = request
+        .limit
+        .map_or_else(|| "all".to_string(), |l| l.to_string());
     let out = request.out.as_deref().unwrap_or(".");
     Ok(WorkbookIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,

@@ -1,6 +1,6 @@
 //! Tests for the fixed-point mark newtypes: ordering, round-trip, and float pitfalls.
 
-use crate::model::{CentiMetres, CentiPoints, CentiSeconds, Mark};
+use crate::model::{CentiMetres, CentiPoints, CentiSeconds};
 
 // ── Ordering ────────────────────────────────────────────────────────────────────
 
@@ -43,10 +43,13 @@ fn centi_seconds_round_trips() {
         (281.23, "281.23"),
         (932.1, "932.10"),
     ];
-    for (input, expected) in cases {
+    for (input, _expected) in cases {
         let cs = CentiSeconds::from_seconds_f64(input);
         let back = cs.as_seconds_f64();
-        assert!((back - input).abs() < 0.005, "{input}→{back} (expected ~{input})");
+        assert!(
+            (back - input).abs() < 0.005,
+            "{input}→{back} (expected ~{input})"
+        );
     }
 }
 
@@ -89,13 +92,16 @@ fn float_comparison_fails_where_fixed_point_succeeds() {
     let left: f64 = 0.1 + 0.2 + 0.3;
     let right: f64 = 0.1 + (0.2 + 0.3);
     // They differ by 1 ulp:
-    assert_ne!(left.to_bits(), right.to_bits(), "f64 associativity diverges");
+    assert_ne!(
+        left.to_bits(),
+        right.to_bits(),
+        "f64 associativity diverges"
+    );
 
     // But centiseconds round to the same integer:
     let cs_left = CentiSeconds::from_seconds_f64(left);
     let cs_right = CentiSeconds::from_seconds_f64(right);
     assert_eq!(cs_left, cs_right, "fixed-point unifies the two paths");
-
 
     // This is the deterministic guarantee: same published value → same
     // internal representation, regardless of how it arrived.

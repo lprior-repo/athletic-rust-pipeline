@@ -38,7 +38,7 @@ proptest! {
         let parsed = parse_time(&text)
             .unwrap_or_else(|| panic!("{text} (from {centis}) was refused"));
         prop_assert!(
-            (parsed - expected).abs() < 1e-9,
+            (parsed.as_seconds_f64() - expected).abs() < 1e-9,
             "{text} parsed to {} not {}",
             parsed,
             expected
@@ -61,7 +61,7 @@ fn the_vendors_own_notation_reads_exactly() {
     for (text, expected) in cases {
         let parsed = parse_time(text).unwrap_or_else(|| panic!("{text} was refused"));
         assert!(
-            (parsed - expected).abs() < 1e-9,
+            (parsed.as_seconds_f64() - expected).abs() < 1e-9,
             "{text} parsed to {parsed}, not {expected}"
         );
     }

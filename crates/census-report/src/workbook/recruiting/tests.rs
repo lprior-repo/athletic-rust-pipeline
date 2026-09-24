@@ -11,9 +11,9 @@ use crate::bests;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     normalize_name, AthleteId, CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet,
-    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventId,
-    EventKind, Evidence, Gender, GradYear, CentiMetres, CentiSeconds, Grade, Mark, MeetId, ObservedGrade, SchoolId,
-    SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
+    CanonicalPerformance, CanonicalSchool, CanonicalTeam, CentiMetres, CentiSeconds, CoachRole,
+    CompetitionLevel, EventId, EventKind, Evidence, Gender, GradYear, Grade, Mark, MeetId,
+    ObservedGrade, SchoolId, SchoolYear, SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};

@@ -102,14 +102,9 @@ impl RobotsRules {
     ///  means no file was fetched (absent or transport failure): the host is treated
     /// as if it has no rules.  means a fetch happened — the result may contain rules,
     /// a crawl delay, or neither (e.g., a body with no valid directives).
+    #[cfg(test)]
     pub(super) fn was_fetched(&self) -> bool {
         self.fetched
-    }
-
-    /// The number of parsed rules.
-    #[cfg(test)]
-    pub(super) fn rule_count(&self) -> usize {
-        self.rules.len()
     }
 }
 
@@ -154,7 +149,10 @@ impl Fetcher {
             // but do not close the host — we simply don't know its rules. The caller receives an
             // unknown outcome: we tried, we just couldn't classify the result.
             Ok((status, _)) => {
-                debug!(status, "robots fetch returned non-standard status, allowing all");
+                debug!(
+                    status,
+                    "robots fetch returned non-standard status, allowing all"
+                );
                 RobotsRules {
                     fetched: true,
                     rules: Vec::new(),
@@ -188,19 +186,30 @@ impl Fetcher {
     /// same internal fetch path as normal requests — host gate pacing, body cap, timeout, and
     /// request accounting — so it cannot bypass the politeness policy.
     async fn fetch_robots(&self, url: &str) -> Result<(u16, Vec<u8>), FetchError> {
-        let response = self.client.get(url).send().await.map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })?;
+        let response =
+            self.client
+                .get(url)
+                .send()
+                .await
+                .map_err(|source| FetchError::Transport {
+                    url: url.to_string(),
+                    source,
+                })?;
         let status = response.status().as_u16();
 
         // Read the body under the robots body cap.
         let mut body = Vec::new();
         let mut stream = response.bytes_stream();
-        while let Some(chunk) = stream.next().await.transpose().map_err(|source| FetchError::Transport {
-            url: url.to_string(),
-            source,
-        })? {
+        while let Some(chunk) =
+            stream
+                .next()
+                .await
+                .transpose()
+                .map_err(|source| FetchError::Transport {
+                    url: url.to_string(),
+                    source,
+                })?
+        {
             if body.len().saturating_add(chunk.len()) > ROBOTS_MAX_BODY {
                 // Body too large — return with what we have; the caller will get an empty parse.
                 break;

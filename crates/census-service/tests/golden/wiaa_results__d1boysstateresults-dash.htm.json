@@ -22,7 +22,7 @@
             "grade": 12,
             "school": "West De Pere",
             "mark": {
-              "TimeSeconds": 10.56
+              "TimeSeconds": 1056
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -35,7 +35,7 @@
             "grade": 11,
             "school": "Oshkosh North",
             "mark": {
-              "TimeSeconds": 10.66
+              "TimeSeconds": 1066
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -48,7 +48,7 @@
             "grade": 11,
             "school": "Waukesha West",
             "mark": {
-              "TimeSeconds": 10.73
+              "TimeSeconds": 1073
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -61,7 +61,7 @@
             "grade": 11,
             "school": "Arrowhead",
             "mark": {
-              "TimeSeconds": 10.59
+              "TimeSeconds": 1059
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -74,7 +74,7 @@
             "grade": 12,
             "school": "Oconomowoc",
             "mark": {
-              "TimeSeconds": 10.79
+              "TimeSeconds": 1079
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -87,7 +87,7 @@
             "grade": 12,
             "school": "Milw. King",
             "mark": {
-              "TimeSeconds": 10.79
+              "TimeSeconds": 1079
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -100,7 +100,7 @@
             "grade": 11,
             "school": "Marquette Univ.",
             "mark": {
-              "TimeSeconds": 10.86
+              "TimeSeconds": 1086
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -113,7 +113,7 @@
             "grade": 10,
             "school": "Middleton",
             "mark": {
-              "TimeSeconds": 10.86
+              "TimeSeconds": 1086
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -126,7 +126,7 @@
             "grade": 12,
             "school": "Homestead",
             "mark": {
-              "TimeSeconds": 10.86
+              "TimeSeconds": 1086
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -139,7 +139,7 @@
             "grade": 12,
             "school": "Wauwatosa East",
             "mark": {
-              "TimeSeconds": 10.9
+              "TimeSeconds": 1090
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -152,7 +152,7 @@
             "grade": 12,
             "school": "Reedsburg Area",
             "mark": {
-              "TimeSeconds": 10.9
+              "TimeSeconds": 1090
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -165,7 +165,7 @@
             "grade": 9,
             "school": "Union Grove",
             "mark": {
-              "TimeSeconds": 10.95
+              "TimeSeconds": 1095
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -178,7 +178,7 @@
             "grade": 10,
             "school": "Milw. Riverside",
             "mark": {
-              "TimeSeconds": 10.95
+              "TimeSeconds": 1095
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -191,7 +191,7 @@
             "grade": 11,
             "school": "Kimberly",
             "mark": {
-              "TimeSeconds": 10.96
+              "TimeSeconds": 1096
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -204,7 +204,7 @@
             "grade": 9,
             "school": "Marshfield",
             "mark": {
-              "TimeSeconds": 10.97
+              "TimeSeconds": 1097
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -217,7 +217,7 @@
             "grade": 12,
             "school": "Brookfield Cent.",
             "mark": {
-              "TimeSeconds": 10.99
+              "TimeSeconds": 1099
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -230,7 +230,7 @@
             "grade": 12,
             "school": "Milw. King",
             "mark": {
-              "TimeSeconds": 11.0
+              "TimeSeconds": 1100
             },
             "wind_mps": 0.8,
             "heat": "2",
@@ -243,7 +243,7 @@
             "grade": 12,
             "school": "Madison Memorial",
             "mark": {
-              "TimeSeconds": 11.05
+              "TimeSeconds": 1105
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -256,7 +256,7 @@
             "grade": 11,
             "school": "EC Memorial",
             "mark": {
-              "TimeSeconds": 11.05
+              "TimeSeconds": 1105
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -269,7 +269,7 @@
             "grade": 11,
             "school": "EC North",
             "mark": {
-              "TimeSeconds": 11.05
+              "TimeSeconds": 1105
             },
             "wind_mps": 0.4,
             "heat": "1",
@@ -282,7 +282,7 @@
             "grade": 11,
             "school": "Fond Du Lac",
             "mark": {
-              "TimeSeconds": 11.18
+              "TimeSeconds": 1118
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -295,7 +295,7 @@
             "grade": 12,
             "school": "Hortonville",
             "mark": {
-              "TimeSeconds": 11.22
+              "TimeSeconds": 1122
             },
             "wind_mps": 0.2,
             "heat": "3",
@@ -317,7 +317,7 @@
             "grade": 12,
             "school": "West De Pere",
             "mark": {
-              "TimeSeconds": 10.57
+              "TimeSeconds": 1057
             },
             "wind_mps": 1.0,
             "heat": "10",
@@ -330,7 +330,7 @@
             "grade": 11,
             "school": "Arrowhead",
             "mark": {
-              "TimeSeconds": 10.59
+              "TimeSeconds": 1059
             },
             "wind_mps": 1.0,
             "heat": "8",
@@ -343,7 +343,7 @@
             "grade": 11,
             "school": "Oshkosh North",
             "mark": {
-              "TimeSeconds": 10.79
+              "TimeSeconds": 1079
             },
             "wind_mps": 1.0,
             "heat": "6",
@@ -356,7 +356,7 @@
             "grade": 12,
             "school": "Milw. King",
             "mark": {
-              "TimeSeconds": 10.84
+              "TimeSeconds": 1084
             },
             "wind_mps": 1.0,
             "heat": "5",
@@ -369,7 +369,7 @@
             "grade": 11,
             "school": "Waukesha West",
             "mark": {
-              "TimeSeconds": 10.87
+              "TimeSeconds": 1087
             },
             "wind_mps": 1.0,
             "heat": "4",
@@ -382,7 +382,7 @@
             "grade": 12,
             "school": "Oconomowoc",
             "mark": {
-              "TimeSeconds": 10.87
+              "TimeSeconds": 1087
             },
             "wind_mps": 1.0,
             "heat": "3",
@@ -395,7 +395,7 @@
             "grade": 10,
             "school": "Middleton",
             "mark": {
-              "TimeSeconds": 10.89
+              "TimeSeconds": 1089
             },
             "wind_mps": 1.0,
             "heat": "2",
@@ -408,7 +408,7 @@
             "grade": 12,
             "school": "Homestead",
             "mark": {
-              "TimeSeconds": 10.92
+              "TimeSeconds": 1092
             },
             "wind_mps": 1.0,
             "heat": "1",
@@ -421,7 +421,7 @@
             "grade": 11,
             "school": "Marquette Univ.",
             "mark": {
-              "TimeSeconds": 10.97
+              "TimeSeconds": 1097
             },
             "wind_mps": 1.0,
             "heat": null,
@@ -434,7 +434,7 @@
             "grade": 12,
             "school": "Wauwatosa East",
             "mark": {
-              "TimeSeconds": 11.24
+              "TimeSeconds": 1124
             },
             "wind_mps": 1.0,
             "heat": null,

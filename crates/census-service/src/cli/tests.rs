@@ -47,8 +47,8 @@ fn a_restriction_with_no_flag_is_empty_not_wisconsin() {
 use std::path::Path;
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalEvent, CanonicalPerformance, EventKind, Gender, GradYear, Id, Mark,
-    TeamId,
+    CanonicalAthlete, CanonicalEvent, CanonicalPerformance, CentiSeconds, EventKind, Gender,
+    GradYear, Id, Mark, TeamId,
 };
 use census_report::bests::mark_text;
 use rust_xlsxwriter::Workbook as Xlsx;
@@ -153,7 +153,7 @@ fn make_perf(
         event: event.id.clone(),
         meet: event.meet.clone(),
         date: "2027-04-15".to_string(),
-        mark: Mark::TimeSeconds(time_seconds as f64),
+        mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(time_seconds as f64)),
         wind_mps: None,
         place: None,
         heat: None,

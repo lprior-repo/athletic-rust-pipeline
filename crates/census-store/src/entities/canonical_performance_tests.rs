@@ -10,8 +10,8 @@ use crate::{Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
-    CentiSeconds, EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity,
-    SourceNamespace, Sport, TimingMethod,
+    CentiSeconds, EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace,
+    Sport, TimingMethod,
 };
 
 /// One performance of one athlete, keyed by `source_key` so two calls mint one id.

@@ -4,9 +4,9 @@
 use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Mark, CentiSeconds, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
-    Sport,
+    CanonicalSchool, CanonicalTeam, CentiSeconds, CoachRole, CompetitionLevel, EventKind, Evidence,
+    Gender, GradYear, Grade, Mark, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace,
+    SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};

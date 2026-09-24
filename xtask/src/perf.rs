@@ -61,6 +61,7 @@ use std::fs;
 use std::path::PathBuf;
 
 /// Default tolerance for the check verb: 5% throughput regression is a failure.
+#[allow(dead_code)]
 const DEFAULT_TOLERANCE: f64 = 0.05;
 
 /// Baseline file name.
@@ -122,8 +123,8 @@ pub fn run_record() -> Result<()> {
         metadata: Meta {
             cpu: cpu_model()?,
             cores: physical_cores()?,
-            rustc: rustc_version()?,
-            sha: git_sha()?,
+            rustc: rustc_version(),
+            sha: git_sha(),
             corpus_lines: corpus_size(),
         },
         check_reason: None,
@@ -156,8 +157,8 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     let current_meta = Meta {
         cpu: cpu_model()?,
         cores: physical_cores()?,
-        rustc: rustc_version()?,
-        sha: git_sha()?,
+        rustc: rustc_version(),
+        sha: git_sha(),
         corpus_lines: corpus_size(),
     };
     let mut env_warnings = Vec::new();
@@ -198,7 +199,7 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     }
 
     let mut failures = Vec::new();
-    let mut max_delta = 0.0;
+    let mut max_delta: f64 = 0.0;
 
     for (group, current) in &current_data {
         let baseline = baseline.groups.get(group).ok_or_else(|| {
@@ -223,12 +224,15 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
 
         println!("group: {group}");
         if let Some(d) = delta {
-            println!("  throughput: {d:+.2%}");
+            println!("  throughput: {:.2}%", d * 100.0);
             if d > tolerance {
                 let old = baseline.throughput.unwrap();
                 let new = current.throughput.unwrap();
                 failures.push(format!(
-                    "{group}: throughput regressed by {d:.2%} ({new:.0} vs {old:.0} elem/s)",
+                    "{group}: throughput regressed by {:.2}% ({:.0} vs {:.0} elem/s)",
+                    d * 100.0,
+                    new,
+                    old,
                 ));
             }
         } else {
@@ -238,11 +242,17 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     }
 
     if !failures.is_empty() {
-        println!("\nperf check: {} group(s) regressed past tolerance", failures.len());
+        println!(
+            "\nperf check: {} group(s) regressed past tolerance",
+            failures.len()
+        );
         for f in &failures {
             println!("  {f}");
         }
-        bail!("perf check: regression detected (max delta {max_delta:.2%})");
+        bail!(
+            "perf check: regression detected (max delta {:.2}%)",
+            max_delta * 100.0
+        );
     }
 
     println!("\nperf check: no regression detected");
@@ -291,7 +301,7 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
         let output = Cmd::new("bash")
             .arg("-c")
             .arg(wrapper_script(bench_name))
-            .run()
+            .output()
             .with_context(|| format!("running benchmark wrapper for {bench_name}"))?;
 
         let mut wall_time: Option<f64> = None;
@@ -302,14 +312,16 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
             if let Some(val) = line.strip_prefix("metric=wall_seconds value=") {
                 if let Some(val) = val.strip_suffix(" unit=s") {
                     wall_time = Some(
-                        val.parse().with_context(|| format!("parsing wall_seconds: {val}"))?,
+                        val.parse()
+                            .with_context(|| format!("parsing wall_seconds: {val}"))?,
                     );
                 }
             }
             // peak_rss line: wrapper prints `peak_rss_kib=12345`
             if let Some(val) = line.strip_prefix("peak_rss_kib=") {
                 peak_rss = Some(
-                    val.parse().with_context(|| format!("parsing peak_rss_kib: {val}"))?,
+                    val.parse()
+                        .with_context(|| format!("parsing peak_rss_kib: {val}"))?,
                 );
             }
             // Benchmark line: `name=...  bench_time=...  throughput=...` or `name=...  bench_time=...`
@@ -321,12 +333,18 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
                 for part in parts {
                     if part.starts_with("name=") {
                         // group name is everything after `name=` up to the first space-separated part
-                        group_name = part["name=".len()..].to_string();
+                        group_name = part.strip_prefix("name=").unwrap_or("").to_string();
                     }
                     if part.starts_with("throughput=") {
-                        if let Some(v) = part["throughput=".len()..].split('/').next() {
+                        if let Some(v) = part
+                            .strip_prefix("throughput=")
+                            .unwrap_or("")
+                            .split('/')
+                            .next()
+                        {
                             throughput = Some(
-                                v.parse().with_context(|| format!("parsing throughput: {part}"))?,
+                                v.parse()
+                                    .with_context(|| format!("parsing throughput: {part}"))?,
                             );
                         }
                     }
@@ -416,12 +434,11 @@ fn physical_cores() -> Result<u32> {
     let output = Cmd::new("bash")
         .arg("-c")
         .arg("nproc --physical 2>/dev/null || nproc")
-        .run()
-        .ok()
-        .map(|o| o.trim().parse::<u32>())
-        .transpose()
-        .with_context(|| "parsing core count")?;
-    Ok(output.unwrap_or(0))
+        .output()?;
+    output
+        .trim()
+        .parse::<u32>()
+        .with_context(|| "parsing nproc --physical")
 }
 
 /// Git commit SHA of the working tree.
@@ -429,10 +446,9 @@ fn git_sha() -> String {
     Cmd::new("bash")
         .arg("-c")
         .arg("git rev-parse HEAD 2>/dev/null || echo unknown")
-        .run()
-        .ok()
+        .output()
         .map(|o| o.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string())
+        .unwrap_or_else(|_| "unknown".to_string())
 }
 
 /// Rust compiler version string.
@@ -440,10 +456,9 @@ fn rustc_version() -> String {
     Cmd::new("bash")
         .arg("-c")
         .arg("rustc --version 2>/dev/null || echo unknown")
-        .run()
-        .ok()
+        .output()
         .map(|o| o.trim().to_string())
-        .unwrap_or_else(|| "unknown".to_string())
+        .unwrap_or_else(|_| "unknown".to_string())
 }
 
 /// Total lines of fixture text files, if the crawl crate's fixtures directory exists.

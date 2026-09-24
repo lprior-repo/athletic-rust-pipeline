@@ -14,8 +14,8 @@
 //! `athleticlive` with `athleticlive_athletes` a harvest and the meet ids its athlete index is
 //! keyed on.
 
-use std::sync::Arc;
 use crate::restate_services::job_error;
+use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -92,9 +92,12 @@ async fn sweep_team_source(
     };
     match arm {
         TeamsArm::MilesplitIndex => {
-            let teams = census::collect_state_teams(fetcher, store, jurisdiction, refresh)
-                .await
-                .map_err(|error| job_error(collect_error(error)))?;
+            return Ok(Some(
+                census::collect_state_teams(fetcher, store, jurisdiction, refresh)
+                    .await
+                    .map_err(|error| job_error(collect_error(error)))
+                    .map(|t| t.len())?,
+            ));
         }
         TeamsArm::WiaaDirectory => Ok(Some(
             walk_wiaa(store, fetcher, jurisdiction, season, refresh, at).await?,

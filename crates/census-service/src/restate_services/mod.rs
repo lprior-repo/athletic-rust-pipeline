@@ -120,10 +120,11 @@ pub use plan::{
 // The job layer the handlers share. `JobError` stays reachable at this path because a caller
 // outside the module reads it; `blocking` and `job_error` are re-exported for stage submodules
 // to use so they can classify `JobError` into `HandlerError` at the boundary.
-pub use support::JobError;
-pub use support::{blocking, job_error};
+#[allow(unused_imports)]
 pub(super) use jobs::collect_error;
 pub(super) use resolve::{cohort_label, resolve_scope, resolve_table, resolve_tables};
+pub use support::JobError;
+pub use support::{blocking, job_error};
 
 pub use browser_session::{
     BrowserSession, BrowserSessionClient, BrowserSessionDrain, BrowserSessionIngressClient,
@@ -203,9 +204,10 @@ pub(super) async fn journaled_today(
     let clock = Arc::clone(clock);
     ctx.run(move || async move {
         let clock = Arc::clone(&clock);
-        Ok(clock.today())
+        Ok::<_, restate_sdk::errors::HandlerError>(clock.today())
     })
     .await
+    .map_err(restate_sdk::errors::HandlerError::from)
 }
 
 /// [`journaled_today`] for workflow handlers. One body per context type because the SDK's
@@ -217,9 +219,10 @@ pub(super) async fn journaled_today_workflow(
     let clock = Arc::clone(clock);
     ctx.run(move || async move {
         let clock = Arc::clone(&clock);
-        Ok(clock.today())
+        Ok::<_, restate_sdk::errors::HandlerError>(clock.today())
     })
     .await
+    .map_err(restate_sdk::errors::HandlerError::from)
 }
 
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,

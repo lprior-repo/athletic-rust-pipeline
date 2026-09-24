@@ -1,7 +1,7 @@
 use super::header::header;
 use super::*;
-use census_domain::model::{Gender, Mark, SourceRef};
 use census_domain::model::CentiSeconds;
+use census_domain::model::{Gender, Mark, SourceRef};
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)

@@ -1,3 +1,4 @@
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 use restate_sdk::prelude::*;
@@ -93,23 +94,54 @@ impl Ingest {
         // replay, so a wall-clock read that has moved on to the next day would fail the invocation
         // with a journal mismatch instead of replaying it.
         let today = super::journaled_today(&ctx, &self.clock).await?;
-        let appended = run_once(move || async move {
-            blocking(region, move || append_observations(&store, table, &rows))
-                .await
-                // The accepted count reaches the wire as `u64`. A host where it does not fit is
-                // a hard failure: a clamped "appended" figure would be a fabricated total.
-                .and_then(|count| {
-                    u64::try_from(count).map_err(|_| JobError::Terminal {
-                        message: format!("appended row count {count} does not fit u64"),
-                    })
-                })
-                .map_err(job_error)
-        })
-
-        .await?;
-
         let mut state = self.load_object(&ctx).await?;
+        // Idempotency: derive a deterministic operation id from the content being recorded, then
+        // check the store-side receipt before appending. Same operation id + same payload → no-op.
+        // Same operation id + different payload → terminal (data integrity violation).
+        let mut hasher = Sha256::new();
+        hasher.update(table.file().as_bytes());
+        for row in &rows {
+            hasher.update(
+                serde_json::to_vec(row).map_err(|source| JobError::Terminal {
+                    message: format!("serializing observation row for idempotency hash: {source}"),
+                })?,
+            );
+        }
+        let payload_digest = hex::encode(hasher.finalize());
+        let receipt = format!(
+            "{endpoint}:{today}:{table}:{payload_digest}",
+            endpoint = state.endpoint,
+            table = table.file()
+        );
+        if state.seen_operations.contains(&receipt) {
+            tracing::debug!(
+                endpoint = state.endpoint.as_str(),
+                "idempotent replay of recorded content; no-op"
+            );
+            return Ok(Json(IngestReply {
+                endpoint: state.endpoint.clone(),
+                appended: 0,
+                total_observations: state.total_observations,
+                cursor: state.cursor.clone(),
+                last_appended_at: state.last_appended_at,
+            }));
+        }
+        let appended = ctx
+            .run(move || async move {
+                blocking(region, move || append_observations(&store, table, &rows))
+                    .await
+                    // The accepted count reaches the wire as `u64`. A host where it does not fit is
+                    // a hard failure: a clamped "appended" figure would be a fabricated total.
+                    .and_then(|count| {
+                        u64::try_from(count).map_err(|_| JobError::Terminal {
+                            message: format!("appended row count {count} does not fit u64"),
+                        })
+                    })
+                    .map_err(job_error)
+            })
+            .await?;
         state.total_observations = state.total_observations.saturating_add(appended);
+        state.seen_operations.push(receipt);
         if request.cursor.is_some() {
             state.cursor = request.cursor.clone();
         }

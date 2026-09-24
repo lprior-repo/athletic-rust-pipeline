@@ -49,7 +49,6 @@ pub enum SeasonScope {
     All,
 }
 
-
 /// The source namespace every row this module writes is keyed under.
 pub const SOURCE: &str = "milesplit";
 
@@ -189,7 +188,7 @@ pub fn select_meets(
     let rows = filter_by_season(rows, scope);
     let mut selected: Vec<SourceMeetRef> = rows
         .into_iter()
-        .filter(|row| states.contains(&row.jurisdiction))
+        .filter(|row| states.is_empty() || states.contains(&row.jurisdiction))
         .collect();
     selected.sort_by(|left, right| {
         (left.jurisdiction, left.source_meet_id.as_str())

@@ -17,7 +17,7 @@
           "grade": 10,
           "school": "St. Ambrose/Abundant Life",
           "mark": {
-            "TimeSeconds": 981.6
+            "TimeSeconds": 98160
           },
           "wind_mps": null,
           "heat": null,
@@ -30,7 +30,7 @@
           "grade": 11,
           "school": "Madison Country Day",
           "mark": {
-            "TimeSeconds": 1005.7
+            "TimeSeconds": 100570
           },
           "wind_mps": null,
           "heat": null,
@@ -43,7 +43,7 @@
           "grade": 11,
           "school": "St. Ambrose/Abundant Life",
           "mark": {
-            "TimeSeconds": 1015.4
+            "TimeSeconds": 101540
           },
           "wind_mps": null,
           "heat": null,

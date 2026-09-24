@@ -21,7 +21,6 @@
 ///
 /// The per-source row count is the durable record of what ran, for the reason the meet census states:
 /// an arm that found nothing and an arm that never ran would otherwise leave the same trace.
-
 use std::sync::Arc;
 
 use census_crawl::net::Fetcher;
@@ -132,7 +131,12 @@ pub(super) async fn results_stage(
     // The selection belongs to the stage rather than to an arm: both arms read the same meets, and
     // selecting once here — moving the scan rather than copying it — is what keeps an arm from
     // re-filtering the whole table on its own.
-    let selected = crate::census::select_meets(stored, &[jurisdiction], crate::census::SeasonScope::Year(year), None);
+    let selected = crate::census::select_meets(
+        stored,
+        &[jurisdiction],
+        crate::census::SeasonScope::Year(year),
+        None,
+    );
     let mut outcome = ResultsStageOutcome::default();
     for slug in &sweepable {
         let Some(arm) = arm_for(slug) else {

@@ -3,8 +3,8 @@
 //! Every formatting function works on integers only — no `as f64` — to agree with the tree's
 //! independent renderer used in the property tests and to avoid `clippy::as_conversions`.
 
-use census_domain::model::Mark;
 use census_domain::model::CentiSeconds;
+use census_domain::model::Mark;
 
 /// Published notation for a mark: `10.94`, `4:41.23`, `5' 4"`, `42.10 m`, `3120 pts`.
 pub fn mark_text(mark: &Mark) -> String {
@@ -25,7 +25,6 @@ pub fn format_distance_metres(cm: i32) -> String {
     let (whole, frac) = (cm / 100, (cm % 100).abs());
     format!("{whole}.{frac:02} m")
 }
-
 
 /// Centi-points as a scored string — `312000` → `"3120 pts"`.
 pub fn format_points_scored(cp: i32) -> String {

@@ -41,8 +41,8 @@
 
 use census_domain::model::{
     normalize_name, CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
-    CanonicalSchool, CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Grade,
-    Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
+    CanonicalSchool, CanonicalTeam, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
+    GradYear, Grade, Id, Mark, ObservedGrade, SchoolId, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_reconcile::identity::{Revision, WorkflowIdentity};
@@ -540,7 +540,9 @@ fn add_athlete(
             event: event_id.clone(),
             meet: meet_id.clone(),
             date: MEET_DATE.to_string(),
-            mark: Mark::TimeSeconds(11.5 + f64::from(u32::try_from(attempt).unwrap()) / 10.0),
+            mark: Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
+                11.5 + f64::from(u32::try_from(attempt).unwrap()) / 10.0,
+            )),
             wind_mps: None,
             place: Some(u16::try_from(attempt + 1).unwrap()),
             heat: None,

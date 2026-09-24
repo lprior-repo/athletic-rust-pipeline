@@ -68,7 +68,7 @@ pub use identifiers::{
     TeamId,
 };
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
-pub use normalization::{Counters, flip_last_first, normalize_name};
+pub use normalization::{flip_last_first, normalize_name, Counters};
 pub use provenance::{
     Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
 };

@@ -1,5 +1,6 @@
 //! The census fixture: the performance arithmetic the pipeline benches feed through the merge.
 use super::*;
+use census_domain::model::CentiSeconds;
 
 /// `PERFORMANCES` performances, each observed `OBSERVATIONS_PER_PERFORMANCE` times, spread over one
 /// championship meet per jurisdiction so the batch covers the country instead of one state.
@@ -26,7 +27,9 @@ pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
         let source_key = format!("bench:{index:05}");
         let id = CanonicalPerformance::mint(&athlete, &meet, &kind, MEET_DATE, &source_key);
         let step = u32::try_from(index % 900).context("a mark step does not fit u32")?;
-        let mark = Mark::TimeSeconds(120.0 + f64::from(step) / 100.0);
+        let mark = Mark::TimeSeconds(CentiSeconds::from_seconds_f64(
+            120.0 + f64::from(step) / 100.0,
+        ));
         for observation in 0..OBSERVATIONS_PER_PERFORMANCE {
             let seen = u16::try_from(observation).context("an observation does not fit u16")?;
             let first = observation == 0;

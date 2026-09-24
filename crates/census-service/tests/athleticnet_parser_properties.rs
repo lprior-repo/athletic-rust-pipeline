@@ -71,10 +71,10 @@ fn shaped_token() -> impl Strategy<Value = String> {
 /// The number a mark holds, whichever variant carries one; `None` for a mark kept as raw text.
 fn number_of(mark: &Mark) -> Option<f64> {
     match mark {
-        Mark::TimeSeconds(value) | Mark::Points(value) | Mark::DistanceMetres(value) => {
-            Some(*value)
-        }
-        Mark::FieldImperial { metres, .. } => Some(*metres),
+        Mark::TimeSeconds(cs) => Some(cs.as_seconds_f64()),
+        Mark::Points(cp) => Some(cp.as_points_f64()),
+        Mark::DistanceMetres(cm) => Some(cm.as_metres_f64()),
+        Mark::FieldImperial { metres, .. } => Some(metres.as_metres_f64()),
         Mark::Raw(_) => None,
     }
 }

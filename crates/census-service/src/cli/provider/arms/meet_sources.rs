@@ -72,7 +72,9 @@ pub(crate) async fn milesplit_results_report(
 ) -> Result<AdapterReport> {
     let states = resolve_states(args.all_states, &args.states)?;
     let stored: Vec<SourceMeetRef> = context.store.scan(census_store::Table::SourceMeets)?;
-    let scope = args.season_year.map_or(census::SeasonScope::All, census::SeasonScope::Year);
+    let scope = args
+        .season_year
+        .map_or(census::SeasonScope::All, census::SeasonScope::Year);
     let meets = census::select_meets(stored, &states, scope, args.limit);
     let mut urls: Vec<String> = Vec::new();
     let mut pages_read = 0_usize;

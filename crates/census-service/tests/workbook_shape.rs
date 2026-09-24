@@ -7,8 +7,8 @@
 use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark, SchoolYear,
-    SourceRef, Sport,
+    CanonicalTeam, CentiMetres, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
+    GradYear, Mark, SchoolYear, SourceRef, Sport,
 };
 use census_domain::UsJurisdiction;
 use census_report::bests;
@@ -70,9 +70,9 @@ fn the_workbook_carries_the_scopes_the_bests_and_the_meet_inventory() {
         store.append(Table::Events, &event).unwrap();
         for mark in marks {
             let value = if matches!(kind, EventKind::Track400m) {
-                Mark::TimeSeconds(*mark)
+                Mark::TimeSeconds(CentiSeconds::from_seconds_f64(*mark))
             } else {
-                Mark::DistanceMetres(*mark)
+                Mark::DistanceMetres(CentiMetres::from_metres_f64(*mark))
             };
             let source_key = format!("test:{kind:?}:{mark}");
             let performance = CanonicalPerformance {

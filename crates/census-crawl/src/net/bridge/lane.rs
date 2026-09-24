@@ -50,19 +50,15 @@ impl BrowserLane {
         &self,
         spec: &RequestSpec,
     ) -> Result<BrowserOutcome, FetchError> {
-        // Origin guard: the browser lane only serves its admitted origins.
+        // Host guard: the browser lane only serves its admitted hosts.
         let parsed = Url::parse(&spec.url).map_err(|source| FetchError::Policy {
             detail: format!("cannot parse browser URL: {source}"),
         })?;
-        let origin = format!(
-            "{}://{}",
-            parsed.scheme(),
-            parsed.host_str().unwrap_or_default()
-        );
-        if !super::ADMITTED_BROWSER_ORIGINS.contains(&origin.as_str()) {
+        let host = parsed.host_str().unwrap_or_default();
+        if !super::ADMITTED_BROWSER_ORIGINS.contains(&host) {
             return Err(FetchError::Policy {
                 detail: format!(
-                    "origin {origin} not admitted to browser lane; allowed: {}",
+                    "host {host} not admitted to browser lane; allowed: {}",
                     super::ADMITTED_BROWSER_ORIGINS.join(", ")
                 ),
             });
@@ -131,17 +127,13 @@ pub fn validate_origin(url: &str) -> Result<(), FetchError> {
     let parsed = url::Url::parse(url).map_err(|source| FetchError::Policy {
         detail: format!("cannot parse browser URL: {source}"),
     })?;
-    let origin = format!(
-        "{}://{}",
-        parsed.scheme(),
-        parsed.host_str().unwrap_or_default()
-    );
-    if super::ADMITTED_BROWSER_ORIGINS.contains(&origin.as_str()) {
+    let host = parsed.host_str().unwrap_or_default();
+    if super::ADMITTED_BROWSER_ORIGINS.contains(&host) {
         Ok(())
     } else {
         Err(FetchError::Policy {
             detail: format!(
-                "origin {origin} not admitted to browser lane; allowed: {}",
+                "host {host} not admitted to browser lane; allowed: {}",
                 super::ADMITTED_BROWSER_ORIGINS.join(", ")
             ),
         })

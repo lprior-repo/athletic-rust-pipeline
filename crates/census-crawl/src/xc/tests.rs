@@ -1,5 +1,5 @@
-use super::*;
 use super::CentiSeconds;
+use super::*;
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)

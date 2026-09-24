@@ -44,7 +44,7 @@ pub(super) fn coverage(origin: &str) -> Result<()> {
     ingress::announce(&endpoint, "Report", "run");
     // The key names the job instance: a fresh instant per submission, so today's second report is a
     // second question rather than the first one's retained answer.
-    let key = run_key("report", &[Scope::AllSources.as_str()]);
+    let key = run_key("report", &[Scope::AllSources.as_str()], "1");
     let report = ReportIngressClient::from_client(client, key);
     let request = ReportRequest {
         scope: Some(Scope::AllSources.as_str().to_string()),
@@ -88,7 +88,7 @@ pub(super) fn workbook(
     let year = request
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
-    let key = run_key("workbook", &[&year, scope.as_str()]);
+    let key = run_key("workbook", &[&year, scope.as_str()], "1");
     let workbook = WorkbookIngressClient::from_client(client, key);
     let response =
         ingress::block_on(workbook.run(Json(request)).call())?.map_err(ingress::error)?;

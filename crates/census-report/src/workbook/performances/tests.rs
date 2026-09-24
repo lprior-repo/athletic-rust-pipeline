@@ -7,8 +7,8 @@ use crate::report::retain_core_row;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, CentiMetres, CentiSeconds, Mark, SchoolYear,
-    SourceRef, Sport, TimingMethod,
+    CanonicalTeam, CentiMetres, CentiSeconds, CompetitionLevel, EventKind, Evidence, Gender,
+    GradYear, Mark, SchoolYear, SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
 use census_store::Table;

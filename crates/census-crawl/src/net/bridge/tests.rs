@@ -160,7 +160,11 @@ fn every_reason_renders_as_its_wire_name() {
 /// reviewer changes `SESSION_KEY` to anything else, the build fails here *and* at compile time.
 #[test]
 fn session_key_is_profile_zero() {
-    assert_eq!(super::SESSION_KEY, "profile-0", "browser session must be profile-0");
+    assert_eq!(
+        super::SESSION_KEY,
+        "profile-0",
+        "browser session must be profile-0"
+    );
 }
 
 /// Admitted origins invariant: the set must list every browser-transported origin from the registry.

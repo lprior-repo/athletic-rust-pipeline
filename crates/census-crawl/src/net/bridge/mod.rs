@@ -40,5 +40,8 @@ pub(super) const ADMITTED_BROWSER_ORIGINS: &[&str] = &["www.athletic.net"];
 
 /// Compile-time check that the session key is profile-0, the single profile the browser engine
 /// serves.  If this fires the deployment is misconfigured.
-// SESSION_KEY must be "profile-0" for correct lane routing (checked at runtime in init)
-const _: () = { let _ = SESSION_KEY; };
+/// SESSION_KEY must be "profile-0" for correct lane routing (checked at compile time).
+const _: fn() = || match SESSION_KEY {
+    "profile-0" => {}
+    other => panic!("browser lane key must be profile-0, got: {other}"),
+};

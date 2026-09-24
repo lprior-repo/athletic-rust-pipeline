@@ -20,6 +20,12 @@ pub struct IngestState {
     pub last_appended_at: Option<String>,
     #[serde(default)]
     pub windows: Vec<String>,
+    /// Operation IDs already recorded: hash(table||rows) of every `record` call that reached the store.
+    /// A repeat with the same hash is a no-op — same operation id with different payload digest
+    /// is rejected. The set grows unbounded but is bounded in practice by the 30-day
+    /// `idempotency_retention` on this object: Restate purges state older than the retention.
+    #[serde(default)]
+    pub seen_operations: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

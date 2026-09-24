@@ -119,7 +119,11 @@ impl Fetcher {
     /// The body and metadata are always cached — a 404 is a real answer the run should remember.
     /// When `allow_not_found` is `true`, the caller expects the 404 as a normal outcome.
     /// When `false`, the caller wants a 404 to propagate as an error.
-    async fn handle_404(&self, plan: &FetchPlan<'_>, response: reqwest::Response) -> Result<FetchOutcome, FetchError> {
+    async fn handle_404(
+        &self,
+        plan: &FetchPlan<'_>,
+        response: reqwest::Response,
+    ) -> Result<FetchOutcome, FetchError> {
         let status = 404u16;
         let (body_vec, key_prefix, content_hex) = read_checked_body(response, plan.url).await?;
         let (etag, last_modified, content_type) = header_strings(plan.url, &body_vec);
