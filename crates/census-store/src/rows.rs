@@ -139,7 +139,7 @@ pub(super) fn count_rows(entities: &Keyspace, table: Table) -> StoreResult<u64> 
 /// cannot parse is corruption, not a row to skip past.
 fn walk_keys(entities: &Keyspace, table: Table) -> StoreResult<TableWalk> {
     let mut walk = TableWalk::default();
-    let mut previous = String::new();
+    let mut previous: Vec<u8> = Vec::new();
     for guard in entities.prefix(table_prefix(table)) {
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
         let (_, id, sequence) =
@@ -157,7 +157,7 @@ impl TableWalk {
     /// The keys of one id sort together, so a repeat is caught against the id read just before it and
     /// nothing but that one id has to be remembered. `previous` is cleared and refilled rather than
     /// reassigned, so the walk allocates nothing per row.
-    fn record(&mut self, id: &str, sequence: u64, previous: &mut String) {
+    fn record(&mut self, id: &[u8], sequence: u64, previous: &mut Vec<u8>) {
         self.rows = self.rows.saturating_add(1);
         self.highest_sequence = Some(match self.highest_sequence {
             Some(highest) => highest.max(sequence),
@@ -170,7 +170,7 @@ impl TableWalk {
             self.repeated_ids = self.repeated_ids.saturating_add(1);
         } else {
             previous.clear();
-            previous.push_str(id);
+            previous.extend_from_slice(id);
         }
     }
 }

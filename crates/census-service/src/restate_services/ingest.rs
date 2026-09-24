@@ -93,20 +93,20 @@ impl Ingest {
         // replay, so a wall-clock read that has moved on to the next day would fail the invocation
         // with a journal mismatch instead of replaying it.
         let today = super::journaled_today(&ctx, &self.clock).await?;
-        let appended = ctx
-            .run(move || async move {
-                blocking(region, move || append_observations(&store, table, &rows))
-                    .await
-                    // The accepted count reaches the wire as `u64`. A host where it does not fit is
-                    // a hard failure: a clamped "appended" figure would be a fabricated total.
-                    .and_then(|count| {
-                        u64::try_from(count).map_err(|_| JobError::Terminal {
-                            message: format!("appended row count {count} does not fit u64"),
-                        })
+        let appended = run_once(move || async move {
+            blocking(region, move || append_observations(&store, table, &rows))
+                .await
+                // The accepted count reaches the wire as `u64`. A host where it does not fit is
+                // a hard failure: a clamped "appended" figure would be a fabricated total.
+                .and_then(|count| {
+                    u64::try_from(count).map_err(|_| JobError::Terminal {
+                        message: format!("appended row count {count} does not fit u64"),
                     })
-                    .map_err(job_error)
-            })
-            .await?;
+                })
+                .map_err(job_error)
+        })
+
+        .await?;
 
         let mut state = self.load_object(&ctx).await?;
         state.total_observations = state.total_observations.saturating_add(appended);

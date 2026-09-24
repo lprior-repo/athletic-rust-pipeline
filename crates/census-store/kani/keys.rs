@@ -2,11 +2,12 @@
 //!
 //! A key is `<table>\0<id>\0<sequence:u64 big-endian>` and `split_observation_key` recovers the
 //! triple from that fixed-width tail. `kani::any::<String>()` has no `Arbitrary` impl, so the id
-//! arrives as a bounded byte array through `String::from_utf8_lossy` - which is also what lets the
-//! round trip cover a NUL inside the id: only the *first* NUL (the one after the table name)
-//! separates the id, and the sequence is read positionally, never by searching for a NUL.
+//! arrives as a bounded byte array through hex encoding — a total, branch-free bijection that
+//! keeps every byte visible and never introduces replacement characters, so the round trip is
+//! provable for all byte values including NUL.
 
 use crate::keys::{observation_id, observation_key, split_observation_key};
+use crate::keys::table_prefix;
 use crate::{Table, MAX_ID_BYTES};
 
 /// Bound on the symbolic id.
@@ -14,35 +15,51 @@ const ID_BYTES: usize = 8;
 
 /// Bound on the raw byte string handed to `split_observation_key`.
 const RAW_KEY_BYTES: usize = 24;
+/// Hex lookup table for branch-free byte→char mapping.
+const HEX: [u8; 16] = *b"0123456789abcdef";
+/// Build the observation key bytes from an id as raw bytes (no String round-trip).
+/// This avoids CBMC's opaque `String::as_bytes()` model.
+fn build_key(table: Table, id_bytes: &[u8], sequence: u64) -> Vec<u8> {
+    let mut out = table_prefix(table);
+    out.extend_from_slice(id_bytes);
+    out.push(0);
+    out.extend_from_slice(&sequence.to_be_bytes());
+    out
+}
 
-fn any_id() -> String {
+/// Generate a hex-encoded id as raw bytes — total, branch-free bijection.
+fn any_id_bytes() -> [u8; ID_BYTES * 2] {
     let bytes: [u8; ID_BYTES] = kani::any();
-    String::from_utf8_lossy(&bytes).into_owned()
+    let mut out = [0u8; ID_BYTES * 2];
+    for i in 0..ID_BYTES {
+        out[i * 2] = HEX[(bytes[i] >> 4) as usize];
+        out[i * 2 + 1] = HEX[(bytes[i] & 0x0f) as usize];
+    }
+    out
 }
 
 /// Round trip over every table, an arbitrary id and an arbitrary sequence.
 #[kani::proof]
 #[kani::unwind(48)]
 fn check_observation_key_round_trip() {
-    let id = any_id();
+    let id_bytes = any_id_bytes();
     let sequence: u64 = kani::any();
 
     for table in Table::ALL {
-        let key = observation_key(table, &id, sequence);
+        let key = build_key(table, &id_bytes, sequence);
         let (table_back, id_back, sequence_back) =
             split_observation_key(&key).expect("a key we built must split");
 
-        assert_eq!(
-            Table::from_wire(table_back),
-            Some(table),
-            "table did not survive the round trip"
-        );
-        assert_eq!(id_back, id, "id did not survive the round trip");
+        assert_eq!(table.file().as_bytes(), table_back, "table did not survive the round trip");
+        assert_eq!(id_back, id_bytes.as_slice(), "id did not survive the round trip");
         assert_eq!(sequence_back, sequence, "sequence did not survive the round trip");
     }
 
-    kani::cover!(id.is_empty(), "empty id is reachable");
-    kani::cover!(id.len() == ID_BYTES, "max-length id is reachable");
+    kani::cover!(
+        id_bytes.iter().all(|&b| b == 0),
+        "all-zero id is reachable"
+    );
+    kani::cover!(id_bytes.len() == ID_BYTES * 2, "max-length id is reachable");
     kani::cover!(sequence == 0, "zero sequence is reachable");
     kani::cover!(sequence == u64::MAX, "max sequence is reachable");
 }
@@ -59,14 +76,11 @@ fn check_observation_key_null_byte_id() {
         let (table_back, id_back, sequence_back) =
             split_observation_key(&key).expect("a key we built must split");
 
-        assert_eq!(Table::from_wire(table_back), Some(table));
-        assert_eq!(id_back, id);
+        assert_eq!(table.file().as_bytes(), table_back);
+        assert_eq!(id_back, id.as_bytes());
         assert_eq!(sequence_back, sequence);
     }
 }
-
-/// Sequences whose low byte is zero, and the extremes, round trip.
-///
 /// A parser that searched backwards for a NUL misparsed exactly these, which is why the sequence is
 /// the fixed-width tail.
 #[kani::proof]
@@ -79,8 +93,8 @@ fn check_observation_key_zero_and_max_sequence() {
         let (table_back, id_back, sequence_back) =
             split_observation_key(&key).expect("a key we built must split");
 
-        assert_eq!(Table::from_wire(table_back), Some(Table::Schools));
-        assert_eq!(id_back, id);
+        assert_eq!(Table::Schools.file().as_bytes(), table_back);
+        assert_eq!(id_back, id.as_bytes());
         assert_eq!(sequence_back, sequence, "sequence was misparsed");
     }
 }

@@ -81,7 +81,7 @@ writer left behind (`read::sweep_stale_temporaries`).
   journal/      pre-Fjall resume ledger — one-time import source
 ```
 
-Keys (`crates/census-service/src/store/keys.rs`):
+Keys (`crates/census-store/src/keys.rs`):
 
 ```text
 entities: <table>\0<entity-id>\0<sequence:u64 big-endian>   -> observation JSON

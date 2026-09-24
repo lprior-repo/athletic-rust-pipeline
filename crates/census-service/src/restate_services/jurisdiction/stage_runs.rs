@@ -44,7 +44,6 @@ impl JurisdictionCensus {
             .run(move || {
                 jobs::teams_stage(store, fetcher, jurisdiction, season, refresh, at, sweepable)
             })
-            .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(outcome)
     }
@@ -61,7 +60,6 @@ impl JurisdictionCensus {
         let store = Arc::clone(&self.store);
         let Json(progress) = ctx
             .run(move || jobs::rosters_stage(store, fetcher, options, jurisdiction))
-            .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(progress)
     }
@@ -87,7 +85,6 @@ impl JurisdictionCensus {
             .run(move || {
                 jobs::results_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
             })
-            .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(outcome)
     }
@@ -120,7 +117,6 @@ impl JurisdictionCensus {
             .run(move || {
                 jobs::meets_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
             })
-            .retry_policy(jobs::no_run_retry())
             .await?;
         for source in &outcome.recorded {
             let endpoint = ingest_post::endpoint_of(&source.slug, jurisdiction);
@@ -129,7 +125,6 @@ impl JurisdictionCensus {
             let entries = source.recorded.journal.clone();
             let Json(journaled) = ctx
                 .run(move || jobs::flush_journal(store, entries))
-                .retry_policy(jobs::no_run_retry())
                 .await?;
             tracing::info!(
                 endpoint = endpoint.as_str(),

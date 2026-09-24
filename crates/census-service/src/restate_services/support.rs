@@ -34,6 +34,11 @@ pub enum JobError {
 /// counter reached its limit, a journal entry is too large, a request was refused, a legacy import
 /// failed, or an invariant was violated — do not improve on retry: the same input reproduces the
 /// same result.
+///
+/// `StoreError::Io` is transient here: it wraps a WAL or sidecar write. This is a different
+/// failure surface than `CrawlError::Io` (which wraps a read of a crawl fixture and is terminal
+/// in `jobs.rs`). The store's I/O is a durable write that may recover (disk pressure, lock
+/// contention); the crawl's I/O is a read-only fixture that will fail identically on retry.
 impl From<StoreError> for JobError {
     fn from(error: StoreError) -> Self {
         let message = error.to_string();
@@ -60,7 +65,6 @@ impl From<StoreError> for JobError {
         }
     }
 }
-
 /// Report, bests and workbook work that failed: the same rule one layer up. A store failure
 /// delegates so its own classification survives, and a violated invariant is terminal here for the
 /// same reason it is in the store: the report's invariants are its own, so a replay cannot restore
@@ -79,7 +83,7 @@ impl From<ReportError> for JobError {
 /// Map a job outcome onto Restate's terminal/retryable split. Deliberately a plain function rather
 /// than a `From` impl: `HandlerError` already has a blanket `From<E: StdError>`, and letting
 /// `JobError` take that path would make every terminal failure silently retryable.
-pub(super) fn job_error(error: JobError) -> HandlerError {
+pub fn job_error(error: JobError) -> HandlerError {
     match error {
         JobError::Transient { message } => HandlerError::from(TransientFailure { message }),
         JobError::Terminal { message } => HandlerError::from(TerminalError::new(message)),
@@ -102,7 +106,7 @@ struct TransientFailure {
 /// The job goes through the region the shell handed in, so an invocation that is aborted mid-await
 /// leaves the work owned (and reaped) by the region rather than running unattached.
 #[tracing::instrument(skip_all)]
-pub(super) async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
+pub async fn blocking<T, E, F>(spawner: Arc<Spawner>, job: F) -> Result<T, JobError>
 where
     F: FnOnce() -> Result<T, E> + Send + 'static,
     T: Send + 'static,

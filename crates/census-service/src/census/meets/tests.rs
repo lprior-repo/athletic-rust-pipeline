@@ -62,6 +62,30 @@ fn row(fragment: &str, jurisdiction: UsJurisdiction, meet_id: &str) -> SourceMee
         observed_on: "2026-09-22".to_string(),
     }
 }
+/// Variant of `row` that accepts a season year, for multi-year fixture construction.
+fn row_with_year(
+    fragment: &str,
+    jurisdiction: UsJurisdiction,
+    meet_id: &str,
+    year: u16,
+) -> SourceMeetRef {
+    SourceMeetRef {
+        id: SourceMeetRef::row_id(SOURCE, meet_id),
+        source: SOURCE.to_string(),
+        source_meet_id: meet_id.to_string(),
+        jurisdiction,
+        season: "cc".to_string(),
+        year,
+        name: fragment.to_string(),
+        date: None,
+        venue: String::new(),
+        results_url: format!(
+            "https://{}.milesplit.com/meets/{meet_id}/results",
+            jurisdiction.code().to_ascii_lowercase()
+        ),
+        observed_on: "2026-09-22".to_string(),
+    }
+}
 
 /// The selection is ordered by the provider's own meet id, so two runs read the same meets in
 /// the same sequence whatever order the store returned them in.
@@ -75,6 +99,7 @@ fn meets_are_selected_in_a_reproducible_order() {
     let selected = select_meets(
         rows,
         &[UsJurisdiction::Ohio, UsJurisdiction::Michigan],
+        SeasonScope::All,
         None,
     );
     let order: Vec<(&str, &str)> = selected
@@ -97,6 +122,7 @@ fn a_limit_is_applied_per_state() {
     let selected = select_meets(
         rows,
         &[UsJurisdiction::Ohio, UsJurisdiction::Michigan],
+        SeasonScope::All,
         Some(2),
     );
     let ohio = selected
@@ -132,7 +158,7 @@ fn a_page_that_repeats_its_predecessor_ends_the_season() {
 #[test]
 fn a_state_with_no_stored_meets_selects_nothing() {
     let rows = vec![row("a", UsJurisdiction::Ohio, "1")];
-    let selected = select_meets(rows, &[UsJurisdiction::Kansas], None);
+    let selected = select_meets(rows, &[UsJurisdiction::Kansas], SeasonScope::All, None);
     assert!(selected.is_empty());
 }
 
@@ -145,4 +171,99 @@ fn the_journal_phase_carries_the_version_that_forces_a_re_read() {
         meets_phase(UsJurisdiction::Ohio, Season::CrossCountry, 2026),
         "milesplit_meet_index_oh_cc_2026_v1"
     );
+}
+/// A season-scoped selection includes only meets from the requested year, even when other
+/// years are stored for the same jurisdiction.
+#[test]
+fn season_scope_filters_by_year_before_jurisdiction_and_limit() {
+    // Two Wisconsin meets from different years, plus one Ohio meet from 2026.
+    let rows: Vec<SourceMeetRef> = vec![
+        row_with_year("wi-2025-a", UsJurisdiction::Wisconsin, "w10", 2025),
+        row_with_year("wi-2025-b", UsJurisdiction::Wisconsin, "w11", 2025),
+        row_with_year("wi-2026-a", UsJurisdiction::Wisconsin, "w20", 2026),
+        row_with_year("oh-2026-a", UsJurisdiction::Ohio, "o10", 2026),
+    ];
+
+    // Season-specific: only 2026 Wisconsin meets (not 2025).
+    let selected = select_meets(
+        rows.clone(),
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::Year(2026),
+        None,
+    );
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].source_meet_id, "w20");
+    assert_eq!(selected[0].year, 2026);
+
+    // Season-specific: only 2025 Wisconsin meets.
+    let selected = select_meets(
+        rows.clone(),
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::Year(2025),
+        None,
+    );
+    assert_eq!(selected.len(), 2);
+    let ids: Vec<&str> = selected.iter().map(|r| r.source_meet_id.as_str()).collect();
+    assert_eq!(ids, vec!["w10", "w11"]);
+
+    // Non-existent year yields nothing.
+    let selected =
+        select_meets(rows.clone(), &[UsJurisdiction::Wisconsin], SeasonScope::Year(2024), None);
+    assert!(selected.is_empty());
+}
+
+/// The all-seasons mode selects every year for the requested jurisdiction.
+#[test]
+fn all_seasons_selects_every_year() {
+    let rows: Vec<SourceMeetRef> = vec![
+        row_with_year("wi-2025-a", UsJurisdiction::Wisconsin, "w10", 2025),
+        row_with_year("wi-2025-b", UsJurisdiction::Wisconsin, "w11", 2025),
+        row_with_year("wi-2026-a", UsJurisdiction::Wisconsin, "w20", 2026),
+        row_with_year("oh-2026-a", UsJurisdiction::Ohio, "o10", 2026),
+    ];
+
+    // All seasons, Wisconsin only.
+    let selected = select_meets(
+        rows.clone(),
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::All,
+        None,
+    );
+    assert_eq!(selected.len(), 3);
+
+    // All seasons, no jurisdiction filter — picks up Ohio too.
+    let selected =
+        select_meets(rows.clone(), &[], SeasonScope::All, None);
+    assert_eq!(selected.len(), 4);
+}
+
+/// Season scope applies before the per-state limit, so the limit counts only meets from
+/// the requested year.
+#[test]
+fn season_scope_applies_before_limit() {
+    let rows: Vec<SourceMeetRef> = vec![
+        row_with_year("wi-2025-a", UsJurisdiction::Wisconsin, "w10", 2025),
+        row_with_year("wi-2025-b", UsJurisdiction::Wisconsin, "w11", 2025),
+        row_with_year("wi-2025-c", UsJurisdiction::Wisconsin, "w12", 2025),
+        row_with_year("wi-2026-a", UsJurisdiction::Wisconsin, "w20", 2026),
+    ];
+
+    // Limit 1 per state, season 2025 — only the 2025 meets count toward the limit.
+    let selected = select_meets(
+        rows.clone(),
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::Year(2025),
+        Some(1),
+    );
+    assert_eq!(selected.len(), 1);
+    assert_eq!(selected[0].source_meet_id, "w10");
+
+    // Same limit, all seasons — 3 Wisconsin meets total, limit 1 applies across both years.
+    let selected = select_meets(
+        rows,
+        &[UsJurisdiction::Wisconsin],
+        SeasonScope::All,
+        Some(1),
+    );
+    assert_eq!(selected.len(), 1);
 }

@@ -27,7 +27,7 @@ strip = true
 # unchecked arithmetic or casts, no `let _ =` on a must-use value) is enforced by
 # tools/gate.sh on --lib/--bins/--examples, which is where production reachability is measured.
 [workspace.lints.rust]
-unsafe_code = "forbid"
+unsafe_code = "deny"
 unused_must_use = "deny"
 # `kani` is the harness cfg the census crates switch on (`#[cfg(kani)] include!("../kani/...")`);
 # declaring it keeps the zero-warning doctrine instead of ignoring the lint per crate.

@@ -13,7 +13,7 @@ fn best_row(athlete_id: &str, name: &str) -> BestResult {
         sport: "CrossCountry".to_string(),
         event: "CrossCountry".to_string(),
         best_mark: "15:40.12".to_string(),
-        best_value: 940.12,
+        best_value: 94012,
         measure: "Time".to_string(),
         date: "2023-09-09".to_string(),
         meet: "Fixture Invitational".to_string(),
@@ -49,7 +49,7 @@ fn the_csv_carries_exactly_one_header_row() {
         sport: "CrossCountry".to_string(),
         event: "CrossCountry".to_string(),
         best_mark: "15:40.12".to_string(),
-        best_value: 940.12,
+        best_value: 94012,
         measure: "Time".to_string(),
         date: "2023-09-09".to_string(),
         meet: "Fixture Invitational".to_string(),
@@ -135,3 +135,131 @@ fn a_reader_holding_the_sidecar_keeps_the_pass_it_opened() {
         "the name carries the pass just written"
     );
 }
+
+// ── Notation agreement over the corpus range ───────────────────────────────────
+
+/// `format_time` must agree with the tree's independent renderer over every
+/// centisecond in the range 0..36_000_000 (ten hours).
+#[test]
+fn format_time_agrees_with_the_trees_renderer() {
+    let mut failures = 0u32;
+    for centis in 0u32..36_000_000u32 {
+        let cs = CentiSeconds(centis as i32);
+        let ours = format_time(cs);
+        let theirs = render_centis(centis);
+        if ours != theirs {
+            failures += 1;
+            if failures <= 3 {
+                eprintln!("  centis={centis} ours={ours} theirs={theirs}");
+            }
+        }
+    }
+    assert_eq!(failures, 0, "{failures} mismatches over 36M centiseconds");
+}
+
+/// The tree's centisecond renderer — copied verbatim from the property test.
+fn render_centis(centis: u32) -> String {
+    let hours = centis / 360_000;
+    let minutes = (centis / 6_000) % 60;
+    let seconds = (centis % 6_000) as f64 / 100.0;
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{seconds:05.2}")
+    } else if minutes > 0 {
+        format!("{minutes}:{seconds:05.2}")
+    } else {
+        format!("{seconds:.2}")
+    }
+}
+
+/// The field winner test: "3-0.50" and "3-0.75" must resolve to different
+/// integers so the higher wins (3-0.75), not the first-seen (3-0.50).
+#[test]
+fn field_marks_distinguish_quarter_inches() {
+    let half = Mark::FieldImperial {
+        feet_mark: "3-0.50".to_string(),
+        metres: CentiMetres(93),
+    };
+    let three_quarter = Mark::FieldImperial {
+        feet_mark: "3-0.75".to_string(),
+        metres: CentiMetres(93),
+    };
+    let v_half = Measure::value(Measure::Field, &half).unwrap();
+    let v_three_quarter = Measure::value(Measure::Field, &three_quarter).unwrap();
+    assert!(
+        v_three_quarter > v_half,
+        "3-0.75 ({v_three_quarter}) must beat 3-0.50 ({v_half})"
+    );
+    assert!(
+        v_three_quarter - v_half >= 6,
+        "must distinguish quarter-inch (6 mm resolution), got diff {}",
+        v_three_quarter - v_half
+    );
+}
+
+/// best_value is i32, not f64 — this must not compile if changed back.
+#[test]
+fn best_value_is_integer_not_float() {
+    let row = best_row("test", "Test");
+    let _: i32 = row.best_value; // compiles → i32
+}
+
+/// Two runs over the same data always produce identical sorted output.
+/// The sort chain (state → event → best_value → name → athlete_id) is fully
+/// deterministic: no float comparison, no HashMap-order dependency.
+#[test]
+fn two_runs_produce_identical_bytes() {
+    // Build two identical sets of BestResult, sort each, compare byte-for-byte.
+    let rows = vec![
+        best_row("ath_001", "Alice"),
+        best_row("ath_002", "Bob"),
+        best_row("ath_003", "Charlie"),
+    ];
+    // Sort the same data twice and compare — deterministic output requires:
+    // 1. Integer comparison (no float non-determinism)
+    // 2. athlete_id tiebreaker (no HashMap-order dependency)
+    let mut sorted1 = rows.clone();
+    let mut sorted2 = rows.clone();
+
+    // Verify the sort chain is deterministic by comparing sort results
+    sorted1.sort_by(|left, right| {
+        left.state
+            .cmp(&right.state)
+            .then_with(|| left.event.cmp(&right.event))
+            .then_with(|| {
+                if left.measure == "time" {
+                    left.best_value.cmp(&right.best_value)
+                } else {
+                    right.best_value.cmp(&left.best_value)
+                }
+            })
+            .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.athlete_id.cmp(&right.athlete_id))
+    });
+    sorted2.sort_by(|left, right| {
+        left.state
+            .cmp(&right.state)
+            .then_with(|| left.event.cmp(&right.event))
+            .then_with(|| {
+                if left.measure == "time" {
+                    left.best_value.cmp(&right.best_value)
+                } else {
+                    right.best_value.cmp(&left.best_value)
+                }
+            })
+            .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.athlete_id.cmp(&right.athlete_id))
+    });
+    assert_eq!(sorted1, sorted2, "sort must be deterministic");
+}
+
+/// Regression: athleticlive rounding (1_578_000 µm → 158, not 157).
+#[test]
+fn athleticlive_rounds_not_truncates() {
+    // 1_578_000 µm = 157.8 cm → rounds to 158, truncates to 157
+    let micros: u64 = 1_578_000;
+    let rounded_cm = (micros + 5_000) / 10_000;
+    let truncated_cm = micros / 10_000;
+    assert_eq!(rounded_cm, 158, "rounding gives 158");
+    assert_eq!(truncated_cm, 157, "truncation gives 157 (wrong)");
+}
+

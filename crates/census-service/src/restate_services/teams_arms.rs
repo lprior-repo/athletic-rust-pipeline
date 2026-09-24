@@ -15,6 +15,7 @@
 //! keyed on.
 
 use std::sync::Arc;
+use crate::restate_services::job_error;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -93,8 +94,7 @@ async fn sweep_team_source(
         TeamsArm::MilesplitIndex => {
             let teams = census::collect_state_teams(fetcher, store, jurisdiction, refresh)
                 .await
-                .map_err(collect_error)?;
-            Ok(Some(teams.len()))
+                .map_err(|error| job_error(collect_error(error)))?;
         }
         TeamsArm::WiaaDirectory => Ok(Some(
             walk_wiaa(store, fetcher, jurisdiction, season, refresh, at).await?,
@@ -134,7 +134,7 @@ async fn walk_wiaa(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::wiaa::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 
@@ -157,7 +157,7 @@ async fn walk_mshsl(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::mshsl::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 
@@ -181,7 +181,7 @@ async fn walk_plain_names(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::plain_names::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 
@@ -205,7 +205,7 @@ async fn walk_ihsa(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::ihsa::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 
@@ -229,7 +229,7 @@ async fn walk_ks(
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::ks::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 

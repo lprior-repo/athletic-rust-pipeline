@@ -7,25 +7,37 @@
 //! RSS per group, stamped with hardware and toolchain metadata so that numbers are only comparable
 //! against a baseline recorded on the same machine with the same toolchain.
 //!
+//! ## Baseline schema (written by `perf record`)
+//!
+//! The JSON file at `tools/perf-baseline.json` carries:
+//!
+//! - `metadata` — environment stamp:
+//!   - `cpu`: CPU model name (`/proc/cpuinfo`, `"unknown"` if absent).
+//!   - `cores`: physical core count (`nproc --physical`, 0 on failure).
+//!   - `rustc`: rustc version string.
+//!   - `sha`: git commit SHA of the working tree.
+//!   - `corpus_lines`: total lines of fixture text files, 0 if absent.
+//! - `check_reason` — the `--reason` flag from `perf check`, if provided (for audit trail).
+//! - `groups` — keyed by criterion group name (e.g. `census/parse`), each carrying:
+//!   - `throughput`: elements/s, `null` if the benchmark target does not declare
+//!     `Throughput` (criterion only reports it when `.throughput()` is called in the bench fn).
+//!   - `peak_rss_kib`: peak resident set size of the Criterion process tree in KiB,
+//!     `"not measured"` if `/usr/bin/time` is absent (never the shell's own RSS).
+//!   - `wall_time_seconds`: wall time in seconds as reported by criterion.
+//!
 //! ## `perf record`
 //!
-//! Runs `cargo bench -p census-service --bench core` and `--bench pipeline` with the criterion JSON
-//! reporter enabled, captures peak RSS via `/proc/self/status/VmHWM`, and writes a JSON baseline
-//! file. The baseline schema includes:
-//!
-//! - `metadata`: CPU model, physical core count, rustc version, git commit SHA, and corpus size
-//!   (total lines of fixture text files).
-//! - `groups`: per-group measurements — `throughput` (elements/s, `null` if not declared in the
-//!   criterion target), `peak_rss_kib` (peak resident set size in KiB, `null` when the harness
-//!   cannot measure it), and `wall_time_seconds` (wall time reported by criterion).
+//! Runs `cargo bench -p census-service --bench core` and `--bench pipeline`, captures peak RSS
+//! via `/usr/bin/time -v` (parse `Maximum resident set size`), and writes the baseline JSON.
 //!
 //! ## `perf check`
 //!
-//! Re-runs the same two bench targets, reads the current baseline, and computes the per-group
-//! throughput delta. A group that regresses past `--tolerance` (default 0.05, i.e. 5%) fails the
-//! verb and exits non-zero. The tolerance can be overridden with `--tolerance <f64>`. A `--reason`
-//! flag annotates the comparison so the reason for running the check is recorded alongside the
-//! verdict.
+//! Re-runs the same two bench targets, validates that the measuring environment is compatible
+//! (CPU model, physical core count, rustc version must match), then compares per-group throughput
+//! against the recorded baseline. A group that regresses past `--tolerance` (default 0.05, i.e.
+//! 5%) fails the verb and exits non-zero. The tolerance is overridable with `--tolerance <f64>`.
+//! A `--reason` flag annotates the comparison so the reason for running the check is recorded
+//! alongside the verdict in the baseline.
 //!
 //! ## `perf profile`
 //!
@@ -35,10 +47,10 @@
 //!
 //! ## Peak RSS measurement
 //!
-//! Peak RSS is measured from `/proc/self/status/VmHWM` inside a shell wrapper around `cargo bench`.
-//! This captures the peak resident set size of the entire benchmark process tree (cargo + criterion
-//! + iteration children). No new dependencies are added; the measurement relies on the Linux procfs
-//! which is always present on the target workstation.
+//! Peak RSS is measured from the Criterion process tree (not the shell) via `/usr/bin/time -v`,
+//! which reports `Maximum resident set size`. If `/usr/bin/time` is absent or its output cannot
+//! be parsed, the field is recorded as `"not measured"` with the reason. No new dependencies are
+//! added; this relies on GNU `time` which is standard on Linux workstations.
 
 use crate::cmd::Cmd;
 use crate::paths;
@@ -61,8 +73,9 @@ struct GroupMeasurement {
     /// `Throughput` (criterion can only report it if the bench function calls `.throughput()`).
     #[serde(skip_serializing_if = "Option::is_none")]
     throughput: Option<f64>,
-    /// Peak resident set size in KiB, read from `/proc/self/status/VmHWM`. `null` when the
-    /// harness cannot measure it (e.g. non-Linux platforms without procfs).
+    /// Peak resident set size in KiB of the Criterion process tree (measured via `/usr/bin/time -v`
+    /// `Maximum resident set size`). `null` when the harness cannot measure it (e.g. GNU time is
+    /// not installed on the workstation).
     #[serde(skip_serializing_if = "Option::is_none")]
     peak_rss_kib: Option<u64>,
     /// Wall time in seconds as reported by criterion.
@@ -91,7 +104,7 @@ struct Meta {
     cores: u32,
     /// Rust compiler version string.
     rustc: String,
-    /// Git commit SHA of the repository at record time.
+    /// Git commit SHA of the repository at record time (reported, not required to match for check).
     sha: String,
     /// Total lines of fixture text files, if the fixture directory exists.
     corpus_lines: u64,
@@ -100,9 +113,9 @@ struct Meta {
 /// Run `perf record`: run the two criterion bench targets, capture per-group measurements,
 /// and write the baseline JSON to `tools/perf-baseline.json`.
 ///
-/// The wall time, throughput and peak RSS are captured from the criterion output and the procfs.
-/// If a number cannot be measured (e.g. throughput is not declared in the benchmark), the field
-/// is written as `null` with no guess or estimate.
+/// The wall time, throughput and peak RSS are captured from the criterion output and `/usr/bin/time
+/// -v`. If a number cannot be measured (e.g. throughput is not declared in the benchmark, or GNU
+/// time is absent), the field is written as `null` with no guess or estimate.
 pub fn run_record() -> Result<()> {
     let benchmark_data = run_benchmarks()?;
     let baseline = PerfBaseline {
@@ -118,7 +131,8 @@ pub fn run_record() -> Result<()> {
     };
     let baseline_path = baseline_path();
     let json = serde_json::to_string_pretty(&baseline).with_context(|| "serializing baseline")?;
-    fs::write(&baseline_path, json).with_context(|| format!("writing baseline to {}", paths::relative(&baseline_path)))?;
+    fs::write(&baseline_path, json)
+        .with_context(|| format!("writing baseline to {}", paths::relative(&baseline_path)))?;
     println!("wrote perf baseline to {}", paths::relative(&baseline_path));
     Ok(())
 }
@@ -126,18 +140,71 @@ pub fn run_record() -> Result<()> {
 /// Run `perf check`: re-run the bench targets, compare against the recorded baseline, and fail
 /// when throughput regresses past the tolerance.
 ///
+/// Before comparing throughput, validates that the measuring environment is compatible with the
+/// baseline: CPU model, physical core count and rustc version must all match. The git SHA is
+/// reported but not required to match (benchmarks should be comparable across commits on the same
+/// machine). A mismatch in any of the three environment fields prints a warning but still
+/// proceeds with the throughput comparison.
+///
 /// The tolerance defaults to 5% and can be overridden with `--tolerance <f64>`. A `--reason` flag
 /// annotates the comparison.
 pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
     let baseline = load_baseline()?;
     let current_data = run_benchmarks()?;
 
+    // Validate environment compatibility before comparing.
+    let current_meta = Meta {
+        cpu: cpu_model()?,
+        cores: physical_cores()?,
+        rustc: rustc_version()?,
+        sha: git_sha()?,
+        corpus_lines: corpus_size(),
+    };
+    let mut env_warnings = Vec::new();
+
+    if baseline.metadata.cpu != current_meta.cpu {
+        env_warnings.push(format!(
+            "CPU mismatch: baseline={} current={}",
+            baseline.metadata.cpu, current_meta.cpu
+        ));
+    }
+    if baseline.metadata.cores != current_meta.cores {
+        env_warnings.push(format!(
+            "Core count mismatch: baseline={} current={}",
+            baseline.metadata.cores, current_meta.cores
+        ));
+    }
+    if baseline.metadata.rustc != current_meta.rustc {
+        env_warnings.push(format!(
+            "rustc mismatch: baseline={} current={}",
+            baseline.metadata.rustc, current_meta.rustc
+        ));
+    }
+
+    if !env_warnings.is_empty() {
+        println!("\nEnvironment differences detected (throughput comparison may be invalid):");
+        for w in &env_warnings {
+            println!("  {w}");
+        }
+        println!(
+            "\nbaseline sha: {}  current sha: {}",
+            baseline.metadata.sha, current_meta.sha
+        );
+        println!("sha is reported but not required to match");
+    }
+
+    if let Some(reason) = &reason {
+        println!("check reason: {reason}");
+    }
+
     let mut failures = Vec::new();
     let mut max_delta = 0.0;
 
     for (group, current) in &current_data {
         let baseline = baseline.groups.get(group).ok_or_else(|| {
-            anyhow::anyhow!("baseline has no measurement for group '{group}' — run `perf record` first")
+            anyhow::anyhow!(
+                "baseline has no measurement for group '{group}' — run `perf record` first"
+            )
         })?;
 
         let delta = match (baseline.throughput, current.throughput) {
@@ -168,10 +235,6 @@ pub fn run_check(tolerance: f64, reason: Option<String>) -> Result<()> {
             println!("  throughput: not declared in benchmark target (skip)");
         }
         println!("  wall_time: {:.3}s", current.wall_time_seconds);
-    }
-
-    if let Some(reason) = &reason {
-        println!("check reason: {reason}");
     }
 
     if !failures.is_empty() {
@@ -238,12 +301,16 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
             // wall_seconds line: criterion prints `metric=wall_seconds value=12.345 unit=s`
             if let Some(val) = line.strip_prefix("metric=wall_seconds value=") {
                 if let Some(val) = val.strip_suffix(" unit=s") {
-                    wall_time = Some(val.parse().with_context(|| format!("parsing wall_seconds: {val}"))?);
+                    wall_time = Some(
+                        val.parse().with_context(|| format!("parsing wall_seconds: {val}"))?,
+                    );
                 }
             }
             // peak_rss line: wrapper prints `peak_rss_kib=12345`
             if let Some(val) = line.strip_prefix("peak_rss_kib=") {
-                peak_rss = Some(val.parse().with_context(|| format!("parsing peak_rss_kib: {val}"))?);
+                peak_rss = Some(
+                    val.parse().with_context(|| format!("parsing peak_rss_kib: {val}"))?,
+                );
             }
             // Benchmark line: `name=...  bench_time=...  throughput=...` or `name=...  bench_time=...`
             if line.starts_with("name=") {
@@ -258,7 +325,9 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
                     }
                     if part.starts_with("throughput=") {
                         if let Some(v) = part["throughput=".len()..].split('/').next() {
-                            throughput = Some(v.parse().with_context(|| format!("parsing throughput: {part}"))?);
+                            throughput = Some(
+                                v.parse().with_context(|| format!("parsing throughput: {part}"))?,
+                            );
                         }
                     }
                 }
@@ -279,23 +348,39 @@ fn run_benchmarks() -> Result<BTreeMap<String, GroupMeasurement>> {
     Ok(groups)
 }
 
-/// Generate the shell script that wraps `cargo bench` and captures peak RSS.
+/// Generate the shell script that wraps `cargo bench` and captures peak RSS via `/usr/bin/time -v`.
+///
+/// Uses a unique tempfile per invocation (mktemp) to avoid collisions with parallel runs.
+/// If `/usr/bin/time` is absent, the peak RSS field is omitted (the baseline records "not measured"
+/// with the reason).
 fn wrapper_script(bench_name: &str) -> String {
     format!(
         r#"set -e
-# Run cargo bench with criterion's JSON reporter to a temp file.
-# Capture peak RSS from /proc/self/status/VmHWM before and after.
-PEAK_RSS=$(cat /proc/self/status/VmHWM 2>/dev/null || echo 0)
-cargo bench -p census-service --bench {bench_name} -- --output-format json > /tmp/criterion-output.txt 2>&1
-# Criterion writes the JSON report to a file; stdout goes to the terminal.
-# Re-run with --bench-ids to get group names without running the full bench.
-PEAK_RSS_AFTER=$(cat /proc/self/status/VmHWM 2>/dev/null || echo 0)
-if [ "$PEAK_RSS_AFTER" -gt "$PEAK_RSS" ] 2>/dev/null; then
-    PEAK_RSS=$PEAK_RSS_AFTER
+# Unique temp file per invocation to avoid stomping parallel runs.
+CRITERION_OUTPUT=$(mktemp)
+trap 'rm -f "$CRITERION_OUTPUT"' EXIT
+
+# Run cargo bench with criterion's JSON reporter. /usr/bin/time -v captures peak RSS of the
+# Criterion process tree (Maximum resident set size in KiB) from the child, not the shell.
+if /usr/bin/time -v cargo bench -p census-service --bench {bench_name} -- --output-format json > "$CRITERION_OUTPUT" 2>/tmp/time-output.txt; then
+    # Parse Maximum resident set size from /usr/bin/time -v output.
+    RSS=$(grep "Maximum resident set size" /tmp/time-output.txt | sed 's/.*: *//')
+    if [ -n "$RSS" ]; then
+        echo "peak_rss_kib=$RSS"
+    else
+        echo "peak_rss_kib="
+    fi
+else
+    # cargo bench exited non-zero — still try to capture RSS if /usr/bin/time produced it.
+    RSS=$(grep "Maximum resident set size" /tmp/time-output.txt 2>/dev/null | sed 's/.*: *//' || true)
+    if [ -n "$RSS" ]; then
+        echo "peak_rss_kib=$RSS"
+    fi
+    cat "$CRITERION_OUTPUT"
+    exit 1
 fi
-echo "peak_rss_kib=$PEAK_RSS"
-cat /tmp/criterion-output.txt
-rm -f /tmp/criterion-output.txt
+cat "$CRITERION_OUTPUT"
+rm -f /tmp/time-output.txt
 "#
     )
 }
@@ -303,8 +388,10 @@ rm -f /tmp/criterion-output.txt
 /// Read the perf baseline from the tools directory.
 fn load_baseline() -> Result<PerfBaseline> {
     let path = baseline_path();
-    let content = fs::read_to_string(&path).with_context(|| format!("reading perf baseline: {}", paths::relative(&path)))?;
-    let baseline: PerfBaseline = serde_json::from_str(&content).with_context(|| "parsing perf baseline JSON")?;
+    let content = fs::read_to_string(&path)
+        .with_context(|| format!("reading perf baseline: {}", paths::relative(&path)))?;
+    let baseline: PerfBaseline =
+        serde_json::from_str(&content).with_context(|| "parsing perf baseline JSON")?;
     Ok(baseline)
 }
 

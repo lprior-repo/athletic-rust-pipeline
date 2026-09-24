@@ -6,7 +6,6 @@ use super::request::RequestBody;
 use super::{FetchError, FetchOptions, FetchOutcome, Fetcher, MIN_AUTHORIZED_DELAY};
 use census_domain::model::AccessBlockKind;
 use census_store::clock::{Clock, SystemClock};
-use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -147,10 +146,11 @@ impl Fetcher {
             .unwrap_or_default();
         let key = Self::key_for(method, url, &extra);
         let (body_path, meta_path) = self.cache_paths(&key);
+        // read_cache verifies the body against the metadata; a mismatch returns None (miss).
         let cached = read_cache(&body_path, &meta_path)?;
-        if let Some(meta) = cached.as_ref() {
+        if let Some((meta, body)) = cached.as_ref() {
             if let Some(outcome) = self
-                .cached_outcome(method, url, &body_path, meta, options)
+                .cached_outcome(method, url, meta, options, body.clone())
                 .await?
             {
                 return Ok(outcome);
@@ -169,7 +169,7 @@ impl Fetcher {
             host: &host,
             body_path: &body_path,
             meta_path: &meta_path,
-            cached: cached.as_ref(),
+            cached: cached.as_ref().map(|(meta, _)| meta),
             options,
             timeout_secs,
         };
@@ -182,21 +182,18 @@ impl Fetcher {
         }
     }
 
-    /// Serve the request from the cache when a usable body is already on disk.
+    /// Serve the request from the cache when a verified body is already on disk.
     async fn cached_outcome(
         &self,
         method: &str,
         url: &str,
-        body_path: &Path,
         meta: &CacheMeta,
         options: &FetchOptions,
+        body: Vec<u8>,
     ) -> Result<Option<FetchOutcome>, FetchError> {
         if options.refresh {
             return Ok(None);
         }
-        let Ok(bytes) = std::fs::read(body_path) else {
-            return Ok(None);
-        };
         if meta.status != 200 && !(options.allow_not_found && meta.status == 404) {
             return Ok(None);
         }
@@ -208,12 +205,12 @@ impl Fetcher {
             url: url.to_string(),
             method: method.to_string(),
             status: meta.status,
-            sha256: meta.sha256.clone(),
+            sha256: meta.key_prefix.clone(),
             bytes: meta.bytes,
             fetched_at: meta.fetched_at.clone(),
             from_cache: true,
             content_type: meta.content_type.clone(),
-            body: bytes,
+            body,
         }))
     }
 

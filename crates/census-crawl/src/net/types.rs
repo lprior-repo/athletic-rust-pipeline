@@ -93,6 +93,15 @@ pub enum FetchError {
     /// test, golden or operator reads keeps its exact text.
     #[error("{detail}")]
     Invariant { detail: String },
+    /// A request violated a transport policy: wrong profile on the browser lane, or a URL whose
+    /// origin is not admitted to the browser transport.
+    ///
+    /// The detail names the conflict so an operator or a test can distinguish profile-mismatch
+    /// from origin-excluded.  The taxonomy keeps `Policy` below `Invariant` because the caller
+    /// is wrong (it asked the browser for the wrong origin), but the error is *not* a bug — it is
+    /// the policy enforcement itself.
+    #[error("policy: {detail}")]
+    Policy { detail: String },
 }
 
 impl FetchError {
@@ -113,6 +122,7 @@ impl FetchError {
             | Self::Decode { .. }
             | Self::Encode { .. }
             | Self::Client { .. }
+            | Self::Policy { .. }
             | Self::Invariant { .. } => false,
         }
     }

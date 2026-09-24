@@ -1154,7 +1154,7 @@ impl serde::Serialize for FlakyRecord {
     }
 }
 
-impl serde::de::Deserialize<'de> for FlakyRecord {
+impl<'de> serde::de::Deserialize<'de> for FlakyRecord {
     fn deserialize<D: serde::de::Deserializer<'de>>(
         deserializer: D,
     ) -> std::result::Result<Self, D::Error> {
@@ -1200,11 +1200,13 @@ impl Entity for FlakyRecord {
 /// A page's encode failure leaves the store untouched: no rows, no journal, no counter moved.
 ///
 /// The test uses three `FlakyRecord` instances whose `Serialize` succeeds for the first two
-/// calls and fails on the third. They are pushed through `StoreBatch::append_many` (all into
-/// the same page, so they share a table reservation), then `commit` is called.
+/// calls and fails on the third. The batch buffers a journal entry first, then offers all three
+/// records to `StoreBatch::append_many` as one slice, which refuses the whole call: records are
+/// encoded there, so the batch never reaches `commit`.
 ///
-/// The assertion is that the Json error surfaces from `commit`, a reopen shows the store as
-/// it was before the batch, and the sequence pointer and row count are exactly where they were.
+/// The assertion is that the Json error surfaces from `append_many`, the abandoned batch leaves
+/// the store exactly as it was, and a reopen shows the sequence pointer, row count and journal
+/// in their original state.
 #[test]
 fn a_store_batch_encode_failure_commits_nothing() {
     let dir = tempfile::tempdir().unwrap();
@@ -1219,21 +1221,23 @@ fn a_store_batch_encode_failure_commits_nothing() {
     let r0 = FlakyRecord { id: "r0".to_string(), value: 0 };
     let r1 = FlakyRecord { id: "r1".to_string(), value: 1 };
     let r2 = FlakyRecord { id: "r2".to_string(), value: 2 };
-    batch.append_many(Table::Schools, &[r0, r1, r2]).unwrap();
+    // The journal entry is buffered before the records, so the abandoned batch already holds
+    // real work when the append refuses: the entry cannot escape on its own either.
     batch
         .journal_done("unit", "fail-atomic", &serde_json::json!({"rows": 3}))
         .unwrap();
+    let refused = batch.append_many(Table::Schools, &[r0, r1, r2]);
 
-    // commit returns the Json error from the third record's serialization.
-    let err = batch.commit();
+    // The third record's serialization is what refuses the append; `commit` is never reached.
     assert!(
-        err.is_err(),
-        "commit should have failed on the real encode error"
+        refused.is_err(),
+        "append_many should have refused the unencodable record"
     );
     assert!(
-        matches!(&err, Err(StoreError::Json { detail, .. }) if detail.contains("serializing a batched observation")),
+        matches!(&refused, Err(StoreError::Json { detail, .. }) if detail.contains("serializing a batched observation")),
         "error should be StoreError::Json"
     );
+    drop(batch);
 
     // A reopen shows the store is exactly as it was before the batch: no rows, no journal.
     drop(store);

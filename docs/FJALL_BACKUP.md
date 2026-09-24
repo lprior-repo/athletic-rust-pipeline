@@ -23,10 +23,10 @@ Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store co
 
 | Path | Role | Needed in a backup? |
 |---|---|---|
-| `fjall/` | All canonical state: keyspaces `entities` (schools, teams, coaches, athletes, meets, events, performances), `journal` (per-phase dispatch logs), `meta` (markers, e.g. the legacy-import marker) | **Required** |
+| `fjall/` | All canonical state: keyspaces `entities` (all sixteen tables, `crates/census-store/src/table.rs:72-104`), `journal` (per-phase dispatch logs), `meta` (markers, e.g. the legacy-import marker) | **Required** |
 | `http/` | Source response cache | Optional - dropping it costs re-fetches, not correctness |
 | `out/` | Regenerable exports (`report.json`, `census-by-state.csv`, `*.jsonl` snapshots) | No - rebuild with `consolidate` / `report` |
-| `entities/`, `journal/` | Pre-Fjall JSONL logs; imported once at open and recorded by a marker in `meta` | No, once that marker exists |
+| `entities/`, `journal/` | Pre-Fjall JSONL logs; imported once by `import-legacy` (opening never imports, `crates/census-store/src/lib.rs:53-56`) and recorded by a marker in `meta` | No, once that marker exists |
 
 `fjall/` in the drill store is 12 files / 229,232 bytes:
 
@@ -58,11 +58,15 @@ copy the whole `fjall/` subtree.
 
 Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
 
-* **No consistent-backup entry point exists in the census API.** `Store` keeps `db: Database` private
-  and exposes no snapshot. fjall does provide `Database::snapshot()` (`fjall-3.1.10/src/db.rs:150`)
-  returning a `Snapshot` (`src/snapshot.rs:17-31`) that pins the LSM version for as long as it is
-  held - the thing a copier needs so compaction cannot delete a file mid-copy - but the census crate
-  never calls it and gives a caller no way to hold one.
+* **The only consistent-backup entry point is cold.** `Store::backup`
+  (`crates/census-store/src/backup/copy.rs:36`) copies a closed store and writes `backup.json` beside
+  it; `Store::restore` (`backup/restore.rs:29`) verifies that manifest, and `Store::integrity`
+  (`backup/integrity.rs:23`) checks a store in place. What no entry point gives a caller is a copy of
+  a *live* store: `Store` keeps `db: Database` private and exposes no snapshot. fjall does provide
+  `Database::snapshot()` (`fjall-3.1.10/src/db.rs:150`) returning a `Snapshot`
+  (`src/snapshot.rs:17-31`) that pins an in-memory read view for as long as it is held - it stops
+  neither compaction from rewriting SSTs nor the journal from rotating mid-frame - but the census
+  crate never calls it, so a copier has no way to hold one.
 * **There is no pause point during a backup.** The only quiescence primitives are process-level: the
   handle's lock and `Store::flush()` (= `Database::persist(PersistMode::SyncAll)`,
   `fjall-3.1.10/src/db.rs:350`), which fsyncs but does **not** stop writers.
@@ -103,8 +107,12 @@ Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
 
 Not filed as a bug against the census crate; recorded here so nobody ships a "hot backup" script
 believing the store cooperates. The two shapes that would make a hot backup safe are exposing
-`fjall::Snapshot` from `Store` (hold the snapshot, copy `fjall/`, drop it) or a `Store::backup_to(dir)`.
-Neither exists today, so the rest of this document is **cold backup only**.
+`fjall::Snapshot` from `Store` (hold the snapshot, copy `fjall/`, drop it) or a cold-copy entry point
+that enforces the stop. The second landed as `Store::backup`
+(`crates/census-store/src/backup/copy.rs:36`, driven by `census-service --store <root> store-backup
+--to <dir>`): it takes `fjall/lock` and refuses a lock that is already held rather than trusting an
+operator to stop the writer. The snapshot shape still does not exist, so the rest of this document is
+**cold backup only** - the same cold copy the CLI performs, kept so an operator can run it by hand.
 
 ## 3. The drill, command by command
 
@@ -173,7 +181,7 @@ Three sizes are in play and they answer different questions; the numbers below a
 | `fjall-stats` line | live root | restored root | What it counts |
 |---|---|---|---|
 | `bytes_on_disk` | 0 | 0 | fjall's LSM-tree level sizes - SST files only (`Keyspace::disk_space`, `fjall-3.1.10/src/keyspace/mod.rs:401` → `lsm-tree-3.1.10/src/tree/mod.rs:615-620`). A store whose rows still live in the journal reports 0, and reads 0 again for every damaged copy in §3.5 |
-| `store_bytes` | 429,419 | 229,232 | the recursive size of the store root (`store/read.rs:250-262`, reported at `store/read.rs:127`): database, journal, HTTP cache, `out/` and the pre-Fjall logs. `du -sb` agrees |
+| `store_bytes` | 429,419 | 229,232 | the recursive size of the store root (`crates/census-store/src/read/directory.rs:23`, reported at `crates/census-store/src/read/mod.rs:218`): database, journal, HTTP cache, `out/` and the pre-Fjall logs. `du -sb` agrees |
 
 So `bytes_on_disk 0` is not a bug and not a restore check either: it is 0 before the damage and 0
 after it. Size a copy by `store_bytes` (or `du -sb`), and prove a restore by the journal manifest, the
@@ -217,8 +225,12 @@ $ diff $DRILL/backup.manifest $DRILL/restored.manifest && echo "RESTORED MANIFES
 RESTORED MANIFEST IDENTICAL
 ```
 
-`<store-dir>/fjall` is the whole restore input: the CLI takes `--store <dir>`, creates the directory if
-missing, and has no restore subcommand - restoring is copying `fjall/` onto a fresh root. The fresh root
+The manual path below restores by copying `fjall/` onto a fresh root, and that is all it needs; the
+CLI's own restore is `census-service store-restore --from <backup dir> --to <fresh root>`
+(`crates/census-store/src/backup/restore.rs:29`), which streams the directory `store-backup` wrote -
+`fjall/` plus its `backup.json` manifest - checks every file's length and SHA-256 as the bytes pass,
+and reconciles the restored row counts against the manifest before renaming the staging directory into
+place (`crates/census-store/src/backup/mod.rs:38-45`). The fresh root
 must **not** contain the pre-Fjall `entities/`/`journal/` logs of the source root; if it does, the
 legacy import is marker-guarded per table (`imported:<table>` in the `meta` keyspace travels with the
 database, `crates/census-store/src/legacy.rs:25-27,79-86`), so the logs are not read a second time -
@@ -329,7 +341,7 @@ assertion `left == right` failed
 A damaged **descriptor** closes the door; a damaged **journal** opens and answers, because recovery
 truncates at the last complete frame (`journal/reader.rs:56-79`). So "it opened" proves nothing about a
 restore, and neither size column does either: `bytes_on_disk` reads `0` on the intact restore *and* on
-every damaged copy in the table, while `store_bytes` (the recursive root size, `store/read.rs:250-262`)
+every damaged copy in the table, while `store_bytes` (the recursive root size, `crates/census-store/src/read/directory.rs:23`)
 counts real bytes but says nothing about which rows survived - it even *grows* to 458,251 on the truncated
 copy, because that copy carries the consolidated snapshots of the root it was taken from. `fjall-stats`
 reports what survived the recovery, not what was backed up. Verify a restore by digest (§3.1) or by

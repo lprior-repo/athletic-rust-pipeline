@@ -1,26 +1,26 @@
-//! The results stage's arms: the pull each planned result source runs over the meets this run
-//! enumerated.
-//!
-//! Why a fourth stage rather than an arm beside the other two: the team-index and meet-index stages
-//! *publish* the universes a run covers, and a result source *consumes* them. An arm that read the
-//! meets it should pull would make one stage both publish and consume, and a plan carries one
-//! disposition per source, not one per phase of a source's work.
-//!
-//! The seed is the run's own table, never an argument. `source_meets` holds the meets this run's
-//! walks enumerated for the jurisdiction (`census::meets` and the meet-index arms), so an arm reads
-//! the meets the run itself decided it covers. A stage that took meet ids from anywhere else would be
-//! a second opinion about what the run covers, which is exactly what the meet-index stage refuses to
-//! be.
-//!
-//! Each arm appends canonical observations through the adapter that owns them (athletes,
-//! performances, schools) — not `source_meets` rows — so there is nothing for this caller to route
-//! through an `Ingest` object, and the adapter's own journal is the resume point: `milesplit_results`
-//! journals one entry per result set under its versioned phase, `athleticnet` journals each meet's
-//! request pair. This stage holds no journal of its own, and a re-invocation that reaches it again
-//! resumes inside whichever arm it calls.
-//!
-//! The per-source row count is the durable record of what ran, for the reason the meet census states:
-//! an arm that found nothing and an arm that never ran would otherwise leave the same trace.
+/// The results stage's arms: the pull each planned result source runs over the meets this run
+/// enumerated.
+///
+/// Why a fourth stage rather than an arm beside the other two: the team-index and meet-index stages
+/// *publish* the universes a run covers, and a result source *consumes* them. An arm that read the
+/// meets it should pull would make one stage both publish and consume, and a plan carries one
+/// disposition per source, not one per phase of a source's work.
+///
+/// The seed is the run's own table, never an argument. `source_meets` holds the meets this run's
+/// walks enumerated for the jurisdiction (`census::meets` and the meet-index arms), so an arm reads
+/// the meets the run itself decided it covers. A stage that took meet ids from anywhere else would be
+/// a second opinion about what the run covers, which is exactly what the meet-index stage refuses to
+/// be.
+///
+/// Each arm appends canonical observations through the adapter that owns them (athletes,
+/// performances, schools) — not `source_meets` rows — so there is nothing for this caller to route
+/// through an `Ingest` object, and the adapter's own journal is the resume point: `milesplit_results`
+/// journals one entry per result set under its versioned phase, `athleticnet` journals each meet's
+/// request pair. This stage holds no journal of its own, and a re-invocation that reaches it again
+/// resumes inside whichever arm it calls.
+///
+/// The per-source row count is the durable record of what ran, for the reason the meet census states:
+/// an arm that found nothing and an arm that never ran would otherwise leave the same trace.
 
 use std::sync::Arc;
 
@@ -132,7 +132,7 @@ pub(super) async fn results_stage(
     // The selection belongs to the stage rather than to an arm: both arms read the same meets, and
     // selecting once here — moving the scan rather than copying it — is what keeps an arm from
     // re-filtering the whole table on its own.
-    let selected = crate::census::select_meets(stored, &[jurisdiction], None);
+    let selected = crate::census::select_meets(stored, &[jurisdiction], crate::census::SeasonScope::Year(year), None);
     let mut outcome = ResultsStageOutcome::default();
     for slug in &sweepable {
         let Some(arm) = arm_for(slug) else {

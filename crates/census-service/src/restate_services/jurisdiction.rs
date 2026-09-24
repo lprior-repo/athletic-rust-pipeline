@@ -26,7 +26,9 @@
 //! an invocation that loses its endpoint is replayed by the node until it completes. The policy
 //! declared on the handler is therefore the only retry budget that exists, and fetches and store
 //! writes alike are retried by it — a lock contention or a compaction is exactly what a replay is
-//! for.
+//! for. When the invocation exhausts three attempts it *aborts* rather than pausing: the parent
+//! national workflow records the jurisdiction as a `NationalFailure` row and continues with the
+//! remaining states, so one dead jurisdiction cannot strand the national census.
 
 use std::sync::Arc;
 
@@ -221,7 +223,7 @@ fn report(
         initial_interval = "500ms",
         max_interval = "1m",
         max_attempts = 3,
-        on_max_attempts = "pause"
+        on_max_attempts = "kill"
     )
 )]
 impl JurisdictionCensus {

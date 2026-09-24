@@ -301,7 +301,7 @@ fn a_recorded_plan_partitions_the_dispositions_in_plan_order() {
             BrowserLaneState::Absent,
         ),
     ];
-    let recorded = SourcePlan::of(&dispositions);
+    let recorded = SourcePlan::of(&dispositions, String::new());
     assert_eq!(recorded.sweepable, vec!["mshsl".to_string()]);
     assert_eq!(
         recorded.refused,
@@ -349,11 +349,86 @@ fn a_recorded_plan_round_trips_through_the_journal() {
             BrowserLaneState::Absent,
         ),
     ];
-    state.plan = Some(SourcePlan::of(&dispositions));
+    state.plan = Some(SourcePlan::of(&dispositions, String::new()));
     let written = serde_json::to_value(&state).expect("a state serializes");
     let read: JurisdictionState = serde_json::from_value(written).expect("and reads back");
     assert_eq!(read.plan, state.plan);
     let plan = read.plan.expect("the state carried a plan");
     assert_eq!(plan.sweepable, vec!["mshsl".to_string()]);
     assert_eq!(plan.refused.len(), 1);
+}
+
+/// The fingerprint is deterministic: same inputs always produce the same hash.
+#[test]
+fn fingerprint_is_deterministic() {
+    use crate::restate_services::plan::compute_plan_fingerprint;
+    use census_domain::model::SchoolYear;
+    use census_reconcile::identity::Revision;
+
+    let fp1 = compute_plan_fingerprint(
+        UsJurisdiction::Wisconsin,
+        SchoolYear::new(2026),
+        Revision::new(1),
+        BrowserLaneState::Absent,
+    );
+    let fp2 = compute_plan_fingerprint(
+        UsJurisdiction::Wisconsin,
+        SchoolYear::new(2026),
+        Revision::new(1),
+        BrowserLaneState::Absent,
+    );
+    assert_eq!(fp1, fp2);
+    // Fixed length SHA-256 hex.
+    assert_eq!(fp1.len(), 64);
+}
+
+/// Changing any determinant produces a different fingerprint.
+#[test]
+fn fingerprint_changes_with_different_inputs() {
+    use crate::restate_services::plan::compute_plan_fingerprint;
+    use census_domain::model::SchoolYear;
+    use census_reconcile::identity::Revision;
+
+    let base = compute_plan_fingerprint(
+        UsJurisdiction::Wisconsin,
+        SchoolYear::new(2026),
+        Revision::new(1),
+        BrowserLaneState::Absent,
+    );
+    assert_ne!(
+        compute_plan_fingerprint(
+            UsJurisdiction::Minnesota, // different jurisdiction
+            SchoolYear::new(2026),
+            Revision::new(1),
+            BrowserLaneState::Absent,
+        ),
+        base
+    );
+    assert_ne!(
+        compute_plan_fingerprint(
+            UsJurisdiction::Wisconsin,
+            SchoolYear::new(2025), // different season
+            Revision::new(1),
+            BrowserLaneState::Absent,
+        ),
+        base
+    );
+    assert_ne!(
+        compute_plan_fingerprint(
+            UsJurisdiction::Wisconsin,
+            SchoolYear::new(2026),
+            Revision::new(2), // different revision
+            BrowserLaneState::Absent,
+        ),
+        base
+    );
+    assert_ne!(
+        compute_plan_fingerprint(
+            UsJurisdiction::Wisconsin,
+            SchoolYear::new(2026),
+            Revision::new(1),
+            BrowserLaneState::Configured, // different lane state
+        ),
+        base
+    );
 }

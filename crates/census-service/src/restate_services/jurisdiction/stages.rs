@@ -22,7 +22,7 @@ use census_crawl::{default_family_delays, default_host_delays};
 use census_reconcile::identity::WorkflowIdentity;
 
 use super::JurisdictionCensus;
-use crate::restate_services::plan::{plan as planned, BrowserLaneState};
+use crate::restate_services::plan::{compute_plan_fingerprint, plan as planned, BrowserLaneState};
 use crate::restate_services::wire::{JurisdictionRequest, JurisdictionState, SourcePlan};
 use crate::restate_services::KEY_STATE;
 
@@ -127,11 +127,16 @@ impl JurisdictionCensus {
         );
     }
 
-    /// Record the run's source plan, once per state.
+    /// Record the run's source plan, once per state, and bind it to the request that produced it.
     ///
     /// Before any adapter runs: this jurisdiction's sources, split into the units this machine can
     /// sweep and the ones it refuses. Built once and kept, so a re-invocation resumes the plan it
     /// started with instead of deriving a second one from a machine that may have changed since.
+    ///
+    /// A fingerprint binds the plan to the exact jurisdiction, season, revision, and lane state that
+    /// determined it. On resume the fingerprint is recomputed and compared: a mismatch means the
+    /// plan was built for different inputs and must not be reused — the invocation is failed, never
+    /// silently continued with stale work.
     pub(super) async fn record_plan(
         &self,
         ctx: &ObjectContext<'_>,
@@ -140,12 +145,27 @@ impl JurisdictionCensus {
         state: &mut JurisdictionState,
         today: &str,
     ) -> Result<(), HandlerError> {
-        if state.plan.is_some() {
-            return Ok(());
-        }
         let fetcher = self.fetcher().await?;
         let lane = BrowserLaneState::of(&fetcher);
-        state.plan = Some(SourcePlan::of(&planned(request.jurisdiction, lane)));
+        let fingerprint = compute_plan_fingerprint(
+            request.jurisdiction,
+            request.season,
+            request.revision,
+            lane,
+        );
+        if let Some(existing) = &state.plan {
+            if existing.fingerprint != fingerprint {
+                return Err(TerminalError::new(format!(
+                    "plan fingerprint mismatch: stored {} does not match current request {} — \
+                     the plan was built for different inputs and must not be reused; \
+                     fail the invocation rather than continuing with stale work",
+                    existing.fingerprint, fingerprint
+                ))
+                .into());
+            }
+            return Ok(());
+        }
+        state.plan = Some(SourcePlan::of(&planned(request.jurisdiction, lane), fingerprint));
         state.identity = identity.as_str().to_string();
         self.save(ctx, state, today);
         Ok(())

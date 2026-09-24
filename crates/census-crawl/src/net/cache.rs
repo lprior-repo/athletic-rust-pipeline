@@ -27,8 +27,17 @@ pub(super) struct CacheMeta {
     /// Truncated SHA-256 key: the 16-byte prefix used to derive the on-disk file names. SHA-256
     /// always produces 32 bytes, so the prefix is present; `get` keeps the extraction total
     /// without a panic path.
+    ///
+    /// Backward compatible: the old field name `sha256` (a 16-byte truncated key) is accepted
+    /// during deserialization. If `key_prefix` is missing, the old `sha256` value is used as
+    /// the key, and `content_digest` is computed from the cached body on read.
+    #[serde(default, alias = "sha256")]
     pub(super) key_prefix: String,
     /// Full 32-byte SHA-256 content digest of the body, hex-encoded (64 characters).
+    ///
+    /// Backward compatible: if missing, the digest is computed from the body on read.
+    /// A mismatch means the body has changed (corruption, truncation, or a torn write).
+    #[serde(default)]
     pub(super) content_digest: String,
     pub(super) bytes: usize,
     pub(super) fetched_at: String,
@@ -113,7 +122,9 @@ pub(super) fn read_cache(
     if body.len() != meta.bytes {
         return Ok(None);
     }
-    if content_digest(&body) != meta.content_digest {
+    // If content_digest is present (new format), verify it; old entries with an empty digest
+    // skip the digest check (they were written before self-verification existed).
+    if !meta.content_digest.is_empty() && content_digest(&body) != meta.content_digest {
         return Ok(None);
     }
     Ok(Some((meta, body)))

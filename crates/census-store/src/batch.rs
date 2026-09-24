@@ -163,7 +163,7 @@ pub(super) fn drop_unnamed(
         let (_, id, _) = split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
             detail: format!("table {} holds a malformed observation key", table.file()),
         })?;
-        if !named.contains(id) {
+        if !named.iter().any(|s| s.as_bytes() == id) {
             batch.remove(entities, key);
         }
     }

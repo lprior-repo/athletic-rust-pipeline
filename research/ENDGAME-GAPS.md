@@ -5,10 +5,12 @@ number was measured with the command shown beside it. Nothing here edits or buil
 
 **Provenance.** `git rev-parse HEAD` = `3af713ba2a9d9422cbec2788e75a4009370c534c`, working tree dirty
 with sibling edits in flight (`git status --porcelain` = 12 entries, including new
-`crates/census-service/src/workbook/performances.rs`, `.../workbook/recruiting/`,
-`.../report/coverage.rs`). Findings about those files describe the tree at the minute I read them;
-line numbers in `src/cli/{gather,mod}.rs` and `src/report/mod.rs` are moving under sibling edits,
-so re-`grep` the symbol before relying on a line.
+`crates/census-report/src/workbook/performances.rs`, `.../workbook/recruiting/`,
+`.../report/coverage.rs`; the root package's own `src/workbook/**` went with it on 2026-09-23, and
+those in-flight modules landed under `crates/census-report/`, where the reporting plane already
+was). Findings about those files describe the tree at the minute I read them; line numbers in
+`crates/census-service/src/cli/{gather,mod}.rs` and `crates/census-report/src/report/mod.rs` move
+under sibling edits, so re-`grep` the symbol before relying on a line.
 
 **What is proven today (raw evidence).**
 
@@ -37,7 +39,11 @@ carries no sport-matching profile link becomes an `invalid_athlete_row` issue
 `/cross-country` (`src/search/parser/markup.rs:70-81`), a non-canonical URL is an error
 (`markup.rs:67`), and **any** page issue rejects the whole page as malformed
 (`src/search/progress.rs:161,185`; `:178` for a short page; `:95` for an over-bound advertised
-count). Acceptance then needs a `2..=64` hard-eligible candidate set
+count) - those citations went with the root package on 2026-09-23, and nothing under `crates/` carries
+`invalid_athlete_row` today; the surviving runSearch reader is
+`crates/census-crawl/src/athleticnet/` (`parse.rs`, `absorb/rows.rs`), which still builds the
+`/track-and-field` profile URL the rule tested (`athleticnet/map.rs:18`). Acceptance then needs a
+`2..=64` hard-eligible candidate set
 (`src/runtime/row_worker/review.rs:43`, deleted with the root package 2026-09-23), which the rejected
 page can never supply.
 The team's own live probe already assumes the other behaviour: it POSTs
@@ -52,9 +58,12 @@ Acquiring → Complete"), §70 item 9 (identity-matched rows). **Smallest change
 endpoint; the probes above already issue the call) as a fixture and reconcile
 `stream/row.rs`'s link rule with the live markup; separately decide whether a page that
 legitimately contains other-sport rows should fail closed (today's `progress.rs` rule) or treat
-them as skips — an owner contract decision, not a bug fix. **Proof.** `cargo run -p athletic-rust-pipeline -- start --input <real-8-row>.xlsx
---sha256 <digest> --per-sheet 8 --concurrency 8 --snapshot real-slice-v1 --output <out>.xlsx`
-followed by `… status --run <digest>` → expect `coverage.deterministic >= 1` (today 0 on every
+them as skips - an owner contract decision, not a bug fix. **Proof.** The invocation this proof was
+written against is gone: `cargo run -p athletic-rust-pipeline` was the root package's binary (deleted
+2026-09-23), its `start --input <real-8-row>.xlsx --sha256 <digest> --per-sheet 8 --concurrency 8
+--snapshot real-slice-v1 --output <out>.xlsx` pair reads an `.xlsx` no live verb accepts, and
+`cargo run -p census-service -- report --print` prints the measured census without a per-run
+`coverage.*` line. The criterion stands unmeasured: `coverage.deterministic >= 1` (today 0 on every
 live run) and at least one `"status":"accepted"` in the JSONL sidecar. **Risk.** If the live pages
 are challenge/login interstitials rather than real results, no parser change helps and the block
 is session/browser-level; that distinction is exactly what the capture settles.
@@ -89,12 +98,16 @@ fiction.
 (`crates/census-service/src/restate_services/national.rs:158-200`), each jurisdiction runs exactly
 three stages — `teams`, `rosters`, `consolidate`
 (`restate_services/jurisdiction.rs:27-37`, runners at `jurisdiction/stages.rs:115,133,149`) — and
-nothing invokes it: the CLI has no `national` command (`src/cli/mod.rs:55-112`), the service tests
+nothing invokes it: the CLI's `national`, `jurisdiction` and `national-report` verbs only *submit* it
+to a running service (`crates/census-service/src/cli/command.rs:83-88`; `src/cli/mod.rs` went with
+the root package on 2026-09-23), the service tests
 cover only request/plan helpers (`restate_services/tests.rs:146-248`), and the e2e test asserts
 service *advertisement*, not invocation (`tests/fjall_restate_e2e.rs:493`). The walk itself is
-reachable only as a batch CLI (`src/cli/gather.rs:66-71,108-113`, `collect --all-states`), calling
+reachable as a batch CLI as well (`crates/census-service/src/cli/gather.rs:179-208` declares the
+`collect` verb, `:233-270` runs the walk; `collect --all-states`), calling
 the same code the workflow's stages wrap (`restate_services/jobs.rs:136,153`). The publishing
-command `run` gathers an Athletic.net registry only (`src/cli/cycle.rs:15-66`). Measured cost of
+command `run` gathers an Athletic.net registry only (`crates/census-service/src/cli/cycle.rs:71`, the
+`run_cycle` body). Measured cost of
 the national walk: 12 states = 6,737 roster pages and 35,622 cached responses ⇒ ≈28.6k roster
 pages for 51 jurisdictions (linear extrapolation, not measured). **Objective.** §7 (every unit of
 work durably owned), §46 A–M, §48. **Smallest change.** One CLI subcommand that submits
@@ -110,16 +123,23 @@ home (§69).
 ## G4. §47 gap sweep and §48 completion lattice do not exist
 
 **Evidence.** `grep -rn "CensusState\|SealedCensus"` over the whole repository returns nothing;
-`grep -rn "seal\|gap"` over `crates/census-service/src/{census,report}` returns nothing (both run
-in this session). `NationalCensus::run` completes when its fan-out drains
-(`restate_services/national.rs:143-157`) — i.e. exactly the "HTTP queue empty" completion §48
-forbids. **Objective.** §47 (athletes without performances / without graduation evidence, schools
+`grep -rn "seal\|gap"` over `crates/census-service/src/{census,report}` returned nothing (run in the
+session that wrote this; those paths today are `crates/census-service/src/census/` and
+`crates/census-report/src/report/`). `NationalCensus::run` completed when its fan-out drained
+(`crates/census-service/src/restate_services/national.rs`, the fold at `:145-163`) - i.e. exactly the
+"HTTP queue empty" completion §48 forbids. **[2026-09-23]** Half of the change this item asks for has
+landed: the lattice and seal exist (`crates/census-service/src/census/state.rs:5-11`, `census/seal.rs`,
+verb `crates/census-service/src/cli/seal.rs:1-16`) and the §47 classes are classified
+(`crates/census-report/src/report/coverage/gaps.rs:16`). What has not landed is the value *on the
+jurisdiction object* (`crates/census-service/src/restate_services/jurisdiction.rs:11-13,80-95`
+records per-stage work, not the lattice) - this item's own smallest change. **Objective.** §47 (athletes
+without performances / without graduation evidence, schools
 without coach data, unnormalized events, conflicts, source failures), §48 (state lattice; no
 direct `Acquiring → Complete`). **Smallest change.** A `CensusState` value on the jurisdiction
-object's durable state with the gap classes as a re-plan stage; note a sibling lane is landing
-§47 gap classes for the coverage report right now
-(`crates/census-service/src/report/coverage.rs:1-30`, untracked, 1 minute old when read), so the
-missing half is the *sealing* state, not the classification. **Proof.** After the change:
+object's durable state with the gap classes as a re-plan stage. **[2026-09-23]** The classification
+half is no longer in flight: the classes live in
+`crates/census-report/src/report/coverage/gaps.rs:16` (`GapClass`) and `coverage/classify.rs`. The
+missing half is still the *sealing* state on the jurisdiction object. **Proof.** After the change:
 `cargo run -p census-service -- national …` yields per-jurisdiction `state` that is not
 `Complete` while its `gaps` list is non-empty; today the observable is the grep above returning
 zero matches. **Risk.** Without a lattice, any workbook built from the census crate is sealed on
@@ -139,9 +159,12 @@ no artefact in the tree assigns it to a human or model, and the row is not retri
 ("review required" denominator). **Smallest change.** A review queue surface: emit the
 `review_required` set (row identity + candidate ids + probe digests) as a sheet/CSV the operator
 can adjudicate, and accept a decided verdict as an additive observation. **Proof.** After G1,
-`cargo run -p athletic-rust-pipeline -- status --run <digest>` → `coverage.local_review > 0` and a
-`Review` sheet listing case ids; today the same command parses to `local_review: 0` on every run
-measured. **Risk.** If review never runs, the owner's second-best outcome (a canonical
+The root binary's `status --run <digest>` is gone (2026-09-23) and no live verb prints a per-run
+`coverage.*`: the store-side surfaces are `cargo run -p census-service -- report --print` (the
+measured census) and `cargo run -p census-service -- review` (the retained review cases the model is
+asked about, `crates/census-service/src/cli/command.rs:91`). The criterion stands unmeasured - a run
+that produced `coverage.local_review > 0` and a `Review` sheet listing case ids - while the retained
+summaries parse to `local_review: 0` on every run. **Risk.** If review never runs, the owner's second-best outcome (a canonical
 "needs-adjudication" list with evidence) is unavailable and rows silently stay unresolved.
 
 ## G6. Throughput ceiling: ≈0.31 rows/s per lane ⇒ ≈4.5 days for one 120,716-row workbook
@@ -164,9 +187,13 @@ must answer without a physical act (the reverted probe's own conclusion) or the 
 operations must be cut, which is a design change in the acquisition plane (`src/runtime/source/`,
 deleted with the root package 2026-09-23; `crates/census-crawl/src/net/` is what fetches today).
 Measure first.
-**Proof.** `cargo run -p athletic-rust-pipeline -- status --run <digest>` twice, 10 minutes apart,
-at `--concurrency 8` and `--concurrency 32` → rows/min; today's expectation from the record is
-"no gain from 8 → 32", and the fix's expectation is strictly higher rows/min at one setting.
+**Proof.** The root binary's `status --run <digest>` is gone (2026-09-23), and so is the per-run
+`status` print; the concurrency knob survives on the walk verb - `cargo run -p census-service --
+collect --concurrency 8` and `--concurrency 32` (`crates/census-service/src/cli/gather.rs:191-193`) -
+and `cargo run -p census-service -- open-work` reads the durable run's remaining work
+(`crates/census-service/src/cli/open_work.rs:1-8`). Rows/min must come from the walk's own accounting:
+today's expectation from the record is "no gain from 8 → 32", and the fix's expectation is strictly
+higher rows/min at one setting.
 **Risk.** At 0.31 rows/s the deliverable needs days of wall clock per pass, and §47's second pass
 doubles it; a national census on this path is not reproducible in a working day.
 
@@ -184,20 +211,29 @@ rankings3,girls-rankings}`; `out-live-roster-slice/start.log` shows `state: "sub
 **Objective.** §70 item 13 (export verified before sealing), §44 (observability). **Smallest
 change.** Have `run_and_export` (or the export worker) write the publication result — destination
 path, output digest, verification verdict — into the run's durable state, and surface it from
-`status`. **Proof.** `cargo run -p athletic-rust-pipeline -- status --run <digest>` on an
-export-failed run → prints a non-`Complete` publication field naming the failure; today the output
-has no such key (compare its key set to `run_protocol.rs:129-139`). **Risk.** An operator cannot
+`status`. **Proof.** The run-state reader that exists is `cargo run -p census-service -- open-work`
+(what the durable run still owes, `crates/census-service/src/cli/open_work.rs:1-8`); the root binary's
+`status --run <digest>`, which would have printed a publication field, is gone (2026-09-23) and no live
+verb prints one, so the criterion - an export-failed run printing a non-`Complete` publication field
+naming the failure - has no surface to be measured on today. **Risk.** An operator cannot
 tell "delivered" from "still running but nothing will be published", which is precisely the state
 the six empty directories are in.
 
 ## G8. The census report omits jurisdictions it has no data for, instead of reporting zeros
 
-**Evidence.** `Census::by_state` (`src/report/mod.rs:143`) is built only from observed rows:
-athlete states come from `state_entry(&mut rollup.by_state, &state)` per athlete
+**Evidence, as first written.** `Census::by_state` (`src/report/mod.rs:143`) was built only from
+observed rows: athlete states came from `state_entry(&mut rollup.by_state, &state)` per athlete
 (`src/report/projection.rs:33-34`), coach states from `apply_coach_states` (`:68-76`), and school
-counts are attached only to states that already have a row (`:105-110`). A jurisdiction with
-schools but no athletes or coaches therefore publishes nothing, and a state with no observations at
-all is silently absent from `report.json`, the "By state" sheets and the per-state CSVs.
+counts were attached only to states that already had a row (`:105-110`), so a jurisdiction with
+schools but no athletes or coaches published nothing. **[2026-09-23] Closed.** The rollup now seeds
+every jurisdiction before any row touches the map
+(`crates/census-report/src/report/projection.rs:91-102`, over `UsJurisdiction::CENSUS_SCOPE` plus
+`JurisdictionBucket::Unplaced` at `:99-102`), the tables are built from that map
+(`crates/census-report/src/report/tables.rs:82-86`), and
+`crates/census-report/src/report/tests.rs:131` asserts it by name
+(`every_jurisdiction_publishes_a_by_state_row`, `:139-140`). The root paths above are historical:
+no commit holds `src/report/**`; the same code is `crates/census-report/src/report/projection.rs`, the
+plane's home since its extraction there (`774a7ee`, 2026-09-23).
 **Objective.** §49 ("Report exact denominators where known"; emptiness is a finding), §46 B
 (school universe), §70 item 11. **Smallest change.** Seed `by_state` with a default row for every
 `UsJurisdiction::ALL` entry (plus the existing `UNKNOWN` bucket) before the rollups run. **Proof.**
@@ -207,13 +243,17 @@ all is silently absent from `report.json`, the "By state" sheets and the per-sta
 
 ## G9. The census workbook has no athlete/PR/coach surface yet
 
-**Evidence.** The workbook's asserted sheet set is nine aggregate sheets — "Goal & method",
-"Summary", "By state - core", "By state - all sources", "Athletic.net marginal", "Best results",
-"Meets", "Evidence mix", "Method notes" (`crates/census-service/src/workbook/tests.rs:97-107`).
-There is no `Athletes`, `Performances`, `PRs`, `Coaches` or per-jurisdiction sheet, i.e. none of
-the objective's §50–§53 recruiter-facing tables; the in-flight frozen signatures
-(`workbook/performances.rs`, `workbook/meta.rs`, wired by peer `WbRecruiting`) are the first of
-them. **Objective.** §49–§54 columns and workbook surfaces, §22 (performances), §50 (athlete
+**Evidence, as first written.** The workbook's asserted sheet set was nine aggregate sheets -
+"Goal & method", "Summary", "By state - core", "By state - all sources", "Athletic.net marginal",
+"Best results", "Meets", "Evidence mix", "Method notes"
+(`crates/census-service/src/workbook/tests.rs:97-107` — no commit holds that path either; the workbook
+is `crates/census-report/src/workbook/`, where the in-flight module landed). There was no `Athletes`,
+`Performances`, `PRs`, `Coaches` or per-jurisdiction sheet. **[2026-09-23] Closed.** The objective's
+§50-§53 surfaces landed: `crates/census-report/src/workbook/recruiting/mod.rs:1-16` writes `Athletes`
+(§50), `PRs` (§51) and `Coaches` (§53), `crates/census-report/src/workbook/performances.rs` writes `Performances_NNN` (§52), and
+the full sheet list is written at `crates/census-report/src/workbook/mod.rs:185-202`. No sheet-list
+test exists under `crates/` to extend, so the module list is the contract now.
+**Objective.** §49–§54 columns and workbook surfaces, §22 (performances), §50 (athlete
 roster). **Smallest change.** Land the in-flight sheet modules and extend the crate's sheet-list
 test with the new names (the test is the contract; it fails until the sheets exist). **Proof.**
 `cargo test -p census-service workbook::tests` → the sheet-name assertion list contains the new
@@ -223,13 +263,17 @@ recruiter-facing nationwide roster), only its own aggregate summary.
 
 ## G10. Capability coverage is national for discovery only: 1 state of bulk results, 7 of coach directories
 
-**Evidence.** The registry (`crates/census-service/src/sources/registry/table.rs:26-267`) declares
-`bulk_results` for one adapter (`wiaa_results`, Wisconsin only), `meet_discovery` for three
-(`athleticlive` — an import artifact — `wiaa_results`, `wayzata`), `coach_directory` for seven
-jurisdictions (IHSA IL, KSHSAA KS, MSHSL MN, OHSAA OH, WIAA WI, NDHSAA ND / NSAA NE; the last two
-names-only), `athlete_profile` for Athletic.net with operator-supplied ids because its discovery
-endpoint is robots-disallowed (same file, athleticnet entry), and `athlete_discovery` for MileSplit
-(all states) plus AthleticLIVE. So §46 C/D/H and §49's meet and coach denominators are bounded by
+**Evidence.** The registry (`crates/census-crawl/src/registry/`, `descriptors()` at
+`registry/table/mod.rs:32`, capability constants in `registry/policy.rs`) declares `bulk_results` for
+five adapters (tfrrs, wiaa_results, athleticlive, athleticnet, milesplit) where this item first
+recorded one (Wisconsin only), `meet_discovery` for four (`athleticlive` - an import artifact -
+`wiaa_results`, `wayzata`, `milesplit`), `coach_directory` for seven jurisdictions (IHSA IL, KSHSAA KS,
+MSHSL MN, OHSAA OH, WIAA WI, NDHSAA ND / NSAA NE; the last two names-only, unchanged),
+`athlete_profile` for Athletic.net with operator-supplied ids because its discovery endpoint is
+robots-disallowed (same registry, athleticnet entry), and `athlete_discovery` for three (MileSplit -
+all states - AthleticLIVE's athlete index and tfrrs). So the one-state bulk-results bound this item was
+measured under has grown and needs re-deriving; §46 C/D/H and §49's meet and coach denominators are
+bounded by
 one to seven jurisdictions outside MileSplit, while §46 E is national only through roster parses.
 **Objective.** §46 C/D/H, §5 (coach contacts), §49 (meets/coaches denominators), §68 (priority by
 new coverage per request). **Smallest change.** Adapters, in the measured order the sibling
@@ -268,7 +312,7 @@ denominator that counts matched athletes, and of any meaningful throughput measu
   response body settles mapper-vs-markup, and whether the pages are interstitials.
 - **Whether any national workflow run ever executed against a live Restate server.** No CLI, test
   or script invokes it and the retained journals under `var/census-service/journal/` are produced
-  by the CLI walks (`src/cli/gather.rs:108-113`), but both paths share the same store, so the
+  by the CLI walks (`crates/census-service/src/cli/gather.rs:233-270`), but both paths share the same store, so the
   journals cannot separate them. An ingress-call log or the object's durable state would.
 - **SCOPE.md:32 says `profile_artifacts`/`performance_evidence` "have stayed empty"; the retained
   pilot contradicts that for its own run** — 2,263 profile artifacts and 46,524 performance

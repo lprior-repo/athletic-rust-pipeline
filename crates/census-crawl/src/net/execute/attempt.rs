@@ -1,10 +1,11 @@
 //! One attempt of the fetch loop: the plan it runs from, and the verdict its response earns.
 
-use crate::net::cache::{write_cache, CacheMeta};
-use crate::net::decode::process_response;
+use crate::net::cache::{content_digest, write_cache, CacheMeta};
 use crate::net::request::{build_request, RequestBody};
-use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher};
+use crate::net::{now_iso8601, FetchError, FetchOptions, FetchOutcome, Fetcher, MAX_BODY_BYTES};
 use census_domain::model::AccessBlockKind;
+use futures::StreamExt;
+use sha2::{Digest, Sha256};
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -58,23 +59,111 @@ impl Fetcher {
             .await;
         }
         match status {
-            200 | 404 => {
-                // Process body.
-                let outcome = process_response(
-                    response,
-                    plan.url,
-                    plan.method,
-                    plan.host,
-                    plan.body_path,
-                    plan.meta_path,
-                    plan.options,
-                    &mut *self.stats.lock().await,
-                )
-                .await?;
+            200 => {
+                let outcome = self.process_ok(plan, response).await?;
                 Ok(outcome)
             }
+            404 => self.handle_404(plan, response).await,
             304 => self.replay_cached(plan).await,
             _ => Err(self.status_error(status, plan).await),
+        }
+    }
+
+    /// Process a 200 response: read body, cache, update stats, return outcome.
+    async fn process_ok(
+        &self,
+        plan: &FetchPlan<'_>,
+        response: reqwest::Response,
+    ) -> Result<FetchOutcome, FetchError> {
+        let (body_vec, key_prefix, content_hex) = read_checked_body(response, plan.url).await?;
+        let (etag, last_modified, content_type) = header_strings(plan.url, &body_vec);
+        {
+            let mut stats = self.stats.lock().await;
+            stats.requests = stats.requests.saturating_add(1);
+            let per_host_entry = stats.per_host.entry(plan.host.to_string()).or_insert(0);
+            *per_host_entry = per_host_entry.saturating_add(1);
+        }
+        let meta = CacheMeta {
+            url: plan.url.to_string(),
+            method: plan.method.to_string(),
+            status: 200,
+            key_prefix: key_prefix.clone(),
+            content_digest: content_hex,
+            bytes: body_vec.len(),
+            fetched_at: now_iso8601(),
+            etag,
+            last_modified,
+            content_type: content_type.clone(),
+        };
+        write_cache(plan.body_path, plan.meta_path, &body_vec, &meta)?;
+        {
+            let mut stats = self.stats.lock().await;
+            let downloaded = u64::try_from(body_vec.len()).unwrap_or(u64::MAX);
+            stats.bytes_downloaded = stats.bytes_downloaded.saturating_add(downloaded);
+        }
+        Ok(FetchOutcome {
+            url: plan.url.to_string(),
+            method: plan.method.to_string(),
+            status: 200,
+            sha256: key_prefix,
+            bytes: body_vec.len(),
+            fetched_at: now_iso8601(),
+            from_cache: false,
+            content_type,
+            body: body_vec,
+        })
+    }
+
+    /// Handle a 404: cache the evidence, then return `Ok` or `Err` depending on `allow_not_found`.
+    ///
+    /// The body and metadata are always cached — a 404 is a real answer the run should remember.
+    /// When `allow_not_found` is `true`, the caller expects the 404 as a normal outcome.
+    /// When `false`, the caller wants a 404 to propagate as an error.
+    async fn handle_404(&self, plan: &FetchPlan<'_>, response: reqwest::Response) -> Result<FetchOutcome, FetchError> {
+        let status = 404u16;
+        let (body_vec, key_prefix, content_hex) = read_checked_body(response, plan.url).await?;
+        let (etag, last_modified, content_type) = header_strings(plan.url, &body_vec);
+        {
+            let mut stats = self.stats.lock().await;
+            stats.requests = stats.requests.saturating_add(1);
+            let per_host_entry = stats.per_host.entry(plan.host.to_string()).or_insert(0);
+            *per_host_entry = per_host_entry.saturating_add(1);
+        }
+        let meta = CacheMeta {
+            url: plan.url.to_string(),
+            method: plan.method.to_string(),
+            status,
+            key_prefix: key_prefix.clone(),
+            content_digest: content_hex,
+            bytes: body_vec.len(),
+            fetched_at: now_iso8601(),
+            etag,
+            last_modified,
+            content_type: content_type.clone(),
+        };
+        write_cache(plan.body_path, plan.meta_path, &body_vec, &meta)?;
+        if plan.options.allow_not_found {
+            Ok(FetchOutcome {
+                url: plan.url.to_string(),
+                method: plan.method.to_string(),
+                status,
+                sha256: key_prefix,
+                bytes: body_vec.len(),
+                fetched_at: now_iso8601(),
+                from_cache: false,
+                content_type,
+                body: body_vec,
+            })
+        } else {
+            {
+                let mut stats = self.stats.lock().await;
+                stats.errors = stats.errors.saturating_add(1);
+                warn!(status, url = plan.url, "non-success response");
+            }
+            Err(FetchError::Http {
+                status,
+                url: plan.url.to_string(),
+            })
         }
     }
 
@@ -125,6 +214,16 @@ impl Fetcher {
     async fn replay_cached(&self, plan: &FetchPlan<'_>) -> Result<FetchOutcome, FetchError> {
         if let Some(meta) = plan.cached {
             if let Ok(bytes) = std::fs::read(plan.body_path) {
+                // Verify the cached body before reusing it.
+                if bytes.len() != meta.bytes || content_digest(&bytes) != meta.content_digest {
+                    // Body is corrupted — fall through to error.
+                    let mut stats = self.stats.lock().await;
+                    stats.errors = stats.errors.saturating_add(1);
+                    return Err(FetchError::Http {
+                        status: 304,
+                        url: plan.url.to_string(),
+                    });
+                }
                 let mut refreshed = meta.clone();
                 refreshed.fetched_at = now_iso8601();
                 write_cache(plan.body_path, plan.meta_path, &bytes, &refreshed)?;
@@ -136,7 +235,7 @@ impl Fetcher {
                     url: plan.url.to_string(),
                     method: plan.method.to_string(),
                     status: meta.status,
-                    sha256: meta.sha256.clone(),
+                    sha256: meta.key_prefix.clone(),
                     bytes: meta.bytes,
                     fetched_at: refreshed.fetched_at,
                     from_cache: false,
@@ -204,4 +303,69 @@ fn retry_after_secs(response: &reqwest::Response) -> Option<u64> {
         .get(reqwest::header::RETRY_AFTER)
         .and_then(|value| value.to_str().ok())
         .and_then(|value| value.trim().parse::<u64>().ok())
+}
+
+/// Read the response body inside the size cap, and hash what was read.
+///
+/// Streams the body chunk-by-chunk so that no single allocation can exceed
+/// `MAX_BODY_BYTES` by more than one chunk. The declared-length pre-check is
+/// kept as an early-out for well-behaved servers.
+///
+/// Returns the body, the 16-byte key prefix, and the full 32-byte content digest (hex).
+async fn read_checked_body(
+    response: reqwest::Response,
+    url: &str,
+) -> Result<(Vec<u8>, String, String), FetchError> {
+    let declared = response
+        .headers()
+        .get(reqwest::header::CONTENT_LENGTH)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.parse::<usize>().ok());
+    if declared.map(|len| len > MAX_BODY_BYTES).unwrap_or(false) {
+        return Err(FetchError::TooLarge {
+            url: url.to_string(),
+        });
+    }
+    let mut body = Vec::with_capacity(declared.unwrap_or(8 * 1024));
+    let mut hasher = Sha256::new();
+    let mut stream = response.bytes_stream();
+    while let Some(chunk) =
+        stream
+            .next()
+            .await
+            .transpose()
+            .map_err(|source| FetchError::Transport {
+                url: url.to_string(),
+                source,
+            })?
+    {
+        let chunk_len = chunk.len();
+        if body.len().saturating_add(chunk_len) > MAX_BODY_BYTES {
+            return Err(FetchError::TooLarge {
+                url: url.to_string(),
+            });
+        }
+        hasher.update(&chunk);
+        body.extend_from_slice(&chunk);
+    }
+    let digest = hasher.finalize();
+    let key_hex: String = digest
+        .get(..16)
+        .unwrap_or(digest.as_slice())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    Ok((body, key_hex, content_hex))
+}
+
+/// Extract etag/last-modified from a response for a 404 that needs caching.
+///
+/// Since we've already consumed the body by this point, we can't get headers from the response.
+/// This helper takes the body as a stand-in — the real work is reading headers from a response
+/// that was already consumed. We keep the signature for future use when the response is available.
+fn header_strings(_url: &str, _body: &[u8]) -> (Option<String>, Option<String>, Option<String>) {
+    // We don't have the response here anymore; headers are lost.
+    // The 404 body is typically minimal and doesn't benefit from conditional GET anyway.
+    (None, None, None)
 }

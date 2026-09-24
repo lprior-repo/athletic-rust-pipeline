@@ -36,6 +36,19 @@ use tracing::info;
 mod walk;
 
 use walk::{walk_season, SeasonReader, SeasonWalk};
+/// Which seasons the meet selector should include.
+///
+/// A season-specific scope filters `source_meets` rows by their stored year before
+/// applying the jurisdiction filter and limit. The all-seasons variant selects
+/// every row regardless of year — useful for backfills or cross-season reports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SeasonScope {
+    /// Only meets whose stored year matches.
+    Year(u16),
+    /// Every stored season, regardless of year.
+    All,
+}
+
 
 /// The source namespace every row this module writes is keyed under.
 pub const SOURCE: &str = "milesplit";
@@ -165,13 +178,15 @@ pub async fn collect_state_meets(
 ///
 /// Pure, and deliberately so: the caller owns the store scan, and this decides only what the run
 /// takes. Order comes from the provider's own id, so two runs over the same store read the same
-/// meets in the same sequence, and a limit is applied per state rather than across the selection —
-/// a national limit would let one state's meets fill the whole run.
+/// meets in the same sequence. The `scope` parameter selects by stored year before any
+/// filtering or limit is applied, so per-state limit counts are per-season, not cross-season.
 pub fn select_meets(
     rows: Vec<SourceMeetRef>,
     states: &[UsJurisdiction],
+    scope: SeasonScope,
     limit: Option<usize>,
 ) -> Vec<SourceMeetRef> {
+    let rows = filter_by_season(rows, scope);
     let mut selected: Vec<SourceMeetRef> = rows
         .into_iter()
         .filter(|row| states.contains(&row.jurisdiction))
@@ -193,6 +208,16 @@ pub fn select_meets(
         true
     });
     selected
+}
+/// Filter to only the requested season: a row whose stored year matches.
+///
+/// Called before jurisdiction filtering and limit application so the chunking
+/// limit is applied to the correct season's meets, not to a cross-season merge.
+fn filter_by_season(rows: Vec<SourceMeetRef>, scope: SeasonScope) -> Vec<SourceMeetRef> {
+    match scope {
+        SeasonScope::All => rows,
+        SeasonScope::Year(year) => rows.into_iter().filter(|row| row.year == year).collect(),
+    }
 }
 
 /// Whether an index page repeats the page before it, which is this site's end-of-index signal.

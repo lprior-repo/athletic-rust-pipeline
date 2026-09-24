@@ -45,24 +45,35 @@ use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
 use census_store::clock::Clock;
-/// The workflow key one job run is addressed by: `<job>[:<part>…]>`.
+/// The workflow key one job run is addressed by: `<job>:<part>…:<generation>`.
 ///
-/// The key names the job instance, and a resubmission with the same semantic parts attaches to the
-/// retained result rather than running the job again. This is what the key buys: the durability of
-/// the job does not depend on the client staying up, and two submissions with identical semantics
-/// always share one identity. A submission whose semantic parts differ produces a different key,
-/// so the caller controls identity by varying the parts.
+/// The key names the job instance. A resubmission with the same semantic parts and the same
+/// generation attaches to the retained result rather than running the job again — this is what
+/// the key buys: the durability of the job does not depend on the client staying up.
+///
+/// A different generation (a fresh operator-visible `--generation` or `--run-id`) produces a new
+/// key even when the semantic parts are identical, so an operator can ask for a fresh run of a
+/// request whose result is already available. The default generation is `"1"`, which preserves
+/// the attach-on-rerun behaviour for clients that do not specify one.
 ///
 /// It lives here, next to the workflow definitions, so the batch CLI and the harness that drives
 /// the deployment cannot key the same job two different ways.
-pub fn run_key(job: &str, parts: &[&str]) -> String {
+pub fn run_key(job: &str, parts: &[&str], generation: &str) -> String {
     let mut key = job.to_string();
     for part in parts {
         key.push(':');
         key.push_str(part);
     }
+    key.push(':');
+    key.push_str(generation);
     key
 }
+/// The default generation a client uses when the operator does not specify one.
+///
+/// The same default across all callers means a rerun of the same request attaches to the existing
+/// workflow, while a new `--generation` value (or a new `--run-id`) produces a fresh key and
+/// starts a new run even when the semantic request is identical.
+pub const DEFAULT_GENERATION: &str = "1";
 
 mod browser_session;
 mod census;
@@ -107,11 +118,11 @@ pub use plan::{
 // ---------------------------------------------------------------- services
 
 // The job layer the handlers share. `JobError` stays reachable at this path because a caller
-// outside the module reads it; `blocking` and `job_error` are the submodules' own, so the import
-// stays private to this module and its children.
+// outside the module reads it; `blocking` and `job_error` are re-exported for stage submodules
+// to use so they can classify `JobError` into `HandlerError` at the boundary.
 pub use support::JobError;
-use support::{blocking, job_error};
-
+pub use support::{blocking, job_error};
+pub(super) use jobs::collect_error;
 pub(super) use resolve::{cohort_label, resolve_scope, resolve_table, resolve_tables};
 
 pub use browser_session::{
@@ -190,12 +201,11 @@ pub(super) async fn journaled_today(
     clock: &Arc<dyn Clock>,
 ) -> Result<String, HandlerError> {
     let clock = Arc::clone(clock);
-    Ok(ctx
-        .run(move || {
-            let clock = Arc::clone(&clock);
-            async move { Ok::<_, HandlerError>(clock.today()) }
-        })
-        .await?)
+    ctx.run(move || async move {
+        let clock = Arc::clone(&clock);
+        Ok(clock.today())
+    })
+    .await
 }
 
 /// [`journaled_today`] for workflow handlers. One body per context type because the SDK's
@@ -205,12 +215,11 @@ pub(super) async fn journaled_today_workflow(
     clock: &Arc<dyn Clock>,
 ) -> Result<String, HandlerError> {
     let clock = Arc::clone(clock);
-    Ok(ctx
-        .run(move || {
-            let clock = Arc::clone(&clock);
-            async move { Ok::<_, HandlerError>(clock.today()) }
-        })
-        .await?)
+    ctx.run(move || async move {
+        let clock = Arc::clone(&clock);
+        Ok(clock.today())
+    })
+    .await
 }
 
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,

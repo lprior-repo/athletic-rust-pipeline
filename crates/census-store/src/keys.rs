@@ -49,23 +49,31 @@ pub(super) fn observation_key(table: Table, id: &str, sequence: u64) -> Vec<u8> 
 ///
 /// The sequence is the fixed-width tail, so it is read positionally. Searching backwards for a NUL
 /// would misparse every key whose low sequence byte is zero and leave the store unable to reopen.
-pub(super) fn split_observation_key(key: &[u8]) -> Option<(&str, &str, u64)> {
+pub(super) fn split_observation_key(key: &[u8]) -> Option<(&[u8], &[u8], u64)> {
     let sequence_start = key.len().checked_sub(8)?;
     let separator = sequence_start.checked_sub(1)?;
     if key.get(separator) != Some(&0) {
         return None;
     }
-    let text = std::str::from_utf8(key.get(..separator)?).ok()?;
-    let (table, id) = text.split_once('\0')?;
+    let text_bytes = key.get(..separator)?;
+    let table_end = text_bytes.iter().position(|&b| b == 0)?;
     let sequence_bytes: [u8; 8] = key.get(sequence_start..)?.try_into().ok()?;
-    Some((table, id, u64::from_be_bytes(sequence_bytes)))
+    Some((
+        key.get(..table_end)?,
+        key.get(table_end + 1..separator)?,
+        u64::from_be_bytes(sequence_bytes),
+    ))
 }
 
 /// A store key as an operator reads it: an observation key becomes `<table>:<id>#<sequence>`, and
 /// any other key has its NUL separators shown as `:`. Used to name the row a failure came from.
 pub(super) fn key_label(key: &[u8]) -> String {
     match split_observation_key(key) {
-        Some((table, id, sequence)) => format!("{table}:{id}#{sequence}"),
+        Some((table, id, sequence)) => format!(
+            "{}:{}#{sequence}",
+            String::from_utf8_lossy(table),
+            String::from_utf8_lossy(id),
+        ),
         None => String::from_utf8_lossy(key).replace('\0', ":"),
     }
 }

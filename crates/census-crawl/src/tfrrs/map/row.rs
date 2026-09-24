@@ -48,7 +48,7 @@ pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mar
             if let Some(metres) = feet_inches_metres(token) {
                 return Some(Mark::FieldImperial {
                     feet_mark: token.clone(),
-                    metres: CentiMetres::from_metres_f64(conv_metres.unwrap_or(metres)),
+                    metres: CentiMetres::from_metres_f64(metres),
                 });
             }
             match conv_metres {

@@ -21,7 +21,9 @@
 use census_crawl::applicability::applicable_sources;
 use census_crawl::net::Fetcher;
 use census_crawl::registry::{AccessClass, SourceDescriptor};
+use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
+use census_reconcile::identity::Revision;
 
 /// Whether this machine can serve a browser-session source at plan time.
 ///
@@ -218,6 +220,34 @@ pub(super) fn classify_access(
         });
     }
     UnitDisposition::Sweep(PlannedUnit { slug, access })
+}
+
+/// A fingerprint that binds a plan to the request and premises that produced it.
+///
+/// Hash over the four fields that determine a plan's shape, in a fixed order with no clock and
+/// no map iteration. A resumed invocation whose jurisdiction, season, revision or lane state
+/// differs is a mismatch: the plan was built for different inputs and must not be reused.
+///
+/// Deliberately excludes: `refresh`, `limit_per_state`, `concurrency`, `observed_on` — fields
+/// that affect the run's behaviour but not the plan's shape.
+pub fn compute_plan_fingerprint(
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    revision: Revision,
+    lane: BrowserLaneState,
+) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    // Fixed order, no map, no clock: jurisdiction code + season + revision + lane state.
+    hasher.update(jurisdiction.code().as_bytes());
+    hasher.update(season.short().as_bytes());
+    hasher.update(revision.get().to_string().as_bytes());
+    hasher.update(match lane {
+        BrowserLaneState::Configured => b"C",
+        BrowserLaneState::Absent => b"A",
+    });
+    let bytes = hasher.finalize();
+    bytes.iter().map(|b| format!("{:02x}", b)).collect()
 }
 
 #[cfg(test)]

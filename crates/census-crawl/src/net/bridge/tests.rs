@@ -153,3 +153,53 @@ fn every_reason_renders_as_its_wire_name() {
     }
     assert_eq!(rendered.len(), REASONS.len());
 }
+
+///
+/// This is a compile-time assertion in [`super`], but the test reads the value back through the
+/// constant so a reviewer can see it in the source, and so a human can grep for it.  If a
+/// reviewer changes `SESSION_KEY` to anything else, the build fails here *and* at compile time.
+#[test]
+fn session_key_is_profile_zero() {
+    assert_eq!(super::SESSION_KEY, "profile-0", "browser session must be profile-0");
+}
+
+/// Admitted origins invariant: the set must list every browser-transported origin from the registry.
+///
+/// The only browser-transported origin is `www.athletic.net` (the `athleticnet` descriptor).
+/// A missing entry here would let an off-target URL through the lane.
+#[test]
+fn admitted_browser_origins_contains_athletic_net() {
+    assert!(
+        super::ADMITTED_BROWSER_ORIGINS.contains(&"www.athletic.net"),
+        "athletic.net must be in the admitted set"
+    );
+}
+
+/// Origin guard: a URL with a non-admitted origin is refused at the lane boundary.
+#[test]
+fn a_non_admitted_origin_is_refused_with_policy_error() {
+    let err = crate::net::bridge::validate_origin("http://evil.example.com/page")
+        .expect_err("non-admitted origin must be refused");
+    match err {
+        crate::net::FetchError::Policy { ref detail } => {
+            assert!(
+                detail.contains("evil.example.com"),
+                "policy error names the offending origin: {detail}"
+            );
+            assert!(
+                detail.contains("www.athletic.net"),
+                "policy error names the allowed origins: {detail}"
+            );
+        }
+        other => panic!("expected Policy error, got: {other:?}"),
+    }
+}
+
+/// Origin guard: an admitted origin passes validation.
+#[test]
+fn an_admitted_origin_passes_validation() {
+    let result = crate::net::bridge::validate_origin(
+        "https://www.athletic.net/api/v1/AthleteBio/GetAthleteBioData?athleteId=1&sport=tf",
+    );
+    assert!(result.is_ok(), "admitted origin must pass: {result:?}");
+}

@@ -59,7 +59,7 @@ const FORBIDDEN: [(&str, &str); 9] = [
 /// in this repository, while allowing the space re-admits every type false positive above by letting
 /// the match start on the space itself (`&mut [u8]` matched once the engine began at the space after
 /// `mut`). Do not "simplify" this back to `\[\s*[a-zA-Z0-9_]+\s*\]`: that pattern scored slice types
-/// and `#[must_use]` as indexing (`src/domain/decision.rs`: 21 reported, 0 real index operators).
+/// and `#[must_use]` as indexing (`src/domain/decision.rs`: **historical**: path belonged to deleted root crate, 21 reported, 0 real index operators — deleted 2026-09-23, `278a298f`).
 ///
 /// `production_scan.py` spelled the left context as a lookbehind, which the `regex` crate does not
 /// support. Folding the same character class into the match is equivalent for this yes/no test: it can

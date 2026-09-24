@@ -14,7 +14,7 @@ use crate::spawn::Spawner;
 use census_report::{bests, workbook};
 use census_store::Store;
 
-use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables};
+use super::jobs::{build_bests, build_report, build_workbook, consolidate_tables, run_once};
 use super::wire::{
     BestsReply, BestsRequest, ConsolidateReply, ConsolidateRequest, ReportReply, ReportRequest,
     WorkbookReply, WorkbookRequest,
@@ -103,15 +103,14 @@ impl Consolidate {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = ctx
-            .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || consolidate_tables(&store, &tables))
-                    .await
-                    .map(|tables| Json(ConsolidateReply { tables }))
-                    .map_err(job_error)
-            })
-            .await?;
+        let reply = run_once(move || async move {
+            let _permit = permit;
+            blocking(region, move || consolidate_tables(&store, &tables))
+                .await
+                .map(|tables| Json(ConsolidateReply { tables }))
+                .map_err(job_error)
+        })
+        .await?;
         Ok(reply)
     }
 }
@@ -151,15 +150,14 @@ impl Report {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = ctx
-            .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_report(&store, scope))
-                    .await
-                    .map(Json)
-                    .map_err(job_error)
-            })
-            .await?;
+        let reply = run_once(move || async move {
+            let _permit = permit;
+            blocking(region, move || build_report(&store, scope))
+                .await
+                .map(Json)
+                .map_err(job_error)
+        })
+        .await?;
         Ok(reply)
     }
 }
@@ -203,15 +201,14 @@ impl Bests {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = ctx
-            .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_bests(&store, &options))
-                    .await
-                    .map(Json)
-                    .map_err(job_error)
-            })
-            .await?;
+        let reply = run_once(move || async move {
+            let _permit = permit;
+            blocking(region, move || build_bests(&store, &options))
+                .await
+                .map(Json)
+                .map_err(job_error)
+        })
+        .await?;
         Ok(reply)
     }
 }
@@ -256,15 +253,14 @@ impl Workbook {
         let store = Arc::clone(&self.jobs.store);
         let region = Arc::clone(&self.jobs.region);
         let permit = self.jobs.permit().await?;
-        let reply = ctx
-            .run(move || async move {
-                let _permit = permit;
-                blocking(region, move || build_workbook(&store, &options))
-                    .await
-                    .map(Json)
-                    .map_err(job_error)
-            })
-            .await?;
+        let reply = run_once(move || async move {
+            let _permit = permit;
+            blocking(region, move || build_workbook(&store, &options))
+                .await
+                .map(Json)
+                .map_err(job_error)
+        })
+        .await?;
         Ok(reply)
     }
 }

@@ -9,6 +9,7 @@
 use super::*;
 use crate::net::bridge::{BrowserFailure, BrowserResponse};
 use crate::net::cache::read_cache;
+use crate::net::cache::sha256_prefix16;
 use crate::net::FetchOptions;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -195,11 +196,11 @@ async fn a_capture_mints_the_evidence_an_http_body_would() {
         "the digest is the body's, so content ids match the HTTP path's"
     );
 
-    let meta = read_cache(&coordinates.body_path, &coordinates.meta_path)
+    let (meta, _) = read_cache(&coordinates.body_path, &coordinates.meta_path)
         .expect("read cache")
         .expect("the capture's body is cached");
     assert_eq!(meta.status, 200);
-    assert_eq!(meta.sha256, outcome.sha256);
+    assert_eq!(meta.key_prefix, outcome.sha256);
     assert_eq!(meta.bytes, body.len());
     assert_eq!(meta.fetched_at, outcome.fetched_at);
     assert!(meta.etag.is_none() && meta.last_modified.is_none());
@@ -374,4 +375,53 @@ async fn a_failure_is_graded_as_the_transport_graded_it() {
         .expect("the human requirement left a row");
     assert_eq!(human_row.cooldown_until, None);
     assert_eq!(human_row.retry_after_seconds, None);
+}
+
+/// A 404 capture with `allow_not_found = true` is returned as `Ok`.
+#[tokio::test]
+async fn an_allowed_404_capture_returns_ok() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_in(dir.path());
+    let mut coordinates = Coordinates::for_get(&fetcher);
+    coordinates.options.allow_not_found = true;
+    let plan = coordinates.plan("GET");
+    let body = b"<html>not found</html>".to_vec();
+    let capture = capture_of(404, "text/html; charset=utf-8", &body);
+
+    let outcome = fetcher
+        .handle_404_capture(&plan, capture)
+        .await
+        .expect("a 404 capture with allow_not_found is Ok");
+
+    assert_eq!(outcome.status, 404);
+    assert_eq!(outcome.body, body);
+}
+
+/// A 404 capture with `allow_not_found = false` is returned as `Err`.
+#[tokio::test]
+async fn a_disallowed_404_capture_returns_err() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = fetcher_in(dir.path());
+    let mut coordinates = Coordinates::for_get(&fetcher);
+    coordinates.options.allow_not_found = false;
+    let plan = coordinates.plan("GET");
+    let body = b"<html>not found</html>".to_vec();
+    let capture = capture_of(404, "text/html; charset=utf-8", &body);
+
+    let error = fetcher
+        .handle_404_capture(&plan, capture)
+        .await
+        .expect_err("a 404 capture without allow_not_found is Err");
+
+    assert!(
+        matches!(error, FetchError::Http { status: 404, .. }),
+        "expected Http(404), got {error:?}"
+    );
+
+    // The evidence was still cached.
+    let (meta, cached_body) = read_cache(&coordinates.body_path, &coordinates.meta_path)
+        .expect("read cache")
+        .expect("evidence was cached");
+    assert_eq!(meta.status, 404);
+    assert_eq!(cached_body, body);
 }

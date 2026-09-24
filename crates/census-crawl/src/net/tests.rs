@@ -130,3 +130,76 @@ fn cache_key_pins_the_on_disk_cache_layout() {
         Fetcher::key_for("POST", "https://example.com/api", "q=1&page=3")
     );
 }
+
+/// A body that does not match its metadata digest is a cache miss, never served as evidence.
+#[tokio::test]
+async fn a_corrupted_cache_body_is_rejected_not_served() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let fetcher = Fetcher::new(
+        dir.path().join("http"),
+        None,
+        Duration::from_millis(1),
+        HashMap::new(),
+        Vec::new(),
+    )
+    .expect("fetcher");
+    let key = Fetcher::key_for("GET", "https://example.com/teams", "");
+    let (body_path, meta_path) = fetcher.cache_paths(&key);
+
+    let body = b"valid body";
+    use super::cache::{write_cache, content_digest};
+    let meta = super::cache::CacheMeta {
+        url: "https://example.com/teams".to_string(),
+        method: "GET".to_string(),
+        status: 200,
+        key_prefix: "deadbeef".to_string(),
+        content_digest: content_digest(body),
+        bytes: body.len(),
+        fetched_at: "2025-01-01T00:00:00Z".to_string(),
+        etag: None,
+        last_modified: None,
+        content_type: None,
+    };
+    write_cache(&body_path, &meta_path, body, &meta).expect("write");
+
+    // A valid body is served.
+    let (cached_meta, cached_body) =
+        super::cache::read_cache(&body_path, &meta_path).expect("read").expect("cache hit");
+    assert_eq!(cached_body, body);
+    assert_eq!(cached_meta.bytes, body.len());
+
+    // Corrupt the body.
+    std::fs::write(&body_path, b"corrupted body!!!").expect("corrupt");
+
+    // The corrupted body is a miss — never served as evidence.
+    let result = super::cache::read_cache(&body_path, &meta_path).expect("read");
+    assert!(result.is_none(), "corrupted body must be a cache miss");
+}
+
+/// A robots.txt body that is completely empty (as might happen on a 5xx with no body) yields
+/// `fetched: true` with no rules — the host is treated as having rules but none were parsed.
+/// This is the "unknown" outcome: we fetched, we just don't know the rules.
+#[test]
+fn an_empty_robots_body_is_fetched_but_has_no_rules() {
+    let rules = parse_robots("");
+    // An empty body with no User-agent lines: saw_any_group is false, so rules are cleared.
+    // But the `fetched` flag is still true.
+    assert!(
+        rules.was_fetched(),
+        "empty body is a fetched file, not an absent one"
+    );
+    // no rules parsed from empty body — parsed rules are empty when no user-agent groups exist
+    // No rules means all paths are allowed.
+    assert!(rules.allows("/"));
+}
+
+/// A robots.txt body with only comments and whitespace is parsed as fetched with no rules.
+#[test]
+fn a_comment_only_robots_body_is_fetched_but_has_no_rules() {
+    let rules = parse_robots("# just a comment\n  \n# nothing useful\n");
+    assert!(
+        rules.was_fetched(),
+        "a comment-only body is still fetched"
+    );
+    // no directives parsed from comments — parsed rules are empty when no user-agent groups exist
+}

@@ -15,7 +15,7 @@ use census_domain::UsJurisdiction;
 use census_reconcile::identity::Revision;
 use census_report::report;
 use census_service::restate_services::{
-    run_key, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
+    run_key, DEFAULT_GENERATION, BestsIngressClient, BestsReply, BestsRequest, ConsolidateIngressClient,
     ConsolidateReply, ConsolidateRequest, ConsolidatedTable, JurisdictionReport,
     JurisdictionRequest, ReportIngressClient, ReportReply, ReportRequest, WorkbookIngressClient,
     WorkbookReply, WorkbookRequest,
@@ -29,7 +29,7 @@ use census_service::ingress;
 fn consolidate_client(origin: Option<&str>) -> Result<ConsolidateIngressClient<reqwest::Client>> {
     Ok(ConsolidateIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("consolidate", &[]),
+        run_key("consolidate", &[], DEFAULT_GENERATION),
     ))
 }
 
@@ -40,7 +40,7 @@ fn report_client(
 ) -> Result<ReportIngressClient<reqwest::Client>> {
     Ok(ReportIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("report", &[scope.as_str()]),
+        run_key("report", &[scope.as_str()], DEFAULT_GENERATION),
     ))
 }
 
@@ -58,11 +58,16 @@ fn bests_client(
     let limit = limit.map_or_else(|| "all".to_string(), |limit| limit.to_string());
     Ok(BestsIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("bests", &[scope.as_str(), &year, &limit]),
+        run_key("bests", &[scope.as_str(), &year, &limit], DEFAULT_GENERATION),
     ))
 }
 
 /// The `Workbook` workflow's ingress client for `origin`, under today's key for the request.
+///
+/// `grad_year`, `limit`, and `scope` change the workbook's content, and `out` changes its path
+/// (the reply carries the path), so all four fields are part of the key. The default `out` is
+/// the store's own `out/` directory, which is the same as omitting it, so the default value
+/// is `"."` and it is included in the key to distinguish a user-requested alternate path.
 fn workbook_client(
     origin: Option<&str>,
     request: &WorkbookRequest,
@@ -71,9 +76,11 @@ fn workbook_client(
         .grad_year
         .map_or_else(|| "all".to_string(), |year| year.to_string());
     let scope = request.scope.as_deref().unwrap_or("all");
+    let limit = request.limit.map_or_else(|| "all".to_string(), |l| l.to_string());
+    let out = request.out.as_deref().unwrap_or(".");
     Ok(WorkbookIngressClient::from_client(
         ingress::job_client(ingress::origin(origin))?,
-        run_key("workbook", &[&year, scope]),
+        run_key("workbook", &[&year, scope, &limit, out], DEFAULT_GENERATION),
     ))
 }
 

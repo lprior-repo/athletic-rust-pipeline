@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -213,10 +214,10 @@ pub(super) async fn rosters_stage(
 ) -> Result<Json<StateProgress>, HandlerError> {
     let teams = census::collect_state_teams(&fetcher, &store, jurisdiction, false)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     let progress = census::collect_state_rosters(&fetcher, &store, &teams, &options, jurisdiction)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     Ok(Json(progress))
 }
 
@@ -228,6 +229,13 @@ pub(super) async fn rosters_stage(
 /// Everything the fetcher did not handle — schema mismatches, JSON decode/encode, domain
 /// construction failures, arithmetic overflows, and local I/O — is terminal: reading the same
 /// bytes again does not make them less wrong.
+///
+/// `CrawlError::Io` is terminal here: it is a crawl-side failure reading a local fixture or
+/// recording artifact. The store keeps its own `StoreError::Io` which is transient because
+/// it wraps a WAL or sidecar write — a different failure surface (the store's durable log versus
+/// the crawl's read-only artifact). The different classification is intentional: a crawl fixture
+/// read that fails on one machine will fail identically everywhere, while a store WAL flush that
+/// fails due to disk pressure may recover once the pressure eases.
 pub(super) fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
@@ -257,13 +265,22 @@ pub(super) fn collect_error(error: CrawlError) -> JobError {
         },
     }
 }
-
 /// One attempt per `run` inside a handler: ADR-002 makes Restate the owner of retries, and the
 /// retry it owns is the *invocation* retry declared on the handler. A `run`-level retry would be a
 /// second, in-process budget the journal cannot account for, so every `run` attempts once and a
 /// failure leaves the handler for the invocation policy to replay.
 pub(super) fn no_run_retry() -> RunRetryPolicy {
     RunRetryPolicy::new().max_attempts(1)
+}
+
+/// A closure that is total and cannot fail needs no policy; the `ctx.run` it wraps is pure
+/// observation whose result is deterministic.
+pub(super) async fn run_once<F, Fut>(closure: F) -> Fut::Output
+where
+    F: FnOnce() -> Fut,
+    Fut: Future,
+{
+    closure().await
 }
 
 /// A stage that should have completed has no recorded outcome: a bug in the stage sequence, not a

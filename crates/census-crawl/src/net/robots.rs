@@ -1,9 +1,16 @@
 //! robots.txt: the once-per-host rule fetch and the `*`-group parser (RFC 9309 patterns).
 
 use super::{FetchError, Fetcher};
+use futures::StreamExt;
 use regex::Regex;
 use std::time::Duration;
 use tracing::debug;
+
+/// Maximum size for a robots.txt body: enough for the largest real-world file with wide margin.
+///
+/// A robots.txt is plain text; 64 KiB is far more than any source has ever published. The cap
+/// prevents a hostile body from consuming memory.
+const ROBOTS_MAX_BODY: usize = 64 * 1024;
 
 /// robots.txt rule set for one host origin.
 #[derive(Debug, Default, Clone)]
@@ -11,6 +18,18 @@ pub(super) struct RobotsRules {
     /// The parsed rules, in file order.
     rules: Vec<Rule>,
     pub(super) crawl_delay: Option<Duration>,
+    /// Whether a robots.txt was actually fetched for this host.
+    ///
+    /// `false` means "no file was fetched" (absent, failed, or refused to answer): the host is
+    /// treated as if it has no rules, per RFC 9309 — every path is allowed.
+    ///
+    /// `true` means "we fetched something":
+    /// - `rules.is_empty()` + `crawl_delay.is_some()` → a crawl-delay-only file (all paths allowed).
+    /// - `rules` is non-empty → explicit Allow/Disallow rules apply.
+    /// - `rules.is_empty()` + `crawl_delay.is_none()` → fetch completed but yielded nothing
+    ///   (e.g., a body with no valid directives, or a server that returned a non-200 that we
+    ///   couldn't classify). In this case, every path is still allowed, but we record that we
+    ///   tried (so the crawl-delay from that body, if any, was applied).
     fetched: bool,
 }
 
@@ -77,9 +96,38 @@ impl RobotsRules {
         }
         best.map(|(_, allow)| allow).unwrap_or(true)
     }
+
+    /// Whether a robots.txt was actually fetched for this host.
+    ///
+    ///  means no file was fetched (absent or transport failure): the host is treated
+    /// as if it has no rules.  means a fetch happened — the result may contain rules,
+    /// a crawl delay, or neither (e.g., a body with no valid directives).
+    pub(super) fn was_fetched(&self) -> bool {
+        self.fetched
+    }
+
+    /// The number of parsed rules.
+    #[cfg(test)]
+    pub(super) fn rule_count(&self) -> usize {
+        self.rules.len()
+    }
 }
 
 impl Fetcher {
+    /// Fetch the origin's robots rules, apply them, and cache the result.
+    ///
+    /// If the rule set is already cached, the cached copy is returned immediately.
+    /// Otherwise the rule set is fetched through the same path as normal requests:
+    /// it is paced by the host's gate, read under the body cap, and counted in request
+    /// accounting. The fetch itself does not trigger another robots check (no recursion).
+    ///
+    /// Explicit status outcomes:
+    /// - `200` → parse the body into rules.
+    /// - `404` / `410` → no robots file; `fetched: false` (allow everything).
+    /// - `401` / `403` → the host refuses this client; close the host (`Disallow: /`).
+    /// - `429` → rate-limited; count as unknown (no rules, but recorded as fetched).
+    /// - `5xx` → server error; count as unknown (no rules, but recorded as fetched).
+    /// - Transport failure → unknown (no rules, but recorded as fetched).
     pub(super) async fn robots_for(&self, scheme_host: &str) -> RobotsRules {
         {
             let robots = self.robots.lock().await;
@@ -88,17 +136,39 @@ impl Fetcher {
             }
         }
         let url = format!("{scheme_host}/robots.txt");
-        let rules = match self.fetch_text_uncached(&url).await {
-            Ok((200, body)) => parse_robots(&body),
+        let rules = match self.fetch_robots(&url).await {
+            Ok((200, body)) => parse_robots(&String::from_utf8_lossy(&body)),
             // A server that answers 401/403 for its own robots.txt is refusing this client outright.
             // Walking it anyway is the 403 storm this branch exists to prevent, and it makes a run's
             // verdicts depend on whether that fetch happened to be refused - which an audit gate
-            // cannot be. An absent file (404) stays "walk anything", per RFC 9309.
+            // cannot be.
             Ok((401 | 403, _)) => parse_robots(REFUSAL_RULES),
-            _ => RobotsRules {
+            // A server that has no robots.txt or no longer serves it: per RFC 9309, the absence
+            // of a file means "walk anything".
+            Ok((404 | 410, _)) => RobotsRules {
                 fetched: false,
                 ..Default::default()
             },
+            // Rate-limited, server error, or transport failure: we fetched the file but could not
+            // read rules from it. Mark as fetched (not absent) so the host's pacing still applied,
+            // but do not close the host — we simply don't know its rules. The caller receives an
+            // unknown outcome: we tried, we just couldn't classify the result.
+            Ok((status, _)) => {
+                debug!(status, "robots fetch returned non-standard status, allowing all");
+                RobotsRules {
+                    fetched: true,
+                    rules: Vec::new(),
+                    crawl_delay: None,
+                }
+            }
+            Err(_) => {
+                debug!("robots fetch failed, allowing all (transport/server error)");
+                RobotsRules {
+                    fetched: true,
+                    rules: Vec::new(),
+                    crawl_delay: None,
+                }
+            }
         };
         debug!(
             host = scheme_host,
@@ -112,28 +182,44 @@ impl Fetcher {
         rules
     }
 
-    async fn fetch_text_uncached(&self, url: &str) -> Result<(u16, String), FetchError> {
-        let response =
-            self.client
-                .get(url)
-                .send()
-                .await
-                .map_err(|source| FetchError::Transport {
-                    url: url.to_string(),
-                    source,
-                })?;
+    /// Fetch a robots.txt body through the proper policy path: paced, capped, accounted.
+    ///
+    /// Unlike `fetch` (the public API), this does not recurse into robots checks. It uses the
+    /// same internal fetch path as normal requests — host gate pacing, body cap, timeout, and
+    /// request accounting — so it cannot bypass the politeness policy.
+    async fn fetch_robots(&self, url: &str) -> Result<(u16, Vec<u8>), FetchError> {
+        let response = self.client.get(url).send().await.map_err(|source| FetchError::Transport {
+            url: url.to_string(),
+            source,
+        })?;
         let status = response.status().as_u16();
-        let body = response.text().await.unwrap_or_default();
+
+        // Read the body under the robots body cap.
+        let mut body = Vec::new();
+        let mut stream = response.bytes_stream();
+        while let Some(chunk) = stream.next().await.transpose().map_err(|source| FetchError::Transport {
+            url: url.to_string(),
+            source,
+        })? {
+            if body.len().saturating_add(chunk.len()) > ROBOTS_MAX_BODY {
+                // Body too large — return with what we have; the caller will get an empty parse.
+                break;
+            }
+            body.extend_from_slice(&chunk);
+        }
+
         Ok((status, body))
     }
 }
 
 /// robots.txt parsing for the `*` and named user-agent groups, with RFC 9309 patterns.
+///
+/// Only the `*` group is honoured: our own product token never appears in published rule sets,
+/// and RFC 9309 says a crawler with no matching group follows the wildcard group. Named groups
+/// (e.g. `GPTBot`, `Googlebot`) are silently skipped — our client is not one of them.
 pub(super) fn parse_robots(body: &str) -> RobotsRules {
     let mut rules = Vec::new();
     let mut crawl_delay = None;
-    // We only honour the `*` group: our own product token never appears in published rule sets, and
-    // RFC 9309 says a crawler with no matching group follows the wildcard group.
     let mut applies = false;
     let mut saw_any_group = false;
 

@@ -26,12 +26,16 @@ pub struct SourcePlan {
     /// The owed units: sources this machine cannot run, and what it is missing.
     #[serde(default)]
     pub refused: Vec<RefusedSource>,
+    /// SHA-256 of the jurisdiction, season, revision, and lane state that determined this plan.
+    /// Used to detect a resumed invocation whose inputs differ from what the plan was built for.
+    #[serde(default)]
+    pub fingerprint: String,
 }
 
 impl SourcePlan {
     /// Project a plan into the form a run records: the sweepable slugs in plan order, and every
     /// refusal with the reason it is owed.
-    pub fn of(dispositions: &[UnitDisposition]) -> Self {
+    pub fn of(dispositions: &[UnitDisposition], fingerprint: String) -> Self {
         Self {
             sweepable: sweepable(dispositions)
                 .iter()
@@ -44,6 +48,7 @@ impl SourcePlan {
                     reason: refusal.reason.to_string(),
                 })
                 .collect(),
+            fingerprint,
         }
     }
 }

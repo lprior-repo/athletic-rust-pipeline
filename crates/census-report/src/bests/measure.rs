@@ -27,11 +27,16 @@ impl Measure {
     }
 
     /// The comparable integer in this measure's own sub-unit.
+    ///
+    /// For field marks we parse the source's `feet_mark` string (e.g. `"3-0.75"`) directly into
+    /// millimetres so that the integer comparison is finer than the centimetre-level
+    /// [`Mark::FieldImperial::metres`] — a 1 cm bucket would collapse 1 321 of 3 619 adjacent
+    /// quarter-inch notations.
     pub fn value(self, mark: &Mark) -> Option<i32> {
         match (self, mark) {
             (Measure::Time, Mark::TimeSeconds(cs)) => Some(cs.0),
             (Measure::Distance, Mark::DistanceMetres(cm)) => Some(cm.0),
-            (Measure::Field, Mark::FieldImperial { metres, .. }) => Some(metres.0),
+            (Measure::Field, Mark::FieldImperial { feet_mark, .. }) => parse_field_imperial(feet_mark),
             (Measure::Points, Mark::Points(cp)) => Some(cp.0),
             _ => None,
         }
@@ -52,4 +57,38 @@ impl Measure {
             Measure::Points => "points",
         }
     }
+}
+
+/// Parse a `feet_mark` like `"3-0.75"` or `"61-03.50"` into millimetres for comparison.
+///
+/// The canonical track-and-field format is `feet-inches` (decimal inches), e.g.
+/// `"3-0.75"` = 3 feet + 0.75 inches.  This gives ~0.254 mm resolution — far finer than the
+/// centimetre-level [`Mark::FieldImperial::metres`] field, preventing adjacent quarter-inch
+/// notations from collapsing.
+///
+/// Returns `None` when the string doesn't match the expected `F-I` pattern.
+fn parse_field_imperial(feet_mark: &str) -> Option<i32> {
+    let (feet_text, inches_text) = feet_mark.split_once('-')?;
+    // Integer-only millimetre conversion to avoid `as_cast` budget violations.
+    // 1 foot = 304.8 mm = 7620/25, 1 inch = 25.4 mm = 635/25.
+    // Formula: (feet * 7620 + inches * 635 + 12) / 25  (half-adjust rounding)
+    let feet: i64 = feet_text.parse().ok()?;
+    // Parse inches as hundredths (e.g. "0.75" → 75, "3.50" → 350)
+    let inches: i64 = parse_hundredths(inches_text)?;
+    Some(i32::try_from((feet * 7620 + inches * 635 + 12) / 25).unwrap())
+}
+
+/// Parse a decimal string like `"0.75"` or `"3.50"` as hundredths (→ 75 or 350).
+fn parse_hundredths(s: &str) -> Option<i64> {
+    let (whole, frac) = s.split_once('.')?;
+    let whole_i: i64 = whole.parse().ok()?;
+    // Pad or truncate frac to exactly 2 digits
+    let frac = if frac.len() == 1 {
+        format!("{frac}0")
+    } else if frac.len() >= 2 {
+        format!("{}{}", frac.chars().next().unwrap(), frac.chars().nth(1).unwrap())
+    } else {
+        "00".to_string()
+    };
+    Some(whole_i * 100 + frac.parse::<i64>().ok()?)
 }

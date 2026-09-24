@@ -6,6 +6,7 @@
 //! builds one [`Walk`] and asks it to run an arm instead of naming that list at two call sites.
 
 use std::sync::Arc;
+use crate::restate_services::job_error;
 
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
@@ -122,7 +123,7 @@ pub(super) async fn walk_index(
         Some(&index),
     )
     .await
-    .map_err(collect_error)?;
+    .map_err(|error| job_error(collect_error(error)))?;
     let mut recorded = Vec::new();
     take_recorded(store, census::SOURCE, index.drain(), &mut recorded)?;
     Ok((census, recorded.pop()))
@@ -150,7 +151,7 @@ async fn walk_wiaa_results(
     let context = adapter_context(store, fetcher, season, refresh, at, recording);
     let report = census_crawl::wiaa_results::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     rows_written(&report)
 }
 
@@ -175,7 +176,7 @@ async fn walk_wayzata(
     let context = adapter_context(store, fetcher, season, refresh, at, recording);
     let report = census_crawl::wayzata::collect(&context, &options)
         .await
-        .map_err(collect_error)?;
+        .map_err(|error| job_error(collect_error(error)))?;
     let _ = jurisdiction;
     rows_written(&report)
 }

@@ -22,6 +22,9 @@ pub(super) struct ProviderArgs {
     /// Cap the number of schools processed (smoke runs).
     #[arg(long)]
     limit: Option<usize>,
+    /// Restrict meet selection to this season year. Without it, all stored seasons are selected.
+    #[arg(long)]
+    season_year: Option<u16>,
     /// Restrict to these jurisdictions (adapters that span several states). The `milesplit` arm
     /// walks the list and defaults to Wisconsin; every other adapter reads an empty list as its own
     /// coverage, and the list must include that state or the run reports the mismatch.

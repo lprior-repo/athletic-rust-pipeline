@@ -49,7 +49,7 @@ pub struct BestResult {
     pub sport: String,
     pub event: String,
     pub best_mark: String,
-    pub best_value: f64,
+    pub best_value: i32,
     pub measure: String,
     pub date: String,
     pub meet: String,

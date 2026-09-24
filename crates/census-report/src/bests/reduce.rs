@@ -58,12 +58,13 @@ pub fn build(store: &Store, options: &Options) -> StoreResult<Vec<BestResult>> {
             .then_with(|| left.event.cmp(&right.event))
             .then_with(|| {
                 if left.measure == "time" {
-                    left.best_value.total_cmp(&right.best_value)
+                    left.best_value.cmp(&right.best_value)
                 } else {
-                    right.best_value.total_cmp(&left.best_value)
+                    right.best_value.cmp(&left.best_value)
                 }
             })
             .then_with(|| left.name.cmp(&right.name))
+            .then_with(|| left.athlete_id.cmp(&right.athlete_id))
     });
     if let Some(limit) = options.limit {
         rows.truncate(limit);
@@ -123,7 +124,7 @@ fn accumulate(
     let wins = bests
         .get(&key)
         .map(|incumbent| {
-            let incumbent_value = (incumbent.best_value * 100.0).round() as i32;
+            let incumbent_value = incumbent.best_value;
             measure.better(value, incumbent_value)
         })
         .unwrap_or(true);
@@ -137,7 +138,7 @@ fn accumulate(
         meet,
         performance,
         event_label,
-        value as f64 / 100.0,
+        value,
         measure,
     );
     bests.insert(key, row);
@@ -150,7 +151,7 @@ fn best_row(
     meet: Option<&CanonicalMeet>,
     performance: &CanonicalPerformance,
     event: String,
-    value: f64,
+    value: i32,
     measure: Measure,
 ) -> BestResult {
     BestResult {

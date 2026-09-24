@@ -16,10 +16,8 @@ use super::wire::{BrowserOutcome, RequestSpec};
 use crate::net::FetchError;
 use restate_sdk::ingress::{ClientError, RequestTarget, ReqwestClient};
 use restate_sdk::prelude::Json;
+use url::Url;
 
-/// The object the pipeline registers for the one headed profile. One key, because one profile: the
-/// pipeline's own CLI addresses the same one.
-const SESSION_KEY: &str = "profile-0";
 /// The handler that takes a [`RequestSpec`] and answers with a [`BrowserOutcome`].
 const FETCH_HANDLER: &str = "fetch";
 
@@ -45,14 +43,34 @@ impl BrowserLane {
     /// only the call's own transport failure — an ingress that is not running, a service the
     /// deployment does not have, a reply that is not this wire's JSON — and that is exactly the
     /// "applicable but cannot run" case whose row the caller records.
+    ///
+    /// A URL whose origin is not in [`super::ADMITTED_BROWSER_ORIGINS`] is refused before it
+    /// leaves this process with a [`FetchError::Policy`] error.
     pub(in crate::net) async fn answer(
         &self,
         spec: &RequestSpec,
     ) -> Result<BrowserOutcome, FetchError> {
+        // Origin guard: the browser lane only serves its admitted origins.
+        let parsed = Url::parse(&spec.url).map_err(|source| FetchError::Policy {
+            detail: format!("cannot parse browser URL: {source}"),
+        })?;
+        let origin = format!(
+            "{}://{}",
+            parsed.scheme(),
+            parsed.host_str().unwrap_or_default()
+        );
+        if !super::ADMITTED_BROWSER_ORIGINS.contains(&origin.as_str()) {
+            return Err(FetchError::Policy {
+                detail: format!(
+                    "origin {origin} not admitted to browser lane; allowed: {}",
+                    super::ADMITTED_BROWSER_ORIGINS.join(", ")
+                ),
+            });
+        }
         let response = self
             .client
             .request::<Json<RequestSpec>, Json<BrowserOutcome>>(
-                RequestTarget::object(super::SESSION_OBJECT, SESSION_KEY, FETCH_HANDLER),
+                RequestTarget::object(super::SESSION_OBJECT, super::SESSION_KEY, FETCH_HANDLER),
                 Json(spec.clone()),
             )
             .call()
@@ -103,4 +121,29 @@ fn ingress_detail(error: &ClientError) -> String {
 #[derive(serde::Deserialize)]
 struct IngressFailure {
     message: String,
+}
+
+///
+/// This is the guard that prevents a request from being sent to an origin the browser session
+/// does not serve.  Extracted from [`BrowserLane::answer`] so it can be exercised in tests
+/// without constructing a [`restate_sdk::ingress::ReqwestClient`].
+pub fn validate_origin(url: &str) -> Result<(), FetchError> {
+    let parsed = url::Url::parse(url).map_err(|source| FetchError::Policy {
+        detail: format!("cannot parse browser URL: {source}"),
+    })?;
+    let origin = format!(
+        "{}://{}",
+        parsed.scheme(),
+        parsed.host_str().unwrap_or_default()
+    );
+    if super::ADMITTED_BROWSER_ORIGINS.contains(&origin.as_str()) {
+        Ok(())
+    } else {
+        Err(FetchError::Policy {
+            detail: format!(
+                "origin {origin} not admitted to browser lane; allowed: {}",
+                super::ADMITTED_BROWSER_ORIGINS.join(", ")
+            ),
+        })
+    }
 }

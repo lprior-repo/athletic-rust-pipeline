@@ -1,6 +1,6 @@
 //! Response decoding: size guard, hashing, cache write and outcome construction.
 
-use super::cache::{sha256_prefix16, write_cache, CacheMeta};
+use super::cache::{write_cache, CacheMeta};
 use super::{now_iso8601, FetchError, FetchOptions, FetchOutcome, FetchStats, MAX_BODY_BYTES};
 use futures::StreamExt;
 use sha2::{Digest, Sha256};
@@ -12,6 +12,7 @@ use tracing::warn;
 /// The eight parameters are the request's own coordinates plus the two cache paths it writes; a
 /// struct would only move the same list one level up.
 #[allow(clippy::too_many_arguments)]
+#[allow(dead_code)]
 pub(super) async fn process_response(
     response: reqwest::Response,
     url: &str,
@@ -36,12 +37,13 @@ pub(super) async fn process_response(
         });
     }
 
-    let (body_vec, sha256) = read_checked_body(response, url).await?;
+    let (body_vec, key_prefix, content_digest_hex) = read_checked_body(response, url).await?;
     let meta = CacheMeta {
         url: url.to_string(),
         method: method.to_string(),
         status,
-        sha256: sha256.clone(),
+        key_prefix: key_prefix.clone(),
+        content_digest: content_digest_hex,
         bytes: body_vec.len(),
         fetched_at: now_iso8601(),
         etag,
@@ -60,7 +62,7 @@ pub(super) async fn process_response(
         url: url.to_string(),
         method: method.to_string(),
         status,
-        sha256,
+        sha256: key_prefix,
         bytes: body_vec.len(),
         fetched_at: meta.fetched_at,
         from_cache: false,
@@ -70,6 +72,7 @@ pub(super) async fn process_response(
 }
 
 /// The three response headers the cache keeps, as owned strings.
+#[allow(dead_code)]
 fn header_strings(
     headers: &reqwest::header::HeaderMap,
 ) -> (Option<String>, Option<String>, Option<String>) {
@@ -91,10 +94,14 @@ fn header_strings(
 /// Streams the body chunk-by-chunk so that no single allocation can exceed
 /// `MAX_BODY_BYTES` by more than one chunk. The declared-length pre-check is
 /// kept as an early-out for well-behaved servers.
+///
+/// Returns the body, the 16-byte key prefix (used for cache filenames), and the full 32-byte
+/// content digest (hex). Both hashes are derived from the same SHA-256 computation.
+#[allow(dead_code)]
 async fn read_checked_body(
     response: reqwest::Response,
     url: &str,
-) -> Result<(Vec<u8>, String), FetchError> {
+) -> Result<(Vec<u8>, String, String), FetchError> {
     let declared = response
         .headers()
         .get(reqwest::header::CONTENT_LENGTH)
@@ -127,5 +134,14 @@ async fn read_checked_body(
         hasher.update(&chunk);
         body.extend_from_slice(&chunk);
     }
-    Ok((body, sha256_prefix16(hasher)))
+    let digest = hasher.finalize();
+    // Compute key_prefix from the digest bytes directly (don't create a new hasher).
+    let key_hex: String = digest
+        .get(..16)
+        .unwrap_or(digest.as_slice())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect();
+    let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+    Ok((body, key_hex, content_hex))
 }

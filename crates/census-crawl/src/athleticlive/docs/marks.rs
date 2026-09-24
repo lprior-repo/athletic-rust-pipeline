@@ -36,9 +36,9 @@ pub(super) fn canonical_mark(kind: &EventKind, mark_int: &Value) -> Option<Mark>
     }
     Some(if kind.is_field() {
         // micrometres → centimetres
-        Mark::DistanceMetres(CentiMetres((micros / 10_000) as i32))
+        Mark::DistanceMetres(CentiMetres(((micros + 5_000) / 10_000) as i32))
     } else {
         // milliseconds → centiseconds
-        Mark::TimeSeconds(CentiSeconds((micros / 10) as i32))
+        Mark::TimeSeconds(CentiSeconds(((micros + 5) / 10) as i32))
     })
 }

@@ -54,21 +54,30 @@ fn baseline_groups_preserves_order() {
     use crate::perf::PerfBaseline;
 
     let mut groups = BTreeMap::new();
-    groups.insert("c".to_string(), crate::perf::GroupMeasurement {
-        throughput: Some(100.0),
-        peak_rss_kib: None,
-        wall_time_seconds: 1.0,
-    });
-    groups.insert("a".to_string(), crate::perf::GroupMeasurement {
-        throughput: Some(200.0),
-        peak_rss_kib: None,
-        wall_time_seconds: 2.0,
-    });
-    groups.insert("b".to_string(), crate::perf::GroupMeasurement {
-        throughput: Some(150.0),
-        peak_rss_kib: None,
-        wall_time_seconds: 1.5,
-    });
+    groups.insert(
+        "c".to_string(),
+        crate::perf::GroupMeasurement {
+            throughput: Some(100.0),
+            peak_rss_kib: None,
+            wall_time_seconds: 1.0,
+        },
+    );
+    groups.insert(
+        "a".to_string(),
+        crate::perf::GroupMeasurement {
+            throughput: Some(200.0),
+            peak_rss_kib: None,
+            wall_time_seconds: 2.0,
+        },
+    );
+    groups.insert(
+        "b".to_string(),
+        crate::perf::GroupMeasurement {
+            throughput: Some(150.0),
+            peak_rss_kib: None,
+            wall_time_seconds: 1.5,
+        },
+    );
 
     let baseline = PerfBaseline {
         metadata: crate::perf::Meta {

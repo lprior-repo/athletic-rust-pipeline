@@ -81,6 +81,17 @@ Each target builds its own dataset and asserts it before reporting a rate — th
 round-trips its synthetic XLSX through `calamine`, the census bench reads its corpus from
 `crates/census-crawl/tests/fixtures/**`, and the census merge group appends to a temporary store —
 so a rate can never describe a corpus that lost rows.
+The three perf verbs (`cargo xtask perf record`, `check`, `profile`) maintain a throughput baseline
+for these same targets. `record` runs `cargo bench -p census-service --bench core` and `--bench
+pipeline`, captures peak RSS of the Criterion process tree via `/usr/bin/time -v` (parse
+`Maximum resident set size`), and writes `tools/perf-baseline.json` with metadata (CPU, core count,
+rustc, git sha, corpus size) and per-group measurements (throughput, wall time, peak RSS). Two
+baselines are only comparable when all metadata fields match. `check` re-runs both targets and
+compares throughput against the recorded baseline, first validating that CPU model, physical core
+count and rustc version match the baseline; a group whose throughput regressed past 5% (default,
+overridable with `--tolerance`) fails the verb with a non-zero exit. A `--reason` flag annotates
+the comparison for audit. `profile` runs one named group under `perf record --call-graph=dwarf`
+when `perf` is installed, or prints the exact command and reasons for not running otherwise.
 
 **Example harnesses** (clap-based, whole-pipeline and substrate throughput). They are examples, not
 `benches/` targets: the gate compiles the criterion targets, not these.
@@ -437,10 +448,11 @@ hyphens). Both appear in `tools/quality-baseline.json`.
   lane at all.
 - CI exists (`.github/workflows/gate.yml` runs `bash tools/gate.sh`), but it inherits the same gap:
   the gate compiles the benches and does not threshold them.
-- No throughput number is recorded in the repo; the historical 559–627k obs/s figures are explicitly
-  out-of-repo in program §2.5.
-- No allocation accounting: no counting allocator, no `try_reserve` policy applied, no peak-RSS
-  capture in the harnesses.
+- Throughput numbers are now recorded in `tools/perf-baseline.json` by `cargo xtask perf record`;
+  two baselines are only comparable when all metadata fields (CPU, cores, rustc, sha) match.
+  The historical 559–627k obs/s figures remain out-of-repo in program §2.5.
+- Peak RSS is captured in the perf baseline; no counting allocator or per-observation allocation
+  budget is applied yet, and the example harnesses do not capture it.
 - Both harnesses measure synthetic corpora in a temp dir; they do not model production data
   distribution or contention with a live browser.
 

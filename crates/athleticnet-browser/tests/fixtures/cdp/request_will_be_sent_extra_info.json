@@ -1,0 +1,386 @@
+{
+  "requestId": "2178051.377",
+  "associatedCookies": [
+    {
+      "cookie": {
+        "name": "__qca",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/TrackAndField/rankings/list/173005/m/100m",
+        "expires": -1,
+        "size": 32,
+        "httpOnly": false,
+        "secure": false,
+        "session": true,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [
+        "NotOnPath"
+      ],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_ga",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824503350.100019,
+        "size": 29,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "__stripe_mid",
+        "value": "REDACTED",
+        "domain": ".www.athletic.net",
+        "path": "/",
+        "expires": 1821479350,
+        "size": 54,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "Strict",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_cfuvid",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": -1,
+        "size": 121,
+        "httpOnly": true,
+        "secure": true,
+        "session": true,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_au_1d",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1821460464.220877,
+        "size": 42,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_pbjs_userid_consent_data",
+        "value": "REDACTED",
+        "domain": "www.athletic.net",
+        "path": "/",
+        "expires": 1792516464,
+        "size": 41,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "sameSite": "Lax",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "__gads",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1823620424,
+        "size": 89,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "__gpi",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1823620424,
+        "size": 89,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "__eoi",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1805476424,
+        "size": 82,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_ga_BY35Y57BMZ",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824484475.91719,
+        "size": 59,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_ga_FVWZ0RM4DH",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824484475.921666,
+        "size": 59,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "FCCDCF",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1823623520,
+        "size": 162,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "FCNEC",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1821463521,
+        "size": 191,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "ANETSettings",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824503349.994465,
+        "size": 53,
+        "httpOnly": false,
+        "secure": true,
+        "session": false,
+        "sameSite": "Lax",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_ga_ZXKS3ZXZ0V",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824497357.949377,
+        "size": 59,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": ".AspNet.SharedCookie",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1791152948.699208,
+        "size": 772,
+        "httpOnly": true,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "cf_clearance",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1821479349.16958,
+        "size": 545,
+        "httpOnly": true,
+        "secure": true,
+        "session": false,
+        "sameSite": "None",
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443,
+        "partitionKey": {
+          "topLevelSite": "https://athletic.net",
+          "hasCrossSiteAncestor": false
+        }
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    },
+    {
+      "cookie": {
+        "name": "_ga_CV6QCFM8SJ",
+        "value": "REDACTED",
+        "domain": ".athletic.net",
+        "path": "/",
+        "expires": 1824503350.103239,
+        "size": 59,
+        "httpOnly": false,
+        "secure": false,
+        "session": false,
+        "priority": "Medium",
+        "sourceScheme": "Secure",
+        "sourcePort": 443
+      },
+      "blockedReasons": [],
+      "exemptionReason": "None"
+    }
+  ],
+  "headers": {
+    ":authority": "www.athletic.net",
+    ":method": "GET",
+    ":path": "/api/v1/SocialPost/GetFullPost?postId=38697917&moderationCheck=false",
+    ":scheme": "https",
+    "accept": "application/json, text/plain, */*",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "accept-language": "en-US,en;q=0.9",
+    "anet-appinfo": "web:web:0:300",
+    "anet-site-roles-token": "REDACTED",
+    "authid": "960929",
+    "authid2": "38697917",
+    "authid3": "0",
+    "authtoken": "jsdej9sf1waddzs5y1sfpg",
+    "cookie": "REDACTED",
+    "pageguid": "REDACTED",
+    "priority": "u=1, i",
+    "referer": "https://www.athletic.net/dashboard/960929",
+    "sec-ch-ua": "\"Chromium\";v=\"151\", \"Not=A?Brand\";v=\"99\"",
+    "sec-ch-ua-arch": "\"x86\"",
+    "sec-ch-ua-bitness": "\"64\"",
+    "sec-ch-ua-full-version": "\"151.0.7922.173\"",
+    "sec-ch-ua-full-version-list": "\"Chromium\";v=\"151.0.7922.173\", \"Not=A?Brand\";v=\"99.0.0.0\"",
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-model": "\"\"",
+    "sec-ch-ua-platform": "\"Linux\"",
+    "sec-ch-ua-platform-version": "\"\"",
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-origin",
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36"
+  },
+  "connectTiming": {
+    "requestTime": 418604.348475
+  },
+  "clientSecurityState": {
+    "initiatorIsSecureContext": true,
+    "initiatorIPAddressSpace": "Public",
+    "localNetworkAccessRequestPolicy": "PermissionBlock"
+  },
+  "siteHasCookieInOtherPartition": false
+}

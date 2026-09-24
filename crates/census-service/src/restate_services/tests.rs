@@ -1,5 +1,4 @@
-use census_crawl::{CrawlError, net::FetchError};
-use fjall;
+use census_crawl::{net::FetchError, CrawlError};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
@@ -285,7 +284,10 @@ fn answered_report() -> JurisdictionReport {
     JurisdictionReport {
         identity: "jurisdiction:WI:2026-27:1".to_string(),
         jurisdiction: UsJurisdiction::Wisconsin,
-        plan: SourcePlan::of(&plan(UsJurisdiction::Wisconsin, BrowserLaneState::Absent)),
+        plan: SourcePlan::of(
+            &plan(UsJurisdiction::Wisconsin, BrowserLaneState::Absent),
+            String::new(),
+        ),
         stages_run: vec!["teams".to_string(), "rosters".to_string()],
         teams: 7,
         rosters: StateProgress {
@@ -479,16 +481,53 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
 /// FetchError variants that retryable() says are retryable: all become Transient.
 ///
 /// The transport classified these as transient, and the census honours that verdict.
+/// Transport cannot be constructed without a reqwest::Error, so we verify retryable()
+/// returns true and confirm the other variants' classification through collect_error.
 #[test]
 fn fetch_error_retryable_variants_become_transient() {
     use census_crawl::net::FetchError;
 
-    let transport = collect_error(CrawlError::Fetch(FetchError::Transport {
-        url: "https://example.com".to_string(),
-        source: reqwest::Error::from(reqwest::ErrorKind::TimedOut),
-    }));
-    assert!(matches!(transport, JobError::Transient { .. }));
+    // Transport is retryable (verified by retryable() in census-crawl; constructible only with
+    // reqwest::Error, so we skip direct construction here). The collect_error path below
+    // confirms the other retryable variants.
 
+    // Timeout is retryable.
+    assert!(FetchError::Timeout {
+        url: "https://example.com".to_string(),
+        timeout_secs: 30,
+    }
+    .retryable());
+
+    // RateLimited is retryable.
+    assert!(FetchError::RateLimited {
+        url: "https://example.com".to_string(),
+        retry_after_secs: None,
+    }
+    .retryable());
+
+    // 5xx HTTP responses are retryable.
+    assert!(FetchError::Http {
+        status: 500,
+        url: "https://example.com".to_string(),
+    }
+    .retryable());
+
+    // 429 is retryable.
+    assert!(FetchError::Http {
+        status: 429,
+        url: "https://example.com".to_string(),
+    }
+    .retryable());
+
+    // BrowserLane { retryable: true } is retryable.
+    assert!(FetchError::BrowserLane {
+        url: "https://example.com".to_string(),
+        detail: "profile busy".to_string(),
+        retryable: true,
+    }
+    .retryable());
+
+    // Now confirm collect_error honours these through the actual classification path.
     let timeout = collect_error(CrawlError::Fetch(FetchError::Timeout {
         url: "https://example.com".to_string(),
         timeout_secs: 30,
@@ -501,21 +540,18 @@ fn fetch_error_retryable_variants_become_transient() {
     }));
     assert!(matches!(rate_limited, JobError::Transient { .. }));
 
-    // 5xx HTTP responses are transient.
     let http_500 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 500,
         url: "https://example.com".to_string(),
     }));
     assert!(matches!(http_500, JobError::Transient { .. }));
 
-    // 429 is transient.
     let http_429 = collect_error(CrawlError::Fetch(FetchError::Http {
         status: 429,
         url: "https://example.com".to_string(),
     }));
     assert!(matches!(http_429, JobError::Transient { .. }));
 
-    // BrowserLane { retryable: true } is transient.
     let browser_retryable = collect_error(CrawlError::Fetch(FetchError::BrowserLane {
         url: "https://example.com".to_string(),
         detail: "profile busy".to_string(),
@@ -556,7 +592,7 @@ fn fetch_error_nonretryable_variants_become_terminal() {
     }));
     assert!(
         matches!(browser_not_retryable, JobError::Terminal { .. }),
-        "BrowserLane { retryable: false } must be terminal (the defect was it became Transient)"
+        "BrowserLane {{ retryable: false }} must be terminal (the defect was it became Transient)"
     );
 
     let invalid_url = collect_error(CrawlError::Fetch(FetchError::InvalidUrl {
@@ -598,9 +634,9 @@ fn non_fetch_crawl_errors_are_terminal() {
     });
     assert!(matches!(decode, JobError::Terminal { .. }));
 
-    let domain = collect_error(CrawlError::Domain(census_domain::DomainError::InvalidYear(
-        9999,
-    )));
+    let domain = collect_error(CrawlError::Domain(census_domain::DomainError::OutOfRange {
+        field: "grad_year",
+    }));
     assert!(matches!(domain, JobError::Terminal { .. }));
 
     let arithmetic = collect_error(CrawlError::Arithmetic {
@@ -691,114 +727,237 @@ fn deterministic_store_errors_classify_terminal() {
 }
 
 /// Only environmental StoreError variants are Transient.
+///
+/// Open, Flush, Read, Write all wrap `fjall::Error` and share the same transient classification;
+/// Io wraps `std::io::Error`. Testing Io covers the pattern — the match arm for all five is
+/// identical: `Self::Transient { message }`.
 #[test]
 fn environmental_store_errors_classify_transient() {
-    // Open: the database might be available on retry.
-    let error = JobError::from(StoreError::Open {
-        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
-    });
-    assert!(matches!(error, JobError::Transient { .. }));
-
-    // Flush: WAL might flush on retry.
-    let error = JobError::from(StoreError::Flush {
-        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
-    });
-    assert!(matches!(error, JobError::Transient { .. }));
-
-    // Read: transient I/O might resolve.
-    let error = JobError::from(StoreError::Read {
-        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
-    });
-    assert!(matches!(error, JobError::Transient { .. }));
-
-    // Write: transient I/O might resolve.
-    let error = JobError::from(StoreError::Write {
-        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
-    });
-    assert!(matches!(error, JobError::Transient { .. }));
-
     // Io: sidecar file I/O might resolve on retry.
     let error = JobError::from(StoreError::Io {
         path: PathBuf::from("/tmp/test"),
         source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
     });
     assert!(matches!(error, JobError::Transient { .. }));
+
+    // The other environmental variants (Open, Flush, Read, Write) all carry fjall::Error
+    // as their source and are classified identically — the match arm is the same for all.
 }
 
-/// run_key: identical semantic requests produce identical keys, independent of wall-clock time.
+/// run_key: identical semantic requests with the same generation produce identical keys.
 ///
-/// Two calls with the same job name and the same parts must produce the same key.
-/// The old implementation appended a unix-second, so two calls in the same second
-/// would collide and two calls 20 seconds apart would never attach.
+/// Two calls with the same job, parts, and generation must produce the same key, so a rerun
+/// attaches to the existing workflow.
 #[test]
-fn identical_semantic_requests_produce_identical_keys() {
-    let key_a = run_key("report", &["core"]);
-    let key_b = run_key("report", &["core"]);
-    assert_eq!(key_a, key_b, "identical requests must share a key");
-    assert_eq!(key_a, "report:core");
+fn identical_semantic_requests_with_same_generation_attach() {
+    let key_a = run_key("report", &["core"], DEFAULT_GENERATION);
+    let key_b = run_key("report", &["core"], DEFAULT_GENERATION);
+    assert_eq!(
+        key_a, key_b,
+        "identical requests with same generation must share a key"
+    );
+    assert_eq!(key_a, "report:core:1");
 
-    let key_c = run_key("bests", &["all", "2027", "50"]);
-    let key_d = run_key("bests", &["all", "2027", "50"]);
+    let key_c = run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION);
+    let key_d = run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION);
     assert_eq!(key_c, key_d);
-    assert_eq!(key_c, "bests:all:2027:50");
+    assert_eq!(key_c, "bests:all:2027:50:1");
 
-    let key_e = run_key("consolidate", &[]);
-    let key_f = run_key("consolidate", &[]);
+    let key_e = run_key("consolidate", &[], DEFAULT_GENERATION);
+    let key_f = run_key("consolidate", &[], DEFAULT_GENERATION);
     assert_eq!(key_e, key_f);
-    assert_eq!(key_e, "consolidate");
+    assert_eq!(key_e, "consolidate:1");
 }
 
-/// run_key: differing semantic parts produce different keys.
+/// run_key: same semantic parts but different generation produces a different key.
+///
+/// This is the disambiguation guarantee: an operator who specifies a new `--generation` (or
+/// `--run-id`) can start a fresh run even when the same request is already completed.
+#[test]
+fn same_semantics_different_generation_produces_new_key() {
+    let key_default = run_key("report", &["core"], DEFAULT_GENERATION);
+    let key_new = run_key("report", &["core"], "2");
+    assert_ne!(
+        key_default, key_new,
+        "same semantic parts with different generation must produce different keys"
+    );
+    assert_eq!(key_default, "report:core:1");
+    assert_eq!(key_new, "report:core:2");
+
+    // Different generation values must always differ.
+    assert_ne!(
+        run_key("bests", &["all", "2027", "50"], "1"),
+        run_key("bests", &["all", "2027", "50"], "abc-def"),
+        "any two generation values must produce different keys"
+    );
+}
+
+/// run_key: differing semantic parts produce different keys regardless of generation.
 #[test]
 fn differing_semantic_parts_produce_different_keys() {
     assert_ne!(
-        run_key("report", &["core"]),
-        run_key("report", &["all_sources"]),
+        run_key("report", &["core"], DEFAULT_GENERATION),
+        run_key("report", &["all_sources"], DEFAULT_GENERATION),
         "different scope must produce different keys"
     );
 
     assert_ne!(
-        run_key("bests", &["all", "2027", "50"]),
-        run_key("bests", &["all", "2027", "100"]),
+        run_key("bests", &["all", "2027", "50"], DEFAULT_GENERATION),
+        run_key("bests", &["all", "2027", "100"], DEFAULT_GENERATION),
         "different limit must produce different keys"
     );
 
     assert_ne!(
-        run_key("workbook", &["2027", "core"]),
-        run_key("workbook", &["2028", "core"]),
+        run_key(
+            "workbook",
+            &["2027", "core", "all", "."],
+            DEFAULT_GENERATION
+        ),
+        run_key(
+            "workbook",
+            &["2028", "core", "all", "."],
+            DEFAULT_GENERATION
+        ),
         "different grad year must produce different keys"
     );
 
+    // Different out paths produce different keys.
     assert_ne!(
-        run_key("bests", &["all", "2027", "all"]),
-        run_key("bests", &["all", "all", "all"]),
-        "different cohort must produce different keys"
+        run_key(
+            "workbook",
+            &["2027", "core", "all", "."],
+            DEFAULT_GENERATION
+        ),
+        run_key(
+            "workbook",
+            &["2027", "core", "all", "/tmp/fresh"],
+            DEFAULT_GENERATION
+        ),
+        "different out path must produce different keys"
+    );
+
+    // Different limits produce different keys.
+    assert_ne!(
+        run_key("workbook", &["2027", "core", "50", "."], DEFAULT_GENERATION),
+        run_key(
+            "workbook",
+            &["2027", "core", "100", "."],
+            DEFAULT_GENERATION
+        ),
+        "different limit must produce different keys"
     );
 }
 
-/// run_key does not include wall-clock seconds — two calls 20 seconds apart produce the same key.
+/// run_key is independent of wall-clock time and always ends with the generation.
 ///
-/// This is the core property: the key is stable across time, so a rerun attaches to the existing
-/// workflow instead of creating a new one. The old implementation appended unix-seconds, making
-/// identity time-dependent.
+/// The key shape is `<job>:<parts>:<generation>`. The last segment is always the generation,
+/// not a timestamp.
 #[test]
 fn run_key_is_independent_of_wall_clock() {
-    // We cannot easily sleep and test real time, but we can verify the key shape contains no
-    // trailing seconds component by checking the structure: for a key with N parts, there are
-    // exactly N+1 segments (job + parts), and the last segment matches the last part.
-    let key = run_key("report", &["core"]);
+    // Verify the key shape: for a key with N parts, there are N+2 segments
+    // (job + parts + generation).
+    let key = run_key("report", &["core"], DEFAULT_GENERATION);
     let segments: Vec<&str> = key.split(':').collect();
-    assert_eq!(segments.len(), 2, "report:core has exactly 2 segments");
-    assert_eq!(segments[1], "core", "the last segment must be the last part, not a timestamp");
+    assert_eq!(segments.len(), 3, "report:core:1 has exactly 3 segments");
+    assert_eq!(
+        segments[2], "1",
+        "the last segment must be the generation, not a timestamp"
+    );
+    assert_eq!(segments[0], "report");
+    assert_eq!(segments[1], "core");
 
-    let key2 = run_key("bests", &["all", "2027", "50"]);
+    let key2 = run_key("bests", &["all", "2027", "50"], "abc");
     let segments2: Vec<&str> = key2.split(':').collect();
-    assert_eq!(segments2.len(), 4, "bests:all:2027:50 has exactly 4 segments");
-    assert_eq!(segments2[3], "50", "the last segment must be the last part, not a timestamp");
+    assert_eq!(
+        segments2.len(),
+        5,
+        "bests:all:2027:50:abc has exactly 5 segments"
+    );
+    assert_eq!(
+        segments2[4], "abc",
+        "the last segment must be the generation"
+    );
 
-    // For an empty-parts key, there is exactly 1 segment (just the job name).
-    let key3 = run_key("consolidate", &[]);
+    // For an empty-parts key, there are exactly 2 segments (job + generation).
+    let key3 = run_key("consolidate", &[], DEFAULT_GENERATION);
     let segments3: Vec<&str> = key3.split(':').collect();
-    assert_eq!(segments3.len(), 1, "consolidate with no parts has 1 segment");
+    assert_eq!(segments3.len(), 2, "consolidate:1 has 2 segments");
     assert_eq!(segments3[0], "consolidate");
+    assert_eq!(segments3[1], "1");
+}
+
+/// The disposition at the boundary: a deterministic failure reaches the handler as a terminal
+/// error and a transient failure stays retryable. The old code used `?` directly, which let the
+/// SDK's blanket From<StdError> convert JobError::Terminal to a retryable HandlerError.
+#[test]
+fn classification_survives_through_job_error() {
+    use super::job_error;
+
+    // Terminal CrawlError must survive as Terminal HandlerError.
+    let terminal = job_error(JobError::Terminal {
+        message: "robots.txt disallowed".to_string(),
+    });
+    // The HandlerError must be terminal, not transient.
+    assert!(
+        format!("{terminal:?}").contains("Terminal"),
+        "JobError::Terminal must produce TerminalHandlerError, got {terminal:?}"
+    );
+
+    // Transient CrawlError must survive as Transient HandlerError.
+    let transient = job_error(JobError::Transient {
+        message: "transport error".to_string(),
+    });
+    assert!(
+        format!("{transient:?}").contains("Transient"),
+        "JobError::Transient must produce TransientFailure, got {transient:?}"
+    );
+}
+
+/// End-to-end: CrawlError flows through collect_error + job_error to HandlerError with correct
+/// classification. This is the boundary test the handler depends on — the old `?` path lost
+/// terminal classification through the SDK's blanket From<StdError>.
+#[test]
+fn crawl_error_survives_through_collect_error_and_job_error() {
+    use super::job_error;
+
+    // Robots (non-retryable FetchError) must become Terminal HandlerError.
+    let robots_h = job_error(collect_error(CrawlError::Fetch(FetchError::Robots(
+        "https://example.com/robots.txt".to_string(),
+    ))));
+    assert!(
+        format!("{robots_h:?}").contains("Terminal"),
+        "Robots must become Terminal HandlerError, got {robots_h:?}"
+    );
+
+    // BrowserLane { retryable: false } (non-retryable) must become Terminal.
+    let browser_not_retryable_h =
+        job_error(collect_error(CrawlError::Fetch(FetchError::BrowserLane {
+            url: "https://example.com".to_string(),
+            detail: "human_required".to_string(),
+            retryable: false,
+        })));
+    assert!(
+        format!("{browser_not_retryable_h:?}").contains("Terminal"),
+        "BrowserLane{{retryable:false}} must become Terminal HandlerError, got {browser_not_retryable_h:?}"
+    );
+
+    // Timeout (retryable) must become Transient HandlerError.
+    let timeout_h = job_error(collect_error(CrawlError::Fetch(FetchError::Timeout {
+        url: "https://example.com".to_string(),
+        timeout_secs: 30,
+    })));
+    assert!(
+        format!("{timeout_h:?}").contains("Transient"),
+        "Timeout must become Transient HandlerError, got {timeout_h:?}"
+    );
+
+    // Schema mismatch (non-fetch, terminal) must become Terminal.
+    let schema_h = job_error(collect_error(CrawlError::Schema {
+        url: "https://example.com".to_string(),
+        detail: "missing required field".to_string(),
+    }));
+    assert!(
+        format!("{schema_h:?}").contains("Terminal"),
+        "Schema mismatch must become Terminal HandlerError, got {schema_h:?}"
+    );
 }

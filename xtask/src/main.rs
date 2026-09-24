@@ -47,6 +47,28 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 }
+#[derive(Subcommand, Debug)]
+enum PerfCommand {
+    /// Run the `census-service` criterion bench targets and write a baseline recording wall time,
+    /// throughput and peak RSS per group, stamped with hardware and toolchain metadata.
+    Record,
+    /// Re-run the bench targets, compare throughput against the recorded baseline, and fail when
+    /// any group regresses past the tolerance (default 5%, overridable with `--tolerance`).
+    Check {
+        /// Override the default 5% regression tolerance (e.g. `--tolerance 0.1` for 10%).
+        #[arg(long, default_value_t = 0.05)]
+        tolerance: f64,
+        /// Reason for running the check; stored alongside the baseline for audit.
+        #[arg(long)]
+        reason: Option<String>,
+    },
+    /// Run one named group under `perf record --call-graph=dwarf`; prints the exact command
+    /// and explains why it did not run when `perf` is absent.
+    Profile {
+        /// Criterion group id to profile, e.g. `census/parse` or `pipeline/result_file`.
+        group: String,
+    },
+}
 
 #[derive(Subcommand, Debug)]
 enum Command {
@@ -202,6 +224,11 @@ fn run() -> Result<()> {
         Command::CensusStatus { target } => census::status(target),
         Command::Coverage { target } => census::coverage(target),
         Command::Bench { args } => bench(&args),
+        Command::Perf { command } => match command {
+            PerfCommand::Record => perf::run_record(),
+            PerfCommand::Check { tolerance, reason } => perf::run_check(tolerance, reason),
+            PerfCommand::Profile { group } => perf::run_profile(&group),
+        },
         Command::Export {
             target,
             out,

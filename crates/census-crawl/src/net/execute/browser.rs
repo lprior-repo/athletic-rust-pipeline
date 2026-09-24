@@ -15,7 +15,7 @@
 
 use super::attempt::{blocking_kind, FetchPlan};
 use crate::net::bridge::{Action, BrowserCapture, BrowserOutcome, RequestSpec};
-use crate::net::cache::{sha256_prefix16, write_cache, CacheMeta};
+use crate::net::cache::{write_cache, CacheMeta};
 use crate::net::{instant_iso8601, now_iso8601, FetchError, FetchOutcome, Fetcher, MAX_BODY_BYTES};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
@@ -132,7 +132,7 @@ impl Fetcher {
         // A 403 or 429 is an observation about the *host*, not about this URL, so it is recorded
         // once per run here exactly as it is on the HTTP path.
         if let Some(kind) = blocking_kind(status) {
-            let retry_after = retry_after_secs(&capture.response.headers);
+            let retry_after = capture.retry_after_ms.map(|ms| ms / 1_000);
             self.record_access_condition(
                 plan.host,
                 kind,
@@ -143,7 +143,8 @@ impl Fetcher {
             .await;
         }
         match status {
-            200 | 404 => self.mint_capture(plan, capture).await,
+            200 => self.mint_capture(plan, capture).await,
+            404 => self.handle_404_capture(plan, capture).await,
             304 => Err(FetchError::Invariant {
                 // A capture that reports 304 came from a transport that sent conditional headers; a
                 // capture that was taken from the source cannot be a revalidation.
@@ -169,7 +170,14 @@ impl Fetcher {
         let body = decode_capture_body(plan, &capture)?;
         let mut hasher = Sha256::new();
         hasher.update(&body);
-        let sha256 = sha256_prefix16(hasher);
+        let digest = hasher.finalize();
+        let key_hex: String = digest
+            .get(..16)
+            .unwrap_or(digest.as_slice())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
         let bytes = body.len();
         let content_type = content_type(&capture.response.headers);
         // The transport stamps the capture; a stamp that is not an instant falls back to this
@@ -182,7 +190,8 @@ impl Fetcher {
             url: plan.url.to_string(),
             method: plan.method.to_string(),
             status,
-            sha256: sha256.clone(),
+            key_prefix: key_hex.clone(),
+            content_digest: content_hex,
             bytes,
             fetched_at: fetched_at.clone(),
             // The lane sends no conditional headers, so it has neither validator to carry forward.
@@ -196,13 +205,76 @@ impl Fetcher {
             url: plan.url.to_string(),
             method: plan.method.to_string(),
             status,
-            sha256,
+            sha256: key_hex,
             bytes,
             fetched_at,
             from_cache: false,
             content_type,
             body,
         })
+    }
+
+    /// Handle a 404 capture: cache the evidence, then return `Ok` or `Err` depending on
+    /// `allow_not_found`.
+    ///
+    /// The body and metadata are always cached — a 404 is a real answer the run should remember.
+    /// When `allow_not_found` is `true`, the caller expects the 404 as a normal outcome.
+    /// When `false`, the caller wants a 404 to propagate as an error.
+    async fn handle_404_capture(
+        &self,
+        plan: &FetchPlan<'_>,
+        capture: BrowserCapture,
+    ) -> Result<FetchOutcome, FetchError> {
+        let status = 404u16;
+        let body = decode_capture_body(plan, &capture)?;
+        let mut hasher = Sha256::new();
+        hasher.update(&body);
+        let digest = hasher.finalize();
+        let key_hex: String = digest
+            .get(..16)
+            .unwrap_or(digest.as_slice())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect();
+        let content_hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
+        let bytes = body.len();
+        let content_type = content_type(&capture.response.headers);
+        let fetched_at = capture
+            .fetched_at_ms
+            .and_then(instant_iso8601)
+            .unwrap_or_else(now_iso8601);
+        let meta = CacheMeta {
+            url: plan.url.to_string(),
+            method: plan.method.to_string(),
+            status,
+            key_prefix: key_hex.clone(),
+            content_digest: content_hex,
+            bytes,
+            fetched_at: fetched_at.clone(),
+            etag: None,
+            last_modified: None,
+            content_type: content_type.clone(),
+        };
+        write_cache(plan.body_path, plan.meta_path, &body, &meta)?;
+        self.count_body(plan, status, bytes).await;
+        if plan.options.allow_not_found {
+            Ok(FetchOutcome {
+                url: plan.url.to_string(),
+                method: plan.method.to_string(),
+                status,
+                sha256: key_hex,
+                bytes,
+                fetched_at,
+                from_cache: false,
+                content_type,
+                body,
+            })
+        } else {
+            Err(FetchError::Http {
+                status,
+                url: plan.url.to_string(),
+            })
+        }
     }
 
     /// Count the body one accepted capture carried, and flag the status it arrived under.
@@ -251,19 +323,6 @@ fn decode_capture_body(
         });
     }
     Ok(body)
-}
-
-/// The `Retry-After` a capture published, when it published one in the delta-seconds form.
-///
-/// The HTTP path reads the same header from a `reqwest::Response`; a capture carries the pairs
-/// themselves. The HTTP-date form is deliberately not parsed in either place: no source in this
-/// corpus has used it, and a wrong guess at an instant is worse than no instant.
-fn retry_after_secs(headers: &[(String, String)]) -> Option<u64> {
-    headers
-        .iter()
-        .rev()
-        .find(|(name, _)| name.eq_ignore_ascii_case("retry-after"))
-        .and_then(|(_, value)| value.trim().parse::<u64>().ok())
 }
 
 /// The content type a capture published, when it published one.
