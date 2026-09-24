@@ -1336,6 +1336,46 @@ Only public professional school/sport-role contacts are represented: school name
 - **Implementation recommendation**: REJECT
 - **Evidence**: whsaa.org homepage (5 501 B) serves no directory; no /schools path located (samples/assoc-home/WY__whsaa.org.html)
 
+## Measured 2026-09-24: what the census browser lane can read
+
+Open question 2 asked for a headless browser to render the 26 client-rendered tier-1 directories.
+The census now runs a browser lane, and the answer is that this lane is not that browser, by
+construction rather than by policy drift:
+
+- `census-serve --browser-profile` serves one headed profile whose origin is compiled in as
+  `https://www.athletic.net` (`crates/census-service/src/bootstrap/options.rs`), with the stated
+  reason that "a profile that may navigate anywhere is not the one this lane is for".
+- Its transport is action-defined for that one site
+  (`crates/athleticnet-browser/src/transport/rankings/`): `validate_route` pins the captured
+  response's origin, API path and method, and `RequestSpec` addresses that site's own actions.
+
+Attempted anyway, on 2026-09-24, against the endpoint serving the lane:
+`browser-session fetch --url https://www.nhiaa.org/about-nhiaa/schools/` and
+`--url https://piaa.org/schools` both answered `verdict HumanRequired` — the profile itself stands
+challenged, so a lane read is refused before any host question is asked. Rendering an association
+site would need a second, unscoped browser, which this design deliberately does not have.
+
+The 26 client-rendered jurisdictions therefore stay recorded as absences, and the entry per state
+above is the evidence: the URL tried, what the response contained, and the fact that no compliant
+read of it served directory rows.
+
+Two findings from running the landed association adapters the same day:
+
+- **CT** — `ciac` refuses: `https://ciacsports.com/Directory.aspx` presents a certificate that
+  expired 2021-07-27, so the adapter cannot read the directory the earlier capture recorded.
+- **ME, RI** — `mpa` and `riil` run; their fragments are the rows RI's FusionPoint directory serves
+  (49 schools with an XC/indoor+outdoor-track Head Coach row). The 2026-09-24 re-run of both
+  produced 543 `head_coach` rows (285 `mpa`, 258 `riil`, each citing its `School.aspx` or directory
+  page, none with an email), but `provider` is an offline-only verb: with no `--store` it opens the
+  default root `var/census-service` (`crates/census-service/src/cli/mod.rs`), so those rows are
+  staged there and the census store does not carry ME or RI yet. They are re-run against
+  `var/midwest-census` once the revision-8 crawl drains and releases the single-writer lock.
+
+Coach coverage as measured from the store's own rows on 2026-09-24: 23 of the 49 jurisdictions carry
+at least one coach row, 26 carry none. The zero ones are this report's client-rendered, robots-
+refused and login-gated states, and they are absences in the published workbook rather than gaps
+filled by inference.
+
 ## Unverified summary
 
 26 jurisdictions are recorded as unverified because their tier-1 directory is client-rendered: the served HTML contains no directory rows, so the absence of coach contacts cannot be asserted from a compliant fetch, and this lane did not run a browser to render them. Each such state names the exact URL tried and what the response contained. 3 jurisdictions (AL, MO, VA) are refused by robots.txt, plus the ArbiterLive platform used by KY/OK/MA/MT and the Bound directory path used by IA/SD - all of which publish `Disallow: /` or `Disallow: /*directory`.
