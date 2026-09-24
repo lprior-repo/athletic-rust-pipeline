@@ -109,6 +109,15 @@ Start `census-serve` on the assigned port, pointing at the version's binary:
 census-serve --listen 127.0.0.1:<port> --data-dir var/census-service --max-concurrent 8
 ```
 
+One store serves one process. `census-serve` opens `--data-dir` for writing at startup and a Fjall
+store has one writer, so the new endpoint cannot come up on its new port while the old one still
+holds the store: the old process has to drain and exit first, and only then does the new port start
+answering. The registration order is the half that must not be skipped — register the new deployment
+before removing any registration for the old endpoint, so no invocation window resolves to a dead
+address. Measured 2026-09-24: the old endpoint exited 2 s after `SIGTERM` with nothing in flight, the
+new one answered on its own port 2 s later, and the canary that followed ran its results stage on the
+new revision.
+
 ### 4. Register the deployment
 
 Register the new endpoint with the Restate node so that new invocations route to it:
@@ -142,6 +151,14 @@ kill <old-pid>
 # Unregister the old deployment
 restate deployment unregister <old-id>
 ```
+
+Without the CLI on `PATH` — and it is not installed on this host — the admin API does the same work,
+and retirement needs `force=true`: `DELETE /deployments/<id>` answers `501 Not Implemented`, while
+`DELETE /deployments/<id>?force=true` answers `202 Accepted`. Registration is `POST /deployments`
+with `{"uri": "http://127.0.0.1:<port>/"}`. Measured 2026-09-24: two registrations for one endpoint
+had accumulated — `http://localhost:9080/` at revisions 9/5 and `http://127.0.0.1:9080/` at revisions
+8/4, because one host spelled two ways is two deployments — and both were retired this way once the
+new deployment on its own port was registered and serving revisions 10/6.
 
 The binary at `/releases/<old-sha>/` may be removed after unregistration.
 
