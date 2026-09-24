@@ -876,3 +876,81 @@ The same crate compiles successfully under the workspace toolchain (`nightly-202
 2. `'/home/lewis/.agents/skills/kani/references/kani-practice.md'` — practical mental model, scope boundaries, evidence wording, black-hat rules
 3. `'/home/lewis/.agents/skills/kani/references/kani-patterns.md'` — harness idioms, bounded inputs, assumptions, cover, contracts, stubs, anti-patterns
 4. `'/home/lewis/.agents/skills/kani/references/kani-harness.md'` — CLI-first commands, install/setup, evidence capture, triage, report template
+
+---
+
+## §70 item 2: a closed window is a terminal acquisition state (2026-09-24)
+
+The revision-8 re-drive created 53 ingest objects, read from the deployment's own state rather than
+from memory:
+
+    curl -s -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
+      -d '{"query":"SELECT service_key, key, value_utf8 FROM state WHERE service_name = '\''Ingest'\''"}'
+
+49 of them are `milesplit_<st>` and each accepted observations (81 for DC to 1,996 for WI, 29,665
+across the 49). Four accepted none: `wayzata_ia`, `wayzata_mn`, `wayzata_wi`, `wiaa_results_wi`. Each
+of the four carries a **closed window** (`2026-W39`), a null cursor and a null `last_appended_at`.
+
+The cause is resume, not failure. The wayzata walk's rows are durable from the 2026-09-20 pass: 1,078
+meets in the store under provider `wayzata` (MN 428, IA 167, WI 28, IL 11, SD 2, unplaced 442),
+consolidated in `out/meets.jsonl`, minted from `sports/track/2026/schedule` and
+`sports/xc/2026/schedule` (386 + 151 `event-row` rows in the cached bodies, fetched 2026-09-20T18:10Z,
+both 200). The revision-8 walk honoured its own journal, produced no new batches, and posted none.
+`ingest_post` holds the rule on both sides of that: a batch is posted before the journal entry that
+claims it, and `complete_window` runs only after every batch landed. Zero appends with a closed
+window is therefore the record of a walk that **finished** — not work still owed.
+
+`SourceObject::terminal` read only `observations > 0`, so all four counted as owed and item 2 could
+not reach zero by either route: naming them refused the seal, naming none left the item `unmeasured`,
+and no re-run could change either, because the rows were already durable. The rule is now
+`observations > 0 || windows > 0` (`crates/census-service/src/census/state/open.rs`), which is what
+the object model already asserted. The case the old rule protected against is preserved rather than
+dropped: an object with neither an observation nor a window is still owed, still counted, and still
+refuses the seal by name —
+`census::state::tests::a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window`
+asserts all four combinations (written, resumed, empty-read, untouched) and that exactly one of them
+is owed. `Sweep` keeps its own inline rule — nothing accepted across the windows it watched — which
+answers a liveness question, not a terminality one, and the divergence now says so in both places.
+
+Operator consequence, and the reason this is written down: enumerate the keys from the `state` table
+and name every one of them. An item-2 count assembled from recall rather than from that query is a
+count nobody took. `docs/OPERATIONS.md` carries the command.
+
+---
+
+## The nationwide run aborted on Restate's default invocation timeouts (2026-09-24)
+
+The revision-8 nationwide fan-out did not finish. Its own aggregate state, read from the node, records
+two jurisdictions and 47 failures, every failure identical:
+
+    Terminal error [500]: the invocation stream was closed after the 'abort timeout' (10m) fired.
+
+The two that survived are the two smallest — AL 79 rosters done and 483 skipped (4,370 athletes,
+1,102 of them class of 2027), DC 67 teams and every roster skipped. Nothing was running when the
+failure was read: `SELECT ... FROM sys_invocation WHERE status = 'running'` answered 0 rows, and the
+newest invocation in the node was the `Consolidate run` that closed the pass at 23:07Z.
+
+Cause. Restate asks an invocation to suspend after `inactivity_timeout` with no journal progress, and
+aborts it `abort_timeout` later — one minute and ten minutes by default, both read from the manifest
+the endpoint publishes, per service. This endpoint declared neither, which the live manifest showed
+before the fix:
+
+    curl -s --http2-prior-knowledge -H 'accept: application/vnd.restate.endpointmanifest.v4+json' \
+      http://127.0.0.1:19102/discover      # every service: no inactivityTimeout, no abortTimeout
+
+Every handler here queues behind a blocking slot (`--max-concurrent 8`), and the fan-out submits all
+49 jurisdictions at once, so most of those handlers were *waiting* — with no journal entry to show for
+the wait — when the one-minute rule read them as stalled. The abort killed each invocation ten minutes
+later. The timeouts were therefore never a statement about how long the census takes; they were a
+statement about how long a queue may be, and the nationwide queue is longer than that.
+
+Fix. The nine store-backed services are bound with `ServiceOptions` declaring an hour for each timer
+(`CENSUS_INACTIVITY_TIMEOUT`/`CENSUS_ABORT_TIMEOUT`, `crates/census-service/src/restate_services/mod.rs`),
+`BrowserSession` deliberately keeps the defaults, and `fjall_restate_e2e`'s discovery test asserts both
+numbers appear in the manifest of every service that advertises them:
+
+    cargo test -p census-service --test fjall_restate_e2e restate_endpoint_advertises
+
+The abort is a *first* attempt's ending rather than lost work: a jurisdiction invocation resumes from
+its journal, so the failed states are re-driven rather than rebuilt. `docs/deployment-lifecycle.md`
+carries the rule.

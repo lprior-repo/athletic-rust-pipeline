@@ -13,7 +13,10 @@ use restate_sdk::prelude::*;
 use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
-use crate::census::{owed_jurisdictions, owed_source_objects, JurisdictionStages, SourceObject};
+use crate::census::{
+    owed_jurisdictions, owed_source_objects, silent_source_objects, JurisdictionStages,
+    SourceObject,
+};
 use census_reconcile::identity::{Revision, WorkflowIdentity};
 
 use super::ingest::IngestClient;
@@ -36,13 +39,15 @@ pub(super) async fn measure(
     let revision = Revision(request.revision);
     let jurisdictions = read_jurisdictions(ctx, season, revision).await;
     let endpoints = read_source_objects(ctx, &request.source_objects).await;
+    let source_objects = objects(&endpoints);
     Ok(OpenWorkReply {
         season: season.short(),
         revision: revision.get(),
         jurisdiction_sweeps: measured(&jurisdictions)
             .then(|| owed_jurisdictions(&stages(&jurisdictions))),
         source_objects: (!endpoints.is_empty() && measured(&endpoints))
-            .then(|| owed_source_objects(&objects(&endpoints))),
+            .then(|| owed_source_objects(&source_objects)),
+        silent_sources: silent_source_objects(&source_objects),
         jurisdictions,
         endpoints,
     })

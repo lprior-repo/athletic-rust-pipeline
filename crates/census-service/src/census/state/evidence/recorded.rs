@@ -74,6 +74,14 @@ pub struct RetainedFindings {
     /// `RateLimited`, `Timeout`, or a host that could not be reached. A cooldown bounds the retry; none
     /// of these is a refusal.
     pub throttled_hosts: u64,
+    /// Of the run's source objects: the endpoints that finished their walk without appending a row,
+    /// sorted.
+    ///
+    /// §70 item 2 counts a finished walk terminal whether or not it appended, so these are not owed
+    /// and the owed count cannot name them. They are findings because nothing else in the seal would:
+    /// a source of no rows leaves no gap of its own, and an ingest object is not a store row, so
+    /// without this field "read and empty" and "never read" are the same seal.
+    pub silent_sources: Vec<String>,
     pub source_failures: Option<u64>,
     pub observations: u64,
     pub calculations: u64,

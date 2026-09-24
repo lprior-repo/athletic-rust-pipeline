@@ -135,8 +135,10 @@ fn run_request(request: &SealRequest) -> OpenWorkRequest {
 
 /// The store-side seal request, carrying what the journal could measure and nothing it could not.
 ///
-/// `source_failures` stays unmeasured: the journal reports the objects that accepted nothing, which
-/// is what §70 asks for, and the per-attempt failure count is not a row either side keeps.
+/// `source_failures` stays unmeasured: the journal reports the objects with no terminal acquisition,
+/// which is what §70 asks for, and the per-attempt failure count is not a row either side keeps. The
+/// objects that finished their walk empty are named alongside that count rather than inside it, so
+/// the seal records them as findings instead of silently reading their sources as never read.
 fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealRequest {
     StoreSealRequest {
         grad_year: request.grad_year,
@@ -150,6 +152,7 @@ fn store_request(request: &SealRequest, journal: &OpenWorkReply) -> StoreSealReq
         journal: Some(JournalCounts {
             jurisdiction_sweeps: journal.jurisdiction_sweeps,
             source_objects: journal.source_objects,
+            silent_sources: journal.silent_sources.clone(),
         }),
         source_failures: None,
     }

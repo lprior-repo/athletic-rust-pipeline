@@ -62,9 +62,14 @@ pub struct OpenWorkReply {
     pub revision: u32,
     /// Owed jurisdiction sweeps. `None` when not one jurisdiction object could be read.
     pub jurisdiction_sweeps: Option<u64>,
-    /// Source objects that have accepted nothing. `None` when the caller named none, or when not
-    /// one of them could be read.
+    /// Source objects whose acquisition has no terminal state yet. `None` when the caller named
+    /// none, or when not one of them could be read.
     pub source_objects: Option<u64>,
+    /// Of [`Self::endpoints`]: the endpoints that finished their walk without appending a row, by
+    /// name. Defaulted rather than required, because replies recorded before this field existed are
+    /// still replayed — and a replayed reply that cannot be read is a run that cannot be measured.
+    #[serde(default)]
+    pub silent_sources: Vec<String>,
     /// Every jurisdiction in the run scope, owed or not, in scope order.
     pub jurisdictions: Vec<JurisdictionOpen>,
     /// Every source object the caller named, in request order.

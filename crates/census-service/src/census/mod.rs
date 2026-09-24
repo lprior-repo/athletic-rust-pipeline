@@ -31,8 +31,9 @@ pub use meets::{
 };
 pub use state::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
-    AcceptanceItem, CensusState, GapTally, JurisdictionStages, OpenWork, Phase, RetainedFindings,
-    SealCounts, SealError, SealEvidence, SealedCensus, SourceObject, WorkbookCheck,
+    silent_source_objects, AcceptanceItem, CensusState, GapTally, JurisdictionStages, OpenWork,
+    Phase, RetainedFindings, SealCounts, SealError, SealEvidence, SealedCensus, SourceObject,
+    WorkbookCheck,
 };
 pub use sweep::{collect_milesplit, collect_state_rosters, collect_state_teams};
 

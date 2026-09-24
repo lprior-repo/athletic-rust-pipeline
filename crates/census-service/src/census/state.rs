@@ -29,7 +29,7 @@ pub use evidence::{
 };
 pub use open::{
     owed_cohort_decisions, owed_identity_candidates, owed_jurisdictions, owed_source_objects,
-    JurisdictionStages, SourceObject,
+    silent_source_objects, JurisdictionStages, SourceObject,
 };
 
 /// The phases §48 names, in the only order they may be entered.
@@ -111,6 +111,11 @@ impl Phase {
 }
 
 /// Where one census stands. `Complete` is unconstructible without a seal.
+///
+/// The seal is boxed. It carries the whole evidence set, so inlining a payload that much wider than a
+/// phase name would size every `CensusState` — including the five that hold nothing — to the seal's
+/// own width, and each new finding would move the enum again. Serialization is unaffected: `Box` is
+/// transparent to serde, so a `seal.json` written before this still reads.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "phase", rename_all = "snake_case")]
 pub enum CensusState {
@@ -121,7 +126,7 @@ pub enum CensusState {
     Reviewing,
     ResolvingGaps,
     Exporting,
-    Complete(SealedCensus),
+    Complete(Box<SealedCensus>),
 }
 
 impl CensusState {
@@ -141,7 +146,7 @@ impl CensusState {
     /// The seal, when this census has one.
     pub const fn sealed(&self) -> Option<&SealedCensus> {
         match self {
-            CensusState::Complete(sealed) => Some(sealed),
+            CensusState::Complete(sealed) => Some(&**sealed),
             _ => None,
         }
     }
@@ -187,7 +192,7 @@ impl CensusState {
                 detail: evidence.detail(item),
             });
         }
-        *self = CensusState::Complete(evidence.into_seal());
+        *self = CensusState::Complete(Box::new(evidence.into_seal()));
         Ok(())
     }
 }

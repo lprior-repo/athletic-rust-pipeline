@@ -35,12 +35,17 @@ use workbook::inspect_workbook;
 /// They are separate from the store-side counts on purpose: a caller that holds no journal passes
 /// `None` here and the seal says *unmeasured* rather than zero, which keeps the items those counts
 /// belong to open instead of certifying them by default.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct JournalCounts {
     /// Jurisdictions whose sweep still owes a stage.
     pub jurisdiction_sweeps: Option<u64>,
-    /// Source objects that have accepted nothing yet.
+    /// Source objects whose acquisition has no terminal state yet.
     pub source_objects: Option<u64>,
+    /// Of the run's source objects: the ones that finished their walk without appending a row, by
+    /// endpoint. §70 item 2 counts a finished walk terminal whether or not it appended, so these are
+    /// findings rather than owed work — and the only field in the seal that shows a source of no rows
+    /// at all.
+    pub silent_sources: Vec<String>,
 }
 
 /// What a seal run is asked to certify, and what its caller could read beyond the store.

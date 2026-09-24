@@ -26,7 +26,7 @@ pub(super) fn assemble(
     request: &SealRequest,
     workbook: WorkbookCheck,
 ) -> SealEvidence {
-    let journal = request.journal.unwrap_or_default();
+    let journal = request.journal.clone().unwrap_or_default();
     SealEvidence {
         open: open_work(cases, journal),
         counts: seal_counts(census, coverage),
@@ -95,10 +95,19 @@ fn retained_findings(
         access_conditions,
         blocked_hosts,
         throttled_hosts,
+        // Of the run's source objects, the ones that finished their walk without appending a row.
+        // §70 item 2 counts a finished walk terminal whether or not it appended, so this finding is
+        // what keeps "read and empty" from reading as "never read". Empty on the store route, which
+        // has no journal to name them from.
+        silent_sources: request
+            .journal
+            .as_ref()
+            .map_or_else(Vec::new, |journal| journal.silent_sources.clone()),
         // A source *failure* is a terminal outcome of one attempt, and the store keeps access
-        // conditions rather than attempts. The journal knows the objects that accepted nothing,
-        // which is the other half of §70 item 2's fact; per-attempt failures are reported only where
-        // the caller could read them.
+        // conditions rather than attempts. The journal reports the objects with no terminal
+        // acquisition — of which the silent sources above are the ones that finished empty — and
+        // that report is the other half of §70 item 2's fact; per-attempt failures are reported only
+        // where the caller could read them.
         source_failures: request.source_failures,
         observations: stats.observations,
         calculations: count(coverage.read.performances),

@@ -68,12 +68,20 @@ pub struct SourceObject {
 }
 
 impl SourceObject {
-    /// A source object is terminal once it has accepted an observation.
+    /// A source object is terminal once it has accepted an observation, or once the walk that owns it
+    /// declared a window complete.
     ///
-    /// This is the sweep's own rule for a stale endpoint, reused rather than restated: the seal and
-    /// the sweep must not disagree about which endpoints are owed.
+    /// The window is the object's own record that its walk finished: `complete_window` is called only
+    /// after every batch the walk produced landed, so no window closes over rows that were not
+    /// appended — and a walk that produced none, because its rows were already durable from an
+    /// earlier run, closes one too. Counting that as owed would hold a fully acquired source on the
+    /// seal's item 2 for good.
+    ///
+    /// The `Sweep` asks a different question, with its own inline rule — whether an endpoint accepted
+    /// anything across the windows it watched. Liveness over an observation window is not the same
+    /// claim as terminality of the acquisition, so the two rules stay apart rather than shared.
     pub fn terminal(&self) -> bool {
-        self.observations > 0
+        self.observations > 0 || self.windows > 0
     }
 }
 
@@ -82,9 +90,27 @@ pub fn owed_jurisdictions(stages: &[JurisdictionStages]) -> u64 {
     count(stages.iter().filter(|stage| !stage.terminal()).count())
 }
 
-/// Count the source objects that have never accepted an observation.
+/// Count the source objects whose acquisition has no terminal state yet.
 pub fn owed_source_objects(objects: &[SourceObject]) -> u64 {
     count(objects.iter().filter(|object| !object.terminal()).count())
+}
+
+/// Name the source objects that finished their walk without appending a row.
+///
+/// The other half of §70 item 2's fact, and the half the owed count cannot carry: these objects
+/// satisfy the item — a closed window is the object's own record that its walk finished — so they
+/// travel as a retained finding instead. Without them the seal would show nothing at all for a source
+/// of no rows, and a source that was read and found empty would read exactly like one nobody read.
+/// Sorted and deduplicated, so the names are evidence rather than the order a caller named keys in.
+pub fn silent_source_objects(objects: &[SourceObject]) -> Vec<String> {
+    let mut names = objects
+        .iter()
+        .filter(|object| object.observations == 0 && object.windows > 0)
+        .map(|object| object.endpoint.clone())
+        .collect::<Vec<_>>();
+    names.sort();
+    names.dedup();
+    names
 }
 
 /// Count the retained cases that ask a cohort question and have no terminal decision.

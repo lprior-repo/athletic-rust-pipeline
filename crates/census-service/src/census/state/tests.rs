@@ -32,6 +32,7 @@ fn evidence() -> SealEvidence {
             coaches: 27_580,
         },
         retained: RetainedFindings {
+            silent_sources: vec!["wayzata_mn".to_string(), "wiaa_results_wi".to_string()],
             gaps: vec![
                 GapTally {
                     class: "missing_coach".to_string(),
@@ -443,7 +444,7 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
 /// instead of as one opaque hash that cannot say which field moved.
 #[test]
 fn the_digest_is_pinned_field_by_field() {
-    let body = "census-seal-v5\n\
+    let body = "census-seal-v6\n\
          jurisdiction_buckets=51\n\
          schools=18047\n\
          meets=11007\n\
@@ -455,6 +456,7 @@ fn the_digest_is_pinned_field_by_field() {
          access_conditions=96\n\
          blocked_hosts=60\n\
          throttled_hosts=36\n\
+         silent_sources=wayzata_mn|wiaa_results_wi\n\
          source_failures=4\n\
          observations=9800000\n\
          calculations=4060000\n\
@@ -471,8 +473,18 @@ fn the_digest_is_pinned_field_by_field() {
     );
     assert_eq!(
         digest_of(&seal_from_export(evidence()).expect("seals")),
-        "8c8ed4fac393f4753373b9596c08551f202d11c14a1afc35da9e89e1bd9ec3bb",
+        "62820209dbeaa3afbc6ca9546b27c0206d4f574624173c8c201e8cb09710fe36",
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
+    );
+
+    // The silent sources are evidence rather than a comment on the findings: naming one more source
+    // that finished empty is a different census.
+    let mut named = evidence();
+    named.retained.silent_sources.push("wayzata_ia".to_string());
+    assert_ne!(
+        super::seal_digest::render(&named),
+        super::seal_digest::render(&evidence()),
+        "a source object that finished empty is part of what the digest identifies"
     );
 
     // The tri-state is part of the wire: a count nobody took must not digest as a measured zero.
@@ -609,23 +621,77 @@ fn unread_jurisdictions_count_as_owing() {
     );
 }
 
-/// A source object is owed until it has accepted one observation — the sweep's own rule for a stale
-/// endpoint, so the seal and the sweep cannot disagree about which endpoints are owed.
+/// A source object is owed until it has accepted an observation or completed a window: the first
+/// says its rows are durable, the second that the walk which owns it finished posting.
 #[test]
-fn a_source_object_is_owed_until_it_accepts_an_observation() {
+fn a_source_object_is_owed_until_it_accepts_an_observation_or_completes_a_window() {
     let written = SourceObject {
         endpoint: "milesplit_wi".to_string(),
         observations: 1,
         windows: 0,
     };
-    let silent = SourceObject {
-        endpoint: "wiaa_results".to_string(),
+    // Rows already durable from an earlier run: the resumed walk posts nothing and closes its window,
+    // which is a terminal acquisition state rather than outstanding work.
+    let resumed = SourceObject {
+        endpoint: "wayzata_mn".to_string(),
+        observations: 0,
+        windows: 1,
+    };
+    // Read and genuinely empty: the closed window still records that the walk finished.
+    let empty_read = SourceObject {
+        endpoint: "wiaa_results_wi".to_string(),
         observations: 0,
         windows: 3,
     };
+    // Neither: no batch posted and no window declared, so the object is owed.
+    let untouched = SourceObject {
+        endpoint: "never_walked".to_string(),
+        observations: 0,
+        windows: 0,
+    };
     assert!(written.terminal());
-    assert!(!silent.terminal());
-    assert_eq!(owed_source_objects(&[written, silent]), 1);
+    assert!(resumed.terminal());
+    assert!(empty_read.terminal());
+    assert!(!untouched.terminal());
+    assert_eq!(
+        owed_source_objects(&[written, resumed, empty_read, untouched]),
+        1
+    );
+}
+
+/// The names the owed count cannot carry: an object whose walk finished without appending a row is
+/// terminal, so it is not owed — and it still has to be recorded, or "read and empty" and "never
+/// read" are the same seal.
+#[test]
+fn the_objects_that_finished_empty_are_named_rather_than_owed() {
+    let written = SourceObject {
+        endpoint: "milesplit_mn".to_string(),
+        observations: 412,
+        windows: 1,
+    };
+    let resumed = SourceObject {
+        endpoint: "wayzata_mn".to_string(),
+        observations: 0,
+        windows: 1,
+    };
+    let empty_read = SourceObject {
+        endpoint: "wiaa_results_wi".to_string(),
+        observations: 0,
+        windows: 3,
+    };
+    // Named, never read: no window, so this is owed work rather than a source of no rows.
+    let untouched = SourceObject {
+        endpoint: "never_walked".to_string(),
+        observations: 0,
+        windows: 0,
+    };
+    let objects = [written, resumed, empty_read, untouched];
+    assert_eq!(owed_source_objects(&objects), 1);
+    assert_eq!(
+        silent_source_objects(&objects),
+        vec!["wayzata_mn".to_string(), "wiaa_results_wi".to_string()],
+        "sorted, and only the objects whose walk finished with nothing"
+    );
 }
 
 /// The state a cohort case starts in is what makes this item attainable, so the item counts only the

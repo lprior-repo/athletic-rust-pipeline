@@ -21,6 +21,30 @@ the following describes how it must work and why.
 
 These rules exist because of the replay hazards that Restate workflows exhibit across builds.
 
+## Invocation timeouts
+
+Restate asks an invocation to suspend after `inactivity_timeout` without journal progress, then aborts
+it `abort_timeout` later. Both default to one minute and ten minutes, and both are read from the
+manifest the endpoint publishes — per service — so an endpoint that declares neither gets the defaults
+whatever the node's own configuration says.
+
+The census needs longer than the defaults, because **queueing is in-flight time**. Every handler runs
+its work on the blocking pool (`--max-concurrent` slots), and the national fan-out submits every
+jurisdiction at once, so most handlers spend their first minutes waiting for a slot with no journal
+entry to show for it. Restate read that wait as a stall: on 2026-09-24 the revision-8 nationwide run
+lost 47 of its 49 jurisdictions to a ten-minute abort while they were queued, and finished with two.
+
+`build_endpoint` therefore binds the nine store-backed services with `ServiceOptions` declaring an
+hour for each timer (`CENSUS_INACTIVITY_TIMEOUT`/`CENSUS_ABORT_TIMEOUT` in `restate_services/mod.rs`),
+and `fjall_restate_e2e` asserts both numbers appear in the manifest that every one of them advertises.
+`BrowserSession` keeps the defaults on purpose: the lane answers one request at a time, and a lane
+that hangs should be aborted quickly rather than held for an hour.
+
+The hour is also the backstop for a genuinely stuck handler. An abort discards whatever the blocking
+job had done in memory — the journal holds only what landed — so the invocation's next attempt
+replays that work. The retry policy decides what happens after an abort; the timer decides only that
+waiting forever is not one of the options.
+
 ## What breaking rule 1 looks like
 
 The failure is silent, which is why it is worth recognising. A client that submits work against a

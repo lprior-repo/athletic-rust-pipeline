@@ -39,6 +39,7 @@ use crate::spawn::Spawner;
 use census_crawl::net::bridge::BrowserLane;
 use census_store::Store;
 use std::sync::Arc;
+use std::time::Duration;
 
 use restate_sdk::prelude::*;
 use tokio::sync::Semaphore;
@@ -225,6 +226,48 @@ pub(super) async fn journaled_today_workflow(
     .map_err(restate_sdk::errors::HandlerError::from)
 }
 
+/// How long an invocation on this endpoint may stay in flight without journal progress.
+///
+/// Every handler here runs its work on the blocking pool, and the fan-out submits far more
+/// jurisdiction handlers than the pool has slots, so waiting for a slot is part of an invocation's
+/// in-flight time and produces no journal entry at all. Restate's one-minute default read that wait as
+/// a stalled handler: on 2026-09-24 it asked 47 of the nationwide run's 49 jurisdiction invocations to
+/// suspend, and aborted each one ten minutes later while it was still queued. A census handler is
+/// allowed an hour of queueing; the fetch layer's own timeouts bound any single request.
+const CENSUS_INACTIVITY_TIMEOUT: Duration = Duration::from_secs(60 * 60);
+
+/// How long Restate waits for an invocation to react after asking it to suspend.
+///
+/// The work a handler does is not journaled until it lands, so an abort mid-job discards it and the
+/// invocation's next attempt replays it. This is the backstop for a handler that is genuinely stuck
+/// rather than queued: an hour is longer than any one jurisdiction's walk, and the invocation's own
+/// retry policy is what decides what happens after an abort.
+const CENSUS_ABORT_TIMEOUT: Duration = Duration::from_secs(60 * 60);
+
+/// The invocation timeouts every store-backed census service declares.
+///
+/// Restate reads them from the manifest this endpoint publishes, per service, and falls back to its
+/// own defaults — one minute without journal progress, then a ten-minute abort — when a service
+/// declares neither. `BrowserSession` is deliberately not bound with these: the lane answers one
+/// request at a time and a lane that hangs is better aborted on the defaults than held for an hour,
+/// while a census handler that is *queued* behind the blocking pool is doing exactly what it was
+/// asked to and must not be read as stalled.
+fn census_service_options() -> ServiceOptions {
+    ServiceOptions::new()
+        .inactivity_timeout(CENSUS_INACTIVITY_TIMEOUT)
+        .abort_timeout(CENSUS_ABORT_TIMEOUT)
+}
+
+/// A store-backed census service definition, with its invocation timeouts declared.
+///
+/// The options belong to the definition rather than to the `bind` call: that is the SDK's own
+/// placement, and it keeps the timeout list next to the service it describes.
+fn census_service<D: IntoServiceDefinition>(definition: D) -> ServiceDefinition {
+    definition
+        .into_service_definition()
+        .options(census_service_options())
+}
+
 /// Build the endpoint the HTTP server serves. Service names come from the struct names: `Census`,
 /// `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`,
 /// `NationalCensus`, and - when the deployment serves one - `BrowserSession`.
@@ -252,31 +295,31 @@ pub fn build_endpoint(
     let load = Arc::new(Semaphore::new(max_concurrent.max(1)));
     let jobs = Jobs::new(Arc::clone(&store), load, Arc::clone(&region));
     let mut builder = Endpoint::builder()
-        .bind(Census::new(
+        .bind(census_service(Census::new(
             Arc::clone(&store),
             Arc::clone(&clock),
             jobs.clone(),
-        ))
-        .bind(Consolidate::new(jobs.clone()))
-        .bind(Report::new(jobs.clone()))
-        .bind(Bests::new(jobs.clone()))
-        .bind(Workbook::new(jobs))
-        .bind(Ingest::new(
+        )))
+        .bind(census_service(Consolidate::new(jobs.clone())))
+        .bind(census_service(Report::new(jobs.clone())))
+        .bind(census_service(Bests::new(jobs.clone())))
+        .bind(census_service(Workbook::new(jobs)))
+        .bind(census_service(Ingest::new(
             Arc::clone(&store),
             Arc::clone(&clock),
             Arc::clone(&region),
-        ))
-        .bind(Sweep::new(
+        )))
+        .bind(census_service(Sweep::new(
             Arc::clone(&store),
             Arc::clone(&clock),
             Arc::clone(&region),
-        ))
-        .bind(JurisdictionCensus::new(
+        )))
+        .bind(census_service(JurisdictionCensus::new(
             Arc::clone(&store),
             Arc::clone(&clock),
             uses_lane,
-        ))
-        .bind(NationalCensus::new(clock));
+        )))
+        .bind(census_service(NationalCensus::new(clock)));
     if let Some(settings) = serves_lane {
         builder = builder.bind(BrowserSession::new(settings, Arc::new(SystemClock)));
     }

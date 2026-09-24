@@ -182,14 +182,23 @@ the store route, not a bug. A finished census seals through the deployment that 
 
 `--season` and `--revision` name the run being certified (defaults: the 2026-27 season, revision 1)
 — the run it *was submitted under*, never a new one. `--source-object <key>` names an ingest object
-to read, repeatably, because an object key is the caller's to choose and the service cannot enumerate
-them: naming none leaves item 2 unmeasured rather than reporting it as zero, and naming a key whose
-acquisition never ran that way reads as an endpoint that never accepted an observation. The
-meet-index stage routes each planned source's acquisition through `<slug>_<state>`, so an online seal
-measures item 2 from the endpoints the operator names; a pass that ran before the route existed
-leaves the same object readable and empty, and naming it is what refuses the seal rather than
-certifying a count nobody took. The two routes otherwise assemble the same ladder, and an operator
-reads one vocabulary either way.
+to read, repeatably, because an object key is the caller's to choose rather than a list the service
+publishes. The meet-index stage routes each planned source's acquisition through `<slug>_<state>`,
+and every object a pass created is readable from the deployment's own state:
+
+    curl -s -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
+      -d '{"query":"SELECT service_key FROM state WHERE service_name = '\''Ingest'\'' ORDER BY service_key"}'
+
+Name every key that query answers, or item 2 stays `unmeasured` instead of zero. An object is
+terminal once it has accepted an observation **or** declared a window complete: the second is the
+object's own record that its walk finished — `complete_window` runs only after every batch the walk
+produced landed, so no window closes over rows that were not appended — and a resumed walk closes one
+while posting nothing, because its rows were already durable from an earlier pass. A walk that
+finished is not work still owed, so a fully acquired source never reads as `owed`. What does read
+`owed` is an object with neither an observation nor a window: a walk that never finished, which the
+seal refuses over by name — the honest reading, and the one that keeps the pressure on the finding
+rather than on the label. The two routes otherwise assemble the same ladder, and an operator reads one
+vocabulary either way.
 
 `--write` records the sealed state in `out/seal.json`. What the seal checks: the phase ladder
 against the store's own artifacts, the cohort the workbook's `Run Metrics` sheet names against the

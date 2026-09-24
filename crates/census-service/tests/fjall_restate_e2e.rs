@@ -457,9 +457,9 @@ fn free_local_address() -> SocketAddr {
     address
 }
 
-/// Poll `/discover` until the endpoint answers, then return the advertised service names. The retry
-/// loop is bounded by `DISCOVERY_ATTEMPTS`.
-async fn discover_service_names(client: &reqwest::Client, url: &str) -> Vec<String> {
+/// Poll `/discover` until the endpoint answers, then return the advertised manifest. The retry loop
+/// is bounded by `DISCOVERY_ATTEMPTS`.
+async fn discover_manifest(client: &reqwest::Client, url: &str) -> serde_json::Value {
     let mut answered = None;
     let mut last_error = None;
     for _ in 0..DISCOVERY_ATTEMPTS {
@@ -487,7 +487,11 @@ async fn discover_service_names(client: &reqwest::Client, url: &str) -> Vec<Stri
         reqwest::StatusCode::OK,
         "discovery must answer 200 while the endpoint is up"
     );
-    let manifest: serde_json::Value = response.json().await.unwrap();
+    response.json().await.unwrap()
+}
+
+/// The service names a manifest advertises, in its own order.
+fn service_names(manifest: &serde_json::Value) -> Vec<String> {
     manifest
         .get("services")
         .and_then(serde_json::Value::as_array)
@@ -496,6 +500,11 @@ async fn discover_service_names(client: &reqwest::Client, url: &str) -> Vec<Stri
         .filter_map(|service| service.get("name").and_then(serde_json::Value::as_str))
         .map(str::to_string)
         .collect()
+}
+
+/// The names `/discover` answers with, for the callers that assert on the service list alone.
+async fn discover_service_names(client: &reqwest::Client, url: &str) -> Vec<String> {
+    service_names(&discover_manifest(client, url).await)
 }
 
 /// The client the endpoint's discovery surface speaks: HTTP/2 with prior knowledge, because the
@@ -559,7 +568,8 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
 
     let url = format!("http://{listen}/discover");
     let client = discovery_client();
-    let names = discover_service_names(&client, &url).await;
+    let manifest = discover_manifest(&client, &url).await;
+    let names = service_names(&manifest);
     for expected in EXPECTED_SERVICES {
         assert!(
             names.iter().any(|name| name == expected),
@@ -571,6 +581,43 @@ async fn restate_endpoint_advertises_services_and_drains_on_request() {
         EXPECTED_SERVICES.len(),
         "the endpoint advertises exactly its services, nothing more: {names:?}"
     );
+
+    // Restate reads these two timeouts out of the manifest and falls back to its own defaults when
+    // they are absent: one minute without journal progress, then a ten-minute abort. Every handler
+    // here queues behind a blocking slot, and the fan-out submits more jurisdictions than there are
+    // slots, so on 2026-09-24 those defaults aborted 47 of the nationwide run's 49 jurisdiction
+    // invocations while they were queued rather than stalled. Both are advertised per service because
+    // the manifest is the only place Restate reads them from.
+    let advertised = 60 * 60 * 1000;
+    let services = manifest
+        .get("services")
+        .and_then(serde_json::Value::as_array)
+        .expect("the discovery manifest carries a services array");
+    assert_eq!(
+        services.len(),
+        EXPECTED_SERVICES.len(),
+        "every advertised service carries the timeouts: {services:?}"
+    );
+    for service in services {
+        let name = service
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("?");
+        assert_eq!(
+            service
+                .get("inactivityTimeout")
+                .and_then(serde_json::Value::as_u64),
+            Some(advertised),
+            "{name} does not advertise the census inactivity timeout: {service:?}"
+        );
+        assert_eq!(
+            service
+                .get("abortTimeout")
+                .and_then(serde_json::Value::as_u64),
+            Some(advertised),
+            "{name} does not advertise the census abort timeout: {service:?}"
+        );
+    }
 
     let report = drain_after_shutdown(&mut tasks, shutdown_tx).await;
     assert_eq!(report.stop_reason, StopReason::Requested);
