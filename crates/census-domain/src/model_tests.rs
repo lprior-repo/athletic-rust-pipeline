@@ -388,18 +388,18 @@ fn athlete_ids_separate_gender_sides_and_ignore_spacing() {
 
 #[test]
 fn mark_raw_reports_the_published_value_or_its_unit() {
-    let imperial = |feet: &str, metres| Mark::FieldImperial {
+    let imperial = |feet: &str, metres: i32| Mark::FieldImperial {
         feet_mark: feet.into(),
-        metres,
+        metres: CentiMetres(metres),
     };
     let cases: &[(Mark, &str)] = &[
         (Mark::Raw("41-06.5".into()), "41-06.5"),
         (Mark::Raw(String::new()), ""),
         (Mark::Raw(" ".into()), " "),
-        (Mark::TimeSeconds(10.94), "time"),
-        (Mark::DistanceMetres(1.73), "distance"),
-        (imperial("5' 4\"", 1.63), "field"),
-        (Mark::Points(8421.0), "points"),
+        (Mark::TimeSeconds(CentiSeconds(1094)), "time"),
+        (Mark::DistanceMetres(CentiMetres(173)), "distance"),
+        (imperial("5' 4\"", 163), "field"),
+        (Mark::Points(CentiPoints(842100)), "points"),
     ];
     for (mark, raw) in cases {
         assert_eq!(mark.raw(), *raw);
@@ -635,4 +635,80 @@ fn school_state_is_stored_as_the_validated_jurisdiction() {
     assert_eq!(id.to_string(), "sch_b5ea31ddfcd999ba");
     // The jurisdiction's code is what a report or key renderer asks for, and it is the wire form.
     assert_eq!(school.state.map(UsJurisdiction::code), Some("WI"));
+}
+
+#[test]
+fn candidate_key_mints_the_id_the_athlete_row_carries() {
+    // Both ids are pinned to bytes computed outside this program (SHA-256 over `prefix 0x1f part…`,
+    // first eight bytes), so a change to the part order, the separator or the gender letter shows up
+    // here as a moved stored key instead of a silent re-mint of every athlete row.
+    let school = SchoolId::mint("sch", &["madison west"]);
+    assert_eq!(school.as_str(), "sch_86dce1a10ef047d3");
+    let class = GradYear::new(2027).expect("2027 is a class the census places");
+    let key = AthleteCandidateKey::new(&school, "Jane Doe", class, Gender::Girls);
+    assert_eq!(key.name, "jane doe");
+    assert_eq!(key.candidate_id().as_str(), "ath_2df0e32537167dac");
+    // A cluster of one candidate carries that candidate's id, and the row minted from the same four
+    // facts is that cluster.
+    assert_eq!(key.cluster_id().as_str(), key.candidate_id().as_str());
+    assert_eq!(
+        CanonicalAthlete::mint(&school, "Jane Doe", class, Gender::Girls).as_str(),
+        "ath_2df0e32537167dac"
+    );
+}
+
+#[test]
+fn candidate_key_equality_agrees_with_the_retained_athlete_key() {
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Madison West High School",
+        "madison-west",
+    );
+    let class = GradYear::new(2027).expect("2027 is a class the census places");
+    let raw = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Girls);
+    let respelled = CanonicalAthlete::new(&school, "jane  DOE", class, Gender::Girls);
+    // One subject spelled two ways: one id, one key, one subject to the merge.
+    assert_eq!(raw.id, respelled.id);
+    assert_eq!(raw.candidate_key(), respelled.candidate_key());
+    assert!(raw.same_natural_key(&respelled));
+
+    // `Mixed` and `Unknown` both mint the letter `u`, so those rows share an id while stating two
+    // different keys: one id, two claims — a disagreement the merge retains instead of resolving.
+    let mixed = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Mixed);
+    let unknown = CanonicalAthlete::new(&school, "Jane Doe", class, Gender::Unknown);
+    assert_eq!(mixed.id, unknown.id);
+    assert_ne!(mixed.candidate_key(), unknown.candidate_key());
+    assert!(!mixed.same_natural_key(&unknown));
+}
+
+#[test]
+fn candidate_key_order_is_the_minted_letter_order_and_stays_total() {
+    let school = CanonicalSchool::mint(
+        UsJurisdiction::Wisconsin,
+        "Madison West High School",
+        "madison-west",
+    );
+    let class = GradYear::new(2027).expect("2027 is a class the census places");
+    let key = |side: Gender, cohort: GradYear| {
+        AthleteCandidateKey::new(&school, "Jane Doe", cohort, side)
+    };
+    let girls = key(Gender::Girls, class);
+    let boys = key(Gender::Boys, class);
+    let mixed = key(Gender::Mixed, class);
+    let unknown = key(Gender::Unknown, class);
+    let later = key(
+        Gender::Girls,
+        GradYear::new(2028).expect("2028 is a class the census places"),
+    );
+    // The order is the letters the ids are minted from — `f` before `m` — never the enum's order, so a
+    // new variant cannot land between two existing ones and move a cluster id.
+    assert!(girls < boys);
+    assert!(girls < later);
+    // `Mixed` and `Unknown` share the letter and the frozen stable key still separates them, so `Ord`
+    // and `Eq` agree and a `BTreeSet` of keys keeps both.
+    assert_ne!(mixed, unknown);
+    assert!(mixed < unknown);
+    let mut sorted = vec![unknown.clone(), boys.clone(), mixed.clone(), girls.clone()];
+    sorted.sort();
+    assert_eq!(sorted, vec![girls, boys, mixed, unknown]);
 }

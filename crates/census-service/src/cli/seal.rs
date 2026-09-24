@@ -239,12 +239,12 @@ fn report_open(open: &[(String, String)]) {
 /// The counts the seal certified, and what the census retains without resolving.
 fn report_certified(ladder: &Ladder) {
     println!(
-        "  cohort {} of {} athletes, {} schools, {} meets, {} performances, {} coaches",
+        "  cohort {} of {} athletes, {} schools, {} meets, {} cohort performances, {} coaches",
         ladder.counts.class_of_2027,
         ladder.counts.athletes,
         ladder.counts.schools,
         ladder.counts.meets,
-        ladder.counts.performances,
+        ladder.counts.cohort_performances,
         ladder.counts.coaches,
     );
     println!(

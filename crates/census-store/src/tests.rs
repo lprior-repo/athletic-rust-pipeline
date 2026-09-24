@@ -1115,3 +1115,145 @@ fn a_refused_entry_leaves_the_page_unwritten_and_every_counter_where_it_was() {
     assert_eq!(rows_held(&store, Table::Schools), 0);
     assert!(store.journal_keys("unit").unwrap().is_empty());
 }
+/// A record whose `Serialize` fails on the Nth call, proving that a real encode error
+/// during `StoreBatch::append_many` leaves the store completely untouched: no rows, no journal,
+/// no counter moved, no reservation spent.
+///
+/// The old non-atomic path (`Store::append_many` + `Store::journal_done` as separate calls)
+/// would have left the rows of the first successful call visible — a half-applied source
+/// observation — because each call was its own commit.
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Zero-indexed call counter for `FlakyRecord::serialize`: returns Err on the call matching this.
+static FLAKY_SERIALIZE_FAIL_AT: AtomicUsize = AtomicUsize::new(3);
+
+/// A record that serializes successfully twice, then fails on the third call.
+///
+/// Implements `Entity` so it can be stored in any table.
+#[derive(Debug, Clone)]
+struct FlakyRecord {
+    id: String,
+    value: u32,
+}
+
+impl serde::Serialize for FlakyRecord {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        let call = FLAKY_SERIALIZE_FAIL_AT.fetch_add(1, Ordering::Relaxed);
+        if call == 3 {
+            return Err(serde::ser::Error::custom("real encode failure"));
+        }
+        // Serialize a simple two-field object.
+        use serde::ser::SerializeStruct;
+        let mut s = serializer.serialize_struct("FlakyRecord", 2)?;
+        s.serialize_field("id", &self.id)?;
+        s.serialize_field("value", &self.value)?;
+        s.end()
+    }
+}
+
+impl serde::de::Deserialize<'de> for FlakyRecord {
+    fn deserialize<D: serde::de::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        use serde::de::{self, MapAccess};
+        struct Visitor;
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = FlakyRecord;
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a FlakyRecord")
+            }
+            fn visit_map<M: MapAccess<'de>>(
+                self,
+                mut map: M,
+            ) -> std::result::Result<Self::Value, M::Error> {
+                let mut id = None;
+                let mut value = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        "id" => id = Some(map.next_value()?),
+                        "value" => value = Some(map.next_value()?),
+                        _ => { drop(map.next_value::<serde_json::Value>()); }
+                    }
+                }
+                Ok(FlakyRecord {
+                    id: id.ok_or_else(|| de::Error::missing_field("id"))?,
+                    value: value.ok_or_else(|| de::Error::missing_field("value"))?,
+                })
+            }
+        }
+        deserializer.deserialize_map(Visitor)
+    }
+}
+
+impl Entity for FlakyRecord {
+    fn entity_id(&self) -> &str {
+        &self.id
+    }
+    fn merge(&mut self, _other: Self) {
+        // Never called — this test only appends.
+    }
+}
+
+/// A page's encode failure leaves the store untouched: no rows, no journal, no counter moved.
+///
+/// The test uses three `FlakyRecord` instances whose `Serialize` succeeds for the first two
+/// calls and fails on the third. They are pushed through `StoreBatch::append_many` (all into
+/// the same page, so they share a table reservation), then `commit` is called.
+///
+/// The assertion is that the Json error surfaces from `commit`, a reopen shows the store as
+/// it was before the batch, and the sequence pointer and row count are exactly where they were.
+#[test]
+fn a_store_batch_encode_failure_commits_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    // Reset the flaky counter so this test is deterministic in isolation.
+    FLAKY_SERIALIZE_FAIL_AT.store(3, Ordering::Relaxed);
+
+    let before_seq = sequence_pointer(&store, Table::Schools);
+    let before_rows = rows_held(&store, Table::Schools);
+
+    let mut batch = store.write_batch();
+    let r0 = FlakyRecord { id: "r0".to_string(), value: 0 };
+    let r1 = FlakyRecord { id: "r1".to_string(), value: 1 };
+    let r2 = FlakyRecord { id: "r2".to_string(), value: 2 };
+    batch.append_many(Table::Schools, &[r0, r1, r2]).unwrap();
+    batch
+        .journal_done("unit", "fail-atomic", &serde_json::json!({"rows": 3}))
+        .unwrap();
+
+    // commit returns the Json error from the third record's serialization.
+    let err = batch.commit();
+    assert!(
+        err.is_err(),
+        "commit should have failed on the real encode error"
+    );
+    assert!(
+        matches!(&err, Err(StoreError::Json { detail, .. }) if detail.contains("serializing a batched observation")),
+        "error should be StoreError::Json"
+    );
+
+    // A reopen shows the store is exactly as it was before the batch: no rows, no journal.
+    drop(store);
+    let reopened = Store::open(dir.path()).unwrap();
+    assert_eq!(
+        sequence_pointer(&reopened, Table::Schools),
+        before_seq,
+        "sequence pointer must not have moved"
+    );
+    assert_eq!(
+        rows_held(&reopened, Table::Schools),
+        before_rows,
+        "row count must be unchanged"
+    );
+    assert!(
+        reopened.journal_keys("unit").unwrap().is_empty(),
+        "no journal entry should exist"
+    );
+    assert!(
+        reopened.scan::<FlakyRecord>(Table::Schools).unwrap().is_empty(),
+        "no rows should have landed"
+    );
+}

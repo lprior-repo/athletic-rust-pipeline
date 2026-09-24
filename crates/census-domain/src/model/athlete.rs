@@ -1,4 +1,105 @@
 use super::*;
+use std::cmp::Ordering;
+
+// -------------------------------------------------------------------------------------------------
+// Candidate keys
+// -------------------------------------------------------------------------------------------------
+
+/// The four facts two sources have to agree on to be naming one athlete candidate: the school the
+/// athlete competes for, the normalized name, the class and the gender side.
+///
+/// This is the *candidate* key — what one observation names — and a candidate is not yet an athlete:
+/// two spellings of one person, or one person's school transfer, are two candidates that only a
+/// decision (a rule or a review verdict) may resolve into one cluster. Both id roles are minted from
+/// the same bytes, so a cluster of one candidate prints the id that candidate already had, and a
+/// member that sorts after the canonical one never moves a cluster's id.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct AthleteCandidateKey {
+    /// The school the athlete competes for: part of the key, so a transfer is a second candidate.
+    pub school: SchoolId,
+    /// Normalized once at construction: the raw spelling is evidence the row keeps, never key
+    /// material.
+    pub name: String,
+    pub grad_year: GradYear,
+    pub gender: Gender,
+}
+
+impl AthleteCandidateKey {
+    /// Build the key from a source's raw spelling of a name.
+    pub fn new(school: &SchoolId, name: &str, grad_year: GradYear, gender: Gender) -> Self {
+        Self {
+            school: school.clone(),
+            name: normalize_name(name),
+            grad_year,
+            gender,
+        }
+    }
+
+    /// This candidate's own id: what one source's observation identifies.
+    pub fn candidate_id(&self) -> AthleteCandidateId {
+        self.mint()
+    }
+
+    /// The id of a cluster whose canonical member is this candidate.
+    ///
+    /// A cluster is addressed by its canonical member — the minimum member under [`Ord`] — so a
+    /// cluster of one prints exactly that candidate's id, and a member sorting after it never moves
+    /// the cluster. Losing the canonical member is the one change that moves a cluster's id, and it
+    /// has to record the departure to stay reversible.
+    pub fn cluster_id(&self) -> AthleteId {
+        self.mint()
+    }
+
+    /// The gender side as an id spells it: `Mixed` and `Unknown` both mint `u`, which is why those two
+    /// stay a retained disagreement rather than a merge when one row is re-observed as the other.
+    const fn gender_letter(gender: Gender) -> &'static str {
+        match gender {
+            Gender::Boys => "m",
+            Gender::Girls => "f",
+            Gender::Mixed | Gender::Unknown => "u",
+        }
+    }
+
+    /// The one place a candidate key becomes an id: the four fields, in the order [`Id::mint`] hashes
+    /// them, under the `ath` prefix both roles use.
+    fn mint<T>(&self) -> Id<T> {
+        let year = self.grad_year.get().to_string();
+        Id::mint(
+            "ath",
+            &[
+                self.school.as_str(),
+                &self.name,
+                &year,
+                Self::gender_letter(self.gender),
+            ],
+        )
+    }
+}
+
+impl PartialOrd for AthleteCandidateKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for AthleteCandidateKey {
+    /// The order the canonical-member rule reads, and it is the *mint* order: the school, the
+    /// normalized name, the class (as a number — the years the census places are four-digit, so this
+    /// is the order their digits spell) and the gender letter.
+    ///
+    /// The letter alone cannot order two keys, because `Mixed` and `Unknown` share `u`, so the frozen
+    /// [`Gender::stable_key`] breaks the tie. Nothing here reads the enum's declaration order: adding
+    /// a `Gender` variant must not land between two existing ones and move a cluster id.
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.school
+            .as_str()
+            .cmp(other.school.as_str())
+            .then_with(|| self.name.cmp(&other.name))
+            .then_with(|| self.grad_year.cmp(&other.grad_year))
+            .then_with(|| Self::gender_letter(self.gender).cmp(Self::gender_letter(other.gender)))
+            .then_with(|| self.gender.stable_key().cmp(other.gender.stable_key()))
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CanonicalAthlete {
@@ -38,20 +139,21 @@ impl CanonicalAthlete {
     /// Mint an athlete from (school, normalized name, grad year, gender).
     ///
     /// Two sources that agree on those four facts produce the same canonical athlete without any
-    /// shared vendor id.
+    /// shared vendor id. The four facts are the [`AthleteCandidateKey`], and its cluster rule is the
+    /// only place that turns a key into an id — so a row minted here is a cluster of one candidate and
+    /// carries that candidate's id.
     pub fn mint(school: &SchoolId, name: &str, grad_year: GradYear, gender: Gender) -> AthleteId {
-        Id::mint(
-            "ath",
-            &[
-                school.as_str(),
-                &normalize_name(name),
-                &grad_year.get().to_string(),
-                match gender {
-                    Gender::Boys => "m",
-                    Gender::Girls => "f",
-                    _ => "u",
-                },
-            ],
+        AthleteCandidateKey::new(school, name, grad_year, gender).cluster_id()
+    }
+
+    /// The candidate key this row's own fields restate, exactly as [`NaturalKey`] restates its mint
+    /// material: the school it competes for, its canonical name, its class and its gender side.
+    pub fn candidate_key(&self) -> AthleteCandidateKey {
+        AthleteCandidateKey::new(
+            &self.school,
+            &self.canonical_name,
+            self.grad_year,
+            self.gender,
         )
     }
 

@@ -21,6 +21,7 @@ mod ingress;
 mod integrity;
 mod json;
 mod paths;
+mod perf;
 mod purity;
 mod replay;
 mod retry;
@@ -127,6 +128,11 @@ enum Command {
         /// Filter arguments forwarded to `cargo bench`, given after `--`.
         #[arg(last = true, value_name = "BENCH_ARG")]
         args: Vec<String>,
+    },
+    /// Record, check and profile throughput baselines for the `census-service` criterion bench targets.
+    Perf {
+        #[command(subcommand)]
+        command: PerfCommand,
     },
     /// Build the census workbook (`.xlsx`) and its text sidecars: `Workbook/run` on the running
     /// deployment, or `census-service workbook` offline.

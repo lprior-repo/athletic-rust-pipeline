@@ -7,7 +7,7 @@ use crate::report::retain_core_row;
 use calamine::{open_workbook, Data, Range, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalSchool,
-    CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, Mark, SchoolYear,
+    CanonicalTeam, CompetitionLevel, EventKind, Evidence, Gender, GradYear, CentiMetres, CentiSeconds, Mark, SchoolYear,
     SourceRef, Sport, TimingMethod,
 };
 use census_domain::UsJurisdiction;
@@ -35,21 +35,21 @@ fn fixtures() -> Vec<Fixture> {
             athlete: "Ada",
             date: "2026-05-01",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(48.55),
+            mark: Mark::TimeSeconds(CentiSeconds(4855)),
         },
         Fixture {
             school: "Abbotsford",
             athlete: "Ada",
             date: "2026-05-08",
             kind: EventKind::Track400m,
-            mark: Mark::TimeSeconds(48.10),
+            mark: Mark::TimeSeconds(CentiSeconds(4810)),
         },
         Fixture {
             school: "Abbotsford",
             athlete: "Bo",
             date: "2026-05-08",
             kind: EventKind::LongJump,
-            mark: Mark::DistanceMetres(6.42),
+            mark: Mark::DistanceMetres(CentiMetres(642)),
         },
         Fixture {
             school: "Colby",
@@ -63,7 +63,7 @@ fn fixtures() -> Vec<Fixture> {
             athlete: "Dee",
             date: "2026-05-08",
             kind: EventKind::Track1600m,
-            mark: Mark::TimeSeconds(281.23),
+            mark: Mark::TimeSeconds(CentiSeconds(28123)),
         },
     ]
 }
@@ -480,7 +480,7 @@ fn a_performance_the_store_cannot_join_is_still_written() {
         event: CanonicalEvent::new(&meet, EventKind::Track800m, Gender::Boys, None, None).id,
         meet: meet.clone(),
         date: "2026-04-30".to_string(),
-        mark: Mark::TimeSeconds(120.5),
+        mark: Mark::TimeSeconds(CentiSeconds(12050)),
         wind_mps: None,
         place: None,
         heat: None,

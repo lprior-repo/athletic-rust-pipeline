@@ -25,7 +25,7 @@ mod reduce;
 mod write;
 
 #[cfg(test)]
-use census_domain::model::{EventKind, Mark};
+use census_domain::model::EventKind;
 #[cfg(test)]
 use census_store::Store;
 

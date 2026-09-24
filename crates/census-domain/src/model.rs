@@ -48,24 +48,27 @@ mod cohort;
 mod contact;
 mod event_ontology;
 mod event_performance;
+mod fixed_mark;
 mod identifiers;
 mod meet;
 mod normalization;
 mod provenance;
 mod school;
 
-pub use athlete::CanonicalAthlete;
+pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
 pub use contact::{professional_email, CONSUMER_MAIL_DOMAINS};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
+pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};
 pub use identifiers::{
-    tag, AthleteId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId, TeamId,
+    tag, AthleteCandidateId, AthleteId, CoachId, EventId, Id, MeetId, PerformanceId, SchoolId,
+    TeamId,
 };
 pub use meet::{CanonicalMeet, MEET_STATE_UNRESOLVED};
-pub use normalization::{flip_last_first, normalize_name, Counters};
+pub use normalization::{Counters, flip_last_first, normalize_name};
 pub use provenance::{
     Confidence, Evidence, EvidenceMethod, SourceIdentity, SourceNamespace, SourceRef,
 };

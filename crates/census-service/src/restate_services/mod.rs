@@ -45,31 +45,22 @@ use tokio::sync::Semaphore;
 
 use crate::census::CollectOptions;
 use census_store::clock::Clock;
-
-/// The workflow key one job run is addressed by: `<job>[:<part>…]:<unix seconds>`.
+/// The workflow key one job run is addressed by: `<job>[:<part>…]>`.
 ///
-/// The key names the job instance, and a resubmission of the same key attaches to the retained
-/// result rather than running the job again. The instant is part of it rather than the date: a
-/// second run on the same day is a second question — the store has moved on, and answering it with
-/// the first run's retained result would be wrong. What the key buys is that a *repeat* of one
-/// submission attaches, so the durability of the job does not depend on the client staying up.
+/// The key names the job instance, and a resubmission with the same semantic parts attaches to the
+/// retained result rather than running the job again. This is what the key buys: the durability of
+/// the job does not depend on the client staying up, and two submissions with identical semantics
+/// always share one identity. A submission whose semantic parts differ produces a different key,
+/// so the caller controls identity by varying the parts.
 ///
-/// It lives here, next to the workflow definitions, so the batch CLI and the harness that drives the
-/// deployment cannot key the same job two different ways: a date-shaped key refuses the second run
-/// of a day with `the workflow method was already invoked`, which is the opposite of what the key is
-/// for.
+/// It lives here, next to the workflow definitions, so the batch CLI and the harness that drives
+/// the deployment cannot key the same job two different ways.
 pub fn run_key(job: &str, parts: &[&str]) -> String {
     let mut key = job.to_string();
     for part in parts {
         key.push(':');
         key.push_str(part);
     }
-    let seconds = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_secs())
-        .unwrap_or_default();
-    key.push(':');
-    key.push_str(&seconds.to_string());
     key
 }
 

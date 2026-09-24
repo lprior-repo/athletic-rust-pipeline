@@ -26,16 +26,37 @@ pub enum JobError {
 
 /// Store work that failed, classified for retry.
 ///
-/// Transient is the default and the deliberate one: a lock, a full volume, an in-flight compaction —
-/// each is exactly what a journaled retry repairs, and every job here is safe to repeat. An
-/// `Invariant` violation is the exception: the store's own writer maintains those, so replaying the
-/// same journal value cannot restore one.
+/// Plausibly environmental failures — the database cannot be opened, a WAL flush stalls, a read
+/// or write hits a transient I/O fault, or a sidecar file operation fails — ride Transient
+/// because a retry may succeed once the environment stabilises.
+///
+/// Deterministic failures — the stored data is corrupt JSON, a scan bound would be exceeded, a
+/// counter reached its limit, a journal entry is too large, a request was refused, a legacy import
+/// failed, or an invariant was violated — do not improve on retry: the same input reproduces the
+/// same result.
 impl From<StoreError> for JobError {
     fn from(error: StoreError) -> Self {
         let message = error.to_string();
         match error {
-            StoreError::Invariant { .. } => Self::Terminal { message },
-            _ => Self::Transient { message },
+            // Environmental: the database, its journal, or a sidecar file is temporarily
+            // unreachable — a retry is what repairs these.
+            StoreError::Open { .. }
+            | StoreError::Flush { .. }
+            | StoreError::Read { .. }
+            | StoreError::Write { .. }
+            | StoreError::Io { .. } => Self::Transient { message },
+            // Deterministic: the stored data is corrupt, a scan bound would be exceeded, a
+            // counter reached its limit, or a journal entry is too large — none of these
+            // improve on retry.
+            StoreError::Decode { .. }
+            | StoreError::Json { .. }
+            | StoreError::SnapshotRow { .. }
+            | StoreError::TooManyRows { .. }
+            | StoreError::JournalTooLarge { .. }
+            | StoreError::CounterOverflow
+            | StoreError::Refused { .. }
+            | StoreError::Legacy { .. }
+            | StoreError::Invariant { .. } => Self::Terminal { message },
         }
     }
 }

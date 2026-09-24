@@ -40,6 +40,11 @@ fn check_observation_key_round_trip() {
         assert_eq!(id_back, id, "id did not survive the round trip");
         assert_eq!(sequence_back, sequence, "sequence did not survive the round trip");
     }
+
+    kani::cover!(id.is_empty(), "empty id is reachable");
+    kani::cover!(id.len() == ID_BYTES, "max-length id is reachable");
+    kani::cover!(sequence == 0, "zero sequence is reachable");
+    kani::cover!(sequence == u64::MAX, "max sequence is reachable");
 }
 
 /// A NUL byte inside the id survives the round trip.
@@ -107,6 +112,15 @@ fn check_split_key_reads_fixed_width_tail() {
             "a split key must be table + NUL + id + NUL + 8 bytes"
         );
     }
+
+    kani::cover!(
+        bytes[RAW_KEY_BYTES - 9] == 0,
+        "bytes with separator before tail are reachable"
+    );
+    kani::cover!(
+        bytes[RAW_KEY_BYTES - 9] != 0,
+        "bytes without separator before tail are reachable"
+    );
 }
 
 /// The id contract `observation_id` enforces on a serialized observation: non-empty, at most

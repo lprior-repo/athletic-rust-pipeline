@@ -221,18 +221,39 @@ pub(super) async fn rosters_stage(
 }
 
 /// Classify a collection failure for retry. The store keeps its own classification, an invariant
-/// violation is terminal because replaying it cannot restore one, and everything else — a fetch, a
-/// schema mismatch, a poisoned page — is what a bounded retry is for.
+/// violation is terminal because replaying it cannot restore one, and `FetchError::retryable()`
+/// lets the transport decide whether a transient network condition is worth retrying — the census
+/// does not second-guess the transport's verdict.
+///
+/// Everything the fetcher did not handle — schema mismatches, JSON decode/encode, domain
+/// construction failures, arithmetic overflows, and local I/O — is terminal: reading the same
+/// bytes again does not make them less wrong.
 pub(super) fn collect_error(error: CrawlError) -> JobError {
     match error {
         CrawlError::Store(source) => JobError::from(source),
         CrawlError::Invariant { detail } => JobError::Terminal { message: detail },
-        // A row that cannot be encoded for the wire will not encode on a replay either.
+        // Encode a row for the wire once; a replay cannot fix a broken row.
         error @ CrawlError::Encode { .. } => JobError::Terminal {
             message: error.to_string(),
         },
-        other => JobError::Transient {
-            message: other.to_string(),
+        // Schema, Decode, Domain and Arithmetic are all deterministic: the same input reproduces
+        // the same failure, so a retry is pointless.
+        CrawlError::Schema { .. }
+        | CrawlError::Decode { .. }
+        | CrawlError::Domain(..)
+        | CrawlError::Arithmetic { .. }
+        | CrawlError::Io { .. }
+        | CrawlError::RegexInit { .. } => JobError::Terminal {
+            message: error.to_string(),
+        },
+        // Let the transport decide: it classified the failure as retryable or not, and the census
+        // honours that verdict. A fetch the transport says can be retried rides Transient; one it
+        // says cannot (robots, TooLarge, BrowserLane { retryable: false }) is terminal.
+        CrawlError::Fetch(e) if e.retryable() => JobError::Transient {
+            message: e.to_string(),
+        },
+        CrawlError::Fetch(e) => JobError::Terminal {
+            message: e.to_string(),
         },
     }
 }

@@ -114,6 +114,11 @@ fn check_school_merge_idempotent() {
         after == before,
         "CanonicalSchool::merge(itself) changed the entity"
     );
+
+    kani::cover!(
+        before.name.is_empty() || before.name.len() == TEXT_BYTES,
+        "text boundaries (empty-like / full) are reachable"
+    );
 }
 
 /// Same law for a coach, which also carries the mailbox the collection contract watches.
@@ -128,6 +133,11 @@ fn check_coach_merge_idempotent() {
     assert!(
         after == before,
         "CanonicalCoach::merge(itself) changed the entity"
+    );
+
+    kani::cover!(
+        before.name.is_empty() || before.name.len() == TEXT_BYTES,
+        "text boundaries (empty-like / full) are reachable"
     );
 }
 
@@ -145,6 +155,15 @@ fn check_coach_publish_idempotent() {
     assert!(
         coach == published_once,
         "CanonicalCoach::publish is not idempotent"
+    );
+
+    kani::cover!(
+        coach.professional_email.is_some(),
+        "email present after first publish"
+    );
+    kani::cover!(
+        coach.professional_email.is_none(),
+        "email dropped after first publish"
     );
 }
 
@@ -170,6 +189,15 @@ fn check_coach_publish_no_consumer_mailbox() {
             "publish dropped the address without recording it as withheld"
         ),
     }
+
+    kani::cover!(
+        coach.professional_email.is_some(),
+        "an address survives publish"
+    );
+    kani::cover!(
+        coach.professional_email.is_none(),
+        "an address is dropped by publish"
+    );
 }
 
 /// The withheld count the report reads is the observable consequence of publishing: one for a

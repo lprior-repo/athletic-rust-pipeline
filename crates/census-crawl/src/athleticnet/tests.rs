@@ -2,6 +2,9 @@ use super::*;
 use crate::registry::{transport_for_host, TransportKind};
 use census_domain::core_scope::is_core_source;
 use census_domain::model::{EventKind, Mark, SourceNamespace};
+use census_domain::model::CentiPoints;
+use census_domain::model::CentiMetres;
+use census_domain::model::CentiSeconds;
 
 fn payload(body: &str) -> Bio {
     serde_json::from_str(body).expect("a payload this adapter reads")
@@ -73,15 +76,15 @@ fn a_registry_is_refused_rather_than_guessed_between_states() {
 #[test]
 fn marks_are_read_in_the_form_athleticnet_publishes() {
     let time = parse_mark(&EventKind::Track800m, "1:17.80a").expect("an auto-timed time");
-    assert_eq!(time, (Mark::TimeSeconds(77.8), true));
+    assert_eq!(time, (Mark::TimeSeconds(CentiSeconds(7780)), true));
     assert_eq!(
         parse_mark(&EventKind::Track3200m, "9:41.23"),
-        Some((Mark::TimeSeconds(581.23), false)),
+        Some((Mark::TimeSeconds(CentiSeconds(58123)), false)),
         "a bare mark is hand-timed"
     );
     assert_eq!(
         parse_mark(&EventKind::Track100m, "11.32q"),
-        Some((Mark::TimeSeconds(11.32), false)),
+        Some((Mark::TimeSeconds(CentiSeconds(1132)), false)),
         "a qualifier suffix is not part of the mark"
     );
     assert_eq!(
@@ -89,19 +92,19 @@ fn marks_are_read_in_the_form_athleticnet_publishes() {
         Some((
             Mark::FieldImperial {
                 feet_mark: "5-04.25".to_string(),
-                metres: 1.63195
+                metres: CentiMetres(163),
             },
             false
         ))
     );
     assert_eq!(
         parse_mark(&EventKind::ShotPut, "12.34m"),
-        Some((Mark::DistanceMetres(12.34), false)),
+        Some((Mark::DistanceMetres(CentiMetres(1234)), false)),
         "a metric field mark is metres, not a time"
     );
     assert_eq!(
         parse_mark(&EventKind::Decathlon, "3,456"),
-        Some((Mark::Points(3456.0), false))
+        Some((Mark::Points(CentiPoints(345600)), false))
     );
 }
 

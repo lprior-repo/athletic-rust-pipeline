@@ -1,4 +1,9 @@
-//! On-disk body/metadata cache: content-addressed keys and atomic writes.
+//! On-disk body/metadata cache: content-addressed keys, self-verifying evidence, and atomic publish.
+//!
+//! A crash between the body rename and the metadata rename is impossible to observe: the cache read
+//! requires *both* files to be present and a content digest that matches, so a half-written
+//! generation is silently treated as a cache miss rather than poisoning a later read with stale
+//! evidence.
 
 use super::{FetchError, Fetcher};
 use serde::{Deserialize, Serialize};
@@ -6,12 +11,25 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
 /// Metadata stored alongside a cached body on disk.
+///
+/// `key_prefix` is the 16-byte truncated SHA-256 used to derive the on-disk filenames. It serves
+/// exclusively as a cache key, never as evidence.
+///
+/// `content_digest` is the full 32-byte SHA-256 of the body, hex-encoded (64 characters). It is
+/// the content hash: the thing that proves "this body is what we think it is." On read, both the
+/// byte count and the digest are checked; a mismatch means the body has changed since it was cached
+/// (corruption, truncation, or a torn write) and must be discarded.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(super) struct CacheMeta {
     pub(super) url: String,
     pub(super) method: String,
     pub(super) status: u16,
-    pub(super) sha256: String,
+    /// Truncated SHA-256 key: the 16-byte prefix used to derive the on-disk file names. SHA-256
+    /// always produces 32 bytes, so the prefix is present; `get` keeps the extraction total
+    /// without a panic path.
+    pub(super) key_prefix: String,
+    /// Full 32-byte SHA-256 content digest of the body, hex-encoded (64 characters).
+    pub(super) content_digest: String,
     pub(super) bytes: usize,
     pub(super) fetched_at: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -55,10 +73,27 @@ pub(super) fn sha256_prefix16(hasher: Sha256) -> String {
     head.iter().map(|b| format!("{b:02x}")).collect()
 }
 
+/// Full 32-byte SHA-256 digest, hex-encoded — the content hash, not a key.
+///
+/// The caller hands the body bytes (not a hasher), so this function does the hashing. On read, the
+/// result is compared against `CacheMeta::content_digest`; a mismatch means the body has changed
+/// since it was cached (corruption, truncation, or a torn write) and must be discarded.
+pub(super) fn content_digest(body: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(body);
+    let d = hasher.finalize();
+    d.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Read a cached entry and verify it against the on-disk body.
+///
+/// Returns `Ok(None)` when either file is missing, the body file cannot be read, or the body does
+/// not match the metadata (size or digest mismatch). A mismatch is a cache miss, not an error —
+/// the corrupted body is discarded and the request is re-fetched.
 pub(super) fn read_cache(
     body_path: &Path,
     meta_path: &Path,
-) -> Result<Option<CacheMeta>, FetchError> {
+) -> Result<Option<(CacheMeta, Vec<u8>)>, FetchError> {
     if !meta_path.exists() || !body_path.exists() {
         return Ok(None);
     }
@@ -70,9 +105,23 @@ pub(super) fn read_cache(
         target: meta_path.display().to_string(),
         source,
     })?;
-    Ok(Some(meta))
+    let body = std::fs::read(body_path).map_err(|source| FetchError::Cache {
+        path: body_path.to_path_buf(),
+        source,
+    })?;
+    // Verify length first (cheap), then content digest.
+    if body.len() != meta.bytes {
+        return Ok(None);
+    }
+    if content_digest(&body) != meta.content_digest {
+        return Ok(None);
+    }
+    Ok(Some((meta, body)))
 }
 
+/// Publish a cached entry atomically: both body and metadata are written to temp files and
+/// renamed in sequence. A crash between the two renames leaves one file without the other, so the
+/// next read (which requires both) treats the entry as absent rather than corrupted.
 pub(super) fn write_cache(
     body_path: &Path,
     meta_path: &Path,

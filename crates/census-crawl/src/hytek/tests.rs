@@ -1,5 +1,6 @@
 use super::*;
 use census_domain::model::{EventKind, Gender, Grade, Mark, SourceRef};
+use census_domain::model::CentiSeconds;
 
 /// Verbatim slices of
 /// `https://www.wiaawi.org/Portals/0/PDF/Results/Track/2025/d1boysstateresults.htm`
@@ -153,14 +154,14 @@ fn event_labels_map_onto_the_ontology() {
 
 #[test]
 fn marks_parse_from_published_notation() {
-    assert_eq!(parse_time("10.56"), Some(10.56));
-    assert_eq!(parse_time("1:54.32"), Some(114.32));
-    assert_eq!(parse_time("15:32.1"), Some(932.1));
+    assert_eq!(parse_time("10.56"), Some(CentiSeconds(1056)));
+    assert_eq!(parse_time("1:54.32"), Some(CentiSeconds(11432)));
+    assert_eq!(parse_time("15:32.1"), Some(CentiSeconds(93210)));
     assert_eq!(parse_time("DNF"), None);
     match parse_field_mark("61-03.50") {
         Some(Mark::FieldImperial { metres, .. }) => {
             assert!(
-                (metres - 18.68).abs() < 0.01,
+                (metres.0 - 1868).abs() < 1,
                 "61'3.5\" is 18.68 m, got {metres}"
             );
         }
@@ -195,7 +196,7 @@ fn individual_rows_carry_place_grade_school_mark_and_wind() {
     assert_eq!(winner.name, "Ben Lemirand");
     assert_eq!(winner.grade.map(Grade::get), Some(12));
     assert_eq!(winner.school, "West De Pere");
-    assert_eq!(winner.mark, Mark::TimeSeconds(10.56));
+    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds(1056)));
     assert_eq!(winner.wind_mps, Some(0.4));
     // Every prelim row carries a grade in this section; the parser must not invent one.
     assert!(event.rows.iter().all(|row| row.grade.is_some()));

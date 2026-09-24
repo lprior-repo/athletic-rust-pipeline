@@ -69,7 +69,7 @@ fn finish_list_rows_carry_place_grade_school_and_the_final_time() -> anyhow::Res
     );
     {
         let left_value = &winner.mark;
-        let right_value = &(Mark::TimeSeconds(1033.69));
+        let right_value = &(Mark::TimeSeconds(CentiSeconds(103369)));
         anyhow::ensure!(
             left_value == right_value,
             "17:13.69 is the finish, not a mile split — left={left_value:?} right={right_value:?}"

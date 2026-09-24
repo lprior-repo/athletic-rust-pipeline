@@ -1,4 +1,5 @@
 use super::*;
+use census_domain::model::{CentiMetres, CentiPoints, CentiSeconds, Mark};
 
 /// One published row, as the reduction hands it to the writer.
 fn best_row(athlete_id: &str, name: &str) -> BestResult {
@@ -72,30 +73,30 @@ fn the_csv_carries_exactly_one_header_row() {
 
 #[test]
 fn times_run_down_and_field_marks_run_up() {
-    assert!(Measure::Time.better(10.94, 11.02));
-    assert!(!Measure::Time.better(11.02, 10.94));
-    assert!(Measure::Distance.better(6.42, 6.10));
-    assert!(!Measure::Distance.better(6.10, 6.42));
-    assert!(Measure::Field.better(1.85, 1.70));
-    assert!(Measure::Points.better(3120.0, 2900.0));
+    assert!(Measure::Time.better(1094, 1102));
+    assert!(!Measure::Time.better(1102, 1094));
+    assert!(Measure::Distance.better(642, 610));
+    assert!(!Measure::Distance.better(610, 642));
+    assert!(Measure::Field.better(185, 170));
+    assert!(Measure::Points.better(312000, 290000));
     // Unparsed marks are carried but never chosen.
     assert_eq!(Measure::of(&Mark::Raw("DNS".to_string())), None);
 }
 
 #[test]
 fn marks_print_in_the_notation_a_reader_expects() {
-    assert_eq!(mark_text(&Mark::TimeSeconds(10.94)), "10.94");
-    assert_eq!(mark_text(&Mark::TimeSeconds(281.23)), "4:41.23");
-    assert_eq!(mark_text(&Mark::TimeSeconds(304.1)), "5:04.10");
-    assert_eq!(mark_text(&Mark::DistanceMetres(6.4213)), "6.42 m");
+    assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(1094))), "10.94");
+    assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(28123))), "4:41.23");
+    assert_eq!(mark_text(&Mark::TimeSeconds(CentiSeconds(30410))), "5:04.10");
+    assert_eq!(mark_text(&Mark::DistanceMetres(CentiMetres(642))), "6.42 m");
     assert_eq!(
         mark_text(&Mark::FieldImperial {
             feet_mark: "5' 4\"".to_string(),
-            metres: 1.63,
+            metres: CentiMetres(163),
         }),
         "5' 4\""
     );
-    assert_eq!(mark_text(&Mark::Points(3120.0)), "3120 pts");
+    assert_eq!(mark_text(&Mark::Points(CentiPoints(312000))), "3120 pts");
 }
 
 #[test]

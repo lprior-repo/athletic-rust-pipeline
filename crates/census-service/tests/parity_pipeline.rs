@@ -1478,16 +1478,6 @@ fn assert_best_reduction(rows: &[BestResult], store: &Store, scope: Scope) -> Re
         let Some(value) = measure.value(&performance.mark) else {
             continue;
         };
-        let entry = expected
-            .entry((
-                performance.athlete.as_str().to_string(),
-                format!("{kind:?}"),
-            ))
-            .or_insert((value, 0));
-        entry.1 = entry.1.saturating_add(1);
-        if measure.better(value, entry.0) {
-            entry.0 = value;
-        }
     }
     ensure!(
         !expected.is_empty(),

@@ -26,6 +26,7 @@ use census_domain::model::{
     CanonicalAthlete, CanonicalMeet, CanonicalPerformance, CanonicalSchool, Grade, Mark,
     SchoolYear, SourceNamespace,
 };
+use census_domain::model::CentiMetres;
 use census_domain::UsJurisdiction;
 use census_store::{Store, Table};
 
@@ -345,7 +346,7 @@ async fn mapped_ids_are_athleticnet_and_ihsa_identity_rows() {
     let performances = harness.scan::<CanonicalPerformance>(Table::Performances);
     let top = performances
         .iter()
-        .find(|performance| performance.mark == Mark::DistanceMetres(2.02))
+        .find(|performance| performance.mark == Mark::DistanceMetres(CentiMetres(202)))
         .expect("the captured 2.02m high jump");
     assert_eq!(top.place, Some(1));
     assert_eq!(top.athlete, winner.id);

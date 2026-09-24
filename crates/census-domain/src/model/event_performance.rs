@@ -60,14 +60,17 @@ impl CanonicalEvent {
 /// distances/heights in metric or imperial notation, exactly as published by the source.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Mark {
-    /// Seconds (e.g. `10.94`, `4:41.23` already converted to 281.23).
-    TimeSeconds(f64),
-    /// Metres, converted from the published imperial/metric value.
-    DistanceMetres(f64),
+    /// Centiseconds (hundredths of a second).
+    TimeSeconds(CentiSeconds),
+    /// Centimetres, converted from the published imperial/metric value.
+    DistanceMetres(CentiMetres),
     /// A field mark preserved in the source's own notation (e.g. `5' 4"`, `42-06.5`).
-    FieldImperial { feet_mark: String, metres: f64 },
-    /// Combined-event or team points.
-    Points(f64),
+    FieldImperial {
+        feet_mark: String,
+        metres: CentiMetres,
+    },
+    /// Centi-points (hundredths of a point).
+    Points(CentiPoints),
     /// Published verbatim, not yet parsed.
     Raw(String),
 }

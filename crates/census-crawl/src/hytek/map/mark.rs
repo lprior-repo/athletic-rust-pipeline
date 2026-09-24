@@ -5,6 +5,8 @@
 //! `None` or an error rather than a guess, and the caller decides what an unreadable mark means.
 
 use census_domain::model::{EventKind, Mark};
+use census_domain::model::CentiSeconds;
+use census_domain::model::CentiMetres;
 
 use super::super::NO_MARK;
 use super::mark_token_regex;
@@ -47,9 +49,8 @@ pub fn round_marker(trimmed: &str) -> Option<&'static str> {
         _ => None,
     }
 }
-
-/// Convert a published Hy-Tek time (`10.56`, `1:54.32`, `15:32.1`, `1:05:12.34`) to seconds.
-pub fn parse_time(token: &str) -> Option<f64> {
+/// Convert a published Hy-Tek time (`10.56`, `1:54.32`, `15:32.1`, `1:05:12.34`) to centiseconds.
+pub fn parse_time(token: &str) -> Option<CentiSeconds> {
     let token = token.trim();
     if token.is_empty() {
         return None;
@@ -58,13 +59,14 @@ pub fn parse_time(token: &str) -> Option<f64> {
     match parts.as_slice() {
         [seconds] => {
             let value: f64 = seconds.parse().ok()?;
-            (value.is_finite() && value >= 0.0).then_some(value)
+            (value.is_finite() && value >= 0.0).then_some(CentiSeconds::from_seconds_f64(value))
         }
         [minutes, seconds] => {
             let minutes: f64 = minutes.parse().ok()?;
             let seconds: f64 = seconds.parse().ok()?;
             let total = minutes * 60.0 + seconds;
-            (minutes >= 0.0 && (0.0..60.0).contains(&seconds) && total.is_finite()).then_some(total)
+            (minutes >= 0.0 && (0.0..60.0).contains(&seconds) && total.is_finite())
+                .then_some(CentiSeconds::from_seconds_f64(total))
         }
         [hours, minutes, seconds] => {
             let hours: f64 = hours.parse().ok()?;
@@ -75,7 +77,7 @@ pub fn parse_time(token: &str) -> Option<f64> {
                 && (0.0..60.0).contains(&minutes)
                 && (0.0..60.0).contains(&seconds)
                 && total.is_finite())
-            .then_some(total)
+                .then_some(CentiSeconds::from_seconds_f64(total))
         }
         _ => None,
     }
@@ -97,7 +99,7 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         }
         return Some(Mark::FieldImperial {
             feet_mark: token.to_string(),
-            metres,
+            metres: CentiMetres::from_metres_f64(metres),
         });
     }
     if let Some((feet, rest)) = token.split_once('\'') {
@@ -114,11 +116,12 @@ pub fn parse_field_mark(token: &str) -> Option<Mark> {
         }
         return Some(Mark::FieldImperial {
             feet_mark: token.to_string(),
-            metres,
+            metres: CentiMetres::from_metres_f64(metres),
         });
     }
     let metres: f64 = token.parse().ok()?;
-    (metres.is_finite() && metres > 0.0).then_some(Mark::DistanceMetres(metres))
+    (metres.is_finite() && metres > 0.0)
+        .then_some(Mark::DistanceMetres(CentiMetres::from_metres_f64(metres)))
 }
 
 /// Mark plus the wind, heat and points published beside it.

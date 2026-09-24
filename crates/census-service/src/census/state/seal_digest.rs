@@ -39,13 +39,13 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         None => "unmeasured".to_string(),
     };
     let rendered = format!(
-            "census-seal-v4\njurisdiction_buckets={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\nperformances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
+            "census-seal-v5\njurisdiction_buckets={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\ncohort_performances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
             counts.jurisdiction_buckets,
             counts.schools,
             counts.meets,
             counts.athletes,
             counts.class_of_2027,
-            counts.performances,
+            counts.cohort_performances,
             counts.coaches,
             evidence.retained.conflicts,
             evidence.retained.access_conditions,

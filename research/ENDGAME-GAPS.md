@@ -38,7 +38,8 @@ carries no sport-matching profile link becomes an `invalid_athlete_row` issue
 (`markup.rs:67`), and **any** page issue rejects the whole page as malformed
 (`src/search/progress.rs:161,185`; `:178` for a short page; `:95` for an over-bound advertised
 count). Acceptance then needs a `2..=64` hard-eligible candidate set
-(`src/runtime/row_worker/review.rs:43`), which the rejected page can never supply.
+(`src/runtime/row_worker/review.rs:43`, deleted with the root package 2026-09-23), which the rejected
+page can never supply.
 The team's own live probe already assumes the other behaviour: it POSTs
 `{q, fq: "t:a a:tf", start: 0}` and skips any `<tr>` whose athlete link does not match
 `href="/athlete/(\d+)/track-and-field"` (`~/.local/share/athletic-rust-pipeline/lane-v14/
@@ -129,7 +130,10 @@ zero matches. **Risk.** Without a lattice, any workbook built from the census cr
 **Evidence.** Every coverage summary in every retained run shows `local_review: 0`
 (`scale-v15/FINAL.json`; live rows all `review_required`). The review path requires a `2..=64`
 hard-eligible candidate set (`src/runtime/row_worker/review.rs:43`) and the accepted branch is
-`map_or(RowResolution::ReviewRequired, …)` (`review.rs:82-86`). Once a row is `review_required`,
+`map_or(RowResolution::ReviewRequired, …)` (`review.rs:82-86`) — that path lived in the root package's
+row worker, which 278a298 deleted on 2026-09-23; no `RowResolution`, `review_required` or `local_review`
+symbol exists under `crates/` today (the surviving review lane, `crates/census-review/`, adjudicates
+merge findings, not row resolutions). Once a row is `review_required`,
 no artefact in the tree assigns it to a human or model, and the row is not retried by `status`
 (its page is sealed). **Objective.** §46 J (review only unresolved candidates), §49
 ("review required" denominator). **Smallest change.** A review queue surface: emit the
@@ -150,13 +154,16 @@ invocations and ≈10 source operations per row. HANDOFF.md:168 gives the instru
 14,267 lifetime calls against 14,265 fetches), with the handler's 0.329 s mean duration equal to
 the observed operation period — the single-key exclusive gate *is* the rate. HANDOFF.md:169 records
 the attempted fix: a shared-probe fast path (worker `fe95a735…`) stayed 1:1 (280/280) and *cut* the
-lane to 0.167 rows/s, was reverted, and left its constraint in `src/runtime/source/dispatch.rs`.
+lane to 0.167 rows/s, was reverted, and left its constraint in `src/runtime/source/dispatch.rs`
+(deleted with the root package 2026-09-23).
 HANDOFF.md:166-167 measure the rest of the cost as storage-engine churn — ≈12–14 MB of durable
 writes per row, then corrected to ≈51.5 KB journal per decided row, 110 KB `restate-data` and
 36 KB store per row. **Objective.** §46 (national: 120,716 source rows), §48 completion, §68
 (effort and request cost in the ranking). **Smallest change.** Not a code guess: the exclusive gate
 must answer without a physical act (the reverted probe's own conclusion) or the row's ~10 source
-operations must be cut, which is a design change in `src/runtime/source/`. Measure first.
+operations must be cut, which is a design change in the acquisition plane (`src/runtime/source/`,
+deleted with the root package 2026-09-23; `crates/census-crawl/src/net/` is what fetches today).
+Measure first.
 **Proof.** `cargo run -p athletic-rust-pipeline -- status --run <digest>` twice, 10 minutes apart,
 at `--concurrency 8` and `--concurrency 32` → rows/min; today's expectation from the record is
 "no gain from 8 → 32", and the fix's expectation is strictly higher rows/min at one setting.
@@ -166,10 +173,12 @@ doubles it; a national census on this path is not reproducible in a working day.
 ## G7. Publication is not part of any run's durable status
 
 **Evidence.** `RunProgress` carries `coverage`, `pages`, `pending_rows`, `complete`, `summary`,
-`collection_ref` — and no export/publication field (`src/runtime/run_protocol.rs:129-139`);
-`status` prints exactly that object (`src/cli/status.rs:18-28`). Publication is a separate
-control chain (`PipelineControl::run_and_export`, `src/runtime/control.rs:100-124`) that returns
-`PublishedExport` to its *caller* and records nothing into the run. Six live run directories are
+`collection_ref` — and no export/publication field (`src/runtime/run_protocol.rs:129-139`, deleted
+with the root package 2026-09-23); `status` printed exactly that object (`src/cli/status.rs:18-28`, gone
+the same day). Publication was a separate
+control chain (`PipelineControl::run_and_export`, `src/runtime/control.rs:100-124`, deleted with the
+root package 2026-09-23) that returned `PublishedExport` to its *caller* and recorded nothing into the
+run. Six live run directories are
 empty while their submissions were accepted (`lane-v14/out-live-{entitled,full,full-2,rankings,
 rankings3,girls-rankings}`; `out-live-roster-slice/start.log` shows `state: "submitted"`).
 **Objective.** §70 item 13 (export verified before sealing), §44 (observability). **Smallest

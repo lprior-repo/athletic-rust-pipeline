@@ -53,7 +53,8 @@ fn open_work(cases: &[ReviewCase], journal: JournalCounts) -> OpenWork {
 }
 
 /// The store-side counts §70 certifies, each read from the census and the coverage report it came
-/// from rather than from a caller's tally.
+/// from rather than from a caller's tally. The report's `read` counters are the rows it published
+/// under the run's scope and cohort, which is why the count taken from one says so in its name.
 fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
     SealCounts {
         jurisdiction_buckets: count(census.by_state.len()),
@@ -61,7 +62,7 @@ fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
         meets: count(coverage.read.meets),
         athletes: count(census.totals.athletes),
         class_of_2027: count(census.totals.class_of_2027),
-        performances: count(coverage.read.performances),
+        cohort_performances: count(coverage.read.performances),
         coaches: count(census.totals.coaches),
     }
 }

@@ -14,6 +14,9 @@ pub mod tag {
     pub struct Coach;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct Athlete;
+    /// The candidate role of [`Athlete`]: what one source's observation mints.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    pub struct AthleteCandidate;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
     pub struct Meet;
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -72,6 +75,14 @@ pub type SchoolId = Id<tag::School>;
 pub type TeamId = Id<tag::Team>;
 pub type CoachId = Id<tag::Coach>;
 pub type AthleteId = Id<tag::Athlete>;
+/// A canonical athlete *candidate*'s id: what one source's observation of a (school, name, class,
+/// gender side) mints.
+///
+/// Distinct from [`AthleteId`], the resolved cluster's id, even though both print the same value for
+/// a cluster of one candidate — which is every row until a decision resolves two candidates into one
+/// cluster. Keeping the two roles in two types is what stops a departed candidate's id from being
+/// read as the cluster's.
+pub type AthleteCandidateId = Id<tag::AthleteCandidate>;
 pub type MeetId = Id<tag::Meet>;
 pub type EventId = Id<tag::Event>;
 pub type PerformanceId = Id<tag::Performance>;

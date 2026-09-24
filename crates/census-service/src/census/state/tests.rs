@@ -28,7 +28,7 @@ fn evidence() -> SealEvidence {
             meets: 11_007,
             athletes: 1_226_212,
             class_of_2027: 307_653,
-            performances: 4_100_000,
+            cohort_performances: 4_100_000,
             coaches: 27_580,
         },
         retained: RetainedFindings {
@@ -318,7 +318,7 @@ fn a_census_that_claims_work_but_proves_nothing_is_refused() {
     // An empty census makes no such claim, so the same zero counts are not a refusal.
     let mut empty = evidence();
     empty.counts.athletes = 0;
-    empty.counts.performances = 0;
+    empty.counts.cohort_performances = 0;
     empty.counts.class_of_2027 = 0;
     empty.retained.observations = 0;
     empty.retained.calculations = 0;
@@ -443,13 +443,13 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
 /// instead of as one opaque hash that cannot say which field moved.
 #[test]
 fn the_digest_is_pinned_field_by_field() {
-    let body = "census-seal-v4\n\
+    let body = "census-seal-v5\n\
          jurisdiction_buckets=51\n\
          schools=18047\n\
          meets=11007\n\
          athletes=1226212\n\
          co2027=307653\n\
-         performances=4100000\n\
+         cohort_performances=4100000\n\
          coaches=27580\n\
          conflicts=11342\n\
          access_conditions=96\n\
@@ -471,7 +471,7 @@ fn the_digest_is_pinned_field_by_field() {
     );
     assert_eq!(
         digest_of(&seal_from_export(evidence()).expect("seals")),
-        "1aaf6de7ceb39ff0e53f210ca504fe7359f53dd1794d25dca0b0bc2643453274",
+        "8c8ed4fac393f4753373b9596c08551f202d11c14a1afc35da9e89e1bd9ec3bb",
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
     );
 
@@ -485,16 +485,17 @@ fn the_digest_is_pinned_field_by_field() {
     );
 }
 
-/// A seal written before the v4 rename carries its state-rollup count under the old name. A
-/// recorded seal is reported rather than re-derived, so an old `seal.json` has to read: the alias is
-/// the promise, and the digest it carries stays the digest it was written with.
+/// A seal written before the renames carries its state-rollup and performance counts under the old
+/// names. A recorded seal is reported rather than re-derived, so an old `seal.json` has to read: each
+/// alias is the promise, and the digest it carries stays the digest it was written with.
 #[test]
 fn a_seal_counted_before_the_rename_still_reads() {
     let recorded = r#"{"jurisdictions":51,"schools":18047,"meets":11007,"athletes":1226212,
                        "class_of_2027":307653,"performances":4100000,"coaches":27580}"#;
     let counts: SealCounts =
-        serde_json::from_str(recorded).expect("a seal.json written under the old name reads");
+        serde_json::from_str(recorded).expect("a seal.json written under the old names reads");
     assert_eq!(counts.jurisdiction_buckets, 51);
+    assert_eq!(counts.cohort_performances, 4_100_000);
 }
 
 #[test]

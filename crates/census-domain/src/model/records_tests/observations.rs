@@ -28,7 +28,10 @@ fn an_athlete_observation_keeps_what_its_source_published() {
 
     assert_eq!(observation.id, "milesplit_athlete:14399169");
     assert_eq!(
-        observation.observed_grade.as_ref().map(ObservedGrade::grad_year),
+        observation
+            .observed_grade
+            .as_ref()
+            .map(ObservedGrade::grad_year),
         Some(GradYear::new(2028).expect("a class")),
         "the class is what the source's own grade observation implies, not what this program decided"
     );

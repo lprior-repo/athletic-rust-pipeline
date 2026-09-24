@@ -9,6 +9,8 @@ use super::parse::{
 };
 use super::wire::{EventSummary, QualifierAthlete, QualifiersEnvelope};
 use census_domain::model::{Grade, Mark, SchoolYear};
+use census_domain::model::CentiMetres;
+use census_domain::model::CentiSeconds;
 
 /// Provenance: `GET https://api.ihsa.org/v1/track-field/meets`, fetched 2026-09-19 23:15.
 /// Capture: `tools/a13-ihsa/p_track-field_meets.json` (1,088 B). Measured: `count: 2`.
@@ -189,7 +191,7 @@ fn hj_summary_pins_net_and_live_ids_on_every_finisher() {
     assert_eq!(winner.ihsa_school_id.as_deref(), Some("0611"));
     assert_eq!(
         winner.mark.as_deref().and_then(parse_mark),
-        Some(Mark::DistanceMetres(2.02))
+        Some(Mark::DistanceMetres(CentiMetres(202)))
     );
     let athlete = winner.athlete.as_ref().expect("checked above");
     assert_eq!(athlete.athletic_net_id, Some(27_740_691));
@@ -251,7 +253,7 @@ fn relay_summary_pins_four_legs_per_team_with_ids_and_grades() {
     assert_eq!(winner.ihsa_school_id.as_deref(), Some("1835"));
     assert_eq!(
         winner.mark.as_deref().and_then(parse_mark),
-        Some(Mark::TimeSeconds(471.37)),
+        Some(Mark::TimeSeconds(CentiSeconds(47137))),
         "7:51.37 in seconds"
     );
     assert_eq!(
@@ -434,12 +436,12 @@ fn terms_pin_the_newest_completed_school_year() {
 
 #[test]
 fn mark_forms_seen_in_the_corpus_parse_to_canonical_marks() {
-    assert_eq!(parse_mark("2.02m"), Some(Mark::DistanceMetres(2.02)));
-    assert_eq!(parse_mark("1.88mq"), Some(Mark::DistanceMetres(1.88)));
-    assert_eq!(parse_mark("7:51.37"), Some(Mark::TimeSeconds(471.37)));
-    assert_eq!(parse_mark("10.94"), Some(Mark::TimeSeconds(10.94)));
-    assert_eq!(parse_mark("10.94Q"), Some(Mark::TimeSeconds(10.94)));
-    assert_eq!(parse_mark("  2.02m "), Some(Mark::DistanceMetres(2.02)));
+    assert_eq!(parse_mark("2.02m"), Some(Mark::DistanceMetres(CentiMetres(202))));
+    assert_eq!(parse_mark("1.88mq"), Some(Mark::DistanceMetres(CentiMetres(188))));
+    assert_eq!(parse_mark("7:51.37"), Some(Mark::TimeSeconds(CentiSeconds(47137))));
+    assert_eq!(parse_mark("10.94"), Some(Mark::TimeSeconds(CentiSeconds(1094))));
+    assert_eq!(parse_mark("10.94Q"), Some(Mark::TimeSeconds(CentiSeconds(1094))));
+    assert_eq!(parse_mark("  2.02m "), Some(Mark::DistanceMetres(CentiMetres(202))));
 
     assert_eq!(parse_mark(""), None, "an absent mark is never invented");
     assert_eq!(parse_mark("NH"), None, "no height");

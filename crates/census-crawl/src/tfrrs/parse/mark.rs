@@ -6,6 +6,7 @@
 
 use super::html::{attribute, collapse_whitespace, decode_entities, text_runs};
 
+use census_domain::model::CentiSeconds;
 /// A row's mark, kept in the notation the host published it in: a running mark reads as a clock
 /// (`6.71`, `1:26.56`), a field mark as feet–inches or metres (`7' 1.75"`, `2.17m`). The column the
 /// host used (`Time` or `Mark`) is what [`parse_row`] reads, and the token's own shape is what
@@ -58,12 +59,11 @@ fn reads_as_mark(token: &str) -> bool {
         || feet_inches_metres(token).is_some()
         || metric_metres(token).is_some()
 }
-
 /// The seconds a published running mark states: `6.71`, `1:26.56`, `9:17.02`.
 ///
 /// Minutes are folded into seconds, so a 3200 m mark compares as a single number, the shape the
 /// crate's mark type keeps.
-pub fn clock_seconds(token: &str) -> Option<f64> {
+pub fn clock_seconds(token: &str) -> Option<CentiSeconds> {
     let trimmed = token.trim();
     let mut parts = trimmed.split(':');
     let first: f64 = parts.next()?.trim().parse().ok()?;
@@ -76,7 +76,7 @@ pub fn clock_seconds(token: &str) -> Option<f64> {
         }
         None => first,
     };
-    (seconds.is_finite() && seconds > 0.0).then_some(seconds)
+    (seconds.is_finite() && seconds > 0.0).then_some(CentiSeconds::from_seconds_f64(seconds))
 }
 
 /// The metres a published metric mark states (`20.60m`, `2.17M`).

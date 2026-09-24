@@ -87,7 +87,7 @@ pub(super) struct SchoolFacts {
 /// event, and every mark text seen per meet.
 #[derive(Default)]
 struct Slot {
-    winner: Option<(PrRow, f64, Measure)>,
+    winner: Option<(PrRow, i32, Measure)>,
     sources: BTreeSet<String>,
     reports: BTreeMap<String, BTreeSet<String>>,
 }

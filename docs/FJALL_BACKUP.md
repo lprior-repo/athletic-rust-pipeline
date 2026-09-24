@@ -11,13 +11,15 @@ The drill is enforced by [`crates/census-service/tests/backup_restore.rs`](../cr
 --test backup_restore` rather than by hand. The shell sequence below exists so an operator can do the
 same thing against a production root (a `<store-dir>` on disk, not a `/tmp` drill).
 
-Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store code: `src/store/`.
+Schema, keyspaces and key format: [`FJALL_SCHEMA.md`](FJALL_SCHEMA.md). Store code:
+[`crates/census-store/src/`](../crates/census-store/src/).
 
 ---
 
 ## 1. What a census store root contains
 
-`<store-dir>/` as created by the CLI (`crates/census-service/src/store/mod.rs`):
+`<store-dir>/` as the CLI's `--store` names it (`crates/census-service/src/cli/mod.rs:87`, default
+`var/census-service` at `:48`) and as `Store::open` lays it out (`crates/census-store/src/lib.rs:140`):
 
 | Path | Role | Needed in a backup? |
 |---|---|---|
@@ -83,12 +85,15 @@ Read out of the pinned dependency (`fjall-3.1.10`), not assumed:
   1
   ```
 
-  The same lock covers the legacy import: `Store::open` imports pre-Fjall `entities/`/`journal/` logs
-  before handing the store back (`crates/census-service/src/store/mod.rs:261` →
-  `store/legacy.rs:21-45`), under the same locked handle, and the CLI's `import-legacy` command
-  (`src/cli/store.rs:25-42`) merely reports on the already-open store. So an import can never race a
-  root another process is serving - but it does mean **opening a copy that still carries legacy logs
-  writes into that copy** (markers, and the imported rows). On the source root nothing is re-imported,
+  The same lock covers the legacy import: `Store::import_legacy`
+  (`crates/census-store/src/legacy.rs:76`) runs on a `Store` that is already open, so it holds that
+  store's lock, and only the paths that decided to migrate call it - the offline census run
+  (`crates/census-service/src/cli/cycle.rs:77`), the `import-legacy` verb
+  (`crates/census-service/src/cli/store.rs:29`) and the service bootstrap
+  (`crates/census-service/src/bootstrap/serve.rs:229`). So an import can never race a root another
+  process is serving. Opening alone does not import (`crates/census-store/src/lib.rs:53-56`), so the
+  write risk is a verb: **pointed at a copy that still carries legacy logs, an importing verb writes
+  into that copy** (markers, and the imported rows). On the source root nothing is re-imported,
   because the markers travel inside `fjall/`'s `meta` keyspace.
 * **A copy that races a live writer loses the incomplete tail silently.** Recovery truncates a torn
   journal tail instead of failing the open (`fjall-3.1.10/src/journal/reader.rs:56-79`), so a snapshot
@@ -216,9 +221,9 @@ RESTORED MANIFEST IDENTICAL
 missing, and has no restore subcommand - restoring is copying `fjall/` onto a fresh root. The fresh root
 must **not** contain the pre-Fjall `entities/`/`journal/` logs of the source root; if it does, the
 legacy import is marker-guarded per table (`imported:<table>` in the `meta` keyspace travels with the
-database, `crates/census-service/src/store/legacy.rs:12-45`), so the logs are not read a second time -
+database, `crates/census-store/src/legacy.rs:25-27,79-86`), so the logs are not read a second time -
 and if the marker were ever missing, a re-import appends at a freshly reserved sequence base instead of
-overwriting (`legacy.rs:48-91`). Do not restore a backup over a root that is
+overwriting (`crates/census-store/src/legacy/chunk.rs:51-66`). Do not restore a backup over a root that is
 being served - the lock (§2) will reject it, or worse, a running process holds an in-memory view of the
 files you are replacing.
 

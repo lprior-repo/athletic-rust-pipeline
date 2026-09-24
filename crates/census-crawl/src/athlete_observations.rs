@@ -90,7 +90,7 @@ pub fn observe_athletes_of<'a>(
 mod tests {
     use super::*;
     use census_domain::model::{
-        CanonicalEvent, CanonicalMeet, CanonicalTeam, EventKind, Gender, GradYear, Mark,
+        CanonicalEvent, CanonicalMeet, CanonicalTeam, CentiSeconds, EventKind, Gender, GradYear, Mark,
         SchoolYear, Sport, TimingMethod,
     };
     use census_domain::UsJurisdiction;
@@ -132,7 +132,7 @@ mod tests {
             event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
             meet,
             date: "2026-05-01".to_string(),
-            mark: Mark::TimeSeconds(10.94),
+            mark: Mark::TimeSeconds(CentiSeconds(1094)),
             wind_mps: None,
             place: None,
             heat: None,

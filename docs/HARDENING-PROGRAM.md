@@ -274,8 +274,10 @@ P0 gates ──► P1 burndown ──► P2 decomposition ──┬─► P3 DDD
 
 Rationale: gates first so nothing regresses while churning; burndown before decomposition (smaller
 diffs to review); decomposition before the crate split (module seams become crate seams); async
-hardening touches disjoint files (root `src/runtime/browser/*` vs census store/net) so P3 and P4 run
-concurrently; verification last but anchored by the golden corpus that already exists.
+hardening touches disjoint files (the root runtime's browser modules `src/runtime/browser_*.rs` vs
+census store/net) so P3 and P4 run concurrently (historical: those modules were deleted with the root
+package on 2026-09-23; the browser transport is `crates/census-crawl/src/net/execute/browser.rs`
+today); verification last but anchored by the golden corpus that already exists.
 
 Parallel ownership map (no two streams edit the same file):
 

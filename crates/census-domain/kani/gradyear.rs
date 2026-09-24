@@ -36,6 +36,11 @@ fn check_gradyear_of_formula() {
         GradYear::new(grad_year.get()).is_some(),
         "in-domain observation derived {grad_year}, which GradYear::new rejects"
     );
+
+    kani::cover!(grade.get() == 9, "grade boundary 9 is reachable");
+    kani::cover!(grade.get() == 12, "grade boundary 12 is reachable");
+    kani::cover!(school_year.get() == 2020, "school_year lower bound is reachable");
+    kani::cover!(school_year.get() == 2027, "school_year upper bound is reachable");
 }
 
 /// The known cohort anchors from the model docs.
@@ -86,6 +91,15 @@ fn check_gradyear_of_saturating() {
             .saturating_sub(i16::from(grade.get())),
         "saturating arithmetic in GradYear::of changed"
     );
+
+    kani::cover!(
+        school_year.get() == SchoolYear::MIN_START_YEAR,
+        "min season boundary is reachable"
+    );
+    kani::cover!(
+        school_year.get() == SchoolYear::MAX_START_YEAR,
+        "max season boundary is reachable"
+    );
 }
 
 /// `ObservedGrade::grad_year` is exactly the cohort derivation of its own grade and school year.
@@ -108,4 +122,9 @@ fn check_observed_grade_grad_year() {
 
     let expected = GradYear::of(grade, school_year);
     assert!(observed.grad_year() == expected, "ObservedGrade::grad_year mismatch");
+
+    kani::cover!(grade.get() == 9, "grade boundary 9 is reachable");
+    kani::cover!(grade.get() == 12, "grade boundary 12 is reachable");
+    kani::cover!(school_year.get() == 2020, "school_year lower bound is reachable");
+    kani::cover!(school_year.get() == 2040, "school_year upper bound is reachable");
 }

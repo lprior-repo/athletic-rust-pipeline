@@ -6,7 +6,11 @@
 
 use serde::{Deserialize, Serialize};
 
-/// What a seal certifies: the numbers a reader of the workbook sees.
+/// What a seal certifies: the counts the census reads off the store and the coverage report.
+///
+/// Three of them are the report's counts for the rows it publishes under this run's scope rather than
+/// totals over every stored row: `schools` and `cohort_performances` narrow by the census's cohort as
+/// well, while `meets` is read whole under the scope.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealCounts {
     /// The rows the census's state rollup publishes: one per covered jurisdiction *and* the unplaced
@@ -21,7 +25,15 @@ pub struct SealCounts {
     pub meets: u64,
     pub athletes: u64,
     pub class_of_2027: u64,
-    pub performances: u64,
+    /// Performances counted from the published rows: the store's rows for athletes inside this census's
+    /// cohort, under its run scope — not every performance the store holds. A reader who wants them all
+    /// reads the workbook's `Performances_*` sheets or the store.
+    ///
+    /// The field and the digest key were named `performances` until that reading was told apart, and the
+    /// digest prefix moved to `v5` with the rename so a `v4` digest cannot be read as this one. A
+    /// `seal.json` written under the old name still reads.
+    #[serde(alias = "performances")]
+    pub cohort_performances: u64,
     pub coaches: u64,
 }
 

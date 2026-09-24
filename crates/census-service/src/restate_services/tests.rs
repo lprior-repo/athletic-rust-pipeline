@@ -1,3 +1,5 @@
+use census_crawl::{CrawlError, net::FetchError};
+use fjall;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 
@@ -471,4 +473,332 @@ fn a_refused_source_is_owed_evidence_and_is_never_dispatched() {
         1,
         "a source object that accepted no observation is owed work"
     );
+}
+// ----------------------------------------------------------------------- defect regression
+
+/// FetchError variants that retryable() says are retryable: all become Transient.
+///
+/// The transport classified these as transient, and the census honours that verdict.
+#[test]
+fn fetch_error_retryable_variants_become_transient() {
+    use census_crawl::net::FetchError;
+
+    let transport = collect_error(CrawlError::Fetch(FetchError::Transport {
+        url: "https://example.com".to_string(),
+        source: reqwest::Error::from(reqwest::ErrorKind::TimedOut),
+    }));
+    assert!(matches!(transport, JobError::Transient { .. }));
+
+    let timeout = collect_error(CrawlError::Fetch(FetchError::Timeout {
+        url: "https://example.com".to_string(),
+        timeout_secs: 30,
+    }));
+    assert!(matches!(timeout, JobError::Transient { .. }));
+
+    let rate_limited = collect_error(CrawlError::Fetch(FetchError::RateLimited {
+        url: "https://example.com".to_string(),
+        retry_after_secs: None,
+    }));
+    assert!(matches!(rate_limited, JobError::Transient { .. }));
+
+    // 5xx HTTP responses are transient.
+    let http_500 = collect_error(CrawlError::Fetch(FetchError::Http {
+        status: 500,
+        url: "https://example.com".to_string(),
+    }));
+    assert!(matches!(http_500, JobError::Transient { .. }));
+
+    // 429 is transient.
+    let http_429 = collect_error(CrawlError::Fetch(FetchError::Http {
+        status: 429,
+        url: "https://example.com".to_string(),
+    }));
+    assert!(matches!(http_429, JobError::Transient { .. }));
+
+    // BrowserLane { retryable: true } is transient.
+    let browser_retryable = collect_error(CrawlError::Fetch(FetchError::BrowserLane {
+        url: "https://example.com".to_string(),
+        detail: "profile busy".to_string(),
+        retryable: true,
+    }));
+    assert!(matches!(browser_retryable, JobError::Transient { .. }));
+}
+
+/// FetchError variants that retryable() says are NOT retryable: all become Terminal.
+///
+/// Robots, TooLarge, BrowserLane { retryable: false }, InvalidUrl, Decode, Encode, Client,
+/// and Invariant are deterministic — the same input reproduces the same failure, so retry
+/// cannot help. The defect was that these fell through to Transient.
+#[test]
+fn fetch_error_nonretryable_variants_become_terminal() {
+    use census_crawl::net::FetchError;
+
+    let robots = collect_error(CrawlError::Fetch(FetchError::Robots(
+        "https://example.com".to_string(),
+    )));
+    assert!(
+        matches!(robots, JobError::Terminal { .. }),
+        "Robots must be terminal (the defect was it became Transient)"
+    );
+
+    let too_large = collect_error(CrawlError::Fetch(FetchError::TooLarge {
+        url: "https://example.com".to_string(),
+    }));
+    assert!(
+        matches!(too_large, JobError::Terminal { .. }),
+        "TooLarge must be terminal"
+    );
+
+    let browser_not_retryable = collect_error(CrawlError::Fetch(FetchError::BrowserLane {
+        url: "https://example.com".to_string(),
+        detail: "human_required".to_string(),
+        retryable: false,
+    }));
+    assert!(
+        matches!(browser_not_retryable, JobError::Terminal { .. }),
+        "BrowserLane { retryable: false } must be terminal (the defect was it became Transient)"
+    );
+
+    let invalid_url = collect_error(CrawlError::Fetch(FetchError::InvalidUrl {
+        url: "not a url".to_string(),
+        source: url::Url::parse("not a url").unwrap_err(),
+    }));
+    assert!(matches!(invalid_url, JobError::Terminal { .. }));
+
+    // 4xx HTTP (non-429) is terminal.
+    let http_404 = collect_error(CrawlError::Fetch(FetchError::Http {
+        status: 404,
+        url: "https://example.com".to_string(),
+    }));
+    assert!(matches!(http_404, JobError::Terminal { .. }));
+
+    // 4xx other non-429 is terminal.
+    let http_403 = collect_error(CrawlError::Fetch(FetchError::Http {
+        status: 403,
+        url: "https://example.com".to_string(),
+    }));
+    assert!(matches!(http_403, JobError::Terminal { .. }));
+}
+
+/// Non-fetch CrawlError variants: Schema, Decode, Domain, Arithmetic, Io, RegexInit are all
+/// terminal because reading the same bytes again does not make them less wrong.
+#[test]
+fn non_fetch_crawl_errors_are_terminal() {
+    use census_crawl::net::FetchError;
+
+    let schema = collect_error(CrawlError::Schema {
+        url: "https://example.com".to_string(),
+        detail: "missing field".to_string(),
+    });
+    assert!(matches!(schema, JobError::Terminal { .. }));
+
+    let decode = collect_error(CrawlError::Decode {
+        url: "https://example.com".to_string(),
+        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+    });
+    assert!(matches!(decode, JobError::Terminal { .. }));
+
+    let domain = collect_error(CrawlError::Domain(census_domain::DomainError::InvalidYear(
+        9999,
+    )));
+    assert!(matches!(domain, JobError::Terminal { .. }));
+
+    let arithmetic = collect_error(CrawlError::Arithmetic {
+        detail: "overflow".to_string(),
+    });
+    assert!(matches!(arithmetic, JobError::Terminal { .. }));
+
+    let io_err = collect_error(CrawlError::Io {
+        path: std::path::PathBuf::from("/dev/null/nowhere"),
+        source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+    });
+    assert!(matches!(io_err, JobError::Terminal { .. }));
+
+    let encode = collect_error(CrawlError::Encode {
+        table: "schools".to_string(),
+        source: serde_json::to_vec(&serde_json::Value::Null).unwrap_err(),
+    });
+    assert!(matches!(encode, JobError::Terminal { .. }));
+}
+
+/// Every deterministic StoreError classifies Terminal; only environmental ones are Transient.
+///
+/// The defect was that everything except Invariant was transient. CounterOverflow, JournalTooLarge,
+/// Decode, Json, SnapshotRow, TooManyRows, Refused, and Legacy are deterministic — retrying with
+/// the same input cannot fix them.
+#[test]
+fn deterministic_store_errors_classify_terminal() {
+    // CounterOverflow: no more u64 available, retry yields nothing.
+    let error = JobError::from(StoreError::CounterOverflow);
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // Decode: corrupt JSON in store, retry reproduces the same corruption.
+    let error = JobError::from(StoreError::Decode {
+        key: "schools:1".to_string(),
+        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // Json: unkeyed bytes failed to decode.
+    let error = JobError::from(StoreError::Json {
+        detail: "raw row".to_string(),
+        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // SnapshotRow: a JSONL snapshot line is corrupt.
+    let error = JobError::from(StoreError::SnapshotRow {
+        path: PathBuf::from("/tmp/out/schools.jsonl"),
+        line: 42,
+        source: serde_json::from_str::<serde_json::Value>("not json").unwrap_err(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // TooManyRows: a scan would exceed the ceiling — retry does not shrink the table.
+    let error = JobError::from(StoreError::TooManyRows {
+        table: "schools".to_string(),
+        max: 20_000_000,
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // JournalTooLarge: entry exceeds the ceiling — the data is what it is.
+    let error = JobError::from(StoreError::JournalTooLarge {
+        what: "value",
+        phase: "teams".to_string(),
+        key: "wi:1".to_string(),
+        bytes: 1_000_000,
+        max: 500_000,
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // Refused: the request did not meet the condition the store enforces.
+    let error = JobError::from(StoreError::Refused {
+        detail: "destination busy".to_string(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // Legacy: the one-time import failed — retrying the same data fails again.
+    let error = JobError::from(StoreError::Legacy {
+        detail: "column count mismatch".to_string(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+
+    // Invariant: replaying cannot restore it (this was already terminal, confirming it stays so).
+    let error = JobError::from(StoreError::Invariant {
+        detail: "row id missing".to_string(),
+    });
+    assert!(matches!(error, JobError::Terminal { .. }));
+}
+
+/// Only environmental StoreError variants are Transient.
+#[test]
+fn environmental_store_errors_classify_transient() {
+    // Open: the database might be available on retry.
+    let error = JobError::from(StoreError::Open {
+        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
+    });
+    assert!(matches!(error, JobError::Transient { .. }));
+
+    // Flush: WAL might flush on retry.
+    let error = JobError::from(StoreError::Flush {
+        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
+    });
+    assert!(matches!(error, JobError::Transient { .. }));
+
+    // Read: transient I/O might resolve.
+    let error = JobError::from(StoreError::Read {
+        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
+    });
+    assert!(matches!(error, JobError::Transient { .. }));
+
+    // Write: transient I/O might resolve.
+    let error = JobError::from(StoreError::Write {
+        source: fjall::Error::new(fjall::ErrorKind::Corrupted, "test"),
+    });
+    assert!(matches!(error, JobError::Transient { .. }));
+
+    // Io: sidecar file I/O might resolve on retry.
+    let error = JobError::from(StoreError::Io {
+        path: PathBuf::from("/tmp/test"),
+        source: std::io::Error::from(std::io::ErrorKind::PermissionDenied),
+    });
+    assert!(matches!(error, JobError::Transient { .. }));
+}
+
+/// run_key: identical semantic requests produce identical keys, independent of wall-clock time.
+///
+/// Two calls with the same job name and the same parts must produce the same key.
+/// The old implementation appended a unix-second, so two calls in the same second
+/// would collide and two calls 20 seconds apart would never attach.
+#[test]
+fn identical_semantic_requests_produce_identical_keys() {
+    let key_a = run_key("report", &["core"]);
+    let key_b = run_key("report", &["core"]);
+    assert_eq!(key_a, key_b, "identical requests must share a key");
+    assert_eq!(key_a, "report:core");
+
+    let key_c = run_key("bests", &["all", "2027", "50"]);
+    let key_d = run_key("bests", &["all", "2027", "50"]);
+    assert_eq!(key_c, key_d);
+    assert_eq!(key_c, "bests:all:2027:50");
+
+    let key_e = run_key("consolidate", &[]);
+    let key_f = run_key("consolidate", &[]);
+    assert_eq!(key_e, key_f);
+    assert_eq!(key_e, "consolidate");
+}
+
+/// run_key: differing semantic parts produce different keys.
+#[test]
+fn differing_semantic_parts_produce_different_keys() {
+    assert_ne!(
+        run_key("report", &["core"]),
+        run_key("report", &["all_sources"]),
+        "different scope must produce different keys"
+    );
+
+    assert_ne!(
+        run_key("bests", &["all", "2027", "50"]),
+        run_key("bests", &["all", "2027", "100"]),
+        "different limit must produce different keys"
+    );
+
+    assert_ne!(
+        run_key("workbook", &["2027", "core"]),
+        run_key("workbook", &["2028", "core"]),
+        "different grad year must produce different keys"
+    );
+
+    assert_ne!(
+        run_key("bests", &["all", "2027", "all"]),
+        run_key("bests", &["all", "all", "all"]),
+        "different cohort must produce different keys"
+    );
+}
+
+/// run_key does not include wall-clock seconds — two calls 20 seconds apart produce the same key.
+///
+/// This is the core property: the key is stable across time, so a rerun attaches to the existing
+/// workflow instead of creating a new one. The old implementation appended unix-seconds, making
+/// identity time-dependent.
+#[test]
+fn run_key_is_independent_of_wall_clock() {
+    // We cannot easily sleep and test real time, but we can verify the key shape contains no
+    // trailing seconds component by checking the structure: for a key with N parts, there are
+    // exactly N+1 segments (job + parts), and the last segment matches the last part.
+    let key = run_key("report", &["core"]);
+    let segments: Vec<&str> = key.split(':').collect();
+    assert_eq!(segments.len(), 2, "report:core has exactly 2 segments");
+    assert_eq!(segments[1], "core", "the last segment must be the last part, not a timestamp");
+
+    let key2 = run_key("bests", &["all", "2027", "50"]);
+    let segments2: Vec<&str> = key2.split(':').collect();
+    assert_eq!(segments2.len(), 4, "bests:all:2027:50 has exactly 4 segments");
+    assert_eq!(segments2[3], "50", "the last segment must be the last part, not a timestamp");
+
+    // For an empty-parts key, there is exactly 1 segment (just the job name).
+    let key3 = run_key("consolidate", &[]);
+    let segments3: Vec<&str> = key3.split(':').collect();
+    assert_eq!(segments3.len(), 1, "consolidate with no parts has 1 segment");
+    assert_eq!(segments3[0], "consolidate");
 }

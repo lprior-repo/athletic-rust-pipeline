@@ -1,4 +1,5 @@
 use super::*;
+use super::CentiSeconds;
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
@@ -124,7 +125,7 @@ fn state_blocks_carry_place_grade_and_time() -> anyhow::Result<()> {
     }
     {
         let left_value = &first.mark;
-        let right_value = &(Mark::TimeSeconds(950.2));
+        let right_value = &(Mark::TimeSeconds(CentiSeconds(95020)));
         anyhow::ensure!(
             left_value == right_value,
             "left={left_value:?} right={right_value:?}"
@@ -179,7 +180,7 @@ fn padded_table_rows_parse_with_and_without_team_points() -> anyhow::Result<()> 
     }
     {
         let left_value = &first.mark;
-        let right_value = &(Mark::TimeSeconds(1004.1));
+        let right_value = &(Mark::TimeSeconds(CentiSeconds(100410)));
         anyhow::ensure!(
             left_value == right_value,
             "left={left_value:?} right={right_value:?}"
@@ -264,7 +265,7 @@ fn accurace_rows_are_read_through_the_rule_line() -> anyhow::Result<()> {
     }
     {
         let left_value = &first.mark;
-        let right_value = &(Mark::TimeSeconds(981.6));
+        let right_value = &(Mark::TimeSeconds(CentiSeconds(98160)));
         anyhow::ensure!(
             left_value == right_value,
             "left={left_value:?} right={right_value:?}"

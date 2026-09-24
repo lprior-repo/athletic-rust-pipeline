@@ -3,6 +3,7 @@
 
 use crate::hytek::{parse_field_mark, parse_time, NO_MARK};
 use census_domain::model::{EventKind, Gender, Mark, Sport, TimingMethod};
+use census_domain::model::CentiPoints;
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -219,7 +220,7 @@ pub fn parse_mark(kind: &EventKind, published: &str) -> Option<(Mark, bool)> {
     let mark = match kind {
         EventKind::Pentathlon | EventKind::Heptathlon | EventKind::Decathlon => {
             let points: f64 = token.replace(',', "").parse().ok()?;
-            (points.is_finite() && points >= 0.0).then_some(Mark::Points(points))?
+            (points.is_finite() && points >= 0.0).then_some(Mark::Points(CentiPoints::from_points_f64(points)))?
         }
         kind if kind.is_field() => parse_field_mark(metric_bare(token))?,
         _ => Mark::TimeSeconds(parse_time(token)?),

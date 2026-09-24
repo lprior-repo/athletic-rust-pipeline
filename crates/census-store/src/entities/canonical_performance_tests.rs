@@ -10,8 +10,8 @@ use crate::{Store, Table};
 use census_domain::jurisdiction::UsJurisdiction;
 use census_domain::model::{
     CanonicalAthlete, CanonicalEvent, CanonicalMeet, CanonicalPerformance, CanonicalTeam,
-    EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity, SourceNamespace, Sport,
-    TimingMethod,
+    CentiSeconds, EventKind, Gender, GradYear, Mark, SchoolYear, SourceIdentity,
+    SourceNamespace, Sport, TimingMethod,
 };
 
 /// One performance of one athlete, keyed by `source_key` so two calls mint one id.
@@ -48,7 +48,7 @@ fn performance(source_key: &str, identity: Option<SourceIdentity>) -> CanonicalP
         event: CanonicalEvent::new(&meet, EventKind::Track100m, Gender::Boys, None, None).id,
         meet,
         date: "2026-05-01".to_string(),
-        mark: Mark::TimeSeconds(10.94),
+        mark: Mark::TimeSeconds(CentiSeconds(1094)),
         wind_mps: None,
         place: None,
         heat: None,

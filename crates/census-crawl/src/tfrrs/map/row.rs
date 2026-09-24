@@ -5,7 +5,7 @@ use crate::tfrrs::parse::{
     clock_seconds, feet_inches_metres, ParsedMark, ParsedMeet, ParsedRow, ParsedSection,
     PublishedDate, YearToken,
 };
-use census_domain::model::{Grade, Mark};
+use census_domain::model::{CentiMetres, Grade, Mark};
 
 pub(super) fn grade_for(
     row: &ParsedRow,
@@ -48,11 +48,11 @@ pub(super) fn mark_of(mark: &ParsedMark, conv_metres: Option<f64>) -> Option<Mar
             if let Some(metres) = feet_inches_metres(token) {
                 return Some(Mark::FieldImperial {
                     feet_mark: token.clone(),
-                    metres: conv_metres.unwrap_or(metres),
+                    metres: CentiMetres::from_metres_f64(conv_metres.unwrap_or(metres)),
                 });
             }
             match conv_metres {
-                Some(metres) => Some(Mark::DistanceMetres(metres)),
+                Some(metres) => Some(Mark::DistanceMetres(CentiMetres::from_metres_f64(metres))),
                 None => Some(Mark::Raw(token.clone())),
             }
         }

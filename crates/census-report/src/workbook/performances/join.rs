@@ -240,6 +240,7 @@ fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
 
 /// The comparable number on the mark's own scale. A [`Mark::Raw`] value has no scale yet, so it stays
 /// blank instead of being invented.
+/// The comparable number on the mark's own scale, converted back to f64 for the wire form.
 fn normalized_mark(mark: &Mark) -> Option<f64> {
-    Measure::of(mark).and_then(|measure| measure.value(mark))
+    Measure::of(mark).and_then(|measure| measure.value(mark)).map(|v| v as f64 / 100.0)
 }

@@ -130,7 +130,7 @@ impl SealEvidence {
         if self.retained.observations == 0 && self.counts.athletes > 0 {
             open.push(AcceptanceItem::EvidenceDurable);
         }
-        if self.retained.calculations == 0 && self.counts.performances > 0 {
+        if self.retained.calculations == 0 && self.counts.cohort_performances > 0 {
             open.push(AcceptanceItem::CalculationsReproducible);
         }
         if self.workbook.mapped_athletes < self.counts.class_of_2027 {
@@ -189,8 +189,8 @@ impl SealEvidence {
                 self.retained.observations, self.counts.athletes
             ),
             AcceptanceItem::CalculationsReproducible => format!(
-                "{} reproducible calculations for {} performances",
-                self.retained.calculations, self.counts.performances
+                "{} reproducible calculations for the cohort's {} performances",
+                self.retained.calculations, self.counts.cohort_performances
             ),
         }
     }

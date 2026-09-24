@@ -5,7 +5,7 @@ use super::*;
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalEvent, CanonicalMeet, CanonicalPerformance,
     CanonicalSchool, CanonicalTeam, CoachRole, CompetitionLevel, EventKind, Evidence, Gender,
-    GradYear, Grade, Mark, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
+    GradYear, Grade, Mark, CentiSeconds, ObservedGrade, SchoolYear, SourceIdentity, SourceNamespace, SourceRef,
     Sport,
 };
 use census_domain::UsJurisdiction;
@@ -153,7 +153,7 @@ fn fixture_store() -> (TempDir, Store) {
         &meet.id,
         &school_a_id,
         EventKind::Track100m,
-        Mark::TimeSeconds(10.94),
+        Mark::TimeSeconds(CentiSeconds(1094)),
         "wiaa_results",
         "wi-1",
     );
@@ -210,7 +210,7 @@ fn fixture_store() -> (TempDir, Store) {
         &meet.id,
         &school_d_id,
         EventKind::Track200m,
-        Mark::TimeSeconds(24.10),
+        Mark::TimeSeconds(CentiSeconds(2410)),
         "ohsaa_results",
         "oh-orphan",
     );
@@ -612,7 +612,7 @@ fn an_out_of_scope_jurisdiction_enters_no_denominator_and_still_reconciles() {
         &ak_meet.id,
         &ak_school_id,
         EventKind::Track100m,
-        Mark::TimeSeconds(11.42),
+        Mark::TimeSeconds(CentiSeconds(1142)),
         "athleticlive_results",
         "ak-1",
     );

@@ -122,7 +122,10 @@ fn accumulate(
 
     let wins = bests
         .get(&key)
-        .map(|incumbent| measure.better(value, incumbent.best_value))
+        .map(|incumbent| {
+            let incumbent_value = (incumbent.best_value * 100.0).round() as i32;
+            measure.better(value, incumbent_value)
+        })
         .unwrap_or(true);
     if !wins {
         return;
@@ -134,7 +137,7 @@ fn accumulate(
         meet,
         performance,
         event_label,
-        value,
+        value as f64 / 100.0,
         measure,
     );
     bests.insert(key, row);

@@ -26,18 +26,18 @@ impl Measure {
         }
     }
 
-    /// The comparable number, in this measure's own unit.
-    pub fn value(self, mark: &Mark) -> Option<f64> {
+    /// The comparable integer in this measure's own sub-unit.
+    pub fn value(self, mark: &Mark) -> Option<i32> {
         match (self, mark) {
-            (Measure::Time, Mark::TimeSeconds(seconds)) => Some(*seconds),
-            (Measure::Distance, Mark::DistanceMetres(metres)) => Some(*metres),
-            (Measure::Field, Mark::FieldImperial { metres, .. }) => Some(*metres),
-            (Measure::Points, Mark::Points(points)) => Some(*points),
+            (Measure::Time, Mark::TimeSeconds(cs)) => Some(cs.0),
+            (Measure::Distance, Mark::DistanceMetres(cm)) => Some(cm.0),
+            (Measure::Field, Mark::FieldImperial { metres, .. }) => Some(metres.0),
+            (Measure::Points, Mark::Points(cp)) => Some(cp.0),
             _ => None,
         }
     }
 
-    pub const fn better(self, candidate: f64, incumbent: f64) -> bool {
+    pub const fn better(self, candidate: i32, incumbent: i32) -> bool {
         match self {
             Measure::Time => candidate < incumbent,
             Measure::Distance | Measure::Field | Measure::Points => candidate > incumbent,

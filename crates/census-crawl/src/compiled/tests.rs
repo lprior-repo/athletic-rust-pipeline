@@ -1,6 +1,7 @@
 use super::header::header;
 use super::*;
 use census_domain::model::{Gender, Mark, SourceRef};
+use census_domain::model::CentiSeconds;
 
 fn source() -> SourceRef {
     SourceRef::new("wiaa_results", None)
@@ -46,7 +47,7 @@ fn regional_export_parses_both_blocks_of_a_page() {
     assert_eq!(relay.round.as_deref(), Some("finals"));
     let winner = &relay.rows[0];
     assert_eq!(winner.school, "HORTONVILLE");
-    assert_eq!(winner.mark, Mark::TimeSeconds(595.11));
+    assert_eq!(winner.mark, Mark::TimeSeconds(CentiSeconds(59511)));
     assert_eq!(winner.points, Some(10.0));
     assert_eq!(
         winner.legs,
@@ -81,7 +82,7 @@ fn regional_export_parses_both_blocks_of_a_page() {
         relay.rows
     );
     assert_eq!(relay.rows[1].school, "APPLETON NORTH");
-    assert_eq!(relay.rows[2].mark, Mark::TimeSeconds(603.38));
+    assert_eq!(relay.rows[2].mark, Mark::TimeSeconds(CentiSeconds(60338)));
     assert_eq!(
         relay.rows[2].legs,
         Vec::new(),
@@ -104,7 +105,7 @@ fn regional_export_parses_both_blocks_of_a_page() {
     // The source itself truncates long school names with an ellipsis; the parser keeps it.
     assert_eq!(leader.school, "APPLETON NOR\u{2026}");
     // The qualifier letter is not part of the time, and a prelim awards no points.
-    assert_eq!(leader.mark, Mark::TimeSeconds(12.30));
+    assert_eq!(leader.mark, Mark::TimeSeconds(CentiSeconds(1230)));
     assert_eq!(leader.points, None);
 }
 
