@@ -954,3 +954,65 @@ numbers appear in the manifest of every service that advertises them:
 The abort is a *first* attempt's ending rather than lost work: a jurisdiction invocation resumes from
 its journal, so the failed states are re-driven rather than rebuilt. `docs/deployment-lifecycle.md`
 carries the rule.
+
+---
+
+## The census seals: every §70 item satisfied (2026-09-24)
+
+With both fixes in the build, the revision-8 census was sealed through the deployment that ran it.
+The endpoint was rebuilt at `326853b`, started over `var/midwest-census`, and registered with the
+local Restate node; the seal then read the run's own journal by naming every key the deployment's
+`state` table answers for `Ingest`:
+
+    census-serve --listen 127.0.0.1:19103 --data-dir var/midwest-census --max-concurrent 16 \
+                 --drain-timeout 30 --browser-profile …/var/browser-profile
+    curl -X POST http://127.0.0.1:19095/deployments -d '{"uri":"http://127.0.0.1:19103/","use_http_1_1":true}'
+    KEYS=… # SELECT DISTINCT service_key FROM state WHERE service_name = 'Ingest'  → 53 keys
+    census-service open-work --season 2026 --revision 8
+    census-service seal --grad-year 2027 --season 2026 --revision 8 --write --source-object $(53 keys)
+
+    season 2026-27 revision 8
+    jurisdiction sweeps owed: 0 of 49      # item 1, online
+    source objects owed: unmeasured        # open-work cannot enumerate objects; the seal's list does
+    phase: complete
+    already sealed: 86421165beab0bc754faf36d326a0f34efaeb9357fb18b53f794d0ac7ab3ddf4
+    acceptance: every §70 item is satisfied
+    sealed 86421165beab0bc754faf36d326a0f34efaeb9357fb18b53f794d0ac7ab3ddf4 on 2026-09-24
+      cohort 580334 of 2228631 athletes, 31818 schools, 11353 meets, 28979 cohort performances, 31488 coaches
+      retained: 127 gaps, 4548 conflicts, 0 access conditions (0 hosts refused, 0 throttled),
+                unmeasured source failures
+    wrote var/midwest-census/out/seal.json
+
+Four things this run settles:
+
+- **The workbook gap was an export stale by 488 cohort athletes, not a store difference.** The first
+  pass certified `census-service-2026-09-24.xlsx` as it stood at 16:11 and refused on
+  `579846 of 580334 cohort athletes appear in the workbook`. `census-service workbook` (92 s) rebuilt
+  it from the same store, and the same seal then read `580334 of 580334`: the rows had landed between
+  the export and the check. `--all-sources` stays a different census (`report.json` 623509) and is not
+  what the seal certifies by default.
+- **A `seal.json` from an older build is a parse trap, exactly as the runbook warns.** Both the store
+  route and the online route died on `parsing var/midwest-census/out/seal.json — missing field
+  silent_sources`, the field this build added to `RetainedFindings`. Renaming the artifact aside
+  (`seal.v5-2026-09-24.bak.json`) and re-deriving produced the same digest the ladder had already
+  recorded, so the retired file was the only stale thing in the path.
+- **The retained finding is where the item-2 shortfall travels.** `unmeasured source failures` is
+  `RetainedFindings.silent_sources` — the endpoints that finished empty — so the half of the count the
+  owed rule can no longer carry is still named, and still part of the digest.
+- **The timeout fix is live, not only asserted.** The registered deployment answers per service:
+  nine store-backed services report `inactivity=1h abort=1h`, `BrowserSession` keeps Restate's
+  `1m/10m` on purpose, and `Census` keeps `journal=1h idempotency=30d` while the rest keep `90d/30d`.
+
+The sealed workbook is `var/midwest-census/out/census-service-2026-09-24.xlsx` (78 666 872 bytes,
+20 sheets: Athletes, PRs, Performances_001, Coaches, Schools, Meets, Sources, Coverage, Conflicts,
+Review, Run Metrics, Goal & method, Summary, By state - core, By state - all sources, Athletic.net
+marginal, Best results, Meets summary, Evidence mix, Method notes). `census-service verify --store
+var/midwest-census --workbook …` then reconciles its data rows against the store with `census-serve`
+stopped — the same window in which the store is free for `fjall-stats` and `store-integrity` — and
+answered `verify: OK (5000 athletes sampled of 580334 rows, 5000 performances sampled of 222065
+rows)`.
+
+The run's own counts, read from the objects rather than recalled: 49 jurisdiction objects at revision
+8, each holding its teams, rosters and meets stages; 53 `Ingest` objects; the store holds 3 072 309
+athletes, 2 364 818 of them inside the census scope (AK and HI publish in no row), 12 556 meets, and
+the 580 334 class-of-2027 athletes the core-scope seal certifies.
