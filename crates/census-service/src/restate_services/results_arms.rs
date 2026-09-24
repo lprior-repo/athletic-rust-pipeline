@@ -215,6 +215,14 @@ async fn athleticnet_meets(
 ) -> Result<(usize, AdapterReport), HandlerError> {
     let ids = athleticnet_meet_ids(meets, jurisdiction);
     let meets = ids.len();
+    // A selection that names no meet is a fact about this run's coverage, not a walk: an empty
+    // `--meets` is the adapter's registry route, so calling it here would refuse for lack of a
+    // registry — an operator file this stage has no way to name. Measured 2026-09-24: the previous
+    // national run failed all forty-nine jurisdictions here, because only the states whose own
+    // sources publish Athletic.net links select anything for this arm to pull.
+    if meets == 0 {
+        return Ok((0, AdapterReport::new(ATHLETICNET, "performances")));
+    }
     let report = census_crawl::athleticnet::collect(
         context,
         &census_crawl::athleticnet::Options {
