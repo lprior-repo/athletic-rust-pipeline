@@ -5,6 +5,10 @@
 //! * **Idempotency** — absorbing a second identical observation changes nothing.
 //! * **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`,
 //!   `source_urls` and `source_labels` are sets, so merge order cannot leak into a row.
+//! * **Source identity reversibility** — those unions are *exact*: the `source_identities` a merge
+//!   leaves are the two sides' union and nothing else, `identity_in` answers from the merged row for
+//!   every namespace either side named, and a refused merge absorbs no identity while its finding
+//!   names both sides' provider objects.
 //! * **First-writer-wins** — an option a row already carries is never replaced (`level`, `city`,
 //!   `professional_email`, `enrollment`, …). Every law is checked in both directions, so it is the
 //!   *first* writer that survives rather than one fixed side. The meet `level` is the documented
@@ -21,7 +25,7 @@
 //!
 //! Deterministic by construction: [`law_config`] pins 64 cases on ChaCha with the fixed seed
 //! `0x004D_4552_475F_4944`, so a failing case is reproducible from the seed alone. The laws live in
-//! [`laws_unions`], [`laws_writers`] and [`contact_policy`].
+//! [`laws_unions`], [`laws_source_identity`], [`laws_writers`] and [`contact_policy`].
 
 #![forbid(unsafe_code)]
 
@@ -38,6 +42,8 @@ use proptest::test_runner::{RngAlgorithm, RngSeed};
 
 #[path = "merge_properties/contact_policy.rs"]
 mod contact_policy;
+#[path = "merge_properties/laws_source_identity.rs"]
+mod laws_source_identity;
 #[path = "merge_properties/laws_unions.rs"]
 mod laws_unions;
 #[path = "merge_properties/laws_writers.rs"]
