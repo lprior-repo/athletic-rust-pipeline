@@ -20,7 +20,7 @@ use census_domain::UsJurisdiction;
 
 /// The rows: one per registered adapter, in slug order, each with the jurisdictions the research
 /// evidences it for.
-pub(super) const TABLE: [Applicability; 14] = [
+pub(super) const TABLE: [Applicability; 17] = [
     Applicability {
         slug: "athleticlive",
         jurisdictions: &[
@@ -83,6 +83,17 @@ pub(super) const TABLE: [Applicability; 14] = [
         refusal: "No in-scope jurisdiction is excluded: the API answers a node per state, which is why this row is the \
                   whole census scope. Per-state *depth* is that state's own column in §1a/§1b — a state whose surface \
                   publishes no Athletic.net id still plans this source, at the depth its row states.",
+    },
+    Applicability {
+        slug: "ciac",
+        jurisdictions: &[UsJurisdiction::Connecticut],
+        evidence: "`coach-directories-national` CT: the FusionPoint directory's 190 school tables carry 182 schools with \
+                   at least one XC/indoor+outdoor-track Head Coach row (1,043 such rows) and 189 Athletic Director \
+                   rows, counted over `samples/dir/CT__directory.html` by `tools/dir_coach_counts.py`. The lane \
+                   records `PRIMARY - tier 1 names TF/XC head coaches per side` and notes the directory has no email \
+                   column. Cost: 1 request.",
+        refusal: "One league's directory: no other jurisdiction in the corpus publishes on this host, and the lane's \
+                  rows for the rest name a different provider or none.",
     },
     Applicability {
         slug: "coach_contacts",
@@ -148,6 +159,16 @@ pub(super) const TABLE: [Applicability; 14] = [
                   states per state in §1a/§1b what is free and what is not.",
     },
     Applicability {
+        slug: "mpa",
+        jurisdictions: &[UsJurisdiction::Maine],
+        evidence: "`coach-directories-national` ME: the same FusionPoint directory shape, 147 school tables carrying 81 \
+                   schools with an XC/indoor+outdoor-track Head Coach row (310 such rows) and 149 Athletic Director \
+                   rows, counted by `tools/dir_coach_counts.py`. The lane records `PRIMARY` and notes the directory \
+                   has no email column. Cost: 1 request.",
+        refusal: "One association's directory: the rest of the census scope is served by other providers, by ones the \
+                  lane found unworkable, or by none.",
+    },
+    Applicability {
         slug: "mshsl",
         jurisdictions: &[UsJurisdiction::Minnesota],
         evidence: "[09] MSHSL: 664 unique `/schools/<slug>` in sitemap page 1 -> 1,328 roster targets (664 x XC+TF); \
@@ -176,6 +197,15 @@ pub(super) const TABLE: [Applicability; 14] = [
                    `professional_email == None`.",
         refusal: "North Dakota and Nebraska only: the two member directories the adapter parses. Neither publishes an \
                   address, which is why the row carries the names shape and makes no contact claim.",
+    },
+    Applicability {
+        slug: "riil",
+        jurisdictions: &[UsJurisdiction::RhodeIsland],
+        evidence: "`coach-directories-national` RI: 55 school tables carrying 49 schools with an XC/indoor+outdoor-track \
+                   Head Coach row (259 such rows), 57 Athletic Director rows and 0 `mailto`, counted by \
+                   `tools/dir_coach_counts.py`. The lane records `PRIMARY` and a 1-2 request cost.",
+        refusal: "One league's directory: no other jurisdiction's lane row names this host, so a plan outside Rhode \
+                  Island has nothing here to read.",
     },
     Applicability {
         slug: "tfrrs",

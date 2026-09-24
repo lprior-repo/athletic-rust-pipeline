@@ -8,7 +8,21 @@ use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
 /// The adapters whose slugs sort from `mshsl` on.
-pub(super) const FROM_MSHSL: [SourceDescriptor; 7] = [
+pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
+    SourceDescriptor {
+        slug: "mpa",
+        provider: "Maine Principals' Association school directory",
+        transport: TransportKind::Html,
+        // school_evidence: `map::school_entities` mints one `CanonicalSchool` per entry
+        // `pages::parse_directory` reads off the school list, keyed by the normalized name because
+        // the list publishes no stable id of its own. coach_directory: the same call mints a
+        // `CanonicalCoach` for each row `pages::parse_staff_table` returns, and `map::strip_honorific`
+        // is what keeps a "Coach " lead-in out of the published name. No public_professional_contact:
+        // the staff table's phone column is a school number, and no row publishes a coach address, so
+        // every entity this adapter mints carries an empty `professional_email`.
+        capabilities: SCHOOL_COACH_NAMES,
+        admission: fetched("www.mpa.cc", FETCHER_RPS),
+    },
     SourceDescriptor {
         slug: "mshsl",
         provider: "Minnesota State High School League (MSHSL)",
@@ -50,6 +64,19 @@ pub(super) const FROM_MSHSL: [SourceDescriptor; 7] = [
         // `secure.nsaahome.org` under the same 1 rps policy; a single-origin admission cannot name
         // both, and the second host is listed here so the declaration stays reviewable.
         admission: fetched("ndhsaa.com", FETCHER_RPS),
+    },
+    SourceDescriptor {
+        slug: "riil",
+        provider: "Rhode Island Interscholastic League directory",
+        transport: TransportKind::Html,
+        // school_evidence: `map::school_entities` mints one `CanonicalSchool` per school table the
+        // league's single directory page publishes. coach_directory: the same call mints a
+        // `CanonicalCoach` for each XC/TF row label `pages::parse_sport_label` recognises. No
+        // public_professional_contact: the page publishes no coach or director address, so every
+        // entity it mints carries an empty `professional_email`. The whole league is one page, so
+        // the run costs one to two GETs regardless of how many schools it covers.
+        capabilities: SCHOOL_COACH_NAMES,
+        admission: fetched("riil.org", FETCHER_RPS),
     },
     SourceDescriptor {
         slug: "tfrrs",

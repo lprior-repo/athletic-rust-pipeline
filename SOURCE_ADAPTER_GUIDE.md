@@ -81,6 +81,26 @@ and derive any host/URL from it, never a parallel string convention.
   core census scope via `report::NON_CORE_SOURCE_IDS` / `is_core_source`. An adapter whose data
   cannot stand alone must be listed there so the core filter can ignore it.
 
+## Partial failure
+
+An adapter that walks a run of source objects decides, per object, whether a failure is the
+*source's* or the *run's* — and the two go opposite ways:
+
+* **A template the build does not recognise is the source's.** It is one object this build cannot
+  read, not a reason to abandon the objects around it (§62). Record it — the object's own URL and
+  the parser's own reason — in `AdapterReport::notes`, count it, and keep walking. The reference is
+  `census-crawl::milesplit::read_meet_pages`: it matches `CrawlError::Schema` and lets every other
+  error through.
+* **A fetch failure is the run's.** Transport, timeout, `429`, a 5xx and a challenge all mean the
+  object was never read, and §9 forbids reading that as absence. Propagate it: the transport owns
+  the retry (`## Traffic rules`), and the workflow owns the decision about the whole step
+  (ADR-002). A quarantined tag and an unfetched tag must never look the same to a later reader.
+* **A run of mismatches is a contract change.** Scattered junk objects are a source fact; a run of
+  them with few readable objects between is the template this build knows no longer being the one
+  the site serves, which is §69's repeated-malformed-contract stop condition. Bound the walk on
+  that ratio rather than on an absolute count, so junk among readable objects never costs a state
+  its readable ones — `milesplit::MISMATCH_LIMIT` and `MeetPages::stopped` are the worked example.
+
 ## Traffic rules (non-negotiable)
 
 * **No retries inside the adapter.** Adapters perform one attempt per requested resource, and never

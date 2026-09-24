@@ -5,12 +5,14 @@
 //! published order either way. Each entry's comment names the symbol its `true` capabilities rest
 //! on, which is what makes a reviewer's check possible without reading the adapter end to end.
 
-use super::super::policy::{artifact, fetched, FETCHER_RPS, SCHOOL_COACH_CONTACT};
+use super::super::policy::{
+    artifact, fetched, FETCHER_RPS, SCHOOL_COACH_CONTACT, SCHOOL_COACH_NAMES,
+};
 use super::super::SourceCapabilities as Caps;
 use super::super::{SourceDescriptor, TransportKind};
 
 /// The adapters whose slugs sort up to `milesplit`.
-pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 7] = [
+pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
     SourceDescriptor {
         slug: "athleticlive",
         provider: "AthleticLIVE meet harvest and result-plane captures (research artifacts)",
@@ -92,6 +94,19 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 7] = [
             ..Caps::NONE
         },
         admission: fetched("www.athletic.net", FETCHER_RPS),
+    },
+    SourceDescriptor {
+        slug: "ciac",
+        provider: "CIAC sports directory (Connecticut)",
+        transport: TransportKind::Html,
+        // school_evidence: `map::school_entities` mints one `CanonicalSchool` per
+        // `DirectoryStaffTable` the directory page publishes. coach_directory: the same call mints a
+        // `CanonicalCoach` for every row `pages::parse_sport_label` recognises, and
+        // `pages::is_placeholder_name` is what keeps the rows the page fills with "TBA" or "Vacant"
+        // out of the workbook. No public_professional_contact: the directory publishes no coach or
+        // director address, so every entity it mints carries an empty `professional_email`.
+        capabilities: SCHOOL_COACH_NAMES,
+        admission: fetched("ciacsports.com", FETCHER_RPS),
     },
     SourceDescriptor {
         slug: "coach_contacts",

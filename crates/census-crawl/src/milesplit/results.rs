@@ -31,11 +31,15 @@ use census_domain::UsJurisdiction;
 use census_store::Table;
 use std::collections::HashMap;
 
+mod pages;
 mod report;
 mod run;
 #[cfg(test)]
 mod tests;
 
+pub use pages::{
+    is_results_page, read_meet_pages, ListedResultFile, MeetPage, MeetPages, MISMATCH_LIMIT,
+};
 use report::{note_entities, note_resolution, note_result_sets, note_rows};
 use run::Run;
 

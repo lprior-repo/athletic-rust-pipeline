@@ -76,42 +76,72 @@ pub(crate) async fn milesplit_results_report(
         .season_year
         .map_or(census::SeasonScope::All, census::SeasonScope::Year);
     let meets = census::select_meets(stored, &states, scope, args.limit);
-    let mut urls: Vec<providers::milesplit::ResultSetRequest> = Vec::new();
-    let mut pages_read = 0_usize;
-    let mut pro_marked = 0_usize;
-    for meet in &meets {
-        let files = providers::milesplit::fetch_meet_result_files(
-            context.fetcher,
-            &meet.results_url,
-            &context.fetch_options(),
-        )
-        .await
-        .with_context(|| format!("results page of meet {}", meet.source_meet_id))?;
-        pages_read = pages_read.saturating_add(1);
-        pro_marked =
-            pro_marked.saturating_add(files.iter().filter(|file| file.is_meet_pro != 0).count());
-        // The request carries the jurisdiction of the row that named the meet, because a results
-        // page which redirects to `www` publishes no state of its own.
-        urls.extend(
-            files
-                .iter()
-                .filter(|file| file.is_meet_pro == 0)
-                .map(|file| providers::milesplit::ResultSetRequest {
-                    url: file.raw_url(&meet.results_url),
-                    jurisdiction: meet.jurisdiction,
-                }),
-        );
-    }
+    // Only the rows naming a MileSplit results page are this arm's to read. A row naming another
+    // provider's page belongs to that provider's arm, and fetching it here would spend a request to
+    // read a template this arm does not know — which is a mismatch, not a meet without results.
+    let selected: Vec<providers::milesplit::MeetPage> = meets
+        .iter()
+        .filter(|meet| providers::milesplit::is_results_page(&meet.results_url))
+        .map(|meet| providers::milesplit::MeetPage {
+            results_url: meet.results_url.clone(),
+            jurisdiction: meet.jurisdiction,
+        })
+        .collect();
+    let pages = read_pages(context, &selected).await?;
+    let pro_marked = pages
+        .files
+        .iter()
+        .filter(|file| file.is_meet_pro != 0)
+        .count();
+    // The request carries the jurisdiction of the row that named the meet, because a results page
+    // which redirects to `www` publishes no state of its own.
+    let urls: Vec<providers::milesplit::ResultSetRequest> = pages
+        .files
+        .iter()
+        .filter(|file| file.is_meet_pro == 0)
+        .map(providers::milesplit::ListedResultFile::request)
+        .collect();
     let mut report = providers::milesplit::collect_result_sets(
         context,
         &providers::milesplit::ResultSetOptions { urls },
     )
     .await
     .context("milesplit result sets")?;
-    report.note(format!("meets_selected={}", meets.len()));
-    report.note(format!("meet_pages_read={pages_read}"));
+    report.note(format!("meets_in_scope={}", meets.len()));
+    report.note(format!("meet_pages_selected={}", selected.len()));
     report.note(format!("pro_marked_result_files={pro_marked}"));
+    note_pages(&mut report, &pages);
     Ok(report)
+}
+
+/// Read the selected meets' pages, tolerating the ones whose template this build does not know (§62)
+/// and propagating the ones it could not reach (§9).
+async fn read_pages(
+    context: &AdapterContext<'_>,
+    selected: &[providers::milesplit::MeetPage],
+) -> Result<providers::milesplit::MeetPages> {
+    providers::milesplit::read_meet_pages(
+        context.fetcher,
+        selected.iter().cloned(),
+        &context.fetch_options(),
+    )
+    .await
+    .context("milesplit result pages")
+}
+
+/// Record what the walk did with the pages: how many it read, which it could not and for what reason,
+/// and whether a run of unreadable pages stopped it (§69, repeated malformed contract).
+fn note_pages(report: &mut AdapterReport, pages: &providers::milesplit::MeetPages) {
+    report.note(format!("meet_pages_read={}", pages.pages_read));
+    for (url, reason) in &pages.quarantined {
+        report.note(format!("quarantined meet page {url}: {reason}"));
+    }
+    if pages.stopped() {
+        report.note(format!(
+            "stopped after {} unrecognised meet pages: the results template is not the one this build knows",
+            providers::milesplit::MISMATCH_LIMIT
+        ));
+    }
 }
 
 pub(crate) async fn wayzata_report(

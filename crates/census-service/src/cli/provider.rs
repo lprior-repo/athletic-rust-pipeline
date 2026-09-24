@@ -16,7 +16,7 @@ mod arms;
 #[derive(Args, Debug)]
 pub(super) struct ProviderArgs {
     /// Adapter name, matching its registry slug: ks, wiaa, wiaa_results, ihsa, ihsa_tournament,
-    /// ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_athletes,
+    /// ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_athletes,
     /// athleticlive_results, athleticnet, milesplit, milesplit_results, coach_contacts.
     name: String,
     /// Cap the number of schools processed (smoke runs).
@@ -98,6 +98,9 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         "mshsl" => arms::mshsl_report(&context, args, observed_on).await,
         "wayzata" | "wayzata_schedule" => arms::wayzata_report(&context, args, observed_on).await,
         "plain_names" => arms::plain_names_report(&context, args, observed_on).await,
+        "ciac" => arms::ciac_report(&context, args, observed_on).await,
+        "mpa" => arms::mpa_report(&context, args, observed_on).await,
+        "riil" => arms::riil_report(&context, args, observed_on).await,
         "athleticlive" => arms::athleticlive_report(&context, args, observed_on).await,
         "athleticlive_results" => {
             arms::athleticlive_results_report(&context, args, observed_on).await
@@ -110,7 +113,7 @@ pub(super) async fn run_provider(cli: &Cli, store: &Store, args: &ProviderArgs) 
         "milesplit_results" => arms::milesplit_results_report(&context, args).await,
         "coach_contacts" => arms::coach_contacts_report(store, args, observed_on),
         other => bail!(
-            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts"
+            "unknown adapter {other}; expected one of ks, wiaa, wiaa_results, ihsa, ihsa_tournament, ohsaa, mshsl, plain_names, ciac, mpa, riil, wayzata, athleticlive, athleticlive_results, athleticlive_athletes, athleticnet, milesplit, milesplit_results, coach_contacts"
         ),
     };
     // §69: the blocked hosts are named before the report, so a run that hit a hard block never reads

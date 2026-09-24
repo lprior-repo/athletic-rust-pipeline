@@ -7,7 +7,8 @@
 use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 
-use super::{arm_for, athleticnet_meet_ids, is_results_page, meet_id_in, ResultsArm};
+use super::{arm_for, athleticnet_meet_ids, meet_id_in, ResultsArm};
+use census_crawl::milesplit::is_results_page;
 
 /// A row as a meet walk writes one, with only the fields the seed rule reads varied.
 fn row(source: &str, id: &str, url: &str, jurisdiction: UsJurisdiction) -> SourceMeetRef {

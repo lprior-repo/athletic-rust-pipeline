@@ -45,11 +45,6 @@ const ATHLETICNET_HOST: &str = "athletic.net";
 /// without allocating a comparison string per row.
 const ATHLETICNET_HOST_SUFFIX: &str = ".athletic.net";
 
-/// MileSplit's host, and the same host as a subdomain suffix: every state site used to be its own
-/// host (`oh.milesplit.com`), and both spellings name one family.
-const MILESPLIT_HOST: &str = "milesplit.com";
-const MILESPLIT_HOST_SUFFIX: &str = ".milesplit.com";
-
 /// The walks the results stage can run, one per planned source.
 ///
 /// The plan asks [`super::jurisdiction::DISPATCHED`] whether any stage sweeps a source; this table,
@@ -172,63 +167,40 @@ async fn milesplit_results(
     context: &AdapterContext<'_>,
     meets: &[SourceMeetRef],
 ) -> Result<(usize, AdapterReport), HandlerError> {
-    let mut urls: Vec<census_crawl::milesplit::ResultSetRequest> = Vec::new();
-    let mut selected = 0_usize;
-    for meet in meets
+    // Only the rows that name a MileSplit results page are this arm's to read; the rest name another
+    // provider's page, and the count of the arm's own is what the caller reports.
+    let selected: Vec<census_crawl::milesplit::MeetPage> = meets
         .iter()
-        .filter(|meet| is_results_page(&meet.results_url))
-    {
-        selected = selected.saturating_add(1);
-        let files = census_crawl::milesplit::fetch_meet_result_files(
-            context.fetcher,
-            &meet.results_url,
-            &context.fetch_options(),
-        )
-        .await
-        .map_err(|error| job_error(collect_error(error)))?;
-        // Each address carries the jurisdiction of the row that named the meet: a results page that
-        // redirects to `www` publishes no state of its own, and this row is the only thing that
-        // knows whose meet it is.
-        urls.extend(
-            files
-                .iter()
-                .map(|file| census_crawl::milesplit::ResultSetRequest {
-                    url: file.raw_url(&meet.results_url),
-                    jurisdiction: meet.jurisdiction,
-                }),
-        );
-    }
-    let report = census_crawl::milesplit::collect_result_sets(
+        .filter(|meet| census_crawl::milesplit::is_results_page(&meet.results_url))
+        .map(|meet| census_crawl::milesplit::MeetPage {
+            results_url: meet.results_url.clone(),
+            jurisdiction: meet.jurisdiction,
+        })
+        .collect();
+    let pages = census_crawl::milesplit::read_meet_pages(
+        context.fetcher,
+        selected.iter().cloned(),
+        &context.fetch_options(),
+    )
+    .await
+    .map_err(|error| job_error(collect_error(error)))?;
+    // Each request carries the jurisdiction of the row that named the meet: a results page that
+    // redirects to `www` publishes no state of its own, and this row is the only thing that knows
+    // whose meet it is.
+    let urls = pages.files.iter().map(|file| file.request()).collect();
+    let mut report = census_crawl::milesplit::collect_result_sets(
         context,
         &census_crawl::milesplit::ResultSetOptions { urls },
     )
     .await
     .map_err(|error| job_error(collect_error(error)))?;
-    Ok((selected, report))
-}
-
-/// Whether a row's URL is a meet's results page on one of MileSplit's state sites.
-///
-/// A shape check rather than a parse: the page itself carries no provider id, and the `/raw`
-/// addresses under it are what the adapter's own `ResultSetRef` validates before a request. What this
-/// decides is only whether the page belongs to this arm at all — a WIAA artifact, a Wayzata schedule
-/// or an Athletic.net meet is another provider's page and is never handed to the MileSplit reader.
-fn is_results_page(url: &str) -> bool {
-    let Some(host) = url.split('/').nth(2) else {
-        return false;
-    };
-    let host = host.to_ascii_lowercase();
-    if host != MILESPLIT_HOST && !host.ends_with(MILESPLIT_HOST_SUFFIX) {
-        return false;
+    // §62: a page this build could not read is named with the parser's own reason, so a run that
+    // skipped a meet says which meet and why instead of looking like a meet with no results.
+    for (url, reason) in &pages.quarantined {
+        report.note(format!("quarantined meet page {url}: {reason}"));
     }
-    let named = url
-        .split('/')
-        .any(|segment| segment.eq_ignore_ascii_case("meets"));
-    let last = url
-        .rsplit('/')
-        .find(|segment| !segment.is_empty())
-        .is_some_and(|segment| segment.eq_ignore_ascii_case("results"));
-    named && last
+    report.note(format!("meet_pages_read={}", pages.pages_read));
+    Ok((selected.len(), report))
 }
 
 /// The Athletic.net meets this run's own rows name, pulled whole.

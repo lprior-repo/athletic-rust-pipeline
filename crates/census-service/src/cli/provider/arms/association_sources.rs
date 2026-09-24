@@ -172,3 +172,57 @@ pub(crate) async fn plain_names_report(
     )
     .await?)
 }
+
+pub(crate) async fn ciac_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::ciac::collect(
+        context,
+        &providers::ciac::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
+pub(crate) async fn mpa_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::mpa::collect(
+        context,
+        &providers::mpa::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+            states: args.jurisdictions()?,
+            school_names: args.school_names.clone(),
+        },
+    )
+    .await?)
+}
+
+/// The RIIL directory publishes every school in one page and takes no state or name restriction, so
+/// its `Options` carries neither.
+pub(crate) async fn riil_report(
+    context: &AdapterContext<'_>,
+    args: &ProviderArgs,
+    observed_on: String,
+) -> Result<AdapterReport> {
+    Ok(providers::riil::collect(
+        context,
+        &providers::riil::Options {
+            limit: args.limit,
+            refresh: args.refresh,
+            observed_on,
+        },
+    )
+    .await?)
+}

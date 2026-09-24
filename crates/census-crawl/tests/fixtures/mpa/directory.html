@@ -1,0 +1,1026 @@
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+<head><meta name='description' content='The Maine Principals' Association is a nonprofit serving Maine schools through high school interscholastic athletics governance and professional support for Kâ€“12 administrators.'/><link href="/_Styles/2010/Config.css?v=20260924a" rel="stylesheet" type="text/css" /><link href="/_Styles/Controls.css?v=20260924a" rel="stylesheet" type="text/css" /><link href="/_Styles/Dashboard.css?v=20260924a" rel="stylesheet" type="text/css" /><link href="/_Styles/TournamentCentral.css?v=20260924a" rel="stylesheet" type="text/css" /><meta charset="utf-8" /><title>
+	FusionPoint Sports - Maine Principal's Association
+</title><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><meta id="Viewport" name="viewport" content="width=device-width, initial-scale=1, minimal-ui" /><meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" /><meta http-equiv="Cache-control" content="max-age=300" /><link id="SiteCss" rel="stylesheet" type="text/css" href="/_Styles/Site.css?v=20260924a" /><link rel="stylesheet" type="text/css" href="/_Styles/parsley.css" /><link rel="stylesheet" type="text/css" href="/_Styles/jquery-ui.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/fontawesome.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/regular.css" /><link rel="stylesheet" type="text/css" href="/_Fonts/Awesome/css/solid.css" /><link rel="stylesheet" type="text/css" href="../_Fonts/Awesome/css/duotone.css" /><link href="../favicon.ico" rel="shortcut icon" type="image/x-icon" />
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+
+    <script type="text/javascript" src="/_Scripts/Application.js"></script>
+    <script type="text/javascript" src="/_Scripts/Controls.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/Parsley/v2.0.7/parsley.js"></script>
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/JLoadImage/js/load-image.all.min.js"></script>
+    <script src="https://cdn.fpsports.org/3rdParty/slick/slick.js"></script>
+    <link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick.css" /><link rel="stylesheet" href="https://cdn.fpsports.org/3rdParty/slick/slick-theme.css" /><link rel="icon" sizes="196x196" href="/_Images/Logos/196x196.png" /><link rel="manifest" href="/manifest.json" /><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" /><meta name="theme-color" content="#ffffff" />
+
+    <!--jstree References-->
+    <script type="text/javascript" src="https://cdn.fpsports.org/3rdParty/jsTree/V3.1/jstree.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.fpsports.org/3rdParty/jsTree/jstree.css" /><link href="../_Styles/fancy.css" rel="stylesheet" />
+    <script src="https://cdn.fpsports.org/3rdParty/fancygrid/fp/fancy_v7.full.min.js"></script>
+
+    <script type="text/javascript">
+        //Prevent Links in Standalone Web Apps Opening Mobile Safari
+        if (("standalone" in window.navigator) && window.navigator.standalone) {
+            var noddy, remotes = false;
+            document.addEventListener('click', function (event) {
+                noddy = event.target;
+                while (noddy.nodeName !== "A" && noddy.nodeName !== "HTML") {
+                    noddy = noddy.parentNode;
+                }
+                if ('href' in noddy && noddy.href.indexOf('http') !== -1 && (noddy.href.indexOf(document.location.host) !== -1 || remotes)) {
+                    event.preventDefault();
+                    document.location.href = noddy.href;
+                }
+            }, false);
+        }
+
+        $(document).ready(function () {
+            Fancy.MODULESDIR = 'https://cdn.fpsports.org/3rdParty/fancygrid/modules/';
+            FancyGrid.LICENSE = ['f3e1cd90dfb49ba1b9d16d7c5abe7260'];
+
+            FixCSS();
+
+            // The full-height report panel scrolls on its own, so a keyboard user has to be able to
+            // focus it to scroll it with the arrow keys (WCAG 2.1.1). Done here rather than on the
+            // 100-plus pages that declare one. A page that set its own tabindex keeps it.
+            $('.dsFormPanelFSwTB').each(function () {
+                if (!this.hasAttribute('tabindex')) this.setAttribute('tabindex', '0');
+            });
+
+            bindToolbarMenuFunctions('SchoolMenu_');
+
+
+        });
+
+        // Slick marks the slides that are off screen aria-hidden, but leaves their links in the tab order,
+        // so a keyboard user tabs onto things a screen reader has been told are not there (WCAG 4.1.2).
+        // Bound on document, not per slider, so every .slick() on every page is covered - including those
+        // a page starts in its own ready handler before this one runs.
+        $(document).on('init reInit afterChange setPosition', '.slick-slider', function () {
+            $(this).find('.slick-slide[aria-hidden="true"]').find('a, button, input, select, textarea, [tabindex]').attr('tabindex', '-1');
+            $(this).find('.slick-slide[aria-hidden="false"]').find('a, button, input, select, textarea').removeAttr('tabindex');
+        });
+
+        $(window).on('load', function () { ProcessesLinkTracking(); });
+
+        $(window).on("resize", function () {
+            FixCSS();
+        });
+
+        function FixCSS() {
+            $(":root").css("--toolbarheight", ($("#ToolbarPanel").outerHeight() ?? 0) + 'px');
+            $(":root").css("--noticeheight", ($(".dsSiteNotice").outerHeight(true) ?? 0) + 'px');
+        }
+
+
+        function ProcessesLinkTracking() {
+            var Items = [];
+
+            $('.CarouselTracker:visible').each(function () {
+                var CarouselTracker = $(this);
+                Items.push({ CarouselID: $(this).attr('carouselid'), Carousel: $(this).attr('carousel'), CarouselEntryID: $(this).attr('carouselentryid'), CarouselEntry: $(this).attr('carouselentry') });
+                $(this).find('a').each(function () { $(this).on('click', function () { ProcessLinkClick(CarouselTracker.attr('carouselid'), CarouselTracker.attr('carousel'), CarouselTracker.attr('carouselentryid'), CarouselTracker.attr('carouselentry')) }); });
+            });
+
+            var dto = {
+                'Links': Items
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkImpression',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+        function ProcessLinkClick(CarouselID, Carousel, CarouselEntryID, CarouselEntry) {
+            var dto = {
+                'CarouselID': CarouselID,
+                'Carousel': Carousel,
+                'CarouselEntryID': CarouselEntryID,
+                'CarouselEntry': CarouselEntry,
+            };
+
+            $.ajax({
+                type: 'post',
+                contentType: 'application/json; charset-utf-8',
+                dataType: 'json',
+                url: '/Services/CoreServices.asmx/LogLinkClick',
+                data: JSON.stringify(dto),
+                success: function (result) {
+                }
+            });
+        }
+
+
+
+    </script>
+
+    <style>
+        .LegacyItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .NewItem {
+            font-size: 9px;
+            color: red;
+        }
+
+        .dsNavigationMenuHidden {
+            display: none;
+        }
+
+        #mnuTournamentCentralButton {
+            background-color: #b12e34;
+            color: white;
+        }
+
+    </style>
+
+
+
+    
+    <link id="ShellCss" rel="stylesheet" type="text/css" href="/_Styles/SiteShell.css?v=20260924a"></link>
+
+    
+
+    <link href="../_Styles/GameCalendar.css?5" rel="stylesheet" />
+
+    <style>
+        .dsFormPanelFSwTB {
+            width: Calc(100% - 20px);
+            padding: 10px;
+            background-color: white;
+            overflow: visible;
+            height: fit-content;
+        }
+
+        .dsMiddlePanel {
+            background-color: white;
+        }
+
+
+        #HeaderWrapper {
+            color: black;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+
+        .TeamSelection {
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 0 4px 0;
+        }
+
+
+        /*  The gap under the toolbar belongs to this container, not to whatever happens to be first
+            inside it.
+
+            It used to come from the app note's own margin-top. In app mode that note is hidden -
+            display:none, so it is still the first child and any :first-child rule would land on it
+            rather than on the carousel - and the gap went with it, putting the carousel hard
+            against the toolbar. Here it is the same 20px whatever is or is not showing, on every
+            tab. */
+        .school-content {
+            color: black;
+            padding-top: 20px;
+            padding-bottom: 60px;
+            min-height: 400px;
+        }
+
+            .school-content p {
+                margin-bottom: 10px;
+            }
+
+            .school-content h2 {
+                padding: 2px 0px 2px 10px;
+                background-color: #0571b8;
+                color: white;
+                font-size: 17px;
+                font-weight: bold;
+                display: block;
+                width: 100%;
+                margin: 30px 0 10px 0;
+                box-sizing: border-box;
+                text-transform: uppercase;
+                line-height: 30px;
+            }
+
+        .SchoolList {
+            display: block;
+            clear: both;
+            margin-bottom: 10px;
+        }
+
+        .SchoolListWrapper {
+            display: block;
+            float: left;
+            margin: 10px;
+        }
+
+        .SchoolSearchResults a, .SchoolSearchResults a:link, .SchoolSearchResults a:visited, .SchoolSearchResults a:hover, .SchoolSearchResults a:active {
+            color: #444444;
+            text-decoration: none;
+        }
+
+        .SchoolListImageWrapper {
+            display: block;
+            width: 120px;
+            margin: 0 auto;
+        }
+
+        .SchoolListLogo {
+            display: block;
+            object-fit: contain;
+            height: 60px;
+            max-width: 80px;
+            margin: auto auto;
+        }
+
+        .SchoolListName {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 60px;
+            max-width: 120px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: pre-wrap;
+        }
+
+        .SchoolLogo {
+            max-height: 150px;
+            max-width: 20vw;
+        }
+
+        .SchoolName {
+            font-size: clamp(20px, 5vw, 30px);
+            font-weight: bold;
+            clear: right;
+        }
+
+        /* Shown INSTEAD of the logo/name table, for a school with extended content and a banner
+           uploaded to its own resource folder. It replaces a full-width table, so it is full width
+           too - the artwork decides its own height rather than being boxed to the logo's 150px. */
+        .SchoolBanner img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .SportTitle {
+            background-color: #003366;
+            color: white;
+            padding: 16px 0 16px 0;
+            font-size: 32px;
+            text-align: center;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .SportInfoTitle {
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .SportInfoIndent {
+            padding-left: 10px;
+            font-weight: bold;
+        }
+
+        .DashboardAds img {
+            width: Calc(100% - 7px) !important;
+            margin-bottom: 6px;
+        }
+
+        .ImportantWrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .ImportantBlock {
+            min-height: 200px;
+            background-color: white;
+            max-height: 600px;
+        }
+
+            .ImportantBlock h2 {
+                margin: 0;
+            }
+
+            .ImportantBlock .ImportantBlockContent {
+                display: block;
+                font-size: 13px;
+                line-height: 1.9;
+                overflow-y: auto;
+                height: Calc(100% - 30px);
+            }
+
+            .ImportantBlock .SportInfoDates {
+                color: black;
+                padding: 8px 8px 20px 8px;
+            }
+
+                .ImportantBlock .SportInfoDates h2 {
+                    background-color: transparent;
+                    margin: 0;
+                    color: black;
+                    font-size: 14px;
+                    text-align: left;
+                    padding: 0 0px 4px 0px;
+                }
+
+
+            .ImportantBlock ul {
+                list-style-type: none;
+                padding: 4px 8px 20px 8px;
+            }
+
+            .ImportantBlock li a {
+                color: black;
+                font-size: 14px;
+                margin-bottom: 12px;
+                line-height: 30px;
+            }
+
+                .ImportantBlock li a i {
+                    font-size: 18px;
+                    margin: 0 6px 0 0;
+                }
+
+        .SportInfoDetail {
+            padding: 10px;
+            min-height: 80px;
+            background-color: transparent;
+            color: white;
+            text-shadow: -2px 0 2px #222222, 0 2px 2px #222222, 2px 0 2px #222222, 0 -2px 2px #222222;
+            font-size: 14px;
+        }
+
+        .SportInfoLinks {
+            font-size: 16px;
+            margin-top: 10px;
+            margin-right: 30px;
+            margin-left: 20px;
+            float: left;
+            color: black;
+        }
+
+        .GameTickerWrapper {
+            display: flex;
+            gap: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+            background-color: lightgrey;
+            padding: 10px 0 20px 0;
+        }
+
+            .GameTickerWrapper a {
+                flex: 0 0 45%;
+                height: 170px;
+                text-decoration: none;
+                color: white;
+                padding: 6px;
+                background-color: white;
+            }
+
+                .GameTickerWrapper a:visited {
+                    text-decoration: none;
+                    color: white;
+                }
+
+        .GameTickerBlock {
+            height: 100%;
+            width: 100%;
+            display: block;
+            background-size: cover;
+            background-attachment: local;
+            background-position: center;
+            background-color: white;
+            color: black;
+            text-align: center;
+            padding: 0;
+            position: relative;
+        }
+
+        .GameTickerDivision {
+            font-size: 15px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            background-color: white;
+            color: black;
+        }
+
+        .GameTickerTeam {
+            width: Calc(50% - 15px);
+        }
+
+            .GameTickerTeam img {
+                display: inline-block;
+                vertical-align: middle;
+                height: 65px;
+                width: 65px;
+                margin: 4px 0 0 0;
+            }
+
+        .GameSchoolName {
+            height: 36px;
+            overflow: hidden;
+        }
+
+        .GameTickerWinner {
+            border: 2px solid black;
+            background-color: white;
+        }
+
+        .GameTeamLeft {
+            display: block;
+            float: left;
+        }
+
+        .GameTeamRight {
+            display: block;
+            float: right;
+        }
+
+        .GameTickerScore {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .GameTickerDetail {
+            clear: both;
+            text-align: left;
+            line-height: 1;
+            position: absolute;
+            bottom: 8px;
+            width: Calc(100% - 20px);
+            overflow-x: hidden;
+            white-space: nowrap;
+            font-size: 11px;
+            height: 12px;
+        }
+
+        .SponsorLogos {
+            background-color: white;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+            .SponsorLogos img {
+                max-height: 100px;
+                margin: 20px;
+            }
+
+
+
+
+        .StandingTable {
+            margin-left: 10px;
+        }
+
+        .TeamPhoto {
+            display: block;
+            margin: 10px auto 20px auto;
+            max-width: 100%;
+            max-height: 450px;
+        }
+
+        .TeamHeaderTextWrapper {
+            margin: 10px 0 10px 0;
+            line-height: 1.5;
+        }
+
+        .StandingTable th {
+            font-weight: bold;
+            font-size: 10px;
+            padding-bottom: 4px;
+        }
+
+        .StandingTable td {
+            font-weight: normal;
+            font-size: 14px;
+            padding: 4px 0 4px 0;
+        }
+
+            .StandingTable td:nth-child(2) {
+                font-size: 12px;
+            }
+
+
+            .StandingTable td:nth-child(3) {
+                font-weight: bold;
+            }
+
+            .StandingTable td:nth-child(2),
+            .StandingTable td:nth-child(3),
+            .StandingTable td:nth-child(4),
+            .StandingTable td:nth-child(5) {
+                text-align: center;
+            }
+
+        .TeamNotifications {
+            font-weight: normal;
+            font-size: 14px;
+            padding: 4px 0 4px 0;
+            color: #444444;
+        }
+
+            .TeamNotifications th {
+                font-weight: bold;
+                font-size: 10px;
+                padding-bottom: 4px;
+            }
+
+            .TeamNotifications td {
+                font-weight: normal;
+                font-size: 13px;
+                padding: 2px 10px 2px 0;
+            }
+
+                .TeamNotifications td:nth-child(3),
+                .TeamNotifications td:nth-child(4) {
+                    font-size: 8px;
+                }
+
+            .TeamNotifications a,
+            .TeamNotifications a:visited {
+                color: #444444;
+            }
+
+
+        .DirectoryGroup {
+            padding: 2px 0px 2px 10px;
+            background-color: #003366;
+            color: white;
+            font-size: 17px;
+            font-weight: bold;
+            display: block;
+            width: 100%;
+            margin: 10px 0 10px 0 !important;
+            box-sizing: border-box;
+            text-transform: uppercase;
+        }
+
+        .DirectoryDetail {
+            padding: 10px 10px 10px 10px !important;
+            font-size: 12px;
+            width: Calc(100% - 20px);
+            overflow-x: auto;
+        }
+
+        .DirectoryFixedWidth1 {
+            display: inline-block;
+            min-width: 120px;
+        }
+
+        .DirectoryStaffTable {
+            margin-top: 20px !important;
+            width: max-content;
+        }
+
+            .DirectoryStaffTable td {
+                padding: 0px 4px;
+            }
+
+        @media (max-width: 900px) {
+            .DashboardAds {
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+                .DashboardAds a {
+                    flex: 0 0 50%;
+                }
+
+            .ImportantWrapper .dsFlexBlock50 {
+                width: 100%;
+            }
+
+            .highlightedad {
+                flex: 1 0 100% !important;
+            }
+
+            .SponsorLogos img {
+                width: 100%;
+                margin: 0px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .GameTickerWrapper {
+                display: block;
+            }
+
+                .GameTickerWrapper a {
+                    display: block;
+                    width: 90%;
+                    margin: 0 auto 15px auto;
+                }
+        }
+        /* A school's own carousel, published from its resource folder. One slide at a time.
+
+           max-width rather than width: the published posters are 590px wide, and stretching them
+           to a full-width column would upscale and blur them. They shrink on a narrow screen and
+           sit centred on a wide one. */
+        .SchoolCarouselPanel {
+            margin-bottom: 30px;
+        }
+
+            .SchoolCarouselPanel img {
+                display: block;
+                max-width: 100%;
+                height: auto;
+                margin: 0 auto;
+            }
+
+            /* Each slide is a <span class='CarouselTracker'> - that is what the publisher emits,
+               and it is what Default.aspx's news carousel is built from too. Slick gives them
+               their own display, but until the script runs they would all stack and the page
+               would jump as it initialises, so everything after the first is hidden. */
+            .SchoolCarouselPanel:not(.slick-initialized) > *:not(:first-child) {
+                display: none;
+            }
+
+        /* NEWS - image on top, then date, title, text, three across. Mirrors the featured news
+           strip on the tenant dashboard; the class names are the school's own because the
+           tenant's .NewsBlock rules live inline in Default.aspx rather than in a
+           shared stylesheet, and copying them under the same names would invite the two to drift
+           apart silently. */
+        .SchoolNewsPanel .slick-track {
+            display: flex;
+            align-items: stretch;
+        }
+
+        .SchoolNewsPanel .slick-slide {
+            height: auto;
+        }
+
+            .SchoolNewsPanel .slick-slide > div,
+            .SchoolNewsPanel .CarouselTracker {
+                display: block;
+                height: 100%;
+            }
+
+        /* The block IS the anchor - the whole card is the click target. Colour and underline are
+           reset so it reads as an article rather than a link, and the title underlines on hover
+           AND on keyboard focus, so the two are not told apart. */
+        /*  Written as a.SchoolNewsBlock WITH the link pseudo-classes on purpose. Site.css carries
+            a global "a, a:link, a:visited, a:hover, a:active { color: blue }", and a:link scores
+            0-1-1 against a bare .SchoolNewsBlock's 0-1-0 - so the card's body text inherited blue
+            from the anchor. Matching the pseudo-classes takes this to 0-2-1 and it wins. The date
+            and title set their own colours and were never affected.                               */
+        a.SchoolNewsBlock,
+        a.SchoolNewsBlock:link,
+        a.SchoolNewsBlock:visited,
+        a.SchoolNewsBlock:hover,
+        a.SchoolNewsBlock:active {
+            display: block;
+            height: 100%;
+            box-sizing: border-box;
+            margin: 0 8px;
+            padding: 8px;
+            background-color: white;
+            color: black;
+            text-decoration: none;
+        }
+
+            .SchoolNewsBlock:hover .SchoolNewsTitle,
+            .SchoolNewsBlock:focus .SchoolNewsTitle {
+                text-decoration: underline;
+            }
+
+            .SchoolNewsBlock .SchoolNewsImage {
+                display: block;
+                background-color: black;
+                margin-bottom: 8px;
+            }
+
+                /* Beats the .SchoolCarouselPanel img rule, which centres and caps at 100% for the
+                   poster strip - here the image is the full width of its card. */
+                .SchoolNewsBlock .SchoolNewsImage img {
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                    margin: 0;
+                }
+
+            /* The template's parts are <span> so the whole card can be one anchor - an <a> may
+               not contain <div>. They need to be told to behave as blocks. */
+            .SchoolNewsBlock .SchoolNewsDate,
+            .SchoolNewsBlock .SchoolNewsText {
+                display: block;
+            }
+
+            .SchoolNewsBlock .SchoolNewsDate {
+                font-size: 12px;
+                /* #595959 on white is 7:1 - comfortably past the 4.5:1 WCAG 1.4.3 needs for body
+                   text, which #999-ish placeholder greys are not. */
+                color: #595959;
+                margin: 8px 0 8px 0;
+            }
+
+            .SchoolNewsBlock .SchoolNewsTitle {
+                display: block;
+                font-size: 14px;
+                font-weight: bold;
+                margin: 0 0 10px 0;
+                padding: 0;
+                background-color: transparent;
+                color: #0571b8;
+                text-transform: none;
+                line-height: 1.3;
+                width: auto;
+            }
+
+            .SchoolNewsBlock .SchoolNewsText {
+                font-size: 12px;
+                line-height: 1.5;
+                overflow: hidden;
+            }
+
+        /* ARROWS INSIDE THE PANEL.
+
+           slick-theme.css parks them at left:-25px / right:-25px, which assumes the carousel has
+           25px of empty page either side of it. These panels run the full width of the content
+           column, so the arrows landed outside the site. A gutter on the panel gives them
+           somewhere to sit, and they are positioned into it. */
+        .SchoolCarouselPanel,
+        .SchoolNewsPanel {
+            padding: 0 34px;
+            box-sizing: border-box;
+        }
+
+            .SchoolCarouselPanel .slick-prev,
+            .SchoolNewsPanel .slick-prev {
+                left: 2px;
+                z-index: 2;
+            }
+
+            .SchoolCarouselPanel .slick-next,
+            .SchoolNewsPanel .slick-next {
+                right: 2px;
+                z-index: 2;
+            }
+
+            /* Slick's arrow glyph is white by default and invisible against these cards. */
+            .SchoolCarouselPanel .slick-prev:before,
+            .SchoolCarouselPanel .slick-next:before,
+            .SchoolNewsPanel .slick-prev:before,
+            .SchoolNewsPanel .slick-next:before {
+                color: #0571b8;
+                opacity: 1;
+            }
+
+            .SchoolCarouselPanel .slick-prev:focus-visible,
+            .SchoolCarouselPanel .slick-next:focus-visible,
+            .SchoolNewsPanel .slick-prev:focus-visible,
+            .SchoolNewsPanel .slick-next:focus-visible {
+                outline: 2px solid #0571b8;
+                outline-offset: 2px;
+            }
+    </style>
+    <script>
+        $(document).ready(function () {
+            if (window.matchMedia('(display-mode: standalone)').matches) $('#installappnote').hide();
+
+            /*  Matches nothing for the 4,048 schools with no carousel, so this is inert there.
+                Slick is already loaded by Site.Master - the same copy Default.aspx uses.
+
+                WCAG 2.3.3 / 2.2.2: a reader who has asked the operating system for reduced motion
+                gets no autoplay and no slide animation at all. They keep the arrows and dots, so
+                nothing becomes unreachable - only the movement they did not ask for stops. */
+            var reduceMotion = window.matchMedia
+                && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            $('.SchoolCarouselPanel').slick({
+                dots: true,
+                arrows: true,
+                infinite: true,
+                autoplay: !reduceMotion,
+                autoplaySpeed: 3000,
+                speed: reduceMotion ? 0 : 300,
+                slidesToShow: 1,
+                slidesToScroll: 1,
+                adaptiveHeight: true,
+                pauseOnHover: true,
+                pauseOnFocus: true
+            });
+
+            /*  News: three across like the tenant dashboard's featured strip, down to one on a
+                phone. Not autoplayed - three articles are readable side by side and moving text
+                someone is part way through reading is worse than no movement at all. */
+            $('.SchoolNewsPanel').slick({
+                dots: true,
+                arrows: true,
+                infinite: false,
+                autoplay: false,
+                speed: reduceMotion ? 0 : 300,
+                slidesToShow: 3,
+                slidesToScroll: 3,
+                responsive: [
+                    { breakpoint: 1100, settings: { slidesToShow: 2, slidesToScroll: 2 } },
+                    { breakpoint: 800, settings: { slidesToShow: 1, slidesToScroll: 1 } }
+                ]
+            });
+
+            /*  Name the arrows. Slick's own markup is a bare <button> whose only content is the
+                word Previous/Next in a :before, which does not reach the accessibility tree. */
+            $('.SchoolCarouselPanel, .SchoolNewsPanel').each(function () {
+                $(this).find('.slick-prev').attr('aria-label', 'Previous');
+                $(this).find('.slick-next').attr('aria-label', 'Next');
+            });
+
+            /*  No visible pause button - Jason's call, 2026-09-18.
+             *
+             *  WCAG 2.2.2 wants a mechanism to stop content that moves by itself for more than
+             *  five seconds. What is left standing in for it: autoplay stops on hover and on
+             *  keyboard focus (pauseOnHover / pauseOnFocus above), and never starts at all for a
+             *  reader who has asked the system for reduced motion. That covers a reader who
+             *  reaches the carousel, but not one who simply wants the movement to stop without
+             *  touching it, so this is short of the letter of 2.2.2. The alternative that would
+             *  satisfy it without a control is to stop autoplaying entirely. */
+        })
+
+        //let deferredPrompt;
+        //const installAppButton = document.querySelector("#installAppButton");
+
+        //window.addEventListener("beforeinstallprompt", (e) => {
+        //    //alert('here');
+        //    // Prevent default prompt and show your button
+        //    e.preventDefault();
+        //    deferredPrompt = e;
+        //    installAppButton.removeAttribute("hidden");
+        //});
+
+        //installAppButton.addEventListener("click", async () => {
+        //    if (deferredPrompt) {
+        //        // Show the prompt and handle user choice
+        //        deferredPrompt.prompt();
+        //        const { outcome } = await deferredPrompt.userChoice;
+        //        console.log(`User response to the install prompt: ${outcome}`);
+        //        deferredPrompt = null;
+        //        installAppButton.setAttribute("hidden", "");
+        //    }
+        //});
+
+        //window.addEventListener("appinstalled", () => {
+        //    // Hide button and log success
+        //    installAppButton.setAttribute("hidden", "");
+        //    console.log("PWA was installed");
+        //});
+    </script>
+
+
+</head>
+<body>
+    <iframe id="hidden-iframe" name="hidden-iframe" style="visibility: hidden; position: absolute;"></iframe>
+    <form method="post" action="./School.aspx" id="MainForm">
+<input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="PPgNnVAUMLWtyQPMs0JUmmYu73C3IhB+ZGwX7rs9T2AUprN5f9InkpG5PF3WVfOxo3zohFc961FkcKH+yu1kKcKShK/Z19WwKkHWj8wIa1QBhcHoU9R9D97OkwwLVRN5Cg+bjCr9XVI5c0NAPM5a194E23YCJkpQuRUUqRppWAJccSI8mdwIZ5DQCmxy4ez7tocBLEVUFdNqyOOTOqbkRYsHFsZj3qZl0XaDo0elXBLdeJLkFmk1k2+WCKdQA051P9U4jYoWwftgAYGGzGD8j4jy1khqtrNLpmEWmbqP9mzboFD07fniwX0yszyhX0rzzA1ci2xr/HteUcNQ4C9+LxWoRvCDANoqbP9kZMcbTYSDjYMPfLmJqvgSb3y+MBNxPTN0k1P7N4RSrNwwX10xm7Fp4jbPbHJE6O7oebQX14P2YudoBmT+8orB6RPg6afqLTuQ+EQqPjxGNKerLVheAx0L3NKuvKqFbSfCaEEnaUsJ99kHP5xO6cotJEGWajstfrSilYrk4ZIeP596MaCywFpjzY6rmomUrq5VdG1wHAcyYPzur6hJcNDkbQL52Z1hHrv4lmV7axTgCEnmxYcGhn+LSNJ8PIccD+WcXz9LpJiAT98JH7rCyvNVORGBAzAH0bGtpsbVy9Z7gUNVTglGV1713la/Xs9Nk02syEEMJiQ=" />
+
+<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="B9366D98" />
+<input type="hidden" name="__EVENTVALIDATION" id="__EVENTVALIDATION" value="nNqmjYerI1lvqErqw02WPJ5VUeoYi8U+xswcCiH44Fl90onI7lD0rH3IgrS++vOB1wPKgOASJpQMykZ2VJ0nio8H/t7sz+yaTXZrh/6mzJ7EPCVtlbg06RWSJPeWKsbdK5gqyH/AoF32tSdLzy68jg==" />
+        <div id="dsLoader"></div>
+
+        <div id="dsNavigation" class="dsNavigationOverlay">
+	
+            <div id="dsNavigationMenu" class="dsNavigationMenu">
+                <a href="javascript:void(0)" class="dsNavigationCloseButton" onclick="closeNav()">×</a>
+                <div id="dsNavigationMenuContent" class="dsNavigationMenuContent">
+		
+                    <ul id="dsNavigationMenuUL" class="dsNavigationMenuUL dsNavigationMenuSubPanel active"><li><a id="mnuDashboard" href="\">Dashboard</a></li><li><a id="mnuSportHS" class=" dsNavigationMenuLink " href="https://www.mpa.cc/SchoolPages/School.aspx#NavigationMenu_mnuSportHS"><div style="float:left;">Sport Info - High School</div><i class="fa fa-chevron-right" style="float:right;"></i><div style="clear:both;"></div></a></li><li><a id="mnuScheduleHS" href="\DashboardSchedule.aspx">Schedules</a></li><li><a id="mnuSchoolPages" href="/SchoolPages/School.aspx">School Pages</a></li><li><a id="mnuSchoolSchedule" href="/DashboardTeamSchedule.aspx">Team Schedule</a></li><li><a id="mnuSchoolRoster" href="/DashboardTeamRoster.aspx?SeasonRoster=1">Team Rosters</a></li><li><a id="mnuMasterSchedule" href="/MasterSchedule.aspx?TeamLevelID=5">Master Schedule</a></li><li><a id="mnuTournamentCentralPastChamps" href="\Reports\PastChampionsBySport.aspx">Past Champions</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Tournament Central</div></li><li><a id="mnuTournamentDashboard" href="\DashboardTournamentCentral.aspx">Dashboard</a></li><li><a id="mnuTournamentRankings" href="\TournamentCentralRankings.aspx">Tournament Standings</a></li><li><a id="mnuTournamentRankingDetail" href="\Custom\MPA\MPADetail.aspx">Standings Detail</a></li><li><a id="mnuTournamentBrackets" href="\TournamentCentralBrackets.aspx">Brackets</a></li><li><a id="mnuTournamentTeamStats" href="\DashboardTeamRoster.aspx">Tournament Rosters</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">MPA Members</div></li><li><a id="mnuDirectory" href="\Directory.aspx">School Directory</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Important Links</div></li><li><a id="mnuSubResources_f9b602bb-fe17-4827-9755-280820b280f4" href="https://gofan.co/app/school/MPA" target="_blank">GoFan Tickets</a></li><li><a id="mnuSubResources_2934d35a-e186-4fb6-8130-7cc44d51feb9" href="https://nwd.ink/s/mpa/" target="_blank">Championship Apparel</a></li><li><a id="mnuSubResources_7be6e9fb-cf30-4e22-a72b-88be2a2f6e35" href="https://www.flipsnack.com/tpg2020/25-26-maine-state-championships" target="_blank">Championship Programs</a></li><li><a id="mnuSubResources_27ffddad-64cc-48d8-a601-c1f4e3e025d8" href="https://mpaprof.org" target="_blank">Professional Division</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Resources</div></li><li><a id="mnuSubResources_1a940ada-af55-4629-aece-c939607d89e4" href="/TenantHTML.aspx?D=Resources&amp;F=Heart of the Arts Awards.html">Heart of the Arts Awards</a></li><li><a id="mnuSubResources_2ad015a9-1ddc-4667-bb77-bba22b2cf245" href="/TenantHTML.aspx?D=Resources&amp;F=Larry LaBrie Award.html">Larry LaBrie Award</a></li><li><a id="mnuSubResources_26d9f078-01cd-4c24-932b-aa9704a41979" href="/TenantHTML.aspx?D=Resources&amp;F=State Coaches of the Year.html">State Coaches of the Year</a></li><li><a id="mnuSubResources_31c01396-2f12-4501-93e3-1fd5b486a4f5" href="/TenantHTML.aspx?D=Resources&amp;F=Hall of Excellence.html">Hall of Excellence</a></li><li><a id="mnuSubResources_044a7ddf-0030-4923-b30d-a69d394f09d6" href="/resources/Resources/Sport%20Season%20Dates%202026-2027.pdf" target="_blank">Sport Season Dates 2026-2027</a></li><li><a id="mnuSubResources_52c34601-8111-4d0e-b0e3-1f52ca1dba47" href="/resources/Resources/Sport%20Season%20Dates%202026-2030.pdf" target="_blank">Sport Season Dates 2026-2030</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">About Us</div></li><li><a id="mnuSubResources_bcae1fde-f606-42b7-ac02-8b1b4431c70d" href="/TenantHTML.aspx?D=About Us&amp;F=Conference and Meeting Center.html">Conference and Meeting Center</a></li><li><a id="mnuSubResources_894129f3-293d-4338-9160-8d89f865e1f1" href="/TenantHTML.aspx?D=About Us&amp;F=Directions.html">Directions</a></li><li><a id="mnuSubResources_377607f9-ea20-45f1-aa37-e57be209b9ec" href="/resources/About%20Us/Handbook.pdf" target="_blank">Handbook</a></li><li><a id="mnuSubResources_a94e9089-b074-46aa-a01c-5d61d1594aca" href="/TenantHTML.aspx?D=About Us&amp;F=Membership and Dues.html">Membership and Dues</a></li><li><a id="mnuSubResources_d852471c-c42e-4ca5-8961-7eabcf77f4f0" href="/TenantHTML.aspx?D=About Us&amp;F=MPA Information.html">MPA Information</a></li><li><a id="mnuSubResources_ab5e4b3e-f168-4fe0-9f0c-fdfb07a696f2" href="/TenantHTML.aspx?D=About Us&amp;F=MPA Media.html">MPA Media</a></li><li><a id="mnuSubResources_851f2add-f0c6-4347-b299-f7f2be47df9f" href="/TenantHTML.aspx?D=About Us&amp;F=Officers and Staff.html">Officers and Staff</a></li><li><a id="mnuSubResources_66b80bba-c268-4fe0-8270-b8cf35e53509" href="/resources/About%20Us/Professional%20Membership%20Form.pdf" target="_blank">Professional Membership Form</a></li><li><a id="mnuSubResources_e9f9fd4c-ceab-42ed-8fea-6f747639b576" href="/CarouselAll.aspx?CarouselID=9" target="_blank">Sponsors</a></li><li><a id="mnuSubResources_f93277a5-7dfd-4ff9-85fb-41bf09188373" href="/resources/About%20Us/MPA%20Acceptable%20Use%20Policy.pdf" target="_blank">MPA Acceptable Use Policy</a></li><li><a id="mnuSubResources_bdf0779c-ad97-4d27-b16d-317ca5041b02" href="/resources/About%20Us/MPA%20Third-Party%20For-Profit%20Data%20Access%20Policy.pdf" target="_blank">MPA Third-Party For-Profit Data Access Policy</a></li><li><a id="mnuSubResources_ca1e84b0-1415-4c5d-a9c8-1cd1de82f38b" href="/resources/About%20Us/MPA%20Committees%202026-2027.pdf" target="_blank">MPA Committees 2026-2027</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Account</div></li><li><a id="mnuLogin" href="../Login.aspx?ReturnUrl=%2fSchoolPages%2fSchool.aspx">Login</a></li><li><a id="mnuSignUp" href="../SignUp.aspx?ReturnUrl=%2fSchoolPages%2fSchool.aspx">Sign-Up</a></li><li><a id="mnuPasswordReset" href="\PasswordReset.aspx">Forgot Password</a></li></ul>
+                    <div style="display: none">
+                        <ul id="dsNavigationMenuHidden" class="dsNavigationMenuUL dsNavigationMenuSubPane"></ul>
+                    </div>
+                <ul id="NavigationMenu_mnuSportHS" class="dsNavigationMenuUL dsNavigationMenuSubPanel"><li><div class="dsNavigationSubMenuTitle">Sport Info - High School</div></li><li><a id="SUB_MAIN_mnuSportHS" class=" dsNavigationMenuLink " onclick="changeToMainMenu();"><i class="fa fa-arrow-left" style="float:left;"></i><div style="float:left;" class="dsNavigationMenuBackButton">MAIN MENU</div><div style="clear:both;"></div></a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Fall</div></li><li><a id="mnuSportButtonHSCornhole (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=1026">Cornhole (Unified)</a></li><li><a id="mnuSportButtonHSCross Country (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=1">Cross Country (Boys)</a></li><li><a id="mnuSportButtonHSCross Country (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=9">Cross Country (Girls)</a></li><li><a id="mnuSportButtonHSESports Fall" href="\SportPages\SportPageInfo.aspx?TournamentID=304">ESports Fall</a></li><li><a id="mnuSportButtonHSField Hockey" href="\SportPages\SportPageInfo.aspx?TournamentID=2">Field Hockey</a></li><li><a id="mnuSportButtonHSFootball" href="\SportPages\SportPageInfo.aspx?TournamentID=3">Football</a></li><li><a id="mnuSportButtonHSGolf (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=4">Golf (Coed)</a></li><li><a id="mnuSportButtonHSSoccer (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=5">Soccer (Boys)</a></li><li><a id="mnuSportButtonHSSoccer (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=6">Soccer (Girls)</a></li><li><a id="mnuSportButtonHSSoccer (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=1007">Soccer (Unified)</a></li><li><a id="mnuSportButtonHSVolleyball (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=8">Volleyball (Girls)</a></li><li><a id="mnuSportButtonHSVolleyball (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=303">Volleyball (Unified)</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Winter</div></li><li><a id="mnuSportButtonHSAlpine Ski (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=403">Alpine Ski (Boys)</a></li><li><a id="mnuSportButtonHSAlpine Ski (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=404">Alpine Ski (Girls)</a></li><li><a id="mnuSportButtonHSBasketball (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=302">Basketball (Unified)</a></li><li><a id="mnuSportButtonHSBoys Basketball" href="\SportPages\SportPageInfo.aspx?TournamentID=100">Boys Basketball</a></li><li><a id="mnuSportButtonHSGirls Basketball" href="\SportPages\SportPageInfo.aspx?TournamentID=101">Girls Basketball</a></li><li><a id="mnuSportButtonHSDrama (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=1010">Drama (Coed)</a></li><li><a id="mnuSportButtonHSIce Hockey (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=103">Ice Hockey (Boys)</a></li><li><a id="mnuSportButtonHSIce Hockey (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=108">Ice Hockey (Girls)</a></li><li><a id="mnuSportButtonHSIndoor Track (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=104">Indoor Track (Boys)</a></li><li><a id="mnuSportButtonHSIndoor Track (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=300">Indoor Track (Girls)</a></li><li><a id="mnuSportButtonHSNordic Ski" href="\SportPages\SportPageInfo.aspx?TournamentID=402">Nordic Ski</a></li><li><a id="mnuSportButtonHSSwimming (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=105">Swimming (Boys)</a></li><li><a id="mnuSportButtonHSSwimming (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=7">Swimming (Girls)</a></li><li><a id="mnuSportButtonHSCheerleading Winter (Coed)" href="\SportPages\SportPageInfo.aspx?TournamentID=1005">Cheerleading Winter (Coed)</a></li><li><a id="mnuSportButtonHSWrestling" href="\SportPages\SportPageInfo.aspx?TournamentID=106">Wrestling</a></li><li class="dsNavigationMenuGroupSeperator"></li><li><div class="dsNavigationMenuGroupTitle">Spring</div></li><li><a id="mnuSportButtonHSBaseball" href="\SportPages\SportPageInfo.aspx?TournamentID=200">Baseball</a></li><li><a id="mnuSportButtonHSBocce (Unified)" href="\SportPages\SportPageInfo.aspx?TournamentID=400">Bocce (Unified)</a></li><li><a id="mnuSportButtonHSESports Spring" href="\SportPages\SportPageInfo.aspx?TournamentID=1003">ESports Spring</a></li><li><a id="mnuSportButtonHSLacrosse (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=202">Lacrosse (Boys)</a></li><li><a id="mnuSportButtonHSLacrosse (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=203">Lacrosse (Girls)</a></li><li><a id="mnuSportButtonHSOutdoor Track (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=204">Outdoor Track (Boys)</a></li><li><a id="mnuSportButtonHSOutdoor Track (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=301">Outdoor Track (Girls)</a></li><li><a id="mnuSportButtonHSSoftball" href="\SportPages\SportPageInfo.aspx?TournamentID=205">Softball</a></li><li><a id="mnuSportButtonHSTennis (Boys)" href="\SportPages\SportPageInfo.aspx?TournamentID=206">Tennis (Boys)</a></li><li><a id="mnuSportButtonHSTennis (Girls)" href="\SportPages\SportPageInfo.aspx?TournamentID=207">Tennis (Girls)</a></li></ul>
+	</div>
+            </div>
+        
+</div>
+
+        <div id="dsPagePanel" class="dsPagePanel">
+	
+
+            <div id="dsHeaderPanel" class="dsHeaderPanel">
+		
+                
+                
+                <ul id="ToolbarUL" class="dsHeaderMenu" role="none">
+                    <li class="dsHeaderLeft dsNavigationMenuClosed" role="button" tabindex="0" aria-label="Open menu" onclick="openNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openNav();}"><i class="fa fa-bars" aria-hidden="true"></i></li>
+                    <li class="dsHeaderLeft dsNavigationMenuOpen" role="button" tabindex="0" aria-label="Close menu" onclick="closeNav()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();closeNav();}"><span style="font-size: 32px !important; font-weight: normal;" aria-hidden="true">×</span></li>
+
+                    <li id="NavBack" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Back" onclick="history.back();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();history.back();}"><i class="fa fa-arrow-left" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="NavRefresh" class="dsHeaderLeft dsHeaderNavButton">
+                        <a role="button" tabindex="0" aria-label="Refresh" onclick="window.location.reload();return false;"
+                           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();window.location.reload();}"><i class="fa fa-arrow-rotate-right" aria-hidden="true"></i></a>
+                    </li>
+
+                    <li id="Logo" class="dsHeaderLeft">
+                        
+                        <a href="/" id="LogoLink" onclick="changeToMainMenu();">
+                            <img id="LogoImage" class="fpLogoImage" src="/resources/_LogoSmall.png?t=2010" alt="Home" /></a>
+                        <!--<div class="dsLogoTextDatable">datable</div>-->
+                    </li>
+
+                </ul>
+                <div id="WelcomeText" class="dsWelcomeText">
+                    <a id="Signup" title="Sign-Up" class="dsHeaderButton" href="../SignUp.aspx?ReturnUrl=%2fSchoolPages%2fSchool.aspx">Sign-Up</a>
+                    <a id="Login" title="Login" class="dsHeaderButton" href="../Login.aspx?ReturnUrl=%2fSchoolPages%2fSchool.aspx">Login</a>
+                </div>
+            
+	</div>
+
+
+
+            <div class="dsMiddlePanel">
+
+                
+
+    <div class="dsSiteContent">
+
+        
+        
+
+        
+        
+
+        
+        
+
+        
+        <main class="dsSiteContentBody">
+            
+
+    <div id="Panel1" class="dsFormPanelFSwTB ">
+		
+        <div id="HeaderWrapper">
+			
+        
+		</div>
+
+        <div id="ToolbarPanel" class="dsToolbarPanel">
+            
+        </div>
+
+        <div id="BodyWrapper" class="school-content">
+			
+        <h3>All schools that are members of the association have a custom page.<br/>Please search for your school by name.<br/></h3><div id="SearchWrapper" class="t" style="display:block;width:300px;margin:10px;">
+				<span id="Search" class="dsInputWrapper"><label for="Search_Text" id="Search_Label" class="dsInputLabel">Enter the name of the school to search for.</label><input name="ctl00$ctl00$MainContent$MainContent$Search$Search_Text" type="text" maxlength="50" id="Search_Text" class="dsInput dsInputText" data-parsley-group="default" data-parsley-errors-container="#ValidationStatus" onkeydown="return (event.keyCode!=13);" /></span><input type="submit" name="ctl00$ctl00$MainContent$MainContent$ctl00" value="Search" class="dsButton" />
+			</div><br/><br/><div class='SchoolSearchResults'><h2 style='clear:both;'>High Schools</h2><a href='/SchoolPages/School.aspx?SchoolID=25'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_25.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Ashland District School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=26'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_26.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Bangor Christian Schools</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=27'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_27.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Bangor High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=28'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_28.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Belfast Area High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=154'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_154.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Berwick Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=2'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_2.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Biddeford High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=300'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_300.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Blue Hill Harbor School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=3'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_3.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Bonny Eagle High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=29'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_29.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Boothbay Region High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=30'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_30.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Brewer High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=58'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_58.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Brunswick High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=59'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_59.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Buckfield High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=60'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_60.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Bucksport High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=61'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_61.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Calais High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=62'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_62.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Camden Hills Regional High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=63'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_63.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Cape Elizabeth High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=64'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_64.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Caribou High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=70'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_70.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Carrabec High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=1023'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_1023.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Casco Bay High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=71'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_71.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Central Aroostook Sr High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=72'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_72.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Central High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=4'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_4.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Cheverus High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=301'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_301.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Chop Point School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=73'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_73.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Cony High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=74'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_74.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Deer Isle-Stonington High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=5'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_5.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Deering High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=75'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_75.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Dexter Regional High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=76'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_76.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Dirigo High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=77'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_77.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>East Grand School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=127'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_127.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Easton Senior High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=86'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_86.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Edward Little High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=87'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_87.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Ellsworth High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=88'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_88.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Erskine Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=18'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_18.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Falmouth High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=89'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_89.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Forest Hills Consolidated School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=128'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_128.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Fort Fairfield High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=129'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_129.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Fort Kent Community High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=130'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_130.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Foxcroft Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=90'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_90.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Freeport High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=91'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_91.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Fryeburg Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=92'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_92.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gardiner Area High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=131'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_131.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>George Stevens Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=6'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_6.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gorham High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=302'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_302.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gould (Arthur R.) School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=303'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_303.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gould Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=132'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_132.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gray-New Gloucester High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=304'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_304.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Greater Houlton Christian Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=305'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_305.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Greater Portland Christian School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=93'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_93.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Greely High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=94'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_94.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Greenville Consolidated School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=95'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_95.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hall-Dale High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=96'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_96.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hampden Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=97'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_97.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hebron Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=98'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_98.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hermon High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=306'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_306.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Highview Christian Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=133'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_133.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hodgdon High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=134'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_134.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Houlton High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=135'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_135.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Hyde School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=99'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_99.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Islesboro Central School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=100'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_100.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>John Bapst Memorial High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=101'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_101.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Jonesport-Beals High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=136'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_136.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Katahdin High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=21'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_21.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Kennebunk High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=137'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_137.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Kents Hill School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=102'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_102.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lake Region High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=103'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_103.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lawrence High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=104'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_104.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Leavitt Area High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=105'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_105.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lee Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=106'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_106.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lewiston High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=107'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_107.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lincoln Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=108'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_108.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Lisbon High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=138'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_138.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Machias Memorial High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=139'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_139.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Madawaska High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=140'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_140.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Madison High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=109'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_109.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Maine Central Institute</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=307'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_307.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Maine Coast Waldorf High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=110'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_110.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Maine School of Science and Math</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=308'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_308.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Maranacook Community High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=7'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_7.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Marshwood High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=8'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_8.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Massabesic High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=111'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_111.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mattanawcook Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=112'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_112.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Medomak Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=113'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_113.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Messalonskee High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=114'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_114.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Monmouth Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=115'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_115.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Morse High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=309'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_309.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mount Desert Island High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=117'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_117.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mount View High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=118'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_118.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mountain Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=119'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_119.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mt. Abram High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=120'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_120.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mt. Ararat High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=121'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_121.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Mt. Blue High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=122'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_122.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Narraguagus Sr. High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=9'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_9.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Noble High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=39'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_39.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Nokomis Regional High</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=40'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_40.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>North Haven Community School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=41'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_41.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>North Yarmouth Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=42'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_42.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Oak Hill High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=43'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_43.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Oceanside High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=44'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_44.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Old Orchard Beach High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=123'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_123.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Old Town High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=45'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_45.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Orono High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=46'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_46.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Oxford Hills Comprehensive High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=124'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_124.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Penobscot Christian School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=125'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_125.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Penobscot Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=126'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_126.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Penquis Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=47'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_47.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Pine Tree Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=78'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_78.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Piscataquis Community Secondary School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=48'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_48.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Poland Regional High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=10'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_10.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Portland High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=49'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_49.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Presque Isle High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=50'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_50.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Rangeley Lakes Regional School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=51'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_51.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Richmond High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=52'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_52.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Sacopee Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=11'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_11.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Sanford High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=12'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_12.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Scarborough High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=79'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_79.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Schenck High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=310'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_310.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Seacoast Christian School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=53'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_53.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Searsport District High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=80'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_80.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Shead High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=54'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_54.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Skowhegan Area High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=13'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_13.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>South Portland High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=81'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_81.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Southern Aroostook Community School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=55'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_55.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Spruce Mountain High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=82'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_82.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Stearns Sr. High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=83'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_83.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Sumner (Charles M.) Learning Campus</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=84'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_84.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Telstar Regional High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=24'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_24.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Temple Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=14'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_14.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Thornton Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=56'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_56.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Traip (Robert W.) Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=67'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_67.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Upper Kennebec Valley High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=85'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_85.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Van Buren District Secondary School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=57'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_57.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Vinalhaven School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=68'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_68.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Washburn District High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=69'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_69.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Washington Academy</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=312'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_312.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Watershed Community School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=31'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_31.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Waterville Senior High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=32'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_32.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Waynflete School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=33'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_33.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Wells High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=15'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_15.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Westbrook High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=16'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_16.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Windham High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=34'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_34.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Winslow High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=35'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_35.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Winthrop High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=36'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_36.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Wiscasset High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=65'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_65.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Wisdom High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=66'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_66.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Woodland Sr. High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=37'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_37.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Yarmouth High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=38'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_38.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>York High School</p></div></div></a><h2 style='clear:both;'>Middle Schools</h2><a href='/SchoolPages/School.aspx?SchoolID=10139'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_10139.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Bath Middle School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=1003'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_1003.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Buckfield Jr.High School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=10125'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_10125.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Gorham Middle School</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=10148'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_10148.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Oxford Hills Middle</p></div></div></a><a href='/SchoolPages/School.aspx?SchoolID=1000'><div class='SchoolListWrapper'><div class='SchoolListImageWrapper'><img class='SchoolListLogo' alt='' src='/resources/_media/SchoolLogos/SchoolLogo_1000.jpg' onerror="this.onerror=null;this.src='/resources/_LogoSmall.png'"  /></div><div class='SchoolListName'><p>Woolwich Middle School</p></div></div></a></div>
+		</div>
+    
+	</div>
+
+
+        </main>
+
+        
+        <div id="FooterPanel" class="dsSiteFooter" role="contentinfo">
+		
+            <div id="FooterLinks" class="dsSiteFooterLinks">
+
+		</div>
+            <div class="dsSiteFooterMark">
+                Powered by <span class="dsSiteFooterMarkName">FusionPoint Sports</span>
+            </div>
+        
+	</div>
+
+    </div>
+
+
+
+            </div>
+        
+</div>
+
+
+    
+
+<script type="text/javascript">
+//<![CDATA[
+  $('#Search_Text').change(function () {DetectChange();});//]]>
+</script>
+</form>
+</body>
+</html>

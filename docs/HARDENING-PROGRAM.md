@@ -24,7 +24,7 @@ Nine crates, one workspace:
 | `athleticnet-browser` | Chromium transport: CDP session management, bounded tab pool, challenge state, request/response identity | — | — |
 | `census-domain` | Pure canonical model: newtypes, error taxonomy, identity policy, mark arithmetic | — | — |
 | `census-store` | Fjall-backed observation store: twelve tables, merge, snapshot, index write paths | — | — |
-| `census-crawl` | Source adapters: athleticnet, hytek, milesplit, ohsaa, mshsl, ihsa, tfrrs, athleticlive, plain_names, ks, wiaa, wiaa_results | — | — |
+| `census-crawl` | Source adapters: athleticnet, hytek, milesplit, ohsaa, mshsl, ihsa, tfrrs, athleticlive, plain_names, ks, wiaa, wiaa_results, ciac, mpa, riil | — | — |
 | `census-service` | Restate services, CLI, workbook/report/bests/projection, browser session transport | — | — |
 | `census-report` | Report surfaces | — | — |
 | `census-review` | Review surfaces | — | — |

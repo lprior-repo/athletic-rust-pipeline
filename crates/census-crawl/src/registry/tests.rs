@@ -12,17 +12,20 @@ use super::{bulk_first, descriptor, descriptors, transport_for_host, AccessClass
 /// deliberately, so deleting an entry fails here instead of quietly shrinking what a plan can see,
 /// and adding one requires saying so in both places. An adapter's stamped evidence id is not a plan
 /// name (`wayzata_schedule` for `wayzata`, `ohsaa_portal` for `ohsaa`), so only slugs appear here.
-const PLAN_SLUGS: [&str; 14] = [
+const PLAN_SLUGS: [&str; 17] = [
     "athleticlive",
     "athleticlive_athletes",
     "athleticnet",
+    "ciac",
     "coach_contacts",
     "ihsa",
     "ks",
     "milesplit",
+    "mpa",
     "mshsl",
     "ohsaa",
     "plain_names",
+    "riil",
     "tfrrs",
     "wiaa",
     "wiaa_results",
