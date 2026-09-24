@@ -5,13 +5,18 @@ sharp-edge list with current line citations. This file is the design-side schema
 
 What `census-service` actually writes to its embedded store: directories, keyspaces, key bytes,
 values, the write and read paths, and the limits the code enforces. Derived from
-`crates/census-service/src/store/` (primary), `crates/census-service/src/cli/` (the `census-service`
+`crates/census-store/src/` (primary), `crates/census-service/src/cli/` (the `census-service`
 binary, a thin clap shell),
 `crates/census-service/src/bin/census-serve.rs`, `crates/census-service/src/bootstrap/`,
 `crates/census-service/src/restate_services/`, `crates/census-domain/src/model.rs`, and the pinned
 dependency
-`fjall = "=3.1.10"` (`crates/census-service/Cargo.toml`). Dependency behaviour is cited from the
+`fjall = "=3.1.10"` (`crates/census-store/Cargo.toml`). Dependency behaviour is cited from the
 registry source of that version.
+
+The store has its own crate since the split: `crates/census-store/src/`, whose root module is
+`lib.rs`. References below to `store/mod.rs`, `store/read.rs`, `store/write.rs` and
+`store/legacy.rs` name that crate's `lib.rs`, `read/`, `write.rs` and `legacy/` modules — the paths
+as they stood when those citations were written.
 
 Line numbers are from the tree at the time of writing and will drift while the crate is being
 hardened; **symbol names are authoritative**. Nothing here is measured: no store command was run for
@@ -110,9 +115,9 @@ ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets` (
 (`schools`, `teams`, … `source_meets`), `Table::ALL` the ordered list, and `Table::from_wire` the
 ingest-side parser (unknown names are rejected so a typo cannot create a table nobody scans).
 
-Correction to `ARCHITECTURE.md`: that file lists `schools … performances` as "census keyspaces"
-alongside `entities`, `journal`, `meta`. Those names are tables inside the `entities` keyspace; only
-`entities`, `journal`, `meta` are Fjall keyspaces.
+Only `entities`, `journal` and `meta` are Fjall keyspaces; the fifteen names above are tables inside
+`entities`. `ARCHITECTURE.md` §4 describes `census-store` as "Fjall keyspaces, journals, snapshots,
+migration, backup/restore" and leaves the keyspace/table split to this file, which is its authority.
 
 | Table | Entity type | Observation body |
 | --- | --- | --- |

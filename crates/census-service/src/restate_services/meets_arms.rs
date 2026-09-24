@@ -11,6 +11,8 @@
 //! run here, because a stage that invented its own seed would be a second opinion about what the
 //! run covers.
 
+mod walks;
+
 use std::sync::Arc;
 
 use census_domain::model::SchoolYear;
@@ -23,10 +25,9 @@ use census_crawl::{Recorded, RecordedBatch, Recording};
 use census_store::Store;
 use serde::{Deserialize, Serialize};
 
-use super::jobs::{
-    adapter_context, append_observations, assert_some_stage_arms, collect_error, rows_written,
-};
+use super::jobs::{append_observations, assert_some_stage_arms};
 use super::{job_error, JobError, MAX_ROWS_PER_REQUEST};
+use walks::{walk_index, Walk};
 
 /// The walks the meet-index stage can run, one per planned source.
 ///
@@ -102,25 +103,18 @@ pub(super) async fn meets_stage(
     at: String,
     sweepable: Vec<String>,
 ) -> Result<Json<MeetsStageOutcome>, HandlerError> {
-    let index = Recording::new();
-    let mut census = census::collect_state_meets(
-        &fetcher,
-        &store,
-        jurisdiction,
-        year,
-        &at,
-        refresh,
-        Some(&index),
-    )
-    .await
-    .map_err(collect_error)?;
     let season = season_of(year)?;
+    let (mut census, index_recorded) =
+        walk_index(&store, &fetcher, jurisdiction, year, refresh, &at).await?;
+    let mut recorded = Vec::new();
+    if let Some(entry) = index_recorded {
+        recorded.push(entry);
+    }
+    let walk = Walk::new(&store, &fetcher, jurisdiction, season, refresh, &at);
     let mut sources = vec![MeetSourceRows {
         slug: census::SOURCE.to_string(),
         rows: census.rows,
     }];
-    let mut recorded = Vec::new();
-    take_recorded(&store, census::SOURCE, index.drain(), &mut recorded)?;
     for slug in &sweepable {
         let Some(arm) = arm_for(slug) else {
             assert_some_stage_arms(slug)?;
@@ -129,32 +123,7 @@ pub(super) async fn meets_stage(
         let recording = Recording::new();
         // The arm's sink: `Some` holds the rows for the caller to post, `None` writes them into the
         // store the walk holds. The walk itself is the same either way.
-        let rows = match arm {
-            MeetsArm::WiaaResults => {
-                walk_wiaa_results(
-                    &store,
-                    &fetcher,
-                    jurisdiction,
-                    season,
-                    refresh,
-                    &at,
-                    Some(&recording),
-                )
-                .await?
-            }
-            MeetsArm::Wayzata => {
-                walk_wayzata(
-                    &store,
-                    &fetcher,
-                    jurisdiction,
-                    season,
-                    refresh,
-                    &at,
-                    Some(&recording),
-                )
-                .await?
-            }
-        };
+        let rows = walk.armed(arm, &recording).await?;
         take_recorded(&store, slug, recording.drain(), &mut recorded)?;
         sources.push(MeetSourceRows {
             slug: slug.clone(),
@@ -219,56 +188,4 @@ fn append_recorded(store: &Store, batch: &RecordedBatch) -> Result<(), HandlerEr
             .map_err(|error| job_error(JobError::from(error)))?;
     }
     Ok(())
-}
-
-/// The association's result archive: its per-season listing is the meet index, so the season the
-/// request asked for is the only seed this walk needs.
-async fn walk_wiaa_results(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &str,
-    recording: Option<&Recording>,
-) -> Result<usize, HandlerError> {
-    let options = census_crawl::wiaa_results::Options {
-        limit: None,
-        refresh,
-        observed_on: at.to_string(),
-        seasons: vec![season.get()],
-        states: vec![jurisdiction],
-        school_names: Vec::new(),
-    };
-    let context = adapter_context(store, fetcher, season, refresh, at, recording);
-    let report = census_crawl::wiaa_results::collect(&context, &options)
-        .await
-        .map_err(collect_error)?;
-    rows_written(&report)
-}
-
-/// The timer's published schedules for the season the request asked for. It serves its own three
-/// states from one set of pages, so the walk is the same one for each of them and the store merges
-/// the rows it writes by id.
-async fn walk_wayzata(
-    store: &Arc<Store>,
-    fetcher: &Arc<Fetcher>,
-    jurisdiction: UsJurisdiction,
-    season: SchoolYear,
-    refresh: bool,
-    at: &str,
-    recording: Option<&Recording>,
-) -> Result<usize, HandlerError> {
-    let options = census_crawl::wayzata::Options {
-        years: vec![season.get()],
-        limit: None,
-        refresh,
-        observed_on: Some(at.to_string()),
-    };
-    let context = adapter_context(store, fetcher, season, refresh, at, recording);
-    let report = census_crawl::wayzata::collect(&context, &options)
-        .await
-        .map_err(collect_error)?;
-    let _ = jurisdiction;
-    rows_written(&report)
 }

@@ -44,7 +44,9 @@ not a bug.
 
 Binary: `./target/release/census-service` today, renaming to `census-service` when the CLI crate is
 extracted — address it through the shared constant, never by inlining the name. Store root:
-`var/census-service`. **The store is single-writer**; lanes that write must serialize.
+`var/census-service` in the command `census-cli serve` prints; the delivered census of ADR-009 lives
+in `var/midwest-census` (the store the seal, the workbook and the §58 verification were built from).
+**The store is single-writer**; lanes that write must serialize.
 
 ## Crate ownership
 

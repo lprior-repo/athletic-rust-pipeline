@@ -132,7 +132,7 @@ impl Fetcher {
             tokio::time::sleep(wait).await;
         }
     }
-    /// Core fetch logic with caching, rate limiting, retry, and timeout.
+    /// Core fetch logic: serve from cache, take the host's turn, then attempt once inside the timeout.
     pub(super) async fn fetch(
         &self,
         method: &str,

@@ -765,3 +765,20 @@ reaching the item list at all re-establishes the workbook check against
 `not measured` form quoted above; naming one leaves it in the counted form quoted above. Both are
 refusals, and the difference between the two readings is the whole point of the field: `unmeasured`
 is "nobody looked", `owed` is "looked, and the endpoint has accepted nothing".
+
+### The seal that closed (2026-09-23, 17:41)
+
+Item 2 — the one the online run above refused by name — was then measured from a routed acquisition,
+and the seal closed. The terminal state it wrote, after the refusal narrative at 16:12:
+
+    sha256 d6cdd7e0868f0d4a9fb5d2c9658f01d6510df06503c66906bfb0bb9b97f1b497  (12 726 bytes)
+    file   var/midwest-census/out/seal.json
+    jq     {"phase":"complete","sealed_on":"2026-09-23",
+            "digest":"5ab49d85c232c26363e8c2e04695ab2c6394d84eb31590c70fed78ccba9ad233",
+            "counts":{"jurisdictions":50,"schools":31818,"meets":11016,"athletes":2225091,
+                      "class_of_2027":579732,"performances":23970,"coaches":31488}}
+
+Two independent re-runs over the same store back it: the §58 verification (`verify: OK (5000 athletes
+sampled of 579732 rows, 5000 performances sampled of 202979 rows)`, exit 0, 6m56s) and the §60 drill
+(`PASS: backup drill completed successfully`, `observations match: 3859887`, exit 0). The live route
+agrees with the drill's count: `Census/status` through the ingress reads `observations=3859887`.

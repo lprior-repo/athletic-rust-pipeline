@@ -21,8 +21,9 @@
 //!
 //! * All shared state (hosts, robots, stats) uses `tokio::sync::Mutex` — no `std::sync::Mutex` is
 //!   ever held across an `.await`.
-//! * Every network request is guarded by a per-request timeout (default 45 s) and retries with
-//!   bounded exponential backoff + jitter (max 3 attempts, 500 ms base delay).
+//! * Every network request is guarded by a per-request timeout (default 45 s), and the transport
+//!   attempts it once: the durable layer owns retries (ADR-002), so a failure leaves as an error for
+//!   Restate to replay under a policy the journal can account for.
 //! * Response bodies are capped at 32 MiB; oversized responses return [`FetchError::TooLarge`].
 
 use std::collections::HashMap;

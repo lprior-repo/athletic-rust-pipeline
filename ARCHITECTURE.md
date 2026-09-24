@@ -86,6 +86,18 @@ crates/
 xtask/                 the agent-facing verbs
 ```
 
+Paths in older documents that read `crates/census-service/src/store/`, `.../report/`, `.../net/` or
+`.../workbook/` predate this split: `store/` is `census-store` (`lib.rs`, `keys.rs`, `read/`,
+`write.rs`, `legacy/`, `backup/`), `report/` and `workbook/` are `census-report`, and `net/` is
+`census-crawl`. Symbol names remain the authority; the module paths moved, the schema did not.
+
+### The `acq-*` family
+
+§17 also names `acq-*` crates for the **existing acquisition pipeline**. Those crates do not exist
+yet: that pipeline is still the root package `athletic-rust-pipeline`, which sits in this workspace
+beside the census crates, so the §55 gates build and test it too. No census crate depends on it, and
+the `acq-*` split is a separate, unstarted refactor of that legacy pipeline.
+
 `census-domain` operates entirely on explicit values. Parse external data once at the boundary:
 external shapes become `Raw*` types, validation produces domain enums (for example
 `RawGraduationValue` → `GraduationEvidence`), and no `String` stands in where the domain knows
@@ -112,10 +124,12 @@ school:{source}:{source_school_id}:{revision} review:{evidence_digest}:{policy_r
 ```
 
 **§9 retry model**: one retry owner (Restate), maximum three automatic attempts per failed external
-operation, transport performs one attempt. Never stack Restate × HTTP-helper × adapter retries.
-Retry exhaustion is evidence (`OperationTerminal`): `Complete`, `NotFound`, `Incomplete`,
-`RateLimited`, `HumanRequired`, `RetryExhausted`, `SourceUnavailable`, `PolicyBlocked`. A source
-failure is never equivalent to `NO_MATCH`.
+operation, transport performs one attempt. Never stack Restate × HTTP-helper × adapter retries; the
+scan in `crates/census-service/src/restate_services/retry_policy_tests.rs` reads every ceiling out of
+the tree and fails a value outside the contract. Retry exhaustion is evidence, and each layer names
+its own causes rather than one shared type: `FailureCode`/`Decision`/`BrowserError` in the root crate,
+`AccessBlockKind` (`census-domain`) and `FetchError` (`census-crawl`) in the census crates, `Outcome`
+at async boundaries in `census-service`. A source failure is never equivalent to `NO_MATCH`.
 
 ## 6. Admission and browser state (§10, §26-§28)
 
