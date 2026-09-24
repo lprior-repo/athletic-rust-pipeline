@@ -6,8 +6,8 @@
 
 use census_crawl::net::Fetcher;
 use census_crawl::AdapterContext;
-use census_domain::model::SourceMeetRef;
 use census_domain::model::SchoolYear;
+use census_domain::model::SourceMeetRef;
 use census_domain::UsJurisdiction;
 
 use super::{arm_for, athleticnet_meet_ids, athleticnet_meets, meet_id_in, ResultsArm};
