@@ -7,7 +7,7 @@
 //! posts a request spec to that object and mints its own [`crate::net::FetchOutcome`] from the
 //! response, so the evidence it records keeps the shape every other adapter already produces.
 //!
-//! What lives here is the wire half: [`wire`] mirrors both directions of `athleticnet-browser`'s
+//! What lives here is the wire half: `wire` mirrors both directions of `athleticnet-browser`'s
 //! vocabulary, and the fixtures under `fixtures/wire/` are what keeps the two readings one contract —
 //! the spec this module posts and the evidence it mints from the answer are each pinned by one.
 

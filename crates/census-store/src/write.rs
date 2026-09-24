@@ -39,7 +39,7 @@ impl Store {
     /// this batch ended at instead of walking the table to find it.
     ///
     /// The ceiling is a bound on the sequence space: the batch would reach `base + count`, so a
-    /// batch that would take the table past [`MAX_ROWS_PER_TABLE`] is refused before the reservation
+    /// batch that would take the table past `crate::MAX_ROWS_PER_TABLE` is refused before the reservation
     /// moves the counter, and a refused batch leaves the counter where it found it.
     ///
     /// Every record is validated before a single sequence is reserved, so a rejected batch leaves

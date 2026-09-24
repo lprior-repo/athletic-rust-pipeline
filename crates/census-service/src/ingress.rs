@@ -55,12 +55,12 @@ const READ_TIMEOUT: Duration = Duration::from_secs(120);
 /// either way, and a client that gave up cannot report what it produced.
 const JOB_TIMEOUT: Duration = Duration::from_secs(900);
 
-/// Build the ingress client for `origin` with the read budget ([`READ_TIMEOUT`]).
+/// Build the ingress client for `origin` with the read budget (`READ_TIMEOUT`).
 pub fn client(origin: &str) -> Result<ReqwestClient> {
     build(origin, READ_TIMEOUT)
 }
 
-/// Build the ingress client for `origin` with the job budget ([`JOB_TIMEOUT`]).
+/// Build the ingress client for `origin` with the job budget (`JOB_TIMEOUT`).
 ///
 /// Only the calls that own the store's writer for minutes use this: a submit's acceptance and every
 /// read are answered in milliseconds, and a long budget there would hide a wedged connection.

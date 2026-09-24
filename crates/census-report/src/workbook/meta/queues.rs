@@ -6,8 +6,8 @@
 //! disagree about the graduating class, a meet whose venue was never placed, a coach whose only
 //! published address was a personal mailbox and was therefore withheld by the collection contract.
 //! Each family prints one row per retained subject — the same subject ids the store holds — so the
-//! operator acts on rows instead of on a number. The families themselves live in [`conflicts`] and
-//! [`review`]; this module holds the labels, the family lists and the one row shape they share.
+//! operator acts on rows instead of on a number. The families themselves live in `conflicts` and
+//! `review`; this module holds the labels, the family lists and the one row shape they share.
 //!
 //! The families are deliberately narrow: a row appears here because a *stored* field is unresolved,
 //! never because a heuristic disliked it. Cohort-family rows are scoped to the published class of

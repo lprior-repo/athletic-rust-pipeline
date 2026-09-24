@@ -7,7 +7,7 @@
 //! confidence.
 //!
 //! The key rule lives here, beside the agreement flag it produces, because the two are one question
-//! asked twice: [`key`] is what the merge grouped the rows by, and [`FlagKind::NameSchoolCohortAgree`]
+//! asked twice: `crate::athlete_flags::key` is what the merge grouped the rows by, and `crate::athlete_flags::FlagKind::NameSchoolCohortAgree`
 //! is that grouping stated as evidence.
 
 use std::collections::{BTreeMap, BTreeSet};

@@ -54,7 +54,7 @@ impl BrowserLaneState {
 /// The second capability question, and the one asked first: the applicability table evidences
 /// sources whose walks a jurisdiction run has no stage for, and a plan that called one of those
 /// sweepable would name work that nothing performs. A source is wired when the chain in
-/// [`super::jurisdiction`] sweeps it — declared there, next to the stages themselves, so widening
+/// [`super::JurisdictionCensus`] sweeps it — declared there, next to the stages themselves, so widening
 /// the chain and widening the list is one edit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dispatch {

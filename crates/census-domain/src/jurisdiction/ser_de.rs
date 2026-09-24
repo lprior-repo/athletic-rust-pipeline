@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::table::UsJurisdiction;
 
 impl Serialize for UsJurisdiction {
-    /// Serializes as the two-letter code, delegating to the [`fmt::Display`] impl the tests pin.
+    /// Serializes as the two-letter code, delegating to the [`std::fmt::Display`] impl the tests pin.
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

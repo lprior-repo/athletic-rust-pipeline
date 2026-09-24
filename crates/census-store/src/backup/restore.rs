@@ -21,7 +21,7 @@ use crate::{Store, StoreError, StoreResult, Table};
 impl Store {
     /// Validate the backup at `from` and materialise it into `to`.
     ///
-    /// The manifest's version must be [`MANIFEST_VERSION`], every file it lists must exist as a regular
+    /// The manifest's version must be `MANIFEST_VERSION`, every file it lists must exist as a regular
     /// file of the recorded length, and each file is then streamed once into the staging generation
     /// with its SHA-256 checked as the bytes pass. The staged tree is opened as a store and its
     /// per-table row counts are reconciled against the manifest's before anything is renamed onto

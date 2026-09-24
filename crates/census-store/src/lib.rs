@@ -32,7 +32,7 @@
 //!
 //! A database written before marks existed holds none. The open that misses one derives it with the
 //! one scan this store has always done, commits the result in one durable batch, and is the last open
-//! that reads that table: see [`sequences::Counters::seeded`]. A mark that is present but unreadable
+//! that reads that table: see `sequences::Counters::seeded`. A mark that is present but unreadable
 //! fails the open with [`StoreError::Invariant`] rather than being guessed at.
 //!
 //! # Durability

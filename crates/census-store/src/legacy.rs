@@ -64,7 +64,7 @@ impl Store {
     /// — a read model the derivation pass rebuilds from the merged rows on every pass — so a legacy
     /// file for one of those tables is a stale read model rather than progress worth keeping, and
     /// importing it would write rows the mode's own writer never writes: a derived write keys every
-    /// row under sequence zero, while [`ImportChunk::push`] keys imported rows with the sequences it
+    /// row under sequence zero, while `ImportChunk::push` keys imported rows with the sequences it
     /// is spending. A read merges the later key of an id over the earlier one, so an imported copy
     /// would win over the row the next derivation wrote — and no pass would ever remove it, because
     /// the derivation writes the ids it derived, not the keys something else left behind.

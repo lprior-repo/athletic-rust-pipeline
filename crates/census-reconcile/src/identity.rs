@@ -15,7 +15,7 @@
 //! Restate addresses objects and workflows by a UTF-8 key, so an identity is a key. External source
 //! ids are unbounded strings: a meet id from a timing provider can be any length and can contain the
 //! `:` separator this module joins fields with. A dynamic part that is empty, longer than
-//! [`MAX_PART_BYTES`], or carrying a byte outside `[A-Za-z0-9._-]` is therefore replaced by its
+//! `MAX_PART_BYTES`, or carrying a byte outside `[A-Za-z0-9._-]` is therefore replaced by its
 //! digest. That keeps every identity inside [`MAX_IDENTITY_BYTES`], keeps the field structure
 //! unambiguous, and costs nothing: the full provider value lives in the store row the workflow reads.
 

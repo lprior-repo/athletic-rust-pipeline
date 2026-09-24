@@ -190,7 +190,7 @@ impl Fetcher {
     ///
     /// The lane is the one component allowed to drive the headed profile, and it lives outside this
     /// crate: installing it here is what makes `get` hand a browser-transported host to it instead of
-    /// making the request itself. Built by the run (see [`bridge::BrowserLane::new`]), because the
+    /// making the request itself. Built by the run (see [`bridge::BrowserLane::over`]), because the
     /// ingress origin it talks to is a deployment fact the library does not know.
     pub fn with_browser_lane(mut self, lane: bridge::BrowserLane) -> Self {
         self.lane = Some(lane);

@@ -15,8 +15,8 @@
 //! sheets carry the subject id of every one of them.
 //!
 //! This module is the entry point and the shared vocabulary: each sheet family lives beside it
-//! ([`inventory`], [`coverage`], [`queues`], [`sources`], [`metrics`]) and reads the same
-//! [`StoreRows`] snapshot, so the workbook scans each table once.
+//! (`inventory`, `coverage`, [`queues`], `sources`, `metrics`) and reads the same
+//! `StoreRows` snapshot, so the workbook scans each table once.
 
 use crate::bests::BestResult;
 use crate::report::{

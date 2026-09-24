@@ -55,8 +55,8 @@ pub fn write_snapshot_rows<T: Serialize>(path: &Path, rows: &[T]) -> StoreResult
 /// works.
 ///
 /// `body` writes the bytes and is responsible for nothing else: this function pushes them onto the
-/// disk before the rename ([`sync_file`]) and the directory entry after it
-/// ([`sync_parent_directory`]), so a publication that returned has left an artifact a machine loss
+/// disk before the rename (`sync_file`) and the directory entry after it
+/// (`sync_parent_directory`), so a publication that returned has left an artifact a machine loss
 /// cannot take back — not a name that resolves to bytes still sitting in the page cache. A temporary
 /// left by a refused body or a refused rename is removed; the sweep at store open reclaims the one a
 /// killed process leaves.
