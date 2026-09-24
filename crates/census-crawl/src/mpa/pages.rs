@@ -34,29 +34,44 @@ pub fn parse_directory(html: &str) -> Vec<SchoolEntry> {
     let mut entries = Vec::new();
     let mut cursor = 0usize;
 
-    while let Some(found) = html[cursor..].find(SCHOOL_LIST_WRAPPER) {
-        let wrapper_start = cursor + found;
-        let wrapper = &html[wrapper_start..];
+    while let Some(rest) = html.get(cursor..) {
+        let Some(found) = rest.find(SCHOOL_LIST_WRAPPER) else {
+            break;
+        };
+        let Some(wrapper_start) = cursor.checked_add(found) else {
+            break;
+        };
+        let Some(wrapper) = html.get(wrapper_start..) else {
+            break;
+        };
         // A wrapper never nests, so its span ends at the next one. Bounding the span here is what
         // stops a wrapper with no `<p>` of its own from borrowing the next school's name.
-        let span = wrapper[SCHOOL_LIST_WRAPPER.len()..]
-            .find(SCHOOL_LIST_WRAPPER)
-            .map_or(wrapper.len(), |next| SCHOOL_LIST_WRAPPER.len() + next);
-        let wrapper = &wrapper[..span];
+        let span = wrapper
+            .get(SCHOOL_LIST_WRAPPER.len()..)
+            .and_then(|after| after.find(SCHOOL_LIST_WRAPPER))
+            .and_then(|next| SCHOOL_LIST_WRAPPER.len().checked_add(next))
+            .unwrap_or(wrapper.len());
+        let wrapper = wrapper.get(..span).unwrap_or_default();
 
         // The anchor that owns this wrapper closes before it, and its `href` carries the SchoolID:
         // `<a href='/SchoolPages/School.aspx?SchoolID=25'>`. The nearest one to the left is this
         // wrapper's, because the page emits anchor then wrapper, anchor then wrapper.
-        let school_id = html[..wrapper_start]
-            .rfind(SCHOOL_ID)
-            .and_then(|at| school_id_at(html, at + SCHOOL_ID.len()));
+        let school_id = html
+            .get(..wrapper_start)
+            .and_then(|before| before.rfind(SCHOOL_ID))
+            .and_then(|at| at.checked_add(SCHOOL_ID.len()))
+            .and_then(|start| school_id_at(html, start));
         let name = wrapper_name(wrapper);
 
         if let (Some(school_id), Some(name)) = (school_id, name) {
             entries.push(SchoolEntry { name, school_id });
         }
 
-        cursor = wrapper_start + SCHOOL_LIST_WRAPPER.len();
+        // The marker was found inside `html`, so its end is a boundary `html` already has.
+        match wrapper_start.checked_add(SCHOOL_LIST_WRAPPER.len()) {
+            Some(next) if next > cursor => cursor = next,
+            _ => break,
+        }
     }
 
     entries
@@ -79,9 +94,9 @@ fn school_id_at(html: &str, start: usize) -> Option<String> {
 /// The `<p>` text inside one wrapper's `SchoolListName` div.
 fn wrapper_name(wrapper: &str) -> Option<String> {
     let at = wrapper.find("<p>")?;
-    let text = &wrapper[at + 3..];
+    let text = wrapper.get(at..)?.strip_prefix("<p>")?;
     let end = text.find("</p>")?;
-    let name = decode_html(text[..end].trim());
+    let name = decode_html(text.get(..end)?.trim());
     if name.is_empty() {
         None
     } else {
@@ -96,30 +111,40 @@ pub fn parse_staff_table(html: &str) -> Vec<CoachRow> {
     let Some(table_start) = html.find(SCHOOL_STAFF_TABLE) else {
         return Vec::new();
     };
-    let table = &html[table_start..];
+    let mut rest = html.get(table_start..).unwrap_or_default();
 
     let mut rows = Vec::new();
     // Walk through all <tr> elements in the table.
-    let mut rest = table;
     while let Some(tr_start) = rest.find("<tr>") {
-        rest = &rest[tr_start..];
-        let Some(tr_end) = rest.find("</tr>") else {
+        let Some(from_row) = rest.get(tr_start..) else {
             break;
         };
-        let row = &rest[..tr_end];
-        rest = &rest[tr_end + 5..];
+        let Some(tr_end) = from_row.find("</tr>") else {
+            break;
+        };
+        let Some(row) = from_row.get(..tr_end) else {
+            break;
+        };
+        let Some(after_row) = from_row
+            .get(tr_end..)
+            .and_then(|tail| tail.strip_prefix("</tr>"))
+        else {
+            break;
+        };
+        rest = after_row;
 
-        // Extract cells from the row.
+        // Extract cells from the row; a row narrower than the three coach columns is not read.
         let cells = extract_cells(row);
-        if cells.len() >= 3 {
-            let sport = decode_html(cells[0].trim());
-            let role = decode_html(cells[1].trim());
-            let coach = decode_html(cells[2].trim());
+        let [sport_cell, role_cell, coach_cell, ..] = cells.as_slice() else {
+            continue;
+        };
+        let sport = decode_html(sport_cell.trim());
+        let role = decode_html(role_cell.trim());
+        let coach = decode_html(coach_cell.trim());
 
-            // Only keep Head Coach rows (skip Principal, AD, etc.)
-            if role == "Head Coach" && !sport.is_empty() && !coach.is_empty() {
-                rows.push(CoachRow { sport, coach });
-            }
+        // Only keep Head Coach rows (skip Principal, AD, etc.)
+        if role == "Head Coach" && !sport.is_empty() && !coach.is_empty() {
+            rows.push(CoachRow { sport, coach });
         }
     }
 
@@ -132,16 +157,24 @@ fn extract_cells(row: &str) -> Vec<String> {
     let mut rest = row;
 
     while let Some(td_start) = rest.find("<td") {
-        rest = &rest[td_start..];
-        if let Some(td_end) = rest.find("</td>") {
-            let cell_html = &rest[..td_end];
-            // Strip HTML tags from the cell.
-            let text = strip_html(cell_html);
-            cells.push(text);
-            rest = &rest[td_end + 5..];
-        } else {
+        let Some(from_cell) = rest.get(td_start..) else {
             break;
-        }
+        };
+        let Some(td_end) = from_cell.find("</td>") else {
+            break;
+        };
+        let Some(cell_html) = from_cell.get(..td_end) else {
+            break;
+        };
+        // Strip HTML tags from the cell.
+        cells.push(strip_html(cell_html));
+        let Some(after_cell) = from_cell
+            .get(td_end..)
+            .and_then(|tail| tail.strip_prefix("</td>"))
+        else {
+            break;
+        };
+        rest = after_cell;
     }
 
     cells

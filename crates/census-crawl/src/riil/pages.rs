@@ -165,11 +165,11 @@ fn parse_table_rows(table_html: &str) -> Vec<CoachRow> {
 fn extract_phone_from_cell(cell: &str) -> Option<String> {
     if let Some(after) = cell.split_once("href=\"tel:") {
         let end = after.1.find('"').unwrap_or(after.1.len());
-        return Some(after.1[..end].to_string());
+        return after.1.get(..end).map(str::to_string);
     }
     if let Some(after) = cell.split_once("href='tel:") {
         let end = after.1.find('\'').unwrap_or(after.1.len());
-        return Some(after.1[..end].to_string());
+        return after.1.get(..end).map(str::to_string);
     }
     None
 }
@@ -201,44 +201,45 @@ pub fn parse_directory(html: &str) -> Vec<SchoolTable> {
 
 /// Extract the school name from a section (from <summary> or <b>).
 fn extract_school_name(section: &str) -> String {
-    // Try <summary> first
-    if let Some(start) = section.find("<summary>") {
-        let inner_start = start + 9; // len("<summary>")
-        if let Some(end) = section[inner_start..].find("</summary>") {
-            let end = inner_start + end;
-            let raw = &section[inner_start..end];
-            let text = strip_tags(&decode_entities(raw));
-            let collapsed = collapse_whitespace(&text);
-            if !collapsed.is_empty() {
-                return collapsed;
-            }
-        }
-    }
-
-    // Fallback: look for <b> tag
-    if let Some(start) = section.find("<b>") {
-        let inner_start = start + 3; // len("<b>")
-        if let Some(end) = section[inner_start..].find("</b>") {
-            let end = inner_start + end;
-            let raw = &section[inner_start..end];
-            let text = strip_tags(&decode_entities(raw));
-            let collapsed = collapse_whitespace(&text);
-            if !collapsed.is_empty() {
-                return collapsed;
-            }
+    for (opening, closing) in [("<summary>", "</summary>"), ("<b>", "</b>")] {
+        if let Some(name) = tagged_text(section, opening, closing) {
+            return name;
         }
     }
 
     String::new()
 }
 
+/// The whitespace-collapsed text between the first `opening` and the next `closing` after it.
+fn tagged_text(section: &str, opening: &str, closing: &str) -> Option<String> {
+    let start = section.find(opening)?.checked_add(opening.len())?;
+    let from_open = section.get(start..)?;
+    let raw = from_open.get(..from_open.find(closing)?)?;
+    let text = collapse_whitespace(&strip_tags(&decode_entities(raw)));
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
 /// Extract the `<table>` content from a section.
 fn extract_table(section: &str) -> String {
-    if let Some(start) = section.find("<table") {
-        if let Some(end) = section[start..].find("</table>") {
-            let end = start + end + 8; // len("</table>")
-            return section[start..end].to_string();
-        }
-    }
-    String::new()
+    const CLOSING: &str = "</table>";
+
+    let Some(start) = section.find("<table") else {
+        return String::new();
+    };
+    let Some(from_table) = section.get(start..) else {
+        return String::new();
+    };
+    let Some(table) = from_table
+        .find(CLOSING)
+        .and_then(|close| close.checked_add(CLOSING.len()))
+        .and_then(|end| from_table.get(..end))
+    else {
+        return String::new();
+    };
+
+    table.to_string()
 }

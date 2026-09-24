@@ -120,9 +120,12 @@ pub fn parse_table(table_html: &str) -> Option<SchoolTable> {
 
 /// Parse the full directory page HTML into a list of school tables.
 pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
+    const OPENING: &str = "<table class='DirectoryStaffTable'>";
+    const CLOSING: &str = "</table>";
+
     let mut results: Vec<(String, SchoolTable)> = Vec::new();
 
-    for table_match in html.match_indices("<table class='DirectoryStaffTable'>") {
+    for table_match in html.match_indices(OPENING) {
         let table_start = table_match.0;
 
         let name = find_school_name(html, table_start);
@@ -130,14 +133,21 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
             continue;
         }
 
-        let mut end = table_start + 38;
-        if let Some(close) = html[end..].find("</table>") {
-            end += close + 8;
-        } else {
-            end = html.len();
-        }
+        // The table runs from its opening tag to the first `</table>` after it; a capture that stops
+        // inside the table keeps whatever survived of it.
+        let Some(from_table) = html.get(table_start..) else {
+            continue;
+        };
+        let end = from_table
+            .get(OPENING.len()..)
+            .and_then(|after_open| after_open.find(CLOSING))
+            .and_then(|close| OPENING.len().checked_add(close))
+            .and_then(|close| close.checked_add(CLOSING.len()))
+            .unwrap_or(from_table.len());
 
-        let table_html = &html[table_start..end];
+        let Some(table_html) = from_table.get(..end) else {
+            continue;
+        };
         if let Some(school_table) = parse_table(table_html) {
             results.push((name, school_table));
         }
@@ -148,20 +158,20 @@ pub fn parse_directory(html: &str) -> Vec<(String, SchoolTable)> {
 
 /// Find the school name from the <b> tag in the preceding DirectoryDetail div.
 fn find_school_name(html: &str, table_pos: usize) -> String {
-    let before = &html[..table_pos];
-    if let Some(detail_end) = before.rfind("<div class='DirectoryDetail'>") {
-        let detail = &before[detail_end..];
-        if let Some(b_start) = detail.rfind("<b>") {
-            let content = &detail[b_start + 3..];
-            if let Some(b_end) = content.find("</b>") {
-                let name = content[..b_end].trim();
-                if !name.is_empty() {
-                    return name.to_string();
-                }
-            }
-        }
+    name_before(html, table_pos).unwrap_or_default()
+}
+
+/// The `<b>` text of the `DirectoryDetail` div that precedes `table_pos`, when the page has one.
+fn name_before(html: &str, table_pos: usize) -> Option<String> {
+    let before = html.get(..table_pos)?;
+    let detail = before.get(before.rfind("<div class='DirectoryDetail'>")?..)?;
+    let content = detail.get(detail.rfind("<b>")?..)?.strip_prefix("<b>")?;
+    let name = content.get(..content.find("</b>")?)?.trim();
+    if name.is_empty() {
+        None
+    } else {
+        Some(name.to_string())
     }
-    String::new()
 }
 
 /// Extract Sport, Role, Name from a row's first three <td> cells.
@@ -176,7 +186,9 @@ fn extract_td_text(row: &str) -> (String, String, String) {
         let Some(open) = rest.find("<td") else {
             break;
         };
-        let from_td = &rest[open..];
+        let Some(from_td) = rest.get(open..) else {
+            break;
+        };
         let Some((text, after)) = from_td.split_once("</td>") else {
             break;
         };
