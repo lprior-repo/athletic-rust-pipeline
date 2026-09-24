@@ -21,6 +21,41 @@ the following describes how it must work and why.
 
 These rules exist because of the replay hazards that Restate workflows exhibit across builds.
 
+## What breaking rule 1 looks like
+
+The failure is silent, which is why it is worth recognising. A client that submits work against a
+stale registration prints `submitted as invocation inv_…` and then blocks until its own observation
+bound expires; re-running the same command prints the same and blocks again. The endpoint's log says
+nothing, the store gains no rows, and the HTTP cache gains no bodies, so the run looks like a crawl
+that is thinking rather than one that is not running at all.
+
+The invocations are visible from the node's admin API:
+
+```bash
+curl -s -X POST http://127.0.0.1:19095/query \
+  -H 'content-type: application/json' -H 'accept: application/json' \
+  -d '{"query":"SELECT id, status, target FROM sys_invocation"}'
+```
+
+`status: "paused"` is the signature. Every `JurisdictionCensus` and `Sweep` handler carries
+`invocation_retry_policy(on_max_attempts = "pause")`, so an invocation whose journal no longer
+matches the registered schema fails its three attempts and is parked instead of failing the caller.
+A paused invocation **keeps its virtual-object key**, so every later submission for the same
+`<jurisdiction>:<season>:<revision>` waits behind it as `pending` and never starts: the key stays
+poisoned until the paused invocation is ended.
+
+```bash
+# Ends the paused invocation (the key is released; it reports `completed`)
+curl -s -X PATCH http://127.0.0.1:19095/invocations/<id>/kill \
+  -H 'content-type: application/json' -H 'accept: application/json'
+```
+
+Measured 2026-09-24: rebuilding `census-serve` in place and restarting it at the same URI left 59
+paused invocations — the revision-5 sweeps of roughly half the states. The DC key absorbed three
+further submissions, none of which ran, before the paused one was killed; the run then completed in
+minutes and wrote its observations. Re-registering the rebuilt binary bumped each service to
+revision 8 and the symptoms stopped.
+
 ## Replay hazards
 
 A Restate workflow invocation may replay on a different build of the same endpoint. If the binary
