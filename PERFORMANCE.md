@@ -338,8 +338,9 @@ never enforced with a panic.
 `scan<T: Entity>`, `consolidate<T: Entity>`, `consolidate_table` dispatching through a seven-arm
 match; the XLSX visitor is `impl FnMut(SourceRecord) -> Result<()>` threaded through
 `visit_records`/`walk_records`, with no `Box<dyn FnMut>`; adapters are free functions called directly
-("no trait indirection", `sources/mod.rs`); calamine hands out `DataRef<'_>` borrows that are
-materialized into `String` only when a value is actually retained.
+("no trait indirection", `crates/census-crawl/src/lib.rs` and `crates/census-crawl/src/registry.rs`);
+calamine hands out `DataRef<'_>` borrows that are materialized into `String` only when a value is
+actually retained.
 
 **Allocation hygiene visible in the code.** One reusable event buffer per XML reader
 (`buffer.clear()`); per-row maps reused and moved out with `std::mem::take`; `Vec::with_capacity`
@@ -354,13 +355,13 @@ measured.
 | Bound | Value | Enforced in |
 |---|---:|---|
 | `MAX_ZIP_ENTRY_BYTES` | 512 MiB declared and actual, per entry | ~~`src/xlsx.rs`~~ (historical: deleted root crate) |
-| `MAX_TOTAL_DECOMPRESSED_BYTES` | 1 GiB per workbook | `workbook_ingest/preflight.rs` |
-| `MAX_ZIP_ENTRIES` | 4096 | `workbook_ingest/preflight.rs` |
+| `MAX_TOTAL_DECOMPRESSED_BYTES` | 1 GiB per workbook | ~~`workbook_ingest/preflight.rs`~~ (historical: deleted root crate) |
+| `MAX_ZIP_ENTRIES` | 4096 | ~~`workbook_ingest/preflight.rs`~~ (historical: deleted root crate) |
 | `MAX_SHARED_STRINGS` / per-string / total | 2,000,000 / 4 MiB / 256 MiB | ~~`src/xlsx.rs`~~ (historical), ~~`parser.rs::load_shared_strings`~~ (historical) |
-| `MAX_MATERIALIZED_ROW_BYTES` / `MAX_RETAINED_HEADER_BYTES` | 8 MiB per row / 1 MiB per workbook | `workbook_ingest/stream.rs` |
+| `MAX_MATERIALIZED_ROW_BYTES` / `MAX_RETAINED_HEADER_BYTES` | 8 MiB per row / 1 MiB per workbook | ~~`workbook_ingest/stream.rs`~~ (historical: deleted root crate) |
 | `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/census-store/src/table.rs` |
 | `MAX_ID_BYTES` | 512 bytes | `crates/census-store/src/table.rs` |
-| Census cache / root cache | 256 MiB / 32 MiB | `Database::builder(..).cache_size(..)` |
+| Census cache | 256 MiB | `Database::builder(..).cache_size(..)` |
 | `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | ~~`src/store.rs`~~ (historical), ~~`backend.rs`~~ (historical) |
 | `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/census-service/src/restate_services/` |
 | `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | ~~`src/html_bounds.rs`~~ (historical) |
@@ -421,9 +422,9 @@ absent), and bench presence. Exact invocations live in `tools/gate.sh`; it is th
 to refresh `tools/quality-baseline.json`, because `cargo xtask ratchet` and `cargo xtask quality-baseline` only compare —
 they never measure.
 
-~~One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name~~ (historical: the `athletic_rust_pipeline` crate no longer exists; deleted 2026-09-23)
-~~(`athletic_rust_pipeline`, underscores) while `cargo xtask scan` keys them by directory~~
-~~(`athletic-rust-pipeline`, hyphens). Both appear in `tools/quality-baseline.json`.~~
+One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name
+(`census_service`, underscores) while `cargo xtask scan` keys them by directory (`census-service`,
+hyphens). Both appear in `tools/quality-baseline.json`.
 
 ## 6. Known unknowns and next measurement
 
@@ -445,21 +446,18 @@ they never measure.
 
 **Top measurement candidates**, in descending order of expected information per unit of work:
 
-~~1. Append batching and durability mode~~ (`crates/census-service/src/store/`) — **historical**: no `store` dir under census-service; store code is in `crates/census-store/src/`. ~~Sweep `--batch` and compare `single_append` versus `batched_append`; the production knob equivalent is the batch size adapters pass to `append_many` and the per-batch `SyncData` commit. A group-commit policy is a design change, so measure first.~~
-2. **Fjall tuning** (program Phase 7): cache size (256 MiB census / 32 MiB root), compaction and
+1. **Fjall tuning** (program Phase 7): cache size (256 MiB census), compaction and
    partition settings, and KV separation for large observation payloads — currently all defaults.
-3. **Observation codec** (program §5, owner decision 2): every observation is `serde_json` on write
+2. **Observation codec** (program §5, owner decision 2): every observation is `serde_json` on write
    and on every scan; `postcard` is the listed alternative. Requires migration plus a dual-read path,
    so it needs a measured budget before it is worth starting.
-4. **Repeated full scans**: `report::build_census` scans schools/athletes/coaches/meets,
+3. **Repeated full scans**: `report::build_census` scans schools/athletes/coaches/meets,
    `bests::build` scans athletes/meets/events/performances, and `workbook::build` does both plus the
    XLSX write. Quantify scan time and peak memory at scale before considering a shared read model.
-~~5. Workbook ingest passes~~ (`src/workbook_ingest.rs`) — **historical**: path belonged to deleted root crate. ~~Preflight decompresses and scans the container, metadata reads it again, calamine streams it a third time. Measure cost per megabyte and whether the preflight pass can validate during the parse instead of before it.~~
-~~6. XLSX visitor container opens~~ (`src/xlsx/parser.rs`) — **historical**: path belonged to deleted root crate. ~~Shared strings plus one archive open per sheet; measure whether a single open across sheets is worth the API change on wide workbooks.~~
-7. **Browser/HTTP scaling** (program Phase 7 lists N=1/8/64): tabs are validated 1..=8 with a
+4. **Browser/HTTP scaling** (program Phase 7 lists N=1/8/64): tabs are validated 1..=8 with a
    `tabs × 4` queue; the fetcher's per-host pacing and one-in-flight-per-host rule will dominate
    most curves, so measure latency and error rate as well as throughput.
-8. **Allocation budget per observation**: attach a counting allocator to the store harness and derive
+5. **Allocation budget per observation**: attach a counting allocator to the store harness and derive
    a per-observation allocation target, then add `try_reserve` at the capped growth points the program
    names (JSONL ingest, parser buffers).
 
