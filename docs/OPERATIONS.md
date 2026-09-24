@@ -105,6 +105,39 @@ enforced in code (`bootstrap.rs:NonLoopbackListen`) and must not be changed unti
 lands. Remote workers access the endpoint through a reverse proxy or tunnel — never by changing the
 bind address.
 
+## The browser lane
+
+Sources that only publish through a browser session are read by a lane the *endpoint* owns, not by
+the census: `census_crawl::net::bridge::BrowserLane` posts each page to the `BrowserSession` service
+and the endpoint runs the one persistent profile. A fetcher built without the lane refuses those
+sources by name rather than reading an empty page — measured 2026-09-24, the plan reported
+`athleticnet: source needs a browser session and no browser lane is configured: start a lane and
+re-run`.
+
+Install it by starting `census-serve` with `--browser-profile <dir>` (also `--browser-executable`,
+and `--browser-headless` where no display exists), then drive it through the ingress:
+
+```bash
+census-service browser-session start          # launch the profile, or report the manager already on it
+census-service browser-session status         # the engine's view of the profile
+census-service browser-session stop           # drain the lane and report the tasks taken down
+census-service browser-session fetch --url <URL> --semantic-url <citation>
+```
+
+`fetch` files its read under `--semantic-url` — the citation a receipt will name — and prints the
+transport's classified answer. One deployment serves one profile, keyed `profile-0` unless `--key`
+says otherwise.
+
+**Installing or removing the lane takes a new `--revision`.** The plan's fingerprint is computed over
+the jurisdiction, the season, the revision *and* the lane's presence
+(`compute_plan_fingerprint(…, lane)`), and `record_plan` fails the invocation when the stored
+fingerprint no longer matches, rather than continuing with a plan built for other inputs. A run that
+recorded its plan without a lane cannot be resumed with one; submit the next revision instead.
+
+The lane is for sources that require a browser. It is not a way to clear a `HumanRequired` latch:
+that state means a challenge page was served, and the fix is the access path, not a profile that
+answers it.
+
 ## Session-pool sizing
 The browser session pool uses `tabs × 4` as the queue capacity (where `tabs` is the `--max-concurrent`
 count, which defaults to 8 and refuses only 0). For a unit running at `--max-concurrent 8`, the
