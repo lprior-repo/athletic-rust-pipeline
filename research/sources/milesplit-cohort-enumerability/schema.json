@@ -1,0 +1,150 @@
+{
+  "lane": "milesplit-cohort-enumerability",
+  "scope": "MileSplit record shapes that decide whether class-of-2027 athletes can be enumerated from the network without Athletic.net: athlete profile, team index, roster, meet/result pages, the raw result file, and robots.txt",
+  "observed_on": "2026-09-22",
+  "conventions": {
+    "example": "A real value observed in the cited evidence. null means the key was documented but no example value was retained; see the field's note.",
+    "evidence_kind": {
+      "fresh_capture": "fetched by this lane; file in research/sources/milesplit-cohort-enumerability/samples/",
+      "prior_capture": "retained by the earlier MileSplit wave and cited in SOURCE_REPORT.md as `prior samples/...`"
+    }
+  },
+  "sources": {
+    "athlete_profile": {
+      "url_shape": "https://<state>.milesplit.com/athletes/<athlete_id>-<slug>",
+      "hosts": "one subdomain per state, plus `www`",
+      "grad_year": {
+        "location": "rendered HTML",
+        "selector": "span.grad-year",
+        "example": "Class of 2027",
+        "present": true,
+        "in_json_ld": false,
+        "evidence_kind": "fresh_capture",
+        "evidence": [
+          "samples/athlete-va-16833517.html (Class of 2031)",
+          "samples/athlete-wi-14399169.html (Class of 2027)",
+          "samples/athlete-in-17974879.html (Class of 2028)",
+          "prior samples/athlete-oh-15005189.html (Class of 2028)",
+          "prior samples/athlete-www-13966799.html (Class of 2029)"
+        ]
+      },
+      "json_ld_person": {
+        "type": "Person",
+        "fields": ["@type", "name", "image", "affiliation", "gender", "url"],
+        "grad_year": null,
+        "affiliation_example": "",
+        "gender_example": "Female",
+        "note": "schema.org Person carries no grad-year or class field on any sampled profile"
+      },
+      "identifiers": {
+        "athlete_id": "numeric, in the URL path",
+        "join_key": "athlete_id is the identity key; the slug is decoration"
+      }
+    },
+    "team_index": {
+      "url_shape": "https://<state>.milesplit.com/teams",
+      "pagination": "none — one page per state",
+      "client_side_filter": "#txtFilter",
+      "team_link_shape": "https://<state>.milesplit.com/teams/<team_id>-<slug>",
+      "count_method": "grep -oP 'href=\"https://<state>.milesplit.com/teams/\\d+-[a-z0-9-]+' <capture> | wc -l",
+      "counts": {
+        "OH": 977,
+        "IL": 849,
+        "MI": 895,
+        "MO": 700,
+        "VA": 609,
+        "WI": 597,
+        "MN": 592,
+        "IN": 533,
+        "KS": 413,
+        "IA": 411,
+        "NE": 317,
+        "SD": 199,
+        "ND": 153
+      },
+      "evidence": [
+        "samples/teams-va.html",
+        "samples/teams-wi.html",
+        "samples/teams-in.html",
+        "samples/teams-mi.html",
+        "samples/teams-mn.html",
+        "samples/teams-ia.html",
+        "samples/teams-mo.html",
+        "samples/teams-ks.html",
+        "samples/teams-ne.html",
+        "samples/teams-sd.html",
+        "samples/teams-nd.html",
+        "samples/teams-il.html",
+        "prior samples/teams-oh.html"
+      ]
+    },
+    "roster": {
+      "url_shape": "https://<state>.milesplit.com/teams/<team_id>/roster",
+      "grad_year_cell": "column-grad-year",
+      "grad_year_presence": "every athlete row of a populated roster",
+      "observed_sizes": {
+        "sample": "15 populated rosters",
+        "median": 89,
+        "min": 40,
+        "max": 445,
+        "mean_populated": 167,
+        "conservative_planning": 150
+      },
+      "evidence": [
+        "samples/roster-va-abingdon.html (260 athletes)",
+        "samples/roster-va-albemarle.html (253 athletes)",
+        "samples/roster-wi-abbotsford.html (58 athletes)",
+        "samples/roster-in-adams-central.html (55 athletes)",
+        "prior samples/roster-oh-mason.html (319 athletes)"
+      ]
+    },
+    "meet": {
+      "info_url_shape": "https://<state>.milesplit.com/meets/<meet_id>",
+      "results_url_shape": "https://<state>.milesplit.com/meets/<meet_id>/results",
+      "results_page": "JavaScript shell — result rows are not in the served HTML",
+      "evidence": ["samples/meet-oh-770621.html", "samples/meet-oh-770621-results.html"]
+    },
+    "raw_results": {
+      "url_shape": "https://<state>.milesplit.com/meets/<meet_id>/results/<result_set_id>/raw",
+      "format": "HTML document containing a <pre> block, not fixed-width text",
+      "correction": "the earlier MileSplit report described this payload as static fixed-width text; the retained capture is HTML",
+      "size_example_bytes": 47564,
+      "grade_column": "Yr — present only when the timer's file carried it (prior report: 5 of 6 files)",
+      "profile_url_field": "available only through the robots-disallowed /api/ endpoint, so /raw carries no athlete-ID join",
+      "evidence": ["samples/raw-oh-770621-rs1321880.txt", "prior samples/js-loadresultsnew.js"]
+    },
+    "robots": {
+      "bytes": 173,
+      "identical_across_sampled_hosts": true,
+      "user_agents": {
+        "Mediapartners-Google": "Disallow:",
+        "*": ["/rankings", "/virtual-meets", "/api/", "/contact"],
+        "AmazonAdBot": "Allow: /"
+      },
+      "crawl_delay": null,
+      "sitemap_directive": null,
+      "allowed_paths_used_here": [
+        "/teams",
+        "/teams/<id>/roster",
+        "/athletes/<id>",
+        "/meets/<id>",
+        "/meets/<id>/results",
+        "/results",
+        "/search/v2/athletes",
+        "/sitemap.xml"
+      ],
+      "evidence": [
+        "samples/robots-va-milesplit.txt",
+        "samples/robots-wi-milesplit.txt",
+        "samples/robots-oh-milesplit.txt",
+        "samples/robots-il-milesplit.txt"
+      ]
+    }
+  },
+  "cross_source_identifiers": {
+    "athlete": "MileSplit numeric athlete id; joins to Athletic.net only via the disallowed /api/ or by name+school+state matching",
+    "team": "MileSplit numeric team id from the state /teams index",
+    "meet": "MileSplit numeric meet id from the state calendar",
+    "state_host": "the subdomain (oh, wi, va, …) names the jurisdiction"
+  }
+}

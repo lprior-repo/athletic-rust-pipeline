@@ -1,0 +1,73 @@
+{
+  "lane": "milesplit-cohort-enumerability",
+  "question": "Can MileSplit supply Class-of-2027 athlete identities without Athletic.net?",
+  "verdict": "YES — the roster path (/teams then /teams/<id>/roster) is robots-allowed on every host, HTML-only, carries a grad-year cell on every athlete row of a populated roster, needs no login or paywall, and enumerates a state's whole team universe with one request for the index",
+  "recommendation": "PRIMARY for class-of-2027 identity, grade and school attribution; RESULT_SOURCE (/raw result files) and DISCOVERY_SOURCE (/teams, /results, /calendar, /search/v2/athletes) as declared secondary roles",
+  "observed_on": "2026-09-22",
+  "evidence_kinds": {
+    "measured_fresh": "count computed by this lane from a capture in samples/ (command recorded in SOURCE_REPORT.md)",
+    "prior_capture": "count computed from a capture retained by the earlier MileSplit wave and cited as `prior samples/...`",
+    "report_citation": "value as stated in SOURCE_REPORT.md"
+  },
+  "adapter_status": {
+    "milesplit": "implemented — roster walk over the state hosts (crates/census-crawl, dispatched by the revision-8 run)",
+    "milesplit_results": "implemented — meet result acquisition from the meets the `meets` subcommand discovered"
+  },
+  "jurisdictions": {
+    "OH": {"teams": 977, "roster_quality": "sampled (Mason, 319 athletes)", "evidence_kind": "prior_capture"},
+    "IL": {"teams": 849, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "MI": {"teams": 895, "roster_quality": "risk — 2 of 3 sampled teams returned 0 athletes", "evidence_kind": "measured_fresh"},
+    "MO": {"teams": 700, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "VA": {"teams": 609, "roster_quality": "sampled (Abingdon 260, Albemarle 253)", "evidence_kind": "measured_fresh"},
+    "WI": {"teams": 597, "roster_quality": "sampled (Abbotsford 58)", "evidence_kind": "measured_fresh"},
+    "MN": {"teams": 592, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "IN": {"teams": 533, "roster_quality": "sampled (Adams Central 55)", "evidence_kind": "measured_fresh"},
+    "KS": {"teams": 413, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "IA": {"teams": 411, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "NE": {"teams": 317, "roster_quality": "not sampled", "evidence_kind": "measured_fresh"},
+    "SD": {"teams": 199, "roster_quality": "not measured", "evidence_kind": "measured_fresh"},
+    "ND": {"teams": 153, "roster_quality": "not measured", "evidence_kind": "measured_fresh"}
+  },
+  "team_universe_total": 7245,
+  "team_universe_cross_check": "matches the earlier independent sweep (hs_team_records_on_milesplit in ~/Downloads/midwest-tfxc-source-research/data/milesplit-coverage-matrix.csv)",
+  "cost": {
+    "roster_path": {
+      "requests_per_1000_athletes": 20,
+      "per_state_average": "≈561 (1 index + 560 rosters)",
+      "full_13_state_midwest": 7258,
+      "wall_clock_at_1_rps": "≈2 hours"
+    },
+    "meet_result_path": "blocked as a grade source — /raw is HTML-wrapped, the Yr column is present only when the timer's file carried it, and profileUrl (the athlete-ID join) exists only on the robots-disallowed /api/ endpoint",
+    "athlete_profile_path": "1 request per athlete — validation only, not enumeration"
+  },
+  "robots": {
+    "bytes": 173,
+    "identical_across_hosts": true,
+    "disallowed": ["/rankings", "/virtual-meets", "/api/", "/contact"],
+    "allowed_used_here": ["/teams", "/teams/<id>/roster", "/athletes/<id>", "/meets/<id>", "/meets/<id>/results", "/results", "/search/v2/athletes", "/sitemap.xml"],
+    "crawl_delay": null
+  },
+  "rates_observed": {
+    "requests": "30+ across 7 hosts at <=1 request/second, sequential, browser user agent",
+    "http_429": 0,
+    "http_403": 0,
+    "retry_after": 0,
+    "captcha": 0,
+    "assumption": "<=1 request/second/host, sequential, browser UA — unproven at sweep scale"
+  },
+  "risks": [
+    "Michigan roster emptiness: 895 teams indexed but 2 of 3 sampled rosters returned 0 athletes — the single biggest risk to a roster sweep",
+    "Per-jurisdiction Class-of-2027 counts do not exist yet; only per-team samples were measured",
+    "The earlier report's fixed-width description of /raw is inaccurate: the payload is HTML containing a <pre> block",
+    "Rate-limit behaviour at 7,258 requests is unproven — the <=1 req/s assumption needs a pilot sweep before committing to the production sweep"
+  ],
+  "unverified": [
+    {"item": "MI roster quality", "reason": "not re-measured in this wave", "impact": "could reduce MI yield by roughly 100%"},
+    {"item": "IL roster quality", "reason": "not sampled", "impact": "unknown"},
+    {"item": "ND/SD roster quality", "reason": "only team counts measured", "impact": "small states, low expected impact"},
+    {"item": "/raw file grade presence rate", "reason": "only one file tested here", "impact": "prior report says 5 of 6 carry Yr"},
+    {"item": "rate limit at 7K+ requests", "reason": "only ~30 requests tested", "impact": "the <=1 req/s assumption is unproven"},
+    {"item": "search/v2/athletes across states", "reason": "only oh and www tested", "impact": "filters[subdomain] not proven"},
+    {"item": "JSON-LD grad-year on all profiles", "reason": "only five profiles checked", "impact": "could vary by state template"}
+  ]
+}
