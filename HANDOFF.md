@@ -109,29 +109,45 @@ The user pushed the accumulated changes. Subsequent documentation updates must c
 
 Preserve original workbooks, profiles, active stores, journals, retained binaries, and evidence. Never replace a changed binary under its old journals. Never open a live Fjall store from a second process. For offline verification: owner-online export first, drain, stop the sole writer, then open the stopped store.
 
-## Current source design
+## Current source design (historical: root package deleted 2026-09-23)
 
-For the supplied two-sheet source shape, both source worksheets remain in scope; sport and grade do not select or discard rows. The completed consolidated rankings delivery contains 142,705 unique athletes on `AllAthletes`. It is separate from original-workbook identity matching.
+The following describes the design that lived in the deleted root package. Its concepts are now distributed across the nine census crates:
 
-The expanded roster target is **source-verified Grade 11/junior boys and girls**, within the existing USA/2026 scope, covering **indoor track, outdoor track, and cross-country**. It requires athlete URLs, competing-school history, all available high-school performances, and evidence-backed comparable PRs. The exact contract and current implementation gaps are in [SCOPE.md](SCOPE.md#expanded-roster-target--requested-not-yet-complete). Do not describe the existing boys rankings collector as this completed expanded product.
+- `crates/census-domain/src/` — the pure canonical model (`SchoolId`, `AthleteId`, `MeetId`, `GradYear`, `ObservedGrade`, `SourceNamespace`) and the `DomainError`/`StoreError` type taxonomy.
+- `crates/census-crawl/src/` — all source adapters (athleticnet, hytek, milesplit, ohsaa, mshsl, ihsa, tfrrs, athleticlive, plain_names, ks, wiaa, wiaa_results) that crawl, parse, and absorb into canonical entities.
+- `crates/census-store/src/` — the Fjall-backed observation store with twelve tables, merge, snapshot, and index write paths.
+- `crates/census-service/src/` — Restate services (`restate_services/`), the CLI, workbook/report/bests/projection, and the `BrowserSession` for headed Chromium transport.
+- `crates/census-report/src/`, `crates/census-review/src/` — report and review surfaces.
+- `xtask/src/` — developer tooling: quality gates (`scan`, `contract`, `seams`, `integrity`), census reporting (`CensusStatus`, `Coverage`, `Export`), and the `g1` Grade-1 audit pipeline.
 
-The deterministic core covers stable source keys, request construction, HTML/JSON/rankings parsing, candidate evidence, identity policy, event/mark calculations, provenance checks, and export projection. The effect shell covers workbook I/O, ranking-index persistence, Restate calls/timers/admission, Chromium/CDP capture, browser challenge state, retries and uncertain-effect evidence, cancellation/drain, durable checkpoints, collection controls, seal, and publication.
-
-Rankings are optional discovery. The requested manifest contains 46 event families. Cataloging expands matching navigation entries to observed variants (current target: 95), excludes walk events, and records absent families. Individual Grade 11 rows and relay members joined through the relay roster can enter the discovery projection. The Grade 11 projection does not decide workbook eligibility.
-
-The rankings parser is bounded separately from source transport: source bodies are capped at 32 MiB while the parser accounts at most 8 MiB of ranking capture state. Pages retain source row numbers, result IDs, candidate kind, and checkpoint digest. Stable public IDs and provenance bind collection, event, page, request, raw receipt, parsed observation, and index. A collection seals only after every planned event has a terminal page.
-
-`SourceCache` retains successful outcomes. Failed ranking outcomes are deliberately not cached; a resumed gateway call receives a new audit identity and can make a fresh source attempt. Restate owns durable attempt/retry scheduling and checkpoints; external HTTP remains an uncertain-effect boundary.
+The deleted root package's `SourceCache`, rankings parser, rankings discovery (46-family manifest, `RankingsScope`), `ArtifactStore`, and Restate runtime with `RunCoordinator`/`PipelineControl` are no longer present as a monolith. Rankings collection for the expanded roster is now exercised through the census `gather` command (athleticnet adapter) or the `xtask g1` pipeline. Browser transport is owned by `census-service::cli::browser_session`.
 
 ## Current CLI and operations
 
-The actual CLI includes `worker`, `deploy`, `start`, `status`, `browser-start`, `browser-status`, `export`, `verify`, `rankings-status`, `rankings-pause`, and `rankings-resume`. The removed alpha/exhaustive/restate-native commands and deleted `tools/restate-native.sh` are not valid continuation instructions.
+### `census-service` (production binary)
 
-`start --output NEW_PATH` submits the durable `run-and-export` workflow, so it queues collection and export publication automatically. Its response is `state: submitted`; it is not completion. Without `--output`, submit the run, inspect `status`, then invoke `export` with a new destination. Ranking controls pause/resume the durable collection and its browser recovery path; a pause is genuine, and resumption is explicit rather than an implicit polling retry.
+```text
+Fetch, Sites, Teams, Meets, Collect, ImportCoaches, Provider,
+Consolidate, Index, Report, Bests, Workbook, Seal, Verify, Run,
+FjallStats, ImportLegacy, StoreBackup, StoreRestore, StoreIntegrity,
+Serve, National, Jurisdiction, NationalReport, Review, MergeCoaches,
+VerifyCoaches, QaReports, ExportData, SchoolNames, CensusDoc,
+OpenWork, BrowserSession(start|status|stop|fetch)
+```
+
+### `xtask` (developer binary)
+
+```text
+Gate, Scan, Contract, Seams, Integrity, QualityBaseline, Ratchet,
+DomainPurity, SourceTest, SourceTests, SourceFixture, Replay,
+CensusStatus, Coverage, Bench, Export, NewSource, DumpSheet
+```
+
+`census-service Run` is the main one-command cycle: gather → consolidate → report (both scopes) → bests → workbook. It takes `--input REGISTRY` (optional; without it the cycle publishes what the store already holds), plus `--states`, `--limit`, `--grad-year`, `--all-sources`, `--refresh`, `--observed-on`, `--meets`, `--event-metadata`, `--meet-limit`, `--out`, and `--ingress`. `census-service Verify` requires the existing stopped Fjall store and must not open a live writer. `census-service BrowserSession start` launches the headed browser profile; `BrowserSession status` reads it; `stop` drains it; `fetch` posts one request through it. `xtask Export` builds the census workbook from the running deployment or offline.
 
 Real Cloudflare handling is manual human interaction only in the existing headed profile. There is no evasion, cookie extraction/replay, webdriver patch, proxy/CAPTCHA service, or direct source-HTTP fallback. A challenge closes new admission profile-wide while issued requests drain. Resumption requires successful non-challenged document evidence.
 
-Readiness recovery is bounded by operator action, not by elapsed time: an escalated session (`human_required`) ends the wait with that durable status, and only an explicit `browser-start` re-runs the readiness workflow with operator intent, which re-arms one recovery navigation before the session escalates again. Fetch paths (`capture_ready`, the legacy `await_ready` waiter used by the source gateway) keep the strict policy and never clear a stall. A CDP endpoint that is not reachable at browser startup falls back to launching a managed browser on the configured profile; a connection that dies after startup still requires a worker restart, because the manager is cached per worker process.
+Readiness recovery is bounded by operator action, not by elapsed time: an escalated session (`human_required`) ends the wait with that durable status, and only an explicit `census-service BrowserSession start` re-runs the readiness workflow with operator intent, which re-arms one recovery navigation before the session escalates again. The `BrowserSession` Restate object owns the browser lifecycle with four handlers: `start` launches the persistent profile (idempotent — if the manager is already alive it returns the current reading without relaunching), `status` reads it, `stop` drains it, and `fetch` posts one request through it. The profile is launched via `BrowserManager::connect` when `cdp_endpoint` is set on the bootstrap options, or `BrowserManager::launch` (managed browser) when it is `None`; a failed connect or launch becomes `TerminalError("the browser lane could not start: …")` — there is no fallback between the two paths, and the current CLI leaves `cdp_endpoint` unset, so the connect path is currently unreachable.
 
 ## Evidence and remaining work
 

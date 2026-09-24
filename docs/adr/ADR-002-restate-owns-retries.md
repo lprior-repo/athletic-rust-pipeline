@@ -2,8 +2,8 @@
 
 ## Status
 
-Implemented, in both runtimes. The root crate's transport owns the *classification* of a failure and
-no budget (`src/runtime/source/retry.rs`: "no attempt budget, no delay ladder, no sleep inside the
+Implemented, in both runtimes. The root crate's transport owned the *classification* of a failure and
+no budget (`src/runtime/source/retry.rs` (historical: root package deleted 2026-09-23): "no attempt budget, no delay ladder, no sleep inside the
 invocation"), and the census fetcher attempts once for the same reason
 (`crates/census-crawl/src/net/execute/attempt.rs`: "the transport attempts exactly once, as the ADR's
 Decision states"). Restate owns every later attempt: each durable handler declares `max_attempts = 3`
@@ -38,20 +38,21 @@ is the only scheduler here") already state the rule.
 * **A retry reuses the logical identity** of the operation, so a replay after a crash reads the
   journaled value instead of manufacturing new work.
 * **Budgets are explicit and small**, and exhaustion is a recorded outcome, not an exception:
-  `FailureCode::RetryExhausted` (`src/runtime/source/result/classification.rs:69`) on an
-  `OperationFailure` carrying its attempt receipts (`src/runtime/protocol.rs`).
+  `FailureCode::RetryExhausted` (historical: root package deleted 2026-09-23; `src/runtime/source/result/classification.rs:69`) on an
+  `OperationFailure` carrying its attempt receipts (historical: `src/runtime/protocol.rs`).
+
 * **A source failure is never `NO_MATCH`.** `Decision::CompleteSearchNoMatch` is reachable only when
-  discovery is `SearchCompleteness::Complete` (`src/domain/decision/pipeline.rs:100-104`; restated in
-  `src/domain/decision/review.rs:19-20`, pinned by `src/domain/decision/tests.rs:206`).
+  discovery is `SearchCompleteness::Complete` (historical: `src/domain/decision/pipeline.rs:100-104`; restated in
+  historical: `src/domain/decision/review.rs:19-20`, pinned by historical: `src/domain/decision/tests.rs:206`).
 
 ## Consequences
 
 * Physical requests are auditable: `RetryEvidence` records who owned the retries, the budget and the
-  observed attempts (`src/runtime/protocol.rs:92-115`), and an independent verifier re-reads that from
-  the store instead of trusting the caller (`src/result_verify/source_receipts.rs:154-165`).
+  observed attempts (historical: `src/runtime/protocol.rs:92-115`), and an independent verifier re-reads that from
+  the store instead of trusting the caller (historical: `src/result_verify/source_receipts.rs:154-165`).
 * Budgets are typed and fail closed: `RetryCount::new(4)` is refused
-  (`src/domain/facts/facts_contract_tests.rs:41`) and the counter stops at three
-  (`src/domain/facts/scalars.rs:98`; `src/domain/error.rs:16`).
+  (historical: `src/domain/facts/facts_contract_tests.rs:41`) and the counter stops at three
+  (historical: `src/domain/facts/scalars.rs:98`; historical: `src/domain/error.rs:16`).
 * Adapter authors must not add convenience retries "just for this endpoint" — the traffic budget
   depends on that discipline.
 
@@ -65,14 +66,15 @@ is the only scheduler here") already state the rule.
 * **Unbounded exponential retry.** Rejected: the invocation retry caps automatic attempts at three and
   a blocked service pauses for an operator instead of replaying (`max_attempts = 3` /
   `on_max_attempts = "pause"` in `crates/census-service/src/restate_services/`), and the transport
-  owns no budget of its own to extend (`src/runtime/source/retry.rs`).
+  owns no budget of its own to extend (`src/runtime/source/retry.rs`, historical: root package deleted 2026-09-23).
 
 ## Evidence — what exists, what does not
 
-Implemented, root runtime: `src/runtime/source.rs:3-5` ("one journaled attempt in `attempt`");
-`src/runtime/source/attempt.rs` (`run_step` = one browser fetch inside `ctx.run`);
-`src/runtime/source/retry.rs` (the transport keeps the classification, not a budget: "no attempt
-budget, no delay ladder, no sleep inside the invocation"); `src/runtime/http_audit.rs:71,84` (recorded
+Implemented, root runtime (historical: root package deleted 2026-09-23): `src/runtime/source.rs:3-5` ("one journaled attempt in `attempt`");
+
+`src/runtime/source/attempt.rs` (historical: root package deleted 2026-09-23; `run_step` = one browser fetch inside `ctx.run`);
+historical: `src/runtime/source/retry.rs` (the transport keeps the classification, not a budget: "no attempt
+budget, no delay ladder, no sleep inside the invocation"); historical: `src/runtime/http_audit.rs:71,84` (recorded
 budget `RetryCount::new(3)`).
 
 Implemented, census crates: `crates/census-crawl/src/net/execute/attempt.rs` (`fetch_once` = one
@@ -87,7 +89,7 @@ Resolved since the first draft of this section: the `MAX_RETRIES = 3` transport 
 `retry_loop` that let the census fetcher own retries lived in the pre-migration
 `crates/census-service/src/net/**`; that module is `crates/census-crawl/src/net/**` now and contains
 neither. `ARCHITECTURE.md` §9 names the per-layer vocabularies instead of asserting an
-`OperationTerminal` type. What remains open is bounded and different: the root runtime walks up to 64
+`OperationTerminal` type. What remains open is bounded and different: the root runtime walked up to 64
 admission steps per source operation (`src/runtime/source/admission.rs:121`,
-`src/runtime/source/dispatch.rs:108`), a loop the rankings path refuses — 64 × the invocation budget is
+`src/runtime/source/dispatch.rs:108`) (historical: root package deleted 2026-09-23), a loop the rankings path refused — 64 × the invocation budget is
 reachable and unmeasured there.

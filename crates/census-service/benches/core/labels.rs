@@ -236,7 +236,8 @@ fn verify(index: &SchoolIndex, cases: &[LabelCase]) -> Result<()> {
             .expected
             .as_ref()
             .map_or(UNRESOLVED, |(_, kind)| kind.as_str());
-        *kinds.entry(kind).or_default() += 1;
+        let seen = kinds.entry(kind).or_default();
+        *seen = seen.saturating_add(1);
     }
     for kind in KINDS.into_iter().chain([UNRESOLVED]) {
         let seen = kinds.get(kind).copied().unwrap_or(0);

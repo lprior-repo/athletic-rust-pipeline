@@ -1,6 +1,6 @@
 # Current scope and architecture
 
-This document is the current product and source scope. It replaces historic alpha/exhaustive/run-restate descriptions; those commands and tools are not part of the current CLI.
+This document is the current product and source scope. It replaces historic alpha/exhaustive/run-restate descriptions; those commands and tools are not part of the current CLI. (historical: the root `athletic-rust-pipeline` package that used to sit at the workspace root was deleted 2026-09-23 once the census path owned its work — the nine member crates listed in the workspace `Cargo.toml` are now the entire source tree.)
 
 ## Expanded roster target — requested, not yet complete
 
@@ -29,10 +29,11 @@ Read-only probes through the lane's own headed transport (scripts and digests re
 - **The rankings list API carries no cross-country season.** `GetNavInfo`'s `seasons` map holds only indoor keys (`12004`–`12027`, where `12026` maps to indoor list `173005`) and outdoor keys (`2004`–`2027`, where `2026` maps to outdoor list `168416`); its `events` list is track-only and the payload contains no cross-country season, event, or division. `/CrossCountry/rankings` and `/CrossCountry/rankings/list/…` return `200` but render the video landing surface and issue no rankings request. Cross-country *rankings* are meet-oriented instead — the site's own client picks `/api/v1/{tfRankings|xcRankings}/GetMeets` by sport — so a `--rankings-season` value is still the wrong shape for XC rankings.
 - **The athlete bio surface is anonymously reachable and carries the whole expanded roster.** The site builds profile URLs with its `athleteBioUrl` pipe as `/athlete/{athleteId}/track-and-field` and `/athlete/{athleteId}/cross-country`, and `GET /api/v1/AthleteBio/GetAthleteBioData?athleteId={id}&sport={tf|xc}&level={0|4}` answers signed out with one athlete's identity (`IDAthlete`, `FirstName`, `LastName`, `Handle`, `SchoolID`, `Gender`), `allSeasons`, `allTeams`, `grades` keyed by school and season, `meets`, every track and field result in `resultsTF`, every cross-country result in `resultsXC` (`Result`, `SortValue`, `Place`, `PersonalBest`, `SeasonBest`, `SchoolID`, `Distance`, `MeetID`, `Division`, `SeasonID`), `distancesXC`, `eventsTF`, and `relayTeamMembers`. That is the field set [the expanded roster target](#expanded-roster-target--requested-not-yet-complete) lists, including cross-country.
 - **`level=4` scopes the response to high school.** Across five athletes sampled from the live outdoor list, `resultsTF` fell from 88 / 87 / 428 / 80 / 162 at `level=0` to 73 / 74 / 148 / 71 / 68 at `level=4`. The in-tree request builder asks for `level=0` and filters downstream.
-- **The pipeline already implements this surface.** `SourceResource::Bio` and `SourceResource::ProfileHtml` build the same request in `src/runtime/source/request.rs`, and `initial_resources` in `src/runtime/profile_worker.rs` fetches both sports plus the `/all` profile page for one athlete. What has not happened is a live run whose identities are accepted — profiles are fetched per accepted identity, so no profile job has executed and `profile_artifacts` and `performance_evidence` have stayed empty.
+- **The pipeline already implements this surface (historical: root package deleted 2026-09-23).** `SourceResource::Bio` and `SourceResource::ProfileHtml` used to build the request in `src/runtime/source/request.rs`, and `initial_resources` in `src/runtime/profile_worker.rs` fetched both sports plus the `/all` profile page for one athlete. That surface no longer exists; the Athletic.net bio API (`GET /api/v1/AthleteBio/GetAthleteBioData?athleteId={id}&sport={tf|xc}&level={0|4}`) is now consumed by `crates/census-crawl/src/athleticnet/` (`Bio` struct in `parse.rs`, `collect/walk.rs` fetches, `absorb/rows.rs` turns responses into entities). What has not happened is a live run whose identities are accepted — so the census crawl's `gather` command has no accepted-identity run to exercise the bio path.
 - **`GetAthletes?listId=` is not a roster path.** It answers `200` with an empty array for a live division list id, and the rendered rankings page carries no athlete anchors.
 
-**Consequence:** the expanded roster does not need a new source surface. It needs a run whose row identities are accepted, so the profile stage executes against real athletes and the export carries profile and performance evidence instead of empty arrays.
+**Consequence:** the expanded roster does not need a new source surface. The bio API is implemented in `crates/census-crawl/src/athleticnet/`; what is needed is an accepted-identity run so the census-crawl `gather` command exercises the bio path and the export carries profile and performance evidence.
+
 
 ## End-to-end shape
 
@@ -82,13 +83,32 @@ Source, request, response, attempt, candidate, row, page, and export identities 
 
 ## Current CLI contract
 
+The workspace has two CLIs:
+
+### `census-service` (production)
+
 ```text
-worker, deploy, start, status,
-browser-start, browser-status, export, verify,
-rankings-status, rankings-pause, rankings-resume
+Fetch, Sites, Teams, Meets, Collect, ImportCoaches, Provider,
+Consolidate, Index, Report, Bests, Workbook, Seal, Verify, Run,
+FjallStats, ImportLegacy, StoreBackup, StoreRestore, StoreIntegrity,
+Serve, National, Jurisdiction, NationalReport, Review, MergeCoaches,
+VerifyCoaches, QaReports, ExportData, SchoolNames, CensusDoc,
+OpenWork, BrowserSession(start|status|stop|fetch)
 ```
 
-`start` takes exactly one of `--per-sheet N` or `--all`, plus the original workbook digest. `--rankings` enables discovery collection; `--rankings-gender {m,f}` and `--rankings-season {outdoor,indoor}` select the division, and `--max-pages-per-event` bounds page traversal. `start --output PATH` queues `run-and-export` automatically; its response is submitted state, not completion. Ranking pause is durable; resume is explicit and performs the browser recovery path. `verify` requires the existing stopped ArtifactStore and must not open a live writer store.
+### `xtask` (developer)
+
+```text
+Gate, Scan, Contract, Seams, Integrity, QualityBaseline, Ratchet,
+DomainPurity, SourceTest, SourceTests, SourceFixture, Replay,
+CensusStatus, Coverage, Bench, Export, NewSource, DumpSheet
+```
+
+`census-service Run` takes one of `--per-sheet N` or `--all`, plus the input source.
+`census-service Verify` requires the existing stopped Fjall store and must not open a live writer.
+`census-service BrowserSession start` launches the headed browser profile;
+`BrowserSession status` reads it; `stop` drains it; `fetch` posts one request through it.
+`xtask Export` builds the census workbook from the running deployment or offline.
 
 ## Qualification ledger
 
@@ -97,9 +117,6 @@ rankings-status, rankings-pause, rankings-resume
  A separate `scale-v15` lane (own Restate identity and store, fixture transport, worker binary sha256 `0f044e59…` built from the working tree at `9d101d9`) exercised the **real 120,716-row two-sheet workbook** rather than the synthetic fixture copy: a 10-row smoke run published a verifier-matched XLSX (111,939 + 8,777 rows, 1,569,308 source fields matched, 26/26 source headers) with an 83.7 MB JSONL sidecar, and an owner-online export during an unfinished 5,000-row run retained all 120,716 rows with 462 completed and 120,254 explicitly pending while matching source SHA-256 before and after. Measured non-rankings throughput: ≈0.31 rows/s at `row_concurrency = 8` with ≈50 durable invocations and ≈10 source operations per row (zero retries, zero model calls), unchanged at ≈0.27 rows/s when a second identical lane ran `row_concurrency = 32`, while two workers together sustained ≈0.9 rows/s with every process near-idle and no new fixture requests across a 30 s / 24-row window — so the ≈108 h full-workbook bound is per-worker waiting inside the row's source-operation chain, not coordinator concurrency or CPU, and locating that hop is the work that precedes raising admission. The hop is now isolated and its cause corrected: sampling `/proc/<pid>/io` during collection shows ≈11 MB/s of device writes across the Restate node and worker (≈12–14 MB per completed row) with both processes near-idle, but the *logical* durable cost is small — `sys_journal.raw_length` totals 51.5 KB per decided row (112.5 B/entry), `restate-data` grows 110 KB/row, and the store 36 KB/row, while the collection path journals ≈800 KB per ranking page. The device volume is therefore LSM compaction and fsync churn plus a debug-level worker log rather than payload size, so the levers toward workbook-scale delivery are fewer durable steps per row (~46 invocations) and storage/log configuration, not smaller journaled payloads.
 
 **Pending:** a live run whose row identities are accepted, which is what enqueues the profile stage — the profile surface itself is implemented and anonymously reachable, so the empty `profile_artifacts` and `performance_evidence` arrays record unaccepted identities rather than a missing source ([discovery findings](#source-surfaces-for-the-expanded-roster--discovery-findings)); cross-country *rankings* collection, which the rankings API cannot serve (seasons map is indoor/outdoor only and XC rankings are meet-oriented) even though cross-country *results* already arrive through the bio call; an entitled session, which the two live outdoor runs lacked and which blocks complete per-event evidence; a live run on the CDP-patched binary rather than the re-arm mitigation (the frame-drop cause is repaired in-tree: `vendor/chromiumoxide_cdp` makes `ClientSecurityState.privateNetworkRequestPolicy` optional and `tests/cdp_frame_compat.rs` pins it; the re-arm supervision stays until a live collection completes without it) (the 2026-09-20 headed capture retained one real indoor navigation and boys/girls division pages with `200` responses, confirming `seasons["12026"] = 173005`, see [HANDOFF.md](HANDOFF.md); the 2026-09-19 headless attempt was Cloudflare-blocked with raw block-page bodies at `lane-v14/live-capture/`); workbook-scale identity-matched delivery (the real 120,716-row workbook is bound to ≈0.31 rows/s per lane, ≈108 h for `--all`; the `scale-v15` 5,000-row run's stopped-writer verification and cached replay are executed — `out-v17/scale-final.xlsx` verifies exit 0 with `pages` unchanged and all three artifact digests unchanged, and the three earlier `out/` publishes fail the current header-width check as historical artifacts from an earlier exporter); the broader boys/girls indoor/outdoor/XC roster, full available histories, school history, and PR publication. No live-readiness or expanded-roster claim is supported beyond the four executed 2026 division chains (indoor and outdoor, boys and girls).
-
-Removed alpha/exhaustive/run-restate commands, deleted `tools/restate-native.sh`, old benchmark targets, and removed campaign documents must not reappear in operational instructions. Retained historical evidence remains useful only when labelled with its frozen binary, store, and source contract; it cannot certify this current tree.
-
 ## Module graph note
 
-The production graph is the graph compiled from `src/main.rs`/`src/lib.rs` and their declared submodules. `#[path]` places implementations such as ranking parser children in feature directories without creating alternate roots; `pub(crate)` limits internal helpers; inline modules hold local support/tests. No claim should be based on naive filesystem reachability or historic dead-file counts; inspect declarations and actual callers.
+**The workspace's production graph spans nine member crates.** The deleted root package had its own `src/main.rs`/`src/lib.rs` and `#[path]`-based submodule layout (historical: root package deleted 2026-09-23). No claim should be based on naive filesystem reachability or historic dead-file counts; inspect `Cargo.toml` members and actual declarations.

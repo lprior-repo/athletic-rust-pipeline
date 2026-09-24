@@ -24,6 +24,12 @@ genuinely ambiguous. Excel is a projection of that truth, never the truth itself
 **The identity rule.** No canonical identity decision may destroy source identity or provenance
 required to reverse that decision later.
 
+**The root package is gone.** The acquisition-side root crate, `athletic-rust-pipeline`, was deleted
+on 2026-09-23 once the census crates owned its work: this workspace now holds only the nine members of
+§4 plus the package-less `fixtures/` directory, and no root `src/`, `tests/` or `benches/` exists. The
+root manifest's header records the same fact, and §4's `acq-*` note says what became of that pipeline
+— documents that cite this section for the deletion mean this paragraph.
+
 ## 2. Scope
 
 - **Geography (§2)**: all 50 states plus the District of Columbia are valid
@@ -82,6 +88,7 @@ crates/
     census-reconcile/  normalisation, deterministic scoring, conflict detection
     census-review/     local Qwen identity-review lane
     census-report/     coverage, bests, PR projection, workbook export
+    athleticnet-browser/ persistent Chromium transport: tab pool, CDP capture, challenge detection, 429 cooldown
     census-service/    CLI + Restate workflows + bootstrap/supervision
 xtask/                 the agent-facing verbs
 ```
@@ -93,10 +100,11 @@ Paths in older documents that read `crates/census-service/src/store/`, `.../repo
 
 ### The `acq-*` family
 
-§17 also names `acq-*` crates for the **existing acquisition pipeline**. Those crates do not exist
-yet: that pipeline is still the root package `athletic-rust-pipeline`, which sits in this workspace
-beside the census crates, so the §55 gates build and test it too. No census crate depends on it, and
-the `acq-*` split is a separate, unstarted refactor of that legacy pipeline.
+§17 also names `acq-*` crates for the acquisition pipeline. Those crates do not exist: the pipeline's
+root package (`athletic-rust-pipeline`) was deleted once the census crates owned its work, and what
+survived of it is library code rather than a package — `crates/athleticnet-browser` carries the
+persistent Chromium transport, and the census crates carry the rest. The `acq-*` split is therefore
+superseded rather than unstarted.
 
 `census-domain` operates entirely on explicit values. Parse external data once at the boundary:
 external shapes become `Raw*` types, validation produces domain enums (for example
@@ -127,7 +135,8 @@ school:{source}:{source_school_id}:{revision} review:{evidence_digest}:{policy_r
 operation, transport performs one attempt. Never stack Restate × HTTP-helper × adapter retries; the
 scan in `crates/census-service/src/restate_services/retry_policy_tests.rs` reads every ceiling out of
 the tree and fails a value outside the contract. Retry exhaustion is evidence, and each layer names
-its own causes rather than one shared type: `FailureCode`/`Decision`/`BrowserError` in the root crate,
+its own causes rather than one shared type: `FailureCode`/`Decision` in the deleted root package (`BrowserError` survives in
+`crates/athleticnet-browser`),
 `AccessBlockKind` (`census-domain`) and `FetchError` (`census-crawl`) in the census crates, `Outcome`
 at async boundaries in `census-service`. A source failure is never equivalent to `NO_MATCH`.
 
@@ -246,9 +255,10 @@ backup/restore, and the clock capability) and `crates/census-review` (the local-
 the **crawl** wave landed `crates/census-crawl` (the polite fetcher and browser bridge, one module per
 provider, the provider registry) together with `census-domain/src/school_index.rs` and
 `census-domain/src/core_scope.rs`. What remains in `crates/census-service` is the composition root:
-the sweep and meet walk, the durable services, the reductions (`report`, `bests`, `workbook`), the
-CLI, the supervisor, and `crates/g1-audit` beside it. Deps already wired: fjall 3.1.10, restate-sdk
-0.12, reqwest 0.13, tokio, thiserror, serde. `xtask seams` enforces both graphs: the module table for
+the sweep and meet walk, the durable services, the reductions (`crates/census-report/src/{report,bests,workbook}/`), the
+CLI and the supervisor; the `crates/g1-audit` audit binary that sat beside them was folded into
+Deps already wired: fjall 3.1.10, restate-sdk 0.12, reqwest 0.13, tokio, thiserror, serde.
+`xtask seams` enforces both graphs: the module table for
 what is left and the crate table for the edges that crossed a boundary, so a wave cannot quietly
 reintroduce a direction the layout forbids. `docs/migration/module-map.md` holds the file-level cut;
 `docs/adr/README.md` holds the decisions frozen so far.

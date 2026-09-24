@@ -18,6 +18,7 @@ use census_domain::model::SchoolYear;
 use census_domain::UsJurisdiction;
 
 use crate::census::{CollectOptions, MeetCensus, StateProgress};
+use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_crawl::net::Fetcher;
 
 use super::JurisdictionCensus;
@@ -63,6 +64,32 @@ impl JurisdictionCensus {
             .retry_policy(jobs::no_run_retry())
             .await?;
         Ok(progress)
+    }
+
+    /// Pull the meets this run enumerated, one arm per planned result source.
+    ///
+    /// Nothing is routed from here: a results arm appends canonical observations through its own
+    /// adapter, and the adapter's journal is the resume point (one entry per result set for
+    /// `milesplit_results`, one per meet's request pair for `athleticnet`). The outcome is per source
+    /// so that an arm which found no meets reads differently from an arm that never ran.
+    pub(super) async fn results_stage(
+        &self,
+        ctx: &ObjectContext<'_>,
+        fetcher: Arc<Fetcher>,
+        jurisdiction: UsJurisdiction,
+        year: u16,
+        refresh: bool,
+        sweepable: Vec<String>,
+    ) -> Result<ResultsStageOutcome, HandlerError> {
+        let store = Arc::clone(&self.store);
+        let at = super::super::journaled_today(ctx, &self.clock).await?;
+        let Json(outcome) = ctx
+            .run(move || {
+                jobs::results_stage(store, fetcher, jurisdiction, year, refresh, at, sweepable)
+            })
+            .retry_policy(jobs::no_run_retry())
+            .await?;
+        Ok(outcome)
     }
 
     /// Enumerate the jurisdiction's meets for one season year. The count and per-page journal are

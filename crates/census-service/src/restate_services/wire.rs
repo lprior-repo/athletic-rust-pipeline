@@ -6,6 +6,8 @@ use serde_json::Value;
 use crate::census::{MeetCensus, StateProgress};
 use census_reconcile::identity::Revision;
 
+use super::results_arms::ResultsStageOutcome;
+
 pub(super) mod ingest;
 
 /// The ingest family, re-exported so this module remains the one wire-protocol surface to import
@@ -32,6 +34,12 @@ pub(super) mod seal;
 /// The seal family, re-exported for the same reason as the two families above: this module stays
 /// the one wire-protocol surface to import from.
 pub use seal::{SealItem, SealRef, SealReply, SealRequest};
+
+pub(super) mod national;
+
+/// The national-run family, re-exported for the same reason as the families above: this module
+/// stays the one wire-protocol surface to import from.
+pub use national::{JurisdictionSummary, NationalFailure, NationalReport, NationalRequest};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableCount {
@@ -200,6 +208,12 @@ pub struct JurisdictionState {
     /// which is why the stage keys on this field rather than on the invocation's stage list.
     #[serde(default)]
     pub meets: Option<MeetCensus>,
+    /// The results stage's measured outcome: one row per planned result source that ran, with the
+    /// meets it selected and the rows it wrote. Absent on a state journaled before the stage existed,
+    /// and keyed on exactly as `meets` is, so a state whose enumerating stages are already complete
+    /// still pulls the meets they enumerated.
+    #[serde(default)]
+    pub results: Option<ResultsStageOutcome>,
     #[serde(default)]
     pub updated_at: Option<String>,
 }
@@ -220,70 +234,9 @@ pub struct JurisdictionReport {
     pub rosters: StateProgress,
     pub consolidated: Vec<ConsolidatedTable>,
     pub meets: MeetCensus,
+    /// What the result sources pulled from the meets this run enumerated. Defaulted on read so a
+    /// report journaled before the stage existed still decodes.
+    #[serde(default)]
+    pub results: ResultsStageOutcome,
     pub completed_at: String,
-}
-
-/// The national run's request. `jurisdictions` empty means all fifty states and the District of
-/// Columbia, in declaration order.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NationalRequest {
-    pub season: SchoolYear,
-    pub revision: Revision,
-    #[serde(default)]
-    pub jurisdictions: Vec<UsJurisdiction>,
-    #[serde(default)]
-    pub refresh: bool,
-    #[serde(default)]
-    pub limit_per_state: Option<usize>,
-    #[serde(default = "default_concurrency")]
-    pub concurrency: usize,
-    #[serde(default)]
-    pub observed_on: Option<String>,
-}
-
-/// One jurisdiction's row in the national report.
-///
-/// The walk's three outcomes are separate on purpose. `rosters_done` is what this traversal
-/// fetched, `rosters_skipped` is what the journal already held, and `rosters_owed` is what the run
-/// left unfinished — a state whose host refused requests (§69) stops the walk with most of its
-/// index still owed. Without the last two an operator reading a blocked state sees a small state.
-///
-/// Both are `Option` because a report written by an earlier revision does not carry them: a missing
-/// denominator must read as unknown, never as zero.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JurisdictionSummary {
-    pub jurisdiction: UsJurisdiction,
-    pub identity: String,
-    pub teams: usize,
-    pub rosters_done: usize,
-    pub rosters_skipped: usize,
-    /// Rosters this run left unfinished: no journal entry, no fetched page.
-    #[serde(default)]
-    pub rosters_owed: Option<usize>,
-    /// The host refused at least one roster with HTTP 403/429, which ends the state's requests.
-    #[serde(default)]
-    pub blocked: Option<bool>,
-    pub athletes: usize,
-    pub class_of_2027: usize,
-}
-
-/// A jurisdiction whose run failed. The national run keeps going: one jurisdiction's source outage
-/// is a row in this list, never a failed national run (§69).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NationalFailure {
-    pub jurisdiction: UsJurisdiction,
-    pub identity: String,
-    pub error: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NationalReport {
-    pub season: SchoolYear,
-    pub revision: Revision,
-    pub jurisdictions: Vec<JurisdictionSummary>,
-    pub failures: Vec<NationalFailure>,
-    pub teams_total: usize,
-    pub athletes_total: usize,
-    pub class_of_2027_total: usize,
-    pub today: String,
 }

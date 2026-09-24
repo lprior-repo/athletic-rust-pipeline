@@ -34,9 +34,9 @@ pub(crate) fn is_test_file(path: &Path) -> bool {
 /// Lines before the `#[cfg(test)]` attribute that opens the file's test module.
 ///
 /// A bare `#[cfg(test)]` ends the production region only when it gates a module. Files that
-/// cfg(test)-gate `use` re-exports (`src/xlsx.rs`: `pub(crate) use cells::{..}`) keep every line in
-/// scope, otherwise the real production code below them is invisible to every count and to the size
-/// budgets.
+/// cfg(test)-gate `use` re-exports (`crates/census-crawl/src/tfrrs/parse/mod.rs`: `#[cfg(test)] pub
+/// use season::season_from_label;`) keep every line in scope, otherwise the real production code
+/// below them is invisible to every count and to the size budgets.
 pub(crate) fn production_lines(lines: &[String], rules: &Rules) -> Vec<String> {
     for (index, line) in lines.iter().enumerate() {
         if line.trim() != "#[cfg(test)]" {

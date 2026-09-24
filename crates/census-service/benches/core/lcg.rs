@@ -34,7 +34,7 @@ impl Lcg {
         if bound == 0 {
             return 0;
         }
-        usize::try_from(self.next_state() % bound).unwrap_or(0)
+        usize::try_from(self.next_state().checked_rem(bound).unwrap_or(0)).unwrap_or(0)
     }
 
     /// The stream-chosen element of `items`; `fallback` answers an empty table.

@@ -3,7 +3,7 @@ Description=Midwest census Restate server (journal, ingress, admin)
 Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
 After=network-online.target
 Wants=network-online.target
-Before=midwest-serve@.service
+Before=census-serve@.service
 
 [Service]
 Type=simple
@@ -14,22 +14,22 @@ Environment=RUST_LOG=info
 # The journal, the metadata store and the ingress live here. This unit used to run `midwest-serve`
 # under the name of the server it never started: the deployment had no journal at all, and two units
 # contended for one Fjall store. It now runs the pinned 1.7.10 build the census lanes are qualified
-# against, with `deploy/restate.toml` deployed to /etc/midwest-census/restate.toml as the only file
+# against, with `deploy/restate.toml` deployed to /etc/census-service/restate.toml as the only file
 # that knows the ports.
 ExecStart=/opt/athletic-rust-pipeline/vendor/restate-server-1.7.10/restate-server \
   --no-logo \
-  --config-file /etc/midwest-census/restate.toml
+  --config-file /etc/census-service/restate.toml
 Restart=on-failure
 RestartSec=5
 KillSignal=SIGTERM
 # The node flushes the bifrost log on shutdown; this must exceed its own shutdown-timeout.
 TimeoutStopSec=120
-StateDirectory=midwest-census-restate
+StateDirectory=census-service-restate
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/midwest-census-restate
+ReadWritePaths=/var/lib/census-service-restate
 LimitNOFILE=65536
 
 [Install]

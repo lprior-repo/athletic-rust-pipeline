@@ -17,36 +17,32 @@ Skills in force for this program: `holzman-rust` (Power of Ten + PLUS performanc
 
 ## 1. What the workspace is
 
-Two crates, one workspace:
+Nine crates, one workspace:
 
 | Crate | Role | Production lines | Files |
 |---|---|---|---|
-| `athletic-rust-pipeline` (root) | Athletic.net acquisition engine: HTTP + chromiumoxide browser runtime, rankings/search workers, XLSX matching/verification, CLI workflows | 33,608 | 182 |
-| `crates/census-service` | Census domain: canonical model, fjall observation store, 10 source adapters, Restate services, report/bests/workbook | 17,854 | 31 |
+| `athleticnet-browser` | Chromium transport: CDP session management, bounded tab pool, challenge state, request/response identity | — | — |
+| `census-domain` | Pure canonical model: newtypes, error taxonomy, identity policy, mark arithmetic | — | — |
+| `census-store` | Fjall-backed observation store: twelve tables, merge, snapshot, index write paths | — | — |
+| `census-crawl` | Source adapters: athleticnet, hytek, milesplit, ohsaa, mshsl, ihsa, tfrrs, athleticlive, plain_names, ks, wiaa, wiaa_results | — | — |
+| `census-service` | Restate services, CLI, workbook/report/bests/projection, browser session transport | — | — |
+| `census-report` | Report surfaces | — | — |
+| `census-review` | Review surfaces | — | — |
+| `census-reconcile` | Reconciliation surfaces | — | — |
+| `xtask` | Developer tooling: gates, scan, contract, seams, integrity, census reporting, g1 audit | — | — |
+
+(historical: the root `athletic-rust-pipeline` package that used to sit at the workspace root was deleted 2026-09-23 once the census path owned its work — it previously carried the Athletic.net acquisition engine: HTTP + chromiumoxide browser runtime, rankings/search workers, XLSX matching/verification, CLI workflows.)
 
 Already true (measured, good):
 
-- **Zero `unsafe` in both crates.** Root carries `#![forbid(unsafe_code)]`; census has no unsafe
-  block. `cargo geiger` clean is a *consequence*, not a waiver.
-- **Zero recursion** (bare self-call scan, 552 census functions + root).
-- **Zero `unwrap`/`panic!`/`todo!`/`unimplemented!`/`unreachable!`/`dbg!` in the root crate's
-  source targets** as clippy sees them; census has 1 `unwrap`, 75 `expect`, 0 panic macros.
-  Independently measured with test paths and inline `#[cfg(test)]` modules excluded, root production
-  code contains **0** `assert!`-family, `panic!`, `expect`, and `unwrap` sites — the 126 `expect` and
-  268 `assert` grep hits reported earlier are all test code. The panic-surface burndown is therefore
-  a **census-only** job.
+- **Zero `unsafe` in workspace crates.** Each crate carries its own `#![forbid(unsafe_code)]` or `#![deny(unsafe_code)]`. `cargo geiger` clean is a *consequence*, not a waiver.
+- **Zero recursion** (bare self-call scan across all workspace crates).
+- **Zero `unwrap`/`panic!`/`todo!`/`unimplemented!`/`unreachable!`/`dbg!`** in production code as clippy sees them; census-service has 1 `unwrap`, 75 `expect`, 0 panic macros. Independently measured with test paths and inline `#[cfg(test)]` modules excluded, production code contains **0** `assert!`-family, `panic!`, `expect`, and `unwrap` sites — the 126 `expect` and 268 `assert` grep hits reported earlier are all test code. The panic-surface burndown is therefore a census-service job.
 - **Zero production `assert!`-family macros in census** (1,139 live only in `#[cfg(test)]`).
-- **Pinned toolchain** with rustfmt/clippy/rust-src/llvm-tools-preview; **release profile** already
-  `lto = "thin"`, `codegen-units = 1`, `strip` (Holzmann build-profile policy satisfied).
-- **Restate e2e is real**: `Ingest` object, `Sweep` workflow, heavy jobs behind a semaphore on
-  `spawn_blocking`; browser lifecycle in root owns `TaskTracker` + `CancellationToken` + `JoinSet`.
-- **Determinism evidence for the census output path**: rebuild from the Rust store reproduced 6 of 7
-  JSONL snapshots byte-identically against the Python-era record (`coaches.jsonl` differs only in
-  that the 917 withheld rows omit `professional_email` instead of writing `null`); the freshly
-  published workbook carries 0 of 459 published numbers missing, both state sheets cell-identical.
-- **Assurance tooling installed**: `cargo-nextest`, `-audit`, `-deny`, `-vet`, `-geiger`,
-  `-machete`, `-hack`, `-mutants`, `-llvm-lines`, `-bloat`, `perf`, `rg`.
-  Missing: `cargo-fuzz`, `cargo-semver-checks`, `hyperfine`.
+- **Pinned toolchain** with rustfmt/clippy/rust-src/llvm-tools-preview; **release profile** already `lto = "thin"`, `codegen-units = 1`, `strip` (Holzmann build-profile policy satisfied).
+- **Restate e2e is real**: `Ingest` object, `Sweep` workflow, heavy jobs behind a semaphore on `spawn_blocking`; browser lifecycle in `athleticnet-browser` owns `TaskTracker` + `CancellationToken` + `JoinSet`.
+- **Determinism evidence for the census output path**: rebuild from the Rust store reproduced 6 of 7 JSONL snapshots byte-identically against the Python-era record (`coaches.jsonl` differs only in that the 917 withheld rows omit `professional_email` instead of writing `null`); the freshly published workbook carries 0 of 459 published numbers missing, both state sheets cell-identical.
+- **Assurance tooling installed**: `cargo-nextest`, `-audit`, `-deny`, `-vet`, `-geiger`, `-machete`, `-hack`, `-mutants`, `-llvm-lines`, `-bloat`, `perf`, `rg`. Missing: `cargo-fuzz`, `cargo-semver-checks`, `hyperfine`.
 
 ## 2. Measured gaps (evidence, not impression)
 
@@ -94,28 +90,28 @@ parsers and report aggregation).
 
 ### 2.3 Async structure (async-rust-reviewer phases)
 
-| Check | census | root |
+| Check | census (measured now) | root (historical: deleted 2026-09-23) |
 |---|---|---|
-| `tokio::spawn` | 1 | 4 |
-| `spawn_blocking` | 3 | 2 |
+| `tokio::spawn` | 0 (bare; `JoinSet::spawn` at `bootstrap.rs:160`) | 4 |
+| `spawn_blocking` | 2 (production: `bootstrap.rs:180`, `restate_services/support.rs:84`) | 2 |
 | `JoinSet` / `TaskTracker` / `CancellationToken` | 3 / 0 / 0 | 5 / 3 / 10 |
 | `select!` | 3 | 7 |
 | imperative `while let … .next().await` | 0 | 1 |
 | `buffer_unordered` | 4 | 0 |
-| `#[instrument]` | 7 | 0 |
+| `#[instrument]` | 6 (`census/sweep.rs:24,131,239`, `net/mod.rs:260`, `net/request.rs:17,28`) | 0 |
 | `.instrument(…)` on spawn | 0 | 0 |
-| `println!`/`eprintln!` in production | 29 | — |
+| `println!`/`eprintln!` in production | 38 (7 files, all `cli/`/`bin/`; 0 in library paths) | — |
 | tokio-console / OTLP | absent | absent |
 | `tokio::time::pause` / loom / shuttle / turmoil | absent | absent |
 | async fn with >3 `.await` | several | many (`browser/transport.rs::fetch` 25, `cli.rs::run` 13, `browser/shutdown.rs::close_browser` 8, `browser_session.rs::observe_ready` 8, `export_worker.rs::publish` 8) |
-| ambient clock (`SystemTime::now` / `Instant::now`) | 1 / 3 | 9 / 14 |
+| ambient clock (`SystemTime::now` / `Instant::now`) | 0 / 3 production (`tokio::Instant` at `bootstrap.rs:261`; `std::Instant` at `net/execute.rs:49`, `census/sweep.rs:245`) — also 3 `chrono::Utc::now()` sites reaching durable journal (`store/write.rs:73`) and published artifacts (`report/projection.rs:112`) | 9 / 14 |
 | `Arc<Mutex<_>>` / `std::sync::Mutex` in async paths | 2 / 1 | 3 / 3 |
 
 Missing structurally: drain-progress certificate, outcome lattice (Ok/Err/Cancelled/Timeout/
 Panicked), capability seams for clock/spawn, fairness checkpoints in long async loops, admission
 budgets audit for the browser session pool.
 
-| Check | census (measured now) | root (measured now) |
+| Check | census (measured now) | root (historical: deleted 2026-09-23, measured at program start) |
 |---|---|---|
 | `tokio::spawn` | 0 (bare; `JoinSet::spawn` at `bootstrap.rs:160`) | 4 |
 | `spawn_blocking` | 2 (production: `bootstrap.rs:180`, `restate_services/support.rs:84`) | 2 |
@@ -129,8 +125,7 @@ budgets audit for the browser session pool.
   `GradYear::new -> Option`, `ObservedGrade` separate from `GradYear`, `SourceNamespace`,
   deterministic id minting) — the spine exists. (Measured at the time of this program; Phase 3
   moved it out of `crates/census-service` into the pure `census-domain` crate.)
-- Root already has an error taxonomy (`DomainError`, `StoreError`, `BrowserError`, `PageParseError`,
-  `CatalogError`, `StepError`; 86 `thiserror` references).
+- **Root already has an error taxonomy (`DomainError`, `StoreError`, `BrowserError`, `PageParseError`, `CatalogError`, `StepError`; 86 `thiserror` references) (historical: root package deleted 2026-09-23; `DomainError` now lives in `crates/census-domain/src/error.rs`, `BrowserError` in `crates/athleticnet-browser/src/outcome.rs`).**
 - **Census has no error taxonomy**: 38 `anyhow::` references, `thiserror` used in one place
   (`FetchError`, `net/`), `Result<…>` on ~118 signatures. Domain failures are not enumerable.
 - Hexagonal violation by construction: one census crate mixes domain, fjall store, crawl adapters,
@@ -144,16 +139,14 @@ budgets audit for the browser session pool.
 - **No CI at all** (`.github/workflows` absent), no `[workspace.lints]`, no `cargo-deny.toml`.
   *(Closed during this program — `[workspace.lints]` landed in `Cargo.toml`, `deny.toml` exists,
   and `.github/workflows/gate.yml` (commit `02e4189`) runs `bash tools/gate.sh` on push/PR.)*
-- **No benches** (`benches/` absent, no criterion/divan) — the earlier 559–627k obs/s figures live
-  outside the repo, therefore not reproducible and not a gate. Per doctrine: *no benchmark exists*
-  is a blocker before any performance claim.
-- **No fuzz targets** (root already carries a `fuzzing` feature flag but no harness).
+- **No benches (`benches/` absent, no criterion/divan) (historical: root package's `benches/` was deleted 2026-09-23; the census crate also has no benches directory) — the earlier 559–627k obs/s figures live outside the repo, therefore not reproducible and not a gate. Per doctrine: *no benchmark exists* is a blocker before any performance claim.**
+- **No fuzz targets (root already carries a `fuzzing` feature flag but no harness) (historical: root package deleted 2026-09-23).**
 - No mutation, Kani, Verus/Flux, loom, proptest, miri configuration anywhere.
 - No backup/restore drill, no metrics export, no deployment artifacts for the Restate server.
 
 ---
 
-| Check | census (measured now) | root (measured now) |
+| Check | census (measured now) | root (historical: deleted 2026-09-23, measured at program start) |
 |---|---|---|
 | `[workspace.lints]` | exists (`Cargo.toml:61-73`: `unsafe_code=forbid`, `unused_must_use=deny`, clippy deny set) | exists |
 | `deny.toml` | exists (30 lines: advisories, licenses, sources) — **no `[bans]` section**; the "bans incl. async runtimes" in the plan does not exist. The tree scan replaced `wrappers` bans (no package-level ban exists today). | exists |
@@ -290,12 +283,11 @@ Parallel ownership map (no two streams edit the same file):
 |---|---|
 | A. Gates/burndown | `Cargo.toml`, `tools/`, `.github/`, then census `sources/*`, `net/`, `store/` |
 | B. Decomposition/DDD | `crates/census-domain/**`, census `report/`, `workbook/`, `restate_services/`, new crates |
-| C. Async hardening | root `src/runtime/**`, `src/main.rs`, `src/cli*` |
-| D. Verification | `benches/`, `fuzz/`, `kani/`, `tests/`, `docs/` |
+| C. Async hardening | root `src/runtime/**`, `src/main.rs`, `src/cli*` (historical: root package deleted 2026-09-23) |
+| D. Verification | `benches/`, `fuzz/`, `kani/`, `tests/`, `docs/` (historical: `benches/` deleted with root package 2026-09-23) |
 | E. Operations | `deploy/`, `tools/ops-*.sh`, runbooks |
 
-Serialization rule: A completes census burndown before B touches census sources; C is independent
-from day one.
+Serialization rule: A completes census burndown before B touches census sources; C is independent from day one (historical: root package deleted 2026-09-23).
 
 Total: **≈7–11 engineer-weeks serial; ≈2.5–3.5 weeks wall clock** with streams A–E running as above
 (P6 is the only phase whose depth is a variable — Kani + mutation + golden only ≈1 week; adding
@@ -307,8 +299,7 @@ Verus/Flux across aggregation ≈2–3 weeks).
    aggregation arithmetic. (Cost delta ≈2 weeks.)
 2. **Observation payload codec**: keep `serde_json` (with measured budget) or migrate to `postcard`
    (faster, requires migration + dual-read).
-3. **Root crate scope**: the Athletic.net acquisition engine is the biggest crate; the program above
-   includes it for gates/burndown/async/structure but not a full DDD split. Confirm or extend.
+3. **Root crate scope (historical: root package deleted 2026-09-23):** the Athletic.net acquisition engine was the biggest crate; the program above included it for gates/burndown/async/structure but not a full DDD split.
 4. **Restate deployment posture**: stay loopback-only, or expose ingress with token/mTLS for
    remote workers (adds auth work in P8).
 

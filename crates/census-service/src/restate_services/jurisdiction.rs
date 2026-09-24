@@ -120,6 +120,11 @@ impl JurisdictionCensus {
             stages_run.push("meets".to_string());
         }
 
+        if state.results.is_none() {
+            self.results_owed(ctx, request, state, &today).await?;
+            stages_run.push("results".to_string());
+        }
+
         Ok(stages_run)
     }
 }
@@ -140,13 +145,21 @@ impl JurisdictionCensus {
 /// a published schedule — so they need no seed either. A source that does need one — a school-name
 /// list, a meet id, an athlete profile — stays refused, and each of those stays owed until a stage
 /// can seed it.
+///
+/// The two result sources are the ones this run *does* seed: the results stage reads the meets this
+/// same run enumerated (`source_meets`) and pulls them through the adapter, which is why they are
+/// listed after the index walks that fill that table rather than being refused for needing a seed.
 pub(super) const DISPATCHED: &[&str] = &[
     crate::census::SOURCE,
     "wiaa",
     "mshsl",
     "plain_names",
+    "ihsa",
+    "ks",
     "wiaa_results",
     "wayzata",
+    "milesplit",
+    "athleticnet",
 ];
 
 /// The report one completed run produces.
@@ -181,6 +194,12 @@ fn report(
         .meets
         .clone()
         .ok_or_else(|| jobs::invariant("no meet census recorded after the meets stage"))?;
+    // The results stage runs whenever its field is absent, so a full sequence always records one —
+    // a gap here means the report was built ahead of the sequence.
+    let results = state
+        .results
+        .clone()
+        .ok_or_else(|| jobs::invariant("no results outcome recorded after the results stage"))?;
     Ok(JurisdictionReport {
         identity: identity.as_str().to_string(),
         jurisdiction: request.jurisdiction,
@@ -190,6 +209,7 @@ fn report(
         rosters,
         consolidated,
         meets,
+        results,
         completed_at,
     })
 }

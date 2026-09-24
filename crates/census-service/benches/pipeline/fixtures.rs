@@ -19,7 +19,7 @@ pub(super) fn performance_observations() -> Result<Vec<CanonicalPerformance>> {
             &school,
             Sport::OutdoorTrack,
             Gender::Boys,
-            SchoolYear::new(2024).expect("2024 is a season"),
+            SchoolYear::new(2024).context("2024 is a season")?,
         );
         let kind = EventKind::Track800m;
         let event = CanonicalEvent::new(&meet, kind.clone(), Gender::Boys, None, Some("finals"));

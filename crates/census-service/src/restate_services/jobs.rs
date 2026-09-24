@@ -126,6 +126,7 @@ pub(super) fn write_sweep_report(
 // ------------------------------------------------------- jurisdiction census stages
 
 pub(super) use super::meets_arms::meets_stage;
+pub(super) use super::results_arms::results_stage;
 pub(super) use super::teams_arms::teams_stage;
 
 /// The context a source walk runs under, built the way the `provider` subcommand builds it: one

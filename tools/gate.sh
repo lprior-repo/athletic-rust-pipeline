@@ -132,9 +132,20 @@ lane_vet() { cargo vet --locked; }
 # `IO error for operation on machete`. Calling the resolved binary by path with the directory it
 # should analyze removes the argv[0] dependence — the lane then measures dependencies, not PATH.
 lane_machete() { "$(command -v cargo-machete)" .; }
-lane_geiger() { cargo geiger --workspace --all-features --output-format Json > /dev/null; }
+# `cargo geiger` picks one root package and walks its dependency tree; it has no `--workspace` of
+# its own, so cargo consumes that flag and then refuses a virtual manifest for naming no package —
+# and geiger itself rejects a relative `--manifest-path`. The lane therefore runs from the
+# workspace's widest first-party root instead: every other library crate is in census-service's
+# tree, which keeps the scan a measurement of the whole graph rather than one package's own files.
+#
+# A tree whose `target/` still holds the deleted root package's fingerprint needs one `cargo clean`
+# after that deletion: geiger walks those units and fails on the `src/lib.rs` they name, which no
+# current manifest declares. A fresh target — CI, a clone, a cleaned tree — is unaffected.
+lane_geiger() {
+  (cd crates/census-service && cargo geiger --all-features --output-format Json > /dev/null)
+}
 # Every feature combination compiles: `loom` in census-service gates the concurrency models, and the
-# root crate's telemetry sinks are optional, so a combination that only breaks under one of them
+# optional features are declared per crate, so a combination that only breaks under one of them
 # would otherwise reach review.
 lane_hack() { cargo hack check --workspace --feature-powerset; }
 # Mutation testing: the slowest lane by far and the only one that measures whether the tests can

@@ -5,9 +5,24 @@ edition = "2021"
 description = "Repository developer commands: quality gate, source fixtures and tests, census reports, adapter scaffolding"
 license = "MIT"
 publish = false
+# The gate runs this harness as `cargo run -q -p xtask -- <verb>`, so the package needs a default
+# binary. Without it the second binary below makes that invocation ambiguous and *every* lane that
+# measures code — production scan, integrity, purity, seams, the ratchet — fails with
+# `could not determine which binary to run` instead of measuring anything. `g1-audit` stays reachable
+# as `cargo run -p xtask --bin g1-audit`.
+default-run = "xtask"
 
 [lints]
 workspace = true
+
+# The G1 audit lane: a read-only counted inventory of the retained Athletic.net `/Search.aspx`
+# runSearch response bodies, ported from the deleted Python inventory script. It used to be its own
+# package (`crates/g1-audit`); it is a second binary here because it is a tool, not a pipeline stage,
+# and nothing depends on it (see `docs/migration/module-map.md` §1.2). The binary name is unchanged:
+# `research/G1-LIVE-SEARCH-CONTRACT.md` and the retained corpora cite `g1-audit --raw …` verbatim.
+[[bin]]
+name = "g1-audit"
+path = "src/g1/main.rs"
 
 [dependencies]
 anyhow = "1"
@@ -26,6 +41,9 @@ census-store = { path = "../crates/census-store" }
 # the crate that owns it, so the harness names the reporting plane rather than `census-service`.
 census-report = { path = "../crates/census-report" }
 clap = { version = "4.5", features = ["derive"] }
+# `g1-audit` prints its per-class counts in document order, so the audit lane's tables are insertion
+# ordered; `sha2` recomputes each retained body's digest rather than trusting the store key.
+indexmap = "2"
 # The census services, their generated ingress clients and the wire types they take and return: the
 # mutating half of the harness submits invocations instead of opening the store, and the definitions
 # belong to the crate that owns the handlers. Same pinned restate-sdk and reqwest as the workspace.
@@ -35,5 +53,6 @@ reqwest = { version = "=0.13.4", default-features = false, features = ["json", "
 restate-sdk = { version = "=0.12.0", default-features = false, features = ["aws_lc_rs", "reqwest-client"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+sha2 = "0.10"
 tokio = { version = "1", features = ["rt", "net", "time"] }
 url = "2.5"

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted. Implemented: census workbook writer (`crates/census-service/src/workbook/`, `src/xlsx/**`),
+Accepted. Implemented: census workbook writer (`crates/census-report/src/workbook/`,
+`src/xlsx/**` (historical: root package deleted 2026-09-23)),
 best-mark reduction (`crates/census-service/src/bests/`), census report (`.../report/`).
 
 ## Context

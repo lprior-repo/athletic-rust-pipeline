@@ -34,12 +34,12 @@ carry has burned down. Regenerate it with `tools/gate.sh --update-baseline` afte
 Production scan (`cargo xtask scan`; "production-reachable" = before the first `#[cfg(test)]` in a
 file, test files excluded), as recorded in the same baseline file:
 
-| Metric | root (`athletic-rust-pipeline`) | census (`census-service`) |
-|---|---:|---:|
-| `production_lines` | 36,656 | 24,039 |
-| `files` | 305 | 160 |
-| `unsafe`, `unwrap`, `expect`, `indexing`, `as_cast` | 0 | 0 |
-| `assert_family`, `panic`, `todo`, `dbg`, `unreachable` | 0 | 0 |
+| Metric | ~~root (`athletic-rust-pipeline`)~~ (historical: root package deleted 2026-09-23, see `Cargo.toml` header + `ARCHITECTURE.md` §1) | census (`census-service`) |
+|---|---|---:|
+| ~~`production_lines`~~ | ~~36,656~~ | 24,039 |
+| ~~`files`~~ | ~~305~~ | 160 |
+| ~~`unsafe`, `unwrap`, `expect`, `indexing`, `as_cast`~~ | ~~0~~ | 0 |
+| ~~`assert_family`, `panic`, `todo`, `dbg`, `unreachable`~~ | ~~0~~ | 0 |
 
 Structure, workspace-wide: **0** files over 300 lines, **0** functions over 60 logical lines, **549**
 functions over 25 logical lines. `cargo xtask scan` reports the offending paths when the first of
@@ -71,9 +71,9 @@ Two kinds of harness exist, both runnable; neither is gated by a threshold.
 measurement the rest of the repository cites:
 
 ```bash
-cargo bench -p athletic-rust-pipeline --bench artifact_store    # root ArtifactStore: put_bytes/put_source_batch/get_bytes
-cargo bench -p athletic-rust-pipeline --bench blocking_fanout  # Runtime::blocking at cpu_workers 1/8/32
-cargo bench -p athletic-rust-pipeline --bench workbook_export  # WorkbookExport::{new,write,finish}
+~~cargo bench -p athletic-rust-pipeline --bench artifact_store    # root ArtifactStore: put_bytes/put_source_batch/get_bytes~~ (historical: root crate deleted 2026-09-23)
+~~cargo bench -p athletic-rust-pipeline --bench blocking_fanout  # Runtime::blocking at cpu_workers 1/8/32~~ (historical: root crate deleted 2026-09-23)
+~~cargo bench -p athletic-rust-pipeline --bench workbook_export  # WorkbookExport::{new,write,finish}~~ (historical: root crate deleted 2026-09-23)
 cargo bench -p census-service --bench core                     # census/parse, census/school_index, census/merge
 ```
 
@@ -169,7 +169,7 @@ read from the harness source.
 
 ## 3. Hot paths and their current shape
 
-### 3.1 XLSX parse — visitor path (`src/xlsx/parser.rs`, `src/xlsx/parser/rows.rs`)
+### 3.1 XLSX parse — visitor path (`src/xlsx/parser.rs`, `src/xlsx/parser/rows.rs`) — **historical**: these paths belonged to the deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1)
 
 `visit_records(path, visitor: impl FnMut(SourceRecord) -> Result<()>)` opens the container once to
 load shared strings, once for sheet metadata, then once per selected worksheet inside the sheet fold
@@ -185,20 +185,20 @@ clone per retained field; values are materialized as `String` at parse time.
 
 ### 3.2 ZIP/deflate handling
 
-The root crate depends on `zip = "=8.6.0"` with `default-features = false, features = ["deflate"]`:
+~~The root crate depends on `zip = "=8.6.0"` with `default-features = false, features = ["deflate"]`~~ (historical: `zip` dependency no longer present in any crate; root crate deleted 2026-09-23)
 deflate only. Reads go through `bounded_entry`, which rejects a declared uncompressed size over
 512 MiB and then enforces the same limit on *actual* decompressed bytes via `BoundedReader` — a lying
 central directory cannot get past it. The workbook preflight adds container-wide budgets:
 `MAX_ZIP_ENTRIES` 4096 and `MAX_TOTAL_DECOMPRESSED_BYTES` 1 GiB across entries, 512 MiB per entry,
-256 MiB of shared-string payload (`src/workbook_ingest/preflight.rs`). The preflight also validates
+256 MiB of shared-string payload (`src/workbook_ingest/preflight.rs`) — **historical**: path belonged to deleted root crate.
 the zip record structure itself (local/central signatures, EOCD, zip64 extras, data descriptors) in
-`src/workbook_ingest/preflight/zip.rs`. Writing copies untouched entries with
+`src/workbook_ingest/preflight/zip.rs` — **historical**: path belonged to deleted root crate.
 `std::io::copy(bounded_entry(file), &mut destination)` without materializing them, preserving each
 entry's compression method; generated sheets are `CompressionMethod::Deflated`.
 
-### 3.3 Workbook ingest — calamine path (`src/workbook_ingest.rs`, `stream.rs`, `guards.rs`)
+### 3.3 Workbook ingest — calamine path (`src/workbook_ingest.rs`, `stream.rs`, `guards.rs`) — **historical**: paths belonged to deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1).
 
-`visit_records` for the root crate is stateful and single-pass per row, but it touches the container
+`visit_records` for the ~~root~~ crate is stateful and single-pass per row — **historical**: the root crate's `visit_records` lived at the deleted paths; `census-report` and `census-service` now use calamine under `crates/census-report/src/workbook/` and `crates/census-service/src/` respectively.
 at least three times before the first data row reaches the callback: preflight (decompress-and-scan
 every entry with nesting/order guard state machines), `load_sheet_metadata` (OOXML path mapping),
 then `calamine::open_workbook` with `Xlsx<BufReader<File>>`. Rows are then streamed incrementally via
@@ -209,7 +209,7 @@ headers) and 1 MiB of retained headers across the workbook. Header validation is
 through a `BTreeSet`, and cells in unnamed columns are rejected. Numeric cells are converted through
 `finite_number`, which rejects non-finite doubles rather than writing a bogus cell text.
 
-### 3.4 Workbook write (`crates/census-service/src/workbook/`, `src/xlsx/writer.rs`)
+### 3.4 Workbook write (`crates/census-report/src/workbook/`; ~~`src/xlsx/writer.rs` is the legacy root writer~~ — historical: path belonged to deleted root crate)
 
 Census: `workbook::build` calls `rust_xlsxwriter::Workbook::new()` and saves cell-by-cell; both
 manifests pin `rust_xlsxwriter = "=0.99.1"` with `features = ["constant_memory"]`, so the writer
@@ -226,12 +226,12 @@ range's sorted rows plus the indexed parent tables, not the whole performance ta
 250,000 rows and there are at most 256 ranges, so the spill is bounded at a few hundred megabytes
 rather than the table's size. The spill directory is removed when the row iterator drops.
 
-Root: `append_matches_sheet` streams the input archive entry-by-entry into a `ZipWriter` over a
-`BufWriter<File>`, replacing `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `[Content_Types].xml`
-and the matches sheet; every other entry is copied with bounded reads. Output goes to a temporary
-path and is promoted with `fs::rename`; existing outputs are never overwritten.
+~~Root: `append_matches_sheet` streams the input archive entry-by-entry into a `ZipWriter` over a~~ **historical**: the root crate's workbook write code at `src/xlsx/writer.rs` was deleted (2026-09-23, see `Cargo.toml` header).
+~~`BufWriter<File>`, replacing `xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `[Content_Types].xml`~~
+~~and the matches sheet; every other entry is copied with bounded reads. Output goes to a temporary~~
+~~path and is promoted with `fs::rename`; existing outputs are never overwritten.~~
 
-### 3.5 Census store writes (`crates/census-service/src/store/`)
+### 3.5 Census store writes (`crates/census-store/src/`)
 
 Append path: `append` is `append_many` of a single record. `append_many` serializes each record with
 `serde_json::to_vec`, borrows the id back out of the serialized bytes (a structural `Deserialize`
@@ -256,16 +256,16 @@ are created with `KeyspaceCreateOptions::default`, i.e. **KV separation is not c
 resume journal commits one `SyncData` batch per completed unit of work. Legacy `entities/*.jsonl` and
 `journal/*.jsonl` are imported once, in batched commits, behind a `meta` marker.
 
-### 3.6 Root artifact store — contrast (`src/store.rs`, `src/store/backend.rs`)
+### 3.6 Root artifact store — contrast (`src/store.rs`, `src/store/backend.rs`) — **historical**: paths belonged to deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1).
 
-The acquisition-side store makes different placements: a 32 MiB block cache and
-`manual_journal_persist(true)`, keyspaces `documents`, `sources`, `attempts`, `rankings`, a `Mutex`
-serialising writers, batch publication capped at `MAX_BATCH_RECORDS` 4,096 and `MAX_BATCH_BYTES`
-32 MiB with a typed `StoreError::BatchTooLarge`, single-document cap `MAX_DOCUMENT_BYTES` 32 MiB, and
-commits at `PersistMode::SyncAll`. Same substrate, different durability/latency trade-off stated in
-code — worth citing whenever the two stores are compared.
+~~The acquisition-side store makes different placements: a 32 MiB block cache and~~ **historical**: the root crate's acquisition-side store at `src/store.rs` was deleted (2026-09-23, see `Cargo.toml` header).
+~~`manual_journal_persist(true)`, keyspaces `documents`, `sources`, `attempts`, `rankings`, a `Mutex`~~
+~~serialising writers, batch publication capped at `MAX_BATCH_RECORDS` 4,096 and `MAX_BATCH_BYTES`~~
+~~32 MiB with a typed `StoreError::BatchTooLarge`, single-document cap `MAX_DOCUMENT_BYTES` 32 MiB, and~~
+~~commits at `PersistMode::SyncAll`. Same substrate, different durability/latency trade-off stated in~~
+~~code — worth citing whenever the two stores are compared.~~
 
-### 3.7 Browser pool concurrency (`src/runtime/browser/`)
+### 3.7 Browser pool concurrency (`crates/athleticnet-browser/src/`)
 
 `pool.rs` is small by design: `PageSlot { page, busy }`, a `VecDeque<Pending>` of
 request + `oneshot::Sender` pairs, profile-directory preparation, and `reject_pending`, which drains
@@ -280,9 +280,9 @@ abort all jobs, release every slot, revoke the gate, reject pending. Concurrency
 validated `tabs` count (1..=8 in `BrowserSettings::validate`), not by origin; per-origin admission
 lives in the fetcher.
 
-### 3.8 Adapter fan-out and HTTP fetch (`crates/census-crawl/src/mod.rs`, `net/`)
+### 3.8 Adapter fan-out and HTTP fetch (`crates/census-crawl/src/lib.rs`, `net/`)
 
-`sources::CONCURRENCY_BOUND = 8` is the default ceiling on concurrent async operations per adapter
+`CONCURRENCY_BOUND = 8` (`lib.rs:27`) is the default ceiling on concurrent async operations per adapter
 (overridable locally); adapters are plain async functions over `AdapterContext`, called directly
 (no trait objects). `net/` makes politeness the first-order constraint: at most one in-flight
 request per host, 1 s default spacing (10 s floor for Bound), a hard 2 requests/second ceiling even
@@ -290,7 +290,7 @@ for operator-authorized hosts, a 45 s request timeout, three retry attempts with
 32 MiB response cap, and a disk cache keyed by content hash with conditional GETs. Wall-clock
 throughput here is set by policy and per-host latency, not by the Rust side — measure before tuning.
 
-### 3.9 Streaming HTML extraction (`src/html_bounds.rs`)
+### 3.9 Streaming HTML extraction (`src/html_bounds.rs`) — **historical**: path belonged to deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1).
 
 `rewrite_bounded` caps input at 32 MiB, sets lol_html's `MemorySettings` to a 4 KiB preallocated
 buffer with an 8 MiB parser memory ceiling, enables strict parsing, and discards rewritten output
@@ -299,10 +299,10 @@ memory is bounded independently of document size.
 
 ## 4. Allocation and safety policy
 
-**Unsafe.** `#![forbid(unsafe_code)]` is on `src/lib.rs:1`, `src/main.rs:1`, `src/store.rs:1`, and in
+**Unsafe.** `#![forbid(unsafe_code)]` is on ~~`src/lib.rs:1`, `src/main.rs:1`, `src/store.rs:1`~~ (historical: paths belonged to deleted root crate)
 the census crates on `crates/census-service/src/lib.rs:27`, `crates/census-service/src/main.rs:9`,
 `crates/census-service/src/bin/census-serve.rs:10`, and `crates/census-domain/src/lib.rs:9`. The scan counts
-0 `unsafe` in both crates, and the gate runs `cargo geiger`. There is no unsafe waiver, and none is
+0 `unsafe` in every scanned package, and the gate runs `cargo geiger`. There is no unsafe waiver, and none is
 requested (program §6).
 
 **Lints.** Workspace lints (`Cargo.toml:103-115`) forbid `unsafe_code` and deny `unused_must_use`,
@@ -319,19 +319,19 @@ requested (program §6).
 
 Existing violations are frozen in the ratchet (§5), not waived per site.
 
-**Panic surface, as measured.** The gate's scan covers exactly two crates — `src` and
-`crates/census-service/src`, a deliberately closed set (`xtask/src/scan.rs:47`) — and the current
-baseline is zero in both: 0 `unwrap`, 0 `expect`, 0 panic macros, 0 assert-family, 0 `unsafe`,
-0 `indexing`, 0 `as_cast`, 0 `todo` (`tools/quality-baseline.json`). The earlier census reading of
-1 `unwrap` / 75 `expect` has been burned down to that zero; the ratchet only shrinks, so a
-reappearance fails `tools/gate.sh`. `crates/census-domain` and `xtask` are not scan targets at all; the baseline's `clippy` block is
-`{}` — no lint debt recorded for any crate the gate's strict source lane measures.
+**Panic surface, as measured.** The gate's scan covers every package the workspace declares — the
+set comes from `cargo metadata --no-deps` (`xtask/src/scan.rs`), nine packages today — and the
+current baseline is zero in all of them: 0 `unwrap`, 0 `expect`, 0 panic macros, 0 assert-family,
+0 `unsafe`, 0 `indexing`, 0 `as_cast`, 0 `todo` (`tools/quality-baseline.json`). The earlier census
+reading of 1 `unwrap` / 75 `expect` has been burned down to that zero; the ratchet only shrinks, so a
+reappearance fails `tools/gate.sh`.
 
-**Errors.** The root store returns typed errors (`StoreError::BatchTooLarge`, …). The census crate
-now has typed error enums at its own layer boundaries too — `FetchError` (`net/mod.rs`),
-`CrawlError` (`sources/mod.rs`), `StoreError` (`store/mod.rs`) and the Restate job/service errors
-(`restate_services/mod.rs`) — with `anyhow::Result` and `.context(...)` above them in the CLI and
-orchestration layers. Typed failure at every bound is the pattern in both crates — a limit is
+~~The root store returns typed errors (`StoreError::BatchTooLarge`, …)~~ (historical: root package deleted; `census-store` now owns the store at `crates/census-store/src/`).
+now have typed error enums at their own layer boundaries too — `FetchError`
+(`census-crawl/src/net/types.rs`), `CrawlError` (`census-crawl/src/lib.rs`), `StoreError`
+(`census-store/src/error.rs`) and the Restate job/service errors
+(`census-service/src/restate_services/`) — with `anyhow::Result` and `.context(...)` above them in
+the CLI and orchestration layers. Typed failure at every bound is the pattern in both crates — a limit is
 never enforced with a panic.
 
 **Static dispatch.** The hot APIs are generic, not object-safe: `append_many<T: Serialize>`,
@@ -353,17 +353,17 @@ measured.
 
 | Bound | Value | Enforced in |
 |---|---:|---|
-| `MAX_ZIP_ENTRY_BYTES` | 512 MiB declared and actual, per entry | `src/xlsx.rs`, `metadata.rs::bounded_entry` |
+| `MAX_ZIP_ENTRY_BYTES` | 512 MiB declared and actual, per entry | ~~`src/xlsx.rs`~~ (historical: deleted root crate) |
 | `MAX_TOTAL_DECOMPRESSED_BYTES` | 1 GiB per workbook | `workbook_ingest/preflight.rs` |
 | `MAX_ZIP_ENTRIES` | 4096 | `workbook_ingest/preflight.rs` |
-| `MAX_SHARED_STRINGS` / per-string / total | 2,000,000 / 4 MiB / 256 MiB | `src/xlsx.rs`, `parser.rs::load_shared_strings` |
+| `MAX_SHARED_STRINGS` / per-string / total | 2,000,000 / 4 MiB / 256 MiB | ~~`src/xlsx.rs`~~ (historical), ~~`parser.rs::load_shared_strings`~~ (historical) |
 | `MAX_MATERIALIZED_ROW_BYTES` / `MAX_RETAINED_HEADER_BYTES` | 8 MiB per row / 1 MiB per workbook | `workbook_ingest/stream.rs` |
-| `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/census-service/src/store/` |
-| `MAX_ID_BYTES` | 512 bytes | `crates/census-service/src/store/` |
+| `MAX_ROWS_PER_TABLE` | 20,000,000 observations | `crates/census-store/src/table.rs` |
+| `MAX_ID_BYTES` | 512 bytes | `crates/census-store/src/table.rs` |
 | Census cache / root cache | 256 MiB / 32 MiB | `Database::builder(..).cache_size(..)` |
-| `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | `src/store.rs`, `backend.rs` |
+| `MAX_BATCH_RECORDS` / `MAX_BATCH_BYTES` (root) | 4,096 / 32 MiB | ~~`src/store.rs`~~ (historical), ~~`backend.rs`~~ (historical) |
 | `MAX_ROWS_PER_REQUEST` (Restate ingest) | 50,000 rows per invocation | `crates/census-service/src/restate_services/` |
-| `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | `src/html_bounds.rs` |
+| `MAX_HTML_BYTES` / parser memory | 32 MiB / 8 MiB | ~~`src/html_bounds.rs`~~ (historical) |
 | HTTP body cap | 32 MiB | `crates/census-crawl/src/net/` |
 
 Storage placement still open: Fjall KV separation is **not** configured (both stores use
@@ -421,18 +421,15 @@ absent), and bench presence. Exact invocations live in `tools/gate.sh`; it is th
 to refresh `tools/quality-baseline.json`, because `cargo xtask ratchet` and `cargo xtask quality-baseline` only compare —
 they never measure.
 
-One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name
-(`athletic_rust_pipeline`, underscores) while `cargo xtask scan` keys them by directory
-(`athletic-rust-pipeline`, hyphens). Both appear in `tools/quality-baseline.json`.
+~~One naming gotcha when reading either file: the clippy TSV keys crates by cargo target name~~ (historical: the `athletic_rust_pipeline` crate no longer exists; deleted 2026-09-23)
+~~(`athletic_rust_pipeline`, underscores) while `cargo xtask scan` keys them by directory~~
+~~(`athletic-rust-pipeline`, hyphens). Both appear in `tools/quality-baseline.json`.~~
 
 ## 6. Known unknowns and next measurement
 
 **Not wired.**
 
-- Criterion benches exist (`benches/artifact_store.rs`, `benches/blocking_fanout.rs`,
-  `benches/workbook_export.rs`, `crates/census-service/benches/core.rs`); there is still no
-  flamegraph, pprof or hyperfine reference in `src/`, `tools/`, or either `Cargo.toml`. (Program §1
-  notes `perf` is installed on the workstation; nothing in the repo calls it.)
+~~- Criterion benches existed at (`benches/artifact_store.rs` (historical: root crate deleted), `benches/blocking_fanout.rs` (historical), `benches/workbook_export.rs` (historical)) — none under `src/`, `tools/`, or either `Cargo.toml`. `crates/census-service/benches/core.rs` remains.~~ (historical: root crate benches and `src/` path deleted 2026-09-23)
 - No regression gate: `tools/gate.sh`'s bench-presence lane runs `cargo bench --workspace --no-run`,
   which fails only when a benchmark target does not compile. Nothing compares a benchmark number to a
   threshold, so a slowdown is not caught. The two harnesses in `examples/` are not compiled by that
@@ -448,10 +445,7 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
 
 **Top measurement candidates**, in descending order of expected information per unit of work:
 
-1. **Append batching and durability mode** (`crates/census-service/src/store/`): sweep `--batch`
-   and compare `single_append` versus `batched_append`; the production knob equivalent is the batch
-   size adapters pass to `append_many` and the per-batch `SyncData` commit. A group-commit policy is
-   a design change, so measure first.
+~~1. Append batching and durability mode~~ (`crates/census-service/src/store/`) — **historical**: no `store` dir under census-service; store code is in `crates/census-store/src/`. ~~Sweep `--batch` and compare `single_append` versus `batched_append`; the production knob equivalent is the batch size adapters pass to `append_many` and the per-batch `SyncData` commit. A group-commit policy is a design change, so measure first.~~
 2. **Fjall tuning** (program Phase 7): cache size (256 MiB census / 32 MiB root), compaction and
    partition settings, and KV separation for large observation payloads — currently all defaults.
 3. **Observation codec** (program §5, owner decision 2): every observation is `serde_json` on write
@@ -460,11 +454,8 @@ One naming gotcha when reading either file: the clippy TSV keys crates by cargo 
 4. **Repeated full scans**: `report::build_census` scans schools/athletes/coaches/meets,
    `bests::build` scans athletes/meets/events/performances, and `workbook::build` does both plus the
    XLSX write. Quantify scan time and peak memory at scale before considering a shared read model.
-5. **Workbook ingest passes** (`src/workbook_ingest.rs`): preflight decompresses and scans the
-   container, metadata reads it again, calamine streams it a third time. Measure cost per megabyte
-   and whether the preflight pass can validate during the parse instead of before it.
-6. **XLSX visitor container opens** (`src/xlsx/parser.rs`): shared strings plus one archive open per
-   sheet; measure whether a single open across sheets is worth the API change on wide workbooks.
+~~5. Workbook ingest passes~~ (`src/workbook_ingest.rs`) — **historical**: path belonged to deleted root crate. ~~Preflight decompresses and scans the container, metadata reads it again, calamine streams it a third time. Measure cost per megabyte and whether the preflight pass can validate during the parse instead of before it.~~
+~~6. XLSX visitor container opens~~ (`src/xlsx/parser.rs`) — **historical**: path belonged to deleted root crate. ~~Shared strings plus one archive open per sheet; measure whether a single open across sheets is worth the API change on wide workbooks.~~
 7. **Browser/HTTP scaling** (program Phase 7 lists N=1/8/64): tabs are validated 1..=8 with a
    `tabs × 4` queue; the fetcher's per-host pacing and one-in-flight-per-host rule will dominate
    most curves, so measure latency and error rate as well as throughput.

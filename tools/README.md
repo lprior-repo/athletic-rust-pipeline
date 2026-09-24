@@ -23,12 +23,12 @@ Two modes, and the difference is what a missing tool means:
   `mutants` lane.
 * **`--release`** — the pass a release is signed off on. It implies `--full`, and a missing tool is a
   **failure**: a `SKIP` there would be a claim that a lane's coverage was not needed, and a release
-  cannot make that claim. Install the whole set (`cargo-audit`, `cargo-vet`, `cargo-machete`,
-  `cargo-geiger`, `cargo-hack`, `cargo-mutants`) before invoking it. `cargo-deny` is never skipped in
+  Install the whole set (`cargo-audit`, `cargo-vet`, `cargo-machete`,
+  `cargo-geiger`, `cargo-hack`, `cargo-mutants`, `cargo-deny`) before invoking it. `cargo-deny` is never skipped in
   either mode: its scorecard is a pass/fail lane, not an advisory one.
 
 The check and strict-clippy lanes run through the pinned nightly with
-`-Zallow-features=portable_simd,try_blocks`. That is the source-policy allowlist: a `#![feature(..)]`
+`-Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access`. That is the source-policy allowlist: a `#![feature(..)]`
 outside it fails the gate, and on a stable toolchain the two lanes fail on the `-Z` flag rather than
 silently dropping the check.
 
@@ -37,22 +37,23 @@ silently dropping the check.
 | Lane | Command | Fails when |
 | --- | --- | --- |
 | fmt | `cargo fmt --all -- --check` | any file is not rustfmt-clean |
-| check | `cargo -Zallow-features=portable_simd,try_blocks check --workspace --all-targets --all-features` | anything does not compile, tests and examples included |
+| check | `cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access check --workspace --all-targets --all-features` | anything does not compile, tests and examples included |
 | doc | `cargo doc --workspace --all-features --no-deps` | a doc comment breaks `rustdoc` |
 | tests | `cargo nextest run --workspace --all-features`, else `cargo test --workspace --all-features --quiet` | a test fails |
-| strict clippy | `cargo -Zallow-features=portable_simd,try_blocks clippy --workspace --lib --bins --examples --all-features -- <LINT_SET>` | (measurement lane, not a pass/fail lane: its tallies feed the ratchet) |
+| strict clippy | `cargo -Zallow-features=portable_simd,try_blocks,proc_macro_span,error_generic_member_access clippy --workspace --lib --bins --examples --all-features -- <LINT_SET>` | (measurement lane, not a pass/fail lane: its tallies feed the ratchet) |
 | production scan | `cargo xtask scan` | the scan cannot run; the numbers themselves are ratcheted below |
 | domain type integrity | `cargo xtask integrity` | (measurement lane: review candidates, ratcheted in the DDD phase) |
 | domain purity | `cargo xtask domain-purity` | a banned async/I/O package is in the `census-domain` normal tree |
+| module seams | `cargo xtask seams` | a top-level module re-exports a symbol that should be private (the gate prints the violation set on FAIL) |
 | baseline update | `cargo xtask quality-baseline` | only with `--update-baseline`; refuses to raise a number without `--allow-increase` |
 | debt ratchet | `cargo xtask ratchet` | any metric grew against the baseline |
 | deny | `cargo deny check` | a dependency policy violation (needs `cargo-deny`; a missing tool fails this lane) |
 | audit | `cargo audit --quiet` | an advisory covers a locked crate (a missing `cargo-audit` SKIPs in dev and fails `--release`) |
 | vet | `cargo vet --locked` | a locked crate is neither audited nor exempted in `supply-chain/` (a missing `cargo-vet` SKIPs in dev and fails `--release`) |
-| machete | `cargo machete` | an unused dependency is declared (a missing `cargo-machete` SKIPs in dev and fails `--release`) |
-| geiger | `cargo geiger --workspace --all-features --output-format Json` | unsafe code appears (a missing `cargo-geiger` SKIPs in dev and fails `--release`) |
+| machete | `$(command -v cargo-machete) .` | an unused dependency is declared (a missing `cargo-machete` SKIPs in dev and fails `--release`; plain `cargo machete` fails through a mise shim) |
+| geiger | `(cd crates/census-service && cargo geiger --all-features --output-format Json > /dev/null)` | unsafe code appears (a missing `cargo-geiger` SKIPs in dev and fails `--release`; the workspace form fails because geiger rejects a virtual manifest) |
 | feature powerset | `cargo hack check --workspace --feature-powerset` | a feature combination does not compile (a missing `cargo-hack` SKIPs in dev and fails `--release`) |
-| bench presence | `cargo bench --workspace --no-run` | a benchmark target exists and does not build; with no `benches/` yet it prints why and passes |
+| bench presence | `cargo bench --workspace --no-run` | a benchmark target exists and does not build (the `if [ -d benches ] || [ -d crates/census-service/benches ]` branch always runs; the else-branch was removed when root `benches/` was deleted) |
 | mutants | `cargo mutants --workspace --in-place` | a mutant survives the test suite (only with `--full`, which `--release` implies; a missing `cargo-mutants` SKIPs in dev and fails `--release`) |
 
 ## Supply chain
@@ -89,8 +90,7 @@ gate prints are the same numbers `cargo xtask <command>` prints by hand.
 | --- | --- |
 | `cargo xtask scan` | the forbidden-construct and size-budget report, as JSON on stdout |
 | `cargo xtask integrity` | the domain type-integrity candidates, as JSON on stdout |
-| `cargo xtask domain-purity` | the `census-domain` normal dependency tree; fails on a banned package |
-| `cargo xtask contract` | the seven architectural constants agents rely on (census scope, the source transports, handler ceilings, Python artifacts, descriptor admission, scanned-package parity, the front-door documents); one line per violated check |
+| `cargo xtask contract` | the eight architectural constants agents rely on (census scope, the source transports, handler ceilings, Python artifacts, descriptor admission, scanned-package parity, the front-door documents, every sources/ module is a registered source or listed reader and vice versa); one line per violated check |
 | `cargo xtask quality-baseline <baseline> <clippy.tsv> <scan.json> [--allow-increase]` | rewrites the baseline |
 | `cargo xtask ratchet <baseline> <clippy.tsv> <scan.json>` | compares measurements with the baseline |
 

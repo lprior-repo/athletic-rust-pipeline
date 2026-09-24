@@ -30,7 +30,7 @@ Three bodies of work already exist, and none of them is the missing piece on its
 | Body | What it is | State |
 |---|---|---|
 | `crates/census-service/**` (untracked) | a **synchronous, dependency-light collector**: per-host paced fetch, robots, disk cache, journal-resume, canonical entity graph, 12 state adapters, coach/GPA-adjacent passes | **P1 essentially done for 12 midwest states** — 141,441 athletes, **31,657 Class-of-2027** with 100% profile-URL + grad-year evidence, 2,224 coaches, 611 with email `[RECORDED: var/census-service/out/report.json + census-by-state.csv]`. Performances/PRs/verification: **absent** |
-| `src/**` (committed) | the **domain, verification and durability** machinery: exact mark parsers + event ontology, recompute-don't-trust verifiers, per-row evidence envelopes, durable local-model lane, Restate topology | mature, fixture-qualified; bound to one source origin and one workbook pipeline |
+| ~~`src/**`~~ (committed) | ~~the domain, verification and durability machinery: exact mark parsers + event ontology, recompute-don't-trust verifiers, per-row evidence envelopes, durable local-model lane, Restate topology~~ — **historical**: root package deleted 2026-09-23 (`Cargo.toml` header + `ARCHITECTURE.md` §1)
 | `SOURCES_SURVEY.md` §0/§14 + `PROFILE_REPLICATION.md` | the **recorded policy and plan**: 2 RPS/host ceiling, `HostPolicy` fields, backoff ladder, phased P0–P6 | written; P2–P5 unimplemented |
 
 The consequence: the collector's *acquisition* half is already built and running; the
@@ -49,9 +49,9 @@ remain, and the main pipeline already contains working implementations of the *p
 | `net/robots.rs::RobotsRules::allows` | **REUSE AS-IS** | Longest-prefix match, allow wins ties — correct enough for every host observed in the survey |
 | `net/client.rs::Fetcher::new` | **REUSE AS-IS** | 45 s total / 15 s connect timeouts, 5-redirect limit, honest UA, 32 MiB body cap (`MAX_BODY_BYTES`) checked against both `Content-Length` and the read body |
 | `net/mod.rs::FetchStats` | **ADAPT** | The right counters (`requests`, `cache_hits`, `conditional_304`, `robots_blocked`, `bytes_downloaded`, `errors`, `per_host`) but they are never persisted — P0 requires the per-host budget in the run log |
-| `src/runtime/source/admission.rs` | **PATTERN ONLY** | Durable `not-before-ms` deadline + bounded waiter queue is the right *idea*, but it is Restate-object state; the collector is deliberately synchronous — port the semantics, not the code |
-| `src/runtime/source/retry.rs::next_delay` | **PATTERN ONLY** | `next_delay`: `Retry-After` wins, else `429 → [60,120,240] s`, other retryable → `[1,2,4] s`, clamp by attempt, floor at the pacing interval, `MAX_ATTEMPTS = 4`, `MAX_RETRY_DELAY = 86_400 s`, no jitter. This is the exact ladder the census transport lacks |
-| `src/cli/flow_control.rs::source_rules` | **PATTERN ONLY** | Server-side pattern+concurrency rules and refusal to shadow a stricter wildcard; the collector's equivalent is a per-host concurrency of 1 enforced in-process |
+| ~~`src/runtime/source/admission.rs`~~ | ~~**PATTERN ONLY**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/runtime/source/retry.rs::next_delay`~~ | ~~**PATTERN ONLY**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/cli/flow_control.rs::source_rules`~~ | ~~**PATTERN ONLY**~~ — **historical**: root crate deleted 2026-09-23.
 
 ### P1 — cohort seed (**already delivered, midwest evidence only**)
 
@@ -59,8 +59,8 @@ remain, and the main pipeline already contains working implementations of the *p
 |---|---|---|
 | `census-domain/src/model.rs::GradYear::of` / `ObservedGrade` | **REUSE AS-IS** | `grad_year = school_year.start + 13 - grade`; the cohort key is derived, never assumed, and the observation carries its source — this is the `SCOPE.md` evidence rule in code |
 | `census-domain/src/model.rs::SchoolYear::containing` | **REUSE AS-IS** | Aug-1 boundary; grade evidence is season-bound by construction |
-| `sources/milesplit.rs::parse_roster` + `roster_entities` | **REUSE AS-IS** | Roster rows are dropped when the grad cell or name is missing (fail-closed), `identity_confidence = HIGH` only for the 2027 cohort |
-| `report/` (`build_census` + `write_census`) | **REUSE AS-IS** | Every cohort number is paired with a coverage counter; `co2027_multisource = 0` is reported honestly rather than papered over |
+| ~~`sources/milesplit.rs::parse_roster` + `roster_entities`~~ (historical: was `src/sources/milesplit.rs`) | ~~**REUSE AS-IS**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`report/`~~ (`build_census` + `write_census`) (historical: was `src/report/`) | ~~**REUSE AS-IS**~~ — **historical**: root crate deleted 2026-09-23.
 | MaxPreps sitemap path (`PROFILE_REPLICATION.md` §1) | **GAP** | Not implemented anywhere; the census is MileSplit/association-seeded (2026-09-21: the jurisdiction type covers all 51 US jurisdictions and the MileSplit host is derived per jurisdiction, but the *ingested* evidence is still Midwest state associations plus MileSplit rosters) |
 
 ### P2 — performances + grade evidence per row (the main gap)
@@ -70,7 +70,7 @@ remain, and the main pipeline already contains working implementations of the *p
 | `census-domain/src/model.rs::CanonicalPerformance` | **REUSE AS-IS** | `{athlete, team, event, meet, date, mark, wind_mps, place, heat, round, timing, observed_grade, evidence, source_key}` — already the full field set the target requires |
 | `census-domain/src/model.rs::EventKind` + `SourceEventLabel` | **REUSE AS-IS** | 35 canonical variants with `Unmapped{label}` preservation; `from_source_label` maps vendor labels without losing the raw string |
 | `census-domain/src/model.rs::Mark` | **ADAPT** | `Raw(String)` keeps unparsed marks honest, but the numeric variants are `f64`; the main pipeline's integer-exact parsers are strictly better (below) |
-| `store/entities.rs::Entity for CanonicalPerformance` + `source_key` | **ADAPT** | `source_key` is documented as the idempotent-upsert key but **no consumer exists** — wire it into `merge` or delete it; a documented-but-unused idempotency key is exactly what the verification lane will flag |
+| ~~`store/entities.rs::Entity for CanonicalPerformance` + `source_key`~~ (historical: was `src/store/entities.rs`) | ~~**ADAPT**~~ — **historical**: root crate deleted 2026-09-23.
 | MileSplit `/raw` HY-TEK text + performance API (`SOURCES_SURVEY.md` §2) | **GAP** | Nothing in the crate fetches per-performance data; `out/events.jsonl` and `out/performances.jsonl` are 0 B `[RECORDED]` |
 
 ### P3 — history / cross-check
@@ -78,14 +78,14 @@ remain, and the main pipeline already contains working implementations of the *p
 | Asset | Verdict | Why |
 |---|---|---|
 | `census-domain/src/model.rs::SourceNamespace` | **REUSE AS-IS** | Already declares `TfrrsAthlete`, `TfrrsTeam`, `DirectAthletics*`, `TimerMeet{provider}`, `LegacyAthleticNet{kind}` — the history sources are pre-modelled |
-| `report/` (`ProviderCoverage`) | **REUSE AS-IS** | Already counts “Athletic.net URLs known without any Athletic.net request” — the no-broad-crawl thesis, measured |
+| ~~`report/`~~ (`ProviderCoverage`) (historical: was `src/report/`) | ~~**REUSE AS-IS**~~ — **historical**: root crate deleted 2026-09-23.
 | TFRRS adapter | **GAP** | No module; TFRRS is static HTML with `ETag`s and one request per athlete career |
 
 ### P4 — enrichment (coach, GPA)
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `sources/wiaa/`, `ks.rs`, `ihsa/`, `ohsaa/`, `mshsl/`, `plain_names/`, `coach_contacts.rs` (2026-09-21: there is no `mhsaa.rs` module; `mhsaa` survives only as a host tag in `sources/coach_contacts/wire.rs`) | **REUSE AS-IS** | Association APIs/directories → staff → `CanonicalCoach` with `CoachRole` (AD is school-wide, never sport-bound) and per-field evidence; 526 KS + 526 emails already imported `[RECORDED]` |
+| ~~`sources/wiaa/`, `ks.rs`, `ihsa/`, `ohsaa/`, `mshsl/`, `plain_names/`, `coach_contacts.rs`~~ (historical: was `src/sources/...`) | ~~**REUSE AS-IS**~~ — **historical**: root crate deleted 2026-09-23.
 | `census-domain/src/model.rs::CanonicalCoach` / `CoachRole` | **REUSE AS-IS** | Role + optional sport binding + professional email + phone, all evidence-carrying |
 | GPA as a nullable field with a source enum | **GAP** | Not modelled yet; plan §6 requires `recruiting_profile | academic_list | school_page` and never-inferred values |
 
@@ -93,25 +93,25 @@ remain, and the main pipeline already contains working implementations of the *p
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `src/result_verify/assessment.rs::verify` | **PATTERN ONLY → port** | **Recompute** `decision::assess(...)` from the evidence and demand exact equality with the exported assessment — the single most valuable idea in the repo for the collector |
-| `src/result_verify/checks/mod.rs::verify_embedded_artifacts` | **PATTERN ONLY → port** | Three-way identity per artifact: embedded JSON == typed serde re-serialization == retained bytes at the referenced digest |
-| `checks/mod.rs::VerifiedState::add_to` | **PATTERN ONLY → port** | `checked_add` with an explicit overflow error; cohort counters must not wrap |
-| `src/result_verify.rs::verify_results` + `validate_line` | **PATTERN ONLY → port** | Stream a JSONL snapshot, cap each line, reject duplicate keys — the shape a census verifier needs |
-| `coverage.rs::verify` / `verify_discovery` | **PATTERN ONLY → port** | “Every reference is consumed exactly once, no unbound extras”; candidate-ID set equality between stages |
-| `assessment.rs::admit` + `ByteCount` | **PATTERN ONLY → port** | Replays the runtime's per-row byte budget instead of trusting it — directly reusable as the collector's per-athlete parse budget |
-| `src/runtime/reviewer/mod.rs::LocalReviewer` | **PATTERN ONLY** | Durable object, one lane key, request content-addressed **before** the call, `blocked` latch on artifact failure, cooldown = max `Retry-After`, receipts retained through exhaustion. The collector's AI lane should copy this shape without Restate |
-| `reviewer/model.rs::ChatRequest` + `input.rs::prepare` | **REUSE AS-IS (shape)** | OpenAI-compatible request typing and 3-line endpoint/model resolution; the prompt text itself is task-specific (`PATTERN ONLY`) |
-| `src/runtime/review_case.rs` / `src/runtime/protocol.rs::Review*` protocol types | **PATTERN ONLY** | Verdict + evidence envelope for “AI proposes, deterministic gate decides” |
+| ~~`src/result_verify/assessment.rs::verify`~~ | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/result_verify/checks/mod.rs::verify_embedded_artifacts`~~ | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`checks/mod.rs::VerifiedState::add_to`~~ (historical: was `src/result_verify/checks/mod.rs`) | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/result_verify.rs::verify_results` + `validate_line`~~ | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`coverage.rs::verify` / `verify_discovery`~~ (historical: was `src/result_verify/coverage.rs`) | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`assessment.rs::admit` + `ByteCount`~~ (historical: was `src/result_verify/assessment.rs`) | ~~**PATTERN ONLY → port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/runtime/reviewer/mod.rs::LocalReviewer`~~ | ~~**PATTERN ONLY**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`reviewer/model.rs::ChatRequest` + `input.rs::prepare`~~ (historical: was `src/runtime/reviewer/model.rs` / `input.rs`) | ~~**REUSE AS-IS (shape)**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/runtime/review_case.rs`~~ / ~~`src/runtime/protocol.rs::Review*`~~ | ~~**PATTERN ONLY**~~ — **historical**: root crate deleted 2026-09-23.
 
 ### P6 — PR computation (deterministic only)
 
 | Asset | Verdict | Why |
 |---|---|---|
-| `src/domain/marks/event.rs::EventName` | **PORT/EXTRACT** | 17-variant identity with a lossless `Unsupported(String)` tail; `event_key`, `is_lower_better`, `is_comparable_event`, `value_kind` — comparability is a property of identity, so no caller table is needed |
-| `event.rs::track_event/field_event/hurdles_event/relay_event/cross_country_name` | **PORT/EXTRACT** | Flat events incl. 500/600/2000, hurdles set, relays, and **XC as distances** (`xc2k…xc12k`, `xc2mile|3mile|5mile|6mile`) — the “a 5 k and a 3-mile time are not interchangeable” rule is already encoded |
-| `src/domain/marks/parser.rs::parse_time/parse_distance` | **PORT/EXTRACT** | Exact integer arithmetic (milliseconds, nanometres), no floats, no silent unit assumption; bare numbers are hard errors |
-| `event.rs::flat_name/hurdle_name/…` | **ADAPT on port** | Silent `_ => "unsupported"` / `_ => "cross_country"` fallbacks merge identities — replace with explicit arms when adding events |
-| `src/domain/performance_evidence.rs` | **PORT/EXTRACT** | Carries the indoor/outdoor surface (`season`) that `EventKind`/`TrackEvent` deliberately lacks |
+| ~~`src/domain/marks/event.rs::EventName`~~ | ~~**PORT/EXTRACT**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`event.rs::track_event/field_event/hurdles_event/relay_event/cross_country_name`~~ (historical: was `src/domain/marks/event.rs`) | ~~**PORT/EXTRACT**~~ — **historical**.
+| ~~`src/domain/marks/parser.rs::parse_time/parse_distance`~~ | ~~**PORT/EXTRACT**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`event.rs::flat_name/hurdle_name/…`~~ (historical: was `src/domain/marks/event.rs`) | ~~**ADAPT on port**~~ — **historical**: root crate deleted 2026-09-23.
+| ~~`src/domain/performance_evidence.rs`~~ | ~~**PORT/EXTRACT**~~ — **historical**: root crate deleted 2026-09-23.
 | PR/best computation itself | **GAP (both codebases)** | No PR function exists anywhere: group by `(event identity, gender)`, take the valid minimum under `is_lower_better`, honour wind/timing flags; the source's own PR table is stored as a cross-check only |
 
 ---
@@ -194,9 +194,7 @@ the 2026-09-20 snapshot; four of the nine are fixed and one is structurally diff
 - **Verification is ported, not merged.** The `result_verify` *patterns* (recompute, three-way CAS
   identity, checked counters, streaming line validation, budget replay) belong in the collector as
   its own deterministic gate; the workbook verifier stays where it is.
-- **One prerequisite if the collector is ever wired into the pipeline:** `runtime/config.rs::validate_source`
-  hard-pins `https://www.athletic.net/` and `RawConfig` carries a single `source_origin`/`source_interval_ms`.
-  A second host needs a per-origin allowlist with per-origin intervals before anything else works.
+~~- One prerequisite if the collector is ever wired into the pipeline: `runtime/config.rs::validate_source`~~ (historical: was `src/runtime/config.rs`, root crate deleted 2026-09-23)
 - **Coordination note (updated 2026-09-21):** the earlier warning that "`crates/` and `var/` are
   untracked and were being written by another session" no longer applies to `crates/` — it is tracked
   in git (`git ls-files crates` lists it, including `crates/census-domain/**`). `var/` remains

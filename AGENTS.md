@@ -14,26 +14,29 @@ projection; the durable evidence system is the census.
 
 ## Read first
 
-1. `ARCHITECTURE.md` — pipeline, crate boundaries, invariants, and the binding standards (§-numbered
-   so that references such as §9, §38, §70 resolve there).
+1. `ARCHITECTURE.md` — pipeline, crate boundaries, invariants, and the binding standards (§-numbered:
+   §9, §55 and §70 resolve there; the §38/§49/§56 family comes from the mission brief, which is not in
+   this tree, and this file restates those standards where they bind).
 2. `docs/adr/README.md` — decisions that may not be silently re-litigated.
 3. `docs/migration/module-map.md` — the module inventory and the crate cut being executed.
-4. Per-crate `README.md` files as the crates are extracted.
+4. `crates/census-service/README.md` and `xtask/README.md` — the two crate-root READMEs that exist;
+   the other crates document themselves in their module headers.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `cargo xtask gate` | the four build gates (§55) plus the line-budget scan, in order, stopping at the first failure |
+| `cargo xtask gate [-- <gate args>]` | every lane of `tools/gate.sh` — the four build gates (§55), the scans, the debt ratchet, and each optional tool lane that is installed; it runs them all and reports the failing set |
+| `cargo xtask contract` | the eight workspace contract checks, adapter registration and the documented set among them |
 | `cargo xtask census-status [--ingress [<ORIGIN>] \| --store <DIR>]` | current store state, counted by the serving census (`Census/status`) or read from the store directly |
 | `cargo xtask coverage [--ingress [<ORIGIN>] \| --store <DIR>]` | coverage summary (§49 fields) |
 | `cargo xtask export [--ingress [<ORIGIN>] \| --store <DIR>]` | workbook export (`Workbook/run`) |
-| `cargo xtask source-check <name>` | adapter layout and fixture presence |
-| `cargo xtask source-fixture <name>` | fixture set integrity |
+| `cargo xtask source-check <name>` | alias of `source-test`: the census-service tests covering one source |
+| `cargo xtask source-fixture <name>` | lists the captures under the crate's `tests/fixtures/<name>/` (read-only) |
 | `cargo xtask source-test <name>` | offline fixture test for one source |
 | `cargo xtask replay <name>` | deterministic offline parser replay |
 | `cargo xtask new-source <name>` | scaffold a new adapter |
-| `cargo xtask bench parser` | parser benchmarks |
+| `cargo xtask bench -- parser` | parser benchmarks; filters after `--` are forwarded to `cargo bench` |
 
 `census-status`, `coverage` and `export` default to the serving census: the flag-free form and
 `--ingress [<ORIGIN>]` (default `http://127.0.0.1:18095/`) submit the matching Restate handler and are
@@ -42,9 +45,9 @@ safe to run beside `census-serve`; origins must be loopback HTTP with no path or
 store is single-writer, and the lock error it returns while the census serves is the correct answer,
 not a bug.
 
-Binary: `./target/release/census-service` today, renaming to `census-service` when the CLI crate is
-extracted — address it through the shared constant, never by inlining the name. Store root:
-`var/census-service` in the command `census-cli serve` prints; the delivered census of ADR-009 lives
+Binary: `./target/release/census-service` — the `census-service` bin of `crates/census-service`; its
+`serve` subcommand prints the `census-serve` command line that runs the endpoint against this store.
+Store root: `var/census-service` (the `--data-dir` default); the delivered census of ADR-009 lives
 in `var/midwest-census` (the store the seal, the workbook and the §58 verification were built from).
 **The store is single-writer**; lanes that write must serialize.
 
@@ -52,15 +55,15 @@ in `var/midwest-census` (the store the seal, the workbook and the §58 verificat
 
 | Crate | Owns | May not |
 | --- | --- | --- |
-| `census-domain` | pure types, cohort/grade evidence, event canonicalisation, PR ordering rules | depend on tokio, fjall, reqwest, chromiumoxide, restate, xlsx, llama clients |
-| `census-store` | Fjall keyspaces, journals, snapshots, migrations, backup/restore | know about HTTP or parsers |
-| `census-crawl` | source adapters, fetchers, admission, browser supervisor | write canonical entities |
-| `census-reconcile` | identity normalisation, deterministic scoring, conflict detection | call models |
-| `census-review` | the local Qwen identity-review lane | decide identity (it advises; Rust adjudicates) |
-| `census-report` | coverage, bests, PR projection, workbook/export | mutate evidence |
-| `census-service` | CLI, Restate workflows, bootstrap and task supervision | bypass the store's durability rules |
-| `g1-audit` | the audit lane | be imported by production paths |
-| `xtask` | the agent-facing verbs above | hold business logic |
+| `athleticnet-browser` | persistent headed profile, tab pool, CDP request/response capture, challenge classification, retry-after header classification, `BrowserError` failure vocabulary | retry (belongs to the caller), solve challenges, spoof headers, handle logins, proxy rotation |
+| `census-domain` | pure types, cohort/grade evidence, event canonicalisation, PR ordering rules | depend on tokio, fjall, reqwest, chromiumoxide, restate, xlsx, llama clients
+| `census-store` | Fjall keyspaces, journals, snapshots, migrations, backup/restore | know about HTTP or parsers
+| `census-crawl` | source adapters, fetchers, admission, browser supervisor | write canonical entities
+| `census-reconcile` | identity normalisation, deterministic scoring, conflict detection | call models
+| `census-review` | the local Qwen identity-review lane | decide identity (it advises; Rust adjudicates)
+| `census-report` | coverage, bests, PR projection, workbook/export | mutate evidence
+| `census-service` | CLI, Restate workflows, bootstrap and task supervision | bypass the store's durability rules
+| `xtask` | the agent-facing verbs above | hold business logic
 
 Main (the architect) owns: workspace layout, domain public contracts, serialized public types, Fjall
 schema revisions, Restate workflow contracts, migrations, and final integration. Adapter owners own
@@ -94,8 +97,9 @@ infer GPA (§36). A §69 stop condition for one source is persisted and the cens
 
 ## How to add work
 
-- **Adapter**: `cargo xtask new-source <name>`, then fixtures per §64
-  (`fixtures/<name>/{README.md,index.json,raw/,expected/}`), offline test via
+- **Adapter**: `cargo xtask new-source <name>`, then captured fixtures under
+  `crates/census-crawl/tests/fixtures/<name>/` — flat captured bytes, the scaffolded `README.md`
+  contract, and an optional `SOURCE.md` provenance note — offline test via
   `cargo xtask source-test <name>`. Answer the §13 report questions in
   `research/sources/<name>/SOURCE_REPORT.md`.
 - **Workflow**: identity per §8 (`jurisdiction:{state}:{season}:{revision}` and friends). Never mint a

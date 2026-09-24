@@ -8,7 +8,11 @@
 //! Every arm is a walk that publishes a school or team universe and needs no seed from another
 //! source. A source whose walk needs one — a name list, a meet id, an athlete profile — is refused
 //! by the plan instead of being run here, because a stage that invented its own seed would be a
-//! second opinion about what the run covers.
+//! second opinion about what the run covers. The registered sources this stage leaves owed are the
+//! ones whose first input only an operator can supply: `ohsaa` the name of a school to search for,
+//! `coach_contacts` a dataset path, `tfrrs` a performance list and a roster URL, and
+//! `athleticlive` with `athleticlive_athletes` a harvest and the meet ids its athlete index is
+//! keyed on.
 
 use std::sync::Arc;
 
@@ -35,6 +39,8 @@ pub(super) const TEAMS_ARMS: &[(&str, TeamsArm)] = &[
     ("wiaa", TeamsArm::WiaaDirectory),
     ("mshsl", TeamsArm::MshslSchools),
     ("plain_names", TeamsArm::PlainNamesDirectories),
+    ("ihsa", TeamsArm::IhsaSchools),
+    ("ks", TeamsArm::KsDirectory),
 ];
 
 /// One arm per walk: what the stage runs for a planned source.
@@ -48,6 +54,12 @@ pub(super) enum TeamsArm {
     MshslSchools,
     /// The Nebraska and North Dakota half each: association directories of schools and staff.
     PlainNamesDirectories,
+    /// The IHSA school list and its per-school staff: schools, their coaches and activities
+    /// directors. One request returns every Illinois member school, so the walk needs no seed.
+    IhsaSchools,
+    /// The KSHSAA directory: one request returns every Kansas member school with its athletic
+    /// director.
+    KsDirectory,
 }
 
 /// The arm for one planned slug, or `None` when the stage has no walk for it.
@@ -92,6 +104,12 @@ async fn sweep_team_source(
         )),
         TeamsArm::PlainNamesDirectories => Ok(Some(
             walk_plain_names(store, fetcher, jurisdiction, season, refresh, at).await?,
+        )),
+        TeamsArm::IhsaSchools => Ok(Some(
+            walk_ihsa(store, fetcher, jurisdiction, season, refresh, at).await?,
+        )),
+        TeamsArm::KsDirectory => Ok(Some(
+            walk_ks(store, fetcher, jurisdiction, season, refresh, at).await?,
         )),
     }
 }
@@ -162,6 +180,54 @@ async fn walk_plain_names(
     };
     let context = adapter_context(store, fetcher, season, refresh, at, None);
     let report = census_crawl::plain_names::collect(&context, &options)
+        .await
+        .map_err(collect_error)?;
+    rows_written(&report)
+}
+
+/// The IHSA school list and its per-school staff. One request returns every Illinois member school,
+/// so an empty `school_names` walks the whole state rather than nothing.
+async fn walk_ihsa(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    refresh: bool,
+    at: &str,
+) -> Result<usize, HandlerError> {
+    let options = census_crawl::ihsa::Options {
+        limit: None,
+        refresh,
+        observed_on: at.to_string(),
+        states: vec![jurisdiction],
+        school_names: Vec::new(),
+    };
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let report = census_crawl::ihsa::collect(&context, &options)
+        .await
+        .map_err(collect_error)?;
+    rows_written(&report)
+}
+
+/// The KSHSAA directory. Its one endpoint returns every Kansas member school with its athletic
+/// director, and the walk names no school of its own.
+async fn walk_ks(
+    store: &Arc<Store>,
+    fetcher: &Arc<Fetcher>,
+    jurisdiction: UsJurisdiction,
+    season: SchoolYear,
+    refresh: bool,
+    at: &str,
+) -> Result<usize, HandlerError> {
+    let options = census_crawl::ks::Options {
+        limit: None,
+        refresh,
+        observed_on: at.to_string(),
+        states: vec![jurisdiction],
+        school_names: Vec::new(),
+    };
+    let context = adapter_context(store, fetcher, season, refresh, at, None);
+    let report = census_crawl::ks::collect(&context, &options)
         .await
         .map_err(collect_error)?;
     rows_written(&report)

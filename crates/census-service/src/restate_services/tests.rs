@@ -14,6 +14,7 @@ use census_store::StoreError;
 
 use super::*;
 use crate::restate_services::plan::classify_access;
+use crate::restate_services::results_arms::ResultsStageOutcome;
 use census_report::report::Scope;
 use census_store::Table;
 
@@ -301,6 +302,7 @@ fn answered_report() -> JurisdictionReport {
         },
         consolidated: Vec::new(),
         meets: MeetCensus::default(),
+        results: ResultsStageOutcome::default(),
         completed_at: "2026-09-22".to_string(),
     }
 }

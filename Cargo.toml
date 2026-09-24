@@ -1,14 +1,10 @@
-[package]
-name = "athletic-rust-pipeline"
-version = "0.1.0"
-edition = "2021"
-description = "Streaming XLSX athlete matching pipeline with deterministic source evidence and local models"
-license = "MIT"
-
-[lints]
-workspace = true
+# The workspace root. Every package lives in `crates/` or `xtask/`; the acquisition-side root package
+# that used to sit here was deleted once the census path owned its work (ARCHITECTURE.md §1). What
+# remains at this level is workspace-wide configuration and the shared, package-less `fixtures/`
+# directory: `athleticnet-browser` and `census-crawl` compile `fixtures/wire/**` into their tests.
 
 [workspace]
+resolver = "2"
 members = [
     "crates/athleticnet-browser",
     "crates/census-domain",
@@ -18,91 +14,8 @@ members = [
     "crates/census-review",
     "crates/census-store",
     "crates/census-service",
-    "crates/g1-audit",
     "xtask",
 ]
-
-[features]
-default = []
-fuzzing = []
-# Optional telemetry sinks. Both are off in every default build.
-#
-# `otlp` exports the spans the stderr layer prints over OTLP. Endpoint, protocol and headers come
-# from the standard `OTEL_EXPORTER_OTLP_*` environment variables, and spans are batched, so `main`
-# shuts the provider down explicitly to flush the last batch.
-otlp = ["dep:tracing-opentelemetry", "dep:opentelemetry", "dep:opentelemetry_sdk", "dep:opentelemetry-otlp", "tracing-subscriber/registry"]
-# `tokio-console` layers `console_subscriber::spawn()` next to the stderr layer. It compiles with or
-# without `RUSTFLAGS="--cfg tokio_unstable"` (that is why this feature can stay inside the gate's
-# all-features lanes), but tokio only emits its task spans under `cfg(all(tokio_unstable, feature =
-# "tracing"))` — see tokio's `cfg_trace!` in `src/macros/cfg.rs` — and `console_subscriber::spawn()`
-# panics outright in a build without the flag. `main` therefore installs the layer only under
-# `cfg(tokio_unstable)` and notes the skip at `debug` otherwise. Build with the flag to observe
-# tasks.
-tokio-console = ["dep:console-subscriber", "tokio/tracing"]
-
-[dependencies]
-anyhow = "1"
-athleticnet-browser = { path = "crates/athleticnet-browser" }
-clap = { version = "4.5", features = ["derive"] }
-fjall = "=3.1.10"
-futures = "0.3"
-httpdate = "1"
-quick-xml = "=0.41.0"
-regex = "1.11"
-reqwest = { version = "=0.13.4", default-features = false, features = ["json", "rustls", "stream", "query"] }
-restate-sdk = { version = "=0.12.0", default-features = false, features = ["http_server", "aws_lc_rs", "reqwest-client"] }
-rust_xlsxwriter = { version = "=0.99.1", features = ["constant_memory"] }
-calamine = "=0.36.1"
-serde = { version = "1", features = ["derive"] }
-sha2 = "0.10"
-serde_json = "1"
-thiserror = "2"
-tempfile = "3"
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "sync", "time", "signal"] }
-tokio-util = { version = "0.7", features = ["rt"] }
-toml = "0.9"
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-unicode-normalization = "0.1"
-url = { version = "2.5", features = ["serde"] }
-uuid = { version = "1", features = ["v7", "serde"] }
-zip = { version = "=8.6.0", default-features = false, features = ["deflate"] }
-lol_html = "=2.9.0"
-html-escape = "=0.2.13"
-# Optional telemetry exporters, one group because they are versioned together: tracing-opentelemetry
-# 0.33 is the release that tracks the opentelemetry 0.32 API, so the four OpenTelemetry crates must
-# move as a unit (mixing their nominal versions puts two `opentelemetry` crates in one graph and the
-# layer stops accepting the SDK's tracer).
-console-subscriber = { version = "0.5", optional = true }
-opentelemetry = { version = "0.32", optional = true }
-opentelemetry-otlp = { version = "0.32", optional = true }
-opentelemetry_sdk = { version = "0.32", optional = true }
-tracing-opentelemetry = { version = "0.33", optional = true }
-
-[dev-dependencies]
-http = "1"
-axum = "0.8"
-# The CDP frame-compatibility guard (tests/cdp_frame_compat.rs) pins one vendored model struct, so
-# the guard names the client directly while the transport crate owns the runtime dependency.
-chromiumoxide = "=0.9.1"
-proptest = "1"
-mockito = "1"
-tokio = { version = "1", features = ["test-util"] }
-criterion = "0.8"
-
-# Committed measurement targets. Each self-asserts its dataset before reporting a rate, so a
-# benchmark run fails loudly instead of publishing a number for a corpus that lost rows.
-[[bench]]
-name = "artifact_store"
-harness = false
-
-[[bench]]
-name = "blocking_fanout"
-harness = false
-
-[[bench]]
-name = "workbook_export"
-harness = false
 
 [profile.release]
 lto = "thin"
@@ -116,7 +29,7 @@ strip = true
 [workspace.lints.rust]
 unsafe_code = "forbid"
 unused_must_use = "deny"
-# `kani` is the harness cfg both census crates switch on (`#[cfg(kani)] include!("../kani/...")`);
+# `kani` is the harness cfg the census crates switch on (`#[cfg(kani)] include!("../kani/...")`);
 # declaring it keeps the zero-warning doctrine instead of ignoring the lint per crate.
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(tokio_unstable)'] }
 

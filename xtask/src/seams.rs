@@ -97,9 +97,6 @@ const ALLOWED: &[(&str, &str)] = &[
 /// it is the harness, it drives the census through the library and the services, and nothing depends
 /// on it. Rows are added when a crate is extracted, never to silence a violation.
 const ALLOWED_CRATES: &[(&str, &str)] = &[
-    // The original tree, carried over: the root binary drives a persistent Chromium session through
-    // the browser crate, which knows nothing about the census.
-    ("athletic-rust-pipeline", "athleticnet-browser"),
     // The acquisition plane: the polite fetcher, the browser bridge, one module per provider and the
     // provider registry. It is below the run — it maps provider data onto domain rows and writes them
     // through the store — and names nothing above it, so the run's shape and the durable layer's shape

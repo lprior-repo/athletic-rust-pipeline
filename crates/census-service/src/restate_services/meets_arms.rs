@@ -165,13 +165,16 @@ fn take_recorded(
 
 /// The season the request asked for, as the walks carry it. A year the season constructor rejects
 /// is a request fault rather than a source condition, so it is terminal.
-fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
+///
+/// `pub(super)` because the results stage learns the year from the same request field and must
+/// refuse it with the same sentence.
+pub(super) fn season_of(year: u16) -> Result<SchoolYear, HandlerError> {
     let start_year = i16::try_from(year).map_err(|_| not_a_season(year))?;
     SchoolYear::new(start_year).ok_or_else(|| not_a_season(year))
 }
 
 /// The terminal error a year outside the season window earns.
-fn not_a_season(year: u16) -> HandlerError {
+pub(super) fn not_a_season(year: u16) -> HandlerError {
     TerminalError::new(format!("season year {year} is not a school year")).into()
 }
 

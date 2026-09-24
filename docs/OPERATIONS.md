@@ -28,14 +28,17 @@ costs its requests and yields no canonical athlete.
 census-service --store <dir> teams --all-states --refresh
 census-service --store <dir> meets --all-states --year 2026
 census-service --store <dir> provider milesplit_results --all-states --limit 200
-census-service --store <dir> collect --all-states --school-year 2027
+census-service --store <dir> collect --all-states --school-year 2026
 census-service --store <dir> consolidate
 census-service --store <dir> index
 census-service --store <dir> report --print
 census-service --store <dir> bests
 census-service --store <dir> workbook
 ```
-
+The `--school-year` flag names the roster's season start, never the cohort: 2026 = the 2026-27
+season, the only season the class of 2027 is still enrolled in. Rosters are current-season
+documents, so a 2027 label would file today's 2026-27 rosters under 2027-28 and compute grade 13
+— not a grade — causing observations to be dropped.
 `index` rewrites the derived index tables — source-object identities, retained conflicts and review
 cases, coverage, and one snapshot of the pass — replacing their rows rather than appending, so the
 chain can run daily without growing them. `run` chains every step above in one command.
@@ -52,7 +55,8 @@ repair path — `index` re-deriving the table from the same rows *is* what keeps
 `teams --refresh` is the only step that re-reads association indexes; `collect` walks rosters and the
 current season's result pages. No step re-reads the full historical corpus: every fetch is
 content-hash cached, per-host paced (2 rps) and robots-checked. `deploy/systemd/census-service-collect.service`
-`.timer` runs exactly this chain weekly, against the **staging** store: the canonical store is written
+`.timer` runs this chain weekly, appending `"$bin" --store "$out" fjall-stats` after `workbook`, against the
+staging store at `/var/lib/census-service-staging`: the canonical store is written
 only by an endpoint deployment, so a collector run can neither race the national run for the Fjall
 writer lock nor write past the journal. Routing acquisition through the `Ingest` service is the
 replacement for the staging hop, and the service drives it: the meet-index stage of a jurisdiction run
@@ -69,13 +73,13 @@ stages — are the ones left to route.
 `--data-dir` and `--grad-year` are rejected by the batch CLI with exit code 2.
 
 **Jurisdiction default (critical):** with neither `--states` nor `--all-states`, the gather commands
-(`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/census-service/src/cli/mod.rs:235`,
+(`teams`, `meets`, `collect`) cover **Wisconsin alone** (`crates/census-service/src/cli/mod.rs:239`,
 pinned by `crates/census-service/src/cli/tests.rs:15`) — a one-state quick test, not the run scope.
 The run scope is the 49 jurisdictions of `UsJurisdiction::CENSUS_SCOPE` (ADR-009): `--all-states`
-selects it (`cli/mod.rs:234`), and the operational path is the service, which walks the whole scope on
+selects it (`cli/mod.rs:238`), and the operational path is the service, which walks the whole scope on
 its own (`crates/census-service/src/restate_services/open_work.rs:102`; a request naming a
 jurisdiction outside it is refused at `restate_services/national.rs:73`). The `provider` subcommands
-take the restriction form instead, where no flag means no restriction (`cli/mod.rs:248`, pinned at
+take the restriction form instead, where no flag means no restriction (`cli/mod.rs:252`, pinned at
 `cli/tests.rs:34`).
 
 ## Shutdown and the drain certificate
@@ -102,9 +106,8 @@ lands. Remote workers access the endpoint through a reverse proxy or tunnel — 
 bind address.
 
 ## Session-pool sizing
-
-The browser session pool uses `tabs × 4` as the queue capacity (where `tabs` is the validated
-`--max-concurrent` count, validated at 1..=8). For a unit running at `--max-concurrent 8`, the
+The browser session pool uses `tabs × 4` as the queue capacity (where `tabs` is the `--max-concurrent`
+count, which defaults to 8 and refuses only 0). For a unit running at `--max-concurrent 8`, the
 queue holds 32 pending requests. When the queue is full, `BrowserError::Unavailable` is returned
 immediately. Plan concurrent consumers so they do not exceed `tabs × 4` in steady state.
 
@@ -221,14 +224,14 @@ Rolling forward is starting the new release's instance and retiring the old one.
 deployments in `curl http://127.0.0.1:19095/deployments`, and only the new one is redelivered to;
 this is also how a rollback happens, by starting the previous release's instance again.
 
-Every service declares its own retention in `crates/census-service/src/restate_services/*.rs`:
-90 days of journal, 180 days of workflow completion, 30 days of idempotency. The server's own
-defaults are one day, which is shorter than a full census run can take.
+Every service declares its own retention in `crates/census-service/src/restate_services/*.rs`: most
+services set 90 days of journal, 180 days of workflow completion, 30 days of idempotency; the
+`Census` service overrides with `journal_retention = "1 hour"` and no workflow-completion retention.
 
 ## Quality gates
 
-`tools/gate.sh` runs fmt, `check --all-targets`, the strict clippy set, tests, the panic-macro scan,
-the forbidden-construct scan and the ratchet, then the optional cargo subcommand lanes (`audit`,
-`deny`, `vet`, `geiger`, `machete`); absent tools print SKIP with the install command instead of
-failing. `tools/quality-baseline.json` records the remaining debt and `cargo xtask ratchet` fails the
-gate on any increase, so the numbers in `docs/HARDENING-PROGRAM.md` can only move down.
+`tools/gate.sh` runs lanes in this order: `fmt`, `check`, `doc`, `tests`, `strict clippy`,
+`production scan`, `domain type integrity`, `domain purity`, `module seams`, `debt ratchet`;
+then tool-lanes `deny`, `audit`, `vet`, `machete`, `geiger`, `feature powerset`, `bench presence`;
+`mutants` runs only with `--full`. The `ratchet` step compares clippy + scan debt against
+`tools/quality-baseline.json`; absent tools print SKIP (or fail with `--release`).

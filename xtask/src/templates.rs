@@ -31,7 +31,8 @@ pub struct Options {{
 ///
 /// Scaffold: nothing is implemented yet. Keep the signature — the adapter registry and `census.rs`
 /// call adapters in this shape — hand parsing to [`parse`], canonical mapping to [`map`], and
-/// append rows with `sources::append_all`, never by writing keys directly. Adapters never panic:
+/// append rows and journal entries through the page `AdapterContext::write_batch` hands out, never
+/// by writing keys directly. Adapters never panic:
 /// every failure returns a [`CrawlError`] variant, which is what the durable retry policy reads.
 pub async fn collect(_ctx: &AdapterContext<'_>, _options: &Options) -> CrawlResult<AdapterReport> {{
     Err(CrawlError::Invariant {{
@@ -159,7 +160,8 @@ same command spelled out. Both run nextest with a `test({name})` filter over the
 - [ ] real URLs and their robots status written into the module doc
 - [ ] parsing and mapping asserted against captured fixtures
 - [ ] registered in `census.rs`, or exposed as a `provider {name}` CLI subcommand
-- [ ] rows appended with `sources::append_all`, never by writing keys directly
+- [ ] rows and journal entries appended through the page `AdapterContext::write_batch` hands out,
+      never by writing keys directly
 "#
     )
 }

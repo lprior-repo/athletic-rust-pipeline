@@ -10,16 +10,15 @@ the planned workspace split — read `ARCHITECTURE.md` at the repository root. F
 
 ## 1. Crate map
 
-Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-crawl`, `crates/census-reconcile`, `crates/census-report`, `crates/census-review`, `crates/census-store`, `crates/census-service`, `crates/g1-audit` and `xtask`.
+Workspace members come from the root `Cargo.toml`: `crates/athleticnet-browser`, `crates/census-domain`, `crates/census-crawl`, `crates/census-reconcile`, `crates/census-report`, `crates/census-review`, `crates/census-store`, `crates/census-service`, and `xtask`.
 
 | Crate / package | Path | What it is | Bins |
 |---|---|---|---|
-| `athletic-rust-pipeline` | `src/` (root package) | the Athletic.net-facing acquisition pipeline and operator CLI: Restate worker, browser session supervisor, rankings collection, workbook export/verify | `athletic-rust-pipeline` |
 | `census-domain` | `crates/census-domain/` | pure domain model: canonical entities, deterministic ids, cohort identity, the school-name index and the core-scope predicate; normal dependency tree carries no async runtime, store engine, HTTP client, service framework or browser engine | — |
 | `census-store` | `crates/census-store/` | the Fjall system of record: keyspaces, append-only observations merged through the `Entity` rules, snapshots, backup/restore/integrity, the legacy import, and the clock capability | — |
 | `census-crawl` | `crates/census-crawl/` | the acquisition plane: robots-enforcing cache-first fetcher, the Restate-backed browser bridge, one module per provider, the provider registry | — |
 | `census-review` | `crates/census-review/` | the local-model identity-review lane: retained families, model packets, verdict records | — |
-| `census-service` | `crates/census-service/` | the composition root: the sweep and meet walk, orchestration (`src/census/`), reductions (`src/report/`, `src/bests/`, `src/workbook/`, `src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`), CLI | `census-service`, `census-serve` |
+| `census-service` | `crates/census-service/` | the composition root: the sweep and meet walk, orchestration (`src/census/`), reductions (`crates/census-report/src/{report,bests,workbook}/`, `crates/census-reconcile/src/index.rs`), durable services (`src/restate_services/`), supervisor (`src/bootstrap.rs`), CLI | `census-service`, `census-serve` |
 | `xtask` | `xtask/` | developer commands: the gate wrapper, the gate's measurement layer, source fixtures/tests, census reports, adapter scaffolding | `xtask` |
 
 Not cargo members of this workspace:
@@ -27,14 +26,13 @@ Not cargo members of this workspace:
 | Path | What it is |
 |---|---|
 | `fuzz/` | standalone cargo-fuzz workspace (`fuzz/Cargo.toml`), targets under `fuzz/fuzz_targets/` |
-| `benches/` | root-package measurement targets: `artifact_store`, `blocking_fanout`, `workbook_export` |
 | `tools/` | `tools/gate.sh` (the one quality gate) and `tools/quality-baseline.json` (the debt ratchet) |
 | `vendor/chromiumoxide_cdp/` | the one locally patched crate, wired through `[patch.crates-io]` in the root `Cargo.toml` |
-| `deploy/systemd/` | the census service units: `census-serve.service`, `restate-server.service`, `census-service-collect.{service,timer}` |
+| `deploy/systemd/` | the census service units: `census-serve@.service`, `restate-server.service`, `census-service-collect.{service,timer}` |
 | `research/` | source reconnaissance lanes, append-only captures |
 
-Census measurement targets are `crates/census-service/benches/{core,pipeline}.rs`; the standalone
-harness binaries live in `crates/census-service/examples/bench_store.rs` and `bench_census.rs`.
+Census measurement targets are `crates/census-service/benches/core.rs`; the standalone harness
+binaries live in `crates/census-service/examples/bench_store.rs` and `bench_census.rs`.
 
 ## 2. Acquisition phases
 
@@ -50,7 +48,7 @@ monotone: a later artifact cannot exist without the earlier ones.
 | Phase | Advanced by | Subcommands that produce it |
 |---|---|---|
 | Discovering | (an empty store; every census starts here) | `teams`, `meets`, `provider <name>`, `collect`, `run --input/--meets` |
-| Acquiring | `StoreStats::observations > 0` | the same adapter commands, appending observations through `sources::append_all` |
+| Acquiring | `StoreStats::observations > 0` | the same adapter commands, appending rows through `AdapterContext::write_batch` and filing observations through its `observe_*` funnels |
 | Reconciling | `snapshots` holds ≥ 1 row | `index` writes that row; `consolidate` merges observations into `out/*.jsonl` |
 | Reviewing | `review_cases` **or** `identity_verdicts` holds ≥ 1 row | `index` (derives the cases), `review` (records verdicts and closes the cases it decided) |
 | ResolvingGaps | `coverage` holds ≥ 1 row | `index` (writes the per-jurisdiction coverage rows and their §47 gap classes) |
@@ -64,7 +62,7 @@ it — and because opening the store takes the exclusive Fjall lock a live `cens
 
 `index` is what advances three phases in one pass: it writes `source_identities`, `conflicts`,
 `review_cases`, `coverage` (all through `Store::replace_many`) and the `snapshots` row
-(`src/index.rs`). The gap classes the ResolvingGaps phase publishes are `GapClass` in
+(`crates/census-reconcile/src/index.rs`). The gap classes the ResolvingGaps phase publishes are `GapClass` in
 `crates/census-service/src/report/coverage/gaps.rs`, one row per class per jurisdiction, derived
 from the counts the coverage row measured.
 
@@ -98,7 +96,7 @@ per table.
 
 ### 3.1 Tables
 
-`Table` (`src/store/table.rs`) is the store's naming for the fifteen collections; the names ride in
+`Table` (`crates/census-store/src/table.rs`) is the store's naming for the fifteen collections; the names ride in
 keys and sidecar file names.
 
 | Table | Meaning | Written by |
@@ -117,7 +115,7 @@ Two write disciplines, not one:
 
 * **Canonical entities are append-only.** An observation is never overwritten — appending the same
   entity twice writes two rows, and readers merge through `Entity::merge` (`Store::consolidate`,
-  `src/store/read.rs`). A transfer does not rewrite a prior school attribution.
+  `crates/census-store/src/read/`). A transfer does not rewrite a prior school attribution.
 * **The derived tables are not evidence.** Their rows are a function of the store as it stands, so
   they are written through `replace_many`/`replace`: one row per key, overwritten in place, so a
   re-derivation cannot grow them.
@@ -134,19 +132,19 @@ flushed — never a rewritten snapshot.
 
 | Property | Value | Source |
 |---|---|---|
-| commit mode | `PersistMode::SyncData` (`fdatasync`) per batch | `src/store/mod.rs` |
-| upgrade | `Store::flush()` → `PersistMode::SyncAll`, called at consolidation and shutdown | `src/store/mod.rs` |
-| block cache | 256 MiB (`CACHE_BYTES`) | `src/store/mod.rs` |
-| sequence seeding | from the last key present at open, so a reopened database never reuses a sequence or overwrites an observation | `src/store/mod.rs`, `src/store/sequences.rs` |
-| resume journal | durable per completed unit of work; the journal keyspace holds `<phase>\0<key>` | `src/store/keys.rs` |
-| legacy import | `Store::open` imports the pre-Fjall `entities/` and `journal/` JSONL exactly once, recorded under `meta` | `src/store/legacy.rs` |
+| commit mode | `PersistMode::SyncData` (`fdatasync`) per batch | `crates/census-store/src/lib.rs` |
+| upgrade | `Store::flush()` → `PersistMode::SyncAll`, called at consolidation and shutdown | `crates/census-store/src/lib.rs` |
+| block cache | 256 MiB (`CACHE_BYTES`) | `crates/census-store/src/lib.rs` |
+| sequence seeding | from the last key present at open, so a reopened database never reuses a sequence or overwrites an observation | `crates/census-store/src/lib.rs`, `crates/census-store/src/sequences.rs` |
+| resume journal | durable per completed unit of work; the journal keyspace holds `<phase>\0<key>` | `crates/census-store/src/keys.rs` |
+| legacy import | `Store::open` imports the pre-Fjall `entities/` and `journal/` JSONL exactly once, recorded under `meta` | `crates/census-store/src/legacy.rs` |
 
 The store API also owns `Store::backup`, `Store::restore` and `Store::integrity`
-(`src/store/backup.rs`): `backup` copies the durable material and writes a `backup.json` manifest of
+(`crates/census-store/src/backup/`): `backup` copies the durable material and writes a `backup.json` manifest of
 file digests, byte lengths and per-table counts taken from the same sequence counters `Store::stats`
 reads; `restore` validates that manifest and re-opens through the normal `Store::open` path;
 `integrity` checks each table's row count against its sequence counter plus journal/entity-log
-pairings. `Store::stats` (`src/store/mod.rs`) is what a status command prints: per-table counts from
+pairings. `Store::stats` (`crates/census-store/src/lib.rs`) is what a status command prints: per-table counts from
 those counters, LSM bytes on disk, and the recursive store size.
 
 ## 4. Seal

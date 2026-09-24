@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted. Implemented: census store `crates/census-service/src/store/` (keyspaces `entities`,
-`journal`, `meta`) and the root acquisition store (`src/store.rs`, `src/store/rankings/`). Two defects
+Accepted. Implemented: census store `crates/census-store/src/` (keyspaces `entities`,
+`journal`, `meta`) and the root acquisition store (`src/store.rs`, `src/store/rankings/`)
+(historical: root package deleted 2026-09-23). Two defects
 present today are named under Consequences, not described as future work.
 
 ## Context
@@ -50,8 +51,9 @@ review outcomes.
 * The store is bounded by construction: `MAX_ROWS_PER_TABLE = 20_000_000` aborts a scan with a typed
   error (`store/mod.rs:125`; `docs/FJALL_SCHEMA.md:61,116-118`) and a scan materializes the merged map
   in the process heap (`docs/FJALL_SCHEMA.md:119-120`).
-* Defect today: the census store has no backup/snapshot API (`store/mod.rs:38` imports none) while the
-  root crate uses `Database::snapshot()` (`docs/FJALL_SCHEMA.md` §8, sharp edge 5).
+* Defect today: the census store has no backup/snapshot API (`store/mod.rs:38` imports none).
+* The root crate used `Database::snapshot()` (historical: root package deleted 2026-09-23;
+  census backup is in `docs/FJALL_SCHEMA.md` §8, sharp edge 5).
 * Defect today: `store/mod.rs:207-208` documents `StoreStats` as `approximate_len` estimates, but
   `stats()` reads exact `AtomicU64` counters (`docs/FJALL_SCHEMA.md:65-68,139-141`) — stale comment.
 
@@ -69,8 +71,9 @@ review outcomes.
 Read directly: `ARCHITECTURE.md:36,38-41,45-46`; `crates/census-service/src/store/mod.rs:9-13,38,125,
 135-179,207-210,219-222,241-249`; `store/keys.rs`; `crates/census-service/src/workbook/mod.rs:3-6`;
 `docs/adr/ADR-006-excel-recruiter-query-layer.md:27-34`; `RESTATE_WORKFLOWS.md:371-373`;
-`src/store.rs:141-146`.
+`src/store.rs:141-146` (historical: root package deleted 2026-09-23).
 
 Cited through the doc, not re-derived: `store/read.rs` scan/consolidate/stats lines, the 20M cap,
 single-writer and legacy-import sharp edges, and the root-crate `Database::snapshot()` sites
-(`docs/FJALL_SCHEMA.md:11,55-68,79,116-124`). No heap or restore measurement exists; none is claimed.
+(`docs/FJALL_SCHEMA.md:11,55-68,79,116-124`, historical: root package deleted 2026-09-23).
+No heap or restore measurement exists; none is claimed.

@@ -13,7 +13,8 @@
 //! lane draws the line at `--lib --bins --examples`. Harness files are still read: they are measured
 //! for size, so a 400-line benchmark or a 200-line proof harness is visible, but their constructs are
 //! not counted as production debt. A `#[cfg(test)]` that only gates `use` re-exports does not end the
-//! production region (`xlsx.rs`); see [`counts::production_lines`]. This is the measurement
+//! production region (`crates/census-crawl/src/tfrrs/parse/mod.rs`: `#[cfg(test)] pub use
+//! season::season_from_label;`); see [`counts::production_lines`]. This is the measurement
 //! methodology `docs/HARDENING-PROGRAM.md` records, so the ratchet in `tools/gate.sh` compares like
 //! with like.
 //!

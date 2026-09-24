@@ -9,9 +9,9 @@
 //! These are review candidates, not verdicts: each hit must be either converted or justified. The
 //! counts are printed by `tools/gate.sh` and ratcheted in the DDD phase.
 //!
-//! Emits JSON on stdout: one object per domain root, keyed `root-domain` -> `src/domain` and
-//! `census-domain` -> `crates/census-domain/src`, plus `ok`, which is true only when every declared
-//! root produced at least one production file to measure.
+//! Emits JSON on stdout: one object per domain root - one today, `census-domain` ->
+//! `crates/census-domain/src` - keyed as the deleted `type_integrity_scan.py` keyed it, plus `ok`,
+//! which is true only when every declared root produced at least one production file to measure.
 
 use crate::json::count;
 use crate::paths;
@@ -23,10 +23,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// The domain roots, keyed as the deleted `type_integrity_scan.py` keyed them.
-const DOMAINS: [(&str, &str); 2] = [
-    ("root-domain", "src/domain"),
-    ("census-domain", "crates/census-domain/src"),
-];
+const DOMAINS: [(&str, &str); 1] = [("census-domain", "crates/census-domain/src")];
 
 /// A public function signature, up to its parameters and optional return type.
 const PUB_FN: &str =

@@ -1,0 +1,54 @@
+[Unit]
+Description=Midwest census weekly incremental refresh (staged corpus)
+Documentation=file:/opt/athletic-rust-pipeline/docs/OPERATIONS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=midwest
+Group=midwest
+WorkingDirectory=/opt/athletic-rust-pipeline
+Environment=RUST_LOG=info
+# Acquisition is the one leg that does not go through the endpoint: no CLI subcommand drives the
+# `Ingest` service yet. Until one does, this chain writes a *staging* store, never the canonical one:
+# the canonical store is written only by a deployment of `census-serve`, and a batch job that wrote
+# it behind the state machine's back would race the national run for the same Fjall writer lock and
+# would bypass the journal that is supposed to make its writes resumable.
+#
+# Incremental only: `teams --refresh` re-reads state association team indexes (cheap, changes rarely),
+# `collect` walks rosters and result pages, `index` rebuilds the derived index tables, then the
+# reducers republish. No step re-fetches the full historical corpus; every fetch honours per-host
+# pacing and the on-disk cache.
+#
+# Every acquiring step walks the census `--all-states` run scope — the 48 contiguous states plus the
+# District of Columbia (ADR-009) — never a named subset: a state list here would narrow the weekly
+# census to those states while every report still calls itself national.
+#
+# `--school-year` names the season the *rosters* belong to, as its starting calendar year (2026 is
+# the 2026-27 season), never the cohort: rosters are current-season documents and this step labels
+# the grade evidence it records from that season. 2027 would file the rosters the site publishes
+# today under a season nobody has run yet, and a 2027-28 label puts every row at grade 13, which is
+# no grade at all — so the evidence would be dropped rather than misdated.
+ExecStart=/bin/sh -c 'set -eu; \
+  bin=target/release/census-service; \
+  out=/var/lib/census-service-staging; \
+  "$bin" --store "$out" teams --all-states --refresh; \
+  "$bin" --store "$out" meets --all-states --year 2026; \
+  "$bin" --store "$out" provider milesplit_results --all-states --limit 200; \
+  "$bin" --store "$out" collect --all-states --school-year 2026; \
+  "$bin" --store "$out" consolidate; \
+  "$bin" --store "$out" index; \
+  "$bin" --store "$out" report --print; \
+  "$bin" --store "$out" bests; \
+  "$bin" --store "$out" workbook; \
+  "$bin" --store "$out" fjall-stats'
+Restart=on-failure
+RestartSec=300
+TimeoutStartSec=3600
+StateDirectory=census-service-staging
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/census-service-staging

@@ -21,7 +21,7 @@ not executed. Totals below are exact for the three crates' `src` trees at this r
 
 **Anchor re-verification (2026-09-23).** The anchors in §5, §5.1 and §5.2 below were re-read against
 the working tree at HEAD `95e89e9` — three commits after `ea81c56`, with uncommitted changes present —
-and corrected where they had drifted; the numbers here are that snapshot (`census/identity.rs` 265
+and corrected where they had drifted; the numbers here are that snapshot (`crates/census-reconcile/src/identity.rs` 265
 lines, `restate_services/{jurisdiction.rs 243, national.rs 292, census.rs 156, ingest.rs 147,
 sweep.rs 187}`). A file that moves invalidates them again.
 
@@ -194,7 +194,7 @@ in its proposed home; the required edit is named.
 | `restate_services/` (1,973 prod) | **census-service** | The workflow/object layer and its wire types. | high | n/a (restate-sdk) |
 | `cli/` (6,487 prod) | **census-service** | Composition root: clap surface, dispatch, every subcommand body; drives all six other crates. | high | n/a (calamine, restate-sdk) |
 | `lib.rs`, `main.rs`, `bin/census-serve.rs` | **census-service** (bins) | Umbrella re-exports die in the cutover (`lib.rs:48-50`); binaries are re-pointed per ADR-007. | high | n/a |
-| `g1-audit/src/main.rs` (1,383) | **no target crate** | Not one of the seven; it is a directory-reading audit gate over retained evidence, not a pipeline stage. Keep as its own tool binary (or fold into `xtask`). | medium | n/a |
+| `g1-audit/src/main.rs` (1,383) | **no target crate** | Not one of the seven; it is a directory-reading audit gate over retained evidence, not a pipeline stage. **Resolved 2026-09-23: folded into `xtask`** as its second binary (`cargo run -p xtask --bin g1-audit`, source `xtask/src/g1/main.rs`); the `crates/g1-audit` package no longer exists, so no directory of that name remains in the workspace. | medium | n/a |
 
 Direction rule the table obeys: `census-domain` ← everything; every other crate may depend on
 `census-domain`; `census-crawl` must not write canonical entities (`AGENTS.md`), which is the one

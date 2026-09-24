@@ -1,7 +1,7 @@
 # DOMAIN.md — types, identities and evidence rules
 
 The census answers one question for every athlete: *who is this, what did they run, and how do we
-know?* The types in `crates/census-domain/src/model.rs` (plus `src/jurisdiction.rs` and
+know?* The types in `crates/census-domain/src/model.rs` (plus `crates/census-domain/src/jurisdiction/` and
 `src/error.rs`) exist to make the wrong answer hard to express. This document is the contract; the
 code is the implementation.
 
@@ -19,7 +19,7 @@ Consequences:
 - Deleting or re-importing a provider never renumbers canonical entities.
 - Two providers that disagree stay disagreeing and visible; the merge does not average them.
 
-A state is not a string either: `UsJurisdiction` (`crates/census-domain/src/jurisdiction.rs`)
+A state is not a string either: `UsJurisdiction` (`crates/census-domain/src/jurisdiction/`)
 declares the 50 states plus the District of Columbia. `UsJurisdiction::ALL` is the *modelled*
 universe; `UsJurisdiction::CENSUS_SCOPE` — every one of them except Alaska and Hawaii — is what
 every coverage denominator is decided over, so a jurisdiction in `ALL` but outside the scope is a
@@ -98,11 +98,13 @@ There is no single `OperationTerminal<T>` type in this tree: earlier revisions o
 one, and no such type exists in the code. The vocabulary is per layer, and each layer names its own
 causes:
 
-- root crate: `FailureCode` (`src/runtime/protocol.rs`), `InvalidInput`, `Transport`,
-  `AccessDenied`, `BrowserChallenge`, `BrowserUnavailable`, `RateLimited`, `HttpFailure`,
-  `PayloadLimit`, `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect`;
-  `BrowserError` (`src/runtime/browser.rs`), including `HumanRequired`, `Unavailable`,
-  `TaskPanicked`, `Shutdown`; and `DomainError` (`src/domain/error.rs`) for pure validation.
+- acquisition pipeline (deleted; see `ARCHITECTURE.md` §1): its per-layer vocabulary —
+  `FailureCode` (`src/runtime/protocol.rs`), `InvalidInput`, `Transport`, `AccessDenied`,
+  `BrowserChallenge`, `BrowserUnavailable`, `RateLimited`, `HttpFailure`, `PayloadLimit`,
+  `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect` — went with the root
+  package. What survives of it is `BrowserError` (`crates/athleticnet-browser/src/outcome.rs`),
+  including `HumanRequired`, `Unavailable`, `TaskPanicked`, `Shutdown`; and `DomainError`
+  (`crates/census-domain/src/error.rs`) for pure validation.
 - census crate: `FetchError` (`crates/census-crawl/src/net/mod.rs`) for the transport
   (`Robots`, `Http{status}`, `RateLimited{retry_after_secs}`, `TooLarge`, `Transport`, `Cache`,
   `Timeout`, …) and `CrawlError` (`crates/census-crawl/src/lib.rs`) for the adapter

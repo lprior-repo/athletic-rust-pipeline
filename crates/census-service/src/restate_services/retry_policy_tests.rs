@@ -122,14 +122,93 @@ pub(super) fn line_at(text: &str, offset: usize) -> usize {
     1 + text[..offset].bytes().filter(|byte| *byte == b'\n').count()
 }
 
+/// Whether the key at `offset` is written in code rather than quoted in a comment or a literal.
+///
+/// The module's contract is that prose is left alone: a doc comment that quotes the attribute
+/// (`max_attempts = N`) names the key without declaring a ceiling, and the sentence is the place a
+/// reader learns the shape from. Reading text rather than parsing Rust means the scan has to know
+/// which text is code, so comments and double-quoted literals are skipped here and everything else is
+/// read as a ceiling. Single quotes are deliberately not treated as literal delimiters: in this tree
+/// they open lifetimes far more often than character literals, and a character literal cannot hold
+/// the key.
+///
+/// One pass per match rather than a precomputed span table: a file holds a handful of matches and
+/// this runs in a test, so the simple control flow is worth more than the saved scan. A key inside a
+/// block comment that never closes is read as prose to the end of the file, which is what a Rust
+/// file with an unterminated comment is anyway.
+fn is_code(text: &str, offset: usize) -> bool {
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum State {
+        Code,
+        Line,
+        Block,
+        Str,
+    }
+
+    let mut state = State::Code;
+    let mut escaped = false;
+    let mut characters = text.char_indices();
+    while let Some((index, character)) = characters.next() {
+        if index >= offset {
+            break;
+        }
+        match state {
+            State::Code => match character {
+                '/' => {
+                    let mut lookahead = characters.clone();
+                    match lookahead.next() {
+                        Some((_, '/')) => state = State::Line,
+                        Some((_, '*')) => state = State::Block,
+                        _ => {}
+                    }
+                    if state != State::Code {
+                        characters = lookahead;
+                    }
+                }
+                '"' => state = State::Str,
+                _ => {}
+            },
+            State::Line => {
+                if character == '\n' {
+                    state = State::Code;
+                }
+            }
+            State::Block => {
+                if character == '*' {
+                    let mut lookahead = characters.clone();
+                    if lookahead.next().is_some_and(|(_, next)| next == '/') {
+                        state = State::Code;
+                        characters = lookahead;
+                    }
+                }
+            }
+            State::Str => {
+                if escaped {
+                    escaped = false;
+                } else if character == '\\' {
+                    escaped = true;
+                } else if character == '"' {
+                    state = State::Code;
+                }
+            }
+        }
+    }
+    state == State::Code
+}
+
 /// Every ceiling written in one file's text, in the order they appear.
+///
+/// A key quoted in a comment or a literal is not a ceiling, so it is skipped rather than read: see
+/// [`is_code`].
 fn sites_in(path: &Path, text: &str) -> Result<Vec<Site>, String> {
     let mut sites = Vec::new();
     let mut search = 0;
     while let Some(found) = text[search..].find(KEY) {
         let offset = search + found;
-        if let Some(site) = site_at(path, text, offset)? {
-            sites.push(site);
+        if is_code(text, offset) {
+            if let Some(site) = site_at(path, text, offset)? {
+                sites.push(site);
+            }
         }
         search = offset + KEY.len();
     }
@@ -138,7 +217,7 @@ fn sites_in(path: &Path, text: &str) -> Result<Vec<Site>, String> {
 
 /// Every ceiling declared in the `.rs` files under one source root.
 ///
-/// `target` never appears: the roots are `src/` and `crates/`, and cargo's copies live elsewhere.
+/// `target` never appears: the roots are `crates/` and `xtask/`, and cargo's copies live elsewhere.
 fn ceilings_under(root: &Path) -> Result<Vec<Site>, String> {
     let mut sites = Vec::new();
     let mut paths = Vec::new();
@@ -181,11 +260,13 @@ pub(super) fn workspace_root() -> Result<PathBuf, String> {
         .ok_or_else(|| format!("no workspace root above {}", env!("CARGO_MANIFEST_DIR")))
 }
 
-/// The first-party source roots: the root crate's `src/` and the workspace's `crates/`, because
-/// handlers in either tree are replayed by the same Restate scheduler.
+/// The first-party source roots: the workspace's `crates/` and `xtask/`, because handlers in either
+/// tree are replayed by the same Restate scheduler. The root package that used to hold the rest was
+/// deleted once its reusable pieces had moved into the crates, so its `src/` is gone rather than
+/// merely empty — a scan that still named it would fail on a missing directory.
 fn source_roots() -> Result<Vec<PathBuf>, String> {
     let root = workspace_root()?;
-    Ok(vec![root.join("src"), root.join("crates")])
+    Ok(vec![root.join("crates"), root.join("xtask")])
 }
 
 /// Every ceiling declared in first-party source, across the workspace.

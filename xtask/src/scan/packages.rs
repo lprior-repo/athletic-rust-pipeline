@@ -1,7 +1,7 @@
 //! The package set the scan covers, enumerated from `cargo metadata` rather than kept by hand.
 //!
 //! The scan used to name its packages in a two-row table. That table is why three of the workspace's
-//! five members — `census-domain`, `g1-audit` and `xtask` itself — escaped every construct count and
+//! then-members — `census-domain`, `g1-audit` and `xtask` itself — escaped every construct count and
 //! every size budget: widening a scan is supposed to be a deliberate act, but a hand-kept list makes
 //! *joining the workspace* the act, and nobody notices a missing row until someone ports the scanner
 //! by hand and compares.
@@ -24,9 +24,10 @@ use std::path::{Path, PathBuf};
 /// `src/` is what a library or binary target is built from, so it is production. `examples/`,
 /// `benches/` and `kani/` are harnesses by construction: an example target is built only when someone
 /// asks for it (two of the three here are manual benchmarks, the third a fixture server), a benchmark
-/// target has no error channel (`benches/*.rs` panics on a setup failure) and a Kani harness asserts
-/// by definition. None of the three is reachable from a production build, so their constructs are not
-/// production debt — their *size* still is, because a 500-line example is a file that is too long.
+/// target has no error channel (`benches/*.rs` aborts the run when its corpus will not build) and a
+/// Kani harness asserts by definition. None of the three is reachable from a production build, so
+/// their constructs are not production debt — their *size* still is, because a 500-line example is
+/// a file that is too long.
 /// The gate's strict clippy lane keeps analyzing them (`--lib --bins --examples` names them as source
 /// targets rather than test targets), which is where a lint can see the whole target.
 const ROOTS: [(&str, bool); 4] = [

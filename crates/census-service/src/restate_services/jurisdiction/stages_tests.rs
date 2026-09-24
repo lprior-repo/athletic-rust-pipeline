@@ -25,8 +25,11 @@ use crate::restate_services::teams_arms::{arm_for, TEAMS_ARMS};
 /// run time.
 #[test]
 fn the_arms_are_the_dispatched_slugs() {
+    use crate::restate_services::results_arms::RESULTS_ARMS;
+
     let mut arms: Vec<&str> = TEAMS_ARMS.iter().map(|(slug, _)| *slug).collect();
     arms.extend(MEETS_ARMS.iter().map(|(slug, _)| *slug));
+    arms.extend(RESULTS_ARMS.iter().map(|(slug, _)| *slug));
     assert_eq!(arms, DISPATCHED);
     assert!(
         arm_for("no-stage-runs-this").is_none(),

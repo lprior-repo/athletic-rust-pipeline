@@ -8,7 +8,13 @@ plan is touched (already the case for every file below on the day the harness la
 
 ## Status
 
-Completed (each proven by its parity target, `tests/golden/` unchanged, and flat-or-falling counters):
+Completed (each proven by its parity target, `crates/census-service/tests/golden/` unchanged, and flat-or-falling counters):
+
+This document is the Phase 2 plan, so every path in it is the root crate's as it stood then: the
+`sources/` splits below are today's `crates/census-crawl/src/` adapters, the `net/` split is
+`census-crawl`'s and the `store/` split is `crates/census-store/src/`, while the `profile/`,
+`domain/`, `result_verify/`, `search/` and `runtime/` units went with the root package (deleted
+2026-09-23; `ARCHITECTURE.md` §1).
 
 | Unit | Result |
 | --- | --- |
@@ -42,7 +48,7 @@ from 62): the census core modules (`model.rs` 1327 — since moved to `crates/ce
 `workbook.rs` 844, `main.rs` 740, `census.rs` 467, `bests.rs` 414, `bootstrap.rs` 382), the remaining
 source adapters (`compiled.rs` 674 / `xc.rs` 604 / `milesplit.rs` 591 / `coach_contacts.rs` 586 /
 `ks.rs` 528 / `athleticlive.rs` 526 / `raceday.rs` 320), and the root `runtime/`, `store/`, `domain/`
-and `workbook_*` modules.
+and `workbook_*` modules (historical: those went with the root package on 2026-09-23).
 
 Three rules learned during this phase, all now enforced:
 
@@ -131,20 +137,19 @@ Smaller files (`compiled.rs` 674, `xc.rs` 604, `milesplit.rs` 591, `coach_contac
 `athleticlive.rs` 526, `raceday.rs` 320) are already under the 300-line production budget once tests are
 accounted separately — check each with the audit script before deciding they need a split.
 
-## Root-crate targets
-
-The baseline's `files_over_300_lines` list is the authority for the root crate; the largest are
-`src/profile/bio.rs` (1035), `src/domain/performance_evidence/context.rs` (483),
-`src/result_verify/rankings.rs` (464), `src/bundle_verify.rs` (433), `src/profile/html/stream.rs` (387),
-`src/result_verify/positive.rs` (388), `src/domain/decision.rs` (381), `src/domain/marks/event.rs` (351),
-`src/result_verify/checks.rs` (346), `src/cli.rs` (329). Root tests (`cargo nextest run -p
-athletic-rust-pipeline`, 241 tests) plus the workbook/XLSX byte-parity tests are the proof there.
+## Root-crate targets — **historical** (deleted 2026-09-23, `Cargo.toml` header + `ARCHITECTURE.md` §1)
+~~The baseline's `files_over_300_lines` list is the authority for the root crate; the largest are~~
+~~`src/profile/bio.rs` (1035), `src/domain/performance_evidence/context.rs` (483),~~
+~~`src/result_verify/rankings.rs` (464), `src/bundle_verify.rs` (433), `src/profile/html/stream.rs` (387),~~
+~~`src/result_verify/positive.rs` (388), `src/domain/decision.rs` (381), `src/domain/marks/event.rs` (351),~~
+~~`src/result_verify/checks.rs` (346), `src/cli.rs` (329). Root tests (`cargo nextest run -p~~
+~~athletic-rust-pipeline`, 241 tests) plus the workbook/XLSX byte-parity tests are the proof there.~~
 
 ## Order of work
 
 1. Landing the parity harness (done first — it is what makes the rest safe).
 2. Census adapters, largest first, one agent per file, in the order of the table (biggest first).
-3. Root crate: `profile/bio.rs`, then the `result_verify` family, then `cli.rs` and the runtime workers.
+~~3. Root crate: `profile/bio.rs`, then the `result_verify` family, then `cli.rs` and the runtime workers.~~ (historical: root crate deleted)
 4. Re-run the full gate; the ratchet must show every size counter flat or down.
 
 ## Non-goals

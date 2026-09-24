@@ -4,16 +4,18 @@ How this repo uses [Restate](https://restate.dev) to make the browser/scrape sid
 process hosts which service, what each handler does, what state is written per invocation, and what
 the code does (and does not) promise about retries and replay.
 
+**2026-09-23 root package deletion.** The `athletic-rust-pipeline` root package was deleted (`Cargo.toml` header: "the acquisition-side root package that used to sit here was deleted once the census path owned its work (ARCHITECTURE.md §1)"); the workspace now has members only in `crates/` and `xtask/`. The following sections are therefore **historical**: §1 overview (pipeline worker rows), §2.1 pipeline worker catalog, §3.2 `RunCoordinator` state, §4.2 pipeline worker boot, §5.2 CLI→handler map rows referencing `athletic-rust-pipeline`, §6.1 adding a pipeline handler, §7.4 run fan-out cancellation, the entire "Pipeline" half of §5.3 request/response shapes. The census Restate code still lives at `crates/census-service/src/restate_services/` and is unaffected.
+
 Everything below is read from source. Where it comes from:
 
 | Path | Contents |
 |---|---|
-| `src/runtime/worker.rs`, `src/runtime/**` | Pipeline-worker endpoint and its 13 Restate definitions (`run/`, `row_worker/`, `rankings_collection/` hold submodules) |
+| ~~`src/runtime/worker.rs`~~, ~~`src/runtime/**`~~ | ~~Pipeline-worker endpoint and its 13 Restate definitions~~ — **historical**: root crate deleted 2026-09-23 |
 | `crates/census-service/src/restate_services/` (`mod.rs`, `census.rs`, `ingest.rs`, `sweep.rs`, `jurisdiction.rs`, `national.rs`, `jobs.rs`, `wire.rs`) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` and `build_endpoint` |
-| `crates/census-service/src/bin/census-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`), `.../store/` | Census endpoint process, supervisor and store |
-| `src/cli.rs`, `src/cli/{args,transport,flow_control}.rs`, `src/runtime/{protocol,run_protocol,row_protocol}.rs` | Operator surface (ingress clients, deployment, flow control) and retry/revision vocabulary |
+| `crates/census-service/src/bin/census-serve.rs`, `.../bootstrap/` (`mod.rs`, `serve.rs`, `options.rs`, `stop.rs`, `drain.rs`) | Census endpoint process, supervisor and store |
+| ~~`src/cli.rs`~~, ~~`src/cli/{args,transport,flow_control}.rs`~~, ~~`src/runtime/{protocol,run_protocol,row_protocol}.rs`~~ | ~~Operator surface (ingress clients, deployment, flow control) and retry/revision vocabulary~~ — **historical**: root crate deleted |
 
-Two path notes. There is **no** `src/restate.rs` and no `src/restate_services.rs` in the root crate;
+~~Two path notes. There is **no** `src/restate.rs` and no `src/restate_services.rs` in the root crate~~ (historical: root package deleted 2026-09-23)
 the census registrations live at `crates/census-service/src/restate_services/mod.rs`. Line numbers
 are as read on 2026-09-21, and other agents edit this tree: when a number and a name disagree, trust
 the name.
@@ -23,15 +25,13 @@ the name.
 Restate is the scheduler, journal and K/V store for work too long-lived and too failure-prone to own
 in-process: headed-browser acquisitions that wait on humans, workbook rows that fan out across
 duplicate athlete identities, multi-window collection sweeps. The worker performs the effects;
-Restate decides when they run, what has already run, and what to re-run. The code states the split
-directly: "Restate owns scheduling. Source workflows and model SDK policies have distinct retry
-budgets. Unacknowledged effects may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`).
+Restate decides when they run, what has already run, and what to re-run. ~~The code states the split directly: "Restate owns scheduling. Source workflows and model SDK policies have distinct retry budgets. Unacknowledged effects may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`)~~ (historical: path belonged to deleted root crate).
 
 Two processes serve two endpoints.
 
 | Process | Started by | Binds | Serves |
 |---|---|---|---|
-| **Pipeline worker** | `athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`) | default `127.0.0.1:19181` (`src/cli/args.rs:19-20`) | the 13 definitions in §2.1 |
+| ~~**Pipeline worker**~~ | ~~`athletic-rust-pipeline worker --config <toml> --bind 127.0.0.1:19181` — `Command::Worker` (`src/cli/args.rs:15-21`) → `runtime::worker::serve` (`src/cli.rs:33`)~~ | ~~default `127.0.0.1:19181` (`src/cli/args.rs:19-20`)~~ | ~~the 13 definitions in §2.1~~ | — **historical**: root package deleted 2026-09-23.
 | **Census service** | `census-serve --listen 127.0.0.1:9080 --data-dir var/census-service --max-concurrent 8 --drain-timeout 30` (`crates/census-service/src/bin/census-serve.rs`) → `bootstrap::serve` | default `127.0.0.1:9080` and the other defaults live in `ServeOptions::default()` (`crates/census-service/src/bootstrap/options.rs`); flags parsed by `ServeOptions::from_env` (same file) | `Census`, `Consolidate`, `Report`, `Bests`, `Workbook`, `Ingest`, `Sweep`, `JurisdictionCensus`, `NationalCensus` |
 
 `census-service serve` is **not** a third server: it prints the `census-serve` argv built from
@@ -39,13 +39,11 @@ Two processes serve two endpoints.
 (`crates/census-service/src/cli/serve.rs`).
 
 Registration is an operator step, not a boot step:
-`athletic-rust-pipeline deploy --admin http://127.0.0.1:19070/ --endpoint http://127.0.0.1:19181/`
-(`src/cli/args.rs:22-28`) runs `flow_control::ensure_source_scope`, then `POST`s `{"uri": <endpoint>}`
-to the admin `deployments` resource (`src/cli/transport.rs`).
+~~`athletic-rust-pipeline deploy --admin http://127.0.0.1:19070/ --endpoint http://127.0.0.1:19181/`~~
+~~(`src/cli/args.rs:22-28`) runs `flow_control::ensure_source_scope`, then `POST`s `{"uri": <endpoint>}`~~
+~~to the admin `deployments` resource (`src/cli/transport.rs`)~~ — **historical**: root crate deleted.
 
-Both processes refuse a non-loopback bind: the worker with `bail!("worker must bind a loopback
-address")` (`src/runtime/worker.rs:14-16`), the census endpoint because it "has no identity key
-configured, so it must not be reachable from another host" (`bootstrap/serve.rs:52`). The census side
+~~Both processes refuse a non-loopback bind: the worker with `bail!("worker must bind a loopback address")` (`src/runtime/worker.rs:14-16`)~~ — **historical**: root package deleted. The census endpoint because it "has no identity key configured, so it must not be reachable from another host" (`bootstrap/serve.rs:52`).
 also holds the store exclusively (`Store::open` takes an exclusive lock,
 `crates/census-service/src/main.rs:5-7`), so `census-serve` cannot share a `--data-dir` with a batch
 subcommand.
@@ -59,7 +57,7 @@ check, so the endpoint may serve more definitions than the list (`build_endpoint
 nine). Renaming a struct is therefore a breaking API change; the SDK escape hatch is
 `#[handler(name = "...")]`.
 
-### 2.1 Pipeline worker (`src/runtime/worker.rs:23-60`)
+### 2.1 Pipeline worker (`src/runtime/worker.rs:23-60`) — **historical**: pipeline worker belonged to deleted root crate (`Cargo.toml` header + `ARCHITECTURE.md` §1).
 
 | Definition | Kind | Object key | Handlers | Visibility |
 |---|---|---|---|---|
@@ -91,7 +89,7 @@ everything invoked only by a sibling handler is `ingress_private`.
 | `Workbook` | workflow | `run` | Writes the recruiting workbook. Key = `workbook:<grad year or all>:<scope>:<date>` |
 | `Ingest` | object | `record`, `state`, `complete_window` | Key = endpoint string; the whole state is one value under `"state"` (§3.1); `state` is a shared (read-only) handler |
 | `Sweep` | workflow | `run`, `interrupt` | `run` chains windows; `interrupt` is a shared handler that resolves `STOP_SIGNAL` on the target invocation |
-| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/census-service/src/census/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
+| `JurisdictionCensus` | object | `state` (shared), `run` | Key = `jurisdiction:<state>:<season>:<revision>` (`census::WorkflowIdentity::jurisdiction`, `crates/census-reconcile/src/identity.rs`); one state's stages — team index, roster walk, meet census — recorded in durable state as each completes; its source plan (the applicable sources this machine may sweep and the ones it refuses by name) is recorded first, before any stage runs, and kept across re-invocations |
 | `NationalCensus` | workflow | `run`, `report` (shared) | Key = `national:<season>:<scope>:<revision>` (`WorkflowIdentity::national`); fans out one `JurisdictionCensus` call per `UsJurisdiction`, folds the reports into one `NationalReport` (failed states land as `failures` rows instead of failing the run), and merges the table snapshots once through the `Consolidate` workflow before it assembles the report |
 
 The four job workflows share one `Jobs` holder: the store, the concurrency semaphore (`Jobs::permit`)
@@ -101,7 +99,7 @@ They are workflows rather than service handlers because each one is a unit of co
 records the merge or the render as it happens, the completion is retained for 180 days, and a
 re-invocation under the same key attaches to that result instead of redoing months of work.
 
-**Qualified.** Both definitions are exercised by the census CLI (`crates/census-service/src/cli/national.rs`):
+**Qualified.** Both definitions are exercised by the census CLI (`crates/census-service/src/cli/national/`):
 
 ```bash
 census-service national --revision 2 [--states WI,...] [--limit-per-state N] [--concurrency N] [--detach]
@@ -254,7 +252,7 @@ The pipeline equivalent lives in the `global`-keyed `RunCoordinator`, spread ove
 
 | Slot | Written by | Content |
 |---|---|---|
-| `progress:<run>` | `Results::{new, update_collection_ref, record, finish}` (`src/runtime/run/results.rs`) | `RunProgress { request, coverage, pages, pending_rows, complete, started_at_unix_ms, updated_at_unix_ms, summary, collection_ref }` |
+~~| `progress:<run>` | `Results::{new, update_collection_ref, record, finish}` (`src/runtime/run/results.rs`) | `RunProgress { request, coverage, pages, pending_rows, complete, started_at_unix_ms, updated_at_unix_ms, summary, collection_ref }` |~~ (historical: Pipeline worker deletion)
 | `page:<run>:<page>` | `Results::flush` | digest of the sealed `RunPage` |
 | `result:<run>` | `Results::finish` | digest of the `RunSummary` |
 
@@ -308,7 +306,7 @@ server-side journal/state, and content-addressed local artifacts.
    `Store::open` is also where legacy recovery happens: pre-Fjall
    `entities/*.jsonl` and `journal/*.jsonl` are imported exactly once and marked under `meta`, and the
    sequence counter is "seeded from the last key present at open time"
-   (`crates/census-service/src/store/mod.rs:1-40`).
+   (`crates/census-store/src/lib.rs:48-56`).
 3. Reject a non-loopback `--listen`; bind the listener; install the stop future (SIGINT/SIGTERM or
    the caller's `shutdown`, recording a `StopReason`), then build the endpoint with
    `restate_services::build_endpoint(store, max_concurrent, region)` and spawn exactly one task —
@@ -338,7 +336,7 @@ server-side journal/state, and content-addressed local artifacts.
 
 There is no boot-time enumeration of runs, cursors or workflows, and no CLI verb to cancel a run: the
 command set is `worker`, `deploy`, `start`, `status`, `browser-start`, `browser-status`, `export`,
-`verify`, `rankings-status`, `rankings-pause`, `rankings-resume` (`src/cli/args.rs:14-79`). Recovery is
+`verify`, `rankings-status`, `rankings-pause`, `rankings-resume` (`src/cli/args.rs:14-79`) — **historical**: root crate deleted.
 re-delivery plus re-submission:
 
 * an open invocation is retried by the server under the definition's
@@ -359,27 +357,26 @@ and shut down with `serve_with_cancel`, so a stop request stops intake and lets 
 finish. Discovery is served by the SDK — the e2e test notes it "routes any path whose last segment is
 `discover`" and asserts the manifest advertises `Census`, `Ingest`, `Sweep`
 (`crates/census-service/tests/fjall_restate_e2e.rs:1-30`, `:513-519`); no `/discover` assertion exists
-for the pipeline worker in `src/` or `tests/`.
+for the pipeline worker in ~~`src/`~~ (historical: root crate deleted) or ~~`tests/`~~ (historical: root crate deleted).
 
 Handler bodies take and return `Json<T>`; failures are `HandlerError`, where `TerminalError::new` (or
 `new_with_code`) means "do not retry" and a bare `HandlerError` means "retry". The ingress clients
 surface Restate's terminal message instead of a bare status: `transport::ingress_error` decodes
 `{"code":…,"message":…}` so an operator sees *why* a call was rejected
-(`src/cli/transport.rs:13-27`). Codes used in-repo include 404 (`run not found`), 408 (browser
-readiness bound or deadline exhausted) and 409 (`browser is not ready; collection remains paused`).
+(`src/cli/transport.rs:13-27`) — **historical**: root crate deleted. ~~Codes used in-repo include 404 (`run not found`), 408 (browser readiness bound or deadline exhausted) and 409 (`browser is not ready; collection remains paused`).~~
 
 ### 5.2 CLI → handler map
 
 | Command | Handler call | Idempotency key |
 |---|---|---|
-| `start` (no `--output`) | `PipelineControl::prepare` → `RunCoordinator::run` | `preparation_key(request)`, then the run key |
-| `start --output <file>` | `PipelineControl::prepare` → `PipelineControl::run_and_export` | `preparation_key`, then `fingerprint(("run-and-export-v1", request))` |
-| `status --run <digest>` | `RunCoordinator::status` | — |
-| `browser-start` | `BrowserSession::await_ready { operator: true }` (submitted, not awaited) | — |
-| `browser-status` | `BrowserSession::status` | — |
-| `export --run <digest> --output <file>` | `ExportWorker::publish` | `fingerprint(("native-export-v4", request))`; the CLI then polls `InvocationHandle::output()` for up to 86 400 s |
-| `rankings-status` / `-pause` / `-resume` | `PipelineControl::rankings_progress` / `rankings_pause` / `rankings_resume` | — |
-| `deploy` | no handler: admin `POST /deployments` after flow-control checks | — |
+| ~~`start`~~ (no `--output`) | ~~`PipelineControl::prepare` → `RunCoordinator::run`~~ | ~~`preparation_key(request)`, then the run key~~ | (historical: root crate deleted)
+| ~~`start --output <file>`~~ | ~~`PipelineControl::prepare` → `PipelineControl::run_and_export`~~ | ~~`preparation_key`, then `fingerprint(("run-and-export-v1", request))`~~ | (historical)
+| ~~`status --run <digest>`~~ | ~~`RunCoordinator::status`~~ | — | (historical)
+| ~~`browser-start`~~ | ~~`BrowserSession::await_ready { operator: true }` (submitted, not awaited)~~ | — | (historical)
+| ~~`browser-status`~~ | ~~`BrowserSession::status`~~ | — | (historical)
+| ~~`export --run <digest> --output <file>`~~ | ~~`ExportWorker::publish`~~ | ~~`fingerprint(("native-export-v4", request))`; the CLI then polls `InvocationHandle::output()` for up to 86 400 s~~ | (historical)
+| ~~`rankings-status` / `-pause` / `-resume`~~ | ~~`PipelineControl::rankings_progress` / `rankings_pause` / `rankings_resume`~~ | — | (historical)
+| ~~`deploy`~~ | ~~no handler: admin `POST /deployments` after flow-control checks~~ | — | (historical)
 
 Ingress clients are loopback-only by construction: `transport::local_origin` rejects any origin that
 is not a loopback HTTP(S) origin without credentials, path, query or fragment; the admin/ingress
@@ -387,10 +384,10 @@ clients use a 300 s timeout with retries and redirects disabled.
 
 ### 5.3 Request/response shapes
 
-* Pipeline: `PrepareRequest` → `RunRequest`; `RunRequest` → `EvidenceDigest`; `EvidenceDigest` →
-  `Option<RunProgress>`; `PageRequest { run, page }` → `Option<EvidenceDigest>`; `EvidenceDigest` →
-  `Option<ExportSnapshot>`; `ExportRequest` → `PublishedExport`; `RowJob` → `EvidenceDigest`;
-  `SourceResource` → `FetchOutcome`; `ReadinessRequest` / nothing → `BrowserStatus`.
+~~* Pipeline: `PrepareRequest` → `RunRequest`; `RunRequest` → `EvidenceDigest`; `EvidenceDigest` →~~
+~~  `Option<RunProgress>`; `PageRequest { run, page }` → `Option<EvidenceDigest>`; `EvidenceDigest` →~~
+~~  `Option<ExportSnapshot>`; `ExportRequest` → `PublishedExport`; `RowJob` → `EvidenceDigest`;~~
+~~  `SourceResource` → `FetchOutcome`; `ReadinessRequest` / nothing → `BrowserStatus`.~~ (historical: root crate deleted)
 * Census: `StatusReply`, `Consolidate*`, `Report*`, `Bests*`, `Workbook*`, `IngestRequest` →
   `IngestReply`, `WindowRequest` → `IngestState`, `SweepRequest` → `SweepReport`,
   `JurisdictionRequest` → `JurisdictionReport` (`JurisdictionState`, `JurisdictionSummary`,
@@ -430,14 +427,14 @@ open.
 
 ### 5.5 Flow control
 
-Outbound acquisition runs under the Restate flow-control scope `athletic-source`
-(`src/runtime/source.rs:22`) with `SOURCE_CONCURRENCY = 16` (`:23`). `SourceGateway::fetch` refuses a
-call whose key is not `"global"` or whose scope is not `SOURCE_SCOPE`, and `SourceCache` calls it with
-`.scope(SOURCE_SCOPE)`. Before any deployment, `flow_control::ensure_source_scope` reads the server
-version (1.7.3 or newer, with the flow-control features), refuses to continue while
-`SourceGateway`/`global`/`blocked` exists in server state ("scope migration or deployment cannot
-bypass retained source policy"), then validates or provisions the `athletic-source` rule plus the
-stricter wildcard rule (`src/cli/flow_control.rs:13-14`, `:29-47`).
+~~Outbound acquisition runs under the Restate flow-control scope `athletic-source`~~
+~~(`src/runtime/source.rs:22`) with `SOURCE_CONCURRENCY = 16` (`:23`). `SourceGateway::fetch` refuses a~~
+~~call whose key is not `"global"` or whose scope is not `SOURCE_SCOPE`, and `SourceCache` calls it with~~
+~~`.scope(SOURCE_SCOPE)`. Before any deployment, `flow_control::ensure_source_scope` reads the server~~
+~~version (1.7.3 or newer, with the flow-control features), refuses to continue while~~
+~~`SourceGateway`/`global`/`blocked` exists in server state ("scope migration or deployment cannot~~
+~~bypass retained source policy"), then validates or provisions the `athletic-source` rule plus the~~
+~~stricter wildcard rule (`src/cli/flow_control.rs:13-14`, `:29-47`).~~ (historical: root crate deleted)
 
 ### 5.6 Where the browser pool is invoked
 
@@ -461,27 +458,7 @@ reports `Ready`.
 
 ## 6. Adding a handler or service
 
-### 6.1 Pipeline worker
-
-1. Put the definition in a module under `src/runtime/` (a submodule directory if it has helpers, as
-   `run/`, `row_worker/`, `rankings_collection/` do) and export it from `src/runtime.rs`.
-2. Write `pub struct X { pub runtime: Arc<Runtime> }`, `#[restate_sdk::object(...)]` (or
-   `#[restate_sdk::service(...)]`) on the `impl` block, and `#[handler]` on each `pub async fn`.
-3. Choose attributes deliberately: `lazy_state = true` when invocations touch few keys;
-   `ingress_private = true` unless the CLI must reach it; an explicit `invocation_retry_policy` for
-   anything that can block on a human; 30-day retentions when the result must stay replayable.
-4. Derive the object key from content and **validate it in the handler**: existing objects compare
-   `ctx.key()` against a recomputed or fixed key (`RunCoordinator`/`SourceGateway` require `"global"`,
-   `BrowserSession` requires `BROWSER_SESSION_KEY`, `LocalReviewer` the lane key) and fail terminally
-   on a mismatch. Keys are `identity::fingerprint(...)` (sha256 over the JSON encoding) or
-   `identity::scoped_key(scope, value)` = `<scope>:<fingerprint>`.
-5. Keep effects inside `ctx.run(...)`, pick `.retry_policy(...)` per effect (`max_attempts(1)`
-   everywhere: an effect the SDK re-issues is a second retry owner, and the handler's three attempts
-   already own the retry, §9), and read/write state with
-   `ctx.get`/`ctx.set`; check the result slot first when re-entrant.
-6. Bind it in `src/runtime/worker.rs`'s `Endpoint::builder()` chain — an unbound definition is simply
-   not served, and nothing else in the tree will tell you. Unit-test the free functions that take
-   `&Runtime`/`&Store`; handler bodies are thin by design.
+### 6.1 Pipeline worker — **historical**: entire section is about adding handlers to the deleted root crate's pipeline worker (`src/runtime/`).
 
 ### 6.2 Census endpoint
 
@@ -505,26 +482,20 @@ reports `Ready`.
 * **Never rename a struct or handler** without `#[handler(name = "...")]`: the name is the wire contract.
 * A new outbound-fetch scope needs a matching flow-control rule (§5.5), or `deploy` will refuse and
   `fetch`'s scope check will reject the call.
-* Changing a wire type's meaning means bumping the matching revision constant: `RUN_REVISION`,
-  `PREPARE_REVISION` (`run_protocol.rs:9-10`), `ROW_PROTOCOL_REVISION` (`row_protocol.rs:8`),
-  `EXPORT_PROTOCOL_REVISION` (`export_worker.rs:25`), `ACQUISITION_REVISION`, `INGESTION_REVISION`.
+* Changing a wire type's meaning means bumping the matching revision constant: ~~`RUN_REVISION`~~, ~~`PREPARE_REVISION`~~ (`run_protocol.rs:9-10`), ~~`ROW_PROTOCOL_REVISION`~~ (`row_protocol.rs:8`), ~~`EXPORT_PROTOCOL_REVISION`~~ (`export_worker.rs:25`), ~~`ACQUISITION_REVISION`~~, ~~`INGESTION_REVISION`~~ — all **historical**: these revision constants lived in the deleted pipeline-half (root crate deleted 2026-09-23).
 * Do not add a second convention beside an existing one — another store, queue or retry loop. Restate
-  is the only scheduler here: "Row work uses a bounded, replenished durable fan-out; no application
-  queue or lease exists" (`run.rs`).
+  is the only scheduler here: ~~"Row work uses a bounded, replenished durable fan-out; no application
+  queue or lease exists"~~ (`run.rs`) — **historical**: this rule described the pipeline half that no longer exists.
 
 ## 7. Durability and idempotency contract
 
-### 7.1 What is guaranteed: at-least-once
-
 * Effects wrapped in `ctx.run` are journaled; a replay reuses the recorded value instead of repeating
   an acknowledged step — but effects whose acknowledgement was lost may repeat: "Unacknowledged effects
-  may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`), and "If the SDK loses the
-  acknowledgement after this run, its kept stage may orphan" (`export_worker.rs`).
+~~may repeat during crash recovery" (`src/runtime/protocol.rs:93-94`)~~ (historical: Pipeline worker deletion)
+  acknowledgement after this run, its kept stage may orphan" (`export_worker.rs`) — **historical**: `export_worker.rs` belonged to the deleted pipeline-half (root crate deleted 2026-09-23).
 * The census store is append-only: "appending the same entity twice writes two rows, and
-  `Store::consolidate` merges them through `Entity::merge`"
-  (`crates/census-service/src/store/mod.rs`). A duplicate observation is
+  `Store::consolidate` merges them through `Entity::merge`" (`crates/census-store/src/lib.rs`). A duplicate observation is
   visible in `total_observations` and in raw scans until the next consolidation; it is not deduplicated
-  at append time.
 
 ### 7.2 Dedup keys and short-circuits
 
@@ -544,15 +515,15 @@ keeps a 26 h inactivity window because a challenge can legitimately be waiting o
 
 ### 7.4 Cancellation
 
-* **Run fan-out failure**: `drive` in `run.rs` cancels every outstanding `RowWorker` invocation
-  handle and drains the durable futures before returning the error, so a failed run leaves no orphan
-  row work.
+~~* **Run fan-out failure**: `drive` in `run.rs` cancels every outstanding `RowWorker` invocation~~
+~~  handle and drains the durable futures before returning the error, so a failed run leaves no orphan~~
+~~  row work.~~ (historical: Pipeline worker deletion)
 * **Sweep stop**: `Sweep::interrupt` resolves the `stop` signal on a target invocation; `wait_windows`
   is "cancellation-safe by construction: both select branches are durable Restate futures, so a drop
   mid-select replays the branch from its start instead of losing the wakeup". A stopped sweep still
   observes endpoints, writes its report, and returns `interrupted: true` with the windows it saw.
-* **Rankings pause**: `RankingsCollectionState::pause` writes `Paused(Manual)` and stops
-  re-scheduling; `resume` bumps the generation and requires a `Ready` browser.
+~~* **Rankings pause**: `RankingsCollectionState::pause` writes `Paused(Manual)` and stops~~
+~~  re-scheduling; `resume` bumps the generation and requires a `Ready` browser.~~ (historical)
 * **Invocation pause at the retry ceiling**: a definition declared
   `on_max_attempts = "pause"` suspends a failed invocation for a human instead of failing it forever
   — the SDK's own words are "the invocation enters the paused state and can be manually resumed from
@@ -597,8 +568,7 @@ state and the artifact store. What exists is at-least-once delivery plus §7.2. 
   command was run while writing it, so no claim here is backed by a compile or test result.
 * The **census** service set is covered by an executable test that queries `/discover` and asserts
   each name in `["Census", "Ingest", "Sweep"]` is advertised
-  (`EXPECTED_SERVICES`, `fjall_restate_e2e.rs:40`); the pipeline worker's 13 bindings are covered only
-  by the binding chain in `src/runtime/worker.rs`.
+~~by the binding chain in `src/runtime/worker.rs`.~~ (historical: root crate deleted)
 * Exactly-once, cross-store atomicity, and cancellation semantics under a drained endpoint are
   properties of the Restate server version in use, not of this repo; the comments quoted in §7 are the
   codebase's own statement of what it expects from that server.

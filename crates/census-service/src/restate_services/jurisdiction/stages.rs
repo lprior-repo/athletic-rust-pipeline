@@ -244,6 +244,48 @@ impl JurisdictionCensus {
         self.save(ctx, state, today);
         Ok(())
     }
+
+    /// Pull the meets this run enumerated and record what the result sources read.
+    ///
+    /// The seed is the run's own `source_meets` rows, read inside the stage, so a state whose
+    /// enumerating stages are already complete still pulls the meets they enumerated rather than
+    /// depending on a second list. The year rule and the recorded-plan guard are the meet-index
+    /// stage's, because both stages learn the same two facts from the same request.
+    pub(super) async fn results_owed(
+        &self,
+        ctx: &ObjectContext<'_>,
+        request: &JurisdictionRequest,
+        state: &mut JurisdictionState,
+        today: &str,
+    ) -> Result<(), HandlerError> {
+        let year = u16::try_from(request.season.get()).map_err(|_| {
+            TerminalError::new(format!(
+                "season year {} is not a results-index year",
+                request.season.get()
+            ))
+        })?;
+        let Some(plan) = state.plan.as_ref() else {
+            return Err(TerminalError::new(
+                "the results stage ran before the run recorded its source plan",
+            )
+            .into());
+        };
+        let sweepable = plan.sweepable.clone();
+        let fetcher = self.fetcher().await?;
+        let outcome = self
+            .results_stage(
+                ctx,
+                fetcher,
+                request.jurisdiction,
+                year,
+                request.refresh,
+                sweepable,
+            )
+            .await?;
+        state.results = Some(outcome);
+        self.save(ctx, state, today);
+        Ok(())
+    }
 }
 
 #[cfg(test)]

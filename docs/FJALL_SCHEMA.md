@@ -112,8 +112,9 @@ moment in it, so re-running it overwrites its rows in place — the table cannot
 count, the 20M cap cannot be exhausted by re-deriving, and `stats()` keeps counting what was
 *appended*: a table written only through `replace_many` reports zero there.
 
-**No `try_reserve` calls exist in the census store.** The root crate has ~10 sites; census
+**No `try_reserve` calls exist in the census store.** The root crate had ~10 sites (historical: root package deleted 2026-09-23); census
 has zero. This is a P7 gap named in PERFORMANCE.md §6.
+
 
 ## 6. Legacy import
 
@@ -136,7 +137,7 @@ The cost of that shape is memory: one ledger file is one WriteBatch before commi
 
 ## 7. Tuning knobs
 
-| Knob | Census | Root (acquisition) | Fjall default |
+| Knob | Census | Root (acquisition) (historical: root package deleted 2026-09-23) | Fjall default |
 |---|---|---|---|
 | Cache size | 256 MiB (`CACHE_BYTES: u64 = 256 * 1024 * 1024`, `lib.rs:65`) | 32 MiB (`src/store.rs:25`) | 32 MiB (`db_config.rs:90`) |
 | Journal persist | default (auto) | `manual_journal_persist(true)` (`backend.rs:33-35`) | auto |
@@ -174,7 +175,7 @@ The cost of that shape is memory: one ledger file is one WriteBatch before commi
    only print in `census-store` is in a test (`legacy_tests.rs`).
 8. **StoreError is thiserror, not anyhow**: contrary to earlier claims that "store.rs uses
    anyhow throughout", census has a dedicated `StoreError` enum (`error.rs:9`)
-   with `thiserror` derives. Zero `anyhow` matches under `src/`.
+   with `thiserror` derives. Zero `anyhow` matches under `src/` (historical: root package deleted 2026-09-23).
 9. **StoreStats counts are exact, not approximate**: `stats()` reads `AtomicU64` sequence
    counters, not Fjall's `approximate_len` (corrected 2026-09-22, near `pub fn stats`).
 10. **Journal payloads clone per row**: `journal_payloads` (`read/mod.rs:260`)
