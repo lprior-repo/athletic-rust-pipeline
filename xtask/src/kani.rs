@@ -83,19 +83,19 @@ pub fn run(harnesses: &[String]) -> Result<()> {
         match result {
             Ok(_) => {
                 println!("PASS ({:.1}s)", elapsed.as_secs_f64());
-                passed += 1;
+                passed = passed.saturating_add(1);
             }
             Err(KaniError::Fail) => {
                 println!("FAIL ({:.1}s)", elapsed.as_secs_f64());
-                failed += 1;
+                failed = failed.saturating_add(1);
             }
             Err(KaniError::Timeout) => {
                 println!("TIMEOUT ({:.1}s)", elapsed.as_secs_f64());
-                timed_out += 1;
+                timed_out = timed_out.saturating_add(1);
             }
             Err(KaniError::Missing) => {
                 println!("MISSING (harness not found in crate)");
-                failed += 1;
+                failed = failed.saturating_add(1);
             }
         }
     }
@@ -106,7 +106,10 @@ pub fn run(harnesses: &[String]) -> Result<()> {
     );
 
     if failed > 0 || timed_out > 0 {
-        bail!("{} harness(es) did not verify", failed + timed_out);
+        bail!(
+            "{} harness(es) did not verify",
+            failed.saturating_add(timed_out)
+        );
     }
 
     Ok(())

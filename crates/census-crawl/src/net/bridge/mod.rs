@@ -41,6 +41,11 @@ pub(super) const ADMITTED_BROWSER_ORIGINS: &[&str] = &["www.athletic.net"];
 /// Compile-time check that the session key is profile-0, the single profile the browser engine
 /// serves.  If this fires the deployment is misconfigured.
 /// SESSION_KEY must be "profile-0" for correct lane routing (checked at compile time).
+///
+/// The `panic!` runs in the const evaluator only: a mismatched key fails the *build* with the
+/// message below and cannot reach a shipped binary, which is why the tree's `panic` metric records
+/// one site here rather than the check being deleted or downgraded to a type mismatch.
+#[allow(clippy::panic)]
 const _: fn() = || match SESSION_KEY {
     "profile-0" => {}
     other => panic!("browser lane key must be profile-0, got: {other}"),

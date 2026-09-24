@@ -121,7 +121,8 @@ fn a_row_whose_mark_overflows_its_columns_is_reported_rather_than_misread() {
 
 #[test]
 fn every_result_file_derives_a_raw_url_the_reader_accepts() {
-    let files = parse_meet_result_files(OH_FILE_LIST).expect("the file list parses");
+    let files = parse_meet_result_files(super::OH_FILE_LIST_URL, OH_FILE_LIST)
+        .expect("the file list parses");
     assert!(!files.is_empty(), "the capture lists result files");
     let page = parse_meet_index(super::OH_INDEX).expect("the index parses");
     let meet = page

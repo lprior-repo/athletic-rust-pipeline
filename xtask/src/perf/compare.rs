@@ -90,9 +90,18 @@ fn check_group<'a>(
     current: &'a GroupMeasurement,
     tolerance: f64,
 ) -> GroupCheckResult {
-    let baseline = groups.get(group).unwrap_or_else(|| {
-        panic!("baseline has no measurement for group '{group}' — run `perf record` first")
-    });
+    println!("group: {group}");
+
+    // A group the baseline never recorded cannot be compared. Report it as a failure the operator
+    // can act on: aborting the comparison here hid every other group's result behind a panic.
+    let Some(baseline) = groups.get(group) else {
+        return GroupCheckResult {
+            max_delta: None,
+            failure: Some(format!(
+                "{group}: baseline has no measurement for this group — run `perf record` first"
+            )),
+        };
+    };
 
     let delta = match (baseline.throughput, current.throughput) {
         (Some(old), Some(new)) => {
@@ -102,7 +111,6 @@ fn check_group<'a>(
         _ => None,
     };
 
-    println!("group: {group}");
     let mut failure: Option<String> = None;
     if let Some((d, old, new)) = delta {
         println!("  throughput: {:.2}%", d * 100.0);

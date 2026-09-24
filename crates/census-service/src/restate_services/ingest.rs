@@ -145,7 +145,11 @@ impl Ingest {
                 })?,
             );
         }
-        let payload_digest = hex::encode(hasher.finalize());
+        let payload_digest: String = hasher
+            .finalize()
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         let receipt = format!(
             "{endpoint}:{today}:{table}:{payload_digest}",
             endpoint = state.endpoint,

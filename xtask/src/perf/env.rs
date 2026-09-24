@@ -69,14 +69,15 @@ pub fn corpus_size() -> u64 {
                 if path.is_file() {
                     if let Some(ext) = path.extension() {
                         if ext == "txt" || ext == "htm" || ext == "html" {
-                            total += std::fs::read_to_string(&path)
+                            let lines = std::fs::read_to_string(&path)
                                 .ok()
-                                .map(|s| s.lines().count() as u64)
+                                .map(|s| u64::try_from(s.lines().count()).unwrap_or(u64::MAX))
                                 .unwrap_or(0);
+                            total = total.saturating_add(lines);
                         }
                     }
                 } else if path.is_dir() {
-                    total += count_lines_in_dir(&path);
+                    total = total.saturating_add(count_lines_in_dir(&path));
                 }
             }
         }

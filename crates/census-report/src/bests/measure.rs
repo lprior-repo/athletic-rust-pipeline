@@ -77,7 +77,12 @@ fn parse_field_imperial(feet_mark: &str) -> Option<i32> {
     let feet: i64 = feet_text.parse().ok()?;
     // Parse inches as hundredths (e.g. "0.75" → 75, "3.50" → 350)
     let inches: i64 = parse_hundredths(inches_text)?;
-    Some(i32::try_from((feet * 7620 + inches * 635 + 12) / 25).unwrap())
+    // Each step is checked so a pathological source string refuses instead of wrapping.
+    let millimetres = feet
+        .checked_mul(7620)?
+        .checked_add(inches.checked_mul(635)?)?
+        .checked_add(12)?;
+    i32::try_from(millimetres / 25).ok()
 }
 
 /// Parse a decimal string like `"0.75"` or `"3.50"` as hundredths (→ 75 or 350).
@@ -88,13 +93,13 @@ fn parse_hundredths(s: &str) -> Option<i64> {
     let frac = if frac.len() == 1 {
         format!("{frac}0")
     } else if frac.len() >= 2 {
-        format!(
-            "{}{}",
-            frac.chars().next().unwrap(),
-            frac.chars().nth(1).unwrap()
-        )
+        // Only the first two digits matter; a longer fraction is truncated, not rejected. `get`
+        // fails on a non-boundary index, which is the right refusal for a non-ASCII fraction.
+        frac.get(..2)?.to_string()
     } else {
         "00".to_string()
     };
-    Some(whole_i * 100 + frac.parse::<i64>().ok()?)
+    whole_i
+        .checked_mul(100)?
+        .checked_add(frac.parse::<i64>().ok()?)
 }

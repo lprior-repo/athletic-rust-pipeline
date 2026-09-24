@@ -492,12 +492,13 @@ async fn milesplit_html_parity() -> Result<()> {
                     "meets": meets.iter().map(meet_json).collect::<Vec<Value>>(),
                 }),
             )?;
-        } else if file.starts_with("oh_meet_") {
-            // The per-meet captures: a meet's results page, its file-list page and a `/raw` body.
-            // Their routes are asserted end to end by the adapter's own tests (`milesplit::tests`
-            // parses the captures and maps their rows into canonical entities), so this harness —
-            // whose case set is the index, roster and results-index routes — names them instead of
-            // aborting the whole walk.
+        } else if file.contains("_meet_") {
+            // The per-meet captures: a meet's results page in either template the platform serves
+            // (the `meetResultFiles` literal or the `ddResultsPage` select), its file-list page and
+            // a `/raw` body. Their routes are asserted end to end by the adapter's own tests
+            // (`milesplit::tests` parses the captures and maps their rows into canonical entities),
+            // so this harness — whose case set is the index, roster and results-index routes — names
+            // them instead of aborting the whole walk.
             continue;
         } else {
             bail!("uncovered {SOURCE} fixture `{file}`: parity_national.rs has no case for it");

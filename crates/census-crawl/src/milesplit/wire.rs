@@ -163,9 +163,14 @@ pub struct ResultSetRef {
 /// `is_meet_pro` is carried exactly as the page publishes it, without a reading of its own: a file
 /// the platform marks as Pro is still attempted, and the fetch layer reports whatever status the
 /// host answers with rather than this layer guessing that the file is gated.
+///
+/// `inline` names the third template (`ID 764735`): a results page with no file list at all whose
+/// one result set is the page's own `<pre>` block, served at `/results` rather than at a `/raw`
+/// route. It never comes from `meetResultFiles[]` — the JSON has no such key — so it is minted by
+/// the page reader, and its `id` is `0`, which no published file id takes.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct MeetResultFile {
-    /// The provider's own result-set id, the `RSID` of the `/raw` route.
+    /// The provider's own result-set id, the `RSID` of the `/raw` route. `0` when `inline`.
     pub id: i64,
     /// The name the page gives the file (`Results`, `Section 2`, …).
     #[serde(default)]
@@ -173,17 +178,26 @@ pub struct MeetResultFile {
     /// The page's own Pro marker, uninterpreted.
     #[serde(rename = "isMeetPro", default)]
     pub is_meet_pro: i64,
+    /// The rows are on the results page itself, not behind this file's `/raw` route.
+    #[serde(default)]
+    pub inline: bool,
 }
 
 impl MeetResultFile {
-    /// The `/raw` URL of this file under the results page that listed it.
+    /// Where this file's rows are read from under the results page that listed it: the page itself
+    /// for an inline file, its own `/raw` route for every other.
     pub fn raw_url(&self, results_url: &str) -> String {
-        format!("{}/{}/raw", results_url.trim_end_matches('/'), self.id)
+        let base = results_url.trim_end_matches('/');
+        if self.inline {
+            return base.to_string();
+        }
+        format!("{base}/{}/raw", self.id)
     }
 }
 
 impl ResultSetRef {
-    /// Read a published `/meets/<id>-<slug>/results/<rsid>/raw` URL.
+    /// Read a published `/meets/<id>-<slug>/results/<rsid>/raw` URL, or the results page itself for
+    /// the inline template.
     ///
     /// `None` for anything else — including a `/formatted` URL, which serves an empty JS shell
     /// rather than rows — so a mistyped or unserved entry is reported instead of requested. The
@@ -196,19 +210,59 @@ impl ResultSetRef {
             .or_else(|| trimmed.strip_prefix("http://"))?
             .split_once('/')?;
         let jurisdiction = UsJurisdiction::from_code(host.strip_suffix(".milesplit.com")?)?;
-        let segments: Vec<&str> = path.split('/').collect();
-        if !segments.last()?.eq_ignore_ascii_case("raw") {
+        result_set(host, path, Site::for_jurisdiction(jurisdiction))
+    }
+
+    /// Parse a results URL when the host is the canonical `www.milesplit.com` rather than a state
+    /// code. The caller must supply the jurisdiction that the meet belongs to — the host string
+    /// itself (`www`) is not a jurisdiction, but the run's own `source_meets` row carries it. The
+    /// host check still rejects any host other than `<state>.milesplit.com` and
+    /// `www.milesplit.com`, so a mistyped domain still falls through.
+    pub fn parse_with_jurisdiction(
+        url: &str,
+        jurisdiction: UsJurisdiction,
+    ) -> Option<ResultSetRef> {
+        let trimmed = url.trim();
+        let (host, path) = trimmed
+            .strip_prefix("https://")
+            .or_else(|| trimmed.strip_prefix("http://"))?
+            .split_once('/')?;
+        // Only state hosts and the canonical www host are accepted. A `www` URL needs the caller's
+        // jurisdiction; a state host carries its own.
+        if host == "www.milesplit.com" {
+            return result_set(host, path, Site::for_jurisdiction(jurisdiction));
+        }
+        if !host.ends_with(".milesplit.com") {
             return None;
         }
-        let meet_id = after(&segments, "meets")?;
-        let rsid = after(&segments, "results")?;
-        Some(ResultSetRef {
-            site: Site::for_jurisdiction(jurisdiction),
-            meet_id,
-            rsid,
-            url: format!("https://{host}/{}", segments.join("/")),
-        })
+        let jurisdiction = UsJurisdiction::from_code(host.strip_suffix(".milesplit.com")?)?;
+        result_set(host, path, Site::for_jurisdiction(jurisdiction))
     }
+}
+
+/// The result set a `/meets/<id>-<slug>/results[/<rsid>/raw]` path addresses, under `site`.
+///
+/// Two routes carry rows. A file the results page lists is read at its own `/raw` route. The inline
+/// template's page is its own one result set, so it is read at `/results` itself and takes the
+/// `0` that no published file id can be — its rows are the page's `<pre>` block, which is what the
+/// `/raw` route serves for every other file.
+fn result_set(host: &str, path: &str, site: Site) -> Option<ResultSetRef> {
+    let segments: Vec<&str> = path.split('/').collect();
+    let last = *segments.last()?;
+    let rsid = if last.eq_ignore_ascii_case("raw") {
+        after(&segments, "results")?
+    } else if last.eq_ignore_ascii_case("results") {
+        "0".to_string()
+    } else {
+        return None;
+    };
+    let meet_id = after(&segments, "meets")?;
+    Some(ResultSetRef {
+        site,
+        meet_id,
+        rsid,
+        url: format!("https://{host}/{}", segments.join("/")),
+    })
 }
 
 /// The digits that open the segment following `label`, e.g. `770621` after `meets` in

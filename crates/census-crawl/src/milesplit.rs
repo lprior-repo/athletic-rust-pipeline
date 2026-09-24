@@ -43,7 +43,7 @@ pub use parse::{
     has_next_page, parse_meet_index, parse_meet_result_files, parse_roster, parse_team_index,
 };
 pub use raw::{parse_raw, RawPage};
-pub use results::{collect as collect_result_sets, ResultSetOptions};
+pub use results::{collect as collect_result_sets, ResultSetOptions, ResultSetRequest};
 pub use wire::{
     MeetRef, MeetResultFile, ResultSetRef, Roster, RosterAthlete, Season, Site, TeamRef,
 };

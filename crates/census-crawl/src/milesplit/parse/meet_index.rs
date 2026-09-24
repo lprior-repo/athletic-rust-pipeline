@@ -27,6 +27,26 @@ fn meet_index_marker_regex() -> CrawlResult<&'static Regex> {
 static MEET_RESULT_FILES_REGEX: LazyLock<Result<Regex, regex::Error>> =
     LazyLock::new(|| Regex::new(r"(?s)meetResultFiles\s*=\s*(\[[^]]*\])"));
 
+/// The legacy `<select id="ddResultsPage">` a second results-page template serves instead of the
+/// JS literal: one `<option>` per file, whose value carries the file's id as the last path segment
+/// before `?type=formatted`, and whose label is the file's human name. The `All` option carries
+/// no file id and is never emitted.
+static DD_RESULTS_PAGE_REGEX: LazyLock<Result<Regex, regex::Error>> =
+    LazyLock::new(|| Regex::new(r#"(?s)<select\s+id="ddResultsPage">\s*(.*?)\s*</select>"#));
+
+/// One `<option value="…/results/<id>?type=formatted">Name</option>` from a legacy results page.
+static LEGACY_OPTION_REGEX: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| {
+    Regex::new(
+        r#"<option\s+value="https?://[^/]+/meets/\d+-[^"]+/results/(\d+)(?:\?[^"]*)?"[^>]*>([^<]+)</option>"#,
+    )
+});
+
+/// The third template's anchor: `<div id="meetResultsBody">`, whose `<pre>` block holds the rows of
+/// a page that publishes no file list. Measured across the 473 meet results pages in the run's own
+/// HTTP cache (2026-09-24): 437 carry the literal, 26 the legacy select, 10 this anchor, and none
+/// carries none of the three.
+const INLINE_RESULTS_ANCHOR: &str = r#"id="meetResultsBody""#;
+
 fn meet_result_files_regex() -> CrawlResult<&'static Regex> {
     MEET_RESULT_FILES_REGEX
         .as_ref()
@@ -36,17 +56,67 @@ fn meet_result_files_regex() -> CrawlResult<&'static Regex> {
         })
 }
 
+/// Extract one file id and name from a legacy `<option>` element; `None` for the `All` option
+/// (value has no numeric id segment after `results/`).
+fn legacy_option(option_html: &str) -> Option<(i64, String)> {
+    let re = LEGACY_OPTION_REGEX.as_ref().ok()?;
+    let cap = re.captures(option_html)?;
+    let id: i64 = cap.get(1)?.as_str().parse().ok()?;
+    let name = cap.get(2)?.as_str().trim().to_string();
+    (!name.is_empty() && id > 0).then_some((id, name))
+}
+
+/// Parse the legacy `<select id="ddResultsPage">` template into result-file entries.
+fn parse_legacy_results_page(html: &str) -> Option<Vec<MeetResultFile>> {
+    let re = DD_RESULTS_PAGE_REGEX.as_ref().ok()?;
+    let select_html = re.captures(html)?.get(1)?.as_str();
+    let mut files = Vec::new();
+    for option_match in LEGACY_OPTION_REGEX
+        .as_ref()
+        .ok()?
+        .captures_iter(select_html)
+    {
+        if let Some((id, name)) = legacy_option(option_match.get(0)?.as_str()) {
+            files.push(MeetResultFile {
+                id,
+                name,
+                is_meet_pro: 0,
+                inline: false,
+            });
+        }
+    }
+    Some(files)
+}
+
 /// Read the result files a meet's results page lists, in the order the page lists them.
 ///
+/// Three templates publish result sets and all three are read, in this order: the
+/// `meetResultFiles` literal, the legacy `<select id="ddResultsPage">`, and the inline template —
+/// a page with no file list at all whose one result set is its own `<pre>` block.
+///
 /// An empty list is a meet with no published results yet, which is a state rather than an error; a
-/// page that publishes no `meetResultFiles` literal at all is a schema mismatch, because that page
-/// is the only cheap place the list exists.
-pub fn parse_meet_result_files(html: &str) -> CrawlResult<Vec<MeetResultFile>> {
+/// page that publishes none of the three is a schema mismatch, named by the URL that answered it,
+/// because that page is the only cheap place the list exists.
+pub fn parse_meet_result_files(url: &str, html: &str) -> CrawlResult<Vec<MeetResultFile>> {
     let regex = meet_result_files_regex()?;
     let Some(captured) = regex.captures(html) else {
+        // Second template: legacy `<select id="ddResultsPage">` shape.
+        if let Some(files) = parse_legacy_results_page(html) {
+            return Ok(files);
+        }
+        // Third template: the page is the one result set.
+        if html.contains(INLINE_RESULTS_ANCHOR) {
+            return Ok(vec![MeetResultFile {
+                id: 0,
+                name: "Results".to_string(),
+                is_meet_pro: 0,
+                inline: true,
+            }]);
+        }
         return Err(CrawlError::Schema {
-            url: "meet results page".to_string(),
-            detail: "no meetResultFiles literal in the body".to_string(),
+            url: url.to_string(),
+            detail: "no meetResultFiles literal, ddResultsPage select or meetResultsBody block"
+                .to_string(),
         });
     };
     let literal = captured

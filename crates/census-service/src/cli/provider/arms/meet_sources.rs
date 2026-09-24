@@ -76,7 +76,7 @@ pub(crate) async fn milesplit_results_report(
         .season_year
         .map_or(census::SeasonScope::All, census::SeasonScope::Year);
     let meets = census::select_meets(stored, &states, scope, args.limit);
-    let mut urls: Vec<String> = Vec::new();
+    let mut urls: Vec<providers::milesplit::ResultSetRequest> = Vec::new();
     let mut pages_read = 0_usize;
     let mut pro_marked = 0_usize;
     for meet in &meets {
@@ -90,11 +90,16 @@ pub(crate) async fn milesplit_results_report(
         pages_read = pages_read.saturating_add(1);
         pro_marked =
             pro_marked.saturating_add(files.iter().filter(|file| file.is_meet_pro != 0).count());
+        // The request carries the jurisdiction of the row that named the meet, because a results
+        // page which redirects to `www` publishes no state of its own.
         urls.extend(
             files
                 .iter()
                 .filter(|file| file.is_meet_pro == 0)
-                .map(|file| file.raw_url(&meet.results_url)),
+                .map(|file| providers::milesplit::ResultSetRequest {
+                    url: file.raw_url(&meet.results_url),
+                    jurisdiction: meet.jurisdiction,
+                }),
         );
     }
     let mut report = providers::milesplit::collect_result_sets(

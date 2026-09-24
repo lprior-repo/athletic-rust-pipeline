@@ -1,7 +1,9 @@
 //! Published notation for a mark.
 //!
-//! Every formatting function works on integers only — no `as f64` — to agree with the tree's
-//! independent renderer used in the property tests and to avoid `clippy::as_conversions`.
+//! Every formatting function works on integers only — no floating-point conversion — to agree with
+//! the tree's independent renderer used in the property tests and to keep the crate's `as_cast`
+//! count at zero. The construct is named rather than spelled because `xtask`'s per-line construct
+//! counts read the raw line, so a comment that writes the cast out is scored as one.
 
 use census_domain::model::CentiSeconds;
 use census_domain::model::Mark;
@@ -33,8 +35,8 @@ pub fn format_points_scored(cp: i32) -> String {
 }
 
 /// Centiseconds as a race time: `1094` stays `10.94`, `28123` becomes `4:41.23`,
-/// `360000` becomes `1:00:00.00`.  Integer-only — no `as f64` — to agree with the
-/// tree's independent renderer used in the property tests.
+/// `360000` becomes `1:00:00.00`.  Integer-only — no floating-point conversion — to agree
+/// with the tree's independent renderer used in the property tests.
 pub fn format_time(cs: CentiSeconds) -> String {
     let total_cs = cs.0.abs();
     let total_seconds = total_cs / 100;

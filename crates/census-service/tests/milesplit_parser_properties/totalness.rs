@@ -7,7 +7,7 @@
 
 use super::{
     arbitrary_body, parse_meet_index, parse_meet_result_files, parse_raw, seam_config, shaped_body,
-    ResultSetRef, OH_RAW_URL,
+    ResultSetRef, OH_FILE_LIST_URL, OH_RAW_URL,
 };
 use proptest::prelude::*;
 
@@ -32,13 +32,13 @@ proptest! {
     #[test]
     fn the_index_answers_or_refuses_arbitrary_bytes(body in arbitrary_body()) {
         let _ = answer(parse_meet_index(&body));
-        let _ = answer(parse_meet_result_files(&body));
+        let _ = answer(parse_meet_result_files(OH_FILE_LIST_URL, &body));
     }
 
     #[test]
     fn the_index_answers_or_refuses_shaped_bytes(body in shaped_body()) {
         let _ = answer(parse_meet_index(&body));
-        let _ = answer(parse_meet_result_files(&body));
+        let _ = answer(parse_meet_result_files(OH_FILE_LIST_URL, &body));
     }
 
     #[test]

@@ -123,3 +123,184 @@ fn field_mark_comparison_is_deterministic() {
         "same published precision → same cm integer"
     );
 }
+// ── Serde: legacy float → integer deserialisation ───────────────────────────────
+
+#[test]
+fn legacy_float_time_deserialises() {
+    let json = r#"50.21"#;
+    let cs: CentiSeconds = serde_json::from_str(json).unwrap();
+    assert_eq!(cs, CentiSeconds(5021));
+}
+
+#[test]
+fn legacy_float_distance_deserialises() {
+    let json = r#"4.0703499999999995"#;
+    let cm: CentiMetres = serde_json::from_str(json).unwrap();
+    assert_eq!(cm, CentiMetres(407));
+}
+
+#[test]
+fn legacy_float_points_deserialises() {
+    let json = r#"8421.0"#;
+    let cp: CentiPoints = serde_json::from_str(json).unwrap();
+    assert_eq!(cp, CentiPoints(842100));
+}
+
+// ── Serde: current integer → integer deserialisation ────────────────────────────
+
+#[test]
+fn current_integer_time_deserialises() {
+    let json = r#"5021"#;
+    let cs: CentiSeconds = serde_json::from_str(json).unwrap();
+    assert_eq!(cs, CentiSeconds(5021));
+}
+
+#[test]
+fn current_integer_distance_deserialises() {
+    let json = r#"407"#;
+    let cm: CentiMetres = serde_json::from_str(json).unwrap();
+    assert_eq!(cm, CentiMetres(407));
+}
+
+#[test]
+fn current_integer_points_deserialises() {
+    let json = r#"842100"#;
+    let cp: CentiPoints = serde_json::from_str(json).unwrap();
+    assert_eq!(cp, CentiPoints(842100));
+}
+
+// ── Serde: overflow on legacy float is a hard error ────────────────────────────
+
+#[test]
+fn legacy_float_overflow_is_error() {
+    let json = r#"30000000.0"#; // ×100 = 3 000 000 000 > i32::MAX
+    let result: Result<CentiSeconds, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "legacy float 30000000.0 should overflow");
+    let err = result.unwrap_err().to_string();
+    assert!(
+        err.contains("overflow") || err.contains("exceeds"),
+        "error should mention overflow: {err}"
+    );
+}
+
+// ── Scaling: the shared conversion's boundary behaviour ────────────────────────
+
+#[test]
+fn scaling_refuses_what_does_not_fit() {
+    assert_eq!(super::checked_hundredths(10.94), Some(1094));
+    assert_eq!(super::checked_hundredths(-10.94), Some(-1094));
+    assert_eq!(super::checked_hundredths(0.0), Some(0));
+    assert_eq!(super::checked_hundredths(f64::NAN), None);
+    assert_eq!(super::checked_hundredths(f64::INFINITY), None);
+    assert_eq!(super::checked_hundredths(f64::NEG_INFINITY), None);
+    assert_eq!(super::checked_hundredths(30_000_000.0), None); // ×100 exceeds i32::MAX
+    assert_eq!(super::checked_hundredths(-30_000_000.0), None);
+}
+
+#[test]
+fn scaling_for_parsers_keeps_the_replaced_cast_semantics() {
+    assert_eq!(super::hundredths(10.94), 1094);
+    // The `as` this replaced read NaN as zero and pinned an overflow to the bound it ran past;
+    // the parsers already range-check, so these are the unreachable cases it has to keep agreeing on.
+    assert_eq!(super::hundredths(f64::NAN), 0);
+    assert_eq!(super::hundredths(f64::INFINITY), i32::MAX);
+    assert_eq!(super::hundredths(f64::NEG_INFINITY), i32::MIN);
+    assert_eq!(super::hundredths(30_000_000.0), i32::MAX);
+    assert_eq!(super::hundredths(-30_000_000.0), i32::MIN);
+}
+
+#[test]
+fn u32_past_i32_max_is_refused_not_wrapped() {
+    use serde::de::value::{Error, U32Deserializer};
+    use serde::de::IntoDeserializer;
+    use serde::Deserialize;
+
+    let over: U32Deserializer<Error> = 3_000_000_000u32.into_deserializer();
+    assert!(
+        CentiSeconds::deserialize(over).is_err(),
+        "3 000 000 000 centiseconds must be refused, not wrapped to -1 294 967 296"
+    );
+
+    let fits: U32Deserializer<Error> = 1094u32.into_deserializer();
+    assert_eq!(
+        CentiSeconds::deserialize(fits).ok(),
+        Some(CentiSeconds(1094))
+    );
+}
+
+// ── Serde: serialisation pins the raw integer form ─────────────────────────────
+
+#[test]
+fn serialise_time_emits_raw_integer() {
+    let cs = CentiSeconds(5021);
+    let json = serde_json::to_string(&cs).unwrap();
+    assert_eq!(json, "5021");
+}
+
+#[test]
+fn serialise_distance_emits_raw_integer() {
+    let cm = CentiMetres(407);
+    let json = serde_json::to_string(&cm).unwrap();
+    assert_eq!(json, "407");
+}
+
+#[test]
+fn serialise_points_emits_raw_integer() {
+    let cp = CentiPoints(842100);
+    let json = serde_json::to_string(&cp).unwrap();
+    assert_eq!(json, "842100");
+}
+
+// ── Serde: whole Mark round-trip from legacy shape ─────────────────────────────
+
+use crate::model::Mark;
+
+#[test]
+fn mark_time_seconds_round_trips_legacy_json() {
+    let json = r#"{"TimeSeconds":50.21}"#;
+    let mark: Mark = serde_json::from_str(json).unwrap();
+    assert_eq!(mark, Mark::TimeSeconds(CentiSeconds(5021)));
+}
+
+#[test]
+fn mark_distance_metres_round_trips_legacy_json() {
+    let json = r#"{"DistanceMetres":4.0703499999999995}"#;
+    let mark: Mark = serde_json::from_str(json).unwrap();
+    assert_eq!(mark, Mark::DistanceMetres(CentiMetres(407)));
+}
+
+#[test]
+fn mark_field_imperial_round_trips_legacy_json() {
+    let json = r#"{"FieldImperial":{"feet_mark":"5' 4\"","metres":162.56}}"#;
+    let mark: Mark = serde_json::from_str(json).unwrap();
+    assert_eq!(
+        mark,
+        Mark::FieldImperial {
+            feet_mark: "5' 4\"".into(),
+            metres: CentiMetres(16256),
+        }
+    );
+}
+
+#[test]
+fn mark_points_round_trips_legacy_json() {
+    let json = r#"{"Points":8421.0}"#;
+    let mark: Mark = serde_json::from_str(json).unwrap();
+    assert_eq!(mark, Mark::Points(CentiPoints(842100)));
+}
+
+// ── Serde: wrong token types are errors ────────────────────────────────────────
+
+#[test]
+fn string_token_is_error() {
+    let json = r#""10.94""#;
+    let result: Result<CentiSeconds, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "string token should be rejected");
+}
+
+#[test]
+fn null_token_is_error() {
+    let json = r#"null"#;
+    let result: Result<CentiSeconds, _> = serde_json::from_str(json);
+    assert!(result.is_err(), "null should be rejected");
+}

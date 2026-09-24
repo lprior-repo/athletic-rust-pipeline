@@ -95,7 +95,7 @@ pub async fn fetch_meet_result_files(
             url: outcome.url.clone(),
         }));
     }
-    parse_meet_result_files(&outcome.text())
+    parse_meet_result_files(&outcome.url, &outcome.text())
 }
 
 pub async fn fetch_meet_index(

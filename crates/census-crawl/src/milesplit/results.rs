@@ -27,6 +27,7 @@ use census_domain::model::{
     CanonicalTeam, SourceNamespace,
 };
 use census_domain::school_index::SchoolIndex;
+use census_domain::UsJurisdiction;
 use census_store::Table;
 use std::collections::HashMap;
 
@@ -43,10 +44,26 @@ const PHASE: &str = "milesplit_result_sets_v1";
 /// The adapter name this route reports under.
 const ADAPTER: &str = "milesplit_results";
 
-/// What a result-set run is asked for: the `/raw` URLs to read, in the order to read them.
+/// One `/raw` URL to read, and the jurisdiction the run's own `source_meets` row filed its meet
+/// under.
+///
+/// The jurisdiction travels with the URL rather than with the run, because a meet's results page
+/// does not always sit on the state host the meet belongs to: `dc.milesplit.com/meets/<id>/results`
+/// answers `301` to `www.milesplit.com/meets/<id>/results`, and `www` names no jurisdiction. A URL
+/// on a state host is validated against that host and this field is not read. A `www` URL has
+/// nothing else to be attributed by, so the caller's own row is what says whose meet it is — and a
+/// caller that does not say is refused rather than guessed at.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ResultSetRequest {
+    pub url: String,
+    pub jurisdiction: UsJurisdiction,
+}
+
+/// What a result-set run is asked for: the `/raw` URLs to read, in the order to read them, each
+/// with the jurisdiction its meet was filed under.
 #[derive(Debug, Clone, Default)]
 pub struct ResultSetOptions {
-    pub urls: Vec<String>,
+    pub urls: Vec<ResultSetRequest>,
 }
 
 /// Canonical entities minted by one run, by table.
@@ -100,10 +117,15 @@ pub async fn collect(
         done: ctx.store.journal_keys(PHASE)?,
         pending: Vec::new(),
     };
-    for entry in &options.urls {
-        match ResultSetRef::parse(entry) {
+    for request in &options.urls {
+        // A state-host URL is its own authority; only when the host names no jurisdiction is the
+        // caller's row consulted, and a request neither route accepts is reported rather than
+        // requested.
+        match ResultSetRef::parse(&request.url)
+            .or_else(|| ResultSetRef::parse_with_jurisdiction(&request.url, request.jurisdiction))
+        {
             Some(reference) => run.read(ctx, &reference).await,
-            None => run.reject(entry),
+            None => run.reject(&request.url),
         }
     }
     let counts = append(ctx, run.accumulated, run.pending)?;

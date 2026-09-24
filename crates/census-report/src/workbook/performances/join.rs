@@ -244,5 +244,5 @@ fn observed(performance: &CanonicalPerformance) -> Option<&Evidence> {
 fn normalized_mark(mark: &Mark) -> Option<f64> {
     Measure::of(mark)
         .and_then(|measure| measure.value(mark))
-        .map(|v| v as f64 / 100.0)
+        .map(|v| f64::from(v) / 100.0)
 }

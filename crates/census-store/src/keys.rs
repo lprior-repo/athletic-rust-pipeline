@@ -58,9 +58,10 @@ pub(super) fn split_observation_key(key: &[u8]) -> Option<(&[u8], &[u8], u64)> {
     let text_bytes = key.get(..separator)?;
     let table_end = text_bytes.iter().position(|&b| b == 0)?;
     let sequence_bytes: [u8; 8] = key.get(sequence_start..)?.try_into().ok()?;
+    let id_start = table_end.checked_add(1)?;
     Some((
         key.get(..table_end)?,
-        key.get(table_end + 1..separator)?,
+        key.get(id_start..separator)?,
         u64::from_be_bytes(sequence_bytes),
     ))
 }

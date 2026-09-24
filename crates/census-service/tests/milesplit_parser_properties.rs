@@ -47,6 +47,10 @@ const OH_FILE_LIST: &str =
 const OH_RAW: &str =
     include_str!("../../census-crawl/tests/fixtures/milesplit/oh_meet_770621_rs1321880_raw.html");
 
+/// The results-page URL the file-list capture above was served from.
+const OH_FILE_LIST_URL: &str =
+    "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results";
+
 /// The `/raw` URL the capture above was served from.
 const OH_RAW_URL: &str =
     "https://oh.milesplit.com/meets/770621-beaver-eastern-invite-2026/results/1321880/raw";

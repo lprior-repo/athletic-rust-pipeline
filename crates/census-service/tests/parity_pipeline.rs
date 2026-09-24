@@ -1195,12 +1195,17 @@ fn milesplit_roster(corpus: &mut Corpus) -> Result<()> {
             .and_then(|rest| rest.strip_suffix(".html"))
         {
             roster = Some((team_id.to_string(), body));
+        } else if name.contains("_meet_") {
+            // The per-meet captures: a meet's results page in either template the platform serves
+            // (the `meetResultFiles` literal or the `ddResultsPage` select), its file-list page and
+            // a `/raw` body. The corpus this walk builds models the WI school, its athletes and its
+            // teams; these captures are asserted by the adapter's own tests, and folding them in
+            // here would move the goldens without adding a case the WI pair does not already cover.
+            // They are named, not unknown.
+            continue;
         } else if name.starts_with("oh_") {
-            // The rank-4 route captures — the OH team index, the graded OH roster and the two
-            // result-set bodies. The corpus this walk builds models the WI school, its athletes and
-            // its teams; the OH captures are asserted by the adapter's own tests, and folding them
-            // in here would move the goldens without adding a case the WI pair does not already
-            // cover. They are named, not unknown.
+            // The rest of the rank-4 route captures — the OH team index, the graded OH roster and
+            // the OH results index — asserted by the adapter's own tests for the same reason.
             continue;
         } else {
             bail!("{name} is not a known milesplit fixture");

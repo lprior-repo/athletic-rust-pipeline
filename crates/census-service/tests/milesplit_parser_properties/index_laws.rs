@@ -85,7 +85,8 @@ fn the_pager_and_the_rows_disagree_only_when_the_page_says_so() {
 
 #[test]
 fn the_file_list_names_files_with_positive_ids() {
-    let files = parse_meet_result_files(OH_FILE_LIST).expect("the file list parses");
+    let files = parse_meet_result_files(super::OH_FILE_LIST_URL, OH_FILE_LIST)
+        .expect("the file list parses");
     assert!(!files.is_empty(), "the capture lists result files");
     for file in &files {
         assert!(file.id > 0, "result-set id {} is not positive", file.id);

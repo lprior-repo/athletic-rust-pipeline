@@ -8,7 +8,7 @@
 //! below assert the rows this capture does mint, and never a count the run reported about itself.
 
 use super::run::Run;
-use super::{collect, Accumulator, ResultSetOptions, Stats, ADAPTER, PHASE};
+use super::{collect, Accumulator, ResultSetOptions, ResultSetRequest, Stats, ADAPTER, PHASE};
 use crate::net::Fetcher;
 use crate::AdapterContext;
 use census_domain::model::{
@@ -161,7 +161,10 @@ async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     let report = collect(
         &ctx,
         &ResultSetOptions {
-            urls: vec![OH_RAW_URL.to_string()],
+            urls: vec![ResultSetRequest {
+                url: OH_RAW_URL.to_string(),
+                jurisdiction: UsJurisdiction::Ohio,
+            }],
         },
     )
     .await
@@ -189,7 +192,10 @@ async fn a_result_set_whose_rows_never_landed_is_read_again_by_the_next_run() {
     let third = collect(
         &ctx,
         &ResultSetOptions {
-            urls: vec![OH_RAW_URL.to_string()],
+            urls: vec![ResultSetRequest {
+                url: OH_RAW_URL.to_string(),
+                jurisdiction: UsJurisdiction::Ohio,
+            }],
         },
     )
     .await

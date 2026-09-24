@@ -172,7 +172,7 @@ async fn milesplit_results(
     context: &AdapterContext<'_>,
     meets: &[SourceMeetRef],
 ) -> Result<(usize, AdapterReport), HandlerError> {
-    let mut urls: Vec<String> = Vec::new();
+    let mut urls: Vec<census_crawl::milesplit::ResultSetRequest> = Vec::new();
     let mut selected = 0_usize;
     for meet in meets
         .iter()
@@ -186,7 +186,17 @@ async fn milesplit_results(
         )
         .await
         .map_err(|error| job_error(collect_error(error)))?;
-        urls.extend(files.iter().map(|file| file.raw_url(&meet.results_url)));
+        // Each address carries the jurisdiction of the row that named the meet: a results page that
+        // redirects to `www` publishes no state of its own, and this row is the only thing that
+        // knows whose meet it is.
+        urls.extend(
+            files
+                .iter()
+                .map(|file| census_crawl::milesplit::ResultSetRequest {
+                    url: file.raw_url(&meet.results_url),
+                    jurisdiction: meet.jurisdiction,
+                }),
+        );
     }
     let report = census_crawl::milesplit::collect_result_sets(
         context,

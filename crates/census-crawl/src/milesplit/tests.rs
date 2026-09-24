@@ -508,7 +508,7 @@ fn the_results_index_url_is_the_published_query_shape() {
 /// names the same `RSID` the result-set sample was fetched under.
 #[test]
 fn a_results_page_lists_the_result_files_the_raw_route_serves() {
-    let files = parse_meet_result_files(OH_MEET_RESULTS).unwrap();
+    let files = parse_meet_result_files(OH_MEET_RESULTS_URL, OH_MEET_RESULTS).unwrap();
     assert_eq!(files.len(), 1);
     assert_eq!(files[0].id, 1321880);
     assert_eq!(files[0].name, "Results");
@@ -519,7 +519,7 @@ fn a_results_page_lists_the_result_files_the_raw_route_serves() {
 /// result set: discovery and the `/raw` reader agree on the address without a second convention.
 #[test]
 fn a_listed_result_file_addresses_the_raw_url_the_reader_accepts() {
-    let files = parse_meet_result_files(OH_MEET_RESULTS).unwrap();
+    let files = parse_meet_result_files(OH_MEET_RESULTS_URL, OH_MEET_RESULTS).unwrap();
     let url = files[0].raw_url(OH_MEET_RESULTS_URL);
     assert_eq!(url, OH_RAW_URL);
     let reference = ResultSetRef::parse(&url).expect("the derived URL is a /raw URL");
@@ -531,14 +531,143 @@ fn a_listed_result_file_addresses_the_raw_url_the_reader_accepts() {
 /// the only cheap record of what result sets exist, so its absence is reported.
 #[test]
 fn a_page_without_a_file_list_is_a_schema_mismatch() {
-    let error = parse_meet_result_files("<html><body>no result files here</body></html>")
-        .expect_err("no file list is a mismatch");
+    let error = parse_meet_result_files(
+        "https://www.milesplit.com/meets/1-a/results",
+        "<html><body>no result files here</body></html>",
+    )
+    .expect_err("no file list is a mismatch");
     assert!(matches!(error, CrawlError::Schema { .. }), "{error:?}");
 }
 
 /// A meet with no results yet publishes an empty list, which is a state rather than a failure.
 #[test]
 fn an_empty_file_list_is_a_state_not_a_failure() {
-    let files = parse_meet_result_files("let meetResultFiles = [];").unwrap();
+    let files = parse_meet_result_files(OH_MEET_RESULTS_URL, "let meetResultFiles = [];").unwrap();
     assert!(files.is_empty());
+}
+
+// ---------------------------------------------------------------------------
+// Defect 1: legacy <select id="ddResultsPage"> template.
+// ---------------------------------------------------------------------------
+
+/// The DC fixture uses the legacy `<select id="ddResultsPage">` template instead of the
+/// `meetResultFiles` JS literal. This test proves the parser reads it into the same shape.
+#[test]
+fn dc_legacy_fixture_parses_result_file_entries() {
+    const DC_LEGACY: &str =
+        include_str!("../../tests/fixtures/milesplit/dc_meet_735841_results_legacy.html");
+    let files = parse_meet_result_files(
+        "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results",
+        DC_LEGACY,
+    )
+    .unwrap();
+    // The fixture carries two per-file options (Varsity Boys + Varsity Girls), not the All option.
+    assert_eq!(files.len(), 2, "two per-file result entries");
+    assert_eq!(files[0].id, 1257095);
+    assert_eq!(files[0].name, "Varsity Boys Results");
+    assert_eq!(files[0].is_meet_pro, 0);
+    assert_eq!(files[1].id, 1257096);
+    assert_eq!(files[1].name, "Varsity Girls Results");
+    assert_eq!(files[1].is_meet_pro, 0);
+}
+
+/// A legacy select that contains only the `All` option is the legacy spelling of the empty list.
+#[test]
+fn legacy_select_with_only_all_is_empty() {
+    let html = r#"
+<select id="ddResultsPage">
+    <option value="https://www.milesplit.com/meets/999999-x/results">All</option>
+</select>
+"#;
+    let files =
+        parse_meet_result_files("https://www.milesplit.com/meets/999999-x/results", html).unwrap();
+    assert!(files.is_empty(), "only-All legacy select yields empty list");
+}
+
+// ---------------------------------------------------------------------------
+// Defect 3: the inline results page — no file list, the page is the result set.
+// ---------------------------------------------------------------------------
+
+/// The DC10 Track Fest capture (`meet 764735`) is the third template: no file list at all, and the
+/// meet's one result set is the `<pre>` block on the results page itself. It is read as one inline
+/// file whose address is the page, and the page parses as a `/raw` body — which is what lets the
+/// route carry these rows without a `/raw` of their own.
+#[test]
+fn an_inline_results_page_is_its_own_one_result_set() {
+    const DC_INLINE: &str =
+        include_str!("../../tests/fixtures/milesplit/dc_meet_764735_results_inline.html");
+    const DC_INLINE_URL: &str =
+        "https://www.milesplit.com/meets/764735-dc10-track-fest-hosted-by-light-horse-track-club-2026/results";
+
+    let files = parse_meet_result_files(DC_INLINE_URL, DC_INLINE).unwrap();
+    assert_eq!(files.len(), 1, "an inline page publishes one result set");
+    assert!(files[0].inline, "the page is the result set");
+    assert_eq!(files[0].id, 0, "an inline set has no published file id");
+
+    let url = files[0].raw_url(DC_INLINE_URL);
+    assert_eq!(url, DC_INLINE_URL, "the rows are the page itself");
+
+    let reference = ResultSetRef::parse_with_jurisdiction(&url, UsJurisdiction::DistrictOfColumbia)
+        .expect("the inline page is a result set the run can address");
+    assert_eq!(reference.meet_id, "764735");
+    assert_eq!(reference.rsid, "0");
+
+    let page = parse_raw(DC_INLINE, &url).expect("the page carries a raw body");
+    assert!(
+        page.meet.rows_parsed > 0,
+        "the capture publishes rows, not an empty block: {} line(s) skipped",
+        page.skipped.len()
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Defect 2: www.milesplit.com host handling.
+// ---------------------------------------------------------------------------
+
+/// A www-hosted URL is rejected by `parse` (the original path) but accepted by
+/// `parse_with_jurisdiction` with the caller-supplied jurisdiction.
+#[test]
+fn www_host_is_rejected_by_parse_but_accepted_by_parse_with_jurisdiction() {
+    let www_url =
+        "https://www.milesplit.com/meets/735841-stancs-home-meet-1-2026/results/1257095/raw";
+    // Original parse: www is not a jurisdiction code → rejected.
+    assert!(
+        ResultSetRef::parse(www_url).is_none(),
+        "www host rejected by plain parse"
+    );
+    // With jurisdiction: accepted, attributed to the caller's jurisdiction.
+    let ref_with_jur =
+        ResultSetRef::parse_with_jurisdiction(www_url, UsJurisdiction::DistrictOfColumbia);
+    let reference = ref_with_jur.expect("www host accepted with explicit jurisdiction");
+    assert_eq!(reference.meet_id, "735841");
+    assert_eq!(reference.rsid, "1257095");
+    assert_eq!(reference.site.code(), "DC");
+    assert_eq!(reference.url, www_url);
+}
+
+/// An unknown host (neither state nor www) is rejected by both parse methods.
+#[test]
+fn unknown_host_is_rejected_by_both_parse_methods() {
+    let fake_url = "https://fake.milesplit.com/meets/123456-x/results/789/raw";
+    assert!(ResultSetRef::parse(fake_url).is_none());
+    assert!(ResultSetRef::parse_with_jurisdiction(fake_url, UsJurisdiction::Ohio).is_none());
+}
+
+/// A page with neither the JS literal nor the legacy select fails closed with a schema error.
+#[test]
+fn neither_template_is_a_schema_error() {
+    let html = r#"
+<html>
+<head><title>Results</title></head>
+<body>
+<p>No file list here at all.</p>
+</body>
+</html>
+"#;
+    let error = parse_meet_result_files("https://www.milesplit.com/meets/999999-x/results", html)
+        .expect_err("neither template should be a schema error");
+    assert!(
+        matches!(error, CrawlError::Schema { .. }),
+        "expected schema error: {error:?}"
+    );
 }
