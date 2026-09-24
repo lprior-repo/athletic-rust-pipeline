@@ -72,10 +72,13 @@ struct Shared {
     empty: usize,
     rosters: usize,
     errors: Vec<String>,
-    /// §69: set by the first roster outcome that is a hard access block (HTTP 403/429).
+    /// §69: set by the first roster outcome the host refused (HTTP 429), or by a contiguous run of
+    /// page refusals that reads as a wall rather than as one unpublished roster.
     blocked: bool,
     /// Units the walk dropped unfetched because the block was already known.
     blocked_skipped: usize,
+    /// The consecutive page refusals seen so far, which is what tells a wall from a dead page.
+    refusals: access::RefusalRun,
 }
 
 /// Fold one roster outcome into the shared progress state and journal the completed unit of work.
@@ -94,7 +97,7 @@ async fn record_roster(
         Ok(roster) => roster,
         Err(error) => {
             let mut guard = shared.lock().await;
-            if access::refused(&error) {
+            if guard.refusals.observe(access::refusal(&error)) {
                 guard.blocked = true;
             }
             guard.errors.push(format!("{}: {error}", team.url));
@@ -103,6 +106,8 @@ async fn record_roster(
     };
     let co2027 = count_co2027(&roster);
     let mut guard = shared.lock().await;
+    // A roster the host served breaks any run of page refusals.
+    guard.refusals.observe(access::Refusal::None);
     guard.rosters = guard.rosters.saturating_add(1);
     if roster.athletes.is_empty() {
         guard.empty = guard.empty.saturating_add(1);
@@ -178,6 +183,7 @@ pub async fn collect_state_rosters(
         rosters: 0,
         errors: Vec::new(),
         blocked: false,
+        refusals: access::RefusalRun::default(),
         blocked_skipped: 0,
     }));
     let working: Vec<TeamRef> = match options.limit_per_state {
