@@ -105,7 +105,7 @@ pub(super) fn append_school(corpus: &mut Corpus, rng: &mut Lcg, index: usize) ->
         },
         format!("school-{index}"),
     ));
-    let team = team_of(&school_id, index);
+    let team = team_of(&school_id, index)?;
     let team_id = team.id.clone();
     let meet = meet_of(state, index);
     let meet_id = meet.id.clone();

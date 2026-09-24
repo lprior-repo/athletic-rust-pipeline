@@ -26,28 +26,34 @@ pub(super) fn grade(value: u8) -> Result<Grade> {
     Grade::new(value).context("grade must be between 9 and 12")
 }
 
+/// The season every synthetic row carries. `2025` sits inside the domain's year window by
+/// construction, so the only way this fails is the constant disagreeing with the constructor.
+pub(super) fn season() -> Result<SchoolYear> {
+    SchoolYear::new(2025).context("2025 is a season")
+}
+
 /// The grade-11 observation every athlete row carries for the 2025 season, from [`SOURCE_ID`].
 pub(super) fn observed_grade() -> Result<ObservedGrade> {
     Ok(ObservedGrade {
         grade: grade(11)?,
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        school_year: season()?,
         source: SourceRef::id(SOURCE_ID),
     })
 }
 
-pub(super) fn team_of(school_id: &SchoolId, index: usize) -> CanonicalTeam {
+pub(super) fn team_of(school_id: &SchoolId, index: usize) -> Result<CanonicalTeam> {
     let id: TeamId = Id::mint("team", &[school_id.as_str(), "outdoor", &index.to_string()]);
-    CanonicalTeam {
+    Ok(CanonicalTeam {
         id,
         school: school_id.clone(),
         sport: Sport::OutdoorTrack,
         gender: Gender::Mixed,
-        school_year: SchoolYear::new(2025).expect("2025 is a season"),
+        school_year: season()?,
         level: None,
         source_identities: Vec::new(),
         evidence: vec![evidence()],
         retained_conflicts: Vec::new(),
-    }
+    })
 }
 
 pub(super) fn meet_of(state: UsJurisdiction, index: usize) -> CanonicalMeet {
