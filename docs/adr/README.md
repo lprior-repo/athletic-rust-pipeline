@@ -20,6 +20,8 @@ query capability we use.
 **Consequences.** Analytical queries are projections built in `census-report`, not SQL. Schema
 changes are migrations with an explicit revision, never silent rewrites.
 
+The long record is [`ADR-001-fjall-primary-store.md`](ADR-001-fjall-primary-store.md).
+
 ---
 
 ## ADR-002 — Restate owns retries
@@ -34,6 +36,8 @@ reuses the same workflow identity rather than minting a new logical job.
 **Consequences.** Adapter code must not loop on failure; it reports a terminal outcome
 (`ARCHITECTURE.md` §5). Retry exhaustion is retained as evidence, and a source failure is never
 `NO_MATCH`.
+
+The long record is [`ADR-002-restate-owns-retries.md`](ADR-002-restate-owns-retries.md).
 
 ---
 
@@ -50,6 +54,8 @@ grade evidence keeps both observations supporting one canonical athlete.
 observation recorded as supporting evidence. Source query parameters are `Raw*` values until
 interpreted.
 
+The long record is [`ADR-003-graduation-year-cohort-identity.md`](ADR-003-graduation-year-cohort-identity.md).
+
 ---
 
 ## ADR-004 — Meet-first result ingestion
@@ -64,6 +70,8 @@ requests, and the efficiency metric is verified useful records per physical requ
 
 **Consequences.** Ordering is meet value first (championship and qualifier meets before the
 remainder), and the per-origin admission budget is spent on payloads, not navigation.
+
+The long record is [`ADR-004-meet-first-ingestion.md`](ADR-004-meet-first-ingestion.md).
 
 ---
 
@@ -82,6 +90,8 @@ so it is spent only where deterministic evidence is genuinely ambiguous.
 digest and policy revision, so identical packages reuse prior verdicts. Contradictions are listed
 explicitly in the packet; models never see raw HTML.
 
+The long record is [`ADR-005-ai-cannot-override-contradictions.md`](ADR-005-ai-cannot-override-contradictions.md).
+
 ---
 
 ## ADR-006 — Excel is the recruiter query layer
@@ -96,6 +106,8 @@ comparison of two countable things.
 
 **Consequences.** Every workbook row maps to canonical stored evidence, counts reconcile by command,
 and `Performances` partitions to respect Excel's row limit.
+
+The long record is [`ADR-006-excel-recruiter-query-layer.md`](ADR-006-excel-recruiter-query-layer.md).
 
 ---
 
