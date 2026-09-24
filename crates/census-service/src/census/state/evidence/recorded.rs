@@ -9,7 +9,14 @@ use serde::{Deserialize, Serialize};
 /// What a seal certifies: the numbers a reader of the workbook sees.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealCounts {
-    pub jurisdictions: u64,
+    /// The rows the census's state rollup publishes: one per covered jurisdiction *and* the unplaced
+    /// row the rollup always seeds, so this is not a count of placed jurisdictions.
+    ///
+    /// The field and the digest key were named `jurisdictions` until those two readings were told
+    /// apart, and the digest prefix moved to `v4` with the rename so a `v3` digest cannot be read as
+    /// this one. A `seal.json` written under the old name still reads.
+    #[serde(alias = "jurisdictions")]
+    pub jurisdiction_buckets: u64,
     pub schools: u64,
     pub meets: u64,
     pub athletes: u64,

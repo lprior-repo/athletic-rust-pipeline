@@ -9,8 +9,8 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
-/// Evidence that satisfies every §70 item: 51 jurisdictions, a workbook that carries the cohort, and
-/// retained findings that are non-zero on purpose (findings never block a seal).
+/// Evidence that satisfies every §70 item: 51 jurisdiction buckets, a workbook that carries the
+/// cohort, and retained findings that are non-zero on purpose (findings never block a seal).
 fn evidence() -> SealEvidence {
     SealEvidence {
         // Every open-work field is measured and terminal. `Some(0)` is not the same claim as
@@ -23,7 +23,7 @@ fn evidence() -> SealEvidence {
             identity_candidates: Some(0),
         },
         counts: SealCounts {
-            jurisdictions: 51,
+            jurisdiction_buckets: 51,
             schools: 18_047,
             meets: 11_007,
             athletes: 1_226_212,
@@ -443,8 +443,8 @@ fn the_seal_digest_is_stable_and_moves_with_the_counts() {
 /// instead of as one opaque hash that cannot say which field moved.
 #[test]
 fn the_digest_is_pinned_field_by_field() {
-    let body = "census-seal-v3\n\
-         jurisdictions=51\n\
+    let body = "census-seal-v4\n\
+         jurisdiction_buckets=51\n\
          schools=18047\n\
          meets=11007\n\
          athletes=1226212\n\
@@ -471,7 +471,7 @@ fn the_digest_is_pinned_field_by_field() {
     );
     assert_eq!(
         digest_of(&seal_from_export(evidence()).expect("seals")),
-        "a05889c00d29e669e5341c46620a789c2ce81bb9ea7f41f913cbe6bc5f32311f",
+        "1aaf6de7ceb39ff0e53f210ca504fe7359f53dd1794d25dca0b0bc2643453274",
         "the sealed digest is that digest in lowercase hex, which is what a stored `seal.json` carries"
     );
 
@@ -483,6 +483,18 @@ fn the_digest_is_pinned_field_by_field() {
         super::seal_digest::render(&evidence()),
         "an unmeasured count has its own spelling in the digest"
     );
+}
+
+/// A seal written before the v4 rename carries its state-rollup count under the old name. A
+/// recorded seal is reported rather than re-derived, so an old `seal.json` has to read: the alias is
+/// the promise, and the digest it carries stays the digest it was written with.
+#[test]
+fn a_seal_counted_before_the_rename_still_reads() {
+    let recorded = r#"{"jurisdictions":51,"schools":18047,"meets":11007,"athletes":1226212,
+                       "class_of_2027":307653,"performances":4100000,"coaches":27580}"#;
+    let counts: SealCounts =
+        serde_json::from_str(recorded).expect("a seal.json written under the old name reads");
+    assert_eq!(counts.jurisdiction_buckets, 51);
 }
 
 #[test]

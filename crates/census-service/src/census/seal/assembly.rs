@@ -56,7 +56,7 @@ fn open_work(cases: &[ReviewCase], journal: JournalCounts) -> OpenWork {
 /// from rather than from a caller's tally.
 fn seal_counts(census: &Census, coverage: &CoverageReport) -> SealCounts {
     SealCounts {
-        jurisdictions: count(census.by_state.len()),
+        jurisdiction_buckets: count(census.by_state.len()),
         schools: count(coverage.read.schools),
         meets: count(coverage.read.meets),
         athletes: count(census.totals.athletes),

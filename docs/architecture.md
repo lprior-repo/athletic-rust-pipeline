@@ -157,7 +157,8 @@ Scope is the core scope unless `--all-sources` is given; the cohort defaults to 
 
 ### 4.1 What it certifies
 
-`SealCounts` (`census/state/evidence.rs`): `jurisdictions`, `schools`, `meets`, `athletes`,
+`SealCounts` (`census/state/evidence.rs`): `jurisdiction_buckets` (the rows the census's state rollup
+publishes: one per covered jurisdiction plus the unplaced row), `schools`, `meets`, `athletes`,
 `class_of_2027`, `performances`, `coaches`. With `--write` the sealed state is persisted to
 `<store>/out/seal.json`; a seal recorded by an earlier run is printed and then *checked against this
 run's evidence*, never trusted — a difference is reported, not resolved in either direction.
@@ -170,7 +171,10 @@ count of hosts that blocked or throttled a lane, which is **not** §70's *retry-
 that is an invocation state on the durable side and no store row records it), `source_failures`,
 `observations` and `calculations`. A non-zero gap tally seals fine and stays visible inside the
 seal. The field carried the name `retry_exhausted` until the two were told apart; the digest prefix
-moved to `census-seal-v3` with the rename so a `v2` digest cannot be read as this one.
+moved to `census-seal-v3` with the rename so a `v2` digest cannot be read as this one. The state
+rollup's row count carried the name `jurisdictions` until the unplaced row it also counts was told
+apart; the prefix moved to `census-seal-v4` with that rename, so a `v3` digest cannot be read as this
+one.
 
 ### 4.3 What it refuses
 

@@ -5,11 +5,13 @@
 //! keeps an acceptance item open and no seal can carry one; and the workbook's own sha256 is
 //! included, so two exports with the same row count cannot share a seal.
 //!
-//! The version prefix is `v3`: v2 hashed the access-condition count of a blocked or throttled host
-//! under the name `retry_exhausted`, which said it counted per-attempt exhaustion; v1 hashed
-//! `source_failures` as a bare integer, and that field is now tri-state. A digest written by an older
-//! seal cannot be compared with a current one, and the prefix is what makes that visible instead of
-//! silently producing a different number for the same evidence.
+//! The version prefix is `v4`: v3 hashed the state rollup's row count under the name
+//! `jurisdictions`, which read as a count of placed jurisdictions while the rollup always carries an
+//! unplaced row too; v2 hashed the access-condition count of a blocked or throttled host under the
+//! name `retry_exhausted`, which said it counted per-attempt exhaustion; v1 hashed `source_failures`
+//! as a bare integer, and that field is now tri-state. A digest written by an older seal cannot be
+//! compared with a current one, and the prefix is what makes that visible instead of silently
+//! producing a different number for the same evidence.
 
 use sha2::{Digest, Sha256};
 
@@ -37,8 +39,8 @@ pub(super) fn render(evidence: &SealEvidence) -> String {
         None => "unmeasured".to_string(),
     };
     let rendered = format!(
-            "census-seal-v3\njurisdictions={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\nperformances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
-            counts.jurisdictions,
+            "census-seal-v4\njurisdiction_buckets={}\nschools={}\nmeets={}\nathletes={}\nco2027={}\nperformances={}\ncoaches={}\nconflicts={}\naccess_conditions={}\nblocked_hosts={}\nthrottled_hosts={}\nsource_failures={source_failures}\nobservations={}\ncalculations={}\nworkbook_rows={}\nworkbook_sheets={}\nworkbook_sha256={workbook_digests}\ngaps={tallies}\n",
+            counts.jurisdiction_buckets,
             counts.schools,
             counts.meets,
             counts.athletes,
