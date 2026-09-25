@@ -172,6 +172,17 @@ numbers behind it, for example `Run Metrics cohort 307652 != store 307653`. Seal
 phase ladder has not reached `exporting` is refused rather than granted: a store with no workbook,
 no coverage classification or no consolidated snapshots cannot be sealed at all.
 
+**Project, export and seal after acquisition stops — in that order.** The seal compares the store it
+reads now against the workbook's own `Run Metrics` cells, so it certifies an agreement, not a
+promise: acquisition that lands after the export re-opens the census and the seal has to be run
+again. 2026-09-24 is the worked example — directory staff pages were fetched at 17:36, the workbook
+was exported at 18:37 and sealed at 18:38, then a consolidate at 18:53 folded those rows into the
+canonical tables (52 schools, 543 coaches) and `verify` failed on the workbook that had certified
+the smaller store. The chain is `consolidate` -> `index` -> `report` (core, then all sources) ->
+`bests` -> `recruiting` -> `workbook` -> `seal`: `census-service run` is that whole chain, and
+`census-service verify --store <dir> --workbook <out.xlsx>` is the check that catches the ordering
+mistake.
+
 **Two of §70's items only the run's own objects can answer** — owed jurisdiction sweeps (§70 item 1)
 and source objects that have accepted nothing (item 2) — and the store holds neither. The command
 above therefore reads them as *unmeasured* and stays refused over them; that is the honest answer for
