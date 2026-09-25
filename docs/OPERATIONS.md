@@ -183,8 +183,10 @@ the smaller store. The chain is `index` -> `consolidate` -> `report` (core, then
 `census-service verify --store <dir> --workbook <out.xlsx>` is the check that catches the ordering
 mistake. `consolidate` follows the index pass, never precedes it: its finding half writes the derived
 tables' `out/*.jsonl` snapshots and the index pass is what rewrites those tables, so the other order
-publishes the previous cycle's rows — `conflicts.jsonl` held 4,548 lines while the store's ledger for
-the same table read 5,300.
+publishes the previous cycle's rows. The 2026-09-24 cycle did exactly that, and the dumps it left were
+measurably wrong — `conflicts.jsonl` held 4,548 lines against the store's own 5,300-row ledger, and
+`coverage.jsonl`'s 50 jurisdiction rows summed 622,940 against the store's 623,509. `consolidate` is
+read-only on the store, which is why the correction is a reorder rather than a repair.
 
 **Two of §70's items only the run's own objects can answer** — owed jurisdiction sweeps (§70 item 1)
 and source objects that have accepted nothing (item 2) — and the store holds neither. The command
