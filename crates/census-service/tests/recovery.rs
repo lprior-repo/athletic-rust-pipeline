@@ -403,16 +403,12 @@ fn report_of(output: &Output) -> serde_json::Value {
     })
 }
 
-/// `<table>\t<count>` and `observations\t<count>` lines from `fjall-stats` or `consolidate`.
-///
-/// Only keys the durable contract names survive: the table observation counts, the journal's
-/// `observations` counter and the withholding count `consolidate` reports. Everything else is
-/// operational (the on-disk byte figure, the store path) and would compare filesystem layout
-/// instead of durable state across restarts.
+/// Only keys the durable contract names survive: the table observation counts and the journal's
+/// `observations` counter. Everything else is operational (the on-disk byte figure, the store path)
+/// and would compare filesystem layout instead of durable state across restarts.
 fn counters_of(output: &Output) -> BTreeMap<String, u64> {
     let mut allowed: BTreeSet<&str> = Table::ALL.iter().map(|table| table.file()).collect();
     allowed.insert("observations");
-    allowed.insert("coaches_email_withheld");
     String::from_utf8_lossy(&output.stdout)
         .lines()
         .filter_map(|line| line.split_once('\t'))
@@ -759,8 +755,8 @@ fn store_reopen_after_a_writer_stops_mid_batch_resumes_at_the_first_unjournaled_
         SCENARIO,
         format!(
             "before restart: journal={:?} tables={counts_before:?} merged_entities={merged_before} \
-             snapshot_rows={} withheld={}",
-            journal_before, consolidated_before.rows, consolidated_before.withheld
+             snapshot_rows={}",
+            journal_before, consolidated_before.rows
         ),
     );
     assert_eq!(journal_before.len(), 2, "two units reached the journal");

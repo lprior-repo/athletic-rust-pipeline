@@ -2,7 +2,7 @@
 
 use census_domain::model::{
     ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, COHORT_IDENTITY_CONFIDENCE_FAMILY,
-    COHORT_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
+    COHORT_UNVERIFIED_FAMILY, UNRESOLVED_VENUE_FAMILY,
 };
 
 use sha2::{Digest, Sha256};
@@ -771,10 +771,10 @@ fn a_decided_cohort_case_is_not_owed_again() {
 #[test]
 fn every_pending_case_is_an_open_identity_candidate() {
     let pending = ReviewCase::pending(
-        WITHHELD_MAILBOX_FAMILY,
-        "coach:1",
-        "A Coach (Somewhere High)",
-        "only a personal mailbox was published",
+        COHORT_UNVERIFIED_FAMILY,
+        "athlete:1",
+        "A Runner (Somewhere High)",
+        "no cohort evidence",
     );
     let mut decided = ReviewCase::pending(
         UNRESOLVED_VENUE_FAMILY,
@@ -796,11 +796,11 @@ fn another_lanes_pending_case_is_not_a_cohort_decision() {
         "Some Invitational",
         "no evidence placed the venue in a jurisdiction",
     );
-    let mailbox = ReviewCase::pending(
-        WITHHELD_MAILBOX_FAMILY,
-        "coach:1",
-        "A Coach (Somewhere High)",
-        "only a personal mailbox was published",
+    let another_venue = ReviewCase::pending(
+        UNRESOLVED_VENUE_FAMILY,
+        "meet:2",
+        "Another Invitational",
+        "no evidence placed the venue in a jurisdiction",
     );
-    assert_eq!(owed_cohort_decisions(&[venue, mailbox]), 0);
+    assert_eq!(owed_cohort_decisions(&[venue, another_venue]), 0);
 }

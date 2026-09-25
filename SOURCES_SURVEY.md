@@ -1,5 +1,7 @@
 # Data source survey — findings and collection design
 
+**Superseded 2026-09-25:** `crates/census-crawl/src/registry/` and `SOURCE_ADAPTER_GUIDE.md` own this subject now. Kept as the dated record of 2026-09-20 source survey.
+
 **Date:** 2026-09-20. **Scope:** alternative public data sources for the athlete-evidence pipeline (HS track & field + cross-country), required because the previous pipeline target (athletic.net) is avoided by owner instruction.
 **Status of this file:** reconnaissance findings + operating policy + design direction. Every status,
 byte count and quote below is a live probe result from 2026-09-20 and is not a code claim. Since that

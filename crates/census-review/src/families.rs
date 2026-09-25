@@ -57,7 +57,7 @@ impl ReviewFamily {
     /// The family a retained case's label names, if this lane asks about it.
     ///
     /// The other retained families are deliberately not asked about: a cohort claim needs evidence
-    /// this store does not hold, and a withheld mailbox is withheld on purpose.
+    /// this store does not hold, so the census's own rules decide it and no lane is owed a question.
     pub fn from_label(label: &str) -> Option<Self> {
         if label == UNRESOLVED_SCHOOL_FAMILY {
             Some(Self::SchoolJurisdiction)

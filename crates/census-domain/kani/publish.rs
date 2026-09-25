@@ -1,76 +1,60 @@
-//! Kani proof harnesses for `professional_email` and `normalize_name`.
+//! Kani proof harnesses for `published_email` and `normalize_name`.
 //!
 //! `kani::any::<String>()` has no `Arbitrary` impl, so the arbitrary address is built from a
-//! bounded byte array through `String::from_utf8_lossy` instead. `normalize_name` is exercised
-//! through value tables rather than symbolically: it calls `str::to_lowercase`, which pulls the
-//! Unicode case-mapping tables into the harness, and the concrete harness whose only input is
-//! `"Cafe"` was still inside CBMC after four minutes on this machine. The tables state the rules
-//! the function documents (case, diacritics, punctuation, whitespace, type suffixes) with the
-//! values observed from the current model.
+//! bounded byte array. The address bytes are assumed printable ASCII: that is the input contract
+//! exercised by the symbolic harness, and it keeps UTF-8 decoding out of CBMC. `normalize_name` is
+//! exercised through value tables rather than symbolically: it calls `str::to_lowercase`, which
+//! pulls the Unicode case-mapping tables into the harness, and the concrete harness whose only
+//! input is `"Cafe"` was still inside CBMC after four minutes on this machine.
 
-use crate::model::{CONSUMER_MAIL_DOMAINS, normalize_name, professional_email};
+use crate::model::{
+    published_email, CanonicalCoach, CanonicalSchool, CoachRole, Gender, MailboxKind,
+    CONSUMER_MAIL_DOMAINS, normalize_name,
+};
 
 /// Address bytes handed to the symbolic harness: long enough for `local@domain.tld` and for the
 /// `.<consumer>` subdomain case.
 const ADDRESS_BYTES: usize = 12;
 
 /// An arbitrary address over printable ASCII.
-///
-/// The contract compares ASCII domains and `CONSUMER_MAIL_DOMAINS` is an ASCII list, so restricting
-/// the arbitrary address to printable ASCII loses nothing a mailbox can be - and it keeps
-/// `str::from_utf8_lossy`'s byte-by-byte replacement decoding out of CBMC.
 fn any_address() -> String {
     let bytes: [u8; ADDRESS_BYTES] = kani::any();
     let mut address = String::with_capacity(ADDRESS_BYTES);
     for byte in bytes {
-        address.push(char::from((byte % 95) + 32));
+        kani::assume(byte >= 32);
+        kani::assume(byte <= 126);
+        address.push(char::from(byte));
     }
     address
 }
 
-/// Whatever `professional_email` publishes is the trimmed input, is stable under re-publication,
-/// and its domain is not a consumer mailbox - not even as a `.<consumer>` suffix.
+/// `published_email` never panics for printable ASCII and returns `Some` exactly when the trimmed
+/// address has a non-empty local part and domain.
 #[kani::proof]
 #[kani::unwind(64)]
-fn check_professional_email_never_publishes_consumer_mailbox() {
+fn check_published_email_printable_ascii_contract() {
     let address = any_address();
-
-    let Some(published) = professional_email(&address) else {
-        return;
+    let trimmed = address.trim();
+    let expected = match trimmed.split_once('@') {
+        Some((local, domain)) => !local.is_empty() && !domain.is_empty(),
+        None => false,
     };
 
+    let published = published_email(&address);
     assert_eq!(
-        published,
-        address.trim(),
-        "publish must return the trimmed address"
+        published.is_some(),
+        expected,
+        "published_email accepted the wrong printable-ASCII shape: {address:?}"
     );
-    assert_eq!(
-        professional_email(&published),
-        Some(published.clone()),
-        "publish must be closed under re-publication"
-    );
-
-    let (_, domain) = published
-        .split_once('@')
-        .expect("a published address carries a domain");
-    let domain = domain.to_ascii_lowercase();
-    for base in CONSUMER_MAIL_DOMAINS {
-        let exact = domain == base;
-        let subdomain = domain
-            .strip_suffix(base)
-            .is_some_and(|prefix| prefix.ends_with('.'));
-        assert!(
-            !exact && !subdomain,
-            "a personal mailbox was published: {published}"
-        );
+    if let Some((normalized, _)) = published {
+        assert_eq!(normalized, trimmed, "published_email must trim its input");
     }
 }
 
-/// Every consumer mailbox in the crate's list is withheld, including subdomains of one and a
-/// mixed-case spelling of one.
+/// Every listed consumer domain is personal, while a domain outside the list is professional.
 #[kani::proof]
 #[kani::unwind(64)]
-fn check_professional_email_known_consumer() {
+fn check_published_email_classifies_domains() {
     for address in [
         "coach@gmail.com",
         "user@googlemail.com",
@@ -87,18 +71,12 @@ fn check_professional_email_known_consumer() {
         "user@sub.gmail.com",
         "  coach@GMAIL.COM  ",
     ] {
-        assert!(
-            professional_email(address).is_none(),
-            "{address} is a personal mailbox and must be withheld"
+        assert_eq!(
+            published_email(address).map(|(_, kind)| kind),
+            Some(MailboxKind::Personal),
+            "{address} must classify as personal"
         );
     }
-}
-
-/// A school/association address survives, trimmed of surrounding whitespace, and a domain that
-/// merely contains a consumer name is not one.
-#[kani::proof]
-#[kani::unwind(64)]
-fn check_professional_email_known_professional() {
     for address in [
         "coach@school.edu",
         "admin@university.org",
@@ -106,28 +84,83 @@ fn check_professional_email_known_professional() {
         "a@b.gmail.example",
     ] {
         assert_eq!(
-            professional_email(address),
-            Some(address.to_string()),
-            "{address} is not a consumer mailbox and must be published"
+            published_email(address).map(|(_, kind)| kind),
+            Some(MailboxKind::Professional),
+            "{address} must classify as professional"
         );
     }
     assert_eq!(
-        professional_email("  coach@school.edu  "),
-        Some("coach@school.edu".to_string()),
-        "publish must trim the address"
+        CONSUMER_MAIL_DOMAINS.len(),
+        12,
+        "the concrete table covers the configured consumer domains"
     );
 }
 
-/// Malformed addresses are withheld rather than repaired.
+/// Empty local parts, empty domains and missing separators are malformed.
 #[kani::proof]
 #[kani::unwind(64)]
-fn check_professional_email_malformed() {
+fn check_published_email_malformed() {
     for address in ["", "noatsign", "@nodomain", "local@", " @ ", "   "] {
         assert!(
-            professional_email(address).is_none(),
-            "{address:?} is malformed and must be withheld"
+            published_email(address).is_none(),
+            "{address:?} is malformed"
         );
     }
+}
+
+fn proof_coach() -> CanonicalCoach {
+    let school = CanonicalSchool::mint(crate::UsJurisdiction::Wisconsin, "Test High School", "test high school");
+    CanonicalCoach::new(
+        &school,
+        "Coach",
+        None,
+        Gender::Boys,
+        CoachRole::HeadCoach,
+    )
+}
+
+/// A published address occupies exactly one field, selected by its domain rather than its caller's
+/// initial field.
+#[kani::proof]
+#[kani::unwind(64)]
+fn check_set_published_email_routes_by_kind() {
+    for address in [
+        "coach@gmail.com",
+        "coach@school.edu",
+        "  coach@GMAIL.COM  ",
+        "noatsign",
+    ] {
+        let expected = published_email(address);
+        let mut coach = proof_coach();
+        coach.set_published_email(address);
+
+        match expected {
+            Some((normalized, MailboxKind::Professional)) => {
+                assert_eq!(coach.professional_email.as_deref(), Some(normalized.as_str()));
+                assert_eq!(coach.personal_email, None);
+            }
+            Some((normalized, MailboxKind::Personal)) => {
+                assert_eq!(coach.personal_email.as_deref(), Some(normalized.as_str()));
+                assert_eq!(coach.professional_email, None);
+            }
+            None => {
+                assert_eq!(coach.professional_email, None);
+                assert_eq!(coach.personal_email, None);
+            }
+        }
+    }
+}
+
+/// Routing an address again is a no-op.
+#[kani::proof]
+#[kani::unwind(64)]
+fn check_set_published_email_idempotent() {
+    let address = any_address();
+    let mut coach = proof_coach();
+    coach.set_published_email(&address);
+    let once = coach.clone();
+    coach.set_published_email(&address);
+    assert_eq!(coach, once, "routing the same address twice must be idempotent");
 }
 
 /// The comparison key folds case and diacritics: an accented and an unaccented spelling of the

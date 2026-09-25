@@ -1,6 +1,5 @@
-//! The operational sheets (§54): the school and meet inventories, the source declarations and the
-//! evidence they left, the coverage table, the retained conflict and review queues, and the run's
-//! own counters.
+//! The operational sheets (§54): the meet inventory, the source declarations and the evidence they
+//! left, the coverage table, the retained data-quality queues, and the run's own counters.
 //!
 //! Every row is a merged store row ([`Store::scan`]) or a counter the census document already
 //! publishes; nothing is read from the materialized `out/*.jsonl` export, exactly as the census
@@ -10,20 +9,22 @@
 //!
 //! The row-level sheets render what the store retains rather than what is convenient to count: a
 //! school another school's normalized name collides with, an athlete whose own grade observations
-//! disagree, a meet whose venue was never placed, a coach whose only published address was a
-//! personal mailbox and was therefore withheld. Those rows are the operator's work queue, so the
-//! sheets carry the subject id of every one of them.
+//! disagree, or a meet whose venue was never placed. Those rows are the operator's work queue, so
+//! the sheets carry the subject id of every one of them.
 //!
 //! This module is the entry point and the shared vocabulary: each sheet family lives beside it
-//! (`inventory`, `coverage`, [`queues`], `sources`, `metrics`) and reads the same
-//! `StoreRows` snapshot, so the workbook scans each table once.
+//! (`inventory`, `coverage`, [`queues`], `sources`, `metrics`) and reads the same `StoreRows` snapshot,
+//! so the workbook scans each table once.
 
 use crate::bests::BestResult;
 use crate::report::{
-    exclude_out_of_scope, in_run_scope, jurisdiction_of, school_state_index, Census, ReportResult,
+    exclude_out_of_scope, in_run_scope, jurisdiction_of, retain_core, school_state_index, Census,
+    ReportResult, Scope,
 };
 use census_domain::{
-    model::{CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool},
+    model::{
+        CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, ReviewVerdictRecord,
+    },
     JurisdictionBucket,
 };
 use census_store::{Store, Table};
@@ -40,9 +41,9 @@ pub mod queues;
 mod sources;
 
 use coverage::{coverage_sheet, COVERAGE_WIDTHS};
-use inventory::{meets_sheet, schools_sheet, MEET_WIDTHS, SCHOOL_WIDTHS};
+use inventory::{meets_sheet, MEET_WIDTHS};
 use metrics::{metrics_sheet, METRIC_WIDTHS};
-use queues::{conflict_families, queue_sheet, review_families, QUEUE_WIDTHS};
+use queues::{conflict_families, data_quality_sheet, review_families, DATA_QUALITY_WIDTHS};
 
 /// The retained queue rows, as the store's `conflicts` and `review_cases` tables hold them.
 pub use queues::retained_records;
@@ -52,7 +53,7 @@ use sources::{sources_sheet, SOURCE_WIDTHS};
 /// carries an autofilter.
 type Sheet = (&'static str, Vec<Vec<Cell>>, &'static [u16], bool);
 
-/// Write §54's remaining sheets into `book`, in the order the objective lists them.
+/// Write §54's remaining sheets into `book`, in the frozen order.
 pub(super) fn write_meta_sheets(
     book: &mut Workbook,
     path: &Path,
@@ -60,29 +61,21 @@ pub(super) fn write_meta_sheets(
     core: &Census,
     all_sources: &Census,
     bests: &[BestResult],
+    scope: Scope,
 ) -> ReportResult<()> {
-    let rows = StoreRows::read(store)?;
+    let rows = StoreRows::read(store, scope)?;
     let names = school_name_index(&rows.schools);
     let conflicts = conflict_families(&rows, &names);
     let review = review_families(&rows, &names);
-    let metrics = metrics_sheet(store, core, all_sources, bests, &rows, &conflicts)?;
-    // One entry per sheet, in published order: the name, the rows, the column widths and whether the
-    // header carries an autofilter.
-    let sheets: [Sheet; 7] = [
-        ("Schools", schools_sheet(&rows)?, &SCHOOL_WIDTHS, true),
+    let metrics = metrics_sheet(store, core, all_sources, bests, &rows, &conflicts, scope)?;
+    let sheets: [Sheet; 5] = [
         ("Meets", meets_sheet(&rows.meets), &MEET_WIDTHS, true),
         ("Sources", sources_sheet(all_sources)?, &SOURCE_WIDTHS, true),
         ("Coverage", coverage_sheet(store)?, &COVERAGE_WIDTHS, true),
         (
-            "Conflicts",
-            queue_sheet(&conflicts, "Retained conflicts")?,
-            &QUEUE_WIDTHS,
-            true,
-        ),
-        (
-            "Review",
-            queue_sheet(&review, "Retained review queue")?,
-            &QUEUE_WIDTHS,
+            "Data Quality",
+            data_quality_sheet(&conflicts, &review, &rows),
+            &DATA_QUALITY_WIDTHS,
             true,
         ),
         ("Run Metrics", metrics, &METRIC_WIDTHS, false),
@@ -93,18 +86,19 @@ pub(super) fn write_meta_sheets(
     Ok(())
 }
 
-/// The merged store rows every operational sheet reads, read once for the whole workbook.
+/// The merged store rows every operational sheet reads, read once for the workbook.
 struct StoreRows {
     schools: Vec<CanonicalSchool>,
     meets: Vec<CanonicalMeet>,
     athletes: Vec<CanonicalAthlete>,
     coaches: Vec<CanonicalCoach>,
+    verdicts: Vec<ReviewVerdictRecord>,
 }
 impl StoreRows {
-    /// Read the four entity tables the operational sheets render, scoped to the run's
-    /// jurisdictions (`CENSUS_SCOPE` + unplaced) so the workbook reconciliation block
-    /// (ADR-009) matches the census totals computed by the same predicate.
-    fn read(store: &Store) -> ReportResult<Self> {
+    /// Read the entity tables scoped to the run's jurisdictions (`CENSUS_SCOPE` + unplaced) so
+    /// the reconciliation block matches the run's published scope. Verdicts are an extra read from
+    /// their durable table, preserving store order for the Data Quality queue.
+    fn read(store: &Store, scope: Scope) -> ReportResult<Self> {
         let mut schools: Vec<CanonicalSchool> = store.scan(Table::Schools)?;
         // The placement index carries the excluded school rows too, so an athlete or coach whose
         // school the run scope leaves out is placed by that school's jurisdiction and excluded with
@@ -117,21 +111,22 @@ impl StoreRows {
         let mut school_state = school_state_index(&schools);
         school_state.extend(school_state_index(&outside_schools));
         athletes.retain(|a| in_run_scope(jurisdiction_of(&school_state, a.school.as_str())));
+        if scope == Scope::Core {
+            retain_core(&mut meets);
+            retain_core(&mut athletes);
+        }
         let mut coaches: Vec<CanonicalCoach> = store.scan(Table::Coaches)?;
         // Coach jurisdiction also comes from school state.
         coaches.retain(|c| in_run_scope(jurisdiction_of(&school_state, c.school.as_str())));
+        let verdicts: Vec<ReviewVerdictRecord> = store.scan(Table::IdentityVerdicts)?;
         Ok(Self {
             schools,
             meets,
             athletes,
             coaches,
+            verdicts,
         })
     }
-}
-
-/// A saturating counter bump: a tally cannot exceed the rows it was built from.
-fn bump(counter: &mut usize) {
-    *counter = counter.saturating_add(1);
 }
 
 /// One family of retained rows: the label the counts block prints, how many findings it holds (a

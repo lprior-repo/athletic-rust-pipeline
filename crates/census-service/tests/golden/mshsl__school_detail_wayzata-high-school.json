@@ -1,7 +1,6 @@
 {
   "ad_coaches": [
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -31,7 +30,6 @@
       ]
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",

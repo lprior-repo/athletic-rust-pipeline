@@ -9,8 +9,8 @@
 
 use census_domain::UsJurisdiction;
 use census_domain::model::{
-    CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SourceIdentity, SourceNamespace,
-    SourceRef, Sport, professional_email,
+    published_email, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, MailboxKind,
+    SourceIdentity, SourceNamespace, SourceRef, Sport,
 };
 use crate::Entity;
 
@@ -94,8 +94,8 @@ fn any_coach() -> CanonicalCoach {
     );
     coach.name = any_text();
     coach.professional_email = any_opt_text();
+    coach.personal_email = any_opt_text();
     coach.phone = any_opt_text();
-    coach.email_withheld = kani::any();
     coach.source_identities = any_source_identities();
     coach.evidence = any_evidence();
     coach
@@ -121,7 +121,7 @@ fn check_school_merge_idempotent() {
     );
 }
 
-/// Same law for a coach, which also carries the mailbox the collection contract watches.
+/// The merge idempotence law also covers both published mailbox fields.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -141,7 +141,7 @@ fn check_coach_merge_idempotent() {
     );
 }
 
-/// Publishing twice is publishing once, for an arbitrary address and an arbitrary withheld flag.
+/// Publishing twice is publishing once, for arbitrary addresses in both fields.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
@@ -156,90 +156,56 @@ fn check_coach_publish_idempotent() {
         coach == published_once,
         "CanonicalCoach::publish is not idempotent"
     );
-
-    kani::cover!(
-        coach.professional_email.is_some(),
-        "email present after first publish"
-    );
-    kani::cover!(
-        coach.professional_email.is_none(),
-        "email dropped after first publish"
-    );
 }
 
-/// Publish never leaves an address the collection contract rejects behind: either the address it
-/// kept is one the contract publishes, or the address was dropped and recorded as withheld.
+/// An address is routed to the field matching its domain, regardless of its input field.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
-fn check_coach_publish_no_consumer_mailbox() {
+fn check_coach_publish_routes_arbitrary_address() {
     let mut coach = any_coach();
-    coach.professional_email = Some(any_text());
-    coach.email_withheld = false;
+    coach.personal_email = None;
+    let Some(address) = coach.professional_email.clone() else {
+        return;
+    };
 
     coach.publish();
 
-    match &coach.professional_email {
-        Some(survived) => assert!(
-            professional_email(survived) == Some(survived.clone()),
-            "publish kept an address its own contract rejects"
-        ),
-        None => assert!(
-            coach.email_withheld,
-            "publish dropped the address without recording it as withheld"
-        ),
+    match published_email(&address) {
+        Some((expected, MailboxKind::Professional)) => {
+            assert_eq!(coach.professional_email.as_deref(), Some(expected.as_str()));
+            assert_eq!(coach.personal_email, None);
+        }
+        Some((expected, MailboxKind::Personal)) => {
+            assert_eq!(coach.personal_email.as_deref(), Some(expected.as_str()));
+            assert_eq!(coach.professional_email, None);
+        }
+        None => {
+            assert_eq!(coach.professional_email, None);
+            assert_eq!(coach.personal_email, None);
+        }
     }
-
-    kani::cover!(
-        coach.professional_email.is_some(),
-        "an address survives publish"
-    );
-    kani::cover!(
-        coach.professional_email.is_none(),
-        "an address is dropped by publish"
-    );
 }
 
-/// The withheld count the report reads is the observable consequence of publishing: one for a
-/// personal mailbox, none for a school one.
+/// Both address kinds route correctly even when each starts in the other field.
 #[kani::proof]
 #[kani::unwind(64)]
 #[kani::stub(core::arch::x86_64::__cpuid_count, cpuid_without_features)]
-fn check_coach_withheld_mailboxes_consistency() {
-    let school_id = CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Test High School", "test high school");
-
-    let mut personal = CanonicalCoach::new(
+fn check_coach_publish_routes_known_addresses() {
+    let school_id =
+        CanonicalSchool::mint(UsJurisdiction::Wisconsin, "Test High School", "test high school");
+    let mut coach = CanonicalCoach::new(
         &school_id,
-        "Coach Personal",
+        "Coach",
         None,
         Gender::Boys,
         CoachRole::HeadCoach,
     );
-    personal.professional_email = Some("coach@gmail.com".to_string());
-    personal.publish();
-    assert_eq!(personal.professional_email, None);
-    assert_eq!(
-        personal.withheld_mailboxes(),
-        1,
-        "a dropped mailbox must be counted as withheld"
-    );
+    coach.professional_email = Some("coach@gmail.com".to_string());
+    coach.personal_email = Some("coach@school.edu".to_string());
 
-    let mut professional = CanonicalCoach::new(
-        &school_id,
-        "Coach Professional",
-        None,
-        Gender::Boys,
-        CoachRole::HeadCoach,
-    );
-    professional.professional_email = Some("coach@school.edu".to_string());
-    professional.publish();
-    assert_eq!(
-        professional.professional_email.as_deref(),
-        Some("coach@school.edu")
-    );
-    assert_eq!(
-        professional.withheld_mailboxes(),
-        0,
-        "a published mailbox must not be counted as withheld"
-    );
+    coach.publish();
+
+    assert_eq!(coach.personal_email.as_deref(), Some("coach@gmail.com"));
+    assert_eq!(coach.professional_email.as_deref(), Some("coach@school.edu"));
 }

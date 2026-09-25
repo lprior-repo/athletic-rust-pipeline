@@ -97,12 +97,10 @@ pub use table::{
 };
 pub use write_batch::StoreBatch;
 
-/// What one [`Store::consolidate`] call produced: the rows written, and how many of them the
-/// collection contract withheld a consumer mailbox from.
+/// What one [`Store::consolidate`] call produced: the number of rows written.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Consolidated {
     pub rows: usize,
-    pub withheld: usize,
 }
 
 /// Per-table rows and the database's on-disk footprint. The figures come from the store's own durable

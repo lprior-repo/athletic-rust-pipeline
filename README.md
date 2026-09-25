@@ -27,7 +27,7 @@ a cargo-fuzz workspace of its own.
 | `crates/census-service/benches/{core,pipeline}`, `crates/census-service/examples/bench_*` | committed measurements; a performance claim may cite only these | `PERFORMANCE.md` |
 | `fuzz/` | cargo-fuzz targets for the result-file parsers | `fuzz/fuzz_targets/`, seeds in `fuzz/corpus/` |
 | `research/` | source-research lanes, append-only captures (`research/sources/<lane>/`) | `research/README.md` |
-| `docs/` | hardening program, operations runbook, executed evidence, decomposition plan, ADRs | `docs/HARDENING-PROGRAM.md`, `docs/adr/` |
+| `docs/` | hardening program, operations runbook, executed evidence, Fjall backup/restore, deployment lifecycle, current-state reference, ADRs, module migration map | `docs/HARDENING-PROGRAM.md`, `docs/OPERATIONS.md`, `docs/FJALL_BACKUP.md`, `docs/deployment-lifecycle.md`, `docs/architecture.md`, `docs/adr/`, `docs/migration/module-map.md` |
 | `deploy/systemd/` | unit and timer definitions for the collect timer and the Restate endpoints | `deploy/systemd/` |
 
 ## Start here
@@ -42,6 +42,19 @@ a cargo-fuzz workspace of its own.
   reconnaissance (research input).
 - `crates/census-service/README.md`, `xtask/README.md`, `tools/README.md` — the census crate, the
   developer commands and the gate.
+- `CHROMIUM_DESIGN.md` — Chromium browser automation design for the Athletic.net transport lane.
+- `docs/OPERATIONS.md` — operations runbook; successor to the superseded `HANDOFF.md`.
+- `docs/FJALL_BACKUP.md` — Fjall backup and restore procedures.
+- `docs/deployment-lifecycle.md` — deployment and lifecycle management.
+- `docs/architecture.md` — current-state reference (the binding architecture and standards live in root `ARCHITECTURE.md`).
+- `docs/adr/README.md` — the decision record index; `docs/adr/ADR-*.md` are the individual decisions.
+- `docs/migration/module-map.md` — the module inventory and the crate cut.
+- `docs/DECOMPOSITION.md` **(Superseded 2026-09-25):** the crate layout in `ARCHITECTURE.md` §1 owns this subject now. Kept as the dated record of the Phase 2 split plan.
+- `WORKFLOW_REVIEW.md` **(Superseded 2026-09-25):** root `ARCHITECTURE.md` owns this subject now. Kept as the dated record of the deleted root package architecture.
+- `HANDOFF.md` **(Superseded 2026-09-25):** `docs/OPERATIONS.md` and `docs/VERIFICATION-EVIDENCE.md` own this subject now. Kept as the dated record of the 2026-09-21 live-chain handoff.
+- `SOURCES_SURVEY.md` **(Superseded 2026-09-25):** `crates/census-crawl/src/registry/` and `SOURCE_ADAPTER_GUIDE.md` own this subject now. Kept as the dated record of 2026-09-20 source survey.
+- `COLLECTOR_PATTERNS.md` **(Superseded 2026-09-25):** `SOURCE_ADAPTER_GUIDE.md` and `crates/census-crawl/src/registry/` own this subject now. Kept as the dated record of 2026-09-20 reconnaissance.
+- `PROFILE_REPLICATION.md` **(Superseded 2026-09-25):** `crates/census-crawl/src/milesplit/` and the profile collection lane own this subject now. Kept as the dated record of 2026-09-20 profile replication plan.
 
 ## Run it
 
@@ -85,6 +98,8 @@ cargo xtask gate
 ## Status
 
 `README.md` records no run results. End-to-end evidence, its scope and what remains unqualified live
-in `HANDOFF.md`, `docs/VERIFICATION-EVIDENCE.md` and `crates/census-service/README.md`; the current
-hardening program and its measured gaps live in `docs/HARDENING-PROGRAM.md`. The target workspace split
-described in `ARCHITECTURE.md` was executed: all eight workspace-member crates now exist under `crates/`, plus the `xtask` developer-harness package and the `fuzz/` cargo-fuzz workspace.
+in `docs/VERIFICATION-EVIDENCE.md`, `docs/OPERATIONS.md` and `crates/census-service/README.md`; the current
+hardening program and its measured gaps live in `docs/HARDENING-PROGRAM.md`. The superseded records — `HANDOFF.md`,
+`docs/DECOMPOSITION.md`, `WORKFLOW_REVIEW.md`, `SOURCES_SURVEY.md`, `COLLECTOR_PATTERNS.md`, `PROFILE_REPLICATION.md` — are kept
+as dated snapshots and must not be followed as current guidance. The target workspace split described in
+`ARCHITECTURE.md` was executed: all eight workspace-member crates now exist under `crates/`, plus the `xtask` developer-harness package and the `fuzz/` cargo-fuzz workspace.

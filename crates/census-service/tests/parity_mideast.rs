@@ -511,8 +511,8 @@ struct SchoolPair {
     school_id: SchoolId,
 }
 
-/// One staff payload's published result: the people as parsed, the coaches they mint, and which of
-/// those coaches is worth paying for an address reveal.
+/// One staff payload's published result: the people as parsed, the coaches they mint, and the
+/// retained rows whose payload advertises an address for reveal.
 #[derive(Serialize)]
 struct StaffFacts {
     staff: Vec<StaffRow>,
@@ -579,7 +579,7 @@ fn ihsa_case(file: &str, body: &str) -> Result<(String, String)> {
                 "https://api.ihsa.org/v1/schools/0101/staff2",
                 OBSERVED_ON,
             ) {
-                if ihsa::reveal_address_for(&coach) {
+                if person.has_email == Some(true) {
                     paid_reveal_names.push(coach.name.clone());
                 }
                 coaches.push(coach);

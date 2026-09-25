@@ -460,7 +460,9 @@ fn measured_email_fill_rate_on_captured_pages() {
             extract
                 .coaches
                 .iter()
-                .filter(|coach| coach.professional_email.is_some())
+                .filter(|coach| {
+                    coach.professional_email.is_some() || coach.personal_email.is_some()
+                })
                 .count(),
         );
     }

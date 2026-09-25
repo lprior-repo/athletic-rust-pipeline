@@ -1,202 +1,197 @@
 {
-  "report": {
-    "adapter": "ohsaa",
-    "rows": 1,
-    "requests": 0,
-    "from_cache": 3,
-    "errors": 0,
-    "with_email": 5,
-    "unit": "schools",
-    "notes": [
-      "processed 1 of 1 requested schools (0 skipped_done, 0 not_found, 0 fetch_failures, 5 coach_rows, 2 office_roles_skipped)"
-    ]
-  },
-  "schools": [
-    {
-      "id": "sch_4599a8b2b3afe0ad",
-      "name": "DUBLIN COFFMAN",
-      "normalized_name": "dublin coffman",
-      "city": "Dublin",
-      "state": "OH",
-      "association": "ohsaa",
-      "co_op": false,
-      "aliases": [],
-      "source_identities": [
-        {
-          "namespace": {
-            "association_school": {
-              "association": "ohsaa"
-            }
-          },
-          "id": "474",
-          "url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474"
-        }
-      ],
-      "evidence": [
-        {
-          "source": {
-            "id": "ohsaa_portal",
-            "url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ]
-    }
-  ],
   "coaches": [
     {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ohsaa_portal",
+            "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
+          }
+        }
+      ],
+      "gender": "boys",
       "id": "coa_2a4f61a45e46c392",
       "name": "Joe DePalma",
-      "school": "sch_4599a8b2b3afe0ad",
-      "sport": "cross_country",
-      "gender": "boys",
-      "role": "head_coach",
       "professional_email": "depalma_joseph@dublinschools.net",
+      "role": "head_coach",
+      "school": "sch_4599a8b2b3afe0ad",
       "source_identities": [
         {
+          "id": "coach:474:xc:boys",
           "namespace": {
             "association_school": {
               "association": "ohsaa"
             }
           },
-          "id": "coach:474:xc:boys",
           "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
         }
       ],
+      "sport": "cross_country"
+    },
+    {
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ohsaa_portal",
             "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
       ],
-      "email_withheld": false
-    },
-    {
+      "gender": "girls",
       "id": "coa_485dcb3a60a95d46",
       "name": "Greg King",
-      "school": "sch_4599a8b2b3afe0ad",
-      "sport": "outdoor_track",
-      "gender": "girls",
-      "role": "head_coach",
       "professional_email": "king_greg@dublinschools.net",
+      "role": "head_coach",
+      "school": "sch_4599a8b2b3afe0ad",
       "source_identities": [
         {
+          "id": "coach:474:tf:girls",
           "namespace": {
             "association_school": {
               "association": "ohsaa"
             }
           },
-          "id": "coach:474:tf:girls",
           "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
         }
       ],
+      "sport": "outdoor_track"
+    },
+    {
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ohsaa_portal",
             "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
       ],
-      "email_withheld": false
-    },
-    {
+      "gender": "girls",
       "id": "coa_9f05f319f8d273ed",
       "name": "Greg King",
-      "school": "sch_4599a8b2b3afe0ad",
-      "sport": "cross_country",
-      "gender": "girls",
-      "role": "head_coach",
       "professional_email": "king_greg@dublinschools.net",
+      "role": "head_coach",
+      "school": "sch_4599a8b2b3afe0ad",
       "source_identities": [
         {
+          "id": "coach:474:xc:girls",
           "namespace": {
             "association_school": {
               "association": "ohsaa"
             }
           },
-          "id": "coach:474:xc:girls",
           "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
         }
       ],
-      "evidence": [
-        {
-          "source": {
-            "id": "ohsaa_portal",
-            "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
+      "sport": "cross_country"
     },
     {
-      "id": "coa_c5553ae81d9a2983",
-      "name": "Duane Sheldon",
-      "school": "sch_4599a8b2b3afe0ad",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "sheldon_duane@dublinschools.net",
-      "source_identities": [
-        {
-          "namespace": {
-            "association_school": {
-              "association": "ohsaa"
-            }
-          },
-          "id": "ad:474",
-          "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
-        }
-      ],
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ohsaa_portal",
             "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
       ],
-      "email_withheld": false
-    },
-    {
-      "id": "coa_e676f19543bd356a",
-      "name": "James Legins",
+      "gender": "mixed",
+      "id": "coa_c5553ae81d9a2983",
+      "name": "Duane Sheldon",
+      "professional_email": "sheldon_duane@dublinschools.net",
+      "role": "athletic_director",
       "school": "sch_4599a8b2b3afe0ad",
-      "sport": "outdoor_track",
-      "gender": "boys",
-      "role": "head_coach",
       "source_identities": [
         {
+          "id": "ad:474",
           "namespace": {
             "association_school": {
               "association": "ohsaa"
             }
           },
-          "id": "coach:474:tf:boys",
-          "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
+          "url": "https://officials.myohsaa.org/Outside/Schedule/AthleticDirector?ohsaaId=474"
         }
-      ],
+      ]
+    },
+    {
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ohsaa_portal",
             "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
       ],
-      "email_withheld": true
+      "gender": "boys",
+      "id": "coa_e676f19543bd356a",
+      "name": "James Legins",
+      "role": "head_coach",
+      "school": "sch_4599a8b2b3afe0ad",
+      "source_identities": [
+        {
+          "id": "coach:474:tf:boys",
+          "namespace": {
+            "association_school": {
+              "association": "ohsaa"
+            }
+          },
+          "url": "https://officials.myohsaa.org/Outside/Schedule/SportsInformation?ohsaaId=474"
+        }
+      ],
+      "sport": "outdoor_track"
+    }
+  ],
+  "report": {
+    "adapter": "ohsaa",
+    "errors": 0,
+    "from_cache": 3,
+    "notes": [
+      "processed 1 of 1 requested schools (0 skipped_done, 0 not_found, 0 fetch_failures, 5 coach_rows, 2 office_roles_skipped)"
+    ],
+    "requests": 0,
+    "rows": 1,
+    "unit": "schools",
+    "with_email": 5
+  },
+  "schools": [
+    {
+      "aliases": [],
+      "association": "ohsaa",
+      "city": "Dublin",
+      "co_op": false,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ohsaa_portal",
+            "url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474"
+          }
+        }
+      ],
+      "id": "sch_4599a8b2b3afe0ad",
+      "name": "DUBLIN COFFMAN",
+      "normalized_name": "dublin coffman",
+      "source_identities": [
+        {
+          "id": "474",
+          "namespace": {
+            "association_school": {
+              "association": "ohsaa"
+            }
+          },
+          "url": "https://officials.myohsaa.org/Outside/Schedule?ohsaaId=474"
+        }
+      ],
+      "state": "OH"
     }
   ]
 }

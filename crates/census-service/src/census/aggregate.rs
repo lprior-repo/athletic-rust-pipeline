@@ -80,7 +80,7 @@ pub fn consolidate(store: &Store) -> StoreResult<Vec<(String, usize)>> {
     Ok(counts)
 }
 
-/// The canonical tables: one snapshot per entity table, plus the coach mailboxes the merge withheld.
+/// The canonical tables: one merged snapshot per entity table.
 fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     let coaches_path = out.join("coaches.jsonl");
     let coaches = store.consolidate::<CanonicalCoach>(Table::Coaches, &coaches_path)?;
@@ -94,9 +94,6 @@ fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
             table_rows::<CanonicalTeam>(store, Table::Teams, &out.join("teams.jsonl"))?,
         ),
         ("coaches".to_string(), coaches.rows),
-        // The merge withholds consumer mailboxes before the snapshot is written, so this counts the
-        // same rule the report and the workbook already went through.
-        ("coaches_email_withheld".to_string(), coaches.withheld),
         (
             "athletes".to_string(),
             table_rows::<CanonicalAthlete>(store, Table::Athletes, &out.join("athletes.jsonl"))?,

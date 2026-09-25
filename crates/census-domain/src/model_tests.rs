@@ -407,27 +407,44 @@ fn mark_raw_reports_the_published_value_or_its_unit() {
 }
 
 #[test]
-fn professional_email_boundaries() {
-    // One empty half is enough to drop a malformed address.
-    assert_eq!(professional_email("@ofsd.k12.wi.us"), None);
-    assert_eq!(professional_email("coach@"), None);
-    assert_eq!(professional_email(""), None);
-    assert_eq!(professional_email("no-at-sign"), None);
-    // Personal mailboxes, exact and in a subdomain, in any case.
+fn published_email_classifies_domains_and_keeps_personal_mailboxes() {
+    // One empty half is enough to refuse a malformed address.
+    assert_eq!(published_email("@ofsd.k12.wi.us"), None);
+    assert_eq!(published_email("coach@"), None);
+    assert_eq!(published_email(""), None);
+    assert_eq!(published_email("no-at-sign"), None);
+    // Personal mailboxes are kept and labelled, exact and in a subdomain, in any case.
     for domain in ["gmail.com", "GMAIL.com", "sub.gmail.com", "proton.me"] {
         let mailbox = format!("coach@{domain}");
-        assert_eq!(professional_email(&mailbox), None, "{domain}");
+        let published = published_email(&mailbox);
+        assert_eq!(
+            published,
+            Some((mailbox.clone(), MailboxKind::Personal)),
+            "{domain}"
+        );
     }
-    // School mailboxes survive, including domains that merely contain a consumer name.
+    // Organisation mailboxes are professional, including domains that merely contain a consumer name.
     for domain in ["notgmail.com", "llhs.org", "gmail.com.evil.org"] {
         let address = format!("ad@{domain}");
-        let kept = professional_email(&address);
-        assert_eq!(kept.as_deref(), Some(address.as_str()), "{domain}");
+        assert_eq!(
+            published_email(&address),
+            Some((address.clone(), MailboxKind::Professional)),
+            "{domain}"
+        );
     }
-    let trimmed = professional_email(" jstoik@ofsd.k12.wi.us ");
-    assert_eq!(trimmed.as_deref(), Some("jstoik@ofsd.k12.wi.us"));
-    let caps = professional_email("AD@LLHS.ORG");
-    assert_eq!(caps.as_deref(), Some("AD@LLHS.ORG"));
+    let trimmed = published_email(" jstoik@ofsd.k12.wi.us ");
+    assert_eq!(
+        trimmed,
+        Some((
+            "jstoik@ofsd.k12.wi.us".to_string(),
+            MailboxKind::Professional
+        ))
+    );
+    let caps = published_email("AD@LLHS.ORG");
+    assert_eq!(
+        caps,
+        Some(("AD@LLHS.ORG".to_string(), MailboxKind::Professional))
+    );
 }
 
 #[test]

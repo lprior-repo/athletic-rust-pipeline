@@ -12,6 +12,7 @@ pub(super) fn build(coaches: &[HashMap<String, String>]) -> Vec<Vec<String>> {
         *state_count = state_count.saturating_add(1);
         if coach
             .get("professional_email")
+            .or_else(|| coach.get("personal_email"))
             .is_some_and(|e| !e.is_empty())
         {
             let email_count = coach_email_by_state.entry(st).or_default();

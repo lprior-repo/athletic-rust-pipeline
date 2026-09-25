@@ -35,8 +35,8 @@
 //! match kind its recipe was built for, with the decoy labels still unresolved and all four outcomes
 //! (exact, abbreviation, partial, unresolved) present; and the merge batch folds to exactly the
 //! seeded distinct entity count, with first-writer fields surviving later observations, the alias
-//! union intact, the longer name kept while the minted name does not move, and half the coach
-//! mailboxes withheld by the contact policy.
+//! union intact, the longer name kept while the minted name does not move, and each coach mailbox
+//! retained in the field for its domain kind.
 //!
 //! **Footprint.** The merge group seeds a Fjall store in a temporary directory (1_792 small rows)
 //! and the directory is removed when the run ends; measurement itself is read-only. `cargo bench

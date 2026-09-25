@@ -57,7 +57,7 @@ fn rollup_coaches(
         let state = jurisdiction_of(school_state, coach.school.as_str());
         let slot = rollup.by_state.entry(state).or_insert((0, 0));
         slot.0 = slot.0.saturating_add(1);
-        if coach.professional_email.is_some() {
+        if coach.has_published_email() {
             slot.1 = slot.1.saturating_add(1);
         }
         let role = coach.role.stable_key().to_lowercase();

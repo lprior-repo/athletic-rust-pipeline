@@ -12,7 +12,7 @@ use census_domain::model::GradYear;
 use census_store::Store;
 use std::collections::BTreeMap;
 
-use crate::workbook::cells::{cell, row, Cell};
+use crate::workbook::cells::{row, Cell};
 
 use super::sorted_counts;
 

@@ -14,8 +14,7 @@
 //!    an athlete with stored indoor or outdoor track evidence, the cross-country slot
 //!    (`Head XC Coach`) for an athlete whose only sport is cross country, and the track slot for an
 //!    athlete that stores no sport at all, which is the sheet's first coaching contact;
-//! 2. else the school's other head-coach slot — the same fallback the `Coach Professional Email`
-//!    column already takes;
+//! 2. else the school's other head-coach slot;
 //! 3. else a head coach whose row carries no sport binding (the source publishes school-wide head
 //!    coach rows as well as per-sport ones);
 //! 4. else the school's athletic director.
@@ -34,7 +33,7 @@
 //! `Girls Track and Field` both arrive as [`Sport::OutdoorTrack`] — so a slot is bucketed by the side
 //! its rows were published for, and a bucket resolves to one row: the athlete's own side first, then
 //! a side-less (`Gender::Mixed`) row, then an `Unknown` one, then boys, then girls. Within one
-//! bucket the row that published a professional address wins over a row that published none, and the
+//! bucket the row that published an address wins over a row that published none, and the
 //! newest `Evidence.observed_on` wins among rows otherwise equal; ties fall back to the coach's name,
 //! then to the coach's id, so two runs over one store publish the same coach.
 //!
@@ -47,8 +46,8 @@
 //! of a coin toss between names. The rows themselves stay visible on the `Coaches` sheet, which
 //! publishes every coach the store holds.
 //!
-//! A cell only ever carries [`CanonicalCoach::professional_email`]: an absent or withheld mailbox
-//! leaves the email blank, and no address is ever derived from a name, a school, or a domain.
+//! A preferred-contact email carries the professional address first, falling back explicitly to the
+//! personal address when no professional address was published. A blank means no source published one.
 
 mod heads;
 mod school;
@@ -64,11 +63,11 @@ pub(super) use school::{contacts, SchoolContacts};
 /// read as the same quantity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum ContactState {
-    /// A head coach of the athlete's own sport published a professional address.
+    /// A head coach of the athlete's own sport published an address.
     ProfessionalCoachEmail,
     /// No coach of the athlete's sport published one; the athletic director did.
     ProfessionalAdEmail,
-    /// A contact is named, and no public professional address exists anywhere for the school.
+    /// A contact is named, and no public address exists anywhere for the school.
     CoachNameOnly,
     /// The coach table holds rows for the school, and none names a head coach or an athletic
     /// director: a contact source reached the school and published no contact.
@@ -142,8 +141,7 @@ impl Slot {
     }
 }
 
-/// One head coach a school's rows resolved to: the name a sheet prints, the address the coach
-/// published, and the side of the team the row was published for.
+/// One head coach a school's rows resolved to: the name, preferred published address, and side.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Named {
     pub(super) name: String,
@@ -152,11 +150,14 @@ pub(super) struct Named {
 }
 
 impl Named {
-    /// The one row of a bucket, as the sheet reads it.
+    /// A professional address wins; a personal address is the explicit fallback.
     fn of(coach: &CanonicalCoach) -> Self {
         Self {
             name: coach.name.clone(),
-            email: coach.professional_email.clone(),
+            email: coach
+                .professional_email
+                .clone()
+                .or_else(|| coach.personal_email.clone()),
             side: coach.gender,
         }
     }

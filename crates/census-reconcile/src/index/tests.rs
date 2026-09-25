@@ -363,36 +363,29 @@ fn a_pending_case_whose_finding_is_gone_is_superseded() {
     );
 }
 
-/// A family the collection contract decided is stored already retained, and the row still reaches the
-/// queue a reader sees.
+/// A family the census's own evidence rule decided is stored already retained, and the row still
+/// reaches the queue a reader sees.
 #[test]
-fn a_withheld_mailbox_is_stored_retained() {
+fn a_cohort_claim_the_rules_decide_is_stored_retained() {
     let dir = tempfile::tempdir().expect("temp store");
     let store = Store::open(dir.path()).expect("store");
     let school = school();
     store.append(Table::Schools, &school).expect("school");
-    let mut coach = CanonicalCoach::new(
-        &school.id,
-        "Dana Reed",
-        None,
-        Gender::Girls,
-        CoachRole::HeadCoach,
-    );
-    coach.professional_email = Some("dana.reed@gmail.com".to_string());
-    store.append(Table::Coaches, &coach).expect("coach");
+    let athlete = athlete(&school);
+    store.append(Table::Athletes, &athlete).expect("athlete");
 
     derive(&store, "index", "2026-09-22").expect("pass");
 
-    let mailbox = store
+    let unverified = store
         .scan::<ReviewCase>(Table::ReviewCases)
         .expect("cases")
         .into_iter()
-        .find(|case| case.family == WITHHELD_MAILBOX_FAMILY)
-        .expect("a coach whose only address was a personal mailbox is a retained finding");
+        .find(|case| case.family == COHORT_UNVERIFIED_FAMILY)
+        .expect("a class-of-2027 athlete with no grade observation is a retained finding");
     assert_eq!(
-        mailbox.state,
+        unverified.state,
         ReviewState::Retained,
-        "the contract decided it, so it is not a question the lane is holding open"
+        "the evidence rule decided it, so it is not a question the lane is holding open"
     );
-    assert_eq!(mailbox.subject_id, coach.id.as_str());
+    assert_eq!(unverified.subject_id, athlete.id.as_str());
 }

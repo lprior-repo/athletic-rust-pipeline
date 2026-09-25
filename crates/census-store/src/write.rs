@@ -135,7 +135,11 @@ impl Store {
     /// Like [`Store::append_many`], every record is validated before the batch is built, so a
     /// rejected record leaves the keyspace untouched.
     pub fn replace_many<T: Serialize>(&self, table: Table, records: &[T]) -> StoreResult<()> {
-        if records.is_empty() {
+        // A snapshot write is the table's whole content, so an empty one states that the derivation
+        // found nothing and the table must come out empty: otherwise the rows of the previous pass
+        // outlive the findings they describe. Every other mode keeps the rows a write does not name,
+        // so an empty batch there is a no-op and stays one.
+        if records.is_empty() && table.storage_mode() != StorageMode::DerivedSnapshot {
             return Ok(());
         }
         let count = u64::try_from(records.len()).map_err(|_| StoreError::CounterOverflow)?;

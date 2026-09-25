@@ -14,7 +14,7 @@
 //! Relay legs are included. They are deliberately not personal bests (see [`crate::bests`]), but §52
 //! asks for every performance, and a 4x400 leg is one.
 
-use super::super::cells::{cell, row, Cell};
+use super::super::cells::{row, Cell};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 

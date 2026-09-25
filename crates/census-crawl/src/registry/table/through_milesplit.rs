@@ -114,8 +114,9 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
         transport: TransportKind::Csv,
         // school_evidence + coach_directory: `entities::row_entities` returns the school and the
         // coach/AD rows one dataset row names. public_professional_contact: the row's
-        // `public_professional_email` column is copied onto `CanonicalCoach::professional_email`.
-        // This adapter reads a checked-in dataset and issues no request, and it stamps its evidence
+        // `public_professional_email` column is routed by `CanonicalCoach::set_published_email`;
+        // malformed values are the only addresses refused. This adapter reads a checked-in dataset
+        // and issues no request, and it stamps its evidence
         // `coach_contacts_csv`, not this slug (`entities::row_entities`).
         capabilities: SCHOOL_COACH_CONTACT,
         admission: artifact(),
@@ -126,10 +127,9 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
         transport: TransportKind::StructuredApi,
         // school_evidence: `map::parse_school` mints a `CanonicalSchool` per `/v1/schools` row.
         // coach_directory: `map::parse_coach` with `staff::parse_coach_title`/`staff::parse_role`.
-        // public_professional_contact: the staff payload carries a `HasEmail` flag and no address;
-        // `collect` pays for the reveal (`/v1/schools/{id}/staff/{person}/email`), `parse::parse_email`
-        // accepts the body only when it parses as an address, and the address lands on
-        // `CanonicalCoach::professional_email`.
+        // `collect` pays for one reveal per retained staff person whose `HasEmail` is true
+        // (`/v1/schools/{id}/staff/{person}/email`), `parse::parse_email` accepts the body only when
+        // it parses as an address, and `set_published_email` classifies the result.
         capabilities: SCHOOL_COACH_CONTACT,
         admission: fetched("api.ihsa.org", FETCHER_RPS),
     },
@@ -139,9 +139,9 @@ pub(super) const THROUGH_MILESPLIT: [SourceDescriptor; 8] = [
         transport: TransportKind::StructuredApi,
         // school_evidence: `parse::parse_school` mints a `CanonicalSchool` per directory record.
         // coach_directory: `parse::parse_ad_coach` mints the athletic director that record names.
-        // public_professional_contact: the record's `ADEmail`, which `parse::parse_ad_coach` puts on
-        // `professional_email` only when it is non-empty; the AD row itself is dropped when
-        // `ADName` is empty.
+        // public_professional_contact: the record's `ADEmail`, which `parse::parse_ad_coach` routes
+        // through `CanonicalCoach::set_published_email`; malformed values are the only addresses
+        // refused. The AD row itself is dropped when `ADName` is empty.
         capabilities: SCHOOL_COACH_CONTACT,
         admission: fetched("kshsaa-api.kshsaa.org", FETCHER_RPS),
     },

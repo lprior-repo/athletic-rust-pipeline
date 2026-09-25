@@ -1,6 +1,6 @@
 //! Mutation-killing tests for the canonical rows ([`super`]): two observations of one subject still
-//! merge, two subjects that landed on one canonical id are retained instead of merged, and a withheld
-//! mailbox travels with the row it was dropped from.
+//! merge, two subjects that landed on one canonical id are retained instead of merged, and published
+//! coach mailboxes are classified by their own domains.
 
 use super::*;
 use crate::{Entity, Store, Table};
@@ -137,7 +137,7 @@ fn one_id_from_two_natural_keys_keeps_the_row_and_retains_the_collision() {
 }
 
 #[test]
-fn a_withheld_mailbox_travels_with_the_row() {
+fn published_mailboxes_route_by_domain_not_arrival_field() {
     let mut coach = CanonicalCoach::new(
         &school(),
         "Dana Reed",
@@ -145,81 +145,55 @@ fn a_withheld_mailbox_travels_with_the_row() {
         Gender::Girls,
         CoachRole::HeadCoach,
     );
-    coach.professional_email = Some("dana.reed@gmail.com".to_string());
-
-    coach.publish();
-
-    assert_eq!(
-        coach.professional_email, None,
-        "a consumer mailbox never ships"
-    );
-    let Ok(json) = serde_json::to_string(&coach) else {
-        panic!("a withheld coach row has to serialize");
-    };
-    // This is the whole point of the field being on the wire: a reader of the consolidated entity file
-    // can tell "no mailbox was observed" from "one was observed and withheld".
-    assert!(
-        json.contains("\"email_withheld\":true"),
-        "a withheld row says so: {json}"
-    );
-    let Ok(decoded) = serde_json::from_str::<CanonicalCoach>(&json) else {
-        panic!("a withheld coach row has to decode");
-    };
-    assert!(decoded.email_withheld, "the flag survives the file");
-}
-
-#[test]
-fn a_publishable_mailbox_settles_a_stale_withheld_flag() {
-    let mut coach = CanonicalCoach::new(
-        &school(),
-        "Dana Reed",
-        None,
-        Gender::Girls,
-        CoachRole::HeadCoach,
-    );
-    coach.professional_email = Some("dana.reed@abbotsford.k12.wi.us".to_string());
-    coach.email_withheld = true;
+    coach.professional_email = Some("  dana.reed@gmail.com  ".to_string());
+    coach.personal_email = Some("dana.reed@abbotsford.k12.wi.us".to_string());
 
     coach.publish();
 
     assert_eq!(
         coach.professional_email.as_deref(),
         Some("dana.reed@abbotsford.k12.wi.us"),
-        "a school mailbox still ships"
+        "an organisation address belongs in the professional field"
     );
+    assert_eq!(
+        coach.personal_email.as_deref(),
+        Some("dana.reed@gmail.com"),
+        "a consumer address belongs in the personal field"
+    );
+    let once = coach.clone();
+    coach.publish();
+    assert_eq!(coach, once, "publishing twice must be idempotent");
+
+    let Ok(json) = serde_json::to_string(&coach) else {
+        panic!("a coach row has to serialize");
+    };
+    let legacy_marker = ["email_", "with", "held"].concat();
     assert!(
-        !coach.email_withheld,
-        "the mailbox ships, so it is not withheld"
+        !json.contains(&legacy_marker),
+        "the removed marker must not appear on the wire: {json}"
     );
+    let Ok(decoded) = serde_json::from_str::<CanonicalCoach>(&json) else {
+        panic!("a published coach row has to decode");
+    };
+    assert_eq!(decoded, coach, "the two published addresses round-trip");
 }
 
 #[test]
-fn a_row_written_before_the_flag_existed_decodes_as_not_withheld() {
-    let coach = CanonicalCoach::new(
+fn malformed_mailboxes_are_refused_from_either_field() {
+    let mut coach = CanonicalCoach::new(
         &school(),
         "Dana Reed",
         None,
         Gender::Girls,
         CoachRole::HeadCoach,
     );
-    let Ok(json) = serde_json::to_string(&coach) else {
-        panic!("a coach row has to serialize");
-    };
-    let Ok(mut value) = serde_json::from_str::<serde_json::Value>(&json) else {
-        panic!("a coach row has to parse");
-    };
-    let Some(fields) = value.as_object_mut() else {
-        panic!("a coach row is a JSON object");
-    };
-    assert!(
-        fields.remove("email_withheld").is_some(),
-        "the flag is on the wire to remove: {json}"
-    );
+    coach.professional_email = Some("no-at-sign".to_string());
+    coach.personal_email = Some("@".to_string());
 
-    let Ok(decoded) = serde_json::from_value::<CanonicalCoach>(value) else {
-        panic!("a row without the key still has to decode");
-    };
-    assert!(!decoded.email_withheld);
+    coach.publish();
+
+    assert_eq!(coach.professional_email, None);
+    assert_eq!(coach.personal_email, None);
 }
 
 /// The transfer case, read off the table rather than off the key: one name at two schools is two

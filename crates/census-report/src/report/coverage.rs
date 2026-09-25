@@ -114,7 +114,7 @@ pub struct JurisdictionCoverage {
     pub schools_with_tf_coach: usize,
     /// Schools with a head coach whose sport is cross country.
     pub schools_with_xc_coach: usize,
-    /// Schools with any coach row carrying a professional email.
+    /// Schools with any coach row carrying a published address, school domain or consumer mailbox.
     pub schools_with_coach_email: usize,
     /// Meets the meet table places here. Meets are not cohort-scoped, so a filter never narrows them.
     pub meets: usize,

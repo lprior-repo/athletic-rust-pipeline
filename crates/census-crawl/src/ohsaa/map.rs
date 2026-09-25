@@ -161,7 +161,9 @@ fn ad_coach(
         Gender::Mixed,
         CoachRole::AthleticDirector,
     );
-    coach.professional_email = ad_email;
+    if let Some(email) = ad_email.as_deref() {
+        coach.set_published_email(email);
+    }
     coach.source_identities.push(
         SourceIdentity::new(
             SourceNamespace::AssociationSchool {
@@ -196,7 +198,9 @@ fn sport_coach(
         gender,
         CoachRole::HeadCoach,
     );
-    coach.professional_email = entry.email;
+    if let Some(email) = entry.email.as_deref() {
+        coach.set_published_email(email);
+    }
     coach.source_identities.push(
         SourceIdentity::new(
             SourceNamespace::AssociationSchool {

@@ -21,6 +21,9 @@ projection; the durable evidence system is the census.
 3. `docs/migration/module-map.md` — the module inventory and the crate cut being executed.
 4. `crates/census-service/README.md` and `xtask/README.md` — the two crate-root READMEs that exist;
    the other crates document themselves in their module headers.
+5. `docs/OPERATIONS.md` — operations runbook; successor to the superseded `HANDOFF.md`.
+6. `docs/FJALL_BACKUP.md` — Fjall backup and restore procedures.
+7. `docs/deployment-lifecycle.md` — deployment and lifecycle management.
 
 ## Commands
 

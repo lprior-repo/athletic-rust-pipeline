@@ -12,7 +12,7 @@ use crate::report::{Census, ReportResult};
 use census_crawl::{descriptors, SourceCapabilities, SourceDescriptor, TransportKind};
 use std::collections::BTreeMap;
 
-use crate::workbook::cells::{cell, row, Cell};
+use crate::workbook::cells::{row, Cell};
 
 use super::sorted_counts;
 

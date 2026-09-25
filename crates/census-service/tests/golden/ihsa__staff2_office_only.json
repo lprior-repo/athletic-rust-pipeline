@@ -1,134 +1,132 @@
 {
-  "staff": [
-    {
-      "person_id": 1042,
-      "name": "Mr. Jake Ringstrand",
-      "default_title": "IHSA Official Representative",
-      "has_email": true,
-      "last_name": "Ringstrand",
-      "role_id": "A0-OffRep",
-      "phone": "847-385-2027.2027",
-      "fax": "847-259-9972",
-      "email": null
-    },
-    {
-      "person_id": 146522,
-      "name": "Keith Foley",
-      "default_title": "Principal",
-      "has_email": false,
-      "last_name": "Foley",
-      "role_id": "B1-Prin",
-      "phone": "",
-      "fax": "",
-      "email": null
-    },
-    {
-      "person_id": 1042,
-      "name": "Mr. Jake Ringstrand",
-      "default_title": "Boys Athletic Director",
-      "has_email": true,
-      "last_name": "Ringstrand",
-      "role_id": "C1-BoysAD",
-      "phone": "847-385-2027.2027",
-      "fax": "847-259-9972",
-      "email": null
-    },
-    {
-      "person_id": 144944,
-      "name": "Katie Stack",
-      "default_title": "Boys Athletic Director's Assistant",
-      "has_email": true,
-      "last_name": "Stack",
-      "role_id": "C2-BoysAD-Sec",
-      "phone": "",
-      "fax": "",
-      "email": null
-    },
-    {
-      "person_id": 1042,
-      "name": "Mr. Jake Ringstrand",
-      "default_title": "Girls Athletic Director",
-      "has_email": true,
-      "last_name": "Ringstrand",
-      "role_id": "D1-GirlsAD",
-      "phone": "847-385-2027.2027",
-      "fax": "847-259-9972",
-      "email": null
-    },
-    {
-      "person_id": 144944,
-      "name": "Katie Stack",
-      "default_title": "Girls Athletic Director's Assistant",
-      "has_email": true,
-      "last_name": "Stack",
-      "role_id": "D2-GirlsAD-Sec",
-      "phone": "",
-      "fax": "",
-      "email": null
-    }
-  ],
   "coaches": [
     {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          }
+        }
+      ],
+      "gender": "mixed",
       "id": "coa_ec51ca2f94139e1d",
       "name": "Jake Ringstrand",
-      "school": "sch_aae2f1a63267d711",
-      "gender": "mixed",
       "role": "athletic_director",
+      "school": "sch_aae2f1a63267d711",
       "source_identities": [
         {
+          "id": "1042",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
-          "id": "1042",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
-      ],
-      "evidence": [
-        {
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
+      ]
     },
     {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ihsa",
+            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
+          }
+        }
+      ],
+      "gender": "mixed",
       "id": "coa_ec51ca2f94139e1d",
       "name": "Jake Ringstrand",
-      "school": "sch_aae2f1a63267d711",
-      "gender": "mixed",
       "role": "athletic_director",
+      "school": "sch_aae2f1a63267d711",
       "source_identities": [
         {
+          "id": "1042",
           "namespace": {
             "association_school": {
               "association": "ihsa"
             }
           },
-          "id": "1042",
           "url": "https://api.ihsa.org/v1/schools/0101/staff2"
         }
-      ],
-      "evidence": [
-        {
-          "source": {
-            "id": "ihsa",
-            "url": "https://api.ihsa.org/v1/schools/0101/staff2"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
+      ]
     }
   ],
   "paid_reveal_names": [
     "Jake Ringstrand",
     "Jake Ringstrand"
+  ],
+  "staff": [
+    {
+      "default_title": "IHSA Official Representative",
+      "email": null,
+      "fax": "847-259-9972",
+      "has_email": true,
+      "last_name": "Ringstrand",
+      "name": "Mr. Jake Ringstrand",
+      "person_id": 1042,
+      "phone": "847-385-2027.2027",
+      "role_id": "A0-OffRep"
+    },
+    {
+      "default_title": "Principal",
+      "email": null,
+      "fax": "",
+      "has_email": false,
+      "last_name": "Foley",
+      "name": "Keith Foley",
+      "person_id": 146522,
+      "phone": "",
+      "role_id": "B1-Prin"
+    },
+    {
+      "default_title": "Boys Athletic Director",
+      "email": null,
+      "fax": "847-259-9972",
+      "has_email": true,
+      "last_name": "Ringstrand",
+      "name": "Mr. Jake Ringstrand",
+      "person_id": 1042,
+      "phone": "847-385-2027.2027",
+      "role_id": "C1-BoysAD"
+    },
+    {
+      "default_title": "Boys Athletic Director's Assistant",
+      "email": null,
+      "fax": "",
+      "has_email": true,
+      "last_name": "Stack",
+      "name": "Katie Stack",
+      "person_id": 144944,
+      "phone": "",
+      "role_id": "C2-BoysAD-Sec"
+    },
+    {
+      "default_title": "Girls Athletic Director",
+      "email": null,
+      "fax": "847-259-9972",
+      "has_email": true,
+      "last_name": "Ringstrand",
+      "name": "Mr. Jake Ringstrand",
+      "person_id": 1042,
+      "phone": "847-385-2027.2027",
+      "role_id": "D1-GirlsAD"
+    },
+    {
+      "default_title": "Girls Athletic Director's Assistant",
+      "email": null,
+      "fax": "",
+      "has_email": true,
+      "last_name": "Stack",
+      "name": "Katie Stack",
+      "person_id": 144944,
+      "phone": "",
+      "role_id": "D2-GirlsAD-Sec"
+    }
   ]
 }

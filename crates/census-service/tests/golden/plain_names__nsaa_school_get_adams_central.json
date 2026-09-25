@@ -4,7 +4,6 @@
       "city": "Hastings",
       "coaches": [
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -23,7 +22,6 @@
           "source_identities": []
         },
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -42,7 +40,6 @@
           "source_identities": []
         },
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -62,7 +59,6 @@
           "sport": "cross_country"
         },
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -82,7 +78,6 @@
           "sport": "cross_country"
         },
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",
@@ -102,7 +97,6 @@
           "sport": "outdoor_track"
         },
         {
-          "email_withheld": false,
           "evidence": [
             {
               "method": "parsed",

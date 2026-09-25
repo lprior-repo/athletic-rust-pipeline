@@ -101,8 +101,11 @@ fn merge_entities(
 fn merge_coach(coaches: &mut BTreeMap<CoachId, CanonicalCoach>, coach: CanonicalCoach) {
     match coaches.get_mut(&coach.id) {
         Some(existing) => {
-            if existing.professional_email.is_none() {
-                existing.professional_email = coach.professional_email.clone();
+            if let Some(email) = coach.professional_email.as_deref() {
+                existing.set_published_email(email);
+            }
+            if let Some(email) = coach.personal_email.as_deref() {
+                existing.set_published_email(email);
             }
             for evidence in coach.evidence.iter().cloned() {
                 if !existing.evidence.contains(&evidence) {
@@ -137,7 +140,7 @@ fn write_entities(
     report.rows = u64::try_from(coach_records.len()).unwrap_or(u64::MAX);
     report.with_email = coach_records
         .iter()
-        .filter(|coach| coach.professional_email.is_some())
+        .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
         .count()
         .try_into()
         .unwrap_or(u64::MAX);

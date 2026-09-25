@@ -1,7 +1,6 @@
 {
   "ad_coaches": [
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -20,7 +19,6 @@
       "source_identities": []
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -39,7 +37,6 @@
       "source_identities": []
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -329,7 +326,6 @@
   "school_id": "sch_1b752c954c9ada64",
   "sport_coaches": [
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -349,7 +345,6 @@
       "sport": "cross_country"
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -369,7 +364,6 @@
       "sport": "cross_country"
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -389,7 +383,6 @@
       "sport": "cross_country"
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -409,7 +402,6 @@
       "sport": "cross_country"
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",
@@ -429,7 +421,6 @@
       "sport": "outdoor_track"
     },
     {
-      "email_withheld": false,
       "evidence": [
         {
           "method": "parsed",

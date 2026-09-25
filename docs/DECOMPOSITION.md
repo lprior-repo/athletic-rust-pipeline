@@ -1,5 +1,7 @@
 # Decomposition plan (Phase 2)
 
+**Superseded 2026-09-25:** the crate layout in `ARCHITECTURE.md` §1 owns this subject now. Kept as the dated record of the Phase 2 split plan.
+
 Phase 1 removed forbidden constructs; it did so by adding explicit error-handling lines, which raised
 the line-count counters (root +121, census +641, `functions_over_25_logical_lines` 434 → 439). Phase 2
 brings those numbers down by moving code to where it belongs — without changing a single published

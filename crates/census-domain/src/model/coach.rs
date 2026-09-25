@@ -10,24 +10,21 @@ pub struct CanonicalCoach {
     pub sport: Option<Sport>,
     pub gender: Gender,
     pub role: CoachRole,
+    /// The address a source published on a school, district, association or organisation domain.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub professional_email: Option<String>,
+    /// The address a source published on a consumer mailbox (see `CONSUMER_MAIL_DOMAINS`).
+    ///
+    /// Both fields publish an address a source carried, each with the kind of domain it sits on, so a
+    /// reader can take the school contact alone or every address the coach ever published. Nothing is
+    /// withheld: [`publish`](crate::model::CanonicalCoach) routes an address to its field by its own
+    /// domain and never trusts the field it arrived in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub personal_email: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
     pub source_identities: Vec<SourceIdentity>,
     pub evidence: Vec<Evidence>,
-    /// Set when the merge dropped a consumer mailbox from `professional_email`.
-    ///
-    /// A withheld row ships the key, so a consumer reading a consolidated entity file can tell "no
-    /// mailbox was ever observed" from "one was observed and withheld" instead of reading the second
-    /// as the first. The key is never omitted, as it is not for a meet's unplaced state.
-    ///
-    /// On the way back in the flag is trusted only where nothing is left to derive it from: a row that
-    /// still carries a mailbox has the flag re-derived from that mailbox on the next publish, and a row
-    /// whose mailbox was dropped keeps what the file says. A row written before this key existed
-    /// decodes to `false`.
-    #[serde(default)]
-    pub email_withheld: bool,
     /// Canonical-id collisions this row's merge retained: another natural key minted this id, so the
     /// row below is the one that survived and the other subject's facts were not absorbed. Empty on
     /// every row whose fields still state the id they minted, which is every row until one collides.
@@ -68,11 +65,44 @@ impl CanonicalCoach {
             gender,
             role,
             professional_email: None,
+            personal_email: None,
             phone: None,
             source_identities: Vec::new(),
             evidence: Vec::new(),
-            email_withheld: false,
             retained_conflicts: Vec::new(),
+        }
+    }
+
+    /// Whether the row carries an address a source published, whichever field it landed in.
+    ///
+    /// A coach's published contact is the school-domain address when a source published one, and the
+    /// coach's own mailbox when that is all any source published. A reader asking whether the school
+    /// can be reached at all asks this, rather than reading one field and answering "no contact".
+    pub fn has_published_email(&self) -> bool {
+        self.professional_email.is_some() || self.personal_email.is_some()
+    }
+
+    /// Record an address a source published, in the field its own domain belongs to.
+    ///
+    /// The kind is derived from the domain, never from the caller's belief: a consumer mailbox lands in
+    /// [`personal_email`](Self::personal_email) and an organisation mailbox in
+    /// [`professional_email`](Self::professional_email). The first address of a kind wins, so two rows
+    /// publishing two addresses of one kind leave the row to the order the source published them in.
+    /// A malformed address is refused — a source that published one published no contact — and nothing
+    /// is ever dropped for its domain.
+    pub fn set_published_email(&mut self, address: &str) {
+        match published_email(address) {
+            Some((address, MailboxKind::Professional)) => {
+                if self.professional_email.is_none() {
+                    self.professional_email = Some(address);
+                }
+            }
+            Some((address, MailboxKind::Personal)) => {
+                if self.personal_email.is_none() {
+                    self.personal_email = Some(address);
+                }
+            }
+            None => {}
         }
     }
 }

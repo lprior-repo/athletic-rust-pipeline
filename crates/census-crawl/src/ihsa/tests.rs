@@ -420,40 +420,40 @@ fn empty_json_object_parses_empty_lists() {
 // ── Coach relevance test ────────────────────────────────────────────────
 
 #[test]
-fn email_reveal_targets_only_shipped_roles() {
+fn email_reveal_covers_every_retained_row_that_advertises_one() {
+    // The reveal is a paid request, so it stays bounded — by the payload's own `HasEmail` flag
+    // rather than by the sport: the census keeps every address a source publishes, so a football
+    // coach's is as publishable as a distance coach's.
     let records = parse_schools(FIXTURE_SCHOOLS).expect("fixture must parse");
     let (_, school_id) =
         parse_school(&records[0], "https://example.com/api", "2026-09-19").unwrap();
     let staff = parse_staff(FIXTURE_STAFF_RICH).expect("fixture must parse");
-    let kept: Vec<_> = staff
+
+    // What the collector asks for: a row it retains whose payload advertises an address.
+    let requested: std::collections::BTreeSet<i64> = staff
         .iter()
-        .filter_map(|p| parse_coach(p, &school_id, "https://example.com/api", "2026-09-19"))
+        .filter(|person| {
+            person.has_email == Some(true)
+                && parse_coach(person, &school_id, "https://example.com/api", "2026-09-19")
+                    .is_some()
+        })
+        .map(|person| person.person_id)
+        .collect();
+    let retained: std::collections::BTreeSet<i64> = staff
+        .iter()
+        .filter_map(|person| {
+            parse_coach(person, &school_id, "https://example.com/api", "2026-09-19")
+                .map(|_| person.person_id)
+        })
         .collect();
 
-    let reveal: Vec<_> = kept.iter().filter(|c| reveal_address_for(c)).collect();
-    assert!(
-        reveal.iter().all(|c| c.role == CoachRole::AthleticDirector
-            || matches!(c.sport, Some(Sport::CrossCountry | Sport::OutdoorTrack))),
-        "only TF/XC and AD roles are paid for"
-    );
-    assert!(
-        !reveal.iter().any(|c| c.name.contains("Quinn")),
-        "the football coach's address is not requested"
-    );
-    // 21 kept rows collapse to three people: both AD rows, the XC coach (boys+girls) and the
-    // track coach (boys+girls), which is what bounds the reveal request count.
-    let people: std::collections::BTreeSet<i64> = staff
-        .iter()
-        .filter(|p| {
-            parse_coach(p, &school_id, "https://example.com/api", "2026-09-19")
-                .is_some_and(|c| reveal_address_for(&c))
-        })
-        .map(|p| p.person_id)
-        .collect();
     assert_eq!(
-        people.len(),
-        3,
-        "one reveal per person, three people publish those roles"
+        requested, retained,
+        "the flag is the only bound: no retained row is passed over for its sport"
+    );
+    assert!(
+        requested.contains(&5494),
+        "the football head coach's advertised address is requested too"
     );
 }
 

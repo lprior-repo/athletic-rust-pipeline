@@ -354,7 +354,7 @@ fn mshsl_coach_records(case: &str, body: &str, rows: &[SchoolListRow]) -> Result
                 "accepted_email": record
                     .email
                     .as_deref()
-                    .and_then(|address| mshsl::accept_coach_email(address, &domains)),
+                    .and_then(|address| mshsl::published_coach_email(address, &domains)),
             }))
             .collect::<Vec<Value>>(),
         "entities": &entities,

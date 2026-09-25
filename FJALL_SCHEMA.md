@@ -44,7 +44,7 @@ sorted tables (module doc, `store/mod.rs` header). The store is the system of re
 ### Directory layout
 
 Created by `Store::open` before the database is opened: `<root>/http` (fetcher cache) and
-`<root>/out` (snapshots and reports). Fjall creates `<root>/fjall` itself.
+- `<table>`: one of the 16 table names (e.g. `schools`)
 
 ```text
 <root>/
@@ -103,19 +103,19 @@ Three Fjall keyspaces exist, named by constants in `store/mod.rs`:
 
 | Keyspace | Constant | Contents | Key shape |
 | --- | --- | --- | --- |
-| `entities` | `ENTITIES` | every observation row of all fifteen tables | `<table>\0<id>\0<seq:u64 BE>` |
+| `entities` | `ENTITIES` | every observation row of all sixteen tables | `<table>\0<id>\0<seq:u64 BE>` |
 | `journal` | `JOURNAL` | completed-unit resume entries | `<phase>\0<key>` |
 | `meta` | `META` | import markers only | `imported:<table>`, `imported:resume-journals` |
 
 There is no fourth keyspace and no per-table keyspace. The **tables** are logical partitions
 inside `entities`, selected by the table-name byte prefix. `Table` (`store/table.rs`, `enum Table`)
 is `Schools, Teams, Coaches, Athletes, Meets, Events, Performances, SourceIdentities, Conflicts,
-ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets` (fifteen as of
+ReviewCases, Coverage, Snapshots, SourceAccess, IdentityVerdicts, SourceMeets, SourceObservations` (sixteen as of
 2026-09-22; `Table::ALL` is the authority), with `Table::file()` giving the wire/prefix name
 (`schools`, `teams`, … `source_meets`), `Table::ALL` the ordered list, and `Table::from_wire` the
 ingest-side parser (unknown names are rejected so a typo cannot create a table nobody scans).
 
-Only `entities`, `journal` and `meta` are Fjall keyspaces; the fifteen names above are tables inside
+Only `entities`, `journal` and `meta` are Fjall keyspaces; the sixteen names above are tables inside
 `entities`. `ARCHITECTURE.md` §4 describes `census-store` as "Fjall keyspaces, journals, snapshots,
 migration, backup/restore" and leaves the keyspace/table split to this file, which is its authority.
 
@@ -221,14 +221,14 @@ time, not by the compiler.
 ## 4. Entity model on disk
 
 All seven canonical entities are persisted, one table each, each row a complete JSON document.
-`Entity` (`store/entities.rs`) supplies `entity_id`, `merge`, and two read-time hooks (`publish`,
-`withheld_mailboxes`) applied by every read.
+`Entity` (`crates/census-store/src/table.rs`) supplies `entity_id`, `merge`, and one read-time hook
+(`publish`) applied by every read.
 
 | Entity | Evidence carried | External identities | Other provenance |
 | --- | --- | --- | --- |
 | `CanonicalSchool` | `evidence: Vec<Evidence>` | `source_identities` | `aliases`, websites |
 | `CanonicalTeam` | `evidence` | `source_identities` | — |
-| `CanonicalCoach` | `evidence` | `source_identities` | `professional_email`, `phone` |
+| `CanonicalCoach` | `evidence` | `source_identities` | `professional_email`, `personal_email`, `phone` |
 | `CanonicalAthlete` | `evidence` | `source_identities` | `public_profile_urls`, `observed_grades` (each with `SourceRef`) |
 | `CanonicalMeet` | `evidence` | `source_identities` | `source_urls` |
 | `CanonicalEvent` | `evidence` | — | `source_labels: Vec<SourceEventLabel>` |
@@ -247,7 +247,7 @@ Merge rules (`impl Entity for …`), which is what makes append-only safe:
 | --- | --- | --- | --- |
 | School | city, association, classification, enrollment, websites | aliases, source_identities, evidence; `co_op` OR | longer `name` wins when it extends the shorter one |
 | Team | level | source_identities, evidence | — |
-| Coach | professional_email, phone | source_identities, evidence | `publish()` drops consumer mailboxes |
+| Coach | professional_email, personal_email, phone | source_identities, evidence | `publish()` routes each stored address to the field its domain belongs to |
 | Athlete | — | known_names, sports, public_profile_urls, source_identities, evidence, observed_grades | `identity_confidence` from grade observations |
 | Meet | location, end_date; level if `Unknown` | sports, source_identities, source_urls, evidence | — |
 | Event | — | source_labels, evidence | — |
@@ -256,11 +256,14 @@ Merge rules (`impl Entity for …`), which is what makes append-only safe:
 Two entity-specific rules are applied on **read**, inside `Store::scan`, so they hold for the
 report, workbook, snapshot and Restate handlers alike:
 
-* `CanonicalCoach::publish` clears `professional_email` when `model::professional_email` rejects it
-  (consumer mailbox or malformed) and sets `email_withheld`; `withheld_mailboxes` reports the count,
-  which `Store::consolidate` sums in the same pass that writes the snapshot.
-* `email_withheld` is `#[serde(skip)]`: it is **not on disk** — the byte stream keeps whatever the
-  adapter wrote, and the gate is re-derived on every read.
+* `CanonicalCoach::publish` takes both stored addresses and re-routes each through
+  `CanonicalCoach::set_published_email`, which classifies the address's domain — a consumer mailbox
+  lands in `personal_email`, an organisation mailbox in `professional_email` — refuses a malformed
+  address, and keeps the first address of a kind. Nothing is withheld for its domain: a row whose two
+  fields disagree with its addresses is corrected on read, and no address a source published is lost.
+* `CanonicalAthlete::publish` derives `identity_confidence` from the row's own grade observations.
+  Every read publishes, so the published value is the one the report, the workbook, the snapshot and
+  the Restate handlers see, whether the row was merged or written once.
 
 ## 5. Write path
 

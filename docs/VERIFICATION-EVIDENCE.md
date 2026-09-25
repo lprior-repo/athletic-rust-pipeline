@@ -29,10 +29,18 @@ bundled nightly (`nightly-2025-11-21`), so the active default toolchain does not
 | Crate | File | Harnesses | Properties |
 |---|---|---|---|
 | `crates/census-domain` | `kani/gradyear.rs` | 4 | `GradYear::of` cohort derivation and saturation, `ObservedGrade::grad_year` agreement, known cohort values |
-| `crates/census-domain` | `kani/publish.rs` | 8 | `professional_email` withholding (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency |
+| `crates/census-domain` | `kani/publish.rs` | 9 | published-address classification by domain and routing on set (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency |
 | `crates/census-domain` | `kani/id_mint.rs` | 5 | `Id::mint` determinism, shape, tag prefixes, golden digest, `as_str`/`Display` agreement |
 | `crates/census-store` | `kani/keys.rs` | 5 | `observation_key`/`split_observation_key` round-trip, fixed-width tail, id bounds, null byte and max-sequence handling |
-| `crates/census-store` | `kani/merge.rs` | 5 | `Entity::merge` idempotency (School, Coach), `CanonicalCoach::publish` idempotency, consumer-mailbox withhold invariant, `withheld_mailboxes` consistency |
+| `crates/census-store` | `kani/merge.rs` | 5 | `Entity::merge` idempotency (School, Coach), `CanonicalCoach::publish` idempotency, address routing (arbitrary and known-value tables) |
+
+**Current set (2026-09-25).** The contact policy changed: an address a source published is classified by
+domain and routed to `professional_email` or `personal_email`, and none is withheld. That replaced the
+two `professional_email` withholding harnesses in `census-domain/kani/publish.rs` (now 9, including
+`check_published_email_classifies_domains` and `check_set_published_email_routes_by_kind`) and the two
+withhold harnesses in `census-store/kani/merge.rs` (now `check_coach_publish_routes_arbitrary_address` and
+`check_coach_publish_routes_known_addresses`), for **28 harnesses** in total. The per-harness audit below
+records the pre-change set under its old names; no verdict in it was re-run.
 
 Wiring: `crates/census-store/src/lib.rs` ends with
 
@@ -560,7 +568,8 @@ order" decides which coach wins at a school. The map is only read by key, the st
 first in deterministic `scan` order, and the email flag is accumulated across every coach at the
 school (`entry.1 = true`), so no published number depends on map iteration. The same review's claim
 that coaches with `sport = None` are wrongly excluded is the documented intent of that index
-(`/// School id -> (a track/XC coach, whether any track/XC coach brings a professional email)`): the
+(`/// School id -> (a track/XC coach, whether any track/XC coach brings a published email)`; the
+comment's wording after the 2026-09-25 contact-policy change): the
 published metric is athletes with an identified *track/XC* coach, and a school-wide coach row carries
 no evidence that they coach track or cross country. Residual, unresolved: a school whose only track
 coach is recorded as school-wide counts its athletes as coachless — a coach-sourcing gap, not a
@@ -797,10 +806,10 @@ Enumerated via `rg '#\[kani::proof\]'` across `crates/census-domain/kani/` and `
 | 2 | gradyear.rs | `check_gradyear_of_known_values` | Known cohort anchors | none (concrete) | — | 16 | none | none |
 | 3 | gradyear.rs | `check_gradyear_of_saturating` | Saturating formula for all seasons | `school_year:i16` | 1900..=2100 | 16 | `kani::assume` | none |
 | 4 | gradyear.rs | `check_observed_grade_grad_year` | `ObservedGrade::grad_year` = `GradYear::of` | `grade:u8`, `school_year:i16` | 9..=12, 2020..=2040 | 16 | `kani::assume` on both | none |
-| 5-12 | publish.rs | 8 harnesses | `professional_email` withholding/rejection; `normalize_name` diacritics/shape/idempotency | `[u8;12]` address (printable ASCII), concrete tables | 12 bytes | 64 | none | none |
+| 5-12 | publish.rs | 8 harnesses | published-address classification by domain and routing on set (symbolic + known-value tables), `normalize_name` diacritics/shape/idempotency | `[u8;12]` address (printable ASCII), concrete tables | 12 bytes | 64 | none | none |
 | 13-17 | id_mint.rs | 5 harnesses | `Id::mint` format, tag prefix, determinism, golden digest, `as_str`/`Display` consistency | none (concrete) | — | 64 | none | `__cpuid_count` stub |
 | 18-22 | keys.rs | 5 harnesses | Key round-trip, null-byte id, zero/max sequence, fixed-width tail split, id bounds | `[u8;8]` id, `[u8;24]` raw key, `u64` sequence | 8, 24 | 48 | none | none |
-| 23-27 | merge.rs | 5 harnesses | `Entity::merge` idempotent, `publish` idempotent, no consumer mailbox, withheld consistency | `[u8;6]` text fields, `bool` flags, `u8%3` counts | 6 | 64 | none | `__cpuid_count` stub |
+| 23-27 | merge.rs | 5 harnesses | `Entity::merge` idempotent, `CanonicalCoach::publish` idempotent, address routing (arbitrary and known-value tables) | `[u8;6]` text fields, `bool` flags, `u8%3` counts | 6 | 64 | none | `__cpuid_count` stub |
 
 ### Audit results by skill rule
 
@@ -813,10 +822,10 @@ Rule: "Audit each assumption and require `kani::cover` or equivalent non-vacuity
 **After fix:** Added `kani::cover!` points in 3 files:
 - `gradyear.rs`: 3 harnesses (formula, saturating, observed_grade) — 10 new cover points for assumed boundaries
 - `keys.rs`: 2 harnesses (round_trip, split_key) — 6 new cover points for id/sequence boundaries
-- `merge.rs`: 5 harnesses (school_merge, coach_merge, coach_publish_idempotent, coach_publish_no_consumer) — 10 new cover points for text/email boundaries
+- `merge.rs`: 5 harnesses (school_merge, coach_merge, coach_publish_idempotent, coach_publish_routes_arbitrary_address) — 10 new cover points for text/email boundaries
 
 **Unchanged (no fix needed):**
-- `check_gradyear_of_known_values`, `check_id_mint_*`, `check_professional_email_*` tables, `check_normalize_*`, `check_observation_key_null_byte_id`, `check_observation_key_zero_and_max_sequence`, `check_observation_id_bounds`, `check_coach_withheld_mailboxes_consistency`: use only concrete inputs, no assumptions, no bounded generators — no cover needed.
+- `check_gradyear_of_known_values`, `check_id_mint_*`, `check_published_email_*` tables, `check_normalize_*`, `check_observation_key_null_byte_id`, `check_observation_key_zero_and_max_sequence`, `check_observation_id_bounds`, `check_coach_withheld_mailboxes_consistency`: use only concrete inputs, no assumptions, no bounded generators — no cover needed.
 
 #### `stubs_and_contracts_are_trust_boundaries` — CONFORMS
 

@@ -37,7 +37,7 @@ impl RowCounts {
             coaches: coaches.len(),
             coaches_with_email: coaches
                 .iter()
-                .filter(|coach| coach.professional_email.is_some())
+                .filter(|coach| coach.has_published_email())
                 .count(),
             dropped,
         }
@@ -71,7 +71,7 @@ pub(super) struct CoachRollup {
     pub(super) sources: BTreeMap<String, usize>,
 }
 
-/// School id -> (a track/XC coach, whether any track/XC coach brings a professional email).
+/// School id -> (a track/XC coach, whether any track/XC coach brings a published email).
 pub(super) fn school_coach_index(
     coaches: &[CanonicalCoach],
 ) -> HashMap<&str, (&CanonicalCoach, bool)> {
@@ -81,7 +81,7 @@ pub(super) fn school_coach_index(
             continue;
         }
         let entry = index.entry(coach.school.as_str()).or_insert((coach, false));
-        if coach.professional_email.is_some() {
+        if coach.has_published_email() {
             entry.1 = true;
         }
     }

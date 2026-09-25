@@ -34,7 +34,7 @@ pub(super) fn totals_body(totals: &super::data_loader::Totals) -> String {
          | Co2027 with grade evidence | {total_co2027_grade} |\n\
          | Co2027 reachable from two independent sources | {total_co2027_multi} |\n\
          | coaches / ADs | {total_coaches} |\n\
-         | coaches / ADs with a published professional email | {total_coaches_email} |\n\
+         | coaches / ADs with a published email | {total_coaches_email} |\n\
          | meets | {meets_total} |\n\
          | meets carrying an Athletic.net meet id | {meets_an} |"
     )
@@ -71,7 +71,7 @@ pub(super) fn coach_coverage_bullet(
     rec_ad: usize,
 ) -> String {
     format!(
-        "- Recruiting projection (`data/recruiting-co2027.csv`): {} Co2027 athletes, {} linked to a named head track/XC coach, {} with a head-coach professional email, {} with an athletic-director email.\n",
+        "- Recruiting projection (`data/recruiting-co2027.csv`): {} Co2027 athletes, {} linked to a named head track/XC coach, {} with a published head-coach email, {} with an athletic-director email.\n",
         fmt_comma(recruiting_len),
         fmt_comma(rec_coach),
         fmt_comma(rec_email),
@@ -122,7 +122,7 @@ fn q5_row(rec_coach: usize, recruiting_len: usize) -> String {
 fn q6_row(rec_email: usize, rec_ad: usize, recruiting_len: usize) -> String {
     if recruiting_len > 0 {
         answer_row(
-            "Q6 share with a public professional coach email",
+            "Q6 share with a public coach email",
             &format!(
                 "{} of {} ({}); AD email {} ({})",
                 fmt_comma(rec_email),

@@ -1,5 +1,7 @@
 # Profile replication plan — Class of 2027 (current seniors / juniors last year)
 
+**Superseded 2026-09-25:** `crates/census-crawl/src/milesplit/` and the profile collection lane own this subject now. Kept as the dated record of 2026-09-20 profile replication plan.
+
 **Date:** 2026-09-20. **Companion to:** [`SOURCES_SURVEY.md`](SOURCES_SURVEY.md) (source inventory + the ≤2 RPS operating policy). This file answers four questions: what exactly we are targeting, whether the athletic.net profile page can be replicated, how free MileSplit profiles would change the design, and how coach/GPA/AI-verification fit in.
 
 ---

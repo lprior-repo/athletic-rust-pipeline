@@ -203,7 +203,7 @@ impl<'a> MshslRun<'a> {
         let with_email = ads
             .iter()
             .chain(sport_coaches.iter())
-            .filter(|coach| coach.professional_email.is_some())
+            .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
             .count();
         self.ad_rows = self.ad_rows.saturating_add(ads.len());
         self.coach_rows = self.coach_rows.saturating_add(sport_coaches.len());
@@ -250,7 +250,7 @@ impl<'a> MshslRun<'a> {
             .saturating_add(count(self.unparsed));
         self.report.with_email = self.with_email;
         self.report.note(format!(
-            "{} school(s) processed ({} already journalled): {} athletic-director row(s), {} sport-coach row(s), {} with a professional email",
+            "{} school(s) processed ({} already journalled): {} athletic-director row(s), {} sport-coach row(s), {} with a published email",
             self.processed, self.skipped, self.ad_rows, self.coach_rows, self.with_email
         ));
         self.report.note(format!(
@@ -258,7 +258,7 @@ impl<'a> MshslRun<'a> {
             self.office_roles
         ));
         self.report.note(
-            "AD contacts come from the school page Administration block (Cloudflare-obfuscated addresses decoded locally); sport coaches come from /api/coaches/<team nid> reached through /jsonapi/views/teams/list_school, filtered to MSHSL coach levels and school-domain addresses - personal-domain addresses and every phone column are never parsed",
+            "AD contacts come from the school page Administration block (Cloudflare-obfuscated addresses decoded locally); sport coaches come from /api/coaches/<team nid> reached through /jsonapi/views/teams/list_school, filtered to MSHSL coach levels; every well-formed published address is retained and classified, while phone columns remain withheld",
         );
         self.report
     }

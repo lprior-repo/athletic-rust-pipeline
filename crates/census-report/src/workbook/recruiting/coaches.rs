@@ -1,7 +1,8 @@
 //! The `Coaches` sheet (objective §53): one row per canonical coach in the store.
 //!
-//! Published columns, in this order: School ID, School, State, Sport, Coach, Role, Professional Email,
-//! Athletic Director, AD Professional Email, Official Source URL, Observed Date.
+//! Published columns, in this order: School ID, School, School City, State, Sport, Coach, Role,
+//! Professional Email, Personal Email, Phone, Athletic Director, AD Professional Email, Official
+//! Source URL, Observed Date.
 //!
 //! Every cell is a stored field:
 //!
@@ -9,8 +10,8 @@
 //!   `school_wide` for the school-wide roles (`CanonicalCoach::sport` is `None` for an athletic
 //!   director) — the same label the census's own coach-sport counter uses;
 //! * `Role` is the coach's `CoachRole`;
-//! * `Professional Email` is the published address the collection contract kept: a consumer mailbox
-//!   is dropped at merge time, so a blank here is a withheld or absent mailbox, never a personal one;
+//! * consumer mailboxes are retained in `Personal Email` and published alongside professional
+//!   addresses; a blank means no source published an address;
 //! * `Athletic Director` and `AD Professional Email` name the school's own AD row, so a coach row and
 //!   an AD row for one school cite each other;
 //! * `Official Source URL` is the first evidence source URL stored for the coach, else the first
@@ -19,21 +20,24 @@
 use crate::report::ReportResult;
 use census_domain::model::CanonicalCoach;
 
-use super::super::cells::{cell, row, Cell};
+use super::super::cells::{row, Cell};
 use super::dataset::Dataset;
 
 /// The worksheet name, as objective §53 publishes it.
 pub(super) const TITLE: &str = "Coaches";
 
 /// The sheet's column headers, in published order.
-pub(super) const HEADERS: [&str; 11] = [
+pub(super) const HEADERS: [&str; 14] = [
     "School ID",
     "School",
+    "School City",
     "State",
     "Sport",
     "Coach",
     "Role",
     "Professional Email",
+    "Personal Email",
+    "Phone",
     "Athletic Director",
     "AD Professional Email",
     "Official Source URL",
@@ -41,7 +45,7 @@ pub(super) const HEADERS: [&str; 11] = [
 ];
 
 /// Column widths, one per header.
-pub(super) const WIDTHS: [u16; 11] = [20, 30, 8, 14, 26, 16, 32, 26, 32, 40, 14];
+pub(super) const WIDTHS: [u16; 14] = [20, 30, 20, 8, 14, 26, 16, 32, 32, 18, 26, 32, 40, 14];
 
 /// The `Coaches` sheet, ordered by state, school, sport, role, then coach.
 pub(super) fn sheet(dataset: &Dataset) -> ReportResult<Vec<Vec<Cell>>> {
@@ -80,20 +84,23 @@ fn row_for(dataset: &Dataset, coach: &CanonicalCoach) -> Vec<Cell> {
     row!(
         Cell::text(coach.school.as_str()),
         Cell::text(dataset.school_name(coach.school.as_str())),
+        Cell::text(dataset.school_city(coach.school.as_str())),
         Cell::text(dataset.school_state(coach.school.as_str())),
         Cell::text(sport_label(coach)),
         Cell::text(coach.name.clone()),
         Cell::text(role_label(coach)),
         Cell::text(coach.professional_email.clone().unwrap_or_default()),
+        Cell::text(coach.personal_email.clone().unwrap_or_default()),
+        Cell::text(coach.phone.clone().unwrap_or_default()),
         Cell::text(
             director
                 .map(|director| director.name.clone())
-                .unwrap_or_default()
+                .unwrap_or_default(),
         ),
         Cell::text(
             director
                 .and_then(|director| director.email.clone())
-                .unwrap_or_default()
+                .unwrap_or_default(),
         ),
         Cell::text(official_url(coach)),
         Cell::text(observed_date(coach)),

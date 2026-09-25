@@ -157,7 +157,7 @@ fn record_school(
     let school_with_email = extract
         .coaches
         .iter()
-        .filter(|coach| coach.professional_email.is_some())
+        .filter(|coach| coach.professional_email.is_some() || coach.personal_email.is_some())
         .count();
     tally.with_email = tally.with_email.saturating_add(count(school_with_email));
     tally.coach_rows = tally.coach_rows.saturating_add(extract.coaches.len());

@@ -239,14 +239,15 @@ fn school_entities_includes_ad_and_xc_coaches() {
         .collect();
     assert!(roles.contains(&"AthleticDirector".to_string()));
 
-    // Verify all coaches have email
+    // Verify all coaches carry the address the page published: the professional field when the
+    // address is an organisation mailbox, the personal one when it is a consumer mailbox.
     let all_have_email = extract
         .coaches
         .iter()
-        .all(|c| c.professional_email.is_some());
+        .all(|c| c.professional_email.is_some() || c.personal_email.is_some());
     assert!(
         all_have_email,
-        "all 5 coaches should have email (100% fill rate)"
+        "all 5 coaches should carry a published address"
     );
 }
 

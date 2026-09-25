@@ -375,46 +375,49 @@ fn stats_count_observations_per_table() {
 }
 
 #[test]
-fn a_consumer_mailbox_never_survives_a_read_but_a_school_address_does() {
+fn a_consumer_mailbox_is_published_as_personal_and_a_school_address_as_professional() {
     let dir = tempfile::tempdir().unwrap();
-    let store = Store::open(dir.path()).unwrap();
+    let store = Store::open(&dir).unwrap();
     let school = school("Abbotsford").id;
-    let mut withheld = CanonicalCoach::new(
+    let mut personal = CanonicalCoach::new(
         &school,
         "J. Riethmiller",
         Some(Sport::OutdoorTrack),
         Gender::Mixed,
         CoachRole::HeadCoach,
     );
-    withheld.professional_email = Some("jriethmiller.ptc@gmail.com".to_string());
-    let mut published = CanonicalCoach::new(
+    personal.professional_email = Some("jriethmiller.ptc@gmail.com".to_string());
+    let mut professional = CanonicalCoach::new(
         &school,
         "A. Bender",
         Some(Sport::CrossCountry),
         Gender::Mixed,
         CoachRole::HeadCoach,
     );
-    published.professional_email = Some("abender@ofsd.k12.wi.us".to_string());
+    professional.personal_email = Some("abender@ofsd.k12.wi.us".to_string());
     store
-        .append_many(Table::Coaches, &[withheld, published])
+        .append_many(Table::Coaches, &[personal, professional])
         .unwrap();
 
     let coaches = store.scan::<CanonicalCoach>(Table::Coaches).unwrap();
-    let withheld_row = coaches
+    let personal_row = coaches
         .iter()
         .find(|coach| coach.name == "J. Riethmiller")
         .unwrap();
-    assert_eq!(withheld_row.professional_email, None);
-    assert!(withheld_row.email_withheld);
-    let published_row = coaches
+    assert_eq!(
+        personal_row.personal_email.as_deref(),
+        Some("jriethmiller.ptc@gmail.com")
+    );
+    assert_eq!(personal_row.professional_email, None);
+    let professional_row = coaches
         .iter()
         .find(|coach| coach.name == "A. Bender")
         .unwrap();
     assert_eq!(
-        published_row.professional_email.as_deref(),
+        professional_row.professional_email.as_deref(),
         Some("abender@ofsd.k12.wi.us")
     );
-    assert!(!published_row.email_withheld);
+    assert_eq!(professional_row.personal_email, None);
 }
 
 #[test]
@@ -561,6 +564,44 @@ fn a_snapshot_write_replaces_the_rows_it_does_not_name() {
         "and the next snapshot replaces what that one left"
     );
     assert_eq!(rows_held(&store, Table::Coverage), 1);
+}
+
+#[test]
+fn an_empty_snapshot_write_empties_the_table() {
+    // The strongest statement a derivation can make is that it derived nothing, and a table that keeps
+    // the rows a write does not name cannot express it: a conflict queue no longer holding the finding
+    // would go on serving the previous pass's row. A map table is the opposite — an empty write there
+    // names nothing and removes nothing — so the table's mode decides what an empty batch means.
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    store
+        .replace_many(Table::Coverage, &[derived("wi", 1), derived("oh", 1)])
+        .unwrap();
+    assert_eq!(rows_held(&store, Table::Coverage), 2);
+
+    store
+        .replace_many(Table::Coverage, &[] as &[DerivedRow])
+        .unwrap();
+    assert!(
+        store
+            .scan::<DerivedRow>(Table::Coverage)
+            .unwrap()
+            .is_empty(),
+        "a snapshot derivation that found nothing leaves no row behind"
+    );
+    assert_eq!(rows_held(&store, Table::Coverage), 0);
+
+    store
+        .replace_many(Table::ReviewCases, &[derived("case:1", 5)])
+        .unwrap();
+    store
+        .replace_many(Table::ReviewCases, &[] as &[DerivedRow])
+        .unwrap();
+    assert_eq!(
+        rows_held(&store, Table::ReviewCases),
+        1,
+        "a map table keeps the row an empty batch does not name"
+    );
 }
 
 #[test]

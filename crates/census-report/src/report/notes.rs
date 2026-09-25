@@ -52,6 +52,10 @@ pub(super) fn census_notes(
             counts.dropped,
             NON_CORE_SOURCE_IDS.join("/")
         ));
+        notes.push(
+            "core performance publication keeps a row only when at least one core-evidence source remains; non-core-only rows are omitted from core counts and sheets"
+                .to_string(),
+        );
     }
     if counts.athletes == 0 {
         notes.push(

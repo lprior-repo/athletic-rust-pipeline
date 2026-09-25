@@ -186,6 +186,19 @@ fn coach(
     store.append(Table::Coaches, &coach).unwrap();
 }
 
+fn personal_coach(store: &Store, school: &SchoolId) {
+    let mut coach = CanonicalCoach::new(
+        school,
+        "Morgan Personal",
+        Some(Sport::IndoorTrack),
+        Gender::Mixed,
+        CoachRole::HeadCoach,
+    );
+    coach.personal_email = Some("morgan@gmail.com".to_string());
+    coach.evidence = evidence("coach_contacts_csv", Some("https://contacts.test/schools"));
+    store.append(Table::Coaches, &coach).unwrap();
+}
+
 /// The whole fixture: two schools, three athletes, three meets, five marks, four coaches.
 fn fixture() -> Fixture {
     let dir = tempfile::tempdir().unwrap();
@@ -365,7 +378,7 @@ fn row_of(range: &Range<Data>, key: &str) -> usize {
 /// The row whose athlete column holds `athlete` and whose event column holds `event`.
 fn row_of_event(range: &Range<Data>, athlete: &str, event: &str) -> usize {
     row_where(range, |row| {
-        text(range, row, 0) == athlete && text(range, row, 5) == event
+        text(range, row, 0) == athlete && text(range, row, 7) == event
     })
 }
 
@@ -405,69 +418,53 @@ fn the_athletes_sheet_publishes_the_objective_columns_and_the_stored_facts() {
 
     let row = row_of(&range, fixture.julian.as_str());
     assert_eq!(text(&range, row, 1), "Julian Aguilera");
-    assert_eq!(text(&range, row, 2), "WI");
-    assert_eq!(text(&range, row, 3), "Abbotsford");
-    assert_eq!(text(&range, row, 4), "2027");
-    assert_eq!(text(&range, row, 5), "11", "the newest observed grade");
-    assert_eq!(text(&range, row, 6), "yes", "TF");
-    assert_eq!(text(&range, row, 7), "yes", "XC");
-    assert_eq!(text(&range, row, 8), "", "no indoor participation stored");
-    assert_eq!(text(&range, row, 9), "yes", "Outdoor");
+    assert_eq!(text(&range, row, 2), "Boys");
+    assert_eq!(text(&range, row, 3), "2027");
+    assert_eq!(text(&range, row, 4), "11", "the newest observed grade");
+    assert_eq!(text(&range, row, 5), "WI");
+    assert_eq!(text(&range, row, 6), "Abbotsford");
+    assert_eq!(text(&range, row, 7), "Abbotsford", "the school row's city");
+    assert_eq!(text(&range, row, 8), "yes", "XC");
+    assert_eq!(text(&range, row, 9), "", "no indoor participation stored");
+    assert_eq!(text(&range, row, 10), "yes", "Outdoor");
+    assert_eq!(text(&range, row, 13), "48.55", "400m PR");
+    assert_eq!(text(&range, row, 23), "6.42", "long-jump PR");
+    assert_eq!(text(&range, row, 11), "", "unrecorded 100m PR is blank");
+    assert_eq!(text(&range, row, 30), "5", "performance count");
+    assert_eq!(text(&range, row, 31), "2", "meet count");
+    assert_eq!(text(&range, row, 32), "Dana Voss", "head TF coach");
+    assert_eq!(text(&range, row, 33), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 34), "Kim Ruiz", "head XC coach");
+    assert_eq!(text(&range, row, 35), "kruiz@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 36), "Lee Adams", "athletic director");
+    assert_eq!(text(&range, row, 37), "ladams@abbotsford.k12.wi.us");
     assert_eq!(
-        text(&range, row, 10),
-        "LongJump; Relay4x400; Track400m",
-        "every event the athlete has a stored mark in"
+        text(&range, row, 38),
+        "dvoss@abbotsford.k12.wi.us; kruiz@abbotsford.k12.wi.us; ladams@abbotsford.k12.wi.us; pnolan@abbotsford.k12.wi.us"
     );
+    assert_eq!(text(&range, row, 39), "Dana Voss");
+    assert_eq!(text(&range, row, 40), "Head TF Coach");
+    assert_eq!(text(&range, row, 41), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, row, 42), "professional_coach_email");
     assert_eq!(
-        text(&range, row, 11),
-        "LongJump 6.42 m; Track400m 48.55",
-        "the PRs sheet's own rows, in its own order"
-    );
-    assert_eq!(text(&range, row, 12), "5", "performance count");
-    assert_eq!(text(&range, row, 13), "2", "meet count");
-    assert_eq!(
-        text(&range, row, 14),
+        text(&range, row, 43),
         "",
-        "a core-scope workbook drops the Athletic.net identity, so no URL is published"
+        "a core-scope workbook drops the Athletic.net identity"
     );
     assert_eq!(
-        text(&range, row, 15),
-        "https://wi.milesplit.com/athletes/999",
-        "the MileSplit identity is core evidence"
+        text(&range, row, 44),
+        "https://wi.milesplit.com/athletes/999"
     );
-    assert_eq!(text(&range, row, 16), "https://example.test/julian");
-    assert_eq!(text(&range, row, 17), "Dana Voss", "head TF coach");
-    assert_eq!(text(&range, row, 18), "Kim Ruiz", "head XC coach");
-    assert_eq!(text(&range, row, 19), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 20), "Lee Adams", "athletic director");
-    assert_eq!(text(&range, row, 21), "https://abbotsford.test/athletics");
-    assert_eq!(text(&range, row, 22), "", "no GPA entity is stored");
-    assert_eq!(text(&range, row, 23), "", "no GPA source is stored");
+    assert_eq!(text(&range, row, 45), "https://example.test/julian");
+    assert_eq!(text(&range, row, 46), "1");
+    assert_eq!(text(&range, row, 47), "85", "agreeing grade evidence");
+    assert_eq!(text(&range, row, 48), "pr");
+    assert_eq!(text(&range, row, 49), "", "no conflict");
     assert_eq!(
-        text(&range, row, 24),
-        "1",
-        "core scope keeps the MileSplit namespace and drops Athletic.net"
-    );
-    assert_eq!(text(&range, row, 25), "85", "agreeing grade evidence");
-    assert_eq!(text(&range, row, 26), "pr");
-    assert_eq!(text(&range, row, 27), "", "no conflict");
-    assert_eq!(
-        text(&range, row, 28),
+        text(&range, row, 50),
         "",
         "confidence at HIGH needs no review"
     );
-    assert_eq!(text(&range, row, 29), "Abbotsford", "the school row's city");
-    assert_eq!(text(&range, row, 30), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 31), "kruiz@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 32), "ladams@abbotsford.k12.wi.us");
-    assert_eq!(
-        text(&range, row, 33),
-        "Dana Voss",
-        "the athlete's own sport picks the slot: track and field wins over cross country"
-    );
-    assert_eq!(text(&range, row, 34), "Head TF Coach");
-    assert_eq!(text(&range, row, 35), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, row, 36), "professional_coach_email");
 }
 
 /// The three profile URL columns follow the evidence scope: the Athletic.net identity is only
@@ -479,15 +476,15 @@ fn the_url_columns_follow_the_evidence_scope() {
     let range = sheet(&mut book, "Athletes");
     let row = row_of(&range, fixture.julian.as_str());
     assert_eq!(
-        text(&range, row, 14),
+        text(&range, row, 43),
         "https://www.athletic.net/athlete/123"
     );
     assert_eq!(
-        text(&range, row, 15),
+        text(&range, row, 44),
         "https://wi.milesplit.com/athletes/999"
     );
-    assert_eq!(text(&range, row, 16), "https://example.test/julian");
-    assert_eq!(text(&range, row, 24), "2", "source namespaces");
+    assert_eq!(text(&range, row, 45), "https://example.test/julian");
+    assert_eq!(text(&range, row, 46), "2", "source namespaces");
 }
 
 #[test]
@@ -499,23 +496,21 @@ fn an_athlete_without_a_performance_is_published_as_identity_only() {
         .find(|row| text(&range, *row, 1) == "Nadia Berger")
         .expect("the second cohort athlete");
     assert_eq!(text(&range, row, 0), fixture.nadia.as_str());
-    assert_eq!(text(&range, row, 2), "MN");
-    assert_eq!(text(&range, row, 12), "0", "no stored performance");
-    assert_eq!(text(&range, row, 26), "identity-only");
+    assert_eq!(text(&range, row, 2), "Girls");
+    assert_eq!(text(&range, row, 30), "0", "no stored performance");
+    for column in 11..30 {
+        assert_eq!(text(&range, row, column), "", "no PR is blank");
+    }
+    assert_eq!(text(&range, row, 48), "identity-only");
     assert_eq!(
-        text(&range, row, 28),
+        text(&range, row, 50),
         "yes",
         "no grade observation agrees with the cohort, so the row asks for review"
     );
-    assert_eq!(text(&range, row, 29), "Ada-Borup");
+    assert_eq!(text(&range, row, 38), "", "no coach emails");
+    assert_eq!(text(&range, row, 39), "", "nothing is named");
     assert_eq!(
-        text(&range, row, 30),
-        "",
-        "the school has no stored coach row"
-    );
-    assert_eq!(text(&range, row, 33), "", "nothing is named");
-    assert_eq!(
-        text(&range, row, 36),
+        text(&range, row, 42),
         "contact_source_not_attempted",
         "no coach row for the school means no contact source reached it"
     );
@@ -546,51 +541,48 @@ fn the_prs_sheet_reduces_like_bests_and_flags_a_meet_reported_twice() {
 
     // The relay leg is not a personal best, so only the 400m and the long jump are published.
     let events: Vec<String> = (1..range.height())
-        .map(|row| text(&range, row, 5))
+        .map(|row| text(&range, row, 7))
         .collect();
     assert_eq!(events, vec!["LongJump", "Track400m"]);
 
     let sprint = row_of_event(&range, fixture.julian.as_str(), "Track400m");
     assert_eq!(text(&range, sprint, 1), "Julian Aguilera");
-    assert_eq!(text(&range, sprint, 2), "Abbotsford");
-    assert_eq!(text(&range, sprint, 3), "WI");
-    assert_eq!(text(&range, sprint, 4), "Track");
-    assert_eq!(text(&range, sprint, 6), "Outdoor");
+    assert_eq!(text(&range, sprint, 2), "Boys");
+    assert_eq!(text(&range, sprint, 3), "Abbotsford");
+    assert_eq!(text(&range, sprint, 4), "WI");
+    assert_eq!(text(&range, sprint, 5), "2027");
+    assert_eq!(text(&range, sprint, 6), "Track");
+    assert_eq!(text(&range, sprint, 8), "Outdoor");
     assert_eq!(
-        text(&range, sprint, 7),
+        text(&range, sprint, 9),
         "48.55",
         "the fastest of the three marks"
     );
-    assert_eq!(text(&range, sprint, 8), "2026-05-01");
-    assert_eq!(text(&range, sprint, 9), "Abbotsford Invitational");
-    assert_eq!(text(&range, sprint, 10), "https://wiaa.test/results/invite");
+    assert_eq!(text(&range, sprint, 10), "48.55");
+    assert_eq!(text(&range, sprint, 11), "s");
+    assert_eq!(text(&range, sprint, 12), "", "no wind was stored");
+    assert_eq!(text(&range, sprint, 13), "2026-05-01");
+    assert_eq!(text(&range, sprint, 14), "Abbotsford Invitational");
+    assert_eq!(text(&range, sprint, 15), "", "no place was stored");
+    assert_eq!(text(&range, sprint, 16), "https://wiaa.test/results/invite");
     assert_eq!(
-        text(&range, sprint, 14),
+        text(&range, sprint, 17),
         "2",
         "two sources report this event"
     );
     assert_eq!(
-        text(&range, sprint, 15),
+        text(&range, sprint, 18),
         "WIAA Division 3 State: 49.71 | 49.80",
-        "the state meet's two published marks are both carried, not reduced to a flag"
+        "the state meet's two published marks are both carried"
     );
 
-    // No source published a PR claim for this athlete, so the three reported-PR columns stay blank
-    // rather than restating the calculated mark as if a source had published it.
-    for column in [11, 12, 13] {
-        assert_eq!(text(&range, sprint, column), "", "no reported PR is stored");
-    }
-
-    // The long jump was reported by one source only, at one meet: one source, no conflict.
     let jump = row_of_event(&range, fixture.julian.as_str(), "LongJump");
-    assert_eq!(text(&range, jump, 4), "Field");
-    assert_eq!(
-        text(&range, jump, 7),
-        "6.42 m",
-        "the notation the source published"
-    );
-    assert_eq!(text(&range, jump, 14), "1");
-    assert_eq!(text(&range, jump, 15), "", "one report cannot conflict");
+    assert_eq!(text(&range, jump, 6), "Field");
+    assert_eq!(text(&range, jump, 9), "6.42 m");
+    assert_eq!(text(&range, jump, 10), "6.42");
+    assert_eq!(text(&range, jump, 11), "m");
+    assert_eq!(text(&range, jump, 17), "1");
+    assert_eq!(text(&range, jump, 18), "", "one report cannot conflict");
 }
 
 #[test]
@@ -605,7 +597,7 @@ fn the_coaches_sheet_publishes_the_school_contact_graph() {
     assert_eq!(range.height(), 5, "header plus the four stored coaches");
 
     let names: Vec<String> = (1..range.height())
-        .map(|row| text(&range, row, 4))
+        .map(|row| text(&range, row, 5))
         .collect();
     assert_eq!(
         names,
@@ -616,23 +608,47 @@ fn the_coaches_sheet_publishes_the_school_contact_graph() {
     let head = 3;
     assert_eq!(text(&range, head, 0), fixture.wi_school.as_str());
     assert_eq!(text(&range, head, 1), "Abbotsford");
-    assert_eq!(text(&range, head, 2), "WI");
-    assert_eq!(text(&range, head, 3), "OutdoorTrack");
-    assert_eq!(text(&range, head, 5), "HeadCoach");
-    assert_eq!(text(&range, head, 6), "dvoss@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, head, 7), "Lee Adams");
-    assert_eq!(text(&range, head, 8), "ladams@abbotsford.k12.wi.us");
-    assert_eq!(text(&range, head, 9), "https://contacts.test/schools");
-    assert_eq!(text(&range, head, 10), DAY);
+    assert_eq!(text(&range, head, 2), "Abbotsford");
+    assert_eq!(text(&range, head, 3), "WI");
+    assert_eq!(text(&range, head, 4), "OutdoorTrack");
+    assert_eq!(text(&range, head, 6), "HeadCoach");
+    assert_eq!(text(&range, head, 7), "dvoss@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, head, 8), "");
+    assert_eq!(text(&range, head, 9), "");
+    assert_eq!(text(&range, head, 10), "Lee Adams");
+    assert_eq!(text(&range, head, 11), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, head, 12), "https://contacts.test/schools");
+    assert_eq!(text(&range, head, 13), DAY);
 
     let director = 4;
     assert_eq!(
-        text(&range, director, 3),
+        text(&range, director, 4),
         "school_wide",
         "an AD is not bound to a sport"
     );
-    assert_eq!(text(&range, director, 5), "AthleticDirector");
-    assert_eq!(text(&range, director, 6), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, director, 6), "AthleticDirector");
+    assert_eq!(text(&range, director, 7), "ladams@abbotsford.k12.wi.us");
+    assert_eq!(text(&range, director, 8), "");
+}
+
+#[test]
+fn a_personal_coach_email_is_published_on_both_contact_surfaces() {
+    let fixture = fixture();
+    personal_coach(&fixture.store, &fixture.wi_school);
+    let (mut book, _) = written(&fixture);
+
+    let athletes = sheet(&mut book, "Athletes");
+    let athlete_row = row_of(&athletes, fixture.julian.as_str());
+    assert_eq!(
+        text(&athletes, athlete_row, 38),
+        "dvoss@abbotsford.k12.wi.us; kruiz@abbotsford.k12.wi.us; ladams@abbotsford.k12.wi.us; morgan@gmail.com; pnolan@abbotsford.k12.wi.us"
+    );
+
+    let coaches = sheet(&mut book, "Coaches");
+    let coach_row = row_where(&coaches, |row| text(&coaches, row, 5) == "Morgan Personal");
+    assert_eq!(text(&coaches, coach_row, 7), "");
+    assert_eq!(text(&coaches, coach_row, 8), "morgan@gmail.com");
+    assert_eq!(text(&coaches, coach_row, 9), "");
 }
 
 #[test]

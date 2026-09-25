@@ -8,8 +8,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use census_domain::model::{
-    CanonicalAthlete, CanonicalSchool, Gender, ReviewCase, ReviewVerdictKind, ReviewVerdictRecord,
-    SourceNamespace, ATHLETE_IDENTITY_FAMILY,
+    AthleteCandidateId, CanonicalAthlete, CanonicalSchool, Gender, ReviewCase, ReviewVerdictKind,
+    ReviewVerdictRecord, SourceNamespace, ATHLETE_IDENTITY_FAMILY,
 };
 use census_store::{Store, StoreResult, Table};
 
@@ -20,6 +20,7 @@ use crate::families::IDENTITY_FIELD;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) struct Row {
     id: String,
+    candidate_id: AthleteCandidateId,
     name: String,
     school: String,
     grad_year: i16,
@@ -31,6 +32,7 @@ impl Row {
         let stored = row.school.as_str();
         Self {
             id: row.id.as_str().to_string(),
+            candidate_id: row.candidate_key().candidate_id(),
             name: row.canonical_name.clone(),
             // The case is read by an operator and by a model, so a site is named the way the store
             // names it; an unmapped school falls back to the id that is the only thing the store
@@ -176,14 +178,15 @@ impl Span {
                 "The rows disagree on name, class or gender, so the object does not settle that they are one athlete."
             }
         );
-        Some(ReviewCase::pending(
+        let mut case = ReviewCase::pending(
             ATHLETE_IDENTITY_FAMILY,
             first.id.as_str(),
             first.line(),
             detail,
-        ))
+        );
+        case.member_ids = self.rows.iter().map(|row| row.candidate_id.clone()).collect();
+        Some(case)
     }
-
     /// The decision the agreement rule states, as the athlete family's own answer.
     pub(super) fn verdict(&self, case: &ReviewCase, observed_at: &str) -> ReviewVerdictRecord {
         ReviewVerdictRecord {
@@ -204,6 +207,7 @@ impl Span {
             ),
             reviewer: RULE_REVIEWER.to_string(),
             observed_at: observed_at.to_string(),
+            member_ids: case.member_ids.clone(),
         }
     }
 }
@@ -225,11 +229,13 @@ impl Alias {
             self.objects.len(),
             self.objects.join(", ")
         );
-        Some(ReviewCase::pending(
+        let mut case = ReviewCase::pending(
             ATHLETE_IDENTITY_FAMILY,
             self.row.id.as_str(),
             format!("{} ({} {})", self.row.name, self.namespace, first),
             detail,
-        ))
+        );
+        case.member_ids.push(self.row.candidate_id.clone());
+        Some(case)
     }
 }

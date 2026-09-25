@@ -13,6 +13,7 @@
 //!   `InsufficientEvidence` leaves the case visible rather than resolving it by default.
 
 use serde::{Deserialize, Serialize};
+use super::AthleteCandidateId;
 
 /// One fact the lane is shown about a case.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -226,6 +227,9 @@ pub struct ReviewVerdictRecord {
     pub reviewer: String,
     /// The lane pass's date.
     pub observed_at: String,
+    /// Raw candidate members captured with the current review case.
+    #[serde(default)]
+    pub member_ids: Vec<AthleteCandidateId>,
 }
 
 #[cfg(test)]

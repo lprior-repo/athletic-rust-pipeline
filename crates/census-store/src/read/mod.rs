@@ -141,8 +141,7 @@ impl Store {
     }
 
     /// Merge a table and write the materialized snapshot as JSONL, the read model every report and
-    /// spreadsheet consumes. The withheld count comes out of the same merge pass that writes the
-    /// rows, so reporting it never re-scans the table.
+    /// spreadsheet consumes.
     ///
     /// The merge streams: each row is published as [`Store::for_each_merged`] produces it, so the pass
     /// holds one id rather than the table and a twenty-million-row table consolidates in the memory a
@@ -155,18 +154,16 @@ impl Store {
         out_path: &Path,
     ) -> StoreResult<Consolidated> {
         let mut rows = 0_usize;
-        let mut withheld = 0_usize;
         publish_atomically(out_path, |temporary| {
             let mut writer = open_snapshot_writer(temporary, out_path)?;
             self.for_each_merged::<T>(table, |row| {
                 rows = rows.saturating_add(1);
-                withheld = withheld.saturating_add(row.withheld_mailboxes());
                 writer.push(&row)
             })?;
             writer.finish()
         })?;
         self.flush()?;
-        Ok(Consolidated { rows, withheld })
+        Ok(Consolidated { rows })
     }
 
     /// Force the write-ahead journal to disk.

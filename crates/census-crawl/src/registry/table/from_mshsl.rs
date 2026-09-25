@@ -30,7 +30,8 @@ pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
         // school_evidence: `map::school_entities` mints a `CanonicalSchool` per listed school.
         // coach_directory: `map::ad_coaches` and `map::coach_entities` mint the directors and
         // per-team coaches. public_professional_contact: `text::decode_cfemail` decodes the address
-        // the page publishes, and `map::accept_coach_email` keeps only school-domain ones.
+        // the page publishes, and `map::published_coach_email` keeps it unless it is malformed — a
+        // consumer mailbox is kept too, as the coach's personal address.
         // The school views are HTML; the team and coach surfaces the walk also reads (`jsonapi` view
         // under `/jsonapi/views/`, coaches under `COACH_API_PREFIX`) are the site's own JSON.
         capabilities: SCHOOL_COACH_CONTACT,
@@ -43,9 +44,10 @@ pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
         // school_evidence: `map::school_entities` mints a `CanonicalSchool` per search result.
         // coach_directory: `pages::parse_sports_table`/`pages::parse_coach_cell` read the sport
         // sections and `map::school_entities` mints the AD and the per-sport head coaches.
-        // public_professional_contact: the `mailto:` hrefs those pages publish become
-        // `professional_email`, accepted only when `parse::valid_email` takes them. Evidence is
-        // stamped `ohsaa_portal` (`SOURCE_ID`), not this slug.
+        // public_professional_contact: the `mailto:` hrefs those pages publish are routed by
+        // `CanonicalCoach::set_published_email`; malformed values are the only addresses refused.
+        // Evidence is stamped
+        // `ohsaa_portal` (`SOURCE_ID`), not this slug.
         capabilities: SCHOOL_COACH_CONTACT,
         admission: fetched("officials.myohsaa.org", FETCHER_RPS),
     },
@@ -123,9 +125,9 @@ pub(super) const FROM_MSHSL: [SourceDescriptor; 9] = [
         // school_evidence: `map::school_entities` mints a `CanonicalSchool` per directory page.
         // coach_directory: the page's administration and head-coach tables become `CanonicalCoach`s
         // through the same function. public_professional_contact: `primitives::decode_cfemail`
-        // decodes the published address (a plain `mailto:` cell is accepted as well), and only a
-        // value that parses as an address is kept. Evidence is stamped `wiaa_directory`
-        // (`SOURCE_ID`), not this slug.
+        // decodes the published address (a plain `mailto:` cell is accepted as well), and any
+        // well-formed value is routed by `CanonicalCoach::set_published_email`. Evidence is stamped
+        // `wiaa_directory` (`SOURCE_ID`), not this slug.
         capabilities: SCHOOL_COACH_CONTACT,
         admission: fetched("schools.wiaawi.org", FETCHER_RPS),
     },

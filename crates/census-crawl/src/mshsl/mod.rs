@@ -12,7 +12,7 @@
 //!   endpoint its filters call is not needed and `export/schools.csv` is a robots-disallowed extension.
 //! * `GET /schools/<slug>` — school facts (numeric `/group/<id>/` id, classification enrollment, website)
 //!   plus the Administration block: `Activities Director` and `Assistant Activities Director` with a
-//!   Cloudflare-obfuscated professional email that is decoded locally (XOR with the first byte). The same
+//!   Cloudflare-obfuscated published email that is decoded locally (XOR with the first byte). The same
 //!   block publishes office roles (principal, superintendent, AD administrative assistant, trainer,
 //!   advisors, Title IX officer, sports representatives): they are parsed and then *rejected*, so no
 //!   non-coaching office ever reaches the store.
@@ -20,9 +20,9 @@
 //!   school's team nodes (`drupal_internal__nid` + path alias), filtered to the track/XC activities.
 //! * `GET /api/coaches/<team nid>` — per-team coach records (`name`, `coach_level`, `field_email`).
 //!   Records whose `coach_level` is not an MSHSL level (`Non-MSHSL Coach`, `MSHSL Sub-Coach`) are dropped
-//!   and an email is kept only when it shares the school's own domain: those records publish
-//!   personal-domain addresses. `field_work_phone` mixes school extensions with personal mobiles, so the
-//!   field is not even declared in the deserializer. [report 09 §"Retention contract"]
+//!   and every well-formed published address is retained and classified as professional or personal.
+//!   `field_work_phone` mixes school extensions with personal mobiles, so the field is not even declared
+//!   in the deserializer. [report 09 §"Retention contract"]
 //!
 //! Every emitted entity carries the URL it came from plus `options.observed_on`; missing fields stay
 //! empty and are reported as notes rather than invented.
@@ -44,7 +44,7 @@ use census_domain::UsJurisdiction;
 
 pub use collect::collect;
 pub use map::{
-    accept_coach_email, ad_coaches, ad_role, coach_entities, provider_key, school_domains,
+    ad_coaches, ad_role, coach_entities, provider_key, published_coach_email, school_domains,
     school_entities,
 };
 pub use parse::{

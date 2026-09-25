@@ -88,9 +88,11 @@ struct CanonicalCoach { … }
 enum CoachRole { … }        // head track, head cross country, assistant, athletic director, …
 ```
 
-Only publicly published professional contact information for a school/sport role is collected, with
-its source URL and observed date. Athlete personal email, personal phone, home address and other
-unrelated personal data are outside the contract: if a directory exposes them, they are not ingested.
+Only a school/sport role's published address is collected, with its source URL and observed date;
+the address's domain decides whether it lands in the coach's `professional_email` or
+`personal_email`, and only a malformed address is refused. Athlete personal email, personal
+phone, home address and other unrelated personal data are outside the contract: if a directory
+exposes them, they are not ingested.
 
 ## 8. Failure is a first-class value
 
@@ -99,7 +101,7 @@ one, and no such type exists in the code. The vocabulary is per layer, and each 
 causes:
 
 - acquisition pipeline (deleted; see `ARCHITECTURE.md` §1): its per-layer vocabulary —
-  `FailureCode` (`src/runtime/protocol.rs`), `InvalidInput`, `Transport`, `AccessDenied`,
+  `FailureCode` (`src/runtime/protocol.rs` — historical: root package deleted 2026-09-23), `InvalidInput`, `Transport`, `AccessDenied`,
   `BrowserChallenge`, `BrowserUnavailable`, `RateLimited`, `HttpFailure`, `PayloadLimit`,
   `ArtifactFailure`, `MalformedResponse`, `RetryExhausted`, `UncertainEffect` — went with the root
   package. What survives of it is `BrowserError` (`crates/athleticnet-browser/src/outcome.rs`),

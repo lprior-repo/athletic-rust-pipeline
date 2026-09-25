@@ -191,13 +191,6 @@ pub trait Entity: Serialize + DeserializeOwned + Clone {
     /// [`Store::scan`](crate::Store::scan), so a rule that lives here holds for the report,
     /// the workbook, the snapshot and the Restate handlers at once.
     fn publish(&mut self) {}
-
-    /// How many of this entity's rows carry something the contract withheld.
-    /// [`Store::consolidate`](crate::Store::consolidate) sums this in the same pass that
-    /// writes the snapshot, so reporting the count never re-scans the table.
-    fn withheld_mailboxes(&self) -> usize {
-        0
-    }
 }
 
 #[cfg(test)]

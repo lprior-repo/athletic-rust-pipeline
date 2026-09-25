@@ -237,7 +237,7 @@ fn bench_merge(criterion: &mut Criterion) -> Result<()> {
                 Table::Performances,
                 &store.out_dir().join("performances.jsonl"),
             ));
-            std::hint::black_box((snapshot.rows, snapshot.withheld));
+            std::hint::black_box(snapshot.rows);
         })
     });
     group.finish();

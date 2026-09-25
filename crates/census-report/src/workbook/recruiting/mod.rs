@@ -2,8 +2,8 @@
 //! `Coaches`.
 //!
 //! All three read one [`Dataset`] — a single scoped, cohort-filtered pass over the store's merged
-//! entity tables — so a recruiting cell can never disagree with the census report or with the
-//! `Best results` sheet, and no sheet re-derives a fact from raw source text.
+//! entity tables — so a recruiting cell can never disagree with the census report or with
+//! the `PRs` sheet, and no sheet re-derives a fact from raw source text.
 //!
 //! # Published sheet order
 //!
@@ -31,14 +31,14 @@
 //! | `Summary` | retained — the workbook-level twin of §49's per-jurisdiction denominators |
 //! | `By state - core`, `By state - all sources` | retained — §49's per-jurisdiction coverage |
 //! | `Athletic.net marginal` | retained — the §49 Athletic.net-attributable view |
-//! | `Best results` | superseded by `PRs` (§51), which publishes the same reduction with the recruiter columns; retained because the `bests` sidecars publish it too |
+//! | `PRs` | the best-mark reduction with recruiter columns; the same reduction is emitted as text sidecars |
 //! | `Meets` | renamed `Meets summary`: the name now belongs to §54's row-level `Meets` sheet |
 //! | `Evidence mix` | retained — the evidence mix behind §54's `Sources` |
 //! | `Method notes` | retained — method provenance |
 //!
 //! Nothing was dropped: the objective's sheets are additions to the legacy set, and the two sheets
-//! whose content the objective re-specifies (`Best results` → `PRs`, `Meets` → `Meets summary` +
-//! `Meets`) are both still present under their new names.
+//! whose content the objective re-specifies (`PRs` and its sidecars, `Meets summary` +
+//! `Meets`) are still present under their current names.
 //!
 //! # Scope, cohort and reconciliation
 //!
@@ -50,7 +50,7 @@
 //! canonical store counts it came from — the store's own table sizes, the count the scope filter kept,
 //! and, for `PRs`, the row count of the crate's independent `bests` reduction over the same store,
 //! scope and cohort. The numbers are printed rather than assumed; a `PRs` line whose `consistent`
-//! field is `false` is the signal that this sheet and the `Best results` sheet disagree.
+//! field is `false` is the signal that this sheet and the best-mark sidecars disagree.
 
 use crate::bests;
 use crate::report::{ReportResult, Scope};

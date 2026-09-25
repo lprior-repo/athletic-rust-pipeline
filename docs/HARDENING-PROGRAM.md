@@ -40,8 +40,7 @@ Already true (measured, good):
 - **Zero `unwrap`/`panic!`/`todo!`/`unimplemented!`/`unreachable!`/`dbg!`** in production code as clippy sees them; census-service has 1 `unwrap`, 75 `expect`, 0 panic macros. Independently measured with test paths and inline `#[cfg(test)]` modules excluded, production code contains **0** `assert!`-family, `panic!`, `expect`, and `unwrap` sites — the 126 `expect` and 268 `assert` grep hits reported earlier are all test code. The panic-surface burndown is therefore a census-service job.
 - **Zero production `assert!`-family macros in census** (1,139 live only in `#[cfg(test)]`).
 - **Pinned toolchain** with rustfmt/clippy/rust-src/llvm-tools-preview; **release profile** already `lto = "thin"`, `codegen-units = 1`, `strip` (Holzmann build-profile policy satisfied).
-- **Restate e2e is real**: `Ingest` object, `Sweep` workflow, heavy jobs behind a semaphore on `spawn_blocking`; browser lifecycle in `athleticnet-browser` owns `TaskTracker` + `CancellationToken` + `JoinSet`.
-- **Determinism evidence for the census output path**: rebuild from the Rust store reproduced 6 of 7 JSONL snapshots byte-identically against the Python-era record (`coaches.jsonl` differs only in that the 917 withheld rows omit `professional_email` instead of writing `null`); the freshly published workbook carries 0 of 459 published numbers missing, both state sheets cell-identical.
+- **Determinism evidence for the census output path**: rebuild from the Rust store reproduced 6 of 7 JSONL snapshots byte-identically against the Python-era record (`coaches.jsonl` differs only in that the 917 withheld rows omit `professional_email` instead of writing `null`; **superseding note 2026-09-25:** under the current contact policy no coach address is withheld — every published address is classified as professional or personal, so this difference class no longer applies. The row records the measurement as captured.) — the freshly published workbook carries 0 of 459 published numbers missing, both state sheets cell-identical.
 - **Assurance tooling installed**: `cargo-nextest`, `-audit`, `-deny`, `-vet`, `-geiger`, `-machete`, `-hack`, `-mutants`, `-llvm-lines`, `-bloat`, `perf`, `rg`. Missing: `cargo-fuzz`, `cargo-semver-checks`, `hyperfine`.
 
 ## 2. Measured gaps (evidence, not impression)
@@ -226,17 +225,18 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
   merge algebra (idempotent, commutative, associative) and for every parser round-trip.
 - Acceptance: named tests in CI for each lane; no sleep-based race tests remain.
 
-### Phase 6 — Verification pack (2–4 weeks, scoped by owner decision)
-- `kani` harnesses: store sequence monotonicity, publish/withhold invariant (no consumer mailbox can
-  be published), merge idempotency, `GradYear`/`ObservedGrade` cohort derivation.
+- `kani` harnesses: store sequence monotonicity, published-address classification invariant (a published mailbox is recorded under the kind its domain implies, and a malformed address is refused), merge idempotency, `GradYear`/`ObservedGrade` cohort derivation.
 - `verus` (or `flux`) for the bests/share reduction and the census aggregation arithmetic.
 - `cargo-mutants` with a threshold on domain crates; `miri` on pure modules; `cargo-fuzz` targets for
   the four file parsers (hytek, result-file, XC, WIAA results) and the workbook XML surface.
 - Golden-corpus determinism: fixtures → rebuild → byte-parity test in CI (institutionalizes the
   parity evidence already obtained).
-- Assurance artifacts: requirements→test→evidence traceability matrix; hazard log (wrong athlete
-  identity, mis-merge across same-name athletes, withheld-contact leak, dropped observation, partial
-  write, stale read-after-restore).
+- Assurance artifacts: requirements→test→evidence traceability matrix; hazard log (wrong athlete identity, mis-merge across same-name athletes, classification misrouting, dropped observation, partial write, stale read-after-restore).
+
+
+
+- Metrics export (counters/gauges: observations ingested, merge conflicts, classification counts, job durations, drain outcomes) and alert thresholds.
+
 - Acceptance: each harness runs in CI with recorded evidence; traceability matrix covers every
   public contract in §1 of the census README; hazard log has a disposition per entry.
 
@@ -256,7 +256,7 @@ Sizes are engineer-days for one competent engineer; ranges reflect discovery ris
 ### Phase 8 — Operations (2–3 d)
 - Backup/restore drill with a scripted test; corrupt/poison-row quarantine policy (one malformed
   observation must not abort a census run); store-integrity check command.
-- Metrics export (counters/gauges: observations ingested, merge conflicts, withheld contacts, job
+
   durations, drain outcomes) and alert thresholds.
 - Deployment artifacts: systemd unit + compose for the Restate server, session-pool sizing guidance
   for the chromiumoxide path, ingress posture documented (currently loopback-only).
@@ -274,7 +274,7 @@ P0 gates ──► P1 burndown ──► P2 decomposition ──┬─► P3 DDD
 
 Rationale: gates first so nothing regresses while churning; burndown before decomposition (smaller
 diffs to review); decomposition before the crate split (module seams become crate seams); async
-hardening touches disjoint files (the root runtime's browser modules `src/runtime/browser_*.rs` vs
+hardening touches disjoint files (the root runtime's browser modules `src/runtime/browser_*.rs` vs (historical: root package deleted 2026-09-23)
 census store/net) so P3 and P4 run concurrently (historical: those modules were deleted with the root
 package on 2026-09-23; the browser transport is `crates/census-crawl/src/net/execute/browser.rs`
 today); verification last but anchored by the golden corpus that already exists.

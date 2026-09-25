@@ -3,7 +3,7 @@
 //!
 //! Every value here is read from the store's merged entity tables through [`Store::scan`], filtered
 //! by the run's evidence scope exactly as `report` and `bests` filter theirs, so a recruiting cell can
-//! never disagree with the census or with the `Best results` sheet. Nothing is re-derived from raw
+//! never disagree with the census or with the `PRs` sheet. Nothing is re-derived from raw
 //! source text: a printed cell traces either to a stored entity field or to a rule over stored fields
 //! that the sheet module documents.
 
@@ -96,14 +96,6 @@ impl Dataset {
         self.schools
             .get(school)
             .and_then(|s| s.city.clone())
-            .unwrap_or_default()
-    }
-
-    /// The school's athletics website, when the school table carries one.
-    pub(super) fn athletics_url(&self, school: &str) -> String {
-        self.schools
-            .get(school)
-            .and_then(|school| school.athletics_website.clone())
             .unwrap_or_default()
     }
 

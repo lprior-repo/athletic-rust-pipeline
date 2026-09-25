@@ -1,285 +1,280 @@
 {
+  "coaches": [
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_6ecea1d9293bd62b",
+      "name": "Derek Berns",
+      "professional_email": "dberns@abileneschools.org",
+      "role": "athletic_director",
+      "school": "sch_358759aa96d53cfe",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_7f7cfe3c912979a1",
+      "name": "John Heise",
+      "professional_email": "heisej@usd385.org",
+      "role": "athletic_director",
+      "school": "sch_5a280505e6f9104c",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_8fdaf57585932ff3",
+      "name": "Jeron Weisshaar",
+      "professional_email": "jweisshaar@usd329.org",
+      "role": "athletic_director",
+      "school": "sch_36e2e82917d2a062",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_b2a15192c3b0243e",
+      "name": "Matt Westerhaus",
+      "professional_email": "matt.westerhaus@usd428.net",
+      "role": "athletic_director",
+      "school": "sch_ebfe8172a5263119",
+      "source_identities": []
+    },
+    {
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
+      "gender": "mixed",
+      "id": "coa_d678e6f05edf6def",
+      "name": "Derek Berns",
+      "professional_email": "dberns@abileneschools.org",
+      "role": "athletic_director",
+      "school": "sch_75152c829b97d64c",
+      "source_identities": []
+    }
+  ],
   "report": {
     "adapter": "ks",
-    "rows": 5,
-    "requests": 0,
-    "from_cache": 1,
     "errors": 0,
-    "with_email": 5,
-    "unit": "schools",
+    "from_cache": 1,
     "notes": [
       "fetched 5 schools from KSHSAA; 0 already done; 0 skipped (no AD name)"
-    ]
+    ],
+    "requests": 0,
+    "rows": 5,
+    "unit": "schools",
+    "with_email": 5
   },
   "schools": [
     {
+      "aliases": [],
+      "association": "kshsaa",
+      "city": "Abilene",
+      "co_op": false,
+      "evidence": [
+        {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
+          "source": {
+            "id": "ks",
+            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
+          }
+        }
+      ],
       "id": "sch_358759aa96d53cfe",
       "name": "Abilene MS",
       "normalized_name": "abilene ms",
-      "city": "Abilene",
-      "state": "KS",
-      "association": "kshsaa",
       "school_website": "www.abileneschools.org",
-      "co_op": false,
-      "aliases": [],
       "source_identities": [
         {
+          "id": "KSS0378",
           "namespace": {
             "association_school": {
               "association": "kshsaa"
             }
           },
-          "id": "KSS0378",
           "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       ],
+      "state": "KS"
+    },
+    {
+      "aliases": [],
+      "association": "kshsaa",
+      "city": "Alma",
+      "classification": "1A",
+      "co_op": false,
+      "enrollment": 106,
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ks",
             "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
-      ]
-    },
-    {
+      ],
       "id": "sch_36e2e82917d2a062",
       "name": "Wabaunsee HS",
       "normalized_name": "wabaunsee",
-      "city": "Alma",
-      "state": "KS",
-      "association": "kshsaa",
-      "classification": "1A",
-      "enrollment": 106,
       "school_website": "www.usd329.com",
-      "co_op": false,
-      "aliases": [],
       "source_identities": [
         {
+          "id": "KSS0004",
           "namespace": {
             "association_school": {
               "association": "kshsaa"
             }
           },
-          "id": "KSS0004",
           "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       ],
+      "state": "KS"
+    },
+    {
+      "aliases": [],
+      "association": "kshsaa",
+      "city": "Andover",
+      "classification": "5A",
+      "co_op": false,
+      "enrollment": 991,
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ks",
             "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
-      ]
-    },
-    {
+      ],
       "id": "sch_5a280505e6f9104c",
       "name": "Andover HS",
       "normalized_name": "andover",
-      "city": "Andover",
-      "state": "KS",
-      "association": "kshsaa",
-      "classification": "5A",
-      "enrollment": 991,
       "school_website": "ahs.usd385.org",
-      "co_op": false,
-      "aliases": [],
       "source_identities": [
         {
+          "id": "KSS0008",
           "namespace": {
             "association_school": {
               "association": "kshsaa"
             }
           },
-          "id": "KSS0008",
           "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       ],
+      "state": "KS"
+    },
+    {
+      "aliases": [],
+      "association": "kshsaa",
+      "city": "Abilene",
+      "classification": "4A",
+      "co_op": false,
+      "enrollment": 467,
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ks",
             "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
-      ]
-    },
-    {
+      ],
       "id": "sch_75152c829b97d64c",
       "name": "Abilene HS",
       "normalized_name": "abilene",
-      "city": "Abilene",
-      "state": "KS",
-      "association": "kshsaa",
-      "classification": "4A",
-      "enrollment": 467,
       "school_website": "www.abileneschools.org",
-      "co_op": false,
-      "aliases": [],
       "source_identities": [
         {
+          "id": "KSS0001",
           "namespace": {
             "association_school": {
               "association": "kshsaa"
             }
           },
-          "id": "KSS0001",
           "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       ],
+      "state": "KS"
+    },
+    {
+      "aliases": [],
+      "association": "kshsaa",
+      "city": "Great Bend",
+      "classification": "5A",
+      "co_op": false,
+      "enrollment": 878,
       "evidence": [
         {
+          "method": "parsed",
+          "observed_on": "2026-09-20",
           "source": {
             "id": "ks",
             "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
+          }
         }
-      ]
-    },
-    {
+      ],
       "id": "sch_ebfe8172a5263119",
       "name": "Great Bend HS",
       "normalized_name": "great bend",
-      "city": "Great Bend",
-      "state": "KS",
-      "association": "kshsaa",
-      "classification": "5A",
-      "enrollment": 878,
-      "co_op": false,
-      "aliases": [],
       "source_identities": [
         {
+          "id": "KSS0120",
           "namespace": {
             "association_school": {
               "association": "kshsaa"
             }
           },
-          "id": "KSS0120",
           "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
         }
       ],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ]
-    }
-  ],
-  "coaches": [
-    {
-      "id": "coa_6ecea1d9293bd62b",
-      "name": "Derek Berns",
-      "school": "sch_358759aa96d53cfe",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "dberns@abileneschools.org",
-      "source_identities": [],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
-    },
-    {
-      "id": "coa_7f7cfe3c912979a1",
-      "name": "John Heise",
-      "school": "sch_5a280505e6f9104c",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "heisej@usd385.org",
-      "source_identities": [],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
-    },
-    {
-      "id": "coa_8fdaf57585932ff3",
-      "name": "Jeron Weisshaar",
-      "school": "sch_36e2e82917d2a062",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "jweisshaar@usd329.org",
-      "source_identities": [],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
-    },
-    {
-      "id": "coa_b2a15192c3b0243e",
-      "name": "Matt Westerhaus",
-      "school": "sch_ebfe8172a5263119",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "matt.westerhaus@usd428.net",
-      "source_identities": [],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
-    },
-    {
-      "id": "coa_d678e6f05edf6def",
-      "name": "Derek Berns",
-      "school": "sch_75152c829b97d64c",
-      "gender": "mixed",
-      "role": "athletic_director",
-      "professional_email": "dberns@abileneschools.org",
-      "source_identities": [],
-      "evidence": [
-        {
-          "source": {
-            "id": "ks",
-            "url": "https://kshsaa-api.kshsaa.org/directory/search/name/a/"
-          },
-          "method": "parsed",
-          "observed_on": "2026-09-20"
-        }
-      ],
-      "email_withheld": false
+      "state": "KS"
     }
   ]
 }

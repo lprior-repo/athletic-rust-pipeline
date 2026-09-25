@@ -109,21 +109,21 @@ fn evidence_normalization_ignores_order_case_and_whitespace() {
 /// A family the census's own rules decide is minted decided: the case is not a question anyone is
 /// holding open, and the row still reaches the workbook's queues.
 #[test]
-fn a_contract_decided_family_is_minted_retained() {
-    let mailbox = ReviewCase::minted(
-        WITHHELD_MAILBOX_FAMILY,
+fn a_rule_decided_family_is_minted_retained() {
+    let cohort = ReviewCase::minted(
+        COHORT_UNVERIFIED_FAMILY,
         "coach:1",
         "A Coach (Somewhere High)",
-        "only a personal mailbox was published",
+        "no grade observation was retained",
     );
-    assert_eq!(mailbox.state, ReviewState::Retained);
+    assert_eq!(cohort.state, ReviewState::Retained);
     assert_eq!(
-        mailbox.id,
+        cohort.id,
         ReviewCase::pending(
-            WITHHELD_MAILBOX_FAMILY,
+            COHORT_UNVERIFIED_FAMILY,
             "coach:1",
             "A Coach (Somewhere High)",
-            "only a personal mailbox was published",
+            "no grade observation was retained",
         )
         .id,
         "the state is not part of the id: the evidence is what a case is keyed on"

@@ -6,9 +6,7 @@
 //! rather than in either crate alone: `census-domain` owns the mint rule and this crate owns the
 //! roster, and neither can see the other's list.
 
-use census_domain::model::{
-    ReviewCase, ReviewState, COHORT_DECISION_FAMILIES, WITHHELD_MAILBOX_FAMILY,
-};
+use census_domain::model::{ReviewCase, ReviewState, COHORT_DECISION_FAMILIES};
 
 use super::ReviewFamily;
 
@@ -44,12 +42,11 @@ fn an_askable_family_is_minted_pending_and_names_itself() {
 /// The families the census's own rules decide are minted retained, and no lane asks about them: their
 /// finding is published, not owed.
 ///
-/// One list, two owners — the collection contract decides a withheld mailbox and the evidence rule
-/// decides a cohort claim — so the test walks the domain's own names rather than restating them.
+/// The domain owns the list — the evidence rule is what decides a cohort claim — so the test walks the
+/// domain's own names rather than restating them.
 #[test]
 fn the_families_the_census_decides_are_minted_retained_and_asked_about_by_nobody() {
-    let decided = std::iter::once(WITHHELD_MAILBOX_FAMILY).chain(COHORT_DECISION_FAMILIES);
-    for family in decided {
+    for family in COHORT_DECISION_FAMILIES {
         assert!(
             ReviewCase::decided_by_its_own_rules(family),
             "{family} is retired by the rule that mints it"

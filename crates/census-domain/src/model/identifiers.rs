@@ -59,6 +59,12 @@ impl<T> Id<T> {
             _tag: PhantomData,
         }
     }
+    pub fn cast<U>(&self) -> Id<U> {
+        Id {
+            value: self.value.clone(),
+            _tag: PhantomData,
+        }
+    }
 
     pub fn as_str(&self) -> &str {
         &self.value

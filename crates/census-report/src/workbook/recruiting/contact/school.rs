@@ -6,7 +6,7 @@
 //! difference between `no_public_contact_found` and `contact_source_not_attempted`.
 
 use census_domain::model::{CanonicalCoach, CoachRole, Gender, Sport};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::heads::{conflicting, resolve, undecided, Heads};
 use super::{Named, Slot};
@@ -20,10 +20,10 @@ pub(in crate::workbook::recruiting) struct SchoolContacts {
     pub(in crate::workbook::recruiting) head_track_email: Option<String>,
     pub(in crate::workbook::recruiting) head_cross_country: Option<String>,
     pub(in crate::workbook::recruiting) head_cross_country_email: Option<String>,
-    /// The head track coach's professional email, else the head cross-country coach's.
-    pub(in crate::workbook::recruiting) coach_email: Option<String>,
     /// The school's athletic director, first by name.
     pub(in crate::workbook::recruiting) director: Option<Named>,
+    /// Every professional and personal address held on every coach row for this school.
+    pub(in crate::workbook::recruiting) all_emails: String,
     /// The school's head coaches, per slot and side.
     pub(in crate::workbook::recruiting) heads: Heads,
 }
@@ -52,12 +52,19 @@ pub(in crate::workbook::recruiting) fn contacts(
 struct Buckets<'a> {
     heads: BTreeMap<(Slot, Gender), Vec<&'a CanonicalCoach>>,
     directors: Vec<&'a CanonicalCoach>,
+    all_emails: BTreeSet<String>,
 }
 
 impl<'a> Buckets<'a> {
     /// Fold one coach row in, whatever its role: an assistant names no contact, but the row is still
     /// what tells the sheet's ladder that a contact source reached the school.
     fn push(&mut self, coach: &'a CanonicalCoach) {
+        if let Some(email) = coach.professional_email.as_ref() {
+            self.all_emails.insert(email.clone());
+        }
+        if let Some(email) = coach.personal_email.as_ref() {
+            self.all_emails.insert(email.clone());
+        }
         match coach.role {
             CoachRole::HeadCoach => {
                 self.heads
@@ -76,18 +83,20 @@ impl<'a> Buckets<'a> {
     fn contacts(&self, school: &str) -> SchoolContacts {
         let head_track = self.legacy_track();
         let head_cross_country = self.legacy_cross_country();
-        let head_track_email = head_track.and_then(|coach| coach.professional_email.clone());
-        let head_cross_country_email =
-            head_cross_country.and_then(|coach| coach.professional_email.clone());
+        let head_track_email = head_track.and_then(published_contact_email);
+        let head_cross_country_email = head_cross_country.and_then(published_contact_email);
         SchoolContacts {
             head_track: head_track.map(|coach| coach.name.clone()),
-            head_cross_country: head_cross_country.map(|coach| coach.name.clone()),
-            coach_email: head_track_email
-                .clone()
-                .or(head_cross_country_email.clone()),
             head_track_email,
+            head_cross_country: head_cross_country.map(|coach| coach.name.clone()),
             head_cross_country_email,
             director: self.director(),
+            all_emails: self
+                .all_emails
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("; "),
             heads: self.heads(school),
         }
     }
@@ -140,6 +149,13 @@ impl<'a> Buckets<'a> {
     }
 }
 
+/// Prefer the organisation address, falling back to the retained personal address.
+fn published_contact_email(coach: &CanonicalCoach) -> Option<String> {
+    coach
+        .professional_email
+        .clone()
+        .or_else(|| coach.personal_email.clone())
+}
 /// The slot one head-coach row fills: the sport it is bound to, else the school-wide slot.
 fn head_slot(coach: &CanonicalCoach) -> Slot {
     if is_track_sport(coach.sport) {

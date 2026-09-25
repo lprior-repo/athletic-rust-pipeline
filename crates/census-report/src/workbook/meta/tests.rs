@@ -8,32 +8,30 @@ use crate::report::{self, Scope};
 use calamine::{open_workbook, Reader, Xlsx};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CoachRole, CompetitionLevel, Evidence, Gender, GradYear,
-    Grade, ObservedGrade, SchoolYear, SourceNamespace, Sport,
+    Grade, ObservedGrade, ReviewVerdictRecord, SchoolYear, SourceNamespace, Sport,
 };
 use census_domain::model::{CanonicalMeet, SourceRef};
 use census_domain::UsJurisdiction;
 use rust_xlsxwriter::Workbook;
 use std::path::Path;
 
-/// The seven sheets this module owns, in published order.
-const SHEETS: [&str; 7] = [
-    "Schools",
+/// The five sheets this module owns, in published order.
+const SHEETS: [&str; 5] = [
     "Meets",
     "Sources",
     "Coverage",
-    "Conflicts",
-    "Review",
+    "Data Quality",
     "Run Metrics",
 ];
 
 /// Build the meta sheets for one store and return the workbook path.
-fn meta_workbook(store: &Store, dir: &Path) -> std::path::PathBuf {
+fn meta_workbook(store: &Store, dir: &Path, scope: Scope) -> std::path::PathBuf {
     let core = report::build_census(store, Scope::Core).unwrap();
     let all_sources = report::build_census(store, Scope::AllSources).unwrap();
     let bests = bests::build(
         store,
         &bests::Options {
-            scope: Scope::Core,
+            scope,
             grad_year: Some(2027),
             limit: None,
         },
@@ -41,7 +39,7 @@ fn meta_workbook(store: &Store, dir: &Path) -> std::path::PathBuf {
     .unwrap();
     let path = dir.join("meta.xlsx");
     let mut book = Workbook::new();
-    write_meta_sheets(&mut book, &path, store, &core, &all_sources, &bests).unwrap();
+    write_meta_sheets(&mut book, &path, store, &core, &all_sources, &bests, scope).unwrap();
     book.save(&path).unwrap();
     path
 }
@@ -66,7 +64,7 @@ fn carries(rows: &[Vec<String>], column: usize, value: &str) -> bool {
 fn an_empty_store_still_writes_every_sheet_with_its_header() {
     let dir = tempfile::tempdir().unwrap();
     let store = Store::open(dir.path()).unwrap();
-    let path = meta_workbook(&store, dir.path());
+    let path = meta_workbook(&store, dir.path(), Scope::Core);
 
     let book: Xlsx<_> = open_workbook(&path).unwrap();
     let names = book.sheet_names().to_vec();
@@ -79,12 +77,10 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
     }
 
     let expectations = [
-        ("Schools", "School ID"),
         ("Meets", "Meet ID"),
         ("Sources", "Source"),
         ("Coverage", "Jurisdiction"),
-        ("Conflicts", "Retained conflicts"),
-        ("Review", "Retained review queue"),
+        ("Data Quality", "Queue"),
         ("Run Metrics", "Run metric"),
     ];
     for (name, header_text) in expectations {
@@ -97,24 +93,10 @@ fn an_empty_store_still_writes_every_sheet_with_its_header() {
         );
     }
 
-    // An empty store is an empty census, not a failure: the two row-level sheets carry their header
-    // and nothing else, and the queues carry zero findings.
-    assert_eq!(sheet(&path, "Schools").len(), 1);
+    // An empty store is an empty census, not a failure: the row-level sheets carry their header
+    // and nothing else, and Data Quality has no retained rows.
     assert_eq!(sheet(&path, "Meets").len(), 1);
-    let conflicts = sheet(&path, "Conflicts");
-    assert_eq!(conflicts.len(), 7, "{conflicts:?}");
-    for row in conflicts.iter().skip(1).take(4) {
-        assert_eq!(row.get(1).map(String::as_str), Some("0"), "{row:?}");
-    }
-    assert!(
-        carries(&conflicts, 0, "Recruiting contact conflict"),
-        "the contact family is declared even when no school disagrees: {conflicts:?}"
-    );
-    let review = sheet(&path, "Review");
-    assert_eq!(review.len(), 8, "{review:?}");
-    for row in review.iter().skip(1).take(5) {
-        assert_eq!(row.get(1).map(String::as_str), Some("0"), "{row:?}");
-    }
+    assert_eq!(sheet(&path, "Data Quality").len(), 1);
 
     // The declarations are not data: the registry and the jurisdiction list are present even when
     // the store holds nothing.
@@ -171,18 +153,26 @@ fn the_sheets_render_the_rows_the_store_retains() {
     unverified.evidence.push(evidence.clone());
     let unverified_id = unverified.id.clone();
     store.append(Table::Athletes, &unverified).unwrap();
-
-    // Only a personal mailbox was published, so the collection contract drops it on the way out.
-    let mut coach = CanonicalCoach::new(
-        &school_id,
-        "Dana Whitfield",
-        Some(Sport::OutdoorTrack),
-        Gender::Girls,
-        CoachRole::HeadCoach,
-    );
-    coach.professional_email = Some("dana.whitfield@gmail.com".to_string());
-    let coach_id = coach.id.clone();
-    store.append(Table::Coaches, &coach).unwrap();
+    store
+        .append(
+            Table::IdentityVerdicts,
+            &ReviewVerdictRecord {
+                id: "verdict-1".to_string(),
+                case_id: "case-1".to_string(),
+                subject_id: conflicted_id.to_string(),
+                family: "athlete-identity".to_string(),
+                kind: "value_proposed".to_string(),
+                field: "identity".to_string(),
+                value: "same_person".to_string(),
+                accepted: true,
+                confidence: 91,
+                rationale: "matching school and cohort".to_string(),
+                reviewer: "test-model".to_string(),
+                observed_at: day.to_string(),
+                member_ids: Vec::new(),
+            },
+        )
+        .unwrap();
 
     // Two head coaches of the same program and side, both with a professional address, both observed
     // on the same day: nothing evidenced picks one, so the bucket is a retained contact conflict.
@@ -241,11 +231,7 @@ fn the_sheets_render_the_rows_the_store_retains() {
     let unresolved_id = unresolved.id.clone();
     store.append(Table::Meets, &unresolved).unwrap();
 
-    let path = meta_workbook(&store, dir.path());
-
-    let schools = sheet(&path, "Schools");
-    assert!(carries(&schools, 0, school_id.as_str()), "{schools:?}");
-    assert!(carries(&schools, 0, orphan_id.as_str()), "{schools:?}");
+    let path = meta_workbook(&store, dir.path(), Scope::AllSources);
 
     let meets = sheet(&path, "Meets");
     assert!(carries(&meets, 0, placed_id.as_str()), "{meets:?}");
@@ -272,49 +258,60 @@ fn the_sheets_render_the_rows_the_store_retains() {
         "{sources:?}"
     );
 
-    let conflicts = sheet(&path, "Conflicts");
-    assert!(carries(&conflicts, 0, "School identity"), "{conflicts:?}");
-    assert!(carries(&conflicts, 1, twin_id.as_str()), "{conflicts:?}");
+    let quality = sheet(&path, "Data Quality");
+    assert_eq!(quality.first().map(Vec::len), Some(8), "{quality:?}");
     assert!(
-        carries(&conflicts, 0, "Class-of-2027 cohort evidence"),
-        "{conflicts:?}"
+        quality.iter().skip(1).all(|row| row.len() == 8),
+        "{quality:?}"
+    );
+    assert!(carries(&quality, 1, "School identity"), "{quality:?}");
+    assert!(carries(&quality, 3, twin_id.as_str()), "{quality:?}");
+    assert!(
+        carries(&quality, 1, "Class-of-2027 cohort evidence"),
+        "{quality:?}"
+    );
+    assert!(carries(&quality, 3, conflicted_id.as_str()), "{quality:?}");
+    assert!(
+        carries(&quality, 1, "Recruiting contact conflict"),
+        "{quality:?}"
     );
     assert!(
-        carries(&conflicts, 1, conflicted_id.as_str()),
-        "{conflicts:?}"
+        quality.iter().any(|row| {
+            row.first().is_some_and(|queue| queue == "Verdict")
+                && row
+                    .get(1)
+                    .is_some_and(|family| family == "Athlete identity")
+                && row.get(3).is_some_and(|id| id == conflicted_id.as_str())
+                && row
+                    .get(5)
+                    .is_some_and(|answer| answer == "identity=same_person")
+                && row.get(6).is_some_and(|confidence| confidence == "91")
+                && row
+                    .get(7)
+                    .is_some_and(|detail| detail == "matching school and cohort")
+        }),
+        "the model verdict is rendered in the audit columns: {quality:?}"
     );
+    assert!(carries(&quality, 3, school_id.as_str()), "{quality:?}");
     assert!(
-        carries(&conflicts, 0, "Recruiting contact conflict"),
-        "{conflicts:?}"
-    );
-    assert!(
-        carries(&conflicts, 1, school_id.as_str()),
-        "the contact conflict names the school as its subject: {conflicts:?}"
-    );
-    assert!(
-        conflicts.iter().any(|row| row
-            .get(3)
+        quality.iter().any(|row| row
+            .get(7)
             .is_some_and(|detail| detail.contains("no evidenced order picks one"))),
-        "the conflict row says the rows cannot be separated: {conflicts:?}"
+        "the conflict row says the rows cannot be separated: {quality:?}"
     );
-
-    let review = sheet(&path, "Review");
-    assert!(carries(&review, 0, "Meet venue unresolved"), "{review:?}");
-    assert!(carries(&review, 1, unresolved_id.as_str()), "{review:?}");
+    assert!(carries(&quality, 1, "Meet venue unresolved"), "{quality:?}");
+    assert!(carries(&quality, 3, unresolved_id.as_str()), "{quality:?}");
     assert!(
-        carries(&review, 0, "School jurisdiction unresolved"),
-        "{review:?}"
+        carries(&quality, 1, "School jurisdiction unresolved"),
+        "{quality:?}"
     );
+    assert!(carries(&quality, 3, orphan_id.as_str()), "{quality:?}");
     assert!(
-        carries(&review, 0, "Class-of-2027 cohort unverified"),
-        "{review:?}"
+        carries(&quality, 1, "Class-of-2027 cohort unverified"),
+        "{quality:?}"
     );
-    assert!(carries(&review, 1, unverified_id.as_str()), "{review:?}");
-    assert!(carries(&review, 0, "Coach mailbox withheld"), "{review:?}");
-    assert!(carries(&review, 1, coach_id.as_str()), "{review:?}");
-
-    // Every row-level tally the run-metrics sheet reconciles must agree with the census: a DIFFERS
-    // cell is the workbook telling the operator it has drifted from report.json.
+    assert!(carries(&quality, 3, unverified_id.as_str()), "{quality:?}");
+    // Every row-level tally the run-metrics sheet reconciles must agree with the core census.
     let metrics = sheet(&path, "Run Metrics");
     assert!(carries(&metrics, 0, "Reconciled counter"), "{metrics:?}");
     assert!(carries(&metrics, 3, "reconciled"), "{metrics:?}");
@@ -323,10 +320,70 @@ fn the_sheets_render_the_rows_the_store_retains() {
         carries(&metrics, 0, "Best-mark rows reduced"),
         "{metrics:?}"
     );
+    assert!(carries(&metrics, 0, "Method note"), "{metrics:?}");
+    assert!(
+        carries(
+            &metrics,
+            1,
+            "core performance publication keeps a row only when at least one core-evidence source remains; non-core-only rows are omitted from core counts and sheets"
+        ),
+        "{metrics:?}"
+    );
 
     // The coverage sheet is the report pass rendered, not recounted here: it names the cohort it was
     // asked for and carries the jurisdictions.
     let coverage = sheet(&path, "Coverage");
     assert!(carries(&coverage, 0, "Coverage note"), "{coverage:?}");
     assert!(carries(&coverage, 1, "2027"), "{coverage:?}");
+}
+
+#[test]
+fn reconciliation_uses_the_published_scope_for_both_workbook_views() {
+    let store_dir = tempfile::tempdir().unwrap();
+    let store = Store::open(store_dir.path()).unwrap();
+    let (school, school_id) = CanonicalSchool::new(
+        UsJurisdiction::Wisconsin,
+        "AthleticLive High",
+        "athleticlive high",
+    );
+    store.append(Table::Schools, &school).unwrap();
+
+    let mut athlete =
+        CanonicalAthlete::new(&school_id, "Mirror Only", GradYear::CO2027, Gender::Boys);
+    athlete.evidence.push(Evidence::parsed(
+        SourceRef::new("athleticnet", None),
+        "2026-09-25",
+    ));
+    store.append(Table::Athletes, &athlete).unwrap();
+
+    let core_dir = tempfile::tempdir().unwrap();
+    let all_sources_dir = tempfile::tempdir().unwrap();
+    let core_path = meta_workbook(&store, core_dir.path(), Scope::Core);
+    let all_sources_path = meta_workbook(&store, all_sources_dir.path(), Scope::AllSources);
+
+    for (path, expected_rows) in [(core_path, "0"), (all_sources_path, "1")] {
+        let metrics = sheet(&path, "Run Metrics");
+        let row = metrics
+            .iter()
+            .find(|row| {
+                row.first().is_some_and(|label| label == "Athletes")
+                    && row.get(3).is_some_and(|status| status == "reconciled")
+            })
+            .expect("the reconciliation block has an athlete row");
+        assert_eq!(
+            row.get(1).map(String::as_str),
+            Some(expected_rows),
+            "{row:?}"
+        );
+        assert_eq!(
+            row.get(2).map(String::as_str),
+            Some(expected_rows),
+            "{row:?}"
+        );
+        assert_eq!(
+            row.get(3).map(String::as_str),
+            Some("reconciled"),
+            "{row:?}"
+        );
+    }
 }

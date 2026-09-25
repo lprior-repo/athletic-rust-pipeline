@@ -72,11 +72,11 @@ fails with that reason instead of interleaving writes with another process.
 | `meta` | `<name>` | small JSON and scalar values, including the legacy-import markers |
 
 Observations are append-only: appending the same entity twice stores two rows, and
-`Store::scan::<T>(Table::X)` merges them through `Entity::merge` and then applies
-`Entity::publish` — the collection contract, applied once per merged entity so the report, the
-workbook, the snapshot and the Restate handlers all see the same projection. (A coach's consumer
-mailbox is withheld there, and `Store::consolidate` reports how many rows it withheld from that same
-merge pass, as `Consolidated::withheld`.)
+`Store::scan::<T>(Table::X)` merges them through `Entity::merge` and then applies `Entity::publish` —
+the collection contract, applied once per merged entity so the report, the workbook, the snapshot and
+the Restate handlers all see the same projection. Every published address is kept in the field for
+its domain kind (`professional_email` for organisation domains, `personal_email` for consumer
+mailboxes); all published addresses remain available.
 That is the guarantee the old JSONL entity logs provided, now applied at read time. Sequence numbers are seeded from the last key
 present at open, and the sequence component is big-endian so byte order is numerical order, so a
 reopened database never reuses a sequence number and never overwrites an observation.
@@ -109,15 +109,16 @@ observations through `Entity::merge` and then applies `Entity::publish`.
 - **Idempotency** — merging an identical observation changes nothing.
 - **Union commutativity** — `source_identities`, `evidence`, `aliases`, `known_names`, `sports`, `source_urls` and `source_labels` are sets: merge order cannot reach a row.
 - **First-writer-wins** — a scalar a row already carries is never replaced (`name`, `city`,
-  `enrollment`, `level`, `professional_email`, `wind_mps`, …); a hole is filled from the other side
-  (`None`, or the meet's `Unknown` level), which is why merge is idempotent on a row it produced.
+  `enrollment`, `level`, `professional_email`, `personal_email`, `wind_mps`, …); a hole is filled
+  from the other side (`None`, or the meet's `Unknown` level), which is why merge is idempotent on
+  a row it produced.
 - **Identity preservation** — merge never rewrites the name a record was minted from
   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); other spellings land in
   `aliases` / `known_names`.
 - **Cohort rule** — an `ObservedGrade` that disagrees with `grad_year` lowers `identity_confidence`
   to `LOW`, agreement raises it to `HIGH`, and silence leaves it alone.
-- **Contact policy** — `publish` runs `professional_email` over a coach's address, so a consumer
-  mailbox never ships, and `withheld_mailboxes()` counts exactly the rows it dropped.
+- **Contact policy** — `publish` keeps every valid address, placing organisation domains in
+  `professional_email` and consumer domains in `personal_email`; every valid address remains available.
 
 Both suites are deterministic: every `proptest!` block pins 64 cases on ChaCha with the fixed seed
 `0x4D45_5247_5F_4944`, so a failure reproduces from the seed alone.

@@ -27,7 +27,7 @@ mod staff;
 pub mod tournament;
 
 pub use collect::collect;
-pub use map::{parse_coach, parse_school, reveal_address_for};
+pub use map::{parse_coach, parse_school};
 pub use parse::{
     parse_email, parse_schools, parse_staff, SchoolRecord, SchoolsEnvelope, StaffPerson,
 };

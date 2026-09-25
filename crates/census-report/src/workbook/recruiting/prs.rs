@@ -1,90 +1,89 @@
 //! The `PRs` sheet (objective §51): one row per athlete and event.
 //!
-//! The mark is the platform's own best-mark rule — the reduction `bests` publishes on the `Best
-//! results` sheet — carried with the recruiter columns §51 asks for: the winning performance's
-//! result URL, how many sources attest the event, and which marks two stored rows for the same meet
-//! and event disagree on. Relay legs are excluded for the same reason `bests` excludes them: a
-//! squad mark is not a personal best, and an unparsed `Mark::Raw` has no comparable value.
+//! The mark is the platform's own best-mark rule — the reduction `bests` emits in its text sidecars —
+//! carried with the recruiter columns §51 asks for: the winning performance's result URL, how many
+//! sources attest the event, and which marks two stored rows for the same meet and event disagree on.
+//! Relay legs are excluded for the same reason `bests` excludes them: a squad mark is not a personal
+//! best, and an unparsed `Mark::Raw` has no comparable value.
 //!
-//! Published columns, in this order: Athlete ID, Athlete, School, State, Sport, Event,
-//! Indoor/Outdoor, Calculated PR, PR date, Meet, Result URL, Athletic.net reported PR, MileSplit
-//! reported PR, Other reported PR, Source count, PR conflict.
+//! Published columns, in this order: Athlete ID, Athlete, Gender, School, State, Graduation Year,
+//! Sport, Event, Season, Calculated PR, Mark Value, Unit, Wind, PR date, Meet, Place, Result URL,
+//! Source count, PR conflict.
 //!
-//! Three columns carry no cell because the store holds no entity behind them: `census-domain` models
-//! no per-source *reported* best, only the performances a source published, so §51's reported-PR
-//! columns stay blank instead of restating the calculated PR as if a source had claimed it.
+//! `Calculated PR` remains the source's own notation. `Mark Value` and `Unit` are the shared numeric
+//! rendering of that same winning mark, so readers can sort and filter it without reparsing text.
 
-use crate::bests::{is_relay, mark_text, sport_of, Measure};
+use crate::bests::{is_relay, mark_text, mark_unit, mark_value, sport_of, Measure};
 use crate::report::ReportResult;
 use census_domain::model::{
-    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Sport,
+    CanonicalAthlete, CanonicalMeet, CanonicalPerformance, EventKind, Mark, Sport,
 };
 use census_domain::JurisdictionBucket;
 use std::collections::{BTreeMap, BTreeSet};
 
-use super::super::cells::{cell, row, Cell};
+use super::super::cells::{row, Cell};
 
 /// The worksheet name, as objective §51 publishes it.
 pub(super) const TITLE: &str = "PRs";
 
 /// The sheet's column headers, in published order.
-pub(super) const HEADERS: [&str; 16] = [
+pub(super) const HEADERS: [&str; 19] = [
     "Athlete ID",
     "Athlete",
+    "Gender",
     "School",
     "State",
+    "Graduation Year",
     "Sport",
     "Event",
-    "Indoor/Outdoor",
+    "Season",
     "Calculated PR",
+    "Mark Value",
+    "Unit",
+    "Wind",
     "PR date",
     "Meet",
+    "Place",
     "Result URL",
-    "Athletic.net reported PR",
-    "MileSplit reported PR",
-    "Other reported PR",
     "Source count",
     "PR conflict",
 ];
 
 /// Column widths, one per header.
-pub(super) const WIDTHS: [u16; 16] = [
-    20, 26, 30, 8, 12, 16, 14, 14, 12, 40, 44, 12, 12, 12, 13, 12,
+pub(super) const WIDTHS: [u16; 19] = [
+    20, 26, 10, 30, 8, 16, 12, 20, 14, 18, 14, 10, 12, 14, 40, 10, 44, 13, 30,
 ];
 
-/// One published PR row.
 #[derive(Debug, Clone)]
 pub(super) struct PrRow {
     pub(super) athlete_id: String,
     pub(super) athlete: String,
+    pub(super) gender: String,
     pub(super) school: String,
-    /// The athlete's school jurisdiction, or the unplaced row when no school row places the school.
     pub(super) state: JurisdictionBucket,
+    pub(super) grad_year: i16,
+    pub(super) source_mark: Mark,
     pub(super) sport: String,
     pub(super) event: String,
-    /// `Indoor`, `Outdoor`, both, or blank when the meet records neither.
     pub(super) season: String,
-    /// The winning mark in the source's own published notation.
     pub(super) mark: String,
+    pub(super) mark_value: Option<f64>,
+    pub(super) unit: Option<&'static str>,
+    pub(super) wind_mps: Option<f64>,
     pub(super) date: String,
     pub(super) meet: String,
-    /// The winning performance's evidence URL, blank when the source published none.
+    pub(super) place: Option<u16>,
     pub(super) result_url: String,
-    /// Distinct evidence sources across every stored mark of this athlete in this event.
+    /// How many distinct sources attest this event for the athlete.
     pub(super) source_count: usize,
-    /// Every meet whose stored rows publish two different marks for this athlete and event, as
-    /// `meet: mark | mark`: the disagreement itself, not a flag standing in for it.
     pub(super) disagreements: Vec<String>,
 }
 
-/// The school facts a PR row prints, resolved by the caller from the school table.
 pub(super) struct SchoolFacts {
     pub(super) name: String,
     pub(super) state: JurisdictionBucket,
 }
 
-/// One `(athlete, event)` reduction slot: the mark that currently wins, the sources that attest the
-/// event, and every mark text seen per meet.
 #[derive(Default)]
 struct Slot {
     winner: Option<(PrRow, i32, Measure)>,
@@ -92,7 +91,6 @@ struct Slot {
     reports: BTreeMap<String, BTreeSet<String>>,
 }
 
-/// The athlete, event kind, meet and school one performance is folded under.
 struct Context<'a> {
     athlete: &'a CanonicalAthlete,
     kind: &'a EventKind,
@@ -100,7 +98,6 @@ struct Context<'a> {
     school: Option<&'a SchoolFacts>,
 }
 
-/// Reduce the scoped performances to one row per athlete and event.
 pub(super) fn reduce(
     athletes: &[CanonicalAthlete],
     performances: &[CanonicalPerformance],
@@ -137,7 +134,6 @@ pub(super) fn reduce(
     into_rows(slots, meets)
 }
 
-/// Fold one performance into its slot, keeping the mark that wins on its own scale.
 fn fold(
     slots: &mut BTreeMap<(String, String), Slot>,
     performance: &CanonicalPerformance,
@@ -171,35 +167,39 @@ fn fold(
     }
 }
 
-/// The published row for one winning mark, before its source count and conflict flag are known.
 fn row_for(context: &Context<'_>, performance: &CanonicalPerformance) -> PrRow {
     let school = context.school;
     PrRow {
         athlete_id: context.athlete.id.as_str().to_string(),
         athlete: context.athlete.canonical_name.clone(),
+        gender: context.athlete.gender.stable_key().to_string(),
         school: school
             .map(|school| school.name.clone())
             .unwrap_or_else(|| context.athlete.school.as_str().to_string()),
         state: school
             .map(|school| school.state)
             .unwrap_or(JurisdictionBucket::Unplaced),
+        grad_year: context.athlete.grad_year.get(),
         sport: sport_of(context.kind).to_string(),
-        event: format!("{:?}", context.kind),
+        event: context.kind.stable_key().into_owned(),
         season: season_of(context.meet),
         mark: mark_text(&performance.mark),
+        mark_value: mark_value(&performance.mark),
+        source_mark: performance.mark.clone(),
+        unit: mark_unit(&performance.mark),
+        wind_mps: performance.wind_mps,
         date: performance.date.clone(),
         meet: context
             .meet
             .map(|meet| meet.name.clone())
             .unwrap_or_default(),
+        place: performance.place,
         result_url: result_url(performance),
         source_count: 0,
         disagreements: Vec::new(),
     }
 }
 
-/// The winning performance's evidence URL: the first stored evidence entry that carries one, so the
-/// row cites the document the mark was read from.
 fn result_url(performance: &CanonicalPerformance) -> String {
     performance
         .evidence
@@ -208,7 +208,6 @@ fn result_url(performance: &CanonicalPerformance) -> String {
         .unwrap_or_default()
 }
 
-/// Which track season a meet was recorded in, from the meet's own sport list.
 fn season_of(meet: Option<&CanonicalMeet>) -> String {
     let Some(meet) = meet else {
         return String::new();
@@ -223,7 +222,6 @@ fn season_of(meet: Option<&CanonicalMeet>) -> String {
     }
 }
 
-/// Close every slot into a published row, then order the sheet: state, event, athlete.
 fn into_rows(
     slots: BTreeMap<(String, String), Slot>,
     meets: &BTreeMap<String, CanonicalMeet>,
@@ -241,8 +239,6 @@ fn into_rows(
     rows
 }
 
-/// One slot's winning row, finished: how many sources attest the event, and every meet whose rows
-/// disagree on the mark.
 fn close(slot: Slot, meets: &BTreeMap<String, CanonicalMeet>) -> Option<PrRow> {
     let (mut row, _, _) = slot.winner?;
     row.source_count = slot.sources.len();
@@ -255,8 +251,6 @@ fn close(slot: Slot, meets: &BTreeMap<String, CanonicalMeet>) -> Option<PrRow> {
     Some(row)
 }
 
-/// One meet's disagreement the way a recruiter reads it: the meet, then every mark published for it,
-/// in the source's own notation. A meet the store cannot name is cited by its id rather than dropped.
 fn disagreement(
     meet: &str,
     marks: &BTreeSet<String>,
@@ -267,25 +261,28 @@ fn disagreement(
     format!("{name}: {}", published.join(" | "))
 }
 
-/// The `PRs` sheet: the frozen header, then one row per athlete and event.
 pub(super) fn sheet(prs: &[PrRow]) -> ReportResult<Vec<Vec<Cell>>> {
     let mut rows = vec![HEADERS.iter().map(|header| Cell::text(*header)).collect()];
     for pr in prs {
         rows.push(row!(
             Cell::text(pr.athlete_id.clone()),
             Cell::text(pr.athlete.clone()),
+            Cell::text(pr.gender.clone()),
             Cell::text(pr.school.clone()),
             Cell::text(pr.state.code()),
+            Cell::Number(f64::from(pr.grad_year)),
             Cell::text(pr.sport.clone()),
             Cell::text(pr.event.clone()),
             Cell::text(pr.season.clone()),
             Cell::text(pr.mark.clone()),
+            pr.mark_value.map_or(Cell::Empty, Cell::Number),
+            pr.unit.map_or(Cell::Empty, Cell::text),
+            pr.wind_mps.map_or(Cell::Empty, Cell::Number),
             Cell::text(pr.date.clone()),
             Cell::text(pr.meet.clone()),
+            pr.place
+                .map_or(Cell::Empty, |place| Cell::Number(f64::from(place))),
             Cell::text(pr.result_url.clone()),
-            Cell::Empty,
-            Cell::Empty,
-            Cell::Empty,
             Cell::number(pr.source_count)?,
             if pr.disagreements.is_empty() {
                 Cell::Empty

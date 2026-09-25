@@ -2,6 +2,30 @@
 
 use census_domain::model::Mark;
 
+/// Return a mark as the numeric value its workbook unit names.
+///
+/// The parsed wrappers retain hundredths, so the conversion returns seconds, metres, or points
+/// with those hundredths represented after conversion. Raw notation has no comparable number.
+pub fn mark_value(mark: &Mark) -> Option<f64> {
+    match mark {
+        Mark::TimeSeconds(value) => Some(value.as_seconds_f64()),
+        Mark::DistanceMetres(value) => Some(value.as_metres_f64()),
+        Mark::FieldImperial { metres, .. } => Some(metres.as_metres_f64()),
+        Mark::Points(value) => Some(value.as_points_f64()),
+        Mark::Raw(_) => None,
+    }
+}
+
+/// Return the unit label paired with [`mark_value`], or no unit for raw notation.
+pub fn mark_unit(mark: &Mark) -> Option<&'static str> {
+    match mark {
+        Mark::TimeSeconds(_) => Some("s"),
+        Mark::DistanceMetres(_) | Mark::FieldImperial { .. } => Some("m"),
+        Mark::Points(_) => Some("pts"),
+        Mark::Raw(_) => None,
+    }
+}
+
 /// How a mark is compared. Nothing crosses measures.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Measure {
@@ -102,4 +126,50 @@ fn parse_hundredths(s: &str) -> Option<i64> {
     whole_i
         .checked_mul(100)?
         .checked_add(frac.parse::<i64>().ok()?)
+}
+#[cfg(test)]
+mod tests {
+    use super::{mark_unit, mark_value};
+    use census_domain::model::{CentiMetres, CentiPoints, CentiSeconds, Mark};
+
+    #[test]
+    fn mark_value_converts_each_published_scale() {
+        assert_eq!(
+            mark_value(&Mark::TimeSeconds(CentiSeconds(4855))),
+            Some(48.55)
+        );
+        assert_eq!(
+            mark_value(&Mark::DistanceMetres(CentiMetres(642))),
+            Some(6.42)
+        );
+        assert_eq!(
+            mark_value(&Mark::FieldImperial {
+                feet_mark: "21-0.75".to_string(),
+                metres: CentiMetres(642),
+            }),
+            Some(6.42)
+        );
+        assert_eq!(mark_value(&Mark::Points(CentiPoints(12345))), Some(123.45));
+    }
+
+    #[test]
+    fn mark_value_and_unit_are_blank_for_raw_notation() {
+        let mark = Mark::Raw("windy".to_string());
+        assert_eq!(mark_value(&mark), None);
+        assert_eq!(mark_unit(&mark), None);
+    }
+
+    #[test]
+    fn mark_unit_matches_numeric_scale() {
+        assert_eq!(mark_unit(&Mark::TimeSeconds(CentiSeconds(1))), Some("s"));
+        assert_eq!(mark_unit(&Mark::DistanceMetres(CentiMetres(1))), Some("m"));
+        assert_eq!(
+            mark_unit(&Mark::FieldImperial {
+                feet_mark: "1-0".to_string(),
+                metres: CentiMetres(30),
+            }),
+            Some("m")
+        );
+        assert_eq!(mark_unit(&Mark::Points(CentiPoints(1))), Some("pts"));
+    }
 }

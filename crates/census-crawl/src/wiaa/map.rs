@@ -11,7 +11,7 @@ use census_domain::UsJurisdiction;
 use std::collections::HashSet;
 
 use super::parse::{CoachRow, IndexEntry, SchoolPage, StaffRow};
-use super::primitives::{clean, meaningful, valid_email};
+use super::primitives::{clean, meaningful};
 use super::{ASSOCIATION, SOURCE_ID};
 
 /// Canonical entities for one school, plus a transcript of what the page offered and the model did
@@ -234,7 +234,9 @@ fn push_admin_coaches(
             continue;
         }
         let mut coach = CanonicalCoach::new(school_id, person, None, Gender::Mixed, role);
-        coach.professional_email = admin.email.as_deref().and_then(valid_email);
+        if let Some(email) = admin.email.as_deref() {
+            coach.set_published_email(email);
+        }
         coach
             .evidence
             .push(Evidence::parsed(source.clone(), observed_on));
@@ -269,7 +271,9 @@ fn push_sport_coaches(
             continue;
         }
         let mut coach = CanonicalCoach::new(school_id, person, Some(sport), gender, role);
-        coach.professional_email = row.email.as_deref().and_then(valid_email);
+        if let Some(email) = row.email.as_deref() {
+            coach.set_published_email(email);
+        }
         coach
             .evidence
             .push(Evidence::parsed(source.clone(), observed_on));

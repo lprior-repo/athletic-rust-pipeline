@@ -108,7 +108,9 @@ pub fn ad_coaches(
             Gender::Mixed,
             CoachRole::AthleticDirector,
         );
-        coach.professional_email = entry.email().map(str::to_string);
+        if let Some(address) = entry.email() {
+            coach.set_published_email(address);
+        }
         coach.source_identities.push(
             SourceIdentity::new(
                 SourceNamespace::AssociationSchool {
@@ -174,29 +176,15 @@ fn host_domain(url: &str) -> Option<String> {
     (!host.is_empty()).then_some(host)
 }
 
-/// True when `domain` is `base` or a subdomain of it.
-fn domain_within(domain: &str, base: &str) -> bool {
-    domain == base
-        || domain
-            .strip_suffix(base)
-            .is_some_and(|prefix| prefix.ends_with('.'))
-}
-
-/// Keep an API-published coach address only when it is not a consumer mailbox and shares the school's
-/// own domain.
-pub fn accept_coach_email(address: &str, domains: &[String]) -> Option<String> {
+/// Keep an API-published coach address unless it is malformed.
+///
+/// The `_domains` parameter remains part of the mapping helper's call shape, but publication is not
+/// restricted to a school's own domains: `CanonicalCoach::set_published_email` classifies the
+/// address's mailbox kind.
+pub fn published_coach_email(address: &str, _domains: &[String]) -> Option<String> {
     let address = address.trim();
-    let domain = email_domain(address)?;
-    if census_domain::model::CONSUMER_MAIL_DOMAINS
-        .iter()
-        .any(|consumer| domain_within(&domain, consumer))
-    {
-        return None;
-    }
-    domains
-        .iter()
-        .any(|known| domain_within(&domain, known))
-        .then(|| address.to_string())
+    email_domain(address)?;
+    Some(address.to_string())
 }
 
 /// Canonical coach entities for the team coach payloads fetched for one school.
@@ -225,10 +213,13 @@ pub fn coach_entities(
             }
             let mut coach =
                 CanonicalCoach::new(school_id, name.as_str(), Some(sport), gender, role);
-            coach.professional_email = record
+            if let Some(address) = record
                 .email
                 .as_deref()
-                .and_then(|address| accept_coach_email(address, domains));
+                .and_then(|address| published_coach_email(address, domains))
+            {
+                coach.set_published_email(&address);
+            }
             coach.source_identities.push(
                 SourceIdentity::new(
                     SourceNamespace::Other(COACH_NAMESPACE.to_string()),

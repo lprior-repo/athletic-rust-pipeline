@@ -1,5 +1,7 @@
 # Collector patterns — what exists, what to steal, what is missing
 
+**Superseded 2026-09-25:** `SOURCE_ADAPTER_GUIDE.md` and `crates/census-crawl/src/registry/` own this subject now. Kept as the dated record of 2026-09-20 reconnaissance.
+
 **Date:** 2026-09-20. **Reading scope:** read-only inventory of this tree at `c5c4c48` plus the
 **untracked** `crates/census-service/**` (in-flight work owned by another working session; its source
 was observed to change mid-inventory, so all line numbers are a snapshot). Companion documents:
@@ -86,7 +88,7 @@ remain, and the main pipeline already contains working implementations of the *p
 | Asset | Verdict | Why |
 |---|---|---|
 | ~~`sources/wiaa/`, `ks.rs`, `ihsa/`, `ohsaa/`, `mshsl/`, `plain_names/`, `coach_contacts.rs`~~ (historical: was `src/sources/...`) | ~~**REUSE AS-IS**~~ — **historical**: root crate deleted 2026-09-23.
-| `census-domain/src/model.rs::CanonicalCoach` / `CoachRole` | **REUSE AS-IS** | Role + optional sport binding + professional email + phone, all evidence-carrying |
+| `census-domain/src/model.rs::CanonicalCoach` / `CoachRole` | **REUSE AS-IS** | Role + optional sport binding + published email (classified as professional/personal by domain) + no phone, all evidence-carrying |
 | GPA as a nullable field with a source enum | **GAP** | Not modelled yet; plan §6 requires `recruiting_profile | academic_list | school_page` and never-inferred values |
 
 ### P5 — verification lane (deterministic gates first)

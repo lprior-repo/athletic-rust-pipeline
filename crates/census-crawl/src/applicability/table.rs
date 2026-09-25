@@ -173,8 +173,8 @@ pub(super) const TABLE: [Applicability; 17] = [
         jurisdictions: &[UsJurisdiction::Minnesota],
         evidence: "[09] MSHSL: 664 unique `/schools/<slug>` in sitemap page 1 -> 1,328 roster targets (664 x XC+TF); \
                    `/jsonapi/views/teams/list_school` and `/api/coaches/<nid>` carry head/assistant names and \
-                   school-domain professional emails; `/api/team-data/schedule/<school>/<level>/<activity>` carries the \
-                   Athletic.net MeetID.",
+                   published emails, including consumer mailboxes; `/api/team-data/schedule/<school>/<level>/<activity>` \
+                   carries the Athletic.net MeetID.",
         refusal: "Minnesota only. Regular season is not published by MSHSL (it lives with the timers), so this source \
                   enumerates schools, teams and coaches — the meet plane is the `athleticlive` row's business.",
     },

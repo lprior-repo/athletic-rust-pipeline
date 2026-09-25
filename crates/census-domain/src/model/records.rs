@@ -30,6 +30,7 @@ pub use source::{SourceEntityKind, SourceMeetRef, SourceObjectIdentity};
 pub use source_observation::SourceObservation;
 
 use serde::{Deserialize, Serialize};
+use super::AthleteCandidateId;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
@@ -171,6 +172,9 @@ pub struct ReviewCase {
     pub subject: String,
     pub detail: String,
     pub state: ReviewState,
+    /// Raw candidate members named by the finding; absent on legacy JSON and hydrated by indexing.
+    #[serde(default)]
+    pub member_ids: Vec<AthleteCandidateId>,
 }
 
 impl ReviewCase {
@@ -199,6 +203,7 @@ impl ReviewCase {
             subject,
             detail,
             state: ReviewState::Pending,
+            member_ids: Vec::new(),
         }
     }
 
@@ -209,12 +214,10 @@ impl ReviewCase {
     /// questions the lane, the operator or a sweep answers, and until one does the case is open work.
     ///
     /// A family starts `Retained` when the census's own rules already decided it, which is what
-    /// [`Self::decided_by_its_own_rules`] asks. A withheld mailbox is the first kind — §5 drops a
-    /// personal address whichever adapter accepted one, so no evidence this store can hold would move
-    /// the finding — and a cohort claim published without evidence that raises it to the high bar is
-    /// the second. Minting those `Retained` keeps the row visible in the workbook's queues, where a
-    /// reader goes to see it, without counting them as decisions nothing can take: the state is the one
-    /// the lane itself leaves a finding it cannot decide.
+    /// [`Self::decided_by_its_own_rules`] asks: a cohort claim published without evidence that raises
+    /// it to the high bar. Minting those `Retained` keeps the row visible in the workbook's queues,
+    /// where a reader goes to see it, without counting them as decisions nothing can take: the state
+    /// is the one the lane itself leaves a finding it cannot decide.
     pub fn minted(
         family: &str,
         subject_id: impl Into<String>,
@@ -230,14 +233,12 @@ impl ReviewCase {
 
     /// Whether a family's finding is decided by the census's own rules rather than by a later answer.
     ///
-    /// Two kinds qualify. The collection contract decides a withheld mailbox: a personal address is
-    /// dropped whichever adapter accepted one, and a school that publishes a professional address stops
-    /// being a finding at all. The evidence rule decides a cohort claim: `identity_confidence` is
-    /// derived from the row's observations, and a row without one that agrees is published at the bar
-    /// its evidence supports — which is the answer the finding asks for. Everything else in the queues
-    /// is a question this store cannot answer for itself.
+    /// One kind qualifies: the evidence rule decides a cohort claim — `identity_confidence` is derived
+    /// from the row's observations, and a row without one that agrees is published at the bar its
+    /// evidence supports, which is the answer the finding asks for. Everything else in the queues is a
+    /// question this store cannot answer for itself.
     pub fn decided_by_its_own_rules(family: &str) -> bool {
-        family == WITHHELD_MAILBOX_FAMILY || COHORT_DECISION_FAMILIES.contains(&family)
+        COHORT_DECISION_FAMILIES.contains(&family)
     }
 }
 
@@ -259,7 +260,7 @@ pub const COHORT_IDENTITY_CONFIDENCE_FAMILY: &str = "Class-of-2027 identity conf
 ///
 /// Both are decided by the rule the row is read through — [`CanonicalAthlete::derived_identity_confidence`]
 /// derives the confidence from the observations, and the row is published at the bar its evidence
-/// supports — so their cases start terminal the way a withheld mailbox does. The acquisition that
+/// supports — so their cases start terminal. The acquisition that
 /// would change the answer (a source that carries the grade level) removes the finding itself, and
 /// the pass that derives it away closes the case as superseded.
 ///
@@ -269,7 +270,6 @@ pub const COHORT_IDENTITY_CONFIDENCE_FAMILY: &str = "Class-of-2027 identity conf
 /// [`CanonicalAthlete::derived_identity_confidence`]: crate::model::CanonicalAthlete::derived_identity_confidence
 pub const COHORT_DECISION_FAMILIES: [&str; 2] =
     [COHORT_UNVERIFIED_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY];
-pub const WITHHELD_MAILBOX_FAMILY: &str = "Coach mailbox withheld";
 pub const UNRESOLVED_VENUE_FAMILY: &str = "Meet venue unresolved";
 pub const UNRESOLVED_SCHOOL_FAMILY: &str = "School jurisdiction unresolved";
 /// A school whose coach rows disagree about the address to publish.

@@ -19,11 +19,12 @@ use std::collections::BTreeMap;
 use std::fmt;
 use std::marker::PhantomData;
 
+mod cluster;
 mod collision;
 mod natural_key;
 mod records;
 mod review;
-
+pub use cluster::AthleteClusterMember;
 pub use collision::{id_collision, CANONICAL_ID_COLLISION_FAMILY};
 pub use natural_key::NaturalKey;
 
@@ -34,7 +35,7 @@ pub use records::{
     SourceSchoolObservation, ATHLETE_IDENTITY_FAMILY, COHORT_DECISION_FAMILIES,
     COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
     CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
-    UNRESOLVED_VENUE_FAMILY, WITHHELD_MAILBOX_FAMILY,
+    UNRESOLVED_VENUE_FAMILY,
 };
 pub use review::{
     ReviewCaseFact, ReviewEvidenceFact, ReviewPacket, ReviewVerdict, ReviewVerdictKind,
@@ -59,7 +60,7 @@ pub use athlete::{AthleteCandidateKey, CanonicalAthlete};
 pub use classification::{CanonicalTeam, CompetitionLevel, Gender, Sport};
 pub use coach::{CanonicalCoach, CoachRole};
 pub use cohort::{GradYear, Grade, ObservedGrade, SchoolYear};
-pub use contact::{professional_email, CONSUMER_MAIL_DOMAINS};
+pub use contact::{is_consumer_domain, published_email, MailboxKind, CONSUMER_MAIL_DOMAINS};
 pub use event_ontology::{EventKind, SourceEventLabel};
 pub use event_performance::{CanonicalEvent, CanonicalPerformance, Mark, TimingMethod};
 pub use fixed_mark::{CentiMetres, CentiPoints, CentiSeconds};

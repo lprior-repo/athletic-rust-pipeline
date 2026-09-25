@@ -104,40 +104,27 @@ impl Entity for CanonicalCoach {
         if self.professional_email.is_none() {
             self.professional_email = other.professional_email;
         }
+        if self.personal_email.is_none() {
+            self.personal_email = other.personal_email;
+        }
         if self.phone.is_none() {
             self.phone = other.phone;
         }
-        // Mailboxes do not merge - the row already there keeps its own - but the withheld fact does:
-        // for a row whose mailbox was dropped, the flag is the only surviving evidence that one was
-        // ever observed, and the copy that recorded it is not necessarily the one that survived.
-        self.email_withheld |= other.email_withheld;
         union_vec(&mut self.source_identities, &other.source_identities);
         union_vec(&mut self.evidence, &other.evidence);
     }
 
     fn publish(&mut self) {
-        let Some(email) = self.professional_email.as_deref() else {
-            // Nothing is left to derive from: the mailbox was dropped, so the flag the row was read
-            // with is what says whether one was dropped or never observed at all.
-            return;
-        };
-        match census_domain::model::professional_email(email) {
-            Some(published) => {
-                // A mailbox that ships settles the flag whichever way the row was read: a withheld
-                // marking a file carries never keeps a public mailbox off the wire.
-                self.professional_email = Some(published);
-                self.email_withheld = false;
-            }
-            None => {
-                // A personal mailbox never ships, whichever adapter accepted one.
-                self.professional_email = None;
-                self.email_withheld = true;
-            }
-        }
+        let professional = self.professional_email.take();
+        let personal = self.personal_email.take();
+        route_published_email(self, professional);
+        route_published_email(self, personal);
     }
+}
 
-    fn withheld_mailboxes(&self) -> usize {
-        usize::from(self.email_withheld)
+fn route_published_email(coach: &mut CanonicalCoach, address: Option<String>) {
+    if let Some(address) = address {
+        coach.set_published_email(&address);
     }
 }
 

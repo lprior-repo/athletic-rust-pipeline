@@ -1,32 +1,25 @@
 //! The review families: retained rows a reader or the review model still has to adjudicate.
 //!
-//! Five families, every one keyed on a stored field that is empty or withheld rather than on a score:
+//! Four families, every one keyed on a stored field that is empty rather than on a score:
 //! a class-of-2027 athlete with no grade observation at all, one whose identity confidence sits below
-//! the domain's high bar, a coach whose only published address was a personal mailbox (dropped by the
-//! collection contract, objective §5), a meet no source placed in a jurisdiction, and a school with
-//! no jurisdiction on its row.
+//! the domain's high bar, a meet no source placed in a jurisdiction, and a school with no jurisdiction
+//! on its row.
 //!
 //! They are all here because a reader who goes looking for a retained finding goes to one place, but
-//! they are not all owed to a lane. The first three are claims the census publishes as decided: the
-//! contract drops a personal mailbox, and the evidence rule derives the confidence from the row's own
-//! observations, so `ReviewCase::minted` starts those cases terminal and no lane asks about them — a
-//! source that carries the missing evidence closes the finding instead of a decision doing it. The
-//! meet and school families are the lane's work in the strict sense: a jurisdiction is a fact about
-//! the world that no rule of this store derives.
+//! the cohort families are claims the census publishes as decided while meet and school families are
+//! the lane's work in the strict sense: a jurisdiction is a fact about the world that no rule of this
+//! store derives.
 //!
 //! The cohort families are scoped to the published class of 2027; the meet and school families cover
 //! the whole table, because neither row carries a cohort.
 
-use census_domain::model::{
-    CanonicalAthlete, CanonicalCoach, CanonicalMeet, CanonicalSchool, Confidence,
-};
-use std::collections::HashMap;
-
 use super::super::{school_of, subject_of, Family, StoreRows};
 use super::{
     class_of_2027, queue_row, COHORT_UNVERIFIED, LOW_CONFIDENCE, UNRESOLVED_SCHOOL,
-    UNRESOLVED_VENUE, WITHHELD_MAILBOX,
+    UNRESOLVED_VENUE,
 };
+use census_domain::model::{CanonicalAthlete, CanonicalMeet, CanonicalSchool, Confidence};
+use std::collections::HashMap;
 
 /// Class-of-2027 athletes with no grade observation at all: the cohort they are published under is
 /// asserted by a source that named no grade level, so the row is published at the confidence its own
@@ -80,27 +73,6 @@ pub(super) fn low_confidence(rows: &StoreRows, names: &HashMap<&str, &str>) -> F
     family
 }
 
-/// Coaches whose only published address was a personal mailbox: the collection contract dropped it
-/// (objective §5), so the school still has no professional contact.
-pub(super) fn withheld_mailboxes(rows: &StoreRows, names: &HashMap<&str, &str>) -> Family {
-    let mut family = Family::new(WITHHELD_MAILBOX);
-    for coach in &rows.coaches {
-        if !coach.email_withheld {
-            continue;
-        }
-        let subject = subject_of(&coach.name, school_of(names, coach.school.as_str()));
-        family.push(queue_row(
-            coach.id.as_str(),
-            subject,
-            format!(
-                "the only published address was not a professional contact; role {}",
-                role_label(coach)
-            ),
-        ));
-    }
-    family
-}
-
 /// Meets no source placed in a jurisdiction: the census files them under `??` rather than guessing,
 /// and the venue decision is still owed.
 pub(super) fn unresolved_venues(meets: &[CanonicalMeet]) -> Family {
@@ -147,9 +119,4 @@ fn source_count(athlete: &CanonicalAthlete) -> usize {
     sources.sort_unstable();
     sources.dedup();
     sources.len()
-}
-
-/// A coach's role as the sheet prints it.
-fn role_label(coach: &CanonicalCoach) -> String {
-    coach.role.stable_key().to_lowercase()
 }

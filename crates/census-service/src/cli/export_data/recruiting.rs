@@ -15,16 +15,9 @@ pub(super) fn build_coach_index(coaches: &[Value]) -> HashMap<&str, HashMap<Stri
 
         let entry = coach_index.entry(sch).or_default();
         if let Some(prior) = entry.get(&key) {
-            let has_email = c
-                .get("professional_email")
-                .and_then(|v| v.as_str())
-                .map(|s| !s.is_empty())
-                .unwrap_or(false);
-            let prior_has_email = prior
-                .get("professional_email")
-                .and_then(|v| v.as_str())
-                .map(|s| !s.is_empty())
-                .unwrap_or(false);
+            let has_email = coach_email_value(c).is_some_and(|value| !value.is_empty());
+            let prior_has_email =
+                coach_email_value(prior).is_some_and(|value| !value.is_empty());
             if has_email && !prior_has_email {
                 entry.insert(key, c);
             }
@@ -33,6 +26,13 @@ pub(super) fn build_coach_index(coaches: &[Value]) -> HashMap<&str, HashMap<Stri
         }
     }
     coach_index
+}
+
+fn coach_email_value(coach: &Value) -> Option<&str> {
+    coach
+        .get("professional_email")
+        .or_else(|| coach.get("personal_email"))
+        .and_then(Value::as_str)
 }
 
 /// Coach lookup results for an athlete's school.
@@ -65,9 +65,9 @@ fn lookup_coaches<'a>(
 
     let emails: Vec<&str> = [&track, &xc, &ad]
         .iter()
-        .filter_map(|r| r.and_then(|c| c.get("professional_email").and_then(|v| v.as_str())))
+        .filter_map(|record| record.and_then(coach_email_value))
         .collect();
-    let has_email = emails.iter().any(|e| !e.is_empty());
+    let has_email = emails.iter().any(|email| !email.is_empty());
     let has_coach = track.is_some() || xc.is_some();
 
     SchoolCoaches {
@@ -123,9 +123,7 @@ fn coach_name(c: Option<&Value>) -> String {
 
 /// Extract coach email from an optional Value.
 fn coach_email(c: Option<&Value>) -> String {
-    c.and_then(|c| c.get("professional_email").and_then(|v| v.as_str()))
-        .unwrap_or("")
-        .to_string()
+    c.and_then(coach_email_value).unwrap_or("").to_string()
 }
 
 /// Get a school field as string.

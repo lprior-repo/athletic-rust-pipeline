@@ -1,26 +1,15 @@
-//! Canonical mapping: one IHSA school record or staff row becomes a canonical entity, and the
-//! reveal policy decides whose address is worth a paid request.
+//! Canonical mapping: one IHSA school record or staff row becomes a canonical entity. The collector
+//! reveals an address for every retained coach or athletic-director row whose staff payload advertises
+//! `HasEmail`.
 
 use super::parse::{nonempty, SchoolRecord, StaffPerson};
 use super::staff::{parse_coach_title, parse_role, strip_honorific};
 use super::ASSOCIATION;
 use census_domain::model::{
     normalize_name, CanonicalCoach, CanonicalSchool, CoachRole, Evidence, Gender, SchoolId,
-    SourceIdentity, SourceNamespace, SourceRef, Sport,
+    SourceIdentity, SourceNamespace, SourceRef,
 };
 use census_domain::UsJurisdiction;
-
-/// Whether a coach's address is worth a reveal request.
-///
-/// The census ships TF/XC head coaches and athletic directors to the recruiting projection; other
-/// sports' addresses are collected (the row is kept) but not paid for.
-pub fn reveal_address_for(coach: &CanonicalCoach) -> bool {
-    coach.role == CoachRole::AthleticDirector
-        || matches!(
-            coach.sport,
-            Some(Sport::CrossCountry | Sport::OutdoorTrack | Sport::IndoorTrack)
-        )
-}
 
 /// Convert one IHSA school record into a canonical school.
 ///
@@ -90,10 +79,11 @@ pub fn parse_coach(
         }
     };
 
-    // `staff2` publishes the person, not the address — the caller fills `professional_email` from
-    // the reveal endpoint when `HasEmail` is set.
-    coach.professional_email = person.email.as_ref().and_then(|e| nonempty(e));
-
+    // `staff2` publishes the person, not the address — the collector fills the contact from the
+    // reveal endpoint when `HasEmail` is set.
+    if let Some(address) = person.email.as_deref() {
+        coach.set_published_email(address);
+    }
     coach.source_identities.push(
         SourceIdentity::new(
             SourceNamespace::AssociationSchool {

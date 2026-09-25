@@ -10,13 +10,13 @@
 //! scan, which is exactly the drift a reader has to see.
 
 use crate::bests::BestResult;
-use crate::report::{io_error, Census, ReportResult};
+use crate::report::{io_error, Census, ReportResult, Scope};
 use census_domain::model::{
     CanonicalAthlete, CanonicalCoach, CanonicalMeet, GradYear, SourceNamespace,
 };
 use census_store::Store;
 
-use crate::workbook::cells::{cell, row, Cell};
+use crate::workbook::cells::{row, Cell};
 
 use super::queues::SCHOOL_IDENTITY;
 use super::{Family, StoreRows};
@@ -33,6 +33,7 @@ pub(super) fn metrics_sheet(
     bests: &[BestResult],
     rows: &StoreRows,
     conflicts: &[Family],
+    scope: Scope,
 ) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!("Run metric", "Value")];
     cells.push(row!(
@@ -50,7 +51,13 @@ pub(super) fn metrics_sheet(
     cells.push(row!());
     cells.extend(scope_counters(core, all_sources)?);
     cells.push(row!());
-    cells.extend(reconciliation(rows, conflicts, all_sources)?);
+    cells.extend(method_notes(core));
+    cells.push(row!());
+    let census = match scope {
+        Scope::Core => core,
+        Scope::AllSources => all_sources,
+    };
+    cells.extend(reconciliation(rows, conflicts, census)?);
     Ok(cells)
 }
 
@@ -107,7 +114,7 @@ const SCOPE_COUNTERS: [ScopeCounter; 7] = [
     ("Schools", |census| census.totals.schools),
     ("Athletes", |census| census.totals.athletes),
     ("Coaches", |census| census.totals.coaches),
-    ("Coaches with a professional email", |census| {
+    ("Coaches with a published email", |census| {
         census.totals.coaches_with_email
     }),
     // The seal's reader matches this label exactly (case-insensitively) and takes the first
@@ -133,43 +140,54 @@ fn scope_counters(core: &Census, all_sources: &Census) -> ReportResult<Vec<Vec<C
     }
     Ok(cells)
 }
+fn method_notes(census: &Census) -> Vec<Vec<Cell>> {
+    let mut cells = vec![row!("Method note", "Value")];
+    cells.extend(
+        census
+            .notes
+            .iter()
+            .filter(|note| note.starts_with("core performance publication"))
+            .map(|note| row!("Core performance publication", Cell::text(note.clone()))),
+    );
+    cells
+}
 
 /// The reconciliation block: each row-level tally beside the census counter it must equal.
 fn reconciliation(
     rows: &StoreRows,
     conflicts: &[Family],
-    all_sources: &Census,
+    census: &Census,
 ) -> ReportResult<Vec<Vec<Cell>>> {
     let mut cells = vec![row!("Reconciled counter", "Sheet rows", "Census", "Status")];
     let sheet_counts = [
-        ("Schools", rows.schools.len(), all_sources.totals.schools),
-        ("Meets", rows.meets.len(), all_sources.meets.total),
-        ("Athletes", rows.athletes.len(), all_sources.totals.athletes),
-        ("Coaches", rows.coaches.len(), all_sources.totals.coaches),
+        ("Schools", rows.schools.len(), census.totals.schools),
+        ("Meets", rows.meets.len(), census.meets.total),
+        ("Athletes", rows.athletes.len(), census.totals.athletes),
+        ("Coaches", rows.coaches.len(), census.totals.coaches),
         (
-            "Coaches with a professional email",
+            "Coaches with a published email",
             count_coaches_with_email(&rows.coaches),
-            all_sources.totals.coaches_with_email,
+            census.totals.coaches_with_email,
         ),
         (
             "Class-of-2027 athletes",
             count_co2027(&rows.athletes),
-            all_sources.totals.class_of_2027,
+            census.totals.class_of_2027,
         ),
         (
             "Class-of-2027 athletes with grade evidence",
             count_grade_evidence(&rows.athletes),
-            all_sources.totals.class_of_2027_with_grad_year_evidence,
+            census.totals.class_of_2027_with_grad_year_evidence,
         ),
         (
             "Meets naming an Athletic.net id",
             count_athletic_net_meets(&rows.meets),
-            all_sources.meets.with_athletic_net_id,
+            census.meets.with_athletic_net_id,
         ),
         (
             "Schools sharing a normalized name",
             findings_of(conflicts, SCHOOL_IDENTITY),
-            all_sources.duplicate_school_names,
+            census.duplicate_school_names,
         ),
     ];
     for (label, sheet, census) in sheet_counts {
@@ -201,11 +219,11 @@ fn findings_of(families: &[Family], label: &str) -> usize {
         .map_or(0, |family| family.findings)
 }
 
-/// Coaches carrying a professional address.
+/// Coaches carrying a published address.
 fn count_coaches_with_email(coaches: &[CanonicalCoach]) -> usize {
     coaches
         .iter()
-        .filter(|coach| coach.professional_email.is_some())
+        .filter(|coach| coach.has_published_email())
         .count()
 }
 

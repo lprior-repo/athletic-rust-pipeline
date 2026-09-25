@@ -1,6 +1,8 @@
 # Module → crate migration map
 
-Read-only survey of `crates/census-domain`, `crates/census-service`, `crates/g1-audit` in
+**Superseded 2026-09-25:** `docs/architecture.md` owns this subject now. Kept as the dated record of the pre-split module survey.
+
+Read-only survey of `crates/census-domain`, `crates/census-service`, and `xtask/src/g1/` (the g1-audit tooling relocated here from `crates/g1-audit` on 2026-09-23) in
 `/home/lewis/src/ad-law-scrape/athletic-rust-pipeline`, mapped onto the crate layout of
 `ARCHITECTURE.md` §4 (`census-domain`, `census-store`, `census-crawl`, `census-reconcile`,
 `census-review`, `census-report`, `census-service`), the keyspaces of `ARCHITECTURE.md` §7 and the
@@ -16,7 +18,7 @@ command at the end listed 15 modified files (adding `crates/census-service/src/b
 `find`, `wc -l`, `grep`, one Python pass over the same files (module-edge resolution). No build, no
 `cargo` command was run — `cargo xtask seams`, `seams.rs`'s `ALLOWED` table, is quoted from source,
 not executed. Totals below are exact for the three crates' `src` trees at this revision:
-`wc -l $(find crates/{census-domain,census-service,g1-audit}/src -name '*.rs')` = **73,209** lines
+`wc -l $(find crates/{census-domain,census-service}/src xtask/src/g1/main.rs -name '*.rs')` = **73,209** lines
 (census-service 68,252 · census-domain 3,574 · g1-audit 1,383).
 
 **Anchor re-verification (2026-09-23).** The anchors in §5, §5.1 and §5.2 below were re-read against
@@ -56,11 +58,11 @@ fjall, reqwest, chromiumoxide, writer, Restate or HTTP client — enforced by `x
 Plus `crates/census-domain/kani/` (4 files: `census_domain_wiring.rs`, `gradyear.rs`, `id_mint.rs`,
 `publish.rs`) reachable only through the `include!` at `lib.rs:19`.
 
-### 1.2 `g1-audit` (1 file, 1,383 lines)
+### 1.2 `xtask/src/g1/` (1 file, 1,383 lines)
 
 | file | lines | public items | external crates |
 |---|---|---|---|
-| `crates/g1-audit/src/main.rs` | 1,383 | none (`pub` items: 0 — binary crate) | `clap` (`main.rs:10`), `indexmap` (`:11`), `regex` (`:12`), `serde_json` (`:13`), `sha2` (`:14`) |
+| `xtask/src/g1/main.rs` | 1,383 | none (`pub` items: 0 — binary crate) | `clap` (`main.rs:10`), `indexmap` (`:11`), `regex` (`:12`), `serde_json` (`:13`), `sha2` (`:14`) |
 
 No tokio, fjall, reqwest, chromiumoxide, workbook writer, Restate or HTTP client: it reads
 `raw/`, `evidence/`, `parsed/` directories (`main.rs:20-30`). No tests, no benches in this crate.

@@ -62,10 +62,7 @@ pub fn parse_ad_coach(
         CoachRole::AthleticDirector,
     );
     if let Some(email) = &record.ad_email {
-        let email = email.trim();
-        if !email.is_empty() {
-            coach.professional_email = Some(email.to_string());
-        }
+        coach.set_published_email(email);
     }
     coach.evidence.push(Evidence::parsed(
         SourceRef::new("ks", Some(source_url.to_string())),

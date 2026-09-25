@@ -66,8 +66,6 @@ pub struct ConsolidateRequest {
 pub struct ConsolidatedTable {
     pub table: String,
     pub rows: usize,
-    /// Consumer mailboxes withheld from the coaches snapshot by the contact contract.
-    pub emails_withheld: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

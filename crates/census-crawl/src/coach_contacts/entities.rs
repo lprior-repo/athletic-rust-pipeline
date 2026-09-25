@@ -84,14 +84,16 @@ fn required_role(role: Option<CoachRole>) -> CrawlResult<CoachRole> {
     })
 }
 
-/// Set a coach row's email and attach its provider identity and evidence.
+/// Set a coach row's published email and attach its provider identity and evidence.
 fn attach_source(
     coach: &mut CanonicalCoach,
     identity: String,
     email: Option<String>,
     source: &RowSource,
 ) {
-    coach.professional_email = email;
+    if let Some(email) = email.as_deref() {
+        coach.set_published_email(email);
+    }
     coach.source_identities.push(
         SourceIdentity::new(source.namespace.clone(), identity)
             .with_url(source.url.clone().unwrap_or_default()),

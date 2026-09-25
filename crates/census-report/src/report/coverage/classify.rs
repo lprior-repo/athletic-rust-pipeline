@@ -193,7 +193,7 @@ fn classify_coaches<'a>(
         );
         bump(&mut bucket.row.coaches);
         let school = coach.school.as_str();
-        if coach.professional_email.is_some() {
+        if coach.has_published_email() {
             bump(&mut bucket.row.coaches_with_email);
             sets.with_coach_email.insert(school);
         }

@@ -90,6 +90,6 @@ Resolved since the first draft of this section: the `MAX_RETRIES = 3` transport 
 `crates/census-service/src/net/**`; that module is `crates/census-crawl/src/net/**` now and contains
 neither. `ARCHITECTURE.md` §9 names the per-layer vocabularies instead of asserting an
 `OperationTerminal` type. What remains open is bounded and different: the root runtime walked up to 64
-admission steps per source operation (`src/runtime/source/admission.rs:121`,
-`src/runtime/source/dispatch.rs:108`) (historical: root package deleted 2026-09-23), a loop the rankings path refused — 64 × the invocation budget is
+admission steps per source operation (`crates/census-crawl/src/net/bridge/lane.rs`,
+`crates/census-crawl/src/net/bridge/mod.rs:39`) (historical: root package deleted 2026-09-23), a loop the rankings path refused — 64 × the invocation budget is
 reachable and unmeasured there.

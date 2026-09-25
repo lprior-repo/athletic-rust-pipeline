@@ -14,9 +14,10 @@
 //! The recipe makes the merge outcome a *claim*: the first observation of a school carries the
 //! enrollment and city every later observation contradicts, so a last-writer merge would show; the
 //! aliases union across three observations; the third publishes a longer name that must survive
-//! while the minted name does not move; and half the coaches first publish a consumer mailbox, which
-//! `publish` must withhold. [`Dataset::build`] folds the batch once and refuses to hand it over
-//! unless every claim holds; the row checks that refusal is built from are in `checks.rs`.
+//! while the minted name does not move; and half the coaches first publish an organisation mailbox
+//! while the other half first publish a consumer mailbox. [`Dataset::build`] folds the batch once
+//! and refuses to hand it over unless every claim holds; the row checks that refusal is built from
+//! are in `checks.rs`.
 
 use anyhow::{ensure, Context, Result};
 use census_domain::model::{
@@ -165,9 +166,8 @@ fn school_observations() -> Vec<CanonicalSchool> {
     }
     batch
 }
-
-/// `COACHES` coaches observed `OBSERVATIONS_PER_COACH` times each: half first publish a school
-/// mailbox, half first publish a consumer mailbox the collection contract has to withhold.
+/// `COACHES` coaches observed `OBSERVATIONS_PER_COACH` times each: half first publish an organisation
+/// mailbox, half first publish a consumer mailbox, and both domain kinds must survive publication.
 fn coach_observations() -> Vec<CanonicalCoach> {
     let mut batch = Vec::with_capacity(COACHES.saturating_mul(OBSERVATIONS_PER_COACH));
     for index in 0..COACHES {
@@ -213,10 +213,10 @@ fn verify(schools: &[CanonicalSchool], coaches: &[CanonicalCoach]) -> Result<()>
         checks::school_row(row)?;
     }
     let half = COACHES / 2;
-    let (published, withheld) = checks::coach_tally(coaches)?;
+    let (professional, personal) = checks::coach_tally(coaches)?;
     ensure!(
-        published == half && withheld == half,
-        "published {published}, withheld {withheld}"
+        professional == half && personal == half,
+        "professional {professional}, personal {personal}; every seeded address must survive"
     );
     Ok(())
 }
@@ -230,8 +230,7 @@ fn alias(index: usize, slot: usize) -> String {
 fn school_mailbox(index: usize) -> String {
     format!("coach{index:04}@school.k12.wi.us")
 }
-
-/// A consumer mailbox for the `index`-th coach: one the collection contract drops.
+/// A consumer mailbox for the `index`-th coach: the merge must retain it as a personal address.
 fn consumer_mailbox(index: usize) -> String {
     format!("coach{index:04}@gmail.com")
 }

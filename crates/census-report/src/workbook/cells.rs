@@ -58,7 +58,7 @@ pub(super) fn cell(value: impl Into<Cell>) -> Cell {
 /// borrowed labels, owned strings, numbers, and explicit blanks.
 macro_rules! row {
     () => { Vec::new() };
-    ($($value:expr),+ $(,)?) => { vec![$(cell($value)),+] };
+    ($($value:expr),+ $(,)?) => { vec![$($crate::workbook::cells::cell($value)),+] };
 }
 pub(super) use row;
 
@@ -210,13 +210,4 @@ impl<'a> SheetWriter<'a> {
             .map_err(|source| xlsx_error(self.path, source))?;
         Ok(())
     }
-}
-
-pub(super) fn share(part: usize, whole: usize) -> ReportResult<Cell> {
-    if whole == 0 {
-        return Ok(Cell::text("n/a"));
-    }
-    let part = count_as_number(part)?;
-    let whole = count_as_number(whole)?;
-    Ok(Cell::text(format!("{:.1}%", 100.0 * part / whole)))
 }

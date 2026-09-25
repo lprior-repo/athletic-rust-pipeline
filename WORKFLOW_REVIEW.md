@@ -1,5 +1,7 @@
 # Current native workflow review
 
+**Superseded 2026-09-25:** root `ARCHITECTURE.md` owns this subject now. Kept as the dated record of the deleted root package architecture.
+
 ## Reading scope
 
 This packet is a current-source architecture map, not a historic alpha plan and not execution evidence. Read it with [README.md](README.md), [HANDOFF.md](HANDOFF.md), and [SCOPE.md](SCOPE.md). The five documents intentionally distinguish source-derived behavior, reported checks, retained historical evidence, and pending qualification.

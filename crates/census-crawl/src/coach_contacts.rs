@@ -1,8 +1,8 @@
 //! Import the researched official coach-contact dataset into canonical entities.
 //!
 //! The dataset (`data/coach-contacts.csv` in the research workspace) is the consolidated output of the
-//! official-source contact graph: one row per (school, sport, role) with the professional email that
-//! the school or state association published for that role. Importing it is an *artifact import*, not
+//! official-source contact graph: one row per (school, sport, role) with the published email that the
+//! school or state association exposed for that role. Importing it is an *artifact import*, not
 //! a crawl: the rows already carry `source_url` + `last_observed`, so each canonical entity can cite
 //! the exact page it came from.
 //!

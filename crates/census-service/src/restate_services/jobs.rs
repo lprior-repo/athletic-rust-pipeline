@@ -51,12 +51,9 @@ pub(super) fn consolidate_tables(
         // to `report`, `bests`, the workbook and every adapter.
         let path = store.out_dir().join(format!("{}.jsonl", table.file()));
         let consolidated = store.consolidate_table(*table, &path)?;
-        // Same rule as the CLI: the count comes out of the merge that wrote the snapshot.
-        let emails_withheld = (*table == Table::Coaches).then_some(consolidated.withheld);
         out.push(ConsolidatedTable {
             table: table.file().to_string(),
             rows: consolidated.rows,
-            emails_withheld,
         });
     }
     Ok(out)

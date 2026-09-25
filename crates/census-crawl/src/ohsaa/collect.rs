@@ -180,7 +180,7 @@ fn emit_school(
     let mut coach_emails = 0u64;
     for coach in &extract.coaches {
         tally.coach_rows = tally.coach_rows.saturating_add(1);
-        if coach.professional_email.is_some() {
+        if coach.professional_email.is_some() || coach.personal_email.is_some() {
             coach_emails = coach_emails.saturating_add(1);
         }
     }
@@ -205,7 +205,7 @@ fn emit_school(
                 "sport": format!("{:?}", coach.sport),
                 "gender": format!("{:?}", coach.gender),
                 "role": format!("{:?}", coach.role),
-                "email": coach.professional_email.is_some(),
+                "email": coach.professional_email.is_some() || coach.personal_email.is_some(),
             }),
         )?;
     }

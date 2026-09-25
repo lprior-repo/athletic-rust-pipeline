@@ -98,6 +98,7 @@ fn family_of(rows: &[CanonicalAthlete]) -> Family {
         meets: Vec::new(),
         athletes: rows.to_vec(),
         coaches: Vec::new(),
+        verdicts: Vec::new(),
     };
     athlete_identity(&store, &HashMap::new())
 }

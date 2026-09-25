@@ -845,7 +845,6 @@ mod merged_scan {
             .consolidate::<CanonicalSchool>(Table::Schools, &out)
             .unwrap();
         assert_eq!(written.rows, 3, "four lines are three ids");
-        assert_eq!(written.withheld, 0, "no school row withholds a mailbox");
 
         // The published file is the JSONL the whole table would have produced, in id order: the
         // streamed writer splits the file into rows, not the merge into a different table.

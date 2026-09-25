@@ -167,7 +167,7 @@ pub(super) fn undecided<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> b
         if evidence_key(row) != best {
             continue;
         }
-        let identity = (row.name.as_str(), row.professional_email.as_deref());
+        let identity = (row.name.as_str(), coach_email(row));
         if !identities.contains(&identity) {
             identities.push(identity);
         }
@@ -175,10 +175,17 @@ pub(super) fn undecided<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> b
     identities.len() > 1
 }
 
-/// The evidence the precedence order compares: whether the row published an address at all, then the
-/// newest observation that dates it.
+/// The preferred published address, with the consumer mailbox as an explicit fallback.
+fn coach_email(coach: &CanonicalCoach) -> Option<&str> {
+    coach
+        .professional_email
+        .as_deref()
+        .or(coach.personal_email.as_deref())
+}
+
+/// The evidence precedence compares whether the row published an address, then its newest date.
 fn evidence_key(coach: &CanonicalCoach) -> (bool, &str) {
-    (coach.professional_email.is_some(), observed_on(coach))
+    (coach_email(coach).is_some(), observed_on(coach))
 }
 
 /// The newest `Evidence.observed_on` one row carries, blank when it carries no evidence.
@@ -191,9 +198,8 @@ pub(super) fn observed_on(coach: &CanonicalCoach) -> &str {
         .unwrap_or_default()
 }
 
-/// The row one `(slot, side)` bucket resolves to: a row that published a professional address wins
-/// over one that published none, then the newest `Evidence.observed_on` decides; ties fall to the
-/// coach's name, then to the coach's id, in ascending order.
+/// The row one `(slot, side)` bucket resolves to: a row that published a professional address, or
+/// its personal fallback, wins over one that published none; newer evidence then decides.
 pub(super) fn resolve<'a>(
     rows: impl Iterator<Item = &'a CanonicalCoach>,
 ) -> Option<&'a CanonicalCoach> {
@@ -204,7 +210,7 @@ pub(super) fn resolve<'a>(
 pub(super) fn conflicting<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> bool {
     let mut addresses: Vec<&str> = Vec::new();
     for row in rows {
-        let Some(address) = row.professional_email.as_deref() else {
+        let Some(address) = coach_email(row) else {
             continue;
         };
         if addresses.contains(&address) {
@@ -218,25 +224,21 @@ pub(super) fn conflicting<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) ->
     false
 }
 
-/// The total order a bucket resolves by: an address before no address, then the newest observation,
-/// then the coach's name, then the coach's id.
+/// The total order a bucket resolves by: an address before no address, then newest observation,
+/// then coach name and id.
 fn rank(coach: &CanonicalCoach) -> (Reverse<bool>, Reverse<&str>, &str, &str) {
     (
-        Reverse(coach.professional_email.is_some()),
+        Reverse(coach_email(coach).is_some()),
         Reverse(observed_on(coach)),
         coach.name.as_str(),
         coach.id.as_str(),
     )
 }
 
-/// Every row of one bucket, as the conflict queue reads it: the coach, the address they published,
-/// and the observation that dates the row.
+/// Every row of one bucket, including a personal address when that is all it published.
 fn describe<'a>(rows: impl Iterator<Item = &'a CanonicalCoach>) -> Vec<String> {
     rows.map(|row| {
-        let address = row
-            .professional_email
-            .as_deref()
-            .unwrap_or("no published address");
+        let address = coach_email(row).unwrap_or("no published address");
         format!("{}: {} (observed {})", row.name, address, observed_on(row))
     })
     .collect()

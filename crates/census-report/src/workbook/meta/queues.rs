@@ -1,10 +1,9 @@
 //! The retained queues: conflicts between rows the merge kept separate, and the material a human or
 //! the review model still has to adjudicate.
 //!
-//! Both sheets render the retained rows rather than dropping them or collapsing them into a count: a
+//! Both queues render retained rows rather than dropping them or collapsing them into a count: a
 //! school another school's normalized name collides with, an athlete whose own grade observations
-//! disagree about the graduating class, a meet whose venue was never placed, a coach whose only
-//! published address was a personal mailbox and was therefore withheld by the collection contract.
+//! disagree about the graduating class, or a meet whose venue was never placed.
 //! Each family prints one row per retained subject — the same subject ids the store holds — so the
 //! operator acts on rows instead of on a number. The families themselves live in `conflicts` and
 //! `review`; this module holds the labels, the family lists and the one row shape they share.
@@ -15,29 +14,164 @@
 //! neither carries a cohort.
 
 use census_domain::model::{
-    CanonicalAthlete, GradYear, ATHLETE_IDENTITY_FAMILY, COHORT_EVIDENCE_FAMILY,
-    COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY, CONTACT_CONFLICT_FAMILY,
-    SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY, UNRESOLVED_VENUE_FAMILY,
-    WITHHELD_MAILBOX_FAMILY,
+    CanonicalAthlete, GradYear, ReviewVerdictRecord, ATHLETE_IDENTITY_FAMILY,
+    COHORT_EVIDENCE_FAMILY, COHORT_IDENTITY_CONFIDENCE_FAMILY, COHORT_UNVERIFIED_FAMILY,
+    CONTACT_CONFLICT_FAMILY, SCHOOL_IDENTITY_FAMILY, UNRESOLVED_SCHOOL_FAMILY,
+    UNRESOLVED_VENUE_FAMILY,
 };
+use census_review::ReviewFamily;
 use std::collections::HashMap;
 
-use crate::report::ReportResult;
-use crate::workbook::cells::{cell, row, Cell};
+use crate::report::{ReportResult, Scope};
+use crate::workbook::cells::{row, Cell};
 use census_store::Store;
 
-use super::{school_name_index, Family, QueueRow, StoreRows};
+use super::{school_name_index, subject_of, Family, QueueRow, StoreRows};
 
 mod conflicts;
 mod review;
 
 use conflicts::{athlete_identity, cohort_evidence, contact_conflicts, school_identity};
-use review::{
-    cohort_unverified, low_confidence, unresolved_schools, unresolved_venues, withheld_mailboxes,
-};
+use review::{cohort_unverified, low_confidence, unresolved_schools, unresolved_venues};
 
-/// Widths for a queue sheet.
-pub(super) const QUEUE_WIDTHS: [u16; 4] = [30, 16, 34, 96];
+/// Widths for the consolidated data-quality sheet.
+pub(super) const DATA_QUALITY_WIDTHS: [u16; 8] = [12, 34, 12, 34, 34, 24, 12, 96];
+
+/// Render retained queues followed by durable model verdicts in one operator sheet.
+pub(super) fn data_quality_sheet(
+    conflicts: &[Family],
+    review: &[Family],
+    rows: &StoreRows,
+) -> Vec<Vec<Cell>> {
+    let mut cells = vec![row!(
+        "Queue",
+        "Family",
+        "State",
+        "Subject ID",
+        "Subject",
+        "Answer",
+        "Confidence",
+        "Detail"
+    )];
+    for family in conflicts {
+        for retained in &family.rows {
+            cells.push(queue_quality_row(
+                "Conflict",
+                family.label,
+                retained,
+                Cell::Empty,
+            ));
+        }
+    }
+    for family in review {
+        for retained in &family.rows {
+            let state = state_for_subject(family.label, &retained.subject_id, rows);
+            cells.push(queue_quality_row("Review", family.label, retained, state));
+        }
+    }
+    cells.extend(
+        rows.verdicts
+            .iter()
+            .map(|verdict| verdict_quality_row(verdict, rows)),
+    );
+    cells
+}
+
+fn queue_quality_row(queue: &str, family: &str, retained: &QueueRow, state: Cell) -> Vec<Cell> {
+    row!(
+        Cell::text(queue),
+        Cell::text(family),
+        state,
+        Cell::text(&retained.subject_id),
+        Cell::text(&retained.subject),
+        Cell::Empty,
+        Cell::Empty,
+        Cell::text(&retained.detail)
+    )
+}
+
+fn verdict_quality_row(verdict: &ReviewVerdictRecord, rows: &StoreRows) -> Vec<Cell> {
+    let family = ReviewFamily::parse(&verdict.family).map_or_else(
+        || verdict.family.clone(),
+        |family| family.label().to_string(),
+    );
+    let subject = verdict_subject(verdict, rows);
+    let answer = match (verdict.field.is_empty(), verdict.value.is_empty()) {
+        (false, false) => format!("{}={}", verdict.field, verdict.value),
+        _ => String::new(),
+    };
+    row!(
+        "Verdict",
+        Cell::text(family),
+        state_for_subject(&verdict.family, &verdict.subject_id, rows),
+        Cell::text(&verdict.subject_id),
+        Cell::text(subject),
+        Cell::text(answer),
+        Cell::Number(f64::from(verdict.confidence)),
+        Cell::text(&verdict.rationale)
+    )
+}
+
+fn verdict_subject(verdict: &ReviewVerdictRecord, rows: &StoreRows) -> String {
+    match ReviewFamily::parse(&verdict.family) {
+        Some(ReviewFamily::SchoolJurisdiction) => rows
+            .schools
+            .iter()
+            .find(|school| school.id.as_str() == verdict.subject_id)
+            .map_or_else(|| verdict.subject_id.clone(), |school| school.name.clone()),
+        Some(ReviewFamily::MeetJurisdiction) => rows
+            .meets
+            .iter()
+            .find(|meet| meet.id.as_str() == verdict.subject_id)
+            .map_or_else(|| verdict.subject_id.clone(), |meet| meet.name.clone()),
+        Some(ReviewFamily::AthleteIdentity) => rows
+            .athletes
+            .iter()
+            .find(|athlete| athlete.id.as_str() == verdict.subject_id)
+            .map_or_else(
+                || verdict.subject_id.clone(),
+                |athlete| {
+                    subject_of(
+                        &athlete.canonical_name,
+                        rows.schools
+                            .iter()
+                            .find(|school| school.id == athlete.school)
+                            .map(|school| school.name.as_str()),
+                    )
+                },
+            ),
+        None => verdict.subject_id.clone(),
+    }
+}
+
+fn state_for_subject(family: &str, subject_id: &str, rows: &StoreRows) -> Cell {
+    match ReviewFamily::parse(family) {
+        Some(ReviewFamily::SchoolJurisdiction) => rows
+            .schools
+            .iter()
+            .find(|school| school.id.as_str() == subject_id)
+            .and_then(|school| school.state)
+            .map_or(Cell::Empty, |state| Cell::text(state.code())),
+        Some(ReviewFamily::MeetJurisdiction) => rows
+            .meets
+            .iter()
+            .find(|meet| meet.id.as_str() == subject_id)
+            .and_then(|meet| meet.state)
+            .map_or(Cell::Empty, |state| Cell::text(state.code())),
+        Some(ReviewFamily::AthleteIdentity) => rows
+            .athletes
+            .iter()
+            .find(|athlete| athlete.id.as_str() == subject_id)
+            .and_then(|athlete| {
+                rows.schools
+                    .iter()
+                    .find(|school| school.id == athlete.school)
+                    .and_then(|school| school.state)
+            })
+            .map_or(Cell::Empty, |state| Cell::text(state.code())),
+        None => Cell::Empty,
+    }
+}
 
 /// Family labels, shared with the reconciliation block on `Run Metrics`.
 ///
@@ -50,7 +184,6 @@ pub(super) const SCHOOL_IDENTITY: &str = SCHOOL_IDENTITY_FAMILY;
 pub(super) const CONTACT_CONFLICT: &str = CONTACT_CONFLICT_FAMILY;
 pub(super) const COHORT_UNVERIFIED: &str = COHORT_UNVERIFIED_FAMILY;
 pub(super) const LOW_CONFIDENCE: &str = COHORT_IDENTITY_CONFIDENCE_FAMILY;
-pub(super) const WITHHELD_MAILBOX: &str = WITHHELD_MAILBOX_FAMILY;
 pub(super) const UNRESOLVED_VENUE: &str = UNRESOLVED_VENUE_FAMILY;
 pub(super) const UNRESOLVED_SCHOOL: &str = UNRESOLVED_SCHOOL_FAMILY;
 
@@ -69,34 +202,9 @@ pub(super) fn review_families(rows: &StoreRows, names: &HashMap<&str, &str>) -> 
     vec![
         cohort_unverified(rows, names),
         low_confidence(rows, names),
-        withheld_mailboxes(rows, names),
         unresolved_venues(&rows.meets),
         unresolved_schools(&rows.schools),
     ]
-}
-
-/// A queue sheet: the family counts first, then the shared header and every retained row.
-pub(super) fn queue_sheet(families: &[Family], counts_label: &str) -> ReportResult<Vec<Vec<Cell>>> {
-    let mut cells = vec![row!(Cell::text(counts_label), "Findings")];
-    for family in families {
-        cells.push(row!(
-            Cell::text(family.label),
-            Cell::number(family.findings)?,
-        ));
-    }
-    cells.push(row!());
-    cells.push(row!("Reason", "Subject id", "Subject", "Detail"));
-    for family in families {
-        for retained in &family.rows {
-            cells.push(row!(
-                Cell::text(family.label),
-                Cell::text(&retained.subject_id),
-                Cell::text(&retained.subject),
-                Cell::text(&retained.detail),
-            ));
-        }
-    }
-    Ok(cells)
 }
 
 /// The published cohort's athlete rows: the same class the census document counts.
@@ -119,7 +227,7 @@ fn queue_row(id: &str, subject: String, detail: String) -> QueueRow {
 /// `conflicts` and `review_cases` tables hold, read through the same families the sheets render, so
 /// the store and the workbook can never name different findings.
 pub fn retained_records(store: &Store) -> ReportResult<RetainedRecords> {
-    let rows = StoreRows::read(store)?;
+    let rows = StoreRows::read(store, Scope::AllSources)?;
     let names = school_name_index(&rows.schools);
     Ok(RetainedRecords {
         conflicts: labelled(conflict_families(&rows, &names)),

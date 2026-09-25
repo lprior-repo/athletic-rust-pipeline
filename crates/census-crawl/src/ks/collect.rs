@@ -131,7 +131,7 @@ fn collect_records(
             KsRead::Unreadable => continue,
             KsRead::Read(None) => tally.skipped_no_ad = tally.skipped_no_ad.saturating_add(1),
             KsRead::Read(Some(coach)) => {
-                if coach.professional_email.is_some() {
+                if coach.professional_email.is_some() || coach.personal_email.is_some() {
                     report.with_email = report.with_email.saturating_add(1);
                 }
             }

@@ -9,7 +9,7 @@ Build the richest defensible recruiting census of U.S. Class-of-2027 high-school
 Field and Cross Country athletes over the run scope of §2: discover them across all qualified
 sources, reconcile duplicate
 identities, collect their available athletic histories, calculate comparable PRs, identify every
-event they contest, resolve their current high school and its public professional coaching contacts,
+:event they contest, resolve their current high school and its publicly published coaching contacts,
 retain source profiles, and export a recruiter-friendly workbook with auditable evidence.
 
 The run may take many hours or days. It must be durable, resumable, restart-safe, rate-aware,

@@ -187,7 +187,7 @@ impl Joins<'_, '_> {
         self.meet.map(|row| row.name.clone()).unwrap_or_default()
     }
 
-    /// The event's family, in the vocabulary the `Best results` sheet already publishes.
+    /// The event's family, in the vocabulary the `PRs` sheet publishes.
     fn sport(&self) -> String {
         self.event
             .map(|row| sport_of(&row.kind).to_string())

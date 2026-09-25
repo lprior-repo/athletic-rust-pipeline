@@ -1,7 +1,7 @@
 //! Collect orchestration: fetch the schools list once, then walk one `staff2` request per school,
 //! appending each school's rows before journalling it so a re-run resumes past it.
 
-use super::map::{parse_coach, parse_school, reveal_address_for};
+use super::map::{parse_coach, parse_school};
 use super::parse::{parse_email, parse_schools, parse_staff, SchoolRecord, StaffPerson};
 use super::{Options, ASSOCIATION, IHSA_API};
 use crate::{AdapterContext, AdapterReport, CrawlError, CrawlResult};
@@ -146,12 +146,12 @@ async fn process_record(
     Ok(())
 }
 
-/// Emit one coach per staff person, revealing the addresses the census pays for.
+/// Emit one coach per staff person, revealing the address of every row the payload advertises.
 ///
 /// `staff2` carries a `HasEmail` flag but never the address itself; the address is behind
 /// `GET /v1/schools/{id}/staff/{PersonID}/email` (the "Show email" button). One reveal per person,
-/// and only for the roles the census ships: the recruiting projection reads TF/XC head coaches and
-/// ADs, so a bowling coach's address is not worth a request.
+/// and the flag is the only bound: the census keeps every address a source publishes, so the
+/// request is not filtered by the sport a row maps to.
 async fn emit_coaches(
     ctx: &AdapterContext<'_>,
     record: &SchoolRecord,
@@ -167,7 +167,7 @@ async fn emit_coaches(
         else {
             continue;
         };
-        if person.has_email == Some(true) && reveal_address_for(&coach) {
+        if person.has_email == Some(true) {
             let email_url = format!(
                 "{IHSA_API}/v1/schools/{}/staff/{}/email",
                 record.school_id, person.person_id
@@ -197,14 +197,15 @@ async fn emit_coaches(
                 }
             };
             if let Some(address) = revealed {
-                coach.professional_email = Some(address);
+                // A revealed address is classified like any other published one.
+                coach.set_published_email(&address);
                 coach.evidence.push(Evidence::parsed(
                     SourceRef::new("ihsa", Some(email_url)),
                     &run.options.observed_on,
                 ));
             }
         }
-        if coach.professional_email.is_some() {
+        if coach.professional_email.is_some() || coach.personal_email.is_some() {
             report.with_email = report.with_email.saturating_add(1);
         }
         coaches.push(coach);

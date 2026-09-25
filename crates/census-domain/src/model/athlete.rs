@@ -143,7 +143,9 @@ impl CanonicalAthlete {
     /// only place that turns a key into an id — so a row minted here is a cluster of one candidate and
     /// carries that candidate's id.
     pub fn mint(school: &SchoolId, name: &str, grad_year: GradYear, gender: Gender) -> AthleteId {
-        AthleteCandidateKey::new(school, name, grad_year, gender).cluster_id()
+        AthleteCandidateKey::new(school, name, grad_year, gender)
+            .candidate_id()
+            .cast()
     }
 
     /// The candidate key this row's own fields restate, exactly as [`NaturalKey`] restates its mint

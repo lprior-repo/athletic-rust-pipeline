@@ -1,35 +1,32 @@
-//! The census as one spreadsheet: the objective's recruiting workbook, then the census provenance
-//! sheets the platform has always published.
+//! The census as one spreadsheet: the recruiting workbook, then the census provenance
+//! sheets the platform publishes.
 //!
 //! # What the workbook contains, in the order it is written
 //!
-//! Objective §50-§54 sheets first, in the objective's own order:
-//!
 //! ```text
-//! Athletes          §50   workbook::recruiting   one row per canonical athlete in the cohort
-//! PRs               §51   workbook::recruiting   one row per athlete/event
-//! Performances_00N  §52   workbook::performances every stored mark, partitioned to Excel's cap
-//! Coaches           §53   workbook::recruiting   one row per canonical coach
-//! Schools, Meets, Sources, Coverage, Conflicts, Review, Run Metrics  §54  workbook::meta
+//! Athletes          §50   one row per canonical athlete in the cohort
+//! PRs               §51   one row per athlete/event
+//! Performances_00N  §52   every stored mark, partitioned to Excel's cap
+//! Coaches           §53   one row per canonical coach
+//! Meets             §54   one row per canonical meet
+//! Sources           §54   source declarations and evidence
+//! Coverage          §54   jurisdiction coverage and gaps
+//! Data Quality      §54   conflicts, review rows and model verdicts
+//! Run Metrics       §54   run counters and reconciliation
 //! ```
 //!
-//! Then the retained legacy census sheets, unchanged and in their original order: `Goal & method`,
-//! `Summary`, `By state - core`, `By state - all sources`, `Athletic.net marginal`, `Best results`,
-//! `Meets summary`, `Evidence mix`, `Method notes`. `workbook::recruiting`'s module documentation holds
-//! the disposition table for these — which the objective supersedes, which it merely renames
-//! (`Meets` → `Meets summary`, because §54's row-level `Meets` sheet now owns that name), and which are
-//! retained as provenance.
+//! The superseded legacy views were dropped because their numbers are published by `Coverage`,
+//! `Sources`, `Run Metrics` and `PRs`.
 //!
 //! Every cell is copied from the typed store the crate already computes or from a documented rule over
 //! it: the recruiting sheets read the store's merged entity tables through one scoped pass
 //! (`workbook::recruiting::dataset`), the census sheets read `report`, and `bests` supplies the
-//! best-mark reduction both the `Best results` and `PRs` sheets rest on. Nothing is recomputed from raw
-//! source text, so the workbook can never disagree with `report`.
+//! best-mark reduction for the `PRs` sheet and text sidecars. Nothing is recomputed from raw source
+//! text, so the workbook can never disagree with `report`.
 //!
 //! The workbook is written with the same `rust_xlsxwriter` dependency the rest of the workspace uses;
 //! there is no external script in the loop. `bests::write` sidecars are emitted alongside it, so the
 //! best-mark reduction is readable as text too.
-
 use crate::bests::{self, BestResult};
 use crate::report::{build_census, io_error, xlsx_error, Census, ReportResult, Scope};
 use census_store::Store;
@@ -37,26 +34,19 @@ use rust_xlsxwriter::Workbook;
 use std::path::{Path, PathBuf};
 
 mod cells;
-mod inventory;
 pub mod meta;
 
 pub use meta::retained_records;
 mod performances;
 mod recruiting;
-mod sheets;
-
-use cells::write_sheet;
-use inventory::{best_sheet, evidence_sheet, meets_sheet, method_sheet};
-use sheets::{goal_sheet, marginal_sheet, state_sheet, summary_sheet};
 
 #[derive(Debug, Clone)]
 pub struct Options {
     pub grad_year: Option<i16>,
     pub out: Option<PathBuf>,
     pub limit: Option<usize>,
-    /// Evidence scope the best-results sheet and its `bests::write` sidecars are reduced over. The
-    /// workbook always publishes both census scopes, but there is one best-results reduction, and
-    /// this is it.
+    /// Evidence scope for the best-mark reduction and its `bests::write` sidecars. The workbook
+    /// publishes both census scopes, but there is one best-mark reduction, and this is it.
     pub scope: Scope,
 }
 
@@ -107,7 +97,7 @@ pub fn build(store: &Store, options: &Options) -> ReportResult<PathBuf> {
 }
 
 /// The three census outputs the sheet blocks read: the two evidence scopes and the best-mark
-/// reduction the `Best results` and `PRs` sheets rest on.
+/// reduction the `PRs` sheet and text sidecars rest on.
 #[derive(Debug, Clone, Copy)]
 struct Views<'a> {
     core: &'a Census,
@@ -115,7 +105,7 @@ struct Views<'a> {
     bests: &'a [BestResult],
 }
 
-/// Write every sheet, objective sheets first and the legacy census sheets after them.
+/// Write every sheet in the frozen publish order.
 fn write_workbook(
     path: &Path,
     store: &Store,
@@ -134,10 +124,7 @@ fn write_workbook(
         all_sources,
         bests,
     };
-
     write_objective_sheets(&mut book, path, store, views, scope, grad_year)?;
-    write_census_sheets(&mut book, path, views, grad_year)?;
-
     book.save(path).map_err(|source| xlsx_error(path, source))?;
     Ok(())
 }
@@ -170,106 +157,6 @@ fn write_objective_sheets(
         views.core,
         views.all_sources,
         views.bests,
+        scope,
     )
-}
-
-/// The retained legacy census sheets, in the order the workbook has always written them.
-fn write_census_sheets(
-    book: &mut Workbook,
-    path: &Path,
-    views: Views<'_>,
-    grad_year: Option<i16>,
-) -> ReportResult<()> {
-    let core = views.core;
-    let all_sources = views.all_sources;
-    write_sheet(
-        book,
-        path,
-        "Goal & method",
-        goal_sheet(core, grad_year),
-        &[12, 96, 18, 12],
-        false,
-    )?;
-    write_sheet(
-        book,
-        path,
-        "Summary",
-        summary_sheet(core, all_sources)?,
-        &[38, 22, 16, 14],
-        false,
-    )?;
-    write_state_sheets(book, path, core, all_sources)?;
-    write_artifact_sheets(book, path, core, all_sources, views.bests)
-}
-
-/// Both per-state views, in published sheet order: core first, then every source.
-fn write_state_sheets(
-    book: &mut Workbook,
-    path: &Path,
-    core: &Census,
-    all_sources: &Census,
-) -> ReportResult<()> {
-    let widths = [
-        10, 10, 12, 14, 11, 11, 18, 15, 14, 14, 17, 12, 16, 15, 17, 19,
-    ];
-    for (name, census) in [
-        ("By state - core", core),
-        ("By state - all sources", all_sources),
-    ] {
-        write_sheet(book, path, name, state_sheet(census)?, &widths, false)?;
-    }
-    Ok(())
-}
-
-/// The marginal, best-results, meet, evidence and method sheets, in published sheet order.
-fn write_artifact_sheets(
-    book: &mut Workbook,
-    path: &Path,
-    core: &Census,
-    all_sources: &Census,
-    bests: &[BestResult],
-) -> ReportResult<()> {
-    write_sheet(
-        book,
-        path,
-        "Athletic.net marginal",
-        marginal_sheet(core, all_sources)?,
-        &[10, 16, 12, 30, 12, 16, 14],
-        false,
-    )?;
-    write_sheet(
-        book,
-        path,
-        "Best results",
-        best_sheet(bests)?,
-        &[
-            26, 14, 10, 9, 12, 10, 14, 16, 12, 13, 14, 10, 12, 11, 14, 26,
-        ],
-        true,
-    )?;
-    write_sheet(
-        book,
-        path,
-        "Meets summary",
-        meets_sheet(core, all_sources)?,
-        &[34, 12, 34, 12],
-        false,
-    )?;
-    write_sheet(
-        book,
-        path,
-        "Evidence mix",
-        evidence_sheet(all_sources)?,
-        &[40, 12, 40, 12],
-        false,
-    )?;
-    write_sheet(
-        book,
-        path,
-        "Method notes",
-        method_sheet(),
-        &[30, 110],
-        false,
-    )?;
-    Ok(())
 }

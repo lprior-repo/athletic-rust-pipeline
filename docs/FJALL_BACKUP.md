@@ -289,6 +289,12 @@ $ jq -c '{scope, totals: {schools: .totals.schools, coaches: .totals.coaches, co
 {"scope":"all_sources","totals":{"schools":199,"coaches":100,"coaches_with_email":25},"meets":100}
 ```
 
+
+**Note (2026-09-25):** the `coaches_email_withheld` field in this transcript was removed from the
+`consolidate` summary by the contact-policy change: the old policy withheld consumer-domain addresses
+and emitted a count; the new policy classifies every published address and emits no withheld counter.
+It was replaced by `coaches_with_email` in the report output (not the consolidate summary). The
+transcript is unmodified; the `coaches_email_withheld 0` line reflects the pre-policy state.
 Every count matches the source store: `fjall-stats` shows the same 200/100/100/400 before and after,
 `consolidate` and `report` produce the same reduction on both roots, and after removing only the two
 fields that are *supposed* to differ (the root path and the run date) the two census documents are

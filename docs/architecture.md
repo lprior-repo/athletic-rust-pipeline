@@ -96,7 +96,7 @@ per table.
 
 ### 3.1 Tables
 
-`Table` (`crates/census-store/src/table.rs`) is the store's naming for the fifteen collections; the names ride in
+`Table` (`crates/census-store/src/table.rs`) is the store's naming for the sixteen collections; the names ride in
 keys and sidecar file names.
 
 | Table | Meaning | Written by |
@@ -121,8 +121,11 @@ Two write disciplines, not one:
   re-derivation cannot grow them.
 
 `Entity::publish` is the collection contract applied to the merged value, so the rule holds for the
-report, the workbook, the snapshot and the Restate handlers at once; `withheld_mailboxes` counts what
-that contract withheld, summed in the same pass as the snapshot.
+report, the workbook, the snapshot and the Restate handlers at once. A coach's published address is
+classified by its domain — a consumer mailbox lands in `personal_email`, an organisation mailbox in
+`professional_email` — and nothing is dropped for its domain: only a malformed address is refused, and
+the first address of a kind wins. No address a source published is withheld, so a published counter is
+the count the sources actually published.
 
 ### 3.2 Durability
 
@@ -134,7 +137,7 @@ flushed — never a rewritten snapshot.
 |---|---|---|
 | commit mode | `PersistMode::SyncData` (`fdatasync`) per batch | `crates/census-store/src/lib.rs` |
 | upgrade | `Store::flush()` → `PersistMode::SyncAll`, called at consolidation and shutdown | `crates/census-store/src/lib.rs` |
-| block cache | 256 MiB (`CACHE_BYTES`) | `crates/census-store/src/lib.rs` |
+| block cache | 1 GiB (`CACHE_BYTES`, `crates/census-store/src/lib.rs:70`) | `crates/census-store/src/lib.rs:70` |
 | sequence seeding | from the last key present at open, so a reopened database never reuses a sequence or overwrites an observation | `crates/census-store/src/lib.rs`, `crates/census-store/src/sequences.rs` |
 | resume journal | durable per completed unit of work; the journal keyspace holds `<phase>\0<key>` | `crates/census-store/src/keys.rs` |
 | legacy import | `Store::open` imports the pre-Fjall `entities/` and `journal/` JSONL exactly once, recorded under `meta` | `crates/census-store/src/legacy.rs` |

@@ -11,8 +11,7 @@ use super::ReviewFamily;
 
 /// Build the durable row for one case's verdict.
 fn verdict_record(
-    subject_id: &str,
-    family: &str,
+    case: &ReviewCase,
     verdict: &ReviewVerdict,
     admitted: Option<&Admitted>,
     reviewer: &str,
@@ -21,8 +20,9 @@ fn verdict_record(
     ReviewVerdictRecord {
         id: verdict.case_id.clone(),
         case_id: verdict.case_id.clone(),
-        subject_id: subject_id.to_string(),
-        family: family.to_string(),
+        subject_id: case.subject_id.clone(),
+        family: case.family.clone(),
+        member_ids: case.member_ids.clone(),
         kind: verdict.kind.slug().to_string(),
         field: admitted
             .map(|admitted| admitted.field.clone())
@@ -130,8 +130,7 @@ pub(super) fn record_case(
             Adjudication::Refused(_) => tally.rejected = tally.rejected.saturating_add(1),
         }
         rows.push(verdict_record(
-            &case.subject_id,
-            &case.family,
+            case,
             &verdict,
             adjudication.admitted(),
             reviewer,

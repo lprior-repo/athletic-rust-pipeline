@@ -375,7 +375,7 @@ fn office_roles_never_become_coaches_or_athletic_directors() {
 }
 
 #[test]
-fn published_phones_and_consumer_mailboxes_never_reach_the_store() {
+fn published_phones_are_withheld_and_consumer_mailboxes_land_personal() {
     let detail = parse_school_detail(WAYZATA);
     let domains = school_domains(&detail);
     assert_eq!(
@@ -407,19 +407,36 @@ fn published_phones_and_consumer_mailboxes_never_reach_the_store() {
         "ten real records, all of them MSHSL levels"
     );
     let serialized = serde_json::to_string(&(school, coaches.clone())).expect("json");
-    for leak in [
+    for withheld in [
         "763-745-6995",
         "763-745-6889",
         "612-387-2904",
         "6124239766",
-        "giesen21@hotmail.com",
-        "mike95asmith@gmail.com",
         "tel:",
         "field_work_phone",
     ] {
-        assert!(!serialized.contains(leak), "{leak} must not be emitted");
+        assert!(
+            !serialized.contains(withheld),
+            "{withheld} must not be emitted"
+        );
     }
     assert!(coaches.iter().all(|coach| coach.phone.is_none()));
+    // Addresses are the opposite: the site publishes them, so they are kept whatever their domain.
+    // A consumer mailbox is a personal address the recruiter can still write to, and the mailbox
+    // kind is what the store routes on — it never silently becomes the professional one.
+    let personal: Vec<&str> = coaches
+        .iter()
+        .filter_map(|coach| coach.personal_email.as_deref())
+        .collect();
+    assert!(personal.contains(&"giesen21@hotmail.com"));
+    assert!(personal.contains(&"mike95asmith@gmail.com"));
+    assert!(
+        coaches
+            .iter()
+            .filter_map(|coach| coach.professional_email.as_deref())
+            .all(|address| !address.ends_with("hotmail.com") && !address.ends_with("gmail.com")),
+        "a consumer mailbox never becomes the professional address"
+    );
     let head = coaches
         .iter()
         .find(|coach| coach.role == CoachRole::HeadCoach)
@@ -485,7 +502,7 @@ fn team_nodes_filter_to_track_and_cross_country() {
 }
 
 #[test]
-fn coach_levels_map_to_roles_and_only_school_domains_survive() {
+fn coach_levels_map_to_roles_and_published_addresses_survive() {
     assert!(is_published_level("Head Coach"));
     assert!(!is_published_level("Non-MSHSL Coach"));
     assert!(!is_published_level("mshsl sub-coach"));
@@ -500,24 +517,29 @@ fn coach_levels_map_to_roles_and_only_school_domains_survive() {
 
     let domains = vec!["wayzataschools.org".to_string()];
     assert_eq!(
-        accept_coach_email("mark.popp@wayzataschools.org", &domains).as_deref(),
+        published_coach_email("mark.popp@wayzataschools.org", &domains).as_deref(),
         Some("mark.popp@wayzataschools.org")
     );
-    assert_eq!(accept_coach_email("giesen21@hotmail.com", &domains), None);
     assert_eq!(
-        accept_coach_email("coach@mail.wayzataschools.org", &domains).as_deref(),
-        Some("coach@mail.wayzataschools.org")
+        published_coach_email("giesen21@hotmail.com", &domains).as_deref(),
+        Some("giesen21@hotmail.com"),
+        "a consumer mailbox is kept: publication is not a domain filter"
     );
     assert_eq!(
-        accept_coach_email("coach@other-district.org", &domains),
-        None
+        published_coach_email("coach@other-district.org", &domains).as_deref(),
+        Some("coach@other-district.org")
     );
-    assert_eq!(accept_coach_email("not-an-address", &domains), None);
     assert_eq!(
-        accept_coach_email("aaron.berndt@wayzataschools.org", &[]),
-        None,
-        "no reference domain, no email"
+        published_coach_email(" aaron.berndt@wayzataschools.org ", &domains).as_deref(),
+        Some("aaron.berndt@wayzataschools.org"),
+        "the address is trimmed"
     );
+    assert_eq!(
+        published_coach_email("aaron.berndt@wayzataschools.org", &[]).as_deref(),
+        Some("aaron.berndt@wayzataschools.org"),
+        "no reference domains is not a filter"
+    );
+    assert_eq!(published_coach_email("not-an-address", &domains), None);
 
     // The unexercised branch: a record whose level is not published and a non-MSHSL level record.
     let node = TeamNode {

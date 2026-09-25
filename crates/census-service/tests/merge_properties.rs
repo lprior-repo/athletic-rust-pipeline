@@ -16,9 +16,8 @@
 //! * **Identity preservation** — merge never rewrites the name a canonical record was minted from
 //!   (`school.name`, `school.normalized_name`, `athlete.canonical_name`); variants land in
 //!   `aliases` / `known_names` instead.
-//! * **Coach contact policy** — `publish` maps `professional_email` through
-//!   `census_domain::model::professional_email`, so a consumer mailbox never ships, and
-//!   `withheld_mailboxes()` counts exactly the rows it dropped.
+//! * **Coach contact policy** — `publish` keeps each valid address and routes it by domain through
+//!   `census_domain::model::published_email`, placing consumer mailboxes in `personal_email`.
 //! * **Athlete cohort rule** — an observation that disagrees with `grad_year` lowers
 //!   `identity_confidence` to `LOW`, agreement raises it to `HIGH`, and no observation leaves it
 //!   alone.

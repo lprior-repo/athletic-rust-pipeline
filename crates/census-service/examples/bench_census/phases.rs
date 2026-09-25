@@ -86,8 +86,7 @@ pub(super) fn consolidate_phase(store: &Store, corpus: &Corpus) -> Result<Phase>
     Ok(phase)
 }
 
-/// Rows over the seven real tables (the consolidated report also carries a `coaches_email_withheld`
-/// counter, which is not a table).
+/// Rows over the seven real tables.
 fn merged_rows(counts: &[(String, usize)]) -> usize {
     counts
         .iter()
