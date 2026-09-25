@@ -7,6 +7,13 @@
 **/*.xlsx
 **/*.csv
 **/*.jsonl
+
+# Test fixtures are inputs to the suite, not captured data. The extension rules above would otherwise
+# keep them out of a fresh checkout, and the `include_str!` sites that read them would fail to
+# compile in CI (`crates/census-crawl/src/athleticlive/tests.rs`).
+!crates/*/tests/fixtures/**
+!xtask/tests/fixtures/**
+
 /saved_pages/
 *.zip
 *.bak
