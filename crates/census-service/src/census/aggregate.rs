@@ -124,6 +124,13 @@ fn bulk_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
 /// queue, the per-jurisdiction coverage, the snapshot history and the access conditions. The
 /// source-identity table is deliberately absent — it is the join table behind those rows, one row
 /// per canonical id per source, and dumping it would dwarf everything else here.
+///
+/// Every table here is a state table the index pass owns, so these files are only as fresh as the
+/// last `index` run: call this after that pass, never before it. In the other order the dumps
+/// publish the previous cycle's rows — a 4,548-line `conflicts.jsonl` against a 5,300-row ledger,
+/// and a `coverage.jsonl` whose 50 jurisdiction rows sum 569 short of the store — while the
+/// workbook, which reads the store directly, stays correct. The `run_offline` cycle in
+/// `crate::cli::cycle` is the caller that has to keep that order.
 fn finding_counts(store: &Store, out: &Path) -> StoreResult<Vec<(String, usize)>> {
     Ok(vec![
         (

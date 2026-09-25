@@ -99,6 +99,19 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
         }
     }
 
+    let index = census_reconcile::index::derive(store, "run", &observed_on)
+        .context("deriving the durable indexes")?;
+    println!(
+        "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={}",
+        index.source_identities, index.conflicts, index.reviews, index.superseded, index.coverage
+    );
+
+    // After the index pass, never before: `consolidate`'s finding half writes the derived tables'
+    // `out/*.jsonl` snapshots, and the index pass above is what rewrites those tables. Running it
+    // first published the previous cycle's rows — `conflicts.jsonl` held 4,548 lines against a
+    // 5,300-row ledger, and it did so while `docs/OPERATIONS.md` described the chain as
+    // consolidate-then-index. The gather stage above writes the same tables' append log, so this
+    // cannot move any earlier than here either.
     let counts = census::consolidate(store).context("consolidating the store")?;
     println!(
         "consolidate\t{}",
@@ -107,13 +120,6 @@ async fn run_offline(cli: &Cli, store: &Store, args: &RunArgs) -> Result<()> {
             .map(|(table, count)| format!("{table}={count}"))
             .collect::<Vec<_>>()
             .join(" ")
-    );
-
-    let index = census_reconcile::index::derive(store, "run", &observed_on)
-        .context("deriving the durable indexes")?;
-    println!(
-        "index\tsource_identities={} conflicts={} reviews={} superseded={} coverage={}",
-        index.source_identities, index.conflicts, index.reviews, index.superseded, index.coverage
     );
 
     for scope in [report::Scope::AllSources, report::Scope::Core] {

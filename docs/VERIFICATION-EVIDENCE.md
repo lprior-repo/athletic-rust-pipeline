@@ -1277,23 +1277,32 @@ What does not reconcile, in the order a reader would hit it:
   `identity_verdicts` — is written by a `consolidate` that runs before the `index` pass that rewrites
   its table. Nothing in the workbook depends on those files. The Review sheet's 1,364 rows against the
   same pass's `reviews=1359` is the same dimensional difference on a second table.
-- **Coverage athletes, 569 short, and the cause is a profile-URL correlation.**
-  `coverage.jsonl`'s own text row claims `athletes=623509` while its 50 jurisdiction rows sum to
-  **622,940**. `report.json`'s `by_state` agrees with the claim (50 rows summing to 623,509) and both
-  sides carry the same 50 keys, so no row is missing — five jurisdictions differ: **AL 9,590 against
-  9,120 (−470)**, **DC 207 against 126 (−81)**, KY 6,647 against 6,637 (−10), MO 15,175 against
-  15,168 (−7), TN 9,515 against 9,514 (−1). In four of those five the coverage figure equals that
-  jurisdiction's *profile-URL* count exactly (AL 9,120, DC 126, KY 6,637, TN 9,514), and all 50 of
-  `coverage.jsonl`'s `with_profile_url` values match `report.json` to the athlete — so the coverage
-  pass places only profile-bearing athletes into jurisdiction buckets and drops the 562 cohort
-  athletes who have no profile URL. MO is the exception in both directions: it publishes 7 more than
-  it drops, and its own profile count is 47 below its cohort. The sheet's "Grad unresolved" column is
-  0 for all 50 rows, so the dropped athletes are not recorded as unresolved either.
-  This is *not* the run-scope exclusion, which the sheet states separately and correctly in its own
+- **Coverage athletes, 569 short, and the cause is the same staleness as above.**
+  `coverage.jsonl`'s 50 jurisdiction rows sum to **622,940** at `cohort_athletes` where `report.json`'s
+  `by_state` sums to **623,509**; five jurisdictions differ (AL 9,590/9,120, DC 207/126, KY 6,647/6,637,
+  MO 15,175/15,168, TN 9,515/9,514) and 45 match. Placement is *not* the difference: both derivers call
+  the same `jurisdiction_of` (`census-report/src/report/coverage/state.rs:70-74`), so no rule diverges.
+  Freshness is: `report.json` is recomputed at publish time (`cli/publish.rs:52` → `build_census`),
+  while `coverage.jsonl` merely re-serializes the stored `Table::Coverage`
+  (`census-service/src/census/aggregate.rs:139`) that only the index pass rewrites. The cycle ran
+  `consolidate` *before* `index`, so the file published the previous cycle's rows — and the 470 newer
+  AL athletes arrived from `milesplit_al` without profiles, which is why the stale AL cohort happened to
+  equal AL's profile count and made the gap look like a profile-URL correlation. It was a coincidence of
+  the previous cycle's numbers, not the cause.
+  `report.json` is right on three further grounds: it equals the store's merged athlete table recomputed
+  per bucket (all 50 buckets, including the run-scope split AK 1,340 / HI 1,619), it equals the coverage
+  pass's live output that the Coverage sheet carries (AL 9,590), and `seal.json`'s own gap register
+  computes AL `missing_profile` = 470, which only follows from athletes 9,590 with 9,120 profiles.
+  This is also *not* the run-scope exclusion, which the sheet states separately and correctly in its own
   note — "stored rows outside the census run scope (the 48 continental states plus DC, ADR-009) are
   excluded from `coverage read` and published in no row: schools=284 athletes=2959 coaches=0 meets=0
   performances=0". That set is 2,959 athletes, and its arithmetic closes on the other axis:
   1,751,450 off-cohort + 623,509 cohort + 2,959 outside scope = 2,377,918 = `athletes.jsonl` lines.
+  **Repaired and verified 2026-09-25.** With the cycle reordered so `index` runs before `consolidate`,
+  a `consolidate` against the live store rewrote the file: 50 jurisdiction rows summing **623,509**,
+  with AL 9,590, DC 207, KY 6,647, MO 15,175 and TN 9,515 — every one equal to `report.json`.
+  `conflicts.jsonl` was regenerated in the same pass and now holds 5,300 lines against the ledger's
+  5,300.
 - **Ohio performances, 1,123 unpublished, and the cause is one non-core-sourced meet.**
   `performances.jsonl` holds 223,188 rows, the Performances_001 sheet publishes 222,065; seven of eight
   jurisdictions are identical and the entire deficit is Ohio (2,108 stored against 985 published). All
