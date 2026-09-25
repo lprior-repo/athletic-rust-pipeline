@@ -897,6 +897,44 @@ fn the_storage_mode_follows_the_writer_that_owns_each_table() {
 }
 
 #[test]
+fn a_derived_batch_keeps_the_appended_rows_of_an_observation_log() {
+    // An observation-log table's rows are keyed by a sequence the acquisition owns, and a derived row
+    // sits at `DERIVED_SEQUENCE` 0, so a derived batch that names an appended id must leave that
+    // appended row standing. `replace_many` counts such a table as `held + added` for exactly that
+    // reason: a batch that cleared the foreign row would leave the durable mark counting a row the
+    // table no longer holds. The per-record guard that keeps this true was dropped in the batch-scan
+    // rewrite and review caught it - this test is the suite's.
+    // The fixture carries a second id because a table's first append lands at sequence 0, which is
+    // `DERIVED_SEQUENCE` itself: deriving that id overwrites that row's payload by design, and the
+    // guard under test only ever protects rows at a nonzero sequence.
+    let dir = tempfile::tempdir().unwrap();
+    let store = Store::open(dir.path()).unwrap();
+    store
+        .append_many(
+            Table::SourceObservations,
+            &[derived("x", 0), derived("a", 1)],
+        )
+        .unwrap();
+    store
+        .replace_many(Table::SourceObservations, &[derived("a", 2)])
+        .unwrap();
+
+    let rows = store
+        .entities
+        .prefix(crate::keys::table_prefix(Table::SourceObservations))
+        .count();
+    assert_eq!(
+        rows, 3,
+        "x, the appended row of a at sequence 1, and the derived row of a at sequence 0"
+    );
+    assert_eq!(
+        rows_held(&store, Table::SourceObservations),
+        3,
+        "and the durable mark counts what the table holds"
+    );
+}
+
+#[test]
 fn a_published_snapshot_leaves_no_temporary_behind() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("schools.jsonl");

@@ -1152,10 +1152,10 @@ frames in `serde_json`'s deserializer (`parse_whitespace` 8.2%, `skip_to_escape`
 classification, athlete, identifiers}` - the rows were being deserialized inside the loop, not merely
 counted.
 
-**Cause, at file:line.** `census-service/src/cli/publish.rs:216 run_index` →
-`census-reconcile/src/index.rs:117 derive` → `:140 canonical_pass` →
-`store.replace_many(Table::SourceIdentities, &pass.identities)` (`census-store/src/write.rs:137`) →
-`census-store/src/batch.rs stage_derived`, which called `drop_foreign` **once per record** (~5.4M
+**Cause, at file:line.** `census-service/src/cli/publish.rs:213 run_index` calls
+`census-reconcile/src/index.rs:118 derive`, which calls `:215 canonical_pass` (from `:119`), which
+calls `store.replace_many(Table::SourceIdentities, &pass.identities)` (`census-store/src/write.rs:137`)
+→ `census-store/src/batch.rs stage_derived`, which called `drop_foreign` **once per record** (~5.4M
 records, each a prefix scan of that table) and `drop_unnamed` with an O(n) `named.iter().any(...)`
 membership test **per row**.
 
@@ -1163,12 +1163,24 @@ membership test **per row**.
 **one** `drop_foreign_batch` scan whose membership test is a `HashSet`; `drop_unnamed` uses
 `HashSet::contains`. No key layout changed and no acquired table was touched.
 
-**Independent review found a real defect in that fix.** The old per-record guard
-`table.storage_mode() != StorageMode::ObservationLog` (`git show HEAD:crates/census-store/src/batch.rs:113`)
-was dropped, which would have deleted appended rows for any observation-log table. The reviewer
-(having read the code; the suite had *not* caught it - the gate was `TEST rc=0` before and after)
-identified it, and the guard was restored at `batch.rs:118`. This is worth stating plainly: the
+**Independent review found a real defect in that fix.** The guard that skips the foreign-row clear
+for observation-log tables lived *inside* the per-record loop
+(`2efbe6c:crates/census-store/src/batch.rs:113` — `if first_named && table.storage_mode() !=
+StorageMode::ObservationLog`); the rewrite dropped it, which would have deleted appended rows for any
+observation-log table a derivation names. The reviewer found it by reading the diff; it is restored
+as the hoisted guard at `crates/census-store/src/batch.rs:121`, where the comment records why the
+mode is hoisted out of the loop - it does not vary inside a batch. Worth stating plainly: the
 regression that mattered here was found by adversarial review, not by the test suite.
+
+**The defect has a test now**, and it was proved the way a test should be:
+`crates/census-store/src/tests.rs a_derived_batch_keeps_the_appended_rows_of_an_observation_log`
+appends two ids to `SourceObservations` (the second lands at sequence 1), derives one of them, and
+asserts the table holds three rows - the untouched id, the appended row at sequence 1, and the derived
+row at sequence 0. Put the pre-fix behaviour back (the clear running for observation-log tables) and
+it fails on that count, 2 against 3; the whole `census-store` suite is 106 passed with the guard in
+place. The fixture carries a second id for a reason worth remembering: a table's *first* append lands
+at sequence 0, which is `DERIVED_SEQUENCE` itself, so deriving that id overwrites that row's payload
+by design and the guard only ever protected rows at a nonzero sequence.
 
 **A/B, same store copy.** Before: 32:26 wall, 20,973 GiB read, **unfinished**. After: **60 s wall,
 2 GiB read, rc=0**, printing `source_identities=2710323 conflicts=5440 reviews=1359 superseded=0
@@ -1210,3 +1222,85 @@ which is what the MPA merge was supposed to move.
 **§60 drill at scale.** Recorded in `docs/FJALL_BACKUP.md` §3.6: on a 1.46 GB on-disk / 7.7 GB logical
 store, backup took 10 s and restore 7 s, all 16 table counts and both size totals came back identical,
 and the restored store served `consolidate` (8 s) and `report` (13 s) to the same headline numbers.
+
+### What the workbook's own numbers reconcile to (2026-09-25, independent audit)
+
+A separate worker re-derived every sheet from the workbook bytes — 20 sheets, 78,754,237 B, sha256
+`5a664010882e84a9fc1ceb1058001c29a8a67195978069f4985bb0f5aa178345` — and cross-checked it against the
+store's snapshots. Sheet names were resolved through `xl/_rels/workbook.xml.rels`, row counts by a
+chunked `<row r="N"` scan cross-validated against each sheet's `<dimension>`, and shared strings
+resolved to read the headers.
+
+What reconciles exactly:
+
+- **Athletes 580,334** = `report-core.json` `totals.class_of_2027`, and the sheet's graduation-year
+  column holds exactly 580,334 values of `2027` and nothing else — so the sheet is the core cohort,
+  not all grades (all sources is 623,509). Per-state counts match `report-core.json` for all 49
+  jurisdictions with 0 mismatches, and **all 580,334 `ath_` ids resolve to `athletes.jsonl` records
+  (0 missing)** — that is §70 item 9 for this sheet.
+- **Best results and PRs 8,560** = `best-results-co2027.csv` data lines = `best-results-co2027.jsonl`
+  lines = Run Metrics "best-mark rows reduced", and the Best results sheet's athlete-id column is a
+  byte-identical *ordered* sequence to the CSV's (8,560 ids, 6,042 distinct).
+- **Coaches 32,031** = both reports, and the sheet's non-empty professional-email count 10,671 = the
+  reports' `coaches_with_email` = the Summary sheet = the By-state total.
+- **Schools 31,870** (= `schools.jsonl` 32,154 minus the 284 out-of-scope AK/HI rows), **Meets 11,353**
+  (`meets.jsonl` 11,353 = report total, and 9,593 of them name an Athletic.net id — four ways),
+  **coverage jurisdictions 50**, **cohort performances 28,979** (three ways), and the Coverage sheet's
+  **127 gap rows summing to 1,159,187** — the same total as `seal.json`'s 127 `retained.gaps` entries.
+
+What does not reconcile, in the order a reader would hit it:
+
+- **Conflicts, three ways.** `seal.json` retains **5,300**; the Conflicts sheet publishes **5,440**
+  detail rows; `conflicts.jsonl` (verified 4,548 lines) holds **4,548**. The index pass itself printed
+  `conflicts=5440`, so the sheet agrees with the stored table and the outliers are the jsonl and the
+  seal. The jsonl is a strict subset of the sheet (0 jsonl-only subjects, 727 sheet-only
+  athlete-identity subjects), so the views differ in *selection*, not formatting. The Review sheet has
+  1,364 data rows against the same pass's `reviews=1359`.
+- **Coverage athletes, 569 short.** `coverage.jsonl`'s own text row claims `athletes=623509` while its
+  50 jurisdiction rows sum to **622,940** — an internal inconsistency inside one artifact.
+- **Ohio performances, 1,123 unpublished.** `performances.jsonl` holds 223,188 rows, the
+  Performances_001 sheet publishes 222,065; seven of eight jurisdictions are identical and the entire
+  deficit is Ohio (2,108 stored against 985 published).
+- **Run Metrics "Athletes"** prints 2,364,818 (all sources) in a block whose sheets are core-scope
+  (2,228,631) — the one counter in the reconciled block that does not reproduce from its own artifact.
+- **`census-by-state-all-sources.csv`** disagrees with `report-all-sources.json` on 12 `schools`
+  values; both files are the stale 2026-09-20 pair, not this run's output.
+
+None of this is visible to the seal's own acceptance: `inspect_workbook` checks sheet presence,
+`coverage_rows >= jurisdictions` (239 >= 50), and `mapped_athletes == class_of_2027` — a floor check
+that passes while the 569-athlete gap stands. That gap between "the seal says every §70 item is
+satisfied" and items 10-12 read strictly is the honest state of those three items.
+
+### What `seal.json` cannot show, and what it implies
+
+The file carries `phase`, `counts`, `retained`, `workbook_rows`, `sealed_on`, `digest` and nothing
+else: `SealedCensus` (`crates/census-service/src/census/state/evidence.rs:238-244`) keeps those five
+fields, so the per-item evidence — `OpenWork`'s fields for items 1-4, `WorkbookCheck`'s for items
+9-13 — is computed at seal time and dropped. Three consequences worth stating:
+
+- **`"complete"` is a construction guarantee, not a claim.** `CensusState::seal`
+  (`crates/census-service/src/census/state.rs:179`) refuses with `SealError::ItemUnmet` unless
+  `SealEvidence::open_items()` is
+  empty, and `open_items` raises items 1-4 whenever `jurisdiction_sweeps`, `source_objects`,
+  `cohort_decisions` or `identity_candidates` is anything but `Some(0)`. The written phase therefore
+  *implies* all four were measured zero, even though no key in the file says so.
+- **Items 5 and 6 are deliberately never blockers** (`RetriesRepresented` and `ConflictsRetained` never
+  appear in `open_items`), which is how the seal says "every item satisfied" while
+  `source_failures` is `null`: that field is tri-state, and `null` means *cannot count*, not *none*.
+- **Re-measured independently on 2026-09-25:** `open-work` over all 53 source objects reports
+  `jurisdiction_sweeps: 0` and `source_objects: 0`, with the 4 silent endpoints matching
+  `retained.silent_sources` element for element; `review_cases.jsonl` (107,768 rows) holds 0 `Pending`
+  identity candidates and 0 `Pending` cohort decisions; and replicating `inspect_workbook`'s row rule
+  returns `239 + 49 = 288` = the stored `workbook_rows`, which is what makes the replication a
+  measurement rather than a guess.
+- **The run's own state, read from the deployment**, is 462 rows across three services: `Ingest` 53
+  (the source objects above), `JurisdictionCensus` 402 (49-51 objects per revision, revisions 1-9),
+  and `NationalCensus` 7 — the 49-jurisdiction scope (digest `51472a0f63b82f0d`, reproduced as sha256
+  over the 49 codes in declaration order) at revisions 1, 2, 6 and 8, plus a DC-only scope
+  (`107154493fc6af5b`, which is sha256 of `DC\n`) at revisions 2, 90 and 91.
+
+Two things a reader should know that the artifact does not say: the counts **mix scopes**
+(`athletes`/`class_of_2027` are core, `meets` is all-source) and there is no `scope` key; and
+`retained.gaps` drops the jurisdiction each `CoverageGap` carries
+(`crates/census-report/src/report/coverage/gaps.rs:80-87`), so the 127 rows cannot be attributed to
+states from this file alone.
