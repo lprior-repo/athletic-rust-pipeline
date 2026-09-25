@@ -62,9 +62,12 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-/// Unified cache for the LSM tree. Bounded on purpose: the default is sized to the machine, and this
-/// process is expected to share the machine with a browser and a text editor.
-const CACHE_BYTES: u64 = 256 * 1024 * 1024;
+/// Unified cache for the LSM tree. The machine has 129 GiB RAM but this process shares it
+/// with a browser and text editor. The store holds ~7.7 GiB logical data (1.46 GiB on disk)
+/// across 13 keyspaces, so 1 GiB holds index and filter blocks for the hot tables without
+/// crowding out the page cache, which is what actually serves this workload: a whole `index`
+/// pass was measured reading 20.5 TiB out of it with only 18 MiB of real disk reads.
+const CACHE_BYTES: u64 = 1024 * 1024 * 1024;
 
 const DB_DIR: &str = "fjall";
 const ENTITIES: &str = "entities";
@@ -152,16 +155,21 @@ impl Store {
             .cache_size(CACHE_BYTES)
             .open()
             .map_err(|source| StoreError::Open { source })?;
+        // `entities` keeps its bloom filters: acquisition asks it about source identities that
+        // usually are not there yet, and a miss must not fall through the last level.
         let entities = db
             .keyspace(ENTITIES, KeyspaceCreateOptions::default)
             .map_err(|source| StoreError::Open { source })?;
         let journal = db
-            .keyspace(JOURNAL, KeyspaceCreateOptions::default)
+            .keyspace(JOURNAL, || {
+                KeyspaceCreateOptions::default().expect_point_read_hits(true)
+            })
             .map_err(|source| StoreError::Open { source })?;
         let meta = db
-            .keyspace(META, KeyspaceCreateOptions::default)
+            .keyspace(META, || {
+                KeyspaceCreateOptions::default().expect_point_read_hits(true)
+            })
             .map_err(|source| StoreError::Open { source })?;
-
         let sequences = sequences::Counters::seeded(&db, &entities, &meta)?;
 
         // Reclaim what a dead writer left behind. The lock above is exclusive, so any temporary

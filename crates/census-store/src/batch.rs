@@ -10,8 +10,7 @@ use serde::Serialize;
 use std::collections::HashSet;
 
 use super::keys::{
-    id_prefix, observation_id, observation_key, split_observation_key, table_prefix,
-    DERIVED_SEQUENCE,
+    observation_id, observation_key, split_observation_key, table_prefix, DERIVED_SEQUENCE,
 };
 use super::{StorageMode, StoreError, StoreResult, Table, MAX_ROWS_PER_TABLE};
 
@@ -85,6 +84,10 @@ impl Staged {
 /// is therefore the ids it is the first to name, whichever of the two wrote them. The ids a batch is
 /// the first to name also have their foreign rows cleared, in the same batch, so a table that took
 /// rows from an older store comes back to one row per id as the derivation names them again.
+///
+/// Foreign rows are dropped in a single scan of the table after all records are staged, rather than
+/// once per id inside the loop.  That avoids the degenerate case where each id's prefix scan reads the
+/// entire table instead of seeking to a narrow range.
 pub(super) fn stage_derived<T: Serialize>(
     batch: &mut OwnedWriteBatch,
     entities: &Keyspace,
@@ -110,35 +113,40 @@ pub(super) fn stage_derived<T: Serialize>(
         if first_named && !held {
             staged.added = staged.added.saturating_add(1);
         }
-        if first_named && table.storage_mode() != StorageMode::ObservationLog {
-            drop_foreign(entities, batch, table, &id)?;
-        }
         batch.insert(entities, key, value);
+    }
+    // Observation-log tables keep their appended rows: their keys are sequences under an id the
+    // acquisition owns, so a derivation that names the same id must not clear that history. The
+    // old per-record guard checked this per id; the table's mode does not vary inside a batch.
+    if table.storage_mode() != StorageMode::ObservationLog {
+        drop_foreign_batch(entities, batch, table, &staged.named)?;
     }
     Ok(staged)
 }
 
-/// Remove every row of `id` that sits above the derived sequence.
+/// Remove every row whose id sits in `named` and whose sequence is not [`DERIVED_SEQUENCE`].
 ///
-/// A derived table is a read model and the derivation is its only legitimate author, so a copy at
-/// another sequence is one an older store imported before the gate existed: the merged read takes the
-/// later row, which puts that copy *over* the row being written, and a table whose rows are replaced
-/// would keep losing to rows it no longer derives. The removal rides in the same batch as the insert,
-/// so no reader sees the id with its row gone and the replacement not yet in place. An append-only
-/// table holds evidence rather than read models, and nothing here removes evidence.
-fn drop_foreign(
+/// Scans the table once rather than once per id, collecting all keys to remove and removing them in
+/// a single pass.  The caller must only pass ids that the table already holds at a non-derived
+/// sequence; this function does not verify that itself.
+fn drop_foreign_batch(
     entities: &Keyspace,
     batch: &mut OwnedWriteBatch,
     table: Table,
-    id: &str,
+    named: &HashSet<String>,
 ) -> StoreResult<()> {
-    for guard in entities.prefix(id_prefix(table, id)) {
+    if named.is_empty() {
+        return Ok(());
+    }
+    let prefix = table_prefix(table);
+    for guard in entities.prefix(&prefix) {
         let key = guard.key().map_err(|source| StoreError::Read { source })?;
-        let (_, _, sequence) =
+        let (_, id, sequence) =
             split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
                 detail: format!("table {} holds a malformed observation key", table.file()),
             })?;
-        if sequence != DERIVED_SEQUENCE {
+        let id_str = String::from_utf8_lossy(id).into_owned();
+        if sequence != DERIVED_SEQUENCE && named.contains(&id_str) {
             batch.remove(entities, key);
         }
     }
@@ -163,7 +171,8 @@ pub(super) fn drop_unnamed(
         let (_, id, _) = split_observation_key(&key).ok_or_else(|| StoreError::Invariant {
             detail: format!("table {} holds a malformed observation key", table.file()),
         })?;
-        if !named.iter().any(|s| s.as_bytes() == id) {
+        let id_str = String::from_utf8_lossy(id);
+        if !named.contains(id_str.as_ref()) {
             batch.remove(entities, key);
         }
     }

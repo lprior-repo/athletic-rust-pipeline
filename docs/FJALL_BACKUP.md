@@ -357,6 +357,59 @@ other corrupt frame; that release behaviour is **not measured here** (the whole 
 binaries, which is what `cargo test` and the repo's own tooling build). Treat it as
 expected-but-unverified, and prefer copying a *stopped* store over coping with a torn one.
 
+### 3.6 A real store at campaign scale, measured (2026-09-24)
+
+The steps above were run against the campaign store itself rather than a synthetic corpus. The source
+was a cold copy of the live root (`fjall/`, `entities/`, `journal/`, `out/`), taken because
+`store-backup` refuses a root whose lock is held - which is the live store for the whole of a
+campaign, so §5's "large live store" bullet still stands as written.
+
+```console
+$ target/release/census-service --store /tmp/store-copy store-backup --to /tmp/census-backup-drill/backup
+table	teams	207609
+…                                                     # 16 tables, exit 0, 10 s wall
+$ target/release/census-service store-restore --from /tmp/census-backup-drill/backup --to /tmp/census-backup-drill/restored
+table	teams	207609
+…                                                     # exit 0, 7 s wall
+$ target/release/census-service --store /tmp/census-backup-drill/restored fjall-stats
+teams	207609
+coaches	65020
+athletes	3072309
+meets	12556
+events	101711
+performances	309962
+source_identities	2507541
+conflicts	4548
+review_cases	107768
+coverage	213
+snapshots	2
+source_access	0
+identity_verdicts	43291
+source_meets	131726
+source_observations	207
+observations	3991059
+bytes_on_disk	1459217992
+store_bytes	7698688836
+```
+
+Every one of the 16 table counts and both size totals is identical to the pre-drill `fjall-stats` of
+the source root, so the restore is exact at 1.46 GB on disk / 7.7 GB logical (4.0 M observations,
+3.1 M athletes, 2.5 M source identities). The restored store then served the full read model:
+
+```console
+$ target/release/census-service --store /tmp/census-backup-drill/restored consolidate
+…                                                     # exit 0, 8 s wall
+$ target/release/census-service --store /tmp/census-backup-drill/restored report
+wrote /tmp/census-backup-drill/restored/out/report.json
+wrote /tmp/census-backup-drill/restored/out/census-by-state.csv
+scope=all_sources totals: schools=31870 athletes=2364818 co2027=623509 (boys=350944 girls=271560) profile_url=609738 multisource=59269 coaches=32031
+                                                      # exit 0, 13 s wall
+```
+
+Two operational numbers are worth keeping: a 1.46 GB store backs up in 10 s and restores in 7 s, and
+the whole read model rebuilds from a restored copy in 21 s. A restore drill is therefore cheap enough
+to run whenever a campaign is paused, and it needs no network.
+
 ## 4. The executable drill
 
 ```console
@@ -388,7 +441,9 @@ no request leaves the process.
   journal; a real campaign flushes SSTs and compacts. The racing-copy behaviour is therefore measured
   for *one* shape (torn journal) and not for the many-file shape (compaction rewriting SSTs while a
   copier reads them) - which is exactly the case a snapshot would protect, and exactly the case no
-  census API can currently express.
+  census API can currently express. The *scale* half of this gap is closed by §3.6 (a 1.46 GB /
+  7.7 GB logical store, backed up in 10 s and restored byte-identically in 7 s), which still starts
+  from a cold copy rather than from a held-open handle, for the reason above.
 * **Restoring while a unit is serving.** Not attempted: the lock forbids part of it, and nothing
   coordinates the in-memory view.
 * **A whole-root restore at CLI level.** The shell drill restores `fjall/` only; the case where the

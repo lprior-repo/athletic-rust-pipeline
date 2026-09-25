@@ -1136,3 +1136,77 @@ result. They are not a second ledger, and not `<store>/out/report.json`: that fi
 verb's read model, which has never carried transport counters. A census sealed before this build has
 no `transport` field at all — absence, not zeros — and the cache inventory above is the honest
 substitute until the next run records its own.
+
+## The index stage was quadratic: fixed, re-measured, and the census re-sealed (2026-09-25)
+
+**Symptom, measured on the live process.** `census-service run --store var/midwest-census` spent
+32:26 (32:08 CPU) inside `index` and committed **no row** — `find var/midwest-census -newermt` empty
+throughout, the last write being the 20:44:46 `consolidate`. `/proc/<pid>/io` showed `rchar` **20,973
+GiB (20.5 TiB)** at 18.5 GB/s sustained with `read_bytes` of 18 MB, i.e. all page cache, single
+writer, RSS flat at 6.13 GB. The reads were ~4.5 MB `pread64` chunks over three segment files of one
+~215 MB table, about 86 full scans a second.
+
+**Where the time went.** A symbolized dev build of the same stage under `perf record` put the hot
+frames in `serde_json`'s deserializer (`parse_whitespace` 8.2%, `skip_to_escape` 3.4%,
+`MapAccess::next_key_seed` 1.3%) reached through `census_domain::model::{provenance, cohort,
+classification, athlete, identifiers}` - the rows were being deserialized inside the loop, not merely
+counted.
+
+**Cause, at file:line.** `census-service/src/cli/publish.rs:216 run_index` →
+`census-reconcile/src/index.rs:117 derive` → `:140 canonical_pass` →
+`store.replace_many(Table::SourceIdentities, &pass.identities)` (`census-store/src/write.rs:137`) →
+`census-store/src/batch.rs stage_derived`, which called `drop_foreign` **once per record** (~5.4M
+records, each a prefix scan of that table) and `drop_unnamed` with an O(n) `named.iter().any(...)`
+membership test **per row**.
+
+**Fix.** `stage_derived` now stages each record (one point `get` + one batch insert) and then runs
+**one** `drop_foreign_batch` scan whose membership test is a `HashSet`; `drop_unnamed` uses
+`HashSet::contains`. No key layout changed and no acquired table was touched.
+
+**Independent review found a real defect in that fix.** The old per-record guard
+`table.storage_mode() != StorageMode::ObservationLog` (`git show HEAD:crates/census-store/src/batch.rs:113`)
+was dropped, which would have deleted appended rows for any observation-log table. The reviewer
+(having read the code; the suite had *not* caught it - the gate was `TEST rc=0` before and after)
+identified it, and the guard was restored at `batch.rs:118`. This is worth stating plainly: the
+regression that mattered here was found by adversarial review, not by the test suite.
+
+**A/B, same store copy.** Before: 32:26 wall, 20,973 GiB read, **unfinished**. After: **60 s wall,
+2 GiB read, rc=0**, printing `source_identities=2710323 conflicts=5440 reviews=1359 superseded=0
+coverage=215`. A second pass changed **zero rows** across all 16 tables - the derivation is
+idempotent, which is what makes a re-derived index trustworthy - and every acquired table stayed put
+(athletes 3,072,309, observations 3,991,059, source_identities 2,507,541 -> 2,508,619 derived,
+review_cases 107,768 preserved).
+
+**Chain and gate.** `run` then completed the whole cycle in **203 s**, writing
+`var/midwest-census/out/census-service-2026-09-25.xlsx`, with its own reconciliation consistent:
+`store_athlete_rows=2228631` = the core report's athletes, `best_mark_rows=8560` = the `bests` rows,
+`store_coach_rows=32031` = the report's coaches. §55: FMT/CHECK/CLIPPY/TEST all `rc=0` (44 suites
+ok). `cargo xtask scan`: `files_over_300_lines: []`, `functions_over_60_lines: 0`.
+
+**§70 items 1 and 2, re-measured online.** `open-work --ingress http://127.0.0.1:18095` reports
+`jurisdiction sweeps owed: 0 of 49`. The run's own state - read from the deployment rather than from
+memory - enumerates exactly **53 `Ingest` objects** (49 `milesplit_<st>` plus `wayzata_ia`,
+`wayzata_mn`, `wayzata_wi`, `wiaa_results_wi`):
+
+    curl -s -X POST http://127.0.0.1:19095/query -H 'content-type: application/json' \
+      -H 'accept: application/json' \
+      -d '{"query":"SELECT service_key FROM state WHERE service_name = '\''Ingest'\''"}'
+
+`open-work` with all 53 keys reports `source objects owed: 0`. The seal then closed:
+
+    phase: complete
+    acceptance: every §70 item is satisfied
+    digest: 453a8612b90eadf6783f8f153443b9b3967753c7d3b3c536450bf474fd8af065
+    cohort 580334 of 2228631 athletes, 31870 schools, 11353 meets, 28979 cohort performances, 32031 coaches
+    retained: 127 gaps, 5300 conflicts, 0 access conditions (0 hosts refused, 0 throttled)
+
+Two honest caveats attached to that acceptance. `source_failures` is the tri-state `None`/unmeasured
+by design (`crates/census-service/src/restate_services/census.rs:138,157`): the journal reports the
+objects with no terminal acquisition instead, and *that* is the measurement - 0 of 53 owed, so no
+retry-exhausted object exists to represent. And the cohort counts are identical to the previous seal
+(class_of_2027 580,334, meets 11,353, athletes 2,228,631) while schools (+52) and coaches (+543) grew,
+which is what the MPA merge was supposed to move.
+
+**§60 drill at scale.** Recorded in `docs/FJALL_BACKUP.md` §3.6: on a 1.46 GB on-disk / 7.7 GB logical
+store, backup took 10 s and restore 7 s, all 16 table counts and both size totals came back identical,
+and the restored store served `consolidate` (8 s) and `report` (13 s) to the same headline numbers.

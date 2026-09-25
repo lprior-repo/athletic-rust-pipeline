@@ -260,10 +260,25 @@ abort with a typed error instead of exhausting memory. `consolidate::<T>` is sca
 (`PersistMode::SyncAll`). `stats()` is O(1) per table: it reads the in-memory sequence counters and
 the keyspace's `disk_space`, so status commands never scan.
 
+Derivation path: `replace_many` serializes a whole batch, then `stage_derived` stages it with **one
+point `get` per record** and, after the loop, **one** table scan whose membership test is a
+`HashSet` (`drop_foreign_batch`), followed by `drop_unnamed` for snapshot tables. Both loops used to
+be per-record table scans with a linear membership scan: on the 7.7 GiB logical campaign store one
+`index` stage read **20,973 GiB in 32 minutes without finishing** (18.5 GB/s sustained from the page
+cache, single writer, no commit). With the batch scan it finishes in **60 s and 2 GiB**, and a second
+pass changes **zero rows** - the derivation is idempotent, which is what makes a re-derived table
+trustworthy. The whole chain (`consolidate` → `index` → two `report` scopes → `bests` → `workbook`)
+then ran in 203 s. Observation-log tables never enter that path: their rows are sequences under an id
+the acquisition owns, so the foreign-row clear is skipped for them by table storage mode.
+
 Durability and placement: the database is opened with
-`Database::builder(root.join("fjall")).cache_size(CACHE_BYTES)` where `CACHE_BYTES` is 256 MiB
-(deliberate: the process shares the machine with a browser); keyspaces `entities`, `journal`, `meta`
-are created with `KeyspaceCreateOptions::default`, i.e. **KV separation is not configured**. The
+`Database::builder(root.join("fjall")).cache_size(CACHE_BYTES)` where `CACHE_BYTES` is 1 GiB (the
+process shares the machine with a browser, so the LSM cache holds index and filter blocks and leaves
+the page cache to serve scans); keyspaces `entities`, `journal`, `meta` are created with
+`KeyspaceCreateOptions::default`, plus `expect_point_read_hits(true)` on `journal` and `meta` whose
+point reads are known-hit - `entities` keeps its bloom filters, because acquisition asks it about
+source identities that usually are not there yet, and a miss must not fall through the last level.
+**KV separation is not configured.** The
 resume journal commits one `SyncData` batch per completed unit of work. Legacy `entities/*.jsonl` and
 `journal/*.jsonl` are imported once, in batched commits, behind a `meta` marker.
 
